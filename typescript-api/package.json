@@ -91,7 +91,6 @@
     ],
     "dependencies": {
         "@polkadot/api": "*",
-        "@polkadot/api-augment": "*",
         "@polkadot/api-base": "*",
         "@polkadot/api-derive": "*",
         "@polkadot/rpc-augment": "*",

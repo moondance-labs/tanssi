@@ -3,7 +3,7 @@ import { type ApiPromise, Keyring } from "@polkadot/api";
 import { jumpToSession } from "util/block";
 
 describeSuite({
-    id: "DTR0820",
+    id: "DEVT0603",
     title: "Starlight <> Ethereum - Rewards mapping",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {

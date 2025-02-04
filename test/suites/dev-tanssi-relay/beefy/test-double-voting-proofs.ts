@@ -14,7 +14,7 @@ import { Keyring } from "@polkadot/keyring";
 import { secp256k1Sign } from "@polkadot/util-crypto";
 
 describeSuite({
-    id: "DTR1203",
+    id: "DEVT1402",
     title: "BEEFY - Double voting proofs",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -105,7 +105,7 @@ describeSuite({
                 const signedTx = await tx.signAsync(bob);
                 const { result } = await context.createBlock(signedTx, { allowFailures: false });
 
-                expect(result!.successful, result!.error?.name).to.be.true;
+                expect(result?.successful, result?.error?.name).to.be.true;
             },
         });
 
@@ -181,9 +181,9 @@ describeSuite({
                 const signedTx = await tx.signAsync(bob);
                 const { result } = await context.createBlock(signedTx);
 
-                expect(result!.successful).to.be.false;
+                expect(result?.successful).to.be.false;
                 expect(result!.error?.section).to.eq("beefy");
-                expect(result!.error?.name).to.eq("InvalidKeyOwnershipProof");
+                expect(result?.error?.name).to.eq("InvalidKeyOwnershipProof");
             },
         });
 
@@ -258,9 +258,9 @@ describeSuite({
                 const signedTx = await tx.signAsync(bob);
                 const { result } = await context.createBlock(signedTx);
 
-                expect(result!.successful).to.be.false;
+                expect(result?.successful).to.be.false;
                 expect(result!.error?.section).to.eq("beefy");
-                expect(result!.error?.name).to.eq("InvalidDoubleVotingProof");
+                expect(result?.error?.name).to.eq("InvalidDoubleVotingProof");
             },
         });
     },

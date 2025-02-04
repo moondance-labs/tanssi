@@ -8,7 +8,7 @@ import { signAndSendAndInclude, waitSessions } from "../../util/block.ts";
 import type { Signer } from "ethers";
 
 describeSuite({
-    id: "ZRUP-01",
+    id: "ZOMBIETANSSIR01",
     title: "Zombie Tanssi Relay Unneeded Para Test",
     foundationMethods: "zombie",
     testCases: ({ it, context }) => {

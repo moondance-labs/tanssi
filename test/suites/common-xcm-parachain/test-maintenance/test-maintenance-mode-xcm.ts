@@ -1,4 +1,4 @@
-import "@polkadot/api-augment";
+import "@tanssi/api-augment";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
@@ -6,7 +6,7 @@ import { initializeCustomCreateBlock } from "../../../util/block";
 import type { MultiLocation } from "../../../util/xcm";
 
 describeSuite({
-    id: "CPX0102",
+    id: "COMMON0102",
     title: "XCM in maintenance mode",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {

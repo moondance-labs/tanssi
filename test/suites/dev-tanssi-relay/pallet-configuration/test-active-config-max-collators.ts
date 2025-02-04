@@ -2,7 +2,7 @@ import { expect, beforeAll, describeSuite } from "@moonwall/cli";
 import { jumpSessions } from "../../../util/block";
 
 describeSuite({
-    id: "CT0402",
+    id: "DEVT0802",
     title: "Configuration - ActiveConfig - MaxCollators",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
@@ -16,7 +16,7 @@ describeSuite({
                     .tx.sudo.sudo(context.polkadotJs().tx.collatorConfiguration.setMaxCollators(200))
                     .signAsync(context.keyring.alice)
             );
-            expect(result!.successful, result!.error?.name).to.be.true;
+            expect(result?.successful, result?.error?.name).to.be.true;
 
             await jumpSessions(context, 2);
         });

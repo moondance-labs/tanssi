@@ -3,9 +3,10 @@ import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 import { initializeCustomCreateBlock, jumpSessions } from "../../../util/block";
+import { u32 } from "@polkadot/types";
 
 describeSuite({
-    id: "DTR1201",
+    id: "DEVT1501",
     title: "Proxy test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -104,10 +105,11 @@ describeSuite({
                 await context.createBlock([await txReserve.signAsync(charlie)]);
 
                 let events = await polkadotJs.query.system.events();
-                const reservedEvent = events.filter((a) => {
-                    return a.event.method === "Reserved" && a.event.data[1].toString() === charlie.address;
-                });
-                const reservedParaId = reservedEvent[0].event.data[0].toPrimitive();
+                const reservedEvent = events.filter(
+                    ({ event }) => event.method === "Reserved" && event.data[1].toString() === charlie.address
+                );
+                const reservedParaId = (reservedEvent[0].event.data[0] as u32).toNumber();
+                console.log(reservedParaId);
 
                 const txRegisterRelay = polkadotJs.tx.registrar.register(reservedParaId, GENESIS_HEAD, VALIDATION_CODE);
                 await context.createBlock([await txRegisterRelay.signAsync(charlie)]);
@@ -181,11 +183,11 @@ describeSuite({
                 await context.createBlock([await txStartCollating.signAsync(delegateBob)]);
 
                 events = await polkadotJs.query.system.events();
-                const startCollatingEvent = events.filter((a) => {
-                    return (
-                        a.event.method === "ParaIdValidForCollating" && a.event.data[0].toString() === reservedParaId
-                    );
-                });
+                const startCollatingEvent = events.filter(
+                    ({ event }) =>
+                        event.method === "ParaIdValidForCollating" &&
+                        event.data[0].toString() === reservedParaId.toString()
+                );
 
                 expect(startCollatingEvent.length).eq(1);
 
@@ -293,9 +295,9 @@ describeSuite({
                 await context.createBlock([await txStartCollating.signAsync(charlie)]);
 
                 const events = await polkadotJs.query.system.events();
-                const startCollatingEvent = events.filter((a) => {
-                    return a.event.method === "ParaIdValidForCollating" && a.event.data[0].toString() === "2002";
-                });
+                const startCollatingEvent = events.filter(
+                    ({ event }) => event.method === "ParaIdValidForCollating" && event.data[0].toString() === "2002"
+                );
 
                 expect(startCollatingEvent.length).eq(0);
             },

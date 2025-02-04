@@ -9,7 +9,7 @@ export const CLEAR_ORIGIN_WEIGHT = 983000n;
 const XCM_UTILS_ADDRESS = "0x0000000000000000000000000000000000000803";
 
 describeSuite({
-    id: "DF1115",
+    id: "DE1315",
     title: "Precompiles - xcm utils",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {

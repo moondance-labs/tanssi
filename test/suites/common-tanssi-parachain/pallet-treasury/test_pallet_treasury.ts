@@ -5,7 +5,7 @@ import type { KeyringPair } from "@moonwall/util";
 import { extractFeeAuthor } from "util/block";
 
 describeSuite({
-    id: "CPT0901",
+    id: "COMMO0601",
     title: "Treasury pallet test suite",
     foundationMethods: "dev",
 

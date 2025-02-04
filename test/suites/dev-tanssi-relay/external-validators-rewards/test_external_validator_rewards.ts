@@ -6,7 +6,7 @@ import { encodeAddress } from "@polkadot/util-crypto";
 import type { MultiLocation } from "../../../util/xcm";
 
 describeSuite({
-    id: "DTR1602",
+    id: "DEVT0602",
     title: "Ethereum reward tests",
     foundationMethods: "dev",
 

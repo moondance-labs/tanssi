@@ -5,7 +5,7 @@ import { alith } from "@moonwall/util";
 
 const MAX_BALANCE_TRANSFER_TRIES = 5;
 describeSuite({
-    id: "CAN",
+    id: "R01",
     title: "Chopsticks Frontier Template Upgrade Test",
     foundationMethods: "chopsticks",
     testCases: ({ it, context, log }) => {

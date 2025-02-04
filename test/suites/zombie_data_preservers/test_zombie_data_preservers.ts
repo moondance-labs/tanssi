@@ -9,7 +9,7 @@ import { u8aToHex } from "@polkadot/util";
 import { decodeAddress } from "@polkadot/util-crypto";
 
 describeSuite({
-    id: "DP01",
+    id: "ZOM01",
     title: "Data Preservers Test",
     foundationMethods: "zombie",
     testCases: ({ it, context }) => {

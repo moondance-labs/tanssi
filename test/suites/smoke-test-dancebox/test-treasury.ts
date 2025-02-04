@@ -4,7 +4,7 @@ import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
 
 describeSuite({
-    id: "S15",
+    id: "SMO05",
     title: "Verify treasury consistency",
     foundationMethods: "read_only",
     testCases: ({ context, it, log }) => {

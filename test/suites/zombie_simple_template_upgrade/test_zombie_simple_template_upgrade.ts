@@ -6,7 +6,7 @@ import { alith } from "@moonwall/util";
 import fs from "node:fs";
 
 describeSuite({
-    id: "R01",
+    id: "ZOMBI01",
     title: "Zombie Container Template Upgrade Test",
     foundationMethods: "zombie",
     testCases: ({ it, context, log }) => {

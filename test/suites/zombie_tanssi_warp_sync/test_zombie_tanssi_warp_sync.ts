@@ -9,7 +9,7 @@ import { getHeaderFromRelay } from "../../util/relayInterface";
 import fs from "node:fs/promises";
 
 describeSuite({
-    id: "W01",
+    id: "ZOMBIETANSSIW01",
     title: "Zombie Tanssi Warp Sync Test",
     foundationMethods: "zombie",
     testCases: ({ it, context }) => {

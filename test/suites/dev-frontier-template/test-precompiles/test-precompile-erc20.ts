@@ -14,7 +14,7 @@ import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 const IERC20_ADDRESS = "0x0000000000000000000000000000000000000800";
 
 describeSuite({
-    id: "DF1111",
+    id: "DE1311",
     title: "Precompiles - ERC20 Native",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {

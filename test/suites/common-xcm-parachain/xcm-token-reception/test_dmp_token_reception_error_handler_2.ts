@@ -7,12 +7,12 @@ import { type RawXcmMessage, XcmFragment, injectDmpMessageAndSeal } from "../../
 import { RELAY_SOURCE_LOCATION } from "../../../util/constants.ts";
 
 describeSuite({
-    id: "CPX0105",
+    id: "COMMON0203",
     title: "Mock XCM - downward transfer with triggered error handler",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
         let polkadotJs: ApiPromise;
-        let transferredBalance;
+        let transferredBalance: bigint;
         let alice: KeyringPair;
         let chain: any;
 
@@ -40,7 +40,7 @@ describeSuite({
                         1
                     ),
                     polkadotJs.tx.assetRate.create(
-                        1,
+                        "1",
                         // this defines how much the asset costs with respect to the
                         // new asset
                         // in this case, asset*2=native

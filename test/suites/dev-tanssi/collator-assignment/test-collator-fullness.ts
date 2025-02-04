@@ -4,7 +4,7 @@ import type { ApiPromise } from "@polkadot/api";
 import { jumpToSession } from "util/block";
 
 describeSuite({
-    id: "DT0802",
+    id: "DEV0202",
     title: "Collator assignment tests",
     foundationMethods: "dev",
 

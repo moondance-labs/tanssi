@@ -1,4 +1,4 @@
-import "@polkadot/api-augment";
+import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
@@ -6,7 +6,7 @@ import { jumpSessions } from "../../../util/block";
 import { u8aToHex } from "@polkadot/util";
 
 describeSuite({
-    id: "DT0203",
+    id: "DEV0403",
     title: "Session keys assignment test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {

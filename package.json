@@ -19,7 +19,6 @@
   },
   "dependencies": {
     "@polkadot/api": "15.5.1",
-    "@polkadot/api-augment": "15.5.1",
     "@polkadot/api-base": "15.5.1",
     "@polkadot/api-derive": "15.5.1",
     "@polkadot/keyring": "13.3.1",
@@ -45,7 +44,6 @@
   "pnpm": {
     "overrides": {
       "@polkadot/api": "15.5.1",
-      "@polkadot/api-augment": "15.5.1",
       "@polkadot/api-base": "15.5.1",
       "@polkadot/api-derive": "15.5.1",
       "@polkadot/rpc-augment": "15.5.1",

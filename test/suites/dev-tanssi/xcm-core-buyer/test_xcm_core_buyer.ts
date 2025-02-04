@@ -9,7 +9,7 @@ import type { ITuple } from "@polkadot/types-codec/types";
 import { u8aToHex } from "@polkadot/util";
 
 describeSuite({
-    id: "DT0601",
+    id: "DEV0501",
     title: "Pallet XCM core buyer",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {

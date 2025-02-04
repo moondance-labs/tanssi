@@ -22,7 +22,7 @@ const CONTRACT_PROXY_TYPE_ANY = 0;
 const CONTRACT_PROXY_TYPE_BALANCES = 4;
 
 describeSuite({
-    id: "DF1113",
+    id: "DE1313",
     title: "Precompile - Proxy",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {

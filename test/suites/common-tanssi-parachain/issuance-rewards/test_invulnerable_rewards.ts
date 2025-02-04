@@ -7,7 +7,7 @@ import { getAuthorFromDigest } from "util/author";
 import { PARACHAIN_BOND } from "util/constants";
 
 describeSuite({
-    id: "CPT0301",
+    id: "COMMO0201",
     title: "Invulnerable reward test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {

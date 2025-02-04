@@ -5,7 +5,7 @@ import { hasEnoughCredits } from "util/payment";
 import type { u32, Vec } from "@polkadot/types-codec";
 
 describeSuite({
-    id: "S08",
+    id: "SM03",
     title: "Sample suite that only runs on Dancebox chains",
     foundationMethods: "read_only",
     testCases: ({ it, context }) => {

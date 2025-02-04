@@ -5,7 +5,7 @@ import { type Abi, encodeFunctionData } from "viem";
 import { type HeavyContract, deployHeavyContracts } from "../../../helpers";
 
 describeSuite({
-    id: "DF1302",
+    id: "DE1202",
     title: "PoV Limit (3.5Mb in Dev)",
     foundationMethods: "dev",
     testCases: ({ context, it, log }) => {

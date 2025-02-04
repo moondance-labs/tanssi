@@ -3,7 +3,7 @@ import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
 
 describeSuite({
-    id: "CPT0801",
+    id: "COMMO0701",
     title: "RelayStorageRoots pallet test suite",
     foundationMethods: "dev",
 

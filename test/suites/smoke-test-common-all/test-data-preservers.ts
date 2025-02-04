@@ -3,7 +3,7 @@ import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
 
 describeSuite({
-    id: "S16",
+    id: "S04",
     title: "Verify data preservers consistency",
     foundationMethods: "read_only",
     testCases: ({ context, it }) => {

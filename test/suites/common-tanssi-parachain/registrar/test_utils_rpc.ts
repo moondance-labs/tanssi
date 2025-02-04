@@ -1,10 +1,10 @@
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
 import { chainSpecToContainerChainGenesisData, containerChainGenesisDataToChainSpec } from "../../../util/genesis_data";
-import "@polkadot/api-augment";
+import "@tanssi/api-augment";
 
 describeSuite({
-    id: "CPT0507",
+    id: "COMMO1106",
     title: "Test ContainerChainGenesisData utils",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {

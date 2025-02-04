@@ -7,7 +7,7 @@ import { fetchIssuance, filterRewardFromOrchestratorWithFailure, fetchRewardAuth
 import { PARACHAIN_BOND } from "util/constants";
 
 describeSuite({
-    id: "S09",
+    id: "SM04",
     title: "Sample suite that only runs on Dancebox chains",
     foundationMethods: "read_only",
     testCases: ({ it, context }) => {

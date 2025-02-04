@@ -4,7 +4,7 @@ import type { PrivateKeyAccount } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
 describeSuite({
-    id: "DF0101",
+    id: "DE0101",
     title: "Existential Deposit disabled",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
@@ -17,7 +17,7 @@ describeSuite({
             const { result } = await context.createBlock(
                 context.polkadotJs().tx.balances.transferAllowDeath(randomAccount.address, 10_000_000_000_000_000_000n)
             );
-            expect(result!.successful, result!.error?.name).to.be.true;
+            expect(result?.successful, result?.error?.name).to.be.true;
         });
 
         for (const txnType of TransactionTypes) {
@@ -40,7 +40,7 @@ describeSuite({
                     );
                     const { result } = await context.createBlock(raw);
 
-                    expect(result!.successful, result!.error?.name).toBe(true);
+                    expect(result?.successful, result?.error?.name).toBe(true);
 
                     expect(await context.viem("public").getBalance({ address: randomAccount.address })).toBe(0n);
                 },

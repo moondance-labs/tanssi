@@ -1,10 +1,9 @@
-import "@polkadot/api-augment";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 
 describeSuite({
-    id: "CA0001",
+    id: "C01",
     title: "Dev test suite",
     foundationMethods: "dev",
     testCases: ({ it, context, log }) => {

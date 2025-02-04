@@ -7,7 +7,7 @@ import { u8aToHex } from "@polkadot/util";
 import { alith, charleth, baltathar, dorothy } from "@moonwall/util";
 
 describeSuite({
-    id: "CA0201",
+    id: "C0201",
     title: "Multisig pallet test suite",
     foundationMethods: "dev",
 

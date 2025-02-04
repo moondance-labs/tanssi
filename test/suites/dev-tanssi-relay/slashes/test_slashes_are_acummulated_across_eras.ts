@@ -5,7 +5,7 @@ import { type KeyringPair, generateKeyringPair } from "@moonwall/util";
 import { jumpToSession } from "../../../util/block";
 
 describeSuite({
-    id: "DTR1308",
+    id: "DEVT1702",
     title: "Slashes are accumulated across eras based on max slashes sent per block",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {

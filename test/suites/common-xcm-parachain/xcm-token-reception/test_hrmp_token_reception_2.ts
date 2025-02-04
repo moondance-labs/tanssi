@@ -7,12 +7,12 @@ import { type RawXcmMessage, XcmFragment, injectHrmpMessageAndSeal } from "../..
 import { STATEMINT_LOCATION_EXAMPLE } from "../../../util/constants.ts";
 
 describeSuite({
-    id: "CPX0106",
+    id: "COMMON0207",
     title: "Mock XCM - Succeeds receiving tokens through HRMP",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
         let polkadotJs: ApiPromise;
-        let transferredBalance;
+        let transferredBalance: bigint;
         let alice: KeyringPair;
         let chain: any;
 

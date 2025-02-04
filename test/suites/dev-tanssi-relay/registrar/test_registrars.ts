@@ -4,7 +4,7 @@ import type { KeyringPair } from "@moonwall/util";
 import { jumpSessions } from "../../../util/block";
 
 describeSuite({
-    id: "DTR0801",
+    id: "DEVT1601",
     title: "ContainerRegistrar <> relay Registrar",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {

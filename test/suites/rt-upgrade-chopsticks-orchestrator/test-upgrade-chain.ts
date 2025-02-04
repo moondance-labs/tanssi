@@ -4,7 +4,7 @@ import { type ApiPromise, Keyring } from "@polkadot/api";
 
 const MAX_BALANCE_TRANSFER_TRIES = 5;
 describeSuite({
-    id: "CAN",
+    id: "RT01",
     title: "Chopsticks Dancebox Upgrade Test",
     foundationMethods: "chopsticks",
     testCases: ({ it, context, log }) => {

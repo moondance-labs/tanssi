@@ -13,7 +13,7 @@ import { DANCE } from "util/constants";
 import { createBlockAndRemoveInvulnerables } from "util/invulnerables";
 
 describeSuite({
-    id: "DT0302",
+    id: "DEV0802",
     title: "Staking candidate reward test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {

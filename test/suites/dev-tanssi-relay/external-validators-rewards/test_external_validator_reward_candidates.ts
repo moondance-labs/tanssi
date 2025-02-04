@@ -4,7 +4,7 @@ import { type ApiPromise, Keyring } from "@polkadot/api";
 import { jumpToSession } from "util/block";
 
 describeSuite({
-    id: "DTR1601",
+    id: "DEVT0601",
     title: "Paras inherent tests",
     foundationMethods: "dev",
 

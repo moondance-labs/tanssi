@@ -1,11 +1,11 @@
-import "@polkadot/api-augment";
+import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 import { initializeCustomCreateBlock, extractFeeAuthor, filterRewardFromContainer } from "../../../util/block";
 
 describeSuite({
-    id: "CA0303",
+    id: "C0303",
     title: "Proxy test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {

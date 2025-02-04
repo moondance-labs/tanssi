@@ -71,7 +71,7 @@ async function mockAndInsertHeadData(
 }
 
 describeSuite({
-    id: "DT0302",
+    id: "DEVT1802",
     title: "Staking candidate reward test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {

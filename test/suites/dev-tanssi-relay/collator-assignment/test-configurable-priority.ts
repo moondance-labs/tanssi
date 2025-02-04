@@ -44,7 +44,7 @@ const sortCollatorAssignment = (collatorAssignment) => {
 };
 
 describeSuite({
-    id: "DTR0401",
+    id: "DEVT0302",
     title: "Collator assignment tests",
     foundationMethods: "dev",
 

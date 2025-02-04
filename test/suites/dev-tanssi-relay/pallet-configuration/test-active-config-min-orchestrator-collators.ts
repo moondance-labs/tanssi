@@ -2,7 +2,7 @@ import { expect, beforeAll, describeSuite } from "@moonwall/cli";
 import { initializeCustomCreateBlock, jumpSessions } from "../../../util/block";
 
 describeSuite({
-    id: "CT0404",
+    id: "DEVT0804",
     title: "Configuration - ActiveConfig - MinOrchestratorCollators",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
@@ -18,7 +18,7 @@ describeSuite({
                     .tx.sudo.sudo(context.polkadotJs().tx.collatorConfiguration.setMinOrchestratorCollators(2))
                     .signAsync(context.keyring.alice)
             );
-            expect(result!.successful, result!.error?.name).to.be.true;
+            expect(result?.successful, result?.error?.name).to.be.true;
 
             await jumpSessions(context, 2);
         });

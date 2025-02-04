@@ -2,7 +2,7 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
 
 describeSuite({
-    id: "S14",
+    id: "SMO04",
     title: "Check staking eligible candidates have session keys",
     foundationMethods: "read_only",
     testCases: ({ it, context }) => {

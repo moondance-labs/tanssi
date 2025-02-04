@@ -7,7 +7,7 @@ import { u8aToHex, stringToHex } from "@polkadot/util";
 import { Keyring } from "@polkadot/keyring";
 
 describeSuite({
-    id: "DTR1201",
+    id: "DEVT1401",
     title: "BEEFY - Test Digests",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {

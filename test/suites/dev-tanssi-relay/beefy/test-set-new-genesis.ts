@@ -4,7 +4,7 @@ import type { ApiPromise } from "@polkadot/api";
 import { jumpToSession } from "../../../util/block";
 
 describeSuite({
-    id: "DTR1202",
+    id: "DEVT1404",
     title: "BEEFY - Set new genesis",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -29,7 +29,7 @@ describeSuite({
                         .signAsync(context.keyring.alice),
                     { allowFailures: false }
                 );
-                expect(result!.successful, result!.error?.name).to.be.true;
+                expect(result?.successful, result?.error?.name).to.be.true;
 
                 const currentBlockNumber = (await polkadotJs.rpc.chain.getHeader()).number.toNumber();
                 const genesisDelayAfter = (await polkadotJs.query.beefy.genesisBlock()).toHuman();

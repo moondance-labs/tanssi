@@ -78,7 +78,7 @@ const runtimeApi = {
 };
 
 describeSuite({
-    id: "CPX0205",
+    id: "COMMON0305",
     title: "XCM - DryRunApi",
     foundationMethods: "dev",
     testCases: ({ it }) => {

@@ -10,7 +10,7 @@ import { RELAY_SOURCE_LOCATION } from "../../../util/constants.ts";
 const PRECOMPILE_PALLET_XCM_ADDRESS: `0x${string}` = "0x0000000000000000000000000000000000000804";
 
 describeSuite({
-    id: "DF1112",
+    id: "DE1312",
     title: "Precompiles - PalletXcm",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {

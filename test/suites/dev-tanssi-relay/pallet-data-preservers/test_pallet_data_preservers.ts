@@ -5,7 +5,7 @@ import type { KeyringPair } from "@moonwall/util";
 import { initializeCustomCreateBlock } from "../../../util/block.ts";
 
 describeSuite({
-    id: "DTR0601",
+    id: "DEVT0901",
     title: "Data preservers pallet relay test suite",
     foundationMethods: "dev",
 

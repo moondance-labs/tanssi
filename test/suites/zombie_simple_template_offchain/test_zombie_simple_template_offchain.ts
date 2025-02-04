@@ -3,7 +3,7 @@ import { getHeaderFromRelay } from "../../util/relayInterface.ts";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import { signAndSendAndInclude, isEventEmittedInTheNextBlocks } from "../../util/block.ts";
 describeSuite({
-    id: "ZOF01",
+    id: "ZOMB01",
     title: "Zombie Offchain Tests",
     foundationMethods: "zombie",
     testCases: ({ it, context }) => {

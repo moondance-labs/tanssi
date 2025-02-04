@@ -9,7 +9,7 @@ import { generateBabeEquivocationProof } from "../../../util/slashes";
 import { PRIMARY_GOVERNANCE_CHANNEL_ID } from "../../../util/constants";
 
 describeSuite({
-    id: "DTR1304",
+    id: "DEVT1703",
     title: "Babe slashes defer period confirmation",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {

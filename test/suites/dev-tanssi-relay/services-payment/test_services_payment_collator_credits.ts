@@ -6,7 +6,7 @@ import { jumpSessions, jumpToSession } from "util/block";
 import { paraIdTank } from "util/payment";
 
 describeSuite({
-    id: "DTR0903",
+    id: "DEVT1202",
     title: "Services payment test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {

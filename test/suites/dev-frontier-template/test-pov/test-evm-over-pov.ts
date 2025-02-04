@@ -5,7 +5,7 @@ import { type Abi, encodeFunctionData } from "viem";
 import { expectEVMResult, type HeavyContract, deployHeavyContracts } from "../../../helpers";
 
 describeSuite({
-    id: "DF1301",
+    id: "DE1201",
     title: "PoV controlled by gasLimit",
     foundationMethods: "dev",
     testCases: ({ context, it, log }) => {

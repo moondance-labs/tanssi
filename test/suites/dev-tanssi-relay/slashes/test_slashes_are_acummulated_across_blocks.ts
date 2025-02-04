@@ -6,7 +6,7 @@ import { jumpToSession } from "../../../util/block";
 import { PRIMARY_GOVERNANCE_CHANNEL_ID } from "../../../util/constants";
 
 describeSuite({
-    id: "DTR1307",
+    id: "DEVT1701",
     title: "Slashes are accumulated based on max slashes sent per block",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {

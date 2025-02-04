@@ -11,7 +11,7 @@ import { getKeyringNimbusIdHex } from "../../util/keys";
 import { getHeaderFromRelay } from "../../util/relayInterface";
 
 describeSuite({
-    id: "P01",
+    id: "ZOMBIE01",
     title: "Zombie Tanssi Test",
     foundationMethods: "zombie",
     testCases: ({ it, context }) => {

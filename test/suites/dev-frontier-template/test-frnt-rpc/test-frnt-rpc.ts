@@ -4,7 +4,7 @@ import { BALTATHAR_ADDRESS, createViemTransaction } from "@moonwall/util";
 const DEFAULT_TXN_MAX_BASE_FEE = 10_000_000_000;
 
 describeSuite({
-    id: "DF0901",
+    id: "DE1001",
     title: "Frontier RPC Methods - frnt_isBlockFinalized ",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {

@@ -6,14 +6,14 @@ import { jumpToSession } from "util/block";
 import { injectUmpMessageAndSeal, type RawXcmMessage, XcmFragment } from "../../../util/xcm";
 
 describeSuite({
-    id: "DTR1003",
+    id: "DEVT1903",
     title: "XCM - Succeeds sending XCM",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
         let random: KeyringPair;
-        let transferredBalance;
+        let transferredBalance: bigint;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();

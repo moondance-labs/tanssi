@@ -547,7 +547,7 @@ export class XcmFragment {
     }
 
     // Utility function to support functional style method call chaining bound to `this` context
-    with(callback: (() => any)[]): this {
+    with(callback): this {
         return callback.call(this);
     }
 
@@ -925,7 +925,8 @@ export class XcmFragment {
 function replaceNetworkAny(obj: AnyObject | Array<AnyObject>): any {
     if (Array.isArray(obj)) {
         return obj.map((item) => replaceNetworkAny(item));
-    } else if (typeof obj === "object" && obj !== null) {
+    }
+    if (typeof obj === "object" && obj !== null) {
         const newObj: AnyObject = {};
         for (const key in obj) {
             if (key === "network" && obj[key] === "Any") {
@@ -950,7 +951,7 @@ export const expectXcmEventMessage = async (context: DevModeContext, message: st
         .map(({ event }) => (context.polkadotJs().events.xcmpQueue.Fail.is(event) ? event : undefined))
         .filter((event) => event);
 
-    return filteredEvents.length ? filteredEvents[0]!.data.error.toString() === message : false;
+    return filteredEvents.length ? filteredEvents[0]?.data.error.toString() === message : false;
 };
 
 export const extractPaidDeliveryFees = async (context: DevModeContext) => {
@@ -960,7 +961,7 @@ export const extractPaidDeliveryFees = async (context: DevModeContext) => {
         .map(({ event }) => (context.polkadotJs().events.polkadotXcm.FeesPaid.is(event) ? event : undefined))
         .filter((event) => event);
 
-    return filteredEvents[0]!.data[1][0].fun.asFungible.toBigInt();
+    return filteredEvents[0]?.data[1][0].fun.asFungible.toBigInt();
 };
 
 export const extractPaidDeliveryFeesDancelight = async (context: DevModeContext) => {
@@ -970,7 +971,7 @@ export const extractPaidDeliveryFeesDancelight = async (context: DevModeContext)
         .map(({ event }) => (context.polkadotJs().events.xcmPallet.FeesPaid.is(event) ? event : undefined))
         .filter((event) => event);
 
-    return filteredEvents[0]!.data[1][0].fun.asFungible.toBigInt();
+    return filteredEvents[0]?.data[1][0].fun.asFungible.toBigInt();
 };
 
 export const getLastSentUmpMessageFee = async (context: DevModeContext, baseDelivery: bigint, txByteFee: bigint) => {

@@ -6,7 +6,7 @@ import { jumpSessions } from "../../../util/block";
 import { u8aToHex, stringToHex } from "@polkadot/util";
 
 describeSuite({
-    id: "CTP0101",
+    id: "COMMO0101",
     title: "Session keys assignment test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {

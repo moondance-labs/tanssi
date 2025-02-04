@@ -4,7 +4,7 @@ import { type MultiLocation, extractPaidDeliveryFees, getLastSentUmpMessageFee }
 import { type ApiPromise, Keyring } from "@polkadot/api";
 
 describeSuite({
-    id: "CPX0204",
+    id: "COMMON0304",
     title: "XCM - Succeeds sending XCM reserve transfer",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {

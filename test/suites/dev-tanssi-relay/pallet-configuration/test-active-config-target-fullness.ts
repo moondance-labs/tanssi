@@ -2,7 +2,7 @@ import { expect, beforeAll, describeSuite } from "@moonwall/cli";
 import { jumpSessions } from "../../../util/block";
 
 describeSuite({
-    id: "CT0406",
+    id: "DEVT0806",
     title: "Configuration - ActiveConfig - targetContainerChainFullness",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
@@ -18,7 +18,7 @@ describeSuite({
                     )
                     .signAsync(context.keyring.alice)
             );
-            expect(result!.successful, result!.error?.name).to.be.true;
+            expect(result?.successful, result?.error?.name).to.be.true;
 
             await jumpSessions(context, 2);
         });

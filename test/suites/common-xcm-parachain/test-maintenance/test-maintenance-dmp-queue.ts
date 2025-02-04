@@ -11,7 +11,7 @@ import {
 } from "../../../util/xcm.ts";
 
 describeSuite({
-    id: "CPX0101",
+    id: "COMMON0101",
     title: "Maintenance mode - DMP queue",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {

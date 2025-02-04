@@ -7,12 +7,12 @@ import { type RawXcmMessage, XcmFragment, injectDmpMessageAndSeal } from "../../
 import { RELAY_SOURCE_LOCATION, RELAY_SOURCE_LOCATION_2 } from "../../../util/constants.ts";
 
 describeSuite({
-    id: "CPX0101",
+    id: "COMMON0206",
     title: "Mock XCM - Succeeds receiving tokens DMP",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
         let polkadotJs: ApiPromise;
-        let transferredBalance;
+        let transferredBalance: bigint;
         let alice: KeyringPair;
         let chain: any;
 

@@ -6,7 +6,6 @@ settings:
 
 overrides:
   '@polkadot/api': 15.5.1
-  '@polkadot/api-augment': 15.5.1
   '@polkadot/api-base': 15.5.1
   '@polkadot/api-derive': 15.5.1
   '@polkadot/rpc-augment': 15.5.1
@@ -29,9 +28,6 @@ importers:
   .:
     dependencies:
       '@polkadot/api':
-        specifier: 15.5.1
-        version: 15.5.1
-      '@polkadot/api-augment':
         specifier: 15.5.1
         version: 15.5.1
       '@polkadot/api-base':
@@ -217,9 +213,6 @@ importers:
   typescript-api:
     dependencies:
       '@polkadot/api':
-        specifier: 15.5.1
-        version: 15.5.1
-      '@polkadot/api-augment':
         specifier: 15.5.1
         version: 15.5.1
       '@polkadot/api-base':
@@ -3123,6 +3116,7 @@ packages:
     resolution: {integrity: sha512-Quz3MvAwHxVYNXsOByL7xI5EB2WYOeFswqaHIA3qOK3isRWTxiplBEocmmru6XmxDB2L7jDNYtYA4FyimoAFEw==}
     engines: {node: '>=8.17.0'}
     hasBin: true
+    bundledDependencies: []
 
   jsonfile@6.1.0:
     resolution: {integrity: sha512-5dgndWOriYSm5cnYaJNhalLNDKOqFwyDB/rr1E9ZsGciGvKPs8R2xYGCacuf3z6K1YKDz182fd+fY3cn3pMqXQ==}

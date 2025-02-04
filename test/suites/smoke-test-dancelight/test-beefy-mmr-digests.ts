@@ -4,7 +4,7 @@ import { stringToHex } from "@polkadot/util";
 import type { ApiPromise } from "@polkadot/api";
 
 describeSuite({
-    id: "S19",
+    id: "SMOK03",
     title: "Sample suite that only runs on Dancelight chains",
     foundationMethods: "read_only",
     testCases: ({ it, context }) => {

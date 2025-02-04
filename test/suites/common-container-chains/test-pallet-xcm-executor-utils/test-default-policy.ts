@@ -8,14 +8,14 @@ import { RELAY_SOURCE_LOCATION, RELAY_SOURCE_LOCATION_2 } from "../../../util/co
 
 // This assumes that the XcmExecutorUtils ReserveDefaultTrustPolicy set in the runtime is AllNative
 describeSuite({
-    id: "DC0102",
+    id: "COM0102",
     title: "XcmExecutorUtils - Default policies",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
         let chain: string;
-        let transferredBalance;
+        let transferredBalance: bigint;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();

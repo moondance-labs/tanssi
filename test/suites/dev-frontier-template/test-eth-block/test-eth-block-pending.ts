@@ -2,7 +2,7 @@ import { describeSuite, expect, fetchCompiledContract } from "@moonwall/cli";
 import { ALITH_ADDRESS, ALITH_PRIVATE_KEY, customWeb3Request, generateKeyringPair } from "@moonwall/util";
 
 describeSuite({
-    id: "DF0301",
+    id: "DE0401",
     title: "Ethereum Block - Pending",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {

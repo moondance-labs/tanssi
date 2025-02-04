@@ -8,7 +8,7 @@ import { jumpToSession } from "../../../util/block";
 import { generateBabeEquivocationProof } from "../../../util/slashes";
 
 describeSuite({
-    id: "DTR1305",
+    id: "DEVT1705",
     title: "Babe offences bonding period",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {

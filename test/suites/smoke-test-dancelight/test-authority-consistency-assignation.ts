@@ -3,7 +3,7 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
 
 describeSuite({
-    id: "S16",
+    id: "SMOK01",
     title: "Sample suite that only runs on Dancelight chains",
     foundationMethods: "read_only",
     testCases: ({ it, context }) => {

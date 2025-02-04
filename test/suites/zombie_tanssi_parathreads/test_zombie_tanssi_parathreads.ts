@@ -16,7 +16,7 @@ import { stringToHex } from "@polkadot/util";
 const JSONbig = jsonBg({ useNativeBigInt: true });
 
 describeSuite({
-    id: "R01",
+    id: "ZOMBIETANS01",
     title: "Zombie Tanssi Rotation Test",
     foundationMethods: "zombie",
     testCases: ({ it, context }) => {

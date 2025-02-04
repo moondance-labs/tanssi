@@ -37,6 +37,9 @@
 				"noAsyncPromiseExecutor": "off",
 				"noExplicitAny":"off",
 				"noShadowRestrictedNames": "off"
+			},
+			"complexity": {
+				"noForEach": "off"
 			}
 		},
 		"ignore":[

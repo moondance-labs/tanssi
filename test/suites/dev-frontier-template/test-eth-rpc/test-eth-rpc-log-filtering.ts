@@ -3,7 +3,7 @@ import type { TransactionReceipt } from "viem";
 import { customWeb3Request } from "@moonwall/util";
 
 describeSuite({
-    id: "DF0603",
+    id: "DE0703",
     title: "Ethereum RPC - Filtering non-matching logs",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
@@ -50,10 +50,12 @@ describeSuite({
             id: "T01",
             title: "EthFilterApi::getFilterLogs - should filter out non-matching cases.",
             test: async () => {
-                let create_filter;
+                let create_filter: any;
                 for (const item of nonMatchingCases) {
                     create_filter = await customWeb3Request(context.web3(), "eth_newFilter", [item]);
-                    const poll = await customWeb3Request(context.web3(), "eth_getFilterLogs", [create_filter.result]);
+                    const poll = (await customWeb3Request(context.web3(), "eth_getFilterLogs", [
+                        create_filter.result,
+                    ])) as any;
                     expect(poll.result.length).to.be.eq(0);
                 }
             },
@@ -63,7 +65,7 @@ describeSuite({
             title: "EthApi::getLogs - should filter out non-matching cases.",
             test: async () => {
                 for (const item of nonMatchingCases) {
-                    const request = await customWeb3Request(context.web3(), "eth_getLogs", [item]);
+                    const request = (await customWeb3Request(context.web3(), "eth_getLogs", [item])) as any;
                     expect(request.result.length).to.be.eq(0);
                 }
             },

@@ -2,7 +2,7 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
 
 describeSuite({
-    id: "S22",
+    id: "SMOK05",
     title: "Smoke tests for external validators rewards pallet",
     foundationMethods: "read_only",
     testCases: ({ it, context }) => {

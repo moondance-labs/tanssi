@@ -4,7 +4,7 @@ import type { U32, Vec } from "@polkadot/types-codec";
 import type { AccountId32 } from "@polkadot/types/interfaces";
 
 describeSuite({
-    id: "S23",
+    id: "SMOK08",
     title: "Smoke tests for validators matching external validators",
     foundationMethods: "read_only",
     testCases: ({ it, context }) => {

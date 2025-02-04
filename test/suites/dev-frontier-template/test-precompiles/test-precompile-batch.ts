@@ -15,7 +15,7 @@ const PRECOMPILE_BATCH_ADDRESS = "0x0000000000000000000000000000000000000801";
 const PRECOMPILE_CALL_PERMIT_ADDRESS = "0x0000000000000000000000000000000000000802";
 
 describeSuite({
-    id: "DF1109",
+    id: "DE1309",
     title: "Batch - All functions should consume the same gas",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {

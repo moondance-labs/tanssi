@@ -4,7 +4,7 @@ import { type MultiLocation, extractPaidDeliveryFeesDancelight, getLastSentDmpMe
 import { type ApiPromise, Keyring } from "@polkadot/api";
 
 describeSuite({
-    id: "DTR1001",
+    id: "DEVT1901",
     title: "XCM - Succeeds sending XCM reserve transfer",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {

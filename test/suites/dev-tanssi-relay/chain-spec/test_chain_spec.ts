@@ -2,7 +2,7 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
 
 describeSuite({
-    id: "DTR0201",
+    id: "DEVT0201",
     title: "Tanssi Relay Chain Spec",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {

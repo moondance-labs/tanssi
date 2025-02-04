@@ -61,7 +61,7 @@ const runtimeApi = {
 };
 
 describeSuite({
-    id: "CPX0207",
+    id: "COMMON0307",
     title: "XCM - XcmPaymentApi",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {

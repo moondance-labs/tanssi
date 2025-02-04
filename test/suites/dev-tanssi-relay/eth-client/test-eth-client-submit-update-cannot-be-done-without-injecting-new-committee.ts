@@ -5,7 +5,7 @@ import { readFileSync } from "fs";
 import type { KeyringPair } from "@moonwall/util";
 
 describeSuite({
-    id: "DTR1204",
+    id: "DEVT0404",
     title: "Ethereum Beacon Client tests",
     foundationMethods: "dev",
 

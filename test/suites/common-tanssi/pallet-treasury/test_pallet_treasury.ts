@@ -5,7 +5,7 @@ import type { KeyringPair } from "@moonwall/util";
 import { jumpBlocks } from "util/block";
 
 describeSuite({
-    id: "CT0001",
+    id: "COMM0101",
     title: "Treasury pallet test suite",
     foundationMethods: "dev",
 

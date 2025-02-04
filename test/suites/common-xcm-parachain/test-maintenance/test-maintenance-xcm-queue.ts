@@ -12,7 +12,7 @@ import {
 } from "../../../util/xcm.ts";
 
 describeSuite({
-    id: "CPX0104",
+    id: "COMMON0103",
     title: "Maintenance mode - XCM queue",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {

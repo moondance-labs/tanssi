@@ -1,10 +1,10 @@
-import "@polkadot/api-augment";
+import "@tanssi/api-augment";
 import { describeSuite, expect } from "@moonwall/cli";
 import type { FrameSupportDispatchDispatchInfo } from "@polkadot/types/lookup";
 import { BN } from "@polkadot/util";
 
 describeSuite({
-    id: "DT0402",
+    id: "DEV0902",
     title: "On set latest author data weight check",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {

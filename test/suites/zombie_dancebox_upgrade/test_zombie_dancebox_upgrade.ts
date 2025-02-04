@@ -4,7 +4,7 @@ import { type ApiPromise, Keyring } from "@polkadot/api";
 import fs from "node:fs";
 
 describeSuite({
-    id: "R01",
+    id: "Z01",
     title: "Zombie Dancebox Upgrade Test",
     foundationMethods: "zombie",
     testCases: ({ it, context, log }) => {

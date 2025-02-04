@@ -6,7 +6,7 @@ import type { PalletProxyProxyDefinition } from "@polkadot/types/lookup";
 import type { ApiPromise } from "@polkadot/api";
 
 describeSuite({
-    id: "S04",
+    id: "S05",
     title: "Verify account proxies created",
     foundationMethods: "read_only",
     testCases: ({ context, it, log }) => {

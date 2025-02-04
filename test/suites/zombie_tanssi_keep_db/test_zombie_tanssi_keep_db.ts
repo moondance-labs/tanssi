@@ -9,7 +9,7 @@ import fs from "node:fs/promises";
 import { createWriteStream } from "fs";
 
 describeSuite({
-    id: "ZK01",
+    id: "ZOMBIET01",
     title: "Zombie Tanssi KeepDb Test",
     foundationMethods: "zombie",
     testCases: ({ it, context }) => {

@@ -7,7 +7,7 @@ import { getHeaderFromRelay } from "../../util/relayInterface";
 import net from "net";
 
 describeSuite({
-    id: "ZM01",
+    id: "ZOMBIETA01",
     title: "Zombie Tanssi Metrics Test",
     foundationMethods: "zombie",
     testCases: ({ it, context }) => {

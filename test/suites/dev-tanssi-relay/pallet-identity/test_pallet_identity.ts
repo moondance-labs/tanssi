@@ -5,7 +5,7 @@ import type { KeyringPair } from "@moonwall/util";
 import { hexToString } from "viem";
 
 describeSuite({
-    id: "DTR0701",
+    id: "DEVT1001",
     title: "Identity pallet test suite",
     foundationMethods: "dev",
 

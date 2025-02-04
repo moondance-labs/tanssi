@@ -6,7 +6,7 @@ import { fetchCollatorAssignmentTip, jumpSessions } from "util/block";
 import { paraIdTank } from "../../../util/payment.ts";
 
 describeSuite({
-    id: "CPT0608",
+    id: "COMMO0803",
     title: "Services payment collator assignment tip test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {

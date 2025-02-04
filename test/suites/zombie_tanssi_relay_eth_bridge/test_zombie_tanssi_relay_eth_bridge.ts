@@ -38,7 +38,7 @@ async function calculateNumberOfBlocksTillNextEra(api, blocksPerSession) {
 }
 
 describeSuite({
-    id: "ZR-01",
+    id: "ZOMBIETANSSI01",
     title: "Zombie Tanssi Relay Test",
     foundationMethods: "zombie",
     testCases: ({ it, context }) => {

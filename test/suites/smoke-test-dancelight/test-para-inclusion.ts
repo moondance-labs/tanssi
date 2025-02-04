@@ -20,7 +20,7 @@ type BlockFilteredRecord = {
 };
 
 describeSuite({
-    id: "S21",
+    id: "SMOK07",
     title: "Sample suite that only runs on Dancelight chains",
     foundationMethods: "read_only",
     testCases: ({ it, context, log }) => {

@@ -5,7 +5,7 @@ import { jumpToSession } from "util/block";
 import { getHeaderFromRelay } from "util/relayInterface.ts";
 
 describeSuite({
-    id: "DTR1401",
+    id: "DEVT1101",
     title: "Paras inherent tests",
     foundationMethods: "dev",
 

@@ -7,7 +7,7 @@ import type { EventRecord } from "@polkadot/types/interfaces";
 import type { bool, u32, u8, Vec } from "@polkadot/types-codec";
 
 describeSuite({
-    id: "DTR0304",
+    id: "DEV0203",
     title: "Collator assignment tests",
     foundationMethods: "dev",
 

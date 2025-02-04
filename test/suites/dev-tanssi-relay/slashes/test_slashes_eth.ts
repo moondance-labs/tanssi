@@ -5,7 +5,7 @@ import type { KeyringPair } from "@moonwall/util";
 import { jumpToSession } from "../../../util/block";
 
 describeSuite({
-    id: "DTR1801",
+    id: "DEVT1708",
     title: "Test slashes are being sent to ethereum using bridge",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {

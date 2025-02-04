@@ -8,7 +8,7 @@ import { jumpToSession } from "../../../util/block";
 import { generateGrandpaEquivocationProof } from "../../../util/slashes";
 
 describeSuite({
-    id: "DTR1306",
+    id: "DEVT1709",
     title: "Grandpa offences should trigger a slash",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {

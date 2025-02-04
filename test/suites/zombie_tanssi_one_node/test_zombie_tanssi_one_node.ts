@@ -6,7 +6,7 @@ import { signAndSendAndInclude, waitSessions } from "../../util/block";
 import { getKeyringNimbusIdHex } from "../../util/keys";
 
 describeSuite({
-    id: "N01",
+    id: "ZOMBIETAN01",
     title: "Zombie Tanssi Rotation Test",
     foundationMethods: "zombie",
     testCases: ({ it, context }) => {

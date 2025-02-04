@@ -4,7 +4,7 @@ import type { ApiPromise } from "@polkadot/api";
 import type { KeyringPair } from "@moonwall/util";
 
 describeSuite({
-    id: "CPT1001",
+    id: "COMMO0401",
     title: "Data preservers pallet test suite",
     foundationMethods: "dev",
 

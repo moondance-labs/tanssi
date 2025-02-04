@@ -9,7 +9,7 @@ import {
 import { type ApiPromise, Keyring } from "@polkadot/api";
 
 describeSuite({
-    id: "DTR1002",
+    id: "DEVT1902",
     title: "XCM - Succeeds sending XCM",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {

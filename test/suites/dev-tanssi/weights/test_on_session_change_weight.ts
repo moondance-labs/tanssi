@@ -1,10 +1,10 @@
-import "@polkadot/api-augment";
+import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
 import { jumpSessions } from "../../../util/block";
 
 describeSuite({
-    id: "DT0401",
+    id: "DEV0901",
     title: "On session change weights suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {

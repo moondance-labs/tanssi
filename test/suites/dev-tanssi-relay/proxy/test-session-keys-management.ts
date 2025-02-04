@@ -1,9 +1,9 @@
-import "@polkadot/api-augment";
+import "@tanssi/api-augment";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
 
 describeSuite({
-    id: "DT0601",
+    id: "DEVT1503",
     title: "Proxy test suite - ProxyType::SessionKeyManagement",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {

@@ -1,3 +1,4 @@
+import "@tanssi/api-augment";
 import { Keyring } from "@polkadot/api";
 import fs from "node:fs/promises";
 import jsonBg from "json-bigint";
@@ -5,6 +6,7 @@ import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import { chainSpecToContainerChainGenesisData } from "../util/genesis_data";
 import { NETWORK_YARGS_OPTIONS, getApiFor } from "./utils/network";
+import type { TpTraitsSlotFrequency } from "@polkadot/types/lookup";
 const JSONbig = jsonBg({ useNativeBigInt: true });
 
 yargs(hideBin(process.argv))
@@ -40,19 +42,19 @@ yargs(hideBin(process.argv))
 
             try {
                 process.stdout.write(`Reading chainSpec from: ${argv.chain}\n`);
-                const rawSpec = JSONbig.parse(await fs.readFile(argv.chain!, "utf8"));
+                const rawSpec = JSONbig.parse(await fs.readFile(argv.chain, "utf8"));
 
                 const privKey = argv["account-priv-key"];
                 const account = keyring.addFromUri(privKey);
 
                 const containerChainGenesisData = chainSpecToContainerChainGenesisData(api, rawSpec);
-                const txs = [];
-                let tx1;
+                const txs: any[] = [];
+                let tx1: any;
                 if (argv.parathread) {
                     const slotFreq = api.createType("TpTraitsSlotFrequency", {
                         min: 1,
                         max: 1,
-                    });
+                    }) as TpTraitsSlotFrequency;
                     tx1 = api.tx.registrar.registerParathread(
                         rawSpec.para_id,
                         slotFreq,
@@ -64,7 +66,7 @@ yargs(hideBin(process.argv))
                 }
                 txs.push(tx1);
                 if (rawSpec.bootNodes?.length) {
-                    let profileId = await api.query.dataPreservers.nextProfileId();
+                    let profileId = (await api.query.dataPreservers.nextProfileId()).toNumber();
                     for (const bootnode of rawSpec.bootNodes) {
                         const profileTx = api.tx.dataPreservers.createProfile({
                             url: bootnode,
@@ -174,15 +176,15 @@ yargs(hideBin(process.argv))
                 const privKey = argv["account-priv-key"];
                 const account = keyring.addFromUri(privKey);
 
-                let bootnodes = [];
+                let bootnodes: (string | number)[] = [];
                 if (!argv.bootnode) {
                     argv.bootnode = [];
                 }
                 bootnodes = [...bootnodes, ...argv.bootnode];
 
-                const txs = [];
+                const txs: any[] = [];
 
-                let profileId = await api.query.dataPreservers.nextProfileId();
+                let profileId = (await api.query.dataPreservers.nextProfileId()).toNumber();
                 for (const bootnode of bootnodes) {
                     const profileTx = api.tx.dataPreservers.createProfile({
                         url: bootnode,
@@ -203,7 +205,7 @@ yargs(hideBin(process.argv))
                     if (notValidParas.toJSON().includes(argv.paraId)) {
                         process.stdout.write("Will set container chain valid for collating\n");
                         const tx2 = api.tx.registrar.markValidForCollating(argv.paraId);
-                        tx2s = api.tx.sudo.sudo(tx2);
+                        const tx2s = api.tx.sudo.sudo(tx2);
                         txs.push(tx2s);
                     } else {
                         // ParaId already valid, or not registered at all

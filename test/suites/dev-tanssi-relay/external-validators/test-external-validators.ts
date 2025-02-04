@@ -4,7 +4,7 @@ import { type ApiPromise, Keyring } from "@polkadot/api";
 import { jumpToSession } from "util/block";
 
 describeSuite({
-    id: "DTR1501",
+    id: "DEVT0501",
     title: "External validators tests",
     foundationMethods: "dev",
 

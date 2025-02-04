@@ -7,7 +7,7 @@ import { type HeavyContract, deployHeavyContracts } from "../../../helpers";
 const PRECOMPILE_BATCH_ADDRESS = "0x0000000000000000000000000000000000000801";
 
 describeSuite({
-    id: "DF1304",
+    id: "DE1204",
     title: "PoV precompile test - PoV Limit (3.5Mb in Dev)",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {

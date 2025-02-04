@@ -16,7 +16,7 @@ async function rpcStreamPaymentStatus(context, block, streamId, now) {
 }
 
 describeSuite({
-    id: "CPT0702",
+    id: "COMMO0901",
     title: "Stream payment RPC",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {

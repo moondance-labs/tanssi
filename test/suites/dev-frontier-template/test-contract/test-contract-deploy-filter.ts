@@ -12,7 +12,7 @@ import {
 import { encodeFunctionData } from "viem";
 
 describeSuite({
-    id: "DF1701",
+    id: "DE0201",
     title: "Test Contract - Deployment Filter",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {

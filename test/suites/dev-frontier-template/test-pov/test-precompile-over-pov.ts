@@ -8,7 +8,7 @@ import { ALITH_ADDRESS, createEthersTransaction } from "@moonwall/util";
 const PRECOMPILE_BATCH_ADDRESS = "0x0000000000000000000000000000000000000801";
 
 describeSuite({
-    id: "DF1303",
+    id: "DE1203",
     title: "PoV precompile test - gasLimit",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {

@@ -1,4 +1,4 @@
-import "@polkadot/api-augment";
+import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
@@ -7,7 +7,7 @@ import { DANCE } from "util/constants";
 import { createBlockAndRemoveInvulnerables } from "util/invulnerables";
 
 describeSuite({
-    id: "DT0202",
+    id: "DEV0402",
     title: "Removing session keys assignment test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {

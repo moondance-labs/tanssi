@@ -8,7 +8,7 @@ import {
 } from "@moonwall/util";
 
 describeSuite({
-    id: "DF0701",
+    id: "DE0801",
     title: "Ethereum Transaction - Nonce",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
