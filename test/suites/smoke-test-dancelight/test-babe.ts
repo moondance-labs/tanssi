@@ -108,8 +108,8 @@ describeSuite({
                 const keyOwnersArray = [];
                 const keyOwnersInPalletSession = await keyOwners(babeAuthoritiesFromPallet, api);
 
-                for (const [keyOwner, _] of keyOwnersInPalletSession) {
-                    keyOwnersArray.push(keyOwner);
+                for (const keyOwner of keyOwnersInPalletSession) {
+                    keyOwnersArray.push(keyOwner[0]);
                 }
 
                 // Get validators from pallet session
@@ -207,18 +207,18 @@ function getPreHash(api, header) {
 async function keyOwners(babeAuthoritiesFromPallet, api) {
     const keyOwnersInPalletSession = [];
 
-    for (const [authorityKey, _] of babeAuthoritiesFromPallet) {
+    for (const authority of babeAuthoritiesFromPallet) {
         const param = api.registry.createType("(SpCoreCryptoKeyTypeId, Bytes)", [
             stringToHex("babe"),
-            authorityKey.toHex(),
+            authority[0].toHex(),
         ]);
         const keyOwner = await api.query.session.keyOwner(param);
 
         expect(
             keyOwner.isSome,
-            `Validator with babe key ${authorityKey.toJSON()} not found in pallet session!`
+            `Validator with babe key ${authority[0].toJSON()} not found in pallet session!`
         ).toBeTruthy();
-        keyOwnersInPalletSession.push([keyOwner.toJSON(), authorityKey.toJSON()]);
+        keyOwnersInPalletSession.push([keyOwner.toJSON(), authority[0].toJSON()]);
     }
 
     return keyOwnersInPalletSession;
