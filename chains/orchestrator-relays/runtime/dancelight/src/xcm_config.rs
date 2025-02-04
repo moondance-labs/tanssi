@@ -268,7 +268,7 @@ impl pallet_xcm::Config for Runtime {
     type ExecuteXcmOrigin = xcm_builder::EnsureXcmOrigin<RuntimeOrigin, LocalOriginToLocation>;
     type XcmExecuteFilter = Everything;
     type XcmExecutor = XcmExecutor<XcmConfig>;
-    type XcmTeleportFilter = Everything;
+    type XcmTeleportFilter = Nothing;
     // Anyone is able to use reserve transfers regardless of who they are and what they want to
     // transfer.
     type XcmReserveTransferFilter = Everything;
