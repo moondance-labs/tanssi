@@ -24,9 +24,7 @@ use {
         StartRelayChainTasksParams,
     },
     cumulus_primitives_core::ParaId,
-    cumulus_relay_chain_interface::{
-        call_runtime_api, OverseerHandle, RelayChainInterface,
-    },
+    cumulus_relay_chain_interface::{call_runtime_api, OverseerHandle, RelayChainInterface},
     dancebox_runtime::{
         opaque::{Block, Hash},
         RuntimeApi,

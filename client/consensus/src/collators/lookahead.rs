@@ -31,6 +31,7 @@
 //! The main limitation is block propagation time - i.e. the new blocks created by an author
 //! must be propagated to the next author before their turn.
 
+use cumulus_relay_chain_interface::CoreState;
 use {
     crate::{
         collators::{self as collator_util, tanssi_claim_slot, ClaimMode, SlotClaim},
@@ -79,7 +80,6 @@ use {
     tokio_util::sync::CancellationToken,
     tp_xcm_core_buyer::{BuyCollatorProofCreationError, BuyCoreCollatorProof},
 };
-use cumulus_relay_chain_interface::CoreState;
 
 #[derive(Debug)]
 pub enum BuyCoreError<BlockNumber: std::fmt::Debug, PoolError: std::fmt::Debug> {

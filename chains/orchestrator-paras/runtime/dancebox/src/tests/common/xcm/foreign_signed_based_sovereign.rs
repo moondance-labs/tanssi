@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use staging_xcm::opaque::latest::WESTEND_GENESIS_HASH;
 use {
     crate::{
         tests::common::xcm::{
@@ -39,7 +40,6 @@ use {
     staging_xcm_executor::traits::ConvertLocation,
     xcm_emulator::{assert_expected_events, Chain},
 };
-use staging_xcm::opaque::latest::WESTEND_GENESIS_HASH;
 
 #[test]
 fn using_signed_based_sovereign_works_in_tanssi() {

@@ -82,7 +82,7 @@ use {
     sp_consensus_slots::{Slot, SlotDuration},
     sp_core::{Get, MaxEncodedLen, OpaqueMetadata, H160, H256, U256},
     sp_runtime::{
-        Cow, generic, impl_opaque_keys,
+        generic, impl_opaque_keys,
         traits::{
             BlakeTwo256, Block as BlockT, DispatchInfoOf, Dispatchable, IdentifyAccount,
             IdentityLookup, PostDispatchInfoOf, UniqueSaturatedInto, Verify,
@@ -90,7 +90,7 @@ use {
         transaction_validity::{
             InvalidTransaction, TransactionSource, TransactionValidity, TransactionValidityError,
         },
-        ApplyExtrinsicResult, BoundedVec,
+        ApplyExtrinsicResult, BoundedVec, Cow,
     },
     sp_std::prelude::*,
     sp_version::RuntimeVersion,

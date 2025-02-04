@@ -22,9 +22,9 @@ use super::{
     XcmPallet,
 };
 use crate::governance::StakingAdmin;
+use tp_bridge::EthereumLocationsConverterFor;
 use xcm::opaque::latest::ROCOCO_GENESIS_HASH;
 use xcm::opaque::latest::WESTEND_GENESIS_HASH;
-use tp_bridge::EthereumLocationsConverterFor;
 use {
     dancelight_runtime_constants::{currency::CENTS, system_parachain::*},
     frame_support::{

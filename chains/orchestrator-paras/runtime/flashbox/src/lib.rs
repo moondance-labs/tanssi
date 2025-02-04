@@ -90,13 +90,13 @@ use {
     sp_consensus_slots::{Slot, SlotDuration},
     sp_core::{crypto::KeyTypeId, Get, MaxEncodedLen, OpaqueMetadata, H256},
     sp_runtime::{
-        Cow, generic, impl_opaque_keys,
+        generic, impl_opaque_keys,
         traits::{
             AccountIdConversion, AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto,
             IdentityLookup, Verify,
         },
         transaction_validity::{TransactionSource, TransactionValidity},
-        AccountId32, ApplyExtrinsicResult,
+        AccountId32, ApplyExtrinsicResult, Cow,
     },
     sp_std::collections::btree_map::BTreeMap,
     sp_std::{collections::btree_set::BTreeSet, marker::PhantomData, prelude::*},

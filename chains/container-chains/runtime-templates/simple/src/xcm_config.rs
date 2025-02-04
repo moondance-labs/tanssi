@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use staging_xcm::latest::WESTEND_GENESIS_HASH;
 use {
     super::{
         currency::MICROUNIT,
@@ -50,7 +51,6 @@ use {
     },
     staging_xcm_executor::XcmExecutor,
 };
-use staging_xcm::latest::WESTEND_GENESIS_HASH;
 
 parameter_types! {
     // Self Reserve location, defines the multilocation identifying the self-reserve currency

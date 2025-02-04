@@ -304,8 +304,7 @@ pub fn run() -> Result<()> {
 
             Ok(runner.async_run(|mut config| {
                 let (client, _, _, task_manager) =
-                    polkadot_service::new_chain_ops(&mut config)
-                        .map_err(Error::PolkadotService)?;
+                    polkadot_service::new_chain_ops(&mut config).map_err(Error::PolkadotService)?;
                 Ok((
                     cmd.run(client, config.database)
                         .map_err(Error::SubstrateCli),
@@ -320,8 +319,7 @@ pub fn run() -> Result<()> {
             set_default_ss58_version(chain_spec);
 
             Ok(runner.async_run(|mut config| {
-                let (client, _, _, task_manager) =
-                    polkadot_service::new_chain_ops(&mut config)?;
+                let (client, _, _, task_manager) = polkadot_service::new_chain_ops(&mut config)?;
                 Ok((
                     cmd.run(client, config.chain_spec)
                         .map_err(Error::SubstrateCli),
@@ -359,15 +357,14 @@ pub fn run() -> Result<()> {
                     polkadot_service::new_chain_ops(&mut config)?;
                 let spawn_handle = task_manager.spawn_handle();
                 let aux_revert = Box::new(|client, backend, blocks| {
-                    polkadot_service::revert_backend(client, backend, blocks, config, spawn_handle).map_err(
-                        |err| {
+                    polkadot_service::revert_backend(client, backend, blocks, config, spawn_handle)
+                        .map_err(|err| {
                             match err {
                                 polkadot_service::Error::Blockchain(err) => err.into(),
                                 // Generic application-specific error.
                                 err => sc_cli::Error::Application(err.into()),
                             }
-                        },
-                    )
+                        })
                 });
                 Ok((
                     cmd.run(client, backend, Some(aux_revert))
@@ -472,8 +469,7 @@ pub fn run() -> Result<()> {
         Some(Subcommand::PrecompileWasm(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             Ok(runner.async_run(|mut config| {
-                let (_, backend, _, task_manager) =
-                    polkadot_service::new_chain_ops(&mut config)?;
+                let (_, backend, _, task_manager) = polkadot_service::new_chain_ops(&mut config)?;
                 Ok((
                     cmd.run(backend, config.chain_spec)
                         .map_err(Error::SubstrateCli),

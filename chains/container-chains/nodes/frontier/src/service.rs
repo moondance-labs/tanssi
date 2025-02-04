@@ -16,6 +16,9 @@
 
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
+use cumulus_primitives_core::CollectCollationInfo;
+use polkadot_primitives::UpgradeGoAhead;
+use sp_api::ProvideRuntimeApi;
 #[allow(deprecated)]
 use {
     container_chain_template_frontier_runtime::{opaque::Block, RuntimeApi},
@@ -44,9 +47,6 @@ use {
         time::Duration,
     },
 };
-use polkadot_primitives::UpgradeGoAhead;
-use sp_api::ProvideRuntimeApi;
-use cumulus_primitives_core::CollectCollationInfo;
 
 type ParachainExecutor = WasmExecutor<ParachainHostFunctions>;
 type ParachainClient = TFullClient<Block, RuntimeApi, ParachainExecutor>;

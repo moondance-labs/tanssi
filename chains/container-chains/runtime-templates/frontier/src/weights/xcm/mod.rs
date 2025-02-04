@@ -16,6 +16,8 @@
 
 pub mod pallet_xcm_benchmarks_generic;
 
+use frame_support::BoundedVec;
+use staging_xcm::latest::AssetTransferFilter;
 use {
     crate::Runtime,
     frame_support::weights::Weight,
@@ -26,8 +28,6 @@ use {
         DoubleEncoded,
     },
 };
-use frame_support::BoundedVec;
-use staging_xcm::latest::AssetTransferFilter;
 
 trait WeighAssets {
     fn weigh_multi_assets(&self, weight: Weight) -> XCMWeight;
@@ -259,7 +259,7 @@ where
             match hint {
                 AssetClaimer { .. } => {
                     weight = weight.saturating_add(XcmGeneric::<Runtime>::asset_claimer());
-                },
+                }
             }
         }
         weight

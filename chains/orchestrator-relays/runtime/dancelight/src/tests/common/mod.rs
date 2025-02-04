@@ -30,11 +30,12 @@ use {
     bitvec::prelude::BitVec,
     cumulus_primitives_core::{
         relay_chain::{
-            node_features::FeatureIndex, AvailabilityBitfield, vstaging::BackedCandidate,
-            CandidateCommitments, vstaging::CandidateDescriptorV2, CollatorPair, vstaging::CommittedCandidateReceiptV2,
-            CompactStatement, CoreIndex, GroupIndex, HeadData,
-            vstaging::InherentData as ParachainsInherentData, PersistedValidationData, SigningContext,
-            UncheckedSigned, ValidationCode, ValidatorIndex, ValidityAttestation,
+            node_features::FeatureIndex, vstaging::BackedCandidate,
+            vstaging::CandidateDescriptorV2, vstaging::CommittedCandidateReceiptV2,
+            vstaging::InherentData as ParachainsInherentData, AvailabilityBitfield,
+            CandidateCommitments, CollatorPair, CompactStatement, CoreIndex, GroupIndex, HeadData,
+            PersistedValidationData, SigningContext, UncheckedSigned, ValidationCode,
+            ValidatorIndex, ValidityAttestation,
         },
         ParaId,
     },
@@ -784,7 +785,8 @@ pub const DAVE: [u8; 32] = [7u8; 32];
 pub const EVE: [u8; 32] = [8u8; 32];
 pub const FERDIE: [u8; 32] = [9u8; 32];
 
-fn take_new_inherent_data() -> Option<cumulus_primitives_core::relay_chain::vstaging::InherentData> {
+fn take_new_inherent_data() -> Option<cumulus_primitives_core::relay_chain::vstaging::InherentData>
+{
     let data: Option<cumulus_primitives_core::relay_chain::vstaging::InherentData> =
         frame_support::storage::unhashed::take(b"ParasInherent");
 
@@ -978,9 +980,9 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
                 para_head: Default::default(),
                 validation_code_hash: mock_validation_code().hash(),
             }
-                .into()
-        }
             .into()
+        }
+        .into()
     }
 
     /*
@@ -1139,7 +1141,9 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
 
                         let group_validators = Self::group_validators(group_idx).unwrap();
 
-                        let descriptor = if true /* self.candidate_descriptor_v2 */ {
+                        let descriptor = if true
+                        /* self.candidate_descriptor_v2 */
+                        {
                             CandidateDescriptorV2::new(
                                 para_id,
                                 relay_parent,
@@ -1167,9 +1171,14 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
                             },
                         };
 
-                        if true /* self.candidate_descriptor_v2 */ {
+                        if true
+                        /* self.candidate_descriptor_v2 */
+                        {
                             // `UMPSignal` separator.
-                            candidate.commitments.upward_messages.force_push(UMP_SEPARATOR);
+                            candidate
+                                .commitments
+                                .upward_messages
+                                .force_push(UMP_SEPARATOR);
 
                             // `SelectCore` commitment.
                             // Claim queue offset must be `0` so this candidate is for the very
@@ -1179,7 +1188,7 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
                                     CoreSelector(chain_idx as u8),
                                     ClaimQueueOffset(0),
                                 )
-                                    .encode(),
+                                .encode(),
                             );
                         }
 
@@ -1213,7 +1222,7 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
                             .node_features
                             .get(FeatureIndex::ElasticScalingMVP as usize)
                             .and_then(|the_bit| if *the_bit { Some(core_idx) } else { None });
-                        
+
                         assert_eq!(group_validators.len(), 1);
 
                         BackedCandidate::<T::Hash>::new(
@@ -1316,13 +1325,13 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
                 )
             })
             .collect();
-        
-        let mut disputed_cores = (self.backed_and_concluding_paras.len() as u32..
-            ((used_cores - 0) as u32))
+
+        let mut disputed_cores = (self.backed_and_concluding_paras.len() as u32
+            ..((used_cores - 0) as u32))
             .into_iter()
             .map(|idx| (idx, 0))
             .collect::<BTreeMap<_, _>>();
-        
+
         let mut all_cores = self.backed_and_concluding_paras.clone();
         all_cores.append(&mut disputed_cores);
 
@@ -1337,7 +1346,10 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
                         // Load an assignment into provider so that one is present to pop
                         let assignment = if is_parathread {
                             // TODO: core_idx or _para_local_core_idx
-                            Assignment::Pool { para_id: ParaId::from(*para_id), core_index: CoreIndex(core_idx) }
+                            Assignment::Pool {
+                                para_id: ParaId::from(*para_id),
+                                core_index: CoreIndex(core_idx),
+                            }
                         } else {
                             Assignment::Bulk(ParaId::from(*para_id))
                         };
@@ -1350,7 +1362,7 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
             .collect::<BTreeMap<CoreIndex, VecDeque<Assignment>>>();
 
         runtime_parachains::scheduler::ClaimQueue::<T>::set(cores);
-        
+
         ParachainsInherentData {
             bitfields,
             backed_candidates,
@@ -1439,8 +1451,8 @@ use babe_primitives::AuthorityPair as BabeAuthorityPair;
 use grandpa_primitives::{
     AuthorityPair as GrandpaAuthorityPair, Equivocation, EquivocationProof, RoundNumber, SetId,
 };
-use primitives::{CandidateDescriptor, CandidateHash, CollatorId, CollatorSignature};
 use primitives::vstaging::{ClaimQueueOffset, CoreSelector, UMPSignal, UMP_SEPARATOR};
+use primitives::{CandidateDescriptor, CandidateHash, CollatorId, CollatorSignature};
 use runtime_parachains::inclusion::CandidatePendingAvailability;
 use runtime_parachains::scheduler::common::{Assignment, AssignmentProvider};
 use sp_core::{ByteArray, H256};
@@ -1532,9 +1544,9 @@ pub fn generate_babe_equivocation_proof(
     }
 }
 
-use sp_core::Public;
-use crate::Paras;
 use crate::weights::runtime_parachains_inclusion;
+use crate::Paras;
+use sp_core::Public;
 
 /// Helper function to generate a crypto pair from seed
 pub fn get_pair_from_seed<TPublic: Public>(seed: &str) -> TPublic::Pair {

@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
+use polkadot_primitives::CoreIndex;
+use std::collections::VecDeque;
 use {
     crate::{
         collators::lookahead::{BuyCoreParams, Params as LookAheadParams},
@@ -45,8 +47,8 @@ use {
     polkadot_overseer::dummy::dummy_overseer_builder,
     polkadot_parachain_primitives::primitives::HeadData,
     polkadot_primitives::{
-        CollatorPair, vstaging::CoreState, Hash as PHash, OccupiedCoreAssumption, PersistedValidationData,
-        ScheduledCore, ValidatorId,
+        vstaging::CoreState, CollatorPair, Hash as PHash, OccupiedCoreAssumption,
+        PersistedValidationData, ScheduledCore, ValidatorId,
     },
     sc_block_builder::BlockBuilderBuilder,
     sc_client_api::{
@@ -89,8 +91,6 @@ use {
     tokio_util::sync::CancellationToken,
     tp_xcm_core_buyer::BuyCoreCollatorProof,
 };
-use polkadot_primitives::CoreIndex;
-use std::collections::VecDeque;
 
 // Duration of slot time
 pub const SLOT_DURATION_MS: u64 = 1000;

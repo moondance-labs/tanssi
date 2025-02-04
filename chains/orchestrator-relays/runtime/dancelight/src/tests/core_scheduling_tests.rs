@@ -77,8 +77,8 @@ fn test_cannot_propose_a_block_without_availability() {
             minimum_backing_votes: 1,
             max_head_data_size: 5,
             node_features: bitvec::vec::BitVec::from_element(
-                (1u8 << (FeatureIndex::ElasticScalingMVP as usize)) |
-                    (1u8 << (FeatureIndex::CandidateReceiptV2 as usize))
+                (1u8 << (FeatureIndex::ElasticScalingMVP as usize))
+                    | (1u8 << (FeatureIndex::CandidateReceiptV2 as usize)),
             ),
             ..Default::default()
         })
@@ -144,7 +144,7 @@ fn test_cannot_produce_block_even_if_buying_on_demand_if_no_collators() {
             max_head_data_size: 5,
             node_features: bitvec::vec::BitVec::from_element(
                 //(1u8 << (FeatureIndex::ElasticScalingMVP as usize)) |
-                    (1u8 << (FeatureIndex::CandidateReceiptV2 as usize))
+                (1u8 << (FeatureIndex::CandidateReceiptV2 as usize)),
             ),
             ..Default::default()
         })
@@ -303,8 +303,8 @@ fn test_parathread_that_does_not_buy_core_does_not_have_affinity() {
             minimum_backing_votes: 1,
             max_head_data_size: 5,
             node_features: bitvec::vec::BitVec::from_element(
-                (1u8 << (FeatureIndex::ElasticScalingMVP as usize)) |
-                    (1u8 << (FeatureIndex::CandidateReceiptV2 as usize))
+                (1u8 << (FeatureIndex::ElasticScalingMVP as usize))
+                    | (1u8 << (FeatureIndex::CandidateReceiptV2 as usize)),
             ),
             ..Default::default()
         })
@@ -386,8 +386,8 @@ fn test_parathread_that_buys_core_has_affinity_and_can_produce() {
             minimum_backing_votes: 1,
             max_head_data_size: 5,
             node_features: bitvec::vec::BitVec::from_element(
-                (1u8 << (FeatureIndex::ElasticScalingMVP as usize)) |
-                    (1u8 << (FeatureIndex::CandidateReceiptV2 as usize))
+                (1u8 << (FeatureIndex::ElasticScalingMVP as usize))
+                    | (1u8 << (FeatureIndex::CandidateReceiptV2 as usize)),
             ),
             ..Default::default()
         })
@@ -484,8 +484,8 @@ fn test_on_demand_core_affinity_bound_to_core_gets_expired_at_session_boundaries
             minimum_backing_votes: 1,
             max_head_data_size: 5,
             node_features: bitvec::vec::BitVec::from_element(
-                (1u8 << (FeatureIndex::ElasticScalingMVP as usize)) |
-                    (1u8 << (FeatureIndex::CandidateReceiptV2 as usize))
+                (1u8 << (FeatureIndex::ElasticScalingMVP as usize))
+                    | (1u8 << (FeatureIndex::CandidateReceiptV2 as usize)),
             ),
             ..Default::default()
         })
@@ -599,8 +599,8 @@ fn test_parathread_uses_0_and_then_1_after_parachain_onboarded() {
             minimum_backing_votes: 1,
             max_head_data_size: 5,
             node_features: bitvec::vec::BitVec::from_element(
-                (1u8 << (FeatureIndex::ElasticScalingMVP as usize)) |
-                    (1u8 << (FeatureIndex::CandidateReceiptV2 as usize))
+                (1u8 << (FeatureIndex::ElasticScalingMVP as usize))
+                    | (1u8 << (FeatureIndex::CandidateReceiptV2 as usize)),
             ),
             ..Default::default()
         })
@@ -797,8 +797,8 @@ fn test_should_have_availability_for_registered_parachain() {
             minimum_backing_votes: 1,
             max_head_data_size: 5,
             node_features: bitvec::vec::BitVec::from_element(
-                (1u8 << (FeatureIndex::ElasticScalingMVP as usize)) |
-                    (1u8 << (FeatureIndex::CandidateReceiptV2 as usize))
+                (1u8 << (FeatureIndex::ElasticScalingMVP as usize))
+                    | (1u8 << (FeatureIndex::CandidateReceiptV2 as usize)),
             ),
             ..Default::default()
         })

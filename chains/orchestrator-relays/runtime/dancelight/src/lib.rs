@@ -50,12 +50,12 @@ use {
     parachains_scheduler::common::Assignment,
     parity_scale_codec::{Decode, Encode, MaxEncodedLen},
     primitives::{
-        slashing, ApprovalVotingParams, BlockNumber, vstaging::CandidateEvent, CandidateHash,
-        vstaging::CommittedCandidateReceiptV2, CoreIndex, vstaging::CoreState, DisputeState, ExecutorParams,
-        GroupRotationInfo, Hash, Id as ParaId, InboundDownwardMessage, InboundHrmpMessage, Moment,
-        NodeFeatures, Nonce, OccupiedCoreAssumption, PersistedValidationData, vstaging::ScrapedOnChainVotes,
-        SessionInfo, Signature, ValidationCodeHash, ValidatorId, ValidatorIndex,
-        PARACHAIN_KEY_TYPE_ID,
+        slashing, vstaging::CandidateEvent, vstaging::CommittedCandidateReceiptV2,
+        vstaging::CoreState, vstaging::ScrapedOnChainVotes, ApprovalVotingParams, BlockNumber,
+        CandidateHash, CoreIndex, DisputeState, ExecutorParams, GroupRotationInfo, Hash,
+        Id as ParaId, InboundDownwardMessage, InboundHrmpMessage, Moment, NodeFeatures, Nonce,
+        OccupiedCoreAssumption, PersistedValidationData, SessionInfo, Signature,
+        ValidationCodeHash, ValidatorId, ValidatorIndex, PARACHAIN_KEY_TYPE_ID,
     },
     runtime_common::{
         self as polkadot_runtime_common, impl_runtime_weights, impls::ToAuthor, paras_registrar,
@@ -70,9 +70,7 @@ use {
         initializer as parachains_initializer, on_demand as parachains_assigner_on_demand,
         origin as parachains_origin, paras as parachains_paras,
         paras_inherent as parachains_paras_inherent,
-        runtime_api_impl::{
-            v11 as parachains_runtime_api_impl,
-        },
+        runtime_api_impl::v11 as parachains_runtime_api_impl,
         scheduler as parachains_scheduler, session_info as parachains_session_info,
         shared as parachains_shared,
     },
@@ -124,14 +122,14 @@ use {
     pallet_transaction_payment::{FeeDetails, FungibleAdapter, RuntimeDispatchInfo},
     sp_core::{OpaqueMetadata, H256},
     sp_runtime::{
-        Cow, generic, impl_opaque_keys,
+        generic, impl_opaque_keys,
         traits::{
             AccountIdConversion, BlakeTwo256, Block as BlockT, ConstU32, Convert,
             Extrinsic as ExtrinsicT, Hash as HashT, IdentityLookup, Keccak256, OpaqueKeys,
             SaturatedConversion, Verify, Zero,
         },
         transaction_validity::{TransactionPriority, TransactionSource, TransactionValidity},
-        ApplyExtrinsicResult, FixedU128, KeyTypeId, Perbill, Percent, Permill, RuntimeDebug,
+        ApplyExtrinsicResult, Cow, FixedU128, KeyTypeId, Perbill, Percent, Permill, RuntimeDebug,
     },
     sp_staking::SessionIndex,
     sp_version::RuntimeVersion,
@@ -700,52 +698,54 @@ impl<LocalCall> frame_system::offchain::CreateSignedTransaction<LocalCall> for R
 where
     RuntimeCall: From<LocalCall>,
 {
-        fn create_signed_transaction<
-                C: frame_system::offchain::AppCrypto<Self::Public, Self::Signature>,
-        >(
-                call: RuntimeCall,
-                public: <Signature as Verify>::Signer,
-                account: AccountId,
-                nonce: <Runtime as frame_system::Config>::Nonce,
-        ) -> Option<UncheckedExtrinsic> {
-                use sp_runtime::traits::StaticLookup;
-                // take the biggest period possible.
-                let period =
-                        BlockHashCount::get().checked_next_power_of_two().map(|c| c / 2).unwrap_or(2) as u64;
+    fn create_signed_transaction<
+        C: frame_system::offchain::AppCrypto<Self::Public, Self::Signature>,
+    >(
+        call: RuntimeCall,
+        public: <Signature as Verify>::Signer,
+        account: AccountId,
+        nonce: <Runtime as frame_system::Config>::Nonce,
+    ) -> Option<UncheckedExtrinsic> {
+        use sp_runtime::traits::StaticLookup;
+        // take the biggest period possible.
+        let period = BlockHashCount::get()
+            .checked_next_power_of_two()
+            .map(|c| c / 2)
+            .unwrap_or(2) as u64;
 
-                let current_block = System::block_number()
-                        .saturated_into::<u64>()
-                        // The `System::block_number` is initialized with `n+1`,
-                        // so the actual block number is `n`.
-                        .saturating_sub(1);
-                let tip = 0;
-                let tx_ext: TxExtension = (
-                        frame_system::CheckNonZeroSender::<Runtime>::new(),
-                        frame_system::CheckSpecVersion::<Runtime>::new(),
-                        frame_system::CheckTxVersion::<Runtime>::new(),
-                        frame_system::CheckGenesis::<Runtime>::new(),
-                        frame_system::CheckMortality::<Runtime>::from(generic::Era::mortal(
-                                period,
-                                current_block,
-                        )),
-                        frame_system::CheckNonce::<Runtime>::from(nonce),
-                        frame_system::CheckWeight::<Runtime>::new(),
-                        pallet_transaction_payment::ChargeTransactionPayment::<Runtime>::from(tip),
-                        //cumulus_primitives_storage_weight_reclaim::StorageWeightReclaim::<Runtime>::new(),
-                        frame_metadata_hash_extension::CheckMetadataHash::new(true),
-                )
-                        .into();
-                let raw_payload = SignedPayload::new(call, tx_ext)
-                        .map_err(|e| {
-                                log::warn!("Unable to create signed payload: {:?}", e);
-                        })
-                        .ok()?;
-                let signature = raw_payload.using_encoded(|payload| C::sign(payload, public))?;
-                let (call, tx_ext, _) = raw_payload.deconstruct();
-                let address = <Runtime as frame_system::Config>::Lookup::unlookup(account);
-                let transaction = UncheckedExtrinsic::new_signed(call, address, signature, tx_ext);
-                Some(transaction)
-        }
+        let current_block = System::block_number()
+            .saturated_into::<u64>()
+            // The `System::block_number` is initialized with `n+1`,
+            // so the actual block number is `n`.
+            .saturating_sub(1);
+        let tip = 0;
+        let tx_ext: TxExtension = (
+            frame_system::CheckNonZeroSender::<Runtime>::new(),
+            frame_system::CheckSpecVersion::<Runtime>::new(),
+            frame_system::CheckTxVersion::<Runtime>::new(),
+            frame_system::CheckGenesis::<Runtime>::new(),
+            frame_system::CheckMortality::<Runtime>::from(generic::Era::mortal(
+                period,
+                current_block,
+            )),
+            frame_system::CheckNonce::<Runtime>::from(nonce),
+            frame_system::CheckWeight::<Runtime>::new(),
+            pallet_transaction_payment::ChargeTransactionPayment::<Runtime>::from(tip),
+            //cumulus_primitives_storage_weight_reclaim::StorageWeightReclaim::<Runtime>::new(),
+            frame_metadata_hash_extension::CheckMetadataHash::new(true),
+        )
+            .into();
+        let raw_payload = SignedPayload::new(call, tx_ext)
+            .map_err(|e| {
+                log::warn!("Unable to create signed payload: {:?}", e);
+            })
+            .ok()?;
+        let signature = raw_payload.using_encoded(|payload| C::sign(payload, public))?;
+        let (call, tx_ext, _) = raw_payload.deconstruct();
+        let address = <Runtime as frame_system::Config>::Lookup::unlookup(account);
+        let transaction = UncheckedExtrinsic::new_signed(call, address, signature, tx_ext);
+        Some(transaction)
+    }
 }
 
 impl frame_system::offchain::SigningTypes for Runtime {
@@ -763,7 +763,7 @@ where
 
 impl<LocalCall> frame_system::offchain::CreateInherent<LocalCall> for Runtime
 where
-        RuntimeCall: From<LocalCall>,
+    RuntimeCall: From<LocalCall>,
 {
     fn create_inherent(call: RuntimeCall) -> UncheckedExtrinsic {
         UncheckedExtrinsic::new_bare(call)
@@ -1209,9 +1209,14 @@ impl parachains_scheduler::common::AssignmentProvider<BlockNumberFor<Runtime>>
 
     fn assignment_duplicated(assignment: &Assignment) {
         match assignment {
-            Assignment::Pool { para_id, core_index } =>
-                    parachains_assigner_on_demand::Pallet::<Runtime>::assignment_duplicated(*para_id, *core_index),
-            Assignment::Bulk(_) => {},
+            Assignment::Pool {
+                para_id,
+                core_index,
+            } => parachains_assigner_on_demand::Pallet::<Runtime>::assignment_duplicated(
+                *para_id,
+                *core_index,
+            ),
+            Assignment::Bulk(_) => {}
         }
     }
 }

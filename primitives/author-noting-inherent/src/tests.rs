@@ -14,10 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use polkadot_primitives::CoreIndex;
+use std::collections::VecDeque;
 use {
     crate::{tests::mock_relay_chain_impl::MyMockRelayInterface, OwnParachainInherentData},
     cumulus_pallet_parachain_system::RelayChainStateProof,
-    cumulus_primitives_core::relay_chain::{BlakeTwo256, BlockNumber, vstaging::CoreState},
+    cumulus_primitives_core::relay_chain::{vstaging::CoreState, BlakeTwo256, BlockNumber},
     dp_core::well_known_keys::para_id_head,
     futures::executor::block_on,
     hex_literal::hex,
@@ -29,8 +31,6 @@ use {
     std::sync::atomic::{AtomicU8, Ordering},
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
 };
-use polkadot_primitives::CoreIndex;
-use std::collections::VecDeque;
 
 #[test]
 fn header_decode_collisions() {
@@ -122,7 +122,8 @@ mod mock_relay_chain_impl {
         async_trait::async_trait,
         cumulus_primitives_core::{
             relay_chain::{
-                BlockId, vstaging::CommittedCandidateReceiptV2, OccupiedCoreAssumption, SessionIndex,
+                vstaging::CommittedCandidateReceiptV2, BlockId, OccupiedCoreAssumption,
+                SessionIndex,
             },
             InboundHrmpMessage, ParaId,
         },
@@ -285,7 +286,10 @@ mod mock_relay_chain_impl {
             unimplemented!("Not needed for test")
         }
 
-        async fn claim_queue(&self, _relay_parent: PHash) -> RelayChainResult<BTreeMap<CoreIndex, VecDeque<ParaId>>> {
+        async fn claim_queue(
+            &self,
+            _relay_parent: PHash,
+        ) -> RelayChainResult<BTreeMap<CoreIndex, VecDeque<ParaId>>> {
             unimplemented!("Not needed for test")
         }
     }

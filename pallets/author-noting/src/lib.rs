@@ -44,8 +44,8 @@ use {
     sp_consensus_aura::{inherents::InherentType, Slot, AURA_ENGINE_ID},
     sp_inherents::{InherentIdentifier, IsFatalError},
     sp_runtime::{traits::Header, DigestItem, DispatchResult},
-    sp_std::vec::Vec,
     sp_std::borrow::Cow,
+    sp_std::vec::Vec,
     tp_author_noting_inherent::INHERENT_IDENTIFIER,
     tp_traits::{
         AuthorNotingHook, AuthorNotingInfo, ContainerChainBlockInfo, GenericStateProof,
@@ -285,9 +285,9 @@ pub mod pallet {
 
         fn is_inherent_required(_: &InherentData) -> Result<Option<Self::Error>, Self::Error> {
             // Return Ok(Some(_)) unconditionally because this inherent is required in every block
-            Ok(Some(InherentError::Other(
-                Cow::from("Pallet Author Noting Inherent required"),
-            )))
+            Ok(Some(InherentError::Other(Cow::from(
+                "Pallet Author Noting Inherent required",
+            ))))
         }
 
         fn create_inherent(data: &InherentData) -> Option<Self::Call> {

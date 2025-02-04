@@ -16,9 +16,9 @@
 
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
+use cumulus_primitives_core::CollectCollationInfo;
 use frame_support::__private::sp_tracing::tracing::Instrument;
 use polkadot_primitives::UpgradeGoAhead;
-use cumulus_primitives_core::CollectCollationInfo;
 use {
     crate::command::solochain::{
         build_solochain_config_dir, copy_zombienet_keystore, dummy_config, keystore_config,
@@ -35,9 +35,7 @@ use {
         relay_chain::{well_known_keys as RelayWellKnownKeys, CollatorPair},
         ParaId,
     },
-    cumulus_relay_chain_interface::{
-        call_runtime_api, OverseerHandle, RelayChainInterface,
-    },
+    cumulus_relay_chain_interface::{call_runtime_api, OverseerHandle, RelayChainInterface},
     dancebox_runtime::{
         opaque::{Block, Hash},
         AccountId, RuntimeApi,
