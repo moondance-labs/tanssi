@@ -175,7 +175,6 @@ fn test_on_era_end_without_proper_token() {
     })
 }
 
-
 #[test]
 fn test_on_era_end_with_zero_inflation() {
     new_test_ext().execute_with(|| {

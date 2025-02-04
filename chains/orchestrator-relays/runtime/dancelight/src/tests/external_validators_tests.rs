@@ -713,6 +713,11 @@ fn external_validators_rewards_sends_message_on_era_end() {
             (AccountId::from(ALICE), 210_000 * UNIT),
             (AccountId::from(BOB), 100_000 * UNIT),
         ])
+        .with_validators(vec![])
+        .with_external_validators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+        ])
         .build()
         .execute_with(|| {
             let token_location: VersionedLocation = Location::here().into();
@@ -829,18 +834,10 @@ fn external_validators_rewards_merkle_proofs() {
                 vec![AccountId::from(CHARLIE), AccountId::from(DAVE)]
             );
 
-            assert!(
-                pallet_external_validators_rewards::RewardPointsForEra::<Runtime>::iter().count()
-                    == 0
-            );
-
-            // Reward all validators in era 1
-            crate::RewardValidators::reward_backing(vec![ValidatorIndex(0)]);
-            crate::RewardValidators::reward_backing(vec![ValidatorIndex(1)]);
-
-            assert!(
-                pallet_external_validators_rewards::RewardPointsForEra::<Runtime>::iter().count()
-                    == 1
+            // Validators are automatically rewarded.
+            assert_eq!(
+                pallet_external_validators_rewards::RewardPointsForEra::<Runtime>::iter().count(),
+                1
             );
 
             let (_era_index, era_rewards) =
@@ -1139,18 +1136,10 @@ fn external_validators_rewards_test_command_integrity() {
                 vec![AccountId::from(CHARLIE), AccountId::from(DAVE)]
             );
 
-            assert!(
-                pallet_external_validators_rewards::RewardPointsForEra::<Runtime>::iter().count()
-                    == 0
-            );
-
-            // Reward Alice and Bob in era 1
-            crate::RewardValidators::reward_backing(vec![ValidatorIndex(0)]);
-            crate::RewardValidators::reward_backing(vec![ValidatorIndex(1)]);
-
-            assert!(
-                pallet_external_validators_rewards::RewardPointsForEra::<Runtime>::iter().count()
-                    == 1
+            // Validators are automatically rewarded.
+            assert_eq!(
+                pallet_external_validators_rewards::RewardPointsForEra::<Runtime>::iter().count(),
+                1
             );
 
             let expected_inflation =
@@ -1209,6 +1198,15 @@ fn external_validators_rewards_are_minted_in_sovereign_account() {
             (AccountId::from(ALICE), 210_000 * UNIT),
             (AccountId::from(BOB), 100_000 * UNIT),
         ])
+        .with_validators(
+            vec![]
+        )
+        .with_external_validators(
+            vec![
+                (AccountId::from(ALICE), 210 * UNIT),
+                (AccountId::from(BOB), 100 * UNIT),
+            ]
+        )
         .build()
         .execute_with(|| {
             let token_location: VersionedLocation = Location::here()
