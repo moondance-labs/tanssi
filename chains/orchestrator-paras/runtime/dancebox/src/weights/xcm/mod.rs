@@ -235,19 +235,33 @@ where
         XcmGeneric::<Runtime>::unpaid_execution()
     }
 
-    fn pay_fees(asset: &Asset) -> Weight {
-        todo!()
+    fn pay_fees(_: &Asset) -> Weight {
+        XcmGeneric::<Runtime>::pay_fees()
     }
 
-    fn initiate_transfer(destination: &Location, remote_fees: &Option<AssetTransferFilter>, preserve_origin: &bool, assets: &Vec<AssetTransferFilter>, remote_xcm: &Xcm<()>) -> Weight {
-        todo!()
+    fn initiate_transfer(
+        _dest: &Location,
+        remote_fees: &Option<AssetTransferFilter>,
+        _preserve_origin: &bool,
+        assets: &Vec<AssetTransferFilter>,
+        _xcm: &Xcm<()>,
+    ) -> Weight {
+        Weight::MAX
     }
 
-    fn execute_with_origin(descendant_origin: &Option<InteriorLocation>, xcm: &Xcm<RuntimeCall>) -> Weight {
-        todo!()
+    fn execute_with_origin(_: &Option<InteriorLocation>, _: &Xcm<RuntimeCall>) -> Weight {
+        XcmGeneric::<Runtime>::execute_with_origin()
     }
 
     fn set_hints(hints: &BoundedVec<Hint, HintNumVariants>) -> Weight {
-        todo!()
+        let mut weight = Weight::zero();
+        for hint in hints {
+            match hint {
+                AssetClaimer { .. } => {
+                    weight = weight.saturating_add(XcmGeneric::<Runtime>::asset_claimer());
+                },
+            }
+        }
+        weight
     }
 }
