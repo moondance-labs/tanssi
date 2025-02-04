@@ -86,7 +86,7 @@ describeSuite({
 
                 expect(
                     failures.length,
-                    `Please investigate blocks ${failures.map((a) => a.blockNum).join(`, `)}; authors  `
+                    `Please investigate blocks ${failures.map((a) => a.blockNum).join(", ")}; authors  `
                 ).to.equal(0);
             },
         });

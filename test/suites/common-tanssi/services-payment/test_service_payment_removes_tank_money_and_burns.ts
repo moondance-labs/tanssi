@@ -13,7 +13,7 @@ describeSuite({
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
         const blocksPerSession = 10n;
-        const paraId2001 = 2001n;
+        const paraId2001 = 2001;
         const costPerBlock = 1_000_000n;
         let balanceTankBefore: bigint;
         let registerAlias: any;

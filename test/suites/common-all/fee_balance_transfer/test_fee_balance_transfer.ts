@@ -17,7 +17,7 @@ describeSuite({
 
         // Difference between the refTime estimated using paymentInfo and the actual refTime reported inside a block
         // https://github.com/paritytech/substrate/blob/5e49f6e44820affccaf517fd22af564f4b495d40/frame/support/src/weights/extrinsic_weights.rs#L56
-        let baseWeight;
+        let baseWeight: bigint;
 
         beforeAll(async () => {
             alice = context.keyring.alice;

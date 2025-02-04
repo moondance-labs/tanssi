@@ -17,7 +17,7 @@ describeSuite({
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
         let baseDelivery: bigint;
-        let chain;
+        let chain: any;
         const destinationPara = 3000;
         const txByteFee = 1n;
 

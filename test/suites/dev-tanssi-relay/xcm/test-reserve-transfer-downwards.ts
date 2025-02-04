@@ -11,7 +11,7 @@ describeSuite({
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
         let baseDelivery: bigint;
-        let chain;
+        let chain: any;
         const UNITS = 1_000_000_000_000n;
         const CENTS = UNITS / 30_000n;
         const MILICENTS = CENTS / 1000n;

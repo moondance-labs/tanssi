@@ -14,7 +14,7 @@ export interface Compiled {
 }
 
 export function getAllContracts(): string[] {
-    const contractsPath = path.join(__dirname, `../helpers/compiled/`);
+    const contractsPath = path.join(__dirname, "../helpers/compiled/");
     const contracts = fs.readdirSync(contractsPath, { withFileTypes: true });
     // Register all the contract code
     return contracts.filter((dirent) => dirent.isFile()).map((contract) => path.basename(contract.name, ".json"));

@@ -16,7 +16,7 @@ describeSuite({
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
         let baseDelivery: bigint;
-        let chain;
+        let chain: any;
         const destinationPara = 3000;
         const txByteFee = 1n;
         const randomReceiver = "0x1111111111111111111111111111111111111111111111111111111111111111";
@@ -46,7 +46,7 @@ describeSuite({
                 // Get pallet indices
                 const metadata = await context.polkadotJs().rpc.state.getMetadata();
                 const balancesPalletIndex = metadata.asLatest.pallets
-                    .find(({ name }) => name.toString() === "Balances")!
+                    .find(({ name }) => name.toString() === "Balances")
                     .index.toNumber();
 
                 const destMultilocation: MultiLocation = {

@@ -206,8 +206,8 @@ describeSuite({
                 const pidCollator200002 = await findCollatorProcessPid("Collator2000-02");
                 expect(isProcessRunning(pidCollator200001)).to.be.true;
                 expect(isProcessRunning(pidCollator200002)).to.be.true;
-                await runZombienetRestart(pidCollator200001, getTmpZombiePath() + `/Collator2000-01.log`);
-                await runZombienetRestart(pidCollator200002, getTmpZombiePath() + `/Collator2000-02.log`);
+                await runZombienetRestart(pidCollator200001, getTmpZombiePath() + "/Collator2000-01.log");
+                await runZombienetRestart(pidCollator200002, getTmpZombiePath() + "/Collator2000-02.log");
 
                 await sleep(5000);
                 // Check that both collators have been stopped
@@ -217,10 +217,10 @@ describeSuite({
                 // Check db has not been deleted
                 const dbPath01 =
                     getTmpZombiePath() +
-                    `/Collator2000-01/data/containers/chains/simple_container_2000/paritydb/full-container-2000`;
+                    "/Collator2000-01/data/containers/chains/simple_container_2000/paritydb/full-container-2000";
                 const dbPath02 =
                     getTmpZombiePath() +
-                    `/Collator2000-02/data/containers/chains/simple_container_2000/paritydb/full-container-2000`;
+                    "/Collator2000-02/data/containers/chains/simple_container_2000/paritydb/full-container-2000";
 
                 expect(await directoryExists(dbPath01)).to.be.true;
                 expect(await directoryExists(dbPath02)).to.be.true;
@@ -259,10 +259,10 @@ describeSuite({
                 // Collator2000-01 db path exists because it was started with `--keep-db`, Collator2000-02 has deleted it
                 const dbPath01 =
                     getTmpZombiePath() +
-                    `/Collator2000-01/data/containers/chains/simple_container_2000/paritydb/full-container-2000`;
+                    "/Collator2000-01/data/containers/chains/simple_container_2000/paritydb/full-container-2000";
                 const dbPath02 =
                     getTmpZombiePath() +
-                    `/Collator2000-02/data/containers/chains/simple_container_2000/paritydb/full-container-2000`;
+                    "/Collator2000-02/data/containers/chains/simple_container_2000/paritydb/full-container-2000";
 
                 expect(await directoryExists(dbPath01)).to.be.true;
                 expect(await directoryExists(dbPath02)).to.be.false;

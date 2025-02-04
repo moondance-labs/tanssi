@@ -12,7 +12,7 @@ describeSuite({
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
-        let collatorAssignmentAlias;
+        let collatorAssignmentAlias: any;
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             alice = context.keyring.alice;

@@ -13,12 +13,12 @@ describeSuite({
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
         const blocksPerSession = 10n;
-        const paraId2001 = 2001n;
+        const paraId2001 = 2001;
         const costPerBlock = 1_000_000n;
-        let refundAddress;
-        let balanceTankBefore;
-        let purchasedCredits;
-        let registerAlias;
+        let refundAddress: KeyringPair;
+        let balanceTankBefore: bigint;
+        let purchasedCredits: bigint;
+        let registerAlias: any;
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             alice = context.keyring.alice;
@@ -34,7 +34,7 @@ describeSuite({
             const tx = polkadotJs.tx.servicesPayment.purchaseCredits(paraId2001, purchasedCredits);
             await context.createBlock([await tx.signAsync(alice)]);
             balanceTankBefore = (await polkadotJs.query.system.account(paraIdTank(paraId2001))).data.free.toBigInt();
-            expect(balanceTankBefore, `Tank should have been filled`).toBe(purchasedCredits);
+            expect(balanceTankBefore, "Tank should have been filled").toBe(purchasedCredits);
         });
         it({
             id: "E01",
@@ -47,7 +47,7 @@ describeSuite({
                 await context.createBlock([await setRefundAddress.signAsync(alice)]);
                 // Check that we can fetch the address
                 const refundAddressOnChain = await polkadotJs.query.servicesPayment.refundAddress(paraId2001);
-                expect(refundAddressOnChain.toString(), `Refund address should be set`).toBe(refundAddress.address);
+                expect(refundAddressOnChain.toString(), "Refund address should be set").toBe(refundAddress.address);
             },
         });
         it({
@@ -62,7 +62,7 @@ describeSuite({
                 const balanceTank = (
                     await polkadotJs.query.system.account(paraIdTank(paraId2001))
                 ).data.free.toBigInt();
-                expect(balanceTank, `Tank should have been removed`).toBe(0n);
+                expect(balanceTank, "Tank should have been removed").toBe(0n);
 
                 const balanceRefundAddress = (
                     await polkadotJs.query.system.account(refundAddress.address)

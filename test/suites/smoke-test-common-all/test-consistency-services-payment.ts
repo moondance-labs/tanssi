@@ -13,7 +13,7 @@ describeSuite({
         const costPerSession = 100_000_000n;
         const costPerBlock = 1_000_000n;
         let blocksPerSession;
-        let chain;
+        let chain: any;
 
         beforeAll(async () => {
             api = context.polkadotJs();

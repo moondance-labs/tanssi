@@ -14,7 +14,7 @@ describeSuite({
         let polkadotJs: ApiPromise;
         let transferredBalance;
         let alice: KeyringPair;
-        let chain;
+        let chain: any;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();

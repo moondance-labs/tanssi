@@ -86,7 +86,6 @@ import type {
     SpWeightsWeightV2Weight,
     StagingXcmV4Instruction,
     StagingXcmV4Location,
-    StagingXcmV4Xcm,
     TpTraitsContainerChainBlockInfo,
     TpTraitsParathreadParams,
     XcmVersionedAssetId,

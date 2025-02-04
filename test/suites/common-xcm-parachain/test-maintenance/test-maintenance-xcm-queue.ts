@@ -72,7 +72,7 @@ describeSuite({
             // Get Pallet balances index
             const metadata = await polkadotJs.rpc.state.getMetadata();
             const balancesPalletIndex = metadata.asLatest.pallets
-                .find(({ name }) => name.toString() === "Balances")!
+                .find(({ name }) => name.toString() === "Balances")
                 .index.toNumber();
 
             const transferCall = polkadotJs.tx.balances.transferAllowDeath(random.address, transferredBalance / 10n);

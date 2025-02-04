@@ -16,10 +16,10 @@ describeSuite({
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
         let polkadotJs: ApiPromise;
-        let transferredBalance;
-        let sendingAddress;
+        let transferredBalance: bigint;
+        let sendingAddress: string;
         let alice: KeyringPair;
-        let chain;
+        let chain: any;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
@@ -57,7 +57,7 @@ describeSuite({
                 // Get Pallet balances index
                 const metadata = await polkadotJs.rpc.state.getMetadata();
                 const balancesPalletIndex = metadata.asLatest.pallets
-                    .find(({ name }) => name.toString() === "Balances")!
+                    .find(({ name }) => name.toString() === "Balances")
                     .index.toNumber();
 
                 const transferCall = polkadotJs.tx.balances.transferAllowDeath(

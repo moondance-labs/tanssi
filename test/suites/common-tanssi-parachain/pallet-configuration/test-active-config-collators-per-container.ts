@@ -8,7 +8,7 @@ describeSuite({
     testCases: ({ context, it }) => {
         beforeAll(async () => {
             const config = await context.polkadotJs().query.configuration.activeConfig();
-            expect(config["collatorsPerContainer"].toString()).toBe("2");
+            expect(config.collatorsPerContainer.toString()).toBe("2");
 
             const { result } = await context.createBlock(
                 context
@@ -16,7 +16,7 @@ describeSuite({
                     .tx.sudo.sudo(context.polkadotJs().tx.configuration.setCollatorsPerContainer(5))
                     .signAsync(context.keyring.alice)
             );
-            expect(result!.successful, result!.error?.name).to.be.true;
+            expect(result?.successful, result?.error?.name).to.be.true;
 
             await jumpSessions(context, 2);
         });
@@ -26,7 +26,7 @@ describeSuite({
             title: "should set collators per container after 2 sessions",
             test: async () => {
                 const config = await context.polkadotJs().query.configuration.activeConfig();
-                expect(config["collatorsPerContainer"].toString()).toBe("5");
+                expect(config.collatorsPerContainer.toString()).toBe("5");
             },
         });
     },

@@ -8,7 +8,7 @@ describeSuite({
     testCases: ({ context, it }) => {
         beforeAll(async () => {
             const config = await context.polkadotJs().query.configuration.activeConfig();
-            expect(config["targetContainerChainFullness"].toString()).toBe("800000000");
+            expect(config.targetContainerChainFullness.toString()).toBe("800000000");
 
             const { result } = await context.createBlock(
                 context
@@ -16,7 +16,7 @@ describeSuite({
                     .tx.sudo.sudo(context.polkadotJs().tx.configuration.setTargetContainerChainFullness(500000000n))
                     .signAsync(context.keyring.alice)
             );
-            expect(result!.successful, result!.error?.name).to.be.true;
+            expect(result?.successful, result?.error?.name).to.be.true;
 
             await jumpSessions(context, 2);
         });
@@ -26,7 +26,7 @@ describeSuite({
             title: "should set target fullness after 2 sessions",
             test: async () => {
                 const config = await context.polkadotJs().query.configuration.activeConfig();
-                expect(config["targetContainerChainFullness"].toString()).toBe("500000000");
+                expect(config.targetContainerChainFullness.toString()).toBe("500000000");
             },
         });
     },

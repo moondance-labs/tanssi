@@ -98,8 +98,8 @@ describeSuite({
             test: async () => {
                 blockData.map(({ blockNum, config, paraInherent }) => {
                     // Should have exactly 1 paraInherent
-                    expect(paraInherent.length, `Block #{blockNum}: missing paraInherent in block`).toBeGreaterThan(0);
-                    expect(paraInherent.length, `Block #{blockNum}: duplicate paraInherent in block`).toBeLessThan(2);
+                    expect(paraInherent.length, "Block #{blockNum}: missing paraInherent in block").toBeGreaterThan(0);
+                    expect(paraInherent.length, "Block #{blockNum}: duplicate paraInherent in block").toBeLessThan(2);
 
                     const {
                         method: { args },

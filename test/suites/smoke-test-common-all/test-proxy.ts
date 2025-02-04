@@ -85,7 +85,7 @@ describeSuite({
                                     proxiesCount.toString().padStart(4, " ")
                                 )} proxies (expected max: ${maxProxies})`;
                             })
-                            .join(`\n`)
+                            .join("\n")
                     );
                 }
 
@@ -114,7 +114,7 @@ describeSuite({
                         break;
                 }
 
-                log(`Verified maximum allowed proxies constant`);
+                log("Verified maximum allowed proxies constant");
             },
         });
     },

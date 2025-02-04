@@ -9,7 +9,7 @@ describeSuite({
     testCases: ({ it, context }) => {
         let api: ApiPromise;
         let runtimeVersion;
-        let chain;
+        let chain: any;
 
         beforeAll(() => {
             api = context.polkadotJs();

@@ -14,7 +14,7 @@ describeSuite({
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
         let chain: string;
-        let transferredBalance;
+        let transferredBalance: bigint;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
@@ -45,8 +45,8 @@ describeSuite({
                         true,
                         1
                     ),
-                    polkadotJs.tx.assetRate.create(1, 2_000_000_000_000_000_000n),
-                    polkadotJs.tx.assetRate.create(2, 2_000_000_000_000_000_000n),
+                    polkadotJs.tx.assetRate.create("1", 2_000_000_000_000_000_000n),
+                    polkadotJs.tx.assetRate.create("2", 2_000_000_000_000_000_000n),
                     // Set custom policy for parent origin to only allowing grandparent asset
                     polkadotJs.tx.xcmExecutorUtils.setReservePolicy(
                         // Origin

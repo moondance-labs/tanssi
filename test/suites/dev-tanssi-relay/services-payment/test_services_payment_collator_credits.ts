@@ -55,7 +55,7 @@ describeSuite({
                 // Moving to the next session should have reduced the credit by one to both parachains
                 // even if one does not produce blocks
 
-                const paraId = 2000n;
+                const paraId = 2000;
                 const credits = await polkadotJs.query.servicesPayment.collatorAssignmentCredits(paraId);
                 expect(
                     credits.unwrap().toBigInt(),
@@ -71,7 +71,7 @@ describeSuite({
                 // Create blocks until authorNoting.blockNum does not increase anymore.
                 // Check that collatorAssignment does not have collators and num credits is less than 2 sessions.
 
-                const paraId = 2000n;
+                const paraId = 2000;
 
                 // Create blocks until credits reach 0
                 let containerCredits = (await polkadotJs.query.servicesPayment.collatorAssignmentCredits(paraId))
@@ -109,7 +109,7 @@ describeSuite({
             title: "Can buy additional credits",
             test: async () => {
                 // As alice, buy credits for para 2000. Check that it is assigned collators again
-                const paraId = 2000n;
+                const paraId = 2000;
 
                 // Create blocks until no collators are assigned to any container chain
                 for (;;) {

@@ -20,7 +20,7 @@ export function expectEVMResult<T extends Errors, Type extends keyof T>(
     resultType: Type,
     reason?: T[Type]
 ) {
-    expect(events, `Missing events, probably failed execution`).to.be.length.at.least(1);
+    expect(events, "Missing events, probably failed execution").to.be.length.at.least(1);
     const ethereumResult = events.find(
         ({ event: { section, method } }) => section === "ethereum" && method === "Executed"
     )!.event.data[3] as EvmCoreErrorExitReason;

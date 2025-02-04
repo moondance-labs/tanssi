@@ -34,7 +34,7 @@ describeSuite({
                 expect(treasuryAccount.data.free.toBigInt() > 0n).to.be.true;
                 expect(treasuryAccount.data.reserved.toBigInt()).to.be.equal(0n);
 
-                log(`Verified treasury free/reserved balance`);
+                log("Verified treasury free/reserved balance");
             },
         });
     },

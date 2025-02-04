@@ -69,7 +69,7 @@ describeSuite({
 
                 for (const [, entry] of entries) {
                     const profile = entry.unwrap().profile;
-                    expect(isValidEndpointUrl(profile.url.toHuman()), `Invalid URL {profile.url}`);
+                    expect(isValidEndpointUrl(profile.url.toHuman()), "Invalid URL {profile.url}");
                 }
             },
         });

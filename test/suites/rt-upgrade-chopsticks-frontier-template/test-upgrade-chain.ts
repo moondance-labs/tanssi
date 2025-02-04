@@ -15,7 +15,7 @@ describeSuite({
             api = context.polkadotJs();
 
             const rtBefore = api.consts.system.version.specVersion.toNumber();
-            log(`About to upgrade to runtime at:`);
+            log("About to upgrade to runtime at:");
             log((await MoonwallContext.getContext()).rtUpgradePath);
 
             await context.upgradeRuntime();

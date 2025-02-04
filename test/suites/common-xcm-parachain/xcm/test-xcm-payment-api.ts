@@ -67,7 +67,7 @@ describeSuite({
     testCases: ({ context, it }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
-        let chain;
+        let chain: any;
 
         beforeAll(async () => {
             // Not using context.polkadotJs() because we need to add the runtime api
@@ -117,7 +117,7 @@ describeSuite({
                 const chainInfo = polkadotJs.registry.getChainProperties();
                 const metadata = await polkadotJs.rpc.state.getMetadata();
                 const balancesPalletIndex = metadata.asLatest.pallets
-                    .find(({ name }) => name.toString() === "Balances")!
+                    .find(({ name }) => name.toString() === "Balances")
                     .index.toNumber();
 
                 console.log(chainInfo.toHuman());

@@ -9,8 +9,8 @@ describeSuite({
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
         it({
-            id: `T01`,
-            title: `should be false for successful ethereum transactions`,
+            id: "T01",
+            title: "should be false for successful ethereum transactions",
             test: async () => {
                 const { result } = await context.createBlock(await createRawTransfer(context, BALTATHAR_ADDRESS, GLMR));
                 const info = extractInfo(result!.events)!;

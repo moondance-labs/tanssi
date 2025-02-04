@@ -22,7 +22,7 @@ yargs(hideBin(process.argv))
     .usage("Usage: $0")
     .version("2.0.0")
     .command(
-        `process <rootDir>`,
+        "process <rootDir>",
         "Changes the testsuite IDs based on positional order in the directory tree.",
         (yargs) => {
             return yargs.positional("rootDir", {

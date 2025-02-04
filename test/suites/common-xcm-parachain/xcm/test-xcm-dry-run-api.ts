@@ -84,7 +84,7 @@ describeSuite({
     testCases: ({ it }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
-        let chain;
+        let chain: any;
 
         beforeAll(async () => {
             polkadotJs = await ApiPromise.create({
@@ -106,7 +106,7 @@ describeSuite({
             test: async () => {
                 const metadata = await polkadotJs.rpc.state.getMetadata();
                 const balancesPalletIndex = metadata.asLatest.pallets
-                    .find(({ name }) => name.toString() === "Balances")!
+                    .find(({ name }) => name.toString() === "Balances")
                     .index.toNumber();
                 const randomReceiver = "0x1111111111111111111111111111111111111111111111111111111111111111";
 
@@ -173,7 +173,7 @@ describeSuite({
             test: async () => {
                 const metadata = await polkadotJs.rpc.state.getMetadata();
                 const balancesPalletIndex = metadata.asLatest.pallets
-                    .find(({ name }) => name.toString() === "Balances")!
+                    .find(({ name }) => name.toString() === "Balances")
                     .index.toNumber();
                 const random = chain === "frontier-template" ? generateKeyringPair() : generateKeyringPair("sr25519");
 

@@ -11,8 +11,8 @@ describeSuite({
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
-        const paraId2000 = 2000n;
-        const paraId2001 = 2001n;
+        const paraId2000 = 2000;
+        const paraId2001 = 2001;
         const costPerSession = 100_000_000n;
         const costPerBlock = 1_000_000n;
         const blocksPerSession = 10n;

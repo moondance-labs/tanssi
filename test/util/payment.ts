@@ -5,7 +5,7 @@ import type { ApiPromise } from "@polkadot/api";
 import type { ParaId } from "@polkadot/types/interfaces";
 
 // Tank account is blake2(b"modlpy/serpayment" + parahain ID)
-export function paraIdTank(paraId: bigint) {
+export function paraIdTank(paraId: number) {
     const seedBytes = stringToU8a("modlpy/serpayment");
     const paraIdBytes = bnToU8a(paraId, { bitLength: 32 });
     const combinedBytes = new Uint8Array(seedBytes.length + paraIdBytes.length);
@@ -48,7 +48,7 @@ export async function hasEnoughCredits(
             existentialDeposit +
             neededCollatorAssignmentPaymentAfterCredits * costPerSession +
             neededBlockPaymentAfterCredits * costPerBlock;
-        const tankBalance = (await paraApi.query.system.account(paraIdTank(paraId.toBigInt()))).data.free.toBigInt();
+        const tankBalance = (await paraApi.query.system.account(paraIdTank(paraId.toNumber()))).data.free.toBigInt();
         if (tankBalance >= neededTankMoney) {
             return true;
         }

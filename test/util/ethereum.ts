@@ -22,10 +22,10 @@ export const createTransaction = async (
 
     // a transaction shouldn't have both Legacy and EIP1559 fields
     if (options.gasPrice && options.maxFeePerGas) {
-        throw new Error(`txn has both gasPrice and maxFeePerGas!`);
+        throw new Error("txn has both gasPrice and maxFeePerGas!");
     }
     if (options.gasPrice && options.maxPriorityFeePerGas) {
-        throw new Error(`txn has both gasPrice and maxPriorityFeePerGas!`);
+        throw new Error("txn has both gasPrice and maxPriorityFeePerGas!");
     }
 
     // convert any bigints to hex
@@ -141,7 +141,7 @@ export const createTransaction = async (
     }
 
     debug(
-        `TransactionDetails` +
+        "TransactionDetails" +
             (data.to ? `to: ${data.to.substr(0, 5) + "..." + data.to.substr(data.to.length - 3)}, ` : "") +
             (data.value ? `value: ${data.value.toString()}, ` : "") +
             (data.gasPrice ? `gasPrice: ${data.gasPrice.toString()}, ` : "") +

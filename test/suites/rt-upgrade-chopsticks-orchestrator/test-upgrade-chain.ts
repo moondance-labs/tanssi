@@ -15,7 +15,7 @@ describeSuite({
 
             const rtBefore = api.consts.system.version.specVersion.toNumber();
             const sessionBefore = api.query.session.currentIndex();
-            log(`About to upgrade to runtime at:`);
+            log("About to upgrade to runtime at:");
             log((await MoonwallContext.getContext()).rtUpgradePath);
 
             await context.upgradeRuntime();
@@ -24,7 +24,7 @@ describeSuite({
             // New sessions can lead to the runtime upgrade not being correctly applied
             // Hence we retry once more just in case
             if ((await sessionAfter).toNumber() > (await sessionBefore).toNumber()) {
-                log(`New session encountered, just in case retrying`);
+                log("New session encountered, just in case retrying");
                 await context.upgradeRuntime();
             }
 

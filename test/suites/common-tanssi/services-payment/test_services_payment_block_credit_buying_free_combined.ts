@@ -12,10 +12,10 @@ describeSuite({
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
         const blocksPerSession = 10n;
-        const paraId2000 = 2000n;
-        const paraId2001 = 2001n;
+        const paraId2000 = 2000;
+        const paraId2001 = 2001;
         const costPerBlock = 1_000_000n;
-        let collatorAssignmentAlias;
+        let collatorAssignmentAlias: any;
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             alice = context.keyring.alice;

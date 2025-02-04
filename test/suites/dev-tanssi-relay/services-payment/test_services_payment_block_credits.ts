@@ -68,7 +68,7 @@ describeSuite({
                 await context.createBlock();
                 await context.createBlock();
 
-                const paraId = 2000n;
+                const paraId = 2000;
 
                 // Create a block, the block number should increase, and the number of credits should decrease
                 const credits1 = (await polkadotJs.query.servicesPayment.blockProductionCredits(paraId)).toJSON();
@@ -103,7 +103,7 @@ describeSuite({
                 // Create blocks until authorNoting.blockNum does not increase anymore.
                 // Check that collatorAssignment does not have collators and num credits is less than 2 sessions.
 
-                const paraId = 2000n;
+                const paraId = 2000;
 
                 // Create blocks until the block number stops increasing
                 let containerBlockNum3 = -1;
@@ -200,7 +200,7 @@ describeSuite({
             title: "Can buy additional credits",
             test: async () => {
                 // As alice, buy credits for para 2000. Check that it is assigned collators again
-                const paraId = 2000n;
+                const paraId = 2000;
 
                 // Create blocks until no collators are assigned to any container chain
                 for (;;) {
