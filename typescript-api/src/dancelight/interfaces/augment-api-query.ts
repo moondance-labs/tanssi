@@ -557,12 +557,22 @@ declare module '@polkadot/api-base/types/storage' {
        **/
       currentEra: AugmentedQuery<ApiType, () => Observable<Option<u32>>, []> & QueryableStorageEntry<ApiType, []>;
       /**
+       * Current external index attached to the latest validators
+       **/
+      currentExternalIndex: AugmentedQuery<ApiType, () => Observable<u64>, []> & QueryableStorageEntry<ApiType, []>;
+      /**
        * The session index at which the era start for the last [`Config::HistoryDepth`] eras.
        * 
        * Note: This tracks the starting session (i.e. session index when era start being active)
        * for the eras in `[CurrentEra - HISTORY_DEPTH, CurrentEra]`.
        **/
       erasStartSessionIndex: AugmentedQuery<ApiType, (arg: u32 | AnyNumber | Uint8Array) => Observable<Option<u32>>, [u32]> & QueryableStorageEntry<ApiType, [u32]>;
+      /**
+       * Latest received external index. This index can be a timestamp
+       * a set-id, an epoch or in general anything that identifies
+       * a particular set of validators selected at a given point in time
+       **/
+      externalIndex: AugmentedQuery<ApiType, () => Observable<u64>, []> & QueryableStorageEntry<ApiType, []>;
       /**
        * Validators set using storage proofs from another blockchain. Ignored if `SkipExternalValidators` is true.
        **/
@@ -571,6 +581,10 @@ declare module '@polkadot/api-base/types/storage' {
        * Mode of era forcing.
        **/
       forceEra: AugmentedQuery<ApiType, () => Observable<PalletExternalValidatorsForcing>, []> & QueryableStorageEntry<ApiType, []>;
+      /**
+       * Pending external index to be applied in the upcoming era
+       **/
+      pendingExternalIndex: AugmentedQuery<ApiType, () => Observable<u64>, []> & QueryableStorageEntry<ApiType, []>;
       /**
        * Allow to disable external validators.
        **/
@@ -601,7 +615,7 @@ declare module '@polkadot/api-base/types/storage' {
        * Must contains information for eras for the range:
        * `[active_era - bounding_duration; active_era]`
        **/
-      bondedEras: AugmentedQuery<ApiType, () => Observable<Vec<ITuple<[u32, u32]>>>, []> & QueryableStorageEntry<ApiType, []>;
+      bondedEras: AugmentedQuery<ApiType, () => Observable<Vec<ITuple<[u32, u32, u64]>>>, []> & QueryableStorageEntry<ApiType, []>;
       /**
        * A counter on the number of slashes we have performed
        **/

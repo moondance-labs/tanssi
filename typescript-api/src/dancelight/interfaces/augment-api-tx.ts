@@ -841,7 +841,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * Manually set external validators. Should only be needed for tests, validators are set
        * automatically by the bridge.
        **/
-      setExternalValidators: AugmentedSubmittable<(validators: Vec<AccountId32> | (AccountId32 | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>, [Vec<AccountId32>]>;
+      setExternalValidators: AugmentedSubmittable<(validators: Vec<AccountId32> | (AccountId32 | string | Uint8Array)[], externalIndex: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [Vec<AccountId32>, u64]>;
       /**
        * Allow to ignore external validators and use only whitelisted ones.
        * 
@@ -858,7 +858,7 @@ declare module '@polkadot/api-base/types/submittable' {
        * Cancel a slash that was deferred for a later era
        **/
       cancelDeferredSlash: AugmentedSubmittable<(era: u32 | AnyNumber | Uint8Array, slashIndices: Vec<u32> | (u32 | AnyNumber | Uint8Array)[]) => SubmittableExtrinsic<ApiType>, [u32, Vec<u32>]>;
-      forceInjectSlash: AugmentedSubmittable<(era: u32 | AnyNumber | Uint8Array, validator: AccountId32 | string | Uint8Array, percentage: Perbill | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u32, AccountId32, Perbill]>;
+      forceInjectSlash: AugmentedSubmittable<(era: u32 | AnyNumber | Uint8Array, validator: AccountId32 | string | Uint8Array, percentage: Perbill | AnyNumber | Uint8Array, externalIdx: u64 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [u32, AccountId32, Perbill, u64]>;
       rootTestSendMsgToEth: AugmentedSubmittable<(nonce: H256 | string | Uint8Array, numMsgs: u32 | AnyNumber | Uint8Array, msgSize: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [H256, u32, u32]>;
       /**
        * Generic tx
