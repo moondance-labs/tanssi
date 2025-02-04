@@ -834,7 +834,10 @@ fn external_validators_rewards_merkle_proofs() {
                 vec![AccountId::from(CHARLIE), AccountId::from(DAVE)]
             );
 
-            // Validators are automatically rewarded.
+            // Reward all validators in era 1
+            crate::RewardValidators::reward_backing(vec![ValidatorIndex(0)]);
+            crate::RewardValidators::reward_backing(vec![ValidatorIndex(1)]);
+            
             assert_eq!(
                 pallet_external_validators_rewards::RewardPointsForEra::<Runtime>::iter().count(),
                 1
@@ -845,6 +848,8 @@ fn external_validators_rewards_merkle_proofs() {
                     .next()
                     .unwrap();
             assert!(era_rewards.total > 0);
+
+            println!("era_rewards: {era_rewards:?}");
 
             let charlie_merkle_proof = ExternalValidatorsRewards::generate_rewards_merkle_proof(
                 AccountId::from(CHARLIE),
@@ -1169,10 +1174,15 @@ fn external_validators_rewards_test_command_integrity() {
                 .count();
 
             let rewards_utils = ExternalValidatorsRewards::generate_era_rewards_utils(1, None);
+
+            let blocks_per_session: u128 = Babe::current_epoch().duration.into();
+            let points_per_block = 20;
+            let expected_total_points = (sessions_per_era as u128) * blocks_per_session * points_per_block;            
+
             let expected_rewards_command = Command::ReportRewards {
                 external_idx: 1u64,
                 era_index: 1u32,
-                total_points: 40u128,
+                total_points: expected_total_points,
                 tokens_inflated: expected_inflation,
                 rewards_merkle_root: rewards_utils.unwrap().rewards_merkle_root,
                 token_id,
