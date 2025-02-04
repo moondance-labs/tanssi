@@ -1,8 +1,8 @@
 import "@moonbeam-network/api-augment";
 import { beforeAll, deployCreateCompiledContract, describeSuite, expect } from "@moonwall/cli";
 import { ALITH_ADDRESS, BALTATHAR_PRIVATE_KEY, CHARLETH_ADDRESS, alith, createViemTransaction } from "@moonwall/util";
-import { u16 } from "@polkadot/types-codec";
-import { Abi, encodeFunctionData } from "viem";
+import type { u16 } from "@polkadot/types-codec";
+import { type Abi, encodeFunctionData } from "viem";
 import { mockAssetCreation, RELAY_SOURCE_LOCATION, relayAssetMetadata } from "../../../helpers/assets";
 
 describeSuite({
@@ -52,7 +52,7 @@ describeSuite({
         it({
             id: "T01",
             title: "Bob approves contract and use transferFrom from contract calls",
-            test: async function () {
+            test: async () => {
                 const tx = await createViemTransaction(context, {
                     to: ADDRESS_ERC20,
                     data: encodeFunctionData({

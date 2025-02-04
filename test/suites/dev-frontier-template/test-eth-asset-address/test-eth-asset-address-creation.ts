@@ -10,7 +10,7 @@ describeSuite({
         it({
             id: "T01",
             title: "dummy precompile address is created when creating the asset and removed when destroyed",
-            test: async function () {
+            test: async () => {
                 const assetId = 5;
                 const assetIdAddress = new Uint8Array([
                     255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 0, 5,

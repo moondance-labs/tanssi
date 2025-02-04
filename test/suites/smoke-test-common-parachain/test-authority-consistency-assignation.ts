@@ -1,6 +1,6 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 
-import { ApiPromise } from "@polkadot/api";
+import type { ApiPromise } from "@polkadot/api";
 
 describeSuite({
     id: "S06",
@@ -16,7 +16,7 @@ describeSuite({
         it({
             id: "C01",
             title: "Collator assignation and authority assignation should match with observed mapping in orchestrator",
-            test: async function () {
+            test: async () => {
                 const assignmentCollatorAccount = (
                     await api.query.collatorAssignment.collatorContainerChain()
                 ).toJSON();
@@ -39,7 +39,7 @@ describeSuite({
         it({
             id: "C02",
             title: "Collator assignation and authority assignation should match with observed mapping in containers",
-            test: async function () {
+            test: async () => {
                 const assignmentCollatorAccount = (
                     await api.query.collatorAssignment.collatorContainerChain()
                 ).toJSON();

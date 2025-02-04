@@ -1,9 +1,9 @@
-import Web3 from "web3";
+import type Web3 from "web3";
 import fs from "fs";
-import path from "path";
-import { TransactionReceipt } from "web3-core";
-import { Contract } from "web3-eth-contract";
-import { AbiItem } from "web3-utils";
+import path from "node:path";
+import type { TransactionReceipt } from "web3-core";
+import type { Contract } from "web3-eth-contract";
+import type { AbiItem } from "web3-utils";
 import { ALITH_PRIVATE_KEY, alith } from "@moonwall/util";
 import { customWeb3Request } from "@moonwall/util";
 

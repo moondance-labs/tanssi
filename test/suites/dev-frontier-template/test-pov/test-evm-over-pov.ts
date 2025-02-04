@@ -1,8 +1,8 @@
 import "@tanssi/api-augment";
 import { beforeAll, deployCreateCompiledContract, describeSuite, expect } from "@moonwall/cli";
 import { ALITH_ADDRESS, createEthersTransaction } from "@moonwall/util";
-import { Abi, encodeFunctionData } from "viem";
-import { expectEVMResult, HeavyContract, deployHeavyContracts } from "../../../helpers";
+import { type Abi, encodeFunctionData } from "viem";
+import { expectEVMResult, type HeavyContract, deployHeavyContracts } from "../../../helpers";
 
 describeSuite({
     id: "DF1301",
@@ -34,7 +34,7 @@ describeSuite({
         it({
             id: "T01",
             title: "should allow to include transaction with estimate gas to cover PoV",
-            test: async function () {
+            test: async () => {
                 const gasEstimate = await context.viem().estimateGas({
                     account: ALITH_ADDRESS,
                     to: proxyAddress,
@@ -61,7 +61,7 @@ describeSuite({
         it({
             id: "T02",
             title: "should allow to include transaction with enough gas limit to cover PoV",
-            test: async function () {
+            test: async () => {
                 const rawSigned = await createEthersTransaction(context, {
                     to: proxyAddress,
                     data: callData,
@@ -81,7 +81,7 @@ describeSuite({
         it({
             id: "T03",
             title: "should fail to include transaction without enough gas limit to cover PoV",
-            test: async function () {
+            test: async () => {
                 // This execution uses only < 100k Gas in cpu execute but require 2M Gas for PoV.
                 // We are providing only 1M Gas, so it should fail.
                 const rawSigned = await createEthersTransaction(context, {

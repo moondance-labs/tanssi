@@ -1,6 +1,6 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 
-import { ApiPromise } from "@polkadot/api";
+import type { ApiPromise } from "@polkadot/api";
 import { fetchRandomnessEvent } from "util/block";
 describeSuite({
     id: "S12",
@@ -18,7 +18,7 @@ describeSuite({
         it({
             id: "C01",
             title: "Randomness storage is empty because on-finalize cleans it, unless on session change boundaries",
-            test: async function () {
+            test: async () => {
                 if (runtimeVersion < 300) {
                     return;
                 }
@@ -27,7 +27,7 @@ describeSuite({
                 const randomness = await api.query.collatorAssignment.randomness();
 
                 // if the next block is a session change, then this storage will be populated
-                if (currentBlock + (1 % sessionLength) == 0) {
+                if (currentBlock + (1 % sessionLength) === 0) {
                     expect(randomness.isEmpty).to.not.be.true;
                 } else {
                     expect(randomness.isEmpty).to.be.true;
@@ -38,7 +38,7 @@ describeSuite({
         it({
             id: "C02",
             title: "Rotation happened at previous session boundary",
-            test: async function () {
+            test: async () => {
                 if (runtimeVersion < 300) {
                     return;
                 }
@@ -70,7 +70,7 @@ describeSuite({
                 expect(randomnessEvent.targetSession.toNumber()).to.be.equal(session.toNumber() + 1);
                 const configuration = await apiAtIssuanceNewSession.query.configuration.activeConfig();
                 if (
-                    configuration.fullRotationPeriod == 0 ||
+                    configuration.fullRotationPeriod === 0 ||
                     randomnessEvent.targetSession.toNumber() % configuration.fullRotationPeriod != 0
                 ) {
                     expect(randomnessEvent.fullRotation.toHuman()).to.be.false;

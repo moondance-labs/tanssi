@@ -1,7 +1,7 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
-import { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
+import type { KeyringPair } from "@moonwall/util";
 import { jumpSessions } from "util/block";
 
 describeSuite({
@@ -27,7 +27,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Collators are unassigned when a container chain does not have enough collator assignment credits",
-            test: async function () {
+            test: async () => {
                 // Create blocks until authorNoting.blockNum does not increase anymore.
                 // Check that collatorAssignment does not have collators and num credits is less than 2 sessions.
 
@@ -50,7 +50,7 @@ describeSuite({
         it({
             id: "E02",
             title: "Collators are not assigned when we buy a session + ED -1 of collator assignment credits",
-            test: async function () {
+            test: async () => {
                 const existentialDeposit = await polkadotJs.consts.balances.existentialDeposit.toBigInt();
                 // Now, buy some credits for container chain 2000. we only buy ones session -1
                 const purchasedCredits = costPerSession + existentialDeposit - 1n;
@@ -71,7 +71,7 @@ describeSuite({
         it({
             id: "E03",
             title: "Collators are assigned when we buy at least a session + ED of block credits",
-            test: async function () {
+            test: async () => {
                 // Now, buy the remaining
                 const purchasedCredits = 1n;
                 // Purchase the remaining 1

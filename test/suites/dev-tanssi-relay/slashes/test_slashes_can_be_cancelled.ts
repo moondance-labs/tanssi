@@ -1,7 +1,7 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
-import { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
+import type { KeyringPair } from "@moonwall/util";
 import { Keyring } from "@polkadot/keyring";
 import { u8aToHex } from "@polkadot/util";
 import { jumpToSession } from "../../../util/block";
@@ -26,7 +26,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Babe offences are cancellable during the defer period",
-            test: async function () {
+            test: async () => {
                 // we crate one block so that we at least have one seal.
                 await jumpToSession(context, 1);
 

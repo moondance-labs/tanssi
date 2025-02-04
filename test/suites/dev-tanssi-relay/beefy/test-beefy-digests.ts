@@ -1,7 +1,7 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { KeyringPair } from "@moonwall/util";
-import { ApiPromise } from "@polkadot/api";
+import type { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
 import { jumpToSession } from "../../../util/block";
 import { u8aToHex, stringToHex } from "@polkadot/util";
 import { Keyring } from "@polkadot/keyring";
@@ -24,7 +24,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Session change should update BEEFY authorities and digest",
-            test: async function () {
+            test: async () => {
                 await jumpToSession(context, 1);
 
                 // Take Alice's BEEFY key corresponding to next session.
@@ -34,7 +34,7 @@ describeSuite({
                 await jumpToSession(context, 2);
                 const digests = (await polkadotJs.query.system.digest()).logs;
                 const filteredDigests = digests.filter(
-                    (log) => log.isConsensus === true && log.asConsensus[0].toHex() == stringToHex("BEEF")
+                    (log) => log.isConsensus === true && log.asConsensus[0].toHex() === stringToHex("BEEF")
                 );
 
                 // As session changed, it should contain two BEEFY digests: AuthoritiesChange and MmrRoot.
@@ -60,11 +60,11 @@ describeSuite({
         it({
             id: "E02",
             title: "Should also update MMR root digest when creating a new block",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
                 const digests = (await polkadotJs.query.system.digest()).logs;
                 const filteredDigests = digests.filter(
-                    (log) => log.isConsensus === true && log.asConsensus[0].toHex() == stringToHex("BEEF")
+                    (log) => log.isConsensus === true && log.asConsensus[0].toHex() === stringToHex("BEEF")
                 );
 
                 // Now we should only have the MmrRoot BEEFY digest (as session didn't change yet).

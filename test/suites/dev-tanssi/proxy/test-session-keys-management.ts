@@ -1,6 +1,6 @@
 import "@polkadot/api-augment";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
+import type { ApiPromise } from "@polkadot/api";
 
 describeSuite({
     id: "DT0601",
@@ -18,7 +18,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Delegate account can manage keys",
-            test: async function () {
+            test: async () => {
                 const delegator_alice = context.keyring.alice;
                 const delegate_charlie = context.keyring.charlie;
 
@@ -27,7 +27,7 @@ describeSuite({
 
                 let events = await polkadotJs.query.system.events();
                 let ev1 = events.filter((a) => {
-                    return a.event.method == "ProxyAdded";
+                    return a.event.method === "ProxyAdded";
                 });
                 expect(ev1.length).to.be.equal(1);
 
@@ -41,7 +41,7 @@ describeSuite({
                 await context.createBlock([await tx.signAsync(delegate_charlie)]);
                 events = await polkadotJs.query.system.events();
                 ev1 = events.filter((a) => {
-                    return a.event.method == "ProxyExecuted";
+                    return a.event.method === "ProxyExecuted";
                 });
                 expect(ev1.length).to.be.equal(1);
                 expect(ev1[0].event.data[0].toString()).to.be.eq("Ok");
@@ -51,7 +51,7 @@ describeSuite({
         it({
             id: "E02",
             title: "Non-Delegate account fails to manage other account's keys",
-            test: async function () {
+            test: async () => {
                 const alice = context.keyring.alice;
                 const non_delegate_dave = context.keyring.dave;
 
@@ -68,7 +68,7 @@ describeSuite({
                 await context.createBlock([await tx.signAsync(non_delegate_dave)]);
                 const events = await polkadotJs.query.system.events();
                 const ev1 = events.filter((a) => {
-                    return a.event.method == "ProxyExecuted";
+                    return a.event.method === "ProxyExecuted";
                 });
                 expect(ev1.length).to.be.equal(0);
             },

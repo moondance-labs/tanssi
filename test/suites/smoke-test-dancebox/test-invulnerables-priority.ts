@@ -1,5 +1,5 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
+import type { ApiPromise } from "@polkadot/api";
 
 describeSuite({
     id: "S11",
@@ -17,7 +17,7 @@ describeSuite({
         it({
             id: "C01",
             title: "Invulnerables have priority over staking candidates",
-            test: async function () {
+            test: async () => {
                 if (runtimeVersion < 300) {
                     return;
                 }

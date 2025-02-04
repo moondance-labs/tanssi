@@ -1,6 +1,6 @@
 import { MoonwallContext, beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { KeyringPair } from "@moonwall/util";
-import { ApiPromise, Keyring } from "@polkadot/api";
+import type { KeyringPair } from "@moonwall/util";
+import { type ApiPromise, Keyring } from "@polkadot/api";
 import { alith } from "@moonwall/util";
 
 import fs from "node:fs";
@@ -9,7 +9,7 @@ describeSuite({
     id: "R01",
     title: "Zombie Container Template Upgrade Test",
     foundationMethods: "zombie",
-    testCases: function ({ it, context, log }) {
+    testCases: ({ it, context, log }) => {
         let paraApi: ApiPromise;
         let alice_or_alith: KeyringPair;
         beforeAll(async () => {
@@ -28,7 +28,7 @@ describeSuite({
         it({
             id: "T01",
             title: "Blocks are being produced on parachain",
-            test: async function () {
+            test: async () => {
                 const blockNum = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
                 expect(blockNum).to.be.greaterThan(0);
             },
@@ -38,7 +38,7 @@ describeSuite({
             id: "T02",
             title: "Chain can be upgraded",
             timeout: 600000,
-            test: async function () {
+            test: async () => {
                 const blockNumberBefore = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
                 const currentCode = await paraApi.rpc.state.getStorage(":code");
                 const codeString = currentCode.toString();

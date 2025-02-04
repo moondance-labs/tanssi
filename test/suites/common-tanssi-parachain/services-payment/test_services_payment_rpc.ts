@@ -9,7 +9,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Services payment RPC",
-            test: async function () {
+            test: async () => {
                 try {
                     await customDevRpcRequest("tanssi_servicesPaymentBlockCost", []);
                     throw { message: "Should have returned an error" };

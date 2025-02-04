@@ -8,7 +8,7 @@ import {
     BALTATHAR_ADDRESS,
 } from "@moonwall/util";
 import { expectEVMResult } from "helpers";
-import { PrivateKeyAccount, keccak256, pad, parseEther, toBytes, toHex } from "viem";
+import { type PrivateKeyAccount, keccak256, pad, parseEther, toBytes, toHex } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
 const IERC20_ADDRESS = "0x0000000000000000000000000000000000000800";
@@ -27,7 +27,7 @@ describeSuite({
         it({
             id: "T01",
             title: "allows to call balanceOf",
-            test: async function () {
+            test: async () => {
                 const transferAmount = 1000n;
                 const signedTx = context
                     .polkadotJs()
@@ -49,7 +49,7 @@ describeSuite({
         it({
             id: "T02",
             title: "allows to call totalSupply",
-            test: async function () {
+            test: async () => {
                 const totalSupply = await context.readContract!({
                     contractAddress: IERC20_ADDRESS,
                     contractName: "IERC20",
@@ -64,7 +64,7 @@ describeSuite({
         it({
             id: "T03",
             title: "allows to approve transfers, and allowance matches",
-            test: async function () {
+            test: async () => {
                 const allowanceBefore = (await context.readContract!({
                     contractAddress: IERC20_ADDRESS,
                     contractName: "IERC20",
@@ -107,7 +107,7 @@ describeSuite({
         it({
             id: "T04",
             title: "allows to call transfer",
-            test: async function () {
+            test: async () => {
                 expect(
                     await context.readContract!({
                         contractAddress: IERC20_ADDRESS,
@@ -144,7 +144,7 @@ describeSuite({
         it({
             id: "T05",
             title: "allows to approve transfer and use transferFrom",
-            test: async function () {
+            test: async () => {
                 const allowedAmount = parseEther("10");
                 const transferAmount = parseEther("5");
 
@@ -205,7 +205,7 @@ describeSuite({
         it({
             id: "T06",
             title: "refuses to transferFrom more than allowed",
-            test: async function () {
+            test: async () => {
                 const allowedAmount = parseEther("10");
                 const transferAmount = parseEther("15");
 

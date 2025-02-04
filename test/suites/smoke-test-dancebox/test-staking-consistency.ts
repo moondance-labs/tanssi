@@ -1,5 +1,5 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
+import type { ApiPromise } from "@polkadot/api";
 
 describeSuite({
     id: "S13",
@@ -18,7 +18,7 @@ describeSuite({
             id: "C01",
             title: "All eligible candidates have enough self delegation",
             timeout: 120000,
-            test: async function () {
+            test: async () => {
                 if (runtimeVersion < 200) {
                     return;
                 }
@@ -72,7 +72,7 @@ describeSuite({
                     // auto stake is calculated using this method as the AutoCompoundingSharesHeldStake is not updated with rewards received
                     // by the candidate, rather the value of each share of candidate increases.
                     const auto =
-                        autoCompoundingSharesSupply == 0n
+                        autoCompoundingSharesSupply === 0n
                             ? 0n
                             : (autoCompoundingSharesOfCandidate * autoCompoundingSharesTotalStaked) /
                               autoCompoundingSharesSupply;

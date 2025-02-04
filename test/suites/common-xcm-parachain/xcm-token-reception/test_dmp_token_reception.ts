@@ -1,9 +1,9 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { KeyringPair, alith } from "@moonwall/util";
-import { ApiPromise, Keyring } from "@polkadot/api";
+import { type KeyringPair, alith } from "@moonwall/util";
+import { type ApiPromise, Keyring } from "@polkadot/api";
 import { u8aToHex } from "@polkadot/util";
 
-import { RawXcmMessage, XcmFragment, injectDmpMessageAndSeal } from "../../../util/xcm.ts";
+import { type RawXcmMessage, XcmFragment, injectDmpMessageAndSeal } from "../../../util/xcm.ts";
 import { RELAY_SOURCE_LOCATION, RELAY_SOURCE_LOCATION_2 } from "../../../util/constants.ts";
 
 describeSuite({
@@ -16,12 +16,12 @@ describeSuite({
         let alice: KeyringPair;
         let chain;
 
-        beforeAll(async function () {
+        beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             chain = polkadotJs.consts.system.version.specName.toString();
             // since in the future is likely that we are going to add this to containers, I leave it here
             alice =
-                chain == "frontier-template"
+                chain === "frontier-template"
                     ? alith
                     : new Keyring({ type: "sr25519" }).addFromUri("//Alice", {
                           name: "Alice default",
@@ -58,7 +58,7 @@ describeSuite({
         it({
             id: "T01",
             title: "Should succeed receiving tokens",
-            test: async function () {
+            test: async () => {
                 // Send an XCM and create block to execute it
                 const xcmMessage = new XcmFragment({
                     assets: [
@@ -100,7 +100,7 @@ describeSuite({
         it({
             id: "T02",
             title: "Should not succeed receiving tokens if asset rate is not defined",
-            test: async function () {
+            test: async () => {
                 // We register the token
                 const txSigned = polkadotJs.tx.sudo.sudo(
                     polkadotJs.tx.foreignAssetsCreator.createForeignAsset(

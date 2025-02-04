@@ -1,6 +1,6 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 
-import { ApiPromise } from "@polkadot/api";
+import type { ApiPromise } from "@polkadot/api";
 import { fetchWithdrawnAmount, fetchDepositedAmount } from "util/block";
 
 describeSuite({
@@ -17,7 +17,7 @@ describeSuite({
         it({
             id: "C03",
             title: "Supply variance is correct",
-            test: async function () {
+            test: async () => {
                 const latestBlock = await api.rpc.chain.getBlock();
 
                 const latestBlockHash = latestBlock.block.hash;

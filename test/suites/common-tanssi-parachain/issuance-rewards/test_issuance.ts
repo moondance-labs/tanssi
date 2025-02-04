@@ -1,6 +1,6 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
+import type { ApiPromise } from "@polkadot/api";
 import { fetchIssuance } from "util/block";
 
 describeSuite({
@@ -15,7 +15,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Issuance is the correct percentage",
-            test: async function () {
+            test: async () => {
                 const supplyBefore = (await polkadotJs.query.balances.totalIssuance()).toBigInt();
                 await context.createBlock();
 

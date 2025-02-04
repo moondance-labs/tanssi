@@ -1,8 +1,8 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
+import type { ApiPromise } from "@polkadot/api";
 import { readFileSync } from "fs";
-import { KeyringPair } from "@moonwall/util";
+import type { KeyringPair } from "@moonwall/util";
 
 describeSuite({
     id: "DTR1205",
@@ -28,7 +28,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Ethreum client should be able to receive an update for the next period when pushing all committee info",
-            test: async function () {
+            test: async () => {
                 // Next sync committee shold give us the default values
                 const nextSyncCommitteeBeforeUpdate = await polkadotJs.query.ethereumBeaconClient.nextSyncCommittee();
                 expect(nextSyncCommitteeBeforeUpdate.root.toHuman()).to.be.eq(

@@ -1,9 +1,9 @@
 import { beforeAll, deployCreateCompiledContract, describeSuite, expect } from "@moonwall/cli";
 import { ALITH_ADDRESS, BALTATHAR_ADDRESS, alith, createEthersTransaction } from "@moonwall/util";
-import { u16 } from "@polkadot/types-codec";
+import type { u16 } from "@polkadot/types-codec";
 import { mockAssetCreation, RELAY_SOURCE_LOCATION, relayAssetMetadata } from "../../../helpers/assets";
 
-import { Abi, encodeFunctionData } from "viem";
+import { type Abi, encodeFunctionData } from "viem";
 
 describeSuite({
     id: "DF1102",
@@ -49,7 +49,7 @@ describeSuite({
         it({
             id: "T01",
             title: "allows to approve transfers, and allowance matches",
-            test: async function () {
+            test: async () => {
                 const rawSigned = await createEthersTransaction(context, {
                     to: ADDRESS_ERC20,
                     data: encodeFunctionData({
@@ -79,7 +79,7 @@ describeSuite({
         it({
             id: "T02",
             title: "should gather the allowance",
-            test: async function () {
+            test: async () => {
                 const data = await context.viem().readContract({
                     address: ADDRESS_ERC20,
                     abi: erc20Abi,

@@ -1,7 +1,7 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
-import { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
+import type { KeyringPair } from "@moonwall/util";
 import { jumpToSession } from "../../../util/block";
 
 describeSuite({
@@ -19,7 +19,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Test using rootTestSendMsgToEth",
-            test: async function () {
+            test: async () => {
                 await jumpToSession(context, 1);
 
                 // Send test message to ethereum
@@ -48,12 +48,12 @@ describeSuite({
                 // Also a MessagesCommitted event with the same hash as the digest log
                 const events = await polkadotJs.query.system.events();
                 const ev1 = events.filter((a) => {
-                    return a.event.method == "MessagesCommitted";
+                    return a.event.method === "MessagesCommitted";
                 });
                 expect(ev1.length).to.be.equal(1);
                 const ev1Data = ev1[0].event.data[0].toJSON();
 
-                // logHex == 0x00 + ev1Data
+                // logHex === 0x00 + ev1Data
                 // Example:
                 // logHex: 0x0064cf0ef843ad5a26c2cc27cf345fe0fd8b72cd6297879caa626c4d72bbe4f9b0
                 // ev1Data:  0x64cf0ef843ad5a26c2cc27cf345fe0fd8b72cd6297879caa626c4d72bbe4f9b0
@@ -65,7 +65,7 @@ describeSuite({
         it({
             id: "E02",
             title: "Test using ethereumSystem.upgrade",
-            test: async function () {
+            test: async () => {
                 await jumpToSession(context, 1);
 
                 // Send test message to ethereum
@@ -93,12 +93,12 @@ describeSuite({
                 // Also a MessagesCommitted event with the same hash as the digest log
                 const events = await polkadotJs.query.system.events();
                 const ev1 = events.filter((a) => {
-                    return a.event.method == "MessagesCommitted";
+                    return a.event.method === "MessagesCommitted";
                 });
                 expect(ev1.length).to.be.equal(1);
                 const ev1Data = ev1[0].event.data[0].toJSON();
 
-                // logHex == 0x00 + ev1Data
+                // logHex === 0x00 + ev1Data
                 // Example:
                 // logHex: 0x0064cf0ef843ad5a26c2cc27cf345fe0fd8b72cd6297879caa626c4d72bbe4f9b0
                 // ev1Data:  0x64cf0ef843ad5a26c2cc27cf345fe0fd8b72cd6297879caa626c4d72bbe4f9b0
@@ -110,7 +110,7 @@ describeSuite({
         it({
             id: "E03",
             title: "Send too big message using rootTestSendMsgToEth",
-            test: async function () {
+            test: async () => {
                 await jumpToSession(context, 1);
 
                 // Send test message to ethereum
@@ -133,7 +133,7 @@ describeSuite({
                 // Also a MessagesCommitted event with the same hash as the digest log
                 const events = await polkadotJs.query.system.events();
                 const ev1 = events.filter((a) => {
-                    return a.event.method == "Sudid";
+                    return a.event.method === "Sudid";
                 });
                 expect(ev1.length).to.be.equal(1);
                 const ev1Data = ev1[0].event.data[0].toJSON();
@@ -144,7 +144,7 @@ describeSuite({
         it({
             id: "E04",
             title: "Send message of max size using rootTestSendMsgToEth",
-            test: async function () {
+            test: async () => {
                 await jumpToSession(context, 1);
 
                 // Send test message to ethereum
@@ -173,12 +173,12 @@ describeSuite({
                 // Also a MessagesCommitted event with the same hash as the digest log
                 const events = await polkadotJs.query.system.events();
                 const ev1 = events.filter((a) => {
-                    return a.event.method == "MessagesCommitted";
+                    return a.event.method === "MessagesCommitted";
                 });
                 expect(ev1.length).to.be.equal(1);
                 const ev1Data = ev1[0].event.data[0].toJSON();
 
-                // logHex == 0x00 + ev1Data
+                // logHex === 0x00 + ev1Data
                 // Example:
                 // logHex: 0x0064cf0ef843ad5a26c2cc27cf345fe0fd8b72cd6297879caa626c4d72bbe4f9b0
                 // ev1Data:  0x64cf0ef843ad5a26c2cc27cf345fe0fd8b72cd6297879caa626c4d72bbe4f9b0
@@ -190,7 +190,7 @@ describeSuite({
         it({
             id: "E05",
             title: "Send 100 messages using rootTestSendMsgToEth",
-            test: async function () {
+            test: async () => {
                 await jumpToSession(context, 1);
 
                 // Send test message to ethereum
@@ -219,12 +219,12 @@ describeSuite({
                 // Also a MessagesCommitted event with the same hash as the digest log
                 const events = await polkadotJs.query.system.events();
                 const ev1 = events.filter((a) => {
-                    return a.event.method == "MessagesCommitted";
+                    return a.event.method === "MessagesCommitted";
                 });
                 expect(ev1.length).to.be.equal(1);
                 const ev1Data = ev1[0].event.data[0].toJSON();
 
-                // logHex == 0x00 + ev1Data
+                // logHex === 0x00 + ev1Data
                 // Example:
                 // logHex: 0x0064cf0ef843ad5a26c2cc27cf345fe0fd8b72cd6297879caa626c4d72bbe4f9b0
                 // ev1Data:  0x64cf0ef843ad5a26c2cc27cf345fe0fd8b72cd6297879caa626c4d72bbe4f9b0

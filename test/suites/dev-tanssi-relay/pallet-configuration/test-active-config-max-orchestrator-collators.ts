@@ -6,7 +6,7 @@ describeSuite({
     title: "Configuration - ActiveConfig - MaxOrchestratorCollators",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
-        beforeAll(async function () {
+        beforeAll(async () => {
             const config = await context.polkadotJs().query.collatorConfiguration.activeConfig();
             expect(config["maxOrchestratorCollators"].toString()).toBe("0");
 
@@ -24,7 +24,7 @@ describeSuite({
         it({
             id: "T01",
             title: "should set max orchestrator collators after 2 sessions",
-            test: async function () {
+            test: async () => {
                 const config = await context.polkadotJs().query.collatorConfiguration.activeConfig();
                 expect(config["maxOrchestratorCollators"].toString()).toBe("2");
             },

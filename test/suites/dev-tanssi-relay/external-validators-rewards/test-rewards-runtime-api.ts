@@ -1,5 +1,5 @@
 import { beforeAll, customDevRpcRequest, describeSuite, expect } from "@moonwall/cli";
-import { ApiPromise, Keyring } from "@polkadot/api";
+import { type ApiPromise, Keyring } from "@polkadot/api";
 import { jumpToSession } from "util/block";
 
 describeSuite({
@@ -10,7 +10,7 @@ describeSuite({
         let polkadotJs: ApiPromise;
         let alice;
 
-        beforeAll(async function () {
+        beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             alice = context.keyring.alice;
         });
@@ -18,7 +18,7 @@ describeSuite({
         it({
             id: "T01",
             title: "Should succeed calling runtimeApi for generating/validating merkle proofs",
-            test: async function () {
+            test: async () => {
                 const keyring = new Keyring({ type: "sr25519" });
                 const aliceStash = keyring.addFromUri("//Alice//stash");
                 await context.createBlock();

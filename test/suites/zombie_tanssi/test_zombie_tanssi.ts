@@ -1,8 +1,8 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { MIN_GAS_PRICE, customWeb3Request, generateKeyringPair } from "@moonwall/util";
-import { ApiPromise, Keyring } from "@polkadot/api";
-import { Signer } from "ethers";
-import fs from "fs/promises";
+import { type ApiPromise, Keyring } from "@polkadot/api";
+import type { Signer } from "ethers";
+import fs from "node:fs/promises";
 import { getAuthorFromDigest, getAuthorFromDigestRange } from "../../util/author";
 import { signAndSendAndInclude, waitSessions } from "../../util/block";
 import { createTransfer, waitUntilEthTxIncluded } from "../../util/ethereum";
@@ -14,7 +14,7 @@ describeSuite({
     id: "P01",
     title: "Zombie Tanssi Test",
     foundationMethods: "zombie",
-    testCases: function ({ it, context }) {
+    testCases: ({ it, context }) => {
         let paraApi: ApiPromise;
         let relayApi: ApiPromise;
         let container2000Api: ApiPromise;
@@ -71,7 +71,7 @@ describeSuite({
         it({
             id: "T01",
             title: "Blocks are being produced on parachain",
-            test: async function () {
+            test: async () => {
                 const blockNum = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
                 expect(blockNum).to.be.greaterThan(0);
             },
@@ -80,7 +80,7 @@ describeSuite({
         it({
             id: "T03",
             title: "Test assignation did not change",
-            test: async function () {
+            test: async () => {
                 const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
                 // TODO: fix once we have types
                 const allCollators = (
@@ -106,7 +106,7 @@ describeSuite({
         it({
             id: "T04",
             title: "Blocks are being produced on container 2000",
-            test: async function () {
+            test: async () => {
                 const blockNum = (await container2000Api.rpc.chain.getBlock()).block.header.number.toNumber();
                 expect(blockNum).to.be.greaterThan(0);
             },
@@ -115,7 +115,7 @@ describeSuite({
         it({
             id: "T05",
             title: "Blocks are being produced on container 2001",
-            test: async function () {
+            test: async () => {
                 const blockNum = (await container2001Api.rpc.chain.getBlock()).block.header.number.toNumber();
 
                 expect(blockNum).to.be.greaterThan(0);
@@ -126,7 +126,7 @@ describeSuite({
         it({
             id: "T06",
             title: "Test container chain 2000 assignation is correct",
-            test: async function () {
+            test: async () => {
                 const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
                 const paraId = (await container2000Api.query.parachainInfo.parachainId()).toString();
                 const containerChainCollators = (
@@ -143,7 +143,7 @@ describeSuite({
         it({
             id: "T07",
             title: "Test container chain 2001 assignation is correct",
-            test: async function () {
+            test: async () => {
                 const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
                 const paraId = (await container2001Api.query.parachainInfo.parachainId()).toString();
                 const containerChainCollators = (
@@ -160,7 +160,7 @@ describeSuite({
             id: "T08",
             title: "Test author noting is correct for both containers",
             timeout: 60000,
-            test: async function () {
+            test: async () => {
                 const assignment = await paraApi.query.collatorAssignment.collatorContainerChain();
                 const paraId2000 = await container2000Api.query.parachainInfo.parachainId();
                 const paraId2001 = await container2001Api.query.parachainInfo.parachainId();
@@ -181,7 +181,7 @@ describeSuite({
         it({
             id: "T09",
             title: "Test author is correct in Orchestrator",
-            test: async function () {
+            test: async () => {
                 const sessionIndex = (await paraApi.query.session.currentIndex()).toNumber();
                 const authorities = await paraApi.query.authorityAssignment.collatorContainerChain(sessionIndex);
                 const author = await getAuthorFromDigest(paraApi);
@@ -193,7 +193,7 @@ describeSuite({
         it({
             id: "T10",
             title: "Test frontier template isEthereum",
-            test: async function () {
+            test: async () => {
                 // TODO: fix once we have types
                 const genesisData2000 = await paraApi.query.registrar.paraGenesisData(2000);
                 expect(genesisData2000.toJSON().properties.isEthereum).to.be.false;
@@ -205,7 +205,7 @@ describeSuite({
             id: "T11",
             title: "Transactions can be made with ethers",
             timeout: 30000,
-            test: async function () {
+            test: async () => {
                 const randomAccount = generateKeyringPair();
                 const tx = await createTransfer(context, randomAccount.address, 1_000_000_000_000, {
                     gasPrice: MIN_GAS_PRICE,
@@ -224,7 +224,7 @@ describeSuite({
             id: "T12",
             title: "Test live registration of container chain 2002",
             timeout: 300000,
-            test: async function () {
+            test: async () => {
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 
@@ -297,7 +297,7 @@ describeSuite({
             id: "T13",
             title: "Blocks are being produced on container 2002",
             timeout: 120000,
-            test: async function () {
+            test: async () => {
                 // Wait 3 blocks because the next test needs to get a non empty value from
                 // container2002Api.query.authoritiesNoting()
                 await context.waitBlock(3, "Container2002");
@@ -307,7 +307,7 @@ describeSuite({
         it({
             id: "T14",
             title: "Test container chain 2002 assignation is correct",
-            test: async function () {
+            test: async () => {
                 const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
                 const paraId = (await container2002Api.query.parachainInfo.parachainId()).toString();
                 // TODO: fix once we have types
@@ -325,7 +325,7 @@ describeSuite({
             id: "T15",
             title: "Deregister container chain 2002, collators should move to tanssi",
             timeout: 300000,
-            test: async function () {
+            test: async () => {
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 
@@ -357,7 +357,7 @@ describeSuite({
         it({
             id: "T16",
             title: "Count number of tanssi collators before and during 2002 chain",
-            test: async function () {
+            test: async () => {
                 // This test depends on T12 and T15 to set blockNumber2002Start and blockNumber2002End
                 // The block range must start and end on session boundaries
                 expect(blockNumber2002Start % sessionPeriod).to.be.equal(0);
@@ -427,7 +427,7 @@ describeSuite({
             id: "T17",
             title: "Count number of tanssi collators after 2002 chain",
             timeout: 120000,
-            test: async function () {
+            test: async () => {
                 // This test depends on T12 and T15 to set blockNumber2002Start and blockNumber2002End
                 const blockNum = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
                 if (blockNum < blockNumber2002End + sessionPeriod - 1) {
@@ -449,7 +449,7 @@ describeSuite({
             id: "T18",
             title: "Check collator logs to ensure common errors are fixed",
             timeout: 300000,
-            test: async function () {
+            test: async () => {
                 const logs = [
                     "/Collator1000-01.log",
                     "/Collator1000-02.log",
@@ -528,7 +528,7 @@ async function countUniqueBlockAuthors(
     // This test can also fail if the values are close, because collators sometimes fail to produce a block.
     // For optimal results use a value of `numAuthors` that is much smaller than `sessionPeriod`.
     expect(numAuthors).toBeLessThanOrEqual(sessionPeriod);
-    // If the authority set changes at any point, the assumption that numAuthors == authorities.len is not valid:
+    // If the authority set changes at any point, the assumption that numAuthors === authorities.len is not valid:
     // we can always have 1 collator assigned to this chain, but if the authority set changes once in the middle of this
     // test, we will see 2 different block authors. We detect that and return an error, the caller is expected to avoid
     // this case by passing a different block range.
@@ -552,7 +552,7 @@ async function countUniqueBlockAuthors(
 
     const uniq = [...new Set(actualAuthors)];
 
-    if (uniq.length > numAuthors || (uniq.length == 1 && numAuthors > 1)) {
+    if (uniq.length > numAuthors || (uniq.length === 1 && numAuthors > 1)) {
         console.error(
             "Mismatch between authorities and actual block authors: authorities: ",
             formatAuthoritySets(authoritiesBySession),

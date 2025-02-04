@@ -1,9 +1,9 @@
 import "@tanssi/api-augment";
-import { ApiDecoration } from "@polkadot/api/types";
+import type { ApiDecoration } from "@polkadot/api/types";
 import chalk from "chalk";
 import { expect, beforeAll, describeSuite } from "@moonwall/cli";
 import type { PalletProxyProxyDefinition } from "@polkadot/types/lookup";
-import { ApiPromise } from "@polkadot/api";
+import type { ApiPromise } from "@polkadot/api";
 
 describeSuite({
     id: "S04",
@@ -12,11 +12,11 @@ describeSuite({
     testCases: ({ context, it, log }) => {
         const proxiesPerAccount: { [account: string]: PalletProxyProxyDefinition[] } = {};
         const proxyAccList: string[] = [];
-        let atBlockNumber: number = 0;
+        let atBlockNumber = 0;
         let apiAt: ApiDecoration<"promise">;
         let paraApi: ApiPromise;
 
-        beforeAll(async function () {
+        beforeAll(async () => {
             paraApi = context.polkadotJs("para");
             const limit = 1000;
             let last_key = "";
@@ -26,7 +26,7 @@ describeSuite({
             // (to avoid inconsistency querying over multiple block when the test takes a long time to
             // query data and blocks are being produced)
             atBlockNumber = process.env.BLOCK_NUMBER
-                ? parseInt(process.env.BLOCK_NUMBER)
+                ? Number.parseInt(process.env.BLOCK_NUMBER)
                 : (await paraApi.rpc.chain.getHeader()).number.toNumber();
             apiAt = await paraApi.at(await paraApi.rpc.chain.getBlockHash(atBlockNumber));
 
@@ -37,7 +37,7 @@ describeSuite({
                     startKey: last_key,
                 });
 
-                if (query.length == 0) {
+                if (query.length === 0) {
                     break;
                 }
                 count += query.length;
@@ -52,7 +52,7 @@ describeSuite({
 
                 // log logs to make sure it keeps progressing
                 // TEMPLATE: Adapt log line
-                if (count % (10 * limit) == 0) {
+                if (count % (10 * limit) === 0) {
                     log(`Retrieved ${count} proxies`);
                 }
             }
@@ -65,7 +65,7 @@ describeSuite({
             id: "C100",
             title: "should have no more than the maximum allowed proxies",
             timeout: 240000,
-            test: async function () {
+            test: async () => {
                 const maxProxies = paraApi.consts.proxy.maxProxies.toNumber();
                 const failedProxies: { accountId: string; proxiesCount: number }[] = [];
 
@@ -98,7 +98,7 @@ describeSuite({
         it({
             id: "C200",
             title: "should have a maximum allowed proxies of 32",
-            test: async function () {
+            test: async () => {
                 const runtimeName = paraApi.runtimeVersion.specName.toString();
                 const maxProxies = (await paraApi.consts.proxy.maxProxies).toNumber();
 

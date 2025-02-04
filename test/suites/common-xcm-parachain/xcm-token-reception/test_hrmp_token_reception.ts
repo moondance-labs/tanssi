@@ -1,9 +1,9 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { KeyringPair, alith } from "@moonwall/util";
-import { ApiPromise, Keyring } from "@polkadot/api";
+import { type KeyringPair, alith } from "@moonwall/util";
+import { type ApiPromise, Keyring } from "@polkadot/api";
 import { u8aToHex } from "@polkadot/util";
 
-import { RawXcmMessage, XcmFragment, injectHrmpMessageAndSeal } from "../../../util/xcm.ts";
+import { type RawXcmMessage, XcmFragment, injectHrmpMessageAndSeal } from "../../../util/xcm.ts";
 import { STATEMINT_LOCATION_EXAMPLE } from "../../../util/constants.ts";
 
 describeSuite({
@@ -16,12 +16,12 @@ describeSuite({
         let alice: KeyringPair;
         let chain;
 
-        beforeAll(async function () {
+        beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             chain = polkadotJs.consts.system.version.specName.toString();
             // since in the future is likely that we are going to add this to containers, I leave it here
             alice =
-                chain == "frontier-template"
+                chain === "frontier-template"
                     ? alith
                     : new Keyring({ type: "sr25519" }).addFromUri("//Alice", {
                           name: "Alice default",
@@ -58,7 +58,7 @@ describeSuite({
         it({
             id: "T01",
             title: "Should succeed receiving tokens",
-            test: async function () {
+            test: async () => {
                 // Send an XCM and create block to execute it
                 const xcmMessage = new XcmFragment({
                     assets: [

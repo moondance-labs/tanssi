@@ -1,6 +1,6 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
+import type { ApiPromise } from "@polkadot/api";
 import { jumpToSession } from "util/block";
 
 describeSuite({
@@ -18,7 +18,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Collator should rotate",
-            test: async function () {
+            test: async () => {
                 const fullRotationPeriod = (await context.polkadotJs().query.configuration.activeConfig())[
                     "fullRotationPeriod"
                 ].toString();

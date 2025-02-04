@@ -1,6 +1,6 @@
 import { expect, beforeAll, describeSuite, fetchCompiledContract, deployCreateCompiledContract } from "@moonwall/cli";
 import { ALITH_ADDRESS, BALTATHAR_ADDRESS, BALTATHAR_PRIVATE_KEY, createViemTransaction } from "@moonwall/util";
-import { Abi, encodeFunctionData, fromHex } from "viem";
+import { type Abi, encodeFunctionData, fromHex } from "viem";
 import { expectEVMResult } from "../../../helpers";
 import { getSignatureParameters } from "util/ethereum";
 
@@ -15,7 +15,7 @@ describeSuite({
         let callPermitDemoAddr: `0x${string}`;
         let callPermitAbi: Abi;
 
-        beforeAll(async function () {
+        beforeAll(async () => {
             const { abi: demoAbi, contractAddress } = await deployCreateCompiledContract(context, "CallPermitDemo", {
                 gas: 5_000_000n,
             });
@@ -145,7 +145,7 @@ describeSuite({
         it({
             id: "T01",
             title: "should have bonds for baltathar and alith in contract balance",
-            test: async function () {
+            test: async () => {
                 const freeBalance = (
                     await context.polkadotJs().query.system.account(callPermitDemoAddr)
                 ).data.free.toNumber();
@@ -156,7 +156,7 @@ describeSuite({
         it({
             id: "T02",
             title: "should have bond for baltathar in contract storage",
-            test: async function () {
+            test: async () => {
                 const baltatharBond = (
                     await context.viem().call({
                         to: callPermitDemoAddr,
@@ -174,7 +174,7 @@ describeSuite({
         it({
             id: "T03",
             title: "should have bond for alith in contract storage",
-            test: async function () {
+            test: async () => {
                 const alithBond = (
                     await context.viem().call({
                         to: callPermitDemoAddr,

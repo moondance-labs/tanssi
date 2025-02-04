@@ -8,7 +8,7 @@ describeSuite({
         it({
             id: "T01",
             title: "should not set storage item if not sudo",
-            test: async function () {
+            test: async () => {
                 const orchestratorParaId = await context.polkadotJs().query.authoritiesNoting.orchestratorParaId();
                 expect(orchestratorParaId.toString()).toBe("1000");
 
@@ -27,7 +27,7 @@ describeSuite({
         it({
             id: "T02",
             title: "should set storage item via sudo",
-            test: async function () {
+            test: async () => {
                 const orchestratorParaId = await context.polkadotJs().query.authoritiesNoting.orchestratorParaId();
                 expect(orchestratorParaId.toString()).toBe("1000");
 

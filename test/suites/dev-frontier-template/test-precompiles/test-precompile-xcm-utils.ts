@@ -1,7 +1,7 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect } from "@moonwall/cli";
 import { GLMR, extractWeight, generateKeyringPair } from "@moonwall/util";
-import { XcmVersionedXcm } from "@polkadot/types/lookup";
+import type { XcmVersionedXcm } from "@polkadot/types/lookup";
 import { u8aToHex } from "@polkadot/util";
 import { expectEVMResult, descendOriginFromAddress20 } from "../../../helpers";
 
@@ -16,7 +16,7 @@ describeSuite({
         it({
             id: "T01",
             title: "allows to retrieve parent-based ML account",
-            test: async function () {
+            test: async () => {
                 const multilocation: [number, any[]] = [1, []];
                 const expectedAddress = u8aToHex(new Uint8Array([...new TextEncoder().encode("Parent")]))
                     .padEnd(42, "0")
@@ -38,7 +38,7 @@ describeSuite({
         it({
             id: "T02",
             title: "allows to retrieve parachain-based ML account",
-            test: async function () {
+            test: async () => {
                 const x2_parachain_asset_enum_selector = "0x00";
                 const x2_parachain_id = "000007D0";
                 const paraId = context.polkadotJs().createType("ParaId", 2000);
@@ -69,7 +69,7 @@ describeSuite({
         it({
             id: "T03",
             title: "allows to retrieve generic ML-based derivated account",
-            test: async function () {
+            test: async () => {
                 const x2_parachain_asset_enum_selector = "0x00";
                 const x2_parachain_id = "00000001";
 
@@ -109,7 +109,7 @@ describeSuite({
         it({
             id: "T04",
             title: "allows to retrieve weight of message",
-            test: async function () {
+            test: async () => {
                 const message = {
                     V2: [
                         {
@@ -143,7 +143,7 @@ describeSuite({
         it({
             id: "T05",
             title: "allows to retrieve units per second for an asset",
-            test: async function () {
+            test: async () => {
                 // Junction::PalletInstance(3)
                 const x2_pallet_instance_enum_selector = "0x04";
                 const x2_instance = "0A";
@@ -179,7 +179,7 @@ describeSuite({
         it({
             id: "T06",
             title: "allows to execute a custom xcm message",
-            test: async function () {
+            test: async () => {
                 const random = generateKeyringPair();
 
                 const transferCall = context.polkadotJs().tx.balances.transferAllowDeath(random.address, 1n * GLMR);
@@ -289,7 +289,7 @@ describeSuite({
         it({
             id: "T08",
             title: "does not allow to self-send a custom xcm message",
-            test: async function () {
+            test: async () => {
                 const ownParaId = (await context.polkadotJs().query.parachainInfo.parachainId()) as any;
                 const x1_parachain_asset_enum_selector = "0x00";
                 const x1_parachain_id = ownParaId.toHex().slice(2);
@@ -413,7 +413,7 @@ describeSuite({
         it({
             id: "T09",
             title: "allows to send a custom xcm message",
-            test: async function () {
+            test: async () => {
                 // Sending it to the relay
                 // { parents:1, Here}
                 const dest = [

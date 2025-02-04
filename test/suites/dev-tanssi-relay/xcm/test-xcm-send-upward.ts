@@ -1,9 +1,9 @@
 import { beforeAll, customDevRpcRequest, describeSuite, expect } from "@moonwall/cli";
-import { generateKeyringPair, KeyringPair } from "@moonwall/util";
-import { ApiPromise, Keyring } from "@polkadot/api";
+import { generateKeyringPair, type KeyringPair } from "@moonwall/util";
+import { type ApiPromise, Keyring } from "@polkadot/api";
 import { u8aToHex } from "@polkadot/util";
 import { jumpToSession } from "util/block";
-import { injectUmpMessageAndSeal, RawXcmMessage, XcmFragment } from "../../../util/xcm";
+import { injectUmpMessageAndSeal, type RawXcmMessage, XcmFragment } from "../../../util/xcm";
 
 describeSuite({
     id: "DTR1003",
@@ -15,7 +15,7 @@ describeSuite({
         let random: KeyringPair;
         let transferredBalance;
 
-        beforeAll(async function () {
+        beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             alice = new Keyring({ type: "sr25519" }).addFromUri("//Alice", {
                 name: "Alice default",
@@ -52,7 +52,7 @@ describeSuite({
         it({
             id: "T01",
             title: "Should succeed receiving tokens",
-            test: async function () {
+            test: async () => {
                 const balanceRandomBefore = (
                     await polkadotJs.query.system.account(random.address)
                 ).data.free.toBigInt();

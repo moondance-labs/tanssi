@@ -1,9 +1,9 @@
-import { DevModeContext, expect, ZombieContext } from "@moonwall/cli";
+import { type DevModeContext, expect, type ZombieContext } from "@moonwall/cli";
 import { filterAndApply } from "@moonwall/util";
 
-import { ApiPromise } from "@polkadot/api";
-import { AccountId32, EventRecord } from "@polkadot/types/interfaces";
-import { Vec, u8, u32, bool } from "@polkadot/types-codec";
+import type { ApiPromise } from "@polkadot/api";
+import type { AccountId32, EventRecord } from "@polkadot/types/interfaces";
+import type { Vec, u8, u32, bool } from "@polkadot/types-codec";
 import { TypeRegistry } from "@polkadot/types";
 
 export async function jumpSessions(context: DevModeContext, count: number): Promise<string | null> {
@@ -190,7 +190,7 @@ export function fetchIssuance(events: EventRecord[] = []) {
         ({ event }: EventRecord) => event.data as unknown as { amount: u128 }
     );
 
-    if (filtered.length == 0) {
+    if (filtered.length === 0) {
         return { amount: new TypeRegistry().createType("u128", 0) };
     }
     return filtered[0];
@@ -369,7 +369,7 @@ export async function fetchStorageProofFromValidationData(polkadotJs) {
         const {
             method: { method, section },
         } = ex;
-        return section == "parachainSystem" && method == "setValidationData";
+        return section === "parachainSystem" && method === "setValidationData";
     });
     // Error handling if not found
     if (!ex) {
@@ -399,7 +399,7 @@ export async function isEventEmittedInTheNextBlocks(
         await context.waitBlock(1, chainName);
         const currentBlockEvents = await api.query.system.events();
         const filteredEvents = currentBlockEvents.filter((a) => {
-            return a.event.method == eventName;
+            return a.event.method === eventName;
         });
         if (filteredEvents.length > 0) {
             return true;

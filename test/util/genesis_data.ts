@@ -1,6 +1,6 @@
 /// Utilities to convert from ChainSpec to ContainerChainGenesisData and back
 
-import { ApiPromise } from "@polkadot/api";
+import type { ApiPromise } from "@polkadot/api";
 import { hexToString, stringToHex } from "@polkadot/util";
 
 export function chainSpecToContainerChainGenesisData(paraApi: ApiPromise, chainSpec: any): any {
@@ -84,6 +84,6 @@ export function onChainPropertiesToChainSpecProperties(properties: any): any {
         tokenSymbol: hexToString(properties.tokenMetadata.tokenSymbol.toHex()),
         ss58Format: properties.tokenMetadata.ss58Format.toNumber(),
         tokenDecimals: properties.tokenMetadata.tokenDecimals.toNumber(),
-        isEthereum: properties.isEthereum == true ? true : false,
+        isEthereum: properties.isEthereum === true ? true : false,
     };
 }

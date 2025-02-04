@@ -1,18 +1,18 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { ApiPromise, Keyring } from "@polkadot/api";
+import { type ApiPromise, Keyring } from "@polkadot/api";
 import { u8aToHex, stringToHex } from "@polkadot/util";
 import { decodeAddress } from "@polkadot/util-crypto";
 import { getAuthorFromDigest } from "../../util/author";
 import { signAndSendAndInclude, waitSessions } from "../../util/block";
 import { getKeyringNimbusIdHex } from "../../util/keys";
 import { getHeaderFromRelay } from "../../util/relayInterface";
-import fs from "fs/promises";
+import fs from "node:fs/promises";
 
 describeSuite({
     id: "W01",
     title: "Zombie Tanssi Warp Sync Test",
     foundationMethods: "zombie",
-    testCases: function ({ it, context }) {
+    testCases: ({ it, context }) => {
         let paraApi: ApiPromise;
         let relayApi: ApiPromise;
         let container2000Api: ApiPromise;
@@ -44,7 +44,7 @@ describeSuite({
         it({
             id: "T01",
             title: "Blocks are being produced on parachain",
-            test: async function () {
+            test: async () => {
                 const blockNum = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
                 expect(blockNum).to.be.greaterThan(0);
             },
@@ -53,7 +53,7 @@ describeSuite({
         it({
             id: "T03",
             title: "Test assignation did not change",
-            test: async function () {
+            test: async () => {
                 const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
                 // TODO: fix once we have types
                 const allCollators = (
@@ -77,7 +77,7 @@ describeSuite({
         it({
             id: "T04",
             title: "Blocks are being produced on container 2000",
-            test: async function () {
+            test: async () => {
                 const blockNum = (await container2000Api.rpc.chain.getBlock()).block.header.number.toNumber();
                 expect(blockNum).to.be.greaterThan(0);
             },
@@ -86,7 +86,7 @@ describeSuite({
         it({
             id: "T06",
             title: "Test container chain 2000 assignation is correct",
-            test: async function () {
+            test: async () => {
                 const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
                 const paraId = (await container2000Api.query.parachainInfo.parachainId()).toString();
                 const containerChainCollators = (
@@ -104,7 +104,7 @@ describeSuite({
             id: "T08",
             title: "Test author noting is correct for both containers",
             timeout: 60000,
-            test: async function () {
+            test: async () => {
                 const assignment = await paraApi.query.collatorAssignment.collatorContainerChain();
                 const paraId2000 = await container2000Api.query.parachainInfo.parachainId();
 
@@ -121,7 +121,7 @@ describeSuite({
         it({
             id: "T09",
             title: "Test author is correct in Orchestrator",
-            test: async function () {
+            test: async () => {
                 const sessionIndex = (await paraApi.query.session.currentIndex()).toNumber();
                 const authorities = await paraApi.query.authorityAssignment.collatorContainerChain(sessionIndex);
                 const author = await getAuthorFromDigest(paraApi);
@@ -133,7 +133,7 @@ describeSuite({
         it({
             id: "T10",
             title: "Test frontier template isEthereum",
-            test: async function () {
+            test: async () => {
                 // TODO: fix once we have types
                 const genesisData2000 = await paraApi.query.registrar.paraGenesisData(2000);
                 expect(genesisData2000.toJSON().properties.isEthereum).to.be.false;
@@ -144,7 +144,7 @@ describeSuite({
             id: "T12",
             title: "Test warp sync: collator rotation from tanssi to container with blocks",
             timeout: 300000,
-            test: async function () {
+            test: async () => {
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 
@@ -162,7 +162,7 @@ describeSuite({
                 const invuln = (await paraApi.query.invulnerables.invulnerables()).toJSON();
 
                 const invulnerable_to_remove = invuln.filter((addr) => {
-                    return u8aToHex(decodeAddress(addr)) == getKeyringNimbusIdHex("Collator2000-02");
+                    return u8aToHex(decodeAddress(addr)) === getKeyringNimbusIdHex("Collator2000-02");
                 })[0];
 
                 const tx = paraApi.tx.invulnerables.removeInvulnerable(invulnerable_to_remove);
@@ -177,7 +177,7 @@ describeSuite({
                         await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)
                     ).toJSON();
                     // Stop waiting if orchestrator chain has 2 collators instead of 3
-                    return allCollators.orchestratorChain.length == 2;
+                    return allCollators.orchestratorChain.length === 2;
                 });
 
                 // Collator1000-03 should rotate to container chain 2000
@@ -215,7 +215,7 @@ describeSuite({
             id: "T13",
             title: "Collator1000-03 is producing blocks on Container 2000",
             timeout: 300000,
-            test: async function () {
+            test: async () => {
                 const blockStart = (await container2000Api.rpc.chain.getBlock()).block.header.number.toNumber() - 3;
                 // Wait up to 8 blocks, giving the new collator 4 chances to build a block
                 const blockEnd = blockStart + 8;
@@ -227,15 +227,15 @@ describeSuite({
                     const apiAt = await container2000Api.at(blockHash);
                     const digests = (await apiAt.query.system.digest()).logs;
                     const filtered = digests.filter(
-                        (log) => log.isPreRuntime === true && log.asPreRuntime[0].toHex() == stringToHex("nmbs")
+                        (log) => log.isPreRuntime === true && log.asPreRuntime[0].toHex() === stringToHex("nmbs")
                     );
                     const author = filtered[0].asPreRuntime[1].toHex();
                     authors.push(author);
-                    if (author == getKeyringNimbusIdHex("Collator1000-03")) {
+                    if (author === getKeyringNimbusIdHex("Collator1000-03")) {
                         break;
                     }
                     const currentBlock = (await container2000Api.rpc.chain.getBlock()).block.header.number.toNumber();
-                    if (currentBlock == blockNumber) {
+                    if (currentBlock === blockNumber) {
                         await context.waitBlock(1, "Container2000");
                     }
                 }
@@ -248,7 +248,7 @@ describeSuite({
             id: "T14",
             title: "Check Collator1000-03.log to ensure it used warp sync",
             timeout: 300000,
-            test: async function () {
+            test: async () => {
                 // Use collator logs to ensure that it used warp sync to first the first time.
                 // Not ideal because logs can change, but better than nothing.
                 const logFilePath = getTmpZombiePath() + "/Collator1000-03.log";
@@ -270,7 +270,7 @@ describeSuite({
             id: "T15",
             title: "Check Collator2000-02.log to ensure shutdown error bug is fixed",
             timeout: 300000,
-            test: async function () {
+            test: async () => {
                 const logFilePath = getTmpZombiePath() + "/Collator2000-02.log";
                 await checkLogsNotExist(logFilePath, [
                     "Entering off-chain worker.",

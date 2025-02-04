@@ -1,8 +1,8 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { MIN_GAS_PRICE, customWeb3Request, generateKeyringPair } from "@moonwall/util";
-import { ApiPromise, Keyring } from "@polkadot/api";
-import { Signer } from "ethers";
-import fs from "fs/promises";
+import { type ApiPromise, Keyring } from "@polkadot/api";
+import type { Signer } from "ethers";
+import fs from "node:fs/promises";
 import { getAuthorFromDigest } from "../../util/author";
 import { signAndSendAndInclude, waitToSession } from "../../util/block";
 import { createTransfer, waitUntilEthTxIncluded } from "../../util/ethereum";
@@ -13,7 +13,7 @@ describeSuite({
     id: "R01",
     title: "Zombie Tanssi Rotation Test",
     foundationMethods: "zombie",
-    testCases: function ({ it, context }) {
+    testCases: ({ it, context }) => {
         let paraApi: ApiPromise;
         let relayApi: ApiPromise;
         let container2000Api: ApiPromise;
@@ -81,7 +81,7 @@ describeSuite({
         it({
             id: "T01",
             title: "Blocks are being produced on parachain",
-            test: async function () {
+            test: async () => {
                 const blockNum = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
                 expect(blockNum).to.be.greaterThan(0);
             },
@@ -91,7 +91,7 @@ describeSuite({
             id: "T02",
             title: "Set 1 collator per parachain, and full_rotation every 5 sessions",
             timeout: 120000,
-            test: async function () {
+            test: async () => {
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 
@@ -107,7 +107,7 @@ describeSuite({
         it({
             id: "T03",
             title: "Test assignation did not change",
-            test: async function () {
+            test: async () => {
                 const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
                 // TODO: fix once we have types
                 const allCollators = (
@@ -133,7 +133,7 @@ describeSuite({
         it({
             id: "T04",
             title: "Blocks are being produced on container 2000",
-            test: async function () {
+            test: async () => {
                 const blockNum = (await container2000Api.rpc.chain.getBlock()).block.header.number.toNumber();
                 expect(blockNum).to.be.greaterThan(0);
             },
@@ -142,7 +142,7 @@ describeSuite({
         it({
             id: "T05",
             title: "Blocks are being produced on container 2001",
-            test: async function () {
+            test: async () => {
                 const blockNum = (await container2001Api.rpc.chain.getBlock()).block.header.number.toNumber();
 
                 expect(blockNum).to.be.greaterThan(0);
@@ -153,7 +153,7 @@ describeSuite({
         it({
             id: "T06",
             title: "Test container chain 2000 assignation is correct",
-            test: async function () {
+            test: async () => {
                 const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
                 const paraId = (await container2000Api.query.parachainInfo.parachainId()).toString();
                 const containerChainCollators = (
@@ -170,7 +170,7 @@ describeSuite({
         it({
             id: "T07",
             title: "Test container chain 2001 assignation is correct",
-            test: async function () {
+            test: async () => {
                 const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
                 const paraId = (await container2001Api.query.parachainInfo.parachainId()).toString();
                 const containerChainCollators = (
@@ -187,7 +187,7 @@ describeSuite({
             id: "T08",
             title: "Test author noting is correct for both containers",
             timeout: 120000,
-            test: async function () {
+            test: async () => {
                 const assignment = await paraApi.query.collatorAssignment.collatorContainerChain();
                 const paraId2000 = await container2000Api.query.parachainInfo.parachainId();
                 const paraId2001 = await container2001Api.query.parachainInfo.parachainId();
@@ -208,7 +208,7 @@ describeSuite({
         it({
             id: "T09",
             title: "Test author is correct in Orchestrator",
-            test: async function () {
+            test: async () => {
                 const sessionIndex = (await paraApi.query.session.currentIndex()).toNumber();
                 const authorities = await paraApi.query.authorityAssignment.collatorContainerChain(sessionIndex);
                 const author = await getAuthorFromDigest(paraApi);
@@ -220,7 +220,7 @@ describeSuite({
         it({
             id: "T10",
             title: "Test frontier template isEthereum",
-            test: async function () {
+            test: async () => {
                 // TODO: fix once we have types
                 const genesisData2000 = await paraApi.query.registrar.paraGenesisData(2000);
                 expect(genesisData2000.toJSON().properties.isEthereum).to.be.false;
@@ -232,7 +232,7 @@ describeSuite({
             id: "T11",
             title: "Transactions can be made with ethers",
             timeout: 120000,
-            test: async function () {
+            test: async () => {
                 const randomAccount = generateKeyringPair();
                 const tx = await createTransfer(context, randomAccount.address, 1_000_000_000_000, {
                     gasPrice: MIN_GAS_PRICE,
@@ -250,7 +250,7 @@ describeSuite({
             id: "T12",
             title: "On session 3 we have 1 collator per chain",
             timeout: 240000,
-            test: async function () {
+            test: async () => {
                 await waitToSession(context, paraApi, 3);
 
                 // The node detects assignment when the block is finalized, but "waitSessions" ignores finality.
@@ -270,7 +270,7 @@ describeSuite({
             id: "T13",
             title: "On session 4 collators start syncing the new chains",
             timeout: 240000,
-            test: async function () {
+            test: async () => {
                 await waitToSession(context, paraApi, 4);
 
                 // The node detects assignment when the block is finalized, but "waitSessions" ignores finality.
@@ -325,7 +325,7 @@ describeSuite({
             id: "T14",
             title: "On session 5 collators stop the previously assigned chains",
             timeout: 240000,
-            test: async function () {
+            test: async () => {
                 await waitToSession(context, paraApi, 5);
                 const assignment = await paraApi.query.collatorAssignment.collatorContainerChain();
                 expect(assignment.toJSON()).to.deep.equal(assignment5);
@@ -374,7 +374,7 @@ describeSuite({
         it({
             id: "T15",
             title: "Blocks are being produced on container 2000",
-            test: async function () {
+            test: async () => {
                 await context.waitBlock(1, "Container2000");
             },
         });
@@ -382,7 +382,7 @@ describeSuite({
         it({
             id: "T16",
             title: "Blocks are being produced on container 2001",
-            test: async function () {
+            test: async () => {
                 await context.waitBlock(1, "Container2001");
             },
         });

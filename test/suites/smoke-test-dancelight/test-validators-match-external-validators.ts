@@ -1,7 +1,7 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
-import { U32, Vec } from "@polkadot/types-codec";
-import { AccountId32 } from "@polkadot/types/interfaces";
+import type { ApiPromise } from "@polkadot/api";
+import type { U32, Vec } from "@polkadot/types-codec";
+import type { AccountId32 } from "@polkadot/types/interfaces";
 
 describeSuite({
     id: "S23",
@@ -18,13 +18,13 @@ describeSuite({
             id: "C01",
             title: "Validators should match external validators",
 
-            test: async function () {
+            test: async () => {
                 // Find the last block in which the era changed
                 const currentEra = await api.query.externalValidators.currentEra<U32>();
                 let blockToCheck = (await api.query.babe.epochStart()).toJSON()[1];
                 let apiBeforeLatestNewSession = await api.at(await api.rpc.chain.getBlockHash(blockToCheck - 1));
 
-                while (currentEra == (await apiBeforeLatestNewSession.query.externalValidators.currentEra<U32>())) {
+                while (currentEra === (await apiBeforeLatestNewSession.query.externalValidators.currentEra<U32>())) {
                     blockToCheck = (await apiBeforeLatestNewSession.query.babe.epochStart()).toJSON()[1];
                     apiBeforeLatestNewSession = await api.at(await api.rpc.chain.getBlockHash(blockToCheck - 1));
                 }

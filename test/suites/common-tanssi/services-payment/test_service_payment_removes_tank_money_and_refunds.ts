@@ -1,7 +1,7 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
-import { KeyringPair, generateKeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
+import { type KeyringPair, generateKeyringPair } from "@moonwall/util";
 import { jumpSessions } from "util/block";
 import { paraIdTank } from "util/payment";
 
@@ -39,7 +39,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Sudo can set refund address",
-            test: async function () {
+            test: async () => {
                 // We deregister the chain
                 const setRefundAddress = polkadotJs.tx.sudo.sudo(
                     polkadotJs.tx.servicesPayment.setRefundAddress(paraId2001, refundAddress.address)
@@ -53,7 +53,7 @@ describeSuite({
         it({
             id: "E02",
             title: "On deregistration we refund the address",
-            test: async function () {
+            test: async () => {
                 // We deregister the chain
                 const deregister2001 = polkadotJs.tx.sudo.sudo(registerAlias.deregister(paraId2001));
                 await context.createBlock([await deregister2001.signAsync(alice)]);

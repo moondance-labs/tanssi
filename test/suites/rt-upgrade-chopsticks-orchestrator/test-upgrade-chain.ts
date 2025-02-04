@@ -1,13 +1,13 @@
 import { MoonwallContext, beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { generateKeyringPair } from "@moonwall/util";
-import { ApiPromise, Keyring } from "@polkadot/api";
+import { type ApiPromise, Keyring } from "@polkadot/api";
 
 const MAX_BALANCE_TRANSFER_TRIES = 5;
 describeSuite({
     id: "CAN",
     title: "Chopsticks Dancebox Upgrade Test",
     foundationMethods: "chopsticks",
-    testCases: function ({ it, context, log }) {
+    testCases: ({ it, context, log }) => {
         let api: ApiPromise;
 
         beforeAll(async () => {

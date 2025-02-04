@@ -11,11 +11,11 @@ describeSuite({
         it({
             id: `T01`,
             title: `should be false for successful ethereum transactions`,
-            test: async function () {
+            test: async () => {
                 const { result } = await context.createBlock(await createRawTransfer(context, BALTATHAR_ADDRESS, GLMR));
                 const info = extractInfo(result!.events)!;
                 expect(info).to.not.be.empty;
-                expect(info.paysFee.isYes, "Transaction should be marked as paysFees == no").to.be.false;
+                expect(info.paysFee.isYes, "Transaction should be marked as paysFees === no").to.be.false;
             },
         });
     },

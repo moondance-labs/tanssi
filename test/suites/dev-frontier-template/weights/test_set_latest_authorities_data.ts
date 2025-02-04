@@ -1,6 +1,6 @@
 import "@polkadot/api-augment";
 import { describeSuite, expect } from "@moonwall/cli";
-import { FrameSupportDispatchDispatchInfo } from "@polkadot/types/lookup";
+import type { FrameSupportDispatchDispatchInfo } from "@polkadot/types/lookup";
 import { BN } from "@polkadot/util";
 
 describeSuite({
@@ -11,7 +11,7 @@ describeSuite({
         it({
             id: "T01",
             title: "Weight should be match expected",
-            test: async function () {
+            test: async () => {
                 const expectedRefTime = new BN(428_360_000);
                 const expectedProofSize = new BN(1626);
 

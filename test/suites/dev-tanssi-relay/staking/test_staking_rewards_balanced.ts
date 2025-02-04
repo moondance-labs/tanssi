@@ -1,8 +1,8 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll, DevModeContext } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
-import { KeyringPair } from "@moonwall/util";
-import { Header, ParaId, HeadData, Digest, DigestItem, Slot } from "@polkadot/types/interfaces";
+import { describeSuite, expect, beforeAll, type DevModeContext } from "@moonwall/cli";
+import type { ApiPromise } from "@polkadot/api";
+import type { KeyringPair } from "@moonwall/util";
+import type { Header, ParaId, HeadData, Digest, DigestItem, Slot } from "@polkadot/types/interfaces";
 import {
     fetchIssuance,
     fetchRewardAuthorContainers,
@@ -147,7 +147,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Alice should receive rewards through staking now",
-            test: async function () {
+            test: async () => {
                 const assignment = (await polkadotJs.query.tanssiCollatorAssignment.collatorContainerChain()).toJSON();
 
                 // Find alice in list of collators
@@ -208,7 +208,7 @@ describeSuite({
         it({
             id: "E02",
             title: "Alice should receive shared rewards with delegators through staking now",
-            test: async function () {
+            test: async () => {
                 await jumpSessions(context, 1);
                 // All pending operations where in session 0
                 await context.createBlock([

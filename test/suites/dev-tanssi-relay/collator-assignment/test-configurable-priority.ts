@@ -1,6 +1,6 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise, Keyring } from "@polkadot/api";
+import { type ApiPromise, Keyring } from "@polkadot/api";
 import { jumpSessions } from "util/block";
 
 const emptyGenesisData = (api) => {
@@ -188,7 +188,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Set of Parathreads would not be truncated",
-            test: async function () {
+            test: async () => {
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 
@@ -222,7 +222,7 @@ describeSuite({
         it({
             id: "E02",
             title: "Set of Parachains should be sort by tip and truncated according to max cores allocated if we have less cores",
-            test: async function () {
+            test: async () => {
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 
@@ -330,7 +330,7 @@ async function createTxBatchForCreatingPara(
     );
 
     let registerTx;
-    if (slotFreq == null) {
+    if (slotFreq === null) {
         registerTx = api.tx.containerRegistrar.register(paraId, containerChainGenesisData, headData);
     } else {
         registerTx = api.tx.containerRegistrar.registerParathread(

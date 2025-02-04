@@ -1,6 +1,6 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 
-import { ApiPromise } from "@polkadot/api";
+import type { ApiPromise } from "@polkadot/api";
 
 describeSuite({
     id: "S02",
@@ -20,27 +20,27 @@ describeSuite({
         it({
             id: "C01",
             title: "Collator assignation length should be different if parachain or parathread",
-            test: async function () {
+            test: async () => {
                 if (runtimeVersion < 500) {
                     return;
                 }
                 const sessionIndex = (await api.query.session.currentIndex()).toNumber();
 
                 const assignmentCollatorKey = (
-                    chain == "dancelight"
+                    chain === "dancelight"
                         ? await api.query.tanssiAuthorityAssignment.collatorContainerChain(sessionIndex)
                         : await api.query.authorityAssignment.collatorContainerChain(sessionIndex)
                 ).toJSON();
 
                 const configuration =
-                    chain == "dancelight"
+                    chain === "dancelight"
                         ? await api.query.collatorConfiguration.activeConfig()
                         : await api.query.configuration.activeConfig();
 
                 if (assignmentCollatorKey["containerChains"] != undefined) {
                     for (const container of Object.keys(assignmentCollatorKey["containerChains"])) {
                         const parathreadParams =
-                            chain == "dancelight"
+                            chain === "dancelight"
                                 ? await api.query.containerRegistrar.parathreadParams(container)
                                 : await api.query.registrar.parathreadParams(container);
 

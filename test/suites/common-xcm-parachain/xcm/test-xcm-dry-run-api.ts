@@ -1,5 +1,5 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { KeyringPair, alith, generateKeyringPair } from "@moonwall/util";
+import { type KeyringPair, alith, generateKeyringPair } from "@moonwall/util";
 import { ApiPromise, Keyring, WsProvider } from "@polkadot/api";
 import { u8aToHex } from "@polkadot/util";
 import { XcmFragment } from "util/xcm.ts";
@@ -86,14 +86,14 @@ describeSuite({
         let alice: KeyringPair;
         let chain;
 
-        beforeAll(async function () {
+        beforeAll(async () => {
             polkadotJs = await ApiPromise.create({
                 provider: new WsProvider(`ws://localhost:${process.env.MOONWALL_RPC_PORT}/`),
                 ...runtimeApi,
             });
             chain = polkadotJs.consts.system.version.specName.toString();
             alice =
-                chain == "frontier-template"
+                chain === "frontier-template"
                     ? alith
                     : new Keyring({ type: "sr25519" }).addFromUri("//Alice", {
                           name: "Alice default",
@@ -103,10 +103,10 @@ describeSuite({
         it({
             id: "T01",
             title: "Should succeed calling dryRunCall",
-            test: async function () {
+            test: async () => {
                 const metadata = await polkadotJs.rpc.state.getMetadata();
                 const balancesPalletIndex = metadata.asLatest.pallets
-                    .find(({ name }) => name.toString() == "Balances")!
+                    .find(({ name }) => name.toString() === "Balances")!
                     .index.toNumber();
                 const randomReceiver = "0x1111111111111111111111111111111111111111111111111111111111111111";
 
@@ -170,12 +170,12 @@ describeSuite({
         it({
             id: "T02",
             title: "Should succeed calling dryRunXcm",
-            test: async function () {
+            test: async () => {
                 const metadata = await polkadotJs.rpc.state.getMetadata();
                 const balancesPalletIndex = metadata.asLatest.pallets
-                    .find(({ name }) => name.toString() == "Balances")!
+                    .find(({ name }) => name.toString() === "Balances")!
                     .index.toNumber();
-                const random = chain == "frontier-template" ? generateKeyringPair() : generateKeyringPair("sr25519");
+                const random = chain === "frontier-template" ? generateKeyringPair() : generateKeyringPair("sr25519");
 
                 const xcmMessage = new XcmFragment({
                     assets: [

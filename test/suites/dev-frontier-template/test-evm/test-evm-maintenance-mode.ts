@@ -15,7 +15,7 @@ describeSuite({
 
             const events = await context.polkadotJs().query.system.events();
             const ev1 = events.filter((a) => {
-                return a.event.method == "EnteredMaintenanceMode";
+                return a.event.method === "EnteredMaintenanceMode";
             });
             expect(ev1.length).to.be.equal(1);
 
@@ -26,7 +26,7 @@ describeSuite({
         it({
             id: "T01",
             title: "should fail without sudo",
-            test: async function () {
+            test: async () => {
                 const enabled = (await context.polkadotJs().query.maintenanceMode.maintenanceMode()).toJSON();
                 expect(enabled).to.be.true;
 
@@ -56,7 +56,7 @@ describeSuite({
         it({
             id: "T02",
             title: "should succeed with sudo",
-            test: async function () {
+            test: async () => {
                 const enabled = (await context.polkadotJs().query.maintenanceMode.maintenanceMode()).toJSON();
                 expect(enabled).to.be.true;
 
@@ -82,7 +82,7 @@ describeSuite({
 
                 expect(
                     result?.events.find(
-                        ({ event: { section, method } }) => section == "system" && method == "ExtrinsicSuccess"
+                        ({ event: { section, method } }) => section === "system" && method === "ExtrinsicSuccess"
                     )
                 ).to.exist;
                 expect(await context.viem("public").getBalance({ address: baltathar.address })).to.equal(

@@ -1,7 +1,7 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { KeyringPair, alith } from "@moonwall/util";
-import { MultiLocation, extractPaidDeliveryFees, getLastSentUmpMessageFee } from "../../../util/xcm";
-import { ApiPromise, Keyring } from "@polkadot/api";
+import { type KeyringPair, alith } from "@moonwall/util";
+import { type MultiLocation, extractPaidDeliveryFees, getLastSentUmpMessageFee } from "../../../util/xcm";
+import { type ApiPromise, Keyring } from "@polkadot/api";
 
 describeSuite({
     id: "CPX0204",
@@ -15,26 +15,26 @@ describeSuite({
         const txByteFee = 1n;
         const randomReceiver = "0x1111111111111111111111111111111111111111111111111111111111111111";
 
-        beforeAll(async function () {
+        beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             chain = polkadotJs.consts.system.version.specName.toString();
             alice =
-                chain == "frontier-template"
+                chain === "frontier-template"
                     ? alith
                     : new Keyring({ type: "sr25519" }).addFromUri("//Alice", {
                           name: "Alice default",
                       });
-            baseDelivery = chain == "frontier-template" ? 100_000_000_000_000n : 100_000_000n;
+            baseDelivery = chain === "frontier-template" ? 100_000_000_000_000n : 100_000_000n;
         });
 
         it({
             id: "T01",
             title: "Should succeed sending a reserve transfer upward",
-            test: async function () {
+            test: async () => {
                 // Get pallet indices
                 const metadata = await context.polkadotJs().rpc.state.getMetadata();
                 const balancesPalletIndex = metadata.asLatest.pallets
-                    .find(({ name }) => name.toString() == "Balances")!
+                    .find(({ name }) => name.toString() === "Balances")!
                     .index.toNumber();
 
                 const destMultilocation: MultiLocation = {

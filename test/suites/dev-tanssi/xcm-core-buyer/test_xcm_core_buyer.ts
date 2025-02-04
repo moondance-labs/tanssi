@@ -1,11 +1,11 @@
 import "@tanssi/api-augment";
 import { describeSuite, beforeAll, expect } from "@moonwall/cli";
-import { KeyringPair } from "@moonwall/util";
-import { ApiPromise, Keyring } from "@polkadot/api";
+import type { KeyringPair } from "@moonwall/util";
+import { type ApiPromise, Keyring } from "@polkadot/api";
 import { jumpSessions } from "../../../util/block.ts";
-import { u64 } from "@polkadot/types-codec";
-import { ParaId } from "@polkadot/types/interfaces";
-import { ITuple } from "@polkadot/types-codec/types";
+import type { u64 } from "@polkadot/types-codec";
+import type { ParaId } from "@polkadot/types/interfaces";
+import type { ITuple } from "@polkadot/types-codec/types";
 import { u8aToHex } from "@polkadot/util";
 
 describeSuite({
@@ -33,7 +33,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Sudo can set XCM weights storage",
-            test: async function () {
+            test: async () => {
                 // 1st block
                 const tx = polkadotJs.tx.sudo.sudo(
                     polkadotJs.tx.xcmCoreBuyer.setRelayXcmWeightConfig({
@@ -54,7 +54,7 @@ describeSuite({
         it({
             id: "E02",
             title: "Register para id 2002 as a parathread and assign collators to it",
-            test: async function () {
+            test: async () => {
                 const currentSesssion = await polkadotJs.query.session.currentIndex();
                 const sessionDelay = await polkadotJs.consts.registrar.sessionDelay;
                 const expectedScheduledOnboarding =
@@ -159,7 +159,7 @@ describeSuite({
         it({
             id: "E03",
             title: "Sudo can forceBuyCore",
-            test: async function () {
+            test: async () => {
                 const paraId = 2002;
 
                 const encodedMsgBefore = await polkadotJs.query.parachainSystem.upwardMessages();
@@ -169,7 +169,7 @@ describeSuite({
                 await context.createBlock([await tx.signAsync(alice)]);
 
                 const events = (await polkadotJs.query.system.events()).filter((a) => {
-                    return a.event.method == "BuyCoreXcmSent";
+                    return a.event.method === "BuyCoreXcmSent";
                 });
                 expect(events.length).to.be.equal(1);
 
@@ -182,7 +182,7 @@ describeSuite({
         it({
             id: "E04",
             title: "Collator can call buyCore",
-            test: async function () {
+            test: async () => {
                 const paraId = 2002;
 
                 const nimbusPublicKey = collatorNimbusKey.publicKey;
@@ -197,7 +197,7 @@ describeSuite({
                 // Check key is reflected in next key
                 // But its not yet in queued
                 const queuedKeys = await polkadotJs.query.session.queuedKeys();
-                const result = queuedKeys.filter((keyItem) => keyItem[1].nimbus == nimbusPublicKey);
+                const result = queuedKeys.filter((keyItem) => keyItem[1].nimbus === nimbusPublicKey);
                 expect(result).is.empty;
                 const nextKey = await polkadotJs.query.session.nextKeys(collatorAccountKey.address);
                 expect(u8aToHex(nextKey.unwrap().nimbus)).to.be.eq(u8aToHex(nimbusPublicKey));
@@ -230,7 +230,7 @@ describeSuite({
                 await context.createBlock();
 
                 const events = (await polkadotJs.query.system.events()).filter((a) => {
-                    return a.event.method == "BuyCoreXcmSent";
+                    return a.event.method === "BuyCoreXcmSent";
                 });
                 expect(events.length).to.be.equal(1);
             },
@@ -239,7 +239,7 @@ describeSuite({
         it({
             id: "E05",
             title: "buyCore nonce works properly",
-            test: async function () {
+            test: async () => {
                 const paraId = 2002;
 
                 const nimbusPublicKey = collatorNimbusKey.publicKey;

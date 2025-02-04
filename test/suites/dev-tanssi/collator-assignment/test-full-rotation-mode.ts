@@ -1,10 +1,10 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll, customDevRpcRequest } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
+import type { ApiPromise } from "@polkadot/api";
 import { jumpBlocks, jumpSessions, jumpToSession } from "util/block";
 import { filterAndApply, generateKeyringPair } from "@moonwall/util";
-import { EventRecord } from "@polkadot/types/interfaces";
-import { bool, u32, u8, Vec } from "@polkadot/types-codec";
+import type { EventRecord } from "@polkadot/types/interfaces";
+import type { bool, u32, u8, Vec } from "@polkadot/types-codec";
 
 describeSuite({
     id: "DTR0303",
@@ -26,7 +26,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Collator should rotate",
-            test: async function () {
+            test: async () => {
                 const orchestrator = "KeepAll";
                 const parachain = { KeepCollators: { keep: 1 } };
                 const parathread = "RotateAll";

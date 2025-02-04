@@ -8,7 +8,7 @@ describeSuite({
         it({
             id: "T01",
             title: "should fail on setMaxCollators if not sudo",
-            test: async function () {
+            test: async () => {
                 const { result } = await context.createBlock(
                     context.polkadotJs().tx.collatorConfiguration.setMaxCollators(200).signAsync(context.keyring.bob),
                     { allowFailures: true }
@@ -21,7 +21,7 @@ describeSuite({
         it({
             id: "T02",
             title: "should fail on setMinOrchestratorCollators if not sudo",
-            test: async function () {
+            test: async () => {
                 const { result } = await context.createBlock(
                     context
                         .polkadotJs()
@@ -37,7 +37,7 @@ describeSuite({
         it({
             id: "T03",
             title: "should fail on setMaxOrchestratorCollators if not sudo",
-            test: async function () {
+            test: async () => {
                 const { result } = await context.createBlock(
                     context
                         .polkadotJs()
@@ -53,7 +53,7 @@ describeSuite({
         it({
             id: "T04",
             title: "should fail on setCollatorsPerContainer if not sudo",
-            test: async function () {
+            test: async () => {
                 const { result } = await context.createBlock(
                     context
                         .polkadotJs()

@@ -9,7 +9,7 @@ describeSuite({
         it({
             id: "T01",
             title: "should return correct author",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
 
                 const author = await context.polkadotJs().query.authorInherent.author();

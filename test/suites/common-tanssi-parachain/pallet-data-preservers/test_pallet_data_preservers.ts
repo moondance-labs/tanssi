@@ -1,7 +1,7 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
-import { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
+import type { KeyringPair } from "@moonwall/util";
 
 describeSuite({
     id: "CPT1001",
@@ -23,7 +23,7 @@ describeSuite({
         it({
             id: "E01",
             title: "User can create profile",
-            test: async function () {
+            test: async () => {
                 const profile = {
                     url: "exemple",
                     paraIds: { whitelist: [42, 43] },
@@ -53,7 +53,7 @@ describeSuite({
         it({
             id: "E02",
             title: "User can update profile",
-            test: async function () {
+            test: async () => {
                 const profile = {
                     url: "exemple",
                     paraIds: { whitelist: [42, 43] },
@@ -105,7 +105,7 @@ describeSuite({
         it({
             id: "E03",
             title: "User can delete profile",
-            test: async function () {
+            test: async () => {
                 const profile = {
                     url: "exemple",
                     paraIds: { whitelist: [42, 43] },
@@ -141,7 +141,7 @@ describeSuite({
         it({
             id: "E04",
             title: "Root can force create profile",
-            test: async function () {
+            test: async () => {
                 const profile = {
                     url: "exemple",
                     paraIds: { whitelist: [42, 43] },
@@ -170,7 +170,7 @@ describeSuite({
         it({
             id: "E05",
             title: "Root can force update profile",
-            test: async function () {
+            test: async () => {
                 const profile = {
                     url: "exemple",
                     paraIds: { whitelist: [42, 43] },
@@ -222,7 +222,7 @@ describeSuite({
         it({
             id: "E06",
             title: "Root can force delete profile",
-            test: async function () {
+            test: async () => {
                 const profile = {
                     url: "exemple",
                     paraIds: { whitelist: [42, 43] },
@@ -259,7 +259,7 @@ describeSuite({
         it({
             id: "E07",
             title: "Profile can be assigned",
-            test: async function () {
+            test: async () => {
                 const paraId = 2002;
                 const emptyGenesisData = () => {
                     const g = polkadotJs.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
@@ -323,7 +323,7 @@ describeSuite({
         it({
             id: "E08",
             title: "Profile can be force assigned",
-            test: async function () {
+            test: async () => {
                 const paraId = 2003;
                 const emptyGenesisData = () => {
                     const g = polkadotJs.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
@@ -387,7 +387,7 @@ describeSuite({
         it({
             id: "E09",
             title: "Profile can be unassigned",
-            test: async function () {
+            test: async () => {
                 const paraId = 2004;
                 const emptyGenesisData = () => {
                     const g = polkadotJs.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
@@ -454,7 +454,7 @@ describeSuite({
         it({
             id: "E10",
             title: "Profile can be force unassigned",
-            test: async function () {
+            test: async () => {
                 const paraId = 2005;
                 const emptyGenesisData = () => {
                     const g = polkadotJs.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
@@ -520,7 +520,7 @@ describeSuite({
         it({
             id: "E11",
             title: "Container will be unassigned on deregister",
-            test: async function () {
+            test: async () => {
                 const paraId = 2006;
                 const emptyGenesisData = () => {
                     const g = polkadotJs.createType("DpContainerChainGenesisDataContainerChainGenesisData", {

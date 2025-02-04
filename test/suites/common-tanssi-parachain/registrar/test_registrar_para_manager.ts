@@ -1,7 +1,7 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { KeyringPair } from "@moonwall/util";
-import { ApiPromise } from "@polkadot/api";
+import type { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
 
 describeSuite({
     id: "CPT0502",
@@ -22,7 +22,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Para manager can be set and is recognized as ManagerOrigin",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
 
                 const emptyGenesisData = () => {

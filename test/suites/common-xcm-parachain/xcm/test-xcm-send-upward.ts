@@ -1,7 +1,7 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { KeyringPair, alith } from "@moonwall/util";
-import { MultiLocation, extractPaidDeliveryFees, getLastSentUmpMessageFee, XcmFragment } from "../../../util/xcm";
-import { ApiPromise, Keyring } from "@polkadot/api";
+import { type KeyringPair, alith } from "@moonwall/util";
+import { type MultiLocation, extractPaidDeliveryFees, getLastSentUmpMessageFee, XcmFragment } from "../../../util/xcm";
+import { type ApiPromise, Keyring } from "@polkadot/api";
 
 describeSuite({
     id: "CPX0209",
@@ -14,22 +14,22 @@ describeSuite({
         let chain;
         const txByteFee = 1n;
 
-        beforeAll(async function () {
+        beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             chain = polkadotJs.consts.system.version.specName.toString();
             alice =
-                chain == "frontier-template"
+                chain === "frontier-template"
                     ? alith
                     : new Keyring({ type: "sr25519" }).addFromUri("//Alice", {
                           name: "Alice default",
                       });
-            baseDelivery = chain == "frontier-template" ? 100_000_000_000_000n : 100_000_000n;
+            baseDelivery = chain === "frontier-template" ? 100_000_000_000_000n : 100_000_000n;
         });
 
         it({
             id: "T01",
             title: "Should succeed sending a XCM upward",
-            test: async function () {
+            test: async () => {
                 const xcmMessage = new XcmFragment({
                     assets: [],
                 })

@@ -8,10 +8,11 @@
 	"files": {
 		"ignoreUnknown": false,
 		"ignore": [
-			"**/target",
-			"**/scripts/tmp",
-			"**/node_modules",
-			"**/.yarn",
+			"**/build/**",
+			"**/target/**",
+			"**/scripts/tmp/**",
+			"**/node_modules/**",
+			"**/.yarn/**",
 			"test/tsconfig.json",
 			"tmp",
 			"**/contracts/out",
@@ -31,8 +32,15 @@
 	"linter": {
 		"enabled": true,
 		"rules": {
-			"recommended": true
-		}
+			"recommended": true,
+			"suspicious": {
+				"noAsyncPromiseExecutor": "off",
+				"noExplicitAny":"off",
+				"noShadowRestrictedNames": "off"
+			}
+		},
+		"ignore":[
+		]
 	},
 	"javascript": {
 		"formatter": {
@@ -43,6 +51,9 @@
 	},
 	"json": {
 		"formatter": {
+			"enabled": false
+		},
+		"linter":{
 			"enabled": false
 		}
 	}

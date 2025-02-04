@@ -1,7 +1,7 @@
 import "@polkadot/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { KeyringPair } from "@moonwall/util";
-import { ApiPromise } from "@polkadot/api";
+import type { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
 import { jumpSessions } from "../../../util/block";
 import { DANCE } from "util/constants";
 import { createBlockAndRemoveInvulnerables } from "util/invulnerables";
@@ -53,7 +53,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Checking that removing a session key makes the key dissappear from eligibility",
-            test: async function () {
+            test: async () => {
                 // Bob is a staking candidate, but the keys will be removed and we will see what happens
                 const bobKey = (await polkadotJs.query.session.nextKeys(bob.address)).toJSON().nimbus;
                 const aliceKey = (await polkadotJs.query.session.nextKeys(alice.address)).toJSON().nimbus;

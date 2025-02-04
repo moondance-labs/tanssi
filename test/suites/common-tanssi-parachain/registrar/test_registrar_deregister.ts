@@ -1,7 +1,7 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { KeyringPair } from "@moonwall/util";
-import { ApiPromise } from "@polkadot/api";
+import type { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
 import { jumpSessions } from "../../../util/block";
 
 describeSuite({
@@ -19,7 +19,7 @@ describeSuite({
         it({
             id: "E03",
             title: "Checking that fetching registered paraIds is possible",
-            test: async function () {
+            test: async () => {
                 const parasRegistered = await polkadotJs.query.registrar.registeredParaIds();
 
                 // These are registered in genesis
@@ -42,7 +42,7 @@ describeSuite({
         it({
             id: "E04",
             title: "Checking that de-registering paraIds is possible",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
 
                 const currentSesssion = await polkadotJs.query.session.currentIndex();
@@ -79,7 +79,7 @@ describeSuite({
         it({
             id: "E05",
             title: "Checking that de-registering all paraIds does not leave extra keys in storage",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
 
                 // Check the number of keys in storage

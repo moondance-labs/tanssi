@@ -1,9 +1,11 @@
+import "@tanssi/api-augment";
 import { bnToU8a, stringToU8a } from "@polkadot/util";
 import { blake2AsU8a } from "@polkadot/util-crypto";
-import { ApiPromise } from "@polkadot/api";
+import type { ApiPromise } from "@polkadot/api";
+import type { ParaId } from "@polkadot/types/interfaces";
 
 // Tank account is blake2(b"modlpy/serpayment" + parahain ID)
-export function paraIdTank(paraId: any): any {
+export function paraIdTank(paraId: bigint) {
     const seedBytes = stringToU8a("modlpy/serpayment");
     const paraIdBytes = bnToU8a(paraId, { bitLength: 32 });
     const combinedBytes = new Uint8Array(seedBytes.length + paraIdBytes.length);
@@ -23,7 +25,7 @@ export async function hasEnoughCredits(
     costPerSession: bigint,
     costPerBlock: bigint
 ): Promise<boolean> {
-    const existentialDeposit = await paraApi.consts.balances.existentialDeposit.toBigInt();
+    const existentialDeposit = paraApi.consts.balances.existentialDeposit.toBigInt();
 
     const freeBlockCredits = (await paraApi.query.servicesPayment.blockProductionCredits(paraId)).unwrap().toBigInt();
 
@@ -46,13 +48,11 @@ export async function hasEnoughCredits(
             existentialDeposit +
             neededCollatorAssignmentPaymentAfterCredits * costPerSession +
             neededBlockPaymentAfterCredits * costPerBlock;
-        const tankBalance = (await paraApi.query.system.account(paraIdTank(paraId))).data.free.toBigInt();
+        const tankBalance = (await paraApi.query.system.account(paraIdTank(paraId.toBigInt()))).data.free.toBigInt();
         if (tankBalance >= neededTankMoney) {
             return true;
-        } else {
-            return false;
         }
-    } else {
-        return true;
+        return false;
     }
+    return true;
 }

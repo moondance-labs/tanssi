@@ -1,7 +1,7 @@
 import "@polkadot/api-augment";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { KeyringPair } from "@moonwall/util";
-import { ApiPromise } from "@polkadot/api";
+import type { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
 
 describeSuite({
     id: "CA0001",
@@ -22,7 +22,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Checking that launched node can create blocks",
-            test: async function () {
+            test: async () => {
                 const block = (await polkadotJs.rpc.chain.getBlock()).block.header.number.toNumber();
                 await context.createBlock();
 
@@ -36,7 +36,7 @@ describeSuite({
             id: "E02",
             title: "Checking that substrate txns possible",
             timeout: 20000,
-            test: async function () {
+            test: async () => {
                 const balanceBefore = (await polkadotJs.query.system.account(bob.address)).data.free;
 
                 await polkadotJs.tx.balances.transferAllowDeath(bob.address, 1000).signAndSend(alice);
@@ -51,7 +51,7 @@ describeSuite({
         it({
             id: "E03",
             title: "Checking that sudo can be used",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
                 const tx = polkadotJs.tx.rootTesting.fillBlock(60 * 10 ** 7);
                 await polkadotJs.tx.sudo.sudo(tx).signAndSend(alice);

@@ -6,7 +6,7 @@ describeSuite({
     title: "Configuration - ActiveConfig - MinOrchestratorCollators",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
-        beforeAll(async function () {
+        beforeAll(async () => {
             initializeCustomCreateBlock(context);
 
             const config = await context.polkadotJs().query.configuration.activeConfig();
@@ -26,7 +26,7 @@ describeSuite({
         it({
             id: "T01",
             title: "should set max orchestrator collators after 2 sessions",
-            test: async function () {
+            test: async () => {
                 const config = await context.polkadotJs().query.configuration.activeConfig();
                 expect(config["minOrchestratorCollators"].toString()).toBe("2");
             },

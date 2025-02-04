@@ -1,5 +1,5 @@
 import { describeSuite, expect, beforeAll, deployCreateCompiledContract } from "@moonwall/cli";
-import { TransactionReceipt } from "viem";
+import type { TransactionReceipt } from "viem";
 import { customWeb3Request } from "@moonwall/util";
 
 describeSuite({
@@ -49,7 +49,7 @@ describeSuite({
         it({
             id: "T01",
             title: "EthFilterApi::getFilterLogs - should filter out non-matching cases.",
-            test: async function () {
+            test: async () => {
                 let create_filter;
                 for (const item of nonMatchingCases) {
                     create_filter = await customWeb3Request(context.web3(), "eth_newFilter", [item]);
@@ -61,7 +61,7 @@ describeSuite({
         it({
             id: "T02",
             title: "EthApi::getLogs - should filter out non-matching cases.",
-            test: async function () {
+            test: async () => {
                 for (const item of nonMatchingCases) {
                     const request = await customWeb3Request(context.web3(), "eth_getLogs", [item]);
                     expect(request.result.length).to.be.eq(0);

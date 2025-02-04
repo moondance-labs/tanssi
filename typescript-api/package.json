@@ -21,6 +21,8 @@
         "clean": "pnpm exec rm -rf node_modules && pnpm exec rm -rf build",
         "fmt": "biome format src",
         "fmt:fix": "biome format --write src",
+        "lint": "biome lint .",
+        "lint:fix": "biome lint --write .",
         "postgenerate": "pnpm fmt:fix",
         "load:meta": "npm run load:meta:flashbox && npm run load:meta:dancebox",
         "load:meta:local": "curl -s -H \"Content-Type: application/json\" -d '{\"id\":\"1\", \"jsonrpc\":\"2.0\", \"method\": \"state_getMetadata\", \"params\":[]}' http://localhost:9948 > metadata-dancebox.json",
@@ -87,22 +89,6 @@
         "LICENSE",
         "!**/*.tsbuildinfo"
     ],
-    "dependencies": {
-        "@polkadot/api": "*",
-        "@polkadot/api-augment": "*",
-        "@polkadot/api-base": "*",
-        "@polkadot/api-derive": "*",
-        "@polkadot/rpc-augment": "*",
-        "@polkadot/rpc-core": "*",
-        "@polkadot/rpc-provider": "*",
-        "@polkadot/typegen": "*",
-        "@polkadot/types": "*",
-        "@polkadot/types-augment": "*",
-        "@polkadot/types-codec": "*",
-        "@polkadot/types-create": "*",
-        "@polkadot/types-known": "*",
-        "@polkadot/types-support": "*"
-    },
     "dependencies": {
         "@polkadot/api": "*",
         "@polkadot/api-augment": "*",

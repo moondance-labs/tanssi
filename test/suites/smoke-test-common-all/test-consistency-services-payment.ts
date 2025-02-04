@@ -1,6 +1,6 @@
 import "@tanssi/api-augment";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
+import type { ApiPromise } from "@polkadot/api";
 import { hasEnoughCredits } from "util/payment";
 
 describeSuite({
@@ -19,38 +19,38 @@ describeSuite({
             api = context.polkadotJs();
             runtimeVersion = api.runtimeVersion.specVersion.toNumber();
             chain = api.consts.system.version.specName.toString();
-            blocksPerSession = chain == "dancebox" || chain == "dancelight" ? 600n : 50n;
+            blocksPerSession = chain === "dancebox" || chain === "dancelight" ? 600n : 50n;
         });
 
         it({
             id: "C01",
             title: "All scheduled parachains should be able to pay for at least 1 session worth of blocks",
-            test: async function () {
+            test: async () => {
                 if (runtimeVersion < 500) {
                     return;
                 }
                 const currentBlock = (await api.rpc.chain.getBlock()).block.header.number.toNumber();
                 const blockToCheck =
-                    chain == "dancelight"
+                    chain === "dancelight"
                         ? (await api.query.babe.epochStart()).toJSON()[1]
                         : Math.trunc(currentBlock / Number(blocksPerSession)) * Number(blocksPerSession);
                 const apiBeforeLatestNewSession = await api.at(await api.rpc.chain.getBlockHash(blockToCheck - 1));
 
                 // If they have collators scheduled, they should have at least enough money to pay
                 let pending =
-                    chain == "dancelight"
+                    chain === "dancelight"
                         ? await api.query.tanssiCollatorAssignment.pendingCollatorContainerChain()
                         : await api.query.collatorAssignment.pendingCollatorContainerChain();
 
                 if (pending.isNone) {
                     pending =
-                        chain == "dancelight"
+                        chain === "dancelight"
                             ? await api.query.tanssiCollatorAssignment.collatorContainerChain()
                             : await api.query.collatorAssignment.collatorContainerChain();
                 }
 
                 const current =
-                    chain == "dancelight"
+                    chain === "dancelight"
                         ? await api.query.tanssiCollatorAssignment.collatorContainerChain()
                         : await api.query.collatorAssignment.collatorContainerChain();
 
@@ -61,8 +61,8 @@ describeSuite({
                         let sessionRequirements: bigint;
 
                         if (
-                            current.toJSON()["containerChains"][container.toString()] == null ||
-                            current.toJSON()["containerChains"][container.toString()].length == 0
+                            current.toJSON()["containerChains"][container.toString()] === null ||
+                            current.toJSON()["containerChains"][container.toString()].length === 0
                         ) {
                             sessionRequirements = 1n;
                         } else {

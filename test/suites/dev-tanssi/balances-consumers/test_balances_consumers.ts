@@ -1,8 +1,8 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll, isExtrinsicSuccessful } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
+import type { ApiPromise } from "@polkadot/api";
 import { jumpSessions } from "../../../util/block";
-import { KeyringPair, generateKeyringPair } from "@moonwall/util";
+import { type KeyringPair, generateKeyringPair } from "@moonwall/util";
 
 describeSuite({
     id: "DT0101",
@@ -20,7 +20,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Checking that authority assignment is correct on genesis",
-            test: async function () {
+            test: async () => {
                 const randomAccount = generateKeyringPair("sr25519");
 
                 const tx = polkadotJs.tx.balances.transferAllowDeath(randomAccount.address, 2n * 10000000000000000n);

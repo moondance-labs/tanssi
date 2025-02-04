@@ -1,5 +1,5 @@
-import { DevModeContext, EthTransactionType, MoonwallContext } from "@moonwall/cli";
-import { ALITH_PRIVATE_KEY, TransactionOptions, alith, customWeb3Request } from "@moonwall/util";
+import { type DevModeContext, type EthTransactionType, MoonwallContext } from "@moonwall/cli";
+import { ALITH_PRIVATE_KEY, type TransactionOptions, alith, customWeb3Request } from "@moonwall/util";
 import { ethers } from "ethers";
 import { FMT_BYTES, FMT_NUMBER } from "web3";
 
@@ -191,7 +191,7 @@ export const ALITH_TRANSACTION_TEMPLATE: TransactionOptions = {
 /// Await for a promise resolution while we wait for the tx hash to be included
 /// This will tipically be waiting for new blocks
 export async function waitUntilEthTxIncluded(promise, web3, txHash) {
-    while ((await customWeb3Request(web3, "eth_getTransactionByHash", [txHash])).result.blockNumber == null) {
+    while ((await customWeb3Request(web3, "eth_getTransactionByHash", [txHash])).result.blockNumber === null) {
         await promise();
     }
 }

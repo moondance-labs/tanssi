@@ -11,7 +11,7 @@ describeSuite({
         let testContractAddress: `0x${string}`;
         let multiplyContractAddress: `0x${string}`;
 
-        beforeAll(async function () {
+        beforeAll(async () => {
             const { contractAddress: addr1 } = await context.deployContract!("SmartContractPrecompileCallTest");
             testContractAddress = addr1;
 
@@ -21,7 +21,7 @@ describeSuite({
         it({
             id: "T01",
             title: "should revert when caller is a smart contract",
-            test: async function () {
+            test: async () => {
                 const rawTxn = await context.writeContract!({
                     contractAddress: testContractAddress,
                     contractName: "SmartContractPrecompileCallTest",

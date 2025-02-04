@@ -1,7 +1,7 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
+import type { ApiPromise } from "@polkadot/api";
 
-import { ApiDecoration } from "@polkadot/api/types";
+import type { ApiDecoration } from "@polkadot/api/types";
 import { getAuthorFromDigest } from "util/author";
 import { fetchIssuance, filterRewardFromOrchestratorWithFailure, fetchRewardAuthorContainers } from "util/block";
 import { PARACHAIN_BOND } from "util/constants";
@@ -30,7 +30,7 @@ describeSuite({
         it({
             id: "C01",
             title: "Inflation for orchestrator should match with expected number of containers",
-            test: async function () {
+            test: async () => {
                 if (runtimeVersion < 300) {
                     return;
                 }
@@ -59,7 +59,7 @@ describeSuite({
         it({
             id: "C02",
             title: "Inflation for containers should match with expected number of containers",
-            test: async function () {
+            test: async () => {
                 if (runtimeVersion < 300) {
                     return;
                 }
@@ -85,7 +85,7 @@ describeSuite({
         it({
             id: "C03",
             title: "Issuance is correct",
-            test: async function () {
+            test: async () => {
                 if (runtimeVersion < 300) {
                     return;
                 }
@@ -117,7 +117,7 @@ describeSuite({
         it({
             id: "C04",
             title: "Parachain bond receives dust plus 30% plus non-distributed rewards",
-            test: async function () {
+            test: async () => {
                 if (runtimeVersion < 300) {
                     return;
                 }

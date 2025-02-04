@@ -1,7 +1,7 @@
 import "@moonbeam-network/api-augment";
 import { beforeAll, describeSuite, fetchCompiledContract, expect } from "@moonwall/cli";
 import { ALITH_ADDRESS, BALTATHAR_ADDRESS, alith, createEthersTransaction } from "@moonwall/util";
-import { u16 } from "@polkadot/types-codec";
+import type { u16 } from "@polkadot/types-codec";
 import { encodeFunctionData } from "viem";
 import { expectEVMResult } from "helpers";
 import { mockAssetCreation, relayAssetMetadata } from "../../../helpers/assets.ts";
@@ -40,7 +40,7 @@ describeSuite({
         it({
             id: "T01",
             title: "allows to call transferAssetsLocation function",
-            test: async function () {
+            test: async () => {
                 const { abi: xcmInterface } = fetchCompiledContract("XCM");
                 const assetBalanceBefore = (
                     await context.polkadotJs().query.foreignAssets.account(assetId.toU8a(), ALITH_ADDRESS)
@@ -86,7 +86,7 @@ describeSuite({
         it({
             id: "T02",
             title: "allows to call transferAssetsToPara20 function",
-            test: async function () {
+            test: async () => {
                 const { abi: xcmInterface } = fetchCompiledContract("XCM");
                 const assetBalanceBefore = (
                     await context.polkadotJs().query.foreignAssets.account(assetId.toU8a(), ALITH_ADDRESS)
@@ -122,7 +122,7 @@ describeSuite({
         it({
             id: "T03",
             title: "allows to call transferAssetsToPara32 function",
-            test: async function () {
+            test: async () => {
                 const { abi: xcmInterface } = fetchCompiledContract("XCM");
                 const assetBalanceBefore = (
                     await context.polkadotJs().query.foreignAssets.account(assetId.toU8a(), ALITH_ADDRESS)
@@ -159,7 +159,7 @@ describeSuite({
         it({
             id: "T04",
             title: "allows to call transferAssetsToRelay function",
-            test: async function () {
+            test: async () => {
                 const { abi: xcmInterface } = fetchCompiledContract("XCM");
                 const assetBalanceBefore = (
                     await context.polkadotJs().query.foreignAssets.account(assetId.toU8a(), ALITH_ADDRESS)

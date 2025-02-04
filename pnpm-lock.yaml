@@ -144,6 +144,9 @@ importers:
       '@types/debug':
         specifier: 4.1.12
         version: 4.1.12
+      '@types/json-bigint':
+        specifier: 1.0.4
+        version: 1.0.4
       '@types/node':
         specifier: '*'
         version: 22.10.5
@@ -1683,6 +1686,9 @@ packages:
 
   '@types/estree@1.0.6':
     resolution: {integrity: sha512-AYnb1nQyY49te+VRAVgmzfcgjYS91mY5P0TKUDCLEM+gNnA+3T6rWITXRLYCpahpqSQbN5cE+gHpnPyXjHWxcw==}
+
+  '@types/json-bigint@1.0.4':
+    resolution: {integrity: sha512-ydHooXLbOmxBbubnA7Eh+RpBzuaIiQjh8WGJYQB50JFGFrdxW7JzVlyEV7fAXw0T2sqJ1ysTneJbiyNLqZRAag==}
 
   '@types/json-schema@7.0.15':
     resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
@@ -6477,6 +6483,8 @@ snapshots:
       '@types/ms': 0.7.34
 
   '@types/estree@1.0.6': {}
+
+  '@types/json-bigint@1.0.4': {}
 
   '@types/json-schema@7.0.15': {}
 

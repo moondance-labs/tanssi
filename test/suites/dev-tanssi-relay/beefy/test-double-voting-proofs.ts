@@ -1,10 +1,10 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { KeyringPair } from "@moonwall/util";
-import { ApiPromise } from "@polkadot/api";
+import type { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
 import { jumpToSession } from "../../../util/block";
 import { u8aToHex, hexToU8a, stringToHex, numberToHex } from "@polkadot/util";
-import {
+import type {
     SpConsensusBeefyDoubleVotingProof,
     SpConsensusBeefyPayload,
     SpConsensusBeefyCommitment,
@@ -37,7 +37,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Should be able to report a valid double voting proof",
-            test: async function () {
+            test: async () => {
                 await jumpToSession(context, 1);
                 await context.createBlock();
 
@@ -112,7 +112,7 @@ describeSuite({
         it({
             id: "E02",
             title: "Should fail to report proof if KeyOwnershipProof is invalid",
-            test: async function () {
+            test: async () => {
                 await jumpToSession(context, 1);
                 await context.createBlock();
 
@@ -190,7 +190,7 @@ describeSuite({
         it({
             id: "E03",
             title: "Should fail to report an invalid DoubleVotingProof",
-            test: async function () {
+            test: async () => {
                 await jumpToSession(context, 1);
                 await context.createBlock();
 

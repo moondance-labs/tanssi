@@ -1,4 +1,4 @@
-import { ApiPromise } from "@polkadot/api";
+import type { ApiPromise } from "@polkadot/api";
 import type { Header, ParaId, HeadData } from "@polkadot/types/interfaces";
 import { Bytes } from "@polkadot/types-codec";
 import { TypeRegistry } from "@polkadot/types";

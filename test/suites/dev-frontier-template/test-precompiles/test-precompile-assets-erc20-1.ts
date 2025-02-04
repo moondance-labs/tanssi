@@ -1,8 +1,8 @@
 import "@moonbeam-network/api-augment";
 import { beforeAll, deployCreateCompiledContract, describeSuite, expect } from "@moonwall/cli";
 import { ALITH_ADDRESS, alith } from "@moonwall/util";
-import { u16 } from "@polkadot/types-codec";
-import { Abi } from "viem";
+import type { u16 } from "@polkadot/types-codec";
+import type { Abi } from "viem";
 import { mockAssetCreation, relayAssetMetadata } from "../../../helpers/assets.ts";
 import { RELAY_SOURCE_LOCATION } from "../../../util/constants.ts";
 
@@ -43,7 +43,7 @@ describeSuite({
         it({
             id: "T01",
             title: "allows to call name",
-            test: async function () {
+            test: async () => {
                 const name = await context.viem().readContract({
                     address: ADDRESS_ERC20,
                     abi: erc20Abi,
@@ -57,7 +57,7 @@ describeSuite({
         it({
             id: "T02",
             title: "allows to call name via wrapper",
-            test: async function () {
+            test: async () => {
                 const name = await context.viem().readContract({
                     address: contractInstanceAddress,
                     abi: erc20Abi,
@@ -71,7 +71,7 @@ describeSuite({
         it({
             id: "T03",
             title: "allows to call symbol",
-            test: async function () {
+            test: async () => {
                 const symbol = await context.viem().readContract({
                     address: ADDRESS_ERC20,
                     abi: erc20Abi,
@@ -84,7 +84,7 @@ describeSuite({
         it({
             id: "T04",
             title: "allows to call symbol via wrapper",
-            test: async function () {
+            test: async () => {
                 const symbol = await context.viem().readContract({
                     address: contractInstanceAddress,
                     abi: erc20Abi,
@@ -97,7 +97,7 @@ describeSuite({
         it({
             id: "T05",
             title: "allows to call decimals",
-            test: async function () {
+            test: async () => {
                 const decimals = await context.viem().readContract({
                     address: ADDRESS_ERC20,
                     abi: erc20Abi,
@@ -110,7 +110,7 @@ describeSuite({
         it({
             id: "T06",
             title: "allows to call decimals via wrapper",
-            test: async function () {
+            test: async () => {
                 const decimals = await context.viem().readContract({
                     address: contractInstanceAddress,
                     abi: erc20Abi,
@@ -123,7 +123,7 @@ describeSuite({
         it({
             id: "T07",
             title: "allows to call getBalance",
-            test: async function () {
+            test: async () => {
                 const data = await context.viem().readContract({
                     address: ADDRESS_ERC20,
                     abi: erc20Abi,
@@ -137,7 +137,7 @@ describeSuite({
         it({
             id: "T08",
             title: "allows to call getBalance via wrapper",
-            test: async function () {
+            test: async () => {
                 const data = await context.viem().readContract({
                     address: contractInstanceAddress,
                     abi: erc20Abi,
@@ -151,7 +151,7 @@ describeSuite({
         it({
             id: "T09",
             title: "allows to call totalSupply",
-            test: async function () {
+            test: async () => {
                 const data = await context.viem().readContract({
                     address: ADDRESS_ERC20,
                     abi: erc20Abi,
@@ -164,7 +164,7 @@ describeSuite({
         it({
             id: "T10",
             title: "allows to call totalSupply via wrapper",
-            test: async function () {
+            test: async () => {
                 const data = await context.viem().readContract({
                     address: contractInstanceAddress,
                     abi: erc20Abi,

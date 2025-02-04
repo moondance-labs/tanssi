@@ -1,8 +1,8 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
+import type { ApiPromise } from "@polkadot/api";
 import { readFileSync } from "fs";
-import { KeyringPair } from "@moonwall/util";
+import type { KeyringPair } from "@moonwall/util";
 
 describeSuite({
     id: "DTR1203",
@@ -28,7 +28,7 @@ describeSuite({
         it({
             id: "E02",
             title: "Ethreum client should be able to receive an update within the same period by same committee",
-            test: async function () {
+            test: async () => {
                 const samePeriodUpdate = JSON.parse(
                     readFileSync("tmp/ethereum_client_test/finalized-header-update.json").toString()
                 );

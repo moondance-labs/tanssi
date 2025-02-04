@@ -1,5 +1,5 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
+import type { ApiPromise } from "@polkadot/api";
 
 describeSuite({
     id: "S22",
@@ -15,7 +15,7 @@ describeSuite({
         it({
             id: "C01",
             title: "Total points matches sum of individual points",
-            test: async function () {
+            test: async () => {
                 const entries = await api.query.externalValidatorsRewards.rewardPointsForEra.entries();
 
                 for (const [key, entry] of entries) {

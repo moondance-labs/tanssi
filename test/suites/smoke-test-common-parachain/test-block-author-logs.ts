@@ -1,9 +1,9 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { getBlockArray } from "@moonwall/util";
-import { ApiPromise } from "@polkadot/api";
-import { GenericExtrinsic } from "@polkadot/types";
-import { FrameSystemEventRecord } from "@polkadot/types/lookup";
-import { AnyTuple } from "@polkadot/types/types";
+import type { ApiPromise } from "@polkadot/api";
+import type { GenericExtrinsic } from "@polkadot/types";
+import type { FrameSystemEventRecord } from "@polkadot/types/lookup";
+import type { AnyTuple } from "@polkadot/types/types";
 import { hexToNumber, stringToHex } from "@polkadot/util";
 import Bottleneck from "bottleneck";
 
@@ -27,7 +27,7 @@ describeSuite({
         let api: ApiPromise;
         let blockData: BlockFilteredRecord[];
 
-        beforeAll(async function () {
+        beforeAll(async () => {
             api = context.polkadotJs();
             const blockNumArray = await getBlockArray(api, timePeriod);
             log(`Collecting ${hours} hours worth of authors`);
@@ -54,18 +54,18 @@ describeSuite({
         it({
             id: "C01",
             title: "Author should be correctly set",
-            test: async function () {
+            test: async () => {
                 const failures = blockData
                     .map(({ blockNum, logs, authorities }) => {
                         const nimbusLog = logs.filter(
-                            (log) => log.isPreRuntime === true && log.asPreRuntime[0].toHex() == stringToHex("nmbs")
+                            (log) => log.isPreRuntime === true && log.asPreRuntime[0].toHex() === stringToHex("nmbs")
                         );
                         // nimbus log has to exist
                         const author = nimbusLog[0].asPreRuntime[1].toHex();
 
                         // aura log has to exist
                         const slotLog = logs.filter(
-                            (log) => log.isPreRuntime === true && log.asPreRuntime[0].toHex() == stringToHex("aura")
+                            (log) => log.isPreRuntime === true && log.asPreRuntime[0].toHex() === stringToHex("aura")
                         );
                         const slot = slotLog[0].asPreRuntime[1].reverse().toHex();
 

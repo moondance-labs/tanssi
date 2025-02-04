@@ -1,7 +1,7 @@
 import "@polkadot/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { KeyringPair } from "@moonwall/util";
-import { ApiPromise } from "@polkadot/api";
+import type { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
 import { jumpSessions } from "../../../util/block";
 import { u8aToHex } from "@polkadot/util";
 
@@ -23,7 +23,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Checking that session keys are correct on genesis",
-            test: async function () {
+            test: async () => {
                 // for session 0
                 const keys = await polkadotJs.query.authorityMapping.authorityIdMapping(0);
                 // TODO: fix once we have types
@@ -41,7 +41,7 @@ describeSuite({
         it({
             id: "E02",
             title: "Checking that session keys can be changed and are reflected",
-            test: async function () {
+            test: async () => {
                 const newKey = await polkadotJs.rpc.author.rotateKeys();
                 await polkadotJs.tx.session.setKeys(newKey, []).signAndSend(alice);
 
@@ -49,7 +49,7 @@ describeSuite({
                 // Check key is reflected in next key
                 // But its not yet in queued
                 const queuedKeys = await polkadotJs.query.session.queuedKeys();
-                const result = queuedKeys.filter((keyItem) => keyItem[1].nimbus == newKey);
+                const result = queuedKeys.filter((keyItem) => keyItem[1].nimbus === newKey);
                 expect(result).is.empty;
                 const nextKey = await polkadotJs.query.session.nextKeys(alice.address);
                 expect(u8aToHex(nextKey.unwrap().nimbus)).to.be.eq(u8aToHex(newKey));
@@ -60,7 +60,9 @@ describeSuite({
                 // The key should be queued at this point, to be applied on the next session
                 const queuedKeysSession1 = await polkadotJs.query.session.queuedKeys();
 
-                const result1 = queuedKeysSession1.filter((keyItem) => u8aToHex(keyItem[1].nimbus) == u8aToHex(newKey));
+                const result1 = queuedKeysSession1.filter(
+                    (keyItem) => u8aToHex(keyItem[1].nimbus) === u8aToHex(newKey)
+                );
                 expect(result1.length).to.be.eq(1);
 
                 // Let's jump one more session

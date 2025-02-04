@@ -1,5 +1,5 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
+import type { ApiPromise } from "@polkadot/api";
 
 describeSuite({
     id: "S14",
@@ -17,7 +17,7 @@ describeSuite({
         it({
             id: "C01",
             title: "All eligible candidates have session keys registered",
-            test: async function () {
+            test: async () => {
                 if (runtimeVersion < 200) {
                     return;
                 }

@@ -1,7 +1,7 @@
 import "@moonbeam-network/api-augment";
 import { expect } from "@moonwall/cli";
-import { EventRecord } from "@polkadot/types/interfaces";
-import {
+import type { EventRecord } from "@polkadot/types/interfaces";
+import type {
     EvmCoreErrorExitError,
     EvmCoreErrorExitFatal,
     EvmCoreErrorExitReason,
@@ -22,7 +22,7 @@ export function expectEVMResult<T extends Errors, Type extends keyof T>(
 ) {
     expect(events, `Missing events, probably failed execution`).to.be.length.at.least(1);
     const ethereumResult = events.find(
-        ({ event: { section, method } }) => section == "ethereum" && method == "Executed"
+        ({ event: { section, method } }) => section === "ethereum" && method === "Executed"
     )!.event.data[3] as EvmCoreErrorExitReason;
 
     const foundReason = ethereumResult.isError

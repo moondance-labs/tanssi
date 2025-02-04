@@ -1,18 +1,18 @@
 import { afterAll, beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { ApiPromise, Keyring } from "@polkadot/api";
+import { type ApiPromise, Keyring } from "@polkadot/api";
 import { getAuthorFromDigest, getAuthorFromDigestRange } from "../../util/author";
 import { signAndSendAndInclude, waitSessions } from "../../util/block";
 import { getKeyringNimbusIdHex } from "../../util/keys";
 import { getHeaderFromRelay } from "../../util/relayInterface";
 import { exec, spawn } from "child_process";
-import fs from "fs/promises";
+import fs from "node:fs/promises";
 import { createWriteStream } from "fs";
 
 describeSuite({
     id: "ZK01",
     title: "Zombie Tanssi KeepDb Test",
     foundationMethods: "zombie",
-    testCases: function ({ it, context }) {
+    testCases: ({ it, context }) => {
         let paraApi: ApiPromise;
         let relayApi: ApiPromise;
         let container2000Api: ApiPromise;
@@ -94,7 +94,7 @@ describeSuite({
         it({
             id: "T01",
             title: "Blocks are being produced on parachain",
-            test: async function () {
+            test: async () => {
                 const blockNum = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
                 expect(blockNum).to.be.greaterThan(0);
             },
@@ -103,7 +103,7 @@ describeSuite({
         it({
             id: "T03",
             title: "Test assignation did not change",
-            test: async function () {
+            test: async () => {
                 const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
                 // TODO: fix once we have types
                 const allCollators = (
@@ -127,7 +127,7 @@ describeSuite({
         it({
             id: "T04",
             title: "Blocks are being produced on container 2000",
-            test: async function () {
+            test: async () => {
                 const blockNum = (await container2000Api.rpc.chain.getBlock()).block.header.number.toNumber();
                 expect(blockNum).to.be.greaterThan(0);
             },
@@ -136,7 +136,7 @@ describeSuite({
         it({
             id: "T06",
             title: "Test container chain 2000 assignation is correct",
-            test: async function () {
+            test: async () => {
                 const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
                 const paraId = (await container2000Api.query.parachainInfo.parachainId()).toString();
                 const containerChainCollators = (
@@ -154,7 +154,7 @@ describeSuite({
             id: "T08",
             title: "Test author noting is correct for both containers",
             timeout: 60000,
-            test: async function () {
+            test: async () => {
                 const assignment = await paraApi.query.collatorAssignment.collatorContainerChain();
                 const paraId2000 = await container2000Api.query.parachainInfo.parachainId();
 
@@ -171,7 +171,7 @@ describeSuite({
         it({
             id: "T09",
             title: "Test author is correct in Orchestrator",
-            test: async function () {
+            test: async () => {
                 const sessionIndex = (await paraApi.query.session.currentIndex()).toNumber();
                 const authorities = await paraApi.query.authorityAssignment.collatorContainerChain(sessionIndex);
                 const author = await getAuthorFromDigest(paraApi);
@@ -183,7 +183,7 @@ describeSuite({
         it({
             id: "T10",
             title: "Test frontier template isEthereum",
-            test: async function () {
+            test: async () => {
                 // TODO: fix once we have types
                 const genesisData2000 = await paraApi.query.registrar.paraGenesisData(2000);
                 expect(genesisData2000.toJSON().properties.isEthereum).to.be.false;
@@ -193,7 +193,7 @@ describeSuite({
         it({
             id: "T11",
             title: "Test restarting both container chain collators",
-            test: async function () {
+            test: async () => {
                 // Fetch block number before restarting because the RPC may no longer work after the restart
                 blockNumberOfRestart = (await container2000Api.rpc.chain.getBlock()).block.header.number.toNumber();
                 // Fetch authorities for a later test
@@ -231,7 +231,7 @@ describeSuite({
             id: "T12",
             title: "Test container chain deregister: only nodes without keep-db should delete db",
             timeout: 300000,
-            test: async function () {
+            test: async () => {
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 
@@ -272,7 +272,7 @@ describeSuite({
         it({
             id: "T13",
             title: "Both container chain collators keep producing blocks after restart",
-            test: async function () {
+            test: async () => {
                 const currentBlock = (await container2000Api.rpc.chain.getBlock()).block.header.number.toNumber();
                 console.log(
                     `Checking block authors for container chain 2000 in range ${blockNumberOfRestart} - ${currentBlock}`

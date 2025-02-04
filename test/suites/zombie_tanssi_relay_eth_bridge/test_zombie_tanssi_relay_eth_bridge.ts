@@ -1,11 +1,11 @@
 import { beforeAll, describeSuite, expect, afterAll } from "@moonwall/cli";
-import { ApiPromise, Keyring } from "@polkadot/api";
+import { type ApiPromise, Keyring } from "@polkadot/api";
 import { spawn, exec } from "node:child_process";
 import { signAndSendAndInclude, waitSessions } from "../../util/block.ts";
 import { ethers } from "ethers";
 import { decodeAddress } from "@polkadot/util-crypto";
 import { u8aToHex } from "@polkadot/util";
-import { MultiLocation } from "@polkadot/types/interfaces/xcm/types";
+import type { MultiLocation } from "@polkadot/types/interfaces/xcm/types";
 
 // Change this if we change the storage parameter in runtime
 const GATEWAY_STORAGE_KEY = "0xaed97c7854d601808b98ae43079dafb3";
@@ -41,7 +41,7 @@ describeSuite({
     id: "ZR-01",
     title: "Zombie Tanssi Relay Test",
     foundationMethods: "zombie",
-    testCases: function ({ it, context }) {
+    testCases: ({ it, context }) => {
         let relayApi: ApiPromise;
         let relayCharlieApi: ApiPromise;
         let ethereumNodeChildProcess;
@@ -200,7 +200,7 @@ describeSuite({
         it({
             id: "T01",
             title: "Ethereum Blocks are being recognized on tanssi-relay",
-            test: async function () {
+            test: async () => {
                 await waitSessions(context, relayApi, 1, null, "Tanssi-relay");
                 const firstFinalizedBlockRoot = (
                     await relayApi.query.ethereumBeaconClient.latestFinalizedBlockRoot()
@@ -219,7 +219,7 @@ describeSuite({
         it({
             id: "T02",
             title: "Dancelight Blocks are being recognized on ethereum",
-            test: async function () {
+            test: async () => {
                 const beefyContract = new ethers.Contract(
                     beefyClientDetails.address,
                     beefyClientDetails.abi,
@@ -236,7 +236,7 @@ describeSuite({
         it({
             id: "T03",
             title: "Message can be passed from ethereum to Starlight",
-            test: async function () {
+            test: async () => {
                 const externalValidatorsBefore = await relayApi.query.externalValidators.externalValidators();
 
                 const epoch = await middlewareContract.getCurrentEpoch();
@@ -293,7 +293,7 @@ describeSuite({
         it({
             id: "T04",
             title: "Operator produces blocks",
-            test: async function () {
+            test: async () => {
                 // wait some time for the operator to be part of session validator
                 await waitSessions(
                     context,
@@ -316,7 +316,7 @@ describeSuite({
                 for (let i = 0; i < 3 * blocksPerSession; ++i) {
                     const latestBlockHash = await relayApi.rpc.chain.getBlockHash();
                     const author = (await relayApi.derive.chain.getHeader(latestBlockHash)).author;
-                    if (author == operatorAccount.address) {
+                    if (author === operatorAccount.address) {
                         return;
                     }
                     await context.waitBlock(1, "Tanssi-relay");
@@ -328,7 +328,7 @@ describeSuite({
         it({
             id: "T05",
             title: "Rewards and slashes are being sent to symbiotic successfully",
-            test: async function () {
+            test: async () => {
                 // Send slash event forcefully
                 const activeEraInfo = (await relayApi.query.externalValidators.activeEra()).toJSON();
                 const currentExternalIndex = await relayApi.query.externalValidators.currentExternalIndex();
@@ -364,7 +364,7 @@ describeSuite({
                 // Get the reward event
                 const rewardBlockEvents = await relayApiAtRewardEventBlock.query.system.events();
                 const filteredEventsForReward = rewardBlockEvents.filter((a) => {
-                    return a.event.method == "RewardsMessageSent";
+                    return a.event.method === "RewardsMessageSent";
                 });
                 expect(filteredEventsForReward.length).to.be.equal(1);
                 const rewardEvent = filteredEventsForReward[0];
@@ -375,7 +375,7 @@ describeSuite({
                 // Get the slash event
                 const slashBlockEvents = await relayApiAtSlashEventBlock.query.system.events();
                 const filteredEventsForSlash = slashBlockEvents.filter((a) => {
-                    return a.event.method == "SlashesMessageSent";
+                    return a.event.method === "SlashesMessageSent";
                 });
                 expect(filteredEventsForSlash.length).to.be.equal(1);
                 const slashEvent = filteredEventsForSlash[0];
@@ -389,10 +389,10 @@ describeSuite({
                 let slashMessageSuccess = false;
 
                 gatewayContract.on("InboundMessageDispatched", (_channelID, _nonce, messageID, success) => {
-                    if (rewardMessageId == messageID) {
+                    if (rewardMessageId === messageID) {
                         rewardMessageReceived = true;
                         rewardMessageSuccess = success;
-                    } else if (slashMessageId == messageID) {
+                    } else if (slashMessageId === messageID) {
                         slashMessageReceived = true;
                         slashMessageSuccess = success;
                     }

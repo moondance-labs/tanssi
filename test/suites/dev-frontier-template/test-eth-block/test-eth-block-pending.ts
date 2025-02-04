@@ -11,7 +11,7 @@ describeSuite({
         it({
             id: "T01",
             title: "should return pending block",
-            test: async function () {
+            test: async () => {
                 let nonce = 0;
                 const sendTransaction = async () => {
                     const gasPrice = (await context.polkadotJs().rpc.eth.gasPrice()).toBigInt();
@@ -66,7 +66,7 @@ describeSuite({
         it({
             id: "T02",
             title: "should be able to estimate gas with pending block with transfers",
-            test: async function () {
+            test: async () => {
                 const randomAccount = generateKeyringPair();
                 const randomAddress = randomAccount.address as `0x${string}`;
                 const estimatedGas = await context.viem().estimateGas({
@@ -82,7 +82,7 @@ describeSuite({
         it({
             id: "T03",
             title: "should be able to estimate gas with pending block with contract creators",
-            test: async function () {
+            test: async () => {
                 const { bytecode } = fetchCompiledContract("MultiplyBy7");
                 expect(
                     await context.viem().estimateGas({

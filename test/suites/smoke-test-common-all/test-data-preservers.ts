@@ -1,6 +1,6 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
+import type { ApiPromise } from "@polkadot/api";
 
 describeSuite({
     id: "S16",
@@ -9,14 +9,14 @@ describeSuite({
     testCases: ({ context, it }) => {
         let paraApi: ApiPromise;
 
-        beforeAll(async function () {
+        beforeAll(async () => {
             paraApi = context.polkadotJs("para");
         });
 
         it({
             id: "C01",
             title: "all profiles should have a deposit of either 0 or value fixed in the runtime",
-            test: async function () {
+            test: async () => {
                 // Add more if we change ProfileDeposit value. Keep previous values for profiles
                 // created before the change.
                 const validDeposits = [0, 11330000000000];
@@ -32,11 +32,11 @@ describeSuite({
         it({
             id: "C02",
             title: "all assigned profile have assignement witness corresponding to request and whished para id",
-            test: async function () {
+            test: async () => {
                 const entries = await paraApi.query.dataPreservers.profiles.entries();
 
                 for (const [, entry] of entries) {
-                    if (entry.assignment == null) {
+                    if (entry.assignment === null) {
                         continue;
                     }
 
@@ -48,7 +48,7 @@ describeSuite({
                         expect(!entry.profile.paraIds.blacklist.includes(para_id));
                     }
 
-                    if (entry.profile.assignmentRequest == "Free") {
+                    if (entry.profile.assignmentRequest === "Free") {
                         expect(witness).to.be.eq("Free");
                     } else if (entry.profile.assignmentRequest.streamPayment != null) {
                         expect(witness.streamPayment).to.not.be.undefined();
@@ -64,7 +64,7 @@ describeSuite({
         it({
             id: "C03",
             title: "all profiles should have valid url",
-            test: async function () {
+            test: async () => {
                 const entries = await paraApi.query.dataPreservers.profiles.entries();
 
                 for (const [, entry] of entries) {

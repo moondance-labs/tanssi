@@ -11,7 +11,7 @@ describeSuite({
         it({
             id: "T01",
             title: "should return as finalized when true",
-            test: async function () {
+            test: async () => {
                 const blockHash = (await context.createBlock([], { finalize: true })).block.hash;
                 const resp = await customDevRpcRequest("frnt_isBlockFinalized", [blockHash]);
                 expect(resp, "Block finalization status mismatch").toBe(true);
@@ -21,7 +21,7 @@ describeSuite({
         it({
             id: "T02",
             title: "should return as unfinalized when false",
-            test: async function () {
+            test: async () => {
                 const blockHash = (await context.createBlock([], { finalize: false })).block.hash;
                 const resp = await customDevRpcRequest("frnt_isBlockFinalized", [blockHash]);
                 expect(resp, "Block finalization status mismatch").toBe(false);
@@ -31,7 +31,7 @@ describeSuite({
         it({
             id: "T03",
             title: "should return as unfinalized when block not found",
-            test: async function () {
+            test: async () => {
                 const blockHash = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
                 const resp = await customDevRpcRequest("frnt_isBlockFinalized", [blockHash]);
                 expect(resp, "Block finalization status mismatch").toBe(false);
@@ -41,7 +41,7 @@ describeSuite({
         it({
             id: "T04",
             title: "should return as finalized when new block is true",
-            test: async function () {
+            test: async () => {
                 const blockHash = (await context.createBlock([], { finalize: false })).block.hash;
                 await context.createBlock([], { finalize: true });
                 const resp = await customDevRpcRequest("frnt_isBlockFinalized", [blockHash]);
@@ -52,7 +52,7 @@ describeSuite({
         it({
             id: "T05",
             title: "should return as finalized when new block reorg happens",
-            test: async function () {
+            test: async () => {
                 const blockHash = (await context.createBlock([], { finalize: false })).block.hash;
                 await context.createBlock([], { finalize: false });
                 await context.createBlock([], { finalize: true, parentHash: blockHash });
@@ -65,7 +65,7 @@ describeSuite({
         it({
             id: "T06",
             title: "should return as finalized when true",
-            test: async function () {
+            test: async () => {
                 await context.createBlock(
                     await createViemTransaction(context, {
                         to: BALTATHAR_ADDRESS,
@@ -85,7 +85,7 @@ describeSuite({
         it({
             id: "T07",
             title: "should return as unfinalized when false",
-            test: async function () {
+            test: async () => {
                 await context.createBlock(
                     await createViemTransaction(context, {
                         to: BALTATHAR_ADDRESS,
@@ -105,7 +105,7 @@ describeSuite({
         it({
             id: "T08",
             title: "should return as unfinalized when txn not found",
-            test: async function () {
+            test: async () => {
                 const txnHash = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
                 const resp = await customDevRpcRequest("frnt_isTxFinalized", [txnHash]);
                 expect(resp, "Transaction finalization status mismatch").toBe(false);
@@ -115,7 +115,7 @@ describeSuite({
         it({
             id: "T09",
             title: "should return as finalized when new block is true",
-            test: async function () {
+            test: async () => {
                 await context.createBlock(
                     await createViemTransaction(context, {
                         to: BALTATHAR_ADDRESS,
@@ -135,7 +135,7 @@ describeSuite({
         it({
             id: "T10",
             title: "should return as finalized when new block reorg happens",
-            test: async function () {
+            test: async () => {
                 const blockHash = (
                     await context.createBlock(
                         await createViemTransaction(context, {

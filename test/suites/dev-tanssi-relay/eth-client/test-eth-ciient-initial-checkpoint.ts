@@ -1,8 +1,8 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
+import type { ApiPromise } from "@polkadot/api";
 import { readFileSync } from "fs";
-import { KeyringPair } from "@moonwall/util";
+import type { KeyringPair } from "@moonwall/util";
 
 describeSuite({
     id: "DTR1201",
@@ -21,7 +21,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Ethreum client should accept an intiial checkpoint",
-            test: async function () {
+            test: async () => {
                 const initialCheckpoint = JSON.parse(
                     readFileSync("tmp/ethereum_client_test/initial-checkpoint.json").toString()
                 );

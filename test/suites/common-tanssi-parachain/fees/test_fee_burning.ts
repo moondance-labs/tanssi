@@ -1,7 +1,7 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { KeyringPair } from "@moonwall/util";
-import { ApiPromise } from "@polkadot/api";
+import type { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
 import { extractWeight } from "@moonwall/util";
 import { extractFeeAuthor, fetchIssuance, filterRewardFromOrchestrator } from "util/block";
 
@@ -28,7 +28,7 @@ describeSuite({
         it({
             id: "E01",
             title: "80% of Fees are burned",
-            test: async function () {
+            test: async () => {
                 const totalSupplyBefore = (await polkadotJs.query.balances.totalIssuance()).toBigInt();
                 const balanceBefore = (await polkadotJs.query.system.account(alice.address)).data.free.toBigInt();
                 const tx = polkadotJs.tx.balances.transferAllowDeath(bob.address, 200_000);

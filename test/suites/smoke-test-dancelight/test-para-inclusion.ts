@@ -1,9 +1,9 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { getBlockArray } from "@moonwall/util";
-import { ApiPromise } from "@polkadot/api";
-import { GenericExtrinsic } from "@polkadot/types";
-import { FrameSystemEventRecord } from "@polkadot/types/lookup";
-import { AnyTuple } from "@polkadot/types/types";
+import type { ApiPromise } from "@polkadot/api";
+import type { GenericExtrinsic } from "@polkadot/types";
+import type { FrameSystemEventRecord } from "@polkadot/types/lookup";
+import type { AnyTuple } from "@polkadot/types/types";
 import Bottleneck from "bottleneck";
 
 const timePeriod = process.env.TIME_PERIOD ? Number(process.env.TIME_PERIOD) : 1 * 60 * 60 * 1000;
@@ -48,7 +48,7 @@ describeSuite({
                     const {
                         method: { method, section },
                     } = ex;
-                    return section == "paraInherent" && method == "enter";
+                    return section === "paraInherent" && method === "enter";
                 });
 
                 const {
@@ -95,7 +95,7 @@ describeSuite({
         it({
             id: "C01",
             title: "Included paras valid",
-            test: async function () {
+            test: async () => {
                 blockData.map(({ blockNum, config, paraInherent }) => {
                     // Should have exactly 1 paraInherent
                     expect(paraInherent.length, `Block #{blockNum}: missing paraInherent in block`).toBeGreaterThan(0);

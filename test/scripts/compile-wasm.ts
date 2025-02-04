@@ -1,5 +1,5 @@
-import fs from "fs/promises";
-import path from "path";
+import fs from "node:fs/promises";
+import path from "node:path";
 import child_process from "child_process";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
@@ -57,7 +57,7 @@ async function spawn(cmd: string) {
             errData += chunk.toString();
         });
 
-        spawned.on("close", function (code) {
+        spawned.on("close", (code) => {
             if (code && code > 0) {
                 return reject(new Error(errData));
             }
@@ -65,7 +65,7 @@ async function spawn(cmd: string) {
             resolve(outData);
         });
 
-        spawned.on("error", function (err) {
+        spawned.on("error", (err) => {
             reject(err);
         });
     });

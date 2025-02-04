@@ -1,5 +1,5 @@
 import { Keyring } from "@polkadot/api";
-import fs from "fs/promises";
+import fs from "node:fs/promises";
 import jsonBg from "json-bigint";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
@@ -83,7 +83,7 @@ yargs(hideBin(process.argv))
                 const tx3s = api.tx.sudo.sudo(tx3);
                 txs.push(tx3s);
 
-                if (txs.length == 2) {
+                if (txs.length === 2) {
                     process.stdout.write(`Sending register transaction (register + markValidForCollating)... `);
                 } else {
                     process.stdout.write(

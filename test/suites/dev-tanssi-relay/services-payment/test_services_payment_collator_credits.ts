@@ -1,7 +1,7 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
-import { generateKeyringPair, KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
+import { generateKeyringPair, type KeyringPair } from "@moonwall/util";
 import { jumpSessions, jumpToSession } from "util/block";
 import { paraIdTank } from "util/payment";
 
@@ -21,7 +21,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Genesis container chains have credits and collators and should have one less credit",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
                 await jumpToSession(context, 1);
 
@@ -49,7 +49,7 @@ describeSuite({
         it({
             id: "E02",
             title: "Getting assignation should consume credits",
-            test: async function () {
+            test: async () => {
                 await jumpToSession(context, 2);
 
                 // Moving to the next session should have reduced the credit by one to both parachains
@@ -67,7 +67,7 @@ describeSuite({
         it({
             id: "E03",
             title: "Collators are unassigned when a container chain does not have enough credits",
-            test: async function () {
+            test: async () => {
                 // Create blocks until authorNoting.blockNum does not increase anymore.
                 // Check that collatorAssignment does not have collators and num credits is less than 2 sessions.
 
@@ -107,7 +107,7 @@ describeSuite({
         it({
             id: "E05",
             title: "Can buy additional credits",
-            test: async function () {
+            test: async () => {
                 // As alice, buy credits for para 2000. Check that it is assigned collators again
                 const paraId = 2000n;
 
@@ -115,7 +115,7 @@ describeSuite({
                 for (;;) {
                     await context.createBlock();
                     const collators = await polkadotJs.query.tanssiCollatorAssignment.collatorContainerChain();
-                    if (Object.keys(collators.toJSON().containerChains).length == 0) {
+                    if (Object.keys(collators.toJSON().containerChains).length === 0) {
                         break;
                     }
                 }

@@ -6,7 +6,7 @@ describeSuite({
     title: "Configuration - ActiveConfig - targetContainerChainFullness",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
-        beforeAll(async function () {
+        beforeAll(async () => {
             const config = await context.polkadotJs().query.configuration.activeConfig();
             expect(config["targetContainerChainFullness"].toString()).toBe("800000000");
 
@@ -24,7 +24,7 @@ describeSuite({
         it({
             id: "T01",
             title: "should set target fullness after 2 sessions",
-            test: async function () {
+            test: async () => {
                 const config = await context.polkadotJs().query.configuration.activeConfig();
                 expect(config["targetContainerChainFullness"].toString()).toBe("500000000");
             },

@@ -1,7 +1,7 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
-import { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
+import type { KeyringPair } from "@moonwall/util";
 import { jumpBlocks } from "util/block";
 
 describeSuite({
@@ -36,7 +36,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Non root can not spend from treasury (Local)",
-            test: async function () {
+            test: async () => {
                 expect((await polkadotJs.query.treasury.spendCount()).toNumber()).to.equal(0);
 
                 // Creates a proposal
@@ -52,7 +52,7 @@ describeSuite({
         it({
             id: "E02",
             title: "Root can spend from treasury (Local)",
-            test: async function () {
+            test: async () => {
                 expect((await polkadotJs.query.treasury.spendCount()).toNumber()).to.equal(0);
                 const balanceBefore = (await polkadotJs.query.system.account(user_dave.address)).data.free.toBigInt();
 
@@ -80,7 +80,7 @@ describeSuite({
         it({
             id: "E03",
             title: "Non root can not spend from treasury (Non-local)",
-            test: async function () {
+            test: async () => {
                 expect((await polkadotJs.query.treasury.spendCount()).toNumber()).to.equal(0);
 
                 // Creates a proposal
@@ -97,7 +97,7 @@ describeSuite({
         it({
             id: "E04",
             title: "Root can spend from treasury (Non-local)",
-            test: async function () {
+            test: async () => {
                 expect((await polkadotJs.query.treasury.spendCount()).toNumber()).to.equal(0);
                 const balanceBefore = (await polkadotJs.query.system.account(user_dave.address)).data.free.toBigInt();
 

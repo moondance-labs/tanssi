@@ -22,7 +22,7 @@ describeSuite({
         it({
             id: "T01",
             title: "should consume the same gas",
-            test: async function () {
+            test: async () => {
                 const { abi: batchInterface } = fetchCompiledContract("Batch");
 
                 let aliceNonce = (await context.polkadotJs().query.system.account(ALITH_ADDRESS)).nonce.toNumber();
@@ -101,7 +101,7 @@ describeSuite({
         it({
             id: "T02",
             title: "should be able to call itself",
-            test: async function () {
+            test: async () => {
                 const { abi: batchInterface } = fetchCompiledContract("Batch");
 
                 const batchAll = await context.writeContract({
@@ -136,7 +136,7 @@ describeSuite({
         it({
             id: "T03",
             title: "should be able to be called from call permit",
-            test: async function () {
+            test: async () => {
                 const { abi: batchInterface } = fetchCompiledContract("Batch");
                 const { abi: callPermitAbi } = fetchCompiledContract("CallPermit");
 

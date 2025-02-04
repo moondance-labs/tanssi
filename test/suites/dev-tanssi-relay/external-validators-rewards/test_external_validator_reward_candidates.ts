@@ -1,6 +1,6 @@
 import "@tanssi/api-augment";
 import { describeSuite, customDevRpcRequest, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise, Keyring } from "@polkadot/api";
+import { type ApiPromise, Keyring } from "@polkadot/api";
 import { jumpToSession } from "util/block";
 
 describeSuite({
@@ -20,7 +20,7 @@ describeSuite({
         it({
             id: "E01",
             title: "para candidates should trigger reward info",
-            test: async function () {
+            test: async () => {
                 const keyring = new Keyring({ type: "sr25519" });
                 const aliceStash = keyring.addFromUri("//Alice//stash");
 
