@@ -34,7 +34,7 @@
         "generate:meta:dancebox": "pnpm tsx node_modules/@polkadot/typegen/scripts/polkadot-types-from-chain.mjs --endpoint ./metadata-dancebox.json --package @tanssi/api-augment/tanssi/interfaces --output ./src/dancebox/interfaces",
         "generate:meta:dancelight": "pnpm tsx node_modules/@polkadot/typegen/scripts/polkadot-types-from-chain.mjs --endpoint ./metadata-dancelight.json --package @tanssi/api-augment/tanssi/interfaces --output ./src/dancelight/interfaces",
         "generate:meta:flashbox": "pnpm tsx node_modules/@polkadot/typegen/scripts/polkadot-types-from-chain.mjs --endpoint ./metadata-flashbox.json --package @tanssi/api-augment/tanssi/interfaces --output ./src/flashbox/interfaces",
-        "prebuild": "rimraf build",
+        "prebuild": "rm -rf build",
         "build": "tsc -b --verbose",
         "publish": "npm publish",
         "deploy": "pnpm run generate && pnpm run build && pnpm run publish"
@@ -87,12 +87,6 @@
         "LICENSE",
         "!**/*.tsbuildinfo"
     ],
-    "peerDependencies": {
-        "@polkadot/api-base": "15.x",
-        "@polkadot/rpc-core": "15.x",
-        "@polkadot/types": "15.x",
-        "@polkadot/types-codec": "15.x"
-    },
     "dependencies": {
         "@polkadot/api": "*",
         "@polkadot/api-augment": "*",
@@ -112,8 +106,7 @@
     "devDependencies": {
         "@types/node": "*",
         "chalk": "^5.4.1",
-        "rimraf": "^6.0.1",
-        "tsx": "^4.19.2",
-        "typescript": "^5.7.2"
+        "tsx": "*",
+        "typescript": "*"
     }
 }
