@@ -188,7 +188,7 @@ pub type Barrier = TrailingSetTopicAsId<(
 /// Locations that will not be charged fees in the executor, neither for execution nor delivery.
 /// We only waive fees for system functions, which these locations represent.
 pub type WaivedLocations = Equals<RootLocation>;
-pub type XcmWeigher = FixedWeightBounds<(), RuntimeCall, MaxInstructions>;
+pub type XcmWeigher = FixedWeightBounds<BaseXcmWeight, RuntimeCall, MaxInstructions>;
 
 pub struct XcmConfig;
 impl xcm_executor::Config for XcmConfig {
