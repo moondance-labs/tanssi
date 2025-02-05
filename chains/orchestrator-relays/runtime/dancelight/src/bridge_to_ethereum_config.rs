@@ -30,7 +30,7 @@ use {
         GetAggregateMessageOrigin, Keccak256, MessageQueue, OutboundMessageCommitmentRecorder,
         Runtime, RuntimeEvent, TransactionByteFee, TreasuryAccount, WeightToFee, UNITS,
     },
-    frame_support::{weights::ConstantMultiplier},
+    frame_support::{traits::Nothing, weights::ConstantMultiplier},
     pallet_xcm::EnsureXcm,
     snowbridge_beacon_primitives::{Fork, ForkVersions},
     snowbridge_core::{gwei, meth, PricingParameters, Rewards},
