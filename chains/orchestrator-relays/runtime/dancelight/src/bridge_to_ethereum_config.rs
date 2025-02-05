@@ -279,22 +279,6 @@ impl MessageProcessor for TokenTransferMessageProcessor {
                     Preservation::Preserve,
                 )?;
 
-                /* - Transfer fees to EthereumTokenTransfers::FeesAccount
-                // Is this right?
-
-                let fees_account =
-                    <Runtime as pallet_ethereum_token_transfers::Config>::FeesAccount::get();
-
-                <Balances as fungible::Mutate<_>>::transfer(
-                    &destination_account,
-                    &fees_account.into(),
-                    fee.into(),
-                    Preservation::Preserve,
-                )?;
-                */
-
-                // TODO:
-                // - Try to reward relayer (same account than EthereumTokenTransfers pallet)
                 Ok(())
             }
             _ => return Err(DispatchError::Other("unexpected message")),
