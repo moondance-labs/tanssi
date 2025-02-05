@@ -1050,8 +1050,6 @@ fn external_validators_whitelisted_never_rewarded() {
 
 #[test]
 fn external_validators_rewards_test_command_integrity() {
-    use {crate::ValidatorIndex, runtime_parachains::inclusion::RewardValidators};
-
     ExtBuilder::default()
         .with_balances(vec![
             (AccountId::from(ALICE), 210_000 * UNIT),
