@@ -160,7 +160,7 @@ impl snowbridge_pallet_ethereum_client::Config for Runtime {
 impl snowbridge_pallet_system::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type OutboundQueue = EthereumOutboundQueue;
-    type SiblingOrigin = EnsureXcm<Nothing>;
+    type SiblingOrigin = EnsureRoot;
     type AgentIdOf = snowbridge_core::AgentIdOf;
     type TreasuryAccount = TreasuryAccount;
     type Token = Balances;
