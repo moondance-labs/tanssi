@@ -82,7 +82,9 @@ describeSuite({
             id: "C01",
             title: "BABE keys are set and validators from logs match validators from pallet",
             test: async function () {
-                // Check the previous epoch digest
+                // Check the previous epoch digest.
+                // The [0] index indicates the block number in which the previous session started.
+                // The [1] index indicates the block number in which the current session started.
                 const blockToCheck = (await api.query.babe.epochStart()).toJSON()[0];
 
                 const apiAtSessionChange = await api.at(await api.rpc.chain.getBlockHash(blockToCheck));
