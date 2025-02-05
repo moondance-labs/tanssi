@@ -2771,15 +2771,15 @@ impl_runtime_apis! {
         fn query_weight_to_asset_fee(weight: Weight, asset: VersionedAssetId) -> Result<u128, XcmPaymentApiError> {
             let local_asset = VersionedAssetId::V5(xcm_config::SelfReserve::get().into());
             let asset = asset
-                .into_version(4)
+                .into_version(5)
                 .map_err(|_| XcmPaymentApiError::VersionedConversionFailed)?;
 
             if asset == local_asset {
                 Ok(WeightToFee::weight_to_fee(&weight))
             } else {
                 let native_fee = WeightToFee::weight_to_fee(&weight);
-                let asset_v4: staging_xcm::latest::AssetId = asset.try_into().map_err(|_| XcmPaymentApiError::VersionedConversionFailed)?;
-                let location: staging_xcm::latest::Location = asset_v4.0;
+                let asset_v5: staging_xcm::latest::AssetId = asset.try_into().map_err(|_| XcmPaymentApiError::VersionedConversionFailed)?;
+                let location: staging_xcm::latest::Location = asset_v5.0;
                 let asset_id = pallet_foreign_asset_creator::ForeignAssetToAssetId::<Runtime>::get(location).ok_or(XcmPaymentApiError::AssetNotFound)?;
                 let asset_rate = AssetRate::to_asset_balance(native_fee, asset_id);
                 match asset_rate {
