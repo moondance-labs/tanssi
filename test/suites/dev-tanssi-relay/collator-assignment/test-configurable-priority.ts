@@ -28,17 +28,14 @@ const emptyGenesisData = (api) => {
 };
 
 const sortCollatorAssignment = (collatorAssignment) => {
-    return Object.keys(collatorAssignment["containerChains"])
+    return Object.keys(collatorAssignment.containerChains)
         .sort((a, b) => {
-            const b_collators = collatorAssignment["containerChains"][b].length;
-            const a_collators = collatorAssignment["containerChains"][a].length;
+            const b_collators = collatorAssignment.containerChains[b].length;
+            const a_collators = collatorAssignment.containerChains[a].length;
             if (a_collators !== b_collators) {
-                return (
-                    collatorAssignment["containerChains"][b].length - collatorAssignment["containerChains"][a].length
-                );
-            } else {
-                return Number(a) - Number(b);
+                return collatorAssignment.containerChains[b].length - collatorAssignment.containerChains[a].length;
             }
+            return Number(a) - Number(b);
         })
         .map((x) => Number(x));
 };
@@ -268,7 +265,7 @@ describeSuite({
 });
 
 async function getRegisterCollatorKeyTx(ed25519Keyring, sr25519Keyring, ecdsaKeyring, api, name, sudoKey, nonce) {
-    const collatorKey = sr25519Keyring.addFromUri("//" + name + "COLLATOR_ACC", { name: "COLLATOR" + name + " ACC" });
+    const collatorKey = sr25519Keyring.addFromUri(`//${name}COLLATOR_ACC`, { name: `COLLATOR${name} ACC` });
     const existentialDeposit = api.consts.balances.existentialDeposit.toBigInt();
 
     return {
@@ -278,22 +275,21 @@ async function getRegisterCollatorKeyTx(ed25519Keyring, sr25519Keyring, ecdsaKey
         setKeysTx: await api.tx.session
             .setKeys(
                 {
-                    grandpa: ed25519Keyring.addFromUri("//" + name + "COLLATOR_GRANDPA", {
+                    grandpa: ed25519Keyring.addFromUri(`//${name}COLLATOR_GRANDPA`, {
                         name: "COLLATOR" + " GRANDPA",
                     }).publicKey,
-                    babe: sr25519Keyring.addFromUri("//" + name + "COLLATOR_BABE", { name: "COLLATOR" + " BABE" })
+                    babe: sr25519Keyring.addFromUri(`//${name}COLLATOR_BABE`, { name: "COLLATOR" + " BABE" }).publicKey,
+                    para_validator: sr25519Keyring.addFromUri(`//${name}COLLATOR_PV`, { name: "COLLATOR" + " PV" })
                         .publicKey,
-                    para_validator: sr25519Keyring.addFromUri("//" + name + "COLLATOR_PV", { name: "COLLATOR" + " PV" })
-                        .publicKey,
-                    para_assignment: sr25519Keyring.addFromUri("//" + name + "COLLATOR_PA", {
+                    para_assignment: sr25519Keyring.addFromUri(`//${name}COLLATOR_PA`, {
                         name: "COLLATOR" + " PA",
                     }).publicKey,
-                    authority_discovery: sr25519Keyring.addFromUri("//" + name + "COLLATOR_AD", {
+                    authority_discovery: sr25519Keyring.addFromUri(`//${name}COLLATOR_AD`, {
                         name: "COLLATOR" + " AD",
                     }).publicKey,
-                    beefy: ecdsaKeyring.addFromUri("//" + name + "COLLATOR_BEEFY", { name: "COLLATOR" + " BEEFY" })
+                    beefy: ecdsaKeyring.addFromUri(`//${name}COLLATOR_BEEFY`, { name: "COLLATOR" + " BEEFY" })
                         .publicKey,
-                    nimbus: sr25519Keyring.addFromUri("//" + name + "COLLATOR_NIMBUS", { name: "COLLATOR" + " NIMBUS" })
+                    nimbus: sr25519Keyring.addFromUri(`//${name}COLLATOR_NIMBUS`, { name: "COLLATOR" + " NIMBUS" })
                         .publicKey,
                 },
                 []
@@ -318,6 +314,7 @@ async function createTxBatchForCreatingPara(
     containerChainGenesisData,
     headData
 ) {
+    let profileId = nextProfileId;
     const txs = [];
     const reserveTx = api.tx.registrar.reserve();
     txs.push(
@@ -329,7 +326,7 @@ async function createTxBatchForCreatingPara(
         )
     );
 
-    let registerTx;
+    let registerTx: any;
     if (slotFreq === null) {
         registerTx = api.tx.containerRegistrar.register(paraId, containerChainGenesisData, headData);
     } else {
@@ -358,7 +355,7 @@ async function createTxBatchForCreatingPara(
         manager
     );
     txs.push(profileTx);
-    const assignmentTx = api.tx.sudo.sudo(api.tx.dataPreservers.forceStartAssignment(nextProfileId++, paraId, "Free"));
+    const assignmentTx = api.tx.sudo.sudo(api.tx.dataPreservers.forceStartAssignment(profileId++, paraId, "Free"));
     txs.push(assignmentTx);
     const trustedValidationCodeTx = api.tx.paras.addTrustedValidationCode("0x0102030405060708090a");
     txs.push(trustedValidationCodeTx);

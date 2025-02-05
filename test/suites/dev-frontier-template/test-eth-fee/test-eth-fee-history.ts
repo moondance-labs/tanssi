@@ -51,9 +51,8 @@ describeSuite({
             const index = (percentile / 100) * array.length - 1;
             if (Math.floor(index) === index) {
                 return array[index];
-            } else {
-                return Math.ceil((array[Math.floor(index)] + array[Math.ceil(index)]) / 2);
             }
+            return Math.ceil((array[Math.floor(index)] + array[Math.ceil(index)]) / 2);
         }
 
         it({
@@ -69,12 +68,16 @@ describeSuite({
                 const feeHistory = new Promise<FeeHistory>((resolve) => {
                     const unwatch = context.viem("public").watchBlocks({
                         onBlock: async (block) => {
-                            if (Number(block.number! - startingBlock) === block_count) {
-                                const result = (await customWeb3Request(context.web3(), "eth_feeHistory", [
+                            if (Number(block.number - startingBlock) === block_count) {
+                                const { result } = (await customWeb3Request(context.web3(), "eth_feeHistory", [
                                     "0x2",
                                     "latest",
                                     reward_percentiles,
-                                ])) as FeeHistory;
+                                ])) as {
+                                    jsonrpc: string;
+                                    id: number;
+                                    result: FeeHistory;
+                                };
                                 unwatch();
                                 resolve(result);
                             }
@@ -83,8 +86,7 @@ describeSuite({
                 });
 
                 await createBlocks(block_count, reward_percentiles, priority_fees, parseGwei("10").toString());
-
-                const feeResults = (await feeHistory).result;
+                const feeResults = await feeHistory;
                 expect(
                     feeResults.baseFeePerGas.length,
                     "baseFeePerGas should always the requested block range + 1 (the next derived base fee)"
@@ -118,12 +120,16 @@ describeSuite({
                 const feeHistory = new Promise<FeeHistory>((resolve) => {
                     const unwatch = context.viem("public").watchBlocks({
                         onBlock: async (block) => {
-                            if (Number(block.number! - startingBlock) === block_count) {
-                                const result = (await customWeb3Request(context.web3(), "eth_feeHistory", [
+                            if (Number(block.number - startingBlock) === block_count) {
+                                const { result } = (await customWeb3Request(context.web3(), "eth_feeHistory", [
                                     "0xA",
                                     "latest",
                                     reward_percentiles,
-                                ])) as FeeHistory;
+                                ])) as {
+                                    jsonrpc: string;
+                                    id: number;
+                                    result: FeeHistory;
+                                };
 
                                 unwatch();
                                 resolve(result);
@@ -134,7 +140,7 @@ describeSuite({
 
                 await createBlocks(block_count, reward_percentiles, priority_fees, max_fee_per_gas);
 
-                const feeResults = (await feeHistory).result;
+                const feeResults = await feeHistory;
                 const localRewards = reward_percentiles
                     .map((percentile) => get_percentile(percentile, priority_fees))
                     .map((reward) => numberToHex(reward));

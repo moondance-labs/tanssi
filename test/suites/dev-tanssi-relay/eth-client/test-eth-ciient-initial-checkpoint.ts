@@ -1,7 +1,7 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
-import { readFileSync } from "fs";
+import { readFileSync } from "node:fs";
 import type { KeyringPair } from "@moonwall/util";
 
 describeSuite({
@@ -29,13 +29,13 @@ describeSuite({
                 const signedTx = await polkadotJs.tx.sudo.sudo(tx).signAsync(alice);
                 await context.createBlock([signedTx]);
                 const checkpointRoot = await polkadotJs.query.ethereumBeaconClient.validatorsRoot();
-                expect(checkpointRoot.toHuman()).to.equal(initialCheckpoint["validators_root"]);
+                expect(checkpointRoot.toHuman()).to.equal(initialCheckpoint.validators_root);
 
                 const latestFinalizedBlockRoot = await polkadotJs.query.ethereumBeaconClient.latestFinalizedBlockRoot();
                 const latestFinalizedSlot =
                     await polkadotJs.query.ethereumBeaconClient.finalizedBeaconState(latestFinalizedBlockRoot);
 
-                expect(latestFinalizedSlot.toHuman().slot).to.equal(initialCheckpoint["header"]["slot"].toString());
+                expect(latestFinalizedSlot.toHuman().slot).to.equal(initialCheckpoint.header.slot.toString());
             },
         });
     },

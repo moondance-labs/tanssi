@@ -35,7 +35,7 @@ describeSuite({
                     .signAsync(baltathar);
                 await context.createBlock(signedTx);
 
-                const balance = await context.readContract!({
+                const balance = await context.readContract?.({
                     contractAddress: IERC20_ADDRESS,
                     contractName: "IERC20",
                     functionName: "balanceOf",
@@ -50,7 +50,7 @@ describeSuite({
             id: "T02",
             title: "allows to call totalSupply",
             test: async () => {
-                const totalSupply = await context.readContract!({
+                const totalSupply = await context.readContract?.({
                     contractAddress: IERC20_ADDRESS,
                     contractName: "IERC20",
                     functionName: "totalSupply",
@@ -65,7 +65,7 @@ describeSuite({
             id: "T03",
             title: "allows to approve transfers, and allowance matches",
             test: async () => {
-                const allowanceBefore = (await context.readContract!({
+                const allowanceBefore = (await context.readContract?.({
                     contractAddress: IERC20_ADDRESS,
                     contractName: "IERC20",
                     functionName: "allowance",
@@ -74,7 +74,7 @@ describeSuite({
 
                 const amount = parseEther("10");
 
-                const rawTx = await context.writeContract!({
+                const rawTx = await context.writeContract?.({
                     contractAddress: IERC20_ADDRESS,
                     contractName: "IERC20",
                     functionName: "approve",
@@ -83,7 +83,7 @@ describeSuite({
                 });
                 const { result } = await context.createBlock(rawTx);
 
-                const allowanceAfter = (await context.readContract!({
+                const allowanceAfter = (await context.readContract?.({
                     contractAddress: IERC20_ADDRESS,
                     contractName: "IERC20",
                     functionName: "allowance",
@@ -109,7 +109,7 @@ describeSuite({
             title: "allows to call transfer",
             test: async () => {
                 expect(
-                    await context.readContract!({
+                    await context.readContract?.({
                         contractAddress: IERC20_ADDRESS,
                         contractName: "IERC20",
                         functionName: "balanceOf",
@@ -119,7 +119,7 @@ describeSuite({
 
                 const balanceBefore = await context.viem().getBalance({ address: BALTATHAR_ADDRESS });
 
-                const rawTx = await context.writeContract!({
+                const rawTx = await context.writeContract?.({
                     contractAddress: IERC20_ADDRESS,
                     contractName: "IERC20",
                     functionName: "transfer",
@@ -135,7 +135,7 @@ describeSuite({
 
                 const balanceAfter = await context.viem().getBalance({ address: BALTATHAR_ADDRESS });
                 const block = await context.viem().getBlock();
-                const fees = ((gasUsed as bigint) * block.baseFeePerGas!) as bigint;
+                const fees = gasUsed * block.baseFeePerGas;
                 expect(balanceAfter).toBeLessThanOrEqual(balanceBefore - parseEther("3") - fees);
                 expect(await context.viem().getBalance({ address: randomAccount.address })).to.equal(parseEther("3"));
             },
@@ -148,7 +148,7 @@ describeSuite({
                 const allowedAmount = parseEther("10");
                 const transferAmount = parseEther("5");
 
-                await context.writeContract!({
+                await context.writeContract?.({
                     contractAddress: IERC20_ADDRESS,
                     contractName: "IERC20",
                     functionName: "approve",
@@ -161,7 +161,7 @@ describeSuite({
                 ).data.free.toBigInt();
                 const toBalBefore = await context.viem().getBalance({ address: CHARLETH_ADDRESS });
 
-                const rawTx = await context.writeContract!({
+                const rawTx = await context.writeContract?.({
                     contractAddress: IERC20_ADDRESS,
                     contractName: "IERC20",
                     functionName: "transferFrom",
@@ -192,7 +192,7 @@ describeSuite({
                 expect(fromBalAfter).toBe(fromBalBefore - transferAmount);
                 const newAllowedAmount = allowedAmount - transferAmount;
                 expect(
-                    await context.readContract!({
+                    await context.readContract?.({
                         contractAddress: IERC20_ADDRESS,
                         contractName: "IERC20",
                         functionName: "allowance",
@@ -209,7 +209,7 @@ describeSuite({
                 const allowedAmount = parseEther("10");
                 const transferAmount = parseEther("15");
 
-                await context.writeContract!({
+                await context.writeContract?.({
                     contractAddress: IERC20_ADDRESS,
                     contractName: "IERC20",
                     functionName: "approve",
@@ -222,7 +222,7 @@ describeSuite({
                 ).data.free.toBigInt();
                 const toBalBefore = await context.viem().getBalance({ address: CHARLETH_ADDRESS });
 
-                const rawTxn = await context.writeContract!({
+                const rawTxn = await context.writeContract?.({
                     contractAddress: IERC20_ADDRESS,
                     contractName: "IERC20",
                     functionName: "transferFrom",
@@ -234,7 +234,7 @@ describeSuite({
                 });
 
                 const { result } = await context.createBlock(rawTxn);
-                expectEVMResult(result!.events, "Revert");
+                expectEVMResult(result?.events, "Revert");
 
                 const fromBalAfter = (
                     await context.polkadotJs().query.system.account(ALITH_ADDRESS)
@@ -244,7 +244,7 @@ describeSuite({
                 expect(toBalAfter).toBe(toBalBefore);
                 expect(fromBalAfter).toBe(fromBalBefore);
                 expect(
-                    await context.readContract!({
+                    await context.readContract?.({
                         contractAddress: IERC20_ADDRESS,
                         contractName: "IERC20",
                         functionName: "allowance",

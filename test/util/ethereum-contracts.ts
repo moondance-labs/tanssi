@@ -1,5 +1,5 @@
 import type Web3 from "web3";
-import fs from "fs";
+import fs from "node:fs";
 import path from "node:path";
 import type { TransactionReceipt } from "web3-core";
 import type { Contract } from "web3-eth-contract";

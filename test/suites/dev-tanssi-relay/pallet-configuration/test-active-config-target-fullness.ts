@@ -8,7 +8,7 @@ describeSuite({
     testCases: ({ context, it }) => {
         beforeAll(async () => {
             const config = await context.polkadotJs().query.collatorConfiguration.activeConfig();
-            expect(config["targetContainerChainFullness"].toString()).toBe("800000000");
+            expect(config.targetContainerChainFullness.toString()).toBe("800000000");
 
             const { result } = await context.createBlock(
                 context
@@ -28,7 +28,7 @@ describeSuite({
             title: "should set target fullness after 2 sessions",
             test: async () => {
                 const config = await context.polkadotJs().query.collatorConfiguration.activeConfig();
-                expect(config["targetContainerChainFullness"].toString()).toBe("500000000");
+                expect(config.targetContainerChainFullness.toString()).toBe("500000000");
             },
         });
     },

@@ -92,9 +92,9 @@ describeSuite({
                     .viem("public")
                     .getTransactionReceipt({ hash: batchSomeUntilFailureResult as `0x${string}` });
 
-                expect(batchAllReceipt["gasUsed"]).to.equal(44_932n);
-                expect(batchSomeReceipt["gasUsed"]).to.equal(44_932n);
-                expect(batchSomeUntilFailureReceipt["gasUsed"]).to.equal(44_932n);
+                expect(batchAllReceipt.gasUsed).to.equal(44_932n);
+                expect(batchSomeReceipt.gasUsed).to.equal(44_932n);
+                expect(batchSomeUntilFailureReceipt.gasUsed).to.equal(44_932n);
             },
         });
 
@@ -129,7 +129,7 @@ describeSuite({
                 });
 
                 const { result } = await context.createBlock(batchAll);
-                expectEVMResult(result!.events, "Succeed");
+                expectEVMResult(result?.events, "Succeed");
             },
         });
 
@@ -226,7 +226,7 @@ describeSuite({
                         value: 0n,
                         data: batchData,
                         gaslimit: 200_000n,
-                        nonce: fromHex(alithNonceResult!, "bigint"),
+                        nonce: fromHex(alithNonceResult, "bigint"),
                         deadline: 9999999999n,
                     },
                 });
@@ -243,7 +243,7 @@ describeSuite({
                         }),
                     })
                 );
-                expectEVMResult(baltatharForAlithResult!.events, "Succeed");
+                expectEVMResult(baltatharForAlithResult?.events, "Succeed");
             },
         });
     },

@@ -4,9 +4,9 @@ import { getAuthorFromDigest, getAuthorFromDigestRange } from "../../util/author
 import { signAndSendAndInclude, waitSessions } from "../../util/block";
 import { getKeyringNimbusIdHex } from "../../util/keys";
 import { getHeaderFromRelay } from "../../util/relayInterface";
-import { exec, spawn } from "child_process";
+import { exec, spawn } from "node:child_process";
 import fs from "node:fs/promises";
-import { createWriteStream } from "fs";
+import { createWriteStream } from "node:fs";
 
 describeSuite({
     id: "ZOMBIET01",
@@ -16,8 +16,8 @@ describeSuite({
         let paraApi: ApiPromise;
         let relayApi: ApiPromise;
         let container2000Api: ApiPromise;
-        let blockNumberOfRestart;
-        let authoritiesAtRestart;
+        let blockNumberOfRestart: number;
+        let authoritiesAtRestart: any;
         const restartedHandles = [];
 
         beforeAll(async () => {
@@ -206,8 +206,8 @@ describeSuite({
                 const pidCollator200002 = await findCollatorProcessPid("Collator2000-02");
                 expect(isProcessRunning(pidCollator200001)).to.be.true;
                 expect(isProcessRunning(pidCollator200002)).to.be.true;
-                await runZombienetRestart(pidCollator200001, getTmpZombiePath() + "/Collator2000-01.log");
-                await runZombienetRestart(pidCollator200002, getTmpZombiePath() + "/Collator2000-02.log");
+                await runZombienetRestart(pidCollator200001, `${getTmpZombiePath()}/Collator2000-01.log`);
+                await runZombienetRestart(pidCollator200002, `${getTmpZombiePath()}/Collator2000-02.log`);
 
                 await sleep(5000);
                 // Check that both collators have been stopped
@@ -215,12 +215,8 @@ describeSuite({
                 expect(isProcessRunning(pidCollator200002)).to.be.false;
 
                 // Check db has not been deleted
-                const dbPath01 =
-                    getTmpZombiePath() +
-                    "/Collator2000-01/data/containers/chains/simple_container_2000/paritydb/full-container-2000";
-                const dbPath02 =
-                    getTmpZombiePath() +
-                    "/Collator2000-02/data/containers/chains/simple_container_2000/paritydb/full-container-2000";
+                const dbPath01 = `${getTmpZombiePath()}/Collator2000-01/data/containers/chains/simple_container_2000/paritydb/full-container-2000`;
+                const dbPath02 = `${getTmpZombiePath()}/Collator2000-02/data/containers/chains/simple_container_2000/paritydb/full-container-2000`;
 
                 expect(await directoryExists(dbPath01)).to.be.true;
                 expect(await directoryExists(dbPath02)).to.be.true;
@@ -257,12 +253,8 @@ describeSuite({
                 expect(registered.toJSON().includes(2000)).to.be.false;
 
                 // Collator2000-01 db path exists because it was started with `--keep-db`, Collator2000-02 has deleted it
-                const dbPath01 =
-                    getTmpZombiePath() +
-                    "/Collator2000-01/data/containers/chains/simple_container_2000/paritydb/full-container-2000";
-                const dbPath02 =
-                    getTmpZombiePath() +
-                    "/Collator2000-02/data/containers/chains/simple_container_2000/paritydb/full-container-2000";
+                const dbPath01 = `${getTmpZombiePath()}/Collator2000-01/data/containers/chains/simple_container_2000/paritydb/full-container-2000`;
+                const dbPath02 = `${getTmpZombiePath()}/Collator2000-02/data/containers/chains/simple_container_2000/paritydb/full-container-2000`;
 
                 expect(await directoryExists(dbPath01)).to.be.true;
                 expect(await directoryExists(dbPath02)).to.be.false;
@@ -316,13 +308,12 @@ const findCollatorProcessPid = async (collatorName: string) => {
 
     if (processes.length === 1) {
         return processes[0].value; // return pid
-    } else {
-        const error = {
-            message: "Multiple processes found.",
-            processes: processes.map((p) => p.name),
-        };
-        throw error;
     }
+    const error = {
+        message: "Multiple processes found.",
+        processes: processes.map((p) => p.name),
+    };
+    throw error;
 };
 
 function isProcessRunning(pid: number): boolean {
@@ -380,7 +371,7 @@ async function countUniqueBlockAuthorsExact(paraApi, blockStart, blockEnd, numAu
 
     const uniq = [...new Set(actualAuthors)];
 
-    if (uniq.length != numAuthors) {
+    if (uniq.length !== numAuthors) {
         console.error(
             "Mismatch between authorities and actual block authors: authorities: ",
             authorities,

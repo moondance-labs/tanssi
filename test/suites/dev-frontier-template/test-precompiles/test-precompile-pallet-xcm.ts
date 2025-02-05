@@ -55,7 +55,7 @@ describeSuite({
                 const beneficiary: [number, any[]] = [
                     0,
                     // junction: AccountId32 enum (01) + the 32 byte account + Any network selector(00)
-                    ["0x01" + destinationAddress + destinationNetworkId],
+                    [`0x01${destinationAddress}${destinationNetworkId}`],
                 ];
 
                 const assetLocation: [number, any[]] = [1, []];
@@ -72,7 +72,7 @@ describeSuite({
                 });
 
                 const result = await context.createBlock(rawTxn);
-                expectEVMResult(result.result!.events, "Succeed");
+                expectEVMResult(result.result?.events, "Succeed");
 
                 const assetBalanceAfter = (
                     await context.polkadotJs().query.foreignAssets.account(assetId.toU8a(), ALITH_ADDRESS)
@@ -108,7 +108,7 @@ describeSuite({
                 });
 
                 const result = await context.createBlock(rawTxn);
-                expectEVMResult(result.result!.events, "Succeed");
+                expectEVMResult(result.result?.events, "Succeed");
 
                 const assetBalanceAfter = (
                     await context.polkadotJs().query.foreignAssets.account(assetId.toU8a(), ALITH_ADDRESS)
@@ -145,7 +145,7 @@ describeSuite({
                 });
 
                 const result = await context.createBlock(rawTxn);
-                expectEVMResult(result.result!.events, "Succeed");
+                expectEVMResult(result.result?.events, "Succeed");
 
                 const assetBalanceAfter = (
                     await context.polkadotJs().query.foreignAssets.account(assetId.toU8a(), ALITH_ADDRESS)
@@ -181,7 +181,7 @@ describeSuite({
                 });
 
                 const result = await context.createBlock(rawTxn);
-                expectEVMResult(result.result!.events, "Succeed");
+                expectEVMResult(result.result?.events, "Succeed");
 
                 const assetBalanceAfter = (
                     await context.polkadotJs().query.foreignAssets.account(assetId.toU8a(), ALITH_ADDRESS)

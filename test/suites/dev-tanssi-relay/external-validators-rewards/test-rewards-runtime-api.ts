@@ -1,5 +1,6 @@
 import { beforeAll, customDevRpcRequest, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
+import type { KeyringPair } from "@moonwall/util";
 import { jumpToSession } from "util/block";
 
 describeSuite({
@@ -8,7 +9,7 @@ describeSuite({
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
-        let alice;
+        let alice: KeyringPair;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();

@@ -93,7 +93,7 @@ describeSuite({
                 let containerBlockNum4 = await (await polkadotJs.query.authorNoting.latestAuthor(paraId)).toJSON()
                     .blockNumber;
 
-                while (containerBlockNum3 != containerBlockNum4) {
+                while (containerBlockNum3 !== containerBlockNum4) {
                     await context.createBlock();
                     containerBlockNum3 = containerBlockNum4;
                     containerBlockNum4 = await (await polkadotJs.query.authorNoting.latestAuthor(paraId)).toJSON()
@@ -225,7 +225,7 @@ describeSuite({
 
                 let creditsRemaining = (await polkadotJs.query.servicesPayment.blockProductionCredits(paraId)).toJSON();
                 // It might happen that we still have some left over collator block credits. Let's try to clean them
-                while (creditsRemaining != 0) {
+                while (creditsRemaining !== 0) {
                     await context.createBlock();
                     creditsRemaining = (await polkadotJs.query.servicesPayment.blockProductionCredits(paraId)).toJSON();
                 }

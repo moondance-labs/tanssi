@@ -68,7 +68,7 @@ describeSuite({
                 expect(block.proofSize).to.be.at.least(34_000);
                 expect(block.proofSize).to.be.at.most(70_000);
                 expect(result?.successful).to.equal(true);
-                expectEVMResult(result!.events, "Error", "OutOfGas");
+                expectEVMResult(result?.events, "Error", "OutOfGas");
             },
         });
 
@@ -93,7 +93,7 @@ describeSuite({
                 expect(block.proofSize).to.be.at.least(EXPECTED_POV_ROUGH / 1.3);
                 expect(block.proofSize).to.be.at.most(EXPECTED_POV_ROUGH * 1.3);
                 expect(result?.successful).to.equal(true);
-                expectEVMResult(result!.events, "Succeed", "Returned");
+                expectEVMResult(result?.events, "Succeed", "Returned");
             },
         });
 
@@ -112,7 +112,7 @@ describeSuite({
                 expect(block.proofSize).to.be.at.least(EXPECTED_POV_ROUGH / 1.3);
                 expect(block.proofSize).to.be.at.most(EXPECTED_POV_ROUGH * 1.3);
                 expect(result?.successful).to.equal(true);
-                expectEVMResult(result!.events, "Succeed", "Returned");
+                expectEVMResult(result?.events, "Succeed", "Returned");
             },
         });
     },

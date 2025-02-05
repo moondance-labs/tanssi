@@ -8,7 +8,7 @@ describeSuite({
     testCases: ({ context, it }) => {
         beforeAll(async () => {
             const config = await context.polkadotJs().query.collatorConfiguration.activeConfig();
-            expect(config["maxCollators"].toString()).toBe("100");
+            expect(config.maxCollators.toString()).toBe("100");
 
             const { result } = await context.createBlock(
                 context
@@ -26,7 +26,7 @@ describeSuite({
             title: "should set max collators after 2 sessions",
             test: async () => {
                 const config = await context.polkadotJs().query.collatorConfiguration.activeConfig();
-                expect(config["maxCollators"].toString()).toBe("200");
+                expect(config.maxCollators.toString()).toBe("200");
             },
         });
     },

@@ -30,7 +30,7 @@ describeSuite({
             id: "T01",
             title: "should fail re-adding proxy account",
             test: async () => {
-                await context.writeContract!({
+                await context.writeContract?.({
                     contractAddress: PRECOMPILE_PROXY_ADDRESS,
                     contractName: "Proxy",
                     functionName: "addProxy",
@@ -39,7 +39,7 @@ describeSuite({
                 });
                 await context.createBlock();
 
-                const rawTxn = await context.writeContract!({
+                const rawTxn = await context.writeContract?.({
                     contractAddress: PRECOMPILE_PROXY_ADDRESS,
                     contractName: "Proxy",
                     functionName: "addProxy",
@@ -49,10 +49,10 @@ describeSuite({
                     gas: 1_000_000n,
                 });
                 const { result } = await context.createBlock(rawTxn);
-                expectEVMResult(result!.events, "Revert");
+                expectEVMResult(result?.events, "Revert");
                 expect(
                     async () =>
-                        await context.writeContract!({
+                        await context.writeContract?.({
                             contractAddress: PRECOMPILE_PROXY_ADDRESS,
                             contractName: "Proxy",
                             functionName: "addProxy",
@@ -67,7 +67,7 @@ describeSuite({
             id: "T02",
             title: "should succeed with valid account",
             test: async () => {
-                const rawTxn = await context.writeContract!({
+                const rawTxn = await context.writeContract?.({
                     contractAddress: PRECOMPILE_PROXY_ADDRESS,
                     contractName: "Proxy",
                     functionName: "addProxy",
@@ -75,9 +75,9 @@ describeSuite({
                     rawTxOnly: true,
                 });
                 const { result } = await context.createBlock(rawTxn);
-                expectEVMResult(result!.events, "Succeed");
+                expectEVMResult(result?.events, "Succeed");
 
-                const proxyAddedEvents = result!.events.reduce((acc, e) => {
+                const proxyAddedEvents = result?.events.reduce((acc, e) => {
                     if (context.polkadotJs().events.proxy.ProxyAdded.is(e.event)) {
                         acc.push({
                             account: e.event.data[0].toString(),
@@ -102,7 +102,7 @@ describeSuite({
             test: async () => {
                 const randomAddress = privateKeyToAccount(generatePrivateKey()).address;
 
-                const rawTxn = await context.writeContract!({
+                const rawTxn = await context.writeContract?.({
                     contractAddress: PRECOMPILE_PROXY_ADDRESS,
                     contractName: "Proxy",
                     functionName: "removeProxy",
@@ -111,11 +111,11 @@ describeSuite({
                     gas: 1_000_000n,
                 });
                 const { result } = await context.createBlock(rawTxn);
-                expectEVMResult(result!.events, "Revert");
+                expectEVMResult(result?.events, "Revert");
 
                 expect(
                     async () =>
-                        await context.writeContract!({
+                        await context.writeContract?.({
                             contractAddress: PRECOMPILE_PROXY_ADDRESS,
                             contractName: "Proxy",
                             functionName: "removeProxy",
@@ -131,7 +131,7 @@ describeSuite({
             test: async () => {
                 const randomAddress = privateKeyToAccount(generatePrivateKey()).address;
 
-                await context.writeContract!({
+                await context.writeContract?.({
                     contractAddress: PRECOMPILE_PROXY_ADDRESS,
                     contractName: "Proxy",
                     functionName: "addProxy",
@@ -139,7 +139,7 @@ describeSuite({
                 });
                 await context.createBlock();
 
-                const rawTxn = await context.writeContract!({
+                const rawTxn = await context.writeContract?.({
                     contractAddress: PRECOMPILE_PROXY_ADDRESS,
                     contractName: "Proxy",
                     functionName: "removeProxy",
@@ -149,8 +149,8 @@ describeSuite({
 
                 const expectEvents = [context.polkadotJs().events.proxy.ProxyRemoved];
                 const { result } = await context.createBlock(rawTxn, { expectEvents, signer: alith });
-                expectEVMResult(result!.events, "Succeed");
-                const proxyRemovedEvents = result!.events.reduce((acc, e) => {
+                expectEVMResult(result?.events, "Succeed");
+                const proxyRemovedEvents = result?.events.reduce((acc, e) => {
                     if (context.polkadotJs().events.proxy.ProxyRemoved.is(e.event)) {
                         acc.push({
                             account: e.event.data[0].toString(),
@@ -179,7 +179,7 @@ describeSuite({
                     context.polkadotJs().tx.balances.transferAllowDeath(randomAccount.address, GLMR)
                 );
 
-                const rawTxn = await context.writeContract!({
+                const rawTxn = await context.writeContract?.({
                     contractAddress: PRECOMPILE_PROXY_ADDRESS,
                     contractName: "Proxy",
                     functionName: "removeProxies",
@@ -187,7 +187,7 @@ describeSuite({
                     rawTxOnly: true,
                 });
                 const { result } = await context.createBlock(rawTxn);
-                expectEVMResult(result!.events, "Succeed");
+                expectEVMResult(result?.events, "Succeed");
             },
         });
 
@@ -195,14 +195,14 @@ describeSuite({
             id: "T06",
             title: "should succeed removing all proxies",
             test: async () => {
-                await context.writeContract!({
+                await context.writeContract?.({
                     contractAddress: PRECOMPILE_PROXY_ADDRESS,
                     contractName: "Proxy",
                     functionName: "addProxy",
                     args: [BALTATHAR_ADDRESS, CONTRACT_PROXY_TYPE_BALANCES, 0],
                 });
                 await context.createBlock();
-                await context.writeContract!({
+                await context.writeContract?.({
                     contractAddress: PRECOMPILE_PROXY_ADDRESS,
                     contractName: "Proxy",
                     functionName: "addProxy",
@@ -213,14 +213,14 @@ describeSuite({
                 const proxiesBefore = await context.polkadotJs().query.proxy.proxies(ALITH_ADDRESS);
                 expect(proxiesBefore[0].length).toBeGreaterThanOrEqual(2);
 
-                const rawTxn = await context.writeContract!({
+                const rawTxn = await context.writeContract?.({
                     contractAddress: PRECOMPILE_PROXY_ADDRESS,
                     contractName: "Proxy",
                     functionName: "removeProxies",
                     rawTxOnly: true,
                 });
                 const { result } = await context.createBlock(rawTxn);
-                expectEVMResult(result!.events, "Succeed");
+                expectEVMResult(result?.events, "Succeed");
 
                 const proxiesAfter = await context.polkadotJs().query.proxy.proxies(ALITH_ADDRESS);
                 expect(proxiesAfter[0].isEmpty).toBe(true);
@@ -233,7 +233,7 @@ describeSuite({
             test: async () => {
                 const randomAccount = privateKeyToAccount(generatePrivateKey()).address;
 
-                const rawTxn = await context.writeContract!({
+                const rawTxn = await context.writeContract?.({
                     contractAddress: PRECOMPILE_PROXY_ADDRESS,
                     contractName: "Proxy",
                     functionName: "addProxy",
@@ -241,10 +241,10 @@ describeSuite({
                     rawTxOnly: true,
                 });
                 const { result } = await context.createBlock(rawTxn);
-                expectEVMResult(result!.events, "Succeed");
+                expectEVMResult(result?.events, "Succeed");
 
                 expect(
-                    await context.readContract!({
+                    await context.readContract?.({
                         contractAddress: PRECOMPILE_PROXY_ADDRESS,
                         contractName: "Proxy",
                         functionName: "isProxy",
@@ -260,7 +260,7 @@ describeSuite({
             test: async () => {
                 const randomAccount = privateKeyToAccount(generatePrivateKey()).address;
 
-                const rawTxn = await context.writeContract!({
+                const rawTxn = await context.writeContract?.({
                     contractAddress: PRECOMPILE_PROXY_ADDRESS,
                     contractName: "Proxy",
                     functionName: "addProxy",
@@ -268,10 +268,10 @@ describeSuite({
                     rawTxOnly: true,
                 });
                 const { result } = await context.createBlock(rawTxn);
-                expectEVMResult(result!.events, "Succeed");
+                expectEVMResult(result?.events, "Succeed");
 
                 expect(
-                    await context.readContract!({
+                    await context.readContract?.({
                         contractAddress: PRECOMPILE_PROXY_ADDRESS,
                         contractName: "Proxy",
                         functionName: "isProxy",
@@ -287,7 +287,7 @@ describeSuite({
             test: async () => {
                 const randomAccount = privateKeyToAccount(generatePrivateKey()).address;
 
-                const rawTxn = await context.writeContract!({
+                const rawTxn = await context.writeContract?.({
                     contractAddress: PRECOMPILE_PROXY_ADDRESS,
                     contractName: "Proxy",
                     functionName: "addProxy",
@@ -295,10 +295,10 @@ describeSuite({
                     rawTxOnly: true,
                 });
                 const { result } = await context.createBlock(rawTxn);
-                expectEVMResult(result!.events, "Succeed");
+                expectEVMResult(result?.events, "Succeed");
 
                 expect(
-                    await context.readContract!({
+                    await context.readContract?.({
                         contractAddress: PRECOMPILE_PROXY_ADDRESS,
                         contractName: "Proxy",
                         functionName: "isProxy",
@@ -312,7 +312,7 @@ describeSuite({
             id: "T10",
             title: "shouldn't accept unknown proxy",
             test: async () => {
-                const rawTxn = await context.writeContract!({
+                const rawTxn = await context.writeContract?.({
                     contractAddress: PRECOMPILE_PROXY_ADDRESS,
                     contractName: "Proxy",
                     functionName: "proxy",
@@ -321,11 +321,11 @@ describeSuite({
                     gas: 1_000_000n,
                 });
                 const { result } = await context.createBlock(rawTxn);
-                expectEVMResult(result!.events, "Revert");
+                expectEVMResult(result?.events, "Revert");
 
                 expect(
                     async () =>
-                        await context.writeContract!({
+                        await context.writeContract?.({
                             contractAddress: PRECOMPILE_PROXY_ADDRESS,
                             contractName: "Proxy",
                             functionName: "proxy",
@@ -342,7 +342,7 @@ describeSuite({
                 const privateKey = generatePrivateKey();
                 const randomAccount = privateKeyToAccount(privateKey).address;
 
-                const rawTxn = await context.writeContract!({
+                const rawTxn = await context.writeContract?.({
                     contractAddress: PRECOMPILE_PROXY_ADDRESS,
                     contractName: "Proxy",
                     functionName: "addProxy",
@@ -350,7 +350,7 @@ describeSuite({
                     rawTxOnly: true,
                 });
                 const { result } = await context.createBlock(rawTxn);
-                expectEVMResult(result!.events, "Succeed");
+                expectEVMResult(result?.events, "Succeed");
 
                 const { abi } = fetchCompiledContract("Proxy");
                 const rawTxn2 = await createViemTransaction(context, {
@@ -364,7 +364,7 @@ describeSuite({
                     }),
                 });
                 const { result: result2 } = await context.createBlock(rawTxn2);
-                expectEVMResult(result2!.events, "Succeed");
+                expectEVMResult(result2?.events, "Succeed");
 
                 expect(await context.viem().getBalance({ address: randomAccount })).toBe(1000n);
             },
@@ -377,7 +377,7 @@ describeSuite({
                 const privateKey = generatePrivateKey();
                 const randomAccount = privateKeyToAccount(privateKey).address;
 
-                const rawTxn = await context.writeContract!({
+                const rawTxn = await context.writeContract?.({
                     contractAddress: PRECOMPILE_PROXY_ADDRESS,
                     contractName: "Proxy",
                     functionName: "addProxy",
@@ -385,9 +385,9 @@ describeSuite({
                     rawTxOnly: true,
                 });
                 const { result } = await context.createBlock(rawTxn);
-                expectEVMResult(result!.events, "Succeed");
+                expectEVMResult(result?.events, "Succeed");
 
-                const rawTxn2 = await context.writeContract!({
+                const rawTxn2 = await context.writeContract?.({
                     contractAddress: PRECOMPILE_PROXY_ADDRESS,
                     contractName: "Proxy",
                     functionName: "removeProxy",
@@ -395,7 +395,7 @@ describeSuite({
                     rawTxOnly: true,
                 });
                 const { result: result2 } = await context.createBlock(rawTxn2);
-                expectEVMResult(result2!.events, "Succeed");
+                expectEVMResult(result2?.events, "Succeed");
 
                 const { abi } = fetchCompiledContract("Proxy");
                 const rawTxn3 = await createViemTransaction(context, {
@@ -410,7 +410,7 @@ describeSuite({
                     }),
                 });
                 const { result: result3 } = await context.createBlock(rawTxn3);
-                expectEVMResult(result3!.events, "Revert");
+                expectEVMResult(result3?.events, "Revert");
 
                 expect(
                     async () =>
@@ -432,7 +432,7 @@ describeSuite({
             id: "T13",
             title: "shouldn't accept instant for delayed proxy",
             test: async () => {
-                const rawTxn = await context.writeContract!({
+                const rawTxn = await context.writeContract?.({
                     contractAddress: PRECOMPILE_PROXY_ADDRESS,
                     contractName: "Proxy",
                     functionName: "addProxy",
@@ -440,7 +440,7 @@ describeSuite({
                     rawTxOnly: true,
                 });
                 const { result } = await context.createBlock(rawTxn);
-                expectEVMResult(result!.events, "Succeed");
+                expectEVMResult(result?.events, "Succeed");
 
                 const { abi } = fetchCompiledContract("Proxy");
                 const rawTxn2 = await createViemTransaction(context, {
@@ -455,7 +455,7 @@ describeSuite({
                     }),
                 });
                 const { result: result2 } = await context.createBlock(rawTxn2);
-                expectEVMResult(result2!.events, "Revert");
+                expectEVMResult(result2?.events, "Revert");
 
                 expect(
                     async () =>
@@ -485,7 +485,7 @@ describeSuite({
                     context.polkadotJs().tx.balances.transferAllowDeath(randomAccount, 10_000_000_000_000_000_000n)
                 );
 
-                const rawTxn = await context.writeContract!({
+                const rawTxn = await context.writeContract?.({
                     contractAddress: PRECOMPILE_PROXY_ADDRESS,
                     contractName: "Proxy",
                     functionName: "addProxy",
@@ -493,7 +493,7 @@ describeSuite({
                     rawTxOnly: true,
                 });
                 const { result } = await context.createBlock(rawTxn);
-                expectEVMResult(result!.events, "Succeed");
+                expectEVMResult(result?.events, "Succeed");
 
                 const contractBalBefore = await context.viem().getBalance({ address: PRECOMPILE_PROXY_ADDRESS });
                 const alithBalBefore = await context.viem().getBalance({ address: ALITH_ADDRESS });
@@ -509,7 +509,7 @@ describeSuite({
                     }),
                 });
                 const { result: result2 } = await context.createBlock(rawTxn2);
-                expectEVMResult(result2!.events, "Succeed");
+                expectEVMResult(result2?.events, "Succeed");
 
                 expect(await context.viem().getBalance({ address: GOLIATH_ADDRESS })).toBe(parseEther("5"));
                 const contractBalAfter = await context.viem().getBalance({ address: PRECOMPILE_PROXY_ADDRESS });
@@ -526,7 +526,7 @@ describeSuite({
                 // The account cannot be random otherwise the calldata might contain more
                 // zero bytes and have a different gas cost
                 const randomAccount = "0x1ced798a66b803d0dbb665680283980a939a6432";
-                const rawTxn = await context.writeContract!({
+                const rawTxn = await context.writeContract?.({
                     contractAddress: PRECOMPILE_PROXY_ADDRESS,
                     contractName: "Proxy",
                     functionName: "addProxy",
@@ -535,12 +535,12 @@ describeSuite({
                     rawTxOnly: true,
                 });
                 const { result } = await context.createBlock(rawTxn);
-                expectEVMResult(result!.events, "Succeed");
+                expectEVMResult(result?.events, "Succeed");
 
                 const balBefore = await context.viem().getBalance({ address: DOROTHY_ADDRESS });
                 const { abi: ierc20Abi } = fetchCompiledContract("IERC20");
 
-                const rawTxn2 = await context.writeContract!({
+                const rawTxn2 = await context.writeContract?.({
                     contractAddress: PRECOMPILE_PROXY_ADDRESS,
                     contractName: "Proxy",
                     functionName: "proxy",
@@ -558,11 +558,11 @@ describeSuite({
                 });
 
                 const { result: result2 } = await context.createBlock(rawTxn2);
-                expectEVMResult(result2!.events, "Succeed");
+                expectEVMResult(result2?.events, "Succeed");
 
                 const { gasUsed } = await context
                     .viem()
-                    .getTransactionReceipt({ hash: result2!.hash as `0x${string}` });
+                    .getTransactionReceipt({ hash: result2?.hash as `0x${string}` });
 
                 // The tx can create an account, so record 148 bytes of storage growth
                 // Storage growth ratio is 366  (Not defined in frontier template)

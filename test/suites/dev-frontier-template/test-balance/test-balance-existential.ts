@@ -54,7 +54,7 @@ describeSuite({
                 const randomAccountBalance = await context
                     .viem("public")
                     .getBalance({ address: randomAccount.address });
-                const rawTxn = await context.createTxn!({
+                const rawTxn = await context.createTxn?.({
                     to: BALTATHAR_ADDRESS,
                     privateKey,
                     txnType: "legacy",

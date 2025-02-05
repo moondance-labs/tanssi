@@ -41,10 +41,10 @@ describeSuite({
                     privateKey: BALTATHAR_PRIVATE_KEY,
                     to: callPermitDemoAddr,
                     data: encodeFunctionData({ abi: callPermitDemoAbi, functionName: "bond" }),
-                    value: fromHex(bondAmount!, "bigint"),
+                    value: fromHex(bondAmount, "bigint"),
                 })
             );
-            expectEVMResult(baltatharResult!.events, "Succeed");
+            expectEVMResult(baltatharResult?.events, "Succeed");
 
             // bond alice via baltathar using call permit
             const alithNonceResult = (
@@ -59,6 +59,7 @@ describeSuite({
             ).data;
 
             const signature = await context.viem().signTypedData({
+                account: ALITH_ADDRESS,
                 types: {
                     EIP712Domain: [
                         {
@@ -119,10 +120,10 @@ describeSuite({
                 message: {
                     from: ALITH_ADDRESS,
                     to: callPermitDemoAddr,
-                    value: fromHex(bondAmount!, "bigint"),
+                    value: fromHex(bondAmount, "bigint"),
                     data: "0x",
                     gaslimit: 100_000n,
-                    nonce: fromHex(alithNonceResult!, "bigint"),
+                    nonce: fromHex(alithNonceResult, "bigint"),
                     deadline: 9999999999n,
                 },
             });
@@ -139,7 +140,7 @@ describeSuite({
                     }),
                 })
             );
-            expectEVMResult(baltatharForAlithResult!.events, "Succeed");
+            expectEVMResult(baltatharForAlithResult?.events, "Succeed");
         });
 
         it({
@@ -167,7 +168,7 @@ describeSuite({
                         }),
                     })
                 ).data;
-                expect(fromHex(baltatharBond!, "bigint")).to.equal(100n);
+                expect(fromHex(baltatharBond, "bigint")).to.equal(100n);
             },
         });
 
@@ -185,7 +186,7 @@ describeSuite({
                         }),
                     })
                 ).data;
-                expect(fromHex(alithBond!, "bigint")).to.equal(100n);
+                expect(fromHex(alithBond, "bigint")).to.equal(100n);
             },
         });
     },

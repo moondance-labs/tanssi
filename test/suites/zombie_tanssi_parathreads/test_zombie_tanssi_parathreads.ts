@@ -465,7 +465,9 @@ function createCollatorKeyToNameMap(paraApi, collatorNames: string[]): Record<st
     return collatorName;
 }
 
-async function createTxBatchForCreatingParathread(api, manager, paraId, slotFreq, nextProfileId, headData?: null) {
+async function createTxBatchForCreatingParathread(api, manager, paraId, slotFreq, profileId, headData?: null) {
+    let nextProfileId = profileId;
+
     const specPaths = {
         2000: "specs/parathreads-template-container-2000.json",
         2001: "specs/parathreads-template-container-2001.json",

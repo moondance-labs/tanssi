@@ -4,7 +4,7 @@ import { getAuthorFromDigest } from "../../util/author";
 import { signAndSendAndInclude, waitSessions } from "../../util/block";
 import { getKeyringNimbusIdHex } from "../../util/keys";
 import { getHeaderFromRelay } from "../../util/relayInterface";
-import net from "net";
+import net from "node:net";
 
 describeSuite({
     id: "ZOMBIETA01",

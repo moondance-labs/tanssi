@@ -1,9 +1,10 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import fs from "node:fs/promises";
-import { stat } from "fs/promises";
+import { stat } from "node:fs/promises";
 import { signAndSendAndInclude, waitSessions } from "../../util/block";
 import { getKeyringNimbusIdHex } from "../../util/keys";
+import { KeyringPair } from "@moonwall/util";
 
 describeSuite({
     id: "ZOMBIETAN01",
@@ -82,7 +83,7 @@ describeSuite({
                         await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)
                     ).toJSON().containerChains;
                     // Stop waiting when parathread has been assigned collators
-                    return containerChainCollators[2000] != undefined;
+                    return containerChainCollators[2000] !== undefined;
                 });
 
                 const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
@@ -90,7 +91,7 @@ describeSuite({
                     await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)
                 ).toJSON().containerChains;
                 expect(
-                    containerChainCollators[2000] != undefined,
+                    containerChainCollators[2000] !== undefined,
                     "Failed to register parathread: no collators assigned"
                 ).to.be.true;
             },
@@ -103,7 +104,7 @@ describeSuite({
                 // We registered an empty wasm as a parathread. Collator should fail to start, but never panic.
                 const assignment = (await paraApi.query.collatorAssignment.collatorContainerChain()).toJSON();
                 const oldC2000 = collatorName[assignment.containerChains[2000][0]];
-                const logFilePath = getTmpZombiePath() + `/${oldC2000}.log`;
+                const logFilePath = `${getTmpZombiePath()}/${oldC2000}.log`;
                 await checkLogs(logFilePath, [
                     "[Orchestrator] Detected assignment for container chain 2000",
                     "[Orchestrator] Loaded chain spec for container chain 2000",
@@ -120,7 +121,7 @@ describeSuite({
             test: async () => {
                 const assignment = (await paraApi.query.collatorAssignment.collatorContainerChain()).toJSON();
                 const oldC2000 = collatorName[assignment.containerChains[2000][0]];
-                const logFilePath = getTmpZombiePath() + `/${oldC2000}.log`;
+                const logFilePath = `${getTmpZombiePath()}/${oldC2000}.log`;
                 // Best effort, if anything else panics this test will breaks
                 await assertLogsDoNotContain(logFilePath, "panic");
             },
@@ -132,7 +133,7 @@ describeSuite({
             test: async () => {
                 const assignment = (await paraApi.query.collatorAssignment.collatorContainerChain()).toJSON();
                 const oldC2000 = collatorName[assignment.containerChains[2000][0]];
-                const logFilePath = getTmpZombiePath() + `/${oldC2000}.log`;
+                const logFilePath = `${getTmpZombiePath()}/${oldC2000}.log`;
                 await waitForNewLogs(logFilePath);
             },
         });
@@ -152,9 +153,9 @@ function createCollatorKeyToNameMap(paraApi, collatorNames: string[]): Record<st
     return collatorName;
 }
 
-async function registerEmptyParathread(api, manager, paraId) {
+async function registerEmptyParathread(api: ApiPromise, manager: any, paraIdString: string) {
     const parathread = true;
-    paraId = Number.parseInt(paraId);
+    const paraId = Number.parseInt(paraIdString);
 
     const emptyGenesisData = () => {
         const g = api.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
@@ -182,7 +183,7 @@ async function registerEmptyParathread(api, manager, paraId) {
     const containerChainGenesisData = emptyGenesisData();
 
     const txs = [];
-    let tx1;
+    let tx1: any;
     if (parathread) {
         const slotFreq = api.createType("TpTraitsSlotFrequency", {
             min: 1,

@@ -100,7 +100,7 @@ describeSuite({
                 expect(block.proofSize).to.be.at.least(30_000);
                 expect(block.proofSize).to.be.at.most(50_000);
                 expect(result?.successful).to.equal(true);
-                expectEVMResult(result!.events, "Error", "OutOfGas");
+                expectEVMResult(result?.events, "Error", "OutOfGas");
             },
         });
     },

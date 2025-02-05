@@ -20,8 +20,8 @@ describeSuite({
         let container2000Api: ApiPromise;
         let container2001Api: ApiPromise;
         let container2002Api: ApiPromise;
-        let blockNumber2002Start;
-        let blockNumber2002End;
+        let blockNumber2002Start: number;
+        let blockNumber2002End: number;
         let ethersSigner: Signer;
         const sessionPeriod = 10;
 

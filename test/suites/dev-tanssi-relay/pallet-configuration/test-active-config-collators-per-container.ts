@@ -8,7 +8,7 @@ describeSuite({
     testCases: ({ context, it }) => {
         beforeAll(async () => {
             const config = await context.polkadotJs().query.collatorConfiguration.activeConfig();
-            expect(config["collatorsPerContainer"].toString()).toBe("2");
+            expect(config.collatorsPerContainer.toString()).toBe("2");
 
             const { result } = await context.createBlock(
                 context
@@ -26,7 +26,7 @@ describeSuite({
             title: "should set collators per container after 2 sessions",
             test: async () => {
                 const config = await context.polkadotJs().query.collatorConfiguration.activeConfig();
-                expect(config["collatorsPerContainer"].toString()).toBe("5");
+                expect(config.collatorsPerContainer.toString()).toBe("5");
             },
         });
     },

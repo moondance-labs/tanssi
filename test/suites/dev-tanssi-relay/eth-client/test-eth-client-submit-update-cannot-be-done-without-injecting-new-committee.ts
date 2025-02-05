@@ -1,7 +1,7 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
-import { readFileSync } from "fs";
+import { readFileSync } from "node:fs";
 import type { KeyringPair } from "@moonwall/util";
 
 describeSuite({
@@ -12,7 +12,7 @@ describeSuite({
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
-        let initialSlot;
+        let initialSlot: string;
         String;
 
         beforeAll(async () => {
@@ -22,7 +22,7 @@ describeSuite({
             const initialCheckpoint = JSON.parse(
                 readFileSync("tmp/ethereum_client_test/initial-checkpoint.json").toString()
             );
-            initialSlot = initialCheckpoint["header"]["slot"].toString();
+            initialSlot = initialCheckpoint.header.slot.toString();
             const tx = polkadotJs.tx.ethereumBeaconClient.forceCheckpoint(initialCheckpoint);
             const signedTx = await polkadotJs.tx.sudo.sudo(tx).signAsync(alice);
             await context.createBlock([signedTx]);

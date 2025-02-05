@@ -155,10 +155,7 @@ describeSuite({
                         const message = hexToU8a(preHash);
                         const signature = hexToU8a(sealLog.toHex());
                         const authorKeys = accountKeys.get(expectedAuthor);
-                        expect(
-                            authorKeys && authorKeys.babe,
-                            `Missing babe key for block author: ${expectedAuthor}`
-                        ).toBeTruthy();
+                        expect(authorKeys?.babe, `Missing babe key for block author: ${expectedAuthor}`).toBeTruthy();
                         const pubKey = hexToU8a(authorKeys.babe);
 
                         const authorValid = sr25519Verify(signature, message, pubKey);

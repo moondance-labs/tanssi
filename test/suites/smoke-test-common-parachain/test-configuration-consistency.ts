@@ -10,7 +10,7 @@ describeSuite({
     foundationMethods: "read_only",
     testCases: ({ it, context }) => {
         let api: ApiPromise;
-        let blocksPerSession;
+        let blocksPerSession: bigint;
         const costPerSession = 100_000_000n;
         const costPerBlock = 1_000_000n;
 
@@ -31,8 +31,8 @@ describeSuite({
                 const authorities = await api.query.authorityAssignment.collatorContainerChain(sessionIndex);
 
                 // We cannot exced max collators
-                expect(authorities.toJSON()["orchestratorChain"].length).to.be.lessThanOrEqual(
-                    config["maxOrchestratorCollators"].toNumber()
+                expect(authorities.toJSON().orchestratorChain.length).to.be.lessThanOrEqual(
+                    config.maxOrchestratorCollators.toNumber()
                 );
             },
         });
@@ -48,9 +48,9 @@ describeSuite({
                 const authorities = (await api.query.authorityAssignment.collatorContainerChain(sessionIndex)).toJSON();
 
                 // If we have container chain collators, is because we at least assigned min to orchestrator
-                if (Object.keys(authorities["containerChains"]).length != 0) {
-                    expect(authorities["orchestratorChain"].length).to.be.greaterThanOrEqual(
-                        config["minOrchestratorCollators"].toNumber()
+                if (Object.keys(authorities.containerChains).length !== 0) {
+                    expect(authorities.orchestratorChain.length).to.be.greaterThanOrEqual(
+                        config.minOrchestratorCollators.toNumber()
                     );
                 }
             },
@@ -116,8 +116,8 @@ describeSuite({
                         let sessionRequirements: bigint;
 
                         if (
-                            currentAuthorityAssignment["containerChains"][container.toString()] === null ||
-                            currentAuthorityAssignment["containerChains"][container.toString()].length === 0
+                            currentAuthorityAssignment.containerChains[container.toString()] === null ||
+                            currentAuthorityAssignment.containerChains[container.toString()].length === 0
                         ) {
                             sessionRequirements = 1n;
                         } else {
@@ -140,7 +140,7 @@ describeSuite({
                             // If we are able to cover all paras, then all of them should have collators if credits
                             if (maxParas >= containersToCompareAgainst.length) {
                                 expect(
-                                    pendingAuthorityAssignment["containerChains"][container.toString()].length
+                                    pendingAuthorityAssignment.containerChains[container.toString()].length
                                 ).to.be.greaterThan(0);
                             }
                         } else {
@@ -154,7 +154,7 @@ describeSuite({
                         containersToCompareAgainst.length - numWithNoCredits,
                         maxParas
                     );
-                    expect(Object.keys(pendingAuthorityAssignment["containerChains"]).length).to.be.equal(
+                    expect(Object.keys(pendingAuthorityAssignment.containerChains).length).to.be.equal(
                         expectedNumberOfChainsAssigned
                     );
                 }

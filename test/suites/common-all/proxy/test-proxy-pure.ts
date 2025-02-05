@@ -12,7 +12,7 @@ describeSuite({
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
         let charlie: KeyringPair;
-        let proxyAddress;
+        let proxyAddress: string;
 
         beforeAll(() => {
             initializeCustomCreateBlock(context);

@@ -3,7 +3,7 @@ import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 import { initializeCustomCreateBlock, jumpSessions } from "../../../util/block";
-import { u32 } from "@polkadot/types";
+import type { u32 } from "@polkadot/types";
 
 describeSuite({
     id: "DEVT1501",

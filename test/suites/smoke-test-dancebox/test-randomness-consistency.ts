@@ -8,7 +8,7 @@ describeSuite({
     foundationMethods: "read_only",
     testCases: ({ it, context }) => {
         let api: ApiPromise;
-        let runtimeVersion;
+        let runtimeVersion: number;
 
         beforeAll(() => {
             api = context.polkadotJs();
@@ -71,7 +71,7 @@ describeSuite({
                 const configuration = await apiAtIssuanceNewSession.query.configuration.activeConfig();
                 if (
                     configuration.fullRotationPeriod === 0 ||
-                    randomnessEvent.targetSession.toNumber() % configuration.fullRotationPeriod != 0
+                    randomnessEvent.targetSession.toNumber() % configuration.fullRotationPeriod !== 0
                 ) {
                     expect(randomnessEvent.fullRotation.toHuman()).to.be.false;
                 } else {

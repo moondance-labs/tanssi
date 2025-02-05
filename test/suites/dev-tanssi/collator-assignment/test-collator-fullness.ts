@@ -19,12 +19,12 @@ describeSuite({
             id: "E01",
             title: "Collator should rotate",
             test: async () => {
-                const fullRotationPeriod = (await context.polkadotJs().query.configuration.activeConfig())[
-                    "fullRotationPeriod"
-                ].toString();
-                const maxCollators = (await context.polkadotJs().query.configuration.activeConfig())[
-                    "maxCollators"
-                ].toNumber();
+                const fullRotationPeriod = (
+                    await context.polkadotJs().query.configuration.activeConfig()
+                ).fullRotationPeriod.toString();
+                const maxCollators = (
+                    await context.polkadotJs().query.configuration.activeConfig()
+                ).maxCollators.toNumber();
                 const sessionIndex = (await polkadotJs.query.session.currentIndex()).toNumber();
                 // Calculate the remaining sessions for next full rotation
                 // This is a workaround for running moonwall in run mode

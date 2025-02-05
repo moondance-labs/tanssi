@@ -26,10 +26,10 @@ describeSuite({
         let alice: KeyringPair;
         let bob: KeyringPair;
 
-        let profile1;
-        let profile2;
+        let profile1: number;
+        let profile2: number;
 
-        let balanceBeforeAssignment;
+        let balanceBeforeAssignment: bigint;
 
         beforeAll(async () => {
             paraApi = context.polkadotJs("Tanssi");
@@ -78,7 +78,7 @@ describeSuite({
             id: "T02",
             title: "Data preservers 2000 watcher properly starts",
             test: async () => {
-                const logFilePath = getTmpZombiePath() + "/DataPreserver-2000.log";
+                const logFilePath = `${getTmpZombiePath()}/DataPreserver-2000.log`;
                 await waitForLogs(logFilePath, 300, ["Starting data preserver assignment watcher"]);
             },
         });
@@ -87,7 +87,7 @@ describeSuite({
             id: "T03",
             title: "Change assignment 2000",
             test: async () => {
-                const logFilePath = getTmpZombiePath() + "/DataPreserver-2000.log";
+                const logFilePath = `${getTmpZombiePath()}/DataPreserver-2000.log`;
 
                 const profile = {
                     url: "exemple",
@@ -140,7 +140,7 @@ describeSuite({
             id: "T05",
             title: "Data preservers 2001 watcher properly starts",
             test: async () => {
-                const logFilePath = getTmpZombiePath() + "/DataPreserver-2001.log";
+                const logFilePath = `${getTmpZombiePath()}/DataPreserver-2001.log`;
                 await waitForLogs(logFilePath, 300, ["Starting data preserver assignment watcher"]);
             },
         });
@@ -149,7 +149,7 @@ describeSuite({
             id: "T06",
             title: "Change assignment 2001",
             test: async () => {
-                const logFilePath = getTmpZombiePath() + "/DataPreserver-2001.log";
+                const logFilePath = `${getTmpZombiePath()}/DataPreserver-2001.log`;
 
                 const profile = {
                     url: "exemple",
@@ -234,7 +234,7 @@ describeSuite({
                 expect(onChainProfileAccount).to.be.eq(bobAccount);
                 expect(onChainProfile.assignment.toHuman()).to.be.eq(null);
 
-                const logFilePath = getTmpZombiePath() + "/DataPreserver-2001.log";
+                const logFilePath = `${getTmpZombiePath()}/DataPreserver-2001.log`;
                 await waitForLogs(logFilePath, 300, ["Active(Id(2001)) => NotAssigned"]);
             },
         });
@@ -324,7 +324,7 @@ describeSuite({
                     })
                 );
 
-                const logFilePath = getTmpZombiePath() + "/DataPreserver-2001.log";
+                const logFilePath = `${getTmpZombiePath()}/DataPreserver-2001.log`;
                 await waitForLogs(logFilePath, 300, ["NotAssigned => Active(Id(2000))"]);
 
                 const wsProvider = new WsProvider("ws://127.0.0.1:9952");
@@ -349,7 +349,7 @@ describeSuite({
             id: "T12",
             title: "Data preserver services halt after stream payment is stalled",
             test: async () => {
-                const logFilePath = getTmpZombiePath() + "/DataPreserver-2001.log";
+                const logFilePath = `${getTmpZombiePath()}/DataPreserver-2001.log`;
                 await waitForLogs(logFilePath, 300, ["Active(Id(2000)) => Inactive(Id(2000))"]);
 
                 {

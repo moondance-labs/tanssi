@@ -1,18 +1,19 @@
 import { beforeAll, describeSuite, expect, afterAll } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
-import { spawn, exec } from "node:child_process";
+import { spawn, exec, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { signAndSendAndInclude, waitSessions } from "../../util/block.ts";
 import { ethers } from "ethers";
 import { decodeAddress } from "@polkadot/util-crypto";
 import { u8aToHex } from "@polkadot/util";
 import type { MultiLocation } from "@polkadot/types/interfaces/xcm/types";
+import type { KeyringPair } from "@moonwall/util";
 
 // Change this if we change the storage parameter in runtime
 const GATEWAY_STORAGE_KEY = "0xaed97c7854d601808b98ae43079dafb3";
 
 function execCommand(command: string, options?) {
     return new Promise((resolve, reject) => {
-        exec(command, options, (error: child.ExecException, stdout: string, stderr: string) => {
+        exec(command, options, (error: unknown, stdout: string, stderr: string) => {
             if (error) {
                 reject({ error, stdout, stderr });
             } else {
@@ -44,21 +45,21 @@ describeSuite({
     testCases: ({ it, context }) => {
         let relayApi: ApiPromise;
         let relayCharlieApi: ApiPromise;
-        let ethereumNodeChildProcess;
-        let relayerChildProcess;
-        let alice;
-        let beefyClientDetails;
+        let ethereumNodeChildProcess: ChildProcessWithoutNullStreams;
+        let relayerChildProcess: ChildProcessWithoutNullStreams;
+        let alice: KeyringPair;
+        let beefyClientDetails: any;
 
         const ethUrl = "ws://127.0.0.1:8546";
-        let customHttpProvider;
-        let ethereumWallet;
-        let middlewareContract;
-        let gatewayContract;
-        let gatewayProxyAddress;
-        let middlewareDetails;
+        let customHttpProvider: ethers.WebSocketProvider;
+        let ethereumWallet: ethers.Wallet;
+        let middlewareContract: ethers.Contract;
+        let gatewayContract: ethers.Contract;
+        let gatewayProxyAddress: string;
+        let middlewareDetails: any;
 
-        let operatorAccount;
-        let operatorNimbusKey;
+        let operatorAccount: KeyringPair;
+        let operatorNimbusKey: string;
 
         beforeAll(async () => {
             relayApi = context.polkadotJs("Tanssi-relay");
@@ -76,7 +77,7 @@ describeSuite({
             // Operator keys
             operatorAccount = keyring.addFromUri("//Charlie", { name: "Charlie default" });
             // We rotate the keys for charlie so that we have access to them from this test as well as the node
-            operatorNimbusKey = await relayCharlieApi.rpc.author.rotateKeys();
+            operatorNimbusKey = (await relayCharlieApi.rpc.author.rotateKeys()).toHex();
             await relayApi.tx.session.setKeys(operatorNimbusKey, []).signAndSend(operatorAccount);
 
             const fundingTxHash = await signAndSendAndInclude(

@@ -14,7 +14,7 @@ describeSuite({
         let apiAt: ApiDecoration<"promise">;
         let api: ApiPromise;
 
-        let runtimeVersion;
+        let runtimeVersion: number;
 
         beforeAll(async () => {
             api = context.polkadotJs();

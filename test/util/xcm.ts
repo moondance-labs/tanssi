@@ -218,7 +218,7 @@ export async function injectUmpMessage(context: DevModeContext, message?: RawXcm
 
 // Weight a particular message using the xcm utils precompile
 export async function weightMessage(context: DevModeContext, message: XcmVersionedXcm) {
-    return (await context.readPrecompile!({
+    return (await context.readPrecompile?.({
         precompileName: "XcmUtils",
         functionName: "weightMessage",
         args: [message.toHex()],

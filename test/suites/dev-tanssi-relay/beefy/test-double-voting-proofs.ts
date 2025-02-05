@@ -182,7 +182,7 @@ describeSuite({
                 const { result } = await context.createBlock(signedTx);
 
                 expect(result?.successful).to.be.false;
-                expect(result!.error?.section).to.eq("beefy");
+                expect(result?.error?.section).to.eq("beefy");
                 expect(result?.error?.name).to.eq("InvalidKeyOwnershipProof");
             },
         });
@@ -259,7 +259,7 @@ describeSuite({
                 const { result } = await context.createBlock(signedTx);
 
                 expect(result?.successful).to.be.false;
-                expect(result!.error?.section).to.eq("beefy");
+                expect(result?.error?.section).to.eq("beefy");
                 expect(result?.error?.name).to.eq("InvalidDoubleVotingProof");
             },
         });

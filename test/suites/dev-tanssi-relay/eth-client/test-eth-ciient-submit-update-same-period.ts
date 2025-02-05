@@ -1,7 +1,7 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
-import { readFileSync } from "fs";
+import { readFileSync } from "node:fs";
 import type { KeyringPair } from "@moonwall/util";
 
 describeSuite({
@@ -40,9 +40,7 @@ describeSuite({
                 const latestFinalizedSlot =
                     await polkadotJs.query.ethereumBeaconClient.finalizedBeaconState(latestFinalizedBlockRoot);
 
-                expect(latestFinalizedSlot.toHuman().slot).to.equal(
-                    samePeriodUpdate["finalized_header"]["slot"].toString()
-                );
+                expect(latestFinalizedSlot.toHuman().slot).to.equal(samePeriodUpdate.finalized_header.slot.toString());
             },
         });
     },

@@ -2,6 +2,7 @@ import "@tanssi/api-augment";
 import { describeSuite, customDevRpcRequest, expect, beforeAll } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import { jumpToSession } from "util/block";
+import type { KeyringPair } from "@moonwall/util";
 
 describeSuite({
     id: "DEVT0601",
@@ -10,7 +11,7 @@ describeSuite({
 
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
-        let alice;
+        let alice: KeyringPair;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();

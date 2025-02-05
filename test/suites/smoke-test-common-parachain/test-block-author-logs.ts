@@ -69,13 +69,13 @@ describeSuite({
                         );
                         const slot = slotLog[0].asPreRuntime[1].reverse().toHex();
 
-                        const orchestratorAuthorities = authorities.toJSON()["orchestratorChain"];
+                        const orchestratorAuthorities = authorities.toJSON().orchestratorChain;
                         const expectedAuthor =
                             orchestratorAuthorities[hexToNumber(slot) % orchestratorAuthorities.length];
 
                         return { blockNum, author, expectedAuthor };
                     })
-                    .filter(({ expectedAuthor, author }) => expectedAuthor.toString() != author.toString());
+                    .filter(({ expectedAuthor, author }) => expectedAuthor.toString() !== author.toString());
 
                 failures.forEach(({ blockNum, author, expectedAuthor }) => {
                     log(

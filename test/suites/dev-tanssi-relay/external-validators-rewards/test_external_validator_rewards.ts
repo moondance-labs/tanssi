@@ -4,7 +4,7 @@ import { type ApiPromise, Keyring } from "@polkadot/api";
 import { jumpToSession } from "util/block";
 import { encodeAddress } from "@polkadot/util-crypto";
 import type { MultiLocation } from "../../../util/xcm";
-
+import type { KeyringPair } from "@moonwall/util";
 describeSuite({
     id: "DEVT0602",
     title: "Ethereum reward tests",
@@ -12,7 +12,7 @@ describeSuite({
 
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
-        let alice;
+        let alice: KeyringPair;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();

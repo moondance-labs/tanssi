@@ -8,7 +8,7 @@ describeSuite({
     foundationMethods: "read_only",
     testCases: ({ it, context }) => {
         let api: ApiPromise;
-        let runtimeVersion;
+        let runtimeVersion: number;
 
         beforeAll(() => {
             api = context.polkadotJs();

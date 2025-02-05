@@ -34,9 +34,9 @@ describeSuite({
                 // Should have resulted in a new "other" digest log being included in the block
                 const baseHeader = await polkadotJs.rpc.chain.getHeader();
                 const allLogs = baseHeader.digest.logs.map((x) => x.toJSON());
-                const otherLogs = allLogs.filter((x) => x["other"]);
+                const otherLogs = allLogs.filter((x) => x.other);
                 expect(otherLogs.length).to.be.equal(1);
-                const logHex = otherLogs[0]["other"];
+                const logHex = otherLogs[0].other;
 
                 await expectEventCount(polkadotJs, {
                     MessagesCommitted: 1,
@@ -79,9 +79,9 @@ describeSuite({
                 // Should have resulted in a new "other" digest log being included in the block
                 const baseHeader = await polkadotJs.rpc.chain.getHeader();
                 const allLogs = baseHeader.digest.logs.map((x) => x.toJSON());
-                const otherLogs = allLogs.filter((x) => x["other"]);
+                const otherLogs = allLogs.filter((x) => x.other);
                 expect(otherLogs.length).to.be.equal(1);
-                const logHex = otherLogs[0]["other"];
+                const logHex = otherLogs[0].other;
 
                 await expectEventCount(polkadotJs, {
                     MessagesCommitted: 1,
@@ -137,7 +137,7 @@ describeSuite({
                 });
                 expect(ev1.length).to.be.equal(1);
                 const ev1Data = ev1[0].event.data[0].toJSON();
-                expect(ev1Data["err"]).toBeTruthy();
+                expect(ev1Data.err).toBeTruthy();
             },
         });
 
@@ -159,9 +159,9 @@ describeSuite({
                 // Should have resulted in a new "other" digest log being included in the block
                 const baseHeader = await polkadotJs.rpc.chain.getHeader();
                 const allLogs = baseHeader.digest.logs.map((x) => x.toJSON());
-                const otherLogs = allLogs.filter((x) => x["other"]);
+                const otherLogs = allLogs.filter((x) => x.other);
                 expect(otherLogs.length).to.be.equal(1);
-                const logHex = otherLogs[0]["other"];
+                const logHex = otherLogs[0].other;
 
                 await expectEventCount(polkadotJs, {
                     MessagesCommitted: 1,
@@ -205,9 +205,9 @@ describeSuite({
                 // Should have resulted in a new "other" digest log being included in the block
                 const baseHeader = await polkadotJs.rpc.chain.getHeader();
                 const allLogs = baseHeader.digest.logs.map((x) => x.toJSON());
-                const otherLogs = allLogs.filter((x) => x["other"]);
+                const otherLogs = allLogs.filter((x) => x.other);
                 expect(otherLogs.length).to.be.equal(1);
-                const logHex = otherLogs[0]["other"];
+                const logHex = otherLogs[0].other;
 
                 await expectEventCount(polkadotJs, {
                     MessagesCommitted: 1,

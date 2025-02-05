@@ -149,12 +149,8 @@ describeSuite({
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 
                 // Collator2000-02 should have a container 2000 db, and Collator1000-03 should not
-                const collator100003DbPath =
-                    getTmpZombiePath() +
-                    "/Collator1000-03/data/containers/chains/simple_container_2000/paritydb/full-container-2000";
-                const container200002DbPath =
-                    getTmpZombiePath() +
-                    "/Collator2000-02/data/containers/chains/simple_container_2000/paritydb/full-container-2000";
+                const collator100003DbPath = `${getTmpZombiePath()}/Collator1000-03/data/containers/chains/simple_container_2000/paritydb/full-container-2000`;
+                const container200002DbPath = `${getTmpZombiePath()}/Collator2000-02/data/containers/chains/simple_container_2000/paritydb/full-container-2000`;
                 expect(await directoryExists(container200002DbPath)).to.be.true;
                 expect(await directoryExists(collator100003DbPath)).to.be.false;
 
@@ -251,7 +247,7 @@ describeSuite({
             test: async () => {
                 // Use collator logs to ensure that it used warp sync to first the first time.
                 // Not ideal because logs can change, but better than nothing.
-                const logFilePath = getTmpZombiePath() + "/Collator1000-03.log";
+                const logFilePath = `${getTmpZombiePath()}/Collator1000-03.log`;
                 await checkLogs(logFilePath, [
                     "[Orchestrator] Detected assignment for container chain 2000",
                     "[Orchestrator] Loaded chain spec for container chain 2000",
@@ -271,7 +267,7 @@ describeSuite({
             title: "Check Collator2000-02.log to ensure shutdown error bug is fixed",
             timeout: 300000,
             test: async () => {
-                const logFilePath = getTmpZombiePath() + "/Collator2000-02.log";
+                const logFilePath = `${getTmpZombiePath()}/Collator2000-02.log`;
                 await checkLogsNotExist(logFilePath, [
                     "Entering off-chain worker.",
                     "Shutdown error",

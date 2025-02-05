@@ -110,7 +110,7 @@ describeSuite({
                 let containerBlockNum4 = await (await polkadotJs.query.authorNoting.latestAuthor(paraId)).toJSON()
                     .blockNumber;
 
-                while (containerBlockNum3 != containerBlockNum4) {
+                while (containerBlockNum3 !== containerBlockNum4) {
                     await context.createBlock();
                     await context.createBlock();
                     containerBlockNum3 = containerBlockNum4;
@@ -241,7 +241,7 @@ describeSuite({
 
                 // spend all credits
                 let creditsRemaining = (await polkadotJs.query.servicesPayment.blockProductionCredits(paraId)).toJSON();
-                while (creditsRemaining != 0) {
+                while (creditsRemaining !== 0) {
                     await context.createBlock();
                     await context.createBlock();
                     creditsRemaining = (await polkadotJs.query.servicesPayment.blockProductionCredits(paraId)).toJSON();

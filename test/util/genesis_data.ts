@@ -84,6 +84,6 @@ export function onChainPropertiesToChainSpecProperties(properties: any): any {
         tokenSymbol: hexToString(properties.tokenMetadata.tokenSymbol.toHex()),
         ss58Format: properties.tokenMetadata.ss58Format.toNumber(),
         tokenDecimals: properties.tokenMetadata.tokenDecimals.toNumber(),
-        isEthereum: properties.isEthereum === true ? true : false,
+        isEthereum: properties.isEthereum === true,
     };
 }

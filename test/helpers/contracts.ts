@@ -28,7 +28,7 @@ export const deployHeavyContracts = async (context: DevModeContext, first = 6000
 
     // Check which contracts are already deployed
     for (const contract of contracts) {
-        contract.deployed = (await context.polkadotJs().rpc.state.getStorage(contract.key))!.toString().length > 10;
+        contract.deployed = (await context.polkadotJs().rpc.state.getStorage(contract.key))?.toString().length > 10;
     }
 
     // Create the contract code (24kb of zeros)

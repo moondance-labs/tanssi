@@ -27,11 +27,11 @@ describeSuite({
                 const authorityKeyMapping = (
                     await api.query.tanssiAuthorityMapping.authorityIdMapping(sessionIndex)
                 ).toJSON();
-                for (const container of Object.keys(assignmentCollatorKey["containerChains"])) {
-                    for (const key of assignmentCollatorKey["containerChains"][container]) {
+                for (const container of Object.keys(assignmentCollatorKey.containerChains)) {
+                    for (const key of assignmentCollatorKey.containerChains[container]) {
                         const assignedAccount = authorityKeyMapping[key.toString()];
                         expect(
-                            assignmentCollatorAccount["containerChains"][container].includes(assignedAccount.toString())
+                            assignmentCollatorAccount.containerChains[container].includes(assignedAccount.toString())
                         ).to.be.true;
                     }
                 }

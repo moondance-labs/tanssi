@@ -9,10 +9,10 @@ describeSuite({
     foundationMethods: "read_only",
     testCases: ({ it, context }) => {
         let api: ApiPromise;
-        let runtimeVersion;
+        let runtimeVersion: number;
         const costPerSession = 100_000_000n;
         const costPerBlock = 1_000_000n;
-        let blocksPerSession;
+        let blocksPerSession: bigint;
         let chain: any;
 
         beforeAll(async () => {
@@ -54,15 +54,15 @@ describeSuite({
                         ? await api.query.tanssiCollatorAssignment.collatorContainerChain()
                         : await api.query.collatorAssignment.collatorContainerChain();
 
-                if (pending["containerChains"] != undefined) {
-                    for (const container of Object.keys(pending.toJSON()["containerChains"])) {
+                if (pending.containerChains !== undefined) {
+                    for (const container of Object.keys(pending.toJSON().containerChains)) {
                         // if not currently assigned, then one session
                         // if currently assigned, then 2
                         let sessionRequirements: bigint;
 
                         if (
-                            current.toJSON()["containerChains"][container.toString()] === null ||
-                            current.toJSON()["containerChains"][container.toString()].length === 0
+                            current.toJSON().containerChains[container.toString()] === null ||
+                            current.toJSON().containerChains[container.toString()].length === 0
                         ) {
                             sessionRequirements = 1n;
                         } else {

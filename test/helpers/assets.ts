@@ -69,7 +69,7 @@ export async function mockAssetCreation(
     );
 
     const evmCodeAssetKey = api.query.evm.accountCodes.key(
-        "0xfFfFFFffFffFFFFffFFfFfffFfFFFFFfffFF" + assetId.toHex().slice(2)
+        `0xfFfFFFffFffFFFFffFFfFfffFfFFFFFfffFF${assetId.toHex().slice(2)}`
     );
 
     await context.createBlock(

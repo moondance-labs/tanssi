@@ -3,16 +3,15 @@ import { describeSuite, beforeAll, expect, customDevRpcRequest } from "@moonwall
 import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 
-async function rpcStreamPaymentStatus(context, block, streamId, now) {
-    if (block === "latest") {
+async function rpcStreamPaymentStatus(context, block: string, streamId: number, now: number) {
+    let blockhash = block;
+    if (blockhash === "latest") {
         const blockNumber = (await context.polkadotJs().rpc.chain.getBlock()).block.header.number.toBigInt();
 
-        const blockHash = await context.polkadotJs().rpc.chain.getBlockHash(blockNumber);
-
-        block = blockHash;
+        blockhash = await context.polkadotJs().rpc.chain.getBlockHash(blockNumber);
     }
 
-    return await customDevRpcRequest("tanssi_streamPaymentStatus", [block, streamId, now]);
+    return await customDevRpcRequest("tanssi_streamPaymentStatus", [blockhash, streamId, now]);
 }
 
 describeSuite({
