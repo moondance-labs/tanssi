@@ -85,14 +85,14 @@ jobs:
       matrix:
         chain: ${{ fromJson(needs.matrix_prep.outputs.matrix_tests) }}
         srtool_image:
-          - moondancelabs/srtool
+          - paritytech/srtool
         srtool_image_tag:
-          - 1.75.0
+          - 1.81.0
         # Change this once https://github.com/paritytech/srtool/pull/81 gets merged
         srtool_build_base_dockerhub:
           - moondancelabs/srtool
         srtool_build_source_image_tag:
-          - temp-1.75
+          - temp-1.81
 
     steps:
       - uses: actions/checkout@v4
