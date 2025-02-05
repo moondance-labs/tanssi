@@ -849,8 +849,6 @@ fn external_validators_rewards_merkle_proofs() {
                     .unwrap();
             assert!(era_rewards.total > 0);
 
-            println!("era_rewards: {era_rewards:?}");
-
             let charlie_merkle_proof = ExternalValidatorsRewards::generate_rewards_merkle_proof(
                 AccountId::from(CHARLIE),
                 1u32,

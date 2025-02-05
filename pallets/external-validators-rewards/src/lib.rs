@@ -268,6 +268,13 @@ pub mod pallet {
 
     impl<T: Config> tp_traits::OnEraEnd for Pallet<T> {
         fn on_era_end(era_index: EraIndex) {
+            // Will send a ReportRewards message to Ethereum unless:
+            // - the reward token is misconfigured
+            // - the tokens inflation is 0 (misconfigured inflation)
+            // - the total points is 0 (no rewards to distribute)
+            // - it fails to mint the tokens in the Ethereum Sovereign Account
+            // - the generated message doesn't pass validation
+
             let token_location = T::TokenLocationReanchored::get();
             let token_id = T::TokenIdFromLocation::convert_back(&token_location);
 
