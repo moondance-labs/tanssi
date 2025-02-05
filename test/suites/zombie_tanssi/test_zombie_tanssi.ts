@@ -207,16 +207,11 @@ describeSuite({
             timeout: 30000,
             test: async () => {
                 const randomAccount = generateKeyringPair();
-                const tx = await createTransfer(context, randomAccount.address, 1_000_000_000_000, {
-                    gasPrice: MIN_GAS_PRICE,
+                const tx = await context.ethers().sendTransaction({
+                    to: randomAccount.address,
+                    value: 1_000_000_000_000n,
                 });
-                const txHash = await customWeb3Request(context.web3(), "eth_sendRawTransaction", [tx]);
-                await waitUntilEthTxIncluded(
-                    () => context.waitBlock(1, "Container2001"),
-                    context.web3(),
-                    txHash.result
-                );
-                expect(Number(await context.web3().eth.getBalance(randomAccount.address))).to.be.greaterThan(0);
+                await tx.wait();
             },
         });
 

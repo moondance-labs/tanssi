@@ -43,19 +43,24 @@ describeSuite({
             const paraId2002 = (await container2002Api.query.parachainInfo.parachainId()).toString();
             expect(container2002Network, "Container2002 API incorrect").to.contain("container-chain-template");
             expect(paraId2002, "Container2002 API incorrect").to.be.equal("2002");
-
-            // Test block numbers in relay are 0 yet
-            const header2000 = await getHeaderFromRelay(relayApi, 2000);
-            const header2001 = await getHeaderFromRelay(relayApi, 2001);
-            const header2002 = await getHeaderFromRelay(relayApi, 2002);
-
-            expect(header2000.number.toNumber()).to.be.equal(0);
-            expect(header2001.number.toNumber()).to.be.equal(0);
-            expect(header2002.number.toNumber()).to.be.equal(0);
         }, 120000);
 
         it({
             id: "T01",
+            title: "Test block numbers in relay are 0 yet",
+            test: async () => {
+                const header2000 = await getHeaderFromRelay(relayApi, 2000);
+                const header2001 = await getHeaderFromRelay(relayApi, 2001);
+                const header2002 = await getHeaderFromRelay(relayApi, 2002);
+
+                expect(header2000.number.toNumber()).to.be.equal(0);
+                expect(header2001.number.toNumber()).to.be.equal(0);
+                expect(header2002.number.toNumber()).to.be.equal(0);
+            },
+        });
+
+        it({
+            id: "T02",
             title: "Blocks are being produced on tanssi-relay",
             test: async () => {
                 const relayNetwork = relayApi.consts.system.version.specName.toString();
@@ -66,7 +71,7 @@ describeSuite({
         });
 
         it({
-            id: "T02",
+            id: "T03",
             title: "Set config params",
             test: async () => {
                 const keyring = new Keyring({ type: "sr25519" });
@@ -81,18 +86,13 @@ describeSuite({
         });
 
         it({
-            id: "T03",
-            timeout: 600000,
+            id: "T04",
             title: "Test assignation did not change",
             test: async () => {
                 const currentSession = (await relayApi.query.session.currentIndex()).toNumber();
-                // TODO: fix once we have types
                 const allCollators = (
                     await relayApi.query.tanssiAuthorityAssignment.collatorContainerChain(currentSession)
                 ).toJSON();
-                // We can only check the number because zombienet dancelight has randomness and rotation,
-                // so the assigned collators will change every time this test is run.
-                // 0 collators in orchestrator and 2 collators in each para
                 expect(allCollators.orchestratorChain.length).to.equal(0);
                 expect(allCollators.containerChains["2000"].length).to.equal(2);
                 expect(allCollators.containerChains["2001"].length).to.equal(2);
@@ -100,7 +100,7 @@ describeSuite({
         });
 
         it({
-            id: "T04",
+            id: "T05",
             title: "Blocks are being produced on container 2000",
             test: async () => {
                 const blockNum = (await container2000Api.rpc.chain.getBlock()).block.header.number.toNumber();
@@ -109,18 +109,17 @@ describeSuite({
         });
 
         it({
-            id: "T05",
+            id: "T06",
             title: "Blocks are being produced on container 2001",
             test: async () => {
                 const blockNum = (await container2001Api.rpc.chain.getBlock()).block.header.number.toNumber();
-
                 expect(blockNum).to.be.greaterThan(0);
                 expect(await ethersSigner.provider.getBlockNumber(), "Safe tag is not present").to.be.greaterThan(0);
             },
         });
 
         it({
-            id: "T06",
+            id: "T07",
             title: "Test container chain 2000 assignation is correct",
             test: async () => {
                 const currentSession = (await relayApi.query.session.currentIndex()).toNumber();
@@ -129,7 +128,6 @@ describeSuite({
                     await relayApi.query.tanssiAuthorityAssignment.collatorContainerChain(currentSession)
                 ).toJSON().containerChains[paraId];
 
-                // TODO: fix once we have types
                 const writtenCollators = (await container2000Api.query.authoritiesNoting.authorities()).toJSON();
 
                 expect(containerChainCollators).to.deep.equal(writtenCollators);
@@ -137,7 +135,7 @@ describeSuite({
         });
 
         it({
-            id: "T07",
+            id: "T08",
             title: "Test container chain 2001 assignation is correct",
             test: async () => {
                 const currentSession = (await relayApi.query.session.currentIndex()).toNumber();
@@ -153,7 +151,7 @@ describeSuite({
         });
 
         it({
-            id: "T08",
+            id: "T09",
             title: "Test author noting is correct for both containers",
             timeout: 60000,
             test: async () => {
@@ -177,34 +175,30 @@ describeSuite({
             id: "T10",
             title: "Test frontier template isEthereum",
             test: async () => {
-                // TODO: fix once we have types
                 const genesisData2000 = await relayApi.query.containerRegistrar.paraGenesisData(2000);
                 expect(genesisData2000.toJSON().properties.isEthereum).to.be.false;
                 const genesisData2001 = await relayApi.query.containerRegistrar.paraGenesisData(2001);
                 expect(genesisData2001.toJSON().properties.isEthereum).to.be.true;
             },
         });
+
         it({
             id: "T11",
             title: "Transactions can be made with ethers",
             timeout: 30000,
             test: async () => {
                 const randomAccount = generateKeyringPair();
-                const tx = await createTransfer(context, randomAccount.address, 1_000_000_000_000, {
-                    gasPrice: MIN_GAS_PRICE,
+                const tx = await context.ethers().sendTransaction({
+                    to: randomAccount.address,
+                    value: 1_000_000_000_000n,
                 });
-                const txHash = await customWeb3Request(context.web3(), "eth_sendRawTransaction", [tx]);
-                await waitUntilEthTxIncluded(
-                    () => context.waitBlock(1, "Container2001"),
-                    context.web3(),
-                    txHash.result
-                );
-                expect(Number(await context.web3().eth.getBalance(randomAccount.address))).to.be.greaterThan(0);
+                await tx.wait();
+                expect(await context.ethers().provider.getBalance(randomAccount.address)).to.be.greaterThan(0);
             },
         });
 
         it({
-            id: "T12a",
+            id: "T12",
             title: "Test live registration of container chain 2002 - Register",
             timeout: 60000,
             test: async () => {
@@ -215,12 +209,9 @@ describeSuite({
                 const spec2002 = await fs.readFile("./specs/single-container-template-container-2002.json", "utf8");
                 const headData2002 = await fs.readFile("./specs/para-2002-genesis-state", "utf8");
 
-                // Before registering container chain 2002, ensure that it has 0 blocks
-                // Since the RPC doesn't exist at this point, we need to get that from the relay
                 const header2002 = await getHeaderFromRelay(relayApi, 2002);
                 expect(header2002.number.toNumber()).to.be.equal(0);
                 const registered1 = await relayApi.query.containerRegistrar.registeredParaIds();
-                // TODO: fix once we have types
                 expect(registered1.toJSON().includes(2002)).to.be.false;
 
                 const chainSpec2002 = JSON.parse(spec2002);
@@ -241,12 +232,8 @@ describeSuite({
                 });
 
                 const tx3 = relayApi.tx.dataPreservers.forceStartAssignment(profileId, 2002, "Free");
-                // In Dancelight we must wait 2 session before calling markValidForCollating, because the para needs to be
-                // onboarded in the relay registrar first.
-                // And before being allowed to do that, we must mark the validationCode as trusted
                 const tx4 = relayApi.tx.paras.addTrustedValidationCode(genesisCode);
 
-                // Send the batch transaction: [register, purchaseCredits, createProfile, sudo(forceStartAssignment), sudo(addTrustedValidationCode)]
                 const txBatch = relayApi.tx.utility.batchAll([
                     tx0,
                     tx1,
@@ -257,28 +244,24 @@ describeSuite({
                 ]);
                 const { blockHash } = await signAndSendAndInclude(txBatch, alice);
 
-                // Assert that the batch succeeded with no error
                 const apiAt = await relayApi.at(blockHash);
                 const events = await apiAt.query.system.events();
-                const ev1 = events.filter((a) => {
-                    return a.event.method === "BatchCompleted";
-                });
+                const ev1 = events.filter((a) => a.event.method === "BatchCompleted");
                 expect(ev1.length).to.be.equal(1);
             },
         });
 
         it({
-            id: "T12b",
+            id: "T13",
             title: "Test live registration of container chain 2002 - Wait 2 sessions",
             timeout: 300000,
             test: async () => {
-                // This needs to wait until registrar.paraLifecycle is "parathread"
                 await waitSessions(context, relayApi, 2, null, "Tanssi-relay");
             },
         });
 
         it({
-            id: "T12c",
+            id: "T14",
             title: "Test live registration of container chain 2002 - MarkValidForCollating",
             timeout: 60000,
             test: async () => {
@@ -288,32 +271,24 @@ describeSuite({
                 const tx4 = relayApi.tx.containerRegistrar.markValidForCollating(2002);
                 await signAndSendAndInclude(relayApi.tx.sudo.sudo(tx4), alice);
 
-                // Check that pending para ids contains 2002
                 const registered2 = await relayApi.query.containerRegistrar.pendingParaIds();
                 const registered3 = await relayApi.query.containerRegistrar.registeredParaIds();
-                // TODO: fix once we have types
                 expect(registered2.toJSON()[0][1].includes(2002)).to.be.true;
-                // But registered does not contain 2002 yet
-                // TODO: fix once we have types
                 expect(registered3.toJSON().includes(2002)).to.be.false;
             },
         });
 
         it({
-            id: "T12d",
+            id: "T15",
             title: "Test live registration of container chain 2002 - Wait 2 sessions more",
             timeout: 300000,
             test: async () => {
-                // Container chain will be registered after 2 sessions, but because `signAndSendAndInclude` waits
-                // until the block that includes the extrinsic is finalized, it is possible that we only need to wait
-                // 1 session. So use a callback to wait 1 or 2 sessions.
                 await waitSessions(
                     context,
                     relayApi,
                     2,
                     async () => {
                         const registered = await relayApi.query.containerRegistrar.registeredParaIds();
-                        // Stop waiting when 2002 is registered
                         return registered.toJSON().includes(2002);
                     },
                     "Tanssi-relay"
@@ -322,47 +297,40 @@ describeSuite({
         });
 
         it({
-            id: "T12e",
+            id: "T16",
             title: "Test live registration of container chain 2002 - Assert",
             timeout: 60000,
             test: async () => {
-                // Check that registered para ids contains 2002
                 const registered5 = await relayApi.query.containerRegistrar.registeredParaIds();
-                // TODO: fix once we have types
                 expect(registered5.toJSON().includes(2002)).to.be.true;
             },
         });
 
         it({
-            id: "T13",
+            id: "T17",
             title: "Blocks are being produced on container 2002",
             timeout: 180000,
             test: async () => {
-                // Wait 3 blocks because the next test needs to get a non empty value from
-                // container2002Api.query.authoritiesNoting()
                 await context.waitBlock(3, "Container2002");
             },
         });
 
         it({
-            id: "T14",
+            id: "T18",
             title: "Test container chain 2002 assignation is correct",
             test: async () => {
                 const currentSession = (await relayApi.query.session.currentIndex()).toNumber();
                 const paraId = (await container2002Api.query.parachainInfo.parachainId()).toString();
-                // TODO: fix once we have types
                 const containerChainCollators = (
                     await relayApi.query.tanssiAuthorityAssignment.collatorContainerChain(currentSession)
                 ).toJSON().containerChains[paraId];
-
                 const writtenCollators = (await container2002Api.query.authoritiesNoting.authorities()).toJSON();
-
                 expect(containerChainCollators).to.deep.equal(writtenCollators);
             },
         });
 
         it({
-            id: "T15",
+            id: "T19",
             title: "Deregister container chain 2002",
             timeout: 300000,
             test: async () => {
@@ -370,35 +338,28 @@ describeSuite({
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 
                 const registered1 = await relayApi.query.containerRegistrar.registeredParaIds();
-                // TODO: fix once we have types
                 expect(registered1.toJSON().includes(2002)).to.be.true;
 
                 const tx = relayApi.tx.containerRegistrar.deregister(2002);
                 await signAndSendAndInclude(relayApi.tx.sudo.sudo(tx), alice);
-                // Container chain will be deregistered after 2 sessions, but because `signAndSendAndInclude` waits
-                // until the block that includes the extrinsic is finalized, it is possible that we only need to wait
-                // 1 session. So use a callback to wait 1 or 2 sessions.
                 await waitSessions(
                     context,
                     relayApi,
                     2,
                     async () => {
                         const registered = await relayApi.query.containerRegistrar.registeredParaIds();
-                        // Stop waiting if 2002 is no longer registered
                         return !registered.toJSON().includes(2002);
                     },
                     "Tanssi-relay"
                 );
 
-                // Check that pending para ids removes 2002
                 const registered = await relayApi.query.containerRegistrar.registeredParaIds();
-                // TODO: fix once we have types
                 expect(registered.toJSON().includes(2002)).to.be.false;
             },
         });
 
         it({
-            id: "T18",
+            id: "T20",
             title: "Check collator logs to ensure common errors are fixed",
             timeout: 300000,
             test: async () => {
@@ -425,7 +386,7 @@ describeSuite({
         });
 
         it({
-            id: "T19",
+            id: "T21",
             title: "Check reward points for validators are distributed",
             test: async () => {
                 const keys = await relayApi.query.externalValidatorsRewards.rewardPointsForEra.keys();

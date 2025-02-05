@@ -12,6 +12,7 @@ export const createTransaction = async (
     options: TransactionOptions,
     txType?: EthTransactionType
 ): Promise<string> => {
+    console.dir(options);
     const isLegacy = txType === "legacy";
     const isEip2930 = txType === "eip2930";
     const isEip1559 = txType === "eip1559";
@@ -115,10 +116,6 @@ export const createTransaction = async (
                 type: 1,
             };
         } else {
-            if (!isEip1559) {
-                throw new Error("Unknown transaction type!");
-            }
-
             data = {
                 from,
                 to: options.to,
