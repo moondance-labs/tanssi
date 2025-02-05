@@ -142,7 +142,7 @@ jobs:
           cat ${{ matrix.chain.runtime_name }}-srtool-digest.json
           cp ${{ steps.srtool_build.outputs.wasm_compressed }} ${{ matrix.chain.runtime_name }}-runtime.compact.compressed.wasm
       - name: Archive Artifacts for ${{ matrix.chain }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: runtime-info
           path: |
@@ -173,7 +173,7 @@ jobs:
           name: original-tools
           path: original-tools 
       - name: Download runtime-info
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: runtime-info
           path: build  
@@ -212,7 +212,7 @@ jobs:
           ref: ${{ github.event.inputs.to }}
           fetch-depth: 0
       - name: Download ${{ matrix.chain }} runtime
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: runtime-info
           path: build    

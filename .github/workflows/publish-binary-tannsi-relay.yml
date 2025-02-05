@@ -55,7 +55,7 @@ jobs:
           cp target/production/tanssi-relay-execute-worker binaries/tanssi-relay-execute-worker-${{matrix.cpu}}
           cp target/production/tanssi-relay-prepare-worker binaries/tanssi-relay-prepare-worker-${{matrix.cpu}}
       - name: Upload binaries
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: binaries
           path: binaries
@@ -111,7 +111,7 @@ jobs:
         cpu: ["", "skylake", "znver3"]
         node: ["tanssi-relay", "tanssi-relay-execute-worker", "tanssi-relay-prepare-worker"]
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: binaries
           path: build

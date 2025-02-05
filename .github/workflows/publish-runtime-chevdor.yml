@@ -33,12 +33,12 @@ jobs:
       ## Use scripts and tools from current branch
       - uses: actions/checkout@v4
       - name: Upload scripts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: original-scripts
           path: scripts
       - name: Upload tools
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: original-tools
           path: tools
@@ -112,7 +112,7 @@ jobs:
           cat ${{ matrix.chain.runtime_name }}-srtool-digest.json
           cp ${{ steps.srtool_build.outputs.wasm_compressed }} ${{ matrix.chain.runtime_name }}-runtime.compact.compressed.wasm
       - name: Archive Artifacts for ${{ matrix.chain }}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: runtime-info
           path: |
