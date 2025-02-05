@@ -74,7 +74,6 @@ function choose_and_bench {
 function bench {
     OUTPUT="${OUTPUT_PATH}/${1}.rs"
     echo "benchmarking '${1}::${2}' --check=${3}, writing results to '${OUTPUT}'"
-    touch "$OUTPUT"
     # Check enabled
     if [[ "${3}" -eq 1 ]]; then
         STEPS=16
@@ -100,6 +99,7 @@ function bench {
                 MODIFIED_PALLET_FILE=${PALLET/::/_}
                 OUTPUT="${OUTPUT_PATH}/$MODIFIED_PALLET_FILE.rs"
             fi
+            touch "$OUTPUT"
             WASMTIME_BACKTRACE_DETAILS=1 ${BINARY} benchmark pallet \
             --execution=wasm \
             --wasm-execution=compiled \
@@ -120,6 +120,7 @@ function bench {
             MODIFIED_PALLET_FILE=${1/::/_}
             OUTPUT="${OUTPUT_PATH}/$MODIFIED_PALLET_FILE.rs"
         fi
+        touch "$OUTPUT"
         WASMTIME_BACKTRACE_DETAILS=1 ${BINARY} benchmark pallet \
             --execution=wasm \
             --wasm-execution=compiled \

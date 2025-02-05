@@ -194,6 +194,23 @@ mod benchmarks {
         Ok(())
     }
 
+    #[benchmark]
+    fn set_external_validators() -> Result<(), BenchmarkError> {
+        let origin =
+            T::UpdateOrigin::try_successful_origin().map_err(|_| BenchmarkError::Weightless)?;
+
+        // Insert 4 external, the number should not be critical as its not a map
+        let invulnerables = invulnerables::<T>(4);
+
+        let (_account_ids, validator_ids): (Vec<T::AccountId>, Vec<<T as Config>::ValidatorId>) =
+            invulnerables.into_iter().unzip();
+
+        #[extrinsic_call]
+        _(origin as T::RuntimeOrigin, validator_ids, 0);
+
+        Ok(())
+    }
+
     // worst case for new session.
     #[benchmark]
     fn new_session(
