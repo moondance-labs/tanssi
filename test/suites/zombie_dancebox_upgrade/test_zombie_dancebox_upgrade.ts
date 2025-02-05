@@ -70,5 +70,13 @@ describeSuite({
                 expect(blockNumberAfter, "Block number did not increase").to.be.greaterThan(blockNumberBefore);
             },
         });
+
+	it({
+            id: "T03",
+            title: "Test if node panics",
+            test: async function () {
+                expect(true).to.be(false);
+	    },
+	});
     },
 });
