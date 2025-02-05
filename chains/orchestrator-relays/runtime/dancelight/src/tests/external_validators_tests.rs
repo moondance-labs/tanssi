@@ -837,7 +837,7 @@ fn external_validators_rewards_merkle_proofs() {
             // Reward all validators in era 1
             crate::RewardValidators::reward_backing(vec![ValidatorIndex(0)]);
             crate::RewardValidators::reward_backing(vec![ValidatorIndex(1)]);
-            
+
             assert_eq!(
                 pallet_external_validators_rewards::RewardPointsForEra::<Runtime>::iter().count(),
                 1
@@ -1177,7 +1177,8 @@ fn external_validators_rewards_test_command_integrity() {
 
             let blocks_per_session: u128 = Babe::current_epoch().duration.into();
             let points_per_block = 20;
-            let expected_total_points = (sessions_per_era as u128) * blocks_per_session * points_per_block;            
+            let expected_total_points =
+                (sessions_per_era as u128) * blocks_per_session * points_per_block;
 
             let expected_rewards_command = Command::ReportRewards {
                 external_idx: 1u64,
