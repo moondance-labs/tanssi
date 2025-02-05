@@ -3,43 +3,6 @@ import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import { jumpSessions } from "util/block";
 
-const emptyGenesisData = (api: ApiPromise) => {
-    const g = api.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
-        storage: [
-            {
-                key: "0x3a636f6465",
-                value: "0x0102030405060708090a",
-            },
-        ],
-        name: "0x436f6e7461696e657220436861696e2032303030",
-        id: "0x636f6e7461696e65722d636861696e2d32303030",
-        forkId: null,
-        extensions: "0x",
-        properties: {
-            tokenMetadata: {
-                tokenSymbol: "0x61626364",
-                ss58Format: 42,
-                tokenDecimals: 12,
-            },
-            isEthereum: false,
-        },
-    });
-    return g;
-};
-
-const sortCollatorAssignment = (collatorAssignment: any) => {
-    return Object.keys(collatorAssignment.containerChains)
-        .sort((a, b) => {
-            const b_collators = collatorAssignment.containerChains[b].length;
-            const a_collators = collatorAssignment.containerChains[a].length;
-            if (a_collators !== b_collators) {
-                return collatorAssignment.containerChains[b].length - collatorAssignment.containerChains[a].length;
-            }
-            return Number(a) - Number(b);
-        })
-        .map((x) => Number(x));
-};
-
 describeSuite({
     id: "DEVT0302",
     title: "Collator assignment tests",
@@ -52,7 +15,7 @@ describeSuite({
             polkadotJs = context.polkadotJs();
             const keyring = new Keyring({ type: "sr25519" });
             const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
-            const nextProfileId = (await polkadotJs.query.dataPreservers.nextProfileId()).toNumber();
+            const nextProfileId = await polkadotJs.query.dataPreservers.nextProfileId();
             const slotFrequency = polkadotJs.createType("TpTraitsSlotFrequency", {
                 min: 6,
                 max: 6,
@@ -62,7 +25,7 @@ describeSuite({
                 alice.address,
                 2002,
                 slotFrequency,
-                nextProfileId,
+                nextProfileId.toNumber(),
                 emptyGenesisData(polkadotJs),
                 "0x01"
             );
@@ -309,7 +272,7 @@ async function getRegisterInvulnerableTx(api, sudoKey, collatorAccountId, nonce)
 }
 
 async function createTxBatchForCreatingPara(
-    api: ApiPromise,
+    api,
     manager,
     paraId,
     slotFreq,
@@ -317,7 +280,7 @@ async function createTxBatchForCreatingPara(
     containerChainGenesisData,
     headData
 ) {
-    const profileId = nextProfileId + 1;
+    let nextProfile = nextProfileId;
     const txs = [];
     const reserveTx = api.tx.registrar.reserve();
     txs.push(
@@ -329,19 +292,22 @@ async function createTxBatchForCreatingPara(
         )
     );
 
-    let registerTx: string;
+    let registerTx: any;
     if (slotFreq == null) {
-        registerTx = api.tx.containerRegistrar.register(paraId, containerChainGenesisData, headData).toHex();
+        registerTx = api.tx.containerRegistrar.register(paraId, containerChainGenesisData, headData);
     } else {
-        registerTx = api.tx.containerRegistrar
-            .registerParathread(paraId, slotFreq, containerChainGenesisData, headData)
-            .toHex();
+        registerTx = api.tx.containerRegistrar.registerParathread(
+            paraId,
+            slotFreq,
+            containerChainGenesisData,
+            headData
+        );
     }
     txs.push(
         api.tx.utility.dispatchAs(
             {
                 system: { Signed: manager },
-            },
+            } as any,
             registerTx
         )
     );
@@ -355,12 +321,49 @@ async function createTxBatchForCreatingPara(
         manager
     );
     txs.push(profileTx);
-    const assignmentTx = api.tx.sudo.sudo(api.tx.dataPreservers.forceStartAssignment(profileId, paraId, "Free"));
+    const assignmentTx = api.tx.sudo.sudo(api.tx.dataPreservers.forceStartAssignment(nextProfile++, paraId, "Free"));
     txs.push(assignmentTx);
     const trustedValidationCodeTx = api.tx.paras.addTrustedValidationCode("0x0102030405060708090a");
     txs.push(trustedValidationCodeTx);
     const markValidForCollating = api.tx.containerRegistrar.markValidForCollating(paraId);
     txs.push(markValidForCollating);
 
-    return { txs: txs, nextProfileId: nextProfileId };
+    return { txs: txs, nextProfileId: nextProfile };
 }
+
+const emptyGenesisData = (api) => {
+    const g = api.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
+        storage: [
+            {
+                key: "0x3a636f6465",
+                value: "0x0102030405060708090a",
+            },
+        ],
+        name: "0x436f6e7461696e657220436861696e2032303030",
+        id: "0x636f6e7461696e65722d636861696e2d32303030",
+        forkId: null,
+        extensions: "0x",
+        properties: {
+            tokenMetadata: {
+                tokenSymbol: "0x61626364",
+                ss58Format: 42,
+                tokenDecimals: 12,
+            },
+            isEthereum: false,
+        },
+    });
+    return g;
+};
+
+const sortCollatorAssignment = (collatorAssignment) => {
+    return Object.keys(collatorAssignment.containerChains)
+        .sort((a, b) => {
+            const b_collators = collatorAssignment.containerChains[b].length;
+            const a_collators = collatorAssignment.containerChains[a].length;
+            if (a_collators !== b_collators) {
+                return collatorAssignment.containerChains[b].length - collatorAssignment.containerChains[a].length;
+            }
+            return Number(a) - Number(b);
+        })
+        .map((x) => Number(x));
+};
