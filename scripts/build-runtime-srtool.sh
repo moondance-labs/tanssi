@@ -8,13 +8,13 @@
 # Docker command to generate JSON blob of the runtime
 if [[ $GH_WORKFLOW_MATRIX_CHAIN == *"template"* ]]; then
   FOLDER_NAME=$(echo $GH_WORKFLOW_MATRIX_CHAIN |sed 's/-template.*//')
-  RUNTIME_DIR=container-chains/runtime-templates/${FOLDER_NAME}
+  RUNTIME_DIR=chains/container-chains/runtime-templates/${FOLDER_NAME}
   PACKAGE=container-chain-template-${FOLDER_NAME}-runtime
 elif [[ $GH_WORKFLOW_MATRIX_CHAIN == *"light"* ]]; then
-  RUNTIME_DIR=solo-chains/runtime/${GH_WORKFLOW_MATRIX_CHAIN}
+  RUNTIME_DIR=chains/orchestrator-relays/runtime/${GH_WORKFLOW_MATRIX_CHAIN}
   PACKAGE=${GH_WORKFLOW_MATRIX_CHAIN}-runtime
 else
-  RUNTIME_DIR=runtime/${GH_WORKFLOW_MATRIX_CHAIN}
+  RUNTIME_DIR=chains/orchestrator-paras/runtime/${GH_WORKFLOW_MATRIX_CHAIN}
   PACKAGE=${GH_WORKFLOW_MATRIX_CHAIN}-runtime
 fi
 
