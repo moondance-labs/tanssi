@@ -31,6 +31,7 @@ use {
         Runtime, RuntimeEvent, TransactionByteFee, TreasuryAccount, WeightToFee, UNITS,
     },
     frame_support::{traits::Nothing, weights::ConstantMultiplier},
+    frame_system::EnsureRoot,
     pallet_xcm::EnsureXcm,
     snowbridge_beacon_primitives::{Fork, ForkVersions},
     snowbridge_core::{gwei, meth, PricingParameters, Rewards},
