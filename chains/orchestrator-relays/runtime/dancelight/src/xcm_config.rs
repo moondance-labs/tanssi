@@ -188,7 +188,7 @@ pub type Barrier = TrailingSetTopicAsId<(
 /// Locations that will not be charged fees in the executor, neither for execution nor delivery.
 /// We only waive fees for system functions, which these locations represent.
 pub type WaivedLocations = Equals<RootLocation>;
-pub type XcmWeigher = FixedWeightBounds<(), RuntimeCall, MaxInstructions>;
+pub type XcmWeigher = FixedWeightBounds<BaseXcmWeight, RuntimeCall, MaxInstructions>;
 
 pub struct XcmConfig;
 impl xcm_executor::Config for XcmConfig {
@@ -268,7 +268,7 @@ impl pallet_xcm::Config for Runtime {
     type ExecuteXcmOrigin = xcm_builder::EnsureXcmOrigin<RuntimeOrigin, LocalOriginToLocation>;
     type XcmExecuteFilter = Everything;
     type XcmExecutor = XcmExecutor<XcmConfig>;
-    type XcmTeleportFilter = Everything;
+    type XcmTeleportFilter = Nothing;
     // Anyone is able to use reserve transfers regardless of who they are and what they want to
     // transfer.
     type XcmReserveTransferFilter = Everything;
