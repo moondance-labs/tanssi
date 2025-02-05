@@ -21,15 +21,11 @@ fi
 CMD="docker run \
   -i \
   --rm \
-  $(~/srtool/uid-gid-mapping.sh 1001 | xargs) \
   -e CARGO_NET_GIT_FETCH_WITH_CLI=true \
   -e PACKAGE=${PACKAGE} \
   -e RUNTIME_DIR=${RUNTIME_DIR} \
   -e PROFILE=production \
   -v ${PWD}:/build \
-  -v /home/${USER}/srtool/.ssh:/home/builder/.ssh \
-  -v /home/${USER}/srtool/entrypoint.sh:/srtool/entrypoint.sh \
-  --entrypoint /srtool/entrypoint.sh \
   ${GH_WORKFLOW_MATRIX_SRTOOL_IMAGE}:${GH_WORKFLOW_MATRIX_SRTOOL_IMAGE_TAG} \
     build --app --json -cM"
 
