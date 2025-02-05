@@ -30,8 +30,7 @@ use {
         GetAggregateMessageOrigin, Keccak256, MessageQueue, OutboundMessageCommitmentRecorder,
         Runtime, RuntimeEvent, TransactionByteFee, TreasuryAccount, WeightToFee, UNITS,
     },
-    frame_support::{traits::Nothing, weights::ConstantMultiplier},
-    frame_system::EnsureRoot,
+    frame_support::{weights::ConstantMultiplier},
     pallet_xcm::EnsureXcm,
     snowbridge_beacon_primitives::{Fork, ForkVersions},
     snowbridge_core::{gwei, meth, PricingParameters, Rewards},
@@ -161,7 +160,10 @@ impl snowbridge_pallet_ethereum_client::Config for Runtime {
 impl snowbridge_pallet_system::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type OutboundQueue = EthereumOutboundQueue;
-    type SiblingOrigin = EnsureRoot;
+    #[cfg(not(feature = "runtime-benchmarks"))]
+    type SiblingOrigin = EnsureXcm<Nothing>;
+    #[cfg(feature = "runtime-benchmarks")]
+    type SiblingOrigin = EnsureXcm<snowbridge_core::AllowSiblingsOnly>;
     type AgentIdOf = snowbridge_core::AgentIdOf;
     type TreasuryAccount = TreasuryAccount;
     type Token = Balances;
