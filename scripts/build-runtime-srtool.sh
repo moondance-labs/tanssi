@@ -18,6 +18,8 @@ else
   PACKAGE=${GH_WORKFLOW_MATRIX_CHAIN}-runtime
 fi
 
+mkdir -p ${RUNTIME_DIR}/target
+chmod uog+rwX ${RUNTIME_DIR}/target
 CMD="docker run \
   -i \
   --rm \
