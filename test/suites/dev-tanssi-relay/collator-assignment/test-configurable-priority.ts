@@ -3,7 +3,7 @@ import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import { jumpSessions } from "util/block";
 
-const emptyGenesisData = (api) => {
+const emptyGenesisData = (api: ApiPromise) => {
     const g = api.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
         storage: [
             {
@@ -27,7 +27,7 @@ const emptyGenesisData = (api) => {
     return g;
 };
 
-const sortCollatorAssignment = (collatorAssignment) => {
+const sortCollatorAssignment = (collatorAssignment: any) => {
     return Object.keys(collatorAssignment.containerChains)
         .sort((a, b) => {
             const b_collators = collatorAssignment.containerChains[b].length;
@@ -52,7 +52,7 @@ describeSuite({
             polkadotJs = context.polkadotJs();
             const keyring = new Keyring({ type: "sr25519" });
             const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
-            const nextProfileId = await polkadotJs.query.dataPreservers.nextProfileId();
+            const nextProfileId = (await polkadotJs.query.dataPreservers.nextProfileId()).toNumber();
             const slotFrequency = polkadotJs.createType("TpTraitsSlotFrequency", {
                 min: 6,
                 max: 6,
@@ -110,6 +110,7 @@ describeSuite({
             ]);
 
             const pendingParas = await polkadotJs.query.containerRegistrar.pendingParaIds();
+            // @ts-expect-error Missing Orchestrator Pallets in api-augment
             expect(pendingParas.length).to.be.eq(1);
             const parasScheduled = pendingParas[0][1];
             expect(parasScheduled.toJSON()).to.deep.equal([2000, 2001, 2002, 2003, 2004]);
@@ -124,13 +125,15 @@ describeSuite({
 
             const activeConfig = (await polkadotJs.query.collatorConfiguration.activeConfig()).toJSON();
 
-            // Existing collators
+            // @ts-expect-error Missing Orchestrator Pallets in api-augment
             const numberOfInvulnerables = (await polkadotJs.query.tanssiInvulnerables.invulnerables()).length;
 
             // We will have two collators less than we need so that we can detect changes in order
             // in below tests easily.
             const numberOfInvulnerablesNeeded =
+                // @ts-expect-error Missing Orchestrator Pallets in api-augment
                 activeConfig.collatorsPerContainer * 2 +
+                // @ts-expect-error Missing Orchestrator Pallets in api-augment
                 activeConfig.collatorsPerParathread * 3 -
                 numberOfInvulnerables -
                 2;
@@ -306,15 +309,15 @@ async function getRegisterInvulnerableTx(api, sudoKey, collatorAccountId, nonce)
 }
 
 async function createTxBatchForCreatingPara(
-    api,
+    api: ApiPromise,
     manager,
     paraId,
     slotFreq,
-    nextProfileId,
+    nextProfileId: number,
     containerChainGenesisData,
     headData
 ) {
-    let profileId = nextProfileId;
+    const profileId = nextProfileId + 1;
     const txs = [];
     const reserveTx = api.tx.registrar.reserve();
     txs.push(
@@ -326,22 +329,19 @@ async function createTxBatchForCreatingPara(
         )
     );
 
-    let registerTx: any;
-    if (slotFreq === null) {
-        registerTx = api.tx.containerRegistrar.register(paraId, containerChainGenesisData, headData);
+    let registerTx: string;
+    if (slotFreq == null) {
+        registerTx = api.tx.containerRegistrar.register(paraId, containerChainGenesisData, headData).toHex();
     } else {
-        registerTx = api.tx.containerRegistrar.registerParathread(
-            paraId,
-            slotFreq,
-            containerChainGenesisData,
-            headData
-        );
+        registerTx = api.tx.containerRegistrar
+            .registerParathread(paraId, slotFreq, containerChainGenesisData, headData)
+            .toHex();
     }
     txs.push(
         api.tx.utility.dispatchAs(
             {
                 system: { Signed: manager },
-            } as any,
+            },
             registerTx
         )
     );
@@ -355,7 +355,7 @@ async function createTxBatchForCreatingPara(
         manager
     );
     txs.push(profileTx);
-    const assignmentTx = api.tx.sudo.sudo(api.tx.dataPreservers.forceStartAssignment(profileId++, paraId, "Free"));
+    const assignmentTx = api.tx.sudo.sudo(api.tx.dataPreservers.forceStartAssignment(profileId, paraId, "Free"));
     txs.push(assignmentTx);
     const trustedValidationCodeTx = api.tx.paras.addTrustedValidationCode("0x0102030405060708090a");
     txs.push(trustedValidationCodeTx);
