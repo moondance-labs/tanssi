@@ -29,7 +29,7 @@ jobs:
   ####### Build runtimes with srtool #######
 
   setup-scripts:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       ## Use scripts and tools from current branch
       - uses: actions/checkout@v4
