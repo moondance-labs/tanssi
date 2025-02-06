@@ -137,7 +137,7 @@ jobs:
           # Ensure we have permissions to write to the runtime folder target for the docker user
           mkdir -p runtime/${GH_WORKFLOW_MATRIX_CHAIN}/target
           chmod uog+rwX runtime/${GH_WORKFLOW_MATRIX_CHAIN}/target
-
+          
           chmod u+x ./original-scripts/build-runtime-srtool.sh
           ./original-scripts/build-runtime-srtool.sh
       - name: Summary
@@ -146,9 +146,9 @@ jobs:
           cat ${{ matrix.chain.runtime_name }}-srtool-digest.json
           cp ${{ steps.srtool_build.outputs.wasm_compressed }} ${{ matrix.chain.runtime_name }}-runtime.compact.compressed.wasm
       - name: Archive Artifacts for ${{ matrix.chain }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: runtime-info
+          name: runtime-info-${{ matrix.chain.runtime_name }}
           path: |
             ${{ matrix.chain.runtime_name }}-runtime.compact.compressed.wasm
             ${{ matrix.chain.runtime_name }}-srtool-digest.json
@@ -179,7 +179,8 @@ jobs:
       - name: Download runtime-info
         uses: actions/download-artifact@v4
         with:
-          name: runtime-info
+          pattern: runtime-info-*
+          merge-multiple: true
           path: build  
       - name: Generate release body
         env:
