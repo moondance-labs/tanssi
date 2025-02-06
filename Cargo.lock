@@ -18017,7 +18017,7 @@ dependencies = [
 
 [[package]]
 name = "tanssi-relay-service"
-version = "0.11.0"
+version = "0.12.0"
 dependencies = [
  "assert_matches",
  "async-io 1.13.0",
