@@ -71,6 +71,7 @@ pallet-assets = { workspace = true }
 pallet-balances = { workspace = true }
 pallet-identity = { workspace = true }
 pallet-message-queue = { workspace = true }
+pallet-multiblock-migrations = { workspace = true }
 pallet-multisig = { workspace = true }
 pallet-root-testing = { workspace = true }
 pallet-session = { workspace = true }
