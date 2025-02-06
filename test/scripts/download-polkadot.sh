@@ -31,24 +31,24 @@ if [[ -f tmp/polkadot && -f tmp/polkadot-execute-worker && -f tmp/polkadot-prepa
 	else
 		echo "Updating polkadot binary from $POLKADOT_VERSION to $polkadot_release"
 
-		pnpm moonwall download polkadot $polkadot_release tmp
+		pnpm moonwall download --overwrite polkadot $polkadot_release tmp
 		chmod +x tmp/polkadot
 
-		pnpm moonwall download polkadot-execute-worker $polkadot_release tmp
+		pnpm moonwall download --overwrite polkadot-execute-worker $polkadot_release tmp
 		chmod +x tmp/polkadot-execute-worker
 
-		pnpm moonwall download polkadot-prepare-worker $polkadot_release tmp
+		pnpm moonwall download --overwrite polkadot-prepare-worker $polkadot_release tmp
 		chmod +x tmp/polkadot-prepare-worker
 
 	fi
 else
 	echo "Polkadot binary not found, downloading $polkadot_release"
-	pnpm moonwall download polkadot $polkadot_release tmp
+	pnpm moonwall download --overwrite polkadot $polkadot_release tmp
 	chmod +x tmp/polkadot
 
-	pnpm moonwall download polkadot-execute-worker $polkadot_release tmp
+	pnpm moonwall download --overwrite polkadot-execute-worker $polkadot_release tmp
 	chmod +x tmp/polkadot-execute-worker
 
-	pnpm moonwall download polkadot-prepare-worker $polkadot_release tmp
+	pnpm moonwall download --overwrite polkadot-prepare-worker $polkadot_release tmp
 	chmod +x tmp/polkadot-prepare-worker
 fi
