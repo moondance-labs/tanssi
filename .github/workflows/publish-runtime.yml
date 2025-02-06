@@ -32,6 +32,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       ## Use scripts and tools from current branch
+      - name: https://github.com/actions/checkout/issues/1720
+        run: |
+          chmod -R u+rwX .
       - uses: actions/checkout@v4
       - name: Upload scripts
         uses: actions/upload-artifact@v4
