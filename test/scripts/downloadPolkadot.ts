@@ -1,4 +1,4 @@
-
+/* eslint-disable */
 import jsonFile from "../polkadotReleaseMapping.json" with {type: "json"};
 import fs from "node:fs/promises";
 import fsSync from "node:fs"
