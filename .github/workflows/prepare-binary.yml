@@ -25,6 +25,10 @@ jobs:
           ref: ${{ github.event.inputs.sha }}
       - name: Setup Rust toolchain
         run: rustup show
+      - name: Install protoc
+        run: |
+          sudo apt-get update
+          sudo apt-get install protobuf-compiler
       - name: Build Node
         run: cargo build --profile=production --all
       - name: Save parachain binary
