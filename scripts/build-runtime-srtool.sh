@@ -19,6 +19,7 @@ else
 fi
 
 mkdir -p ${RUNTIME_DIR}/target
+chmod uog+rwX ${RUNTIME_DIR}/target
 
 CMD="docker run \
   -i \
