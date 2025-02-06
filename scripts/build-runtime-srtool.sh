@@ -58,10 +58,4 @@ stdbuf -oL $CMD | {
 }
 
 # Clean up file permissions after srtool
-docker run \
-  -i \
-  --rm \
-  -v ${PWD}:/build \
-  --entrypoint /bin/sh \
-  ${GH_WORKFLOW_MATRIX_SRTOOL_IMAGE}:${GH_WORKFLOW_MATRIX_SRTOOL_IMAGE_TAG} \
-    chown ${UID}:${UID} -R /build/${RUNTIME_DIR}/target/srtool
+podman unshare chown -R 0:0 ${RUNTIME_DIR}/target/srtool
