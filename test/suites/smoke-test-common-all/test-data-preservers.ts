@@ -13,7 +13,6 @@ describeSuite({
 
         beforeAll(async () => {
             paraApi = context.polkadotJs("para");
-            const rawEntries = await paraApi.query.dataPreservers.profiles.entries();
             registeredProfiles = (await paraApi.query.dataPreservers.profiles.entries())
                 .filter(([, entry]) => entry.isSome)
                 .map(([, entry]) => entry.unwrap());
@@ -23,16 +22,18 @@ describeSuite({
             id: "C01",
             title: "all profiles should have a deposit of either 0 or value fixed in the runtime",
             test: async () => {
-                // Add more if we change ProfileDeposit value. Keep previous values for profiles
-                // created before the change.
-                const validDeposits = [0, 11330000000000];
+                const byteFee = 100n * 1_000_000n * 100n; // 10_000_000_000
+                const baseFee = 100n * 1_000_000_000n * 100n; // 10_000_000_000_000
 
-                const failures = registeredProfiles.filter(
-                    ({ deposit }) => !validDeposits.includes(deposit.toNumber())
-                );
+                const calculatedFee = (encodedLength: number) => baseFee + byteFee * BigInt(encodedLength);
 
-                for (const { deposit } of failures) {
-                    log(`Invalid deposit ${deposit.toNumber()}`);
+                const failures = registeredProfiles.filter(({ deposit, profile }) => {
+                    const fee = calculatedFee(profile.encodedLength);
+                    return deposit.toBigInt() !== fee && deposit.toBigInt() !== 0n;
+                });
+
+                for (const { deposit, account } of failures) {
+                    log(`Invalid deposit ${deposit.toNumber()} for account ${account.toHuman()} `);
                 }
                 expect(failures.length, `${failures.length} invalid deposits registered`).toBe(0);
             },
@@ -42,18 +43,20 @@ describeSuite({
             id: "C02",
             title: "all assigned profile have assignement witness corresponding to request and whished para id",
             test: async () => {
-                for (const { profile, assignment } of registeredProfiles) {
+                for (const { profile, assignment } of registeredProfiles.filter(
+                    ({ assignment }) => assignment.isSome
+                )) {
                     const [para_id, witness] = assignment.unwrap();
 
-                    if (!profile.paraIds.asWhitelist.isEmpty) {
+                    if (profile.paraIds.isWhitelist) {
                         expect(profile.paraIds.asWhitelist.has(para_id));
-                    } else if (!profile.paraIds.asBlacklist.isEmpty) {
+                    } else if (profile.paraIds.isBlacklist) {
                         expect(!profile.paraIds.asBlacklist.has(para_id));
                     }
 
                     if (profile.assignmentRequest.toString() === "Free") {
                         expect(witness.toString()).to.be.eq("Free");
-                    } else if (!profile.assignmentRequest.asStreamPayment.isEmpty) {
+                    } else if (profile.assignmentRequest.isStreamPayment) {
                         expect(witness.asStreamPayment).not.toBeUndefined();
                     } else {
                         // Make test fail on unknown assignment modes.
