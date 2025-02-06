@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use crate::tests::common::{mock_snowbridge_message_proof, ExtBuilder};
+use crate::tests::common::{mock_snowbridge_message_proof, ExtBuilder, ALICE, BOB, UNIT};
 use crate::{AccountId, EthereumInboundQueue, ExternalValidators, Runtime};
 use alloy_sol_types::SolEvent;
 use frame_system::pallet_prelude::OriginFor;
@@ -33,7 +33,16 @@ use tp_bridge::symbiotic_message_processor::{
 
 #[test]
 fn test_inbound_queue_message_passing() {
-    ExtBuilder::default().build().execute_with(|| {
+    ExtBuilder::default()
+    .with_validators(
+        vec![]
+    )
+    .with_external_validators(
+        vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+        ]
+    ).build().execute_with(|| {
         let current_nonce = 1;
 
         snowbridge_pallet_system::Channels::<Runtime>::set(PRIMARY_GOVERNANCE_CHANNEL, Some(Channel {
@@ -58,8 +67,6 @@ fn test_inbound_queue_message_passing() {
             },
             proof: dummy_proof.clone(),
         }), Err(DispatchError::Other("No handler for message found")));
-
-        assert_eq!(ExternalValidators::validators(), ExternalValidators::whitelisted_validators());
 
         let payload_validators = vec![
             AccountKeyring::Charlie.to_account_id(),
@@ -90,7 +97,6 @@ fn test_inbound_queue_message_passing() {
             },
             proof: dummy_proof.clone(),
         }), Ok(()));
-
 
         let expected_validators = [ExternalValidators::whitelisted_validators(), payload_validators].concat();
         assert_eq!(ExternalValidators::validators(), expected_validators);

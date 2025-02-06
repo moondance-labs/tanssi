@@ -437,6 +437,7 @@ fn dancelight_testnet_genesis(
                     x.stash.clone()
                 })
                 .collect::<Vec<_>>(),
+            ..Default::default()
         },
     })
 }

@@ -214,6 +214,7 @@ pub mod pallet {
     pub struct GenesisConfig<T: Config> {
         pub skip_external_validators: bool,
         pub whitelisted_validators: Vec<T::ValidatorId>,
+        pub external_validators: Vec<T::ValidatorId>,
     }
 
     #[pallet::genesis_build]
@@ -236,10 +237,16 @@ pub mod pallet {
             )
             .expect("genesis validators are more than T::MaxWhitelistedValidators");
 
+            let bounded_external_validators = BoundedVec::<_, T::MaxExternalValidators>::try_from(
+                self.external_validators.clone(),
+            )
+            .expect("genesis external validators are more than T::MaxExternalValidators");
+
             <SkipExternalValidators<T>>::put(self.skip_external_validators);
             <WhitelistedValidators<T>>::put(&bounded_validators);
             <WhitelistedValidatorsActiveEra<T>>::put(&bounded_validators);
             <WhitelistedValidatorsActiveEraPending<T>>::put(&bounded_validators);
+            <ExternalValidators<T>>::put(&bounded_external_validators);
         }
     }
 
