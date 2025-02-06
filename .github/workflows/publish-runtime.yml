@@ -173,7 +173,7 @@ jobs:
           name: original-tools
           path: original-tools 
       - name: Download runtime-info
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: runtime-info
           path: build  
@@ -212,7 +212,7 @@ jobs:
           ref: ${{ github.event.inputs.to }}
           fetch-depth: 0
       - name: Download ${{ matrix.chain }} runtime
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: runtime-info
           path: build    
