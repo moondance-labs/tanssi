@@ -25,22 +25,7 @@ delete_if_not_binary tmp/polkadot-execute-worker
 delete_if_not_binary tmp/polkadot-prepare-worker
 
 if [[ -f tmp/polkadot && -f tmp/polkadot-execute-worker && -f tmp/polkadot-prepare-worker ]]; then
-	POLKADOT_VERSION=$(tmp/polkadot --version)
-	if [[ $POLKADOT_VERSION == *$polkadot_release* ]]; then
-		exit 0
-	else
-		echo "Updating polkadot binary from $POLKADOT_VERSION to $polkadot_release"
-
-		pnpm moonwall download polkadot $polkadot_release tmp
-		chmod +x tmp/polkadot
-
-		pnpm moonwall download polkadot-execute-worker $polkadot_release tmp
-		chmod +x tmp/polkadot-execute-worker
-
-		pnpm moonwall download polkadot-prepare-worker $polkadot_release tmp
-		chmod +x tmp/polkadot-prepare-worker
-
-	fi
+    echo "Polkadot binary already found, skipping download ..."
 else
 	echo "Polkadot binary not found, downloading $polkadot_release"
 	pnpm moonwall download polkadot $polkadot_release tmp
