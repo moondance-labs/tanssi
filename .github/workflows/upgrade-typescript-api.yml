@@ -69,7 +69,7 @@ jobs:
           pnpm create-local-interfaces
           pnpm version --no-git-tag-version 0.${{ github.event.inputs.spec_version }}.0
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v5
+        uses: peter-evans/create-pull-request@v7
         with:
           base: master
           branch: "typescript-api-${{ github.event.inputs.spec_version }}"
