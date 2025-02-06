@@ -100,7 +100,7 @@ jobs:
     steps:
       - name: https://github.com/actions/checkout/issues/1720
         run: |
-          chmod -R u+rwX .
+          sudo chmod -R u+rwX .
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.to }}
@@ -140,9 +140,6 @@ jobs:
           GH_WORKFLOW_MATRIX_SRTOOL_IMAGE: ${{ matrix.srtool_image }}
           GH_WORKFLOW_MATRIX_SRTOOL_IMAGE_TAG: ${{ matrix.srtool_image_tag }}
         run: |
-          # Ensure we have permissions to write to the runtime folder target for the docker user
-          mkdir -p runtime/${GH_WORKFLOW_MATRIX_CHAIN}/target
-          chmod uog+rwX runtime/${GH_WORKFLOW_MATRIX_CHAIN}/target
           
           chmod u+x ./original-scripts/build-runtime-srtool.sh
           ./original-scripts/build-runtime-srtool.sh
