@@ -1,63 +1,63 @@
 {
-	"$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
-	"vcs": {
-		"enabled": false,
-		"clientKind": "git",
-		"useIgnoreFile": false
-	},
-	"files": {
-		"ignoreUnknown": false,
-		"ignore": [
-			"**/build/**",
-			"**/target/**",
-			"**/scripts/tmp/**",
-			"**/node_modules/**",
-			"**/.yarn/**",
-			"test/tsconfig.json",
-			"tmp",
-			"**/contracts/out",
-			"**/tmp/",
-			"**/html/"
-		]
-	},
-	"formatter": {
-		"enabled": true,
-		"indentStyle": "space",
-		"lineWidth": 120,
-		"indentWidth": 4
-	},
-	"organizeImports": {
-		"enabled": true
-	},
-	"linter": {
-		"enabled": true,
-		"rules": {
-			"recommended": true,
-			"suspicious": {
-				"noAsyncPromiseExecutor": "off",
-				"noExplicitAny":"off",
-				"noShadowRestrictedNames": "off"
-			},
-			"complexity": {
-				"noForEach": "off"
-			}
-		},
-		"ignore":[
-		]
-	},
-	"javascript": {
-		"formatter": {
-			"quoteStyle": "double",
-			"semicolons": "always",
-			"trailingCommas": "es5"
-		}
-	},
-	"json": {
-		"formatter": {
-			"enabled": false
-		},
-		"linter":{
-			"enabled": false
-		}
-	}
+  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "vcs": {
+    "enabled": false,
+    "clientKind": "git",
+    "useIgnoreFile": false,
+  },
+  "files": {
+    "ignoreUnknown": false,
+    "ignore": [
+      "**/html/**",
+      "**/build/**",
+      "**/target/**",
+      "**/scripts/tmp/**",
+      "**/node_modules/**",
+      "**/.yarn/**",
+      "test/tsconfig.json",
+      "tmp",
+      "**/contracts/out",
+      "**/tmp/",
+      "**/html/"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "lineWidth": 120,
+    "indentWidth": 4,
+  },
+  "organizeImports": {
+    "enabled": true,
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "suspicious": {
+        "noAsyncPromiseExecutor": "off",
+        "noExplicitAny": "off",
+        "noShadowRestrictedNames": "off",
+      },
+      "complexity": {
+        "noForEach": "off",
+      },
+    },
+    "ignore": [],
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "double",
+      "semicolons": "always",
+      "trailingCommas": "es5",
+    },
+  },
+  "json": {
+    "formatter": {
+      "enabled": false,
+    },
+    "linter": {
+      "enabled": false,
+    },
+  },
 }
