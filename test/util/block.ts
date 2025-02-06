@@ -1,9 +1,9 @@
-import { DevModeContext, expect, ZombieContext } from "@moonwall/cli";
+import { type DevModeContext, expect, type ZombieContext } from "@moonwall/cli";
 import { filterAndApply } from "@moonwall/util";
 
-import { ApiPromise } from "@polkadot/api";
-import { AccountId32, EventRecord } from "@polkadot/types/interfaces";
-import { Vec, u8, u32, bool } from "@polkadot/types-codec";
+import type { ApiPromise } from "@polkadot/api";
+import type { AccountId32, EventRecord, ParaId } from "@polkadot/types/interfaces";
+import type { Vec, u8, u32, bool, u128 } from "@polkadot/types-codec";
 import { TypeRegistry } from "@polkadot/types";
 
 export async function jumpSessions(context: DevModeContext, count: number): Promise<string | null> {
@@ -18,7 +18,8 @@ export async function jumpToSession(context: DevModeContext, session: number): P
         const currentSession = (await context.polkadotJs().query.session.currentIndex()).toNumber();
         if (currentSession === session) {
             return lastBlockHash;
-        } else if (currentSession > session) {
+        }
+        if (currentSession > session) {
             return null;
         }
 
@@ -27,9 +28,10 @@ export async function jumpToSession(context: DevModeContext, session: number): P
 }
 
 export async function jumpBlocks(context: DevModeContext, blockCount: number) {
-    while (blockCount > 0) {
+    let count = blockCount;
+    while (count > 0) {
         await context.createBlock();
-        blockCount--;
+        count--;
     }
 }
 
@@ -71,7 +73,8 @@ export async function waitToSession(
         if (currentSession === session) {
             const signedBlock = await paraApi.rpc.chain.getBlock();
             return signedBlock.block.header.hash.toString();
-        } else if (currentSession > session) {
+        }
+        if (currentSession > session) {
             return null;
         }
 
@@ -79,7 +82,7 @@ export async function waitToSession(
     }
 }
 
-export function extractFeeAuthor(events: EventRecord[] = [], feePayer: string) {
+export function extractFeeAuthor(events: EventRecord[], feePayer: string) {
     const filtered = filterAndApply(
         events,
         "balances",
@@ -90,7 +93,7 @@ export function extractFeeAuthor(events: EventRecord[] = [], feePayer: string) {
     return extractFeeFromAuthor[0];
 }
 
-export function fetchRewardAuthorOrchestrator(events: EventRecord[] = []) {
+export function fetchRewardAuthorOrchestrator(events: EventRecord[]) {
     const filtered = filterAndApply(
         events,
         "inflationRewards",
@@ -101,7 +104,7 @@ export function fetchRewardAuthorOrchestrator(events: EventRecord[] = []) {
     return filtered[0];
 }
 
-export function filterRewardStakingCollator(events: EventRecord[] = [], author: string) {
+export function filterRewardStakingCollator(events: EventRecord[], author: string) {
     const stakignRewardEvents = fetchRewardStakingCollators(events);
     for (const index in stakignRewardEvents) {
         if (stakignRewardEvents[index].collator.toString() === author) {
@@ -118,7 +121,7 @@ export function filterRewardStakingCollator(events: EventRecord[] = [], author: 
     };
 }
 
-export function filterRewardStakingDelegators(events: EventRecord[] = [], author: string) {
+export function filterRewardStakingDelegators(events: EventRecord[], author: string) {
     const stakignRewardEvents = fetchRewardStakingDelegators(events);
     for (const index in stakignRewardEvents) {
         if (stakignRewardEvents[index].collator.toString() === author) {
@@ -135,7 +138,7 @@ export function filterRewardStakingDelegators(events: EventRecord[] = [], author
     };
 }
 
-export function fetchRewardStakingDelegators(events: EventRecord[] = []) {
+export function fetchRewardStakingDelegators(events: EventRecord[]) {
     const filtered = filterAndApply(
         events,
         "pooledStaking",
@@ -147,7 +150,7 @@ export function fetchRewardStakingDelegators(events: EventRecord[] = []) {
     return filtered;
 }
 
-export function fetchRewardStakingCollators(events: EventRecord[] = []) {
+export function fetchRewardStakingCollators(events: EventRecord[]) {
     const filtered = filterAndApply(
         events,
         "pooledStaking",
@@ -159,7 +162,7 @@ export function fetchRewardStakingCollators(events: EventRecord[] = []) {
     return filtered;
 }
 
-export function fetchRewardAuthorContainers(events: EventRecord[] = []) {
+export function fetchRewardAuthorContainers(events: EventRecord[]) {
     const filtered = filterAndApply(
         events,
         "inflationRewards",
@@ -170,7 +173,7 @@ export function fetchRewardAuthorContainers(events: EventRecord[] = []) {
     return filtered;
 }
 
-export function fetchRandomnessEvent(events: EventRecord[] = []) {
+export function fetchRandomnessEvent(events: EventRecord[]) {
     const filtered = filterAndApply(
         events,
         "collatorAssignment",
@@ -182,7 +185,7 @@ export function fetchRandomnessEvent(events: EventRecord[] = []) {
     return filtered[0];
 }
 
-export function fetchIssuance(events: EventRecord[] = []) {
+export function fetchIssuance(events: EventRecord[]) {
     const filtered = filterAndApply(
         events,
         "balances",
@@ -190,13 +193,13 @@ export function fetchIssuance(events: EventRecord[] = []) {
         ({ event }: EventRecord) => event.data as unknown as { amount: u128 }
     );
 
-    if (filtered.length == 0) {
+    if (filtered.length === 0) {
         return { amount: new TypeRegistry().createType("u128", 0) };
     }
     return filtered[0];
 }
 
-export function fetchWithdrawnAmount(events: EventRecord[] = []) {
+export function fetchWithdrawnAmount(events: EventRecord[]) {
     let withdrawnAmount = 0n;
     const filtered = filterAndApply(
         events,
@@ -211,7 +214,7 @@ export function fetchWithdrawnAmount(events: EventRecord[] = []) {
     return withdrawnAmount;
 }
 
-export function fetchDepositedAmount(events: EventRecord[] = []) {
+export function fetchDepositedAmount(events: EventRecord[]) {
     let depositAmount = 0n;
     const filtered = filterAndApply(
         events,
@@ -226,7 +229,7 @@ export function fetchDepositedAmount(events: EventRecord[] = []) {
     return depositAmount;
 }
 
-export function fetchCollatorAssignmentTip(events: EventRecord[] = []) {
+export function fetchCollatorAssignmentTip(events: EventRecord[]) {
     const filtered = filterAndApply(
         events,
         "servicesPayment",
@@ -237,9 +240,9 @@ export function fetchCollatorAssignmentTip(events: EventRecord[] = []) {
     return filtered[0];
 }
 
-export function filterRewardFromOrchestratorWithFailure(events: EventRecord[] = [], author: string) {
+export function filterRewardFromOrchestratorWithFailure(events: EventRecord[], author: string) {
     const reward = fetchRewardAuthorOrchestrator(events);
-    expect(reward, `orchestrator rewards event not found`).not.toBe(undefined);
+    expect(reward, "orchestrator rewards event not found").not.toBe(undefined);
     expect(
         reward.accountId.toString() === author,
         `orchestrator author  ${reward.accountId.toString()} does not match expected author  ${author}`
@@ -247,16 +250,15 @@ export function filterRewardFromOrchestratorWithFailure(events: EventRecord[] = 
     return reward.balance.toBigInt();
 }
 
-export function filterRewardFromOrchestrator(events: EventRecord[] = [], author: string) {
+export function filterRewardFromOrchestrator(events: EventRecord[], author: string) {
     const reward = fetchRewardAuthorOrchestrator(events);
     if (reward === undefined || reward.accountId.toString() !== author) {
         return 0n;
-    } else {
-        return reward.balance.toBigInt();
     }
+    return reward.balance.toBigInt();
 }
 
-export function filterRewardFromContainer(events: EventRecord[] = [], feePayer: string, paraId: ParaId) {
+export function filterRewardFromContainer(events: EventRecord[], feePayer: string, paraId: ParaId) {
     const rewardEvents = fetchRewardAuthorContainers(events);
     for (const index in rewardEvents) {
         if (
@@ -282,11 +284,7 @@ export function filterRewardFromContainer(events: EventRecord[] = [], feePayer: 
 // @param account - The account (keypair or address) used to sign the transaction.
 // @param timeout - The timeout in milliseconds, or null for no timeout. Defaults to 5 minutes.
 // @returns A Promise resolving with the transaction hash, block hash, and the full status object.
-export async function signAndSendAndInclude(
-    tx,
-    account,
-    timeout: number | null = 3 * 60 * 1000
-): Promise<{ txHash; blockHash; status }> {
+export async function signAndSendAndInclude(tx, account, timeout: number | null = 3 * 60 * 1000) {
     // Inner function that doesn't handle timeout
     const signAndSendAndIncludeInner = (tx, account) => {
         return new Promise((resolve, reject) => {
@@ -340,19 +338,19 @@ export function initializeCustomCreateBlock(context): any {
         const createBlockAndCheckExtrinsics = async (tx, opt) => {
             if (tx === undefined) {
                 return await originalCreateBlock(tx, opt);
-            } else {
-                const res = await originalCreateBlock(tx, opt);
-                // Ensure that all the extrinsics have been included
-                const txs = Array.isArray(tx) ? tx : [tx];
-                const expectedTxHashes = txs.map((x) => x.hash.toString());
-                const block = await context.polkadotJs().rpc.chain.getBlock(res.block.hash);
-                const includedTxHashes = block.block.extrinsics.map((x) => x.hash.toString());
-                // Note, the block may include some additional extrinsics
-                expectedTxHashes.forEach((a) => {
-                    expect(includedTxHashes).toContain(a);
-                });
-                return res;
             }
+            const res = await originalCreateBlock(tx, opt);
+            // Ensure that all the extrinsics have been included
+            const txs = Array.isArray(tx) ? tx : [tx];
+            const expectedTxHashes = txs.map((x) => x.hash.toString());
+            const block = await context.polkadotJs().rpc.chain.getBlock(res.block.hash);
+            const includedTxHashes = block.block.extrinsics.map((x) => x.hash.toString());
+            // Note, the block may include some additional extrinsics
+
+            for (const a of expectedTxHashes) {
+                expect(includedTxHashes).toContain(a);
+            }
+            return res;
         };
         context.createBlock = createBlockAndCheckExtrinsics;
         context.hasModifiedCreateBlockThatChecksExtrinsics = true;
@@ -369,7 +367,7 @@ export async function fetchStorageProofFromValidationData(polkadotJs) {
         const {
             method: { method, section },
         } = ex;
-        return section == "parachainSystem" && method == "setValidationData";
+        return section === "parachainSystem" && method === "setValidationData";
     });
     // Error handling if not found
     if (!ex) {
@@ -395,16 +393,17 @@ export async function isEventEmittedInTheNextBlocks(
     chainName: string,
     eventName: string
 ) {
-    while (blockCount > 0) {
+    let count = blockCount;
+    while (count > 0) {
         await context.waitBlock(1, chainName);
         const currentBlockEvents = await api.query.system.events();
         const filteredEvents = currentBlockEvents.filter((a) => {
-            return a.event.method == eventName;
+            return a.event.method === eventName;
         });
         if (filteredEvents.length > 0) {
             return true;
         }
-        blockCount--;
+        count--;
     }
     return false;
 }

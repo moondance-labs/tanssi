@@ -1,7 +1,7 @@
 import "@moonbeam-network/api-augment";
 import { beforeAll, describeSuite, fetchCompiledContract, expect } from "@moonwall/cli";
 import { ALITH_ADDRESS, BALTATHAR_ADDRESS, alith, createEthersTransaction } from "@moonwall/util";
-import { u16 } from "@polkadot/types-codec";
+import type { u16 } from "@polkadot/types-codec";
 import { encodeFunctionData } from "viem";
 import { expectEVMResult } from "helpers";
 import { mockAssetCreation, relayAssetMetadata } from "../../../helpers/assets.ts";
@@ -10,7 +10,7 @@ import { RELAY_SOURCE_LOCATION } from "../../../util/constants.ts";
 const PRECOMPILE_PALLET_XCM_ADDRESS: `0x${string}` = "0x0000000000000000000000000000000000000804";
 
 describeSuite({
-    id: "DF1112",
+    id: "DE1312",
     title: "Precompiles - PalletXcm",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
@@ -40,7 +40,7 @@ describeSuite({
         it({
             id: "T01",
             title: "allows to call transferAssetsLocation function",
-            test: async function () {
+            test: async () => {
                 const { abi: xcmInterface } = fetchCompiledContract("XCM");
                 const assetBalanceBefore = (
                     await context.polkadotJs().query.foreignAssets.account(assetId.toU8a(), ALITH_ADDRESS)
@@ -55,7 +55,7 @@ describeSuite({
                 const beneficiary: [number, any[]] = [
                     0,
                     // junction: AccountId32 enum (01) + the 32 byte account + Any network selector(00)
-                    ["0x01" + destinationAddress + destinationNetworkId],
+                    [`0x01${destinationAddress}${destinationNetworkId}`],
                 ];
 
                 const assetLocation: [number, any[]] = [1, []];
@@ -72,7 +72,7 @@ describeSuite({
                 });
 
                 const result = await context.createBlock(rawTxn);
-                expectEVMResult(result.result!.events, "Succeed");
+                expectEVMResult(result.result?.events, "Succeed");
 
                 const assetBalanceAfter = (
                     await context.polkadotJs().query.foreignAssets.account(assetId.toU8a(), ALITH_ADDRESS)
@@ -86,7 +86,7 @@ describeSuite({
         it({
             id: "T02",
             title: "allows to call transferAssetsToPara20 function",
-            test: async function () {
+            test: async () => {
                 const { abi: xcmInterface } = fetchCompiledContract("XCM");
                 const assetBalanceBefore = (
                     await context.polkadotJs().query.foreignAssets.account(assetId.toU8a(), ALITH_ADDRESS)
@@ -108,7 +108,7 @@ describeSuite({
                 });
 
                 const result = await context.createBlock(rawTxn);
-                expectEVMResult(result.result!.events, "Succeed");
+                expectEVMResult(result.result?.events, "Succeed");
 
                 const assetBalanceAfter = (
                     await context.polkadotJs().query.foreignAssets.account(assetId.toU8a(), ALITH_ADDRESS)
@@ -122,7 +122,7 @@ describeSuite({
         it({
             id: "T03",
             title: "allows to call transferAssetsToPara32 function",
-            test: async function () {
+            test: async () => {
                 const { abi: xcmInterface } = fetchCompiledContract("XCM");
                 const assetBalanceBefore = (
                     await context.polkadotJs().query.foreignAssets.account(assetId.toU8a(), ALITH_ADDRESS)
@@ -145,7 +145,7 @@ describeSuite({
                 });
 
                 const result = await context.createBlock(rawTxn);
-                expectEVMResult(result.result!.events, "Succeed");
+                expectEVMResult(result.result?.events, "Succeed");
 
                 const assetBalanceAfter = (
                     await context.polkadotJs().query.foreignAssets.account(assetId.toU8a(), ALITH_ADDRESS)
@@ -159,7 +159,7 @@ describeSuite({
         it({
             id: "T04",
             title: "allows to call transferAssetsToRelay function",
-            test: async function () {
+            test: async () => {
                 const { abi: xcmInterface } = fetchCompiledContract("XCM");
                 const assetBalanceBefore = (
                     await context.polkadotJs().query.foreignAssets.account(assetId.toU8a(), ALITH_ADDRESS)
@@ -181,7 +181,7 @@ describeSuite({
                 });
 
                 const result = await context.createBlock(rawTxn);
-                expectEVMResult(result.result!.events, "Succeed");
+                expectEVMResult(result.result?.events, "Succeed");
 
                 const assetBalanceAfter = (
                     await context.polkadotJs().query.foreignAssets.account(assetId.toU8a(), ALITH_ADDRESS)

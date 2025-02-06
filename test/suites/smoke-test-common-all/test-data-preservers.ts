@@ -1,57 +1,63 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
+import type { ApiPromise } from "@polkadot/api";
+import type { PalletDataPreserversRegisteredProfile } from "@polkadot/types/lookup";
 
 describeSuite({
-    id: "S16",
+    id: "S04",
     title: "Verify data preservers consistency",
     foundationMethods: "read_only",
-    testCases: ({ context, it }) => {
+    testCases: ({ context, it, log }) => {
         let paraApi: ApiPromise;
+        let registeredProfiles: PalletDataPreserversRegisteredProfile[];
 
-        beforeAll(async function () {
+        beforeAll(async () => {
             paraApi = context.polkadotJs("para");
+            registeredProfiles = (await paraApi.query.dataPreservers.profiles.entries())
+                .filter(([, entry]) => entry.isSome)
+                .map(([, entry]) => entry.unwrap());
         });
 
         it({
             id: "C01",
             title: "all profiles should have a deposit of either 0 or value fixed in the runtime",
-            test: async function () {
-                // Add more if we change ProfileDeposit value. Keep previous values for profiles
-                // created before the change.
-                const validDeposits = [0, 11330000000000];
+            test: async () => {
+                const byteFee = 100n * 1_000_000n * 100n; // 10_000_000_000
+                const baseFee = 100n * 1_000_000_000n * 100n; // 10_000_000_000_000
 
-                const entries = await paraApi.query.dataPreservers.profiles.entries();
+                const calculatedFee = (encodedLength: number) => baseFee + byteFee * BigInt(encodedLength);
 
-                for (const [, entry] of entries) {
-                    expect(validDeposits.includes(entry.deposit));
+                const failures = registeredProfiles.filter(({ deposit, profile }) => {
+                    const fee = calculatedFee(profile.encodedLength);
+                    return deposit.toBigInt() !== fee && deposit.toBigInt() !== 0n;
+                });
+
+                for (const { deposit, account } of failures) {
+                    log(`Invalid deposit ${deposit.toNumber()} for account ${account.toHuman()} `);
                 }
+                expect(failures.length, `${failures.length} invalid deposits registered`).toBe(0);
             },
         });
 
         it({
             id: "C02",
             title: "all assigned profile have assignement witness corresponding to request and whished para id",
-            test: async function () {
-                const entries = await paraApi.query.dataPreservers.profiles.entries();
+            test: async () => {
+                for (const { profile, assignment } of registeredProfiles.filter(
+                    ({ assignment }) => assignment.isSome
+                )) {
+                    const [para_id, witness] = assignment.unwrap();
 
-                for (const [, entry] of entries) {
-                    if (entry.assignment == null) {
-                        continue;
+                    if (profile.paraIds.isWhitelist) {
+                        expect(profile.paraIds.asWhitelist.has(para_id));
+                    } else if (profile.paraIds.isBlacklist) {
+                        expect(!profile.paraIds.asBlacklist.has(para_id));
                     }
 
-                    const [para_id, witness] = entry.assignment;
-
-                    if (entry.profile.paraIds.whitelist != null) {
-                        expect(entry.profile.paraIds.whitelist.includes(para_id));
-                    } else if (entry.profile.paraIds.blacklist != null) {
-                        expect(!entry.profile.paraIds.blacklist.includes(para_id));
-                    }
-
-                    if (entry.profile.assignmentRequest == "Free") {
-                        expect(witness).to.be.eq("Free");
-                    } else if (entry.profile.assignmentRequest.streamPayment != null) {
-                        expect(witness.streamPayment).to.not.be.undefined();
+                    if (profile.assignmentRequest.toString() === "Free") {
+                        expect(witness.toString()).to.be.eq("Free");
+                    } else if (profile.assignmentRequest.isStreamPayment) {
+                        expect(witness.asStreamPayment).not.toBeUndefined();
                     } else {
                         // Make test fail on unknown assignment modes.
                         // This force use to update this test when we add new modes.
@@ -64,20 +70,20 @@ describeSuite({
         it({
             id: "C03",
             title: "all profiles should have valid url",
-            test: async function () {
-                const entries = await paraApi.query.dataPreservers.profiles.entries();
-
-                for (const [, entry] of entries) {
-                    const profile = entry.unwrap().profile;
-                    expect(isValidEndpointUrl(profile.url.toHuman()), `Invalid URL {profile.url}`);
+            test: async () => {
+                const failures = registeredProfiles.filter(
+                    ({ profile }) => !isValidEndpointUrl(profile.url.toHuman().toString())
+                );
+                for (const { profile } of failures) {
+                    log(`Invalid URL ${profile.url.toHuman()}`);
                 }
+                expect(failures.length, `${failures.length} invalid endpoint urls registered`).toBe(0);
             },
         });
     },
 });
 
-function isValidEndpointUrl(string) {
+function isValidEndpointUrl(endpoint: string) {
     const prefixes = ["/dns4/", "https://", "http://", "wss://", "ws://"];
-
-    return prefixes.some((prefix) => string.startsWith(prefix));
+    return prefixes.some((prefix) => endpoint.startsWith(prefix));
 }

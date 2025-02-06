@@ -1,30 +1,30 @@
 import { TransactionTypes, beforeEach, describeSuite, expect } from "@moonwall/cli";
 import { ALITH_ADDRESS, BALTATHAR_ADDRESS, MIN_GAS_PRICE, createRawTransfer } from "@moonwall/util";
-import { PrivateKeyAccount } from "viem";
+import type { PrivateKeyAccount } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
 describeSuite({
-    id: "DF0101",
+    id: "DE0101",
     title: "Existential Deposit disabled",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
         let randomAccount: PrivateKeyAccount;
         let privateKey: `0x${string}`;
 
-        beforeEach(async function () {
+        beforeEach(async () => {
             privateKey = generatePrivateKey();
             randomAccount = privateKeyToAccount(privateKey);
             const { result } = await context.createBlock(
                 context.polkadotJs().tx.balances.transferAllowDeath(randomAccount.address, 10_000_000_000_000_000_000n)
             );
-            expect(result!.successful, result!.error?.name).to.be.true;
+            expect(result?.successful, result?.error?.name).to.be.true;
         });
 
         for (const txnType of TransactionTypes) {
             it({
                 id: `T0${TransactionTypes.indexOf(txnType) + 1}`,
                 title: `full ${txnType} transfer should not reap on 0 account balance`,
-                test: async function () {
+                test: async () => {
                     const gasPrice = (await context.polkadotJs().rpc.eth.gasPrice()).toBigInt();
                     const raw = await createRawTransfer(
                         context,
@@ -40,7 +40,7 @@ describeSuite({
                     );
                     const { result } = await context.createBlock(raw);
 
-                    expect(result!.successful, result!.error?.name).toBe(true);
+                    expect(result?.successful, result?.error?.name).toBe(true);
 
                     expect(await context.viem("public").getBalance({ address: randomAccount.address })).toBe(0n);
                 },
@@ -50,11 +50,11 @@ describeSuite({
         it({
             id: "T04",
             title: "should not reap on tiny balance",
-            test: async function () {
+            test: async () => {
                 const randomAccountBalance = await context
                     .viem("public")
                     .getBalance({ address: randomAccount.address });
-                const rawTxn = await context.createTxn!({
+                const rawTxn = await context.createTxn?.({
                     to: BALTATHAR_ADDRESS,
                     privateKey,
                     txnType: "legacy",
@@ -72,7 +72,7 @@ describeSuite({
         it({
             id: "T05",
             title: "runtime constant should be set to zero",
-            test: async function () {
+            test: async () => {
                 const existentialDeposit = context.polkadotJs().consts.balances.existentialDeposit.toBigInt();
                 expect(existentialDeposit).toBe(0n);
             },

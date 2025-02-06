@@ -1,6 +1,6 @@
-import { u16 } from "@polkadot/types";
-import { DevModeContext } from "@moonwall/cli";
-import { KeyringPair } from "@polkadot/keyring/types";
+import type { u16 } from "@polkadot/types";
+import type { DevModeContext } from "@moonwall/cli";
+import type { KeyringPair } from "@polkadot/keyring/types";
 import type { AccountId20 } from "@polkadot/types/interfaces/runtime";
 
 export const DUMMY_REVERT_BYTECODE = "0x60006000fd";
@@ -69,7 +69,7 @@ export async function mockAssetCreation(
     );
 
     const evmCodeAssetKey = api.query.evm.accountCodes.key(
-        "0xfFfFFFffFffFFFFffFFfFfffFfFFFFFfffFF" + assetId.toHex().slice(2)
+        `0xfFfFFFffFffFFFFffFFfFfffFfFFFFFfffFF${assetId.toHex().slice(2)}`
     );
 
     await context.createBlock(

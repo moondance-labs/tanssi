@@ -1,13 +1,13 @@
 import "@tanssi/api-augment";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { DANCE } from "util/constants";
-import { ApiPromise } from "@polkadot/api";
-import { KeyringPair } from "@moonwall/util";
-import { Result } from "@polkadot/types-codec";
-import { SpRuntimeDispatchError } from "@polkadot/types/lookup";
+import type { ApiPromise } from "@polkadot/api";
+import type { KeyringPair } from "@moonwall/util";
+import type { Result } from "@polkadot/types-codec";
+import type { SpRuntimeDispatchError } from "@polkadot/types/lookup";
 
 describeSuite({
-    id: "CAP0302",
+    id: "CO0202",
     title: "Txs can be paused and unpaused",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -16,7 +16,7 @@ describeSuite({
         let bob: KeyringPair;
         let chain: string;
 
-        beforeAll(async function () {
+        beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             alice = context.keyring.alice;
             bob = context.keyring.bob;
@@ -26,7 +26,7 @@ describeSuite({
         it({
             id: "E01",
             title: "transfer should fail after pausing it",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
                 // Pause Balances.transfer_allow_death
                 const { result } = await context.createBlock(
@@ -44,7 +44,7 @@ describeSuite({
                 const signedTx = polkadotJs.tx.balances.transferAllowDeath(bob.address, DANCE).signAsync(alice);
 
                 // transfer_allow_death should fail
-                if (chain == "frontier-template") {
+                if (chain === "frontier-template") {
                     expect(await context.createBlock(signedTx).catch((e) => e.toString())).to.equal(
                         "RpcError: 1010: Invalid Transaction: Transaction call is not expected"
                     );
@@ -60,7 +60,7 @@ describeSuite({
         it({
             id: "E02",
             title: "transfer should succeed after unpausing it",
-            test: async function () {
+            test: async () => {
                 // Unpause Balances.transferAllowDeath
                 const { result } = await context.createBlock(
                     polkadotJs.tx.sudo
@@ -86,7 +86,7 @@ describeSuite({
         it({
             id: "E03",
             title: "sudo shoudn't be affected by a pause",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
 
                 // Pause Balances.transfer

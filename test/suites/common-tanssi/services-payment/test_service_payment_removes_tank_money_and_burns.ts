@@ -1,22 +1,22 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
-import { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
+import type { KeyringPair } from "@moonwall/util";
 import { jumpSessions, fetchIssuance } from "util/block";
 import { paraIdTank } from "util/payment";
 
 describeSuite({
-    id: "CT0101",
+    id: "COMM0201",
     title: "Services payment test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
         const blocksPerSession = 10n;
-        const paraId2001 = 2001n;
+        const paraId2001 = 2001;
         const costPerBlock = 1_000_000n;
-        let balanceTankBefore;
-        let registerAlias;
+        let balanceTankBefore: bigint;
+        let registerAlias: any;
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             alice = context.keyring.alice;
@@ -31,12 +31,12 @@ describeSuite({
             const tx = polkadotJs.tx.servicesPayment.purchaseCredits(paraId2001, purchasedCredits);
             await context.createBlock([await tx.signAsync(alice)]);
             balanceTankBefore = (await polkadotJs.query.system.account(paraIdTank(paraId2001))).data.free.toBigInt();
-            expect(balanceTankBefore, `Tank should have been filled`).toBe(purchasedCredits);
+            expect(balanceTankBefore, "Tank should have been filled").toBe(purchasedCredits);
         });
         it({
             id: "E01",
             title: "We deregister 2000, check the issuance drops",
-            test: async function () {
+            test: async () => {
                 // We deregister the chain
                 const deregister2001 = polkadotJs.tx.sudo.sudo(registerAlias.deregister(paraId2001));
                 await context.createBlock([await deregister2001.signAsync(alice)]);
@@ -45,7 +45,7 @@ describeSuite({
                 const balanceTank = (
                     await polkadotJs.query.system.account(paraIdTank(paraId2001))
                 ).data.free.toBigInt();
-                expect(balanceTank, `Tank should have been removed`).toBe(0n);
+                expect(balanceTank, "Tank should have been removed").toBe(0n);
 
                 const blockNumber = (await polkadotJs.rpc.chain.getHeader()).number.toNumber();
                 const apiAtBlockBefore = await polkadotJs.at(await polkadotJs.rpc.chain.getBlockHash(blockNumber - 1));
@@ -54,7 +54,7 @@ describeSuite({
                 const blockIssuance = await fetchIssuance(await polkadotJs.query.system.events());
 
                 const issuanceDiff = supplyAfter - supplyBefore;
-                expect(issuanceDiff, `Tank should have been removed`).toBe(
+                expect(issuanceDiff, "Tank should have been removed").toBe(
                     blockIssuance.amount.toBigInt() - balanceTankBefore
                 );
             },

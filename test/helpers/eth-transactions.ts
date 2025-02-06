@@ -1,7 +1,7 @@
 import "@moonbeam-network/api-augment";
 import { expect } from "@moonwall/cli";
-import { EventRecord } from "@polkadot/types/interfaces";
-import {
+import type { EventRecord } from "@polkadot/types/interfaces";
+import type {
     EvmCoreErrorExitError,
     EvmCoreErrorExitFatal,
     EvmCoreErrorExitReason,
@@ -20,18 +20,18 @@ export function expectEVMResult<T extends Errors, Type extends keyof T>(
     resultType: Type,
     reason?: T[Type]
 ) {
-    expect(events, `Missing events, probably failed execution`).to.be.length.at.least(1);
+    expect(events, "Missing events, probably failed execution").to.be.length.at.least(1);
     const ethereumResult = events.find(
-        ({ event: { section, method } }) => section == "ethereum" && method == "Executed"
-    )!.event.data[3] as EvmCoreErrorExitReason;
+        ({ event: { section, method } }) => section === "ethereum" && method === "Executed"
+    )?.event.data[3] as EvmCoreErrorExitReason;
 
     const foundReason = ethereumResult.isError
         ? ethereumResult.asError.type
         : ethereumResult.isFatal
-        ? ethereumResult.asFatal.type
-        : ethereumResult.isRevert
-        ? ethereumResult.asRevert.type
-        : ethereumResult.asSucceed.type;
+          ? ethereumResult.asFatal.type
+          : ethereumResult.isRevert
+            ? ethereumResult.asRevert.type
+            : ethereumResult.asSucceed.type;
 
     expect(ethereumResult.type, `Invalid EVM Execution - (${ethereumResult.type}.${foundReason})`).to.equal(resultType);
     if (reason) {

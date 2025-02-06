@@ -1,9 +1,9 @@
 import * as ps from "ps-node";
-import { exec, spawn, execSync } from "child_process";
-import { readFileSync, writeFileSync, readlinkSync, unlinkSync } from "fs";
+import { exec, spawn, execSync } from "node:child_process";
+import { readFileSync, writeFileSync, readlinkSync, unlinkSync } from "node:fs";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
-import inquirer from "inquirer";
+import { select } from "@inquirer/prompts";
 
 const getEnvVariables = (pid: number) => {
     const envData = readFileSync(`/proc/${pid}/environ`).toString();
@@ -80,23 +80,19 @@ yargs(hideBin(process.argv))
                     process.exit(1);
                 }
 
-                const { selectedPid } = await inquirer.prompt([
-                    {
-                        type: "list",
-                        name: "selectedPid",
-                        message: "Select a process to restart:",
-                        choices: processes,
-                        pageSize: 15, // Increase this number as needed
-                    },
-                ]);
+                const result = await select({
+                    message: "Select a process to restart:",
+                    choices: processes,
+                    pageSize: 15, // Increase this number as needed
+                });
 
-                pid = Number(selectedPid);
+                pid = Number.parseInt(result);
             }
 
             // Get process details by PID
             ps.lookup({ pid: pid }, (err, resultList) => {
                 if (err) {
-                    throw new Error(err);
+                    throw err;
                 }
 
                 const processInfo = resultList[0];
@@ -145,15 +141,15 @@ yargs(hideBin(process.argv))
                                 env: Object.fromEntries(envVariables.map((e) => e.split("=", 2))),
                             });
 
-                            ["SIGINT", "SIGTERM"].forEach((signal) => {
+                            for (const signal of ["SIGINT", "SIGTERM"]) {
                                 process.on(signal, () => {
                                     console.log("zombienetRestart: got ", signal);
                                     if (child) {
-                                        child.kill(signal);
+                                        child.kill(signal as NodeJS.Signals);
                                     }
                                     process.exit();
                                 });
-                            });
+                            }
                         }, argv["wait-ms"]);
                     });
                 } else {
@@ -171,9 +167,9 @@ yargs(hideBin(process.argv))
             const processes = await fetchProcesses();
             if (processes.length) {
                 console.log("Matching Processes:");
-                processes.forEach((process) => {
+                for (const process of processes) {
                     console.log(process.name);
-                });
+                }
             } else {
                 console.log("No matching processes found.");
             }

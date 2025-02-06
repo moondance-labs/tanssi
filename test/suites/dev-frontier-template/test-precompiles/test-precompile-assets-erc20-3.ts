@@ -8,13 +8,13 @@ import {
     createEthersTransaction,
     createViemTransaction,
 } from "@moonwall/util";
-import { u16 } from "@polkadot/types-codec";
+import type { u16 } from "@polkadot/types-codec";
 import { mockAssetCreation, RELAY_SOURCE_LOCATION, relayAssetMetadata } from "../../../helpers/assets";
 
-import { Abi, encodeFunctionData } from "viem";
+import { type Abi, encodeFunctionData } from "viem";
 
 describeSuite({
-    id: "DF1103",
+    id: "DE1303",
     title: "Precompiles - Assets-ERC20",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
@@ -57,7 +57,7 @@ describeSuite({
         it({
             id: "T01",
             title: "allows to approve transfer and use transferFrom",
-            test: async function () {
+            test: async () => {
                 const rawSigned = await createEthersTransaction(context, {
                     to: ADDRESS_ERC20,
                     data: encodeFunctionData({

@@ -1,8 +1,8 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { MIN_GAS_PRICE, customWeb3Request, generateKeyringPair, getBlockArray } from "@moonwall/util";
-import { ApiPromise, Keyring } from "@polkadot/api";
-import { Signer } from "ethers";
-import fs from "fs/promises";
+import { type ApiPromise, Keyring } from "@polkadot/api";
+import type { Signer } from "ethers";
+import fs from "node:fs/promises";
 import { getAuthorFromDigest } from "../../util/author";
 import { signAndSendAndInclude, waitSessions } from "../../util/block";
 import { getHeaderFromRelay } from "../../util/relayInterface";
@@ -16,10 +16,10 @@ import { stringToHex } from "@polkadot/util";
 const JSONbig = jsonBg({ useNativeBigInt: true });
 
 describeSuite({
-    id: "R01",
+    id: "ZOMBIETANS01",
     title: "Zombie Tanssi Rotation Test",
     foundationMethods: "zombie",
-    testCases: function ({ it, context }) {
+    testCases: ({ it, context }) => {
         let paraApi: ApiPromise;
         let relayApi: ApiPromise;
         let container2000Api: ApiPromise;
@@ -70,7 +70,7 @@ describeSuite({
         it({
             id: "T01",
             title: "Blocks are being produced on parachain",
-            test: async function () {
+            test: async () => {
                 const blockNum = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
                 expect(blockNum).to.be.greaterThan(0);
             },
@@ -79,7 +79,7 @@ describeSuite({
         it({
             id: "T01a",
             title: "Deregister 2000 and 2001 as parachains and remove their allocation from coretime",
-            test: async function () {
+            test: async () => {
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 
@@ -103,8 +103,8 @@ describeSuite({
                 for (let core = 0; core < maxCores; core++) {
                     const coreData = (await relayApi.query.coretimeAssignmentProvider.coreDescriptors(core)).toJSON();
                     if (
-                        coreData.currentWork.assignments[0][0].task == 2000 ||
-                        coreData.currentWork.assignments[0][0].task == 2001
+                        coreData.currentWork.assignments[0][0].task === 2000 ||
+                        coreData.currentWork.assignments[0][0].task === 2001
                     ) {
                         coresToRemoveFromCoretime.push(core);
                     }
@@ -130,7 +130,7 @@ describeSuite({
         it({
             id: "T01b",
             title: "Fund parachain tank account on relay chain",
-            test: async function () {
+            test: async () => {
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
                 const paraId2000Tank = await getParathreadRelayTankAddress(relayApi, 1000, 2000);
@@ -151,7 +151,7 @@ describeSuite({
             id: "T02a",
             title: "Disable full_rotation and set xcm weights",
             timeout: 6000000,
-            test: async function () {
+            test: async () => {
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
                 const tx4 = paraApi.tx.configuration.setFullRotationPeriod(0);
@@ -177,7 +177,7 @@ describeSuite({
             id: "T02b",
             title: "Change configuration to assign two collators per parathread",
             timeout: 6000000,
-            test: async function () {
+            test: async () => {
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
                 const setParathreadCollators = paraApi.tx.configuration.setCollatorsPerParathread(2);
@@ -194,7 +194,7 @@ describeSuite({
         it({
             id: "T03",
             title: "Register 2000 and 2001 as parathread and assign collators to it",
-            test: async function () {
+            test: async () => {
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
                 const nextProfileId = await paraApi.query.dataPreservers.nextProfileId();
@@ -267,7 +267,7 @@ describeSuite({
         it({
             id: "T04",
             title: "Blocks are being produced on container 2000",
-            test: async function () {
+            test: async () => {
                 // Produces 1 block every 5 slots, which is every 30 seconds
                 // Give it a bit more time just in case
                 await sleep(120000);
@@ -279,7 +279,7 @@ describeSuite({
         it({
             id: "T05",
             title: "Blocks are being produced on container 2001",
-            test: async function () {
+            test: async () => {
                 // Produces 1 block every 5 slots, which is every 30 seconds
                 // Give it a bit more time just in case
                 await sleep(120000);
@@ -293,7 +293,7 @@ describeSuite({
         it({
             id: "T06",
             title: "Test container chain 2000 assignation is correct",
-            test: async function () {
+            test: async () => {
                 const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
                 const paraId = (await container2000Api.query.parachainInfo.parachainId()).toString();
                 const containerChainCollators = (
@@ -310,7 +310,7 @@ describeSuite({
         it({
             id: "T07",
             title: "Test container chain 2001 assignation is correct",
-            test: async function () {
+            test: async () => {
                 const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
                 const paraId = (await container2001Api.query.parachainInfo.parachainId()).toString();
                 const containerChainCollators = (
@@ -327,7 +327,7 @@ describeSuite({
             id: "T08",
             title: "Test author noting is correct for both containers",
             timeout: 120000,
-            test: async function () {
+            test: async () => {
                 const assignment = await paraApi.query.collatorAssignment.collatorContainerChain();
                 const paraId2000 = await container2000Api.query.parachainInfo.parachainId();
                 const paraId2001 = await container2001Api.query.parachainInfo.parachainId();
@@ -348,7 +348,7 @@ describeSuite({
         it({
             id: "T09",
             title: "Test author is correct in Orchestrator",
-            test: async function () {
+            test: async () => {
                 const sessionIndex = (await paraApi.query.session.currentIndex()).toNumber();
                 const authorities = await paraApi.query.authorityAssignment.collatorContainerChain(sessionIndex);
                 const author = await getAuthorFromDigest(paraApi);
@@ -360,7 +360,7 @@ describeSuite({
         it({
             id: "T10",
             title: "Test frontier template isEthereum",
-            test: async function () {
+            test: async () => {
                 // TODO: fix once we have types
                 const genesisData2000 = await paraApi.query.registrar.paraGenesisData(2000);
                 expect(genesisData2000.toJSON().properties.isEthereum).to.be.false;
@@ -372,7 +372,7 @@ describeSuite({
             id: "T11",
             title: "Transactions can be made with ethers",
             timeout: 120000,
-            test: async function () {
+            test: async () => {
                 const randomAccount = generateKeyringPair();
                 const tx = await createTransfer(context, randomAccount.address, 1_000_000_000_000, {
                     gasPrice: MIN_GAS_PRICE,
@@ -390,7 +390,7 @@ describeSuite({
             id: "T12",
             title: "Check block frequency of parathreads",
             timeout: 240000,
-            test: async function () {
+            test: async () => {
                 // Wait 2 sessions so that parathreads have produced at least a few blocks each
                 await waitSessions(context, paraApi, 2);
 
@@ -430,7 +430,7 @@ async function assertSlotFrequency(blockData, expectedSlotDiff) {
             const slotLog = logs.find(
                 (log) => log.isPreRuntime === true && log.asPreRuntime[0].toHex() === stringToHex("aura")
             );
-            return slotLog ? parseInt(slotLog.asPreRuntime[1].reverse().toString("hex"), 16) : null;
+            return slotLog ? Number.parseInt(slotLog.asPreRuntime[1].reverse().toString("hex"), 16) : null;
         })
         .filter((slot) => slot !== null); // Filter out nulls (blocks without slotLog)
 
@@ -465,7 +465,9 @@ function createCollatorKeyToNameMap(paraApi, collatorNames: string[]): Record<st
     return collatorName;
 }
 
-async function createTxBatchForCreatingParathread(api, manager, paraId, slotFreq, nextProfileId, headData?: null) {
+async function createTxBatchForCreatingParathread(api, manager, paraId, slotFreq, profileId, headData?: null) {
+    let nextProfileId = profileId;
+
     const specPaths = {
         2000: "specs/parathreads-template-container-2000.json",
         2001: "specs/parathreads-template-container-2001.json",
