@@ -31,10 +31,6 @@ jobs:
   setup-scripts:
     runs-on: ubuntu-latest
     steps:
-      ## Use scripts and tools from current branch
-      - name: https://github.com/actions/checkout/issues/1720
-        run: |
-          chmod -R u+rwX .
       - uses: actions/checkout@v4
       - name: Upload scripts
         uses: actions/upload-artifact@v4
@@ -98,12 +94,10 @@ jobs:
           - temp-1.81
 
     steps:
-      - name: https://github.com/actions/checkout/issues/1720
-        run: |
-          sudo chmod -R u+rwX .
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.to }}
+          path: tmp
       - name: Login to DockerHub
         uses: docker/login-action@v2.2.0
         with:
@@ -156,7 +150,6 @@ jobs:
             ${{ matrix.chain.runtime_name }}-runtime.compact.compressed.wasm
             ${{ matrix.chain.runtime_name }}-srtool-digest.json
 
-          
   ####### Prepare the release draft #######
   prepare-draft-release:
     runs-on: ubuntu-latest
