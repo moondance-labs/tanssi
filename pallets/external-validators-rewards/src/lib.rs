@@ -132,7 +132,7 @@ pub mod pallet {
         type WeightInfo: WeightInfo;
 
         #[cfg(feature = "runtime-benchmarks")]
-        type BenchmarkHelper: tp_bridge::TokenSetterBenchmarkHelperTrait;
+        type BenchmarkHelper: tp_bridge::TokenChannelSetterBenchmarkHelperTrait;
     }
 
     #[pallet::pallet]
