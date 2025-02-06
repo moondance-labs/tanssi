@@ -20,6 +20,9 @@ fi
 
 mkdir -p ${RUNTIME_DIR}/target
 chmod -R 777 ${RUNTIME_DIR}/target
+
+echo "PWD Is"
+echo ${PWD}
 CMD="docker run \
   -i \
   --rm \
