@@ -53,3 +53,12 @@ stdbuf -oL $CMD | {
   IPFS=`echo $JSON | jq -r .runtimes.compact.ipfs`
   echo "ipfs=$IPFS" >> $GITHUB_OUTPUT
 }
+
+# Clean up file permissions after srtool
+docker run \
+  -i \
+  --rm \
+  -v ${PWD}:/build \
+  --entrypoint /bin/sh \
+  ${GH_WORKFLOW_MATRIX_SRTOOL_IMAGE}:${GH_WORKFLOW_MATRIX_SRTOOL_IMAGE_TAG} \
+    chown ${UID}:${UID} -R /build/${RUNTIME_DIR}/target/srtool
