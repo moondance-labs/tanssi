@@ -95,6 +95,9 @@ jobs:
           - temp-1.81
 
     steps:
+      - name: https://github.com/actions/checkout/issues/1720
+        run: |
+          chmod -R u+rwX .
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.to }}
