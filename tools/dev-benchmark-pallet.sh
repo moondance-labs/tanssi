@@ -68,17 +68,18 @@ fi
 
 # For each runtime, only update the weights if they already existed before
 # This is because the different runtimes have different pallets
-if [ -f "chains/orchestrator-paras/dancebox/src/weights/$PALLET.rs" ]; then
+# When adding a new pallet, you can set env variable FORCE_COPY=1
+if [ "$FORCE_COPY" = "1" ] || [ -f "chains/orchestrator-paras/runtime/dancebox/src/weights/$PALLET.rs" ]; then
 	echo "------------------------------------------------------------"
 	echo "Dancebox weights"
 	echo "------------------------------------------------------------"
 	TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs \
 	    OUTPUT_PATH=tmp/dancebox_weights \
 	    tools/benchmarking.sh "$PALLET" "*" --check
-	cp -v tmp/dancebox_weights/$PALLET.rs chains/orchestrator-paras/dancebox/src/weights/$PALLET.rs
+	cp -v tmp/dancebox_weights/$PALLET.rs chains/orchestrator-paras/runtime/dancebox/src/weights/$PALLET.rs
 fi
 
-if [ -f "chains/orchestrator-paras/flashbox/src/weights/$PALLET.rs" ]; then
+if [ "$FORCE_COPY" = "1" ] || [ -f "chains/orchestrator-paras/runtime/flashbox/src/weights/$PALLET.rs" ]; then
 	echo "------------------------------------------------------------"
 	echo "Flashbox weights"
 	echo "------------------------------------------------------------"
@@ -86,10 +87,10 @@ if [ -f "chains/orchestrator-paras/flashbox/src/weights/$PALLET.rs" ]; then
 	    CHAIN=flashbox_dev \
 	    OUTPUT_PATH=tmp/flashbox_weights \
 	    tools/benchmarking.sh "$PALLET" "*" --check
-	cp -v tmp/flashbox_weights/$PALLET.rs chains/orchestrator-paras/flashbox/src/weights/$PALLET.rs
+	cp -v tmp/flashbox_weights/$PALLET.rs chains/orchestrator-paras/runtime/flashbox/src/weights/$PALLET.rs
 fi
 
-if [ -f "chains/container-chains/runtime-templates/simple/src/weights/$PALLET.rs" ]; then
+if [ "$FORCE_COPY" = "1" ] || [ -f "chains/container-chains/runtime-templates/simple/src/weights/$PALLET.rs" ]; then
 	echo "------------------------------------------------------------"
 	echo "Simple template weights"
 	echo "------------------------------------------------------------"
@@ -100,7 +101,7 @@ if [ -f "chains/container-chains/runtime-templates/simple/src/weights/$PALLET.rs
 	cp -v tmp/simple_template_weights/$PALLET.rs chains/container-chains/runtime-templates/simple/src/weights/$PALLET.rs
 fi
 
-if [ -f "chains/container-chains/runtime-templates/frontier/src/weights/$PALLET.rs" ]; then
+if [ "$FORCE_COPY" = "1" ] || [ -f "chains/container-chains/runtime-templates/frontier/src/weights/$PALLET.rs" ]; then
 	echo "------------------------------------------------------------"
 	echo "Frontier template weights"
 	echo "------------------------------------------------------------"
@@ -111,7 +112,7 @@ if [ -f "chains/container-chains/runtime-templates/frontier/src/weights/$PALLET.
 	cp -v tmp/frontier_template_weights/$PALLET.rs chains/container-chains/runtime-templates/frontier/src/weights/$PALLET.rs
 fi
 
-if [ -f "chains/orchestrator-relays/runtime/dancelight/src/weights/$PALLET.rs" ]; then
+if [ "$FORCE_COPY" = "1" ] || [ -f "chains/orchestrator-relays/runtime/dancelight/src/weights/$PALLET.rs" ]; then
 	echo "------------------------------------------------------------"
 	echo "Dancelight weights"
 	echo "------------------------------------------------------------"
