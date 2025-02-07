@@ -131,6 +131,12 @@ pub mod pallet {
                 "Container chain author data needs to be present in every block!"
             );
         }
+
+
+        #[cfg(feature = "std")]
+        fn integrity_test() {
+            panic!("integrity test enabled :D");
+        }
     }
 
     #[pallet::call]
