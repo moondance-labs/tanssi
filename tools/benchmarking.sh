@@ -98,6 +98,9 @@ function bench {
                 TEMPLATE_TO_USE="./benchmarking/frame-weight-runtime-template-xcm.hbs"
                 MODIFIED_PALLET_FILE=${PALLET/::/_}
                 OUTPUT="${OUTPUT_PATH}/$MODIFIED_PALLET_FILE.rs"
+            elif [[ "$PALLET" == *"runtime_common"* || "$PALLET" == *"runtime_parachains"* ]]; then
+                MODIFIED_PALLET_FILE=${PALLET/::/_}
+                OUTPUT="${OUTPUT_PATH}/$MODIFIED_PALLET_FILE.rs"
             fi
             touch "$OUTPUT"
             WASMTIME_BACKTRACE_DETAILS=1 ${BINARY} benchmark pallet \
@@ -117,6 +120,9 @@ function bench {
         OUTPUT="${OUTPUT_PATH}/${1}.rs"
         if [[ "${1}" == *"pallet_xcm_benchmarks"* ]]; then
             TEMPLATE_TO_USE="./benchmarking/frame-weight-runtime-template-xcm.hbs"
+            MODIFIED_PALLET_FILE=${1/::/_}
+            OUTPUT="${OUTPUT_PATH}/$MODIFIED_PALLET_FILE.rs"
+        elif [[ "${1}" == *"runtime_common"* || "$1" == *"runtime_parachains"* ]]; then
             MODIFIED_PALLET_FILE=${1/::/_}
             OUTPUT="${OUTPUT_PATH}/$MODIFIED_PALLET_FILE.rs"
         fi
