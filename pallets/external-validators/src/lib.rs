@@ -255,7 +255,10 @@ pub mod pallet {
         /// A new force era mode was set.
         ForceEra { mode: Forcing },
         /// External validators were set.
-        ExternalValidatorsSet { validators: Vec<T::ValidatorId>, external_index: u64 },
+        ExternalValidatorsSet {
+            validators: Vec<T::ValidatorId>,
+            external_index: u64,
+        },
     }
 
     #[pallet::error]
@@ -382,10 +385,13 @@ pub mod pallet {
         ) -> DispatchResult {
             // If more validators than max, take the first n
             let validators = BoundedVec::truncate_from(validators);
-            <ExternalValidators<T>>::put(validators.clone());
+            <ExternalValidators<T>>::put(&validators);
             <ExternalIndex<T>>::put(external_index);
 
-            Self::deposit_event(Event::<T>::ExternalValidatorsSet { validators: validators.into_inner(), external_index  });
+            Self::deposit_event(Event::<T>::ExternalValidatorsSet {
+                validators: validators.into_inner(),
+                external_index,
+            });
             Ok(())
         }
 
