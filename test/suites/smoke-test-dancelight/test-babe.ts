@@ -20,18 +20,6 @@ const timePeriod = process.env.TIME_PERIOD ? Number(process.env.TIME_PERIOD) : 1
 const timeout = Math.max(Math.floor(timePeriod / 12), 5000);
 const hours = (timePeriod / (1000 * 60 * 60)).toFixed(2);
 
-interface BlockFilteredRecord {
-    blockNum: number;
-    blockHash: BlockHash;
-    header: Header;
-    preHash: HexString;
-    extrinsics: GenericExtrinsic<AnyTuple>[];
-    events: FrameSystemEventRecord[];
-    logs: DigestItem[];
-    authorities: AccountId32[];
-    accountsWithBabeKeys: [string, string][];
-}
-
 describeSuite({
     id: "SMOK02",
     title: "Sample suite that only runs on Dancelight chains",
@@ -234,4 +222,16 @@ async function keyOwners(
     }
 
     return keyOwnersInPalletSession;
+}
+
+interface BlockFilteredRecord {
+    blockNum: number;
+    blockHash: BlockHash;
+    header: Header;
+    preHash: HexString;
+    extrinsics: GenericExtrinsic<AnyTuple>[];
+    events: FrameSystemEventRecord[];
+    logs: DigestItem[];
+    authorities: AccountId32[];
+    accountsWithBabeKeys: [string, string][];
 }
