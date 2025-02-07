@@ -185,6 +185,7 @@ std = [
 	"pallet-maintenance-mode/std",
 	"pallet-message-queue/std",
 	"pallet-migrations/std",
+	"pallet-multiblock-migrations/std",
 	"pallet-multisig/std",
 	"pallet-parameters/std",
 	"pallet-proxy/std",
@@ -227,7 +228,6 @@ std = [
 	"tanssi-runtime-common/std",
 	"xcm-primitives/std",
 	"xcm-runtime-apis/std",
-	"pallet-multiblock-migrations/std"
 ]
 
 # Allow to print logs details (no wasm:stripped)
@@ -258,6 +258,7 @@ runtime-benchmarks = [
 	"pallet-foreign-asset-creator/runtime-benchmarks",
 	"pallet-message-queue/runtime-benchmarks",
 	"pallet-migrations/runtime-benchmarks",
+	"pallet-multiblock-migrations/runtime-benchmarks",
 	"pallet-multisig/runtime-benchmarks",
 	"pallet-parameters/runtime-benchmarks",
 	"pallet-proxy/runtime-benchmarks",
@@ -277,7 +278,6 @@ runtime-benchmarks = [
 	"tanssi-runtime-common/runtime-benchmarks",
 	"xcm-primitives/runtime-benchmarks",
 	"xcm-runtime-apis/runtime-benchmarks",
-	"pallet-multiblock-migrations/runtime-benchmarks"
 ]
 
 try-runtime = [
@@ -304,6 +304,7 @@ try-runtime = [
 	"pallet-maintenance-mode/try-runtime",
 	"pallet-message-queue/try-runtime",
 	"pallet-migrations/try-runtime",
+	"pallet-multiblock-migrations/try-runtime",
 	"pallet-multisig/try-runtime",
 	"pallet-parameters/try-runtime",
 	"pallet-proxy/try-runtime",
@@ -319,5 +320,4 @@ try-runtime = [
 	"polkadot-runtime-common/try-runtime",
 	"sp-runtime/try-runtime",
 	"tanssi-runtime-common/try-runtime",
-	"pallet-multiblock-migrations/try-runtime"
 ]

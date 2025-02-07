@@ -210,6 +210,7 @@ std = [
 	"pallet-maintenance-mode/std",
 	"pallet-message-queue/std",
 	"pallet-migrations/std",
+	"pallet-multiblock-migrations/std",
 	"pallet-multisig/std",
 	"pallet-pooled-staking/std",
 	"pallet-proxy/std",
@@ -279,7 +280,6 @@ std = [
 	"westend-runtime/std",
 	"xcm-primitives/std",
 	"xcm-runtime-apis/std",
-	"pallet-multiblock-migrations/std"
 ]
 
 # Allow to print logs details (no wasm:stripped)
@@ -315,6 +315,7 @@ runtime-benchmarks = [
 	"pallet-invulnerables/runtime-benchmarks",
 	"pallet-message-queue/runtime-benchmarks",
 	"pallet-migrations/runtime-benchmarks",
+	"pallet-multiblock-migrations/runtime-benchmarks",
 	"pallet-multisig/runtime-benchmarks",
 	"pallet-pooled-staking/runtime-benchmarks",
 	"pallet-proxy/runtime-benchmarks",
@@ -347,7 +348,6 @@ runtime-benchmarks = [
 	"westend-runtime/runtime-benchmarks",
 	"xcm-primitives/runtime-benchmarks",
 	"xcm-runtime-apis/runtime-benchmarks",
-	"pallet-multiblock-migrations/runtime-benchmarks"
 ]
 
 try-runtime = [
@@ -380,6 +380,7 @@ try-runtime = [
 	"pallet-maintenance-mode/try-runtime",
 	"pallet-message-queue/try-runtime",
 	"pallet-migrations/try-runtime",
+	"pallet-multiblock-migrations/try-runtime",
 	"pallet-multisig/try-runtime",
 	"pallet-pooled-staking/try-runtime",
 	"pallet-proxy/try-runtime",
@@ -406,7 +407,6 @@ try-runtime = [
 	"sp-runtime/try-runtime",
 	"tanssi-runtime-common/try-runtime",
 	"westend-runtime/try-runtime",
-	"pallet-multiblock-migrations/try-runtime"
 ]
 
 fast-runtime = []
