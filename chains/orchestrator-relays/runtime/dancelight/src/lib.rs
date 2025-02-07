@@ -2303,6 +2303,12 @@ mod benches {
         [pallet_asset_rate, AssetRate]
         [pallet_whitelist, Whitelist]
         [pallet_services_payment, ServicesPayment]
+        [pallet_babe, Babe]
+        [pallet_grandpa, Grandpa]
+        [pallet_mmr, Mmr]
+        [pallet_beefy_mmr, BeefyMmrLeaf]
+        [pallet_configuration, Configuration]
+        [pallet_multiblock_migrations, MultiBlockMigrations]
         // Tanssi
         [pallet_author_noting, AuthorNoting]
         [pallet_registrar, ContainerRegistrar]
