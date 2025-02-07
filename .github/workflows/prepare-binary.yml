@@ -42,9 +42,9 @@ jobs:
           cp target/production/container-chain-frontier-node binaries/container-chain-frontier-node-${{matrix.cpu}}
           cp target/production/container-chain-simple-node binaries/container-chain-simple-node-${{matrix.cpu}}
       - name: Upload binary
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: binaries
+          name: binaries-${{matrix.cpu}}
           path: binaries
 
   ####### Prepare the release draft #######
@@ -61,7 +61,8 @@ jobs:
             ref: ${{ github.event.inputs.sha }}
         - uses: actions/download-artifact@v4
           with:
-            name: binaries
+            pattern: binaries-*
+            merge-multiple: true
             path: build
         - name: Prepare
           id: prep
