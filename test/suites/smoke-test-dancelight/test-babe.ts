@@ -1,7 +1,7 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { getBlockArray } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
-import type { GenericExtrinsic } from "@polkadot/types";
+import type { GenericExtrinsic, U32 } from "@polkadot/types";
 import type { FrameSystemEventRecord } from "@polkadot/types/lookup";
 import type { AnyTuple } from "@polkadot/types/types";
 import { hexToU8a, stringToHex } from "@polkadot/util";
@@ -21,7 +21,7 @@ type BlockFilteredRecord = {
     events: FrameSystemEventRecord[];
     logs;
     authorities;
-    accountKeys;
+    accountsWithBabeKeys;
 };
 
 describeSuite({
@@ -36,6 +36,7 @@ describeSuite({
             api = context.polkadotJs();
 
             const blockNumArray = await getBlockArray(api, timePeriod);
+
             log(`Collecting ${hours} hours worth of authors`);
 
             const getBlockData = async (blockNum: number) => {
@@ -45,17 +46,23 @@ describeSuite({
                 const apiAt = await api.at(blockHash);
                 const preHash = getPreHash(api, header);
 
-                // Get the session keys from all the authorities because we would need to parse the logs here to know
-                // which one is the expected author.
                 const authorities = await apiAt.query.session.validators();
-                const accountKeys = new Map(
-                    await Promise.all(
-                        authorities.map(async (validator) => {
-                            const nextKeys = await apiAt.query.session.nextKeys(validator);
-                            return [validator.toJSON(), nextKeys.toJSON()];
-                        })
-                    )
-                );
+                const babeAuthorities = await apiAt.query.babe.authorities();
+
+                const blockBabeEpochStart = (await apiAt.query.babe.epochStart()).toJSON()[0];
+                const apiAtSessionChange = await api.at(await api.rpc.chain.getBlockHash(blockBabeEpochStart));
+
+                // If there has been a recent change in session keys,
+                // it might happen that BABE keys from pallet babe haven't changed yet,
+                // but new (next) keys are already stored in pallet session.
+                //
+                // So we need to check the keyOwner storage at the previous epoch change to check
+                // the actual BABE keys that were used to seal the block and match the validator
+                // accounts at that point.
+                //
+                // If we were to use the session pallet to retrieve the validators (and keys),
+                // we would get the new set of keys wich are not being applied yet.
+                const accountsWithBabeKeys = await keyOwners(babeAuthorities, apiAtSessionChange);
 
                 return {
                     blockNum: blockNum,
@@ -64,7 +71,7 @@ describeSuite({
                     events: await apiAt.query.system.events(),
                     logs: signedBlock.block.header.digest.logs,
                     authorities,
-                    accountKeys,
+                    accountsWithBabeKeys,
                 };
             };
             const limiter = new Bottleneck({ maxConcurrent: 5, minTime: 100 });
@@ -75,8 +82,10 @@ describeSuite({
             id: "C01",
             title: "BABE keys are set and validators from logs match validators from pallet",
             test: async () => {
-                const blockToCheck = (await api.query.babe.epochStart()).toJSON()[1];
-
+                // Check the previous epoch digest.
+                // The [0] index indicates the block number in which the previous session started.
+                // The [1] index indicates the block number in which the current session started.
+                const blockToCheck = ((await api.query.babe.epochStart()) as unknown as [U32, U32])[0];
                 const apiAtSessionChange = await api.at(await api.rpc.chain.getBlockHash(blockToCheck));
 
                 const digestsInSessionChange = (await apiAtSessionChange.query.system.digest()).logs;
@@ -97,22 +106,21 @@ describeSuite({
 
                 expect(babeConsensusLog[1]).to.deep.equal(babeAuthoritiesFromPallet);
 
-                // Get babe keys from pallet session
-                const sessionValidators = await api.query.session.validators();
+                const keyOwnersArray = [];
+                const keyOwnersInPalletSession = await keyOwners(babeAuthoritiesFromPallet, api);
 
-                const babeKeysInPalletSession = [];
-
-                for (const account of sessionValidators) {
-                    const accountKeys = await api.query.session.nextKeys(account);
-                    expect(accountKeys.isSome, `Missing babe key for validator ${account.toJSON()}`).toBeTruthy();
-                    babeKeysInPalletSession.push(accountKeys.unwrap().babe.toHex());
+                for (const keyOwner of keyOwnersInPalletSession) {
+                    keyOwnersArray.push(keyOwner[0]);
                 }
 
-                // Assert that all validators have babe keys
-                const babeAuthoritiesSorted = babeAuthoritiesFromPallet.map((x) => x[0].toHex());
-                babeAuthoritiesSorted.sort();
-                babeKeysInPalletSession.sort();
-                expect(babeKeysInPalletSession).to.deep.equal(babeAuthoritiesSorted);
+                // Get validators from pallet session
+                const sessionValidators = await api.query.session.validators();
+
+                keyOwnersArray.sort();
+                sessionValidators.sort();
+
+                // Check that key owners found are the same validators in pallet session
+                expect(keyOwnersArray).to.deep.equal(sessionValidators.toJSON());
             },
         });
 
@@ -121,7 +129,7 @@ describeSuite({
             title: "BABE author signature valid",
             test: async () => {
                 const failures = blockData
-                    .map(({ blockNum, preHash, logs, authorities, accountKeys }) => {
+                    .map(({ blockNum, preHash, logs, authorities, accountsWithBabeKeys }) => {
                         const babeLogs = logs.filter(
                             (log) => log.isPreRuntime === true && log.asPreRuntime[0].toHex() === stringToHex("BABE")
                         );
@@ -154,9 +162,9 @@ describeSuite({
                         // Verify seal signature
                         const message = hexToU8a(preHash);
                         const signature = hexToU8a(sealLog.toHex());
-                        const authorKeys = accountKeys.get(expectedAuthor);
-                        expect(authorKeys?.babe, `Missing babe key for block author: ${expectedAuthor}`).toBeTruthy();
-                        const pubKey = hexToU8a(authorKeys.babe);
+                        const authorBabe = accountsWithBabeKeys.find((acc) => acc[0] === expectedAuthor);
+                        expect(authorBabe, `Missing babe key for block author: ${expectedAuthor}`).toBeTruthy();
+                        const pubKey = hexToU8a(authorBabe[1]);
 
                         const authorValid = sr25519Verify(signature, message, pubKey);
 
@@ -193,4 +201,26 @@ function getPreHash(api, header) {
         },
     });
     return headerWithoutSeal.hash.toHex();
+}
+
+// Helper function to retrieve the validators from pallet session given
+// the babe authorities (babeKeys) and a specific api instance.
+async function keyOwners(babeAuthoritiesFromPallet, api) {
+    const keyOwnersInPalletSession = [];
+
+    for (const authority of babeAuthoritiesFromPallet) {
+        const param = api.registry.createType("(SpCoreCryptoKeyTypeId, Bytes)", [
+            stringToHex("babe"),
+            authority[0].toHex(),
+        ]);
+        const keyOwner = await api.query.session.keyOwner(param);
+
+        expect(
+            keyOwner.isSome,
+            `Validator with babe key ${authority[0].toJSON()} not found in pallet session!`
+        ).toBeTruthy();
+        keyOwnersInPalletSession.push([keyOwner.toJSON(), authority[0].toJSON()]);
+    }
+
+    return keyOwnersInPalletSession;
 }
