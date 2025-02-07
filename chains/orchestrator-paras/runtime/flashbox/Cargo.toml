@@ -167,6 +167,7 @@ std = [
 	"pallet-invulnerables/std",
 	"pallet-maintenance-mode/std",
 	"pallet-migrations/std",
+	"pallet-multiblock-migrations/std",
 	"pallet-multisig/std",
 	"pallet-proxy/std",
 	"pallet-registrar-runtime-api/std",
@@ -216,7 +217,6 @@ std = [
 	"test-relay-sproof-builder/std",
 	"tp-author-noting-inherent/std",
 	"tp-traits/std",
-	"pallet-multiblock-migrations/std"
 ]
 
 # Allow to print logs details (no wasm:stripped)
@@ -244,6 +244,7 @@ runtime-benchmarks = [
 	"pallet-inflation-rewards/runtime-benchmarks",
 	"pallet-invulnerables/runtime-benchmarks",
 	"pallet-migrations/runtime-benchmarks",
+	"pallet-multiblock-migrations/runtime-benchmarks",
 	"pallet-multisig/runtime-benchmarks",
 	"pallet-proxy/runtime-benchmarks",
 	"pallet-registrar/runtime-benchmarks",
@@ -261,7 +262,6 @@ runtime-benchmarks = [
 	"sp-runtime/runtime-benchmarks",
 	"tanssi-runtime-common/runtime-benchmarks",
 	"tp-traits/runtime-benchmarks",
-	"pallet-multiblock-migrations/runtime-benchmarks"
 ]
 
 try-runtime = [
@@ -286,6 +286,7 @@ try-runtime = [
 	"pallet-invulnerables/try-runtime",
 	"pallet-maintenance-mode/try-runtime",
 	"pallet-migrations/try-runtime",
+	"pallet-multiblock-migrations/try-runtime",
 	"pallet-multisig/try-runtime",
 	"pallet-proxy/try-runtime",
 	"pallet-registrar/try-runtime",
@@ -305,7 +306,6 @@ try-runtime = [
 	"polkadot-runtime-parachains/try-runtime",
 	"sp-runtime/try-runtime",
 	"tanssi-runtime-common/try-runtime",
-	"pallet-multiblock-migrations/try-runtime"
 ]
 
 fast-runtime = []
