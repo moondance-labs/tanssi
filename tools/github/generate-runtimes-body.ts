@@ -18,7 +18,7 @@ function capitalize(s) {
 function getRuntimeInfo(srtoolReportFolder: string, runtimeName: string) {
   if (runtimeName.includes("-template")) {
     const specVersion = execSync(
-      `cat ../container-chains/runtime-templates/${runtimeName.split("-template")[0]}/src/lib.rs | grep 'spec_version: [0-9]*' | tail -1`
+      `cat ../chains/container-chains/runtime-templates/${runtimeName.split("-template")[0]}/src/lib.rs | grep 'spec_version: [0-9]*' | tail -1`
     ).toString();
     return {
       name: runtimeName,
@@ -30,7 +30,7 @@ function getRuntimeInfo(srtoolReportFolder: string, runtimeName: string) {
   }
   else if (runtimeName.includes("light")) {
     const specVersion = execSync(
-      `cat ../solo-chains/runtime/${runtimeName}/src/lib.rs | grep 'spec_version: [0-9]*' | tail -1`
+      `cat ../chains/orchestrator-relays/runtime/${runtimeName}/src/lib.rs | grep 'spec_version: [0-9]*' | tail -1`
     ).toString();
     return {
       name: runtimeName,
@@ -42,7 +42,7 @@ function getRuntimeInfo(srtoolReportFolder: string, runtimeName: string) {
   }
   else {
     const specVersion = execSync(
-      `cat ../runtime/${runtimeName}/src/lib.rs | grep 'spec_version: [0-9]*' | tail -1`
+      `cat ../chains/orchestrator-paras/runtime/${runtimeName}/src/lib.rs | grep 'spec_version: [0-9]*' | tail -1`
     ).toString();
     return {
       name: runtimeName,
