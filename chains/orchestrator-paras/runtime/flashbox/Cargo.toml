@@ -59,6 +59,7 @@ frame-system = { workspace = true }
 frame-system-rpc-runtime-api = { workspace = true }
 pallet-balances = { workspace = true }
 pallet-identity = { workspace = true }
+pallet-multiblock-migrations = { workspace = true }
 pallet-multisig = { workspace = true }
 pallet-root-testing = { workspace = true }
 pallet-session = { workspace = true }
@@ -215,6 +216,7 @@ std = [
 	"test-relay-sproof-builder/std",
 	"tp-author-noting-inherent/std",
 	"tp-traits/std",
+	"pallet-multiblock-migrations/std"
 ]
 
 # Allow to print logs details (no wasm:stripped)
@@ -259,6 +261,7 @@ runtime-benchmarks = [
 	"sp-runtime/runtime-benchmarks",
 	"tanssi-runtime-common/runtime-benchmarks",
 	"tp-traits/runtime-benchmarks",
+	"pallet-multiblock-migrations/runtime-benchmarks"
 ]
 
 try-runtime = [
@@ -302,6 +305,7 @@ try-runtime = [
 	"polkadot-runtime-parachains/try-runtime",
 	"sp-runtime/try-runtime",
 	"tanssi-runtime-common/try-runtime",
+	"pallet-multiblock-migrations/try-runtime"
 ]
 
 fast-runtime = []

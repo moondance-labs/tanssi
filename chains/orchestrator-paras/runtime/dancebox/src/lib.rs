@@ -386,7 +386,7 @@ impl frame_system::Config for Runtime {
     type MaxConsumers = frame_support::traits::ConstU32<16>;
     type RuntimeTask = RuntimeTask;
     type SingleBlockMigrations = ();
-    type MultiBlockMigrator = ();
+    type MultiBlockMigrator = MultiBlockMigrations;
     type PreInherents = ();
     type PostInherents = ();
     type PostTransactions = ();
@@ -1508,6 +1508,25 @@ impl pallet_migrations::Config for Runtime {
     type XcmExecutionManager = XcmExecutionManager;
 }
 
+parameter_types! {
+    pub MbmServiceWeight: Weight = Perbill::from_percent(80) * RuntimeBlockWeights::get().max_block;
+}
+
+impl pallet_multiblock_migrations::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    #[cfg(not(feature = "runtime-benchmarks"))]
+    type Migrations = ();
+    // Benchmarks need mocked migrations to guarantee that they succeed.
+    #[cfg(feature = "runtime-benchmarks")]
+    type Migrations = pallet_multiblock_migrations::mock_helpers::MockedMigrations;
+    type CursorMaxLen = ConstU32<65_536>;
+    type IdentifierMaxLen = ConstU32<256>;
+    type MigrationStatusHandler = ();
+    type FailedMigrationHandler = frame_support::migrations::FreezeChainOnFailedMigration;
+    type MaxServiceWeight = MbmServiceWeight;
+    type WeightInfo = weights::pallet_multiblock_migrations::SubstrateWeight<Runtime>;
+}
+
 /// Maintenance mode Call filter
 pub struct MaintenanceFilter;
 impl Contains<RuntimeCall> for MaintenanceFilter {
@@ -1941,6 +1960,7 @@ construct_runtime!(
         Utility: pallet_utility = 5,
         Proxy: pallet_proxy = 6,
         Migrations: pallet_migrations = 7,
+        MultiBlockMigrations: pallet_multiblock_migrations = 121,
         MaintenanceMode: pallet_maintenance_mode = 8,
         TxPause: pallet_tx_pause = 9,
 
@@ -2006,6 +2026,7 @@ mod benches {
         [pallet_balances, Balances]
         [pallet_stream_payment, StreamPayment]
         [pallet_identity, Identity]
+        [pallet_multiblock_migrations, MultiBlockMigrations]
         [pallet_multisig, Multisig]
         [pallet_registrar, Registrar]
         [pallet_configuration, Configuration]

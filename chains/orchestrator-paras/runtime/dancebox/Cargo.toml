@@ -71,6 +71,7 @@ pallet-assets = { workspace = true }
 pallet-balances = { workspace = true }
 pallet-identity = { workspace = true }
 pallet-message-queue = { workspace = true }
+pallet-multiblock-migrations = { workspace = true }
 pallet-multisig = { workspace = true }
 pallet-root-testing = { workspace = true }
 pallet-session = { workspace = true }
@@ -278,6 +279,7 @@ std = [
 	"westend-runtime/std",
 	"xcm-primitives/std",
 	"xcm-runtime-apis/std",
+	"pallet-multiblock-migrations/std"
 ]
 
 # Allow to print logs details (no wasm:stripped)
@@ -345,6 +347,7 @@ runtime-benchmarks = [
 	"westend-runtime/runtime-benchmarks",
 	"xcm-primitives/runtime-benchmarks",
 	"xcm-runtime-apis/runtime-benchmarks",
+	"pallet-multiblock-migrations/runtime-benchmarks"
 ]
 
 try-runtime = [
@@ -403,6 +406,7 @@ try-runtime = [
 	"sp-runtime/try-runtime",
 	"tanssi-runtime-common/try-runtime",
 	"westend-runtime/try-runtime",
+	"pallet-multiblock-migrations/try-runtime"
 ]
 
 fast-runtime = []
