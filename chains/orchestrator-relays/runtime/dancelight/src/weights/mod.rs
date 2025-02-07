@@ -27,6 +27,7 @@ pub mod pallet_external_validators_rewards;
 pub mod pallet_identity;
 pub mod pallet_invulnerables;
 pub mod pallet_message_queue;
+pub mod pallet_multiblock_migrations;
 pub mod pallet_multisig;
 pub mod pallet_parameters;
 pub mod pallet_pooled_staking;

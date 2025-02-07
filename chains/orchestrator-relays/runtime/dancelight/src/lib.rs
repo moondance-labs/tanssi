@@ -1566,7 +1566,7 @@ impl pallet_multiblock_migrations::Config for Runtime {
     type MigrationStatusHandler = ();
     type FailedMigrationHandler = frame_support::migrations::FreezeChainOnFailedMigration;
     type MaxServiceWeight = MbmServiceWeight;
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_multiblock_migrations::SubstrateWeight<Runtime>;
 }
 
 pub const FIXED_BLOCK_PRODUCTION_COST: u128 = 1 * MICROUNITS;
@@ -2288,6 +2288,7 @@ mod benches {
         [pallet_conviction_voting, ConvictionVoting]
         [pallet_identity, Identity]
         [pallet_message_queue, MessageQueue]
+        [pallet_multiblock_migrations, MultiBlockMigrations]
         [pallet_multisig, Multisig]
         [pallet_parameters, Parameters]
         [pallet_preimage, Preimage]
