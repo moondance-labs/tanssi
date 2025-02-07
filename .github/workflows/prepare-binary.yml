@@ -85,7 +85,7 @@ jobs:
             driver-opts: |
                 image=moby/buildkit:master
         - name: Login to DockerHub
-          uses: docker/login-action@v3
+          uses: docker/login-action@v3.3.0
           with:
             username: ${{ secrets.DOCKERHUB_USERNAME }}
             password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -108,7 +108,7 @@ jobs:
                 org.opencontainers.image.licenses=${{ github.event.repository.license.spdx_id }}
 
         - name: Login to DockerHub
-          uses: docker/login-action@v3
+          uses: docker/login-action@v3.3.0
           with:
             username: ${{ secrets.DOCKERHUB_USERNAME }}
             password: ${{ secrets.DOCKERHUB_TOKEN }}
