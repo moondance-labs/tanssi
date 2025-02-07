@@ -304,7 +304,7 @@ pub mod pallet {
             who: T::AccountId,
         ) -> DispatchResultWithPostInfo {
             T::UpdateOrigin::ensure_origin(origin)?;
-            // don't let one unprepared collator ruin things for everyone.
+            // don't let one unprepared validator ruin things for everyone.
             let maybe_validator_id = T::ValidatorIdOf::convert(who.clone())
                 .filter(T::ValidatorRegistration::is_registered);
 
