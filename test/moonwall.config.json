@@ -192,7 +192,7 @@
             "testFileDir": ["suites/zombie_tanssi"],
             "runScripts": [
                 "build-spec-flashbox.sh",
-                "download-polkadot.sh",
+                "downloadPolkadot.ts",
                 "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/flashbox-1000.json",
                 "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/template-container-2000.json",
                 "compile-wasm.ts compile -b ../target/release/container-chain-frontier-node -o wasm -c specs/template-container-2001.json"
@@ -251,7 +251,7 @@
             "testFileDir": ["suites/zombie_tanssi"],
             "runScripts": [
                 "build-spec.sh",
-                "download-polkadot.sh",
+                "downloadPolkadot.ts",
                 "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/tanssi-1000.json",
                 "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/template-container-2000.json",
                 "compile-wasm.ts compile -b ../target/release/container-chain-frontier-node -o wasm -c specs/template-container-2001.json"
@@ -309,7 +309,7 @@
             "testFileDir": ["suites/zombie_tanssi_keep_db"],
             "runScripts": [
                 "build-spec-single-container.sh",
-                "download-polkadot.sh",
+                "downloadPolkadot.ts",
                 "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/single-container-tanssi-1000.json",
                 "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/single-container-template-container-2000.json"
             ],
@@ -346,7 +346,7 @@
             "testFileDir": ["suites/zombie_tanssi_metrics"],
             "runScripts": [
                 "build-spec-single-container.sh",
-                "download-polkadot.sh",
+                "downloadPolkadot.ts",
                 "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/single-container-tanssi-1000.json",
                 "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/single-container-template-container-2000.json"
             ],
@@ -384,7 +384,7 @@
             "testFileDir": ["suites/zombie_tanssi_one_node"],
             "runScripts": [
                 "build-spec-one-node.sh",
-                "download-polkadot.sh",
+                "downloadPolkadot.ts",
                 "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/one-node-tanssi-1000.json"
             ],
             "foundation": {
@@ -416,7 +416,7 @@
             "testFileDir": ["suites/zombie_tanssi_parathreads"],
             "runScripts": [
                 "build-spec-parathreads.sh",
-                "download-polkadot.sh",
+                "downloadPolkadot.ts",
                 "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/parathreads-tanssi-1000.json",
                 "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/parathreads-template-container-2000.json",
                 "compile-wasm.ts compile -b ../target/release/container-chain-frontier-node -o wasm -c specs/parathreads-template-container-2001.json"
@@ -469,7 +469,7 @@
             "testFileDir": ["suites/zombie_tanssi_rotation"],
             "runScripts": [
                 "build-spec.sh",
-                "download-polkadot.sh",
+                "downloadPolkadot.ts",
                 "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/tanssi-1000.json",
                 "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/template-container-2000.json",
                 "compile-wasm.ts compile -b ../target/release/container-chain-frontier-node -o wasm -c specs/template-container-2001.json"
@@ -522,7 +522,7 @@
             "testFileDir": ["suites/zombie_tanssi_warp_sync"],
             "runScripts": [
                 "build-spec-single-container.sh",
-                "download-polkadot.sh",
+                "downloadPolkadot.ts",
                 "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/single-container-tanssi-1000.json",
                 "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/single-container-template-container-2000.json"
             ],
@@ -557,7 +557,7 @@
         {
             "name": "zombie_dancebox_upgrade",
             "testFileDir": ["suites/zombie_dancebox_upgrade"],
-            "runScripts": ["download-polkadot.sh"],
+            "runScripts": ["downloadPolkadot.ts"],
             "timeout": 600000,
             "foundation": {
                 "rtUpgradePath": "../target/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm",
@@ -574,7 +574,7 @@
             "runScripts": [
                 "download-latest-rt-binaries.sh",
                 "build-spec-single-container.sh tmp container-chain-simple-node flashbox-local",
-                "download-polkadot.sh",
+                "downloadPolkadot.ts",
                 "compile-wasm.ts compile -b tmp/tanssi-node -o wasm -c specs/single-container-tanssi-1000.json",
                 "compile-wasm.ts compile -b tmp/container-chain-simple-node -o wasm -c specs/single-container-template-container-2000.json"
             ],
@@ -638,7 +638,7 @@
             "runScripts": [
                 "download-latest-rt-binaries.sh",
                 "build-spec-single-container.sh tmp container-chain-simple-node flashbox-local",
-                "download-polkadot.sh",
+                "downloadPolkadot.ts",
                 "download-latest-binaries.sh ../target/release",
                 "compile-wasm.ts compile -b tmp/tanssi-node -o wasm -c specs/single-container-tanssi-1000.json",
                 "compile-wasm.ts compile -b tmp/container-chain-simple-node -o wasm -c specs/single-container-template-container-2000.json"
@@ -710,7 +710,7 @@
             "runScripts": [
                 "download-latest-rt-binaries.sh",
                 "build-spec-single-container.sh tmp container-chain-frontier-node flashbox-local",
-                "download-polkadot.sh",
+                "downloadPolkadot.ts",
                 "compile-wasm.ts compile -b tmp/tanssi-node -o wasm -c specs/single-container-tanssi-1000.json",
                 "compile-wasm.ts compile -b tmp/container-chain-frontier-node -o wasm -c specs/single-container-template-container-2000.json"
             ],
@@ -750,7 +750,7 @@
             "runScripts": [
                 "download-latest-rt-binaries.sh",
                 "build-spec-single-container.sh tmp container-chain-frontier-node flashbox-local",
-                "download-polkadot.sh",
+                "downloadPolkadot.ts",
                 "download-latest-binaries.sh ../target/release",
                 "compile-wasm.ts compile -b tmp/tanssi-node -o wasm -c specs/single-container-tanssi-1000.json",
                 "compile-wasm.ts compile -b tmp/container-chain-frontier-node -o wasm -c specs/single-container-template-container-2000.json"
@@ -872,7 +872,7 @@
             "testFileDir": ["suites/zombie_data_preservers"],
             "runScripts": [
                 "build-spec-data-preservers.sh",
-                "download-polkadot.sh",
+                "downloadPolkadot.ts",
                 "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/data-preservers-dancebox-1000.json",
                 "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/data-preservers-container-2000.json",
                 "compile-wasm.ts compile -b ../target/release/container-chain-frontier-node -o wasm -c specs/data-preservers-container-2001.json"

@@ -179,6 +179,9 @@ importers:
       solc:
         specifier: 0.8.21
         version: 0.8.21(debug@4.3.7)
+      toml:
+        specifier: ^3.0.0
+        version: 3.0.0
       tsx:
         specifier: '*'
         version: 4.19.2
