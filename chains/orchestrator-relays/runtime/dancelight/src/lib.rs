@@ -570,6 +570,10 @@ impl pallet_session::Config for Runtime {
     type SessionManager = pallet_session::historical::NoteHistoricalRoot<Self, ExternalValidators>;
     type SessionHandler = <SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
     type Keys = SessionKeys;
+    // TODO: Current benchmarking code for pallet_session requires that the runtime
+    // uses pallet_staking, which we don't use. We need to make a PR to Substrate to
+    // allow decoupling the benchmark from other pallets.
+    // See https://github.com/paritytech/polkadot-sdk/blob/0845044454c005b577eab7afaea18583bd7e3dd3/substrate/frame/session/benchmarking/src/inner.rs#L38
     type WeightInfo = ();
 }
 
@@ -1292,6 +1296,8 @@ impl pallet_beefy::Config for Runtime {
     type MaxNominators = ConstU32<0>;
     type MaxSetIdSessionEntries = BeefySetIdSessionEntries;
     type OnNewValidatorSet = BeefyMmrLeaf;
+    // There are currently no benchmarks for pallet_beefy.
+    // https://github.com/paritytech/polkadot-sdk/tree/master/substrate/frame/beefy/src
     type WeightInfo = ();
     type KeyOwnerProof = <Historical as KeyOwnerProofSystem<(KeyTypeId, BeefyId)>>::Proof;
     type EquivocationReportSystem =
@@ -2309,6 +2315,8 @@ mod benches {
         [pallet_beefy_mmr, BeefyMmrLeaf]
         [pallet_configuration, Configuration]
         [pallet_multiblock_migrations, MultiBlockMigrations]
+        // [pallet_session, SessionBench::<Runtime>]
+
         // Tanssi
         [pallet_author_noting, AuthorNoting]
         [pallet_registrar, ContainerRegistrar]
