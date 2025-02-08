@@ -21,10 +21,10 @@ use {
         tests::common::*, Balances, EthereumSovereignAccount, EthereumSystem,
         EthereumTokenTransfers, RuntimeEvent, TokenLocationReanchored, TreasuryAccount,
     },
-    frame_support::assert_ok,
+    frame_support::{assert_noop, assert_ok},
     snowbridge_core::{AgentId, ChannelId, ParaId},
     sp_core::{H160, H256},
-    sp_runtime::traits::MaybeEquivalence,
+    sp_runtime::{traits::MaybeEquivalence, TokenError},
     sp_std::vec,
     xcm::{latest::Location, VersionedLocation},
 };
@@ -204,5 +204,137 @@ fn test_transfer_native_token() {
                 amount_to_transfer
             );
             assert_eq!(Balances::free_balance(TreasuryAccount::get()), fee_found);
+        });
+}
+
+#[test]
+fn test_transfer_native_token_fails_if_channel_info_not_set() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+            let token_location: VersionedLocation = Location::here().into();
+
+            assert_ok!(EthereumSystem::register_token(
+                root_origin(),
+                Box::new(token_location),
+                snowbridge_core::AssetMetadata {
+                    name: "dance".as_bytes().to_vec().try_into().unwrap(),
+                    symbol: "dance".as_bytes().to_vec().try_into().unwrap(),
+                    decimals: 12,
+                }
+            ));
+
+            run_to_block(4);
+
+            let amount_to_transfer = 100 * UNIT;
+            let recipient = H160::random();
+
+            assert_noop!(
+                EthereumTokenTransfers::transfer_native_token(
+                    origin_of(AccountId::from(ALICE)),
+                    amount_to_transfer,
+                    recipient
+                ),
+                pallet_ethereum_token_transfers::Error::<Runtime>::ChannelInfoNotSet
+            );
+        });
+}
+
+#[test]
+fn test_transfer_native_token_fails_if_token_not_registered_in_ethereum_system() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            let channel_id = ChannelId::new([5u8; 32]);
+            let agent_id = AgentId::from_low_u64_be(10);
+            let para_id: ParaId = 2000u32.into();
+
+            assert_ok!(EthereumTokenTransfers::set_token_transfer_channel(
+                root_origin(),
+                channel_id,
+                agent_id,
+                para_id
+            ));
+
+            let amount_to_transfer = 100 * UNIT;
+            let recipient = H160::random();
+
+            assert_noop!(
+                EthereumTokenTransfers::transfer_native_token(
+                    origin_of(AccountId::from(ALICE)),
+                    amount_to_transfer,
+                    recipient
+                ),
+                pallet_ethereum_token_transfers::Error::<Runtime>::UnknownLocationForToken
+            );
+        });
+}
+
+#[test]
+fn test_transfer_native_token_fails_if_not_enough_balance() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 50_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+            let token_location: VersionedLocation = Location::here().into();
+
+            assert_ok!(EthereumSystem::register_token(
+                root_origin(),
+                Box::new(token_location),
+                snowbridge_core::AssetMetadata {
+                    name: "dance".as_bytes().to_vec().try_into().unwrap(),
+                    symbol: "dance".as_bytes().to_vec().try_into().unwrap(),
+                    decimals: 12,
+                }
+            ));
+
+            run_to_block(4);
+
+            let channel_id = ChannelId::new([5u8; 32]);
+            let agent_id = AgentId::from_low_u64_be(10);
+            let para_id: ParaId = 2000u32.into();
+
+            assert_ok!(EthereumTokenTransfers::set_token_transfer_channel(
+                root_origin(),
+                channel_id,
+                agent_id,
+                para_id
+            ));
+
+            // Try to send more than the account's balance.
+            let amount_to_transfer = 70_000 * UNIT;
+            let recipient = H160::random();
+
+            assert_noop!(
+                EthereumTokenTransfers::transfer_native_token(
+                    origin_of(AccountId::from(ALICE)),
+                    amount_to_transfer,
+                    recipient
+                ),
+                TokenError::FundsUnavailable
+            );
         });
 }
