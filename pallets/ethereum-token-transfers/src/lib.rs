@@ -238,66 +238,60 @@ pub mod pallet {
         ) -> DispatchResult {
             let source = ensure_signed(origin)?;
 
-            if let Some(channel_info) = CurrentChannelInfo::<T>::get() {
-                let token_location = T::TokenLocationReanchored::get();
-                let token_id = T::TokenIdFromLocation::convert_back(&token_location);
+            let channel_info =
+                CurrentChannelInfo::<T>::get().ok_or(Error::<T>::ChannelInfoNotSet)?;
 
-                if let Some(token_id) = token_id {
-                    let command = SnowbridgeCommand::MintForeignToken {
-                        token_id,
-                        recipient,
-                        amount,
-                    };
+            let token_location = T::TokenLocationReanchored::get();
+            let token_id = T::TokenIdFromLocation::convert_back(&token_location)
+                .ok_or(Error::<T>::UnknownLocationForToken)?;
 
-                    let message = SnowbridgeMessage {
-                        id: None,
-                        channel_id: channel_info.channel_id,
-                        command,
-                    };
+            let command = SnowbridgeCommand::MintForeignToken {
+                token_id,
+                recipient,
+                amount,
+            };
 
-                    let (ticket, fee) = T::OutboundQueue::validate(&message)
-                        .map_err(|err| Error::<T>::InvalidMessage(err))?;
+            let message = SnowbridgeMessage {
+                id: None,
+                channel_id: channel_info.channel_id,
+                command,
+            };
 
-                    // Transfer fees to FeesAccount.
-                    T::Currency::transfer(
-                        &source,
-                        &T::FeesAccount::get(),
-                        fee.total(),
-                        Preservation::Preserve,
-                    )?;
+            let (ticket, fee) = T::OutboundQueue::validate(&message)
+                .map_err(|err| Error::<T>::InvalidMessage(err))?;
 
-                    // Transfer amount to Ethereum's sovereign account.
-                    T::Currency::transfer(
-                        &source,
-                        &T::EthereumSovereignAccount::get(),
-                        amount.into(),
-                        Preservation::Preserve,
-                    )?;
+            // Transfer fees to FeesAccount.
+            T::Currency::transfer(
+                &source,
+                &T::FeesAccount::get(),
+                fee.total(),
+                Preservation::Preserve,
+            )?;
 
-                    let message_id = ticket.message_id();
+            // Transfer amount to Ethereum's sovereign account.
+            T::Currency::transfer(
+                &source,
+                &T::EthereumSovereignAccount::get(),
+                amount.into(),
+                Preservation::Preserve,
+            )?;
 
-                    log::error!("MESSAGE ID: {:?}", message_id);
+            let message_id = ticket.message_id();
 
-                    T::OutboundQueue::deliver(ticket)
-                        .map_err(|err| Error::<T>::TransferMessageNotSent(err))?;
+            T::OutboundQueue::deliver(ticket)
+                .map_err(|err| Error::<T>::TransferMessageNotSent(err))?;
 
-                    Self::deposit_event(Event::<T>::NativeTokenTransferred {
-                        message_id,
-                        channel_id: channel_info.channel_id,
-                        source,
-                        recipient,
-                        token_id,
-                        amount,
-                        fee: fee.total(),
-                    });
+            Self::deposit_event(Event::<T>::NativeTokenTransferred {
+                message_id,
+                channel_id: channel_info.channel_id,
+                source,
+                recipient,
+                token_id,
+                amount,
+                fee: fee.total(),
+            });
 
-                    return Ok(());
-                } else {
-                    return Err(Error::<T>::UnknownLocationForToken.into());
-                }
-            } else {
-                return Err(Error::<T>::ChannelInfoNotSet.into());
-            }
+            Ok(())
         }
     }
 }
