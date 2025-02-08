@@ -22,7 +22,7 @@ use {
         EthereumTokenTransfers, RuntimeEvent, TokenLocationReanchored, TreasuryAccount,
     },
     frame_support::{assert_noop, assert_ok},
-    snowbridge_core::{AgentId, ChannelId, ParaId},
+    snowbridge_core::{AgentId, Channel, ChannelId, ParaId},
     sp_core::{H160, H256},
     sp_runtime::{traits::MaybeEquivalence, TokenError},
     sp_std::vec,
@@ -71,6 +71,62 @@ fn test_set_token_transfer_channel_reflects_changes_in_ethereum_system() {
             let expected_channel = EthereumSystem::channels(channel_id).unwrap();
             assert_eq!(expected_channel.para_id, para_id);
             assert_eq!(expected_channel.agent_id, agent_id);
+        });
+}
+
+#[test]
+fn test_set_token_transfer_channel_fails_if_channel_or_agent_already_initialized() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+            let channel_id = ChannelId::new([5u8; 32]);
+            let agent_id = AgentId::from_low_u64_be(10);
+            let para_id: ParaId = 2000u32.into();
+
+            assert_eq!(EthereumTokenTransfers::current_channel_info(), None);
+
+            // Let's first insert the agent_id into storage.
+            assert!(EthereumSystem::agents(agent_id).is_none());
+            snowbridge_pallet_system::Agents::<Runtime>::insert(agent_id, ());
+            assert!(EthereumSystem::agents(agent_id).is_some());
+
+            // Call should fail if the agent is already present in EthereumSystem's storage.
+            assert_noop!(
+                EthereumTokenTransfers::set_token_transfer_channel(
+                    root_origin(),
+                    channel_id,
+                    agent_id,
+                    para_id
+                ),
+                snowbridge_pallet_system::Error::<Runtime>::AgentAlreadyCreated
+            );
+
+            // Let's now insert the channel_id into storage.
+            assert!(EthereumSystem::channels(channel_id).is_none());
+            snowbridge_pallet_system::Channels::<Runtime>::insert(
+                channel_id,
+                Channel { para_id, agent_id },
+            );
+            assert!(EthereumSystem::channels(channel_id).is_some());
+
+            // Call should fail if the channel is already present in EthereumSystem's storage.
+            assert_noop!(
+                EthereumTokenTransfers::set_token_transfer_channel(
+                    root_origin(),
+                    channel_id,
+                    agent_id,
+                    para_id
+                ),
+                snowbridge_pallet_system::Error::<Runtime>::ChannelAlreadyCreated
+            );
         });
 }
 
