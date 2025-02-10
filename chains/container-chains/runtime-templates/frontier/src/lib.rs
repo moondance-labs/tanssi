@@ -356,12 +356,6 @@ pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
 pub const HOURS: BlockNumber = MINUTES * 60;
 pub const DAYS: BlockNumber = HOURS * 24;
 
-/// The existential deposit. Set to 0 because this is an ethereum-like chain
-/// We set this to one for runtime-benchmarks because plenty of the benches we
-/// incorporate from parity assume ED != 0
-#[cfg(feature = "runtime-benchmarks")]
-pub const EXISTENTIAL_DEPOSIT: Balance = 1 * currency::MILLIUNIT;
-#[cfg(not(feature = "runtime-benchmarks"))]
 pub const EXISTENTIAL_DEPOSIT: Balance = 0;
 
 /// We assume that ~5% of the block weight is consumed by `on_initialize` handlers. This is
@@ -1302,7 +1296,7 @@ impl_runtime_apis! {
                 fn fee_asset() -> Result<Asset, BenchmarkError> {
                     Ok(Asset {
                         id: AssetId(SelfReserve::get()),
-                        fun: Fungible(ExistentialDeposit::get()*100),
+                        fun: Fungible(crate::currency::MICROUNIT*100),
                     })
                 }
 
@@ -1333,7 +1327,7 @@ impl_runtime_apis! {
                 fn get_asset() -> Asset {
                     Asset {
                         id: AssetId(SelfReserve::get()),
-                        fun: Fungible(ExistentialDeposit::get()),
+                        fun: Fungible(crate::currency::MICROUNIT),
                     }
                 }
 
@@ -1342,10 +1336,11 @@ impl_runtime_apis! {
                 }
 
                 fn teleportable_asset_and_dest() -> Option<(Asset, Location)> {
+                    let teleportable = crate::currency::MICROUNIT;
                     // Relay/native token can be teleported between AH and Relay.
                     Some((
                         Asset {
-                            fun: Fungible(EXISTENTIAL_DEPOSIT),
+                            fun: Fungible(teleportable),
                             id: Parent.into()
                         },
                         Parent.into(),
@@ -1361,8 +1356,9 @@ impl_runtime_apis! {
                         random_para_id.into()
                     );
                     let who = frame_benchmarking::whitelisted_caller();
+
                     // Give some multiple of the existential deposit
-                    let balance = EXISTENTIAL_DEPOSIT * 1000;
+                    let balance = crate::currency::MICROUNIT* 1000;
                     let _ = <Balances as frame_support::traits::Currency<_>>::make_free_balance_be(
                         &who, balance,
                     );
@@ -1383,12 +1379,12 @@ impl_runtime_apis! {
                     // (We don't care that Relay doesn't accept incoming unknown AH local asset)
                     let dest = Parent.into();
 
-                    let fee_amount = EXISTENTIAL_DEPOSIT;
+                    let fee_amount = crate::currency::MICROUNIT;
                     let fee_asset: Asset = (SelfReserve::get(), fee_amount).into();
 
                     let who = frame_benchmarking::whitelisted_caller();
                     // Give some multiple of the existential deposit
-                    let balance = fee_amount + EXISTENTIAL_DEPOSIT * 1000;
+                    let balance = fee_amount + crate::currency::MICROUNIT * 1000;
                     let _ = <Balances as frame_support::traits::Currency<_>>::make_free_balance_be(
                         &who, balance,
                     );

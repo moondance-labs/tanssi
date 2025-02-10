@@ -300,6 +300,7 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
     pallet_external_validators::GenesisConfig::<Test> {
         skip_external_validators: false,
         whitelisted_validators,
+        ..Default::default()
     }
     .assimilate_storage(&mut t)
     .unwrap();

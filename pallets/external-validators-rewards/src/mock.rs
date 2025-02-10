@@ -17,7 +17,7 @@ use {
     crate as pallet_external_validators_rewards,
     frame_support::{
         parameter_types,
-        traits::{ConstU128, ConstU32, ConstU64},
+        traits::{ConstU32, ConstU64},
     },
     pallet_balances::AccountData,
     snowbridge_core::{
@@ -158,6 +158,7 @@ parameter_types! {
     pub const RewardsEthereumSovereignAccount: u64
         = 0xffffffffffffffff;
     pub RewardTokenLocation: Location = Location::here();
+    pub EraInflationProvider: u128 = Mock::mock().era_inflation.unwrap_or(42);
 }
 
 impl pallet_external_validators_rewards::Config for Test {
@@ -166,7 +167,7 @@ impl pallet_external_validators_rewards::Config for Test {
     type HistoryDepth = ConstU32<10>;
     type BackingPoints = ConstU32<20>;
     type DisputeStatementPoints = ConstU32<20>;
-    type EraInflationProvider = ConstU128<42>;
+    type EraInflationProvider = EraInflationProvider;
     type ExternalIndexProvider = TimestampProvider;
     type GetWhitelistedValidators = ();
     type Hashing = Keccak256;
@@ -193,6 +194,7 @@ pub mod mock_data {
     #[derive(Clone, Default, Encode, Decode, sp_core::RuntimeDebug, scale_info::TypeInfo)]
     pub struct Mocks {
         pub active_era: Option<ActiveEraInfo>,
+        pub era_inflation: Option<u128>,
     }
 
     #[pallet::config]
