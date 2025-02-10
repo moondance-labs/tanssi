@@ -295,6 +295,26 @@ fn setting_external_validators_emits_event() {
         assert_eq!(last_event(), event);
     });
 }
+
+#[test]
+fn setting_external_validators_with_more_than_max_external_validators_emits_correct_event() {
+    new_test_ext().execute_with(|| {
+        run_to_block(1);
+        let max_external_validators = 20u64;
+        // Current max external validators is 20 so if we try to set 25 validators
+        // We expect only the first 20 to be set as external validators
+        assert_ok!(ExternalValidators::set_external_validators_inner(
+            (1..(max_external_validators + 5)).collect(),
+            1
+        ));
+        let event = RuntimeEvent::ExternalValidators(crate::Event::ExternalValidatorsSet {
+            validators: (1..(max_external_validators + 1)).collect(),
+            external_index: 1,
+        });
+        assert_eq!(last_event(), event);
+    });
+}
+
 #[test]
 fn era_hooks() {
     new_test_ext().execute_with(|| {
