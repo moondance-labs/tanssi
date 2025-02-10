@@ -37,7 +37,6 @@ describeSuite({
                             .containerChains.entries(),
                     ].map(([key, value]) => [key.toString(), value.map((v) => v.toHuman())])
                 );
-console.log(pendingAuthorityAssignment)
                 // get current authorities
                 // we need to know whether a chain is assigned currently
                 const currentAuthorityAssignment = Object.fromEntries(
@@ -47,7 +46,6 @@ console.log(pendingAuthorityAssignment)
                             .containerChains.entries(),
                     ].map(([key, value]) => [key.toString(), value.map((v) => v.toHuman())])
                 );
-console.log(currentAuthorityAssignment)
                 const currentAuthorities = await api.query.session.validators();
 
                 const currentCollatorNumber = Math.min(currentAuthorities.length, config.maxCollators.toNumber());
@@ -108,9 +106,7 @@ console.log(currentAuthorityAssignment)
                             // Here we only check that  that we have collators
                             // If we are able to cover all paras, then all of them should have collators if credits
                             if (maxParas >= containersToCompareAgainst.length) {
-                                expect(
-                                    pendingAuthorityAssignment[container.toString()].length
-                                ).to.be.greaterThan(0);
+                                expect(pendingAuthorityAssignment[container.toString()].length).to.be.greaterThan(0);
                             }
                         } else {
                             numWithNoCredits += 1;
@@ -123,9 +119,7 @@ console.log(currentAuthorityAssignment)
                         containersToCompareAgainst.length - numWithNoCredits,
                         maxParas
                     );
-                    expect(Object.keys(pendingAuthorityAssignment.containerChains).length).to.be.equal(
-                        expectedNumberOfChainsAssigned
-                    );
+                    expect(Object.keys(pendingAuthorityAssignment).length).to.be.equal(expectedNumberOfChainsAssigned);
                 }
             },
         });
