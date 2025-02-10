@@ -102,7 +102,7 @@ describeSuite({
                     filteredDigests[0].asConsensus[1].toHex()
                 );
 
-                expect(babeConsensusLog[1]).toEqual(babeAuthoritiesFromPallet);
+                expect(babeConsensusLog[1].eq(babeAuthoritiesFromPallet)).toBe(true);
 
                 const keyOwnersArray: string[] = [];
                 const keyOwnersInPalletSession = await keyOwners(babeAuthoritiesFromPallet, api);
@@ -140,7 +140,7 @@ describeSuite({
                             babeLogs[0].asPreRuntime[1].toHex()
                         );
 
-                        expect(babeLogEnum.isSecondaryVRF || babeLogEnum.isPrimary).toBeTruthy();
+                        expect(babeLogEnum.isSecondaryVRF || babeLogEnum.isPrimary).toBe(true);
                         const babeLog = babeLogEnum.isSecondaryVRF ? babeLogEnum.asSecondaryVRF : babeLogEnum.asPrimary;
 
                         // Get expected author from BABE log and on chain authorities
@@ -214,10 +214,9 @@ async function keyOwners(
     for (const authority of babeAuthoritiesFromPallet) {
         const keyOwner = await api.query.session.keyOwner([stringToHex("babe"), authority[0].toHex()]);
 
-        expect(
-            keyOwner.isSome,
-            `Validator with babe key ${authority[0].toHuman()} not found in pallet session!`
-        ).toBeTruthy();
+        expect(keyOwner.isSome, `Validator with babe key ${authority[0].toHuman()} not found in pallet session!`).toBe(
+            true
+        );
         keyOwnersInPalletSession.push([keyOwner.unwrap().toHuman(), authority[0].toJSON()]);
     }
 
