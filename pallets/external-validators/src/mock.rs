@@ -347,3 +347,7 @@ pub fn run_to_block(n: u64) {
         Session::on_initialize(System::block_number());
     }
 }
+
+pub fn last_event() -> RuntimeEvent {
+    System::events().pop().expect("Event expected").event
+}
