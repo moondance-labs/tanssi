@@ -1,12 +1,12 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { KeyringPair, filterAndApply } from "@moonwall/util";
-import { ApiPromise } from "@polkadot/api";
+import { type KeyringPair, filterAndApply } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
 import { extractWeight } from "@moonwall/util";
 import { extractFeeAuthor, filterRewardFromOrchestrator } from "util/block";
 
 describeSuite({
-    id: "CA0101",
+    id: "C0101",
     title: "Fee test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -17,7 +17,7 @@ describeSuite({
 
         // Difference between the refTime estimated using paymentInfo and the actual refTime reported inside a block
         // https://github.com/paritytech/substrate/blob/5e49f6e44820affccaf517fd22af564f4b495d40/frame/support/src/weights/extrinsic_weights.rs#L56
-        let baseWeight;
+        let baseWeight: bigint;
 
         beforeAll(async () => {
             alice = context.keyring.alice;
@@ -31,7 +31,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Fee of balances.transfer can be estimated using paymentInfo",
-            test: async function () {
+            test: async () => {
                 const balanceBefore = (await polkadotJs.query.system.account(alice.address)).data.free.toBigInt();
                 const tx = polkadotJs.tx.balances.transferAllowDeath(bob.address, 200_000);
                 // Estimate fee of balances.transfer using paymentInfo API, before sending transaction
@@ -69,8 +69,8 @@ describeSuite({
                 const expectedbasePlusWeightFee = context.isEthereumChain
                     ? expectedBaseFee + 1600000000000n
                     : isRelay
-                    ? expectedBaseFee + 5800000n
-                    : expectedBaseFee + 1600000n;
+                      ? expectedBaseFee + 5800000n
+                      : expectedBaseFee + 1600000n;
 
                 expect(
                     basePlusWeightFee >= (expectedbasePlusWeightFee * 90n) / 100n &&
@@ -97,7 +97,7 @@ describeSuite({
         it({
             id: "E02",
             title: "Fee of balances.transfer can be estimated using transactionPaymentApi.queryFeeDetails",
-            test: async function () {
+            test: async () => {
                 const balanceBefore = (await polkadotJs.query.system.account(alice.address)).data.free.toBigInt();
                 const tx = polkadotJs.tx.balances.transferAllowDeath(bob.address, 200_000);
                 const signedTx = await tx.signAsync(alice);
@@ -156,7 +156,7 @@ describeSuite({
         it({
             id: "E03",
             title: "Fee of balances.transfer does increase after 100 full blocks due to slow adjusting multiplier",
-            test: async function () {
+            test: async () => {
                 const fillAmount = 600_000_000; // equal to 60% Perbill
 
                 const previousfeeMultiplier = (
@@ -235,7 +235,7 @@ describeSuite({
         it({
             id: "E04",
             title: "Proof size does not affect fee",
-            test: async function () {
+            test: async () => {
                 const refTime = 298945000n;
                 const proofSize = 3593n;
                 const fee1 = (
@@ -259,7 +259,7 @@ describeSuite({
         it({
             id: "E05",
             title: "Base refTime pays base fee",
-            test: async function () {
+            test: async () => {
                 const fee = (
                     await polkadotJs.call.transactionPaymentApi.queryWeightToFee({
                         refTime: baseWeight,

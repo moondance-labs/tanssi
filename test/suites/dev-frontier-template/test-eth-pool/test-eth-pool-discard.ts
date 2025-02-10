@@ -2,14 +2,14 @@ import { describeSuite, expect } from "@moonwall/cli";
 import { customWeb3Request } from "@moonwall/util";
 
 describeSuite({
-    id: "DF0501",
+    id: "DE0601",
     title: "Transaction Cost discards",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
         it({
             id: "T01",
             title: "should take transaction cost into account and not submit it to the pool",
-            test: async function () {
+            test: async () => {
                 // This is a contract deployment signed by Alith but that doesn't have a high enough
                 // gaslimit. Since the standard helpers reject such transactions, we need to use
                 // the customDevRpcRequest helper to send it directly to the node.

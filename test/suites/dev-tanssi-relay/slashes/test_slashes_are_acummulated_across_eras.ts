@@ -1,11 +1,11 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
-import { KeyringPair, generateKeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
+import { type KeyringPair, generateKeyringPair } from "@moonwall/util";
 import { jumpToSession } from "../../../util/block";
 
 describeSuite({
-    id: "DTR1308",
+    id: "DEVT1702",
     title: "Slashes are accumulated across eras based on max slashes sent per block",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -18,7 +18,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Slashes are accumulated across eras",
-            test: async function () {
+            test: async () => {
                 // we need to start at least one sesssion to start eras
                 await jumpToSession(context, 1);
                 // Let's inject slashes N+1 slashes, where N is the max slashes to send per block

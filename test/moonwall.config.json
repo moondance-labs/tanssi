@@ -921,7 +921,7 @@
             "foundation": {
                 "type": "read_only"
             },
-            "reporters": ["html"],
+            "reporters": ["basic","html"],
             "connections": [
                 {
                     "name": "para",
@@ -940,7 +940,7 @@
             "foundation": {
                 "type": "read_only"
             },
-            "reporters": ["html"],
+            "reporters": ["basic","html"],
             "connections": [
                 {
                     "name": "para",
@@ -955,7 +955,7 @@
             "foundation": {
                 "type": "read_only"
             },
-            "reporters": ["html"],
+            "reporters": ["basic","html"],
             "connections": [
                 {
                     "name": "para",
@@ -970,7 +970,7 @@
             "foundation": {
                 "type": "read_only"
             },
-            "reporters": ["html"],
+            "reporters": ["basic","html"],
             "connections": [
                 {
                     "name": "para",

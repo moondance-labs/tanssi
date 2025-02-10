@@ -1,10 +1,10 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { KeyringPair } from "@moonwall/util";
-import { ApiPromise } from "@polkadot/api";
+import type { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
 import { jumpToSession } from "../../../util/block";
 import { u8aToHex, hexToU8a, stringToHex, numberToHex } from "@polkadot/util";
-import {
+import type {
     SpConsensusBeefyFutureBlockVotingProof,
     SpConsensusBeefyPayload,
     SpConsensusBeefyCommitment,
@@ -14,7 +14,7 @@ import { Keyring } from "@polkadot/keyring";
 import { secp256k1Sign } from "@polkadot/util-crypto";
 
 describeSuite({
-    id: "DTR1204",
+    id: "DEVT1403",
     title: "BEEFY - Future voting proofs",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -35,7 +35,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Should be able to report a valid FutureVotingProof",
-            test: async function () {
+            test: async () => {
                 await jumpToSession(context, 1);
                 await context.createBlock();
 
@@ -86,14 +86,14 @@ describeSuite({
                 const signedTx = await tx.signAsync(bob);
                 const { result } = await context.createBlock(signedTx, { allowFailures: false });
 
-                expect(result!.successful, result!.error?.name).to.be.true;
+                expect(result?.successful, result?.error?.name).to.be.true;
             },
         });
 
         it({
             id: "E02",
             title: "Should fail to report proof if KeyOwnershipProof is invalid",
-            test: async function () {
+            test: async () => {
                 await jumpToSession(context, 1);
                 await context.createBlock();
 
@@ -145,16 +145,16 @@ describeSuite({
                 const signedTx = await tx.signAsync(bob);
                 const { result } = await context.createBlock(signedTx);
 
-                expect(result!.successful).to.be.false;
-                expect(result!.error?.section).to.eq("beefy");
-                expect(result!.error?.name).to.eq("InvalidKeyOwnershipProof");
+                expect(result?.successful).to.be.false;
+                expect(result?.error?.section).to.eq("beefy");
+                expect(result?.error?.name).to.eq("InvalidKeyOwnershipProof");
             },
         });
 
         it({
             id: "E03",
             title: "Should fail to report an invalid FutureVotingProof",
-            test: async function () {
+            test: async () => {
                 await jumpToSession(context, 1);
                 await context.createBlock();
 
@@ -204,9 +204,9 @@ describeSuite({
                 const signedTx = await tx.signAsync(bob);
                 const { result } = await context.createBlock(signedTx);
 
-                expect(result!.successful).to.be.false;
-                expect(result!.error?.section).to.eq("beefy");
-                expect(result!.error?.name).to.eq("InvalidFutureBlockVotingProof");
+                expect(result?.successful).to.be.false;
+                expect(result?.error?.section).to.eq("beefy");
+                expect(result?.error?.name).to.eq("InvalidFutureBlockVotingProof");
             },
         });
     },

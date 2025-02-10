@@ -1,21 +1,21 @@
 import { MoonwallContext, beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { generateKeyringPair } from "@moonwall/util";
-import { ApiPromise } from "@polkadot/api";
+import type { ApiPromise } from "@polkadot/api";
 import { alith } from "@moonwall/util";
 
 const MAX_BALANCE_TRANSFER_TRIES = 5;
 describeSuite({
-    id: "CAN",
+    id: "R01",
     title: "Chopsticks Frontier Template Upgrade Test",
     foundationMethods: "chopsticks",
-    testCases: function ({ it, context, log }) {
+    testCases: ({ it, context, log }) => {
         let api: ApiPromise;
 
         beforeAll(async () => {
             api = context.polkadotJs();
 
             const rtBefore = api.consts.system.version.specVersion.toNumber();
-            log(`About to upgrade to runtime at:`);
+            log("About to upgrade to runtime at:");
             log((await MoonwallContext.getContext()).rtUpgradePath);
 
             await context.upgradeRuntime();

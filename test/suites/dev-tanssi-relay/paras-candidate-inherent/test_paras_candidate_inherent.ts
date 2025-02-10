@@ -1,11 +1,11 @@
 import "@tanssi/api-augment";
 import { describeSuite, customDevRpcRequest, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
+import type { ApiPromise } from "@polkadot/api";
 import { jumpToSession } from "util/block";
 import { getHeaderFromRelay } from "util/relayInterface.ts";
 
 describeSuite({
-    id: "DTR1401",
+    id: "DEVT1101",
     title: "Paras inherent tests",
     foundationMethods: "dev",
 
@@ -19,7 +19,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Paras heads should be updated every block",
-            test: async function () {
+            test: async () => {
                 const parasHeadGenesis = await polkadotJs.query.paras.heads(2000);
                 await context.createBlock();
                 // Send RPC call to enable para inherent candidate generation

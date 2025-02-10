@@ -1,12 +1,12 @@
-import { ApiPromise } from "@polkadot/api";
-import {
+import type { ApiPromise } from "@polkadot/api";
+import type {
     BabeEquivocationProof,
     GrandpaEquivocationProof,
     GrandpaEquivocation,
     GrandpaEquivocationValue,
 } from "@polkadot/types/interfaces";
-import { SpRuntimeHeader, SpRuntimeDigestDigestItem, FinalityGrandpaPrevote } from "@polkadot/types/lookup";
-import { KeyringPair } from "@moonwall/util";
+import type { SpRuntimeHeader, SpRuntimeDigestDigestItem, FinalityGrandpaPrevote } from "@polkadot/types/lookup";
+import type { KeyringPair } from "@moonwall/util";
 import { blake2AsHex } from "@polkadot/util-crypto";
 import { u8aToHex, stringToHex, hexToU8a } from "@polkadot/util";
 

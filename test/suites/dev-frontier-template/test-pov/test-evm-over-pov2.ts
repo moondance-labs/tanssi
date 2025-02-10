@@ -1,11 +1,11 @@
 import "@tanssi/api-augment";
 import { beforeAll, deployCreateCompiledContract, describeSuite, expect } from "@moonwall/cli";
 import { MAX_ETH_POV_PER_TX, createEthersTransaction } from "@moonwall/util";
-import { Abi, encodeFunctionData } from "viem";
-import { HeavyContract, deployHeavyContracts } from "../../../helpers";
+import { type Abi, encodeFunctionData } from "viem";
+import { type HeavyContract, deployHeavyContracts } from "../../../helpers";
 
 describeSuite({
-    id: "DF1302",
+    id: "DE1202",
     title: "PoV Limit (3.5Mb in Dev)",
     foundationMethods: "dev",
     testCases: ({ context, it, log }) => {
@@ -31,7 +31,7 @@ describeSuite({
         it({
             id: "T01",
             title: "should allow to produce block just under the PoV Limit",
-            test: async function () {
+            test: async () => {
                 const calculatedMax = MAX_ETH_POV_PER_TX / 24_000n - 1n;
 
                 const callData = encodeFunctionData({
@@ -59,7 +59,7 @@ describeSuite({
         it({
             id: "T02",
             title: "should prevent a transaction reaching just over the PoV",
-            test: async function () {
+            test: async () => {
                 const calculatedMax = MAX_ETH_POV_PER_TX / 24_000n;
 
                 const callData = encodeFunctionData({

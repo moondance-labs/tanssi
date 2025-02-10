@@ -1,5 +1,5 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { KeyringPair, alith } from "@moonwall/util";
+import { type KeyringPair, alith } from "@moonwall/util";
 import { ApiPromise, Keyring, WsProvider } from "@polkadot/api";
 import { STATEMINT_LOCATION_EXAMPLE } from "../../../util/constants.ts";
 
@@ -61,15 +61,15 @@ const runtimeApi = {
 };
 
 describeSuite({
-    id: "CPX0207",
+    id: "COMMON0307",
     title: "XCM - XcmPaymentApi",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
-        let chain;
+        let chain: any;
 
-        beforeAll(async function () {
+        beforeAll(async () => {
             // Not using context.polkadotJs() because we need to add the runtime api
             // This won't be needed after @polkadot/api adds the XcmPaymentApi
             polkadotJs = await ApiPromise.create({
@@ -78,7 +78,7 @@ describeSuite({
             });
             chain = polkadotJs.consts.system.version.specName.toString();
             alice =
-                chain == "frontier-template"
+                chain === "frontier-template"
                     ? alith
                     : new Keyring({ type: "sr25519" }).addFromUri("//Alice", {
                           name: "Alice default",
@@ -113,11 +113,11 @@ describeSuite({
         it({
             id: "T01",
             title: "Should succeed calling runtime api",
-            test: async function () {
+            test: async () => {
                 const chainInfo = polkadotJs.registry.getChainProperties();
                 const metadata = await polkadotJs.rpc.state.getMetadata();
                 const balancesPalletIndex = metadata.asLatest.pallets
-                    .find(({ name }) => name.toString() == "Balances")!
+                    .find(({ name }) => name.toString() === "Balances")
                     .index.toNumber();
 
                 console.log(chainInfo.toHuman());

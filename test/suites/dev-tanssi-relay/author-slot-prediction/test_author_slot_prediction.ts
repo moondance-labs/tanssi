@@ -1,14 +1,14 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { KeyringPair } from "@moonwall/util";
-import { ApiPromise } from "@polkadot/api";
+import type { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
 import { jumpSessions, jumpToSession } from "../../../util/block";
 import { u8aToHex, stringToHex } from "@polkadot/util";
 import { Keyring } from "@polkadot/keyring";
 const includesAll = (arr, values) => values.every((v) => arr.includes(v));
 
 describeSuite({
-    id: "DTR0501",
+    id: "DEVT0101",
     title: "Session keys assignment test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -31,7 +31,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Checking that authority assignment is correct in the first assignment",
-            test: async function () {
+            test: async () => {
                 // We need at least a couple of session to start seeing the first assignment
                 // The reason is that the session pallet goes before the tanssiInvulnerables in the dancelight runtime
                 // Otherwise we would not need this (as in dancebox)
@@ -78,7 +78,7 @@ describeSuite({
         it({
             id: "E02",
             title: "Checking session key changes are reflected at the session length boundary block",
-            test: async function () {
+            test: async () => {
                 const newKey = await polkadotJs.rpc.author.rotateKeys();
                 const newKeyCharlie = await polkadotJs.rpc.author.rotateKeys();
 
@@ -90,7 +90,7 @@ describeSuite({
                 // Check key is reflected in next key
                 // But its not yet in queued
                 const queuedKeys = await polkadotJs.query.session.queuedKeys();
-                const result = queuedKeys.filter((keyItem) => keyItem[1].nimbus == newKey);
+                const result = queuedKeys.filter((keyItem) => keyItem[1].nimbus === newKey);
                 expect(result).is.empty;
                 const nextKey = await polkadotJs.query.session.nextKeys(aliceStash.address);
                 const nextKeyCharlie = await polkadotJs.query.session.nextKeys(charlie.address);
@@ -110,7 +110,7 @@ describeSuite({
                 // The change should have been applied, and now both nimbus and authorityMapping should reflect
                 const digests = (await polkadotJs.query.system.digest()).logs;
                 const filtered = digests.filter(
-                    (log) => log.isConsensus === true && log.asConsensus[0].toHex() == stringToHex("BABE")
+                    (log) => log.isConsensus === true && log.asConsensus[0].toHex() === stringToHex("BABE")
                 );
 
                 expect(filtered[0].asConsensus[1].toHex().includes(nextBabeKey.toHex().slice(2))).to.be.true;

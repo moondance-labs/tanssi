@@ -1,11 +1,11 @@
-import "@polkadot/api-augment";
+import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { KeyringPair } from "@moonwall/util";
-import { ApiPromise } from "@polkadot/api";
+import type { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
 import { initializeCustomCreateBlock } from "../../../util/block";
 
 describeSuite({
-    id: "CA0301",
+    id: "C0301",
     title: "Proxy test suite - ProxyType::CancelProxy",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -29,7 +29,7 @@ describeSuite({
         it({
             id: "E01",
             title: "No proxies at genesis",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
                 const proxies = await polkadotJs.query.proxy.proxies(alice.address);
                 expect(proxies.toJSON()[0]).to.deep.equal([]);
@@ -39,7 +39,7 @@ describeSuite({
         it({
             id: "E02",
             title: "Add proxy Any",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
 
                 const delegate = bob.address;
@@ -49,7 +49,7 @@ describeSuite({
 
                 const events = await polkadotJs.query.system.events();
                 const ev1 = events.filter((a) => {
-                    return a.event.method == "ProxyAdded";
+                    return a.event.method === "ProxyAdded";
                 });
                 expect(ev1.length).to.be.equal(1);
 
@@ -67,7 +67,7 @@ describeSuite({
         it({
             id: "E03",
             title: "Add proxy CancelProxy",
-            test: async function () {
+            test: async () => {
                 const delegate = charlie.address;
                 const cancelProxy = ["frontier-template", "container-chain-template"].includes(chain) ? 3 : 4;
                 const delay = 0;
@@ -76,7 +76,7 @@ describeSuite({
 
                 const events = await polkadotJs.query.system.events();
                 const ev1 = events.filter((a) => {
-                    return a.event.method == "ProxyAdded";
+                    return a.event.method === "ProxyAdded";
                 });
                 expect(ev1.length).to.be.equal(1);
 
@@ -99,7 +99,7 @@ describeSuite({
         it({
             id: "E04",
             title: "Delegate account can call proxy.rejectAnnouncement",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
 
                 // Bob announces a transfer call
@@ -109,7 +109,7 @@ describeSuite({
                 await context.createBlock([await tx1.signAsync(bob)]);
                 let events = await polkadotJs.query.system.events();
                 const ev1 = events.filter((a) => {
-                    return a.event.method == "Announced";
+                    return a.event.method === "Announced";
                 });
                 expect(ev1.length).to.be.equal(1);
 
@@ -122,7 +122,7 @@ describeSuite({
                 await context.createBlock([await tx2.signAsync(charlie)]);
                 events = await polkadotJs.query.system.events();
                 const ev2 = events.filter((a) => {
-                    return a.event.method == "ProxyExecuted";
+                    return a.event.method === "ProxyExecuted";
                 });
                 expect(ev2.length).to.be.equal(1);
                 expect(ev2[0].event.data[0].toString()).to.be.eq("Ok");
@@ -139,7 +139,7 @@ describeSuite({
 
                 events = await polkadotJs.query.system.events();
                 const ev3 = events.filter((a) => {
-                    return a.event.method == "ExtrinsicFailed";
+                    return a.event.method === "ExtrinsicFailed";
                 });
                 expect(ev3.length).to.be.equal(1);
             },
@@ -148,7 +148,7 @@ describeSuite({
         it({
             id: "E05",
             title: "Unauthorized account cannot reject announcement",
-            test: async function () {
+            test: async () => {
                 // Bob announces a transfer call
                 const balanceCall = polkadotJs.tx.balances.transferAllowDeath(bob.address, 200_000);
                 const callHash = balanceCall.method.hash.toString();
@@ -156,7 +156,7 @@ describeSuite({
                 await context.createBlock([await tx1.signAsync(bob)]);
                 let events = await polkadotJs.query.system.events();
                 const ev1 = events.filter((a) => {
-                    return a.event.method == "Announced";
+                    return a.event.method === "Announced";
                 });
                 expect(ev1.length).to.be.equal(1);
 
@@ -169,7 +169,7 @@ describeSuite({
                 await context.createBlock([await tx2.signAsync(dave)]);
                 events = await polkadotJs.query.system.events();
                 const ev2 = events.filter((a) => {
-                    return a.event.method == "ExtrinsicFailed";
+                    return a.event.method === "ExtrinsicFailed";
                 });
                 expect(ev2.length).to.be.equal(1);
 
@@ -185,7 +185,7 @@ describeSuite({
 
                 events = await polkadotJs.query.system.events();
                 const ev3 = events.filter((a) => {
-                    return a.event.method == "ProxyExecuted";
+                    return a.event.method === "ProxyExecuted";
                 });
                 expect(ev3.length).to.be.equal(1);
                 expect(ev3[0].event.data[0].toString()).to.be.eq("Ok");
@@ -195,7 +195,7 @@ describeSuite({
         it({
             id: "E06",
             title: "Delegate account cannot call balance.transfer",
-            test: async function () {
+            test: async () => {
                 if (!chain.includes("light")) {
                     await context.createBlock();
                 }
@@ -209,7 +209,7 @@ describeSuite({
 
                 const events = await polkadotJs.query.system.events();
                 const ev1 = events.filter((a) => {
-                    return a.event.method == "ProxyExecuted";
+                    return a.event.method === "ProxyExecuted";
                 });
                 expect(ev1.length).to.be.equal(1);
                 expect(ev1[0].event.data[0].toString()).to.not.be.eq("Ok");

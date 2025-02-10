@@ -1,11 +1,11 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { KeyringPair } from "@moonwall/util";
-import { ApiPromise } from "@polkadot/api";
+import type { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
 import { jumpSessions } from "../../../util/block";
 
 describeSuite({
-    id: "CPT0506",
+    id: "COMMO1105",
     title: "Registrar test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -22,7 +22,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Checking that fetching registered paraIds is possible",
-            test: async function () {
+            test: async () => {
                 const parasRegistered = await polkadotJs.query.registrar.registeredParaIds();
 
                 // These are registered in genesis
@@ -34,7 +34,7 @@ describeSuite({
         it({
             id: "E02",
             title: "Checking that registering paraIds is possible",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
 
                 const currentSesssion = await polkadotJs.query.session.currentIndex();
@@ -120,7 +120,7 @@ describeSuite({
         it({
             id: "E03",
             title: "Registered paraId has been given free credits, and flag can be cleared",
-            test: async function () {
+            test: async () => {
                 const paraId = 2002;
                 const givenFreeCredits = await polkadotJs.query.servicesPayment.givenFreeCredits(paraId);
                 expect(givenFreeCredits.isNone).to.be.false;
