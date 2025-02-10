@@ -1549,8 +1549,7 @@ impl pallet_configuration::Config for Runtime {
     type SessionIndex = SessionIndex;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type ForceEmptyOrchestrator = ConstBool<true>;
-    // Not present in Kusama, benchmarking code doesn't match WeightInfo trait.
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_configuration::SubstrateWeight<Runtime>;
 }
 
 impl pallet_migrations::Config for Runtime {
@@ -2326,6 +2325,7 @@ mod benches {
         [pallet_invulnerables, TanssiInvulnerables]
         [pallet_data_preservers, DataPreservers]
         [pallet_pooled_staking, PooledStaking]
+        [pallet_configuration, CollatorConfiguration]
 
         // XCM
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
