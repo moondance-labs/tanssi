@@ -35,10 +35,11 @@ async function main() {
 - [ ] Re-run all extrinsics/hooks benchmarks.
 - [ ] Branch from master and create branch \`perm-runtime-${newVersion}\`.
 - [ ] Tag \`perm-${newVersion}\` with runtime-${newVersion} and push to github
-- [ ] Branch from master and create branch \`perm-runtime-${newVersion}-templates\`.
-- [ ] Tag \`perm-runtime-${newVersion}-templates\` with runtime-${newVersion}-templates and push to github
-- [ ] Branch from master and create branch \`perm-runtime-${newVersion}-starlight\`.
-- [ ] Tag \`perm-runtime-${newVersion}-templates\` with runtime-${newVersion}-starlight and push to github
+- [ ] Tag \`perm-runtime-${newVersion}\` with runtime-${newVersion}-templates and push to github
+- [ ] Tag \`perm-runtime-${newVersion}\` with runtime-${newVersion}-starlight and push to github
+- [ ] NOTE: if this is a hotfix to one of the runtimes, branch from runtime-${previousVersion} version
+and create perm-runtime-${newVersion}-templates, perm-runtime-${newVersion}-starlight or perm-runtime-${newVersion}-tanssi
+depending on whether the hotfix is for templates, starlight or tanssi-parachain. Then tag accordingly
 - [ ] Start the github action Publish Runtime Draft
 with runtime-${previousVersion} => runtime-${newVersion}
   - \`gh workflow run "Publish Runtime Draft" -r 'master' ` +
@@ -79,7 +80,7 @@ ${commonTemplate}
 - [ ] Publish the docker runtime image (trigger the github action "Publish Docker runtime containers")
   - \`gh workflow run "Publish Runtime Draft" -r 'master' ` +
       `-f from=runtime-${previousVersion}-templates -f to=runtime-${newVersion}-templates\`
-- [ ] Create a PR that increment spec version (like #1051) in both containers and tanssi runtimes
+- [ ] Create a PR that increment spec version (like #1051) in both containers, tanssi and starlight runtimes
     `;
     console.log(template);
   } else {
