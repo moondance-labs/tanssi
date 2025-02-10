@@ -37,13 +37,24 @@ async function main() {
 - [ ] Tag \`perm-${newVersion}\` with runtime-${newVersion} and push to github
 - [ ] Branch from master and create branch \`perm-runtime-${newVersion}-templates\`.
 - [ ] Tag \`perm-runtime-${newVersion}-templates\` with runtime-${newVersion}-templates and push to github
+- [ ] Branch from master and create branch \`perm-runtime-${newVersion}-starlight\`.
+- [ ] Tag \`perm-runtime-${newVersion}-templates\` with runtime-${newVersion}-starlight and push to github
 - [ ] Start the github action Publish Runtime Draft
 with runtime-${previousVersion} => runtime-${newVersion}
   - \`gh workflow run "Publish Runtime Draft" -r 'master' ` +
-    `-f from=runtime-${previousVersion} -f to=runtime-${newVersion} -f chains=run-all\`
+    `-f from=runtime-${previousVersion} -f to=runtime-${newVersion} -f chains=tanssi-only\`
+- [ ] Start the github action Publish Runtime Draft
+with runtime-${previousVersion} => runtime-${newVersion}
+  - \`gh workflow run "Publish Runtime Draft" -r 'master' ` +
+    `-f from=runtime-${previousVersion} -f to=runtime-${newVersion} -f chains=templates-only\`
+- [ ] Start the github action Publish Runtime Draft
+  with runtime-${previousVersion} => runtime-${newVersion}
+  - \`gh workflow run "Publish Runtime Draft" -r 'master' ` +
+    `-f from=runtime-${previousVersion} -f to=runtime-${newVersion} -f chains=dancelight-only\`
 - [ ] Review the generated Draft and clean a bit the messages if needed (keep it draft)
 - [ ] Upgrade typescript API: Start the github action "Upgrade typescript API"
 - [ ] Upgrade stagenet-dancebox
+- [ ] Upgrade stagelight
 - [ ] When everything is ok, publish the draft release
   `;
 
