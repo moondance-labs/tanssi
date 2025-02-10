@@ -407,6 +407,11 @@ fn test_slashes_are_sent_to_ethereum() {
             (AccountId::from(CHARLIE), 100_000 * UNIT),
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
+        .with_validators(vec![])
+        .with_external_validators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+        ])
         .build()
         .execute_with(|| {
             let token_location: VersionedLocation = Location::here().into();
@@ -422,10 +427,6 @@ fn test_slashes_are_sent_to_ethereum() {
             ));
 
             run_to_block(2);
-            assert_ok!(ExternalValidators::remove_whitelisted(
-                RuntimeOrigin::root(),
-                AccountId::from(ALICE)
-            ));
 
             inject_babe_slash(&AccountId::from(ALICE).to_string());
 
@@ -552,6 +553,15 @@ fn test_slashes_are_sent_to_ethereum_accumulatedly() {
             (AccountId::from(CHARLIE), 100_000 * UNIT),
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
+        .with_validators(
+            vec![]
+        )
+        .with_external_validators(
+            vec![
+                (AccountId::from(ALICE), 210 * UNIT),
+                (AccountId::from(BOB), 100 * UNIT),
+            ]
+        )
         .build()
         .execute_with(|| {
             let token_location: VersionedLocation = Location::here()
@@ -683,6 +693,15 @@ fn test_slashes_are_sent_to_ethereum_accumulate_until_next_era() {
             (AccountId::from(CHARLIE), 100_000 * UNIT),
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
+        .with_validators(
+            vec![]
+        )
+        .with_external_validators(
+            vec![
+                (AccountId::from(ALICE), 210 * UNIT),
+                (AccountId::from(BOB), 100 * UNIT),
+            ]
+        )
         .build()
         .execute_with(|| {
             let token_location: VersionedLocation = Location::here()
