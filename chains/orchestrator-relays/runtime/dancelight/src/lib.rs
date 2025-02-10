@@ -467,6 +467,7 @@ impl pallet_babe::Config for Runtime {
     // session module is the trigger
     type EpochChangeTrigger = pallet_babe::ExternalTrigger;
     type DisabledValidators = Session;
+    // Not benchmarked in Kusama
     type WeightInfo = ();
     type MaxAuthorities = MaxAuthorities;
     type MaxNominators = ConstU32<0>;
@@ -686,6 +687,7 @@ parameter_types! {
 
 impl pallet_grandpa::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
+    // Not benchmarked in Kusama, benchmarking code also don't match WeightInfo trait.
     type WeightInfo = ();
     type MaxAuthorities = MaxAuthorities;
     type MaxNominators = ConstU32<0>;
@@ -1319,7 +1321,7 @@ impl pallet_mmr::Config for Runtime {
     const INDEXING_PREFIX: &'static [u8] = mmr::INDEXING_PREFIX;
     type Hashing = Keccak256;
     type OnNewRoot = pallet_beefy_mmr::DepositBeefyDigest<Runtime>;
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_mmr::SubstrateWeight<Runtime>;
     type LeafData = pallet_beefy_mmr::Pallet<Runtime>;
     type BlockHashProvider = pallet_mmr::DefaultBlockHashProvider<Runtime>;
     #[cfg(feature = "runtime-benchmarks")]
@@ -1365,7 +1367,7 @@ impl pallet_beefy_mmr::Config for Runtime {
     type BeefyAuthorityToMerkleLeaf = pallet_beefy_mmr::BeefyEcdsaToEthereum;
     type LeafExtra = LeafExtraData;
     type BeefyDataProvider = LeafExtraDataProvider;
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_beefy_mmr::SubstrateWeight<Runtime>;
 }
 
 impl paras_sudo_wrapper::Config for Runtime {}
@@ -1547,6 +1549,7 @@ impl pallet_configuration::Config for Runtime {
     type SessionIndex = SessionIndex;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type ForceEmptyOrchestrator = ConstBool<true>;
+    // Not present in Kusama, benchmarking code doesn't match WeightInfo trait.
     type WeightInfo = ();
 }
 
@@ -1572,7 +1575,7 @@ impl pallet_multiblock_migrations::Config for Runtime {
     type MigrationStatusHandler = ();
     type FailedMigrationHandler = frame_support::migrations::FreezeChainOnFailedMigration;
     type MaxServiceWeight = MbmServiceWeight;
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_multiblock_migrations::SubstrateWeight<Runtime>;
 }
 
 pub const FIXED_BLOCK_PRODUCTION_COST: u128 = 1 * MICROUNITS;
@@ -2309,13 +2312,9 @@ mod benches {
         [pallet_asset_rate, AssetRate]
         [pallet_whitelist, Whitelist]
         [pallet_services_payment, ServicesPayment]
-        [pallet_babe, Babe]
-        [pallet_grandpa, Grandpa]
         [pallet_mmr, Mmr]
         [pallet_beefy_mmr, BeefyMmrLeaf]
-        [pallet_configuration, Configuration]
         [pallet_multiblock_migrations, MultiBlockMigrations]
-        // [pallet_session, SessionBench::<Runtime>]
 
         // Tanssi
         [pallet_author_noting, AuthorNoting]
