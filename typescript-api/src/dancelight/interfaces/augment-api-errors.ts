@@ -280,6 +280,24 @@ declare module "@polkadot/api-base/types/errors" {
             /** Generic error */
             [key: string]: AugmentedError<ApiType>;
         };
+        ethereumTokenTransfers: {
+            /** The requested AgentId is already present in this pallet. */
+            AgentIdAlreadyExists: AugmentedError<ApiType>;
+            /** The requested ChannelId is already present in this pallet. */
+            ChannelIdAlreadyExists: AugmentedError<ApiType>;
+            /** The channel's information has not been set on this pallet yet. */
+            ChannelInfoNotSet: AugmentedError<ApiType>;
+            /** The outbound message is invalid prior to send. */
+            InvalidMessage: AugmentedError<ApiType>;
+            /** The requested ParaId is already present in this pallet. */
+            ParaIdAlreadyExists: AugmentedError<ApiType>;
+            /** The outbound message could not be sent. */
+            TransferMessageNotSent: AugmentedError<ApiType>;
+            /** Conversion from Location to TokenId failed. */
+            UnknownLocationForToken: AugmentedError<ApiType>;
+            /** Generic error */
+            [key: string]: AugmentedError<ApiType>;
+        };
         externalValidators: {
             /** Account is already whitelisted. */
             AlreadyWhitelisted: AugmentedError<ApiType>;
