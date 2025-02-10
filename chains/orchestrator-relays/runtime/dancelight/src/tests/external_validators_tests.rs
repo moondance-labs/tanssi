@@ -713,6 +713,11 @@ fn external_validators_rewards_sends_message_on_era_end() {
             (AccountId::from(ALICE), 210_000 * UNIT),
             (AccountId::from(BOB), 100_000 * UNIT),
         ])
+        .with_validators(vec![])
+        .with_external_validators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+        ])
         .build()
         .execute_with(|| {
             let token_location: VersionedLocation = Location::here().into();
@@ -829,18 +834,13 @@ fn external_validators_rewards_merkle_proofs() {
                 vec![AccountId::from(CHARLIE), AccountId::from(DAVE)]
             );
 
-            assert!(
-                pallet_external_validators_rewards::RewardPointsForEra::<Runtime>::iter().count()
-                    == 0
-            );
-
             // Reward all validators in era 1
             crate::RewardValidators::reward_backing(vec![ValidatorIndex(0)]);
             crate::RewardValidators::reward_backing(vec![ValidatorIndex(1)]);
 
-            assert!(
-                pallet_external_validators_rewards::RewardPointsForEra::<Runtime>::iter().count()
-                    == 1
+            assert_eq!(
+                pallet_external_validators_rewards::RewardPointsForEra::<Runtime>::iter().count(),
+                1
             );
 
             let (_era_index, era_rewards) =
@@ -1048,8 +1048,6 @@ fn external_validators_whitelisted_never_rewarded() {
 
 #[test]
 fn external_validators_rewards_test_command_integrity() {
-    use {crate::ValidatorIndex, runtime_parachains::inclusion::RewardValidators};
-
     ExtBuilder::default()
         .with_balances(vec![
             (AccountId::from(ALICE), 210_000 * UNIT),
@@ -1139,18 +1137,10 @@ fn external_validators_rewards_test_command_integrity() {
                 vec![AccountId::from(CHARLIE), AccountId::from(DAVE)]
             );
 
-            assert!(
-                pallet_external_validators_rewards::RewardPointsForEra::<Runtime>::iter().count()
-                    == 0
-            );
-
-            // Reward Alice and Bob in era 1
-            crate::RewardValidators::reward_backing(vec![ValidatorIndex(0)]);
-            crate::RewardValidators::reward_backing(vec![ValidatorIndex(1)]);
-
-            assert!(
-                pallet_external_validators_rewards::RewardPointsForEra::<Runtime>::iter().count()
-                    == 1
+            // Validators are automatically rewarded.
+            assert_eq!(
+                pallet_external_validators_rewards::RewardPointsForEra::<Runtime>::iter().count(),
+                1
             );
 
             let expected_inflation =
@@ -1180,10 +1170,16 @@ fn external_validators_rewards_test_command_integrity() {
                 .count();
 
             let rewards_utils = ExternalValidatorsRewards::generate_era_rewards_utils(1, None);
+
+            let blocks_per_session: u128 = Babe::current_epoch().duration.into();
+            let points_per_block = 20;
+            let expected_total_points =
+                (sessions_per_era as u128) * blocks_per_session * points_per_block;
+
             let expected_rewards_command = Command::ReportRewards {
                 external_idx: 1u64,
                 era_index: 1u32,
-                total_points: 40u128,
+                total_points: expected_total_points,
                 tokens_inflated: expected_inflation,
                 rewards_merkle_root: rewards_utils.unwrap().rewards_merkle_root,
                 token_id,
@@ -1209,6 +1205,15 @@ fn external_validators_rewards_are_minted_in_sovereign_account() {
             (AccountId::from(ALICE), 210_000 * UNIT),
             (AccountId::from(BOB), 100_000 * UNIT),
         ])
+        .with_validators(
+            vec![]
+        )
+        .with_external_validators(
+            vec![
+                (AccountId::from(ALICE), 210 * UNIT),
+                (AccountId::from(BOB), 100 * UNIT),
+            ]
+        )
         .build()
         .execute_with(|| {
             let token_location: VersionedLocation = Location::here()

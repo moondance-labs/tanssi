@@ -7,6 +7,7 @@ updates:
     # Check for updates once a month
     schedule:
       interval: "monthly"
+    rebase-strategy: "disabled"
     labels:
       - "ci"
       - "not-breaking"
