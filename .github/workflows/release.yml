@@ -120,7 +120,8 @@ jobs:
 
     ####### Static Analyses #######
     cargo-clippy:
-        runs-on: ubuntu-latest
+        # Takes 70 mins on GH runner 😱
+        runs-on: bare-metal
         needs: ["set-tags"]
         steps:
             - name: Checkout
