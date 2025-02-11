@@ -32,21 +32,26 @@ use {
         OutboundMessageCommitmentRecorder, Runtime, RuntimeEvent, TokenLocationReanchored,
         TransactionByteFee, TreasuryAccount, WeightToFee, UNITS,
     },
-    frame_support::traits::fungible::{self},
     frame_support::{
-        traits::{tokens::Preservation, Nothing},
+        traits::{
+            fungible::{self, Inspect, Mutate},
+            tokens::{Fortitude, Preservation},
+            Nothing,
+        },
         weights::ConstantMultiplier,
     },
     pallet_xcm::EnsureXcm,
     parity_scale_codec::DecodeAll,
     snowbridge_beacon_primitives::{Fork, ForkVersions},
+    snowbridge_core::inbound::Message,
     snowbridge_core::{gwei, meth, Channel, PricingParameters, Rewards},
+    snowbridge_pallet_inbound_queue::RewardProcessor,
     snowbridge_pallet_outbound_queue::OnNewCommitment,
     snowbridge_router_primitives::inbound::{
         envelope::Envelope, Command, Destination, MessageProcessor, MessageV1, VersionedXcmMessage,
     },
     sp_core::{ConstU32, ConstU8, H160, H256},
-    sp_runtime::{DispatchError, DispatchResult},
+    sp_runtime::{traits::Zero, DispatchError, DispatchResult},
     tp_bridge::{DoNothingConvertMessage, DoNothingRouter, EthereumSystemHandler},
 };
 
@@ -349,6 +354,42 @@ mod test_helpers {
     }
 }
 
+pub struct RewardThroughTreasury<T>(sp_std::marker::PhantomData<T>);
+
+impl<T> RewardProcessor<T> for RewardThroughTreasury<T>
+where
+    T: snowbridge_pallet_inbound_queue::Config,
+    T::AccountId: From<sp_runtime::AccountId32>,
+    <T::Token as Inspect<T::AccountId>>::Balance: From<u128>,
+{
+    fn process_reward(who: T::AccountId, _channel: Channel, message: Message) -> DispatchResult {
+        let envelope = Envelope::try_from(&message.event_log)
+            .map_err(|_| snowbridge_pallet_inbound_queue::Error::<T>::InvalidEnvelope)?;
+
+        let reward_amount: <T::Token as Inspect<T::AccountId>>::Balance =
+            match VersionedXcmMessage::decode_all(&mut envelope.payload.as_slice())
+                .map_err(|_| DispatchError::Other("unable to parse the envelope payload"))?
+            {
+                VersionedXcmMessage::V1(MessageV1 { command, .. }) => match command {
+                    Command::SendNativeToken { fee, .. }
+                    | Command::SendToken { fee, .. }
+                    | Command::RegisterToken { fee, .. } => fee.into(),
+                },
+            };
+
+        let fees_account: T::AccountId = TreasuryAccount::get().into();
+
+        let amount =
+            T::Token::reducible_balance(&fees_account, Preservation::Preserve, Fortitude::Polite)
+                .min(reward_amount);
+        if !amount.is_zero() {
+            T::Token::transfer(&fees_account, &who, amount, Preservation::Preserve)?;
+        }
+
+        Ok(())
+    }
+}
+
 impl snowbridge_pallet_inbound_queue::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     #[cfg(not(test))]
@@ -376,6 +417,7 @@ impl snowbridge_pallet_inbound_queue::Config for Runtime {
         SymbioticMessageProcessor<Runtime>,
         TokenTransferMessageProcessor,
     );
+    type RewardProcessor = RewardThroughTreasury<Self>;
     #[cfg(feature = "runtime-benchmarks")]
     type MessageProcessor = (benchmark_helper::DoNothingMessageProcessor,);
 }

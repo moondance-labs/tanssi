@@ -411,14 +411,14 @@ fn test_transfer_native_token_fails_if_not_enough_balance() {
 fn receive_native_tokens_from_eth_happy_path() {
     ExtBuilder::default()
         .with_balances(vec![
-            // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
             (EthereumSovereignAccount::get(), 100_000 * UNIT),
+            (TreasuryAccount::get(), 100_000 * UNIT),
+            (AccountId::from(ALICE), 100_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
         ])
         .build()
         .execute_with(|| {
-            let origin =
+            let relayer =
                 <Runtime as frame_system::Config>::RuntimeOrigin::signed(AccountId::from(ALICE));
 
             let channel_id: ChannelId = ChannelId::new(hex!(
@@ -426,7 +426,8 @@ fn receive_native_tokens_from_eth_happy_path() {
             ));
             let agent_id = AgentId::from_low_u64_be(10);
             let para_id: ParaId = 2000u32.into();
-            let amount_to_transfer = 100;
+            let amount_to_transfer = 10_000;
+            let fee = 1000;
 
             assert_ok!(EthereumTokenTransfers::set_token_transfer_channel(
                 root_origin(),
@@ -443,7 +444,7 @@ fn receive_native_tokens_from_eth_happy_path() {
                         id: AccountId::from(BOB).into(),
                     },
                     amount: amount_to_transfer,
-                    fee: 0,
+                    fee,
                 },
             });
 
@@ -469,16 +470,33 @@ fn receive_native_tokens_from_eth_happy_path() {
             };
 
             let sovereign_balance_before = Balances::free_balance(EthereumSovereignAccount::get());
+            let treasury_balance_before = Balances::free_balance(TreasuryAccount::get());
+            let relayer_balance_before = Balances::free_balance(AccountId::from(ALICE));
             let bob_balance_before = Balances::free_balance(AccountId::from(BOB));
 
-            assert_ok!(EthereumInboundQueue::submit(origin, message));
+            assert_ok!(EthereumInboundQueue::submit(relayer, message));
+
+            // Amount reduced from sovereign account
             assert_eq!(
                 Balances::free_balance(EthereumSovereignAccount::get()),
                 sovereign_balance_before - amount_to_transfer
             );
+
+            // Amount added in destination account
             assert_eq!(
                 Balances::free_balance(AccountId::from(BOB)),
                 bob_balance_before + amount_to_transfer
+            );
+
+            // Fees are payed
+            assert_eq!(
+                Balances::free_balance(TreasuryAccount::get()),
+                treasury_balance_before - fee
+            );
+
+            assert_eq!(
+                Balances::free_balance(AccountId::from(ALICE)),
+                relayer_balance_before + fee
             );
         });
 }
