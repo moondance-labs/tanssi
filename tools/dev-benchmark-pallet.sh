@@ -7,7 +7,7 @@
 # the expected location.
 #
 # Usage:
-# cargo build --release --features=runtime-benchmarks
+# cargo build --release --features=fast-runtime,runtime-benchmarks
 # git commit -am 'before running benchmarks"
 # ./tools/dev-benchmark-pallet.sh "pallet_registrar"
 #
