@@ -367,14 +367,13 @@ where
             .map_err(|_| snowbridge_pallet_inbound_queue::Error::<T>::InvalidEnvelope)?;
 
         let reward_amount: <T::Token as Inspect<T::AccountId>>::Balance =
-            match VersionedXcmMessage::decode_all(&mut envelope.payload.as_slice())
-                .map_err(|_| DispatchError::Other("unable to parse the envelope payload"))?
-            {
-                VersionedXcmMessage::V1(MessageV1 { command, .. }) => match command {
+            match VersionedXcmMessage::decode_all(&mut envelope.payload.as_slice()) {
+                Ok(VersionedXcmMessage::V1(MessageV1 { command, .. })) => match command {
                     Command::SendNativeToken { fee, .. }
                     | Command::SendToken { fee, .. }
                     | Command::RegisterToken { fee, .. } => fee.into(),
                 },
+                Err(_) => return Ok(()), // Do not reward if we cannot handle the message
             };
 
         let fees_account: T::AccountId = TreasuryAccount::get().into();
