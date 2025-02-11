@@ -1,160 +1,160 @@
 name: Manually run all zombienet tests
 
 on:
-  workflow_dispatch:
-    inputs:
-      sha:
-        description: full sha to the codebase
-        required: true
-      test_name:
-        description: "Name of the test suite to be run (e.g. zombie_flashbox, supports regex)"
-        required: true
-        type: string
-        default: ".*"
-      foundation_type:
-        description: Foundation type to filter tests, select zombie to run all zombienet tests
-        required: true
-        type: choice
-        default: "zombie"
-        options:
-          - "*"
-          - zombie
-          - dev
-          - chopsticks
-          - read_only
+    workflow_dispatch:
+        inputs:
+            sha:
+                description: full sha to the codebase
+                required: true
+            test_name:
+                description: "Name of the test suite to be run (e.g. zombie_flashbox, supports regex)"
+                required: true
+                type: string
+                default: ".*"
+            foundation_type:
+                description: Foundation type to filter tests, select zombie to run all zombienet tests
+                required: true
+                type: choice
+                default: "zombie"
+                options:
+                    - "*"
+                    - zombie
+                    - dev
+                    - chopsticks
+                    - read_only
 
 jobs:
-  # Preliminary job to get the list of tests
-  get-tests:
-    runs-on: self-hosted
-    outputs:
-      matrix: ${{ steps.set_tests.outputs.tests }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    # Preliminary job to get the list of tests
+    get-tests:
+        runs-on: ubuntu-latest
+        outputs:
+            matrix: ${{ steps.set_tests.outputs.tests }}
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
 
-      - name: Pnpm
-        uses: pnpm/action-setup@v4.0.0
-        with:
-          version: 9
+            - name: Pnpm
+              uses: pnpm/action-setup@v4.0.0
+              with:
+                  version: 9
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22.x
-          cache: "pnpm"
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 22.x
+                  cache: "pnpm"
 
-      - name: Get test names
-        id: get_tests
-        run: |
-          foundation_type=${{ github.event.inputs.foundation_type || 'zombie' }}
-          test_name=${{ github.event.inputs.test_name || '.*' }}
+            - name: Get test names
+              id: get_tests
+              run: |
+                  foundation_type=${{ github.event.inputs.foundation_type || 'zombie' }}
+                  test_name=${{ github.event.inputs.test_name || '.*' }}
 
-          # Read and filter the tests from the config file using regex and foundation type
-          # Exclude zombie upgrade tests because they need more complex logic, using docker
-          tests=$(jq -r --arg type "$foundation_type" --arg regex "$test_name" '
-            .environments
-            | map(select((.foundation.type == $type or $type == "*") and (.name | test($regex))))
-            | map(.name)
-            | if $type == "zombie" then map(select(test("_upgrade$") | not)) else . end  # Exclude upgrade tests only if foundation type is zombie
-          ' test/moonwall.config.json | jq -c '.')
+                  # Read and filter the tests from the config file using regex and foundation type
+                  # Exclude zombie upgrade tests because they need more complex logic, using docker
+                  tests=$(jq -r --arg type "$foundation_type" --arg regex "$test_name" '
+                    .environments
+                    | map(select((.foundation.type == $type or $type == "*") and (.name | test($regex))))
+                    | map(.name)
+                    | if $type == "zombie" then map(select(test("_upgrade$") | not)) else . end  # Exclude upgrade tests only if foundation type is zombie
+                  ' test/moonwall.config.json | jq -c '.')
 
-          echo "Will run tests: $tests"
-          if [ -z "$tests" ]; then
-            echo "No tests found. Exiting."
-            exit 1
-          fi
-          echo "tests=$tests" >> $GITHUB_ENV
+                  echo "Will run tests: $tests"
+                  if [ -z "$tests" ]; then
+                    echo "No tests found. Exiting."
+                    exit 1
+                  fi
+                  echo "tests=$tests" >> $GITHUB_ENV
 
-      - name: Set tests output
-        id: set_tests
-        run: |
-          include_tests=$(echo '${{ env.tests }}' | jq -c '{include: . | map({test_name: .})}')
-          echo "tests=$include_tests" >> $GITHUB_OUTPUT
+            - name: Set tests output
+              id: set_tests
+              run: |
+                  include_tests=$(echo '${{ env.tests }}' | jq -c '{include: . | map({test_name: .})}')
+                  echo "tests=$include_tests" >> $GITHUB_OUTPUT
 
-  ####### Building binaries #######
-  build:
-    runs-on: self-hosted
-    needs: [ "get-tests" ]
-    env:
-      TMP_TARGET: "/tmp/target"
-      CARGO_TARGET_DIR: "target"
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ needs.set-tags.outputs.git_ref }}
-      - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.4
-      - name: Setup Variables
-        shell: bash
-        run: |
-          echo "CARGO_INCREMENTAL=0" >> $GITHUB_ENV
-          echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
-          echo "SCCACHE_CACHE_SIZE=100GB" >> $GITHUB_ENV
-          # Set RUSTFLAGS if not already set
-          if [ -z "$RUSTFLAGS" ]; then
-            echo "RUSTFLAGS=-C opt-level=3 -D warnings -C linker=clang -C link-arg=-fuse-ld=$(pwd)/mold/bin/mold" >> $GITHUB_ENV
-          fi
-      - name: Setup Mold Linker
-        shell: bash
-        run: |
-          mkdir -p mold
-          curl -L --retry 10 --silent --show-error https://github.com/rui314/mold/releases/download/v2.30.0/mold-2.30.0-$(uname -m)-linux.tar.gz | tar -C $(realpath mold) --strip-components=1 -xzf -
-      - name: Setup Rust toolchain
-        run: rustup show
-      - name: Build
-        run: cargo build --features=fast-runtime --release --all
-      - name: Save runtime wasm
-        run: |
-          mkdir -p runtimes
-          cp $CARGO_TARGET_DIR/release/wbuild/container-chain-template-simple-runtime/container_chain_template_simple_runtime.compact.compressed.wasm runtimes/;
-          cp $CARGO_TARGET_DIR/release/wbuild/container-chain-template-frontier-runtime/container_chain_template_frontier_runtime.compact.compressed.wasm runtimes/;
-          cp $CARGO_TARGET_DIR/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm runtimes/;
-          cp $CARGO_TARGET_DIR/release/wbuild/flashbox-runtime/flashbox_runtime.compact.compressed.wasm runtimes/;
-      - name: Upload runtimes
-        uses: actions/upload-artifact@v4
-        with:
-          name: runtimes
-          path: runtimes
-      - name: Save tanssi and template binaries
-        run: |
-          mkdir -p binaries
-          cp $CARGO_TARGET_DIR/release/tanssi-node binaries/tanssi-node;
-          cp $CARGO_TARGET_DIR/release/tanssi-relay binaries/tanssi-relay;
-          cp $CARGO_TARGET_DIR/release/tanssi-relay-prepare-worker binaries/tanssi-relay-prepare-worker;
-          cp $CARGO_TARGET_DIR/release/tanssi-relay-execute-worker binaries/tanssi-relay-execute-worker;
-          cp $CARGO_TARGET_DIR/release/container-chain-frontier-node binaries/container-chain-frontier-node;
-          cp $CARGO_TARGET_DIR/release/container-chain-simple-node binaries/container-chain-simple-node;
-      - name: Upload binary
-        uses: actions/upload-artifact@v4
-        with:
-          name: binaries
-          path: binaries
+    ####### Building binaries #######
+    build:
+        runs-on: self-hosted
+        needs: ["get-tests"]
+        env:
+            TMP_TARGET: "/tmp/target"
+            CARGO_TARGET_DIR: "target"
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+              with:
+                  ref: ${{ needs.set-tags.outputs.git_ref }}
+            - name: Run sccache-cache
+              uses: mozilla-actions/sccache-action@v0.0.4
+            - name: Setup Variables
+              shell: bash
+              run: |
+                  echo "CARGO_INCREMENTAL=0" >> $GITHUB_ENV
+                  echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
+                  echo "SCCACHE_CACHE_SIZE=100GB" >> $GITHUB_ENV
+                  # Set RUSTFLAGS if not already set
+                  if [ -z "$RUSTFLAGS" ]; then
+                    echo "RUSTFLAGS=-C opt-level=3 -D warnings -C linker=clang -C link-arg=-fuse-ld=$(pwd)/mold/bin/mold" >> $GITHUB_ENV
+                  fi
+            - name: Setup Mold Linker
+              shell: bash
+              run: |
+                  mkdir -p mold
+                  curl -L --retry 10 --silent --show-error https://github.com/rui314/mold/releases/download/v2.30.0/mold-2.30.0-$(uname -m)-linux.tar.gz | tar -C $(realpath mold) --strip-components=1 -xzf -
+            - name: Setup Rust toolchain
+              run: rustup show
+            - name: Build
+              run: cargo build --features=fast-runtime --release --all
+            - name: Save runtime wasm
+              run: |
+                  mkdir -p runtimes
+                  cp $CARGO_TARGET_DIR/release/wbuild/container-chain-template-simple-runtime/container_chain_template_simple_runtime.compact.compressed.wasm runtimes/;
+                  cp $CARGO_TARGET_DIR/release/wbuild/container-chain-template-frontier-runtime/container_chain_template_frontier_runtime.compact.compressed.wasm runtimes/;
+                  cp $CARGO_TARGET_DIR/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm runtimes/;
+                  cp $CARGO_TARGET_DIR/release/wbuild/flashbox-runtime/flashbox_runtime.compact.compressed.wasm runtimes/;
+            - name: Upload runtimes
+              uses: actions/upload-artifact@v4
+              with:
+                  name: runtimes
+                  path: runtimes
+            - name: Save tanssi and template binaries
+              run: |
+                  mkdir -p binaries
+                  cp $CARGO_TARGET_DIR/release/tanssi-node binaries/tanssi-node;
+                  cp $CARGO_TARGET_DIR/release/tanssi-relay binaries/tanssi-relay;
+                  cp $CARGO_TARGET_DIR/release/tanssi-relay-prepare-worker binaries/tanssi-relay-prepare-worker;
+                  cp $CARGO_TARGET_DIR/release/tanssi-relay-execute-worker binaries/tanssi-relay-execute-worker;
+                  cp $CARGO_TARGET_DIR/release/container-chain-frontier-node binaries/container-chain-frontier-node;
+                  cp $CARGO_TARGET_DIR/release/container-chain-simple-node binaries/container-chain-simple-node;
+            - name: Upload binary
+              uses: actions/upload-artifact@v4
+              with:
+                  name: binaries
+                  path: binaries
 
-  # Run each test as a separate job using a matrix strategy
-  run-tests:
-    runs-on: self-hosted
-    needs: [ "get-tests", "build" ]
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJSON(needs.get-tests.outputs.matrix) }}
-    steps:
-      - name: "Download binaries"
-        uses: actions/download-artifact@v4
-        with:
-          name: binaries
-          path: target/release
-      - name: "Make binaries executable"
-        shell: bash
-        run: |
-          chmod uog+x target/release/tanssi-node
-          chmod uog+x target/release/tanssi-relay
-          chmod uog+x target/release/tanssi-relay-prepare-worker
-          chmod uog+x target/release/tanssi-relay-execute-worker
-          chmod uog+x target/release/container-chain-simple-node
-          chmod uog+x target/release/container-chain-frontier-node
-      - name: Run Zombienet Test ${{ matrix.test_name }}
-        uses: ./.github/workflow-templates/zombienet-tests
-        with:
-          test_name: ${{ matrix.test_name }}
+    # Run each test as a separate job using a matrix strategy
+    run-tests:
+        runs-on: self-hosted
+        needs: ["get-tests", "build"]
+        strategy:
+            fail-fast: false
+            matrix: ${{ fromJSON(needs.get-tests.outputs.matrix) }}
+        steps:
+            - name: "Download binaries"
+              uses: actions/download-artifact@v4
+              with:
+                  name: binaries
+                  path: target/release
+            - name: "Make binaries executable"
+              shell: bash
+              run: |
+                  chmod uog+x target/release/tanssi-node
+                  chmod uog+x target/release/tanssi-relay
+                  chmod uog+x target/release/tanssi-relay-prepare-worker
+                  chmod uog+x target/release/tanssi-relay-execute-worker
+                  chmod uog+x target/release/container-chain-simple-node
+                  chmod uog+x target/release/container-chain-frontier-node
+            - name: Run Zombienet Test ${{ matrix.test_name }}
+              uses: ./.github/workflow-templates/zombienet-tests
+              with:
+                  test_name: ${{ matrix.test_name }}

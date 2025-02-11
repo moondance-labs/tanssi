@@ -2,141 +2,141 @@ name: Publish Dancelight Binary Draft
 
 # The code (like generate-release-body) will be taken from the tag version, not master
 on:
-  workflow_dispatch:
-    inputs:
-      from:
-        description: tag (ex. v0.8.3) to retrieve commit diff from
-        required: true
-      to:
-        description: tag (ex. v0.9.0) to generate release note and srtool runtimes from
-        required: true
+    workflow_dispatch:
+        inputs:
+            from:
+                description: tag (ex. v0.8.3) to retrieve commit diff from
+                required: true
+            to:
+                description: tag (ex. v0.9.0) to generate release note and srtool runtimes from
+                required: true
 
 jobs:
-  ####### Building binaries #######
-  setup-scripts:
-    runs-on: self-hosted
-    steps:
-      - uses: actions/checkout@v4
-      - name: Upload tools
-        uses: actions/upload-artifact@v4
-        with:
-          name: original-tools
-          path: tools
+    ####### Building binaries #######
+    setup-scripts:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - name: Upload tools
+              uses: actions/upload-artifact@v4
+              with:
+                  name: original-tools
+                  path: tools
 
-  build-binary:
-    needs: ["setup-scripts"]
-    runs-on: tanssi-release
-    strategy:
-      matrix:
-        cpu: ["", "skylake", "znver3"]
-    env:
-      RUSTFLAGS: "-C target-cpu=${{ matrix.cpu }}"
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.inputs.to }}
-      - name: Setup Rust toolchain
-        run: rustup show
-      - name: Install protoc
-        run: |
-          sudo apt-get update
-          sudo apt-get install protobuf-compiler
-      - name: Build Node
-        run: cargo build --profile=production -p tanssi-relay
-      - name: Save dancelight binary
-        if: ${{ matrix.cpu == '' }}
-        run: |
-          mkdir -p binaries
-          cp target/production/tanssi-relay binaries/tanssi-relay
-          cp target/production/tanssi-relay-execute-worker binaries/tanssi-relay-execute-worker
-          cp target/production/tanssi-relay-prepare-worker binaries/tanssi-relay-prepare-worker
-      - name: Save dancelight custom binary
-        if: ${{ matrix.cpu != '' }}
-        run: |
-          mkdir -p binaries
-          cp target/production/tanssi-relay binaries/tanssi-relay-${{matrix.cpu}}
-          cp target/production/tanssi-relay-execute-worker binaries/tanssi-relay-execute-worker-${{matrix.cpu}}
-          cp target/production/tanssi-relay-prepare-worker binaries/tanssi-relay-prepare-worker-${{matrix.cpu}}
-      - name: Upload binaries
-        uses: actions/upload-artifact@v4
-        with:
-          name: binaries-${{matrix.cpu}}
-          path: binaries
+    build-binary:
+        needs: ["setup-scripts"]
+        runs-on: tanssi-release
+        strategy:
+            matrix:
+                cpu: ["", "skylake", "znver3"]
+        env:
+            RUSTFLAGS: "-C target-cpu=${{ matrix.cpu }}"
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+              with:
+                  ref: ${{ github.event.inputs.to }}
+            - name: Setup Rust toolchain
+              run: rustup show
+            - name: Install protoc
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install protobuf-compiler
+            - name: Build Node
+              run: cargo build --profile=production -p tanssi-relay
+            - name: Save dancelight binary
+              if: ${{ matrix.cpu == '' }}
+              run: |
+                  mkdir -p binaries
+                  cp target/production/tanssi-relay binaries/tanssi-relay
+                  cp target/production/tanssi-relay-execute-worker binaries/tanssi-relay-execute-worker
+                  cp target/production/tanssi-relay-prepare-worker binaries/tanssi-relay-prepare-worker
+            - name: Save dancelight custom binary
+              if: ${{ matrix.cpu != '' }}
+              run: |
+                  mkdir -p binaries
+                  cp target/production/tanssi-relay binaries/tanssi-relay-${{matrix.cpu}}
+                  cp target/production/tanssi-relay-execute-worker binaries/tanssi-relay-execute-worker-${{matrix.cpu}}
+                  cp target/production/tanssi-relay-prepare-worker binaries/tanssi-relay-prepare-worker-${{matrix.cpu}}
+            - name: Upload binaries
+              uses: actions/upload-artifact@v4
+              with:
+                  name: binaries-${{matrix.cpu}}
+                  path: binaries
 
-  ####### Prepare the release draft #######
-  publish-draft-release:
-    runs-on: ubuntu-latest
-    needs: ["build-binary"]
-    outputs:
-      release_url: ${{ steps.create-release.outputs.html_url }}
-      asset_upload_url: ${{ steps.create-release.outputs.upload_url }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.inputs.to }}
-          fetch-depth: 0
-      - name: Use Node.js 22.x
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22.x
-      - name: Download Original Tools
-        uses: actions/download-artifact@v4
-        with:
-          name: original-tools
-          path: original-tools
-      - name: Generate release body
-        id: generate-release-body
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        working-directory: original-tools
-        run: |
-          yarn
-          yarn -s run ts-node github/generate-release-body.ts --owner "${{ github.repository_owner }}" --repo "$(basename ${{ github.repository }})" --from ${{ github.event.inputs.from }} --to ${{ github.event.inputs.to }} --srtool-report-folder '../build/' > ../body.md
-      - name: Create draft release
-        id: create-release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.event.inputs.to }}
-          release_name: Tanssi ${{ github.event.inputs.to }}
-          body_path: body.md
-          draft: true
-  
-  ####### Upload Binaries #######
+    ####### Prepare the release draft #######
+    publish-draft-release:
+        runs-on: ubuntu-latest
+        needs: ["build-binary"]
+        outputs:
+            release_url: ${{ steps.create-release.outputs.html_url }}
+            asset_upload_url: ${{ steps.create-release.outputs.upload_url }}
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+              with:
+                  ref: ${{ github.event.inputs.to }}
+                  fetch-depth: 0
+            - name: Use Node.js 22.x
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 22.x
+            - name: Download Original Tools
+              uses: actions/download-artifact@v4
+              with:
+                  name: original-tools
+                  path: original-tools
+            - name: Generate release body
+              id: generate-release-body
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              working-directory: original-tools
+              run: |
+                  yarn
+                  yarn -s run ts-node github/generate-release-body.ts --owner "${{ github.repository_owner }}" --repo "$(basename ${{ github.repository }})" --from ${{ github.event.inputs.from }} --to ${{ github.event.inputs.to }} --srtool-report-folder '../build/' > ../body.md
+            - name: Create draft release
+              id: create-release
+              uses: actions/create-release@v1
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              with:
+                  tag_name: ${{ github.event.inputs.to }}
+                  release_name: Tanssi ${{ github.event.inputs.to }}
+                  body_path: body.md
+                  draft: true
 
-  upload-binaries:
-    runs-on: ubuntu-latest
-    needs: ["build-binary", "publish-draft-release"]
-    strategy:
-      matrix:
-        cpu: ["", "skylake", "znver3"]
-        node: ["tanssi-relay", "tanssi-relay-execute-worker", "tanssi-relay-prepare-worker"]
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          pattern: binaries-*
-          merge-multiple: true
-          path: build
-      - name: Upload dancelight
-        uses: actions/upload-release-asset@v1
-        if: ${{ matrix.cpu == '' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.publish-draft-release.outputs.asset_upload_url }}
-          asset_path: build/${{matrix.node}}
-          asset_name: ${{matrix.node}}
-          asset_content_type: application/octet-stream
-      - name: Upload dancelight
-        uses: actions/upload-release-asset@v1
-        if: ${{ matrix.cpu != '' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.publish-draft-release.outputs.asset_upload_url }}
-          asset_path: build/${{matrix.node}}-${{matrix.cpu}}
-          asset_name: ${{matrix.node}}-${{matrix.cpu}}
-          asset_content_type: application/octet-stream
+    ####### Upload Binaries #######
+
+    upload-binaries:
+        runs-on: ubuntu-latest
+        needs: ["build-binary", "publish-draft-release"]
+        strategy:
+            matrix:
+                cpu: ["", "skylake", "znver3"]
+                node: ["tanssi-relay", "tanssi-relay-execute-worker", "tanssi-relay-prepare-worker"]
+        steps:
+            - uses: actions/download-artifact@v4
+              with:
+                  pattern: binaries-*
+                  merge-multiple: true
+                  path: build
+            - name: Upload dancelight
+              uses: actions/upload-release-asset@v1
+              if: ${{ matrix.cpu == '' }}
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              with:
+                  upload_url: ${{ needs.publish-draft-release.outputs.asset_upload_url }}
+                  asset_path: build/${{matrix.node}}
+                  asset_name: ${{matrix.node}}
+                  asset_content_type: application/octet-stream
+            - name: Upload dancelight
+              uses: actions/upload-release-asset@v1
+              if: ${{ matrix.cpu != '' }}
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              with:
+                  upload_url: ${{ needs.publish-draft-release.outputs.asset_upload_url }}
+                  asset_path: build/${{matrix.node}}-${{matrix.cpu}}
+                  asset_name: ${{matrix.node}}-${{matrix.cpu}}
+                  asset_content_type: application/octet-stream
