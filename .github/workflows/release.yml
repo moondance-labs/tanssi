@@ -719,7 +719,7 @@ jobs:
                   fi
     zombienet-tests-merge-queue-bridge-e2e:
         if: ${{ github.event_name == 'merge_group' }}
-        runs-on: self-hosted
+        runs-on: ubuntu-latest
         needs: ["set-tags", "build"]
         steps:
             - name: Checkout
@@ -787,7 +787,7 @@ jobs:
                   pnpm install
                   pnpm moonwall test chopsticks_${{ matrix.chains.chain }}_upgrade
     zombienet-test-upgrade:
-        runs-on: self-hosted
+        runs-on: ubuntu-latest
         needs: ["set-tags", "build"]
         strategy:
             fail-fast: false
