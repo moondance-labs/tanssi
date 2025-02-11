@@ -1,8 +1,8 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { KeyringPair, alith, generateKeyringPair } from "@moonwall/util";
-import { ApiPromise, Keyring } from "@polkadot/api";
+import { type KeyringPair, alith, generateKeyringPair } from "@moonwall/util";
+import { type ApiPromise, Keyring } from "@polkadot/api";
 import {
-    RawXcmMessage,
+    type RawXcmMessage,
     XcmFragment,
     descendSiblingOriginFromAddress20,
     descendSiblingOriginFromAddress32,
@@ -12,21 +12,21 @@ import {
 } from "../../../util/xcm.ts";
 
 describeSuite({
-    id: "CPX0202",
+    id: "COMMON0302",
     title: "Mock XCM - Succeeds using sovereign accounts",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
         let polkadotJs: ApiPromise;
-        let transferredBalance;
-        let sendingAddress;
+        let transferredBalance: bigint;
+        let sendingAddress: string;
         let alice: KeyringPair;
-        let chain;
+        let chain: any;
 
-        beforeAll(async function () {
+        beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             chain = polkadotJs.consts.system.version.specName.toString();
             alice =
-                chain == "frontier-template"
+                chain === "frontier-template"
                     ? alith
                     : new Keyring({ type: "sr25519" }).addFromUri("//Alice", {
                           name: "Alice default",
@@ -34,9 +34,9 @@ describeSuite({
             let aliceNonce = (await polkadotJs.query.system.account(alice.address)).nonce.toNumber();
 
             const descendFunction =
-                chain == "frontier-template" ? descendSiblingOriginFromAddress20 : descendSiblingOriginFromAddress32;
+                chain === "frontier-template" ? descendSiblingOriginFromAddress20 : descendSiblingOriginFromAddress32;
             const sovereignFunction =
-                chain == "frontier-template"
+                chain === "frontier-template"
                     ? sovereignAccountOfSiblingForAddress20
                     : sovereignAccountOfSiblingForAddress32;
 
@@ -64,14 +64,14 @@ describeSuite({
         it({
             id: "T01",
             title: "Should succeed using sovereign account from signed origin",
-            test: async function () {
+            test: async () => {
                 // Generate random receiver address
-                const random = chain == "frontier-template" ? generateKeyringPair() : generateKeyringPair("sr25519");
+                const random = chain === "frontier-template" ? generateKeyringPair() : generateKeyringPair("sr25519");
 
                 // Get Pallet balances index
                 const metadata = await polkadotJs.rpc.state.getMetadata();
                 const balancesPalletIndex = metadata.asLatest.pallets
-                    .find(({ name }) => name.toString() == "Balances")!
+                    .find(({ name }) => name.toString() === "Balances")
                     .index.toNumber();
 
                 const transferCall = polkadotJs.tx.balances.transferAllowDeath(
@@ -131,14 +131,14 @@ describeSuite({
         it({
             id: "T02",
             title: "Should succeed using sovereign account from root origin",
-            test: async function () {
+            test: async () => {
                 // Generate random receiver address
-                const random = chain == "frontier-template" ? generateKeyringPair() : generateKeyringPair("sr25519");
+                const random = chain === "frontier-template" ? generateKeyringPair() : generateKeyringPair("sr25519");
 
                 // Get Pallet balances index
                 const metadata = await polkadotJs.rpc.state.getMetadata();
                 const balancesPalletIndex = metadata.asLatest.pallets
-                    .find(({ name }) => name.toString() == "Balances")!
+                    .find(({ name }) => name.toString() === "Balances")
                     .index.toNumber();
 
                 const transferCall = polkadotJs.tx.balances.transferAllowDeath(

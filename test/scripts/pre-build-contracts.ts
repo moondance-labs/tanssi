@@ -1,10 +1,10 @@
 import solc from "solc";
 import chalk from "chalk";
-import fs from "fs/promises";
-import path from "path";
-import { Compiled } from "../util/ethereum-contracts";
-import { fileURLToPath } from "url";
-import { dirname } from "path";
+import fs from "node:fs/promises";
+import path from "node:path";
+import type { Compiled } from "../util/ethereum-contracts";
+import { fileURLToPath } from "node:url";
+import { dirname } from "node:path";
 
 const sourceByReference = {} as { [ref: string]: string };
 const countByReference = {} as { [ref: string]: number };
@@ -24,8 +24,7 @@ const getImports = (fileRef: string) => (dependency: string) => {
             return { contents: sourceByReference[localRef] };
         }
         base = path.dirname(base);
-        if (base == ".") {
-            continue;
+        if (base === ".") {
         }
     }
     return { error: "Source not found" };
@@ -60,14 +59,17 @@ function compileSolidity(fileRef: string, contractContent: string): { [name: str
     if (!result.contracts) {
         throw result;
     }
-    return Object.keys(result.contracts[filename]).reduce((p, contractName) => {
-        p[contractName] = {
-            byteCode: "0x" + result.contracts[filename][contractName].evm.bytecode.object,
-            contract: result.contracts[filename][contractName],
-            sourceCode: contractContent,
-        };
-        return p;
-    }, {} as { [name: string]: Compiled });
+    return Object.keys(result.contracts[filename]).reduce(
+        (p, contractName) => {
+            p[contractName] = {
+                byteCode: `0x${result.contracts[filename][contractName].evm.bytecode.object}`,
+                contract: result.contracts[filename][contractName],
+                sourceCode: contractContent,
+            };
+            return p;
+        },
+        {} as { [name: string]: Compiled }
+    );
 }
 
 // Shouldn't be run concurrently with the same 'name'
@@ -85,9 +87,7 @@ async function compile(fileRef: string, destPath: string): Promise<{ [name: stri
             if (refByContract[dest]) {
                 console.warn(
                     chalk.red(
-                        `Contract ${contractName} already exist from ` +
-                            `${refByContract[dest]}. ` +
-                            `Erasing previous version`
+                        `Contract ${contractName} already exist from ${refByContract[dest]}. Erasing previous version`
                     )
                 );
             }
@@ -122,7 +122,7 @@ const main = async () => {
     const contractSourcePaths = [
         {
             filepath:
-                args.length > 0 && args[0] != "undefined" ? args[0] : path.join(__dirname, "../contracts/solidity"),
+                args.length > 0 && args[0] !== "undefined" ? args[0] : path.join(__dirname, "../contracts/solidity"),
             importPath: "", // Reference in contracts are local
             compile: true,
         },
@@ -150,9 +150,9 @@ const main = async () => {
         } catch (e) {
             console.log(`Failed to compile: ${ref}`);
             if (e.errors) {
-                e.errors.forEach((error) => {
+                for (const error of e.errors) {
                     console.log(error.formattedMessage);
-                });
+                }
             } else {
                 console.log(e);
             }

@@ -1,9 +1,9 @@
-import Web3 from "web3";
-import fs from "fs";
-import path from "path";
-import { TransactionReceipt } from "web3-core";
-import { Contract } from "web3-eth-contract";
-import { AbiItem } from "web3-utils";
+import type Web3 from "web3";
+import fs from "node:fs";
+import path from "node:path";
+import type { TransactionReceipt } from "web3-core";
+import type { Contract } from "web3-eth-contract";
+import type { AbiItem } from "web3-utils";
 import { ALITH_PRIVATE_KEY, alith } from "@moonwall/util";
 import { customWeb3Request } from "@moonwall/util";
 
@@ -14,7 +14,7 @@ export interface Compiled {
 }
 
 export function getAllContracts(): string[] {
-    const contractsPath = path.join(__dirname, `../helpers/compiled/`);
+    const contractsPath = path.join(__dirname, "../helpers/compiled/");
     const contracts = fs.readdirSync(contractsPath, { withFileTypes: true });
     // Register all the contract code
     return contracts.filter((dirent) => dirent.isFile()).map((contract) => path.basename(contract.name, ".json"));

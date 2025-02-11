@@ -1,4 +1,4 @@
-import fs from "fs/promises";
+import fs from "node:fs/promises";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import jsonBg from "json-bigint";
@@ -12,7 +12,7 @@ yargs(hideBin(process.argv))
     .usage("Usage: $0")
     .version("1.0.0")
     .command(
-        `*`,
+        "*",
         "Creates a chainSpec.json file based on on-chain data for a container chain",
         (yargs) => {
             return yargs
@@ -44,10 +44,10 @@ yargs(hideBin(process.argv))
                 process.stdout.write(`Reading on-chain genesis data for parachain ${argv.paraId} ...`);
                 const encoded = (await api.query.registrar.paraGenesisData(argv.paraId)) as any;
                 if (encoded.isNone) {
-                    process.stdout.write(`❌ parachain not registered\n`);
+                    process.stdout.write("❌ parachain not registered\n");
                     return;
                 }
-                process.stdout.write(`Done ✅\n`);
+                process.stdout.write("Done ✅\n");
                 const onChainGenesisData = await api.createType(
                     "DpContainerChainGenesisDataContainerChainGenesisData",
                     encoded.unwrap()
@@ -65,7 +65,7 @@ yargs(hideBin(process.argv))
                 });
                 process.stdout.write(`Writing to: ${argv.output} ...`);
                 await fs.writeFile(argv.output, convertExponentials(JSONbig.stringify(rawSpec, null, 3)));
-                process.stdout.write(`Done ✅\n`);
+                process.stdout.write("Done ✅\n");
             } finally {
                 await api.disconnect();
             }

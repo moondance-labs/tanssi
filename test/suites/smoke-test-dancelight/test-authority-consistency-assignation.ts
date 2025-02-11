@@ -1,9 +1,9 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 
-import { ApiPromise } from "@polkadot/api";
+import type { ApiPromise } from "@polkadot/api";
 
 describeSuite({
-    id: "S16",
+    id: "SMOK01",
     title: "Sample suite that only runs on Dancelight chains",
     foundationMethods: "read_only",
     testCases: ({ it, context }) => {
@@ -16,7 +16,7 @@ describeSuite({
         it({
             id: "C01",
             title: "Collator assignation and authority assignation should match with observed mapping in containers",
-            test: async function () {
+            test: async () => {
                 const assignmentCollatorAccount = (
                     await api.query.tanssiCollatorAssignment.collatorContainerChain()
                 ).toJSON();
@@ -27,11 +27,11 @@ describeSuite({
                 const authorityKeyMapping = (
                     await api.query.tanssiAuthorityMapping.authorityIdMapping(sessionIndex)
                 ).toJSON();
-                for (const container of Object.keys(assignmentCollatorKey["containerChains"])) {
-                    for (const key of assignmentCollatorKey["containerChains"][container]) {
+                for (const container of Object.keys(assignmentCollatorKey.containerChains)) {
+                    for (const key of assignmentCollatorKey.containerChains[container]) {
                         const assignedAccount = authorityKeyMapping[key.toString()];
                         expect(
-                            assignmentCollatorAccount["containerChains"][container].includes(assignedAccount.toString())
+                            assignmentCollatorAccount.containerChains[container].includes(assignedAccount.toString())
                         ).to.be.true;
                     }
                 }

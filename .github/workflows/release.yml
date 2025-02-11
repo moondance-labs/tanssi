@@ -199,7 +199,6 @@ jobs:
                   cache: "pnpm"
             - name: "Formatting check"
               run: |
-                  cd test
                   pnpm install
                   pnpm run fmt
 
@@ -222,7 +221,6 @@ jobs:
                   cache: "pnpm"
             - name: "Linting check"
               run: |
-                  cd test
                   pnpm install
                   pnpm run lint
 

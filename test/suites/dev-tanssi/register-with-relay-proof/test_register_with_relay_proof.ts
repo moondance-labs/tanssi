@@ -1,11 +1,11 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { KeyringPair } from "@moonwall/util";
-import { ApiPromise, Keyring } from "@polkadot/api";
+import type { KeyringPair } from "@moonwall/util";
+import { type ApiPromise, Keyring } from "@polkadot/api";
 import { jumpSessions, fetchStorageProofFromValidationData } from "../../../util/block";
 
 describeSuite({
-    id: "DT0502",
+    id: "DEV0302",
     title: "Registrar test suite: register with relay proof",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -32,7 +32,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Checking that fetching registered paraIds is possible",
-            test: async function () {
+            test: async () => {
                 const parasRegistered = await polkadotJs.query.registrar.registeredParaIds();
 
                 // These are registered in genesis
@@ -44,7 +44,7 @@ describeSuite({
         it({
             id: "E02",
             title: "Checking that registering paraIds is possible",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
 
                 const currentSesssion = await polkadotJs.query.session.currentIndex();
@@ -76,16 +76,14 @@ describeSuite({
                     return g;
                 };
                 const containerChainGenesisData = emptyGenesisData();
-                const { relayProofBlockNumber, relayStorageProof } = await fetchStorageProofFromValidationData(
-                    polkadotJs
-                );
+                const { relayProofBlockNumber, relayStorageProof } =
+                    await fetchStorageProofFromValidationData(polkadotJs);
 
                 const parathreadParams = null;
                 const relayStorageRoots = await polkadotJs.query.relayStorageRoots.relayStorageRootKeys();
                 const lastStoredRelayBlockNumber = relayStorageRoots.toJSON()[relayStorageRoots.toJSON().length - 1];
-                const lastRelayStorageRoot = await polkadotJs.query.relayStorageRoots.relayStorageRoot(
-                    lastStoredRelayBlockNumber
-                );
+                const lastRelayStorageRoot =
+                    await polkadotJs.query.relayStorageRoots.relayStorageRoot(lastStoredRelayBlockNumber);
 
                 // message: paraId || account (alice) || lastRelayStorageRoot
                 const message = new Uint8Array([
@@ -157,7 +155,7 @@ describeSuite({
         it({
             id: "E03",
             title: "Registered paraId has been given free credits, and flag can be cleared",
-            test: async function () {
+            test: async () => {
                 const paraId = 2002;
                 const givenFreeCredits = await polkadotJs.query.servicesPayment.givenFreeCredits(paraId);
                 expect(givenFreeCredits.isNone).to.be.false;

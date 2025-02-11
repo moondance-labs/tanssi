@@ -1,6 +1,6 @@
-import { execSync, spawn, ChildProcessWithoutNullStreams } from "child_process";
-import { existsSync, writeFileSync } from "fs";
-import path from "path";
+import { execSync, spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
+import { existsSync, writeFileSync } from "node:fs";
+import path from "node:path";
 import chalk from "chalk";
 
 let nodeProcess: ChildProcessWithoutNullStreams | undefined = undefined;
@@ -42,7 +42,7 @@ async function main() {
         ]);
 
         const onProcessExit = () => {
-            nodeProcess && nodeProcess.kill();
+            nodeProcess?.kill();
         };
 
         process.once("exit", onProcessExit);
@@ -69,21 +69,21 @@ async function main() {
                         .then((data) => {
                             writeFileSync(path.join(process.cwd(), `metadata-${CHAIN}.json`), JSON.stringify(data));
 
-                            nodeProcess!.kill();
+                            nodeProcess?.kill();
                             setTimeout(() => {}, 5000); // Sleep for 5 seconds
                             resolve("success");
                         });
                 }
             };
 
-            nodeProcess!.stderr!.on("data", onData);
-            nodeProcess!.stdout!.on("data", onData);
+            nodeProcess?.stderr?.on("data", onData);
+            nodeProcess?.stdout?.on("data", onData);
 
-            nodeProcess!.stderr.on("error", (error) => {
+            nodeProcess?.stderr?.on("error", (error) => {
                 console.error(error);
                 reject(error);
             });
-            nodeProcess!.stderr.on("error", (error) => {
+            nodeProcess?.stderr?.on("error", (error) => {
                 console.error(error);
                 reject(error);
             });

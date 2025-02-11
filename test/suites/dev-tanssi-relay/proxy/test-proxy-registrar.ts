@@ -1,11 +1,12 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { KeyringPair } from "@moonwall/util";
-import { ApiPromise } from "@polkadot/api";
+import type { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
 import { initializeCustomCreateBlock, jumpSessions } from "../../../util/block";
+import type { u32 } from "@polkadot/types";
 
 describeSuite({
-    id: "DTR1201",
+    id: "DEVT1501",
     title: "Proxy test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -53,7 +54,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Can add proxy",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
 
                 const tx = polkadotJs.tx.proxy.addProxy(delegateBob.address, REGISTRAR_PROXY_INDEX, 0);
@@ -73,7 +74,7 @@ describeSuite({
         it({
             id: "E02",
             title: "Delegated account can sudo txs in paras_registrar",
-            test: async function () {
+            test: async () => {
                 const txReserve = polkadotJs.tx.proxy.proxy(
                     sudoAlice.address,
                     null,
@@ -97,17 +98,18 @@ describeSuite({
         it({
             id: "E03",
             title: "Delegated account can sudo txs in data preservers, paras, paraSudoWrapper, and registrar",
-            test: async function () {
+            test: async () => {
                 // A regular user registers a new avs
 
                 const txReserve = polkadotJs.tx.registrar.reserve();
                 await context.createBlock([await txReserve.signAsync(charlie)]);
 
                 let events = await polkadotJs.query.system.events();
-                const reservedEvent = events.filter((a) => {
-                    return a.event.method == "Reserved" && a.event.data[1].toString() == charlie.address;
-                });
-                const reservedParaId = reservedEvent[0].event.data[0].toPrimitive();
+                const reservedEvent = events.filter(
+                    ({ event }) => event.method === "Reserved" && event.data[1].toString() === charlie.address
+                );
+                const reservedParaId = (reservedEvent[0].event.data[0] as u32).toNumber();
+                console.log(reservedParaId);
 
                 const txRegisterRelay = polkadotJs.tx.registrar.register(reservedParaId, GENESIS_HEAD, VALIDATION_CODE);
                 await context.createBlock([await txRegisterRelay.signAsync(charlie)]);
@@ -181,9 +183,11 @@ describeSuite({
                 await context.createBlock([await txStartCollating.signAsync(delegateBob)]);
 
                 events = await polkadotJs.query.system.events();
-                const startCollatingEvent = events.filter((a) => {
-                    return a.event.method == "ParaIdValidForCollating" && a.event.data[0].toString() == reservedParaId;
-                });
+                const startCollatingEvent = events.filter(
+                    ({ event }) =>
+                        event.method === "ParaIdValidForCollating" &&
+                        event.data[0].toString() === reservedParaId.toString()
+                );
 
                 expect(startCollatingEvent.length).eq(1);
 
@@ -206,7 +210,7 @@ describeSuite({
         it({
             id: "E04",
             title: "Unauthorized account cannot sudo calls",
-            test: async function () {
+            test: async () => {
                 // Call adding validation code
                 const VALIDATION_CODE_NOT_INCLUDED = "0x4e6f7420676f6e6e61206d616b65206974";
 
@@ -221,7 +225,7 @@ describeSuite({
 
                 const trustedCodes = await polkadotJs.query.paras.codeByHash.entries();
                 const noCodeMatching = trustedCodes.filter((code) => {
-                    return code[1].toString() == VALIDATION_CODE_NOT_INCLUDED;
+                    return code[1].toString() === VALIDATION_CODE_NOT_INCLUDED;
                 });
 
                 expect(noCodeMatching.length).eq(0);
@@ -291,9 +295,9 @@ describeSuite({
                 await context.createBlock([await txStartCollating.signAsync(charlie)]);
 
                 const events = await polkadotJs.query.system.events();
-                const startCollatingEvent = events.filter((a) => {
-                    return a.event.method == "ParaIdValidForCollating" && a.event.data[0].toString() == "2002";
-                });
+                const startCollatingEvent = events.filter(
+                    ({ event }) => event.method === "ParaIdValidForCollating" && event.data[0].toString() === "2002"
+                );
 
                 expect(startCollatingEvent.length).eq(0);
             },
