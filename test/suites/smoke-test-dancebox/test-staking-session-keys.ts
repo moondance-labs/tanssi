@@ -1,13 +1,13 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
+import type { ApiPromise } from "@polkadot/api";
 
 describeSuite({
-    id: "S14",
+    id: "SMO04",
     title: "Check staking eligible candidates have session keys",
     foundationMethods: "read_only",
     testCases: ({ it, context }) => {
         let api: ApiPromise;
-        let runtimeVersion;
+        let runtimeVersion: number;
 
         beforeAll(async () => {
             api = context.polkadotJs();
@@ -17,7 +17,7 @@ describeSuite({
         it({
             id: "C01",
             title: "All eligible candidates have session keys registered",
-            test: async function () {
+            test: async () => {
                 if (runtimeVersion < 200) {
                     return;
                 }

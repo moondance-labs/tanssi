@@ -17,3 +17,9 @@
 # Temporary files
 **/tmp
 raw.json
+
+# IDE files
+**/.zed/
+**/.vscode/
+**/.idea/
+.cursor

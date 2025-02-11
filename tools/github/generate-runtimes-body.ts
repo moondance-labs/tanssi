@@ -2,7 +2,7 @@ import { execSync } from "child_process";
 import { Octokit } from "octokit";
 import { readFileSync } from "fs";
 import yargs from "yargs";
-import path from "path";
+import path from "node:path";
 import { getCommitAndLabels, getCompareLink } from "./github-utils";
 import { blake2AsHex } from "@polkadot/util-crypto";
 

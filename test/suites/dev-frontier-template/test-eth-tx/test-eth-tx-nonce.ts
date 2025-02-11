@@ -8,14 +8,14 @@ import {
 } from "@moonwall/util";
 
 describeSuite({
-    id: "DF0701",
+    id: "DE0801",
     title: "Ethereum Transaction - Nonce",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
         it({
             id: "T01",
             title: "should be at 0 before using it",
-            test: async function () {
+            test: async () => {
                 expect(await context.viem("public").getTransactionCount({ address: BALTATHAR_ADDRESS })).toBe(0);
             },
         });
@@ -23,7 +23,7 @@ describeSuite({
         it({
             id: "T02",
             title: "should be at 0 for genesis account",
-            test: async function () {
+            test: async () => {
                 expect(await context.viem("public").getTransactionCount({ address: ALITH_ADDRESS })).toBe(0);
             },
         });
@@ -31,7 +31,7 @@ describeSuite({
         it({
             id: "T03",
             title: "should stay at 0 before block is created",
-            test: async function () {
+            test: async () => {
                 await customWeb3Request(context.web3(), "eth_sendRawTransaction", [
                     await createRawTransfer(context, ALITH_ADDRESS, 512),
                 ]);
@@ -44,7 +44,7 @@ describeSuite({
         it({
             id: "T04",
             title: "should stay at previous before block is created",
-            test: async function () {
+            test: async () => {
                 const blockNumber = await context.viem("public").getBlockNumber();
                 const nonce = await context.viem("public").getTransactionCount({ address: ALITH_ADDRESS });
                 await context.createBlock(await createRawTransfer(context, ALITH_ADDRESS, 512));
@@ -58,7 +58,7 @@ describeSuite({
         it({
             id: "T05",
             title: "pending transaction nonce",
-            test: async function () {
+            test: async () => {
                 const nonce = await context.viem("public").getTransactionCount({ address: ALITH_ADDRESS });
 
                 await customWeb3Request(context.web3(), "eth_sendRawTransaction", [
@@ -90,7 +90,7 @@ describeSuite({
         it({
             id: "T06",
             title: "transferring Nonce",
-            test: async function () {
+            test: async () => {
                 const nonce = await context.viem("public").getTransactionCount({ address: ALITH_ADDRESS });
 
                 await context.createBlock([await createRawTransfer(context, BALTATHAR_ADDRESS, 512)]);

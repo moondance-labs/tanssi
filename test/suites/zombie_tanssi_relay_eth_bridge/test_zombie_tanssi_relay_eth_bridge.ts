@@ -1,18 +1,20 @@
+import "@tanssi/api-augment/dancelight";
 import { beforeAll, describeSuite, expect, afterAll } from "@moonwall/cli";
-import { ApiPromise, Keyring } from "@polkadot/api";
-import { spawn, exec } from "node:child_process";
+import { type ApiPromise, Keyring } from "@polkadot/api";
+import { spawn, exec, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { signAndSendAndInclude, waitSessions } from "../../util/block.ts";
 import { ethers } from "ethers";
 import { decodeAddress } from "@polkadot/util-crypto";
 import { u8aToHex } from "@polkadot/util";
-import { MultiLocation } from "@polkadot/types/interfaces/xcm/types";
+import type { MultiLocation } from "@polkadot/types/interfaces/xcm/types";
+import type { KeyringPair } from "@moonwall/util";
 
 // Change this if we change the storage parameter in runtime
 const GATEWAY_STORAGE_KEY = "0xaed97c7854d601808b98ae43079dafb3";
 
 function execCommand(command: string, options?) {
     return new Promise((resolve, reject) => {
-        exec(command, options, (error: child.ExecException, stdout: string, stderr: string) => {
+        exec(command, options, (error: unknown, stdout: string, stderr: string) => {
             if (error) {
                 reject({ error, stdout, stderr });
             } else {
@@ -38,27 +40,27 @@ async function calculateNumberOfBlocksTillNextEra(api, blocksPerSession) {
 }
 
 describeSuite({
-    id: "ZR-01",
+    id: "ZOMBIETANSSI01",
     title: "Zombie Tanssi Relay Test",
     foundationMethods: "zombie",
-    testCases: function ({ it, context }) {
+    testCases: ({ it, context }) => {
         let relayApi: ApiPromise;
         let relayCharlieApi: ApiPromise;
-        let ethereumNodeChildProcess;
-        let relayerChildProcess;
-        let alice;
-        let beefyClientDetails;
+        let ethereumNodeChildProcess: ChildProcessWithoutNullStreams;
+        let relayerChildProcess: ChildProcessWithoutNullStreams;
+        let alice: KeyringPair;
+        let beefyClientDetails: any;
 
         const ethUrl = "ws://127.0.0.1:8546";
-        let customHttpProvider;
-        let ethereumWallet;
-        let middlewareContract;
-        let gatewayContract;
-        let gatewayProxyAddress;
-        let middlewareDetails;
+        let customHttpProvider: ethers.WebSocketProvider;
+        let ethereumWallet: ethers.Wallet;
+        let middlewareContract: ethers.Contract;
+        let gatewayContract: ethers.Contract;
+        let gatewayProxyAddress: string;
+        let middlewareDetails: any;
 
-        let operatorAccount;
-        let operatorNimbusKey;
+        let operatorAccount: KeyringPair;
+        let operatorNimbusKey: string;
 
         beforeAll(async () => {
             relayApi = context.polkadotJs("Tanssi-relay");
@@ -76,7 +78,7 @@ describeSuite({
             // Operator keys
             operatorAccount = keyring.addFromUri("//Charlie", { name: "Charlie default" });
             // We rotate the keys for charlie so that we have access to them from this test as well as the node
-            operatorNimbusKey = await relayCharlieApi.rpc.author.rotateKeys();
+            operatorNimbusKey = (await relayCharlieApi.rpc.author.rotateKeys()).toHex();
             await relayApi.tx.session.setKeys(operatorNimbusKey, []).signAndSend(operatorAccount);
 
             const fundingTxHash = await signAndSendAndInclude(
@@ -149,16 +151,14 @@ describeSuite({
             const setMiddlewareTx = await gatewayContract.setMiddleware(middlewareDetails.address);
             await setMiddlewareTx.wait();
 
-            const initialBeaconUpdate = JSON.parse(
-                <string>(
+            const initialBeaconUpdate = JSON.parse(<string>(
                     await execCommand("./scripts/bridge/setup-relayer.sh", {
                         env: {
                             RELAYCHAIN_ENDPOINT: "ws://127.0.0.1:9947",
                             ...process.env,
                         },
                     })
-                ).stdout
-            );
+                ).stdout);
 
             const tokenLocation: MultiLocation = {
                 parents: 0,
@@ -202,7 +202,7 @@ describeSuite({
         it({
             id: "T01",
             title: "Ethereum Blocks are being recognized on tanssi-relay",
-            test: async function () {
+            test: async () => {
                 await waitSessions(context, relayApi, 1, null, "Tanssi-relay");
                 const firstFinalizedBlockRoot = (
                     await relayApi.query.ethereumBeaconClient.latestFinalizedBlockRoot()
@@ -221,7 +221,7 @@ describeSuite({
         it({
             id: "T02",
             title: "Dancelight Blocks are being recognized on ethereum",
-            test: async function () {
+            test: async () => {
                 const beefyContract = new ethers.Contract(
                     beefyClientDetails.address,
                     beefyClientDetails.abi,
@@ -238,7 +238,7 @@ describeSuite({
         it({
             id: "T03",
             title: "Message can be passed from ethereum to Starlight",
-            test: async function () {
+            test: async () => {
                 const externalValidatorsBefore = await relayApi.query.externalValidators.externalValidators();
 
                 const epoch = await middlewareContract.getCurrentEpoch();
@@ -295,7 +295,7 @@ describeSuite({
         it({
             id: "T04",
             title: "Operator produces blocks",
-            test: async function () {
+            test: async () => {
                 // wait some time for the operator to be part of session validator
                 await waitSessions(
                     context,
@@ -318,7 +318,7 @@ describeSuite({
                 for (let i = 0; i < 3 * blocksPerSession; ++i) {
                     const latestBlockHash = await relayApi.rpc.chain.getBlockHash();
                     const author = (await relayApi.derive.chain.getHeader(latestBlockHash)).author;
-                    if (author == operatorAccount.address) {
+                    if (author.toString() === operatorAccount.address) {
                         return;
                     }
                     await context.waitBlock(1, "Tanssi-relay");
@@ -330,7 +330,7 @@ describeSuite({
         it({
             id: "T05",
             title: "Rewards and slashes are being sent to symbiotic successfully",
-            test: async function () {
+            test: async () => {
                 // Send slash event forcefully
                 const activeEraInfo = (await relayApi.query.externalValidators.activeEra()).toJSON();
                 const currentExternalIndex = await relayApi.query.externalValidators.currentExternalIndex();
@@ -366,7 +366,7 @@ describeSuite({
                 // Get the reward event
                 const rewardBlockEvents = await relayApiAtRewardEventBlock.query.system.events();
                 const filteredEventsForReward = rewardBlockEvents.filter((a) => {
-                    return a.event.method == "RewardsMessageSent";
+                    return a.event.method === "RewardsMessageSent";
                 });
                 expect(filteredEventsForReward.length).to.be.equal(1);
                 const rewardEvent = filteredEventsForReward[0];
@@ -377,7 +377,7 @@ describeSuite({
                 // Get the slash event
                 const slashBlockEvents = await relayApiAtSlashEventBlock.query.system.events();
                 const filteredEventsForSlash = slashBlockEvents.filter((a) => {
-                    return a.event.method == "SlashesMessageSent";
+                    return a.event.method === "SlashesMessageSent";
                 });
                 expect(filteredEventsForSlash.length).to.be.equal(1);
                 const slashEvent = filteredEventsForSlash[0];
@@ -391,10 +391,10 @@ describeSuite({
                 let slashMessageSuccess = false;
 
                 gatewayContract.on("InboundMessageDispatched", (_channelID, _nonce, messageID, success) => {
-                    if (rewardMessageId == messageID) {
+                    if (rewardMessageId === messageID) {
                         rewardMessageReceived = true;
                         rewardMessageSuccess = success;
-                    } else if (slashMessageId == messageID) {
+                    } else if (slashMessageId === messageID) {
                         slashMessageReceived = true;
                         slashMessageSuccess = success;
                     }

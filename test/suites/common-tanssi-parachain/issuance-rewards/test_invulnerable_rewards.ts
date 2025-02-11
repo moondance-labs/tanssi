@@ -1,13 +1,13 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
-import { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
+import type { KeyringPair } from "@moonwall/util";
 import { fetchIssuance, filterRewardFromOrchestrator, filterRewardFromContainer } from "util/block";
 import { getAuthorFromDigest } from "util/author";
 import { PARACHAIN_BOND } from "util/constants";
 
 describeSuite({
-    id: "CPT0301",
+    id: "COMMO0201",
     title: "Invulnerable reward test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -21,7 +21,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Every block created should reward the appropriate amount to orchestrator",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
                 const author = await getAuthorFromDigest(polkadotJs);
                 // Fetch current session
@@ -43,7 +43,7 @@ describeSuite({
         it({
             id: "E02",
             title: "Parachain bond receives 30% of the inflation and pending rewards plus division dust",
-            test: async function () {
+            test: async () => {
                 let expectedAmountParachainBond = 0n;
 
                 const pendingChainRewards = await polkadotJs.query.inflationRewards.chainsToReward();
@@ -82,7 +82,7 @@ describeSuite({
         it({
             id: "E03",
             title: "Charlie receives the reward from container-chain block proposal",
-            test: async function () {
+            test: async () => {
                 const balacharlieBalanceBeforenceBefore = (
                     await polkadotJs.query.system.account(charlie.address)
                 ).data.free.toBigInt();

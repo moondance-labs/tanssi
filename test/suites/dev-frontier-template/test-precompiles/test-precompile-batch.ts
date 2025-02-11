@@ -15,14 +15,14 @@ const PRECOMPILE_BATCH_ADDRESS = "0x0000000000000000000000000000000000000801";
 const PRECOMPILE_CALL_PERMIT_ADDRESS = "0x0000000000000000000000000000000000000802";
 
 describeSuite({
-    id: "DF1109",
+    id: "DE1309",
     title: "Batch - All functions should consume the same gas",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
         it({
             id: "T01",
             title: "should consume the same gas",
-            test: async function () {
+            test: async () => {
                 const { abi: batchInterface } = fetchCompiledContract("Batch");
 
                 let aliceNonce = (await context.polkadotJs().query.system.account(ALITH_ADDRESS)).nonce.toNumber();
@@ -92,16 +92,16 @@ describeSuite({
                     .viem("public")
                     .getTransactionReceipt({ hash: batchSomeUntilFailureResult as `0x${string}` });
 
-                expect(batchAllReceipt["gasUsed"]).to.equal(44_932n);
-                expect(batchSomeReceipt["gasUsed"]).to.equal(44_932n);
-                expect(batchSomeUntilFailureReceipt["gasUsed"]).to.equal(44_932n);
+                expect(batchAllReceipt.gasUsed).to.equal(44_932n);
+                expect(batchSomeReceipt.gasUsed).to.equal(44_932n);
+                expect(batchSomeUntilFailureReceipt.gasUsed).to.equal(44_932n);
             },
         });
 
         it({
             id: "T02",
             title: "should be able to call itself",
-            test: async function () {
+            test: async () => {
                 const { abi: batchInterface } = fetchCompiledContract("Batch");
 
                 const batchAll = await context.writeContract({
@@ -129,14 +129,14 @@ describeSuite({
                 });
 
                 const { result } = await context.createBlock(batchAll);
-                expectEVMResult(result!.events, "Succeed");
+                expectEVMResult(result?.events, "Succeed");
             },
         });
 
         it({
             id: "T03",
             title: "should be able to be called from call permit",
-            test: async function () {
+            test: async () => {
                 const { abi: batchInterface } = fetchCompiledContract("Batch");
                 const { abi: callPermitAbi } = fetchCompiledContract("CallPermit");
 
@@ -226,7 +226,7 @@ describeSuite({
                         value: 0n,
                         data: batchData,
                         gaslimit: 200_000n,
-                        nonce: fromHex(alithNonceResult!, "bigint"),
+                        nonce: fromHex(alithNonceResult, "bigint"),
                         deadline: 9999999999n,
                     },
                 });
@@ -243,7 +243,7 @@ describeSuite({
                         }),
                     })
                 );
-                expectEVMResult(baltatharForAlithResult!.events, "Succeed");
+                expectEVMResult(baltatharForAlithResult?.events, "Succeed");
             },
         });
     },

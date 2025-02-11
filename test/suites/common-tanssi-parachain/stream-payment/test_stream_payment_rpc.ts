@@ -1,22 +1,21 @@
 import "@tanssi/api-augment";
 import { describeSuite, beforeAll, expect, customDevRpcRequest } from "@moonwall/cli";
-import { KeyringPair } from "@moonwall/util";
-import { ApiPromise } from "@polkadot/api";
+import type { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
 
-async function rpcStreamPaymentStatus(context, block, streamId, now) {
-    if (block == "latest") {
+async function rpcStreamPaymentStatus(context, block: string, streamId: number, now: number) {
+    let blockhash = block;
+    if (blockhash === "latest") {
         const blockNumber = (await context.polkadotJs().rpc.chain.getBlock()).block.header.number.toBigInt();
 
-        const blockHash = await context.polkadotJs().rpc.chain.getBlockHash(blockNumber);
-
-        block = blockHash;
+        blockhash = await context.polkadotJs().rpc.chain.getBlockHash(blockNumber);
     }
 
-    return await customDevRpcRequest("tanssi_streamPaymentStatus", [block, streamId, now]);
+    return await customDevRpcRequest("tanssi_streamPaymentStatus", [blockhash, streamId, now]);
 }
 
 describeSuite({
-    id: "CPT0702",
+    id: "COMMO0901",
     title: "Stream payment RPC",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -33,7 +32,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Stream payment RPC",
-            test: async function () {
+            test: async () => {
                 try {
                     await rpcStreamPaymentStatus(context, "latest", 0, null);
                     throw { message: "Should have returned an error" };
@@ -57,7 +56,7 @@ describeSuite({
                 let newBlock = await context.createBlock([txOpenStream]);
 
                 const openStreamEvents = (await polkadotJs.query.system.events()).filter((a) => {
-                    return a.event.method == "StreamOpened";
+                    return a.event.method === "StreamOpened";
                 });
                 expect(openStreamEvents.length).to.be.equal(1);
 
@@ -110,12 +109,12 @@ describeSuite({
                 });
 
                 const performPaymentEvents = (await polkadotJs.query.system.events()).filter((a) => {
-                    return a.event.method == "StreamPayment";
+                    return a.event.method === "StreamPayment";
                 });
                 expect(performPaymentEvents.length).to.be.equal(1);
 
                 const requestChangeEvents = (await polkadotJs.query.system.events()).filter((a) => {
-                    return a.event.method == "StreamConfigChangeRequested";
+                    return a.event.method === "StreamConfigChangeRequested";
                 });
                 expect(requestChangeEvents.length).to.be.equal(1);
 
@@ -148,7 +147,7 @@ describeSuite({
                 newBlock = await context.createBlock([txAcceptChange]);
 
                 const acceptChangeEvents = (await polkadotJs.query.system.events()).filter((a) => {
-                    return a.event.method == "StreamConfigChanged";
+                    return a.event.method === "StreamConfigChanged";
                 });
                 expect(acceptChangeEvents.length).to.be.equal(1);
 
@@ -175,7 +174,7 @@ describeSuite({
                 await context.createBlock([txCloseStream]);
 
                 const closeStreamEvents = (await polkadotJs.query.system.events()).filter((a) => {
-                    return a.event.method == "StreamClosed";
+                    return a.event.method === "StreamClosed";
                 });
                 expect(closeStreamEvents.length).to.be.equal(1);
 
