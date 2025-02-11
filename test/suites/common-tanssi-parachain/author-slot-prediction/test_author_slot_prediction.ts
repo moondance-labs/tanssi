@@ -1,12 +1,12 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { KeyringPair } from "@moonwall/util";
-import { ApiPromise } from "@polkadot/api";
+import type { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
 import { jumpSessions } from "../../../util/block";
 import { u8aToHex, stringToHex } from "@polkadot/util";
 
 describeSuite({
-    id: "CTP0101",
+    id: "COMMO0101",
     title: "Session keys assignment test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -25,7 +25,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Checking that authority assignment is correct on genesis",
-            test: async function () {
+            test: async () => {
                 // for session 0
                 const assignment0 = (await polkadotJs.query.authorityAssignment.collatorContainerChain(0))
                     .unwrap()
@@ -56,7 +56,7 @@ describeSuite({
         it({
             id: "E02",
             title: "Checking session key changes are reflected at the session length boundary block",
-            test: async function () {
+            test: async () => {
                 const newKey = await polkadotJs.rpc.author.rotateKeys();
                 await polkadotJs.tx.session.setKeys(newKey, []).signAndSend(alice);
 
@@ -64,7 +64,7 @@ describeSuite({
                 // Check key is reflected in next key
                 // But its not yet in queued
                 const queuedKeys = await polkadotJs.query.session.queuedKeys();
-                const result = queuedKeys.filter((keyItem) => keyItem[1].nimbus == newKey);
+                const result = queuedKeys.filter((keyItem) => keyItem[1].nimbus === newKey);
                 expect(result).is.empty;
                 const nextKey = await polkadotJs.query.session.nextKeys(alice.address);
                 expect(u8aToHex(nextKey.unwrap().nimbus)).to.be.eq(u8aToHex(newKey));
@@ -77,7 +77,7 @@ describeSuite({
                 // The change should have been applied, and now both nimbus and authorityMapping should reflect
                 const digests = (await polkadotJs.query.system.digest()).logs;
                 const filtered = digests.filter(
-                    (log) => log.isPreRuntime === true && log.asPreRuntime[0].toHex() == stringToHex("nmbs")
+                    (log) => log.isPreRuntime === true && log.asPreRuntime[0].toHex() === stringToHex("nmbs")
                 );
 
                 expect(filtered[0].asPreRuntime[1].toHex()).to.be.eq(u8aToHex(nextKey.unwrap().nimbus));

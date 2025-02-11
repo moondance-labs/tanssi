@@ -1,12 +1,12 @@
-import "@polkadot/api-augment";
+import "@tanssi/api-augment";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { KeyringPair } from "@moonwall/util";
-import { ApiPromise } from "@polkadot/api";
+import type { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
 import { initializeCustomCreateBlock } from "../../../util/block";
-import { MultiLocation } from "../../../util/xcm";
+import type { MultiLocation } from "../../../util/xcm";
 
 describeSuite({
-    id: "CPX0102",
+    id: "COMMON0102",
     title: "XCM in maintenance mode",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -25,7 +25,7 @@ describeSuite({
         it({
             id: "E01",
             title: "polkadotXcm calls disabled in maintenance mode",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
                 await context.createBlock();
 
@@ -50,7 +50,7 @@ describeSuite({
 
                 const polkadotXcmSend = context.polkadotJs().tx.polkadotXcm.send(dest, message);
 
-                if (chain == "frontier-template") {
+                if (chain === "frontier-template") {
                     expect(
                         async () => await context.createBlock(polkadotXcmSend.signAsync(alice))
                     ).rejects.toThrowError("1010: Invalid Transaction: Transaction call is not expected");
@@ -65,7 +65,7 @@ describeSuite({
         it({
             id: "E02",
             title: "polkadotXcm calls enabled with sudo in maintenance mode",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
                 await context.createBlock();
 
@@ -107,7 +107,7 @@ describeSuite({
         it({
             id: "E03",
             title: "polkadotXcm calls allowed again after disabling maintenance mode",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
                 await context.createBlock();
 

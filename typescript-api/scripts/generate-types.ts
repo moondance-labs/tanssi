@@ -1,6 +1,6 @@
-import { execSync, spawn, ChildProcessWithoutNullStreams } from "child_process";
-import { existsSync, writeFileSync } from "fs";
-import path from "path";
+import { execSync, spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
+import { existsSync, writeFileSync } from "node:fs";
+import path from "node:path";
 
 let nodeProcess: ChildProcessWithoutNullStreams | undefined = undefined;
 
@@ -40,7 +40,7 @@ async function main() {
         ]);
 
         const onProcessExit = () => {
-            nodeProcess && nodeProcess.kill();
+            nodeProcess?.kill();
         };
 
         process.once("exit", onProcessExit);
@@ -73,20 +73,20 @@ async function main() {
                             writeFileSync(path.join(process.cwd(), `metadata-${CHAIN}.json`), JSON.stringify(data));
 
                             execSync("pnpm run load:meta:local", { stdio: "inherit" });
-                            nodeProcess!.kill();
-                            setTimeout(() => {}, 5000); // Sleep for 5 seconds
+                            nodeProcess?.kill();
+                            setTimeout(() => { }, 5000); // Sleep for 5 seconds
                             resolve("success");
                         });
                 }
             };
 
-            nodeProcess!.stderr!.on("data", onData);
-            nodeProcess!.stdout!.on("data", onData);
-            nodeProcess!.stderr.on("error", (error) => {
+            nodeProcess?.stderr?.on("data", onData);
+            nodeProcess?.stdout?.on("data", onData);
+            nodeProcess?.stderr?.on("error", (error) => {
                 console.error(error);
                 reject(error);
             });
-            nodeProcess!.stdout.on("error", (error) => {
+            nodeProcess?.stdout?.on("error", (error) => {
                 console.error(error);
                 reject(error);
             });

@@ -2,14 +2,14 @@ import "@tanssi/api-augment";
 import { describeSuite, expect, customDevRpcRequest } from "@moonwall/cli";
 
 describeSuite({
-    id: "CPT0609",
+    id: "COMMO0804",
     title: "Services payment RPC",
     foundationMethods: "dev",
     testCases: ({ it }) => {
         it({
             id: "E01",
             title: "Services payment RPC",
-            test: async function () {
+            test: async () => {
                 try {
                     await customDevRpcRequest("tanssi_servicesPaymentBlockCost", []);
                     throw { message: "Should have returned an error" };

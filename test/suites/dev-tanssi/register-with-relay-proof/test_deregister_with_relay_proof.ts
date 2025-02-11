@@ -1,11 +1,11 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { KeyringPair } from "@moonwall/util";
-import { ApiPromise } from "@polkadot/api";
+import type { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
 import { jumpSessions, fetchStorageProofFromValidationData, extractFeeAuthor } from "../../../util/block";
 
 describeSuite({
-    id: "DT0501",
+    id: "DEV0301",
     title: "Registrar test suite: de-register with relay proof",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -21,7 +21,7 @@ describeSuite({
         it({
             id: "E02",
             title: "Checking that registering paraIds is possible",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
 
                 const currentSesssion = await polkadotJs.query.session.currentIndex();
@@ -103,7 +103,7 @@ describeSuite({
         it({
             id: "E03",
             title: "Checking that fetching registered paraIds is possible",
-            test: async function () {
+            test: async () => {
                 // Expect now paraIds to be registered
                 const parasRegistered = await polkadotJs.query.registrar.registeredParaIds();
                 // TODO: fix once we have types
@@ -118,7 +118,7 @@ describeSuite({
         it({
             id: "E04",
             title: "Checking that de-registering paraIds is possible",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
 
                 const currentSesssion = await polkadotJs.query.session.currentIndex();
@@ -129,9 +129,8 @@ describeSuite({
                 const balanceBeforeAlice = (await polkadotJs.query.system.account(alice.address)).data;
                 const balanceBeforeBob = (await polkadotJs.query.system.account(bob.address)).data;
 
-                const { relayProofBlockNumber, relayStorageProof } = await fetchStorageProofFromValidationData(
-                    polkadotJs
-                );
+                const { relayProofBlockNumber, relayStorageProof } =
+                    await fetchStorageProofFromValidationData(polkadotJs);
                 const tx = polkadotJs.tx.registrar.deregisterWithRelayProof(
                     2003,
                     relayProofBlockNumber,

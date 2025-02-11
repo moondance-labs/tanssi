@@ -1,5 +1,5 @@
 import { Keyring } from "@polkadot/api";
-import fs from "fs/promises";
+import fs from "node:fs/promises";
 import jsonBg from "json-bigint";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
@@ -11,7 +11,7 @@ yargs(hideBin(process.argv))
     .usage("Usage: $0")
     .version("1.0.0")
     .command(
-        `*`,
+        "*",
         "Registers a parachain",
         (yargs) => {
             return yargs
@@ -35,7 +35,7 @@ yargs(hideBin(process.argv))
 
             try {
                 process.stdout.write(`Reading chainSpec from: ${argv.chain}\n`);
-                const rawSpec = JSONbig.parse(await fs.readFile(argv.chain!, "utf8"));
+                const rawSpec = JSONbig.parse(await fs.readFile(argv.chain, "utf8"));
 
                 if (rawSpec.bootNodes?.length) {
                     process.stdout.write(
@@ -50,11 +50,11 @@ yargs(hideBin(process.argv))
 
                 const containerChainGenesisData = chainSpecToContainerChainGenesisData(api, rawSpec);
                 const tx = api.tx.registrar.register(rawSpec.para_id, containerChainGenesisData);
-                process.stdout.write(`Sending transaction... `);
+                process.stdout.write("Sending transaction... ");
                 const txHash = await tx.signAndSend(account);
                 process.stdout.write(`${txHash.toHex()}\n`);
                 // TODO: this will always print Done, even if the extrinsic has failed
-                process.stdout.write(`Done ✅\n`);
+                process.stdout.write("Done ✅\n");
             } finally {
                 await api.disconnect();
             }

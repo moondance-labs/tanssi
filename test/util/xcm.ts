@@ -1,12 +1,12 @@
-import { DevModeContext, customDevRpcRequest, expect } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
-import { XcmpMessageFormat } from "@polkadot/types/interfaces";
-import {
+import { type DevModeContext, customDevRpcRequest, expect } from "@moonwall/cli";
+import type { ApiPromise } from "@polkadot/api";
+import type { XcmpMessageFormat } from "@polkadot/types/interfaces";
+import type {
     CumulusPalletParachainSystemRelayStateSnapshotMessagingStateSnapshot,
     XcmV3JunctionNetworkId,
     XcmVersionedXcm,
 } from "@polkadot/types/lookup";
-import { BN, hexToU8a, stringToU8a, u8aToHex } from "@polkadot/util";
+import { type BN, hexToU8a, stringToU8a, u8aToHex } from "@polkadot/util";
 import { xxhashAsU8a } from "@polkadot/util-crypto";
 
 // Creates and returns the tx that overrides the paraHRMP existence
@@ -71,7 +71,7 @@ export function mockHrmpChannelExistanceTx(
 export function descendSiblingOriginFromAddress20(
     context: DevModeContext,
     address: `0x${string}` = "0x0101010101010101010101010101010101010101",
-    paraId: number = 1
+    paraId = 1
 ) {
     const toHash = new Uint8Array([
         ...new TextEncoder().encode("SiblingChain"),
@@ -93,7 +93,7 @@ export function descendSiblingOriginFromAddress20(
 export function descendSiblingOriginFromAddress32(
     context: DevModeContext,
     address: `0x${string}` = "0x0101010101010101010101010101010101010101010101010101010101010101",
-    paraId: number = 1
+    paraId = 1
 ) {
     const toHash = new Uint8Array([
         ...new TextEncoder().encode("SiblingChain"),
@@ -218,7 +218,7 @@ export async function injectUmpMessage(context: DevModeContext, message?: RawXcm
 
 // Weight a particular message using the xcm utils precompile
 export async function weightMessage(context: DevModeContext, message: XcmVersionedXcm) {
-    return (await context.readPrecompile!({
+    return (await context.readPrecompile?.({
         precompileName: "XcmUtils",
         functionName: "weightMessage",
         args: [message.toHex()],
@@ -348,7 +348,7 @@ export class XcmFragment {
 
     // Add one or more `BuyExecution` instruction
     // if weight_limit is not set in config, then we put unlimited
-    buy_execution(fee_index: number = 0, repeat: bigint = 1n): this {
+    buy_execution(fee_index = 0, repeat = 1n): this {
         const weightLimit =
             this.config.weight_limit != null ? { Limited: this.config.weight_limit } : { Unlimited: null };
         for (let i = 0; i < repeat; i++) {
@@ -369,7 +369,7 @@ export class XcmFragment {
 
     // Add one or more `BuyExecution` instruction
     // if weight_limit is not set in config, then we put unlimited
-    refund_surplus(repeat: bigint = 1n): this {
+    refund_surplus(repeat = 1n): this {
         for (let i = 0; i < repeat; i++) {
             this.instructions.push({
                 RefundSurplus: null,
@@ -379,7 +379,7 @@ export class XcmFragment {
     }
 
     // Add a `ClaimAsset` instruction
-    claim_asset(index: number = 0): this {
+    claim_asset(index = 0): this {
         this.instructions.push({
             ClaimAsset: {
                 assets: [
@@ -401,7 +401,7 @@ export class XcmFragment {
     }
 
     // Add a `ClearOrigin` instruction
-    clear_origin(repeat: bigint = 1n): this {
+    clear_origin(repeat = 1n): this {
         for (let i = 0; i < repeat; i++) {
             this.instructions.push({ ClearOrigin: null as any });
         }
@@ -411,7 +411,7 @@ export class XcmFragment {
     // Add a `DescendOrigin` instruction
     descend_origin(): this {
         if (this.config.descend_origin != null) {
-            if (hexToU8a(this.config.descend_origin).length == 32) {
+            if (hexToU8a(this.config.descend_origin).length === 32) {
                 this.instructions.push({
                     DescendOrigin: {
                         X1: {
@@ -441,11 +441,11 @@ export class XcmFragment {
     }
 
     // Add a `DepositAsset` instruction
-    deposit_asset(max_assets: bigint = 1n, network: "Any" | XcmV3JunctionNetworkId["type"] = "Any"): this {
-        if (this.config.beneficiary == null) {
+    deposit_asset(max_assets = 1n, network: "Any" | XcmV3JunctionNetworkId["type"] = "Any"): this {
+        if (this.config.beneficiary === null) {
             console.warn("!Building a DepositAsset instruction without a configured beneficiary");
         } else {
-            if (hexToU8a(this.config.beneficiary).length == 20) {
+            if (hexToU8a(this.config.beneficiary).length === 20) {
                 this.instructions.push({
                     DepositAsset: {
                         assets: { Wild: "All" },
@@ -477,11 +477,11 @@ export class XcmFragment {
     }
 
     // Add a `DepositAsset` instruction for xcm v3
-    deposit_asset_v3(max_assets: bigint = 1n, network: XcmV3JunctionNetworkId["type"] | null = null): this {
-        if (this.config.beneficiary == null) {
+    deposit_asset_v3(max_assets = 1n, network: XcmV3JunctionNetworkId["type"] | null = null): this {
+        if (this.config.beneficiary === null) {
             console.warn("!Building a DepositAsset instruction without a configured beneficiary");
         } else {
-            if (hexToU8a(this.config.beneficiary).length == 20) {
+            if (hexToU8a(this.config.beneficiary).length === 20) {
                 this.instructions.push({
                     DepositAsset: {
                         assets: { Wild: { AllCounted: max_assets } },
@@ -547,7 +547,7 @@ export class XcmFragment {
     }
 
     // Utility function to support functional style method call chaining bound to `this` context
-    with(callback: (() => any)[]): this {
+    with(callback): this {
         return callback.call(this);
     }
 
@@ -572,14 +572,14 @@ export class XcmFragment {
     }
 
     // Add a `BurnAsset` instruction
-    burn_asset(amount: bigint = 0n): this {
+    burn_asset(amount = 0n): this {
         this.instructions.push({
             BurnAsset: this.config.assets.map(({ multilocation, fungible }) => {
                 return {
                     id: {
                         Concrete: multilocation,
                     },
-                    fun: { Fungible: amount == 0n ? fungible : amount },
+                    fun: { Fungible: amount === 0n ? fungible : amount },
                 };
             }, this),
         });
@@ -640,7 +640,7 @@ export class XcmFragment {
     }
 
     // Add a `ExpectError` instruction
-    expect_error(index: number = 0, error: string = "Unimplemented"): this {
+    expect_error(index = 0, error = "Unimplemented"): this {
         this.instructions.push({
             ExpectError: [index, error],
         });
@@ -648,7 +648,7 @@ export class XcmFragment {
     }
 
     // Add a `ExpectTransactStatus` instruction
-    expect_transact_status(status: string = "Success"): this {
+    expect_transact_status(status = "Success"): this {
         this.instructions.push({
             ExpectTransactStatus: status,
         });
@@ -662,7 +662,7 @@ export class XcmFragment {
             interior: { X1: { Parachain: 1000 } },
         },
         query_id: number = Math.floor(Math.random() * 1000),
-        module_name: string = "pallet_balances",
+        module_name = "pallet_balances",
         max_weight: { refTime: bigint; proofSize: bigint } = {
             refTime: 1_000_000_000n,
             proofSize: 1_000_000_000n,
@@ -683,11 +683,11 @@ export class XcmFragment {
 
     // Add a `ExpectPallet` instruction
     expect_pallet(
-        index: number = 0,
-        name: string = "Balances",
-        module_name: string = "pallet_balances",
-        crate_major: number = 4,
-        min_crate_minor: number = 0
+        index = 0,
+        name = "Balances",
+        module_name = "pallet_balances",
+        crate_major = 4,
+        min_crate_minor = 0
     ): this {
         this.instructions.push({
             ExpectPallet: {
@@ -741,7 +741,7 @@ export class XcmFragment {
 
     // Add a `ExportMessage` instruction
     export_message(
-        xcm_hex: string = "",
+        xcm_hex = "",
         network: "Any" | XcmV3JunctionNetworkId["type"] = "Ethereum",
         destination: Junctions = { X1: { Parachain: 1000 } }
     ): this {
@@ -846,7 +846,7 @@ export class XcmFragment {
     }
 
     // Add a `SetFeesMode` instruction
-    set_fees_mode(jit_withdraw: boolean = true): this {
+    set_fees_mode(jit_withdraw = true): this {
         this.instructions.push({
             SetFeesMode: { jit_withdraw },
         });
@@ -854,7 +854,7 @@ export class XcmFragment {
     }
 
     // Add a `SetTopic` instruction
-    set_topic(topic: string = "0xk89103a9CF04c71Dbc94D0b566f7A2"): this {
+    set_topic(topic = "0xk89103a9CF04c71Dbc94D0b566f7A2"): this {
         this.instructions.push({
             SetTopic: Array.from(stringToU8a(topic)),
         });
@@ -907,7 +907,7 @@ export class XcmFragment {
 
         const instructions = message.asV2;
         for (let i = 0; i < instructions.length; i++) {
-            if (instructions[i].isBuyExecution == true) {
+            if (instructions[i].isBuyExecution === true) {
                 const newWeight = await weightMessage(context, message);
                 this.instructions[i] = {
                     BuyExecution: {
@@ -925,7 +925,8 @@ export class XcmFragment {
 function replaceNetworkAny(obj: AnyObject | Array<AnyObject>): any {
     if (Array.isArray(obj)) {
         return obj.map((item) => replaceNetworkAny(item));
-    } else if (typeof obj === "object" && obj !== null) {
+    }
+    if (typeof obj === "object" && obj !== null) {
         const newObj: AnyObject = {};
         for (const key in obj) {
             if (key === "network" && obj[key] === "Any") {
@@ -950,7 +951,7 @@ export const expectXcmEventMessage = async (context: DevModeContext, message: st
         .map(({ event }) => (context.polkadotJs().events.xcmpQueue.Fail.is(event) ? event : undefined))
         .filter((event) => event);
 
-    return filteredEvents.length ? filteredEvents[0]!.data.error.toString() === message : false;
+    return filteredEvents.length ? filteredEvents[0]?.data.error.toString() === message : false;
 };
 
 export const extractPaidDeliveryFees = async (context: DevModeContext) => {
@@ -960,7 +961,7 @@ export const extractPaidDeliveryFees = async (context: DevModeContext) => {
         .map(({ event }) => (context.polkadotJs().events.polkadotXcm.FeesPaid.is(event) ? event : undefined))
         .filter((event) => event);
 
-    return filteredEvents[0]!.data[1][0].fun.asFungible.toBigInt();
+    return filteredEvents[0]?.data[1][0].fun.asFungible.toBigInt();
 };
 
 export const extractPaidDeliveryFeesDancelight = async (context: DevModeContext) => {
@@ -970,7 +971,7 @@ export const extractPaidDeliveryFeesDancelight = async (context: DevModeContext)
         .map(({ event }) => (context.polkadotJs().events.xcmPallet.FeesPaid.is(event) ? event : undefined))
         .filter((event) => event);
 
-    return filteredEvents[0]!.data[1][0].fun.asFungible.toBigInt();
+    return filteredEvents[0]?.data[1][0].fun.asFungible.toBigInt();
 };
 
 export const getLastSentUmpMessageFee = async (context: DevModeContext, baseDelivery: bigint, txByteFee: bigint) => {

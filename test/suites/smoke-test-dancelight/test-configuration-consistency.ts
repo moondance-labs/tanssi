@@ -1,11 +1,11 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 
-import { ApiPromise } from "@polkadot/api";
+import type { ApiPromise } from "@polkadot/api";
 import { hasEnoughCredits } from "util/payment";
-import { u32, Vec } from "@polkadot/types-codec";
+import type { u32, Vec } from "@polkadot/types-codec";
 
 describeSuite({
-    id: "S17",
+    id: "SMOK04",
     title: "Sample suite that only runs on Dancelight chains",
     foundationMethods: "read_only",
     testCases: ({ it, context }) => {
@@ -21,7 +21,7 @@ describeSuite({
         it({
             id: "C01",
             title: "Config for registered paras should be consistent",
-            test: async function () {
+            test: async () => {
                 const sessionIndex = (await api.query.session.currentIndex()).toNumber();
                 const blockToCheck = (await api.query.babe.epochStart()).toJSON()[1];
 
@@ -56,7 +56,7 @@ describeSuite({
                     const liveContainers = await api.query.containerRegistrar.registeredParaIds();
                     const pendingContainers = await api.query.containerRegistrar.pendingParaIds();
 
-                    if (pendingContainers.length == 0) {
+                    if (pendingContainers.length === 0) {
                         containersToCompareAgainst = liveContainers;
                     } else {
                         const foundEntry = pendingContainers.find((entry) => entry[0].toNumber() === sessionIndex + 1);
@@ -76,8 +76,8 @@ describeSuite({
                         let sessionRequirements: bigint;
 
                         if (
-                            currentAuthorityAssignment["containerChains"][container.toString()] == null ||
-                            currentAuthorityAssignment["containerChains"][container.toString()].length == 0
+                            currentAuthorityAssignment.containerChains[container.toString()] === null ||
+                            currentAuthorityAssignment.containerChains[container.toString()].length === 0
                         ) {
                             sessionRequirements = 1n;
                         } else {
@@ -100,7 +100,7 @@ describeSuite({
                             // If we are able to cover all paras, then all of them should have collators if credits
                             if (maxParas >= containersToCompareAgainst.length) {
                                 expect(
-                                    pendingAuthorityAssignment["containerChains"][container.toString()].length
+                                    pendingAuthorityAssignment.containerChains[container.toString()].length
                                 ).to.be.greaterThan(0);
                             }
                         } else {
@@ -114,7 +114,7 @@ describeSuite({
                         containersToCompareAgainst.length - numWithNoCredits,
                         maxParas
                     );
-                    expect(Object.keys(pendingAuthorityAssignment["containerChains"]).length).to.be.equal(
+                    expect(Object.keys(pendingAuthorityAssignment.containerChains).length).to.be.equal(
                         expectedNumberOfChainsAssigned
                     );
                 }

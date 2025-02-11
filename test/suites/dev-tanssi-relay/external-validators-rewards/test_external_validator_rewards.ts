@@ -1,18 +1,18 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise, Keyring } from "@polkadot/api";
+import { type ApiPromise, Keyring } from "@polkadot/api";
 import { jumpToSession } from "util/block";
 import { encodeAddress } from "@polkadot/util-crypto";
-import { MultiLocation } from "../../../util/xcm";
-
+import type { MultiLocation } from "../../../util/xcm";
+import type { KeyringPair } from "@moonwall/util";
 describeSuite({
-    id: "DTR1602",
+    id: "DEVT0602",
     title: "Ethereum reward tests",
     foundationMethods: "dev",
 
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
-        let alice;
+        let alice: KeyringPair;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
@@ -22,7 +22,7 @@ describeSuite({
         it({
             id: "E01",
             title: "para candidates should trigger reward info",
-            test: async function () {
+            test: async () => {
                 const keyring = new Keyring({ type: "sr25519" });
                 const aliceStash = keyring.addFromUri("//Alice//stash");
 
@@ -89,7 +89,7 @@ describeSuite({
         it({
             id: "E02",
             title: "Check rewards storage clears after historyDepth",
-            test: async function () {
+            test: async () => {
                 const sessionsPerEra = await polkadotJs.consts.externalValidators.sessionsPerEra;
                 const historyDepth = await polkadotJs.consts.externalValidatorsRewards.historyDepth;
 
@@ -113,7 +113,7 @@ describeSuite({
         it({
             id: "E03",
             title: "Ethereum Sovereign Account balance should increase on session change",
-            test: async function () {
+            test: async () => {
                 const currentIndex = (await polkadotJs.query.session.currentIndex()).toNumber();
                 const account = encodeAddress("0x34cdd3f84040fb44d70e83b892797846a8c0a556ce08cd470bf6d4cf7b94ff77", 0);
                 const sessionsPerEra = await polkadotJs.consts.externalValidators.sessionsPerEra;
