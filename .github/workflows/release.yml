@@ -130,6 +130,8 @@ jobs:
 
             - name: Setup Rust toolchain
               run: rustup show
+            - name: Install Protoc
+              uses: arduino/setup-protoc@v3
 
             - name: Check for duplicate git dependencies
               run: ./.github/scripts/check_duplicate_git_dependencies.sh
@@ -844,7 +846,7 @@ jobs:
 
                   chmod uog+x tmp/tanssi_rt
                   tmp/tanssi_rt build-spec --chain ${{ matrix.chain }}-local > tmp/${{ matrix.chain }}-plain-spec.json
-                  pnpm tsx scripts/modify-plain-specs.ts process tmp/${{ matrix.chain }}-plain-spec.json tmp/${{ matrix.chain }}-modified-spec.json 
+                  pnpm tsx scripts/modify-plain-specs.ts process tmp/${{ matrix.chain }}-plain-spec.json tmp/${{ matrix.chain }}-modified-spec.json
                   tmp/tanssi_rt build-spec --chain tmp/${{ matrix.chain }}-modified-spec.json --raw > tmp/${{ matrix.chain }}-raw-spec.json
 
                   ## Run tests
