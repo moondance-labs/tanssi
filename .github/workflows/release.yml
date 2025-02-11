@@ -238,7 +238,7 @@ jobs:
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Run sccache-cache
-              uses: mozilla-actions/sccache-action@v0.0.4
+              uses: mozilla-actions/sccache-action@v0.0.7
             - name: Setup Variables
               shell: bash
               run: |
@@ -384,7 +384,7 @@ jobs:
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Run sccache-cache
-              uses: mozilla-actions/sccache-action@v0.0.4
+              uses: mozilla-actions/sccache-action@v0.0.7
             - name: Setup Variables
               shell: bash
               run: |
