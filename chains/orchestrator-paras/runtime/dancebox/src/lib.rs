@@ -252,7 +252,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: Cow::Borrowed("dancebox"),
     impl_name: Cow::Borrowed("dancebox"),
     authoring_version: 1,
-    spec_version: 1100,
+    spec_version: 1200,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -1528,7 +1528,7 @@ impl pallet_multiblock_migrations::Config for Runtime {
     type MigrationStatusHandler = ();
     type FailedMigrationHandler = frame_support::migrations::FreezeChainOnFailedMigration;
     type MaxServiceWeight = MbmServiceWeight;
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_multiblock_migrations::SubstrateWeight<Runtime>;
 }
 
 /// Maintenance mode Call filter
@@ -2034,6 +2034,7 @@ mod benches {
         [pallet_balances, Balances]
         [pallet_stream_payment, StreamPayment]
         [pallet_identity, Identity]
+        [pallet_multiblock_migrations, MultiBlockMigrations]
         [pallet_multisig, Multisig]
         [pallet_registrar, Registrar]
         [pallet_configuration, Configuration]
