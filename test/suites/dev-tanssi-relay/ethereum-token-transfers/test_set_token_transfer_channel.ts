@@ -45,11 +45,9 @@ describeSuite({
                     await polkadotJs.query.ethereumTokenTransfers.currentChannelInfo()
                 ).unwrap();
 
-                console.log("currentChannelInfoAfter", currentChannelInfoAfter);
-
-                expect(currentChannelInfoAfter.channelId).to.eq(newChannelId);
-                expect(currentChannelInfoAfter.paraId).to.eq(newParaId);
-                expect(currentChannelInfoAfter.agentId).to.eq(newAgentId);
+                expect(currentChannelInfoAfter.channelId.toHex()).to.eq(newChannelId);
+                expect(currentChannelInfoAfter.paraId.toNumber()).to.eq(newParaId);
+                expect(currentChannelInfoAfter.agentId.toHex()).to.eq(newAgentId);
             },
         });
     },
