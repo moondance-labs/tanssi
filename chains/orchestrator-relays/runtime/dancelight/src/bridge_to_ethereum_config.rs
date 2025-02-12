@@ -213,6 +213,9 @@ impl pallet_ethereum_token_transfers::Config for Runtime {
     type WeightInfo = crate::weights::pallet_ethereum_token_transfers::SubstrateWeight<Runtime>;
 }
 
+/// `TokenTransferMessageProcessor` is responsible for receiving and processing native tokens
+/// sent from Ethereum. If the message is valid, it performs the token transfer
+/// from the Ethereum sovereign account to the specified destination account.
 pub struct TokenTransferMessageProcessor<T>(sp_std::marker::PhantomData<T>);
 impl<T> MessageProcessor for TokenTransferMessageProcessor<T>
 where
@@ -358,6 +361,8 @@ mod test_helpers {
     }
 }
 
+/// Rewards the relayer that processed a native token transfer message
+/// using the FeesAccount configured in pallet_ethereum_token_transfers
 pub struct RewardThroughTreasury<T>(sp_std::marker::PhantomData<T>);
 
 impl<T> RewardProcessor<T> for RewardThroughTreasury<T>
