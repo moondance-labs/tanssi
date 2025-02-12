@@ -370,7 +370,8 @@ jobs:
                   edit-mode: replace
 
     rust-test:
-        runs-on: ubuntu-latest
+        # This project is too large and exhausts the capacity of GH runners
+        runs-on: bare-metal
         needs: ["set-tags", "build"]
         env:
             TMP_TARGET: "/tmp/target"
