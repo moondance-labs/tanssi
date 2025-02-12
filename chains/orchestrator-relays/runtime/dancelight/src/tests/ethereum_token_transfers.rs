@@ -519,7 +519,7 @@ fn can_process_message_returns_false_for_none_channel_info() {
         };
 
         assert!(
-            !<TokenTransferMessageProcessor as MessageProcessor>::can_process_message(
+            !<TokenTransferMessageProcessor<Runtime> as MessageProcessor>::can_process_message(
                 &channel, &envelope
             )
         );
@@ -552,7 +552,7 @@ fn can_process_message_returns_false_for_wrong_channel_id() {
         };
 
         assert!(
-            !<TokenTransferMessageProcessor as MessageProcessor>::can_process_message(
+            !<TokenTransferMessageProcessor<Runtime> as MessageProcessor>::can_process_message(
                 &channel, &envelope
             )
         );
@@ -588,7 +588,7 @@ fn can_process_message_returns_false_for_wrong_para_id() {
         };
 
         assert!(
-            !<TokenTransferMessageProcessor as MessageProcessor>::can_process_message(
+            !<TokenTransferMessageProcessor<Runtime> as MessageProcessor>::can_process_message(
                 &channel, &envelope
             )
         );
@@ -624,7 +624,7 @@ fn can_process_message_returns_false_for_wrong_agent_id() {
         };
 
         assert!(
-            !<TokenTransferMessageProcessor as MessageProcessor>::can_process_message(
+            !<TokenTransferMessageProcessor<Runtime> as MessageProcessor>::can_process_message(
                 &channel, &envelope
             )
         );
@@ -656,7 +656,7 @@ fn can_process_message_returns_false_for_wrong_gateway() {
         };
 
         assert!(
-            !<TokenTransferMessageProcessor as MessageProcessor>::can_process_message(
+            !<TokenTransferMessageProcessor<Runtime> as MessageProcessor>::can_process_message(
                 &channel, &envelope
             )
         );
@@ -695,7 +695,7 @@ fn can_process_message_returns_false_for_wrong_message_type() {
         };
 
         assert!(
-            !<TokenTransferMessageProcessor as MessageProcessor>::can_process_message(
+            !<TokenTransferMessageProcessor<Runtime> as MessageProcessor>::can_process_message(
                 &channel, &envelope
             )
         );

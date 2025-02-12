@@ -34,7 +34,7 @@ use {
     },
     frame_support::{
         traits::{
-            fungible::{self, Inspect, Mutate},
+            fungible::{Inspect, Mutate},
             tokens::{Fortitude, Preservation},
             Nothing,
         },
@@ -50,7 +50,7 @@ use {
     snowbridge_router_primitives::inbound::{
         envelope::Envelope, Command, Destination, MessageProcessor, MessageV1, VersionedXcmMessage,
     },
-    sp_core::{ConstU32, ConstU8, H160, H256},
+    sp_core::{ConstU32, ConstU8, Get, H160, H256},
     sp_runtime::{traits::Zero, DispatchError, DispatchResult},
     tp_bridge::{DoNothingConvertMessage, DoNothingRouter, EthereumSystemHandler},
 };
@@ -213,8 +213,12 @@ impl pallet_ethereum_token_transfers::Config for Runtime {
     type WeightInfo = crate::weights::pallet_ethereum_token_transfers::SubstrateWeight<Runtime>;
 }
 
-pub struct TokenTransferMessageProcessor;
-impl MessageProcessor for TokenTransferMessageProcessor {
+pub struct TokenTransferMessageProcessor<T>(sp_std::marker::PhantomData<T>);
+impl<T> MessageProcessor for TokenTransferMessageProcessor<T>
+where
+    T: snowbridge_pallet_inbound_queue::Config + pallet_ethereum_token_transfers::Config,
+    T::AccountId: From<[u8; 32]>,
+{
     fn can_process_message(channel: &Channel, envelope: &Envelope) -> bool {
         // Ensure that the message is intended for the current channel, para_id and agent_id
         if let Some(channel_info) =
@@ -231,7 +235,7 @@ impl MessageProcessor for TokenTransferMessageProcessor {
         }
 
         // Check it is from the right gateway
-        if envelope.gateway != EthereumGatewayAddress::get() {
+        if envelope.gateway != T::GatewayAddress::get() {
             return false;
         }
 
@@ -275,9 +279,9 @@ impl MessageProcessor for TokenTransferMessageProcessor {
                 }
 
                 // - Transfer the amounts of tokens from Ethereum sov account to the destination
-                let sovereign_account = EthereumSovereignAccount::get();
+                let sovereign_account = T::EthereumSovereignAccount::get();
 
-                <Balances as fungible::Mutate<_>>::transfer(
+                T::Currency::transfer(
                     &sovereign_account,
                     &destination_account.into(),
                     amount.into(),
@@ -358,7 +362,7 @@ pub struct RewardThroughTreasury<T>(sp_std::marker::PhantomData<T>);
 
 impl<T> RewardProcessor<T> for RewardThroughTreasury<T>
 where
-    T: snowbridge_pallet_inbound_queue::Config,
+    T: snowbridge_pallet_inbound_queue::Config + pallet_ethereum_token_transfers::Config,
     T::AccountId: From<sp_runtime::AccountId32>,
     <T::Token as Inspect<T::AccountId>>::Balance: From<u128>,
 {
@@ -376,7 +380,7 @@ where
                 Err(_) => return Ok(()), // Do not reward if we cannot handle the message
             };
 
-        let fees_account: T::AccountId = TreasuryAccount::get().into();
+        let fees_account: T::AccountId = T::FeesAccount::get();
 
         let amount =
             T::Token::reducible_balance(&fees_account, Preservation::Preserve, Fortitude::Polite)
@@ -413,8 +417,8 @@ impl snowbridge_pallet_inbound_queue::Config for Runtime {
     type AssetTransactor = <xcm_config::XcmConfig as xcm_executor::Config>::AssetTransactor;
     #[cfg(not(feature = "runtime-benchmarks"))]
     type MessageProcessor = (
-        SymbioticMessageProcessor<Runtime>,
-        TokenTransferMessageProcessor,
+        SymbioticMessageProcessor<Self>,
+        TokenTransferMessageProcessor<Self>,
     );
     type RewardProcessor = RewardThroughTreasury<Self>;
     #[cfg(feature = "runtime-benchmarks")]
