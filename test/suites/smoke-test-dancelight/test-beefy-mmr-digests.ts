@@ -1,10 +1,10 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 
 import { stringToHex } from "@polkadot/util";
-import { ApiPromise } from "@polkadot/api";
+import type { ApiPromise } from "@polkadot/api";
 
 describeSuite({
-    id: "S19",
+    id: "SMOK03",
     title: "Sample suite that only runs on Dancelight chains",
     foundationMethods: "read_only",
     testCases: ({ it, context }) => {
@@ -17,7 +17,7 @@ describeSuite({
         it({
             id: "C01",
             title: "Session change block should update BEEFY and MMR root digests properly",
-            test: async function () {
+            test: async () => {
                 const blockToCheck = (await api.query.babe.epochStart()).toJSON()[1];
 
                 const apiAtBeforeSessionChange = await api.at(await api.rpc.chain.getBlockHash(blockToCheck - 5));
@@ -27,7 +27,7 @@ describeSuite({
 
                 const digestsInSessionChange = (await apiAtSessionChange.query.system.digest()).logs;
                 const filteredDigests = digestsInSessionChange.filter(
-                    (log) => log.isConsensus === true && log.asConsensus[0].toHex() == stringToHex("BEEF")
+                    (log) => log.isConsensus === true && log.asConsensus[0].toHex() === stringToHex("BEEF")
                 );
 
                 // As session changed, it should contain two BEEFY digests: AuthoritiesChange and MmrRoot.
@@ -54,7 +54,7 @@ describeSuite({
                 const apiAtAfterSessionChange = await api.at(await api.rpc.chain.getBlockHash(blockToCheck + 1));
                 const digestsAfterSessionChange = (await apiAtAfterSessionChange.query.system.digest()).logs;
                 const filteredDigestsAfterSessionChange = digestsAfterSessionChange.filter(
-                    (log) => log.isConsensus === true && log.asConsensus[0].toHex() == stringToHex("BEEF")
+                    (log) => log.isConsensus === true && log.asConsensus[0].toHex() === stringToHex("BEEF")
                 );
 
                 // Now we should only have the MmrRoot BEEFY digest (as session didn't change yet).

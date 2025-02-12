@@ -1,13 +1,13 @@
 {
-    "extends": "../../tsconfig.base.json",
-    "compilerOptions": {
-        "rootDir": ".",
-        "outDir": "../../build/dancebox",
-        "paths": {
-            "@tanssi/api-augment/dancebox/*": ["src/dancebox/*"],
-            "@polkadot/api/augment": ["src/dancebox/interfaces/augment-api.ts"],
-            "@polkadot/types/augment": ["src/dancebox/interfaces/augment-types.ts"],
-            "@polkadot/types/lookup": ["src/dancebox/interfaces/types-lookup.ts"]
-        }
-    }
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"rootDir": ".",
+		"outDir": "../../build/dancebox",
+		"paths": {
+			"@tanssi/api-augment/dancebox/*": ["src/dancebox/*"],
+			"@polkadot/api/augment": ["src/dancebox/interfaces/augment-api.ts"],
+			"@polkadot/types/augment": ["src/dancebox/interfaces/augment-types.ts"],
+			"@polkadot/types/lookup": ["src/dancebox/interfaces/types-lookup.ts"]
+		}
+	}
 }

@@ -197,7 +197,6 @@ jobs:
                   cache: "pnpm"
             - name: "Formatting check"
               run: |
-                  cd test
                   pnpm install
                   pnpm run fmt
 
@@ -220,7 +219,6 @@ jobs:
                   cache: "pnpm"
             - name: "Linting check"
               run: |
-                  cd test
                   pnpm install
                   pnpm run lint
 
@@ -238,7 +236,7 @@ jobs:
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Run sccache-cache
-              uses: mozilla-actions/sccache-action@v0.0.4
+              uses: mozilla-actions/sccache-action@v0.0.7
             - name: Setup Variables
               shell: bash
               run: |
@@ -384,7 +382,7 @@ jobs:
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Run sccache-cache
-              uses: mozilla-actions/sccache-action@v0.0.4
+              uses: mozilla-actions/sccache-action@v0.0.7
             - name: Setup Variables
               shell: bash
               run: |
@@ -995,13 +993,13 @@ jobs:
                   driver-opts: |
                       image=moby/buildkit:master
             - name: Login to DockerHub
-              uses: docker/login-action@v3
+              uses: docker/login-action@v3.3.0
               with:
                   username: ${{ secrets.DOCKERHUB_USERNAME }}
                   password: ${{ secrets.DOCKERHUB_TOKEN }}
             - name: Build and push
               id: docker_build
-              uses: docker/build-push-action@v5
+              uses: docker/build-push-action@v6
               with:
                   context: .
                   file: ./docker/${{matrix.image}}.Dockerfile

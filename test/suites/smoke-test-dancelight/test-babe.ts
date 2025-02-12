@@ -1,9 +1,9 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { getBlockArray } from "@moonwall/util";
-import { ApiPromise } from "@polkadot/api";
-import { GenericExtrinsic } from "@polkadot/types";
-import { FrameSystemEventRecord } from "@polkadot/types/lookup";
-import { AnyTuple } from "@polkadot/types/types";
+import type { ApiPromise } from "@polkadot/api";
+import type { GenericExtrinsic, U32 } from "@polkadot/types";
+import type { FrameSystemEventRecord } from "@polkadot/types/lookup";
+import type { AnyTuple } from "@polkadot/types/types";
 import { hexToU8a, stringToHex } from "@polkadot/util";
 import { sr25519Verify } from "@polkadot/wasm-crypto";
 import Bottleneck from "bottleneck";
@@ -25,7 +25,7 @@ type BlockFilteredRecord = {
 };
 
 describeSuite({
-    id: "S20",
+    id: "SMOK02",
     title: "Sample suite that only runs on Dancelight chains",
     foundationMethods: "read_only",
     testCases: ({ it, context, log }) => {
@@ -81,24 +81,23 @@ describeSuite({
         it({
             id: "C01",
             title: "BABE keys are set and validators from logs match validators from pallet",
-            test: async function () {
+            test: async () => {
                 // Check the previous epoch digest.
                 // The [0] index indicates the block number in which the previous session started.
                 // The [1] index indicates the block number in which the current session started.
-                const blockToCheck = (await api.query.babe.epochStart()).toJSON()[0];
-
+                const blockToCheck = ((await api.query.babe.epochStart()) as unknown as [U32, U32])[0];
                 const apiAtSessionChange = await api.at(await api.rpc.chain.getBlockHash(blockToCheck));
 
                 const digestsInSessionChange = (await apiAtSessionChange.query.system.digest()).logs;
                 const filteredDigests = digestsInSessionChange.filter(
-                    (log) => log.isConsensus === true && log.asConsensus[0].toHex() == stringToHex("BABE")
+                    (log) => log.isConsensus === true && log.asConsensus[0].toHex() === stringToHex("BABE")
                 );
                 expect(filteredDigests.length).to.eq(1);
 
                 // 0x01 corresponds to ConsensusLog::NextEpochData enum variant.
                 expect(filteredDigests[0].asConsensus[1].toHex().startsWith("0x01")).to.be.true;
 
-                // Assert that authorities from log == authorities from pallet
+                // Assert that authorities from log === authorities from pallet
                 const babeAuthoritiesFromPallet = await api.query.babe.authorities();
                 const babeConsensusLog = api.registry.createType(
                     "(u8, Vec<(SpConsensusBabeAppPublic, u64)>, [u8; 32])",
@@ -128,11 +127,11 @@ describeSuite({
         it({
             id: "C02",
             title: "BABE author signature valid",
-            test: async function () {
+            test: async () => {
                 const failures = blockData
                     .map(({ blockNum, preHash, logs, authorities, accountsWithBabeKeys }) => {
                         const babeLogs = logs.filter(
-                            (log) => log.isPreRuntime === true && log.asPreRuntime[0].toHex() == stringToHex("BABE")
+                            (log) => log.isPreRuntime === true && log.asPreRuntime[0].toHex() === stringToHex("BABE")
                         );
                         expect(babeLogs.length).to.eq(1);
 
@@ -151,19 +150,19 @@ describeSuite({
 
                         // Get block author signature from seal log
                         const sealLogs = logs.filter(
-                            (log) => log.isSeal === true && log.asSeal[0].toHex() == stringToHex("BABE")
+                            (log) => log.isSeal === true && log.asSeal[0].toHex() === stringToHex("BABE")
                         );
 
                         expect(sealLogs.length).to.eq(1);
                         const sealLog = api.registry.createType(
-                            "PolkadotPrimitivesV7ValidatorAppSignature",
+                            "PolkadotPrimitivesV8ValidatorAppSignature",
                             sealLogs[0].asSeal[1].toHex()
                         );
 
                         // Verify seal signature
                         const message = hexToU8a(preHash);
                         const signature = hexToU8a(sealLog.toHex());
-                        const authorBabe = accountsWithBabeKeys.find((acc) => acc[0] == expectedAuthor);
+                        const authorBabe = accountsWithBabeKeys.find((acc) => acc[0] === expectedAuthor);
                         expect(authorBabe, `Missing babe key for block author: ${expectedAuthor}`).toBeTruthy();
                         const pubKey = hexToU8a(authorBabe[1]);
 
@@ -171,7 +170,7 @@ describeSuite({
 
                         return { blockNum, expectedAuthor, authorValid };
                     })
-                    .filter(({ authorValid }) => authorValid == false);
+                    .filter(({ authorValid }) => authorValid === false);
 
                 failures.forEach(({ blockNum, expectedAuthor }) => {
                     log(
@@ -181,7 +180,7 @@ describeSuite({
 
                 expect(
                     failures.length,
-                    `Please investigate blocks ${failures.map((a) => a.blockNum).join(`, `)}; authors  `
+                    `Please investigate blocks ${failures.map((a) => a.blockNum).join(", ")}; authors  `
                 ).to.equal(0);
             },
         });

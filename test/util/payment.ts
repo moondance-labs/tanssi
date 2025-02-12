@@ -1,9 +1,12 @@
+import "@tanssi/api-augment";
 import { bnToU8a, stringToU8a } from "@polkadot/util";
 import { blake2AsU8a } from "@polkadot/util-crypto";
-import { ApiPromise } from "@polkadot/api";
+import type { ApiPromise } from "@polkadot/api";
+import type { ParaId } from "@polkadot/types/interfaces";
+import type { ApiDecoration } from "@polkadot/api/types";
 
 // Tank account is blake2(b"modlpy/serpayment" + parahain ID)
-export function paraIdTank(paraId: any): any {
+export function paraIdTank(paraId: number) {
     const seedBytes = stringToU8a("modlpy/serpayment");
     const paraIdBytes = bnToU8a(paraId, { bitLength: 32 });
     const combinedBytes = new Uint8Array(seedBytes.length + paraIdBytes.length);
@@ -14,8 +17,8 @@ export function paraIdTank(paraId: any): any {
 }
 
 export async function hasEnoughCredits(
-    paraApi: ApiPromise,
-    paraId: ParaId,
+    paraApi: ApiPromise | ApiDecoration<"promise">,
+    paraId: ParaId | number | string,
     blocksPerSession: bigint,
     // TODO: minSessionRequirement should be 2 if the chain had collators in the previous session, and 1 otherwise
     minCollatorSessionRequirement: bigint,
@@ -23,11 +26,15 @@ export async function hasEnoughCredits(
     costPerSession: bigint,
     costPerBlock: bigint
 ): Promise<boolean> {
-    const existentialDeposit = await paraApi.consts.balances.existentialDeposit.toBigInt();
+    const paraIdNumber =
+        typeof paraId === "number" ? paraId : typeof paraId === "string" ? Number.parseInt(paraId) : paraId.toNumber();
+    const existentialDeposit = paraApi.consts.balances.existentialDeposit.toBigInt();
 
-    const freeBlockCredits = (await paraApi.query.servicesPayment.blockProductionCredits(paraId)).unwrap().toBigInt();
+    const freeBlockCredits = (await paraApi.query.servicesPayment.blockProductionCredits(paraIdNumber))
+        .unwrap()
+        .toBigInt();
 
-    const freeSessionCredits = (await paraApi.query.servicesPayment.collatorAssignmentCredits(paraId))
+    const freeSessionCredits = (await paraApi.query.servicesPayment.collatorAssignmentCredits(paraIdNumber))
         .unwrap()
         .toBigInt();
 
@@ -46,13 +53,11 @@ export async function hasEnoughCredits(
             existentialDeposit +
             neededCollatorAssignmentPaymentAfterCredits * costPerSession +
             neededBlockPaymentAfterCredits * costPerBlock;
-        const tankBalance = (await paraApi.query.system.account(paraIdTank(paraId))).data.free.toBigInt();
+        const tankBalance = (await paraApi.query.system.account(paraIdTank(paraIdNumber))).data.free.toBigInt();
         if (tankBalance >= neededTankMoney) {
             return true;
-        } else {
-            return false;
         }
-    } else {
-        return true;
+        return false;
     }
+    return true;
 }
