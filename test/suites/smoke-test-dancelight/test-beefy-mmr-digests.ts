@@ -1,5 +1,5 @@
+import "@tanssi/api-augment/dancelight";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-
 import { stringToHex } from "@polkadot/util";
 import type { ApiPromise } from "@polkadot/api";
 
@@ -18,7 +18,7 @@ describeSuite({
             id: "C01",
             title: "Session change block should update BEEFY and MMR root digests properly",
             test: async () => {
-                const blockToCheck = (await api.query.babe.epochStart()).toJSON()[1];
+                const blockToCheck = (await api.query.babe.epochStart())[1].toNumber();
 
                 const apiAtBeforeSessionChange = await api.at(await api.rpc.chain.getBlockHash(blockToCheck - 5));
                 const beefyNextAuthorities = await apiAtBeforeSessionChange.query.beefy.nextAuthorities();
@@ -37,9 +37,15 @@ describeSuite({
                 expect(filteredDigests[0].asConsensus[1].toHex().startsWith("0x01")).to.be.true;
 
                 // Check if each authority is included in the BEEFY digest
-                for (const authority of Object.values(beefyNextAuthorities.toJSON())) {
-                    expect(filteredDigests[0].asConsensus[1].toHex().includes(authority.slice(2))).to.be.true;
+                const failures = beefyNextAuthorities
+                    .map((authority) => authority.toHex().slice(2))
+                    .filter((authority) => !filteredDigests[0].asConsensus[1].toHex().includes(authority));
+
+                for (const failure of failures) {
+                    console.error(`${failure} is not included in the BEEFY digest`);
                 }
+
+                expect(failures.length).to.eq(0);
 
                 const firstMmrRootDigest = filteredDigests[1].asConsensus[1].toHex();
 
