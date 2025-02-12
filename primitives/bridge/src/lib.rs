@@ -202,6 +202,7 @@ impl<T: snowbridge_pallet_outbound_queue::Config> TicketInfo for Ticket<T> {
     }
 }
 
+// Benchmarks check message_id so it must be deterministic.
 #[cfg(feature = "runtime-benchmarks")]
 impl<T: snowbridge_pallet_outbound_queue::Config> TicketInfo for Ticket<T> {
     fn message_id(&self) -> H256 {
