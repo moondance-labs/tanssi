@@ -114,6 +114,10 @@ import type {
     PalletDataPreserversProfile,
     PalletDataPreserversProfileMode,
     PalletDataPreserversRegisteredProfile,
+    PalletEthereumTokenTransfersCall,
+    PalletEthereumTokenTransfersChannelInfo,
+    PalletEthereumTokenTransfersError,
+    PalletEthereumTokenTransfersEvent,
     PalletExternalValidatorSlashesCall,
     PalletExternalValidatorSlashesError,
     PalletExternalValidatorSlashesEvent,
@@ -620,6 +624,10 @@ declare module "@polkadot/types/types/registry" {
         PalletDataPreserversProfile: PalletDataPreserversProfile;
         PalletDataPreserversProfileMode: PalletDataPreserversProfileMode;
         PalletDataPreserversRegisteredProfile: PalletDataPreserversRegisteredProfile;
+        PalletEthereumTokenTransfersCall: PalletEthereumTokenTransfersCall;
+        PalletEthereumTokenTransfersChannelInfo: PalletEthereumTokenTransfersChannelInfo;
+        PalletEthereumTokenTransfersError: PalletEthereumTokenTransfersError;
+        PalletEthereumTokenTransfersEvent: PalletEthereumTokenTransfersEvent;
         PalletExternalValidatorSlashesCall: PalletExternalValidatorSlashesCall;
         PalletExternalValidatorSlashesError: PalletExternalValidatorSlashesError;
         PalletExternalValidatorSlashesEvent: PalletExternalValidatorSlashesEvent;
