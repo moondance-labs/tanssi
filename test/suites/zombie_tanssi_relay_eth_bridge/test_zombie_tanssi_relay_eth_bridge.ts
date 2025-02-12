@@ -1,3 +1,4 @@
+import "@tanssi/api-augment/dancelight";
 import { beforeAll, describeSuite, expect, afterAll } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import { spawn, exec, type ChildProcessWithoutNullStreams } from "node:child_process";
@@ -317,7 +318,7 @@ describeSuite({
                 for (let i = 0; i < 3 * blocksPerSession; ++i) {
                     const latestBlockHash = await relayApi.rpc.chain.getBlockHash();
                     const author = (await relayApi.derive.chain.getHeader(latestBlockHash)).author;
-                    if (author === operatorAccount.address) {
+                    if (author.toString() === operatorAccount.address) {
                         return;
                     }
                     await context.waitBlock(1, "Tanssi-relay");

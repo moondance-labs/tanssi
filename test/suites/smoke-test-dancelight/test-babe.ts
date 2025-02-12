@@ -155,7 +155,7 @@ describeSuite({
 
                         expect(sealLogs.length).to.eq(1);
                         const sealLog = api.registry.createType(
-                            "PolkadotPrimitivesV7ValidatorAppSignature",
+                            "PolkadotPrimitivesV8ValidatorAppSignature",
                             sealLogs[0].asSeal[1].toHex()
                         );
 

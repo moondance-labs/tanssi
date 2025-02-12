@@ -59,6 +59,7 @@
         "tsx": "*",
         "typescript": "*",
         "viem": "2.22.21",
+        "toml": "^3.0.0",
         "vitest": "2.1.5",
         "web3": "4.15.0",
         "web3-providers-ws": "4.0.8",

@@ -25,6 +25,10 @@ jobs:
           ref: ${{ github.event.inputs.sha }}
       - name: Setup Rust toolchain
         run: rustup show
+      - name: Install protoc
+        run: |
+          sudo apt-get update
+          sudo apt-get install protobuf-compiler
       - name: Build Node
         run: cargo build --profile=production --all
       - name: Save parachain binary
@@ -81,13 +85,13 @@ jobs:
             driver-opts: |
                 image=moby/buildkit:master
         - name: Login to DockerHub
-          uses: docker/login-action@v3
+          uses: docker/login-action@v3.3.0
           with:
             username: ${{ secrets.DOCKERHUB_USERNAME }}
             password: ${{ secrets.DOCKERHUB_TOKEN }}
         - name: Build and push
           id: docker_build
-          uses: docker/build-push-action@v5
+          uses: docker/build-push-action@v6
           with:
             context: .
             file: ./docker/${{matrix.image}}.Dockerfile
@@ -104,7 +108,7 @@ jobs:
                 org.opencontainers.image.licenses=${{ github.event.repository.license.spdx_id }}
 
         - name: Login to DockerHub
-          uses: docker/login-action@v3
+          uses: docker/login-action@v3.3.0
           with:
             username: ${{ secrets.DOCKERHUB_USERNAME }}
             password: ${{ secrets.DOCKERHUB_TOKEN }}

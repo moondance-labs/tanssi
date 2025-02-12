@@ -17,7 +17,7 @@ describeSuite({
             id: "C01",
             title: "Validators should match external validators",
 
-            test: async (vitest) => {
+            test: async () => {
                 // Find the last block in which the era changed
                 const currentEra = await api.query.externalValidators.currentEra();
                 if (currentEra.isNone) {
@@ -27,11 +27,8 @@ describeSuite({
                 let blockToCheck = (await api.query.babe.epochStart())[1].toNumber();
                 let apiBeforeLatestNewSession = await api.at(await api.rpc.chain.getBlockHash(blockToCheck - 1));
 
-                while (
-                    currentEra.unwrap().toBigInt() ===
-                    (await apiBeforeLatestNewSession.query.externalValidators.currentEra()).unwrap().toBigInt()
-                ) {
-                    blockToCheck = (await apiBeforeLatestNewSession.query.babe.epochStart())[1].toNumber();
+                while (currentEra === (await apiBeforeLatestNewSession.query.externalValidators.currentEra())) {
+                    blockToCheck = (await apiBeforeLatestNewSession.query.babe.epochStart()).toJSON()[1];
                     apiBeforeLatestNewSession = await api.at(await api.rpc.chain.getBlockHash(blockToCheck - 1));
                 }
 
