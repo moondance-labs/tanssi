@@ -1,7 +1,7 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise, Keyring } from "@polkadot/api";
-import { MultiLocation } from "../../../util/xcm";
+import { type ApiPromise, Keyring } from "@polkadot/api";
+import type { MultiLocation } from "../../../util/xcm";
 import { expectEventCount } from "../../../helpers/events";
 
 describeSuite({
@@ -19,7 +19,7 @@ describeSuite({
         it({
             id: "E01",
             title: "transferNativeToken should send message to Ethereum",
-            test: async function () {
+            test: async () => {
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 
@@ -73,9 +73,9 @@ describeSuite({
                 // Should have resulted in a new "other" digest log being included in the block
                 const baseHeader = await polkadotJs.rpc.chain.getHeader();
                 const allLogs = baseHeader.digest.logs.map((x) => x.toJSON());
-                const otherLogs = allLogs.filter((x) => x["other"]);
+                const otherLogs = allLogs.filter((x) => x.other);
                 expect(otherLogs.length).to.be.equal(1);
-                const logHex = otherLogs[0]["other"];
+                const logHex = otherLogs[0].other;
 
                 await expectEventCount(polkadotJs, {
                     MessagesCommitted: 1,
@@ -88,7 +88,7 @@ describeSuite({
                 // Also a MessagesCommitted event with the same hash as the digest log
                 const events = await polkadotJs.query.system.events();
                 const ev1 = events.filter((a) => {
-                    return a.event.method == "MessagesCommitted";
+                    return a.event.method === "MessagesCommitted";
                 });
                 expect(ev1.length).to.be.equal(1);
                 const ev1Data = ev1[0].event.data[0].toJSON();

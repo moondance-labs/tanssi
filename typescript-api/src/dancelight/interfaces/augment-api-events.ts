@@ -458,13 +458,17 @@ declare module "@polkadot/api-base/types/events" {
             [key: string]: AugmentedEvent<ApiType>;
         };
         ethereumTokenTransfers: {
-            /** Information for the channel was set properly. */
+            /**
+             * Information for the channel was set properly.
+             **/
             ChannelInfoSet: AugmentedEvent<
                 ApiType,
                 [channelInfo: PalletEthereumTokenTransfersChannelInfo],
                 { channelInfo: PalletEthereumTokenTransfersChannelInfo }
             >;
-            /** Some native token was successfully transferred to Ethereum. */
+            /**
+             * Some native token was successfully transferred to Ethereum.
+             **/
             NativeTokenTransferred: AugmentedEvent<
                 ApiType,
                 [
@@ -486,7 +490,9 @@ declare module "@polkadot/api-base/types/events" {
                     fee: u128;
                 }
             >;
-            /** Generic event */
+            /**
+             * Generic event
+             **/
             [key: string]: AugmentedEvent<ApiType>;
         };
         externalValidators: {

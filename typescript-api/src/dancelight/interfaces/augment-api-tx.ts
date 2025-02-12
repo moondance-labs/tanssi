@@ -1786,7 +1786,9 @@ declare module "@polkadot/api-base/types/submittable" {
                 ) => SubmittableExtrinsic<ApiType>,
                 [u128, H160]
             >;
-            /** Generic tx */
+            /**
+             * Generic tx
+             **/
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
         externalValidators: {

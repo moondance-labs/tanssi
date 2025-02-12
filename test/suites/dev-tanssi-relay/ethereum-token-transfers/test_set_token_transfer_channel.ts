@@ -1,6 +1,6 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise, Keyring } from "@polkadot/api";
+import { type ApiPromise, Keyring } from "@polkadot/api";
 
 describeSuite({
     id: "DTR1701",
@@ -17,7 +17,7 @@ describeSuite({
         it({
             id: "E01",
             title: "setTokenTransferChannel should update channel details",
-            test: async function () {
+            test: async () => {
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 
@@ -43,11 +43,13 @@ describeSuite({
 
                 const currentChannelInfoAfter = (
                     await polkadotJs.query.ethereumTokenTransfers.currentChannelInfo()
-                ).toJSON();
+                ).unwrap();
 
-                expect(currentChannelInfoAfter["channelId"]).to.eq(newChannelId);
-                expect(currentChannelInfoAfter["paraId"]).to.eq(newParaId);
-                expect(currentChannelInfoAfter["agentId"]).to.eq(newAgentId);
+                console.log("currentChannelInfoAfter", currentChannelInfoAfter);
+
+                expect(currentChannelInfoAfter.channelId).to.eq(newChannelId);
+                expect(currentChannelInfoAfter.paraId).to.eq(newParaId);
+                expect(currentChannelInfoAfter.agentId).to.eq(newAgentId);
             },
         });
     },

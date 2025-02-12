@@ -923,7 +923,9 @@ declare module "@polkadot/api-base/types/storage" {
                 []
             > &
                 QueryableStorageEntry<ApiType, []>;
-            /** Generic query */
+            /**
+             * Generic query
+             **/
             [key: string]: QueryableStorageEntry<ApiType>;
         };
         externalValidators: {
