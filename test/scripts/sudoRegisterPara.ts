@@ -1,17 +1,19 @@
+import "@tanssi/api-augment";
 import { Keyring } from "@polkadot/api";
-import fs from "fs/promises";
+import fs from "node:fs/promises";
 import jsonBg from "json-bigint";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import { chainSpecToContainerChainGenesisData } from "../util/genesis_data";
 import { NETWORK_YARGS_OPTIONS, getApiFor } from "./utils/network";
+import type { TpTraitsSlotFrequency } from "@polkadot/types/lookup";
 const JSONbig = jsonBg({ useNativeBigInt: true });
 
 yargs(hideBin(process.argv))
     .usage("Usage: $0")
     .version("1.0.0")
     .command(
-        `register`,
+        "register",
         "Registers a parachain, adds bootnodes, and sets it valid for collating",
         (yargs) => {
             return yargs
@@ -40,19 +42,19 @@ yargs(hideBin(process.argv))
 
             try {
                 process.stdout.write(`Reading chainSpec from: ${argv.chain}\n`);
-                const rawSpec = JSONbig.parse(await fs.readFile(argv.chain!, "utf8"));
+                const rawSpec = JSONbig.parse(await fs.readFile(argv.chain, "utf8"));
 
                 const privKey = argv["account-priv-key"];
                 const account = keyring.addFromUri(privKey);
 
                 const containerChainGenesisData = chainSpecToContainerChainGenesisData(api, rawSpec);
-                const txs = [];
-                let tx1;
+                const txs: any[] = [];
+                let tx1: any;
                 if (argv.parathread) {
                     const slotFreq = api.createType("TpTraitsSlotFrequency", {
                         min: 1,
                         max: 1,
-                    });
+                    }) as TpTraitsSlotFrequency;
                     tx1 = api.tx.registrar.registerParathread(
                         rawSpec.para_id,
                         slotFreq,
@@ -64,7 +66,7 @@ yargs(hideBin(process.argv))
                 }
                 txs.push(tx1);
                 if (rawSpec.bootNodes?.length) {
-                    let profileId = await api.query.dataPreservers.nextProfileId();
+                    let profileId = (await api.query.dataPreservers.nextProfileId()).toNumber();
                     for (const bootnode of rawSpec.bootNodes) {
                         const profileTx = api.tx.dataPreservers.createProfile({
                             url: bootnode,
@@ -83,25 +85,25 @@ yargs(hideBin(process.argv))
                 const tx3s = api.tx.sudo.sudo(tx3);
                 txs.push(tx3s);
 
-                if (txs.length == 2) {
-                    process.stdout.write(`Sending register transaction (register + markValidForCollating)... `);
+                if (txs.length === 2) {
+                    process.stdout.write("Sending register transaction (register + markValidForCollating)... ");
                 } else {
                     process.stdout.write(
-                        `Sending register transaction (register + createProfile + startAssignment + markValidForCollating)... `
+                        "Sending register transaction (register + createProfile + startAssignment + markValidForCollating)... "
                     );
                 }
                 const txBatch = api.tx.utility.batchAll(txs);
                 const txHash = await txBatch.signAndSend(account);
                 process.stdout.write(`${txHash.toHex()}\n`);
                 // TODO: this will always print Done, even if the extrinsic has failed
-                process.stdout.write(`Done ✅\n`);
+                process.stdout.write("Done ✅\n");
             } finally {
                 await api.disconnect();
             }
         }
     )
     .command(
-        `markValidForCollating`,
+        "markValidForCollating",
         "Marks a registered parachain as valid, allowing collators to start collating",
         (yargs) => {
             return yargs
@@ -129,18 +131,18 @@ yargs(hideBin(process.argv))
 
                 let tx = api.tx.registrar.markValidForCollating(argv.paraId);
                 tx = api.tx.sudo.sudo(tx);
-                process.stdout.write(`Sending transaction... `);
+                process.stdout.write("Sending transaction... ");
                 const txHash = await tx.signAndSend(account);
                 process.stdout.write(`${txHash.toHex()}\n`);
                 // TODO: this will always print Done, even if the extrinsic has failed
-                process.stdout.write(`Done ✅\n`);
+                process.stdout.write("Done ✅\n");
             } finally {
                 await api.disconnect();
             }
         }
     )
     .command(
-        `setBootNodes`,
+        "setBootNodes",
         "Set bootnodes for a container chain",
         (yargs) => {
             return yargs
@@ -174,15 +176,15 @@ yargs(hideBin(process.argv))
                 const privKey = argv["account-priv-key"];
                 const account = keyring.addFromUri(privKey);
 
-                let bootnodes = [];
+                let bootnodes: (string | number)[] = [];
                 if (!argv.bootnode) {
                     argv.bootnode = [];
                 }
                 bootnodes = [...bootnodes, ...argv.bootnode];
 
-                const txs = [];
+                const txs: any[] = [];
 
-                let profileId = await api.query.dataPreservers.nextProfileId();
+                let profileId = (await api.query.dataPreservers.nextProfileId()).toNumber();
                 for (const bootnode of bootnodes) {
                     const profileTx = api.tx.dataPreservers.createProfile({
                         url: bootnode,
@@ -201,28 +203,28 @@ yargs(hideBin(process.argv))
                     // Check if not already valid, and only in that case call markValidForCollating
                     const notValidParas = (await api.query.registrar.pendingVerification()) as any;
                     if (notValidParas.toJSON().includes(argv.paraId)) {
-                        process.stdout.write(`Will set container chain valid for collating\n`);
+                        process.stdout.write("Will set container chain valid for collating\n");
                         const tx2 = api.tx.registrar.markValidForCollating(argv.paraId);
-                        tx2s = api.tx.sudo.sudo(tx2);
+                        const tx2s = api.tx.sudo.sudo(tx2);
                         txs.push(tx2s);
                     } else {
                         // ParaId already valid, or not registered at all
-                        process.stdout.write(`Not setting container chain valid for collating\n`);
+                        process.stdout.write("Not setting container chain valid for collating\n");
                     }
                 }
                 const batchTx = api.tx.utility.batchAll(txs);
-                process.stdout.write(`Sending transaction... `);
+                process.stdout.write("Sending transaction... ");
                 const txHash = await batchTx.signAndSend(account);
                 process.stdout.write(`${txHash.toHex()}\n`);
                 // TODO: this will always print Done, even if the extrinsic has failed
-                process.stdout.write(`Done ✅\n`);
+                process.stdout.write("Done ✅\n");
             } finally {
                 await api.disconnect();
             }
         }
     )
     .command(
-        `deregister`,
+        "deregister",
         "Deregister a container chain",
         (yargs) => {
             return yargs
@@ -250,18 +252,18 @@ yargs(hideBin(process.argv))
 
                 let tx = api.tx.registrar.deregister(argv.paraId);
                 tx = api.tx.sudo.sudo(tx);
-                process.stdout.write(`Sending transaction... `);
+                process.stdout.write("Sending transaction... ");
                 const txHash = await tx.signAndSend(account);
                 process.stdout.write(`${txHash.toHex()}\n`);
                 // TODO: this will always print Done, even if the extrinsic has failed
-                process.stdout.write(`Done ✅\n`);
+                process.stdout.write("Done ✅\n");
             } finally {
                 await api.disconnect();
             }
         }
     )
     .command(
-        `pauseContainerChain`,
+        "pauseContainerChain",
         "Pause a container-chain from collating, without modifying its boot nodes nor its parachain config",
         (yargs) => {
             return yargs
@@ -289,11 +291,11 @@ yargs(hideBin(process.argv))
 
                 let tx = api.tx.registrar.pauseContainerChain(argv.paraId);
                 tx = api.tx.sudo.sudo(tx);
-                process.stdout.write(`Sending transaction... `);
+                process.stdout.write("Sending transaction... ");
                 const txHash = await tx.signAndSend(account);
                 process.stdout.write(`${txHash.toHex()}\n`);
                 // TODO: this will always print Done, even if the extrinsic has failed
-                process.stdout.write(`Done ✅\n`);
+                process.stdout.write("Done ✅\n");
             } finally {
                 await api.disconnect();
             }

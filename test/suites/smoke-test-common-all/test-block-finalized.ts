@@ -1,7 +1,7 @@
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import { getBlockTime } from "@moonwall/util";
 
-import { ApiPromise } from "@polkadot/api";
+import type { ApiPromise } from "@polkadot/api";
 
 describeSuite({
     id: "S01",
@@ -17,7 +17,7 @@ describeSuite({
         it({
             id: "C01",
             title: "Blocks should be finalized",
-            test: async function () {
+            test: async () => {
                 const head = await api.rpc.chain.getFinalizedHead();
                 const block = await api.rpc.chain.getBlock(head);
                 const diff = Date.now() - getBlockTime(block);
