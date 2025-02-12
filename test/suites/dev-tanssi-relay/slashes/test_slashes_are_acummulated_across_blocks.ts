@@ -1,12 +1,12 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
-import { KeyringPair, generateKeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
+import { type KeyringPair, generateKeyringPair } from "@moonwall/util";
 import { jumpToSession } from "../../../util/block";
 import { PRIMARY_GOVERNANCE_CHANNEL_ID } from "../../../util/constants";
 
 describeSuite({
-    id: "DTR1307",
+    id: "DEVT1701",
     title: "Slashes are accumulated based on max slashes sent per block",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -19,7 +19,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Slashes are accumulated across blocks",
-            test: async function () {
+            test: async () => {
                 // we need to start at least one sesssion to start eras
                 await jumpToSession(context, 1);
                 // Let's inject slashes N+1 slashes, where N is the max slashes to send per block
@@ -69,16 +69,14 @@ describeSuite({
                 // In the next block we should send the slashes. For this we will confirm:
                 // A: that the unprocessed slashes decrease
                 // B: that the nonce of the primary channel increases
-                const primaryChannelNonceBefore = await polkadotJs.query.ethereumOutboundQueue.nonce(
-                    PRIMARY_GOVERNANCE_CHANNEL_ID
-                );
+                const primaryChannelNonceBefore =
+                    await polkadotJs.query.ethereumOutboundQueue.nonce(PRIMARY_GOVERNANCE_CHANNEL_ID);
 
                 await context.createBlock();
                 const expectedUnprocessedMessagesAfterOneBlock =
                     await polkadotJs.query.externalValidatorSlashes.unreportedSlashesQueue();
-                const primaryChannelNonceAfter = await polkadotJs.query.ethereumOutboundQueue.nonce(
-                    PRIMARY_GOVERNANCE_CHANNEL_ID
-                );
+                const primaryChannelNonceAfter =
+                    await polkadotJs.query.ethereumOutboundQueue.nonce(PRIMARY_GOVERNANCE_CHANNEL_ID);
                 expect(primaryChannelNonceAfter.toBigInt()).toBe(primaryChannelNonceBefore.toBigInt() + 1n);
                 // However we stil should have one unprocessed message
                 expect(expectedUnprocessedMessagesAfterOneBlock.length).to.be.eq(1);

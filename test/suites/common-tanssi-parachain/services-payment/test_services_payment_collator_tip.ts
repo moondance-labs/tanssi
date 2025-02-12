@@ -1,18 +1,18 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
-import { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
+import type { KeyringPair } from "@moonwall/util";
 import { fetchCollatorAssignmentTip, jumpSessions } from "util/block";
 import { paraIdTank } from "../../../util/payment.ts";
 
 describeSuite({
-    id: "CPT0608",
+    id: "COMMO0803",
     title: "Services payment collator assignment tip test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
-        let collatorAssignmentAlias;
+        let collatorAssignmentAlias: any;
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             alice = context.keyring.alice;
@@ -24,7 +24,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Tip should prioritize collator assignment",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
 
                 const paraId = 2001n;
@@ -53,7 +53,7 @@ describeSuite({
         it({
             id: "E02",
             title: "Tip is not charged when there are enough collators for all chains",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
 
                 const paraId = 2001n;
@@ -80,7 +80,7 @@ describeSuite({
         it({
             id: "E03",
             title: "If parachain tank account does not have enough balance, collators are not assigned",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
 
                 const paraId = 2001n;

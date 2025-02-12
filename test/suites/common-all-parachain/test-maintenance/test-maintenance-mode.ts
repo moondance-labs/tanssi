@@ -1,11 +1,11 @@
-import "@polkadot/api-augment";
+import "@tanssi/api-augment";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { KeyringPair } from "@moonwall/util";
-import { ApiPromise } from "@polkadot/api";
+import type { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
 import { initializeCustomCreateBlock } from "../../../util/block";
 
 describeSuite({
-    id: "CAP0201",
+    id: "CO0101",
     title: "Maintenance mode test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -26,7 +26,7 @@ describeSuite({
         it({
             id: "E01",
             title: "No maintenance mode at genesis",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
                 const enabled = (await polkadotJs.query.maintenanceMode.maintenanceMode()).toJSON();
                 expect(enabled).to.be.false;
@@ -36,7 +36,7 @@ describeSuite({
         it({
             id: "E02",
             title: "Signed origin cannot enable maintenance mode",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
 
                 const tx = polkadotJs.tx.maintenanceMode.enterMaintenanceMode();
@@ -44,7 +44,7 @@ describeSuite({
 
                 const events = await polkadotJs.query.system.events();
                 const ev1 = events.filter((a) => {
-                    return a.event.method == "ExtrinsicFailed";
+                    return a.event.method === "ExtrinsicFailed";
                 });
                 expect(ev1.length).to.be.equal(1);
 
@@ -56,7 +56,7 @@ describeSuite({
         it({
             id: "E03",
             title: "Root origin can enable maintenance mode",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
                 await context.createBlock();
 
@@ -65,7 +65,7 @@ describeSuite({
 
                 const events = await polkadotJs.query.system.events();
                 const ev1 = events.filter((a) => {
-                    return a.event.method == "EnteredMaintenanceMode";
+                    return a.event.method === "EnteredMaintenanceMode";
                 });
                 expect(ev1.length).to.be.equal(1);
 
@@ -77,7 +77,7 @@ describeSuite({
         it({
             id: "E04",
             title: "No transfers allowed in maintenance mode",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
 
                 const enabled = (await polkadotJs.query.maintenanceMode.maintenanceMode()).toJSON();
@@ -87,7 +87,7 @@ describeSuite({
 
                 const tx = polkadotJs.tx.balances.transferAllowDeath(bob.address, 1000);
 
-                if (chain == "frontier-template") {
+                if (chain === "frontier-template") {
                     expect(await context.createBlock([await tx.signAsync(alice)]).catch((e) => e.toString())).to.equal(
                         "RpcError: 1010: Invalid Transaction: Transaction call is not expected"
                     );
@@ -104,7 +104,7 @@ describeSuite({
         it({
             id: "E05",
             title: "Transfer with sudo allowed in maintenance mode",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
                 await context.createBlock();
 
@@ -126,7 +126,7 @@ describeSuite({
         it({
             id: "E06",
             title: "Signed origin cannot disable maintenance mode",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
                 await context.createBlock();
 
@@ -135,7 +135,7 @@ describeSuite({
 
                 const events = await polkadotJs.query.system.events();
                 const ev1 = events.filter((a) => {
-                    return a.event.method == "ExtrinsicFailed";
+                    return a.event.method === "ExtrinsicFailed";
                 });
                 expect(ev1.length).to.be.equal(1);
 
@@ -147,7 +147,7 @@ describeSuite({
         it({
             id: "E07",
             title: "Root origin can disable maintenance mode",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
 
                 const tx = polkadotJs.tx.maintenanceMode.resumeNormalOperation();
@@ -155,7 +155,7 @@ describeSuite({
 
                 const events = await polkadotJs.query.system.events();
                 const ev1 = events.filter((a) => {
-                    return a.event.method == "NormalOperationResumed";
+                    return a.event.method === "NormalOperationResumed";
                 });
                 expect(ev1.length).to.be.equal(1);
 
@@ -167,7 +167,7 @@ describeSuite({
         it({
             id: "E08",
             title: "Transfers allowed again after disabling maintenance mode",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
 
                 const enabled = (await polkadotJs.query.maintenanceMode.maintenanceMode()).toJSON();

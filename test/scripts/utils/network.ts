@@ -1,4 +1,4 @@
-import { Options } from "yargs";
+import type { Options } from "yargs";
 import { ApiPromise, WsProvider } from "@polkadot/api";
 
 export type NetworkOptions = {

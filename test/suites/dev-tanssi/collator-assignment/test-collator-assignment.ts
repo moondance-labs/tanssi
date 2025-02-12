@@ -1,13 +1,13 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
+import type { ApiPromise } from "@polkadot/api";
 import { jumpBlocks, jumpSessions, jumpToSession } from "util/block";
 import { filterAndApply } from "@moonwall/util";
-import { EventRecord } from "@polkadot/types/interfaces";
-import { bool, u32, u8, Vec } from "@polkadot/types-codec";
+import type { EventRecord } from "@polkadot/types/interfaces";
+import type { bool, u32, u8, Vec } from "@polkadot/types-codec";
 
 describeSuite({
-    id: "DT0801",
+    id: "DEV0201",
     title: "Collator assignment tests",
     foundationMethods: "dev",
 
@@ -21,10 +21,10 @@ describeSuite({
         it({
             id: "E01",
             title: "Collator should rotate",
-            test: async function () {
-                const fullRotationPeriod = (await context.polkadotJs().query.configuration.activeConfig())[
-                    "fullRotationPeriod"
-                ].toString();
+            test: async () => {
+                const fullRotationPeriod = (
+                    await context.polkadotJs().query.configuration.activeConfig()
+                ).fullRotationPeriod.toString();
                 const sessionIndex = (await polkadotJs.query.session.currentIndex()).toNumber();
                 // Calculate the remaining sessions for next full rotation
                 // This is a workaround for running moonwall in run mode
@@ -70,7 +70,7 @@ describeSuite({
                 const sessionDuration = 10;
                 await jumpBlocks(context, sessionDuration - 1);
                 const assignmentRandomness = await polkadotJs.query.collatorAssignment.randomness();
-                // TODO: in dancelight isEmpty == false because we have randomness there
+                // TODO: in dancelight isEmpty === false because we have randomness there
                 // In dancebox dev tests there is no rotation because there is no randomness
                 expect(assignmentRandomness.isEmpty).toBe(true);
             },

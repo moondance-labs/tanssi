@@ -27,52 +27,81 @@ export type __AugmentedEvent<ApiType extends ApiTypes> = AugmentedEvent<ApiType>
 declare module "@polkadot/api-base/types/events" {
     interface AugmentedEvents<ApiType extends ApiTypes> {
         authorNoting: {
-            /** Latest author changed */
+            /**
+             * Latest author changed
+             **/
             LatestAuthorChanged: AugmentedEvent<
                 ApiType,
                 [paraId: u32, blockNumber: u32, newAuthor: AccountId32, latestSlotNumber: u64],
                 { paraId: u32; blockNumber: u32; newAuthor: AccountId32; latestSlotNumber: u64 }
             >;
-            /** Removed author data */
+            /**
+             * Removed author data
+             **/
             RemovedAuthorData: AugmentedEvent<ApiType, [paraId: u32], { paraId: u32 }>;
-            /** Generic event */
+            /**
+             * Generic event
+             **/
             [key: string]: AugmentedEvent<ApiType>;
         };
         balances: {
-            /** A balance was set by root. */
+            /**
+             * A balance was set by root.
+             **/
             BalanceSet: AugmentedEvent<ApiType, [who: AccountId32, free: u128], { who: AccountId32; free: u128 }>;
-            /** Some amount was burned from an account. */
+            /**
+             * Some amount was burned from an account.
+             **/
             Burned: AugmentedEvent<ApiType, [who: AccountId32, amount: u128], { who: AccountId32; amount: u128 }>;
-            /** Some amount was deposited (e.g. for transaction fees). */
+            /**
+             * Some amount was deposited (e.g. for transaction fees).
+             **/
             Deposit: AugmentedEvent<ApiType, [who: AccountId32, amount: u128], { who: AccountId32; amount: u128 }>;
-            /** An account was removed whose balance was non-zero but below ExistentialDeposit, resulting in an outright loss. */
+            /**
+             * An account was removed whose balance was non-zero but below ExistentialDeposit,
+             * resulting in an outright loss.
+             **/
             DustLost: AugmentedEvent<
                 ApiType,
                 [account: AccountId32, amount: u128],
                 { account: AccountId32; amount: u128 }
             >;
-            /** An account was created with some free balance. */
+            /**
+             * An account was created with some free balance.
+             **/
             Endowed: AugmentedEvent<
                 ApiType,
                 [account: AccountId32, freeBalance: u128],
                 { account: AccountId32; freeBalance: u128 }
             >;
-            /** Some balance was frozen. */
+            /**
+             * Some balance was frozen.
+             **/
             Frozen: AugmentedEvent<ApiType, [who: AccountId32, amount: u128], { who: AccountId32; amount: u128 }>;
-            /** Total issuance was increased by `amount`, creating a credit to be balanced. */
+            /**
+             * Total issuance was increased by `amount`, creating a credit to be balanced.
+             **/
             Issued: AugmentedEvent<ApiType, [amount: u128], { amount: u128 }>;
-            /** Some balance was locked. */
+            /**
+             * Some balance was locked.
+             **/
             Locked: AugmentedEvent<ApiType, [who: AccountId32, amount: u128], { who: AccountId32; amount: u128 }>;
-            /** Some amount was minted into an account. */
+            /**
+             * Some amount was minted into an account.
+             **/
             Minted: AugmentedEvent<ApiType, [who: AccountId32, amount: u128], { who: AccountId32; amount: u128 }>;
-            /** Total issuance was decreased by `amount`, creating a debt to be balanced. */
+            /**
+             * Total issuance was decreased by `amount`, creating a debt to be balanced.
+             **/
             Rescinded: AugmentedEvent<ApiType, [amount: u128], { amount: u128 }>;
-            /** Some balance was reserved (moved from free to reserved). */
+            /**
+             * Some balance was reserved (moved from free to reserved).
+             **/
             Reserved: AugmentedEvent<ApiType, [who: AccountId32, amount: u128], { who: AccountId32; amount: u128 }>;
             /**
-             * Some balance was moved from the reserve of the first account to the second account. Final argument indicates
-             * the destination balance type.
-             */
+             * Some balance was moved from the reserve of the first account to the second account.
+             * Final argument indicates the destination balance type.
+             **/
             ReserveRepatriated: AugmentedEvent<
                 ApiType,
                 [
@@ -88,31 +117,53 @@ declare module "@polkadot/api-base/types/events" {
                     destinationStatus: FrameSupportTokensMiscBalanceStatus;
                 }
             >;
-            /** Some amount was restored into an account. */
+            /**
+             * Some amount was restored into an account.
+             **/
             Restored: AugmentedEvent<ApiType, [who: AccountId32, amount: u128], { who: AccountId32; amount: u128 }>;
-            /** Some amount was removed from the account (e.g. for misbehavior). */
+            /**
+             * Some amount was removed from the account (e.g. for misbehavior).
+             **/
             Slashed: AugmentedEvent<ApiType, [who: AccountId32, amount: u128], { who: AccountId32; amount: u128 }>;
-            /** Some amount was suspended from an account (it can be restored later). */
+            /**
+             * Some amount was suspended from an account (it can be restored later).
+             **/
             Suspended: AugmentedEvent<ApiType, [who: AccountId32, amount: u128], { who: AccountId32; amount: u128 }>;
-            /** Some balance was thawed. */
+            /**
+             * Some balance was thawed.
+             **/
             Thawed: AugmentedEvent<ApiType, [who: AccountId32, amount: u128], { who: AccountId32; amount: u128 }>;
-            /** The `TotalIssuance` was forcefully changed. */
+            /**
+             * The `TotalIssuance` was forcefully changed.
+             **/
             TotalIssuanceForced: AugmentedEvent<ApiType, [old: u128, new_: u128], { old: u128; new_: u128 }>;
-            /** Transfer succeeded. */
+            /**
+             * Transfer succeeded.
+             **/
             Transfer: AugmentedEvent<
                 ApiType,
                 [from: AccountId32, to: AccountId32, amount: u128],
                 { from: AccountId32; to: AccountId32; amount: u128 }
             >;
-            /** Some balance was unlocked. */
+            /**
+             * Some balance was unlocked.
+             **/
             Unlocked: AugmentedEvent<ApiType, [who: AccountId32, amount: u128], { who: AccountId32; amount: u128 }>;
-            /** Some balance was unreserved (moved from reserved to free). */
+            /**
+             * Some balance was unreserved (moved from reserved to free).
+             **/
             Unreserved: AugmentedEvent<ApiType, [who: AccountId32, amount: u128], { who: AccountId32; amount: u128 }>;
-            /** An account was upgraded. */
+            /**
+             * An account was upgraded.
+             **/
             Upgraded: AugmentedEvent<ApiType, [who: AccountId32], { who: AccountId32 }>;
-            /** Some amount was withdrawn from the account (e.g. for transaction fees). */
+            /**
+             * Some amount was withdrawn from the account (e.g. for transaction fees).
+             **/
             Withdraw: AugmentedEvent<ApiType, [who: AccountId32, amount: u128], { who: AccountId32; amount: u128 }>;
-            /** Generic event */
+            /**
+             * Generic event
+             **/
             [key: string]: AugmentedEvent<ApiType>;
         };
         collatorAssignment: {
@@ -131,13 +182,17 @@ declare module "@polkadot/api-base/types/events" {
                     fullRotationMode: TpTraitsFullRotationModes;
                 }
             >;
-            /** Generic event */
+            /**
+             * Generic event
+             **/
             [key: string]: AugmentedEvent<ApiType>;
         };
         dataPreservers: {
             AssignmentStarted: AugmentedEvent<ApiType, [profileId: u64, paraId: u32], { profileId: u64; paraId: u32 }>;
             AssignmentStopped: AugmentedEvent<ApiType, [profileId: u64, paraId: u32], { profileId: u64; paraId: u32 }>;
-            /** The list of boot_nodes changed. */
+            /**
+             * The list of boot_nodes changed.
+             **/
             BootNodesChanged: AugmentedEvent<ApiType, [paraId: u32], { paraId: u32 }>;
             ProfileCreated: AugmentedEvent<
                 ApiType,
@@ -154,175 +209,245 @@ declare module "@polkadot/api-base/types/events" {
                 [profileId: u64, oldDeposit: u128, newDeposit: u128],
                 { profileId: u64; oldDeposit: u128; newDeposit: u128 }
             >;
-            /** Generic event */
+            /**
+             * Generic event
+             **/
             [key: string]: AugmentedEvent<ApiType>;
         };
         identity: {
-            /** A username authority was added. */
+            /**
+             * A username authority was added.
+             **/
             AuthorityAdded: AugmentedEvent<ApiType, [authority: AccountId32], { authority: AccountId32 }>;
-            /** A username authority was removed. */
+            /**
+             * A username authority was removed.
+             **/
             AuthorityRemoved: AugmentedEvent<ApiType, [authority: AccountId32], { authority: AccountId32 }>;
             /**
-             * A dangling username (as in, a username corresponding to an account that has removed its identity) has been
-             * removed.
-             */
+             * A dangling username (as in, a username corresponding to an account that has removed its
+             * identity) has been removed.
+             **/
             DanglingUsernameRemoved: AugmentedEvent<
                 ApiType,
                 [who: AccountId32, username: Bytes],
                 { who: AccountId32; username: Bytes }
             >;
-            /** A name was cleared, and the given balance returned. */
+            /**
+             * A name was cleared, and the given balance returned.
+             **/
             IdentityCleared: AugmentedEvent<
                 ApiType,
                 [who: AccountId32, deposit: u128],
                 { who: AccountId32; deposit: u128 }
             >;
-            /** A name was removed and the given balance slashed. */
+            /**
+             * A name was removed and the given balance slashed.
+             **/
             IdentityKilled: AugmentedEvent<
                 ApiType,
                 [who: AccountId32, deposit: u128],
                 { who: AccountId32; deposit: u128 }
             >;
-            /** A name was set or reset (which will remove all judgements). */
+            /**
+             * A name was set or reset (which will remove all judgements).
+             **/
             IdentitySet: AugmentedEvent<ApiType, [who: AccountId32], { who: AccountId32 }>;
-            /** A judgement was given by a registrar. */
+            /**
+             * A judgement was given by a registrar.
+             **/
             JudgementGiven: AugmentedEvent<
                 ApiType,
                 [target: AccountId32, registrarIndex: u32],
                 { target: AccountId32; registrarIndex: u32 }
             >;
-            /** A judgement was asked from a registrar. */
+            /**
+             * A judgement was asked from a registrar.
+             **/
             JudgementRequested: AugmentedEvent<
                 ApiType,
                 [who: AccountId32, registrarIndex: u32],
                 { who: AccountId32; registrarIndex: u32 }
             >;
-            /** A judgement request was retracted. */
+            /**
+             * A judgement request was retracted.
+             **/
             JudgementUnrequested: AugmentedEvent<
                 ApiType,
                 [who: AccountId32, registrarIndex: u32],
                 { who: AccountId32; registrarIndex: u32 }
             >;
-            /** A queued username passed its expiration without being claimed and was removed. */
+            /**
+             * A queued username passed its expiration without being claimed and was removed.
+             **/
             PreapprovalExpired: AugmentedEvent<ApiType, [whose: AccountId32], { whose: AccountId32 }>;
-            /** A username was set as a primary and can be looked up from `who`. */
+            /**
+             * A username was set as a primary and can be looked up from `who`.
+             **/
             PrimaryUsernameSet: AugmentedEvent<
                 ApiType,
                 [who: AccountId32, username: Bytes],
                 { who: AccountId32; username: Bytes }
             >;
-            /** A registrar was added. */
+            /**
+             * A registrar was added.
+             **/
             RegistrarAdded: AugmentedEvent<ApiType, [registrarIndex: u32], { registrarIndex: u32 }>;
-            /** A sub-identity was added to an identity and the deposit paid. */
+            /**
+             * A sub-identity was added to an identity and the deposit paid.
+             **/
             SubIdentityAdded: AugmentedEvent<
                 ApiType,
                 [sub: AccountId32, main: AccountId32, deposit: u128],
                 { sub: AccountId32; main: AccountId32; deposit: u128 }
             >;
-            /** A sub-identity was removed from an identity and the deposit freed. */
+            /**
+             * A sub-identity was removed from an identity and the deposit freed.
+             **/
             SubIdentityRemoved: AugmentedEvent<
                 ApiType,
                 [sub: AccountId32, main: AccountId32, deposit: u128],
                 { sub: AccountId32; main: AccountId32; deposit: u128 }
             >;
             /**
-             * A sub-identity was cleared, and the given deposit repatriated from the main identity account to the
-             * sub-identity account.
-             */
+             * A sub-identity was cleared, and the given deposit repatriated from the
+             * main identity account to the sub-identity account.
+             **/
             SubIdentityRevoked: AugmentedEvent<
                 ApiType,
                 [sub: AccountId32, main: AccountId32, deposit: u128],
                 { sub: AccountId32; main: AccountId32; deposit: u128 }
             >;
-            /** A username was queued, but `who` must accept it prior to `expiration`. */
+            /**
+             * A username was queued, but `who` must accept it prior to `expiration`.
+             **/
             UsernameQueued: AugmentedEvent<
                 ApiType,
                 [who: AccountId32, username: Bytes, expiration: u32],
                 { who: AccountId32; username: Bytes; expiration: u32 }
             >;
-            /** A username was set for `who`. */
+            /**
+             * A username was set for `who`.
+             **/
             UsernameSet: AugmentedEvent<
                 ApiType,
                 [who: AccountId32, username: Bytes],
                 { who: AccountId32; username: Bytes }
             >;
-            /** Generic event */
+            /**
+             * Generic event
+             **/
             [key: string]: AugmentedEvent<ApiType>;
         };
         inflationRewards: {
-            /** Rewarding container author */
+            /**
+             * Rewarding container author
+             **/
             RewardedContainer: AugmentedEvent<
                 ApiType,
                 [accountId: AccountId32, paraId: u32, balance: u128],
                 { accountId: AccountId32; paraId: u32; balance: u128 }
             >;
-            /** Rewarding orchestrator author */
+            /**
+             * Rewarding orchestrator author
+             **/
             RewardedOrchestrator: AugmentedEvent<
                 ApiType,
                 [accountId: AccountId32, balance: u128],
                 { accountId: AccountId32; balance: u128 }
             >;
-            /** Generic event */
+            /**
+             * Generic event
+             **/
             [key: string]: AugmentedEvent<ApiType>;
         };
         invulnerables: {
-            /** A new Invulnerable was added. */
+            /**
+             * A new Invulnerable was added.
+             **/
             InvulnerableAdded: AugmentedEvent<ApiType, [accountId: AccountId32], { accountId: AccountId32 }>;
-            /** An Invulnerable was removed. */
+            /**
+             * An Invulnerable was removed.
+             **/
             InvulnerableRemoved: AugmentedEvent<ApiType, [accountId: AccountId32], { accountId: AccountId32 }>;
-            /** Generic event */
+            /**
+             * Generic event
+             **/
             [key: string]: AugmentedEvent<ApiType>;
         };
         maintenanceMode: {
-            /** The chain was put into Maintenance Mode */
+            /**
+             * The chain was put into Maintenance Mode
+             **/
             EnteredMaintenanceMode: AugmentedEvent<ApiType, []>;
-            /** The call to resume on_idle XCM execution failed with inner error */
+            /**
+             * The call to resume on_idle XCM execution failed with inner error
+             **/
             FailedToResumeIdleXcmExecution: AugmentedEvent<
                 ApiType,
                 [error: SpRuntimeDispatchError],
                 { error: SpRuntimeDispatchError }
             >;
-            /** The call to suspend on_idle XCM execution failed with inner error */
+            /**
+             * The call to suspend on_idle XCM execution failed with inner error
+             **/
             FailedToSuspendIdleXcmExecution: AugmentedEvent<
                 ApiType,
                 [error: SpRuntimeDispatchError],
                 { error: SpRuntimeDispatchError }
             >;
-            /** The chain returned to its normal operating state */
+            /**
+             * The chain returned to its normal operating state
+             **/
             NormalOperationResumed: AugmentedEvent<ApiType, []>;
-            /** Generic event */
+            /**
+             * Generic event
+             **/
             [key: string]: AugmentedEvent<ApiType>;
         };
         migrations: {
-            /** XCM execution resume failed with inner error */
+            /**
+             * XCM execution resume failed with inner error
+             **/
             FailedToResumeIdleXcmExecution: AugmentedEvent<
                 ApiType,
                 [error: SpRuntimeDispatchError],
                 { error: SpRuntimeDispatchError }
             >;
-            /** XCM execution suspension failed with inner error */
+            /**
+             * XCM execution suspension failed with inner error
+             **/
             FailedToSuspendIdleXcmExecution: AugmentedEvent<
                 ApiType,
                 [error: SpRuntimeDispatchError],
                 { error: SpRuntimeDispatchError }
             >;
-            /** Migration completed */
+            /**
+             * Migration completed
+             **/
             MigrationCompleted: AugmentedEvent<
                 ApiType,
                 [migrationName: Bytes, consumedWeight: SpWeightsWeightV2Weight],
                 { migrationName: Bytes; consumedWeight: SpWeightsWeightV2Weight }
             >;
-            /** Migration started */
+            /**
+             * Migration started
+             **/
             MigrationStarted: AugmentedEvent<ApiType, [migrationName: Bytes], { migrationName: Bytes }>;
-            /** Runtime upgrade completed */
+            /**
+             * Runtime upgrade completed
+             **/
             RuntimeUpgradeCompleted: AugmentedEvent<
                 ApiType,
                 [weight: SpWeightsWeightV2Weight],
                 { weight: SpWeightsWeightV2Weight }
             >;
-            /** Runtime upgrade started */
+            /**
+             * Runtime upgrade started
+             **/
             RuntimeUpgradeStarted: AugmentedEvent<ApiType, []>;
-            /** Generic event */
+            /**
+             * Generic event
+             **/
             [key: string]: AugmentedEvent<ApiType>;
         };
         multiBlockMigrations: {
@@ -362,7 +487,9 @@ declare module "@polkadot/api-base/types/events" {
             [key: string]: AugmentedEvent<ApiType>;
         };
         multisig: {
-            /** A multisig operation has been approved by someone. */
+            /**
+             * A multisig operation has been approved by someone.
+             **/
             MultisigApproval: AugmentedEvent<
                 ApiType,
                 [approving: AccountId32, timepoint: PalletMultisigTimepoint, multisig: AccountId32, callHash: U8aFixed],
@@ -373,7 +500,9 @@ declare module "@polkadot/api-base/types/events" {
                     callHash: U8aFixed;
                 }
             >;
-            /** A multisig operation has been cancelled. */
+            /**
+             * A multisig operation has been cancelled.
+             **/
             MultisigCancelled: AugmentedEvent<
                 ApiType,
                 [
@@ -389,7 +518,9 @@ declare module "@polkadot/api-base/types/events" {
                     callHash: U8aFixed;
                 }
             >;
-            /** A multisig operation has been executed. */
+            /**
+             * A multisig operation has been executed.
+             **/
             MultisigExecuted: AugmentedEvent<
                 ApiType,
                 [
@@ -407,99 +538,150 @@ declare module "@polkadot/api-base/types/events" {
                     result: Result<Null, SpRuntimeDispatchError>;
                 }
             >;
-            /** A new multisig operation has begun. */
+            /**
+             * A new multisig operation has begun.
+             **/
             NewMultisig: AugmentedEvent<
                 ApiType,
                 [approving: AccountId32, multisig: AccountId32, callHash: U8aFixed],
                 { approving: AccountId32; multisig: AccountId32; callHash: U8aFixed }
             >;
-            /** Generic event */
+            /**
+             * Generic event
+             **/
             [key: string]: AugmentedEvent<ApiType>;
         };
         parachainSystem: {
-            /** Downward messages were processed using the given weight. */
+            /**
+             * Downward messages were processed using the given weight.
+             **/
             DownwardMessagesProcessed: AugmentedEvent<
                 ApiType,
                 [weightUsed: SpWeightsWeightV2Weight, dmqHead: H256],
                 { weightUsed: SpWeightsWeightV2Weight; dmqHead: H256 }
             >;
-            /** Some downward messages have been received and will be processed. */
+            /**
+             * Some downward messages have been received and will be processed.
+             **/
             DownwardMessagesReceived: AugmentedEvent<ApiType, [count: u32], { count: u32 }>;
-            /** An upward message was sent to the relay chain. */
+            /**
+             * An upward message was sent to the relay chain.
+             **/
             UpwardMessageSent: AugmentedEvent<
                 ApiType,
                 [messageHash: Option<U8aFixed>],
                 { messageHash: Option<U8aFixed> }
             >;
-            /** The validation function was applied as of the contained relay chain block number. */
+            /**
+             * The validation function was applied as of the contained relay chain block number.
+             **/
             ValidationFunctionApplied: AugmentedEvent<ApiType, [relayChainBlockNum: u32], { relayChainBlockNum: u32 }>;
-            /** The relay-chain aborted the upgrade process. */
+            /**
+             * The relay-chain aborted the upgrade process.
+             **/
             ValidationFunctionDiscarded: AugmentedEvent<ApiType, []>;
-            /** The validation function has been scheduled to apply. */
+            /**
+             * The validation function has been scheduled to apply.
+             **/
             ValidationFunctionStored: AugmentedEvent<ApiType, []>;
-            /** Generic event */
+            /**
+             * Generic event
+             **/
             [key: string]: AugmentedEvent<ApiType>;
         };
         proxy: {
-            /** An announcement was placed to make a call in the future. */
+            /**
+             * An announcement was placed to make a call in the future.
+             **/
             Announced: AugmentedEvent<
                 ApiType,
                 [real: AccountId32, proxy: AccountId32, callHash: H256],
                 { real: AccountId32; proxy: AccountId32; callHash: H256 }
             >;
-            /** A proxy was added. */
+            /**
+             * A proxy was added.
+             **/
             ProxyAdded: AugmentedEvent<
                 ApiType,
                 [delegator: AccountId32, delegatee: AccountId32, proxyType: FlashboxRuntimeProxyType, delay: u32],
                 { delegator: AccountId32; delegatee: AccountId32; proxyType: FlashboxRuntimeProxyType; delay: u32 }
             >;
-            /** A proxy was executed correctly, with the given. */
+            /**
+             * A proxy was executed correctly, with the given.
+             **/
             ProxyExecuted: AugmentedEvent<
                 ApiType,
                 [result: Result<Null, SpRuntimeDispatchError>],
                 { result: Result<Null, SpRuntimeDispatchError> }
             >;
-            /** A proxy was removed. */
+            /**
+             * A proxy was removed.
+             **/
             ProxyRemoved: AugmentedEvent<
                 ApiType,
                 [delegator: AccountId32, delegatee: AccountId32, proxyType: FlashboxRuntimeProxyType, delay: u32],
                 { delegator: AccountId32; delegatee: AccountId32; proxyType: FlashboxRuntimeProxyType; delay: u32 }
             >;
-            /** A pure account has been created by new proxy with given disambiguation index and proxy type. */
+            /**
+             * A pure account has been created by new proxy with given
+             * disambiguation index and proxy type.
+             **/
             PureCreated: AugmentedEvent<
                 ApiType,
                 [pure: AccountId32, who: AccountId32, proxyType: FlashboxRuntimeProxyType, disambiguationIndex: u16],
                 { pure: AccountId32; who: AccountId32; proxyType: FlashboxRuntimeProxyType; disambiguationIndex: u16 }
             >;
-            /** Generic event */
+            /**
+             * Generic event
+             **/
             [key: string]: AugmentedEvent<ApiType>;
         };
         registrar: {
-            /** A para id has been deregistered. [para_id] */
+            /**
+             * A para id has been deregistered. [para_id]
+             **/
             ParaIdDeregistered: AugmentedEvent<ApiType, [paraId: u32], { paraId: u32 }>;
-            /** A para id has been paused from collating. */
+            /**
+             * A para id has been paused from collating.
+             **/
             ParaIdPaused: AugmentedEvent<ApiType, [paraId: u32], { paraId: u32 }>;
-            /** A new para id has been registered. [para_id] */
+            /**
+             * A new para id has been registered. [para_id]
+             **/
             ParaIdRegistered: AugmentedEvent<ApiType, [paraId: u32], { paraId: u32 }>;
-            /** A para id has been unpaused. */
+            /**
+             * A para id has been unpaused.
+             **/
             ParaIdUnpaused: AugmentedEvent<ApiType, [paraId: u32], { paraId: u32 }>;
-            /** A new para id is now valid for collating. [para_id] */
+            /**
+             * A new para id is now valid for collating. [para_id]
+             **/
             ParaIdValidForCollating: AugmentedEvent<ApiType, [paraId: u32], { paraId: u32 }>;
-            /** Para manager has changed */
+            /**
+             * Para manager has changed
+             **/
             ParaManagerChanged: AugmentedEvent<
                 ApiType,
                 [paraId: u32, managerAddress: AccountId32],
                 { paraId: u32; managerAddress: AccountId32 }
             >;
-            /** Parathread params changed */
+            /**
+             * Parathread params changed
+             **/
             ParathreadParamsChanged: AugmentedEvent<ApiType, [paraId: u32], { paraId: u32 }>;
-            /** Generic event */
+            /**
+             * Generic event
+             **/
             [key: string]: AugmentedEvent<ApiType>;
         };
         rootTesting: {
-            /** Event dispatched when the trigger_defensive extrinsic is called. */
+            /**
+             * Event dispatched when the trigger_defensive extrinsic is called.
+             **/
             DefensiveTestCall: AugmentedEvent<ApiType, []>;
-            /** Generic event */
+            /**
+             * Generic event
+             **/
             [key: string]: AugmentedEvent<ApiType>;
         };
         servicesPayment: {
@@ -543,16 +725,20 @@ declare module "@polkadot/api-base/types/events" {
                 [paraId: u32, refundAddress: Option<AccountId32>],
                 { paraId: u32; refundAddress: Option<AccountId32> }
             >;
-            /** Generic event */
+            /**
+             * Generic event
+             **/
             [key: string]: AugmentedEvent<ApiType>;
         };
         session: {
             /**
-             * New session has happened. Note that the argument is the session index, not the block number as the type might
-             * suggest.
-             */
+             * New session has happened. Note that the argument is the session index, not the
+             * block number as the type might suggest.
+             **/
             NewSession: AugmentedEvent<ApiType, [sessionIndex: u32], { sessionIndex: u32 }>;
-            /** Generic event */
+            /**
+             * Generic event
+             **/
             [key: string]: AugmentedEvent<ApiType>;
         };
         streamPayment: {
@@ -595,158 +781,236 @@ declare module "@polkadot/api-base/types/events" {
                 [streamId: u64, source: AccountId32, target: AccountId32, amount: u128, stalled: bool],
                 { streamId: u64; source: AccountId32; target: AccountId32; amount: u128; stalled: bool }
             >;
-            /** Generic event */
+            /**
+             * Generic event
+             **/
             [key: string]: AugmentedEvent<ApiType>;
         };
         sudo: {
-            /** The sudo key has been updated. */
+            /**
+             * The sudo key has been updated.
+             **/
             KeyChanged: AugmentedEvent<
                 ApiType,
                 [old: Option<AccountId32>, new_: AccountId32],
                 { old: Option<AccountId32>; new_: AccountId32 }
             >;
-            /** The key was permanently removed. */
+            /**
+             * The key was permanently removed.
+             **/
             KeyRemoved: AugmentedEvent<ApiType, []>;
-            /** A sudo call just took place. */
+            /**
+             * A sudo call just took place.
+             **/
             Sudid: AugmentedEvent<
                 ApiType,
                 [sudoResult: Result<Null, SpRuntimeDispatchError>],
                 { sudoResult: Result<Null, SpRuntimeDispatchError> }
             >;
-            /** A [sudo_as](Pallet::sudo_as) call just took place. */
+            /**
+             * A [sudo_as](Pallet::sudo_as) call just took place.
+             **/
             SudoAsDone: AugmentedEvent<
                 ApiType,
                 [sudoResult: Result<Null, SpRuntimeDispatchError>],
                 { sudoResult: Result<Null, SpRuntimeDispatchError> }
             >;
-            /** Generic event */
+            /**
+             * Generic event
+             **/
             [key: string]: AugmentedEvent<ApiType>;
         };
         system: {
-            /** `:code` was updated. */
+            /**
+             * `:code` was updated.
+             **/
             CodeUpdated: AugmentedEvent<ApiType, []>;
-            /** An extrinsic failed. */
+            /**
+             * An extrinsic failed.
+             **/
             ExtrinsicFailed: AugmentedEvent<
                 ApiType,
                 [dispatchError: SpRuntimeDispatchError, dispatchInfo: FrameSupportDispatchDispatchInfo],
                 { dispatchError: SpRuntimeDispatchError; dispatchInfo: FrameSupportDispatchDispatchInfo }
             >;
-            /** An extrinsic completed successfully. */
+            /**
+             * An extrinsic completed successfully.
+             **/
             ExtrinsicSuccess: AugmentedEvent<
                 ApiType,
                 [dispatchInfo: FrameSupportDispatchDispatchInfo],
                 { dispatchInfo: FrameSupportDispatchDispatchInfo }
             >;
-            /** An account was reaped. */
+            /**
+             * An account was reaped.
+             **/
             KilledAccount: AugmentedEvent<ApiType, [account: AccountId32], { account: AccountId32 }>;
-            /** A new account was created. */
+            /**
+             * A new account was created.
+             **/
             NewAccount: AugmentedEvent<ApiType, [account: AccountId32], { account: AccountId32 }>;
-            /** On on-chain remark happened. */
+            /**
+             * On on-chain remark happened.
+             **/
             Remarked: AugmentedEvent<ApiType, [sender: AccountId32, hash_: H256], { sender: AccountId32; hash_: H256 }>;
-            /** An upgrade was authorized. */
+            /**
+             * An upgrade was authorized.
+             **/
             UpgradeAuthorized: AugmentedEvent<
                 ApiType,
                 [codeHash: H256, checkVersion: bool],
                 { codeHash: H256; checkVersion: bool }
             >;
-            /** Generic event */
+            /**
+             * Generic event
+             **/
             [key: string]: AugmentedEvent<ApiType>;
         };
         transactionPayment: {
-            /** A transaction fee `actual_fee`, of which `tip` was added to the minimum inclusion fee, has been paid by `who`. */
+            /**
+             * A transaction fee `actual_fee`, of which `tip` was added to the minimum inclusion fee,
+             * has been paid by `who`.
+             **/
             TransactionFeePaid: AugmentedEvent<
                 ApiType,
                 [who: AccountId32, actualFee: u128, tip: u128],
                 { who: AccountId32; actualFee: u128; tip: u128 }
             >;
-            /** Generic event */
+            /**
+             * Generic event
+             **/
             [key: string]: AugmentedEvent<ApiType>;
         };
         treasury: {
-            /** A new asset spend proposal has been approved. */
+            /**
+             * A new asset spend proposal has been approved.
+             **/
             AssetSpendApproved: AugmentedEvent<
                 ApiType,
                 [index: u32, assetKind: Null, amount: u128, beneficiary: AccountId32, validFrom: u32, expireAt: u32],
                 { index: u32; assetKind: Null; amount: u128; beneficiary: AccountId32; validFrom: u32; expireAt: u32 }
             >;
-            /** An approved spend was voided. */
+            /**
+             * An approved spend was voided.
+             **/
             AssetSpendVoided: AugmentedEvent<ApiType, [index: u32], { index: u32 }>;
-            /** Some funds have been allocated. */
+            /**
+             * Some funds have been allocated.
+             **/
             Awarded: AugmentedEvent<
                 ApiType,
                 [proposalIndex: u32, award: u128, account: AccountId32],
                 { proposalIndex: u32; award: u128; account: AccountId32 }
             >;
-            /** Some of our funds have been burnt. */
+            /**
+             * Some of our funds have been burnt.
+             **/
             Burnt: AugmentedEvent<ApiType, [burntFunds: u128], { burntFunds: u128 }>;
-            /** Some funds have been deposited. */
+            /**
+             * Some funds have been deposited.
+             **/
             Deposit: AugmentedEvent<ApiType, [value: u128], { value: u128 }>;
-            /** A payment happened. */
+            /**
+             * A payment happened.
+             **/
             Paid: AugmentedEvent<ApiType, [index: u32, paymentId: Null], { index: u32; paymentId: Null }>;
-            /** A payment failed and can be retried. */
+            /**
+             * A payment failed and can be retried.
+             **/
             PaymentFailed: AugmentedEvent<ApiType, [index: u32, paymentId: Null], { index: u32; paymentId: Null }>;
-            /** Spending has finished; this is the amount that rolls over until next spend. */
+            /**
+             * Spending has finished; this is the amount that rolls over until next spend.
+             **/
             Rollover: AugmentedEvent<ApiType, [rolloverBalance: u128], { rolloverBalance: u128 }>;
-            /** A new spend proposal has been approved. */
+            /**
+             * A new spend proposal has been approved.
+             **/
             SpendApproved: AugmentedEvent<
                 ApiType,
                 [proposalIndex: u32, amount: u128, beneficiary: AccountId32],
                 { proposalIndex: u32; amount: u128; beneficiary: AccountId32 }
             >;
-            /** We have ended a spend period and will now allocate funds. */
+            /**
+             * We have ended a spend period and will now allocate funds.
+             **/
             Spending: AugmentedEvent<ApiType, [budgetRemaining: u128], { budgetRemaining: u128 }>;
             /**
-             * A spend was processed and removed from the storage. It might have been successfully paid or it may have
-             * expired.
-             */
+             * A spend was processed and removed from the storage. It might have been successfully
+             * paid or it may have expired.
+             **/
             SpendProcessed: AugmentedEvent<ApiType, [index: u32], { index: u32 }>;
-            /** The inactive funds of the pallet have been updated. */
+            /**
+             * The inactive funds of the pallet have been updated.
+             **/
             UpdatedInactive: AugmentedEvent<
                 ApiType,
                 [reactivated: u128, deactivated: u128],
                 { reactivated: u128; deactivated: u128 }
             >;
-            /** Generic event */
+            /**
+             * Generic event
+             **/
             [key: string]: AugmentedEvent<ApiType>;
         };
         txPause: {
-            /** This pallet, or a specific call is now paused. */
+            /**
+             * This pallet, or a specific call is now paused.
+             **/
             CallPaused: AugmentedEvent<
                 ApiType,
                 [fullName: ITuple<[Bytes, Bytes]>],
                 { fullName: ITuple<[Bytes, Bytes]> }
             >;
-            /** This pallet, or a specific call is now unpaused. */
+            /**
+             * This pallet, or a specific call is now unpaused.
+             **/
             CallUnpaused: AugmentedEvent<
                 ApiType,
                 [fullName: ITuple<[Bytes, Bytes]>],
                 { fullName: ITuple<[Bytes, Bytes]> }
             >;
-            /** Generic event */
+            /**
+             * Generic event
+             **/
             [key: string]: AugmentedEvent<ApiType>;
         };
         utility: {
-            /** Batch of dispatches completed fully with no error. */
+            /**
+             * Batch of dispatches completed fully with no error.
+             **/
             BatchCompleted: AugmentedEvent<ApiType, []>;
-            /** Batch of dispatches completed but has errors. */
+            /**
+             * Batch of dispatches completed but has errors.
+             **/
             BatchCompletedWithErrors: AugmentedEvent<ApiType, []>;
-            /** Batch of dispatches did not complete fully. Index of first failing dispatch given, as well as the error. */
+            /**
+             * Batch of dispatches did not complete fully. Index of first failing dispatch given, as
+             * well as the error.
+             **/
             BatchInterrupted: AugmentedEvent<
                 ApiType,
                 [index: u32, error: SpRuntimeDispatchError],
                 { index: u32; error: SpRuntimeDispatchError }
             >;
-            /** A call was dispatched. */
+            /**
+             * A call was dispatched.
+             **/
             DispatchedAs: AugmentedEvent<
                 ApiType,
                 [result: Result<Null, SpRuntimeDispatchError>],
                 { result: Result<Null, SpRuntimeDispatchError> }
             >;
-            /** A single item within a Batch of dispatches has completed with no error. */
+            /**
+             * A single item within a Batch of dispatches has completed with no error.
+             **/
             ItemCompleted: AugmentedEvent<ApiType, []>;
-            /** A single item within a Batch of dispatches has completed with error. */
+            /**
+             * A single item within a Batch of dispatches has completed with error.
+             **/
             ItemFailed: AugmentedEvent<ApiType, [error: SpRuntimeDispatchError], { error: SpRuntimeDispatchError }>;
-            /** Generic event */
+            /**
+             * Generic event
+             **/
             [key: string]: AugmentedEvent<ApiType>;
         };
     } // AugmentedEvents

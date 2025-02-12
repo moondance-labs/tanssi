@@ -1,13 +1,14 @@
+import "@tanssi/api-augment";
 import { MoonwallContext, beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { KeyringPair, generateKeyringPair } from "@moonwall/util";
-import { ApiPromise, Keyring } from "@polkadot/api";
+import { generateKeyringPair, type KeyringPair } from "@moonwall/util";
+import { type ApiPromise, Keyring } from "@polkadot/api";
 import fs from "node:fs";
 
 describeSuite({
-    id: "R01",
+    id: "Z01",
     title: "Zombie Dancebox Upgrade Test",
     foundationMethods: "zombie",
-    testCases: function ({ it, context, log }) {
+    testCases: ({ it, context, log }) => {
         let paraApi: ApiPromise;
         let relayApi: ApiPromise;
         let alice: KeyringPair;
@@ -31,7 +32,7 @@ describeSuite({
         it({
             id: "T01",
             title: "Blocks are being produced on parachain",
-            test: async function () {
+            test: async () => {
                 const blockNum = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
                 expect(blockNum).to.be.greaterThan(0);
             },
@@ -41,7 +42,7 @@ describeSuite({
             id: "T02",
             title: "Chain can be upgraded",
             timeout: 600000,
-            test: async function () {
+            test: async ({ skip }) => {
                 const blockNumberBefore = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
                 const currentCode = await paraApi.rpc.state.getStorage(":code");
                 const codeString = currentCode.toString();
@@ -52,13 +53,12 @@ describeSuite({
 
                 if (rtHex === codeString) {
                     log("Runtime already upgraded, skipping test");
-                    return;
-                } else {
-                    log("Runtime not upgraded, proceeding with test");
-                    log("Current runtime spec version:", rtBefore);
-                    log("Current runtime bytes: " + rtHex.slice(0, 10) + "..." + rtHex.slice(-10));
-                    log("New runtime bytes: " + codeString.slice(0, 10) + "..." + codeString.slice(-10));
+                    skip();
                 }
+                log("Runtime not upgraded, proceeding with test");
+                log("Current runtime spec version:", rtBefore);
+                log(`Current runtime hash: ${rtHex.slice(0, 10)}...${rtHex.slice(-10)}`);
+                log(`New runtime hash: ${codeString.slice(0, 10)}...${codeString.slice(-10)}`);
 
                 await context.upgradeRuntime({ from: alice, logger: log });
                 await context.waitBlock(2);
@@ -77,7 +77,7 @@ describeSuite({
             id: "T03",
             title: "Can send balance transfers",
             timeout: 600000,
-            test: async function () {
+            test: async () => {
                 const randomAccount = generateKeyringPair("sr25519");
 
                 let tries = 0;
