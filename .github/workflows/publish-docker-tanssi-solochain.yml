@@ -1,4 +1,4 @@
-name: Publish Docker Dancelight
+name: Publish Docker Solochain
 
 on:
   workflow_dispatch:
