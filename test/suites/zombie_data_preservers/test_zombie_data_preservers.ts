@@ -2,17 +2,17 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { ApiPromise, Keyring, WsProvider } from "@polkadot/api";
 import { signAndSendAndInclude } from "../../util/block";
 import { getHeaderFromRelay } from "../../util/relayInterface";
-import fs from "fs/promises";
+import fs from "node:fs/promises";
 import { ethers, parseUnits, WebSocketProvider } from "ethers";
-import { BALTATHAR_PRIVATE_KEY, CHARLETH_ADDRESS, KeyringPair } from "@moonwall/util";
+import { BALTATHAR_PRIVATE_KEY, CHARLETH_ADDRESS, type KeyringPair } from "@moonwall/util";
 import { u8aToHex } from "@polkadot/util";
 import { decodeAddress } from "@polkadot/util-crypto";
 
 describeSuite({
-    id: "DP01",
+    id: "ZOM01",
     title: "Data Preservers Test",
     foundationMethods: "zombie",
-    testCases: function ({ it, context }) {
+    testCases: ({ it, context }) => {
         let paraApi: ApiPromise;
         let relayApi: ApiPromise;
         let container2000Api: ApiPromise;
@@ -26,10 +26,10 @@ describeSuite({
         let alice: KeyringPair;
         let bob: KeyringPair;
 
-        let profile1;
-        let profile2;
+        let profile1: number;
+        let profile2: number;
 
-        let balanceBeforeAssignment;
+        let balanceBeforeAssignment: bigint;
 
         beforeAll(async () => {
             paraApi = context.polkadotJs("Tanssi");
@@ -68,7 +68,7 @@ describeSuite({
         it({
             id: "T01",
             title: "Blocks are being produced on parachain",
-            test: async function () {
+            test: async () => {
                 const blockNum = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
                 expect(blockNum).to.be.greaterThan(0);
             },
@@ -77,8 +77,8 @@ describeSuite({
         it({
             id: "T02",
             title: "Data preservers 2000 watcher properly starts",
-            test: async function () {
-                const logFilePath = getTmpZombiePath() + "/DataPreserver-2000.log";
+            test: async () => {
+                const logFilePath = `${getTmpZombiePath()}/DataPreserver-2000.log`;
                 await waitForLogs(logFilePath, 300, ["Starting data preserver assignment watcher"]);
             },
         });
@@ -86,8 +86,8 @@ describeSuite({
         it({
             id: "T03",
             title: "Change assignment 2000",
-            test: async function () {
-                const logFilePath = getTmpZombiePath() + "/DataPreserver-2000.log";
+            test: async () => {
+                const logFilePath = `${getTmpZombiePath()}/DataPreserver-2000.log`;
 
                 const profile = {
                     url: "exemple",
@@ -125,7 +125,7 @@ describeSuite({
         it({
             id: "T04",
             title: "RPC endpoint 2000 is properly started",
-            test: async function () {
+            test: async () => {
                 const wsProvider = new WsProvider("ws://127.0.0.1:9950");
                 dataProvider2000Api = await ApiPromise.create({ provider: wsProvider });
 
@@ -139,8 +139,8 @@ describeSuite({
         it({
             id: "T05",
             title: "Data preservers 2001 watcher properly starts",
-            test: async function () {
-                const logFilePath = getTmpZombiePath() + "/DataPreserver-2001.log";
+            test: async () => {
+                const logFilePath = `${getTmpZombiePath()}/DataPreserver-2001.log`;
                 await waitForLogs(logFilePath, 300, ["Starting data preserver assignment watcher"]);
             },
         });
@@ -148,8 +148,8 @@ describeSuite({
         it({
             id: "T06",
             title: "Change assignment 2001",
-            test: async function () {
-                const logFilePath = getTmpZombiePath() + "/DataPreserver-2001.log";
+            test: async () => {
+                const logFilePath = `${getTmpZombiePath()}/DataPreserver-2001.log`;
 
                 const profile = {
                     url: "exemple",
@@ -187,7 +187,7 @@ describeSuite({
         it({
             id: "T07",
             title: "RPC endpoint 2001 is properly started",
-            test: async function () {
+            test: async () => {
                 const wsProvider = new WsProvider("ws://127.0.0.1:9952");
                 dataProvider2001Api = await ApiPromise.create({ provider: wsProvider });
 
@@ -201,7 +201,7 @@ describeSuite({
         it({
             id: "T08",
             title: "RPC endpoint 2001 is Ethereum compatible",
-            test: async function () {
+            test: async () => {
                 const url = "ws://127.0.0.1:9952";
                 const customHttpProvider = new WebSocketProvider(url);
                 console.log((await customHttpProvider.getNetwork()).chainId);
@@ -220,7 +220,7 @@ describeSuite({
         it({
             id: "T09",
             title: "Stop assignement 2001",
-            test: async function () {
+            test: async () => {
                 {
                     const tx = paraApi.tx.dataPreservers.stopAssignment(profile2, 2001);
                     await signAndSendAndInclude(tx, bob);
@@ -234,7 +234,7 @@ describeSuite({
                 expect(onChainProfileAccount).to.be.eq(bobAccount);
                 expect(onChainProfile.assignment.toHuman()).to.be.eq(null);
 
-                const logFilePath = getTmpZombiePath() + "/DataPreserver-2001.log";
+                const logFilePath = `${getTmpZombiePath()}/DataPreserver-2001.log`;
                 await waitForLogs(logFilePath, 300, ["Active(Id(2001)) => NotAssigned"]);
             },
         });
@@ -242,7 +242,7 @@ describeSuite({
         it({
             id: "T10",
             title: "Update profile to Stream Payment",
-            test: async function () {
+            test: async () => {
                 const newProfile = {
                     url: "exemple",
                     paraIds: "AnyParaId",
@@ -287,7 +287,7 @@ describeSuite({
         it({
             id: "T11",
             title: "Start new assignment for chain 2000 with stream payment",
-            test: async function () {
+            test: async () => {
                 {
                     // to non-force assign we need to have a para manager, which is not the case
                     // with paras registered in genesis. we thus set the para manager manually here
@@ -324,7 +324,7 @@ describeSuite({
                     })
                 );
 
-                const logFilePath = getTmpZombiePath() + "/DataPreserver-2001.log";
+                const logFilePath = `${getTmpZombiePath()}/DataPreserver-2001.log`;
                 await waitForLogs(logFilePath, 300, ["NotAssigned => Active(Id(2000))"]);
 
                 const wsProvider = new WsProvider("ws://127.0.0.1:9952");
@@ -340,7 +340,7 @@ describeSuite({
         it({
             id: "T11b",
             title: "Start new assignment for chain 2000 with stream payment - wait 10 blocks",
-            test: async function () {
+            test: async () => {
                 await context.waitBlock(10, "Tanssi");
             },
         });
@@ -348,8 +348,8 @@ describeSuite({
         it({
             id: "T12",
             title: "Data preserver services halt after stream payment is stalled",
-            test: async function () {
-                const logFilePath = getTmpZombiePath() + "/DataPreserver-2001.log";
+            test: async () => {
+                const logFilePath = `${getTmpZombiePath()}/DataPreserver-2001.log`;
                 await waitForLogs(logFilePath, 300, ["Active(Id(2000)) => Inactive(Id(2000))"]);
 
                 {

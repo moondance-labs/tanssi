@@ -1,12 +1,12 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
+import type { ApiPromise } from "@polkadot/api";
 
-import { ApiDecoration } from "@polkadot/api/types";
+import type { ApiDecoration } from "@polkadot/api/types";
 import { fetchIssuance, fetchRewardAuthorContainers } from "util/block";
 import { DANCELIGHT_BOND } from "util/constants";
 
 describeSuite({
-    id: "S18",
+    id: "SMOK06",
     title: "Sample suite that only runs on Dancelight chains",
     foundationMethods: "read_only",
     testCases: ({ it, context }) => {
@@ -25,7 +25,7 @@ describeSuite({
         it({
             id: "C01",
             title: "Inflation for containers should match with expected number of containers",
-            test: async function () {
+            test: async () => {
                 // 70% is distributed across all rewards
                 const events = await apiAt.query.system.events();
                 const issuance = await fetchIssuance(events).amount.toBigInt();
@@ -48,7 +48,7 @@ describeSuite({
         it({
             id: "C02",
             title: "Issuance is correct",
-            test: async function () {
+            test: async () => {
                 const latestBlock = await api.rpc.chain.getBlock();
 
                 const latestBlockHash = latestBlock.block.hash;
@@ -76,7 +76,7 @@ describeSuite({
         it({
             id: "C03",
             title: "Dancelight bond receives dust plus 30% plus non-distributed rewards",
-            test: async function () {
+            test: async () => {
                 const latestBlock = await api.rpc.chain.getBlock();
 
                 const latestBlockHash = latestBlock.block.hash;

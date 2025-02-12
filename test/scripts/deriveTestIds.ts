@@ -13,8 +13,8 @@
  * 1. Files with special characters or spaces.
  * 2. Files in a case-insensitive lexicographical order.
  */
-import fs from "fs";
-import path from "path";
+import fs from "node:fs";
+import path from "node:path";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 
@@ -22,7 +22,7 @@ yargs(hideBin(process.argv))
     .usage("Usage: $0")
     .version("2.0.0")
     .command(
-        `process <rootDir>`,
+        "process <rootDir>",
         "Changes the testsuite IDs based on positional order in the directory tree.",
         (yargs) => {
             return yargs.positional("rootDir", {
@@ -64,7 +64,7 @@ function generatePrefix(directory: string, usedPrefixes: Set<string>): string {
         const charCode = prefix.charCodeAt(1);
         if (charCode >= 90) {
             // If it's Z, wrap around to A
-            prefix = String.fromCharCode(prefix.charCodeAt(0) + 1) + "A";
+            prefix = `${String.fromCharCode(prefix.charCodeAt(0) + 1)}A`;
         } else {
             prefix = prefix[0] + String.fromCharCode(charCode + 1);
         }
@@ -93,13 +93,13 @@ function generateId(directory: string, rootDir: string, prefix: string): void {
         const fullPath = path.join(directory, item);
 
         if (fs.statSync(fullPath).isDirectory()) {
-            const subDirPrefix = ("0" + subDirCount).slice(-2);
+            const subDirPrefix = `0${subDirCount}`.slice(-2);
             generateId(fullPath, rootDir, prefix + subDirPrefix);
             subDirCount++;
         } else {
             const fileContent = fs.readFileSync(fullPath, "utf-8");
             if (fileContent.includes("describeSuite")) {
-                const newId = prefix + ("0" + fileCount).slice(-2);
+                const newId = prefix + `0${fileCount}`.slice(-2);
                 const updatedContent = fileContent.replace(
                     /(describeSuite\s*?\(\s*?\{\s*?id\s*?:\s*?['"])[^'"]+(['"])/,
                     `$1${newId}$2`

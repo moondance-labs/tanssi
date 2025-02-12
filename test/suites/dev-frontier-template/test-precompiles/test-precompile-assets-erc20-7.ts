@@ -1,12 +1,12 @@
 import "@moonbeam-network/api-augment";
 import { beforeAll, deployCreateCompiledContract, describeSuite, expect } from "@moonwall/cli";
 import { ALITH_ADDRESS, BALTATHAR_ADDRESS, alith, createViemTransaction } from "@moonwall/util";
-import { u16 } from "@polkadot/types-codec";
-import { Abi, encodeFunctionData } from "viem";
+import type { u16 } from "@polkadot/types-codec";
+import { type Abi, encodeFunctionData } from "viem";
 import { mockAssetCreation, RELAY_SOURCE_LOCATION, relayAssetMetadata } from "../../../helpers/assets";
 
 describeSuite({
-    id: "DF1107",
+    id: "DE1307",
     title: "Precompiles - Assets-ERC20",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
@@ -52,7 +52,7 @@ describeSuite({
         it({
             id: "T01",
             title: "allows to transfer through call from SC ",
-            test: async function () {
+            test: async () => {
                 // Create approval
                 const { result } = await context.createBlock(
                     createViemTransaction(context, {
