@@ -316,14 +316,12 @@ describeSuite({
                 // In new era's first session at least one block need to be produced by the operator
                 const blocksPerSession = 10;
                 for (let i = 0; i < 3 * blocksPerSession; ++i) {
-                    const latestBlockHash = await relayApi.rpc.chain.getFinalizedHead();
+                    const latestBlockHash = await relayApi.rpc.chain.getBlockHash();
                     const author = (await relayApi.derive.chain.getHeader(latestBlockHash)).author;
-                    if (typeof author !== "undefined") {
-                        if (author.toString() === operatorAccount.address) {
-                            return;
-                        }
-                        await context.waitBlock(1, "Tanssi-relay");
+                    if (author.toString() === operatorAccount.address) {
+                        return;
                     }
+                    await context.waitBlock(1, "Tanssi-relay");
                 }
                 expect.fail("operator didn't produce a block");
             },
