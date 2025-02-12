@@ -276,17 +276,6 @@ describeSuite({
                     "Tanssi-relay"
                 );
 
-                await relayApi.query.system.events((events) => {
-                    events.forEach(({ event }) => {
-                        if (relayApi.events.externalValidators.ExternalValidatorsSet.is(event)) {
-                            console.log("Event emitted when setting external validators");
-                            return true;
-                        }
-                    });
-                    console.log("No event emitted when setting external validators");
-                    return false;
-                });
-
                 const externalValidators = await relayApi.query.externalValidators.externalValidators();
                 expect(externalValidators).to.not.deep.eq(externalValidatorsBefore);
 
