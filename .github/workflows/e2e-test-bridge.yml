@@ -43,7 +43,7 @@ jobs:
               uses: ./.github/workflow-templates/bridge-e2e
 
             - name: Commit Action Status
-              uses: LouisBrunner/checks-action@v1.1.1
+              uses: LouisBrunner/checks-action@v2.0.0
               with:
                 sha: ${{ steps.sharef.outputs.sha }}
                 token: ${{ secrets.GITHUB_TOKEN }}

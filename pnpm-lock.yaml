@@ -131,10 +131,10 @@ importers:
         version: 0.3401.2(postcss@8.4.49)(yaml@2.7.0)
       '@moonwall/cli':
         specifier: 5.10.0
-        version: 5.10.0(@types/node@22.10.5)(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.4.49)(rxjs@7.8.1)(ts-node@10.9.2(@types/node@22.10.5)(typescript@5.5.4))(tsx@4.19.2)(typescript@5.5.4)(zod@3.24.1)
+        version: 5.10.0(@types/node@22.10.5)(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.4.49)(rxjs@7.8.1)(ts-node@10.9.2(@types/node@22.10.5)(typescript@5.5.4))(tsx@4.19.2)(typescript@5.5.4)(zod@3.24.2)
       '@moonwall/util':
         specifier: 5.10.0
-        version: 5.10.0(@types/node@22.10.5)(@vitest/ui@2.1.5(vitest@2.1.5))(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.4.49)(rxjs@7.8.1)(tsx@4.19.2)(typescript@5.5.4)(yaml@2.7.0)(zod@3.24.1)
+        version: 5.10.0(@types/node@22.10.5)(@vitest/ui@2.1.5(vitest@2.1.5))(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.4.49)(rxjs@7.8.1)(tsx@4.19.2)(typescript@5.5.4)(yaml@2.7.0)(zod@3.24.2)
       '@polkadot/wasm-crypto':
         specifier: ^7.4.1
         version: 7.4.1(@polkadot/util@13.3.1)(@polkadot/x-randomvalues@13.3.1(@polkadot/util@13.3.1)(@polkadot/wasm-util@7.4.1(@polkadot/util@13.3.1)))
@@ -194,13 +194,13 @@ importers:
         version: 5.5.4
       viem:
         specifier: 2.22.21
-        version: 2.22.21(typescript@5.5.4)(zod@3.24.1)
+        version: 2.22.21(typescript@5.5.4)(zod@3.24.2)
       vitest:
         specifier: 2.1.5
         version: 2.1.5(@types/node@22.10.5)(@vitest/ui@2.1.5)(jsdom@23.2.0)
       web3:
         specifier: 4.15.0
-        version: 4.15.0(encoding@0.1.13)(typescript@5.5.4)(zod@3.24.1)
+        version: 4.15.0(encoding@0.1.13)(typescript@5.5.4)(zod@3.24.2)
       web3-providers-ws:
         specifier: 4.0.8
         version: 4.0.8
@@ -4370,8 +4370,8 @@ packages:
   zod@3.23.8:
     resolution: {integrity: sha512-XBx9AXhXktjUqnepgTiE5flcKIYWi/rme0Eaj+5Y0lftuGBq+jyRu/md4WnuxqgP1ubdpNCsYEYPxrzVHD8d6g==}
 
-  zod@3.24.1:
-    resolution: {integrity: sha512-muH7gBL9sI1nciMZV67X5fTKKBLtwpZ5VBp1vsOQzj1MhrBZ4wlVCm3gedKZWLp0Oyel8sIGfeiz54Su+OVT+A==}
+  zod@3.24.2:
+    resolution: {integrity: sha512-lY7CDW43ECgW9u1TcT3IoXHflywfVqDYze4waEz812jR/bZ8FHDsl7pFQoSZTz5N+2NqRXs8GBwnAwo3ZNxqhQ==}
 
 snapshots:
 
@@ -4391,7 +4391,7 @@ snapshots:
       pino: 9.5.0
       pino-pretty: 13.0.0
       rxjs: 7.8.1
-      zod: 3.24.1
+      zod: 3.24.2
     transitivePeerDependencies:
       - bufferutil
       - supports-color
@@ -4451,7 +4451,7 @@ snapshots:
       lodash: 4.17.21
       ws: 8.18.0
       yargs: 17.7.2
-      zod: 3.24.1
+      zod: 3.24.2
     transitivePeerDependencies:
       - '@google-cloud/spanner'
       - '@sap/hana-client'
@@ -4495,7 +4495,7 @@ snapshots:
       lodash: 4.17.21
       ws: 8.18.0
       yargs: 17.7.2
-      zod: 3.24.1
+      zod: 3.24.2
     transitivePeerDependencies:
       - '@google-cloud/spanner'
       - '@sap/hana-client'
@@ -5017,13 +5017,13 @@ snapshots:
       - utf-8-validate
       - yaml
 
-  '@moonwall/cli@5.10.0(@types/node@22.10.5)(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.4.49)(rxjs@7.8.1)(ts-node@10.9.2(@types/node@22.10.5)(typescript@5.5.4))(tsx@4.19.2)(typescript@5.5.4)(zod@3.24.1)':
+  '@moonwall/cli@5.10.0(@types/node@22.10.5)(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.4.49)(rxjs@7.8.1)(ts-node@10.9.2(@types/node@22.10.5)(typescript@5.5.4))(tsx@4.19.2)(typescript@5.5.4)(zod@3.24.2)':
     dependencies:
       '@acala-network/chopsticks': 1.0.2(debug@4.4.0)(ts-node@10.9.2(@types/node@22.10.5)(typescript@5.5.4))
       '@inquirer/prompts': 7.3.1(@types/node@22.10.5)
       '@moonbeam-network/api-augment': 0.3401.2(postcss@8.4.49)(yaml@2.7.0)
-      '@moonwall/types': 5.10.0(@vitest/ui@2.1.5(vitest@2.1.5))(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.4.49)(rxjs@7.8.1)(tsx@4.19.2)(typescript@5.5.4)(yaml@2.7.0)(zod@3.24.1)
-      '@moonwall/util': 5.10.0(@types/node@22.10.5)(@vitest/ui@2.1.5(vitest@2.1.5))(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.4.49)(rxjs@7.8.1)(tsx@4.19.2)(typescript@5.5.4)(yaml@2.7.0)(zod@3.24.1)
+      '@moonwall/types': 5.10.0(@vitest/ui@2.1.5(vitest@2.1.5))(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.4.49)(rxjs@7.8.1)(tsx@4.19.2)(typescript@5.5.4)(yaml@2.7.0)(zod@3.24.2)
+      '@moonwall/util': 5.10.0(@types/node@22.10.5)(@vitest/ui@2.1.5(vitest@2.1.5))(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.4.49)(rxjs@7.8.1)(tsx@4.19.2)(typescript@5.5.4)(yaml@2.7.0)(zod@3.24.2)
       '@octokit/rest': 21.1.0
       '@polkadot/api': 15.5.1
       '@polkadot/api-derive': 15.5.1
@@ -5056,9 +5056,9 @@ snapshots:
       semver: 7.6.3
       tiny-invariant: 1.3.3
       tmp: 0.2.3
-      viem: 2.22.21(typescript@5.5.4)(zod@3.24.1)
+      viem: 2.22.21(typescript@5.5.4)(zod@3.24.2)
       vitest: 2.1.5(@types/node@22.10.5)(@vitest/ui@2.1.5)(jsdom@23.2.0)
-      web3: 4.15.0(encoding@0.1.13)(typescript@5.5.4)(zod@3.24.1)
+      web3: 4.15.0(encoding@0.1.13)(typescript@5.5.4)(zod@3.24.2)
       web3-providers-ws: 4.0.7
       ws: 8.18.0
       yaml: 2.7.0
@@ -5111,7 +5111,7 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@moonwall/types@5.10.0(@vitest/ui@2.1.5(vitest@2.1.5))(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.4.49)(rxjs@7.8.1)(tsx@4.19.2)(typescript@5.5.4)(yaml@2.7.0)(zod@3.24.1)':
+  '@moonwall/types@5.10.0(@vitest/ui@2.1.5(vitest@2.1.5))(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.4.49)(rxjs@7.8.1)(tsx@4.19.2)(typescript@5.5.4)(yaml@2.7.0)(zod@3.24.2)':
     dependencies:
       '@polkadot/api': 15.5.1
       '@polkadot/api-base': 15.5.1
@@ -5125,9 +5125,9 @@ snapshots:
       debug: 4.3.7(supports-color@8.1.1)
       ethers: 6.13.4
       polkadot-api: 1.7.7(postcss@8.4.49)(rxjs@7.8.1)(tsx@4.19.2)(yaml@2.7.0)
-      viem: 2.22.21(typescript@5.5.4)(zod@3.24.1)
+      viem: 2.22.21(typescript@5.5.4)(zod@3.24.2)
       vitest: 2.1.5(@types/node@22.12.0)(@vitest/ui@2.1.5(vitest@2.1.5))(jsdom@23.2.0)
-      web3: 4.15.0(encoding@0.1.13)(typescript@5.5.4)(zod@3.24.1)
+      web3: 4.15.0(encoding@0.1.13)(typescript@5.5.4)(zod@3.24.2)
     transitivePeerDependencies:
       - '@edge-runtime/vm'
       - '@microsoft/api-extractor'
@@ -5158,11 +5158,11 @@ snapshots:
       - yaml
       - zod
 
-  '@moonwall/util@5.10.0(@types/node@22.10.5)(@vitest/ui@2.1.5(vitest@2.1.5))(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.4.49)(rxjs@7.8.1)(tsx@4.19.2)(typescript@5.5.4)(yaml@2.7.0)(zod@3.24.1)':
+  '@moonwall/util@5.10.0(@types/node@22.10.5)(@vitest/ui@2.1.5(vitest@2.1.5))(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.4.49)(rxjs@7.8.1)(tsx@4.19.2)(typescript@5.5.4)(yaml@2.7.0)(zod@3.24.2)':
     dependencies:
       '@inquirer/prompts': 7.3.1(@types/node@22.10.5)
       '@moonbeam-network/api-augment': 0.3401.2(postcss@8.4.49)(yaml@2.7.0)
-      '@moonwall/types': 5.10.0(@vitest/ui@2.1.5(vitest@2.1.5))(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.4.49)(rxjs@7.8.1)(tsx@4.19.2)(typescript@5.5.4)(yaml@2.7.0)(zod@3.24.1)
+      '@moonwall/types': 5.10.0(@vitest/ui@2.1.5(vitest@2.1.5))(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.4.49)(rxjs@7.8.1)(tsx@4.19.2)(typescript@5.5.4)(yaml@2.7.0)(zod@3.24.2)
       '@polkadot/api': 15.5.1
       '@polkadot/api-derive': 15.5.1
       '@polkadot/keyring': 13.3.1(@polkadot/util-crypto@13.3.1(@polkadot/util@13.3.1))(@polkadot/util@13.3.1)
@@ -5180,9 +5180,9 @@ snapshots:
       ethers: 6.13.4
       rlp: 3.0.0
       semver: 7.6.3
-      viem: 2.22.21(typescript@5.5.4)(zod@3.24.1)
+      viem: 2.22.21(typescript@5.5.4)(zod@3.24.2)
       vitest: 2.1.5(@types/node@22.10.5)(@vitest/ui@2.1.5)(jsdom@23.2.0)
-      web3: 4.15.0(encoding@0.1.13)(typescript@5.5.4)(zod@3.24.1)
+      web3: 4.15.0(encoding@0.1.13)(typescript@5.5.4)(zod@3.24.2)
       ws: 8.18.0
       yargs: 17.7.2
     transitivePeerDependencies:
@@ -6334,16 +6334,16 @@ snapshots:
   abbrev@1.1.1:
     optional: true
 
-  abitype@0.7.1(typescript@5.5.4)(zod@3.24.1):
+  abitype@0.7.1(typescript@5.5.4)(zod@3.24.2):
     dependencies:
       typescript: 5.5.4
     optionalDependencies:
-      zod: 3.24.1
+      zod: 3.24.2
 
-  abitype@1.0.8(typescript@5.5.4)(zod@3.24.1):
+  abitype@1.0.8(typescript@5.5.4)(zod@3.24.2):
     optionalDependencies:
       typescript: 5.5.4
-      zod: 3.24.1
+      zod: 3.24.2
 
   acorn-walk@8.3.3:
     dependencies:
@@ -7944,14 +7944,14 @@ snapshots:
 
   os-tmpdir@1.0.2: {}
 
-  ox@0.6.7(typescript@5.5.4)(zod@3.24.1):
+  ox@0.6.7(typescript@5.5.4)(zod@3.24.2):
     dependencies:
       '@adraffy/ens-normalize': 1.11.0
       '@noble/curves': 1.8.1
       '@noble/hashes': 1.7.1
       '@scure/bip32': 1.6.2
       '@scure/bip39': 1.5.4
-      abitype: 1.0.8(typescript@5.5.4)(zod@3.24.1)
+      abitype: 1.0.8(typescript@5.5.4)(zod@3.24.2)
       eventemitter3: 5.0.1
     optionalDependencies:
       typescript: 5.5.4
@@ -8898,15 +8898,15 @@ snapshots:
       spdx-correct: 3.2.0
       spdx-expression-parse: 3.0.1
 
-  viem@2.22.21(typescript@5.5.4)(zod@3.24.1):
+  viem@2.22.21(typescript@5.5.4)(zod@3.24.2):
     dependencies:
       '@noble/curves': 1.8.1
       '@noble/hashes': 1.7.1
       '@scure/bip32': 1.6.2
       '@scure/bip39': 1.5.4
-      abitype: 1.0.8(typescript@5.5.4)(zod@3.24.1)
+      abitype: 1.0.8(typescript@5.5.4)(zod@3.24.2)
       isows: 1.0.6(ws@8.18.0)
-      ox: 0.6.7(typescript@5.5.4)(zod@3.24.1)
+      ox: 0.6.7(typescript@5.5.4)(zod@3.24.2)
       ws: 8.18.0
     optionalDependencies:
       typescript: 5.5.4
@@ -9070,9 +9070,9 @@ snapshots:
     dependencies:
       web3-types: 1.9.0
 
-  web3-eth-abi@4.4.0(typescript@5.5.4)(zod@3.24.1):
+  web3-eth-abi@4.4.0(typescript@5.5.4)(zod@3.24.2):
     dependencies:
-      abitype: 0.7.1(typescript@5.5.4)(zod@3.24.1)
+      abitype: 0.7.1(typescript@5.5.4)(zod@3.24.2)
       web3-errors: 1.3.0
       web3-types: 1.9.0
       web3-utils: 4.3.2
@@ -9091,13 +9091,13 @@ snapshots:
       web3-utils: 4.3.2
       web3-validator: 2.0.6
 
-  web3-eth-contract@4.7.1(encoding@0.1.13)(typescript@5.5.4)(zod@3.24.1):
+  web3-eth-contract@4.7.1(encoding@0.1.13)(typescript@5.5.4)(zod@3.24.2):
     dependencies:
       '@ethereumjs/rlp': 5.0.2
       web3-core: 4.7.0(encoding@0.1.13)
       web3-errors: 1.3.0
-      web3-eth: 4.11.0(encoding@0.1.13)(typescript@5.5.4)(zod@3.24.1)
-      web3-eth-abi: 4.4.0(typescript@5.5.4)(zod@3.24.1)
+      web3-eth: 4.11.0(encoding@0.1.13)(typescript@5.5.4)(zod@3.24.2)
+      web3-eth-abi: 4.4.0(typescript@5.5.4)(zod@3.24.2)
       web3-types: 1.9.0
       web3-utils: 4.3.2
       web3-validator: 2.0.6
@@ -9108,13 +9108,13 @@ snapshots:
       - utf-8-validate
       - zod
 
-  web3-eth-ens@4.4.0(encoding@0.1.13)(typescript@5.5.4)(zod@3.24.1):
+  web3-eth-ens@4.4.0(encoding@0.1.13)(typescript@5.5.4)(zod@3.24.2):
     dependencies:
       '@adraffy/ens-normalize': 1.11.0
       web3-core: 4.7.0(encoding@0.1.13)
       web3-errors: 1.3.0
-      web3-eth: 4.11.0(encoding@0.1.13)(typescript@5.5.4)(zod@3.24.1)
-      web3-eth-contract: 4.7.1(encoding@0.1.13)(typescript@5.5.4)(zod@3.24.1)
+      web3-eth: 4.11.0(encoding@0.1.13)(typescript@5.5.4)(zod@3.24.2)
+      web3-eth-contract: 4.7.1(encoding@0.1.13)(typescript@5.5.4)(zod@3.24.2)
       web3-net: 4.1.0(encoding@0.1.13)
       web3-types: 1.9.0
       web3-utils: 4.3.2
@@ -9133,10 +9133,10 @@ snapshots:
       web3-utils: 4.3.2
       web3-validator: 2.0.6
 
-  web3-eth-personal@4.1.0(encoding@0.1.13)(typescript@5.5.4)(zod@3.24.1):
+  web3-eth-personal@4.1.0(encoding@0.1.13)(typescript@5.5.4)(zod@3.24.2):
     dependencies:
       web3-core: 4.7.0(encoding@0.1.13)
-      web3-eth: 4.11.0(encoding@0.1.13)(typescript@5.5.4)(zod@3.24.1)
+      web3-eth: 4.11.0(encoding@0.1.13)(typescript@5.5.4)(zod@3.24.2)
       web3-rpc-methods: 1.3.0(encoding@0.1.13)
       web3-types: 1.9.0
       web3-utils: 4.3.2
@@ -9148,12 +9148,12 @@ snapshots:
       - utf-8-validate
       - zod
 
-  web3-eth@4.11.0(encoding@0.1.13)(typescript@5.5.4)(zod@3.24.1):
+  web3-eth@4.11.0(encoding@0.1.13)(typescript@5.5.4)(zod@3.24.2):
     dependencies:
       setimmediate: 1.0.5
       web3-core: 4.7.0(encoding@0.1.13)
       web3-errors: 1.3.0
-      web3-eth-abi: 4.4.0(typescript@5.5.4)(zod@3.24.1)
+      web3-eth-abi: 4.4.0(typescript@5.5.4)(zod@3.24.2)
       web3-eth-accounts: 4.3.0
       web3-net: 4.1.0(encoding@0.1.13)
       web3-providers-ws: 4.0.8
@@ -9260,17 +9260,17 @@ snapshots:
       web3-types: 1.9.0
       zod: 3.23.8
 
-  web3@4.15.0(encoding@0.1.13)(typescript@5.5.4)(zod@3.24.1):
+  web3@4.15.0(encoding@0.1.13)(typescript@5.5.4)(zod@3.24.2):
     dependencies:
       web3-core: 4.7.0(encoding@0.1.13)
       web3-errors: 1.3.0
-      web3-eth: 4.11.0(encoding@0.1.13)(typescript@5.5.4)(zod@3.24.1)
-      web3-eth-abi: 4.4.0(typescript@5.5.4)(zod@3.24.1)
+      web3-eth: 4.11.0(encoding@0.1.13)(typescript@5.5.4)(zod@3.24.2)
+      web3-eth-abi: 4.4.0(typescript@5.5.4)(zod@3.24.2)
       web3-eth-accounts: 4.3.0
-      web3-eth-contract: 4.7.1(encoding@0.1.13)(typescript@5.5.4)(zod@3.24.1)
-      web3-eth-ens: 4.4.0(encoding@0.1.13)(typescript@5.5.4)(zod@3.24.1)
+      web3-eth-contract: 4.7.1(encoding@0.1.13)(typescript@5.5.4)(zod@3.24.2)
+      web3-eth-ens: 4.4.0(encoding@0.1.13)(typescript@5.5.4)(zod@3.24.2)
       web3-eth-iban: 4.0.7
-      web3-eth-personal: 4.1.0(encoding@0.1.13)(typescript@5.5.4)(zod@3.24.1)
+      web3-eth-personal: 4.1.0(encoding@0.1.13)(typescript@5.5.4)(zod@3.24.2)
       web3-net: 4.1.0(encoding@0.1.13)
       web3-providers-http: 4.2.0(encoding@0.1.13)
       web3-providers-ws: 4.0.8
@@ -9454,4 +9454,4 @@ snapshots:
 
   zod@3.23.8: {}
 
-  zod@3.24.1: {}
+  zod@3.24.2: {}
