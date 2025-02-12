@@ -1,5 +1,5 @@
-import { DevModeContext } from "@moonwall/cli";
-import { KeyringPair } from "@moonwall/util";
+import type { DevModeContext } from "@moonwall/cli";
+import type { KeyringPair } from "@moonwall/util";
 
 export async function createBlockAndRemoveInvulnerables(context: DevModeContext, sudoKey: KeyringPair) {
     let nonce = (await context.polkadotJs().rpc.system.accountNextIndex(sudoKey.address)).toNumber();

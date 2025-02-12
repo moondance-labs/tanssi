@@ -193,7 +193,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("dancelight"),
     impl_name: create_runtime_str!("tanssi-dancelight-v2.0"),
     authoring_version: 0,
-    spec_version: 1100,
+    spec_version: 1200,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 26,
@@ -467,6 +467,7 @@ impl pallet_babe::Config for Runtime {
     // session module is the trigger
     type EpochChangeTrigger = pallet_babe::ExternalTrigger;
     type DisabledValidators = Session;
+    // Not benchmarked in Kusama
     type WeightInfo = ();
     type MaxAuthorities = MaxAuthorities;
     type MaxNominators = ConstU32<0>;
@@ -570,6 +571,10 @@ impl pallet_session::Config for Runtime {
     type SessionManager = pallet_session::historical::NoteHistoricalRoot<Self, ExternalValidators>;
     type SessionHandler = <SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
     type Keys = SessionKeys;
+    // TODO: Current benchmarking code for pallet_session requires that the runtime
+    // uses pallet_staking, which we don't use. We need to make a PR to Substrate to
+    // allow decoupling the benchmark from other pallets.
+    // See https://github.com/paritytech/polkadot-sdk/blob/0845044454c005b577eab7afaea18583bd7e3dd3/substrate/frame/session/benchmarking/src/inner.rs#L38
     type WeightInfo = ();
 }
 
@@ -682,6 +687,7 @@ parameter_types! {
 
 impl pallet_grandpa::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
+    // Not benchmarked in Kusama, benchmarking code also don't match WeightInfo trait.
     type WeightInfo = ();
     type MaxAuthorities = MaxAuthorities;
     type MaxNominators = ConstU32<0>;
@@ -1292,6 +1298,8 @@ impl pallet_beefy::Config for Runtime {
     type MaxNominators = ConstU32<0>;
     type MaxSetIdSessionEntries = BeefySetIdSessionEntries;
     type OnNewValidatorSet = BeefyMmrLeaf;
+    // There are currently no benchmarks for pallet_beefy.
+    // https://github.com/paritytech/polkadot-sdk/tree/master/substrate/frame/beefy/src
     type WeightInfo = ();
     type KeyOwnerProof = <Historical as KeyOwnerProofSystem<(KeyTypeId, BeefyId)>>::Proof;
     type EquivocationReportSystem =
@@ -1313,7 +1321,7 @@ impl pallet_mmr::Config for Runtime {
     const INDEXING_PREFIX: &'static [u8] = mmr::INDEXING_PREFIX;
     type Hashing = Keccak256;
     type OnNewRoot = pallet_beefy_mmr::DepositBeefyDigest<Runtime>;
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_mmr::SubstrateWeight<Runtime>;
     type LeafData = pallet_beefy_mmr::Pallet<Runtime>;
     type BlockHashProvider = pallet_mmr::DefaultBlockHashProvider<Runtime>;
     #[cfg(feature = "runtime-benchmarks")]
@@ -1359,7 +1367,7 @@ impl pallet_beefy_mmr::Config for Runtime {
     type BeefyAuthorityToMerkleLeaf = pallet_beefy_mmr::BeefyEcdsaToEthereum;
     type LeafExtra = LeafExtraData;
     type BeefyDataProvider = LeafExtraDataProvider;
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_beefy_mmr::SubstrateWeight<Runtime>;
 }
 
 impl paras_sudo_wrapper::Config for Runtime {}
@@ -1541,7 +1549,7 @@ impl pallet_configuration::Config for Runtime {
     type SessionIndex = SessionIndex;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type ForceEmptyOrchestrator = ConstBool<true>;
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_configuration::SubstrateWeight<Runtime>;
 }
 
 impl pallet_migrations::Config for Runtime {
@@ -1566,7 +1574,7 @@ impl pallet_multiblock_migrations::Config for Runtime {
     type MigrationStatusHandler = ();
     type FailedMigrationHandler = frame_support::migrations::FreezeChainOnFailedMigration;
     type MaxServiceWeight = MbmServiceWeight;
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_multiblock_migrations::SubstrateWeight<Runtime>;
 }
 
 pub const FIXED_BLOCK_PRODUCTION_COST: u128 = 1 * MICROUNITS;
@@ -2303,6 +2311,10 @@ mod benches {
         [pallet_asset_rate, AssetRate]
         [pallet_whitelist, Whitelist]
         [pallet_services_payment, ServicesPayment]
+        [pallet_mmr, Mmr]
+        [pallet_beefy_mmr, BeefyMmrLeaf]
+        [pallet_multiblock_migrations, MultiBlockMigrations]
+
         // Tanssi
         [pallet_author_noting, AuthorNoting]
         [pallet_registrar, ContainerRegistrar]
@@ -2313,6 +2325,7 @@ mod benches {
         [pallet_invulnerables, TanssiInvulnerables]
         [pallet_data_preservers, DataPreservers]
         [pallet_pooled_staking, PooledStaking]
+        [pallet_configuration, CollatorConfiguration]
 
         // XCM
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]

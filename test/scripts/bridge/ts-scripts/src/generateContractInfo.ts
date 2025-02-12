@@ -6,7 +6,7 @@ const run = async () => {
     const basedir = process.env.contract_dir || "../contracts";
     const DeployInfoFile = path.join(basedir, "broadcast", process.env.deploy_script, `${NetworkId}/run-latest.json`);
     const BuildInfoDir = path.join(basedir, "./out");
-    const DestFile = process.argv.length >= 3 ? process.argv[2] : process.env["output_dir"] + "/contracts.json";
+    const DestFile = process.argv.length >= 3 ? process.argv[2] : `${process.env.output_dir}/contracts.json`;
     type Contract = {
         [key: string]: ContractInfo;
     };
@@ -22,7 +22,7 @@ const run = async () => {
             if (contractName) {
                 const contractInfo: ContractInfo = { address: transaction.contractAddress };
                 const contractBuildingInfo = JSON.parse(
-                    fs.readFileSync(path.join(BuildInfoDir, contractName + ".sol", contractName + ".json"), "utf8")
+                    fs.readFileSync(path.join(BuildInfoDir, `${contractName}.sol`, `${contractName}.json`), "utf8")
                 );
                 contractInfo.abi = contractBuildingInfo.abi;
                 contracts[contractName] = contractInfo;
