@@ -398,8 +398,10 @@ jobs:
               run: rustup show
             - name: Install Protoc
               uses: arduino/setup-protoc@v3
+            - name: Install nextest
+              uses: taiki-e/install-action@nextest
             - name: Unit tests
-              run: cargo test --release --all
+              run: cargo nextest run
             - name: Run sccache stat for check pre test
               run: ${SCCACHE_PATH} --show-stats
 
