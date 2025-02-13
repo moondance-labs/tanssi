@@ -222,10 +222,8 @@ describeSuite({
                     responseFor2000.nextProfileId
                 );
 
-                // Cram everything in one array
-                const txs = responseFor2000.txs;
-                txs.push(...responseFor2001.txs);
-                await signAndSendAndInclude(paraApi.tx.sudo.sudo(paraApi.tx.utility.batch(txs)), alice);
+                await signAndSendAndInclude(paraApi.tx.sudo.sudo(paraApi.tx.utility.batch(responseFor2000.txs)), alice);
+                await signAndSendAndInclude(paraApi.tx.sudo.sudo(paraApi.tx.utility.batch(responseFor2001.txs)), alice);
 
                 const pendingParas = await paraApi.query.registrar.pendingParaIds();
                 expect(pendingParas.length).to.be.eq(1);
@@ -395,9 +393,9 @@ describeSuite({
                 await waitSessions(context, paraApi, 2);
 
                 // TODO: calculate block frequency somehow
-                assertSlotFrequency(await getBlockData(paraApi), 1);
-                assertSlotFrequency(await getBlockData(container2000Api), 10);
-                assertSlotFrequency(await getBlockData(container2001Api), 10);
+                await assertSlotFrequency(await getBlockData(paraApi), 1);
+                await assertSlotFrequency(await getBlockData(container2000Api), 10);
+                await assertSlotFrequency(await getBlockData(container2001Api), 10);
             },
         });
     },
