@@ -7,6 +7,14 @@ on:
             - master
             - perm-*
     merge_group:
+env:
+    TMP_TARGET: "/tmp/target"
+    CARGO_TARGET_DIR: "target"
+    RUSTC_WRAPPER: "sccache"
+    CARGO_INCREMENTAL: "0"
+    SCCACHE_CACHE_SIZE: "100GB"
+    SCCACHE_GHA_ENABLED: "true"
+    CARGO_TERM_COLOR: always
 
 jobs:
     set-tags:
@@ -122,7 +130,8 @@ jobs:
     cargo-clippy:
         # Takes 70 mins on GH runner 😱
         runs-on: bare-metal
-        needs: ["set-tags"]
+        # This can reuse the cache from the build job
+        needs: ["set-tags", "build"]
         steps:
             - name: Checkout
               uses: actions/checkout@v4
@@ -133,16 +142,22 @@ jobs:
               run: rustup show
             - name: Install Protoc
               uses: arduino/setup-protoc@v3
+            - name: Run sccache-cache
+              uses: mozilla-actions/sccache-action@v0.0.7
 
             - name: Check for duplicate git dependencies
               run: ./.github/scripts/check_duplicate_git_dependencies.sh
 
             - name: Find toml files with lints key not set
               run: ./.github/scripts/check_toml_lints.sh
+            
+            - name: Run sccache stat for check pre test
+              run: ${SCCACHE_PATH} --show-stats
 
             # Do NOT add SKIP_WASM_BUILD=1 environment variable here as it skips wasm binary build which leads to some compilation bugs escaping clippy
             - name: Clippy
               run: cargo clippy --all-targets --locked --workspace --features try-runtime,runtime-benchmarks
+
 
     cargo-toml-feature-propagation:
         runs-on: ubuntu-latest
@@ -230,8 +245,7 @@ jobs:
         runs-on: self-hosted
         needs: ["set-tags"]
         env:
-            TMP_TARGET: "/tmp/target"
-            CARGO_TARGET_DIR: "target"
+          RUSTFLAGS: -C opt-level=3 -D warnings -C linker=clang -C link-arg=-fuse-ld=$(pwd)/mold/bin/mold
         steps:
             - name: Checkout
               uses: actions/checkout@v4
@@ -239,16 +253,6 @@ jobs:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Run sccache-cache
               uses: mozilla-actions/sccache-action@v0.0.7
-            - name: Setup Variables
-              shell: bash
-              run: |
-                  echo "CARGO_INCREMENTAL=0" >> $GITHUB_ENV
-                  echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
-                  echo "SCCACHE_CACHE_SIZE=100GB" >> $GITHUB_ENV
-                  # Set RUSTFLAGS if not already set
-                  if [ -z "$RUSTFLAGS" ]; then
-                    echo "RUSTFLAGS=-C opt-level=3 -D warnings -C linker=clang -C link-arg=-fuse-ld=$(pwd)/mold/bin/mold" >> $GITHUB_ENV
-                  fi
             - name: Setup Mold Linker
               shell: bash
               run: |
@@ -373,13 +377,7 @@ jobs:
         runs-on: bare-metal
         needs: ["set-tags", "build"]
         env:
-            TMP_TARGET: "/tmp/target"
-            CARGO_TARGET_DIR: "target"
-            RUSTC_WRAPPER: "sccache"
-            CARGO_INCREMENTAL: "0"
-            SCCACHE_CACHE_SIZE: "100GB"
-            SCCACHE_GHA_ENABLED: "true"
-            CARGO_TERM_COLOR: always
+            RUSTFLAGS: -C opt-level=3 -D warnings -C linker=clang -C link-arg=-fuse-ld=$(pwd)/mold/bin/mold
         steps:
             - name: Checkout
               uses: actions/checkout@v4
@@ -387,10 +385,6 @@ jobs:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Run sccache-cache
               uses: mozilla-actions/sccache-action@v0.0.7
-            - name: Setup Variables
-              shell: bash
-              run: |
-                  echo "RUSTFLAGS=-C opt-level=3 -D warnings -C linker=clang -C link-arg=-fuse-ld=$(pwd)/mold/bin/mold" >> $GITHUB_ENV
             - name: Setup Mold Linker
               shell: bash
               run: |
@@ -419,20 +413,19 @@ jobs:
       strategy:
           fail-fast: false
           matrix:
-              partition: [1, 2, 3, 4]
+              partition: [1,2,3,4,5,6,7,8]
       steps:
         - uses: actions/checkout@v4
-        - name: Install nextest
-          uses: taiki-e/install-action@nextest
-        - name: Download prepared test
-          uses: actions/download-artifact@v4
+        - uses: taiki-e/install-action@nextest
+        - uses: actions/download-artifact@v4
           with:
               name: nextest-archive
-        - name: Run Tests for All Projects!
-          run: |
-              ~/.cargo/bin/cargo-nextest nextest run \
-                --archive-file nextest-archive.tar.zst \
-                --partition count:${{ matrix.partition }}/4
+        - name: Run tests!
+        # This action is used for nicer error reporting in GH UI
+          uses: actions-rs/cargo@v1
+          with:
+            command: nextest
+            args: run --archive-file nextest-archive.tar.zst --partition count:${{ matrix.partition }}/8
 
     check-api-augment:
         runs-on: ubuntu-latest
