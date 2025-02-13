@@ -49,6 +49,7 @@ import type {
     PalletConvictionVotingVoteVoting,
     PalletDataPreserversRegisteredProfile,
     PalletExternalValidatorSlashesSlash,
+    PalletExternalValidatorSlashesSlashingModeOption,
     PalletExternalValidatorsForcing,
     PalletExternalValidatorsRewardsEraRewardPoints,
     PalletGrandpaStoredPendingChange,
@@ -852,6 +853,12 @@ declare module "@polkadot/api-base/types/storage" {
                 [u32]
             > &
                 QueryableStorageEntry<ApiType, [u32]>;
+            slashingMode: AugmentedQuery<
+                ApiType,
+                () => Observable<PalletExternalValidatorSlashesSlashingModeOption>,
+                []
+            > &
+                QueryableStorageEntry<ApiType, []>;
             /** All unreported slashes that will be processed in the future. */
             unreportedSlashesQueue: AugmentedQuery<
                 ApiType,
