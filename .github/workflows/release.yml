@@ -119,7 +119,7 @@ jobs:
 
     ####### Static Analyses #######
     cargo-clippy:
-        runs-on: bare-metal
+        runs-on: self-hosted
         needs: ["set-tags", "build"]
         env:
             TMP_TARGET: "/tmp/target"
@@ -362,77 +362,88 @@ jobs:
                   edit-mode: replace
 
     rust-test-prepare:
-        runs-on: bare-metal
-        needs: ["set-tags", "build"]
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v4
-              with:
-                  ref: ${{ needs.set-tags.outputs.git_ref }}
-            - name: Run sccache-cache
-              uses: mozilla-actions/sccache-action@v0.0.7
-            - name: Setup Mold Linker
-              shell: bash
-              run: |
-                  if [ -z "$RUSTFLAGS" ]; then
-                      echo "RUSTFLAGS=-C opt-level=3 -D warnings -C linker=clang -C link-arg=-fuse-ld=$(pwd)/mold/bin/mold" >> $GITHUB_ENV
-                  fi
-                  mkdir -p mold
-                  curl -L --retry 10 --silent --show-error https://github.com/rui314/mold/releases/download/v2.30.0/mold-2.30.0-$(uname -m)-linux.tar.gz | tar -C $(realpath mold) --strip-components=1 -xzf -
-            - name: Setup Rust toolchain
-              run: rustup show
-            - name: Install Protoc
-              uses: arduino/setup-protoc@v3
-            - name: Install nextest
-              uses: taiki-e/install-action@nextest
-            - name: Download ethereum client test files
-              run: ./test/scripts/download-ethereum-client-test-files.sh
-            - name: Build and archive tests
-              run: cargo nextest archive  --release --archive-file nextest-archive.tar.zst
-            - name: Run sccache stat for check pre test
-              run: ${SCCACHE_PATH} --show-stats
-            - name: Upload archive to workflow
-              uses: actions/upload-artifact@v4
-              with:
-                  name: nextest-archive
-                  path: nextest-archive.tar.zst
+      runs-on: bare-metal
+      needs: ["set-tags", "build"]
+      outputs:
+        artefact_dir: ${{ steps.artefact_dir.outputs.artefact_dir }}
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+          with:
+            ref: ${{ needs.set-tags.outputs.git_ref }}
+        - name: Run sccache-cache
+          uses: mozilla-actions/sccache-action@v0.0.7
+        - name: Setup Mold Linker
+          shell: bash
+          run: |
+            if [ -z "$RUSTFLAGS" ]; then
+              echo "RUSTFLAGS=-C opt-level=3 -D warnings -C linker=clang -C link-arg=-fuse-ld=$(pwd)/mold/bin/mold" >> $GITHUB_ENV
+            fi
+            mkdir -p mold
+            curl -L --retry 10 --silent --show-error https://github.com/rui314/mold/releases/download/v2.30.0/mold-2.30.0-$(uname -m)-linux.tar.gz \
+              | tar -C "$(realpath mold)" --strip-components=1 -xzf -
+        - name: Setup Rust toolchain
+          run: rustup show
+        - name: Install Protoc
+          uses: arduino/setup-protoc@v3
+        - name: Install nextest
+          uses: taiki-e/install-action@nextest
+        - name: Find ethereum client test files
+          id: artefact_dir
+          run: |
+            checkpoint=$(find "$HOME" -type f -name "initial-checkpoint.json" -printf "%T@ %p\n" \
+              | sort -nr \
+              | head -n 1 \
+              | awk '{print $2}' \
+              | sed -E "s|^$HOME||; s|tests/fixtures/initial-checkpoint\\.json$||")
+            echo "artefact_dir=$checkpoint" >> $GITHUB_OUTPUT
+        - name: Display variables
+          run: |
+            echo git_ref: ${{ steps.artefact_dir.outputs.artefact_dir }}
+        - name: Build and archive tests
+          run: cargo nextest archive --release --archive-file nextest-archive.tar.zst
+        - name: Run sccache stat for check pre test
+          run: ${SCCACHE_PATH} --show-stats
+        - name: Upload test artefacts
+          uses: actions/upload-artifact@v4
+          with:
+            name: test-artefacts
+            path: ${{ steps.artefact_dir.outputs.artefact_dir }}
+        - name: Upload archive to workflow
+          uses: actions/upload-artifact@v4
+          with:
+            name: nextest-archive
+            path: nextest-archive.tar.zst
 
     rust-test-execute:
-        runs-on: ubuntu-latest
-        needs: ["rust-test-prepare"]
-        name: Run all tests (/w partitioning)
-        strategy:
-            fail-fast: false
-            matrix:
-                partition: [1, 2, 3, 4, 5, 6, 7, 8]
-        steps:
-            - uses: actions/checkout@v4
-            - uses: taiki-e/install-action@nextest
-            - uses: actions/download-artifact@v4
-              with:
-                name: nextest-archive
-            - name: Download ethereum client test files
-              run: ./test/scripts/download-ethereum-client-test-files.sh
-            - name: Copy fixtures to cargo git location
-              run: |
-                # Find the polkadot-sdk directory in cargo git
-                cargo_dir=$(find ~/.cargo/git/checkouts -type d -name "polkadot-sdk*" | head -n 1)
-                if [ -n "$cargo_dir" ]; then
-                  fixture_dir="$cargo_dir/bridges/snowbridge/pallets/ethereum-client/tests"
-                  mkdir -p "$fixture_dir"
-                  cp -r test/tmp/ethereum_client_test "$fixture_dir/fixtures"
-                else
-                  echo "Could not find polkadot-sdk checkout directory"
-                  exit 1
-                fi
-            - name: Run tests!
-              uses: actions-rs/cargo@v1
-              with:
-                command: nextest
-                args: run --archive-file nextest-archive.tar.zst   /
-                    --partition count:${{ matrix.partition }}/8    /
-                    --workspace-remap ${{ github.workspace }}      /
-                    --no-fail-fast                                 /
+      runs-on: ubuntu-latest
+      needs: ["rust-test-prepare"]
+      name: Run all tests (/w partitioning)
+      strategy:
+        fail-fast: false
+        matrix:
+          partition: [1, 2, 3, 4, 5, 6, 7, 8]
+      steps:
+        - uses: actions/checkout@v4
+        - uses: taiki-e/install-action@nextest
+        - name: Download nextest archive
+          uses: actions/download-artifact@v4
+          with:
+            name: nextest-archive
+        # Download the test artefacts into $HOME so that the relative path is recreated
+        - name: Download test artefacts
+          uses: actions/download-artifact@v4
+          with:
+            name: test-artefacts
+            path: $HOME
+        - name: Run tests!
+          uses: actions-rs/cargo@v1
+          with:
+            command: nextest
+            args: run --archive-file nextest-archive.tar.zst   /
+                  --partition count:${{ matrix.partition }}/8    /
+                  --workspace-remap ${{ github.workspace }}      /
+                  --no-fail-fast                            
                     
 
     check-api-augment:
