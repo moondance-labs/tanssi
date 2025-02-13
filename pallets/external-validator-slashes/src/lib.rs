@@ -46,7 +46,7 @@ use {
     sp_std::collections::vec_deque::VecDeque,
     sp_std::vec,
     sp_std::vec::Vec,
-    tp_traits::{EraIndexProvider, ExternalIndexProvider, InvulnerablesProvider, OnEraStart},
+    tp_traits::{apply, derive_storage_traits, EraIndexProvider, ExternalIndexProvider, InvulnerablesProvider, OnEraStart},
 };
 
 use snowbridge_core::ChannelId;
@@ -174,6 +174,19 @@ pub mod pallet {
         EthereumDeliverFail,
     }
 
+    #[apply(derive_storage_traits)]
+    #[derive(MaxEncodedLen)]
+    pub enum SlashingModeOption {
+        Enabled,
+        LogOnly, 
+        Disabled,
+    }
+    
+    impl Default for SlashingModeOption {
+        fn default() -> Self {
+            SlashingModeOption::Enabled
+        }
+    }
     #[pallet::pallet]
     pub struct Pallet<T>(PhantomData<T>);
 
@@ -210,6 +223,11 @@ pub mod pallet {
     #[pallet::getter(fn unreported_slashes)]
     pub type UnreportedSlashesQueue<T: Config> =
         StorageValue<_, VecDeque<Slash<T::AccountId, T::SlashId>>, ValueQuery>;
+
+    // Turns slashing on or off
+    #[pallet::storage]
+    pub type SlashingMode<T: Config> =
+        StorageValue<_, SlashingModeOption, ValueQuery>;
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
@@ -351,6 +369,19 @@ pub mod pallet {
 
             Ok(())
         }
+
+        #[pallet::call_index(3)]
+        #[pallet::weight(T::WeightInfo::root_test_send_msg_to_eth())]
+        pub fn set_slashing_mode(
+            origin: OriginFor<T>,
+            mode: SlashingModeOption
+        ) -> DispatchResult {
+            ensure_root(origin)?;
+
+            SlashingMode::<T>::put(mode);
+
+            Ok(())
+        }
     }
 
     #[pallet::hooks]
@@ -385,6 +416,12 @@ where
         slash_fraction: &[Perbill],
         slash_session: SessionIndex,
     ) -> Weight {
+
+        let slashing_mode = SlashingMode::<T>::get();
+        if slashing_mode == SlashingModeOption::Disabled {
+            return Weight::default();
+        }
+
         let active_era = {
             let active_era = T::EraIndexProvider::active_era().index;
             active_era
@@ -428,6 +465,16 @@ where
                 continue;
             }
 
+            Self::deposit_event(Event::<T>::SlashReported {
+                validator: stash.clone(),
+                fraction: *slash_fraction,
+                slash_era,
+            });
+
+            if slashing_mode == SlashingModeOption::LogOnly {
+                continue;
+            }
+
             let slash = compute_slash::<T>(
                 *slash_fraction,
                 next_slash_id,
@@ -436,12 +483,6 @@ where
                 slash_defer_duration,
                 external_idx,
             );
-
-            Self::deposit_event(Event::<T>::SlashReported {
-                validator: stash.clone(),
-                fraction: *slash_fraction,
-                slash_era,
-            });
 
             if let Some(mut slash) = slash {
                 slash.reporters = details.reporters.clone();
