@@ -413,7 +413,7 @@ jobs:
               uses: actions-rs/cargo@v1
               with:
                 command: nextest
-                args: run --archive-file nextest-archive.tar.zst --partition count:${{ matrix.partition }}/8 --workspace-remap /home/gh-actions/runner/_work/tanssi/tanssi=${{ github.workspace }}
+                args: run --archive-file nextest-archive.tar.zst --partition count:${{ matrix.partition }}/8 --workspace-remap ${{ github.workspace }}
 
     check-api-augment:
         runs-on: ubuntu-latest
@@ -613,7 +613,6 @@ jobs:
             - name: "Install and run upgrade test"
               run: |
                   chmod uog+x target/release/tanssi-node
-                  cd typescript-api
                   pnpm install
                   pnpm moonwall test dev_dancebox_specs
 
