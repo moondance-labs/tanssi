@@ -175,18 +175,14 @@ pub mod pallet {
     }
 
     #[apply(derive_storage_traits)]
-    #[derive(MaxEncodedLen)]
+    #[derive(MaxEncodedLen, Default)]
     pub enum SlashingModeOption {
+        #[default]
         Enabled,
         LogOnly, 
         Disabled,
     }
     
-    impl Default for SlashingModeOption {
-        fn default() -> Self {
-            SlashingModeOption::Enabled
-        }
-    }
     #[pallet::pallet]
     pub struct Pallet<T>(PhantomData<T>);
 
