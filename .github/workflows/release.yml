@@ -618,6 +618,7 @@ jobs:
               run: |
                   chmod uog+x target/release/tanssi-node
                   pnpm install
+                  cd test
                   pnpm moonwall test dev_dancebox_specs
 
     typescript-tests-relay:
