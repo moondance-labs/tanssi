@@ -395,11 +395,11 @@ jobs:
               | sort -nr \
               | head -n 1 \
               | awk '{print $2}' \
-              | sed -E "s|^$HOME||; s|tests/fixtures/initial-checkpoint\\.json$||")
+              | sed -E "s|^$HOME||; s|/initial-checkpoint\\.json$||")
             echo "artefact_dir=$checkpoint" >> $GITHUB_OUTPUT
         - name: Display variables
           run: |
-            echo git_ref: ${{ steps.artefact_dir.outputs.artefact_dir }}
+            echo artefact_dir:${{ steps.artefact_dir.outputs.artefact_dir }}
         - name: Build and archive tests
           run: cargo nextest archive --release --archive-file nextest-archive.tar.zst
         - name: Run sccache stat for check pre test
@@ -430,12 +430,16 @@ jobs:
           uses: actions/download-artifact@v4
           with:
             name: nextest-archive
-        # Download the test artefacts into $HOME so that the relative path is recreated
-        - name: Download test artefacts
-          uses: actions/download-artifact@v4
-          with:
-            name: test-artefacts
-            path: $HOME
+        - run: |
+            test/scripts/download-ethereum-client-test-files.sh
+            mkdir -p ~${{needs.rust-test-prepare.outputs.artefact_dir}}
+            cp test/tmp ~${{needs.rust-test-prepare.outputs.artefact_dir}}*
+
+        # - name: Download test artefacts
+        #   uses: actions/download-artifact@v4
+        #   with:
+        #     name: test-artefacts
+        #     path: $HOME
         - name: Run tests!
           uses: actions-rs/cargo@v1
           with:
