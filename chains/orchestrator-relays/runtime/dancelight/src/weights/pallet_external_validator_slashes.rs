@@ -49,6 +49,7 @@
 #![allow(unused_imports)]
 
 use frame_support::{traits::Get, weights::{Weight, constants::RocksDbWeight}};
+use pallet_external_validator_slashes::SlashingModeOption;
 use sp_std::marker::PhantomData;
 
 /// Weights for pallet_external_validator_slashes using the Substrate node and recommended hardware.
@@ -136,5 +137,11 @@ impl<T: frame_system::Config> pallet_external_validator_slashes::WeightInfo for 
 			.saturating_add(T::DbWeight::get().reads(3_u64))
 			.saturating_add(T::DbWeight::get().writes(3_u64))
 			.saturating_add(Weight::from_parts(0, 50).saturating_mul(s.into()))
+	}
+
+	fn set_slashing_mode(s: SlashingModeOption) -> Weight {
+		Weight::from_parts(7_402_000, 3601)
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 }

@@ -51,12 +51,15 @@
 use frame_support::{traits::Get, weights::{Weight, constants::RocksDbWeight}};
 use sp_std::marker::PhantomData;
 
+use crate::SlashingModeOption;
+
 /// Weight functions needed for pallet_external_validator_slashes.
 pub trait WeightInfo {
 	fn cancel_deferred_slash(s: u32, ) -> Weight;
 	fn force_inject_slash() -> Weight;
 	fn root_test_send_msg_to_eth() -> Weight;
 	fn process_slashes_queue(s: u32, ) -> Weight;
+	fn set_slashing_mode(s: SlashingModeOption) -> Weight;
 }
 
 /// Weights for pallet_external_validator_slashes using the Substrate node and recommended hardware.
@@ -134,6 +137,13 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 			.saturating_add(Weight::from_parts(0, 42).saturating_mul(s.into()))
 	}
+
+	fn set_slashing_mode(s: SlashingModeOption) -> Weight {
+		Weight::from_parts(7_402_000, 3601)
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
+	}
+
 }
 
 // For backwards compatibility and tests
@@ -211,5 +221,11 @@ impl WeightInfo for () {
 			.saturating_add(RocksDbWeight::get().reads(4_u64))
 			.saturating_add(RocksDbWeight::get().writes(2_u64))
 			.saturating_add(Weight::from_parts(0, 42).saturating_mul(s.into()))
+	}
+
+	fn set_slashing_mode(s: SlashingModeOption) -> Weight {
+		Weight::from_parts(7_402_000, 3601)
+			.saturating_add(RocksDbWeight::get().reads(1_u64))
+			.saturating_add(RocksDbWeight::get().writes(1_u64))
 	}
 }
