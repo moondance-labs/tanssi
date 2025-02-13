@@ -385,6 +385,8 @@ jobs:
               uses: arduino/setup-protoc@v3
             - name: Install nextest
               uses: taiki-e/install-action@nextest
+            - name: Download ethereum client test files
+              run: ./test/scripts/download-ethereum-client-test-files.sh
             - name: Build and archive tests
               run: cargo nextest archive  --release --archive-file nextest-archive.tar.zst
             - name: Run sccache stat for check pre test
@@ -409,6 +411,8 @@ jobs:
             - uses: actions/download-artifact@v4
               with:
                 name: nextest-archive
+            - name: Download ethereum client test files
+              run: ./test/scripts/download-ethereum-client-test-files.sh
             - name: Run tests!
               uses: actions-rs/cargo@v1
               with:
