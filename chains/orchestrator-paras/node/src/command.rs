@@ -624,3 +624,18 @@ impl CliConfiguration<Self> for RelayChainCli {
         self.base.base.node_name()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn same_impl_version() {
+        // Impl version depends on version in Cargo.toml
+        // This is to verify we didn't forget to change one of them
+        let v1 = ContainerChainCli::impl_version();
+        let v2 = Cli::impl_version();
+
+        assert_eq!(v1, v2);
+    }
+}
