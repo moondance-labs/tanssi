@@ -408,7 +408,7 @@ jobs:
           uses: actions/upload-artifact@v4
           with:
             name: test-artefacts
-            path: ${{ steps.artefact_dir.outputs.artefact_dir }}
+            path: $HOME${{ steps.artefact_dir.outputs.artefact_dir }}
         - name: Upload archive to workflow
           uses: actions/upload-artifact@v4
           with:
