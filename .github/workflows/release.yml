@@ -413,11 +413,27 @@ jobs:
                 name: nextest-archive
             - name: Download ethereum client test files
               run: ./test/scripts/download-ethereum-client-test-files.sh
+            - name: Copy fixtures to cargo git location
+              run: |
+                # Find the polkadot-sdk directory in cargo git
+                cargo_dir=$(find ~/.cargo/git/checkouts -type d -name "polkadot-sdk*" | head -n 1)
+                if [ -n "$cargo_dir" ]; then
+                  fixture_dir="$cargo_dir/bridges/snowbridge/pallets/ethereum-client/tests"
+                  mkdir -p "$fixture_dir"
+                  cp -r test/tmp/ethereum_client_test "$fixture_dir/fixtures"
+                else
+                  echo "Could not find polkadot-sdk checkout directory"
+                  exit 1
+                fi
             - name: Run tests!
               uses: actions-rs/cargo@v1
               with:
                 command: nextest
-                args: run --archive-file nextest-archive.tar.zst --partition count:${{ matrix.partition }}/8 --workspace-remap ${{ github.workspace }}
+                args: run --archive-file nextest-archive.tar.zst   /
+                    --partition count:${{ matrix.partition }}/8    /
+                    --workspace-remap ${{ github.workspace }}      /
+                    --no-fail-fast                                 /
+                    
 
     check-api-augment:
         runs-on: ubuntu-latest
