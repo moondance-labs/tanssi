@@ -16,13 +16,15 @@
 
 //! XCM configuration for Dancelight.
 
-use super::{
-    parachains_origin, weights, AccountId, AllPalletsWithSystem, Balances, Dmp, Fellows, ParaId,
-    Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin, TransactionByteFee, Treasury, WeightToFee,
-    XcmPallet,
+use {
+    super::{
+        parachains_origin, weights, AccountId, AllPalletsWithSystem, Balances, Dmp, Fellows,
+        ParaId, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin, TransactionByteFee, Treasury,
+        WeightToFee, XcmPallet,
+    },
+    crate::governance::StakingAdmin,
+    tp_bridge::EthereumLocationsConverterFor,
 };
-use crate::governance::StakingAdmin;
-use tp_bridge::EthereumLocationsConverterFor;
 
 use {
     dancelight_runtime_constants::{currency::CENTS, system_parachain::*},

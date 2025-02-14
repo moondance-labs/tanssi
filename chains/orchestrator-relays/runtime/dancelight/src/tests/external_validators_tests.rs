@@ -16,7 +16,6 @@
 
 #![cfg(test)]
 
-use sp_core::H256;
 use {
     crate::{
         tests::common::*, EthereumSystem, ExternalValidators, ExternalValidatorsRewards,
@@ -25,11 +24,11 @@ use {
     },
     frame_support::{assert_ok, traits::fungible::Mutate},
     pallet_external_validators::Forcing,
+    sp_core::H256,
     sp_runtime::traits::MaybeEquivalence,
     std::{collections::HashMap, ops::RangeInclusive},
     tp_bridge::Command,
-    xcm::latest::prelude::*,
-    xcm::VersionedLocation,
+    xcm::{latest::prelude::*, VersionedLocation},
 };
 
 fn assert_validators_do_not_change(

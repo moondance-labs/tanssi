@@ -33,24 +33,30 @@ use {
     frame_system::pallet_prelude::*,
     log::log,
     pallet_staking::SessionInterface,
-    parity_scale_codec::FullCodec,
-    parity_scale_codec::{Decode, Encode},
+    parity_scale_codec::{Decode, Encode, FullCodec},
     sp_core::H256,
-    sp_runtime::traits::{Convert, Debug, One, Saturating, Zero},
-    sp_runtime::DispatchResult,
-    sp_runtime::Perbill,
+    sp_runtime::{
+        traits::{Convert, Debug, One, Saturating, Zero},
+        DispatchResult, Perbill,
+    },
     sp_staking::{
         offence::{OffenceDetails, OnOffenceHandler},
         EraIndex, SessionIndex,
     },
-    sp_std::collections::vec_deque::VecDeque,
-    sp_std::vec,
-    sp_std::vec::Vec,
-    tp_traits::{apply, derive_storage_traits, EraIndexProvider, ExternalIndexProvider, InvulnerablesProvider, OnEraStart},
+    sp_std::{
+        collections::vec_deque::VecDeque,
+        vec::{self, Vec},
+    },
+    tp_traits::{
+        apply, derive_storage_traits, EraIndexProvider, ExternalIndexProvider,
+        InvulnerablesProvider, OnEraStart,
+    },
 };
 
-use snowbridge_core::ChannelId;
-use tp_bridge::{Command, DeliverMessage, Message, SlashData, TicketInfo, ValidateMessage};
+use {
+    snowbridge_core::ChannelId,
+    tp_bridge::{Command, DeliverMessage, Message, SlashData, TicketInfo, ValidateMessage},
+};
 
 pub use pallet::*;
 
@@ -179,10 +185,10 @@ pub mod pallet {
     pub enum SlashingModeOption {
         #[default]
         Enabled,
-        LogOnly, 
+        LogOnly,
         Disabled,
     }
-    
+
     #[pallet::pallet]
     pub struct Pallet<T>(PhantomData<T>);
 
@@ -222,8 +228,7 @@ pub mod pallet {
 
     // Turns slashing on or off
     #[pallet::storage]
-    pub type SlashingMode<T: Config> =
-        StorageValue<_, SlashingModeOption, ValueQuery>;
+    pub type SlashingMode<T: Config> = StorageValue<_, SlashingModeOption, ValueQuery>;
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
@@ -368,10 +373,7 @@ pub mod pallet {
 
         #[pallet::call_index(3)]
         #[pallet::weight(T::WeightInfo::set_slashing_mode())]
-        pub fn set_slashing_mode(
-            origin: OriginFor<T>,
-            mode: SlashingModeOption
-        ) -> DispatchResult {
+        pub fn set_slashing_mode(origin: OriginFor<T>, mode: SlashingModeOption) -> DispatchResult {
             ensure_root(origin)?;
 
             SlashingMode::<T>::put(mode);
@@ -412,7 +414,6 @@ where
         slash_fraction: &[Perbill],
         slash_session: SessionIndex,
     ) -> Weight {
-
         let slashing_mode = SlashingMode::<T>::get();
         if slashing_mode == SlashingModeOption::Disabled {
             return Weight::default();

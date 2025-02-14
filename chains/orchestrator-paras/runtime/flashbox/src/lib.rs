@@ -22,11 +22,13 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use frame_support::storage::{with_storage_layer, with_transaction};
-use frame_support::traits::{ExistenceRequirement, WithdrawReasons};
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 use {
+    frame_support::{
+        storage::{with_storage_layer, with_transaction},
+        traits::{ExistenceRequirement, WithdrawReasons},
+    },
     pallet_services_payment::ProvideCollatorAssignmentCost,
     polkadot_runtime_common::SlowAdjustingFeeUpdate,
 };
@@ -40,7 +42,6 @@ pub mod weights;
 #[cfg(test)]
 mod tests;
 
-use pallet_services_payment::BalanceOf;
 use {
     cumulus_pallet_parachain_system::RelayNumberMonotonicallyIncreases,
     cumulus_primitives_core::{relay_chain::SessionIndex, BodyId, ParaId},
@@ -78,7 +79,7 @@ use {
     pallet_invulnerables::InvulnerableRewardDistribution,
     pallet_registrar::RegistrarHooks,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
-    pallet_services_payment::ProvideBlockProductionCost,
+    pallet_services_payment::{BalanceOf, ProvideBlockProductionCost},
     pallet_session::{SessionManager, ShouldEndSession},
     pallet_stream_payment_runtime_api::{StreamPaymentApiError, StreamPaymentApiStatus},
     pallet_transaction_payment::FungibleAdapter,
@@ -98,8 +99,11 @@ use {
         transaction_validity::{TransactionSource, TransactionValidity},
         AccountId32, ApplyExtrinsicResult,
     },
-    sp_std::collections::btree_map::BTreeMap,
-    sp_std::{collections::btree_set::BTreeSet, marker::PhantomData, prelude::*},
+    sp_std::{
+        collections::{btree_map::BTreeMap, btree_set::BTreeSet},
+        marker::PhantomData,
+        prelude::*,
+    },
     sp_version::RuntimeVersion,
     tp_traits::{
         apply, derive_storage_traits, GetContainerChainAuthor, GetHostConfiguration,
