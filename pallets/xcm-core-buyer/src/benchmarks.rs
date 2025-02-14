@@ -44,7 +44,7 @@ mod benchmarks {
         sp_runtime::RuntimeAppPublic,
         staging_xcm::{
             latest::{MaybeErrorCode, QueryId},
-            v4::{Location, Response},
+            v5::{Location, Response},
         },
     };
 

@@ -278,6 +278,7 @@ runtime-benchmarks = [
 	"tanssi-runtime-common/runtime-benchmarks",
 	"xcm-primitives/runtime-benchmarks",
 	"xcm-runtime-apis/runtime-benchmarks",
+	"pallet-transaction-payment/runtime-benchmarks"
 ]
 
 try-runtime = [

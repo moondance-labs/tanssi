@@ -31,8 +31,8 @@ describeSuite({
                 const transactionVersion = polkadotJs.consts.system.version.transactionVersion.toNumber();
                 expect(transactionVersion, "Relay API incorrect").to.toBe(26);
 
-                const stateVersion = polkadotJs.consts.system.version.stateVersion.toNumber();
-                expect(stateVersion, "Relay API incorrect").to.toBe(1);
+                const systemVersion = polkadotJs.consts.system.version.systemVersion.toNumber();
+                expect(systemVersion, "Relay API incorrect").to.toBe(1);
             },
         });
 

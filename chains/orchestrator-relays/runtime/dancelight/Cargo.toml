@@ -413,6 +413,7 @@ runtime-benchmarks = [
 	"xcm-builder/runtime-benchmarks",
 	"xcm-executor/runtime-benchmarks",
 	"xcm-runtime-apis/runtime-benchmarks",
+	"pallet-transaction-payment/runtime-benchmarks"
 ]
 try-runtime = [
 	"container-chain-template-frontier-runtime/try-runtime",

@@ -16,15 +16,13 @@
 
 //! XCM configuration for Dancelight.
 
-use super::{
-    parachains_origin, weights, AccountId, AllPalletsWithSystem, Balances, Dmp, Fellows, ParaId,
-    Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin, TransactionByteFee, Treasury, WeightToFee,
-    XcmPallet,
-};
-use crate::governance::StakingAdmin;
-use tp_bridge::EthereumLocationsConverterFor;
-
 use {
+    super::{
+        parachains_origin, weights, AccountId, AllPalletsWithSystem, Balances, Dmp, Fellows,
+        ParaId, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin, TransactionByteFee, Treasury,
+        WeightToFee, XcmPallet,
+    },
+    crate::governance::StakingAdmin,
     dancelight_runtime_constants::{currency::CENTS, system_parachain::*},
     frame_support::{
         parameter_types,
@@ -37,8 +35,12 @@ use {
         ToAuthor,
     },
     sp_core::ConstU32,
+    tp_bridge::EthereumLocationsConverterFor,
     tp_xcm_commons::NativeAssetReserve,
-    xcm::latest::prelude::*,
+    xcm::{
+        latest::prelude::*,
+        opaque::latest::{ROCOCO_GENESIS_HASH, WESTEND_GENESIS_HASH},
+    },
     xcm_builder::{
         AccountId32Aliases, AllowExplicitUnpaidExecutionFrom, AllowKnownQueryResponses,
         AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom, ChildParachainAsNative,
@@ -55,7 +57,7 @@ use {
 parameter_types! {
     pub TokenLocation: Location = Here.into_location();
     pub RootLocation: Location = Location::here();
-    pub const ThisNetwork: NetworkId = NetworkId::Rococo; // FIXME: Change to Dancelight
+    pub const ThisNetwork: NetworkId = NetworkId::ByGenesis(ROCOCO_GENESIS_HASH); // FIXME: Change to Dancelight
     pub UniversalLocation: InteriorLocation = ThisNetwork::get().into();
     pub CheckAccount: AccountId = XcmPallet::check_account();
     pub LocalCheckAccount: (AccountId, MintLocation) = (CheckAccount::get(), MintLocation::Local);
@@ -146,7 +148,7 @@ parameter_types! {
     pub StarForBridgeHub: (AssetFilter, Location) = (Star::get(), BridgeHub::get());
     pub StarForPeople: (AssetFilter, Location) = (Star::get(), People::get());
     pub StarForBroker: (AssetFilter, Location) = (Star::get(), Broker::get());
-    pub const RelayNetwork: NetworkId = NetworkId::Westend;
+    pub const RelayNetwork: NetworkId = NetworkId::ByGenesis(WESTEND_GENESIS_HASH);
     pub const MaxInstructions: u32 = 100;
     pub const MaxAssetsIntoHolding: u32 = 64;
 }

@@ -23,7 +23,9 @@ use {
     cumulus_client_consensus_common::ParachainBlockImport as TParachainBlockImport,
     cumulus_client_parachain_inherent::{MockValidationDataInherentDataProvider, MockXcmConfig},
     cumulus_client_service::{prepare_node_config, ParachainHostFunctions},
-    cumulus_primitives_core::{relay_chain::well_known_keys as RelayWellKnownKeys, ParaId},
+    cumulus_primitives_core::{
+        relay_chain::well_known_keys as RelayWellKnownKeys, CollectCollationInfo, ParaId,
+    },
     fc_consensus::FrontierBlockImport,
     fc_db::DatabaseSource,
     fc_rpc_core::types::{FeeHistoryCache, FilterPool},
@@ -32,9 +34,11 @@ use {
     node_common::service::{ManualSealConfiguration, NodeBuilder, NodeBuilderConfig, Sealing},
     parity_scale_codec::Encode,
     polkadot_parachain_primitives::primitives::HeadData,
+    polkadot_primitives::UpgradeGoAhead,
     sc_consensus::BasicQueue,
     sc_executor::WasmExecutor,
     sc_service::{Configuration, TFullBackend, TFullClient, TaskManager},
+    sp_api::ProvideRuntimeApi,
     sp_blockchain::HeaderBackend,
     sp_consensus_slots::{Slot, SlotDuration},
     sp_core::{Pair, H256},
@@ -404,6 +408,7 @@ pub async fn start_dev_node(
                     .encode();
 
                 let para_head_data: Vec<u8> = HeadData(para_header).encode();
+                let client_set_aside_for_cidp = client.clone();
                 let client_for_xcm = client.clone();
                 let authorities_for_cidp = authorities.clone();
                 let para_head_key = RelayWellKnownKeys::para_head(para_id);
@@ -441,6 +446,20 @@ pub async fn start_dev_node(
                     additional_keys.append(&mut vec![(para_head_key, para_head_data), (relay_slot_key, Slot::from(relay_slot).encode())]);
 
                     let time = MockTimestampInherentDataProvider;
+                    let current_para_head = client_set_aside_for_cidp
+                            .header(block)
+                            .expect("Header lookup should succeed")
+                            .expect("Header passed in as parent should be present in backend.");
+                    let should_send_go_ahead = match client_set_aside_for_cidp
+                            .runtime_api()
+                            .collect_collation_info(block, &current_para_head)
+                    {
+                            Ok(info) => info.new_validation_code.is_some(),
+                            Err(e) => {
+                                    log::error!("Failed to collect collation info: {:?}", e);
+                                    false
+                            },
+                    };
                     let mocked_parachain = MockValidationDataInherentDataProvider {
                         current_para_block,
                         current_para_block_head: None,
@@ -458,6 +477,12 @@ pub async fn start_dev_node(
                         raw_horizontal_messages: hrmp_xcm_receiver.drain().collect(),
                         additional_key_values: Some(additional_keys),
                         para_id,
+                        upgrade_go_ahead: should_send_go_ahead.then(|| {
+                            log::info!(
+                                "Detected pending validation code, sending go-ahead signal."
+                            );
+                            UpgradeGoAhead::GoAhead
+                        }),
                     };
 
                     Ok((time, mocked_parachain, mocked_authorities_noting))

@@ -50,6 +50,8 @@
 
 use frame_support::{traits::Get, weights::{Weight, constants::RocksDbWeight}};
 use sp_std::marker::PhantomData;
+use frame_support::BoundedVec;
+use staging_xcm::latest::AssetTransferFilter;
 
 /// Weights for pallet_sudo using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
@@ -93,6 +95,15 @@ impl<T: frame_system::Config> pallet_sudo::WeightInfo for SubstrateWeight<T> {
 		//  Estimated: `1517`
 		// Minimum execution time: 12_783_000 picoseconds.
 		Weight::from_parts(13_159_000, 1517)
+			.saturating_add(T::DbWeight::get().reads(1_u64))
+			.saturating_add(T::DbWeight::get().writes(1_u64))
+	}
+	fn check_only_sudo_account() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `61`
+		//  Estimated: `1517`
+		// Minimum execution time: 10_148_000 picoseconds.
+		Weight::from_parts(10_390_000, 1517)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}

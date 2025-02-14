@@ -17,15 +17,17 @@
 use {
     crate::{tests::mock_relay_chain_impl::MyMockRelayInterface, OwnParachainInherentData},
     cumulus_pallet_parachain_system::RelayChainStateProof,
-    cumulus_primitives_core::relay_chain::{BlakeTwo256, BlockNumber, CoreState},
+    cumulus_primitives_core::relay_chain::{vstaging::CoreState, BlakeTwo256, BlockNumber},
     dp_core::well_known_keys::para_id_head,
     futures::executor::block_on,
     hex_literal::hex,
     parity_scale_codec::{Decode, Encode},
+    polkadot_primitives::CoreIndex,
     sp_consensus_aura::{inherents::InherentType, AURA_ENGINE_ID},
     sp_inherents::InherentDataProvider,
     sp_runtime::DigestItem,
     sp_version::RuntimeVersion,
+    std::collections::VecDeque,
     std::sync::atomic::{AtomicU8, Ordering},
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
 };
@@ -120,7 +122,8 @@ mod mock_relay_chain_impl {
         async_trait::async_trait,
         cumulus_primitives_core::{
             relay_chain::{
-                BlockId, CommittedCandidateReceipt, OccupiedCoreAssumption, SessionIndex,
+                vstaging::CommittedCandidateReceiptV2, BlockId, OccupiedCoreAssumption,
+                SessionIndex,
             },
             InboundHrmpMessage, ParaId,
         },
@@ -188,7 +191,7 @@ mod mock_relay_chain_impl {
             &self,
             _: PHash,
             _: ParaId,
-        ) -> RelayChainResult<Option<CommittedCandidateReceipt>> {
+        ) -> RelayChainResult<Option<CommittedCandidateReceiptV2>> {
             unimplemented!("Not needed for test")
         }
 
@@ -208,7 +211,7 @@ mod mock_relay_chain_impl {
             unimplemented!("Not needed for test")
         }
 
-        async fn call_remote_runtime_function_encoded(
+        async fn call_runtime_api(
             &self,
             _: &'static str,
             _: PHash,
@@ -268,7 +271,7 @@ mod mock_relay_chain_impl {
             &self,
             _: PHash,
             _: ParaId,
-        ) -> RelayChainResult<Vec<CommittedCandidateReceipt>> {
+        ) -> RelayChainResult<Vec<CommittedCandidateReceiptV2>> {
             unimplemented!("Not needed for test")
         }
 
@@ -280,6 +283,13 @@ mod mock_relay_chain_impl {
         }
 
         async fn version(&self, _: PHash) -> RelayChainResult<RuntimeVersion> {
+            unimplemented!("Not needed for test")
+        }
+
+        async fn claim_queue(
+            &self,
+            _relay_parent: PHash,
+        ) -> RelayChainResult<BTreeMap<CoreIndex, VecDeque<ParaId>>> {
             unimplemented!("Not needed for test")
         }
     }

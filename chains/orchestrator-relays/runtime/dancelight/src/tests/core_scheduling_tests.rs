@@ -26,7 +26,10 @@ use {
     dancelight_runtime_constants::time::EpochDurationInBlocks,
     frame_support::assert_ok,
     frame_system::pallet_prelude::BlockNumberFor,
-    primitives::runtime_api::runtime_decl_for_parachain_host::ParachainHostV11,
+    primitives::{
+        node_features::FeatureIndex,
+        runtime_api::runtime_decl_for_parachain_host::ParachainHostV11, NodeFeatures,
+    },
     sp_core::{Decode, Encode},
     sp_keystore::testing::MemoryKeystore,
     sp_std::{collections::btree_map::BTreeMap, vec},
@@ -35,7 +38,7 @@ use {
 };
 
 #[test]
-#[should_panic(expected = "CandidatesFilteredDuringExecution")]
+#[should_panic(expected = "InherentDataFilteredDuringExecution")]
 // This test does not panic when producing the candidate, but when injecting it as backed
 // the inclusion pallet will filter it as it does not have a core assigned
 fn test_cannot_propose_a_block_without_availability() {
@@ -75,7 +78,8 @@ fn test_cannot_propose_a_block_without_availability() {
             minimum_backing_votes: 1,
             max_head_data_size: 5,
             node_features: bitvec::vec::BitVec::from_element(
-                1u8 << (primitives::node_features::FeatureIndex::ElasticScalingMVP as usize),
+                (1u8 << (FeatureIndex::ElasticScalingMVP as usize))
+                    | (1u8 << (FeatureIndex::CandidateReceiptV2 as usize)),
             ),
             ..Default::default()
         })
@@ -97,7 +101,7 @@ fn test_cannot_propose_a_block_without_availability() {
 }
 
 #[test]
-#[should_panic(expected = "CandidatesFilteredDuringExecution")]
+#[should_panic(expected = "InvalidBacking")]
 // This test does not panic when producing the candidate, but when injecting it as backed
 // the inclusion pallet will filter it as it does not have a core assigned
 fn test_cannot_produce_block_even_if_buying_on_demand_if_no_collators() {
@@ -139,6 +143,10 @@ fn test_cannot_produce_block_even_if_buying_on_demand_if_no_collators() {
             },
             minimum_backing_votes: 1,
             max_head_data_size: 5,
+            node_features: bitvec::vec::BitVec::from_element(
+                //(1u8 << (FeatureIndex::ElasticScalingMVP as usize)) |
+                (1u8 << (FeatureIndex::CandidateReceiptV2 as usize)),
+            ),
             ..Default::default()
         })
         .with_keystore(Arc::new(MemoryKeystore::new()))
@@ -170,7 +178,7 @@ fn test_cannot_produce_block_even_if_buying_on_demand_if_no_collators() {
 }
 
 #[test]
-#[should_panic(expected = "CandidatesFilteredDuringExecution")]
+#[should_panic(expected = "InherentDataFilteredDuringExecution")]
 // This test does not panic when producing the candidate, but when injecting it as backed
 // the inclusion pallet will filter it as it does not have a core assigned
 fn test_cannot_use_elastic_scaling_if_not_enabled() {
@@ -296,7 +304,8 @@ fn test_parathread_that_does_not_buy_core_does_not_have_affinity() {
             minimum_backing_votes: 1,
             max_head_data_size: 5,
             node_features: bitvec::vec::BitVec::from_element(
-                1u8 << (primitives::node_features::FeatureIndex::ElasticScalingMVP as usize),
+                (1u8 << (FeatureIndex::ElasticScalingMVP as usize))
+                    | (1u8 << (FeatureIndex::CandidateReceiptV2 as usize)),
             ),
             ..Default::default()
         })
@@ -378,7 +387,8 @@ fn test_parathread_that_buys_core_has_affinity_and_can_produce() {
             minimum_backing_votes: 1,
             max_head_data_size: 5,
             node_features: bitvec::vec::BitVec::from_element(
-                1u8 << (primitives::node_features::FeatureIndex::ElasticScalingMVP as usize),
+                (1u8 << (FeatureIndex::ElasticScalingMVP as usize))
+                    | (1u8 << (FeatureIndex::CandidateReceiptV2 as usize)),
             ),
             ..Default::default()
         })
@@ -428,6 +438,8 @@ fn test_parathread_that_buys_core_has_affinity_and_can_produce() {
 
 #[test]
 fn test_on_demand_core_affinity_bound_to_core_gets_expired_at_session_boundaries() {
+    sp_tracing::try_init_simple();
+
     ExtBuilder::default()
         .with_balances(vec![
             // Alice gets 10k extra tokens for her mapping deposit
@@ -464,7 +476,6 @@ fn test_on_demand_core_affinity_bound_to_core_gets_expired_at_session_boundaries
                 // A very high number to avoid group rotation in tests
                 // Otherwise we get a 1 by default, which changes groups every block
                 group_rotation_frequency: 10000000,
-                ttl: 2,
                 ..Default::default()
             },
             async_backing_params: AsyncBackingParams {
@@ -474,7 +485,8 @@ fn test_on_demand_core_affinity_bound_to_core_gets_expired_at_session_boundaries
             minimum_backing_votes: 1,
             max_head_data_size: 5,
             node_features: bitvec::vec::BitVec::from_element(
-                1u8 << (primitives::node_features::FeatureIndex::ElasticScalingMVP as usize),
+                (1u8 << (FeatureIndex::ElasticScalingMVP as usize))
+                    | (1u8 << (FeatureIndex::CandidateReceiptV2 as usize)),
             ),
             ..Default::default()
         })
@@ -579,7 +591,6 @@ fn test_parathread_uses_0_and_then_1_after_parachain_onboarded() {
                 // A very high number to avoid group rotation in tests
                 // Otherwise we get a 1 by default, which changes groups every block
                 group_rotation_frequency: 10000000,
-                ttl: 2,
                 ..Default::default()
             },
             async_backing_params: AsyncBackingParams {
@@ -589,7 +600,8 @@ fn test_parathread_uses_0_and_then_1_after_parachain_onboarded() {
             minimum_backing_votes: 1,
             max_head_data_size: 5,
             node_features: bitvec::vec::BitVec::from_element(
-                1u8 << (primitives::node_features::FeatureIndex::ElasticScalingMVP as usize),
+                (1u8 << (FeatureIndex::ElasticScalingMVP as usize))
+                    | (1u8 << (FeatureIndex::CandidateReceiptV2 as usize)),
             ),
             ..Default::default()
         })
@@ -748,6 +760,8 @@ fn test_parathread_uses_0_and_then_1_after_parachain_onboarded() {
 
 #[test]
 fn test_should_have_availability_for_registered_parachain() {
+    sp_tracing::try_init_simple();
+
     ExtBuilder::default()
         .with_balances(vec![
             // Alice gets 10k extra tokens for her mapping deposit
@@ -784,7 +798,8 @@ fn test_should_have_availability_for_registered_parachain() {
             minimum_backing_votes: 1,
             max_head_data_size: 5,
             node_features: bitvec::vec::BitVec::from_element(
-                1u8 << (primitives::node_features::FeatureIndex::ElasticScalingMVP as usize),
+                (1u8 << (FeatureIndex::ElasticScalingMVP as usize))
+                    | (1u8 << (FeatureIndex::CandidateReceiptV2 as usize)),
             ),
             ..Default::default()
         })

@@ -218,6 +218,7 @@ runtime-benchmarks = [
 	"service/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"xcm-runtime-apis/runtime-benchmarks",
+	"pallet-transaction-payment/runtime-benchmarks"
 ]
 try-runtime = [
 	"dancelight-runtime?/try-runtime",
