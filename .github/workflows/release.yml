@@ -432,7 +432,7 @@ jobs:
             name: nextest-archive
         - run: |
             test/scripts/download-ethereum-client-test-files.sh
-            mkdir -p ~${{needs.rust-test-prepare.outputs.artefact_dir}}
+            mkdir -p ${{needs.rust-test-prepare.outputs.artefact_dir}}
             cp test/tmp/ethereum_client_test/* ${{needs.rust-test-prepare.outputs.artefact_dir}}
             ls -la ${{needs.rust-test-prepare.outputs.artefact_dir}}
 
