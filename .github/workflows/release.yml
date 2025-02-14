@@ -362,7 +362,7 @@ jobs:
                   edit-mode: replace
 
     rust-test-prepare:
-      runs-on: bare-metal
+      runs-on: ubuntu-latest
       needs: ["set-tags", "build"]
       outputs:
         artefact_dir: ${{ steps.artefact_dir.outputs.artefact_dir }}
