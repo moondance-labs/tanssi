@@ -147,6 +147,9 @@ pub use {
     primitives::{AccountId, Balance},
 };
 
+#[cfg(feature = "runtime-benchmarks")]
+use snowbridge_core::{AgentId, TokenId};
+
 /// Constant values used within the runtime.
 use dancelight_runtime_constants::{currency::*, fee::*, snowbridge::EthereumLocation, time::*};
 
@@ -1432,7 +1435,7 @@ parameter_types! {
     // to properly write integration tests.
     pub ExternalRewardsEraInflationProvider: u128 = InflationRate::get() * Balances::total_issuance();
 
-    pub RewardTokenLocation: Location = xcm_config::TokenLocation::get().reanchored(
+    pub TokenLocationReanchored: Location = xcm_config::TokenLocation::get().reanchored(
         &EthereumLocation::get(),
         &xcm_config::UniversalLocation::get()
     ).expect("unable to reanchor reward token");
@@ -1448,11 +1451,13 @@ impl Get<Vec<AccountId>> for GetWhitelistedValidators {
 #[cfg(feature = "runtime-benchmarks")]
 pub struct RewardsBenchHelper;
 #[cfg(feature = "runtime-benchmarks")]
-impl tp_bridge::TokenSetterBenchmarkHelperTrait for RewardsBenchHelper {
-    fn set_up_token(location: Location, token_id: snowbridge_core::TokenId) {
+impl tp_bridge::TokenChannelSetterBenchmarkHelperTrait for RewardsBenchHelper {
+    fn set_up_token(location: Location, token_id: TokenId) {
         snowbridge_pallet_system::ForeignToNativeId::<Runtime>::insert(&token_id, &location);
         snowbridge_pallet_system::NativeToForeignId::<Runtime>::insert(&location, &token_id);
     }
+
+    fn set_up_channel(_channel_id: ChannelId, _para_id: ParaId, _agent_id: AgentId) {}
 }
 impl pallet_external_validators_rewards::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
@@ -1471,7 +1476,7 @@ impl pallet_external_validators_rewards::Config for Runtime {
     type OutboundQueue = tp_bridge::CustomSendMessage<Runtime, GetAggregateMessageOriginTanssi>;
     type Currency = Balances;
     type RewardsEthereumSovereignAccount = EthereumSovereignAccount;
-    type TokenLocationReanchored = RewardTokenLocation;
+    type TokenLocationReanchored = TokenLocationReanchored;
     type TokenIdFromLocation = EthereumSystem;
     type WeightInfo = weights::pallet_external_validators_rewards::SubstrateWeight<Runtime>;
     #[cfg(feature = "runtime-benchmarks")]
@@ -1909,6 +1914,7 @@ construct_runtime! {
         EthereumInboundQueue: snowbridge_pallet_inbound_queue = 24,
         EthereumSystem: snowbridge_pallet_system = 25,
         OutboundMessageCommitmentRecorder: pallet_outbound_message_commitment_recorder = 26,
+        EthereumTokenTransfers: pallet_ethereum_token_transfers = 27,
 
         // Session management
         Session: pallet_session = 30,
@@ -2333,6 +2339,7 @@ mod benches {
         [pallet_xcm_benchmarks::fungible, pallet_xcm_benchmarks::fungible::Pallet::<Runtime>]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
         // Bridges
+        [pallet_ethereum_token_transfers, EthereumTokenTransfers]
         [snowbridge_pallet_ethereum_client, EthereumBeaconClient]
         [snowbridge_pallet_outbound_queue, EthereumOutboundQueue]
         [snowbridge_pallet_system, EthereumSystem]
