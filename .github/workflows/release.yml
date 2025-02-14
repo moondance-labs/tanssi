@@ -708,7 +708,7 @@ jobs:
       steps:
         - run: |
             result="${{ needs.zombienet-tests-merge-queue.result}}"
-            if [[ $result == "success"]]; then
+            if [[ $result == "success" ]]; then
               exit 0
             else
               exit 1
@@ -741,12 +741,12 @@ jobs:
     zombienet-e2e-merge-queue-results:
       if: ${{ always() }}
       runs-on: ubuntu-latest
-      name: Results for zombienet-tests-merge-queue
+      name: Results for zombienet-tests-merge-queue e2e
       needs: [zombienet-tests-bridge-e2e]
       steps:
         - run: |
             result="${{ needs.zombienet-tests-bridge-e2e.result}}"
-            if [[ $result == "success"]]; then
+            if [[ $result == "success" ]]; then
               exit 0
             else
               exit 1
