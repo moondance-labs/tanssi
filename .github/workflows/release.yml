@@ -387,37 +387,7 @@ jobs:
         - name: Install nextest
           uses: taiki-e/install-action@nextest
         - name: Build and archive tests
-          run: cargo nextest archive --release --archive-file nextest-archive.tar.zst
-        - name: Run sccache stat for check pre test
-          run: ${SCCACHE_PATH} --show-stats
-        - name: Upload archive to workflow
-          uses: actions/upload-artifact@v4
-          with:
-            name: nextest-archive
-            path: nextest-archive.tar.zst
-
-    rust-test-execute:
-      runs-on: self-hosted
-      needs: ["rust-test"]
-      name: Run all tests (/w partitioning)
-      strategy:
-        fail-fast: false
-        matrix:
-          partition: [1, 2, 3]
-      steps:
-        - uses: actions/checkout@v4
-        - uses: taiki-e/install-action@nextest
-        - name: Download nextest archive
-          uses: actions/download-artifact@v4
-          with:
-            name: nextest-archive
-        - name: Fetch test artefacts
-          run: cargo fetch
-        - name: Run tests!
-          uses: actions-rs/cargo@v1
-          with:
-            command: nextest
-            args: run --archive-file nextest-archive.tar.zst --partition count:${{ matrix.partition }}/3 --workspace-remap ${{ github.workspace }} --no-fail-fast                           
+          run: cargo nextest run --release --no-fail-fast
 
     check-api-augment:
         runs-on: ubuntu-latest
