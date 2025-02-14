@@ -723,7 +723,7 @@ jobs:
             with:
               ref: ${{ needs.set-tags.outputs.git_ref }}
           - name: Run Merge when ready
-            uses: ./.github/workflows/merge-when-ready,yml
+            uses: ./.github/workflows/merge-when-ready.yml
             with:
               run-sha: ${{ needs.set-tags.outputs.git_ref }}
     chopsticks-upgrade-test:
