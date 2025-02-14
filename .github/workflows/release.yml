@@ -669,7 +669,7 @@ jobs:
             uses: ./.github/workflow-templates/zombienet-tests
             with:
               test_name: ${{ matrix.test_name }}
-    zombienet-tests-merge-queue:
+    zombienet-tests-merge-on-ready:
         if: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'A8-mergeoncegreen') }}
         runs-on: self-hosted
         needs: ["set-tags", "build"]
@@ -700,20 +700,20 @@ jobs:
             uses: ./.github/workflow-templates/zombienet-tests
             with:
               test_name: ${{ matrix.test_name }}
-    zombienet-merge-queue-results:
+    zombienet-merge-on-ready-queue-results:
       if: ${{ always() }}
       runs-on: ubuntu-latest
-      name: Results for zombienet-tests-merge-queue
-      needs: [zombienet-tests-merge-queue]
+      name: Results for zombienet-tests that run when ready to merge
+      needs: [zombienet-tests-merge-on-ready]
       steps:
         - run: |
-            result="${{ needs.zombienet-tests-merge-queue.result}}"
+            result="${{ needs.zombienet-tests-merge-on-ready.result}}"
             if [[ $result == "success" ]]; then
               exit 0
             else
               exit 1
             fi
-    zombienet-tests-bridge-e2e:
+    zombienet-tests-bridge-e2e-merge-on-ready:
         if: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'A8-mergeoncegreen') }}
         runs-on: self-hosted
         needs: ["set-tags", "build"]
@@ -738,14 +738,14 @@ jobs:
               chmod uog+x target/release/container-chain-frontier-node
           - name: Run Zombienet Test ${{ matrix.test_name }}
             uses: ./.github/workflow-templates/bridge-e2e
-    zombienet-e2e-merge-queue-results:
+    zombienet-bridge-e2e-merge-on-ready-results:
       if: ${{ always() }}
       runs-on: ubuntu-latest
-      name: Results for zombienet-tests-merge-queue e2e
-      needs: [zombienet-tests-bridge-e2e]
+      name: Results for zombienet-tests e2e bridge merge when ready
+      needs: [zombienet-tests-bridge-e2e-merge-on-ready]
       steps:
         - run: |
-            result="${{ needs.zombienet-tests-bridge-e2e.result}}"
+            result="${{ needs.zombienet-tests-bridge-e2e-merge-on-ready.result}}"
             if [[ $result == "success" ]]; then
               exit 0
             else
