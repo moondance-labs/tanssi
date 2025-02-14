@@ -714,7 +714,7 @@ jobs:
               exit 1
             fi
     zombienet-tests-bridge-e2e:
-        if: ${{ github.event_name == 'pull_request' && ontains(github.event.pull_request.labels.*.name, 'A8-mergeoncegreen') }}
+        if: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'A8-mergeoncegreen') }}
         runs-on: self-hosted
         needs: ["set-tags", "build"]
         steps:
