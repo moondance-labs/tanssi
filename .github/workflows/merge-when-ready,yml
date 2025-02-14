@@ -36,6 +36,8 @@ jobs:
                 fi
             - name: Checkout
               uses: actions/checkout@v4
+              with:
+                  ref: ${{ steps.retrieve-run-id.outputs.run_sha }}
 
             - name: Download build artifact from triggered workflow
               uses: dawidd6/action-download-artifact@v7
