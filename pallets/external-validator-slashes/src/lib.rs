@@ -45,7 +45,7 @@ use {
     },
     sp_std::{
         collections::vec_deque::VecDeque,
-        vec::{self, Vec},
+        vec, vec::Vec,
     },
     tp_traits::{
         apply, derive_storage_traits, EraIndexProvider, ExternalIndexProvider,
