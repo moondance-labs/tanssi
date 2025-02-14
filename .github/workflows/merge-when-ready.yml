@@ -5,6 +5,7 @@ on:
       run_sha:
         description: "Sha commit from which artifacts are taken"
         required: true
+        type: string
   workflow_dispatch:
     inputs:
       run_sha:
