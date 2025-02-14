@@ -34,6 +34,7 @@ use {
     },
     staging_xcm::{
         latest::prelude::{Junctions::*, *},
+        opaque::latest::WESTEND_GENESIS_HASH,
         VersionedLocation, VersionedXcm,
     },
     staging_xcm_executor::traits::ConvertLocation,
@@ -82,7 +83,7 @@ fn using_signed_based_sovereign_works_in_tanssi() {
     >::convert_location(&Location {
         parents: 1,
         interior: X1([AccountId32 {
-            network: Some(NetworkId::Westend),
+            network: Some(NetworkId::ByGenesis(WESTEND_GENESIS_HASH)),
             id: WestendSender::get().into(),
         }]
         .into()),
@@ -173,7 +174,7 @@ fn using_signed_based_sovereign_works_from_tanssi_to_frontier_template() {
             interior: X2([
                 Parachain(2000u32),
                 AccountId32 {
-                    network: Some(NetworkId::Westend),
+                    network: Some(NetworkId::ByGenesis(WESTEND_GENESIS_HASH)),
                     id: DanceboxSender::get().into(),
                 },
             ]

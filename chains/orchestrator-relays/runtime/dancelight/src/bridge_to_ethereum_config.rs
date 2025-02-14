@@ -272,4 +272,6 @@ impl snowbridge_pallet_inbound_queue::Config for Runtime {
     type MessageProcessor = (SymbioticMessageProcessor<Runtime>,);
     #[cfg(feature = "runtime-benchmarks")]
     type MessageProcessor = (benchmark_helper::DoNothingMessageProcessor,);
+    // TODO: copy from diego PR
+    type RewardProcessor = ();
 }

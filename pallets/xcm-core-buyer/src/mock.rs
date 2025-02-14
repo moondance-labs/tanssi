@@ -40,6 +40,7 @@ use {
     sp_std::collections::btree_map::BTreeMap,
     staging_xcm::{
         latest::{Assets, Location, SendError, SendResult, SendXcm, Xcm, XcmHash},
+        opaque::latest::WESTEND_GENESIS_HASH,
         prelude::{GlobalConsensus, InteriorLocation, Junctions::X2, NetworkId, Parachain},
     },
     tp_traits::{
@@ -106,6 +107,7 @@ impl frame_system::Config for Test {
     type PreInherents = ();
     type PostInherents = ();
     type PostTransactions = ();
+    type ExtensionsWeightInfo = ();
 }
 
 parameter_types! {
@@ -125,6 +127,7 @@ impl pallet_balances::Config for Test {
     type MaxFreezes = ();
     type RuntimeHoldReason = ();
     type RuntimeFreezeReason = ();
+    type DoneSlashHandler = ();
     type WeightInfo = ();
 }
 
@@ -210,7 +213,7 @@ parameter_types! {
     pub const PendingBlocksTtl: u32 = 5;
     pub const CoreBuyingXCMQueryTtl: u32 = 100;
     pub const AdditionalTtlForInflightOrders: u32 = 5;
-    pub UniversalLocation: InteriorLocation = X2([GlobalConsensus(NetworkId::Westend), Parachain(1000)].into());
+    pub UniversalLocation: InteriorLocation = X2([GlobalConsensus(NetworkId::ByGenesis(WESTEND_GENESIS_HASH)), Parachain(1000)].into());
     pub BuyCoreSlotDrift: Slot = Slot::from(2u64);
 }
 

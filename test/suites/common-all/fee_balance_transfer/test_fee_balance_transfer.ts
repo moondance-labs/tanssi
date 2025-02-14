@@ -72,6 +72,25 @@ describeSuite({
                       ? expectedBaseFee + 5800000n
                       : expectedBaseFee + 1600000n;
 
+                /*
+			stable2412:
+			fee:  6055350n
+			basePlusWeightFee:  6055206n
+			expectedBaseFee:  1000000n
+			expectedbasePlusWeightFee:  2600000n
+
+		        master:
+		        fee:  2724942n
+			basePlusWeightFee:  2724798n
+			expectedBaseFee:  1000000n
+			expectedbasePlusWeightFee:  2600000n
+		*/
+
+                console.log("fee: ", fee);
+                console.log("basePlusWeightFee: ", basePlusWeightFee);
+                console.log("expectedBaseFee: ", expectedBaseFee);
+                console.log("expectedbasePlusWeightFee: ", expectedbasePlusWeightFee);
+
                 expect(
                     basePlusWeightFee >= (expectedbasePlusWeightFee * 90n) / 100n &&
                         basePlusWeightFee <= (expectedbasePlusWeightFee * 110n) / 100n

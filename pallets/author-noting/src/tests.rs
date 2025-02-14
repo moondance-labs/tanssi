@@ -668,7 +668,7 @@ fn weights_assigned_to_extrinsics_are_correct() {
                 latest_slot_number: 0u64.into()
             }
             .get_dispatch_info()
-            .weight,
+            .call_weight,
             <() as crate::weights::WeightInfo>::set_author()
         );
 

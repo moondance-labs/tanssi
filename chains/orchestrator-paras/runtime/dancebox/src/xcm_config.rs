@@ -20,6 +20,7 @@ use crate::{CollatorAssignment, Session, System};
 use pallet_session::ShouldEndSession;
 #[cfg(feature = "runtime-benchmarks")]
 use sp_std::{collections::btree_map::BTreeMap, vec};
+use staging_xcm::latest::WESTEND_GENESIS_HASH;
 #[cfg(feature = "runtime-benchmarks")]
 use tp_traits::GetContainerChainAuthor;
 use {
@@ -82,7 +83,7 @@ parameter_types! {
     pub UnitWeightCost: Weight = Weight::from_parts(1_000_000_000, 64 * 1024);
 
     // TODO: revisit
-    pub const RelayNetwork: NetworkId = NetworkId::Westend;
+    pub const RelayNetwork: NetworkId = NetworkId::ByGenesis(WESTEND_GENESIS_HASH);
 
     // The relay chain Origin type
     pub RelayChainOrigin: RuntimeOrigin = cumulus_pallet_xcm::Origin::Relay.into();

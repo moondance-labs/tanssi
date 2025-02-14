@@ -18,11 +18,11 @@ pub mod pallet_xcm_benchmarks_generic;
 
 use {
     crate::Runtime,
-    frame_support::weights::Weight,
+    frame_support::{weights::Weight, BoundedVec},
     pallet_xcm_benchmarks_generic::WeightInfo as XcmGeneric,
     sp_std::prelude::*,
     staging_xcm::{
-        latest::{prelude::*, Weight as XCMWeight},
+        latest::{prelude::*, AssetTransferFilter, Weight as XCMWeight},
         DoubleEncoded,
     },
 };
@@ -86,7 +86,7 @@ where
     }
     fn transact(
         _origin_type: &OriginKind,
-        _require_weight_at_most: &Weight,
+        _require_weight_at_most: &Option<Weight>,
         _call: &DoubleEncoded<RuntimeCall>,
     ) -> XCMWeight {
         XcmGeneric::<Runtime>::transact()
@@ -231,5 +231,35 @@ where
     }
     fn unpaid_execution(_: &WeightLimit, _: &Option<Location>) -> Weight {
         XcmGeneric::<Runtime>::unpaid_execution()
+    }
+
+    fn pay_fees(_: &Asset) -> Weight {
+        XcmGeneric::<Runtime>::pay_fees()
+    }
+
+    fn initiate_transfer(
+        _dest: &Location,
+        remote_fees: &Option<AssetTransferFilter>,
+        _preserve_origin: &bool,
+        assets: &Vec<AssetTransferFilter>,
+        _xcm: &Xcm<()>,
+    ) -> Weight {
+        Weight::MAX
+    }
+
+    fn execute_with_origin(_: &Option<InteriorLocation>, _: &Xcm<RuntimeCall>) -> Weight {
+        XcmGeneric::<Runtime>::execute_with_origin()
+    }
+
+    fn set_hints(hints: &BoundedVec<Hint, HintNumVariants>) -> Weight {
+        let mut weight = Weight::zero();
+        for hint in hints {
+            match hint {
+                AssetClaimer { .. } => {
+                    weight = weight.saturating_add(XcmGeneric::<Runtime>::asset_claimer());
+                }
+            }
+        }
+        weight
     }
 }
