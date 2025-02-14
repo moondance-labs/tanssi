@@ -397,13 +397,13 @@ jobs:
             path: nextest-archive.tar.zst
 
     rust-test-execute:
-      runs-on: ubuntu-latest
+      runs-on: self-hosted
       needs: ["rust-test-prepare"]
       name: Run all tests (/w partitioning)
       strategy:
         fail-fast: false
         matrix:
-          partition: [1, 2, 3, 4, 5, 6, 7, 8]
+          partition: [1, 2, 3]
       steps:
         - uses: actions/checkout@v4
         - uses: taiki-e/install-action@nextest
@@ -417,7 +417,7 @@ jobs:
           uses: actions-rs/cargo@v1
           with:
             command: nextest
-            args: run --archive-file nextest-archive.tar.zst --partition count:${{ matrix.partition }}/8 --workspace-remap ${{ github.workspace }} --no-fail-fast                           
+            args: run --archive-file nextest-archive.tar.zst --partition count:${{ matrix.partition }}/3 --workspace-remap ${{ github.workspace }} --no-fail-fast                           
 
     check-api-augment:
         runs-on: ubuntu-latest
