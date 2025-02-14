@@ -708,13 +708,13 @@ jobs:
       steps:
         - run: |
             result="${{ needs.zombienet-tests-merge-queue.result}}"
-            if [[ $result == "success" || $result == "skipped" ]]; then
+            if [[ $result == "success"]]; then
               exit 0
             else
               exit 1
             fi
     zombienet-tests-bridge-e2e:
-        if: ${{ contains(github.event.pull_request.labels.*.name, 'A8-mergeoncegreen') }}
+        if: ${{ github.event_name == 'pull_request' && ontains(github.event.pull_request.labels.*.name, 'A8-mergeoncegreen') }}
         runs-on: self-hosted
         needs: ["set-tags", "build"]
         steps:
@@ -722,10 +722,35 @@ jobs:
             uses: actions/checkout@v4
             with:
               ref: ${{ needs.set-tags.outputs.git_ref }}
-          - name: Run Merge when ready
-            uses: ./.github/merge-on-ready
+          - name: "Download binaries"
+            uses: actions/download-artifact@v4
             with:
-              run-sha: ${{ needs.set-tags.outputs.git_ref }}
+              name: binaries
+              path: target/release
+          - name: "Make binaries executable"
+            shell: bash
+            run: |
+              chmod uog+x target/release/tanssi-node
+              chmod uog+x target/release/tanssi-relay
+              chmod uog+x target/release/tanssi-relay-prepare-worker
+              chmod uog+x target/release/tanssi-relay-execute-worker
+              chmod uog+x target/release/container-chain-simple-node
+              chmod uog+x target/release/container-chain-frontier-node
+          - name: Run Zombienet Test ${{ matrix.test_name }}
+            uses: ./.github/workflow-templates/bridge-e2e
+    zombienet-e2e-merge-queue-results:
+      if: ${{ always() }}
+      runs-on: ubuntu-latest
+      name: Results for zombienet-tests-merge-queue
+      needs: [zombienet-tests-bridge-e2e]
+      steps:
+        - run: |
+            result="${{ needs.zombienet-tests-bridge-e2e.result}}"
+            if [[ $result == "success"]]; then
+              exit 0
+            else
+              exit 1
+            fi
     chopsticks-upgrade-test:
       runs-on:
         labels: ubuntu-latest
