@@ -5,6 +5,7 @@ import type { ApiPromise } from "@polkadot/api";
 import type { AccountId32, EventRecord, ParaId } from "@polkadot/types/interfaces";
 import type { Vec, u8, u32, bool, u128 } from "@polkadot/types-codec";
 import { TypeRegistry } from "@polkadot/types";
+import type { SubmittableExtrinsic } from "@polkadot/api/types";
 
 export async function jumpSessions(context: DevModeContext, count: number): Promise<string | null> {
     const session = (await context.polkadotJs().query.session.currentIndex()).addn(count.valueOf()).toNumber();
@@ -319,6 +320,76 @@ export async function signAndSendAndInclude(tx, account, timeout: number | null 
         }, timeout);
 
         signAndSendAndIncludeInner(tx, account)
+            .then((result) => {
+                clearTimeout(timer);
+                resolve(result);
+            })
+            .catch((error) => {
+                clearTimeout(timer);
+                reject(error);
+            });
+    });
+}
+
+// Same as `signAndSendAndInclude` but support sending multiple transactions at once.
+// By default the nonce is read from the API, an optional nonce parameter can be passed to override this.
+export async function signAndSendAndIncludeMany(
+    api,
+    txs: SubmittableExtrinsic<"promise">[],
+    account,
+    nonce: number | null = null,
+    timeout: number | null = 3 * 60 * 1000
+) {
+    // Inner function that doesn't handle timeout
+    const signAndSendAndIncludeInner = async (txs: SubmittableExtrinsic<"promise">[], account) => {
+        let nextNonce = nonce;
+        if (nextNonce === null || nextNonce === undefined) {
+            nextNonce = (await api.query.system.account(account.address)).nonce.toNumber();
+        }
+
+        // Get all transactions except last one
+        const txs1 = txs.slice(0, -1);
+        // Send them but don't wait for inclusion in a block
+        for (const tx of txs1) {
+            await tx.signAndSend(account, { nonce: nextNonce++ });
+        }
+
+        // Get last transaction
+        const tx: SubmittableExtrinsic<"promise"> = txs[txs.length - 1];
+
+        // Only wait for the last transaction to be included, because it cannot be included if the previous transactions
+        // were not included, because of the nonce.
+        return new Promise((resolve, reject) => {
+            tx.signAndSend(account, { nonce: nextNonce++ }, (result) => {
+                const { status, txHash } = result;
+
+                // Resolve once the transaction is finalized
+                if (status.isFinalized) {
+                    resolve({
+                        txHash,
+                        blockHash: status.asFinalized,
+                        status: result,
+                    });
+                }
+            }).catch((error) => {
+                reject(error);
+            });
+        });
+    };
+
+    // If no timeout is specified, directly call the no-timeout version
+    if (timeout === null) {
+        return signAndSendAndIncludeInner(txs, account);
+    }
+
+    // Otherwise, create our own promise that sets/rejects on timeout
+    return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+            console.log("Transaction timed out");
+            reject(new Error("Transaction timed out"));
+        }, timeout);
+
+        signAndSendAndIncludeInner(txs, account)
             .then((result) => {
                 clearTimeout(timer);
                 resolve(result);

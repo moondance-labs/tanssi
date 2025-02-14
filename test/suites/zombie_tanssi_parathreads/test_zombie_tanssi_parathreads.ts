@@ -4,7 +4,7 @@ import { type ApiPromise, Keyring } from "@polkadot/api";
 import type { Signer } from "ethers";
 import fs from "node:fs/promises";
 import { getAuthorFromDigest } from "../../util/author";
-import { signAndSendAndInclude, waitSessions } from "../../util/block";
+import { signAndSendAndInclude, signAndSendAndIncludeMany, waitSessions } from "../../util/block";
 import { getHeaderFromRelay } from "../../util/relayInterface";
 import { chainSpecToContainerChainGenesisData } from "../../util/genesis_data.ts";
 import jsonBg from "json-bigint";
@@ -222,8 +222,14 @@ describeSuite({
                     responseFor2000.nextProfileId
                 );
 
-                await signAndSendAndInclude(paraApi.tx.sudo.sudo(paraApi.tx.utility.batch(responseFor2000.txs)), alice);
-                await signAndSendAndInclude(paraApi.tx.sudo.sudo(paraApi.tx.utility.batch(responseFor2001.txs)), alice);
+                await signAndSendAndIncludeMany(
+                    paraApi,
+                    [
+                        paraApi.tx.sudo.sudo(paraApi.tx.utility.batch(responseFor2000.txs)),
+                        paraApi.tx.sudo.sudo(paraApi.tx.utility.batch(responseFor2001.txs)),
+                    ],
+                    alice
+                );
 
                 const pendingParas = await paraApi.query.registrar.pendingParaIds();
                 expect(pendingParas.length).to.be.eq(1);
