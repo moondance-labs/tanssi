@@ -670,7 +670,7 @@ jobs:
             with:
               test_name: ${{ matrix.test_name }}
     zombienet-tests-merge-queue:
-        if: ${{ github.event_name == 'merge_group' }}
+        if: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'A8-mergeoncegreen') }}
         runs-on: self-hosted
         needs: ["set-tags", "build"]
         strategy:
