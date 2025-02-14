@@ -367,7 +367,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(3)]
-        #[pallet::weight(T::WeightInfo::set_slashing_mode(mode.clone()))]
+        #[pallet::weight(T::WeightInfo::set_slashing_mode())]
         pub fn set_slashing_mode(
             origin: OriginFor<T>,
             mode: SlashingModeOption

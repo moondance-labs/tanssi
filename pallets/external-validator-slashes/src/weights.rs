@@ -59,7 +59,7 @@ pub trait WeightInfo {
 	fn force_inject_slash() -> Weight;
 	fn root_test_send_msg_to_eth() -> Weight;
 	fn process_slashes_queue(s: u32, ) -> Weight;
-	fn set_slashing_mode(s: SlashingModeOption) -> Weight;
+	fn set_slashing_mode() -> Weight;
 }
 
 /// Weights for pallet_external_validator_slashes using the Substrate node and recommended hardware.
@@ -138,7 +138,7 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(Weight::from_parts(0, 42).saturating_mul(s.into()))
 	}
 
-	fn set_slashing_mode(s: SlashingModeOption) -> Weight {
+	fn set_slashing_mode() -> Weight {
 		Weight::from_parts(7_402_000, 3601)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
@@ -223,7 +223,7 @@ impl WeightInfo for () {
 			.saturating_add(Weight::from_parts(0, 42).saturating_mul(s.into()))
 	}
 
-	fn set_slashing_mode(s: SlashingModeOption) -> Weight {
+	fn set_slashing_mode() -> Weight {
 		Weight::from_parts(7_402_000, 3601)
 			.saturating_add(RocksDbWeight::get().reads(1_u64))
 			.saturating_add(RocksDbWeight::get().writes(1_u64))

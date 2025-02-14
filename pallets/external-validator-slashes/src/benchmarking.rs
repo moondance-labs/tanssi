@@ -20,6 +20,7 @@ use super::*;
 
 #[allow(unused)]
 use crate::Pallet as ExternalValidatorSlashes;
+use crate::SlashingModeOption;
 use {
     frame_benchmarking::{v2::*, BenchmarkError},
     frame_system::RawOrigin,
@@ -120,6 +121,15 @@ mod benchmarks {
 
         assert_eq!(UnreportedSlashesQueue::<T>::get().len(), 1);
         assert_eq!(processed, s);
+
+        Ok(())
+    }
+
+    #[benchmark]
+    fn set_slashing_mode() -> Result<(), BenchmarkError> {
+
+        #[extrinsic_call]
+        _(RawOrigin::Root, SlashingModeOption::Enabled);
 
         Ok(())
     }

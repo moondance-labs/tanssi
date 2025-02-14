@@ -139,7 +139,7 @@ impl<T: frame_system::Config> pallet_external_validator_slashes::WeightInfo for 
 			.saturating_add(Weight::from_parts(0, 50).saturating_mul(s.into()))
 	}
 
-	fn set_slashing_mode(s: SlashingModeOption) -> Weight {
+	fn set_slashing_mode() -> Weight {
 		Weight::from_parts(7_402_000, 3601)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
