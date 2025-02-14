@@ -23,3 +23,5 @@ raw.json
 **/.vscode/
 **/.idea/
 .cursor
+
+nextest-archive.tar.zst
