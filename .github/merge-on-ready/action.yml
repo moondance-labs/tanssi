@@ -1,6 +1,5 @@
 name: Merge on ready
 on:
-  push:
   workflow_call:
     inputs:
       run_sha:
@@ -33,3 +32,11 @@ jobs:
               
             - name: Run Zombienet Test ${{ matrix.test_name }}
               uses: ./.github/workflow-templates/bridge-e2e
+
+            - name: Commit Action Status
+              uses: LouisBrunner/checks-action@v2.0.0
+              with:
+                sha: ${{ inputs.run_sha }}
+                token: ${{ secrets.GITHUB_TOKEN }}
+                name: Merge on ready
+                conclusion: ${{ job.status }}
