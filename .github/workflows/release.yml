@@ -417,7 +417,7 @@ jobs:
           uses: actions-rs/cargo@v1
           with:
             command: nextest
-            args: run --archive-file nextest-archive.tar.zst --partition count:${{ matrix.partition }}/4 --workspace-remap ${{ github.workspace }} --no-fail-fast                           
+            args: run --archive-file nextest-archive.tar.zst --partition count:${{ matrix.partition }}/8 --workspace-remap ${{ github.workspace }} --no-fail-fast                           
 
     check-api-augment:
         runs-on: ubuntu-latest
