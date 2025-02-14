@@ -361,7 +361,7 @@ jobs:
                   body-path: runtime_size_report.md
                   edit-mode: replace
 
-    rust-test-prepare:
+    rust-test:
       runs-on: self-hosted
       needs: ["set-tags", "build"]
       steps:
@@ -398,7 +398,7 @@ jobs:
 
     rust-test-execute:
       runs-on: self-hosted
-      needs: ["rust-test-prepare"]
+      needs: ["rust-test"]
       name: Run all tests (/w partitioning)
       strategy:
         fail-fast: false
