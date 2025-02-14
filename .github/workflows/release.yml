@@ -669,8 +669,8 @@ jobs:
             uses: ./.github/workflow-templates/zombienet-tests
             with:
               test_name: ${{ matrix.test_name }}
-    zombienet-tests-merge-queue:
-        if: ${{ github.event_name == 'merge_group' }}
+    zombienet-tests-merge-on-ready:
+        if: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'A8-mergeoncegreen') }}
         runs-on: self-hosted
         needs: ["set-tags", "build"]
         strategy:
@@ -700,21 +700,21 @@ jobs:
             uses: ./.github/workflow-templates/zombienet-tests
             with:
               test_name: ${{ matrix.test_name }}
-    zombienet-merge-queue-results:
+    zombienet-merge-on-ready-queue-results:
       if: ${{ always() }}
       runs-on: ubuntu-latest
-      name: Results for zombienet-tests-merge-queue
-      needs: [zombienet-tests-merge-queue]
+      name: Results for zombienet-tests that run when ready to merge
+      needs: [zombienet-tests-merge-on-ready]
       steps:
         - run: |
-            result="${{ needs.zombienet-tests-merge-queue.result}}"
-            if [[ $result == "success" || $result == "skipped" ]]; then
+            result="${{ needs.zombienet-tests-merge-on-ready.result}}"
+            if [[ $result == "success" ]]; then
               exit 0
             else
               exit 1
             fi
-    zombienet-tests-merge-queue-bridge-e2e:
-        if: ${{ github.event_name == 'merge_group' }}
+    zombienet-tests-bridge-e2e-merge-on-ready:
+        if: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'A8-mergeoncegreen') }}
         runs-on: self-hosted
         needs: ["set-tags", "build"]
         steps:
@@ -738,6 +738,19 @@ jobs:
               chmod uog+x target/release/container-chain-frontier-node
           - name: Run Zombienet Test ${{ matrix.test_name }}
             uses: ./.github/workflow-templates/bridge-e2e
+    zombienet-bridge-e2e-merge-on-ready-results:
+      if: ${{ always() }}
+      runs-on: ubuntu-latest
+      name: Results for zombienet-tests e2e bridge merge when ready
+      needs: [zombienet-tests-bridge-e2e-merge-on-ready]
+      steps:
+        - run: |
+            result="${{ needs.zombienet-tests-bridge-e2e-merge-on-ready.result}}"
+            if [[ $result == "success" ]]; then
+              exit 0
+            else
+              exit 1
+            fi
     chopsticks-upgrade-test:
       runs-on:
         labels: ubuntu-latest
