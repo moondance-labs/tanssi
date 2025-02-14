@@ -1,5 +1,6 @@
 name: Merge on ready
 on:
+  push:
   workflow_call:
     inputs:
       run_sha:
