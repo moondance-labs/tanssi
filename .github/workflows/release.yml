@@ -395,7 +395,7 @@ jobs:
               | sort -nr \
               | head -n 1 \
               | awk '{print $2}' \
-              | sed -E "s|^$HOME||; s|/initial-checkpoint\\.json$||")
+              | sed -E "s|/initial-checkpoint\\.json$||")
             echo "artefact_dir=$checkpoint" >> $GITHUB_OUTPUT
         - name: Display variables
           run: |
@@ -433,7 +433,8 @@ jobs:
         - run: |
             test/scripts/download-ethereum-client-test-files.sh
             mkdir -p ~${{needs.rust-test-prepare.outputs.artefact_dir}}
-            cp test/tmp/ethereum_client_test/* ~${{needs.rust-test-prepare.outputs.artefact_dir}}
+            cp test/tmp/ethereum_client_test/* ${{needs.rust-test-prepare.outputs.artefact_dir}}
+            ls -la ${{needs.rust-test-prepare.outputs.artefact_dir}}
 
         # - name: Download test artefacts
         #   uses: actions/download-artifact@v4
