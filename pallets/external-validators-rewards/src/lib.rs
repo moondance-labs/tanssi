@@ -45,10 +45,7 @@ use {
     sp_core::H256,
     sp_runtime::traits::{Hash, MaybeEquivalence, Zero},
     sp_staking::SessionIndex,
-    sp_std::{
-        collections::btree_set::BTreeSet,
-        vec::Vec,
-    },
+    sp_std::{collections::btree_set::BTreeSet, vec::Vec},
     tp_bridge::{Command, DeliverMessage, Message, TicketInfo, ValidateMessage},
     tp_traits::ExternalIndexProvider,
     xcm::prelude::*,
