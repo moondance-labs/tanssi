@@ -1,7 +1,7 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
-import { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
+import type { KeyringPair } from "@moonwall/util";
 import { Keyring } from "@polkadot/keyring";
 import { u8aToHex } from "@polkadot/util";
 import { generateBabeEquivocationProof } from "../../../util/slashes";
@@ -29,7 +29,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Slashing mode LogOnly should generate an event but not trigger a slash",
-            test: async function () {
+            test: async () => {
                 // Set slashing mode to LogOnly
                 const setSlashingMode = await polkadotJs.tx.sudo
                     .sudo(polkadotJs.tx.externalValidatorSlashes.setSlashingMode("LogOnly"))
@@ -85,7 +85,7 @@ describeSuite({
         it({
             id: "E02",
             title: "Slashing mode Disabled should not generate neither an event nor a slash",
-            test: async function () {
+            test: async () => {
                 // Set slashing mode to Disabled
                 const setSlashingMode = await polkadotJs.tx.sudo
                     .sudo(polkadotJs.tx.externalValidatorSlashes.setSlashingMode("Disabled"))
@@ -135,7 +135,7 @@ describeSuite({
         it({
             id: "E03",
             title: "Slashing mode Enabled should generate an event and a slash",
-            test: async function () {
+            test: async () => {
                 // Set slashing mode to Enabled
                 const setSlashingMode = await polkadotJs.tx.sudo
                     .sudo(polkadotJs.tx.externalValidatorSlashes.setSlashingMode("Enabled"))
