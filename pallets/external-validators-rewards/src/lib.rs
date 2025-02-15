@@ -47,7 +47,7 @@ use {
     sp_staking::SessionIndex,
     sp_std::{
         collections::btree_set::BTreeSet,
-        vec::{self, Vec},
+        vec::Vec,
     },
     tp_bridge::{Command, DeliverMessage, Message, TicketInfo, ValidateMessage},
     tp_traits::ExternalIndexProvider,
