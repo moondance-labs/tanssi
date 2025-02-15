@@ -30,7 +30,6 @@ describeSuite({
             id: "E01",
             title: "Slashing mode LogOnly should generate an event but not trigger a slash",
             test: async function () {
-
                 // Set slashing mode to LogOnly
                 const setSlashingMode = await polkadotJs.tx.sudo
                     .sudo(polkadotJs.tx.externalValidatorSlashes.setSlashingMode("LogOnly"))
@@ -73,10 +72,12 @@ describeSuite({
                 const DeferPeriod = (await polkadotJs.consts.externalValidatorSlashes.slashDeferDuration).toNumber();
                 const expectedSlashes = await polkadotJs.query.externalValidatorSlashes.slashes(DeferPeriod + 1);
                 expect(expectedSlashes.length).to.be.eq(0);
-                
+
                 // Event should be there
                 const events = await polkadotJs.query.system.events();
-                const event = events.find(({ event }) => event.section === "externalValidatorSlashes" && event.method === "SlashReported");
+                const event = events.find(
+                    ({ event }) => event.section === "externalValidatorSlashes" && event.method === "SlashReported"
+                );
                 expect(event).not.be.undefined;
             },
         });
@@ -85,7 +86,6 @@ describeSuite({
             id: "E02",
             title: "Slashing mode Disabled should not generate neither an event nor a slash",
             test: async function () {
-
                 // Set slashing mode to Disabled
                 const setSlashingMode = await polkadotJs.tx.sudo
                     .sudo(polkadotJs.tx.externalValidatorSlashes.setSlashingMode("Disabled"))
@@ -122,10 +122,12 @@ describeSuite({
                 const DeferPeriod = (await polkadotJs.consts.externalValidatorSlashes.slashDeferDuration).toNumber();
                 const expectedSlashes = await polkadotJs.query.externalValidatorSlashes.slashes(DeferPeriod + 1);
                 expect(expectedSlashes.length).to.be.eq(0);
-                
+
                 // Event should not be there
                 const events = await polkadotJs.query.system.events();
-                const event = events.find(({ event }) => event.section === "externalValidatorSlashes" && event.method === "SlashReported");
+                const event = events.find(
+                    ({ event }) => event.section === "externalValidatorSlashes" && event.method === "SlashReported"
+                );
                 expect(event).to.be.undefined;
             },
         });
@@ -134,7 +136,6 @@ describeSuite({
             id: "E03",
             title: "Slashing mode Enabled should generate an event and a slash",
             test: async function () {
-
                 // Set slashing mode to Enabled
                 const setSlashingMode = await polkadotJs.tx.sudo
                     .sudo(polkadotJs.tx.externalValidatorSlashes.setSlashingMode("Enabled"))
@@ -171,10 +172,12 @@ describeSuite({
                 const DeferPeriod = (await polkadotJs.consts.externalValidatorSlashes.slashDeferDuration).toNumber();
                 const expectedSlashes = await polkadotJs.query.externalValidatorSlashes.slashes(DeferPeriod + 1);
                 expect(expectedSlashes.length).to.be.eq(1);
-                
+
                 // Event should be there
                 const events = await polkadotJs.query.system.events();
-                const event = events.find(({ event }) => event.section === "externalValidatorSlashes" && event.method === "SlashReported");
+                const event = events.find(
+                    ({ event }) => event.section === "externalValidatorSlashes" && event.method === "SlashReported"
+                );
                 expect(event).not.be.undefined;
             },
         });
