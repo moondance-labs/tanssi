@@ -706,15 +706,6 @@ declare module "@polkadot/rpc-core/types/jsonrpc" {
         };
         offchain: {
             /**
-             * Clear offchain local storage under given key and prefix
-             **/
-            localStorageClear: AugmentedRpc<
-                (
-                    kind: StorageKind | "PERSISTENT" | "LOCAL" | number | Uint8Array,
-                    key: Bytes | string | Uint8Array
-                ) => Observable<Null>
-            >;
-            /**
              * Get offchain local storage under given key and prefix
              **/
             localStorageGet: AugmentedRpc<

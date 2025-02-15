@@ -131,6 +131,7 @@ import type {
     SpWeightsWeightV2Weight,
     StagingXcmV4Instruction,
     StagingXcmV4Location,
+    StagingXcmV4Xcm,
     TpTraitsActiveEraInfo,
     TpTraitsContainerChainBlockInfo,
     TpTraitsParathreadParams,
@@ -1013,6 +1014,12 @@ declare module "@polkadot/api-base/types/storage" {
                 [u32]
             > &
                 QueryableStorageEntry<ApiType, [u32]>;
+            slashingMode: AugmentedQuery<
+                ApiType,
+                () => Observable<PalletExternalValidatorSlashesSlashingModeOption>,
+                []
+            > &
+                QueryableStorageEntry<ApiType, []>;
             /**
              * All unreported slashes that will be processed in the future.
              **/

@@ -1859,6 +1859,18 @@ declare module "@polkadot/api-base/types/submittable" {
                 ) => SubmittableExtrinsic<ApiType>,
                 [H256, u32, u32]
             >;
+            setSlashingMode: AugmentedSubmittable<
+                (
+                    mode:
+                        | PalletExternalValidatorSlashesSlashingModeOption
+                        | "Enabled"
+                        | "LogOnly"
+                        | "Disabled"
+                        | number
+                        | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [PalletExternalValidatorSlashesSlashingModeOption]
+            >;
             /**
              * Generic tx
              **/
