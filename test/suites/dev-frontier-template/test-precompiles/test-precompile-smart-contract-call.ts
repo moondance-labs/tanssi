@@ -4,25 +4,25 @@ import { encodeFunctionData } from "viem";
 import { expectEVMResult } from "../../../helpers";
 
 describeSuite({
-    id: "DF1114",
+    id: "DE1314",
     title: "Smart Contract Precompile Call",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
         let testContractAddress: `0x${string}`;
         let multiplyContractAddress: `0x${string}`;
 
-        beforeAll(async function () {
-            const { contractAddress: addr1 } = await context.deployContract!("SmartContractPrecompileCallTest");
+        beforeAll(async () => {
+            const { contractAddress: addr1 } = await context.deployContract("SmartContractPrecompileCallTest");
             testContractAddress = addr1;
 
-            const { contractAddress: addr3 } = await context.deployContract!("MultiplyBy7");
+            const { contractAddress: addr3 } = await context.deployContract("MultiplyBy7");
             multiplyContractAddress = addr3;
         });
         it({
             id: "T01",
             title: "should revert when caller is a smart contract",
-            test: async function () {
-                const rawTxn = await context.writeContract!({
+            test: async () => {
+                const rawTxn = await context.writeContract({
                     contractAddress: testContractAddress,
                     contractName: "SmartContractPrecompileCallTest",
                     functionName: "callBatch",
@@ -52,10 +52,10 @@ describeSuite({
 
                 const { result } = await context.createBlock(rawTxn);
 
-                expectEVMResult(result!.events, "Revert");
+                expectEVMResult(result?.events, "Revert");
                 expect(
                     async () =>
-                        await context.writeContract!({
+                        await context.writeContract?.({
                             contractAddress: testContractAddress,
                             contractName: "SmartContractPrecompileCallTest",
                             functionName: "callBatch",

@@ -53,7 +53,7 @@ jobs:
       - name: Upload binaries
         uses: actions/upload-artifact@v4
         with:
-          name: binaries-${{ matrix.chain.cpu }}
+          name: binaries-${{ matrix.cpu }}
           path: binaries
   docker-tanssi:
     runs-on: ubuntu-latest
@@ -67,7 +67,7 @@ jobs:
         uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          pattern: binaries-${{ matrix.chain.cpu }}
+          pattern: binaries-*
           merge-multiple: true
           path: build
       - name: Prepare
@@ -87,13 +87,13 @@ jobs:
           driver-opts: |
             image=moby/buildkit:master
       - name: Login to DockerHub
-        uses: docker/login-action@v3
+        uses: docker/login-action@v3.3.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Build and push
         id: docker_build
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: ./docker/${{matrix.image}}.Dockerfile

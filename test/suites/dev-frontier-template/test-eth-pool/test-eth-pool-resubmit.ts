@@ -4,14 +4,14 @@ import { parseGwei } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
 describeSuite({
-    id: "DF0502",
+    id: "DE0602",
     title: "Resubmit transations",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
         let randomAddress: `0x${string}`;
         let currentNonce: number;
 
-        beforeEach(async function () {
+        beforeEach(async () => {
             randomAddress = privateKeyToAccount(generatePrivateKey()).address;
             currentNonce = await context.viem("public").getTransactionCount({ address: ALITH_ADDRESS });
         });
@@ -19,7 +19,7 @@ describeSuite({
         it({
             id: "T01",
             title: "should allow resubmitting with higher gas",
-            test: async function () {
+            test: async () => {
                 await context.createBlock([
                     await createRawTransfer(context, randomAddress, 1, {
                         nonce: currentNonce,
@@ -38,7 +38,7 @@ describeSuite({
         it({
             id: "T02",
             title: "should ignore resubmitting with lower gas",
-            test: async function () {
+            test: async () => {
                 await context.createBlock([
                     await createRawTransfer(context, randomAddress, 1, {
                         nonce: currentNonce,
@@ -57,7 +57,7 @@ describeSuite({
         it({
             id: "T03",
             title: "should allow cancelling transaction",
-            test: async function () {
+            test: async () => {
                 // gas price should trump limit
                 await context.createBlock([
                     await createRawTransfer(context, randomAddress, 1, {
@@ -80,7 +80,7 @@ describeSuite({
         it({
             id: "T04",
             title: "should pick highest gas price from many transactions",
-            test: async function () {
+            test: async () => {
                 await sendRawTransaction(
                     context,
                     await createRawTransfer(context, randomAddress, 2, {

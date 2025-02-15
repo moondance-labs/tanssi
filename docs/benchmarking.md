@@ -145,3 +145,39 @@ TEMPLATE_PATH=benchmarking/frame-weight-pallet-template.hbs OUTPUT_PATH=pallets/
 ```
 BINARY=target/release/container-chain-simple-node TEMPLATE_PATH=benchmarking/frame-weight-pallet-template.hbs OUTPUT_PATH=../dancekit/container-chain-pallets/authorities-noting/src/weights.rs ./tools/benchmarking.sh "pallet_cc_authorities_noting" "*"
 ```
+
+
+# Faster local development
+
+There is a script `tools/dev-benchmark-pallet.sh` that aims to improve developer experience
+related to per-runtime weights.
+
+## Adding new extrinsics
+
+When we add a new extrinsic to one of our pallets, we also need to add a benchmark.
+But that will make all the runtimes that include that pallet fail to compile, because the
+per-runtime weights do not include that new extrinsic.
+
+The usual solution is to add a dummy weight for the new extrinsic in each runtime, and then
+run the benchmarks again to check that the number of storage reads/writes is reasonable.
+
+The dummy weights need to be added manually, but there is a helper script for updating the
+weights with the actual value.
+
+Usage:
+
+```
+cargo build --release --features=fast-runtime,runtime-benchmarks
+git commit -am 'before running benchmarks"
+./tools/dev-benchmark-pallet.sh "pallet_registrar"
+```
+
+This automatically copies the weights to the expected location for each runtime, and it runs the benchmarks locally with `--check=1`, so very few iterations.
+
+This script can also be used when the benchmark for an existing extrinsic changes, by taking a new parameter or if there are changes to the algorithm and now it takes a different amount of storage reads.
+
+## Adding new pallets
+
+This script can also be used to simplify the flow of adding new pallets.
+For that you need to run it with `FORCE_COPY=1` env variable, because by default it will only
+update the weight files for runtimes that already include that pallet.

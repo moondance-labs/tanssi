@@ -1,11 +1,11 @@
 import "@tanssi/api-augment";
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { KeyringPair } from "@moonwall/util";
-import { ApiPromise } from "@polkadot/api";
+import type { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
 import { jumpSessions } from "util/block";
 
 describeSuite({
-    id: "CPT0604",
+    id: "COMMO1104",
     title: "Registrar test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -24,7 +24,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Can add registrar proxy and use it",
-            test: async function () {
+            test: async () => {
                 // Setup proxy
                 const delegate = charlie.address;
                 const registrar_proxy = 6;
@@ -34,7 +34,7 @@ describeSuite({
 
                 const events = await polkadotJs.query.system.events();
                 const ev1 = events.filter((a) => {
-                    return a.event.method == "ProxyAdded";
+                    return a.event.method === "ProxyAdded";
                 });
                 expect(ev1.length).to.be.equal(1);
 
@@ -111,7 +111,7 @@ describeSuite({
         it({
             id: "E02",
             title: "SudoRegistrar proxy works",
-            test: async function () {
+            test: async () => {
                 // Proxy
                 const delegate = charlie.address;
                 const sudo_registrar_proxy = 7;
@@ -122,7 +122,7 @@ describeSuite({
 
                 const events = await polkadotJs.query.system.events();
                 const ev1 = events.filter((a) => {
-                    return a.event.method == "ProxyAdded";
+                    return a.event.method === "ProxyAdded";
                 });
                 expect(ev1.length).to.be.equal(1);
 
