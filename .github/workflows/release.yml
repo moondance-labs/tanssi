@@ -386,7 +386,7 @@ jobs:
           uses: arduino/setup-protoc@v3
         - name: Install nextest
           uses: taiki-e/install-action@nextest
-        - name: Build and archive tests
+        - name: Run Tests
           run: cargo nextest run --release --no-fail-fast
 
     check-api-augment:
