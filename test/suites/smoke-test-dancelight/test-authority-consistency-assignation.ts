@@ -37,11 +37,11 @@ describeSuite({
                     [...authorityKeyMapping.entries()].map(([key, value]) => [key.toHex(), value.toHuman()])
                 );
 
-                const containerChains = assignmentCollatorKey.containerChains.keys();
+                const containerChains = assignmentCollatorKey.containerChains.entries();
 
-                for (const container of containerChains) {
-                    for (const key of assignmentCollatorKey.containerChains.get(container)) {
-                        const assignedAccount = remappedAuthorityKeyMapping[key.toHex()];
+                for (const [container, authorities] of containerChains) {
+                    for (const authority of authorities) {
+                        const assignedAccount = remappedAuthorityKeyMapping[authority.toHex()];
                         expect(remappedAssignmentCollatorAccount[container.toString()]).toContain(assignedAccount);
                     }
                 }
