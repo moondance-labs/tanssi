@@ -230,13 +230,15 @@ pub mod pallet {
         Deserialize,
         MaxEncodedLen,
     )]
-    pub struct StreamConfig<Unit, AssetId, Balance> {
+    pub struct StreamConfig<Unit, AssetId, BalanceOrDuration> {
         /// Unit in which time is measured using a `TimeProvider`.
         pub time_unit: Unit,
         /// Asset used for payment.
         pub asset_id: AssetId,
         /// Amount of asset / unit.
-        pub rate: Balance,
+        pub rate: BalanceOrDuration,
+        /// Minimum amount of time that can be used for mandatory change requests.
+        pub minimum_deadline_delay: BalanceOrDuration,
     }
 
     /// Origin of a change request.
@@ -415,6 +417,7 @@ pub mod pallet {
         ImmediateDepositChangeRequiresSameAssetId,
         DeadlineCantBeInPast,
         CantFetchStatusBeforeLastTimeUpdated,
+        DeadlineDelayIsBelowMinium,
     }
 
     #[pallet::event]
@@ -586,7 +589,14 @@ pub mod pallet {
                 let now = T::TimeProvider::now(&stream.config.time_unit)
                     .ok_or(Error::<T>::CantFetchCurrentTime)?;
 
-                ensure!(deadline >= now, Error::<T>::DeadlineCantBeInPast);
+                let Some(diff) = deadline.checked_sub(&now) else {
+                    return Err(Error::<T>::DeadlineCantBeInPast.into());
+                };
+
+                ensure!(
+                    diff >= stream.config.minimum_deadline_delay,
+                    Error::<T>::DeadlineDelayIsBelowMinium
+                );
             }
 
             // If asset id and time unit are the same, we allow to make the change

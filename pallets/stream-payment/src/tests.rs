@@ -49,6 +49,7 @@ fn default_config() -> StreamConfigOf<Runtime> {
         time_unit: TimeUnit::BlockNumber,
         asset_id: StreamPaymentAssetId::Native,
         rate: 100,
+        minimum_deadline_delay: 0,
     }
 }
 
@@ -1151,6 +1152,42 @@ mod request_change {
                     None,
                 ),
                 Error::DeadlineCantBeInPast
+            );
+        })
+    }
+
+    #[test]
+    fn cant_set_deadline_below_minimum() {
+        ExtBuilder::default().build().execute_with(|| {
+            let mut open_stream = OpenStream::default();
+            open_stream.config.minimum_deadline_delay = 10;
+            assert_ok!(open_stream.call());
+
+            roll_to(5);
+
+            let change1 = StreamConfig {
+                rate: 101,
+                ..open_stream.config
+            };
+            assert_err!(
+                StreamPayment::request_change(
+                    RuntimeOrigin::signed(BOB),
+                    0,
+                    ChangeKind::Mandatory { deadline: 10 },
+                    change1,
+                    None,
+                ),
+                Error::DeadlineDelayIsBelowMinium
+            );
+
+            assert_ok!(
+                StreamPayment::request_change(
+                    RuntimeOrigin::signed(BOB),
+                    0,
+                    ChangeKind::Mandatory { deadline: 15 },
+                    change1,
+                    None,
+                ),
             );
         })
     }

@@ -69,6 +69,7 @@ mod benchmarks {
                 time_unit,
                 asset_id,
                 rate: 100u32.into(),
+                minimum_deadline_delay: 1u32.into(),
             },
             1_000_000u32.into(),
         );
@@ -103,6 +104,7 @@ mod benchmarks {
                 time_unit: time_unit.clone(),
                 asset_id,
                 rate,
+                minimum_deadline_delay: 1u32.into(),
             },
             initial_deposit,
         ));
@@ -144,6 +146,7 @@ mod benchmarks {
                 time_unit: time_unit.clone(),
                 asset_id,
                 rate,
+                minimum_deadline_delay: 1u32.into(),
             },
             initial_deposit,
         ));
@@ -184,6 +187,7 @@ mod benchmarks {
             time_unit: time_unit.clone(),
             asset_id,
             rate,
+            minimum_deadline_delay: 1u32.into(),
         };
 
         assert_ok!(Pallet::<T>::open_stream(
@@ -235,6 +239,7 @@ mod benchmarks {
             time_unit: time_unit.clone(),
             asset_id,
             rate,
+            minimum_deadline_delay: 1u32.into(),
         };
 
         assert_ok!(Pallet::<T>::open_stream(
@@ -292,6 +297,7 @@ mod benchmarks {
             time_unit: time_unit.clone(),
             asset_id,
             rate,
+            minimum_deadline_delay: 1u32.into(),
         };
 
         assert_ok!(Pallet::<T>::open_stream(
@@ -348,6 +354,7 @@ mod benchmarks {
             time_unit: time_unit.clone(),
             asset_id,
             rate,
+            minimum_deadline_delay: 1u32.into(),
         };
 
         assert_ok!(Pallet::<T>::open_stream(
@@ -399,6 +406,7 @@ mod benchmarks {
             time_unit: time_unit.clone(),
             asset_id: asset_id.clone(),
             rate,
+            minimum_deadline_delay: 1u32.into(),
         };
 
         assert_ok!(Pallet::<T>::open_stream(
