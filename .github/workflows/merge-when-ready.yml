@@ -1,8 +1,9 @@
 name: Merge on ready
 on:
   workflow_run:
-    workflows: [Enforce PR labels, CI]
-    types: [completed]
+    workflows: ["Enforce PR labels", "CI"]
+    types: 
+      - completed
   workflow_dispatch:
     inputs:
       run_sha:
