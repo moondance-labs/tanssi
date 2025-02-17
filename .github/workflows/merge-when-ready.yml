@@ -61,11 +61,11 @@ jobs:
               uses: ./.github/workflow-templates/bridge-e2e
             
             - name: Report tests check
-              uses: actions/github-script@v3
+              uses: actions/github-script@v6
               with:
                 github-token: ${{ secrets.GITHUB_TOKEN }}
                 script: |
-                  github.checks.create({
+                  github.rest.checks.create({
                     name: 'run tests',
                     head_sha: '${{ steps.sharef.outputs.sha }}',
                     status: 'completed',
