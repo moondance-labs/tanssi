@@ -1044,7 +1044,7 @@ export default {
     PalletEthereumTokenTransfersEvent: {
         _enum: {
             ChannelInfoSet: {
-                channelInfo: "PalletEthereumTokenTransfersChannelInfo",
+                channelInfo: "TpBridgeChannelInfo",
             },
             NativeTokenTransferred: {
                 messageId: "H256",
@@ -1058,9 +1058,9 @@ export default {
         },
     },
     /**
-     * Lookup110: pallet_ethereum_token_transfers::ChannelInfo
+     * Lookup110: tp_bridge::ChannelInfo
      **/
-    PalletEthereumTokenTransfersChannelInfo: {
+    TpBridgeChannelInfo: {
         channelId: "SnowbridgeCoreChannelId",
         paraId: "u32",
         agentId: "H256",
@@ -6429,10 +6429,7 @@ export default {
      **/
     PalletEthereumTokenTransfersError: {
         _enum: {
-            ChannelIdAlreadyExists: "Null",
             ChannelInfoNotSet: "Null",
-            ParaIdAlreadyExists: "Null",
-            AgentIdAlreadyExists: "Null",
             UnknownLocationForToken: "Null",
             InvalidMessage: "SnowbridgeCoreOutboundSendError",
             TransferMessageNotSent: "SnowbridgeCoreOutboundSendError",

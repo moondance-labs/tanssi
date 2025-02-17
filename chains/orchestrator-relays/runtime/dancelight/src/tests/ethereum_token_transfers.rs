@@ -46,7 +46,7 @@ fn test_set_token_transfer_channel_reflects_changes_in_ethereum_system() {
             let agent_id = AgentId::from_low_u64_be(10);
             let para_id: ParaId = 2000u32.into();
 
-            assert_eq!(EthereumTokenTransfers::current_channel_info(), None);
+            assert!(EthereumTokenTransfers::current_channel_info().is_none());
 
             assert!(EthereumSystem::agents(agent_id).is_none());
             assert!(EthereumSystem::channels(channel_id).is_none());
@@ -75,7 +75,7 @@ fn test_set_token_transfer_channel_reflects_changes_in_ethereum_system() {
 }
 
 #[test]
-fn test_set_token_transfer_channel_fails_if_channel_or_agent_already_initialized() {
+fn test_set_token_transfer_channel_works_with_existing_channels_from_eth_system() {
     ExtBuilder::default()
         .with_balances(vec![
             // Alice gets 10k extra tokens for her mapping deposit
@@ -91,42 +91,43 @@ fn test_set_token_transfer_channel_fails_if_channel_or_agent_already_initialized
             let agent_id = AgentId::from_low_u64_be(10);
             let para_id: ParaId = 2000u32.into();
 
-            assert_eq!(EthereumTokenTransfers::current_channel_info(), None);
+            assert!(EthereumTokenTransfers::current_channel_info().is_none());
 
-            // Let's first insert the agent_id into storage.
+            // Let's first insert both agent_id and channel_id into storage.
             assert!(EthereumSystem::agents(agent_id).is_none());
-            snowbridge_pallet_system::Agents::<Runtime>::insert(agent_id, ());
-            assert!(EthereumSystem::agents(agent_id).is_some());
-
-            // Call should fail if the agent is already present in EthereumSystem's storage.
-            assert_noop!(
-                EthereumTokenTransfers::set_token_transfer_channel(
-                    root_origin(),
-                    channel_id,
-                    agent_id,
-                    para_id
-                ),
-                snowbridge_pallet_system::Error::<Runtime>::AgentAlreadyCreated
-            );
-
-            // Let's now insert the channel_id into storage.
             assert!(EthereumSystem::channels(channel_id).is_none());
+
+            snowbridge_pallet_system::Agents::<Runtime>::insert(agent_id, ());
             snowbridge_pallet_system::Channels::<Runtime>::insert(
                 channel_id,
                 Channel { para_id, agent_id },
             );
+            assert!(EthereumSystem::agents(agent_id).is_some());
             assert!(EthereumSystem::channels(channel_id).is_some());
 
-            // Call should fail if the channel is already present in EthereumSystem's storage.
-            assert_noop!(
-                EthereumTokenTransfers::set_token_transfer_channel(
-                    root_origin(),
-                    channel_id,
-                    agent_id,
-                    para_id
-                ),
-                snowbridge_pallet_system::Error::<Runtime>::ChannelAlreadyCreated
-            );
+            // Call should work with the existing channels from EthereumSystem.
+            assert_ok!(EthereumTokenTransfers::set_token_transfer_channel(
+                root_origin(),
+                channel_id,
+                agent_id,
+                para_id
+            ));
+
+            assert!(EthereumTokenTransfers::current_channel_info().is_some());
+
+            let expected_channel_info = EthereumTokenTransfers::current_channel_info().unwrap();
+
+            assert_eq!(expected_channel_info.channel_id, channel_id);
+            assert_eq!(expected_channel_info.para_id, para_id);
+            assert_eq!(expected_channel_info.agent_id, agent_id);
+
+            // Ensure that everything remains the same in EthereumSystem.
+            assert!(EthereumSystem::agents(agent_id).is_some());
+            assert!(EthereumSystem::channels(channel_id).is_some());
+
+            let expected_channel = EthereumSystem::channels(channel_id).unwrap();
+            assert_eq!(expected_channel.para_id, para_id);
+            assert_eq!(expected_channel.agent_id, agent_id);
         });
 }
 

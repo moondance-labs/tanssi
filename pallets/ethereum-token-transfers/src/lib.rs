@@ -72,7 +72,7 @@ use {
     sp_core::{H160, H256},
     sp_runtime::{traits::MaybeEquivalence, DispatchResult},
     sp_std::vec,
-    tp_bridge::{EthereumSystemChannelManager, TicketInfo},
+    tp_bridge::{ChannelInfo, EthereumSystemChannelManager, TicketInfo},
     xcm::prelude::*,
 };
 
@@ -80,14 +80,6 @@ use {
 use tp_bridge::TokenChannelSetterBenchmarkHelperTrait;
 
 pub use pallet::*;
-
-/// Information of the token-sending channel stored in this pallet.
-#[derive(Encode, Decode, RuntimeDebug, TypeInfo, Clone, PartialEq, MaxEncodedLen)]
-pub struct ChannelInfo {
-    pub channel_id: ChannelId,
-    pub para_id: ParaId,
-    pub agent_id: AgentId,
-}
 
 pub type BalanceOf<T> =
     <<T as pallet::Config>::Currency as Inspect<<T as frame_system::Config>::AccountId>>::Balance;
@@ -158,14 +150,8 @@ pub mod pallet {
     // Errors
     #[pallet::error]
     pub enum Error<T> {
-        /// The requested ChannelId is already present in this pallet.
-        ChannelIdAlreadyExists,
         /// The channel's information has not been set on this pallet yet.
         ChannelInfoNotSet,
-        /// The requested ParaId is already present in this pallet.
-        ParaIdAlreadyExists,
-        /// The requested AgentId is already present in this pallet.
-        AgentIdAlreadyExists,
         /// Conversion from Location to TokenId failed.
         UnknownLocationForToken,
         /// The outbound message is invalid prior to send.
@@ -196,33 +182,10 @@ pub mod pallet {
         ) -> DispatchResult {
             ensure_root(origin)?;
 
-            if let Some(channel_info) = CurrentChannelInfo::<T>::get() {
-                if channel_info.channel_id == channel_id {
-                    return Err(Error::<T>::ChannelIdAlreadyExists.into());
-                }
-
-                if channel_info.para_id == para_id {
-                    return Err(Error::<T>::ParaIdAlreadyExists.into());
-                }
-
-                if channel_info.agent_id == agent_id {
-                    return Err(Error::<T>::AgentIdAlreadyExists.into());
-                }
-            }
-
-            let channel_info = ChannelInfo {
-                channel_id,
-                para_id,
-                agent_id,
-            };
+            let channel_info =
+                T::EthereumSystemHandler::create_channel(channel_id, agent_id, para_id);
 
             CurrentChannelInfo::<T>::put(channel_info.clone());
-
-            T::EthereumSystemHandler::create_channel(
-                channel_info.channel_id,
-                channel_info.agent_id,
-                channel_info.para_id,
-            )?;
 
             Self::deposit_event(Event::<T>::ChannelInfoSet { channel_info });
 

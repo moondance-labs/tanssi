@@ -48,7 +48,6 @@ import type {
     PalletConfigurationHostConfiguration,
     PalletConvictionVotingVoteVoting,
     PalletDataPreserversRegisteredProfile,
-    PalletEthereumTokenTransfersChannelInfo,
     PalletExternalValidatorSlashesSlash,
     PalletExternalValidatorsForcing,
     PalletExternalValidatorsRewardsEraRewardPoints,
@@ -131,6 +130,7 @@ import type {
     SpWeightsWeightV2Weight,
     StagingXcmV4Instruction,
     StagingXcmV4Location,
+    TpBridgeChannelInfo,
     TpTraitsActiveEraInfo,
     TpTraitsContainerChainBlockInfo,
     TpTraitsParathreadParams,
@@ -917,11 +917,7 @@ declare module "@polkadot/api-base/types/storage" {
             [key: string]: QueryableStorageEntry<ApiType>;
         };
         ethereumTokenTransfers: {
-            currentChannelInfo: AugmentedQuery<
-                ApiType,
-                () => Observable<Option<PalletEthereumTokenTransfersChannelInfo>>,
-                []
-            > &
+            currentChannelInfo: AugmentedQuery<ApiType, () => Observable<Option<TpBridgeChannelInfo>>, []> &
                 QueryableStorageEntry<ApiType, []>;
             /**
              * Generic query

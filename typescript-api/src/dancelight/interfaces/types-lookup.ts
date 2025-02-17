@@ -1331,7 +1331,7 @@ declare module "@polkadot/types/lookup" {
     interface PalletEthereumTokenTransfersEvent extends Enum {
         readonly isChannelInfoSet: boolean;
         readonly asChannelInfoSet: {
-            readonly channelInfo: PalletEthereumTokenTransfersChannelInfo;
+            readonly channelInfo: TpBridgeChannelInfo;
         } & Struct;
         readonly isNativeTokenTransferred: boolean;
         readonly asNativeTokenTransferred: {
@@ -1346,8 +1346,8 @@ declare module "@polkadot/types/lookup" {
         readonly type: "ChannelInfoSet" | "NativeTokenTransferred";
     }
 
-    /** @name PalletEthereumTokenTransfersChannelInfo (110) */
-    interface PalletEthereumTokenTransfersChannelInfo extends Struct {
+    /** @name TpBridgeChannelInfo (110) */
+    interface TpBridgeChannelInfo extends Struct {
         readonly channelId: SnowbridgeCoreChannelId;
         readonly paraId: u32;
         readonly agentId: H256;
@@ -7324,23 +7324,13 @@ declare module "@polkadot/types/lookup" {
 
     /** @name PalletEthereumTokenTransfersError (643) */
     interface PalletEthereumTokenTransfersError extends Enum {
-        readonly isChannelIdAlreadyExists: boolean;
         readonly isChannelInfoNotSet: boolean;
-        readonly isParaIdAlreadyExists: boolean;
-        readonly isAgentIdAlreadyExists: boolean;
         readonly isUnknownLocationForToken: boolean;
         readonly isInvalidMessage: boolean;
         readonly asInvalidMessage: SnowbridgeCoreOutboundSendError;
         readonly isTransferMessageNotSent: boolean;
         readonly asTransferMessageNotSent: SnowbridgeCoreOutboundSendError;
-        readonly type:
-            | "ChannelIdAlreadyExists"
-            | "ChannelInfoNotSet"
-            | "ParaIdAlreadyExists"
-            | "AgentIdAlreadyExists"
-            | "UnknownLocationForToken"
-            | "InvalidMessage"
-            | "TransferMessageNotSent";
+        readonly type: "ChannelInfoNotSet" | "UnknownLocationForToken" | "InvalidMessage" | "TransferMessageNotSent";
     }
 
     /** @name SpCoreCryptoKeyTypeId (647) */
