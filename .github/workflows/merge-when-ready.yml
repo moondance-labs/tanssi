@@ -49,6 +49,13 @@ jobs:
                 path: target/release
                 allow_forks: false
 
+            - name: Grant Permissions
+              run: |
+                chmod uog+x target/release/tanssi-node
+                chmod uog+x target/release/tanssi-relay
+                chmod uog+x target/release/tanssi-relay-execute-worker
+                chmod uog+x target/release/tanssi-relay-prepare-worker
+
             - name: Run Zombienet Test ${{ matrix.test_name }}
               uses: ./.github/workflow-templates/bridge-e2e
 
