@@ -106,8 +106,12 @@ import type {
     PalletMaintenanceModeCall,
     PalletMaintenanceModeError,
     PalletMaintenanceModeEvent,
+    PalletMigrationsActiveCursor,
+    PalletMigrationsCall,
     PalletMigrationsError,
     PalletMigrationsEvent,
+    PalletMigrationsHistoricCleanupSelector,
+    PalletMigrationsMigrationCursor,
     PalletMultisigCall,
     PalletMultisigError,
     PalletMultisigEvent,
@@ -295,8 +299,12 @@ declare module "@polkadot/types/types/registry" {
         PalletMaintenanceModeCall: PalletMaintenanceModeCall;
         PalletMaintenanceModeError: PalletMaintenanceModeError;
         PalletMaintenanceModeEvent: PalletMaintenanceModeEvent;
+        PalletMigrationsActiveCursor: PalletMigrationsActiveCursor;
+        PalletMigrationsCall: PalletMigrationsCall;
         PalletMigrationsError: PalletMigrationsError;
         PalletMigrationsEvent: PalletMigrationsEvent;
+        PalletMigrationsHistoricCleanupSelector: PalletMigrationsHistoricCleanupSelector;
+        PalletMigrationsMigrationCursor: PalletMigrationsMigrationCursor;
         PalletMultisigCall: PalletMultisigCall;
         PalletMultisigError: PalletMultisigError;
         PalletMultisigEvent: PalletMultisigEvent;

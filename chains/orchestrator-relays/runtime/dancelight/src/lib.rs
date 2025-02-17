@@ -2296,6 +2296,7 @@ mod benches {
         [pallet_conviction_voting, ConvictionVoting]
         [pallet_identity, Identity]
         [pallet_message_queue, MessageQueue]
+        [pallet_multiblock_migrations, MultiBlockMigrations]
         [pallet_multisig, Multisig]
         [pallet_parameters, Parameters]
         [pallet_preimage, Preimage]
