@@ -27,11 +27,3 @@ jobs:
           REQUIRED_LABELS_ANY: "D1-audited👍,D5-nicetohaveaudit⚠️,D9-needsaudit👮,D2-notlive,D3-trivial"
           REQUIRED_LABELS_ALL: ""
           BANNED_LABELS: ""
-  enforce-ready-to-merge-label:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: yogevbd/enforce-label-action@2.2.2
-        with:
-          REQUIRED_LABELS_ANY: "A8-mergeoncegreen"
-          REQUIRED_LABELS_ALL: ""
-          BANNED_LABELS: ""

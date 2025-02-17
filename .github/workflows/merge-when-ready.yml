@@ -68,6 +68,40 @@ jobs:
               with:
                   name: binaries
                   path: binaries
+    zombienet-tests-ready-to-merge:
+        needs: ["enforce-ready-to-merge-label", "build"]
+        runs-on: self-hosted   
+        strategy:
+            fail-fast: false
+            matrix:
+                test_name:
+                    - zombie_tanssi_warp_sync
+                    - zombie_data_preservers
+                    - zombie_tanssi_parathreads
+                    - zombie_tanssi_rotation
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+              with:
+                  ref: ${{ github.head_ref }}
+            - name: "Download binaries"
+              uses: actions/download-artifact@v4
+              with:
+                  name: binaries
+                  path: target/release
+            - name: "Make binaries executable"
+              shell: bash
+              run: |
+                  chmod uog+x target/release/tanssi-node
+                  chmod uog+x target/release/tanssi-relay
+                  chmod uog+x target/release/tanssi-relay-prepare-worker
+                  chmod uog+x target/release/tanssi-relay-execute-worker
+                  chmod uog+x target/release/container-chain-simple-node
+                  chmod uog+x target/release/container-chain-frontier-node
+            - name: Run Zombienet Test ${{ matrix.test_name }}
+              uses: ./.github/workflow-templates/zombienet-tests
+              with:
+                  test_name: ${{ matrix.test_name }}
     e2e-bridge-test:
         needs: ["enforce-ready-to-merge-label", "build"]
         runs-on: self-hosted
