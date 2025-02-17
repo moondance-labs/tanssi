@@ -17980,7 +17980,7 @@ dependencies = [
 
 [[package]]
 name = "tanssi-relay-cli"
-version = "0.10.0"
+version = "0.12.0"
 dependencies = [
  "clap 4.5.13",
  "frame-benchmarking-cli",

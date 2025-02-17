@@ -66,6 +66,7 @@ update_lib_rs() {
 update_cargo_toml "chains/container-chains/nodes/frontier/Cargo.toml" "$CLIENT_VERSION"
 update_cargo_toml "chains/container-chains/nodes/simple/Cargo.toml" "$CLIENT_VERSION"
 update_cargo_toml "chains/orchestrator-paras/node/Cargo.toml" "$CLIENT_VERSION"
+update_cargo_toml "chains/orchestrator-relays/client/cli/Cargo.toml" "$CLIENT_VERSION"
 update_cargo_toml "chains/orchestrator-relays/node/tanssi-relay/Cargo.toml" "$CLIENT_VERSION"
 update_cargo_toml "chains/orchestrator-relays/node/tanssi-relay-service/Cargo.toml" "$CLIENT_VERSION"
 update_cargo_toml "client/service-container-chain/Cargo.toml" "$CLIENT_VERSION"
