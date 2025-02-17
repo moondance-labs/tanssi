@@ -6,7 +6,7 @@ describeSuite({
     id: "SMOK01",
     title: "Sample suite that only runs on Dancelight chains",
     foundationMethods: "read_only",
-    testCases: ({ it, context }) => {
+    testCases: ({ it, context, log }) => {
         let api: ApiPromise;
 
         beforeAll(() => {
@@ -39,12 +39,27 @@ describeSuite({
 
                 const containerChains = assignmentCollatorKey.containerChains.entries();
 
-                for (const [container, authorities] of containerChains) {
-                    for (const authority of authorities) {
-                        const assignedAccount = remappedAuthorityKeyMapping[authority.toHex()];
-                        expect(remappedAssignmentCollatorAccount[container.toString()]).toContain(assignedAccount);
+                const failures = containerChains
+                    .filter(([container, authorities]) => {
+                        const assignedCollators = remappedAssignmentCollatorAccount[container.toString()];
+                        return authorities.every(
+                            (authority) => !assignedCollators.includes(remappedAuthorityKeyMapping[authority.toHex()])
+                        );
+                    })
+                    .toArray();
+
+                if (failures.length > 0) {
+                    for (const [container, authorities] of failures) {
+                        log(`❌ Session ${sessionIndex} - Error with container:  ${container}. Authorities:`);
+                        log(authorities.map((authority) => authority.toHuman()).join(", "));
+                        log("Tanssi Collators assigned:");
+                        log(remappedAssignmentCollatorAccount[container.toString()].join(", "));
                     }
+                    log(`Tanssi Authorities assigned for session ${sessionIndex}:`);
+                    log((await api.query.tanssiAuthorityAssignment.collatorContainerChain(sessionIndex)).toHuman());
                 }
+
+                expect(failures.length).toBe(0);
             },
         });
     },
