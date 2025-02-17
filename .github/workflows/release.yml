@@ -2,7 +2,6 @@ name: CI
 
 on:
     pull_request:
-      types: [ labeled, unlabeled, opened, edited, synchronize ]
     push:
         branches:
             - master
@@ -671,7 +670,7 @@ jobs:
             with:
               test_name: ${{ matrix.test_name }}
     zombienet-tests-merge-on-ready:
-        if: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'A8-mergeoncegreen') }}
+        if: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'A8-mergeoncegreSADen') }}
         runs-on: self-hosted
         needs: ["set-tags", "build"]
         strategy:
