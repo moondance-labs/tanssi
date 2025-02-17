@@ -1,0 +1,60 @@
+name: Merge on ready
+on:
+  workflow_run:
+    workflows: [Enforce PR labels, CI]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      run_sha:
+        description: "Sha commit from which artifacts are taken"
+        required: true
+
+jobs:
+    e2e-bridge-test:
+        if: ${{ github.event.workflow_run.conclusion == 'success' }} || ${{ github.event_name == 'workflow_dispatch' }}
+        runs-on: self-hosted
+        steps:
+            - name: Retrieve run id
+              id: retrieve-run-id
+              run: |
+                  if [[ -n "${{ github.event_name == 'workflow_dispatch' }}" ]]; then
+                    echo "run_sha=${{ github.event.inputs.run_sha }}" >> $GITHUB_OUTPUT
+                  else
+                    echo "run_sha=${{ github.event.workflow_run.head_sha }}" >> $GITHUB_OUTPUT
+                  fi
+            - name: Recognize sha ref
+              id: sharef
+              run: |
+                if [ ${{ github.event_name }} == 'pull_request' ]
+                then
+                  echo "::set-output name=sha::$(echo ${{github.event.pull_request.head.sha}})"
+                elif [ ${{ github.event_name }} == 'workflow_run' ]
+                then
+                  echo "::set-output name=sha::$(echo ${{github.event.workflow_run.head_sha}})"
+                else
+                  echo "::set-output name=sha::$(echo $GITHUB_SHA)"
+                fi
+            - name: Checkout
+              uses: actions/checkout@v4
+              with:
+                  ref: ${{ steps.retrieve-run-id.outputs.run_sha }}
+
+            - name: Download build artifact from triggered workflow
+              uses: dawidd6/action-download-artifact@v7
+              with:
+                commit: ${{ steps.retrieve-run-id.outputs.run_sha }}
+                workflow: release.yml
+                name: binaries
+                path: target/release
+                allow_forks: false
+
+            - name: Run Zombienet Test ${{ matrix.test_name }}
+              uses: ./.github/workflow-templates/bridge-e2e
+
+            - name: Commit Action Status
+              uses: LouisBrunner/checks-action@v2.0.0
+              with:
+                sha: ${{ steps.sharef.outputs.sha }}
+                token: ${{ secrets.GITHUB_TOKEN }}
+                name: Merge on ready
+                conclusion: ${{ job.status }}
