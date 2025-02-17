@@ -57,12 +57,23 @@ jobs:
                 chmod uog+x target/release/tanssi-relay-prepare-worker
 
             - name: Run Zombienet Test ${{ matrix.test_name }}
+              id: e2e-test
               uses: ./.github/workflow-templates/bridge-e2e
-
-            - name: Commit Action Status
-              uses: LouisBrunner/checks-action@v2.0.0
+            
+            - name: Report tests check
+              uses: actions/github-script@v3
               with:
-                sha: ${{ steps.sharef.outputs.sha }}
-                token: ${{ secrets.GITHUB_TOKEN }}
-                name: Merge on ready
-                conclusion: ${{ job.status }}
+                github-token: ${{ secrets.GITHUB_TOKEN }}
+                script: |
+                  github.checks.create({
+                    name: 'run tests',
+                    head_sha: '${{ steps.sharef.outputs.sha }}',
+                    status: 'completed',
+                    conclusion: '${{ steps.e2e-test.outcome }}',
+                    output: {
+                      title: 'Run tests',
+                      summary: 'Results: ${{ steps.e2e-test.outcome }}'
+                    },
+                    owner: context.repo.owner,
+                    repo: context.repo.repo
+                  })
