@@ -25,13 +25,21 @@ async function main() {
   const commonTemplate = `
   - [ ] Start the github action Publish Binary Draft with ${previousVersion} => ${newVersion}
   (master branch).
+  - [ ] Start the github action Publish Dancelight Binary Draft with ${previousVersion} => ${newVersion}
+  (master branch).
   - [ ] Review the generated Draft and clean a bit the messages if needed (keep it draft).
   - [ ] Start the internal optimized binary build by starting the github action Prepare Optimized Binary Draft with the commit of ${previousVersion} (mster branch)
+  - [ ] Start the internal optimized binary build by starting the github action Prepare Optimized Dancelight Binary Draft with the commit of ${previousVersion} (mster branch)
   - [ ] Update chain-networks stagenet-dancebox config.json to include sha-xxxxx built from the optimized binary and pushed to docker
   (matching your ${newVersion} tag) and increase the config version + 1.
+  - [ ] Update chain-networks stagelight config.json to include sha-xxxxx built from the optimized binary and pushed to docker
+  (matching your ${newVersion} tag) and increase the config version + 1.
   - [ ] Test the new client on stagenet-dancebox.
+  - [ ] Test the new client on stagelight.
   - [ ] Publish the client release draft.
   - [ ] When everything is ok, publish the new docker image: start github action Publish Docker
+  with ${newVersion}.
+  - [ ] When everything is ok, publish the new docker image: start github action Publish Docker Dancelight
   with ${newVersion}.
 `;
 
