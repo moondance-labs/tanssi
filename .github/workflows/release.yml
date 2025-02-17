@@ -9,7 +9,7 @@ on:
     merge_group:
 
 env:
-    CARGO_TERM_COLOR: always
+  CARGO_TERM_COLOR: always
 
 jobs:
     set-tags:
@@ -122,12 +122,12 @@ jobs:
         runs-on: self-hosted
         needs: ["set-tags", "build"]
         env:
-            TMP_TARGET: "/tmp/target"
-            CARGO_TARGET_DIR: "target"
-            RUSTC_WRAPPER: "sccache"
-            CARGO_INCREMENTAL: "0"
-            SCCACHE_CACHE_SIZE: "100GB"
-            SCCACHE_GHA_ENABLED: "true"
+          TMP_TARGET: "/tmp/target"
+          CARGO_TARGET_DIR: "target"
+          RUSTC_WRAPPER: "sccache"
+          CARGO_INCREMENTAL: "0"
+          SCCACHE_CACHE_SIZE: "100GB"
+          SCCACHE_GHA_ENABLED: "true"
         steps:
             - name: Checkout
               uses: actions/checkout@v4
@@ -145,6 +145,7 @@ jobs:
               run: ./.github/scripts/check_toml_lints.sh
             - name: Run sccache stat for check pre test
               run: ${SCCACHE_PATH} --show-stats
+            # Do NOT add SKIP_WASM_BUILD=1 environment variable here as it skips wasm binary build which leads to some compilation bugs escaping clippy
             - name: Clippy
               run: cargo clippy --all-targets --locked --workspace --features try-runtime,runtime-benchmarks
 
@@ -227,12 +228,12 @@ jobs:
         runs-on: self-hosted
         needs: ["set-tags"]
         env:
-            TMP_TARGET: "/tmp/target"
-            CARGO_TARGET_DIR: "target"
-            RUSTC_WRAPPER: "sccache"
-            CARGO_INCREMENTAL: "0"
-            SCCACHE_CACHE_SIZE: "100GB"
-            SCCACHE_GHA_ENABLED: "true"
+          TMP_TARGET: "/tmp/target"
+          CARGO_TARGET_DIR: "target"
+          RUSTC_WRAPPER: "sccache"
+          CARGO_INCREMENTAL: "0"
+          SCCACHE_CACHE_SIZE: "100GB"
+          SCCACHE_GHA_ENABLED: "true"
         steps:
             - name: Checkout
               uses: actions/checkout@v4
@@ -286,8 +287,8 @@ jobs:
         if: github.event_name == 'pull_request'
         needs: ["set-tags", "build"]
         env:
-            GH_TOKEN: ${{ github.token }}
-            RUNTIMES_AS_STRING: "dancebox_runtime,flashbox_runtime,dancelight_runtime,container_chain_template_simple_runtime,container_chain_template_frontier_runtime"
+          GH_TOKEN: ${{ github.token }}
+          RUNTIMES_AS_STRING: "dancebox_runtime,flashbox_runtime,dancelight_runtime,container_chain_template_simple_runtime,container_chain_template_frontier_runtime"
         steps:
             - name: Checkout
               uses: actions/checkout@v4
@@ -364,6 +365,13 @@ jobs:
     rust-test:
       runs-on: self-hosted
       needs: ["set-tags", "build"]
+      env:
+        TMP_TARGET: "/tmp/target"
+        CARGO_TARGET_DIR: "target"
+        RUSTC_WRAPPER: "sccache"
+        CARGO_INCREMENTAL: "0"
+        SCCACHE_CACHE_SIZE: "100GB"
+        SCCACHE_GHA_ENABLED: "true"
       steps:
         - name: Checkout
           uses: actions/checkout@v4
@@ -755,8 +763,8 @@ jobs:
                     - chain: stagelight
                       runtime: dancelight
         env:
-            GH_WORKFLOW_MATRIX_CHAIN: ${{ matrix.chains.chain }}
-            DEBUG_COLORS: 1
+          GH_WORKFLOW_MATRIX_CHAIN: ${{ matrix.chains.chain }}
+          DEBUG_COLORS: 1
         steps:
             - name: Checkout
               uses: actions/checkout@v4
