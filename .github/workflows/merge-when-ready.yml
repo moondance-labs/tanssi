@@ -4,7 +4,7 @@ on:
     types: [labeled, unlabeled, opened, edited, synchronize]
 jobs:
     enforce-ready-to-merge-label:
-        runs-on: ubuntu-  
+        runs-on: ubuntu-latest
         steps:
           - uses: yogevbd/enforce-label-action@2.2.2
             with:
