@@ -16,7 +16,6 @@
 
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
-use frame_support::__private::sp_tracing::tracing::Instrument;
 use {
     crate::command::solochain::{
         build_solochain_config_dir, copy_zombienet_keystore, dummy_config, keystore_config,
@@ -45,6 +44,7 @@ use {
         OrchestratorChainError, OrchestratorChainInterface, OrchestratorChainResult, PHash,
         PHeader,
     },
+    frame_support::__private::sp_tracing::tracing::Instrument,
     futures::{Stream, StreamExt},
     nimbus_primitives::{NimbusId, NimbusPair},
     node_common::service::{ManualSealConfiguration, NodeBuilder, NodeBuilderConfig, Sealing},

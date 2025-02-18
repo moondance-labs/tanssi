@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use tp_traits::AuthorNotingInfo;
 use {
     crate::{
         mock::*, pallet as pallet_services_payment, BlockProductionCredits,
@@ -24,7 +23,7 @@ use {
     cumulus_primitives_core::ParaId,
     frame_support::{assert_err, assert_noop, assert_ok, traits::fungible::Inspect},
     sp_runtime::DispatchError,
-    tp_traits::{AuthorNotingHook, CollatorAssignmentHook},
+    tp_traits::{AuthorNotingHook, AuthorNotingInfo, CollatorAssignmentHook},
 };
 
 const ALICE: u64 = 1;

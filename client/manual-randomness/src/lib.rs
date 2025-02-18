@@ -13,8 +13,10 @@
 
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
-use jsonrpsee::{core::RpcResult, proc_macros::rpc};
-use sp_core::H256;
+use {
+    jsonrpsee::{core::RpcResult, proc_macros::rpc},
+    sp_core::H256,
+};
 
 #[rpc(server)]
 #[jsonrpsee::core::async_trait]

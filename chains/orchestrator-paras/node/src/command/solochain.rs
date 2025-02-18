@@ -16,7 +16,6 @@
 
 //! Helper functions used to implement solochain collator
 
-use sc_service::config::ExecutorConfiguration;
 use {
     crate::cli::{Cli, RelayChainCli},
     futures::FutureExt,
@@ -27,7 +26,8 @@ use {
     sc_network::config::{NetworkBackendType, NetworkConfiguration, TransportConfig},
     sc_network_common::role::Role,
     sc_service::{
-        config::KeystoreConfig, BasePath, BlocksPruning, Configuration, DatabaseSource, TaskManager,
+        config::{ExecutorConfiguration, KeystoreConfig},
+        BasePath, BlocksPruning, Configuration, DatabaseSource, TaskManager,
     },
     sc_tracing::logging::LoggerBuilder,
     std::{

@@ -15,10 +15,9 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    crate::tests::common::*,
     crate::{
-        BondingDuration, EthereumSystem, ExternalValidatorSlashes, ExternalValidators, Grandpa,
-        Historical, RuntimeEvent, SessionsPerEra, SlashDeferDuration,
+        tests::common::*, BondingDuration, EthereumSystem, ExternalValidatorSlashes,
+        ExternalValidators, Grandpa, Historical, RuntimeEvent, SessionsPerEra, SlashDeferDuration,
     },
     frame_support::{assert_noop, assert_ok, traits::KeyOwnerProofSystem},
     parity_scale_codec::Encode,
@@ -26,8 +25,7 @@ use {
     sp_runtime::Perbill,
     sp_std::vec,
     tp_bridge::Command,
-    xcm::latest::prelude::*,
-    xcm::VersionedLocation,
+    xcm::{latest::prelude::*, VersionedLocation},
 };
 
 #[test]
@@ -539,8 +537,7 @@ fn test_slashes_are_sent_to_ethereum() {
         });
 }
 
-use frame_support::traits::Get;
-use tp_bridge::SlashData;
+use {frame_support::traits::Get, tp_bridge::SlashData};
 
 #[test]
 fn test_slashes_are_sent_to_ethereum_accumulatedly() {
