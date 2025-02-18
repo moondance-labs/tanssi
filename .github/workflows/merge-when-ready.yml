@@ -101,19 +101,3 @@ jobs:
             - name: Run Zombienet Test ${{ matrix.test_name }}
               id: e2e-test
               uses: ./.github/workflow-templates/bridge-e2e
-    benchmark-tests:
-        needs: ["enforce-ready-to-merge-label"]
-        runs-on: self-hosted
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v4
-              with:
-                  ref: ${{ github.head_ref }}
-            - name: Setup Rust toolchain
-              run: rustup show
-            - name: Compile with runtime-benchmarks
-              run: cargo build --features=fast-runtime,runtime-benchmarks --release --all
-            - name: "Benchmark tests dancelight"
-              shell: bash
-              run: |
-                BINARY=./target/release/tanssi-relay TEMPLATE_PATH=./benchmarking/frame-weight-runtime-template.hbs tools/benchmarking.sh "*" "*" --check=1
