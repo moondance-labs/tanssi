@@ -381,6 +381,39 @@ mod open_stream {
                 .call(),);
             })
     }
+
+    #[test]
+    fn cant_create_stream_with_deposit_below_soft_minimum() {
+        ExtBuilder::default().build().execute_with(|| {
+            let mut open_stream = OpenStream {
+                from: ALICE,
+                to: BOB,
+                deposit: 99,
+                ..default()
+            };
+            open_stream.config.soft_minimum_deposit = 100;
+
+            assert_err!(
+                open_stream.call(),
+                Error::CantCreateStreamWithDepositUnderSoftMinimum
+            );
+        })
+    }
+
+    #[test]
+    fn can_create_stream_with_deposit_above_soft_minimum() {
+        ExtBuilder::default().build().execute_with(|| {
+            let mut open_stream = OpenStream {
+                from: ALICE,
+                to: BOB,
+                deposit: 100,
+                ..default()
+            };
+            open_stream.config.soft_minimum_deposit = 100;
+
+            assert_ok!(open_stream.call());
+        })
+    }
 }
 
 mod perform_payment {

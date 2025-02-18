@@ -431,6 +431,7 @@ pub mod pallet {
         DeadlineDelayIsBelowMinium,
         CantDecreaseDepositUnderSoftDepositMinimum,
         SourceCantCloseActiveStreamWithSoftDepositMinimum,
+        CantCreateStreamWithDepositUnderSoftMinimum,
     }
 
     #[pallet::event]
@@ -867,6 +868,11 @@ pub mod pallet {
             initial_deposit: T::Balance,
         ) -> Result<T::StreamId, DispatchErrorWithPostInfo> {
             ensure!(origin != target, Error::<T>::CantBeBothSourceAndTarget);
+
+            ensure!(
+                initial_deposit >= config.soft_minimum_deposit,
+                Error::<T>::CantCreateStreamWithDepositUnderSoftMinimum
+            );
 
             // Generate a new stream id.
             let stream_id = NextStreamId::<T>::get();
