@@ -26,6 +26,7 @@ pub mod pallet_configuration;
 pub mod pallet_data_preservers;
 pub mod pallet_identity;
 pub mod pallet_invulnerables;
+pub mod pallet_multiblock_migrations;
 pub mod pallet_multisig;
 pub mod pallet_proxy;
 pub mod pallet_registrar;
