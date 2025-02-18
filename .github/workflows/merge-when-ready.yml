@@ -143,4 +143,4 @@ jobs:
             - name: "Benchmark tests dancelight"
               shell: bash
               run: |
-                BINARY=./target/release/tanssi-relay TEMPLATE_PATH=./benchmarking/frame-weight-runtime-template.hbs tools/benchmarking.sh "*" "*"
+                BINARY=./target/release/tanssi-relay TEMPLATE_PATH=./benchmarking/frame-weight-runtime-template.hbs tools/benchmarking.sh "*" "*" --check=1
