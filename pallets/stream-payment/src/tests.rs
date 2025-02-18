@@ -49,7 +49,8 @@ fn default_config() -> StreamConfigOf<Runtime> {
         time_unit: TimeUnit::BlockNumber,
         asset_id: StreamPaymentAssetId::Native,
         rate: 100,
-        minimum_deadline_delay: 0,
+        minimum_request_deadline_delay: 0,
+        soft_minimum_deposit: 0u32.into(),
     }
 }
 
@@ -798,6 +799,96 @@ mod close_stream {
             assert_balance_change!(+, BOB, payment);
         })
     }
+
+    #[test]
+    fn source_cant_close_active_stream_with_soft_deposit_minimum() {
+        ExtBuilder::default().build().execute_with(|| {
+            let opening_deposit = OpenStreamHoldAmount::get();
+            let mut open_stream = OpenStream::default();
+            open_stream.config.soft_minimum_deposit = 1;
+            assert_ok!(open_stream.call());
+
+            assert_balance_change!(-, ALICE, open_stream.deposit + opening_deposit);
+            assert_eq!(get_deposit(ALICE), open_stream.deposit);
+
+            assert_err!(
+                StreamPayment::close_stream(RuntimeOrigin::signed(ALICE), 0),
+                Error::SourceCantCloseActiveStreamWithSoftDepositMinimum
+            );
+        })
+    }
+
+    #[test]
+    fn source_can_close_stale_stream_with_soft_deposit_minimum() {
+        ExtBuilder::default().build().execute_with(|| {
+            let opening_deposit = OpenStreamHoldAmount::get();
+            let mut open_stream = OpenStream::default();
+            open_stream.config.rate = 10;
+            open_stream.deposit = 100;
+            open_stream.config.soft_minimum_deposit = 1;
+            assert_ok!(open_stream.call());
+
+            assert_balance_change!(-, ALICE, open_stream.deposit + opening_deposit);
+            assert_eq!(get_deposit(ALICE), open_stream.deposit);
+
+            roll_to(11);
+            assert!(
+                StreamPayment::stream_payment_status(0, None)
+                    .unwrap()
+                    .stalled
+            );
+
+            assert_ok!(StreamPayment::close_stream(RuntimeOrigin::signed(ALICE), 0),);
+
+            assert_event_emitted!(PaymentEvent {
+                amount: open_stream.deposit,
+                stalled: true,
+                ..default()
+            });
+            assert_event_emitted!(Event::<Runtime>::StreamClosed {
+                stream_id: 0,
+                refunded: opening_deposit,
+            });
+            assert_eq!(Streams::<Runtime>::get(0), None);
+
+            assert_eq!(get_deposit(ALICE), 0);
+            assert_balance_change!(-, ALICE, open_stream.deposit);
+            assert_balance_change!(+, BOB, open_stream.deposit);
+        })
+    }
+
+    #[test]
+    fn target_can_close_stream_with_payment_with_soft_deposit_minimum() {
+        ExtBuilder::default().build().execute_with(|| {
+            let opening_deposit = OpenStreamHoldAmount::get();
+            let mut open_stream = OpenStream::default();
+            open_stream.config.soft_minimum_deposit = 1;
+            assert_ok!(open_stream.call());
+
+            assert_balance_change!(-, ALICE, open_stream.deposit + opening_deposit);
+            assert_eq!(get_deposit(ALICE), open_stream.deposit);
+
+            let delta = u128::from(roll_to(10));
+            let payment = delta * open_stream.config.rate;
+            let deposit_left = open_stream.deposit - payment;
+
+            assert_ok!(StreamPayment::close_stream(RuntimeOrigin::signed(BOB), 0));
+
+            assert_event_emitted!(PaymentEvent {
+                amount: payment,
+                ..default()
+            });
+            assert_event_emitted!(Event::<Runtime>::StreamClosed {
+                stream_id: 0,
+                refunded: deposit_left + opening_deposit
+            });
+            assert_eq!(Streams::<Runtime>::get(0), None);
+
+            assert_eq!(get_deposit(ALICE), 0);
+            assert_balance_change!(-, ALICE,  payment);
+            assert_balance_change!(+, BOB, payment);
+        })
+    }
 }
 
 mod request_change {
@@ -977,6 +1068,118 @@ mod request_change {
     #[test]
     fn source_can_immediately_decrease_deposit() {
         source_can_immediately_change_deposit(DepositChange::Decrease(100))
+    }
+
+    #[test]
+    fn source_can_immediately_absolute_change_deposit_above_soft_limit() {
+        ExtBuilder::default().build().execute_with(|| {
+            let opening_deposit = OpenStreamHoldAmount::get();
+            let mut open_stream = OpenStream::default();
+            open_stream.config.soft_minimum_deposit = 100;
+            assert_ok!(open_stream.call());
+
+            let change = DepositChange::Absolute(100);
+
+            assert_ok!(StreamPayment::request_change(
+                RuntimeOrigin::signed(ALICE),
+                0,
+                ChangeKind::Suggestion,
+                open_stream.config,
+                Some(change),
+            ));
+
+            assert_event_emitted!(Event::<Runtime>::StreamConfigChanged {
+                stream_id: 0,
+                old_config: open_stream.config,
+                new_config: open_stream.config,
+                deposit_change: Some(change),
+            });
+
+            assert_balance_change!(-, ALICE,
+                100 + opening_deposit
+            );
+        })
+    }
+
+    #[test]
+    fn source_can_immediately_increase_deposit_with_soft_limit() {
+        ExtBuilder::default().build().execute_with(|| {
+            let opening_deposit = OpenStreamHoldAmount::get();
+            let mut open_stream = OpenStream::default();
+            open_stream.config.soft_minimum_deposit = 100;
+            assert_ok!(open_stream.call());
+
+            assert_eq!(open_stream.deposit, 1 * MEGA);
+            let change = DepositChange::Increase(1);
+
+            assert_ok!(StreamPayment::request_change(
+                RuntimeOrigin::signed(ALICE),
+                0,
+                ChangeKind::Suggestion,
+                open_stream.config,
+                Some(change),
+            ));
+
+            assert_eq!(
+                crate::Streams::<Runtime>::get(0).unwrap().deposit,
+                open_stream.deposit + 1
+            );
+
+            assert_event_emitted!(Event::<Runtime>::StreamConfigChanged {
+                stream_id: 0,
+                old_config: open_stream.config,
+                new_config: open_stream.config,
+                deposit_change: Some(change),
+            });
+
+            assert_balance_change!(-, ALICE,
+                open_stream.deposit + 1 + opening_deposit
+            );
+        })
+    }
+
+    #[test]
+    fn source_cant_immediately_absolute_change_deposit_below_soft_limit() {
+        ExtBuilder::default().build().execute_with(|| {
+            let mut open_stream = OpenStream::default();
+            open_stream.config.soft_minimum_deposit = 100;
+            assert_ok!(open_stream.call());
+
+            let change = DepositChange::Absolute(99);
+
+            assert_err!(
+                StreamPayment::request_change(
+                    RuntimeOrigin::signed(ALICE),
+                    0,
+                    ChangeKind::Suggestion,
+                    open_stream.config,
+                    Some(change),
+                ),
+                Error::CantDecreaseDepositUnderSoftDepositMinimum
+            );
+        })
+    }
+
+    #[test]
+    fn source_cant_immediately_decrease_deposit_below_soft_limit() {
+        ExtBuilder::default().build().execute_with(|| {
+            let mut open_stream = OpenStream::default();
+            open_stream.config.soft_minimum_deposit = 100;
+            assert_ok!(open_stream.call());
+
+            let change = DepositChange::Decrease(open_stream.deposit - 99);
+
+            assert_err!(
+                StreamPayment::request_change(
+                    RuntimeOrigin::signed(ALICE),
+                    0,
+                    ChangeKind::Suggestion,
+                    open_stream.config,
+                    Some(change),
+                ),
+                Error::CantDecreaseDepositUnderSoftDepositMinimum
+            );
+        })
     }
 
     #[test]
@@ -1160,7 +1363,7 @@ mod request_change {
     fn cant_set_deadline_below_minimum() {
         ExtBuilder::default().build().execute_with(|| {
             let mut open_stream = OpenStream::default();
-            open_stream.config.minimum_deadline_delay = 10;
+            open_stream.config.minimum_request_deadline_delay = 10;
             assert_ok!(open_stream.call());
 
             roll_to(5);
@@ -1180,15 +1383,13 @@ mod request_change {
                 Error::DeadlineDelayIsBelowMinium
             );
 
-            assert_ok!(
-                StreamPayment::request_change(
-                    RuntimeOrigin::signed(BOB),
-                    0,
-                    ChangeKind::Mandatory { deadline: 15 },
-                    change1,
-                    None,
-                ),
-            );
+            assert_ok!(StreamPayment::request_change(
+                RuntimeOrigin::signed(BOB),
+                0,
+                ChangeKind::Mandatory { deadline: 15 },
+                change1,
+                None,
+            ),);
         })
     }
 
@@ -1553,6 +1754,45 @@ mod accept_requested_change {
     }
 
     #[test]
+    fn change_of_asset_with_soft_minimum_deposit() {
+        ExtBuilder::default().build().execute_with(|| {
+            let open_stream = OpenStream::default();
+            assert_ok!(open_stream.call());
+
+            let new_config = StreamConfig {
+                asset_id: StreamPaymentAssetId::Dummy,
+                soft_minimum_deposit: 10,
+                ..open_stream.config
+            };
+
+            assert_ok!(StreamPayment::request_change(
+                RuntimeOrigin::signed(BOB),
+                0,
+                ChangeKind::Suggestion,
+                new_config,
+                None,
+            ));
+
+            assert_err!(
+                StreamPayment::accept_requested_change(
+                    RuntimeOrigin::signed(ALICE),
+                    0,
+                    1,
+                    Some(DepositChange::Absolute(5)),
+                ),
+                Error::CantDecreaseDepositUnderSoftDepositMinimum
+            );
+
+            assert_ok!(StreamPayment::accept_requested_change(
+                RuntimeOrigin::signed(ALICE),
+                0,
+                1,
+                Some(DepositChange::Absolute(10)),
+            ));
+        })
+    }
+
+    #[test]
     fn accept_deadline_in_past_doesnt_pay_retroactively() {
         ExtBuilder::default().build().execute_with(|| {
             let open_stream = OpenStream::default();
@@ -1718,19 +1958,6 @@ mod immediately_change_deposit {
             let open_stream = OpenStream::default();
             assert_ok!(open_stream.call());
 
-            let change = StreamConfig {
-                time_unit: TimeUnit::Timestamp,
-                ..open_stream.config
-            };
-
-            assert_ok!(StreamPayment::request_change(
-                RuntimeOrigin::signed(ALICE),
-                0,
-                ChangeKind::Suggestion,
-                change,
-                None
-            ));
-
             assert_err!(
                 StreamPayment::immediately_change_deposit(
                     RuntimeOrigin::signed(account),
@@ -1759,19 +1986,6 @@ mod immediately_change_deposit {
             let open_stream = OpenStream::default();
             assert_ok!(open_stream.call());
 
-            let change = StreamConfig {
-                time_unit: TimeUnit::Timestamp,
-                ..open_stream.config
-            };
-
-            assert_ok!(StreamPayment::request_change(
-                RuntimeOrigin::signed(ALICE),
-                0,
-                ChangeKind::Suggestion,
-                change,
-                None
-            ));
-
             assert_ok!(StreamPayment::immediately_change_deposit(
                 RuntimeOrigin::signed(ALICE),
                 0,
@@ -1788,19 +2002,6 @@ mod immediately_change_deposit {
         ExtBuilder::default().build().execute_with(|| {
             let open_stream = OpenStream::default();
             assert_ok!(open_stream.call());
-
-            let change = StreamConfig {
-                time_unit: TimeUnit::Timestamp,
-                ..open_stream.config
-            };
-
-            assert_ok!(StreamPayment::request_change(
-                RuntimeOrigin::signed(ALICE),
-                0,
-                ChangeKind::Suggestion,
-                change,
-                None
-            ));
 
             assert_err!(
                 StreamPayment::immediately_change_deposit(
@@ -1820,19 +2021,6 @@ mod immediately_change_deposit {
             let open_stream = OpenStream::default();
             assert_ok!(open_stream.call());
 
-            let change = StreamConfig {
-                time_unit: TimeUnit::Timestamp,
-                ..open_stream.config
-            };
-
-            assert_ok!(StreamPayment::request_change(
-                RuntimeOrigin::signed(ALICE),
-                0,
-                ChangeKind::Suggestion,
-                change,
-                None
-            ));
-
             assert_err!(
                 StreamPayment::immediately_change_deposit(
                     RuntimeOrigin::signed(ALICE),
@@ -1851,19 +2039,6 @@ mod immediately_change_deposit {
             let open_stream = OpenStream::default();
             assert_ok!(open_stream.call());
 
-            let change = StreamConfig {
-                time_unit: TimeUnit::Timestamp,
-                ..open_stream.config
-            };
-
-            assert_ok!(StreamPayment::request_change(
-                RuntimeOrigin::signed(ALICE),
-                0,
-                ChangeKind::Suggestion,
-                change,
-                None
-            ));
-
             assert_err!(
                 StreamPayment::immediately_change_deposit(
                     RuntimeOrigin::signed(ALICE),
@@ -1873,6 +2048,98 @@ mod immediately_change_deposit {
                 ),
                 ArithmeticError::Underflow
             );
+        })
+    }
+
+    #[test]
+    fn source_can_decrease_deposit_above_soft_minimum() {
+        ExtBuilder::default().build().execute_with(|| {
+            let mut open_stream = OpenStream::default();
+            open_stream.config.soft_minimum_deposit = 100;
+            assert_ok!(open_stream.call());
+
+            assert_ok!(StreamPayment::immediately_change_deposit(
+                RuntimeOrigin::signed(ALICE),
+                0,
+                StreamPaymentAssetId::Native,
+                DepositChange::Decrease(open_stream.deposit - 100)
+            ));
+
+            assert_eq!(get_deposit(ALICE), 100);
+        })
+    }
+
+    #[test]
+    fn source_cant_decrease_deposit_below_soft_minimum() {
+        ExtBuilder::default().build().execute_with(|| {
+            let mut open_stream = OpenStream::default();
+            open_stream.config.soft_minimum_deposit = 100;
+            assert_ok!(open_stream.call());
+
+            assert_err!(
+                StreamPayment::immediately_change_deposit(
+                    RuntimeOrigin::signed(ALICE),
+                    0,
+                    StreamPaymentAssetId::Native,
+                    DepositChange::Decrease(open_stream.deposit - 99)
+                ),
+                Error::CantDecreaseDepositUnderSoftDepositMinimum
+            );
+        })
+    }
+
+    #[test]
+    fn source_can_absolute_change_deposit_above_soft_minimum() {
+        ExtBuilder::default().build().execute_with(|| {
+            let mut open_stream = OpenStream::default();
+            open_stream.config.soft_minimum_deposit = 100;
+            assert_ok!(open_stream.call());
+
+            assert_ok!(StreamPayment::immediately_change_deposit(
+                RuntimeOrigin::signed(ALICE),
+                0,
+                StreamPaymentAssetId::Native,
+                DepositChange::Absolute(100)
+            ));
+
+            assert_eq!(get_deposit(ALICE), 100);
+        })
+    }
+
+    #[test]
+    fn source_cant_absolute_change_deposit_below_soft_minimum() {
+        ExtBuilder::default().build().execute_with(|| {
+            let mut open_stream = OpenStream::default();
+            open_stream.config.soft_minimum_deposit = 100;
+            assert_ok!(open_stream.call());
+
+            assert_err!(
+                StreamPayment::immediately_change_deposit(
+                    RuntimeOrigin::signed(ALICE),
+                    0,
+                    StreamPaymentAssetId::Native,
+                    DepositChange::Absolute(99)
+                ),
+                Error::CantDecreaseDepositUnderSoftDepositMinimum
+            );
+        })
+    }
+
+    #[test]
+    fn source_can_increase_deposit_with_soft_minimum() {
+        ExtBuilder::default().build().execute_with(|| {
+            let mut open_stream = OpenStream::default();
+            open_stream.config.soft_minimum_deposit = 100;
+            assert_ok!(open_stream.call());
+
+            assert_ok!(StreamPayment::immediately_change_deposit(
+                RuntimeOrigin::signed(ALICE),
+                0,
+                StreamPaymentAssetId::Native,
+                DepositChange::Absolute(100)
+            ));
+
+            assert_eq!(get_deposit(ALICE), 100);
         })
     }
 }

@@ -3073,7 +3073,8 @@ fn stream_payment_works() {
                     rate: 2 * UNIT,
                     asset_id: StreamPaymentAssetId::Native,
                     time_unit: TimeUnit::BlockNumber,
-                    minimum_deadline_delay: 0,
+                    minimum_request_deadline_delay: 0,
+                    soft_minimum_deposit: 0,
                 },
                 1_000 * UNIT,
             ));
@@ -3094,7 +3095,8 @@ fn stream_payment_works() {
                     rate: 1 * UNIT,
                     asset_id: StreamPaymentAssetId::Native,
                     time_unit: TimeUnit::BlockNumber,
-                    minimum_deadline_delay: 0,
+                    minimum_request_deadline_delay: 0,
+                    soft_minimum_deposit: 0,
                 },
                 None,
             ));
