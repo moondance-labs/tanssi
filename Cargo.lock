@@ -3300,6 +3300,7 @@ dependencies = [
  "pallet-stream-payment",
  "pallet-stream-payment-runtime-api",
  "pallet-sudo",
+ "pallet-tanssi-util-runtime-api",
  "pallet-timestamp",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
@@ -10498,6 +10499,23 @@ dependencies = [
  "scale-info",
  "sp-io",
  "sp-runtime",
+]
+
+[[package]]
+name = "pallet-tanssi-util"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "scale-info",
+]
+
+[[package]]
+name = "pallet-tanssi-util-runtime-api"
+version = "0.1.0"
+dependencies = [
+ "sp-api",
 ]
 
 [[package]]

@@ -12,6 +12,7 @@ members = [
 	"pallets/*",
 	"pallets/collator-assignment/runtime-api",
 	"pallets/registrar/runtime-api",
+	"pallets/tanssi-util/runtime-api",
 	"primitives/*",
 ]
 resolver = "2"
@@ -74,6 +75,8 @@ pallet-services-payment = { path = "pallets/services-payment", default-features 
 pallet-services-payment-runtime-api = { path = "pallets/services-payment/runtime-api", default-features = false }
 pallet-stream-payment = { path = "pallets/stream-payment", default-features = false }
 pallet-stream-payment-runtime-api = { path = "pallets/stream-payment/runtime-api", default-features = false }
+pallet-tanssi-util = { path = "pallets/tanssi-util", default-features = false }
+pallet-tanssi-util-runtime-api = { path = "pallets/tanssi-util/runtime-api", default-features = false }
 pallet-xcm-core-buyer = { path = "pallets/xcm-core-buyer", default-features = false }
 pallet-xcm-core-buyer-runtime-api = { path = "pallets/xcm-core-buyer/runtime-api", default-features = false }
 

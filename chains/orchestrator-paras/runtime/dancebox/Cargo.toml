@@ -44,6 +44,7 @@ pallet-services-payment = { workspace = true }
 pallet-services-payment-runtime-api = { workspace = true }
 pallet-stream-payment = { workspace = true }
 pallet-stream-payment-runtime-api = { workspace = true }
+pallet-tanssi-util-runtime-api = { workspace = true }
 pallet-xcm-core-buyer = { workspace = true }
 pallet-xcm-core-buyer-runtime-api = { workspace = true }
 tanssi-relay-encoder = { workspace = true }
@@ -226,6 +227,7 @@ std = [
 	"pallet-stream-payment/std",
 	"pallet-sudo/std",
 	"pallet-timestamp/std",
+	"pallet-tanssi-util-runtime-api/std",
 	"pallet-transaction-payment-rpc-runtime-api/std",
 	"pallet-transaction-payment/std",
 	"pallet-treasury/std",
