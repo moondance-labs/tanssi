@@ -64,7 +64,7 @@ runs:
       shell: bash
       run: |
         mkdir -p runtimes
-        cp target/release/wbuild/container-chain-template-simple-runtime/container_chain_template_simple_runtime.compact.compressed.wasm runtimes/
+        cp target/release/wbuild/container-chain-template-simple-runtime/container_chain_template_simple_runtime.compact.compressed.wasm runtimes/;
         cp target/release/wbuild/container-chain-template-frontier-runtime/container_chain_template_frontier_runtime.compact.compressed.wasm runtimes/;
         cp target/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm runtimes/;
         cp target/release/wbuild/flashbox-runtime/flashbox_runtime.compact.compressed.wasm runtimes/;
