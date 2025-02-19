@@ -66,7 +66,7 @@ args = ["Which crate to test", "Tests filter"]
 name = "[Tanssi] Cargo Test Crate (with fast-runtime & benchmarks)"
 only_in_dir = "**/tanssi"
 script = """
-cargo test --release -p $1 --features=fast-runtime,benchmarks $2
+cargo test --release -p $1 --features=fast-runtime,runtime-benchmarks $2
 """
 args = ["Which crate to test", "Tests filter"]
 

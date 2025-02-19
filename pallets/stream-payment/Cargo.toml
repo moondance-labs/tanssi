@@ -30,6 +30,9 @@ sp-core = { workspace = true }
 sp-runtime = { workspace = true }
 sp-std = { workspace = true }
 
+# Moonkit
+pallet-migrations = { workspace = true, optional = true }
+
 [dev-dependencies]
 num-traits = { workspace = true }
 pallet-balances = { workspace = true, features = [ "std" ] }
@@ -56,6 +59,9 @@ std = [
 	"sp-std/std",
 	"tp-maths/std",
 	"tp-traits/std",
+]
+migrations = [
+	"pallet-migrations",
 ]
 runtime-benchmarks = [
 	"frame-benchmarking",

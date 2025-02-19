@@ -26,6 +26,9 @@ mod tests;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
+#[cfg(feature = "migrations")]
+pub mod migrations;
+
 pub mod weights;
 pub use weights::WeightInfo;
 
@@ -165,8 +168,8 @@ pub mod pallet {
         type WeightInfo: weights::WeightInfo;
     }
 
-    type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
-    type AssetIdOf<T> = <T as Config>::AssetId;
+    pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
+    pub type AssetIdOf<T> = <T as Config>::AssetId;
 
     pub type RequestNonce = u32;
 
@@ -190,7 +193,7 @@ pub mod pallet {
         pub source: AccountId,
         /// Payee, target of the stream.
         pub target: AccountId,
-        /// Steam config (time unit, asset id, rate)
+        /// Stream config
         pub config: StreamConfig<Unit, AssetId, Balance>,
         /// How much is deposited to fund this stream.
         pub deposit: Balance,

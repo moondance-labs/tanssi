@@ -938,9 +938,9 @@ where
     Runtime: pallet_balances::Config,
     Runtime: pallet_configuration::Config,
     Runtime: pallet_registrar::Config,
-    Runtime: pallet_data_preservers::Config,
     Runtime: pallet_services_payment::Config,
     Runtime: pallet_data_preservers::Config,
+    Runtime: pallet_stream_payment::Config,
     Runtime::AccountId: From<[u8; 32]>,
     <Runtime as pallet_balances::Config>::RuntimeHoldReason: From<pallet_registrar::HoldReason>,
     <Runtime as pallet_balances::Config>::Balance: From<<<Runtime as pallet_registrar::Config>::Currency as frame_support::traits::fungible::Inspect<Runtime::AccountId>>::Balance>,
@@ -964,6 +964,7 @@ where
         //let migrate_registrar_reserves = RegistrarReserveToHoldMigration::<Runtime>(Default::default());
         //let migrate_config_max_parachain_percentage = MigrateConfigurationAddParachainPercentage::<Runtime>(Default::default());
         let migrate_config_full_rotation_mode = MigrateConfigurationAddFullRotationMode::<Runtime>(Default::default());
+        let migrate_stream_payment_new_config_items = pallet_stream_payment::migrations::MigrateStreamPaymentNewConfigFields::<Runtime>(Default::default());
 
         vec![
             // Applied in runtime 400
@@ -985,6 +986,7 @@ where
             // Applied in runtime 900
             //Box::new(migrate_config_max_parachain_percentage),
             Box::new(migrate_config_full_rotation_mode),
+            Box::new(migrate_stream_payment_new_config_items),
         ]
     }
 }

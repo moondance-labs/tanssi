@@ -29,6 +29,7 @@ pallet-pooled-staking = { workspace = true }
 pallet-registrar = { workspace = true }
 pallet-services-payment = { workspace = true }
 pallet-session = { workspace = true }
+pallet-stream-payment = { workspace = true, features = [ "migrations" ] }
 pallet-treasury = { workspace = true }
 
 # Moonkit
