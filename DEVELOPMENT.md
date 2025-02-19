@@ -26,8 +26,24 @@
       - [2.2.3 Add `Error`](#223-add-error)
       - [2.2.4 Add `Storage`](#224-add-storage)
       - [2.2.5 Add `Call`](#225-add-call)
-      - [2.2.6 Complete Pallet](#226-complete-pallet)
-    - [2.3 Write Tests for Counter Pallet](#23-write-tests-for-counter-pallet)
+      - [2.2.6 Complete Counter Pallet](#226-complete-counter-pallet)
+      - [2.2.7 Compile Counter Pallet](#227-compile-counter-pallet)
+    - [2.3 Add a Runtime for Testing the Counter Pallet](#23-add-a-runtime-for-testing-the-counter-pallet)
+      - [2.3.1 Setup Test - Create Runtime](#231-setup-test---create-runtime)
+      - [2.3.2 Add imports](#232-add-imports)
+      - [2.3.3 Contruct Runtime macro](#233-contruct-runtime-macro)
+      - [2.3.4 Implement Runtime](#234-implement-runtime)
+      - [2.3.5 Create a utils functions](#235-create-a-utils-functions)
+      - [2.3.6 Complete Counter Pallet](#236-complete-counter-pallet)
+      - [2.3.7 Compile mock](#237-compile-mock)
+    - [2.4 Write Tests](#24-write-tests)
+      - [2.4.1 Add imports](#241-add-imports)
+      - [2.4.2 Test if `set_value` works](#242-test-if-set_value-works)
+      - [2.4.3 Test if `get_value` works with `none`](#243-test-if-get_value-works-with-none)
+      - [2.4.4 Test if `get_value` works with `some`](#244-test-if-get_value-works-with-some)
+      - [2.4.5 Test if `get_value` fails](#245-test-if-get_value-fails)
+      - [2.3.6 Complete Counter Test](#236-complete-counter-test)
+      - [2.4.7 Run Tests](#247-run-tests)
     - [2.4 Create Benchmarks for Counter Pallet](#24-create-benchmarks-for-counter-pallet)
   - [5. Add Pallet into Runtime](#5-add-pallet-into-runtime)
     - [5.0 Add Pallet in `Cargo.toml`](#50-add-pallet-in-cargotoml)
@@ -244,7 +260,7 @@ impl<T: Config> Pallet<T> {
 }
 ```
 
-#### 2.2.6 Complete Pallet
+#### 2.2.6 Complete Counter Pallet
 
 ```rust
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -387,18 +403,415 @@ pub mod pallet {
 }
 ```
 
-### 2.3 Write Tests for Counter Pallet
+#### 2.2.7 Compile Counter Pallet
 
-Create `tests.rs`:
+```bash
+cargo b -p counter-pallet -r
+```
+
+### 2.3 Add a Runtime for Testing the Counter Pallet
+
+In this section, we'll set up the test environment and write the unit tests to check the functionality of your pallet.
+
+#### 2.3.1 Setup Test - Create Runtime
+
+> [!IMPORTANT]
+> We need to set up an environment that simulates the runtime, so we use `mock.rs`
+
+#### 2.3.2 Add imports
+
+```rust
+use crate::pallet as counter_pallet;
+use frame_support::construct_runtime;
+use frame_support::derive_impl;
+use frame_system::mocking::MockBlock;
+use sp_runtime::BuildStorage;
+```
+
+#### 2.3.3 Contruct Runtime macro
+
+```rust
+construct_runtime!(
+    pub enum Runtime {
+        // ---^^^^^^ This is where `enum Runtime` is defined.
+        System: frame_system,
+        Counter: counter_pallet,
+    }
+);
+```
+
+#### 2.3.4 Implement Runtime
+
+```rust
+#[derive_impl(frame_system::config_preludes::TestDefaultConfig)]
+impl frame_system::Config for Runtime {
+    type Block = MockBlock<Runtime>;
+    type AccountId = u64;
+}
+
+// our simple pallet has nothing to be configured.
+impl counter_pallet::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type WeightInfo = ();
+}
+```
+
+#### 2.3.5 Create a utils functions
+
+```rust
+/// Auxiliary function to create the test environment with the initial state.
+pub fn new_test_ext() -> sp_io::TestExternalities {
+    // Creates the initial storage from the default system configuration.
+    let storage = frame_system::GenesisConfig::<Runtime>::default()
+        .build_storage()
+        .unwrap();
+    let mut ext = sp_io::TestExternalities::new(storage);
+    // Defines the starting block number.
+    ext.execute_with(|| {
+        frame_system::Pallet::<Runtime>::set_block_number(1);
+    });
+    ext
+}
+```
+
+#### 2.3.6 Complete Counter Pallet
+
+```rust
+//! # Mock Runtime for Testing
+//!
+//! This module provides a mock runtime environment for testing the `counter_pallet` in isolation.
+//! It simulates the Substrate runtime by defining a `Runtime` enum, configuring necessary pallets,
+//! and providing utilities to initialize a test environment.
+//!
+//! ## Key Components
+//! - **`Runtime`**: The mock runtime, combining the `frame_system` and `counter_pallet` pallets.
+//! - **`frame_system::Config`**: Configuration for the `frame_system` pallet, using `MockBlock` and `u64` as `AccountId`.
+//! - **`counter_pallet::Config`**: Configuration for the `counter_pallet`, specifying `RuntimeEvent` and `WeightInfo`.
+//! - **`new_test_ext`**: A helper function to initialize a test environment with a default genesis configuration.
+//!
+//! ## Usage
+//! Use `new_test_ext()` to create a test environment with a clean state and a starting block number of 1.
+//! This allows you to test your pallet logic in a controlled and reproducible environment.
+
+use crate::pallet as counter_pallet;
+use frame_support::{construct_runtime, derive_impl};
+use frame_system::mocking::MockBlock;
+use sp_runtime::BuildStorage;
+
+// Define the mock runtime by combining the `frame_system` and `counter_pallet` pallets.
+construct_runtime!(
+    pub enum Runtime {
+        System: frame_system,
+        Counter: counter_pallet,
+    }
+);
+
+// Implement the `frame_system::Config` trait for the mock runtime.
+#[derive_impl(frame_system::config_preludes::TestDefaultConfig)]
+impl frame_system::Config for Runtime {
+    type Block = MockBlock<Runtime>;
+    type AccountId = u64;
+}
+
+// Implement the `counter_pallet::Config` trait for the mock runtime.
+impl counter_pallet::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type WeightInfo = ();
+}
+
+/// Initializes a test environment with a default genesis configuration and sets the block number to 1.
+///
+/// # Returns
+/// - `sp_io::TestExternalities`: A test externalities instance for running tests.
+pub fn new_test_ext() -> sp_io::TestExternalities {
+    let storage = frame_system::GenesisConfig::<Runtime>::default()
+        .build_storage()
+        .unwrap();
+    let mut ext = sp_io::TestExternalities::new(storage);
+    ext.execute_with(|| {
+        frame_system::Pallet::<Runtime>::set_block_number(1);
+    });
+    ext
+}
+```
+
+#### 2.3.7 Compile mock
+
+```bash
+cargo t -p counter-pallet -r
+```
+
+### 2.4 Write Tests
+
+#### 2.4.1 Add imports
+
+```rust
+#![cfg(test)]
+
+use crate::mock::{new_test_ext, Runtime, System};
+use crate::Error;
+use crate::Event as CounterEvent;
+use crate::Values;
+use frame_support::{assert_noop, assert_ok};
+```
+
+#### 2.4.2 Test if `set_value` works
 
 ```rust
 #[test]
 fn set_value_works() {
     new_test_ext().execute_with(|| {
-        assert_ok!(TemplatePallet::set_value(Origin::signed(1), 42));
-        assert_eq!(TemplatePallet::value(), Some(42));
+        // Account 1 stores the value 42.
+        assert_ok!(crate::Pallet::<Runtime>::set_value(
+            frame_system::RawOrigin::Signed(1).into(),
+            42
+        ));
+
+        // Checks that the value has been stored correctly.
+        assert_eq!(Values::<Runtime>::get(&1), Some(42));
+
+        // Checks if the ValueStored event has been emitted.
+        let event_found = System::events().iter().any(|record| {
+            if let crate::mock::RuntimeEvent::Counter(CounterEvent::ValueStored(account, value)) =
+                record.event
+            {
+                account == 1 && value == 42
+            } else {
+                false
+            }
+        });
+        assert!(event_found, "Expected ValueStored event not found");
     });
 }
+```
+
+#### 2.4.3 Test if `get_value` works with `none`
+
+```rust
+#[test]
+fn get_value_works_with_none() {
+    new_test_ext().execute_with(|| {
+        // Account 1 stores the value 55.
+        assert_ok!(crate::Pallet::<Runtime>::set_value(
+            frame_system::RawOrigin::Signed(1).into(),
+            55
+        ));
+
+        // Account 1 retrieves its own value by passing `None`.
+        assert_ok!(crate::Pallet::<Runtime>::get_value(
+            frame_system::RawOrigin::Signed(1).into(),
+            None
+        ));
+
+        // Checks if the ValueRetrieved event was emitted with the correct value.
+        let event_found = System::events().iter().any(|record| {
+            if let crate::mock::RuntimeEvent::Counter(CounterEvent::ValueRetrieved(
+                account,
+                value,
+            )) = record.event
+            {
+                account == 1 && value == 55
+            } else {
+                false
+            }
+        });
+        assert!(event_found, "Expected ValueRetrieved event not found");
+    });
+}
+```
+
+#### 2.4.4 Test if `get_value` works with `some`
+
+```rust
+#[test]
+fn get_value_works_with_some() {
+    new_test_ext().execute_with(|| {
+        // Account 2 stores the value 99.
+        assert_ok!(crate::Pallet::<Runtime>::set_value(
+            frame_system::RawOrigin::Signed(2).into(),
+            99
+        ));
+
+        // Account 1 retrieves the value stored for account 2 by passing `Some(2)`.
+        assert_ok!(crate::Pallet::<Runtime>::get_value(
+            frame_system::RawOrigin::Signed(1).into(),
+            Some(2)
+        ));
+
+        // Checks that the ValueRetrieved event was sent to account 2 with the correct value.
+        let event_found = System::events().iter().any(|record| {
+            if let crate::mock::RuntimeEvent::Counter(CounterEvent::ValueRetrieved(
+                account,
+                value,
+            )) = record.event
+            {
+                account == 2 && value == 99
+            } else {
+                false
+            }
+        });
+        assert!(event_found, "Expected ValueRetrieved event not found");
+    });
+}
+```
+
+#### 2.4.5 Test if `get_value` fails
+
+```rust
+#[test]
+fn get_value_fails_when_no_value_set() {
+    new_test_ext().execute_with(|| {
+        // Tries to retrieve the value of an account (3) that has never stored a value.
+        assert_noop!(
+            crate::Pallet::<Runtime>::get_value(frame_system::RawOrigin::Signed(1).into(), Some(3)),
+            Error::<Runtime>::NoneValue
+        );
+
+        // Tries to retrieve the value of the account itself (4), with no stored value.
+        assert_noop!(
+            crate::Pallet::<Runtime>::get_value(frame_system::RawOrigin::Signed(4).into(), None),
+            Error::<Runtime>::NoneValue
+        );
+    });
+}
+```
+
+#### 2.3.6 Complete Counter Test
+
+```rust
+#![cfg(test)]
+
+//! # Tests for Counter Pallet
+//!
+//! This module contains unit tests for the `counter_pallet`, ensuring its functionality works as expected.
+//! The tests cover the following scenarios:
+//!
+//! - **`set_value`**: Verifies that a value is correctly stored and that the `ValueStored` event is emitted.
+//! - **`get_value`**: Tests the retrieval of stored values, both for the caller's account (`None`) and for another account (`Some(account)`).
+//! - **Error Handling**: Ensures the `NoneValue` error is returned when attempting to retrieve a value that has not been set.
+//!
+//! ## Test Cases
+//! - `set_value_works`: Tests storing a value and verifies the `ValueStored` event.
+//! - `get_value_works_with_none`: Tests retrieving the caller's stored value using `None`.
+//! - `get_value_works_with_some`: Tests retrieving another account's stored value using `Some(account)`.
+//! - `get_value_fails_when_no_value_set`: Tests error handling when retrieving a value that has not been set.
+
+use crate::mock::{new_test_ext, Runtime, System};
+use crate::Error;
+use crate::Event as CounterEvent;
+use crate::Values;
+use frame_support::{assert_noop, assert_ok};
+
+#[test]
+fn set_value_works() {
+    new_test_ext().execute_with(|| {
+        // Account 1 stores the value 42.
+        assert_ok!(crate::Pallet::<Runtime>::set_value(
+            frame_system::RawOrigin::Signed(1).into(),
+            42
+        ));
+
+        // Verify the value is stored correctly.
+        assert_eq!(Values::<Runtime>::get(&1), Some(42));
+
+        // Check if the `ValueStored` event was emitted.
+        let event_found = System::events().iter().any(|record| {
+            if let crate::mock::RuntimeEvent::Counter(CounterEvent::ValueStored(account, value)) =
+                record.event
+            {
+                account == 1 && value == 42
+            } else {
+                false
+            }
+        });
+        assert!(event_found, "Expected ValueStored event not found");
+    });
+}
+
+#[test]
+fn get_value_works_with_none() {
+    new_test_ext().execute_with(|| {
+        // Account 1 stores the value 55.
+        assert_ok!(crate::Pallet::<Runtime>::set_value(
+            frame_system::RawOrigin::Signed(1).into(),
+            55
+        ));
+
+        // Account 1 retrieves its own value by passing `None`.
+        assert_ok!(crate::Pallet::<Runtime>::get_value(
+            frame_system::RawOrigin::Signed(1).into(),
+            None
+        ));
+
+        // Check if the `ValueRetrieved` event was emitted with the correct value.
+        let event_found = System::events().iter().any(|record| {
+            if let crate::mock::RuntimeEvent::Counter(CounterEvent::ValueRetrieved(
+                account,
+                value,
+            )) = record.event
+            {
+                account == 1 && value == 55
+            } else {
+                false
+            }
+        });
+        assert!(event_found, "Expected ValueRetrieved event not found");
+    });
+}
+
+#[test]
+fn get_value_works_with_some() {
+    new_test_ext().execute_with(|| {
+        // Account 2 stores the value 99.
+        assert_ok!(crate::Pallet::<Runtime>::set_value(
+            frame_system::RawOrigin::Signed(2).into(),
+            99
+        ));
+
+        // Account 1 retrieves the value stored for account 2 by passing `Some(2)`.
+        assert_ok!(crate::Pallet::<Runtime>::get_value(
+            frame_system::RawOrigin::Signed(1).into(),
+            Some(2)
+        ));
+
+        // Check if the `ValueRetrieved` event was emitted for account 2 with the correct value.
+        let event_found = System::events().iter().any(|record| {
+            if let crate::mock::RuntimeEvent::Counter(CounterEvent::ValueRetrieved(
+                account,
+                value,
+            )) = record.event
+            {
+                account == 2 && value == 99
+            } else {
+                false
+            }
+        });
+        assert!(event_found, "Expected ValueRetrieved event not found");
+    });
+}
+
+#[test]
+fn get_value_fails_when_no_value_set() {
+    new_test_ext().execute_with(|| {
+        // Attempt to retrieve the value of an account (3) that has never stored a value.
+        assert_noop!(
+            crate::Pallet::<Runtime>::get_value(frame_system::RawOrigin::Signed(1).into(), Some(3)),
+            Error::<Runtime>::NoneValue
+        );
+
+        // Attempt to retrieve the value of the caller's account (4), which has no stored value.
+        assert_noop!(
+            crate::Pallet::<Runtime>::get_value(frame_system::RawOrigin::Signed(4).into(), None),
+            Error::<Runtime>::NoneValue
+        );
+    });
+}
+```
+
+#### 2.4.7 Run Tests
+
+```bash
+cargo t -p counter-pallet -r
 ```
 
 ### 2.4 Create Benchmarks for Counter Pallet
