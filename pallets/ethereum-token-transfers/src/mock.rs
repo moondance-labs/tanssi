@@ -29,10 +29,10 @@ use {
     sp_core::H256,
     sp_runtime::{
         traits::{BlakeTwo256, IdentityLookup, MaybeEquivalence},
-        BuildStorage, DispatchResult,
+        BuildStorage,
     },
     sp_std::cell::RefCell,
-    tp_bridge::{EthereumSystemChannelManager, TicketInfo},
+    tp_bridge::{ChannelInfo, EthereumSystemChannelManager, TicketInfo},
     xcm::prelude::*,
 };
 
@@ -172,13 +172,13 @@ impl SendMessageFeeProvider for MockOkOutboundQueue {
 }
 pub struct EthereumSystemHandler;
 impl EthereumSystemChannelManager for EthereumSystemHandler {
-    fn create_channel(
-        _channel_id: ChannelId,
-        _agent_id: AgentId,
-        _para_id: ParaId,
-    ) -> DispatchResult {
+    fn create_channel(channel_id: ChannelId, agent_id: AgentId, para_id: ParaId) -> ChannelInfo {
         ETHEREUM_SYSTEM_HANDLER_NONCE.with(|r| *r.borrow_mut() += 1);
-        Ok(())
+        ChannelInfo {
+            channel_id,
+            agent_id,
+            para_id,
+        }
     }
 }
 

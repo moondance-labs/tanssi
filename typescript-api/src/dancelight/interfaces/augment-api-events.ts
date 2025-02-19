@@ -35,7 +35,6 @@ import type {
     FrameSupportTokensMiscBalanceStatus,
     PalletConvictionVotingTally,
     PalletConvictionVotingVoteAccountVote,
-    PalletEthereumTokenTransfersChannelInfo,
     PalletExternalValidatorsForcing,
     PalletMultisigTimepoint,
     PalletPooledStakingTargetPool,
@@ -58,6 +57,7 @@ import type {
     StagingXcmV4Response,
     StagingXcmV4TraitsOutcome,
     StagingXcmV4Xcm,
+    TpBridgeChannelInfo,
     TpBridgeCommand,
     TpTraitsFullRotationModes,
     XcmV3TraitsError,
@@ -463,8 +463,8 @@ declare module "@polkadot/api-base/types/events" {
              **/
             ChannelInfoSet: AugmentedEvent<
                 ApiType,
-                [channelInfo: PalletEthereumTokenTransfersChannelInfo],
-                { channelInfo: PalletEthereumTokenTransfersChannelInfo }
+                [channelInfo: TpBridgeChannelInfo],
+                { channelInfo: TpBridgeChannelInfo }
             >;
             /**
              * Some native token was successfully transferred to Ethereum.
@@ -496,6 +496,14 @@ declare module "@polkadot/api-base/types/events" {
             [key: string]: AugmentedEvent<ApiType>;
         };
         externalValidators: {
+            /**
+             * External validators were set.
+             **/
+            ExternalValidatorsSet: AugmentedEvent<
+                ApiType,
+                [validators: Vec<AccountId32>, externalIndex: u64],
+                { validators: Vec<AccountId32>; externalIndex: u64 }
+            >;
             /**
              * A new force era mode was set.
              **/

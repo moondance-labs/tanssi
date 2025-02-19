@@ -36,7 +36,6 @@ use {
         traits::{
             fungible::{Inspect, Mutate},
             tokens::{Fortitude, Preservation},
-            Nothing,
         },
         weights::ConstantMultiplier,
     },
@@ -177,7 +176,7 @@ impl snowbridge_pallet_system::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type OutboundQueue = EthereumOutboundQueue;
     #[cfg(not(feature = "runtime-benchmarks"))]
-    type SiblingOrigin = EnsureXcm<Nothing>;
+    type SiblingOrigin = EnsureXcm<frame_support::traits::Nothing>;
     #[cfg(feature = "runtime-benchmarks")]
     type SiblingOrigin = EnsureXcm<snowbridge_core::AllowSiblingsOnly>;
     type AgentIdOf = snowbridge_core::AgentIdOf;

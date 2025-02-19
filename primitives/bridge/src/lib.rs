@@ -40,6 +40,7 @@ use {
         traits::Contains,
     },
     frame_system::unique,
+    parity_scale_codec::MaxEncodedLen,
     scale_info::TypeInfo,
     snowbridge_core::{
         outbound::{Fee, SendError},
@@ -52,7 +53,7 @@ use {
     sp_core::blake2_256,
     sp_core::hashing,
     sp_core::H256,
-    sp_runtime::{app_crypto::sp_core, traits::Convert, DispatchResult, RuntimeDebug},
+    sp_runtime::{app_crypto::sp_core, traits::Convert, RuntimeDebug},
     sp_std::vec::Vec,
 };
 
@@ -390,9 +391,17 @@ impl<AccountId> EthereumLocationsConverterFor<AccountId> {
     }
 }
 
+/// Information of a recently created channel.
+#[derive(Encode, Decode, RuntimeDebug, TypeInfo, Clone, PartialEq, MaxEncodedLen)]
+pub struct ChannelInfo {
+    pub channel_id: ChannelId,
+    pub para_id: ParaId,
+    pub agent_id: AgentId,
+}
+
 /// Trait to manage channel creation inside EthereumSystem pallet.
 pub trait EthereumSystemChannelManager {
-    fn create_channel(channel_id: ChannelId, agent_id: AgentId, para_id: ParaId) -> DispatchResult;
+    fn create_channel(channel_id: ChannelId, agent_id: AgentId, para_id: ParaId) -> ChannelInfo;
 }
 
 /// Implementation struct for EthereumSystemChannelManager trait.
@@ -401,20 +410,27 @@ impl<Runtime> EthereumSystemChannelManager for EthereumSystemHandler<Runtime>
 where
     Runtime: snowbridge_pallet_system::Config,
 {
-    fn create_channel(channel_id: ChannelId, agent_id: AgentId, para_id: ParaId) -> DispatchResult {
-        if snowbridge_pallet_system::Channels::<Runtime>::contains_key(channel_id) {
-            return Err(snowbridge_pallet_system::Error::<Runtime>::ChannelAlreadyCreated.into());
+    fn create_channel(channel_id: ChannelId, agent_id: AgentId, para_id: ParaId) -> ChannelInfo {
+        if let Some(channel) = snowbridge_pallet_system::Channels::<Runtime>::get(channel_id) {
+            return ChannelInfo {
+                channel_id,
+                para_id: channel.para_id,
+                agent_id: channel.agent_id,
+            };
+        } else {
+            if !snowbridge_pallet_system::Agents::<Runtime>::contains_key(agent_id) {
+                snowbridge_pallet_system::Agents::<Runtime>::insert(agent_id, ());
+            }
+
+            let channel = Channel { agent_id, para_id };
+            snowbridge_pallet_system::Channels::<Runtime>::insert(channel_id, channel);
+
+            return ChannelInfo {
+                channel_id,
+                para_id,
+                agent_id,
+            };
         }
-
-        if snowbridge_pallet_system::Agents::<Runtime>::contains_key(agent_id) {
-            return Err(snowbridge_pallet_system::Error::<Runtime>::AgentAlreadyCreated.into());
-        }
-
-        let channel = Channel { agent_id, para_id };
-
-        snowbridge_pallet_system::Agents::<Runtime>::insert(agent_id, ());
-        snowbridge_pallet_system::Channels::<Runtime>::insert(channel_id, channel);
-        Ok(())
     }
 }
 
