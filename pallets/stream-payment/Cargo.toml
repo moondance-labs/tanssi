@@ -49,6 +49,7 @@ std = [
 	"frame-system/std",
 	"log/std",
 	"pallet-balances/std",
+	"pallet-migrations?/std",
 	"parity-scale-codec/std",
 	"scale-info/std",
 	"scale-info/std",
@@ -69,6 +70,7 @@ runtime-benchmarks = [
 	"frame-support/runtime-benchmarks",
 	"frame-system/runtime-benchmarks",
 	"pallet-balances/runtime-benchmarks",
+	"pallet-migrations?/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"tp-maths/runtime-benchmarks",
 	"tp-traits/runtime-benchmarks",
@@ -77,5 +79,6 @@ try-runtime = [
 	"frame-support/try-runtime",
 	"frame-system/try-runtime",
 	"pallet-balances/try-runtime",
+	"pallet-migrations?/try-runtime",
 	"sp-runtime/try-runtime",
 ]
