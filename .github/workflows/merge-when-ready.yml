@@ -103,6 +103,8 @@ jobs:
       needs: ["enforce-ready-to-merge-label"]
       runs-on: self-hosted
       steps:
+        - name: Checkout
+          uses: actions/checkout@v4
         - name: Cargo build
           uses: ./.github/workflow-templates/cargo-build
           with:
