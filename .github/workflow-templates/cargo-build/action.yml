@@ -64,10 +64,11 @@ runs:
       shell: bash
       run: |
         mkdir -p runtimes
-        cp target/release/wbuild/container-chain-template-simple-runtime/container_chain_template_simple_runtime.compact.wasm runtimes/;
-        cp target/release/wbuild/container-chain-template-frontier-runtime/container_chain_template_frontier_runtime.compact.wasm runtimes/;
+        cp target/release/wbuild/container-chain-template-simple-runtime/container_chain_template_simple_runtime.compact.compressed.wasm runtimes/;
+        cp target/release/wbuild/container-chain-template-frontier-runtime/container_chain_template_frontier_runtime.compact.compressed.wasm runtimes/;
         cp target/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm runtimes/;
         cp target/release/wbuild/flashbox-runtime/flashbox_runtime.compact.compressed.wasm runtimes/;
+        cp target/release/wbuild/dancelight-runtime/dancelight_runtime.compact.compressed.wasm runtimes/;
     - name: Save binaries
       shell: bash
       run: |
@@ -75,3 +76,6 @@ runs:
         cp target/release/tanssi-node binaries/tanssi-node;
         cp target/release/container-chain-simple-node binaries/container-chain-simple-node;
         cp target/release/container-chain-frontier-node binaries/container-chain-frontier-node;
+        cp target/release/tanssi-relay binaries/tanssi-relay;
+        cp target/release/tanssi-relay-prepare-worker binaries/tanssi-relay-prepare-worker;
+        cp target/release/tanssi-relay-execute-worker binaries/tanssi-relay-execute-worker;
