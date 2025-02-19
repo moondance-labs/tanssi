@@ -31,7 +31,7 @@ use {
         OutboundMessageCommitmentRecorder, Runtime, RuntimeEvent, TokenLocationReanchored,
         TransactionByteFee, TreasuryAccount, WeightToFee, UNITS,
     },
-    frame_support::{traits::Nothing, weights::ConstantMultiplier},
+    frame_support::weights::ConstantMultiplier,
     pallet_xcm::EnsureXcm,
     snowbridge_beacon_primitives::{Fork, ForkVersions},
     snowbridge_core::{gwei, meth, PricingParameters, Rewards},
@@ -162,7 +162,7 @@ impl snowbridge_pallet_system::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type OutboundQueue = EthereumOutboundQueue;
     #[cfg(not(feature = "runtime-benchmarks"))]
-    type SiblingOrigin = EnsureXcm<Nothing>;
+    type SiblingOrigin = EnsureXcm<frame_support::traits::Nothing>;
     #[cfg(feature = "runtime-benchmarks")]
     type SiblingOrigin = EnsureXcm<snowbridge_core::AllowSiblingsOnly>;
     type AgentIdOf = snowbridge_core::AgentIdOf;

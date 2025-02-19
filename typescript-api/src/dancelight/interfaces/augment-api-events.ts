@@ -497,6 +497,14 @@ declare module "@polkadot/api-base/types/events" {
         };
         externalValidators: {
             /**
+             * External validators were set.
+             **/
+            ExternalValidatorsSet: AugmentedEvent<
+                ApiType,
+                [validators: Vec<AccountId32>, externalIndex: u64],
+                { validators: Vec<AccountId32>; externalIndex: u64 }
+            >;
+            /**
              * A new force era mode was set.
              **/
             ForceEra: AugmentedEvent<
