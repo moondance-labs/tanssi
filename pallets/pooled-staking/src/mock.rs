@@ -158,6 +158,7 @@ parameter_types! {
     pub const MinimumSelfDelegation: u128 = 10 * MEGA;
     pub const RewardsCollatorCommission: Perbill = Perbill::from_percent(20);
     pub const BlocksToWait: u64 = BLOCKS_TO_WAIT;
+    pub const MaxInactiveSessions: u32 = 2;
 }
 
 impl pallet_pooled_staking::Config for Runtime {
@@ -176,6 +177,7 @@ impl pallet_pooled_staking::Config for Runtime {
     type EligibleCandidatesFilter = ();
     type WeightInfo = ();
     type RuntimeHoldReason = RuntimeHoldReason;
+    type MaxInactiveSessions = MaxInactiveSessions;
 }
 
 pub trait PoolExt<T: crate::Config>: Pool<T> {

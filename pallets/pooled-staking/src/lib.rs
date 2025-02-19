@@ -332,6 +332,10 @@ pub mod pallet {
         type EligibleCandidatesBufferSize: Get<u32>;
         /// Additional filter for candidates to be eligible.
         type EligibleCandidatesFilter: IsCandidateEligible<Self::AccountId>;
+        
+        /// The maximum number of sessions for which a collator can be inactive 
+        /// before being moved to the offline queue
+        type MaxInactiveSessions: Get<u32>;
 
         type WeightInfo: WeightInfo;
     }
@@ -373,6 +377,11 @@ pub mod pallet {
         T::Balance,
         ValueQuery,
     >;
+
+    /// Switch to enable/disable marking offline feature.
+    #[pallet::storage]
+    pub type EnableMarkingOffline<T: Config> = StorageValue<_, bool, ValueQuery>;
+    
 
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -508,6 +517,7 @@ pub mod pallet {
         CandidateTransferingOwnSharesForbidden,
         RequestCannotBeExecuted(u16),
         SwapResultsInZeroShares,
+        MarkingOfflineNotEnabled,
     }
 
     impl<T: Config> From<tp_maths::OverflowError> for Error<T> {
