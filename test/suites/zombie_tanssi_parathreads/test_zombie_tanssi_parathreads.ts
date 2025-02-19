@@ -4,7 +4,7 @@ import { type ApiPromise, Keyring } from "@polkadot/api";
 import type { Signer } from "ethers";
 import fs from "node:fs/promises";
 import { getAuthorFromDigest } from "../../util/author";
-import { signAndSendAndInclude, waitSessions } from "../../util/block";
+import { signAndSendAndInclude, signAndSendAndIncludeMany, waitSessions } from "../../util/block";
 import { getHeaderFromRelay } from "../../util/relayInterface";
 import { chainSpecToContainerChainGenesisData } from "../../util/genesis_data.ts";
 import jsonBg from "json-bigint";
@@ -222,10 +222,14 @@ describeSuite({
                     responseFor2000.nextProfileId
                 );
 
-                // Cram everything in one array
-                const txs = responseFor2000.txs;
-                txs.push(...responseFor2001.txs);
-                await signAndSendAndInclude(paraApi.tx.sudo.sudo(paraApi.tx.utility.batch(txs)), alice);
+                await signAndSendAndIncludeMany(
+                    paraApi,
+                    [
+                        paraApi.tx.sudo.sudo(paraApi.tx.utility.batch(responseFor2000.txs)),
+                        paraApi.tx.sudo.sudo(paraApi.tx.utility.batch(responseFor2001.txs)),
+                    ],
+                    alice
+                );
 
                 const pendingParas = await paraApi.query.registrar.pendingParaIds();
                 expect(pendingParas.length).to.be.eq(1);
@@ -395,9 +399,9 @@ describeSuite({
                 await waitSessions(context, paraApi, 2);
 
                 // TODO: calculate block frequency somehow
-                assertSlotFrequency(await getBlockData(paraApi), 1);
-                assertSlotFrequency(await getBlockData(container2000Api), 10);
-                assertSlotFrequency(await getBlockData(container2001Api), 10);
+                await assertSlotFrequency(await getBlockData(paraApi), 1);
+                await assertSlotFrequency(await getBlockData(container2000Api), 10);
+                await assertSlotFrequency(await getBlockData(container2001Api), 10);
             },
         });
     },
