@@ -209,6 +209,7 @@ runtime-benchmarks = [
 	"frame-system/runtime-benchmarks",
 	"pallet-babe/runtime-benchmarks",
 	"pallet-staking/runtime-benchmarks",
+	"pallet-transaction-payment/runtime-benchmarks",
 	"polkadot-parachain-primitives/runtime-benchmarks",
 	"polkadot-primitives/runtime-benchmarks",
 	"polkadot-runtime-parachains/runtime-benchmarks",
@@ -218,7 +219,6 @@ runtime-benchmarks = [
 	"service/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"xcm-runtime-apis/runtime-benchmarks",
-	"pallet-transaction-payment/runtime-benchmarks"
 ]
 try-runtime = [
 	"dancelight-runtime?/try-runtime",

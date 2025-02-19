@@ -253,6 +253,7 @@ runtime-benchmarks = [
 	"pallet-stream-payment/runtime-benchmarks",
 	"pallet-sudo/runtime-benchmarks",
 	"pallet-timestamp/runtime-benchmarks",
+	"pallet-transaction-payment/runtime-benchmarks",
 	"pallet-treasury/runtime-benchmarks",
 	"pallet-tx-pause/runtime-benchmarks",
 	"pallet-utility/runtime-benchmarks",
@@ -262,7 +263,6 @@ runtime-benchmarks = [
 	"sp-runtime/runtime-benchmarks",
 	"tanssi-runtime-common/runtime-benchmarks",
 	"tp-traits/runtime-benchmarks",
-	"pallet-transaction-payment/runtime-benchmarks"
 ]
 
 try-runtime = [

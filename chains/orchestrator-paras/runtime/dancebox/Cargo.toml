@@ -326,6 +326,7 @@ runtime-benchmarks = [
 	"pallet-stream-payment/runtime-benchmarks",
 	"pallet-sudo/runtime-benchmarks",
 	"pallet-timestamp/runtime-benchmarks",
+	"pallet-transaction-payment/runtime-benchmarks",
 	"pallet-treasury/runtime-benchmarks",
 	"pallet-tx-pause/runtime-benchmarks",
 	"pallet-utility/runtime-benchmarks",
@@ -348,7 +349,6 @@ runtime-benchmarks = [
 	"westend-runtime/runtime-benchmarks",
 	"xcm-primitives/runtime-benchmarks",
 	"xcm-runtime-apis/runtime-benchmarks",
-	"pallet-transaction-payment/runtime-benchmarks"
 ]
 
 try-runtime = [

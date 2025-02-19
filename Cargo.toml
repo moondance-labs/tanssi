@@ -253,6 +253,7 @@ polkadot-node-primitives = { git = "https://github.com/moondance-labs/polkadot-s
 polkadot-parachain-primitives = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2412", default-features = false }
 polkadot-runtime-common = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2412", default-features = false }
 polkadot-runtime-parachains = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2412", default-features = false }
+primitive-types-hack = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2412", default-features = false }
 rococo-runtime = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2412", default-features = false }
 rococo-runtime-constants = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2412", default-features = false }
 staging-xcm = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2412", default-features = false }
@@ -261,7 +262,6 @@ staging-xcm-executor = { git = "https://github.com/moondance-labs/polkadot-sdk",
 westend-runtime = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2412", default-features = false }
 westend-runtime-constants = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2412", default-features = false }
 xcm-runtime-apis = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2412", default-features = false }
-primitive-types-hack = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2412", default-features = false }
 
 
 # Bridges (wasm)
