@@ -1043,7 +1043,34 @@ export default {
         },
     },
     /**
-     * Lookup110: pallet_session::pallet::Event
+     * Lookup110: pallet_ethereum_token_transfers::pallet::Event<T>
+     **/
+    PalletEthereumTokenTransfersEvent: {
+        _enum: {
+            ChannelInfoSet: {
+                channelInfo: "TpBridgeChannelInfo",
+            },
+            NativeTokenTransferred: {
+                messageId: "H256",
+                channelId: "SnowbridgeCoreChannelId",
+                source: "AccountId32",
+                recipient: "H160",
+                tokenId: "H256",
+                amount: "u128",
+                fee: "u128",
+            },
+        },
+    },
+    /**
+     * Lookup111: tp_bridge::ChannelInfo
+     **/
+    TpBridgeChannelInfo: {
+        channelId: "SnowbridgeCoreChannelId",
+        paraId: "u32",
+        agentId: "H256",
+    },
+    /**
+     * Lookup112: pallet_session::pallet::Event
      **/
     PalletSessionEvent: {
         _enum: {
@@ -1053,7 +1080,7 @@ export default {
         },
     },
     /**
-     * Lookup111: pallet_grandpa::pallet::Event
+     * Lookup113: pallet_grandpa::pallet::Event
      **/
     PalletGrandpaEvent: {
         _enum: {
@@ -1065,11 +1092,11 @@ export default {
         },
     },
     /**
-     * Lookup114: sp_consensus_grandpa::app::Public
+     * Lookup116: sp_consensus_grandpa::app::Public
      **/
     SpConsensusGrandpaAppPublic: "[u8;32]",
     /**
-     * Lookup115: pallet_inflation_rewards::pallet::Event<T>
+     * Lookup117: pallet_inflation_rewards::pallet::Event<T>
      **/
     PalletInflationRewardsEvent: {
         _enum: {
@@ -1085,7 +1112,7 @@ export default {
         },
     },
     /**
-     * Lookup116: pallet_pooled_staking::pallet::Event<T>
+     * Lookup118: pallet_pooled_staking::pallet::Event<T>
      **/
     PalletPooledStakingEvent: {
         _enum: {
@@ -1182,13 +1209,13 @@ export default {
         },
     },
     /**
-     * Lookup118: pallet_pooled_staking::pallet::TargetPool
+     * Lookup120: pallet_pooled_staking::pallet::TargetPool
      **/
     PalletPooledStakingTargetPool: {
         _enum: ["AutoCompounding", "ManualRewards"],
     },
     /**
-     * Lookup119: pallet_treasury::pallet::Event<T, I>
+     * Lookup121: pallet_treasury::pallet::Event<T, I>
      **/
     PalletTreasuryEvent: {
         _enum: {
@@ -1243,7 +1270,7 @@ export default {
         },
     },
     /**
-     * Lookup121: pallet_conviction_voting::pallet::Event<T, I>
+     * Lookup123: pallet_conviction_voting::pallet::Event<T, I>
      **/
     PalletConvictionVotingEvent: {
         _enum: {
@@ -1260,7 +1287,7 @@ export default {
         },
     },
     /**
-     * Lookup122: pallet_conviction_voting::vote::AccountVote<Balance>
+     * Lookup124: pallet_conviction_voting::vote::AccountVote<Balance>
      **/
     PalletConvictionVotingVoteAccountVote: {
         _enum: {
@@ -1280,7 +1307,7 @@ export default {
         },
     },
     /**
-     * Lookup124: pallet_referenda::pallet::Event<T, I>
+     * Lookup126: pallet_referenda::pallet::Event<T, I>
      **/
     PalletReferendaEvent: {
         _enum: {
@@ -1360,7 +1387,7 @@ export default {
         },
     },
     /**
-     * Lookup126: frame_support::traits::preimages::Bounded<dancelight_runtime::RuntimeCall, sp_runtime::traits::BlakeTwo256>
+     * Lookup128: frame_support::traits::preimages::Bounded<dancelight_runtime::RuntimeCall, sp_runtime::traits::BlakeTwo256>
      **/
     FrameSupportPreimagesBounded: {
         _enum: {
@@ -1381,7 +1408,7 @@ export default {
         },
     },
     /**
-     * Lookup128: frame_system::pallet::Call<T>
+     * Lookup130: frame_system::pallet::Call<T>
      **/
     FrameSystemCall: {
         _enum: {
@@ -1426,7 +1453,7 @@ export default {
         },
     },
     /**
-     * Lookup132: pallet_babe::pallet::Call<T>
+     * Lookup134: pallet_babe::pallet::Call<T>
      **/
     PalletBabeCall: {
         _enum: {
@@ -1444,7 +1471,7 @@ export default {
         },
     },
     /**
-     * Lookup133: sp_consensus_slots::EquivocationProof<sp_runtime::generic::header::Header<Number, Hash>, sp_consensus_babe::app::Public>
+     * Lookup135: sp_consensus_slots::EquivocationProof<sp_runtime::generic::header::Header<Number, Hash>, sp_consensus_babe::app::Public>
      **/
     SpConsensusSlotsEquivocationProof: {
         offender: "SpConsensusBabeAppPublic",
@@ -1453,7 +1480,7 @@ export default {
         secondHeader: "SpRuntimeHeader",
     },
     /**
-     * Lookup134: sp_runtime::generic::header::Header<Number, Hash>
+     * Lookup136: sp_runtime::generic::header::Header<Number, Hash>
      **/
     SpRuntimeHeader: {
         parentHash: "H256",
@@ -1463,11 +1490,11 @@ export default {
         digest: "SpRuntimeDigest",
     },
     /**
-     * Lookup135: sp_consensus_babe::app::Public
+     * Lookup137: sp_consensus_babe::app::Public
      **/
     SpConsensusBabeAppPublic: "[u8;32]",
     /**
-     * Lookup136: sp_session::MembershipProof
+     * Lookup138: sp_session::MembershipProof
      **/
     SpSessionMembershipProof: {
         session: "u32",
@@ -1475,7 +1502,7 @@ export default {
         validatorCount: "u32",
     },
     /**
-     * Lookup137: sp_consensus_babe::digests::NextConfigDescriptor
+     * Lookup139: sp_consensus_babe::digests::NextConfigDescriptor
      **/
     SpConsensusBabeDigestsNextConfigDescriptor: {
         _enum: {
@@ -1487,13 +1514,13 @@ export default {
         },
     },
     /**
-     * Lookup139: sp_consensus_babe::AllowedSlots
+     * Lookup141: sp_consensus_babe::AllowedSlots
      **/
     SpConsensusBabeAllowedSlots: {
         _enum: ["PrimarySlots", "PrimaryAndSecondaryPlainSlots", "PrimaryAndSecondaryVRFSlots"],
     },
     /**
-     * Lookup140: pallet_timestamp::pallet::Call<T>
+     * Lookup142: pallet_timestamp::pallet::Call<T>
      **/
     PalletTimestampCall: {
         _enum: {
@@ -1503,7 +1530,7 @@ export default {
         },
     },
     /**
-     * Lookup141: pallet_balances::pallet::Call<T, I>
+     * Lookup143: pallet_balances::pallet::Call<T, I>
      **/
     PalletBalancesCall: {
         _enum: {
