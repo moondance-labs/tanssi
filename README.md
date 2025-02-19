@@ -149,6 +149,8 @@ Currently two templates are offered within this repository
 
 - __Frontier template__: Which ressembles a moonbeam-alike chain, with all pallets necessary for evm and ethereum compatibility
 
+- __Hous3 template__: Which ressembles a DREX-alike chain, with all pallets necessary for evm and ethereum private compatibility
+
 ### Build container-chain nodes (full nodes only, not collators)
 These nodes will only act as full nodes, but not as collators since these are offered by Tanssi:
 
@@ -160,6 +162,11 @@ cargo build -p container-chain-simple-node --release
 ```bash
 # Build the frontier-template node
 cargo build -p container-chain-frontier-node --release
+```
+
+```bash
+# Build the hous3-template node
+cargo build -p container-chain-hous3-node --release
 ```
 
 ## Run with Zombienet directly
