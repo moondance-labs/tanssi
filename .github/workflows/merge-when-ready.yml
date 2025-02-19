@@ -131,6 +131,15 @@ jobs:
               with:
                   name: binaries-benchmark
                   path: target/release
+            - name: "Make binaries executable"
+              shell: bash
+              run: |
+                  chmod uog+x target/release/tanssi-node
+                  chmod uog+x target/release/tanssi-relay
+                  chmod uog+x target/release/tanssi-relay-prepare-worker
+                  chmod uog+x target/release/tanssi-relay-execute-worker
+                  chmod uog+x target/release/container-chain-simple-node
+                  chmod uog+x target/release/container-chain-frontier-node
             - name: "Benchmark test ${{ matrix.binary }}"
               shell: bash
               run: |
