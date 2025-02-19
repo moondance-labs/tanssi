@@ -131,7 +131,7 @@ jobs:
               with:
                   name: binaries-benchmark
                   path: target/release
-            - name: "Benchmark test ${{ matrix.binary }"
+            - name: "Benchmark test ${{ matrix.binary }}"
               shell: bash
               run: |
                 BINARY=./target/release/${{ matrix.binary }} TEMPLATE_PATH=./benchmarking/frame-weight-runtime-template.hbs tools/benchmarking.sh "*" "*" --check
