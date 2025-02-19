@@ -25,8 +25,6 @@ jobs:
         steps:
             - name: Checkout
               uses: actions/checkout@v4
-              with:
-                  ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Cargo build
               uses: ./.github/workflow-templates/cargo-build
               with:
@@ -101,3 +99,46 @@ jobs:
             - name: Run Zombienet Test ${{ matrix.test_name }}
               id: e2e-test
               uses: ./.github/workflow-templates/bridge-e2e
+    build-benchmark:
+      needs: ["enforce-ready-to-merge-label"]
+      runs-on: self-hosted
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+        - name: Cargo build
+          uses: ./.github/workflow-templates/cargo-build
+          with:
+            features: "fast-runtime,runtime-benchmarks"
+        - name: Upload binary
+          uses: actions/upload-artifact@v4
+          with:
+            name: binaries-benchmark
+            path: binaries
+    benchmark-tests:
+        needs: ["enforce-ready-to-merge-label", "build-benchmark"]
+        runs-on: self-hosted
+        strategy:
+            fail-fast: false
+            matrix:
+                binary: [tanssi-relay, tanssi-node, container-chain-simple-node, container-chain-frontier-node]
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+            - name: "Download benchmark binaries"
+              uses: actions/download-artifact@v4
+              with:
+                  name: binaries-benchmark
+                  path: target/release
+            - name: "Make binaries executable"
+              shell: bash
+              run: |
+                  chmod uog+x target/release/tanssi-node
+                  chmod uog+x target/release/tanssi-relay
+                  chmod uog+x target/release/tanssi-relay-prepare-worker
+                  chmod uog+x target/release/tanssi-relay-execute-worker
+                  chmod uog+x target/release/container-chain-simple-node
+                  chmod uog+x target/release/container-chain-frontier-node
+            - name: "Benchmark test ${{ matrix.binary }}"
+              shell: bash
+              run: |
+                BINARY=./target/release/${{ matrix.binary }} TEMPLATE_PATH=./benchmarking/frame-weight-runtime-template.hbs tools/benchmarking.sh "*" "*" --check
