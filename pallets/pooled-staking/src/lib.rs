@@ -332,8 +332,8 @@ pub mod pallet {
         type EligibleCandidatesBufferSize: Get<u32>;
         /// Additional filter for candidates to be eligible.
         type EligibleCandidatesFilter: IsCandidateEligible<Self::AccountId>;
-        
-        /// The maximum number of sessions for which a collator can be inactive 
+
+        /// The maximum number of sessions for which a collator can be inactive
         /// before being moved to the offline queue
         type MaxInactiveSessions: Get<u32>;
 
@@ -381,7 +381,17 @@ pub mod pallet {
     /// Switch to enable/disable marking offline feature.
     #[pallet::storage]
     pub type EnableMarkingOffline<T: Config> = StorageValue<_, bool, ValueQuery>;
-    
+
+    /// A list of offline collators
+    #[pallet::storage]
+    pub type OfflineCandidates<T: Config> = StorageValue<
+        _,
+        BoundedVec<
+            crate::candidate::EligibleCandidate<Candidate<T>, T::Balance>,
+            T::EligibleCandidatesBufferSize,
+        >,
+        ValueQuery,
+    >;
 
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -499,6 +509,10 @@ pub mod pallet {
             pending_leaving: T::Balance,
             released: T::Balance,
         },
+        /// Candidate temporarily leave the set of collator candidates without unbonding.
+        CandidateOffline { candidate: Candidate<T> },
+        /// Candidate rejoins the set of collator candidates.
+        CandidateOnline { candidate: Candidate<T> },
     }
 
     #[pallet::error]
@@ -518,6 +532,9 @@ pub mod pallet {
         RequestCannotBeExecuted(u16),
         SwapResultsInZeroShares,
         MarkingOfflineNotEnabled,
+        CandidateAlreadyOffline,
+        CandidateAlreadyOnline,
+        CandidateDoesNotExist,
     }
 
     impl<T: Config> From<tp_maths::OverflowError> for Error<T> {
@@ -655,6 +672,28 @@ pub mod pallet {
 
             Calls::<T>::swap_pool(candidate, delegator, source_pool, amount)
         }
+
+        #[pallet::call_index(7)]
+        #[pallet::weight(T::WeightInfo::swap_pool())]
+        pub fn enable_marking_offline(origin: OriginFor<T>, value: bool) -> DispatchResult {
+            ensure_root(origin)?;
+            <EnableMarkingOffline<T>>::set(value);
+            Ok(())
+        }
+
+        #[pallet::call_index(8)]
+        #[pallet::weight(T::WeightInfo::swap_pool())]
+        pub fn set_offline(origin: OriginFor<T>) -> DispatchResult {
+            let collator = ensure_signed(origin)?;
+            Self::set_offline_inner(collator)
+        }
+
+        #[pallet::call_index(9)]
+        #[pallet::weight(T::WeightInfo::swap_pool())]
+        pub fn set_online(origin: OriginFor<T>) -> DispatchResult {
+            let collator = ensure_signed(origin)?;
+            Self::set_online_inner(collator)
+        }
     }
 
     impl<T: Config> Pallet<T> {
@@ -680,6 +719,55 @@ pub mod pallet {
             }
             .ok()
             .map(|x| x.0)
+        }
+
+        pub fn set_offline_inner(collator: Candidate<T>) -> DispatchResult {
+            ensure!(
+                <EnableMarkingOffline<T>>::get(),
+                Error::<T>::MarkingOfflineNotEnabled
+            );
+            let candidate = <SortedEligibleCandidates<T>>::get()
+                .into_iter()
+                .find(|c| c.candidate == collator.clone())
+                .ok_or(Error::<T>::CandidateDoesNotExist)?;
+
+            let _ = <SortedEligibleCandidates<T>>::try_mutate(|candidates| -> DispatchResult {
+                candidates
+                    .to_vec()
+                    .retain(|c| c.candidate != collator.clone());
+                Ok(())
+            })?;
+
+            let _ = <OfflineCandidates<T>>::try_mutate(|offline_candidates| {
+                offline_candidates.try_push(candidate)
+            });
+
+            Self::deposit_event(Event::<T>::CandidateOffline {
+                candidate: collator,
+            });
+            Ok(())
+        }
+        pub fn set_online_inner(collator: Candidate<T>) -> DispatchResult {
+            let offline_candidate = <OfflineCandidates<T>>::get()
+                .into_iter()
+                .find(|c| c.candidate == collator.clone())
+                .ok_or(Error::<T>::CandidateDoesNotExist)?;
+
+            let _ = <OfflineCandidates<T>>::try_mutate(|offline_candidates| -> DispatchResult {
+                offline_candidates
+                    .to_vec()
+                    .retain(|c| c.candidate != collator.clone());
+                Ok(())
+            })?;
+
+            let _ = <SortedEligibleCandidates<T>>::try_mutate(|eligible_candidates| {
+                eligible_candidates.try_push(offline_candidate)
+            });
+
+            Self::deposit_event(Event::<T>::CandidateOnline {
+                candidate: collator,
+            });
+            Ok(())
         }
     }
 
