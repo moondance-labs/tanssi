@@ -28,13 +28,14 @@
       - [2.2.5 Add `Call`](#225-add-call)
       - [2.2.6 Complete Counter Pallet](#226-complete-counter-pallet)
       - [2.2.7 Compile Counter Pallet](#227-compile-counter-pallet)
-    - [2.3 Add a Runtime for Testing the Counter Pallet](#23-add-a-runtime-for-testing-the-counter-pallet)
-      - [2.3.1 Setup Test - Create Runtime](#231-setup-test---create-runtime)
-      - [2.3.2 Add imports](#232-add-imports)
-      - [2.3.3 Contruct Runtime macro](#233-contruct-runtime-macro)
-      - [2.3.4 Implement Runtime](#234-implement-runtime)
-      - [2.3.5 Create a utils functions](#235-create-a-utils-functions)
-      - [2.3.6 Complete Counter Pallet](#236-complete-counter-pallet)
+    - [3 Testing a new Pallet](#3-testing-a-new-pallet)
+      - [3.0 Setup a Runtime for Testing the Counter Pallet](#30-setup-a-runtime-for-testing-the-counter-pallet)
+      - [3.1 Setup Test - Create Runtime](#31-setup-test---create-runtime)
+      - [3.2 Add imports](#32-add-imports)
+      - [3.3 Contruct Runtime macro](#33-contruct-runtime-macro)
+      - [3.4 Implement Runtime](#34-implement-runtime)
+      - [3.5 Create a utils functions](#35-create-a-utils-functions)
+      - [3.6 Complete Counter Pallet](#36-complete-counter-pallet)
       - [2.3.7 Compile mock](#237-compile-mock)
     - [2.4 Write Tests](#24-write-tests)
       - [2.4.1 Add imports](#241-add-imports)
@@ -44,7 +45,11 @@
       - [2.4.5 Test if `get_value` fails](#245-test-if-get_value-fails)
       - [2.3.6 Complete Counter Test](#236-complete-counter-test)
       - [2.4.7 Run Tests](#247-run-tests)
-    - [2.4 Create Benchmarks for Counter Pallet](#24-create-benchmarks-for-counter-pallet)
+    - [2.5 Create Benchmarks for Counter Pallet](#25-create-benchmarks-for-counter-pallet)
+      - [2.4.1 Create `benchmarking.rs`](#241-create-benchmarkingrs)
+      - [2.4.2 Update `Cargo.toml`](#242-update-cargotoml)
+      - [2.4.3 Update `lib.rs`](#243-update-librs)
+      - [2.4.4 Run Benchmarks](#244-run-benchmarks)
   - [5. Add Pallet into Runtime](#5-add-pallet-into-runtime)
     - [5.0 Add Pallet in `Cargo.toml`](#50-add-pallet-in-cargotoml)
     - [5.1 Import Pallet](#51-import-pallet)
@@ -409,16 +414,18 @@ pub mod pallet {
 cargo b -p counter-pallet -r
 ```
 
-### 2.3 Add a Runtime for Testing the Counter Pallet
+### 3 Testing a new Pallet
+
+#### 3.0 Setup a Runtime for Testing the Counter Pallet
 
 In this section, we'll set up the test environment and write the unit tests to check the functionality of your pallet.
 
-#### 2.3.1 Setup Test - Create Runtime
+#### 3.1 Setup Test - Create Runtime
 
 > [!IMPORTANT]
 > We need to set up an environment that simulates the runtime, so we use `mock.rs`
 
-#### 2.3.2 Add imports
+#### 3.2 Add imports
 
 ```rust
 use crate::pallet as counter_pallet;
@@ -428,7 +435,7 @@ use frame_system::mocking::MockBlock;
 use sp_runtime::BuildStorage;
 ```
 
-#### 2.3.3 Contruct Runtime macro
+#### 3.3 Contruct Runtime macro
 
 ```rust
 construct_runtime!(
@@ -440,7 +447,7 @@ construct_runtime!(
 );
 ```
 
-#### 2.3.4 Implement Runtime
+#### 3.4 Implement Runtime
 
 ```rust
 #[derive_impl(frame_system::config_preludes::TestDefaultConfig)]
@@ -456,7 +463,7 @@ impl counter_pallet::Config for Runtime {
 }
 ```
 
-#### 2.3.5 Create a utils functions
+#### 3.5 Create a utils functions
 
 ```rust
 /// Auxiliary function to create the test environment with the initial state.
@@ -474,7 +481,7 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 }
 ```
 
-#### 2.3.6 Complete Counter Pallet
+#### 3.6 Complete Counter Pallet
 
 ```rust
 //! # Mock Runtime for Testing
@@ -814,22 +821,81 @@ fn get_value_fails_when_no_value_set() {
 cargo t -p counter-pallet -r
 ```
 
-### 2.4 Create Benchmarks for Counter Pallet
+### 2.5 Create Benchmarks for Counter Pallet
+
+> [!IMPORTANT]
+> Benchmarks are essential for determining the extrinsics weights that will be used in the real runtime.
+
+#### 2.4.1 Create `benchmarking.rs`
 
 Create `benchmarks.rs`:
 
 ```rust
-#[benchmarks]
-mod benchmarks {
-    use super::*;
+#![cfg(feature = "runtime-benchmarks")]
 
-    #[benchmark]
-    fn set_value() {
+use super::*;
+use frame_benchmarking::{benchmarks, impl_benchmark_test_suite, whitelisted_caller};
+use frame_system::RawOrigin;
+
+benchmarks! {
+    set_value {
         let value = 100u32;
-        #[extrinsic_call]
-        _(Origin::signed(caller), value);
+        let caller: T::AccountId = whitelisted_caller();
+    }: _(RawOrigin::Signed(caller), value)
+    verify {
+        assert!(Values::<T>::contains_key(&caller));
+    }
+
+    get_value_existing {
+        let caller: T::AccountId = whitelisted_caller();
+        Values::<T>::insert(&caller, 100u32);
+    }: _(RawOrigin::Signed(caller.clone()), Some(caller.clone()))
+    verify {
+        // Verificação implícita pelo sucesso da chamada
+    }
+
+    get_value_nonexistent {
+        let caller: T::AccountId = whitelisted_caller();
+    }: _(RawOrigin::Signed(caller.clone()), None)
+    verify {
+        // Verificação implícita pelo tratamento de erro
     }
 }
+
+impl_benchmark_test_suite!(
+    Pallet,
+    crate::mock::new_test_ext(),
+    crate::mock::Runtime,
+); 
+```
+
+#### 2.4.2 Update `Cargo.toml`
+
+```toml
+[dependencies]
+frame-benchmarking = { workspace = true, optional = true }
+
+[features]
+runtime-benchmarks = [
+  "frame-benchmarking",
+  "frame-support/runtime-benchmarks",
+  "frame-system/runtime-benchmarks",
+]
+```
+
+#### 2.4.3 Update `lib.rs`
+
+```rust
+// ...
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
+// ...
+```
+
+#### 2.4.4 Run Benchmarks
+
+```bash
+cargo test -p counter-pallet --features runtime-benchmarks -r
 ```
 
 ## 5. Add Pallet into Runtime
