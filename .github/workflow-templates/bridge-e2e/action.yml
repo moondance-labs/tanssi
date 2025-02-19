@@ -10,6 +10,8 @@ runs:
       id: setup_g_plusplus
       run: |
         g++ --version
+    - name: Install Protoc
+      uses: arduino/setup-protoc@v3
     - name: Check protoc
       shell: bash
       id: check_proto_c
