@@ -116,7 +116,7 @@ jobs:
             - name: Cargo build
               uses: ./.github/workflow-templates/cargo-build
               with:
-                features: "fast-runtime, runtime-benchmarks"
+                features: "fast-runtime,runtime-benchmarks"
             - name: "Benchmark tests dancelight"
               shell: bash
               run: |
