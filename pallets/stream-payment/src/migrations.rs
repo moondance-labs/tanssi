@@ -20,8 +20,9 @@ use frame_support::pallet_prelude::Weight;
 use frame_support::traits::Get;
 use pallet_migrations::Migration;
 use parity_scale_codec::{Decode, Encode};
-use sp_std::vec;
-use sp_std::vec::Vec;
+
+#[cfg(feature = "try-runtime")]
+use sp_std::{vec, vec::Vec};
 
 #[derive(Encode, Decode, Clone)]
 pub struct OldStream<AccountId, Unit, AssetId, Balance> {
