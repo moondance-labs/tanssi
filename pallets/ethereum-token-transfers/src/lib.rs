@@ -98,7 +98,9 @@ pub mod pallet {
     #[pallet::config]
     pub trait Config: frame_system::Config {
         /// Overarching event type.
-        type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
+        type RuntimeEvent: From<Event<Self>>
+            + IsType<<Self as frame_system::Config>::RuntimeEvent>
+            + TryInto<Event<Self>>;
 
         /// Currency to handle fees and internal native transfers.
         type Currency: fungible::Inspect<Self::AccountId, Balance: From<u128>>
