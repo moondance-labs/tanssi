@@ -248,10 +248,11 @@ where
                 ..
             })) => {
                 let token_location = TokenLocationReanchored::get();
-                let expected_token_id =
-                    EthereumSystem::convert_back(&token_location).unwrap_or_default();
 
-                return token_id == expected_token_id;
+                if let Some(expected_token_id) = EthereumSystem::convert_back(&token_location) {
+                    return token_id == expected_token_id;
+                }
+                return false;
             }
             _ => false,
         }

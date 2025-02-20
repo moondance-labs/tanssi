@@ -25,14 +25,12 @@ use {
     },
     alloy_sol_types::SolEvent,
     frame_support::{assert_noop, assert_ok},
-    frame_support::{assert_noop, assert_ok},
     hex_literal::hex,
     parity_scale_codec::Encode,
     snowbridge_core::{
         inbound::{Log, Message},
         AgentId, Channel, ChannelId, ParaId,
     },
-    snowbridge_core::{AgentId, Channel, ChannelId, ParaId},
     snowbridge_router_primitives::inbound::{
         envelope::{Envelope, OutboundMessageAccepted},
         Command, Destination, MessageProcessor, MessageV1, VersionedXcmMessage,
@@ -439,10 +437,23 @@ fn receive_native_tokens_from_eth_happy_path() {
                 para_id
             ));
 
+            let token_location: VersionedLocation = Location::here().into();
+
+            assert_ok!(EthereumSystem::register_token(
+                root_origin(),
+                Box::new(token_location),
+                snowbridge_core::AssetMetadata {
+                    name: "dance".as_bytes().to_vec().try_into().unwrap(),
+                    symbol: "dance".as_bytes().to_vec().try_into().unwrap(),
+                    decimals: 12,
+                }
+            ));
+
+            let token_id = EthereumSystem::convert_back(&TokenLocationReanchored::get()).unwrap();
             let payload = VersionedXcmMessage::V1(MessageV1 {
                 chain_id: 1,
                 command: Command::SendNativeToken {
-                    token_id: Default::default(),
+                    token_id,
                     destination: Destination::AccountId32 {
                         id: AccountId::from(BOB).into(),
                     },
