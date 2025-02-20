@@ -26,9 +26,10 @@ use tp_bridge::symbiotic_message_processor::SymbioticMessageProcessor;
 use {
     crate::{
         parameter_types, weights, xcm_config, AggregateMessageOrigin, Balance, Balances,
-        EthereumInboundQueue, EthereumOutboundQueue, EthereumSystem, FixedU128,
-        GetAggregateMessageOrigin, Keccak256, MessageQueue, OutboundMessageCommitmentRecorder,
-        Runtime, RuntimeEvent, TransactionByteFee, TreasuryAccount, WeightToFee, UNITS,
+        EthereumInboundQueue, EthereumOutboundQueue, EthereumSovereignAccount, EthereumSystem,
+        FixedU128, GetAggregateMessageOrigin, Keccak256, MessageQueue,
+        OutboundMessageCommitmentRecorder, Runtime, RuntimeEvent, TokenLocationReanchored,
+        TransactionByteFee, TreasuryAccount, WeightToFee, UNITS,
     },
     frame_support::weights::ConstantMultiplier,
     pallet_xcm::EnsureXcm,
@@ -36,7 +37,7 @@ use {
     snowbridge_core::{gwei, meth, PricingParameters, Rewards},
     snowbridge_pallet_outbound_queue::OnNewCommitment,
     sp_core::{ConstU32, ConstU8, H160, H256},
-    tp_bridge::{DoNothingConvertMessage, DoNothingRouter},
+    tp_bridge::{DoNothingConvertMessage, DoNothingRouter, EthereumSystemHandler},
 };
 
 // Ethereum Bridge
@@ -181,6 +182,20 @@ impl snowbridge_pallet_system::Config for Runtime {
     type EthereumLocation =
         dancelight_runtime_constants::snowbridge::EthereumLocationForParaIdBenchmarks;
     type WeightInfo = crate::weights::snowbridge_pallet_system::SubstrateWeight<Runtime>;
+}
+
+impl pallet_ethereum_token_transfers::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type Currency = Balances;
+    type OutboundQueue = EthereumOutboundQueue;
+    type EthereumSystemHandler = EthereumSystemHandler<Runtime>;
+    type EthereumSovereignAccount = EthereumSovereignAccount;
+    type FeesAccount = TreasuryAccount;
+    type TokenLocationReanchored = TokenLocationReanchored;
+    type TokenIdFromLocation = EthereumSystem;
+    #[cfg(feature = "runtime-benchmarks")]
+    type BenchmarkHelper = tp_bridge::EthereumTokenTransfersBenchHelper<Runtime>;
+    type WeightInfo = crate::weights::pallet_ethereum_token_transfers::SubstrateWeight<Runtime>;
 }
 
 #[cfg(feature = "runtime-benchmarks")]

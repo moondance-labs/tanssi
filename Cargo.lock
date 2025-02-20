@@ -3409,6 +3409,7 @@ dependencies = [
  "pallet-data-preservers",
  "pallet-democracy",
  "pallet-elections-phragmen",
+ "pallet-ethereum-token-transfers",
  "pallet-external-validator-slashes",
  "pallet-external-validators",
  "pallet-external-validators-rewards",
@@ -9364,6 +9365,33 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-version",
+]
+
+[[package]]
+name = "pallet-ethereum-token-transfers"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "pallet-balances",
+ "pallet-session",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "polkadot-primitives",
+ "polkadot-runtime-parachains",
+ "scale-info",
+ "snowbridge-core",
+ "snowbridge-outbound-queue-merkle-tree",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-staking",
+ "sp-std",
+ "staging-xcm",
+ "tp-bridge",
+ "tp-traits",
 ]
 
 [[package]]
@@ -18869,6 +18897,7 @@ dependencies = [
  "snowbridge-beacon-primitives",
  "snowbridge-core",
  "snowbridge-pallet-outbound-queue",
+ "snowbridge-pallet-system",
  "snowbridge-router-primitives",
  "sp-core",
  "sp-runtime",
