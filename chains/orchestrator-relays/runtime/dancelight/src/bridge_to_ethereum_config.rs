@@ -247,7 +247,7 @@ where
                 command: Command::SendNativeToken { token_id, .. },
                 ..
             })) => {
-                let token_location = TokenLocationReanchored::get();
+                let token_location = T::TokenLocationReanchored::get();
 
                 if let Some(expected_token_id) = EthereumSystem::convert_back(&token_location) {
                     return token_id == expected_token_id;
