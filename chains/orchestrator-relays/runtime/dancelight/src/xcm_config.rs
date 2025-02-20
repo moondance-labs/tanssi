@@ -18,9 +18,9 @@
 
 use {
     super::{
-        parachains_origin, weights, AccountId, AllPalletsWithSystem, Balances, Dmp, Fellows,
-        ParaId, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin, TransactionByteFee, Treasury,
-        WeightToFee, XcmPallet,
+        parachains_origin, weights, weights::xcm::XcmWeight, AccountId, AllPalletsWithSystem,
+        Balances, Dmp, Fellows, ParaId, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin,
+        TransactionByteFee, Treasury, WeightToFee, XcmPallet,
     },
     crate::governance::StakingAdmin,
     dancelight_runtime_constants::{currency::CENTS, system_parachain::*},
@@ -48,8 +48,8 @@ use {
         FrameTransactionalProcessor, FungibleAdapter, HashedDescription, IsChildSystemParachain,
         IsConcrete, MintLocation, OriginToPluralityVoice, SendXcmFeeToAccount,
         SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation,
-        TakeWeightCredit, TrailingSetTopicAsId, UsingComponents, WithComputedOrigin,
-        WithUniqueTopic, XcmFeeManagerFromComponents,
+        TakeWeightCredit, TrailingSetTopicAsId, UsingComponents, WeightInfoBounds,
+        WithComputedOrigin, WithUniqueTopic, XcmFeeManagerFromComponents,
     },
     xcm_executor::XcmExecutor,
 };
@@ -190,7 +190,7 @@ pub type Barrier = TrailingSetTopicAsId<(
 /// Locations that will not be charged fees in the executor, neither for execution nor delivery.
 /// We only waive fees for system functions, which these locations represent.
 pub type WaivedLocations = Equals<RootLocation>;
-pub type XcmWeigher = FixedWeightBounds<BaseXcmWeight, RuntimeCall, MaxInstructions>;
+pub type XcmWeigher = WeightInfoBounds<XcmWeight<RuntimeCall>, RuntimeCall, MaxInstructions>;
 
 pub struct XcmConfig;
 impl xcm_executor::Config for XcmConfig {
