@@ -22,6 +22,8 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+extern crate alloc;
+
 use cumulus_pallet_parachain_system::RelayNumberMonotonicallyIncreases;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
@@ -1245,7 +1247,7 @@ impl_runtime_apis! {
 
         fn dispatch_benchmark(
             config: frame_benchmarking::BenchmarkConfig,
-        ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
+        ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, alloc::string::String> {
             use frame_benchmarking::{BenchmarkBatch, Benchmarking, BenchmarkError};
             use sp_core::storage::TrackedStorageKey;
             use staging_xcm::latest::prelude::*;

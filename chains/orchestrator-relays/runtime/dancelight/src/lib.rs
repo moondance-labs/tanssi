@@ -20,6 +20,8 @@
 // `construct_runtime!` does a lot of recursion and requires us to increase the limit.
 #![recursion_limit = "512"]
 
+extern crate alloc;
+
 use frame_support::storage::{with_storage_layer, with_transaction};
 // Fix compile error in impl_runtime_weights! macro
 use {
@@ -3064,7 +3066,7 @@ sp_api::impl_runtime_apis! {
             config: frame_benchmarking::BenchmarkConfig,
         ) -> Result<
             Vec<frame_benchmarking::BenchmarkBatch>,
-            sp_runtime::RuntimeString,
+            alloc::string::String,
         > {
             use frame_support::traits::WhitelistedStorageKeys;
             use frame_benchmarking::{Benchmarking, BenchmarkBatch, BenchmarkError};

@@ -275,8 +275,7 @@ where
     }
 
     fn pay_fees(_asset: &Asset) -> Weight {
-        //XcmGeneric::<Runtime>::pay_fees()
-        Weight::MAX
+        XcmGeneric::<Runtime>::pay_fees()
     }
 
     fn initiate_transfer(
@@ -299,17 +298,26 @@ where
             weight = weight.saturating_add(extra);
         }
         weight
-         */
+        */
         Weight::MAX
     }
 
-    fn execute_with_origin(descendant_origin: &Option<InteriorLocation>, xcm: &Xcm<RuntimeCall>) -> Weight {
-        //XcmGeneric::<Runtime>::execute_with_origin()
-        Weight::MAX
+    fn execute_with_origin(
+        descendant_origin: &Option<InteriorLocation>,
+        xcm: &Xcm<RuntimeCall>,
+    ) -> Weight {
+        XcmGeneric::<Runtime>::execute_with_origin()
     }
 
     fn set_hints(hints: &BoundedVec<Hint, HintNumVariants>) -> Weight {
-        //XcmGeneric::<Runtime>::set_hints()
-        Weight::MAX
+        let mut weight = Weight::zero();
+        for hint in hints {
+            match hint {
+                AssetClaimer { .. } => {
+                    weight = weight.saturating_add(XcmGeneric::<Runtime>::asset_claimer());
+                },
+            }
+        }
+        weight
     }
 }

@@ -22,6 +22,8 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+extern crate alloc;
+
 use frame_support::storage::{with_storage_layer, with_transaction};
 use frame_support::traits::{ExistenceRequirement, WithdrawReasons};
 #[cfg(feature = "std")]
@@ -1937,7 +1939,7 @@ impl_runtime_apis! {
 
         fn dispatch_benchmark(
             config: frame_benchmarking::BenchmarkConfig,
-        ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
+        ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, alloc::string::String> {
             use frame_benchmarking::{BenchmarkBatch, Benchmarking, BenchmarkError};
             use sp_core::storage::TrackedStorageKey;
 
