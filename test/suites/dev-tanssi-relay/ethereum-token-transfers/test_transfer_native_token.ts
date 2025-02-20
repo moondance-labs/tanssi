@@ -184,9 +184,7 @@ describeSuite({
 
                 await context.createBlock([tx2], { allowFailures: false });
 
-                const slot = 64;
-
-                await getSupportedAssetStorageKey(context, slot, alice);
+                await setFinalizedBeaconState(context, initialCheckpoint.header.slot, alice);
 
                 const event_log = {
                     address: "0xeda338e4dc46038493b885327842fd3e301cab39",
@@ -217,7 +215,7 @@ describeSuite({
                     receipt_proof: [[], [receiptShortNode]],
                     execution_proof: {
                         header: {
-                            slot: slot,
+                            slot: initialCheckpoint.header.slot,
                             proposer_index: 4,
                             parent_root: "0x6545b47a614a1dd4cad042a0cdbbf5be347e8ffcdc02c6c64540d5153acebeef",
                             state_root: "0xb62ac34a8cb82497be9542fe2114410c9f6021855b766015406101a1f3d86434",
@@ -290,8 +288,7 @@ describeSuite({
     },
 });
 
-// TODO: change my name
-async function getSupportedAssetStorageKey(context: DevModeContext, slot: number, sudoAccount) {
+async function setFinalizedBeaconState(context: DevModeContext, slot: number, sudoAccount) {
     const module = xxhashAsU8a(new TextEncoder().encode("EthereumBeaconClient"), 128);
     const method = xxhashAsU8a(new TextEncoder().encode("FinalizedBeaconState"), 128);
     const key = "0x61a5108e3fa264956cec30d42aaaf12d5db5ceeb4c008995703e8e81f32380e9";
