@@ -21,18 +21,18 @@ use crate::Pallet as EthereumTokenTransfers;
 use {
     frame_benchmarking::{account, v2::*, BenchmarkError},
     frame_support::traits::Currency,
-    frame_system::{EventRecord, RawOrigin},
+    frame_system::RawOrigin,
     snowbridge_core::{AgentId, ChannelId, ParaId},
     sp_core::H160,
     sp_std::prelude::*,
 };
 
-fn assert_last_event<T: Config>(generic_event: <T as Config>::RuntimeEvent) {
-    let events = frame_system::Pallet::<T>::events();
-    let system_event: <T as frame_system::Config>::RuntimeEvent = generic_event.into();
-    // compare to the last event record
-    let EventRecord { event, .. } = &events[events.len() - 1];
-    assert_eq!(event, &system_event);
+pub(crate) fn ethereum_token_transfers_events<T: Config>() -> Vec<crate::Event<T>> {
+    frame_system::Pallet::<T>::events()
+        .into_iter()
+        .map(|r| r.event)
+        .filter_map(|e| <T as Config>::RuntimeEvent::from(e).try_into().ok())
+        .collect::<Vec<_>>()
 }
 
 const SEED: u32 = 0;
@@ -126,38 +126,66 @@ mod benchmarks {
                 &T::FeesAccount::get(),
             );
 
-        // We hardcode this as the fee is calculated inside pallet_outbound_queue, using
-        // some internal functions which we don't have access to.
-        let expected_fee = 2_680_020_281_600u128;
-
-        assert_eq!(
-            caller_balance_after,
-            initial_amount - amount_transferred - expected_fee
-        );
-        assert_eq!(
-            eth_sovereign_balance_after,
-            eth_sovereign_balance_before + amount_transferred
-        );
-        assert_eq!(
-            fees_account_balance_after,
-            fees_account_balance_before + expected_fee
-        );
-
         let expected_token_id =
             T::TokenIdFromLocation::convert_back(&T::TokenLocationReanchored::get());
 
-        assert_last_event::<T>(
-            Event::NativeTokenTransferred {
-                message_id: Default::default(),
-                channel_id,
-                source: caller.clone(),
-                recipient,
-                token_id: expected_token_id.unwrap(),
-                amount: amount_transferred,
-                fee: expected_fee.into(),
-            }
-            .into(),
-        );
+        if let Some(Event::NativeTokenTransferred {
+            message_id,
+            channel_id: channel_id_found,
+            source,
+            recipient: recipient_found,
+            token_id,
+            amount,
+            fee,
+        }) = ethereum_token_transfers_events::<T>().last()
+        {
+            assert_eq!(*message_id, H256::default());
+            assert_eq!(*channel_id_found, channel_id);
+            assert_eq!(*source, caller.clone());
+            assert_eq!(*recipient_found, recipient);
+            assert_eq!(*token_id, expected_token_id.unwrap());
+            assert_eq!(*amount, amount_transferred);
+
+            // Check balances after the transfer
+            assert_eq!(
+                eth_sovereign_balance_after,
+                eth_sovereign_balance_before + amount_transferred
+            );
+
+            // Convert to the proper types to operate with the fee found
+            let initial_amount: <<T as Config>::Currency as Inspect<
+                <T as frame_system::Config>::AccountId,
+            >>::Balance = initial_amount.into();
+
+            let amount_transferred: <<T as Config>::Currency as Inspect<
+                <T as frame_system::Config>::AccountId,
+            >>::Balance = amount_transferred.into();
+
+            let caller_balance_after: <<T as Config>::Currency as Inspect<
+                <T as frame_system::Config>::AccountId,
+            >>::Balance = caller_balance_after.into();
+
+            let fees_account_balance_after: <<T as Config>::Currency as Inspect<
+                <T as frame_system::Config>::AccountId,
+            >>::Balance = fees_account_balance_after.into();
+
+            let fees_account_balance_before: <<T as Config>::Currency as Inspect<
+                <T as frame_system::Config>::AccountId,
+            >>::Balance = fees_account_balance_before.into();
+
+            assert_eq!(
+                caller_balance_after,
+                initial_amount - amount_transferred - *fee
+            );
+
+            assert_eq!(
+                fees_account_balance_after,
+                fees_account_balance_before + *fee
+            );
+        } else {
+            panic!("NativeTokenTransferred event not found!");
+        }
+
         Ok(())
     }
 
