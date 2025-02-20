@@ -44,10 +44,10 @@ use {
     },
     cumulus_client_consensus_proposer::ProposerInterface,
     cumulus_primitives_core::{
-        relay_chain::{AsyncBackingParams, CoreIndex, CoreState, Hash as PHash},
+        relay_chain::{AsyncBackingParams, CoreIndex, Hash as PHash},
         PersistedValidationData,
     },
-    cumulus_relay_chain_interface::RelayChainInterface,
+    cumulus_relay_chain_interface::{CoreState, RelayChainInterface},
     futures::{channel::oneshot, prelude::*},
     nimbus_primitives::NimbusId,
     pallet_xcm_core_buyer_runtime_api::{BuyingError, XCMCoreBuyerApi},

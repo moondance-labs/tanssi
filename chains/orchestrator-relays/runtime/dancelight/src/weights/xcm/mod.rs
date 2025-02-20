@@ -17,6 +17,8 @@
 mod pallet_xcm_benchmarks_fungible;
 mod pallet_xcm_benchmarks_generic;
 
+use frame_support::BoundedVec;
+use xcm::latest::AssetTransferFilter;
 use {
     crate::Runtime,
     frame_support::weights::Weight,
@@ -125,7 +127,7 @@ where
     }
     fn transact(
         _origin_type: &OriginKind,
-        _require_weight_at_most: &Weight,
+        _require_weight_at_most: &Option<Weight>,
         _call: &DoubleEncoded<RuntimeCall>,
     ) -> XCMWeight {
         XcmGeneric::<Runtime>::transact()
@@ -270,5 +272,44 @@ where
     }
     fn unpaid_execution(_: &WeightLimit, _: &Option<Location>) -> Weight {
         XcmGeneric::<Runtime>::unpaid_execution()
+    }
+
+    fn pay_fees(_asset: &Asset) -> Weight {
+        //XcmGeneric::<Runtime>::pay_fees()
+        Weight::MAX
+    }
+
+    fn initiate_transfer(
+        _dest: &Location,
+        remote_fees: &Option<AssetTransferFilter>,
+        _preserve_origin: &bool,
+        assets: &Vec<AssetTransferFilter>,
+        _xcm: &Xcm<()>,
+    ) -> Weight {
+        /*
+        let mut weight = if let Some(remote_fees) = remote_fees {
+            let fees = remote_fees.inner();
+            fees.weigh_assets(XcmBalancesWeight::<Runtime>::initiate_transfer())
+        } else {
+            Weight::zero()
+        };
+        for asset_filter in assets {
+            let assets = asset_filter.inner();
+            let extra = assets.weigh_assets(XcmBalancesWeight::<Runtime>::initiate_transfer());
+            weight = weight.saturating_add(extra);
+        }
+        weight
+         */
+        Weight::MAX
+    }
+
+    fn execute_with_origin(descendant_origin: &Option<InteriorLocation>, xcm: &Xcm<RuntimeCall>) -> Weight {
+        //XcmGeneric::<Runtime>::execute_with_origin()
+        Weight::MAX
+    }
+
+    fn set_hints(hints: &BoundedVec<Hint, HintNumVariants>) -> Weight {
+        //XcmGeneric::<Runtime>::set_hints()
+        Weight::MAX
     }
 }

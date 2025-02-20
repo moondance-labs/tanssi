@@ -1004,8 +1004,6 @@ where
     <Runtime as pallet_balances::Config>::RuntimeHoldReason:
         From<pallet_pooled_staking::HoldReason>,
     Runtime: pallet_foreign_asset_creator::Config,
-    <Runtime as pallet_foreign_asset_creator::Config>::ForeignAsset:
-        TryFrom<staging_xcm::v3::MultiLocation>,
     <Runtime as pallet_balances::Config>::RuntimeHoldReason:
         From<pallet_registrar::HoldReason>,
     Runtime::AccountId: From<[u8; 32]>,

@@ -11,8 +11,8 @@ import type { ITuple } from "@polkadot/types-codec/types";
 import type { AccountId32, H256 } from "@polkadot/types/interfaces/runtime";
 import type {
     FlashboxRuntimeProxyType,
-    FrameSupportDispatchDispatchInfo,
     FrameSupportTokensMiscBalanceStatus,
+    FrameSystemDispatchEventInfo,
     PalletMultisigTimepoint,
     PalletStreamPaymentDepositChange,
     PalletStreamPaymentParty,
@@ -293,6 +293,14 @@ declare module "@polkadot/api-base/types/events" {
              **/
             RegistrarAdded: AugmentedEvent<ApiType, [registrarIndex: u32], { registrarIndex: u32 }>;
             /**
+             * An account's sub-identities were set (in bulk).
+             **/
+            SubIdentitiesSet: AugmentedEvent<
+                ApiType,
+                [main: AccountId32, numberOfSubs: u32, newDeposit: u128],
+                { main: AccountId32; numberOfSubs: u32; newDeposit: u128 }
+            >;
+            /**
              * A sub-identity was added to an identity and the deposit paid.
              **/
             SubIdentityAdded: AugmentedEvent<
@@ -309,6 +317,14 @@ declare module "@polkadot/api-base/types/events" {
                 { sub: AccountId32; main: AccountId32; deposit: u128 }
             >;
             /**
+             * A given sub-account's associated name was changed by its super-identity.
+             **/
+            SubIdentityRenamed: AugmentedEvent<
+                ApiType,
+                [sub: AccountId32, main: AccountId32],
+                { sub: AccountId32; main: AccountId32 }
+            >;
+            /**
              * A sub-identity was cleared, and the given deposit repatriated from the
              * main identity account to the sub-identity account.
              **/
@@ -318,6 +334,10 @@ declare module "@polkadot/api-base/types/events" {
                 { sub: AccountId32; main: AccountId32; deposit: u128 }
             >;
             /**
+             * A username has been killed.
+             **/
+            UsernameKilled: AugmentedEvent<ApiType, [username: Bytes], { username: Bytes }>;
+            /**
              * A username was queued, but `who` must accept it prior to `expiration`.
              **/
             UsernameQueued: AugmentedEvent<
@@ -326,6 +346,10 @@ declare module "@polkadot/api-base/types/events" {
                 { who: AccountId32; username: Bytes; expiration: u32 }
             >;
             /**
+             * A username has been removed.
+             **/
+            UsernameRemoved: AugmentedEvent<ApiType, [username: Bytes], { username: Bytes }>;
+            /**
              * A username was set for `who`.
              **/
             UsernameSet: AugmentedEvent<
@@ -333,6 +357,10 @@ declare module "@polkadot/api-base/types/events" {
                 [who: AccountId32, username: Bytes],
                 { who: AccountId32; username: Bytes }
             >;
+            /**
+             * A username has been unbound.
+             **/
+            UsernameUnbound: AugmentedEvent<ApiType, [username: Bytes], { username: Bytes }>;
             /**
              * Generic event
              **/
@@ -445,52 +473,6 @@ declare module "@polkadot/api-base/types/events" {
              * Runtime upgrade started
              **/
             RuntimeUpgradeStarted: AugmentedEvent<ApiType, []>;
-            /**
-             * Generic event
-             **/
-            [key: string]: AugmentedEvent<ApiType>;
-        };
-        multiBlockMigrations: {
-            /**
-             * The set of historical migrations has been cleared.
-             **/
-            HistoricCleared: AugmentedEvent<ApiType, [nextCursor: Option<Bytes>], { nextCursor: Option<Bytes> }>;
-            /**
-             * A migration progressed.
-             **/
-            MigrationAdvanced: AugmentedEvent<ApiType, [index: u32, took: u32], { index: u32; took: u32 }>;
-            /**
-             * A Migration completed.
-             **/
-            MigrationCompleted: AugmentedEvent<ApiType, [index: u32, took: u32], { index: u32; took: u32 }>;
-            /**
-             * A Migration failed.
-             *
-             * This implies that the whole upgrade failed and governance intervention is required.
-             **/
-            MigrationFailed: AugmentedEvent<ApiType, [index: u32, took: u32], { index: u32; took: u32 }>;
-            /**
-             * A migration was skipped since it was already executed in the past.
-             **/
-            MigrationSkipped: AugmentedEvent<ApiType, [index: u32], { index: u32 }>;
-            /**
-             * The current runtime upgrade completed.
-             *
-             * This implies that all of its migrations completed successfully as well.
-             **/
-            UpgradeCompleted: AugmentedEvent<ApiType, []>;
-            /**
-             * Runtime upgrade failed.
-             *
-             * This is very bad and will require governance intervention.
-             **/
-            UpgradeFailed: AugmentedEvent<ApiType, []>;
-            /**
-             * A Runtime upgrade started.
-             *
-             * Its end is indicated by `UpgradeCompleted` or `UpgradeFailed`.
-             **/
-            UpgradeStarted: AugmentedEvent<ApiType, [migrations: u32], { migrations: u32 }>;
             /**
              * Generic event
              **/
@@ -840,16 +822,16 @@ declare module "@polkadot/api-base/types/events" {
              **/
             ExtrinsicFailed: AugmentedEvent<
                 ApiType,
-                [dispatchError: SpRuntimeDispatchError, dispatchInfo: FrameSupportDispatchDispatchInfo],
-                { dispatchError: SpRuntimeDispatchError; dispatchInfo: FrameSupportDispatchDispatchInfo }
+                [dispatchError: SpRuntimeDispatchError, dispatchInfo: FrameSystemDispatchEventInfo],
+                { dispatchError: SpRuntimeDispatchError; dispatchInfo: FrameSystemDispatchEventInfo }
             >;
             /**
              * An extrinsic completed successfully.
              **/
             ExtrinsicSuccess: AugmentedEvent<
                 ApiType,
-                [dispatchInfo: FrameSupportDispatchDispatchInfo],
-                { dispatchInfo: FrameSupportDispatchDispatchInfo }
+                [dispatchInfo: FrameSystemDispatchEventInfo],
+                { dispatchInfo: FrameSystemDispatchEventInfo }
             >;
             /**
              * An account was reaped.
