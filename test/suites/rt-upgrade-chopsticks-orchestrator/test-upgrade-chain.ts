@@ -1,3 +1,4 @@
+import "@tanssi/api-augment/dancelight";
 import { MoonwallContext, beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { generateKeyringPair } from "@moonwall/util";
 import { Keyring, type ApiPromise } from "@polkadot/api";
@@ -128,8 +129,22 @@ describeSuite({
                 const newSessionIndex = (await api.query.session.currentIndex()).toNumber();
                 expect(sessionChangeEvent.sessionIndex.toNumber()).toBe(newSessionIndex);
 
-                //  Dancelight does not have collatorAssignment events
-                if (specName !== "dancelight") {
+                if (specName === "dancelight") {
+                    const newPendingAssignmentEvent = blockEvents
+                        .filter(({ event }) => api.events.tanssiCollatorAssignment.NewPendingAssignment.is(event))
+                        .map(
+                            ({ event }) =>
+                                api.events.tanssiCollatorAssignment.NewPendingAssignment.is(event) && event.data
+                        )[0];
+                    expect(
+                        newPendingAssignmentEvent,
+                        "collatorAssignment.NewPendingAssignment event should be emitted on session change"
+                    ).toBeTruthy();
+                    expect(
+                        newPendingAssignmentEvent.targetSession.toNumber(),
+                        "Session index should be incremented"
+                    ).toBe(newSessionIndex + 1);
+                } else {
                     const newPendingAssignmentEvent = blockEvents
                         .filter(({ event }) => api.events.collatorAssignment.NewPendingAssignment.is(event))
                         .map(
