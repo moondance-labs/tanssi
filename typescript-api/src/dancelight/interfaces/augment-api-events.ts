@@ -57,6 +57,7 @@ import type {
     StagingXcmV4Response,
     StagingXcmV4TraitsOutcome,
     StagingXcmV4Xcm,
+    TpBridgeChannelInfo,
     TpBridgeCommand,
     TpTraitsFullRotationModes,
     XcmV3TraitsError,
@@ -456,7 +457,53 @@ declare module "@polkadot/api-base/types/events" {
              **/
             [key: string]: AugmentedEvent<ApiType>;
         };
+        ethereumTokenTransfers: {
+            /**
+             * Information for the channel was set properly.
+             **/
+            ChannelInfoSet: AugmentedEvent<
+                ApiType,
+                [channelInfo: TpBridgeChannelInfo],
+                { channelInfo: TpBridgeChannelInfo }
+            >;
+            /**
+             * Some native token was successfully transferred to Ethereum.
+             **/
+            NativeTokenTransferred: AugmentedEvent<
+                ApiType,
+                [
+                    messageId: H256,
+                    channelId: SnowbridgeCoreChannelId,
+                    source: AccountId32,
+                    recipient: H160,
+                    tokenId: H256,
+                    amount: u128,
+                    fee: u128,
+                ],
+                {
+                    messageId: H256;
+                    channelId: SnowbridgeCoreChannelId;
+                    source: AccountId32;
+                    recipient: H160;
+                    tokenId: H256;
+                    amount: u128;
+                    fee: u128;
+                }
+            >;
+            /**
+             * Generic event
+             **/
+            [key: string]: AugmentedEvent<ApiType>;
+        };
         externalValidators: {
+            /**
+             * External validators were set.
+             **/
+            ExternalValidatorsSet: AugmentedEvent<
+                ApiType,
+                [validators: Vec<AccountId32>, externalIndex: u64],
+                { validators: Vec<AccountId32>; externalIndex: u64 }
+            >;
             /**
              * A new force era mode was set.
              **/
