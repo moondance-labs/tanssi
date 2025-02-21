@@ -77,6 +77,7 @@ pub mod pallet {
         sp_runtime::{BoundedVec, Perbill},
         sp_std::vec::Vec,
         tp_maths::MulDiv,
+        tp_traits::GetSessionIndex,
     };
 
     /// A reason for this pallet placing a hold on funds.
@@ -90,6 +91,8 @@ pub mod pallet {
     pub type CreditOf<T> =
         fungible::Credit<<T as frame_system::Config>::AccountId, <T as Config>::Currency>;
     pub type Delegator<T> = <T as frame_system::Config>::AccountId;
+
+    pub type SessionIndex = u32;
 
     /// Key used by the `Pools` StorageDoubleMap, avoiding lots of maps.
     /// StorageDoubleMap first key is the account id of the candidate.
@@ -335,7 +338,11 @@ pub mod pallet {
 
         /// The maximum number of sessions for which a collator can be inactive
         /// before being moved to the offline queue
+        #[pallet::constant]
         type MaxInactiveSessions: Get<u32>;
+
+        /// Helper that returns the current session index.
+        type CurrentSessionIndex: GetSessionIndex<SessionIndex>;
 
         type WeightInfo: WeightInfo;
     }
@@ -391,6 +398,18 @@ pub mod pallet {
             T::EligibleCandidatesBufferSize,
         >,
         ValueQuery,
+    >;
+
+    /// A list of inactive collators for a session
+    #[pallet::storage]
+    pub type InactiveCollators<T: Config> = StorageDoubleMap<
+        _,
+        Twox64Concat,
+        SessionIndex,
+        Twox64Concat,
+        Candidate<T>,
+        (),
+        OptionQuery,
     >;
 
     #[pallet::event]
@@ -535,6 +554,7 @@ pub mod pallet {
         CandidateAlreadyOffline,
         CandidateAlreadyOnline,
         CandidateDoesNotExist,
+        CandidateCannotBeNotifiedAsInactive,
     }
 
     impl<T: Config> From<tp_maths::OverflowError> for Error<T> {
@@ -693,6 +713,32 @@ pub mod pallet {
         pub fn set_online(origin: OriginFor<T>) -> DispatchResult {
             let collator = ensure_signed(origin)?;
             Self::set_online_inner(collator)
+        }
+
+        #[pallet::call_index(10)]
+        #[pallet::weight(T::WeightInfo::swap_pool())]
+        pub fn notify_inactive_collator(
+            origin: OriginFor<T>,
+            collator: Candidate<T>,
+        ) -> DispatchResult {
+            ensure!(
+                <EnableMarkingOffline<T>>::get(),
+                Error::<T>::MarkingOfflineNotEnabled
+            );
+
+            ensure_signed(origin)?;
+
+            let current_session = T::CurrentSessionIndex::session_index();
+
+            for session_index in current_session
+                .saturating_sub(T::MaxInactiveSessions::get().into())
+                ..current_session.saturating_sub(1u32.into())
+            {
+                if !<InactiveCollators<T>>::contains_key(session_index, collator.clone()) {
+                    return Err(<Error<T>>::CandidateCannotBeNotifiedAsInactive.into());
+                }
+            }
+            Self::set_offline_inner(collator)
         }
     }
 

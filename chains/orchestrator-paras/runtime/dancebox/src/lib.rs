@@ -1659,6 +1659,8 @@ impl pallet_pooled_staking::Config for Runtime {
     type EligibleCandidatesBufferSize = ConstU32<100>;
     type EligibleCandidatesFilter = CandidateHasRegisteredKeys;
     type MaxInactiveSessions = ConstU32<10>;
+
+    type CurrentSessionIndex = CurrentSessionIndexGetter;
     type WeightInfo = weights::pallet_pooled_staking::SubstrateWeight<Runtime>;
 }
 

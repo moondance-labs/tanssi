@@ -151,6 +151,16 @@ impl pallet_balances::Config for Runtime {
 pub const SHARE_INIT: u128 = MEGA;
 pub const BLOCKS_TO_WAIT: u64 = 2;
 
+pub struct CurrentSessionIndexGetter;
+
+impl tp_traits::GetSessionIndex<u32> for CurrentSessionIndexGetter {
+    /// Returns current session index.
+    fn session_index() -> u32 {
+        // For tests, let 1 session be 5 blocks
+        (System::block_number() / 5) as u32
+    }
+}
+
 parameter_types! {
     pub const StakingAccount: u64 = ACCOUNT_STAKING;
     pub const InitialManualClaimShareValue: u128 = SHARE_INIT;
@@ -178,6 +188,7 @@ impl pallet_pooled_staking::Config for Runtime {
     type WeightInfo = ();
     type RuntimeHoldReason = RuntimeHoldReason;
     type MaxInactiveSessions = MaxInactiveSessions;
+    type CurrentSessionIndex = CurrentSessionIndexGetter;
 }
 
 pub trait PoolExt<T: crate::Config>: Pool<T> {
