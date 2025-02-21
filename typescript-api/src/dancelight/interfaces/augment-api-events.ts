@@ -57,6 +57,7 @@ import type {
     StagingXcmV5Response,
     StagingXcmV5TraitsOutcome,
     StagingXcmV5Xcm,
+    TpBridgeChannelInfo,
     TpBridgeCommand,
     TpTraitsFullRotationModes,
     XcmV5TraitsError,
@@ -450,6 +451,44 @@ declare module "@polkadot/api-base/types/events" {
                 ApiType,
                 [implAddress: H160, implCodeHash: H256, initializerParamsHash: Option<H256>],
                 { implAddress: H160; implCodeHash: H256; initializerParamsHash: Option<H256> }
+            >;
+            /**
+             * Generic event
+             **/
+            [key: string]: AugmentedEvent<ApiType>;
+        };
+        ethereumTokenTransfers: {
+            /**
+             * Information for the channel was set properly.
+             **/
+            ChannelInfoSet: AugmentedEvent<
+                ApiType,
+                [channelInfo: TpBridgeChannelInfo],
+                { channelInfo: TpBridgeChannelInfo }
+            >;
+            /**
+             * Some native token was successfully transferred to Ethereum.
+             **/
+            NativeTokenTransferred: AugmentedEvent<
+                ApiType,
+                [
+                    messageId: H256,
+                    channelId: SnowbridgeCoreChannelId,
+                    source: AccountId32,
+                    recipient: H160,
+                    tokenId: H256,
+                    amount: u128,
+                    fee: u128,
+                ],
+                {
+                    messageId: H256;
+                    channelId: SnowbridgeCoreChannelId;
+                    source: AccountId32;
+                    recipient: H160;
+                    tokenId: H256;
+                    amount: u128;
+                    fee: u128;
+                }
             >;
             /**
              * Generic event

@@ -114,6 +114,9 @@ import type {
     PalletDataPreserversProfile,
     PalletDataPreserversProfileMode,
     PalletDataPreserversRegisteredProfile,
+    PalletEthereumTokenTransfersCall,
+    PalletEthereumTokenTransfersError,
+    PalletEthereumTokenTransfersEvent,
     PalletExternalValidatorSlashesCall,
     PalletExternalValidatorSlashesError,
     PalletExternalValidatorSlashesEvent,
@@ -471,6 +474,7 @@ import type {
     StagingXcmV5Response,
     StagingXcmV5TraitsOutcome,
     StagingXcmV5Xcm,
+    TpBridgeChannelInfo,
     TpBridgeCommand,
     TpBridgeSlashData,
     TpTraitsActiveEraInfo,
@@ -620,6 +624,9 @@ declare module "@polkadot/types/types/registry" {
         PalletDataPreserversProfile: PalletDataPreserversProfile;
         PalletDataPreserversProfileMode: PalletDataPreserversProfileMode;
         PalletDataPreserversRegisteredProfile: PalletDataPreserversRegisteredProfile;
+        PalletEthereumTokenTransfersCall: PalletEthereumTokenTransfersCall;
+        PalletEthereumTokenTransfersError: PalletEthereumTokenTransfersError;
+        PalletEthereumTokenTransfersEvent: PalletEthereumTokenTransfersEvent;
         PalletExternalValidatorSlashesCall: PalletExternalValidatorSlashesCall;
         PalletExternalValidatorSlashesError: PalletExternalValidatorSlashesError;
         PalletExternalValidatorSlashesEvent: PalletExternalValidatorSlashesEvent;
@@ -977,6 +984,7 @@ declare module "@polkadot/types/types/registry" {
         StagingXcmV5Response: StagingXcmV5Response;
         StagingXcmV5TraitsOutcome: StagingXcmV5TraitsOutcome;
         StagingXcmV5Xcm: StagingXcmV5Xcm;
+        TpBridgeChannelInfo: TpBridgeChannelInfo;
         TpBridgeCommand: TpBridgeCommand;
         TpBridgeSlashData: TpBridgeSlashData;
         TpTraitsActiveEraInfo: TpTraitsActiveEraInfo;

@@ -142,8 +142,12 @@ import type {
     PalletMessageQueueEvent,
     PalletMessageQueueNeighbours,
     PalletMessageQueuePage,
+    PalletMigrationsActiveCursor,
+    PalletMigrationsCall,
     PalletMigrationsError,
     PalletMigrationsEvent,
+    PalletMigrationsHistoricCleanupSelector,
+    PalletMigrationsMigrationCursor,
     PalletMultisigCall,
     PalletMultisigError,
     PalletMultisigEvent,
@@ -460,8 +464,12 @@ declare module "@polkadot/types/types/registry" {
         PalletMessageQueueEvent: PalletMessageQueueEvent;
         PalletMessageQueueNeighbours: PalletMessageQueueNeighbours;
         PalletMessageQueuePage: PalletMessageQueuePage;
+        PalletMigrationsActiveCursor: PalletMigrationsActiveCursor;
+        PalletMigrationsCall: PalletMigrationsCall;
         PalletMigrationsError: PalletMigrationsError;
         PalletMigrationsEvent: PalletMigrationsEvent;
+        PalletMigrationsHistoricCleanupSelector: PalletMigrationsHistoricCleanupSelector;
+        PalletMigrationsMigrationCursor: PalletMigrationsMigrationCursor;
         PalletMultisigCall: PalletMultisigCall;
         PalletMultisigError: PalletMultisigError;
         PalletMultisigEvent: PalletMultisigEvent;
