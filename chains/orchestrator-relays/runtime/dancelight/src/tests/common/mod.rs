@@ -245,6 +245,21 @@ fn advance_block_state_machine(new_state: RunBlockState) {
 }
 
 pub fn start_block() -> RunSummary {
+    // we inject empty data
+    // We need to create it here, because otherwise the block number increases
+    // on-initialize.
+    // This requires signatures so we should not run it unless we have a keystore
+    let mock_inherent_data: Option<cumulus_primitives_core::relay_chain::vstaging::InherentData> =
+        if is_para_inherent_enabled() {
+            // We check the inherent data in storage else we construct an empty one
+            Some(
+                take_new_inherent_data()
+                    .unwrap_or(ParasInherentTestBuilder::<Runtime>::new().build()),
+            )
+        } else {
+            None
+        };
+
     let block_number = System::block_number();
     advance_block_state_machine(RunBlockState::Start(block_number + 1));
 
@@ -265,8 +280,7 @@ pub fn start_block() -> RunSummary {
     InflationRewards::on_initialize(System::block_number());
     let new_issuance = Balances::total_issuance();
 
-    let maybe_mock_inherent = take_new_inherent_data();
-    if let Some(mock_inherent_data) = maybe_mock_inherent {
+    if let Some(mock_inherent_data) = mock_inherent_data {
         set_paras_inherent(mock_inherent_data);
     }
 
@@ -354,6 +368,7 @@ pub struct ExtBuilder {
     next_free_para_id: ParaId,
     keystore: Option<KeystorePtr>,
     safe_xcm_version: Option<u32>,
+    inherent_data_enabled: bool,
 }
 
 impl Default for ExtBuilder {
@@ -385,6 +400,7 @@ impl Default for ExtBuilder {
             next_free_para_id: Default::default(),
             keystore: None,
             safe_xcm_version: Default::default(),
+            inherent_data_enabled: false,
         }
     }
 }
@@ -483,6 +499,11 @@ impl ExtBuilder {
     // Maybe change to with_collators_config?
     pub fn with_keystore(mut self, keystore: KeystorePtr) -> Self {
         self.keystore = Some(keystore);
+        self
+    }
+
+    pub fn with_inherent_data_enabled(mut self) -> Self {
+        self.inherent_data_enabled = true;
         self
     }
 
@@ -748,6 +769,13 @@ impl ExtBuilder {
             t.top.insert(b"__mock_is_xcm_test".to_vec(), b"1".to_vec());
         }
 
+        // Indicate that we should always (for every block) inject the paras_inherent.
+        // Wether we inject an empty one or not its decided by b'ParasInherentData
+        t.top.insert(
+            b"ParasInherentEnabled".to_vec(),
+            self.inherent_data_enabled.encode(),
+        );
+
         t
     }
 
@@ -826,16 +854,24 @@ pub const DAVE: [u8; 32] = [7u8; 32];
 pub const EVE: [u8; 32] = [8u8; 32];
 pub const FERDIE: [u8; 32] = [9u8; 32];
 
+// Whether we have custom data to inject in paras inherent
 fn take_new_inherent_data() -> Option<cumulus_primitives_core::relay_chain::vstaging::InherentData>
 {
     let data: Option<cumulus_primitives_core::relay_chain::vstaging::InherentData> =
-        frame_support::storage::unhashed::take(b"ParasInherent");
+        frame_support::storage::unhashed::take(b"ParasInherentData");
 
     data
 }
 
+// Whether we should inject the paras inherent.
+fn is_para_inherent_enabled() -> bool {
+    let enabled: Option<bool> = frame_support::storage::unhashed::get(b"ParasInherentEnabled");
+    enabled.unwrap_or(false)
+}
+
+// Set new data to inject in paras inherent
 pub fn set_new_inherent_data(data: cumulus_primitives_core::relay_chain::vstaging::InherentData) {
-    frame_support::storage::unhashed::put(b"ParasInherent", &data);
+    frame_support::storage::unhashed::put(b"ParasInherentData", &data);
 }
 
 pub fn set_new_randomness_data(data: Option<[u8; 32]>) {
@@ -1367,49 +1403,14 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
             })
             .collect();
 
-        let mut disputed_cores = (self.backed_and_concluding_paras.len() as u32
-            ..((used_cores - 0) as u32))
-            .into_iter()
-            .map(|idx| (idx, 0))
-            .collect::<BTreeMap<_, _>>();
-
-        let mut all_cores = self.backed_and_concluding_paras.clone();
-        all_cores.append(&mut disputed_cores);
-
-        let mut core_idx = 0u32;
-        let cores = all_cores
-            .keys()
-            .flat_map(|para_id| {
-                (0..1)
-                    .map(|_para_local_core_idx| {
-                        let is_parathread = Paras::is_parathread(ParaId::from(*para_id));
-
-                        // Load an assignment into provider so that one is present to pop
-                        let assignment = if is_parathread {
-                            // TODO: core_idx or _para_local_core_idx
-                            Assignment::Pool {
-                                para_id: ParaId::from(*para_id),
-                                core_index: CoreIndex(core_idx),
-                            }
-                        } else {
-                            Assignment::Bulk(ParaId::from(*para_id))
-                        };
-
-                        core_idx += 1;
-                        (CoreIndex(core_idx - 1), [assignment].into())
-                    })
-                    .collect::<Vec<(CoreIndex, VecDeque<Assignment>)>>()
-            })
-            .collect::<BTreeMap<CoreIndex, VecDeque<Assignment>>>();
-
-        runtime_parachains::scheduler::ClaimQueue::<T>::set(cores);
-
-        ParachainsInherentData {
+        let data = ParachainsInherentData {
             bitfields,
             backed_candidates,
             disputes: vec![],
             parent_header: Self::header(Self::block_number()),
-        }
+        };
+
+        data
     }
 
     pub(crate) fn block_number() -> BlockNumberFor<T> {
