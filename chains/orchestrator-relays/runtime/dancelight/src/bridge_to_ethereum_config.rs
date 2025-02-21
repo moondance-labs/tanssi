@@ -212,11 +212,11 @@ impl pallet_ethereum_token_transfers::Config for Runtime {
     type WeightInfo = crate::weights::pallet_ethereum_token_transfers::SubstrateWeight<Runtime>;
 }
 
-/// `TokenTransferMessageProcessor` is responsible for receiving and processing native tokens
+/// `NativeTokenTransferMessageProcessor` is responsible for receiving and processing native tokens
 /// sent from Ethereum. If the message is valid, it performs the token transfer
 /// from the Ethereum sovereign account to the specified destination account.
-pub struct TokenTransferMessageProcessor<T>(sp_std::marker::PhantomData<T>);
-impl<T> MessageProcessor for TokenTransferMessageProcessor<T>
+pub struct NativeTokenTransferMessageProcessor<T>(sp_std::marker::PhantomData<T>);
+impl<T> MessageProcessor for NativeTokenTransferMessageProcessor<T>
 where
     T: snowbridge_pallet_inbound_queue::Config + pallet_ethereum_token_transfers::Config,
     T::AccountId: From<[u8; 32]>,
@@ -423,7 +423,7 @@ impl snowbridge_pallet_inbound_queue::Config for Runtime {
     #[cfg(not(feature = "runtime-benchmarks"))]
     type MessageProcessor = (
         SymbioticMessageProcessor<Self>,
-        TokenTransferMessageProcessor<Self>,
+        NativeTokenTransferMessageProcessor<Self>,
     );
     type RewardProcessor = RewardThroughTreasury<Self>;
     #[cfg(feature = "runtime-benchmarks")]

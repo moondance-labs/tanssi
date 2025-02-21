@@ -18,7 +18,7 @@
 
 use {
     crate::{
-        bridge_to_ethereum_config::{EthereumGatewayAddress, TokenTransferMessageProcessor},
+        bridge_to_ethereum_config::{EthereumGatewayAddress, NativeTokenTransferMessageProcessor},
         tests::common::*,
         Balances, EthereumInboundQueue, EthereumSovereignAccount, EthereumSystem,
         EthereumTokenTransfers, RuntimeEvent, TokenLocationReanchored, TreasuryAccount,
@@ -533,7 +533,7 @@ fn can_process_message_returns_false_for_none_channel_info() {
         };
 
         assert!(
-            !<TokenTransferMessageProcessor<Runtime> as MessageProcessor>::can_process_message(
+            !<NativeTokenTransferMessageProcessor<Runtime> as MessageProcessor>::can_process_message(
                 &channel, &envelope
             )
         );
@@ -566,7 +566,7 @@ fn can_process_message_returns_false_for_wrong_channel_id() {
         };
 
         assert!(
-            !<TokenTransferMessageProcessor<Runtime> as MessageProcessor>::can_process_message(
+            !<NativeTokenTransferMessageProcessor<Runtime> as MessageProcessor>::can_process_message(
                 &channel, &envelope
             )
         );
@@ -602,7 +602,7 @@ fn can_process_message_returns_false_for_wrong_para_id() {
         };
 
         assert!(
-            !<TokenTransferMessageProcessor<Runtime> as MessageProcessor>::can_process_message(
+            !<NativeTokenTransferMessageProcessor<Runtime> as MessageProcessor>::can_process_message(
                 &channel, &envelope
             )
         );
@@ -638,7 +638,7 @@ fn can_process_message_returns_false_for_wrong_agent_id() {
         };
 
         assert!(
-            !<TokenTransferMessageProcessor<Runtime> as MessageProcessor>::can_process_message(
+            !<NativeTokenTransferMessageProcessor<Runtime> as MessageProcessor>::can_process_message(
                 &channel, &envelope
             )
         );
@@ -670,7 +670,7 @@ fn can_process_message_returns_false_for_wrong_gateway() {
         };
 
         assert!(
-            !<TokenTransferMessageProcessor<Runtime> as MessageProcessor>::can_process_message(
+            !<NativeTokenTransferMessageProcessor<Runtime> as MessageProcessor>::can_process_message(
                 &channel, &envelope
             )
         );
@@ -709,7 +709,7 @@ fn can_process_message_returns_false_for_wrong_message_type() {
         };
 
         assert!(
-            !<TokenTransferMessageProcessor<Runtime> as MessageProcessor>::can_process_message(
+            !<NativeTokenTransferMessageProcessor<Runtime> as MessageProcessor>::can_process_message(
                 &channel, &envelope
             )
         );
