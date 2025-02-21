@@ -42,7 +42,7 @@
 // --json-file
 // raw.json
 // --output
-// tmp/dancebox_weights/pallet_xcm_benchmarks_generic.rs
+// tmp/frontier_template_weights/pallet_xcm_benchmarks_generic.rs
 
 #![cfg_attr(rustfmt, rustfmt_skip)]
 #![allow(unused_parens)]

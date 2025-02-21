@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use staging_xcm::latest::WESTEND_GENESIS_HASH;
 use {
     super::{
         currency::MICROUNIT,
@@ -40,7 +39,7 @@ use {
     polkadot_runtime_common::xcm_sender::ExponentialPrice,
     sp_core::ConstU32,
     sp_runtime::Perbill,
-    staging_xcm::latest::prelude::*,
+    staging_xcm::latest::{prelude::*, WESTEND_GENESIS_HASH},
     staging_xcm_builder::{
         AccountId32Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
         AllowTopLevelPaidExecutionFrom, ConvertedConcreteId, EnsureXcmOrigin, FungibleAdapter,
