@@ -488,12 +488,14 @@ export default {
         _enum: ["Source", "Target"],
     },
     /**
-     * Lookup53: pallet_stream_payment::pallet::StreamConfig<flashbox_runtime::TimeUnit, flashbox_runtime::StreamPaymentAssetId, Balance>
+     * Lookup53: pallet_stream_payment::pallet::StreamConfig<flashbox_runtime::TimeUnit, flashbox_runtime::StreamPaymentAssetId, BalanceOrDuration>
      **/
     PalletStreamPaymentStreamConfig: {
         timeUnit: "FlashboxRuntimeTimeUnit",
         assetId: "FlashboxRuntimeStreamPaymentAssetId",
         rate: "u128",
+        minimumRequestDeadlineDelay: "u128",
+        softMinimumDeposit: "u128",
     },
     /**
      * Lookup54: flashbox_runtime::TimeUnit
@@ -2367,6 +2369,10 @@ export default {
             "ImmediateDepositChangeRequiresSameAssetId",
             "DeadlineCantBeInPast",
             "CantFetchStatusBeforeLastTimeUpdated",
+            "DeadlineDelayIsBelowMinium",
+            "CantDecreaseDepositUnderSoftDepositMinimum",
+            "SourceCantCloseActiveStreamWithSoftDepositMinimum",
+            "CantCreateStreamWithDepositUnderSoftMinimum",
         ],
     },
     /**
