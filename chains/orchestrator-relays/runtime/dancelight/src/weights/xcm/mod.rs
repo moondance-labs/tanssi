@@ -280,9 +280,9 @@ where
 
     fn initiate_transfer(
         _dest: &Location,
-        remote_fees: &Option<AssetTransferFilter>,
+        _remote_fees: &Option<AssetTransferFilter>,
         _preserve_origin: &bool,
-        assets: &Vec<AssetTransferFilter>,
+        _assets: &Vec<AssetTransferFilter>,
         _xcm: &Xcm<()>,
     ) -> Weight {
         /*
@@ -303,8 +303,8 @@ where
     }
 
     fn execute_with_origin(
-        descendant_origin: &Option<InteriorLocation>,
-        xcm: &Xcm<RuntimeCall>,
+        _descendant_origin: &Option<InteriorLocation>,
+        _xcm: &Xcm<RuntimeCall>,
     ) -> Weight {
         XcmGeneric::<Runtime>::execute_with_origin()
     }

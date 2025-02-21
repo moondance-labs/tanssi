@@ -34,7 +34,7 @@ pub use sp_runtime::BuildStorage;
 pub mod migrations;
 pub mod weights;
 
-pub use sp_runtime::{traits::Extrinsic as ExtrinsicT, MultiAddress, Perbill, Permill};
+pub use sp_runtime::{traits::ExtrinsicLike, MultiAddress, Perbill, Permill};
 use {
     cumulus_primitives_core::AggregateMessageOrigin,
     dp_impl_tanssi_pallets_config::impl_tanssi_pallets_config,

@@ -126,9 +126,8 @@ use {
     sp_runtime::{
         generic, impl_opaque_keys,
         traits::{
-            AccountIdConversion, BlakeTwo256, Block as BlockT, ConstU32, Convert,
-            Extrinsic as ExtrinsicT, Hash as HashT, IdentityLookup, Keccak256, OpaqueKeys,
-            SaturatedConversion, Verify, Zero,
+            AccountIdConversion, BlakeTwo256, Block as BlockT, ConstU32, Convert, Hash as HashT,
+            IdentityLookup, Keccak256, OpaqueKeys, SaturatedConversion, Verify, Zero,
         },
         transaction_validity::{TransactionPriority, TransactionSource, TransactionValidity},
         ApplyExtrinsicResult, Cow, FixedU128, KeyTypeId, Perbill, Percent, Permill, RuntimeDebug,

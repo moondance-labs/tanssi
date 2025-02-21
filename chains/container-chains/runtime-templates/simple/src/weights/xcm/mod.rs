@@ -241,9 +241,9 @@ where
 
     fn initiate_transfer(
         _dest: &Location,
-        remote_fees: &Option<AssetTransferFilter>,
+        _remote_fees: &Option<AssetTransferFilter>,
         _preserve_origin: &bool,
-        assets: &Vec<AssetTransferFilter>,
+        _assets: &Vec<AssetTransferFilter>,
         _xcm: &Xcm<()>,
     ) -> Weight {
         Weight::MAX

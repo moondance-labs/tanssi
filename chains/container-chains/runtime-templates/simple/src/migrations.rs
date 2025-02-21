@@ -28,8 +28,8 @@ use {
     pallet_migrations::{GetMigrations, Migration},
     sp_std::{marker::PhantomData, prelude::*},
     tanssi_runtime_common::migrations::{
-        ForeignAssetCreatorMigration, PolkadotXcmMigrationFixVersion, XcmpQueueMigrationFixVersion,
-        XcmpQueueMigrationV3, XcmpQueueMigrationV4,
+        PolkadotXcmMigrationFixVersion, XcmpQueueMigrationFixVersion, XcmpQueueMigrationV3,
+        XcmpQueueMigrationV4,
     },
 };
 
