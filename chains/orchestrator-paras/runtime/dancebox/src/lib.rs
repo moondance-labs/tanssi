@@ -1644,6 +1644,16 @@ impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
     }
 }
 
+pub struct InvulnerableCheckHandler<AccountId>(PhantomData<AccountId>);
+
+impl tp_traits::CheckInvulnerables<cumulus_primitives_core::relay_chain::AccountId>
+    for InvulnerableCheckHandler<cumulus_primitives_core::relay_chain::AccountId>
+{
+    fn is_invulnerable(account: &cumulus_primitives_core::relay_chain::AccountId) -> bool {
+        Invulnerables::invulnerables().contains(account)
+    }
+}
+
 impl pallet_pooled_staking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
@@ -1661,6 +1671,9 @@ impl pallet_pooled_staking::Config for Runtime {
     type MaxInactiveSessions = ConstU32<10>;
 
     type CurrentSessionIndex = CurrentSessionIndexGetter;
+
+    type InvulnerablesHelper =
+        InvulnerableCheckHandler<cumulus_primitives_core::relay_chain::AccountId>;
     type WeightInfo = weights::pallet_pooled_staking::SubstrateWeight<Runtime>;
 }
 

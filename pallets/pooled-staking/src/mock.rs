@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use std::marker::PhantomData;
 use {
     crate::{
         self as pallet_pooled_staking,
@@ -170,6 +171,13 @@ parameter_types! {
     pub const BlocksToWait: u64 = BLOCKS_TO_WAIT;
     pub const MaxInactiveSessions: u32 = 2;
 }
+pub struct InvulnerableCheckHandler<AccountId>(PhantomData<AccountId>);
+
+impl tp_traits::CheckInvulnerables<AccountId> for InvulnerableCheckHandler<AccountId> {
+    fn is_invulnerable(account: &AccountId) -> bool {
+        true
+    }
+}
 
 impl pallet_pooled_staking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
@@ -188,6 +196,7 @@ impl pallet_pooled_staking::Config for Runtime {
     type WeightInfo = ();
     type RuntimeHoldReason = RuntimeHoldReason;
     type MaxInactiveSessions = MaxInactiveSessions;
+    type InvulnerablesHelper = InvulnerableCheckHandler<AccountId>;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
 }
 

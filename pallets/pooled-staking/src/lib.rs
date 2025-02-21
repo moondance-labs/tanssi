@@ -77,7 +77,7 @@ pub mod pallet {
         sp_runtime::{BoundedVec, Perbill},
         sp_std::vec::Vec,
         tp_maths::MulDiv,
-        tp_traits::GetSessionIndex,
+        tp_traits::{CheckInvulnerables, GetSessionIndex},
     };
 
     /// A reason for this pallet placing a hold on funds.
@@ -344,6 +344,9 @@ pub mod pallet {
         /// Helper that returns the current session index.
         type CurrentSessionIndex: GetSessionIndex<SessionIndex>;
 
+        /// Helper for dealing with invulnerables.
+        type InvulnerablesHelper: CheckInvulnerables<Self::AccountId>;
+
         type WeightInfo: WeightInfo;
     }
 
@@ -551,10 +554,9 @@ pub mod pallet {
         RequestCannotBeExecuted(u16),
         SwapResultsInZeroShares,
         MarkingOfflineNotEnabled,
-        CandidateAlreadyOffline,
-        CandidateAlreadyOnline,
-        CandidateDoesNotExist,
-        CandidateCannotBeNotifiedAsInactive,
+        CollatorDoesNotExist,
+        CollatorCannotBeNotifiedAsInactive,
+        MarkingInvulnerableOfflineInvalid,
     }
 
     impl<T: Config> From<tp_maths::OverflowError> for Error<T> {
@@ -725,17 +727,23 @@ pub mod pallet {
                 <EnableMarkingOffline<T>>::get(),
                 Error::<T>::MarkingOfflineNotEnabled
             );
-
             ensure_signed(origin)?;
+
+            ensure!(
+                !T::InvulnerablesHelper::is_invulnerable(&collator),
+                Error::<T>::MarkingInvulnerableOfflineInvalid
+            );
 
             let current_session = T::CurrentSessionIndex::session_index();
 
+            // Verify that the collator hasn't produced a block in the last MaxInactiveSessions
+            // sessions before notifying it as inactive.
             for session_index in current_session
                 .saturating_sub(T::MaxInactiveSessions::get().into())
                 ..current_session.saturating_sub(1u32.into())
             {
                 if !<InactiveCollators<T>>::contains_key(session_index, collator.clone()) {
-                    return Err(<Error<T>>::CandidateCannotBeNotifiedAsInactive.into());
+                    return Err(<Error<T>>::CollatorCannotBeNotifiedAsInactive.into());
                 }
             }
             Self::set_offline_inner(collator)
@@ -772,10 +780,15 @@ pub mod pallet {
                 <EnableMarkingOffline<T>>::get(),
                 Error::<T>::MarkingOfflineNotEnabled
             );
+            ensure!(
+                !T::InvulnerablesHelper::is_invulnerable(&collator),
+                Error::<T>::MarkingInvulnerableOfflineInvalid
+            );
+
             let candidate = <SortedEligibleCandidates<T>>::get()
                 .into_iter()
                 .find(|c| c.candidate == collator.clone())
-                .ok_or(Error::<T>::CandidateDoesNotExist)?;
+                .ok_or(Error::<T>::CollatorDoesNotExist)?;
 
             let _ = <SortedEligibleCandidates<T>>::try_mutate(|candidates| -> DispatchResult {
                 candidates
@@ -797,7 +810,7 @@ pub mod pallet {
             let offline_candidate = <OfflineCandidates<T>>::get()
                 .into_iter()
                 .find(|c| c.candidate == collator.clone())
-                .ok_or(Error::<T>::CandidateDoesNotExist)?;
+                .ok_or(Error::<T>::CollatorDoesNotExist)?;
 
             let _ = <OfflineCandidates<T>>::try_mutate(|offline_candidates| -> DispatchResult {
                 offline_candidates
