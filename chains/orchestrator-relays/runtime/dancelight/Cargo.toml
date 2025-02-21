@@ -71,6 +71,7 @@ pallet-collective = { workspace = true }
 pallet-conviction-voting = { workspace = true }
 pallet-democracy = { workspace = true }
 pallet-elections-phragmen = { workspace = true }
+pallet-ethereum-token-transfers = { workspace = true }
 pallet-external-validator-slashes = { workspace = true }
 pallet-external-validators = { workspace = true }
 pallet-external-validators-rewards = { workspace = true }
@@ -235,6 +236,7 @@ std = [
 	"pallet-data-preservers/std",
 	"pallet-democracy/std",
 	"pallet-elections-phragmen/std",
+	"pallet-ethereum-token-transfers/std",
 	"pallet-external-validator-slashes/std",
 	"pallet-external-validators-rewards-runtime-api/std",
 	"pallet-external-validators-rewards/std",
@@ -358,6 +360,7 @@ runtime-benchmarks = [
 	"pallet-data-preservers/runtime-benchmarks",
 	"pallet-democracy/runtime-benchmarks",
 	"pallet-elections-phragmen/runtime-benchmarks",
+	"pallet-ethereum-token-transfers/runtime-benchmarks",
 	"pallet-external-validator-slashes/runtime-benchmarks",
 	"pallet-external-validators-rewards/runtime-benchmarks",
 	"pallet-external-validators/runtime-benchmarks",
@@ -442,6 +445,7 @@ try-runtime = [
 	"pallet-data-preservers/try-runtime",
 	"pallet-democracy/try-runtime",
 	"pallet-elections-phragmen/try-runtime",
+	"pallet-ethereum-token-transfers/try-runtime",
 	"pallet-external-validator-slashes/try-runtime",
 	"pallet-external-validators-rewards/try-runtime",
 	"pallet-external-validators/try-runtime",

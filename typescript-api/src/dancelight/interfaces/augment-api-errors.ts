@@ -455,6 +455,28 @@ declare module "@polkadot/api-base/types/errors" {
              **/
             [key: string]: AugmentedError<ApiType>;
         };
+        ethereumTokenTransfers: {
+            /**
+             * The channel's information has not been set on this pallet yet.
+             **/
+            ChannelInfoNotSet: AugmentedError<ApiType>;
+            /**
+             * The outbound message is invalid prior to send.
+             **/
+            InvalidMessage: AugmentedError<ApiType>;
+            /**
+             * The outbound message could not be sent.
+             **/
+            TransferMessageNotSent: AugmentedError<ApiType>;
+            /**
+             * Conversion from Location to TokenId failed.
+             **/
+            UnknownLocationForToken: AugmentedError<ApiType>;
+            /**
+             * Generic error
+             **/
+            [key: string]: AugmentedError<ApiType>;
+        };
         externalValidators: {
             /**
              * Account is already whitelisted.
