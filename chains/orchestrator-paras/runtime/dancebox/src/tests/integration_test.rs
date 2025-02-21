@@ -18,22 +18,18 @@
 
 use {
     crate::{
-        tests::common::*, xcm_config::ForeignAssetsInstance, RewardsCollatorCommission,
-        StreamPayment, StreamPaymentAssetId, TimeUnit, TransactionPayment,
+        tests::common::*, RewardsCollatorCommission, StreamPayment, StreamPaymentAssetId, TimeUnit,
+        TransactionPayment,
     },
     cumulus_primitives_core::ParaId,
     dp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApiV1,
     dp_core::well_known_keys,
-    frame_support::{
-        assert_noop, assert_ok, migration::put_storage_value, storage::generator::StorageMap,
-        BoundedVec, Hashable,
-    },
+    frame_support::{assert_noop, assert_ok, BoundedVec},
     frame_system::ConsumedWeight,
     nimbus_primitives::NIMBUS_KEY_ID,
     pallet_author_noting_runtime_api::runtime_decl_for_author_noting_api::AuthorNotingApi,
     pallet_balances::Instance1,
     pallet_collator_assignment_runtime_api::runtime_decl_for_collator_assignment_api::CollatorAssignmentApi,
-    pallet_foreign_asset_creator::{AssetIdToForeignAsset, ForeignAssetToAssetId},
     pallet_migrations::Migration,
     pallet_pooled_staking::{
         traits::IsCandidateEligible, AllTargetPool, EligibleCandidate, PendingOperationKey,
@@ -51,16 +47,9 @@ use {
         DigestItem, FixedU128,
     },
     sp_std::vec,
-    staging_xcm::{
-        latest::prelude::*,
-        v3::{
-            Junction as V3Junction, Junctions as V3Junctions, MultiLocation as V3MultiLocation,
-            NetworkId as V3NetworkId,
-        },
-    },
-    std::marker::PhantomData,
+    staging_xcm::latest::prelude::*,
     tanssi_runtime_common::migrations::{
-        ForeignAssetCreatorMigration, HostConfigurationV3, MigrateConfigurationAddFullRotationMode,
+        HostConfigurationV3, MigrateConfigurationAddFullRotationMode,
         MigrateServicesPaymentAddCollatorAssignmentCredits, RegistrarPendingVerificationValueToMap,
     },
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},

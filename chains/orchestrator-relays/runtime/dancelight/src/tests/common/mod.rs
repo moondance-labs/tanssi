@@ -32,7 +32,7 @@ use {
             node_features::FeatureIndex, vstaging::BackedCandidate,
             vstaging::CandidateDescriptorV2, vstaging::CommittedCandidateReceiptV2,
             vstaging::InherentData as ParachainsInherentData, AvailabilityBitfield,
-            CandidateCommitments, CollatorPair, CompactStatement, CoreIndex, GroupIndex, HeadData,
+            CandidateCommitments, CompactStatement, CoreIndex, GroupIndex, HeadData,
             PersistedValidationData, SigningContext, UncheckedSigned, ValidationCode,
             ValidatorIndex, ValidityAttestation,
         },
@@ -54,6 +54,7 @@ use {
     snowbridge_beacon_primitives::{types::deneb, ExecutionProof, VersionedExecutionPayloadHeader},
     snowbridge_core::inbound::Proof,
     sp_core::Pair,
+    sp_core::Public,
     sp_keystore::{KeystoreExt, KeystorePtr},
     sp_runtime::{
         traits::{Dispatchable, Header, One, SaturatedConversion, Zero},
@@ -61,7 +62,7 @@ use {
     },
     sp_std::collections::btree_map::BTreeMap,
     sp_storage::well_known_keys,
-    std::collections::{BTreeSet, VecDeque},
+    std::collections::BTreeSet,
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
 };
 
@@ -1494,9 +1495,7 @@ use grandpa_primitives::{
     AuthorityPair as GrandpaAuthorityPair, Equivocation, EquivocationProof, RoundNumber, SetId,
 };
 use primitives::vstaging::{ClaimQueueOffset, CoreSelector, UMPSignal, UMP_SEPARATOR};
-use primitives::{CandidateDescriptor, CandidateHash, CollatorId, CollatorSignature};
-use runtime_parachains::inclusion::CandidatePendingAvailability;
-use runtime_parachains::scheduler::common::{Assignment, AssignmentProvider};
+use primitives::{CandidateDescriptor, CollatorId, CollatorSignature};
 use sp_core::{ByteArray, H256};
 pub fn generate_grandpa_equivocation_proof(
     set_id: SetId,
@@ -1585,10 +1584,6 @@ pub fn generate_babe_equivocation_proof(
         second_header: h2,
     }
 }
-
-use crate::weights::runtime_parachains_inclusion;
-use crate::Paras;
-use sp_core::Public;
 
 /// Helper function to generate a crypto pair from seed
 pub fn get_pair_from_seed<TPublic: Public>(seed: &str) -> TPublic::Pair {
