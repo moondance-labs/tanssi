@@ -6,6 +6,7 @@
     "main": "index.js",
     "type": "module",
     "scripts": {
+        "typegen": "cd ../typescript-api && pnpm create-local-interfaces",
         "clean": "rm -rf node_modules tmp",
         "start": "moonwall",
         "fmt": "biome format .",
