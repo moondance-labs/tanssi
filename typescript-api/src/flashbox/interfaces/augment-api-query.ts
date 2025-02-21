@@ -45,8 +45,10 @@ import type {
     PalletConfigurationHostConfiguration,
     PalletDataPreserversRegisteredProfile,
     PalletIdentityAuthorityProperties,
+    PalletIdentityProvider,
     PalletIdentityRegistrarInfo,
     PalletIdentityRegistration,
+    PalletIdentityUsernameInformation,
     PalletInflationRewardsChainsToRewardValue,
     PalletMigrationsMigrationCursor,
     PalletMultisigMultisig,
@@ -329,15 +331,11 @@ declare module "@polkadot/api-base/types/storage" {
         };
         identity: {
             /**
-             * Reverse lookup from `username` to the `AccountId` that has registered it. The value should
-             * be a key in the `IdentityOf` map, but it may not if the user has cleared their identity.
-             *
-             * Multiple usernames may map to the same `AccountId`, but `IdentityOf` will only map to one
-             * primary username.
+             * A map of the accounts who are authorized to grant usernames.
              **/
-            accountOfUsername: AugmentedQuery<
+            authorityOf: AugmentedQuery<
                 ApiType,
-                (arg: Bytes | string | Uint8Array) => Observable<Option<AccountId32>>,
+                (arg: Bytes | string | Uint8Array) => Observable<Option<PalletIdentityAuthorityProperties>>,
                 [Bytes]
             > &
                 QueryableStorageEntry<ApiType, [Bytes]>;
@@ -349,9 +347,7 @@ declare module "@polkadot/api-base/types/storage" {
              **/
             identityOf: AugmentedQuery<
                 ApiType,
-                (
-                    arg: AccountId32 | string | Uint8Array
-                ) => Observable<Option<ITuple<[PalletIdentityRegistration, Option<Bytes>]>>>,
+                (arg: AccountId32 | string | Uint8Array) => Observable<Option<PalletIdentityRegistration>>,
                 [AccountId32]
             > &
                 QueryableStorageEntry<ApiType, [AccountId32]>;
@@ -359,13 +355,15 @@ declare module "@polkadot/api-base/types/storage" {
              * Usernames that an authority has granted, but that the account controller has not confirmed
              * that they want it. Used primarily in cases where the `AccountId` cannot provide a signature
              * because they are a pure proxy, multisig, etc. In order to confirm it, they should call
-             * [`Call::accept_username`].
+             * [accept_username](`Call::accept_username`).
              *
              * First tuple item is the account and second is the acceptance deadline.
              **/
             pendingUsernames: AugmentedQuery<
                 ApiType,
-                (arg: Bytes | string | Uint8Array) => Observable<Option<ITuple<[AccountId32, u32]>>>,
+                (
+                    arg: Bytes | string | Uint8Array
+                ) => Observable<Option<ITuple<[AccountId32, u32, PalletIdentityProvider]>>>,
                 [Bytes]
             > &
                 QueryableStorageEntry<ApiType, [Bytes]>;
@@ -401,11 +399,37 @@ declare module "@polkadot/api-base/types/storage" {
             > &
                 QueryableStorageEntry<ApiType, [AccountId32]>;
             /**
-             * A map of the accounts who are authorized to grant usernames.
+             * Usernames for which the authority that granted them has started the removal process by
+             * unbinding them. Each unbinding username maps to its grace period expiry, which is the first
+             * block in which the username could be deleted through a
+             * [remove_username](`Call::remove_username`) call.
              **/
-            usernameAuthorities: AugmentedQuery<
+            unbindingUsernames: AugmentedQuery<
                 ApiType,
-                (arg: AccountId32 | string | Uint8Array) => Observable<Option<PalletIdentityAuthorityProperties>>,
+                (arg: Bytes | string | Uint8Array) => Observable<Option<u32>>,
+                [Bytes]
+            > &
+                QueryableStorageEntry<ApiType, [Bytes]>;
+            /**
+             * Reverse lookup from `username` to the `AccountId` that has registered it and the provider of
+             * the username. The `owner` value should be a key in the `UsernameOf` map, but it may not if
+             * the user has cleared their username or it has been removed.
+             *
+             * Multiple usernames may map to the same `AccountId`, but `UsernameOf` will only map to one
+             * primary username.
+             **/
+            usernameInfoOf: AugmentedQuery<
+                ApiType,
+                (arg: Bytes | string | Uint8Array) => Observable<Option<PalletIdentityUsernameInformation>>,
+                [Bytes]
+            > &
+                QueryableStorageEntry<ApiType, [Bytes]>;
+            /**
+             * Identifies the primary username of an account.
+             **/
+            usernameOf: AugmentedQuery<
+                ApiType,
+                (arg: AccountId32 | string | Uint8Array) => Observable<Option<Bytes>>,
                 [AccountId32]
             > &
                 QueryableStorageEntry<ApiType, [AccountId32]>;
@@ -1183,6 +1207,9 @@ declare module "@polkadot/api-base/types/storage" {
         };
         treasury: {
             /**
+             * DEPRECATED: associated with `spend_local` call and will be removed in May 2025.
+             * Refer to <https://github.com/paritytech/polkadot-sdk/pull/5961> for migration to `spend`.
+             *
              * Proposal indices that have been approved but not yet awarded.
              **/
             approvals: AugmentedQuery<ApiType, () => Observable<Vec<u32>>, []> & QueryableStorageEntry<ApiType, []>;
@@ -1191,10 +1218,21 @@ declare module "@polkadot/api-base/types/storage" {
              **/
             deactivated: AugmentedQuery<ApiType, () => Observable<u128>, []> & QueryableStorageEntry<ApiType, []>;
             /**
+             * The blocknumber for the last triggered spend period.
+             **/
+            lastSpendPeriod: AugmentedQuery<ApiType, () => Observable<Option<u32>>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * DEPRECATED: associated with `spend_local` call and will be removed in May 2025.
+             * Refer to <https://github.com/paritytech/polkadot-sdk/pull/5961> for migration to `spend`.
+             *
              * Number of proposals that have been made.
              **/
             proposalCount: AugmentedQuery<ApiType, () => Observable<u32>, []> & QueryableStorageEntry<ApiType, []>;
             /**
+             * DEPRECATED: associated with `spend_local` call and will be removed in May 2025.
+             * Refer to <https://github.com/paritytech/polkadot-sdk/pull/5961> for migration to `spend`.
+             *
              * Proposals that have been made.
              **/
             proposals: AugmentedQuery<
