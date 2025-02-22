@@ -2077,6 +2077,12 @@ pub fn get_para_id_authorities(para_id: ParaId) -> Option<Vec<NimbusId>> {
 }
 
 impl_runtime_apis! {
+    impl pallet_tanssi_util_runtime_api::TanssiUtilApi<Block> for Runtime {
+        fn session_period() -> u32 {
+            Period::get()
+        }
+    }
+
     impl sp_consensus_aura::AuraApi<Block, NimbusId> for Runtime {
         fn slot_duration() -> sp_consensus_aura::SlotDuration {
             sp_consensus_aura::SlotDuration::from_millis(SLOT_DURATION)
