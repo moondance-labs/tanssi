@@ -18,5 +18,5 @@ sp-api = { workspace = true }
 [features]
 default = [ "std" ]
 std = [
-    "sp-api/std",
-] 
+	"sp-api/std",
+]

@@ -11,10 +11,10 @@ describeSuite({
         let api: ApiPromise;
 
         beforeAll(async () => {
-            api = context.pjsApi
-            
-            console.dir( (await api.call.tanssiUtilApi.sessionPeriod()).toNumber(), {depth: 1})
-          
+            api = context.pjsApi;
+
+            console.dir((await api.call.tanssiUtilApi.sessionPeriod()).toNumber(), { depth: 1 });
+
             const specName = api.consts.system.version.specName.toString();
             const specVersion = getSpecVersion(api);
             log(`Currently connected to chain: ${specName} : ${specVersion}`);
@@ -25,27 +25,32 @@ describeSuite({
             timeout: 60000,
             title: "Can upgrade runtime",
             test: async () => {
-                const rtBefore = getSpecVersion(api)
+                const rtBefore = getSpecVersion(api);
                 const sessionBefore = api.query.session.currentIndex();
                 log("About to upgrade to runtime at:");
                 log((await MoonwallContext.getContext()).rtUpgradePath);
-    
+
                 await context.upgradeRuntime();
                 const sessionAfter = api.query.session.currentIndex();
-    
+
                 // New sessions can lead to the runtime upgrade not being correctly applied
                 // Hence we retry once more just in case
-                if ((await sessionAfter).toNumber() > (await sessionBefore).toNumber() && rtBefore === getSpecVersion(api)) {
+                if (
+                    (await sessionAfter).toNumber() > (await sessionBefore).toNumber() &&
+                    rtBefore === getSpecVersion(api)
+                ) {
                     log("New session encountered, just in case retrying");
                     await context.upgradeRuntime();
                 }
 
                 // console.log( api.call.tanssiUtilApi)
-    
-                const rtafter = getSpecVersion(api)
 
-                expect(rtBefore, `RT Upgrade has not been applied, before: ${rtBefore}, after: ${rtafter}`).not.toBe(rtafter);
-            },           
+                const rtafter = getSpecVersion(api);
+
+                expect(rtBefore, `RT Upgrade has not been applied, before: ${rtBefore}, after: ${rtafter}`).not.toBe(
+                    rtafter
+                );
+            },
         });
 
         it({
@@ -93,12 +98,9 @@ describeSuite({
                 expect(balanceBefore < balanceAfter).to.be.true;
             },
         });
-
-      
     },
 });
 
-
 const getSpecVersion = (api: ApiPromise) => {
     return api.consts.system.version.specVersion.toNumber();
-}
+};

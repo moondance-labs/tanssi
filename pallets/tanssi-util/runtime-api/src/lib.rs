@@ -24,4 +24,4 @@ sp_api::decl_runtime_apis! {
         /// Returns the session period (in blocks).
         fn session_period() -> u32;
     }
-} 
+}
