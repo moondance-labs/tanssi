@@ -13,12 +13,12 @@
     - [1.1 Ubuntu/Debian](#11-ubuntudebian)
     - [1.2 MacOS](#12-macos)
     - [1.3 Install Rust](#13-install-rust)
-    - [1.4 Install Toolchain](#14-install-toolchain)
+    - [1.4 Install Rust Toolchain](#14-install-rust-toolchain)
   - [2. Create a new Pallet](#2-create-a-new-pallet)
     - [2.1 Setup Pallet](#21-setup-pallet)
       - [2.1.1 Create a cargo package](#211-create-a-cargo-package)
       - [2.1.2 Setup `counter-pallet/Cargo.toml`](#212-setup-counter-palletcargotoml)
-      - [2.1.3 Build Counter Pallet](#213-build-counter-pallet)
+      - [2.1.3 Compile Counter Pallet](#213-compile-counter-pallet)
     - [2.2 Implement Counter Pallet](#22-implement-counter-pallet)
       - [2.2.0 Add imports](#220-add-imports)
       - [2.2.1 Add `Config`](#221-add-config)
@@ -26,25 +26,25 @@
       - [2.2.3 Add `Error`](#223-add-error)
       - [2.2.4 Add `Storage`](#224-add-storage)
       - [2.2.5 Add `Call`](#225-add-call)
-      - [2.2.6 Complete Counter Pallet](#226-complete-counter-pallet)
+      - [2.2.6 Full Counter Pallet File](#226-full-counter-pallet-file)
       - [2.2.7 Compile Counter Pallet](#227-compile-counter-pallet)
   - [3. Testing a new Pallet](#3-testing-a-new-pallet)
     - [3.1 Setup a Runtime for Testing the Counter Pallet](#31-setup-a-runtime-for-testing-the-counter-pallet)
       - [3.1.1 Add imports](#311-add-imports)
-      - [3.1.2 Contruct Runtime macro](#312-contruct-runtime-macro)
+      - [3.1.2 Contruct Runtime Macro](#312-contruct-runtime-macro)
       - [3.1.3 Implement Runtime](#313-implement-runtime)
-      - [3.1.4 Create a utils functions](#314-create-a-utils-functions)
-      - [3.1.5 Complete Mock Runtime](#315-complete-mock-runtime)
-      - [3.1.6 Compile mock](#316-compile-mock)
+      - [3.1.4 Create Utility Functions](#314-create-utility-functions)
+      - [3.1.5 Full Runtime Mock File](#315-full-runtime-mock-file)
+      - [3.1.6 Compile Runtime Mock File](#316-compile-runtime-mock-file)
     - [3.2 Write Tests](#32-write-tests)
       - [3.2.1 Add imports](#321-add-imports)
       - [3.2.2 Test if `set_value` works](#322-test-if-set_value-works)
       - [3.2.3 Test if `get_value` works with `none`](#323-test-if-get_value-works-with-none)
       - [3.2.4 Test if `get_value` works with `some`](#324-test-if-get_value-works-with-some)
       - [3.2.5 Test if `get_value` fails](#325-test-if-get_value-fails)
-      - [2.2.6 Complete Counter Tests](#226-complete-counter-tests)
+      - [3.2.6 Complete Counter Tests](#326-complete-counter-tests)
       - [3.2.7 Run Tests](#327-run-tests)
-  - [4. \[WIP\] Create Benchmarks for Counter Pallet](#4-wip-create-benchmarks-for-counter-pallet)
+  - [4. (Optional) Create Benchmarks for Counter Pallet](#4-optional-create-benchmarks-for-counter-pallet)
     - [4.1 Create `benchmarking.rs`](#41-create-benchmarkingrs)
     - [4.2 Update `Cargo.toml`](#42-update-cargotoml)
     - [4.3 Update `lib.rs`](#43-update-librs)
@@ -64,10 +64,6 @@
   - [9. Integrate new Pallet in Runtime](#9-integrate-new-pallet-in-runtime)
   - [10. Upgrade Node Network (new runtime)](#10-upgrade-node-network-new-runtime)
   - [11. Validate new feature](#11-validate-new-feature)
-  - [3. Create new Template](#3-create-new-template)
-    - [3.1 Copy and Rename Container Chain `Node` and `Runtime`](#31-copy-and-rename-container-chain-node-and-runtime)
-    - [3.2 Rename `Cargo.toml` of `Node` and `Runtime`](#32-rename-cargotoml-of-node-and-runtime)
-    - [3.3 Rename `Logs` of `Node`](#33-rename-logs-of-node)
 
 ## 1. Setup
 
@@ -90,7 +86,7 @@ brew install cmake openssl protobuf
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 ```
 
-### 1.4 Install Toolchain
+### 1.4 Install Rust Toolchain
 
 ```bash
 rustup default stable
@@ -163,7 +159,7 @@ try-runtime = [
 ]
 ```
 
-#### 2.1.3 Build Counter Pallet
+#### 2.1.3 Compile Counter Pallet
 
 ```bash
 # ✨ cargo b -p counter-pallet -r
@@ -266,7 +262,7 @@ impl<T: Config> Pallet<T> {
 }
 ```
 
-#### 2.2.6 Complete Counter Pallet
+#### 2.2.6 Full Counter Pallet File
 
 ```rust
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -434,7 +430,7 @@ use frame_system::mocking::MockBlock;
 use sp_runtime::BuildStorage;
 ```
 
-#### 3.1.2 Contruct Runtime macro
+#### 3.1.2 Contruct Runtime Macro
 
 ```rust
 construct_runtime!(
@@ -462,7 +458,7 @@ impl counter_pallet::Config for Runtime {
 }
 ```
 
-#### 3.1.4 Create a utils functions
+#### 3.1.4 Create Utility Functions
 
 ```rust
 /// Auxiliary function to create the test environment with the initial state.
@@ -480,7 +476,7 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 }
 ```
 
-#### 3.1.5 Complete Mock Runtime
+#### 3.1.5 Full Runtime Mock File
 
 ```rust
 //! # Mock Runtime for Testing
@@ -541,7 +537,7 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 }
 ```
 
-#### 3.1.6 Compile mock
+#### 3.1.6 Compile Runtime Mock File
 
 ```bash
 cargo t -p counter-pallet -r
@@ -682,7 +678,7 @@ fn get_value_fails_when_no_value_set() {
 }
 ```
 
-#### 2.2.6 Complete Counter Tests
+#### 3.2.6 Complete Counter Tests
 
 ```rust
 #![cfg(test)]
@@ -820,7 +816,7 @@ fn get_value_fails_when_no_value_set() {
 cargo t -p counter-pallet -r
 ```
 
-## 4. [WIP] Create Benchmarks for Counter Pallet
+## 4. (Optional) Create Benchmarks for Counter Pallet
 
 > [!IMPORTANT]
 > Benchmarks are essential for determining the extrinsics weights that will be used in the real runtime.
@@ -984,27 +980,3 @@ cargo build --release -p container-chain-template-my-chain-runtime
 ## 11. Validate new feature
 
 Test upgraded functionality via runtime API and chain state queries.
-
-## 3. Create new Template
-
-### 3.1 Copy and Rename Container Chain `Node` and `Runtime`
-
-### 3.2 Rename `Cargo.toml` of `Node` and `Runtime`
-
-For node:
-
-```bash
-sed -i 's/container-chain-template-simple/container-chain-template-my-chain/g' chains/container-chains/nodes/my-chain/Cargo.toml
-```
-
-For runtime:
-
-```bash
-sed -i 's/container-chain-template-simple/container-chain-template-my-chain/g' chains/container-chains/runtime-templates/my-chain/Cargo.toml
-```
-
-### 3.3 Rename `Logs` of `Node`
-
-```bash
-sed -i 's/Simple Container Chain/My Chain/g' chains/container-chains/nodes/my-chain/src/command.rs
-```
