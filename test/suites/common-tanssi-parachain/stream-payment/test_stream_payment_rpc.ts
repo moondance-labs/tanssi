@@ -1,5 +1,6 @@
 import "@tanssi/api-augment";
-import { describeSuite, beforeAll, expect, customDevRpcRequest } from "@moonwall/cli";
+
+import { beforeAll, customDevRpcRequest, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 

@@ -1,12 +1,13 @@
+import "@tanssi/api-augment";
+
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { ApiPromise, Keyring, WsProvider } from "@polkadot/api";
-import { signAndSendAndInclude } from "../../util/block";
-import { getHeaderFromRelay } from "../../util/relayInterface";
-import fs from "node:fs/promises";
-import { ethers, parseUnits, WebSocketProvider } from "ethers";
 import { BALTATHAR_PRIVATE_KEY, CHARLETH_ADDRESS, type KeyringPair } from "@moonwall/util";
+import { ApiPromise, Keyring, WsProvider } from "@polkadot/api";
 import { u8aToHex } from "@polkadot/util";
 import { decodeAddress } from "@polkadot/util-crypto";
+import { WebSocketProvider, ethers, parseUnits } from "ethers";
+import fs from "node:fs/promises";
+import { getHeaderFromRelay, signAndSendAndInclude } from "utils";
 
 describeSuite({
     id: "ZOM01",

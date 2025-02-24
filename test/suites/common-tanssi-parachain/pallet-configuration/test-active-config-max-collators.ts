@@ -1,5 +1,5 @@
-import { expect, beforeAll, describeSuite } from "@moonwall/cli";
-import { jumpSessions } from "../../../util/block";
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import { jumpSessions } from "utils";
 
 describeSuite({
     id: "COMMO0302",

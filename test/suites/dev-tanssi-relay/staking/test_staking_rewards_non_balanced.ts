@@ -1,17 +1,18 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll, type DevModeContext } from "@moonwall/cli";
-import type { ApiPromise } from "@polkadot/api";
+
+import { type DevModeContext, beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
-import type { Header, ParaId, HeadData, Digest, DigestItem, Slot } from "@polkadot/types/interfaces";
+import type { ApiPromise } from "@polkadot/api";
+import type { Digest, DigestItem, HeadData, Header, ParaId, Slot } from "@polkadot/types/interfaces";
+import { stringToHex } from "@polkadot/util";
 import {
+    DANCE,
     fetchIssuance,
     fetchRewardAuthorContainers,
     filterRewardStakingCollator,
     filterRewardStakingDelegators,
     jumpSessions,
-} from "util/block";
-import { DANCE } from "util/constants";
-import { stringToHex } from "@polkadot/util";
+} from "utils";
 
 export async function createBlockAndRemoveInvulnerables(context: DevModeContext, sudoKey: KeyringPair) {
     let nonce = (await context.polkadotJs().rpc.system.accountNextIndex(sudoKey.address)).toNumber();

@@ -1,12 +1,9 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { getHeaderFromRelay } from "../../util/relayInterface.ts";
-import { customWeb3Request, generateKeyringPair, MIN_GAS_PRICE } from "@moonwall/util";
-import { createTransfer, waitUntilEthTxIncluded } from "../../util/ethereum.ts";
+import { generateKeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
-import fs from "node:fs/promises";
-import { chainSpecToContainerChainGenesisData } from "../../util/genesis_data.ts";
-import { signAndSendAndInclude, waitSessions } from "../../util/block.ts";
 import type { Signer } from "ethers";
+import fs from "node:fs/promises";
+import { chainSpecToContainerChainGenesisData, getHeaderFromRelay, signAndSendAndInclude, waitSessions } from "utils";
 
 describeSuite({
     id: "ZOMBIETANSS01",

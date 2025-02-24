@@ -1,8 +1,9 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import type { ApiPromise } from "@polkadot/api";
+
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
-import { initializeCustomCreateBlock } from "../../../util/block.ts";
+import type { ApiPromise } from "@polkadot/api";
+import { initializeCustomCreateBlock } from "utils";
 
 describeSuite({
     id: "DEVT0901",

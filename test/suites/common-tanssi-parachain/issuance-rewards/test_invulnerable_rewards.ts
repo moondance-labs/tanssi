@@ -1,10 +1,11 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import type { ApiPromise } from "@polkadot/api";
+
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
-import { fetchIssuance, filterRewardFromOrchestrator, filterRewardFromContainer } from "util/block";
+import type { ApiPromise } from "@polkadot/api";
 import { getAuthorFromDigest } from "util/author";
-import { PARACHAIN_BOND } from "util/constants";
+import { fetchIssuance, filterRewardFromContainer, filterRewardFromOrchestrator } from "utils";
+import { PARACHAIN_BOND } from "utils";
 
 describeSuite({
     id: "COMMO0201",

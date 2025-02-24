@@ -1,12 +1,13 @@
 import "@tanssi/api-augment";
-import { describeSuite, beforeAll, expect } from "@moonwall/cli";
+
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
-import { jumpSessions } from "../../../util/block.ts";
 import type { u64 } from "@polkadot/types-codec";
-import type { ParaId } from "@polkadot/types/interfaces";
 import type { ITuple } from "@polkadot/types-codec/types";
+import type { ParaId } from "@polkadot/types/interfaces";
 import { u8aToHex } from "@polkadot/util";
+import { jumpSessions } from "utils";
 
 describeSuite({
     id: "DEV0501",

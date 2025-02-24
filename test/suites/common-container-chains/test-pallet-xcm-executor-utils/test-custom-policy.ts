@@ -1,10 +1,16 @@
+import "@tanssi/api-augment";
+
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type KeyringPair, alith } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import { u8aToHex } from "@polkadot/util";
-
-import { type RawXcmMessage, XcmFragment, injectDmpMessageAndSeal } from "../../../util/xcm.ts";
-import { RELAY_SOURCE_LOCATION, RELAY_SOURCE_LOCATION_2 } from "../../../util/constants.ts";
+import {
+    RELAY_SOURCE_LOCATION,
+    RELAY_SOURCE_LOCATION_2,
+    type RawXcmMessage,
+    XcmFragment,
+    injectDmpMessageAndSeal,
+} from "utils";
 
 describeSuite({
     id: "COM0101",

@@ -1,14 +1,17 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { MIN_GAS_PRICE, customWeb3Request, generateKeyringPair } from "@moonwall/util";
+import { generateKeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import type { Signer } from "ethers";
 import fs from "node:fs/promises";
-import { getAuthorFromDigest, getAuthorFromDigestRange } from "../../util/author";
-import { signAndSendAndInclude, waitSessions } from "../../util/block";
-import { createTransfer, waitUntilEthTxIncluded } from "../../util/ethereum";
-import { chainSpecToContainerChainGenesisData } from "../../util/genesis_data";
-import { getKeyringNimbusIdHex } from "../../util/keys";
-import { getHeaderFromRelay } from "../../util/relayInterface";
+import {
+    chainSpecToContainerChainGenesisData,
+    getAuthorFromDigest,
+    getAuthorFromDigestRange,
+    getHeaderFromRelay,
+    getKeyringNimbusIdHex,
+    signAndSendAndInclude,
+    waitSessions,
+} from "utils";
 
 describeSuite({
     id: "ZOMBIE01",

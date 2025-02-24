@@ -1,12 +1,16 @@
 import { afterAll, beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
-import { getAuthorFromDigest, getAuthorFromDigestRange } from "../../util/author";
-import { signAndSendAndInclude, waitSessions } from "../../util/block";
-import { getKeyringNimbusIdHex } from "../../util/keys";
-import { getHeaderFromRelay } from "../../util/relayInterface";
 import { exec, spawn } from "node:child_process";
-import fs from "node:fs/promises";
 import { createWriteStream } from "node:fs";
+import fs from "node:fs/promises";
+import {
+    getAuthorFromDigest,
+    getAuthorFromDigestRange,
+    getHeaderFromRelay,
+    getKeyringNimbusIdHex,
+    signAndSendAndInclude,
+    waitSessions,
+} from "utils";
 
 describeSuite({
     id: "ZOMBIET01",

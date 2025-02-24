@@ -1,10 +1,7 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
-import fs from "node:fs/promises";
-import { stat } from "node:fs/promises";
-import { signAndSendAndInclude, waitSessions } from "../../util/block";
-import { getKeyringNimbusIdHex } from "../../util/keys";
-import { KeyringPair } from "@moonwall/util";
+import fs, { stat } from "node:fs/promises";
+import { getKeyringNimbusIdHex, signAndSendAndInclude, waitSessions } from "utils";
 
 describeSuite({
     id: "ZOMBIETAN01",

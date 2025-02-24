@@ -1,7 +1,9 @@
+import "@tanssi/api-augment";
+
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { getHeaderFromRelay } from "../../util/relayInterface.ts";
 import { type ApiPromise, Keyring } from "@polkadot/api";
-import { signAndSendAndInclude, isEventEmittedInTheNextBlocks } from "../../util/block.ts";
+import { getHeaderFromRelay, isEventEmittedInTheNextBlocks, signAndSendAndInclude } from "utils";
+
 describeSuite({
     id: "ZOMB01",
     title: "Zombie Offchain Tests",

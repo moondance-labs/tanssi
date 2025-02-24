@@ -1,7 +1,8 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
+
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
-import type { MultiLocation } from "../../../util/xcm";
+import type { MultiLocation } from "utils";
 import { expectEventCount } from "../../../helpers/events";
 
 describeSuite({

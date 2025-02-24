@@ -1,12 +1,15 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
-import { u8aToHex, stringToHex } from "@polkadot/util";
+import { stringToHex, u8aToHex } from "@polkadot/util";
 import { decodeAddress } from "@polkadot/util-crypto";
-import { getAuthorFromDigest } from "../../util/author";
-import { signAndSendAndInclude, waitSessions } from "../../util/block";
-import { getKeyringNimbusIdHex } from "../../util/keys";
-import { getHeaderFromRelay } from "../../util/relayInterface";
 import fs from "node:fs/promises";
+import {
+    getAuthorFromDigest,
+    getHeaderFromRelay,
+    getKeyringNimbusIdHex,
+    signAndSendAndInclude,
+    waitSessions,
+} from "utils";
 
 describeSuite({
     id: "ZOMBIETANSSIW01",

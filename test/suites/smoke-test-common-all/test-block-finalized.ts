@@ -1,6 +1,5 @@
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { getBlockTime } from "@moonwall/util";
-
 import type { ApiPromise } from "@polkadot/api";
 
 describeSuite({

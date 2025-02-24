@@ -3,11 +3,15 @@ import { MIN_GAS_PRICE, customWeb3Request, generateKeyringPair } from "@moonwall
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import type { Signer } from "ethers";
 import fs from "node:fs/promises";
-import { getAuthorFromDigest } from "../../util/author";
-import { signAndSendAndInclude, waitToSession } from "../../util/block";
-import { createTransfer, waitUntilEthTxIncluded } from "../../util/ethereum";
-import { getKeyringNimbusIdHex } from "../../util/keys";
-import { getHeaderFromRelay } from "../../util/relayInterface";
+import {
+    createTransfer,
+    getAuthorFromDigest,
+    getHeaderFromRelay,
+    getKeyringNimbusIdHex,
+    signAndSendAndInclude,
+    waitToSession,
+    waitUntilEthTxIncluded,
+} from "utils";
 
 describeSuite({
     id: "ZOMBIETANSSIRO01",
