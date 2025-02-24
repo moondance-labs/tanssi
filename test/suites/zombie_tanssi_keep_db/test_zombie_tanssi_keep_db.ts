@@ -4,11 +4,17 @@ import { exec, spawn } from "node:child_process";
 import { createWriteStream } from "node:fs";
 import fs from "node:fs/promises";
 import {
+    countUniqueBlockAuthorsExact,
+    directoryExists,
+    findCollatorProcessPid,
     getAuthorFromDigest,
     getAuthorFromDigestRange,
     getHeaderFromRelay,
     getKeyringNimbusIdHex,
+    getTmpZombiePath,
+    isProcessRunning,
     signAndSendAndInclude,
+    sleep,
     waitSessions,
 } from "utils";
 
@@ -288,102 +294,3 @@ describeSuite({
         });
     },
 });
-
-const sleep = (ms: number): Promise<void> => {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-};
-
-const findCollatorProcessPid = async (collatorName: string) => {
-    const pattern = `(tanssi-node.*${collatorName})`;
-    const cmd = `ps aux | grep -E "${pattern}"`;
-    const { stdout } = await execPromisify(cmd);
-    const processes = stdout
-        .split("\n")
-        .filter((line) => line && !line.includes("grep -E"))
-        .map((line) => {
-            const parts = line.split(/\s+/);
-            const pid = parts[1];
-            const command = parts.slice(10).join(" ");
-            return {
-                name: `PID: ${pid}, Command: ${command}`,
-                value: pid,
-            };
-        });
-
-    if (processes.length === 1) {
-        return processes[0].value; // return pid
-    }
-    const error = {
-        message: "Multiple processes found.",
-        processes: processes.map((p) => p.name),
-    };
-    throw error;
-};
-
-function isProcessRunning(pid: number): boolean {
-    try {
-        // The `kill` function with signal 0 does not terminate the process
-        // but will throw an error if the process does not exist.
-        process.kill(pid, 0);
-        return true;
-    } catch (error) {
-        if (error.code === "EPERM") {
-            // The error code 'EPERM' means the process exists but we don't have permission to send the signal.
-            return true;
-        }
-        return false;
-    }
-}
-
-const execPromisify = (command: string) => {
-    return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
-        exec(command, (error, stdout, stderr) => {
-            if (error) {
-                reject(error);
-            } else {
-                resolve({ stdout, stderr });
-            }
-        });
-    });
-};
-
-async function directoryExists(directoryPath) {
-    try {
-        await fs.access(directoryPath, fs.constants.F_OK);
-        return true;
-    } catch (err) {
-        return false;
-    }
-}
-
-/// Returns the /tmp/zombie-52234... path
-function getTmpZombiePath() {
-    return process.env.MOON_ZOMBIE_DIR;
-}
-
-/// Verify that the next `numBlocks` have exactly `numAuthors` different authors
-async function countUniqueBlockAuthorsExact(paraApi, blockStart, blockEnd, numAuthors, authorities) {
-    const actualAuthors = [];
-    const blockNumbers = [];
-
-    const authors = await getAuthorFromDigestRange(paraApi, blockStart, blockEnd);
-    for (let i = 0; i < authors.length; i++) {
-        const [blockNum, author] = authors[i];
-        blockNumbers.push(blockNum);
-        actualAuthors.push(author);
-    }
-
-    const uniq = [...new Set(actualAuthors)];
-
-    if (uniq.length !== numAuthors) {
-        console.error(
-            "Mismatch between authorities and actual block authors: authorities: ",
-            authorities,
-            ", actual authors: ",
-            actualAuthors,
-            ", block numbers: ",
-            blockNumbers
-        );
-        expect(false).to.be.true;
-    }
-}

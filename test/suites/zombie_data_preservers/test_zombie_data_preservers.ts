@@ -7,7 +7,7 @@ import { u8aToHex } from "@polkadot/util";
 import { decodeAddress } from "@polkadot/util-crypto";
 import { WebSocketProvider, ethers, parseUnits } from "ethers";
 import fs from "node:fs/promises";
-import { getHeaderFromRelay, signAndSendAndInclude } from "utils";
+import { getHeaderFromRelay, getTmpZombiePath, signAndSendAndInclude, sleep } from "utils";
 
 describeSuite({
     id: "ZOM01",
@@ -378,7 +378,7 @@ async function waitForLogs(logFilePath: string, timeout: number, logs: string[])
             return;
         }
 
-        await delay(1000);
+        await sleep(1000);
     }
 
     expect.fail(`RPC Assignment Watch log was not found after ${timeout} seconds.`);
@@ -404,10 +404,3 @@ async function checkLogsNoFail(logFilePath: string, logs: string[]): Promise<boo
 
     return logIndex === logs.length;
 }
-
-/// Returns the /tmp/zombie-52234... path
-function getTmpZombiePath() {
-    return process.env.MOON_ZOMBIE_DIR;
-}
-
-const delay = (ms) => new Promise((res) => setTimeout(res, ms));

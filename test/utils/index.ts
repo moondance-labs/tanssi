@@ -9,4 +9,6 @@ export * from "./keys";
 export * from "./payment";
 export * from "./relayInterface";
 export * from "./slashes";
+export * from "./typescript";
 export * from "./xcm";
+export * from "./zombie";

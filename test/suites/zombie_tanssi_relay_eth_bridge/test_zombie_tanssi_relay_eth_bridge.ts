@@ -8,7 +8,7 @@ import { u8aToHex } from "@polkadot/util";
 import { decodeAddress } from "@polkadot/util-crypto";
 import { ethers } from "ethers";
 import { type ChildProcessWithoutNullStreams, exec, spawn } from "node:child_process";
-import { signAndSendAndInclude, waitSessions } from "utils";
+import { signAndSendAndInclude, sleep, waitSessions } from "utils";
 
 // Change this if we change the storage parameter in runtime
 const GATEWAY_STORAGE_KEY = "0xaed97c7854d601808b98ae43079dafb3";
@@ -161,10 +161,10 @@ describeSuite({
                     })
                 ).stdout);
 
-            const tokenLocation: MultiLocation = {
+            const tokenLocation = relayApi.createType<MultiLocation>("MultiLocation", {
                 parents: 0,
                 interior: "Here",
-            };
+            });
             const versionedLocation = {
                 V3: tokenLocation,
             };
@@ -422,7 +422,3 @@ describeSuite({
         });
     },
 });
-
-const sleep = (ms: number): Promise<void> => {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-};

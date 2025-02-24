@@ -5,9 +5,11 @@ import type { Signer } from "ethers";
 import fs from "node:fs/promises";
 import {
     createTransfer,
+    directoryExists,
     getAuthorFromDigest,
     getHeaderFromRelay,
     getKeyringNimbusIdHex,
+    getTmpZombiePath,
     signAndSendAndInclude,
     waitToSession,
     waitUntilEthTxIncluded,
@@ -376,20 +378,6 @@ describeSuite({
         });
     },
 });
-
-async function directoryExists(directoryPath) {
-    try {
-        await fs.access(directoryPath, fs.constants.F_OK);
-        return true;
-    } catch (err) {
-        return false;
-    }
-}
-
-/// Returns the /tmp/zombie-52234... path
-function getTmpZombiePath() {
-    return process.env.MOON_ZOMBIE_DIR;
-}
 
 /// Given a list of collators and a list of dbPaths, checks that the path does not exist for all the collators.
 /// This can be used to ensure that all the unassigned collators do not have any container chains running.

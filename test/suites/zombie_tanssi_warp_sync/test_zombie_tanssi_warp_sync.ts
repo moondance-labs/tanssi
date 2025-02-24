@@ -4,9 +4,12 @@ import { stringToHex, u8aToHex } from "@polkadot/util";
 import { decodeAddress } from "@polkadot/util-crypto";
 import fs from "node:fs/promises";
 import {
+    checkLogsNotExist,
+    directoryExists,
     getAuthorFromDigest,
     getHeaderFromRelay,
     getKeyringNimbusIdHex,
+    getTmpZombiePath,
     signAndSendAndInclude,
     waitSessions,
 } from "utils";
@@ -316,42 +319,4 @@ async function checkLogs(logFilePath: string, logs: string[]): Promise<void> {
             `Not all logs were found in the correct order. Missing log: '${logs[logIndex]}'\nContext around the last found log:\n${contextStr}`
         );
     }
-}
-
-// Read log file path and check that none of the specified logs are found.
-// Only supports single-line logs.
-async function checkLogsNotExist(logFilePath: string, logs: string[]): Promise<void> {
-    const fileContent = await fs.readFile(logFilePath, "utf8");
-    const lines = fileContent.split("\n");
-
-    for (let i = 0; i < lines.length; i++) {
-        for (const log of logs) {
-            if (lines[i].includes(log)) {
-                // In case any log is found, show some context around the found log
-                const contextSize = 3;
-                const contextStart = Math.max(0, i - contextSize);
-                const contextEnd = Math.min(lines.length - 1, i + contextSize);
-                const contextLines = lines.slice(contextStart, contextEnd + 1);
-                const contextStr = contextLines.join("\n");
-
-                expect.fail(
-                    `Log entry '${log}' was found in the log file.\nContext around the found log:\n${contextStr}`
-                );
-            }
-        }
-    }
-}
-
-async function directoryExists(directoryPath) {
-    try {
-        await fs.access(directoryPath, fs.constants.F_OK);
-        return true;
-    } catch (err) {
-        return false;
-    }
-}
-
-/// Returns the /tmp/zombie-52234... path
-function getTmpZombiePath() {
-    return process.env.MOON_ZOMBIE_DIR;
 }
