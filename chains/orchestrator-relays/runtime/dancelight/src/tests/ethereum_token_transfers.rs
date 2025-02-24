@@ -18,11 +18,23 @@
 
 use {
     crate::{
-        tests::common::*, Balances, EthereumSovereignAccount, EthereumSystem,
+        bridge_to_ethereum_config::{EthereumGatewayAddress, NativeTokenTransferMessageProcessor},
+        tests::common::*,
+        Balances, EthereumInboundQueue, EthereumSovereignAccount, EthereumSystem,
         EthereumTokenTransfers, RuntimeEvent, TokenLocationReanchored, TreasuryAccount,
     },
+    alloy_sol_types::SolEvent,
     frame_support::{assert_noop, assert_ok},
-    snowbridge_core::{AgentId, Channel, ChannelId, ParaId},
+    hex_literal::hex,
+    parity_scale_codec::Encode,
+    snowbridge_core::{
+        inbound::{Log, Message},
+        AgentId, Channel, ChannelId, ParaId,
+    },
+    snowbridge_router_primitives::inbound::{
+        envelope::{Envelope, OutboundMessageAccepted},
+        Command, Destination, MessageProcessor, MessageV1, VersionedXcmMessage,
+    },
     sp_core::{H160, H256},
     sp_runtime::{traits::MaybeEquivalence, TokenError},
     sp_std::vec,
@@ -394,4 +406,335 @@ fn test_transfer_native_token_fails_if_not_enough_balance() {
                 TokenError::FundsUnavailable
             );
         });
+}
+
+#[test]
+fn receive_native_tokens_from_eth_happy_path() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (EthereumSovereignAccount::get(), 100_000 * UNIT),
+            (TreasuryAccount::get(), 100_000 * UNIT),
+            (AccountId::from(ALICE), 100_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            let relayer =
+                <Runtime as frame_system::Config>::RuntimeOrigin::signed(AccountId::from(ALICE));
+
+            let channel_id: ChannelId = ChannelId::new(hex!(
+                "00000000000000000000006e61746976655f746f6b656e5f7472616e73666572"
+            ));
+            let agent_id = AgentId::from_low_u64_be(10);
+            let para_id: ParaId = 2000u32.into();
+            let amount_to_transfer = 10_000;
+            let fee = 1000;
+
+            assert_ok!(EthereumTokenTransfers::set_token_transfer_channel(
+                root_origin(),
+                channel_id,
+                agent_id,
+                para_id
+            ));
+
+            let token_location: VersionedLocation = Location::here().into();
+
+            assert_ok!(EthereumSystem::register_token(
+                root_origin(),
+                Box::new(token_location),
+                snowbridge_core::AssetMetadata {
+                    name: "dance".as_bytes().to_vec().try_into().unwrap(),
+                    symbol: "dance".as_bytes().to_vec().try_into().unwrap(),
+                    decimals: 12,
+                }
+            ));
+
+            let token_id = EthereumSystem::convert_back(&TokenLocationReanchored::get()).unwrap();
+            let payload = VersionedXcmMessage::V1(MessageV1 {
+                chain_id: 1,
+                command: Command::SendNativeToken {
+                    token_id,
+                    destination: Destination::AccountId32 {
+                        id: AccountId::from(BOB).into(),
+                    },
+                    amount: amount_to_transfer,
+                    fee,
+                },
+            });
+
+            let event = OutboundMessageAccepted {
+                channel_id: <[u8; 32]>::from(channel_id).into(),
+                nonce: 1,
+                message_id: Default::default(),
+                payload: payload.encode(),
+            };
+
+            let message = Message {
+                event_log: Log {
+                    address:
+                        <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
+                    topics: event
+                        .encode_topics()
+                        .into_iter()
+                        .map(|word| H256::from(word.0 .0))
+                        .collect(),
+                    data: event.encode_data(),
+                },
+                proof: mock_snowbridge_message_proof(),
+            };
+
+            let sovereign_balance_before = Balances::free_balance(EthereumSovereignAccount::get());
+            let treasury_balance_before = Balances::free_balance(TreasuryAccount::get());
+            let relayer_balance_before = Balances::free_balance(AccountId::from(ALICE));
+            let bob_balance_before = Balances::free_balance(AccountId::from(BOB));
+
+            assert_ok!(EthereumInboundQueue::submit(relayer, message));
+
+            // Amount reduced from sovereign account
+            assert_eq!(
+                Balances::free_balance(EthereumSovereignAccount::get()),
+                sovereign_balance_before - amount_to_transfer
+            );
+
+            // Amount added in destination account
+            assert_eq!(
+                Balances::free_balance(AccountId::from(BOB)),
+                bob_balance_before + amount_to_transfer
+            );
+
+            // Fees are payed
+            assert_eq!(
+                Balances::free_balance(TreasuryAccount::get()),
+                treasury_balance_before - fee
+            );
+
+            assert_eq!(
+                Balances::free_balance(AccountId::from(ALICE)),
+                relayer_balance_before + fee
+            );
+        });
+}
+
+#[test]
+fn can_process_message_returns_false_for_none_channel_info() {
+    ExtBuilder::default().build().execute_with(|| {
+        let channel_id = ChannelId::new([1; 32]);
+        let agent_id = AgentId::from_low_u64_be(10);
+        let para_id: ParaId = 2000u32.into();
+
+        let channel = Channel { para_id, agent_id };
+
+        let envelope = Envelope {
+            channel_id,
+            gateway: EthereumGatewayAddress::get(),
+            payload: create_valid_payload(),
+            nonce: 1,
+            message_id: H256::zero(),
+        };
+
+        assert!(
+            !<NativeTokenTransferMessageProcessor<Runtime> as MessageProcessor>::can_process_message(
+                &channel, &envelope
+            )
+        );
+    });
+}
+
+#[test]
+fn can_process_message_returns_false_for_wrong_channel_id() {
+    ExtBuilder::default().build().execute_with(|| {
+        let channel_id = ChannelId::new([1; 32]);
+        let wrong_channel_id = ChannelId::new([2; 32]);
+        let agent_id = AgentId::from_low_u64_be(10);
+        let para_id: ParaId = 2000u32.into();
+
+        assert_ok!(EthereumTokenTransfers::set_token_transfer_channel(
+            root_origin(),
+            channel_id,
+            agent_id,
+            para_id
+        ));
+
+        let channel = Channel { para_id, agent_id };
+
+        let envelope = Envelope {
+            channel_id: wrong_channel_id,
+            gateway: EthereumGatewayAddress::get(),
+            payload: create_valid_payload(),
+            nonce: 1,
+            message_id: H256::zero(),
+        };
+
+        assert!(
+            !<NativeTokenTransferMessageProcessor<Runtime> as MessageProcessor>::can_process_message(
+                &channel, &envelope
+            )
+        );
+    });
+}
+
+#[test]
+fn can_process_message_returns_false_for_wrong_para_id() {
+    ExtBuilder::default().build().execute_with(|| {
+        let channel_id = ChannelId::new([1; 32]);
+        let agent_id = AgentId::from_low_u64_be(10);
+        let para_id: ParaId = 2000u32.into();
+        let wrong_para_id: ParaId = 2002u32.into();
+
+        assert_ok!(EthereumTokenTransfers::set_token_transfer_channel(
+            root_origin(),
+            channel_id,
+            agent_id,
+            para_id
+        ));
+
+        let channel = Channel {
+            para_id: wrong_para_id,
+            agent_id,
+        };
+
+        let envelope = Envelope {
+            channel_id,
+            gateway: EthereumGatewayAddress::get(),
+            payload: create_valid_payload(),
+            nonce: 1,
+            message_id: H256::zero(),
+        };
+
+        assert!(
+            !<NativeTokenTransferMessageProcessor<Runtime> as MessageProcessor>::can_process_message(
+                &channel, &envelope
+            )
+        );
+    });
+}
+
+#[test]
+fn can_process_message_returns_false_for_wrong_agent_id() {
+    ExtBuilder::default().build().execute_with(|| {
+        let channel_id = ChannelId::new([1; 32]);
+        let agent_id = AgentId::from_low_u64_be(10);
+        let para_id: ParaId = 2000u32.into();
+        let wrong_agent_id = AgentId::from_low_u64_be(1010);
+
+        assert_ok!(EthereumTokenTransfers::set_token_transfer_channel(
+            root_origin(),
+            channel_id,
+            agent_id,
+            para_id
+        ));
+
+        let channel = Channel {
+            para_id,
+            agent_id: wrong_agent_id,
+        };
+
+        let envelope = Envelope {
+            channel_id,
+            gateway: EthereumGatewayAddress::get(),
+            payload: create_valid_payload(),
+            nonce: 1,
+            message_id: H256::zero(),
+        };
+
+        assert!(
+            !<NativeTokenTransferMessageProcessor<Runtime> as MessageProcessor>::can_process_message(
+                &channel, &envelope
+            )
+        );
+    });
+}
+
+#[test]
+fn can_process_message_returns_false_for_wrong_gateway() {
+    ExtBuilder::default().build().execute_with(|| {
+        let channel_id = ChannelId::new([1; 32]);
+        let agent_id = AgentId::from_low_u64_be(10);
+        let para_id: ParaId = 2000u32.into();
+
+        assert_ok!(EthereumTokenTransfers::set_token_transfer_channel(
+            root_origin(),
+            channel_id,
+            agent_id,
+            para_id
+        ));
+
+        let channel = Channel { para_id, agent_id };
+
+        let envelope = Envelope {
+            channel_id,
+            gateway: H160(hex!("EDa338E4dC46038493b885327842fD3E301C0000")),
+            payload: create_valid_payload(),
+            nonce: 1,
+            message_id: H256::zero(),
+        };
+
+        assert!(
+            !<NativeTokenTransferMessageProcessor<Runtime> as MessageProcessor>::can_process_message(
+                &channel, &envelope
+            )
+        );
+    });
+}
+
+#[test]
+fn can_process_message_returns_false_for_wrong_message_type() {
+    ExtBuilder::default().build().execute_with(|| {
+        let channel_id = ChannelId::new([1; 32]);
+        let agent_id = AgentId::from_low_u64_be(10);
+        let para_id: ParaId = 2000u32.into();
+
+        assert_ok!(EthereumTokenTransfers::set_token_transfer_channel(
+            root_origin(),
+            channel_id,
+            agent_id,
+            para_id
+        ));
+
+        let channel = Channel { para_id, agent_id };
+
+        let envelope = Envelope {
+            channel_id,
+            gateway: EthereumGatewayAddress::get(),
+            payload: VersionedXcmMessage::V1(MessageV1 {
+                chain_id: 1,
+                command: Command::RegisterToken {
+                    token: Default::default(),
+                    fee: 0,
+                },
+            })
+            .encode(),
+            nonce: 1,
+            message_id: H256::zero(),
+        };
+
+        assert!(
+            !<NativeTokenTransferMessageProcessor<Runtime> as MessageProcessor>::can_process_message(
+                &channel, &envelope
+            )
+        );
+    });
+}
+
+fn create_valid_payload() -> Vec<u8> {
+    let token_location = TokenLocationReanchored::get();
+    let token_id = EthereumSystem::convert_back(&token_location).unwrap_or_default();
+
+    create_payload_with_token_id(token_id)
+}
+
+fn create_payload_with_token_id(token_id: H256) -> Vec<u8> {
+    let message = VersionedXcmMessage::V1(MessageV1 {
+        chain_id: 1,
+        command: Command::SendNativeToken {
+            token_id,
+            destination: Destination::AccountId32 {
+                id: AccountId::from(ALICE).into(),
+            },
+            amount: 100,
+            fee: 0,
+        },
+    });
+
+    message.encode()
 }
