@@ -67,7 +67,7 @@ pub mod pallet {
             pallet_prelude::*,
             storage::types::{StorageDoubleMap, StorageValue, ValueQuery},
             traits::{fungible, tokens::Balance, IsType},
-            Blake2_128Concat,
+            Blake2_128Concat, StorageDoubleMap as StorageDoubleMapTrait,
         },
         frame_system::pallet_prelude::*,
         parity_scale_codec::{Decode, Encode, FullCodec},
@@ -77,6 +77,7 @@ pub mod pallet {
         sp_runtime::{BoundedVec, Perbill},
         sp_std::vec::Vec,
         tp_maths::MulDiv,
+        tp_traits::{CheckInvulnerables, GetSessionIndex},
     };
 
     /// A reason for this pallet placing a hold on funds.
@@ -90,6 +91,8 @@ pub mod pallet {
     pub type CreditOf<T> =
         fungible::Credit<<T as frame_system::Config>::AccountId, <T as Config>::Currency>;
     pub type Delegator<T> = <T as frame_system::Config>::AccountId;
+
+    pub type SessionIndex = u32;
 
     /// Key used by the `Pools` StorageDoubleMap, avoiding lots of maps.
     /// StorageDoubleMap first key is the account id of the candidate.
@@ -333,6 +336,17 @@ pub mod pallet {
         /// Additional filter for candidates to be eligible.
         type EligibleCandidatesFilter: IsCandidateEligible<Self::AccountId>;
 
+        /// The maximum number of sessions for which a collator can be inactive
+        /// before being moved to the offline queue
+        #[pallet::constant]
+        type MaxInactiveSessions: Get<u32>;
+
+        /// Helper that returns the current session index.
+        type CurrentSessionIndex: GetSessionIndex<SessionIndex>;
+
+        /// Helper for dealing with invulnerables.
+        type InvulnerablesHelper: CheckInvulnerables<Self::AccountId>;
+
         type WeightInfo: WeightInfo;
     }
 
@@ -372,6 +386,34 @@ pub mod pallet {
         PendingOperationKeyOf<T>,
         T::Balance,
         ValueQuery,
+    >;
+
+    /// Switch to enable/disable marking offline feature.
+    #[pallet::storage]
+    #[pallet::getter(fn is_marking_offline_enabled)]
+    pub type EnableMarkingOffline<T: Config> = StorageValue<_, bool, ValueQuery>;
+
+    /// A list of offline collators
+    #[pallet::storage]
+    pub type OfflineCollators<T: Config> = StorageValue<
+        _,
+        BoundedVec<
+            crate::candidate::EligibleCandidate<Candidate<T>, T::Balance>,
+            T::EligibleCandidatesBufferSize,
+        >,
+        ValueQuery,
+    >;
+
+    /// A list of inactive collators for a session
+    #[pallet::storage]
+    pub type InactiveCollators<T: Config> = StorageDoubleMap<
+        _,
+        Twox64Concat,
+        SessionIndex,
+        Twox64Concat,
+        Candidate<T>,
+        (),
+        OptionQuery,
     >;
 
     #[pallet::event]
@@ -490,6 +532,10 @@ pub mod pallet {
             pending_leaving: T::Balance,
             released: T::Balance,
         },
+        /// Candidate temporarily leave the set of collator candidates without unbonding.
+        CandidateOffline { candidate: Candidate<T> },
+        /// Candidate rejoins the set of collator candidates.
+        CandidateOnline { candidate: Candidate<T> },
     }
 
     #[pallet::error]
@@ -508,6 +554,10 @@ pub mod pallet {
         CandidateTransferingOwnSharesForbidden,
         RequestCannotBeExecuted(u16),
         SwapResultsInZeroShares,
+        MarkingOfflineNotEnabled,
+        CollatorDoesNotExist,
+        CollatorCannotBeNotifiedAsInactive,
+        MarkingInvulnerableOfflineInvalid,
     }
 
     impl<T: Config> From<tp_maths::OverflowError> for Error<T> {
@@ -550,6 +600,13 @@ pub mod pallet {
             );
 
             Ok(())
+        }
+        fn on_initialize(n: BlockNumberFor<T>) -> Weight {
+            Self::update_inactive_collator_info();
+            Weight::zero()
+        }
+        fn on_finalize(_n: BlockNumberFor<T>) {
+            Self::cleanup_inactive_collator_info();
         }
     }
 
@@ -645,6 +702,60 @@ pub mod pallet {
 
             Calls::<T>::swap_pool(candidate, delegator, source_pool, amount)
         }
+
+        #[pallet::call_index(7)]
+        #[pallet::weight(T::WeightInfo::swap_pool())]
+        pub fn enable_offline_marking(origin: OriginFor<T>, value: bool) -> DispatchResult {
+            ensure_root(origin)?;
+            <EnableMarkingOffline<T>>::set(value);
+            Ok(())
+        }
+
+        #[pallet::call_index(8)]
+        #[pallet::weight(T::WeightInfo::swap_pool())]
+        pub fn set_offline(origin: OriginFor<T>) -> DispatchResult {
+            let collator = ensure_signed(origin)?;
+            Self::set_offline_inner(collator)
+        }
+
+        #[pallet::call_index(9)]
+        #[pallet::weight(T::WeightInfo::swap_pool())]
+        pub fn set_online(origin: OriginFor<T>) -> DispatchResult {
+            let collator = ensure_signed(origin)?;
+            Self::set_online_inner(collator)
+        }
+
+        #[pallet::call_index(10)]
+        #[pallet::weight(T::WeightInfo::swap_pool())]
+        pub fn notify_inactive_collator(
+            origin: OriginFor<T>,
+            collator: Candidate<T>,
+        ) -> DispatchResult {
+            ensure!(
+                <EnableMarkingOffline<T>>::get(),
+                Error::<T>::MarkingOfflineNotEnabled
+            );
+            ensure_signed(origin)?;
+
+            ensure!(
+                !T::InvulnerablesHelper::is_invulnerable(&collator),
+                Error::<T>::MarkingInvulnerableOfflineInvalid
+            );
+
+            let current_session = T::CurrentSessionIndex::session_index();
+
+            // Verify that the collator hasn't produced a block in the last MaxInactiveSessions
+            // sessions before notifying it as inactive.
+            for session_index in current_session
+                .saturating_sub(T::MaxInactiveSessions::get().into())
+                ..current_session.saturating_sub(1u32.into())
+            {
+                if !<InactiveCollators<T>>::contains_key(session_index, collator.clone()) {
+                    return Err(<Error<T>>::CollatorCannotBeNotifiedAsInactive.into());
+                }
+            }
+            Self::set_offline_inner(collator)
+        }
     }
 
     impl<T: Config> Pallet<T> {
@@ -670,6 +781,83 @@ pub mod pallet {
             }
             .ok()
             .map(|x| x.0)
+        }
+
+        pub fn set_offline_inner(collator: Candidate<T>) -> DispatchResult {
+            ensure!(
+                <EnableMarkingOffline<T>>::get(),
+                Error::<T>::MarkingOfflineNotEnabled
+            );
+            ensure!(
+                !T::InvulnerablesHelper::is_invulnerable(&collator),
+                Error::<T>::MarkingInvulnerableOfflineInvalid
+            );
+
+            let candidate = <SortedEligibleCandidates<T>>::get()
+                .into_iter()
+                .find(|c| c.candidate == collator.clone())
+                .ok_or(Error::<T>::CollatorDoesNotExist)?;
+
+            let _ = <SortedEligibleCandidates<T>>::try_mutate(|candidates| -> DispatchResult {
+                candidates
+                    .to_vec()
+                    .retain(|c| c.candidate != collator.clone());
+                Ok(())
+            })?;
+
+            let _ = <OfflineCollators<T>>::try_mutate(|offline_candidates| {
+                offline_candidates.try_push(candidate)
+            });
+
+            Self::deposit_event(Event::<T>::CandidateOffline {
+                candidate: collator,
+            });
+            Ok(())
+        }
+        pub fn set_online_inner(collator: Candidate<T>) -> DispatchResult {
+            let offline_candidate = <OfflineCollators<T>>::get()
+                .into_iter()
+                .find(|c| c.candidate == collator.clone())
+                .ok_or(Error::<T>::CollatorDoesNotExist)?;
+
+            let _ = <OfflineCollators<T>>::try_mutate(|offline_candidates| -> DispatchResult {
+                offline_candidates
+                    .to_vec()
+                    .retain(|c| c.candidate != collator.clone());
+                Ok(())
+            })?;
+
+            let _ = <SortedEligibleCandidates<T>>::try_mutate(|eligible_candidates| {
+                eligible_candidates.try_push(offline_candidate)
+            });
+
+            Self::deposit_event(Event::<T>::CandidateOnline {
+                candidate: collator,
+            });
+            Ok(())
+        }
+
+        fn update_inactive_collator_info() {
+            let current_session = T::CurrentSessionIndex::session_index();
+
+            if <InactiveCollators<T>>::contains_prefix(current_session) {
+                return;
+            }
+        }
+        fn cleanup_inactive_collator_info() {
+            let current_session = T::CurrentSessionIndex::session_index();
+            let minimum_sessions_required = T::MaxInactiveSessions::get() + 1;
+
+            if current_session < minimum_sessions_required
+                || !<InactiveCollators<T>>::contains_prefix(current_session)
+            {
+                return;
+            }
+
+            let _ =
+                <InactiveCollators<T>>::iter_prefix(current_session - minimum_sessions_required)
+                    .drain()
+                    .next();
         }
     }
 

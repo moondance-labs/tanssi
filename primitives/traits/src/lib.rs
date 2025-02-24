@@ -587,3 +587,9 @@ impl FullRotationModes {
 pub trait ExternalIndexProvider {
     fn get_external_index() -> u64;
 }
+
+// A trait to check invulnerables
+pub trait CheckInvulnerables<AccountId> {
+    /// Checks if the given `AccountId` is invulnerable.
+    fn is_invulnerable(account_id: &AccountId) -> bool;
+}
