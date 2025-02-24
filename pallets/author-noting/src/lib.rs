@@ -48,7 +48,7 @@ use {
     tp_author_noting_inherent::INHERENT_IDENTIFIER,
     tp_traits::{
         AuthorNotingHook, AuthorNotingInfo, ContainerChainBlockInfo, GenericStateProof,
-        GenericStorageReader, GetContainerChainAuthor, GetCurrentContainerChains,
+        GenericStorageReader, GetContainerChainAuthor, GetCurrentContainerChainsWithCollators,
         LatestAuthorInfoFetcher, NativeStorageReader, ReadEntryErr,
     },
 };
@@ -77,7 +77,7 @@ pub mod pallet {
         /// The overarching event type.
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
-        type ContainerChains: GetCurrentContainerChains;
+        type ContainerChains: GetCurrentContainerChainsWithCollators<Self::AccountId>;
 
         type SlotBeacon: SlotBeacon;
 
@@ -89,6 +89,10 @@ pub mod pallet {
         type AuthorNotingHook: AuthorNotingHook<Self::AccountId>;
 
         type RelayOrPara: RelayOrPara;
+
+        /// Max length of para id list, should be the same value as in other pallets.
+        #[pallet::constant]
+        type MaxContainerChains: Get<u32>;
 
         /// Weight information for extrinsics in this pallet.
         type WeightInfo: WeightInfo;
@@ -136,7 +140,7 @@ pub mod pallet {
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         #[pallet::call_index(0)]
-        #[pallet::weight((T::WeightInfo::set_latest_author_data(<T::ContainerChains as GetCurrentContainerChains>::MaxContainerChains::get()), DispatchClass::Mandatory))]
+        #[pallet::weight((T::WeightInfo::set_latest_author_data(T::MaxContainerChains::get()), DispatchClass::Mandatory))]
         pub fn set_latest_author_data(
             origin: OriginFor<T>,
             data: InherentDataOf<T>,
@@ -148,7 +152,11 @@ pub mod pallet {
                 "DidSetContainerAuthorData must be updated only once in a block",
             );
 
-            let registered_para_ids = T::ContainerChains::current_container_chains();
+            let registered_para_ids: Vec<_> =
+                T::ContainerChains::current_container_chains_with_collators()
+                    .into_iter()
+                    .filter(|(_para_id, collators)| !collators.is_empty())
+                    .collect();
             let mut total_weight =
                 T::WeightInfo::set_latest_author_data(registered_para_ids.len() as u32);
 
@@ -161,7 +169,7 @@ pub mod pallet {
                 let parent_tanssi_slot = u64::from(T::SlotBeacon::slot()).into();
                 let mut infos = Vec::with_capacity(registered_para_ids.len());
 
-                for para_id in registered_para_ids {
+                for (para_id, _collators) in registered_para_ids {
                     match Self::fetch_block_info_from_proof(
                         &storage_reader,
                         para_id,

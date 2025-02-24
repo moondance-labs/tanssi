@@ -51,6 +51,7 @@ use {
     pallet_author_noting_runtime_api::AuthorNotingApi,
     pallet_data_preservers_runtime_api::DataPreserversApi,
     pallet_registrar_runtime_api::RegistrarApi,
+    pallet_collator_assignment_runtime_api::CollatorAssignmentApi,
     parity_scale_codec::{Decode, Encode},
     polkadot_cli::ProvideRuntimeApi,
     polkadot_parachain_primitives::primitives::HeadData,
@@ -568,7 +569,7 @@ fn start_consensus_orchestrator(
             async move {
                 let para_ids = client_set_aside_for_cidp
                     .runtime_api()
-                    .registered_paras(block_hash)?;
+                    .parachains_with_some_collators(block_hash)?;
                 let para_ids: Vec<_> = para_ids.into_iter().collect();
                 let author_noting_inherent =
                     tp_author_noting_inherent::OwnParachainInherentData::create_at(

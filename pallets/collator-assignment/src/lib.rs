@@ -54,9 +54,9 @@ use {
     },
     sp_std::{collections::btree_set::BTreeSet, fmt::Debug, prelude::*, vec},
     tp_traits::{
-        CollatorAssignmentTip, FullRotationModes, GetContainerChainAuthor, GetHostConfiguration,
-        GetSessionContainerChains, ParaId, ParaIdAssignmentHooks, RemoveInvulnerables,
-        ShouldRotateAllCollators, Slot,
+        CollatorAssignmentTip, FullRotationModes, GetContainerChainAuthor,
+        GetCurrentContainerChainsWithCollators, GetHostConfiguration, GetSessionContainerChains,
+        ParaId, ParaIdAssignmentHooks, RemoveInvulnerables, ShouldRotateAllCollators, Slot,
     },
 };
 pub use {dp_collator_assignment::AssignedCollators, pallet::*};
@@ -624,6 +624,24 @@ pub mod pallet {
                 let random_seed = T::GetRandomnessForNextBlock::get_randomness();
                 Randomness::<T>::put(random_seed);
             }
+        }
+    }
+
+    impl<T: Config> GetCurrentContainerChainsWithCollators<T::AccountId> for Pallet<T> {
+        fn current_container_chains_with_collators() -> Vec<(ParaId, Vec<T::AccountId>)> {
+            CollatorContainerChain::<T>::get()
+                .container_chains
+                .into_iter()
+                .collect()
+        }
+
+        #[cfg(feature = "runtime-benchmarks")]
+        fn set_current_container_chains_with_collators(
+            container_chains: &[(ParaId, Vec<T::AccountId>)],
+        ) {
+            let mut collators = CollatorContainerChain::<T>::get();
+            collators.container_chains = container_chains.iter().cloned().collect();
+            CollatorContainerChain::<T>::put(collators);
         }
     }
 }

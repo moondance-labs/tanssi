@@ -37,5 +37,8 @@ sp_api::decl_runtime_apis! {
         /// Return the list of collators of the given `ParaId`.
         /// Returns `None` if the `ParaId` is not in the registrar.
         fn parachain_collators(para_id: ParaId) -> Option<Vec<AccountId>>;
+        /// Returns the list of `ParaId` of registered chains with at least some
+        /// collators. This filters out parachains with no assigned collators.
+        fn parachains_with_some_collators() -> Vec<ParaId>;
     }
 }
