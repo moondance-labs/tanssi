@@ -3,8 +3,7 @@ import "@tanssi/api-augment";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
-import { getAuthorFromDigest } from "util/author";
-import { fetchIssuance, filterRewardFromContainer, filterRewardFromOrchestrator } from "utils";
+import { fetchIssuance, filterRewardFromContainer, filterRewardFromOrchestrator, getAuthorFromDigest } from "utils";
 import { PARACHAIN_BOND } from "utils";
 
 describeSuite({

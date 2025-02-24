@@ -4,6 +4,7 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import { fetchStorageProofFromValidationData, generateEmptyGenesisData, jumpSessions } from "utils";
+import type { DpContainerChainGenesisDataContainerChainGenesisData } from "@polkadot/types/lookup";
 
 describeSuite({
     id: "DEV0302",
@@ -14,6 +15,7 @@ describeSuite({
         let alice: KeyringPair;
         let charlie: KeyringPair;
         let relayManager: KeyringPair;
+        let containerChainGenesisData: DpContainerChainGenesisDataContainerChainGenesisData;
 
         beforeAll(() => {
             alice = context.keyring.alice;
@@ -28,6 +30,7 @@ describeSuite({
                 type: "ed25519",
             });
             relayManager = relayKeyring.addFromUri(relayManagerPrivateKey);
+            containerChainGenesisData = generateEmptyGenesisData(context.pjsApi);
         });
 
         it({
@@ -52,7 +55,6 @@ describeSuite({
                 const sessionDelay = await polkadotJs.consts.registrar.sessionDelay;
                 const expectedScheduledOnboarding =
                     BigInt(currentSesssion.toString()) + BigInt(sessionDelay.toString());
-                const containerChainGenesisData = generateEmptyGenesisData(context.pjsApi);
                 const { relayProofBlockNumber, relayStorageProof } =
                     await fetchStorageProofFromValidationData(polkadotJs);
 
@@ -113,7 +115,7 @@ describeSuite({
                 // Check that the on chain genesis data is set correctly
                 const onChainGenesisData = await polkadotJs.query.registrar.paraGenesisData(2002);
                 // TODO: fix once we have types
-                expect(emptyGenesisData().toJSON()).to.deep.equal(onChainGenesisData.toJSON());
+                expect(containerChainGenesisData.toJSON()).to.deep.equal(onChainGenesisData.toJSON());
 
                 // Check the para id has been given some free credits
                 const credits = (await polkadotJs.query.servicesPayment.blockProductionCredits(2002)).toJSON();

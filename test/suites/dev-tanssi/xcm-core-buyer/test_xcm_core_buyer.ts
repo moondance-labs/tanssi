@@ -8,6 +8,7 @@ import type { ITuple } from "@polkadot/types-codec/types";
 import type { ParaId } from "@polkadot/types/interfaces";
 import { u8aToHex } from "@polkadot/util";
 import { generateEmptyGenesisData, jumpSessions } from "utils";
+import type { TpTraitsSlotFrequency } from "@polkadot/types/lookup";
 
 describeSuite({
     id: "DEV0501",
@@ -61,33 +62,10 @@ describeSuite({
                 const expectedScheduledOnboarding =
                     BigInt(currentSesssion.toString()) + BigInt(sessionDelay.toString());
 
-                const slotFrequency = polkadotJs.createType("TpTraitsSlotFrequency", {
+                const slotFrequency = polkadotJs.createType<TpTraitsSlotFrequency>("TpTraitsSlotFrequency", {
                     min: 1,
                     max: 1,
                 });
-                const emptyGenesisData = () => {
-                    const g = polkadotJs.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
-                        storage: [
-                            {
-                                key: "0x636f6465",
-                                value: "0x010203040506",
-                            },
-                        ],
-                        name: "0x436f6e7461696e657220436861696e2032303030",
-                        id: "0x636f6e7461696e65722d636861696e2d32303030",
-                        forkId: null,
-                        extensions: "0x",
-                        properties: {
-                            tokenMetadata: {
-                                tokenSymbol: "0x61626364",
-                                ss58Format: 42,
-                                tokenDecimals: 12,
-                            },
-                            isEthereum: false,
-                        },
-                    });
-                    return g;
-                };
                 const containerChainGenesisData = generateEmptyGenesisData(context.pjsApi);
 
                 // Let's disable all other parachains and set parathread collator to 4
@@ -137,7 +115,7 @@ describeSuite({
                 // Check that the on chain genesis data is set correctly
                 const onChainGenesisData = await polkadotJs.query.registrar.paraGenesisData(2002);
                 // TODO: fix once we have types
-                expect(emptyGenesisData().toJSON()).to.deep.equal(onChainGenesisData.toJSON());
+                expect(containerChainGenesisData.toJSON()).to.deep.equal(onChainGenesisData.toJSON());
 
                 // Check the para id has been given some free credits
                 const credits = (await polkadotJs.query.servicesPayment.blockProductionCredits(2002)).toJSON();

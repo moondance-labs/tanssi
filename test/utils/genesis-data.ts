@@ -89,27 +89,41 @@ export function onChainPropertiesToChainSpecProperties(properties: any): any {
     };
 }
 
-export function generateEmptyGenesisData(api: ApiPromise) {
-    const genesisData = api.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
-        storage: [
-            {
-                key: "0x636f6465",
-                value: "0x010203040506",
-            },
-        ],
-        name: "0x436f6e7461696e657220436861696e2032303030",
-        id: "0x636f6e7461696e65722d636861696e2d32303030",
-        forkId: null,
-        extensions: "0x",
-        properties: {
-            tokenMetadata: {
-                tokenSymbol: "0x61626364",
-                ss58Format: 42,
-                tokenDecimals: 12,
-            },
-            isEthereum: false,
-        },
-    });
+export function generateEmptyGenesisData(api: ApiPromise, isCode = false) {
+    const storage = isCode
+        ? [
+              {
+                  // ":code" key
+                  key: "0x3a636f6465",
+                  // code value (must be at least 9 bytes length)
+                  value: "0x0102030405060708091011",
+              },
+          ]
+        : [
+              {
+                  key: "0x636f6465",
+                  value: "0x010203040506",
+              },
+          ];
 
-    return genesisData as DpContainerChainGenesisDataContainerChainGenesisData;
+    const genesisData = api.createType<DpContainerChainGenesisDataContainerChainGenesisData>(
+        "DpContainerChainGenesisDataContainerChainGenesisData",
+        {
+            storage,
+            name: "0x436f6e7461696e657220436861696e2032303030",
+            id: "0x636f6e7461696e65722d636861696e2d32303030",
+            forkId: null,
+            extensions: "0x",
+            properties: {
+                tokenMetadata: {
+                    tokenSymbol: "0x61626364",
+                    ss58Format: 42,
+                    tokenDecimals: 12,
+                },
+                isEthereum: false,
+            },
+        }
+    );
+
+    return genesisData;
 }
