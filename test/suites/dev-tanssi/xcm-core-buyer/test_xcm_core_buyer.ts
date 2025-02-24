@@ -7,7 +7,7 @@ import type { u64 } from "@polkadot/types-codec";
 import type { ITuple } from "@polkadot/types-codec/types";
 import type { ParaId } from "@polkadot/types/interfaces";
 import { u8aToHex } from "@polkadot/util";
-import { jumpSessions } from "utils";
+import { generateEmptyGenesisData, jumpSessions } from "utils";
 
 describeSuite({
     id: "DEV0501",
@@ -88,7 +88,7 @@ describeSuite({
                     });
                     return g;
                 };
-                const containerChainGenesisData = emptyGenesisData();
+                const containerChainGenesisData = generateEmptyGenesisData(context.pjsApi);
 
                 // Let's disable all other parachains and set parathread collator to 4
                 // this will make every collator including the one we are registering being assigned to our parathread

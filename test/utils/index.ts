@@ -3,7 +3,7 @@ export * from "./block";
 export * from "./constants";
 export * from "./ethereum";
 export * from "./ethereum-contracts";
-export * from "./genesis_data";
+export * from "./genesis-data";
 export * from "./invulnerables";
 export * from "./keys";
 export * from "./payment";

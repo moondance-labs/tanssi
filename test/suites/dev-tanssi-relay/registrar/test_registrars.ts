@@ -1,7 +1,7 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
-import { jumpSessions } from "utils";
+import { generateEmptyGenesisData, jumpSessions } from "utils";
 
 describeSuite({
     id: "DEVT1601",
@@ -50,7 +50,7 @@ describeSuite({
             title: "should be able to register paraId",
             test: async () => {
                 await context.createBlock();
-                const containerChainGenesisData = emptyGenesisData();
+                const containerChainGenesisData = generateEmptyGenesisData(context.pjsApi);
 
                 await context.createBlock([await polkadotJs.tx.registrar.reserve().signAsync(alice)]);
                 const tx = await polkadotJs.tx.containerRegistrar
@@ -79,7 +79,7 @@ describeSuite({
 
                 // Check that the on chain genesis data is set correctly
                 const onChainGenesisData = await polkadotJs.query.containerRegistrar.paraGenesisData(2002);
-                expect(emptyGenesisData().toJSON()).to.deep.equal(onChainGenesisData.toJSON());
+                expect(containerChainGenesisData.toJSON()).to.deep.equal(onChainGenesisData.toJSON());
 
                 const profileId = await polkadotJs.query.dataPreservers.nextProfileId();
                 const profileTx = polkadotJs.tx.dataPreservers.createProfile({
@@ -123,7 +123,7 @@ describeSuite({
             test: async () => {
                 // Check we can't register via relay Registrar
                 const tx2 = polkadotJs.tx.containerRegistrar
-                    .register(2002, emptyGenesisData(), "0x0102030405060708091011")
+                    .register(2002, generateEmptyGenesisData(context.pjsApi), "0x0102030405060708091011")
                     .signAsync(alice);
                 const { result: result2 } = await context.createBlock([tx2]);
                 expect(result2[0].successful).to.be.false;
@@ -162,7 +162,7 @@ describeSuite({
             id: "E04",
             title: "should not be able to register through relay",
             test: async () => {
-                const containerChainGenesisData = emptyGenesisData();
+                const containerChainGenesisData = generateEmptyGenesisData(context.pjsApi);
 
                 const tx = polkadotJs.tx.registrar
                     .register(4000, containerChainGenesisData, "0x0102030405060708091011")

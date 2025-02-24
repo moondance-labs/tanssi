@@ -1,7 +1,8 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
+import type { TpTraitsSlotFrequency } from "@polkadot/types/lookup";
 import fs, { stat } from "node:fs/promises";
-import { getKeyringNimbusIdHex, signAndSendAndInclude, waitSessions } from "utils";
+import { generateEmptyGenesisData, getKeyringNimbusIdHex, signAndSendAndInclude, waitSessions } from "utils";
 
 describeSuite({
     id: "ZOMBIETAN01",
@@ -153,36 +154,12 @@ function createCollatorKeyToNameMap(paraApi, collatorNames: string[]): Record<st
 async function registerEmptyParathread(api: ApiPromise, manager: any, paraIdString: string) {
     const parathread = true;
     const paraId = Number.parseInt(paraIdString);
-
-    const emptyGenesisData = () => {
-        const g = api.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
-            storage: [
-                {
-                    key: "0x636f6465",
-                    value: "0x010203040506",
-                },
-            ],
-            name: "0x436f6e7461696e657220436861696e2032303030",
-            id: "0x636f6e7461696e65722d636861696e2d32303030",
-            forkId: null,
-            extensions: "0x",
-            properties: {
-                tokenMetadata: {
-                    tokenSymbol: "0x61626364",
-                    ss58Format: 42,
-                    tokenDecimals: 12,
-                },
-                isEthereum: false,
-            },
-        });
-        return g;
-    };
-    const containerChainGenesisData = emptyGenesisData();
+    const containerChainGenesisData = generateEmptyGenesisData(api);
 
     const txs = [];
     let tx1: any;
     if (parathread) {
-        const slotFreq = api.createType("TpTraitsSlotFrequency", {
+        const slotFreq = api.createType<TpTraitsSlotFrequency>("TpTraitsSlotFrequency", {
             min: 1,
             max: 1,
         });

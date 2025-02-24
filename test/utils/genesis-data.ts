@@ -1,7 +1,8 @@
+import "@tanssi/api-augment";
 /// Utilities to convert from ChainSpec to ContainerChainGenesisData and back
-
 import type { ApiPromise } from "@polkadot/api";
 import { hexToString, stringToHex } from "@polkadot/util";
+import type { DpContainerChainGenesisDataContainerChainGenesisData } from "@polkadot/types/lookup";
 
 export function chainSpecToContainerChainGenesisData(paraApi: ApiPromise, chainSpec: any): any {
     const storage = chainSpecStorageToOnChainStorage(chainSpec.genesis);
@@ -86,4 +87,29 @@ export function onChainPropertiesToChainSpecProperties(properties: any): any {
         tokenDecimals: properties.tokenMetadata.tokenDecimals.toNumber(),
         isEthereum: properties.isEthereum === true,
     };
+}
+
+export function generateEmptyGenesisData(api: ApiPromise) {
+    const genesisData = api.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
+        storage: [
+            {
+                key: "0x636f6465",
+                value: "0x010203040506",
+            },
+        ],
+        name: "0x436f6e7461696e657220436861696e2032303030",
+        id: "0x636f6e7461696e65722d636861696e2d32303030",
+        forkId: null,
+        extensions: "0x",
+        properties: {
+            tokenMetadata: {
+                tokenSymbol: "0x61626364",
+                ss58Format: 42,
+                tokenDecimals: 12,
+            },
+            isEthereum: false,
+        },
+    });
+
+    return genesisData as DpContainerChainGenesisDataContainerChainGenesisData;
 }
