@@ -155,7 +155,7 @@ pub mod pallet {
             let registered_para_ids: Vec<_> =
                 T::ContainerChains::current_container_chains_with_collators()
                     .into_iter()
-                    .filter(|(_para_id, collators)| !collators.is_empty())
+                    .filter_map(|(para_id, collators)| (!collators.is_empty()).then_some(para_id))
                     .collect();
             let mut total_weight =
                 T::WeightInfo::set_latest_author_data(registered_para_ids.len() as u32);
@@ -169,7 +169,7 @@ pub mod pallet {
                 let parent_tanssi_slot = u64::from(T::SlotBeacon::slot()).into();
                 let mut infos = Vec::with_capacity(registered_para_ids.len());
 
-                for (para_id, _collators) in registered_para_ids {
+                for para_id in registered_para_ids {
                     match Self::fetch_block_info_from_proof(
                         &storage_reader,
                         para_id,
