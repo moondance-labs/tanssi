@@ -76,7 +76,7 @@ describeSuite({
             charlie = context.keyring.charlie;
             dave = context.keyring.dave;
 
-            await createBlockAndRemoveInvulnerables(context, alice);
+            await createBlockAndRemoveInvulnerables(context, alice, true);
 
             // Add keys to pallet session. In dancebox they are already there in genesis.
             // We need 4 collators because we have 2 chains with 2 collators per chain.
