@@ -25,7 +25,9 @@ use {
     frame_system::RawOrigin,
     parity_scale_codec::Encode,
     sp_std::{boxed::Box, vec},
-    tp_traits::{AuthorNotingHook, GetContainerChainAuthor, GetCurrentContainerChains},
+    tp_traits::{
+        AuthorNotingHook, GetContainerChainAuthor, GetCurrentContainerChainsWithCollators,
+    },
 };
 
 mod test_sproof {
@@ -66,9 +68,11 @@ benchmarks! {
             // Must start at 0 in Relay mode (why?)
             for para_id in 0..x {
                 let para_id = para_id.into();
-                container_chains.push(para_id);
-                // Mock assigned authors for this para id
+
                 let author: T::AccountId = account("account id", 0u32, 0u32);
+                container_chains.push((para_id, vec![author.clone()]));
+
+                // Mock assigned authors for this para id
                 // Use the max allowed value for num_each_container_chain
                 let num_each_container_chain = 2;
                 T::ContainerChainAuthor::set_authors_for_para_id(para_id, vec![author; num_each_container_chain]);
@@ -110,10 +114,13 @@ benchmarks! {
                 };
                 let para_id: ParaId = para_id.into();
                 let bytes = para_id.twox_64_concat();
-                container_chains.push(para_id);
+
 
                 // Mock assigned authors for this para id
                 let author: T::AccountId = account("account id", 0u32, 0u32);
+
+                container_chains.push((para_id, vec![author.clone()]));
+
                 // Use the max allowed value for num_each_container_chain
                 let num_each_container_chain = 2;
                 T::ContainerChainAuthor::set_authors_for_para_id(para_id, vec![author.clone(); num_each_container_chain]);
@@ -131,7 +138,7 @@ benchmarks! {
             unreachable!("Unknown InherentArg")
         };
 
-        T::ContainerChains::set_current_container_chains(&container_chains);
+        T::ContainerChains::set_current_container_chains_with_collators(&container_chains);
 
     }: _(RawOrigin::None, data)
 
