@@ -206,9 +206,9 @@ describeSuite({
             title: "Test frontier template isEthereum",
             test: async () => {
                 const genesisData2000 = await paraApi.query.registrar.paraGenesisData(2000);
-                expect(genesisData2000.unwrap().properties.isEthereum).to.be.false;
+                expect(genesisData2000.unwrap().properties.isEthereum.isTrue).toBe(false);
                 const genesisData2001 = await paraApi.query.registrar.paraGenesisData(2001);
-                expect(genesisData2001.unwrap().properties.isEthereum).to.be.true;
+                expect(genesisData2001.unwrap().properties.isEthereum.isTrue).toBe(true);
             },
         });
         it({

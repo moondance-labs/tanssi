@@ -1,8 +1,9 @@
+import "@tanssi/api-augment";
+
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { MIN_GAS_PRICE, customWeb3Request, generateKeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import type { Signer } from "ethers";
-import fs from "node:fs/promises";
 import {
     createTransfer,
     directoryExists,
@@ -228,10 +229,10 @@ describeSuite({
             title: "Test frontier template isEthereum",
             test: async () => {
                 // TODO: fix once we have types
-                const genesisData2000 = await paraApi.query.registrar.paraGenesisData(2000);
-                expect(genesisData2000.toJSON().properties.isEthereum).to.be.false;
-                const genesisData2001 = await paraApi.query.registrar.paraGenesisData(2001);
-                expect(genesisData2001.toJSON().properties.isEthereum).to.be.true;
+                const genesisData2000 = (await paraApi.query.registrar.paraGenesisData(2000)).unwrap();
+                expect(genesisData2000.properties.isEthereum.isTrue).toBe(false);
+                const genesisData2001 = (await paraApi.query.registrar.paraGenesisData(2001)).unwrap();
+                expect(genesisData2001.properties.isEthereum.isTrue).toBe(true);
             },
         });
         it({
