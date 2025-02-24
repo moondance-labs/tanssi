@@ -990,13 +990,16 @@
                         "name": "db",
                         "type": "parachain",
                         "configPath": "./configs/stagenet-dancebox.yml",
-                        "address": "127.0.0.1"
-                    }
+                        "address": "127.0.0.1",
+                        "buildBlockMode": "manual"                    }
                 ]
+            },
+            "vitestArgs": {
+                "bail": 1
             },
             "connections": [
                 {
-                    "name": "DB",
+                    "name": "db",
                     "type": "polkadotJs",
                     "endpoints": ["ws://127.0.0.1:8000"]
                 }
@@ -1017,9 +1020,12 @@
                     }
                 ]
             },
+            "vitestArgs": {
+                "bail": 1
+            },
             "connections": [
                 {
-                    "name": "DB",
+                    "name": "db",
                     "type": "polkadotJs",
                     "endpoints": ["ws://127.0.0.1:8000"]
                 }
@@ -1040,9 +1046,12 @@
                     }
                 ]
             },
+            "vitestArgs": {
+                "bail": 1
+            },
             "connections": [
                 {
-                    "name": "DB",
+                    "name": "db",
                     "type": "polkadotJs",
                     "endpoints": ["ws://127.0.0.1:8000"]
                 }
@@ -1063,9 +1072,12 @@
                     }
                 ]
             },
+            "vitestArgs": {
+                "bail": 1
+            },
             "connections": [
                 {
-                    "name": "DB",
+                    "name": "db",
                     "type": "polkadotJs",
                     "endpoints": ["ws://127.0.0.1:8000"]
                 }
