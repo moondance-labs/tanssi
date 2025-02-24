@@ -4,6 +4,7 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 import { generateEmptyGenesisData, initializeCustomCreateBlock } from "utils";
+import type { DpContainerChainGenesisDataContainerChainGenesisData } from "@polkadot/types/lookup";
 
 describeSuite({
     id: "DEVT0901",
@@ -15,12 +16,14 @@ describeSuite({
         let sudo_alice: KeyringPair;
         let general_user_bob: KeyringPair;
         let profileId = 0;
+        let containerChainGenesisData: DpContainerChainGenesisDataContainerChainGenesisData;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             sudo_alice = context.keyring.alice;
             general_user_bob = context.keyring.charlie;
             initializeCustomCreateBlock(context);
+            containerChainGenesisData = generateEmptyGenesisData(context.pjsApi, true);
         });
 
         it({
@@ -263,14 +266,12 @@ describeSuite({
             title: "Profile can be assigned",
             test: async () => {
                 const paraId = 2002;
-                const containerChainGenesisData = generateEmptyGenesisData(context.pjsApi);
-
                 await context.createBlock([]);
                 await context.createBlock([await polkadotJs.tx.registrar.reserve().signAsync(sudo_alice)]);
                 const registerTx = polkadotJs.tx.containerRegistrar.register(
                     paraId,
                     containerChainGenesisData,
-                    "0x010203"
+                    containerChainGenesisData.storage[0].value
                 );
                 await context.createBlock([await registerTx.signAsync(sudo_alice)]);
 
@@ -310,12 +311,11 @@ describeSuite({
             title: "Profile can be force assigned",
             test: async () => {
                 const paraId = 2003;
-                const containerChainGenesisData = generateEmptyGenesisData(context.pjsApi);
                 await context.createBlock([await polkadotJs.tx.registrar.reserve().signAsync(sudo_alice)]);
                 const registerTx = polkadotJs.tx.containerRegistrar.register(
                     paraId,
                     containerChainGenesisData,
-                    "0x010203"
+                    containerChainGenesisData.storage[0].value
                 );
                 await context.createBlock([await registerTx.signAsync(sudo_alice)]);
 
@@ -355,12 +355,12 @@ describeSuite({
             title: "Profile can be unassigned",
             test: async () => {
                 const paraId = 2004;
-                const containerChainGenesisData = generateEmptyGenesisData(context.pjsApi);
+
                 await context.createBlock([await polkadotJs.tx.registrar.reserve().signAsync(sudo_alice)]);
                 const registerTx = polkadotJs.tx.containerRegistrar.register(
                     paraId,
                     containerChainGenesisData,
-                    "0x010203"
+                    containerChainGenesisData.storage[0].value
                 );
                 await context.createBlock([]);
                 await context.createBlock([await registerTx.signAsync(sudo_alice)]);
@@ -403,12 +403,11 @@ describeSuite({
             title: "Profile can be force unassigned",
             test: async () => {
                 const paraId = 2005;
-                const containerChainGenesisData = generateEmptyGenesisData(context.pjsApi);
                 await context.createBlock([await polkadotJs.tx.registrar.reserve().signAsync(sudo_alice)]);
                 const registerTx = polkadotJs.tx.containerRegistrar.register(
                     paraId,
                     containerChainGenesisData,
-                    "0x010203"
+                    containerChainGenesisData.storage[0].value
                 );
                 await context.createBlock([await registerTx.signAsync(sudo_alice)]);
 
@@ -450,13 +449,12 @@ describeSuite({
             title: "Profile will be unassigned on container deregister",
             test: async () => {
                 const paraId = 2006;
-                const containerChainGenesisData = generateEmptyGenesisData(context.pjsApi);
                 await context.createBlock([]);
                 await context.createBlock([await polkadotJs.tx.registrar.reserve().signAsync(sudo_alice)]);
                 const registerTx = polkadotJs.tx.containerRegistrar.register(
                     paraId,
                     containerChainGenesisData,
-                    "0x010203"
+                    containerChainGenesisData.storage[0].value
                 );
                 await context.createBlock([await registerTx.signAsync(sudo_alice)]);
 

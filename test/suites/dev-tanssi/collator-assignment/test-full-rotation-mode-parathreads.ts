@@ -1,11 +1,12 @@
 import "@tanssi/api-augment";
 
-import { beforeAll, customDevRpcRequest, describeSuite, expect } from "@moonwall/cli";
+import { beforeAll, customDevRpcRequest, describeSuite, type DevModeContext, expect } from "@moonwall/cli";
 import { type KeyringPair, filterAndApply, generateKeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 import type { Vec, bool, u8, u32 } from "@polkadot/types-codec";
 import type { EventRecord } from "@polkadot/types/interfaces";
 import { generateEmptyGenesisData, jumpBlocks, jumpSessions, jumpToSession } from "utils";
+import type { TpTraitsSlotFrequency } from "@polkadot/types/lookup";
 
 describeSuite({
     id: "DEV0203",
@@ -66,7 +67,7 @@ describeSuite({
                 // Second block, add keys and register them as invulnerables
                 for (const randomAccount of randomAccounts) {
                     const newKey1 = await polkadotJs.rpc.author.rotateKeys();
-                    await polkadotJs.tx.session.setKeys(newKey1, []).signAndSend(randomAccount);
+                    await polkadotJs.tx.session.setKeys(newKey1, "0x").signAndSend(randomAccount);
 
                     await polkadotJs.tx.sudo
                         .sudo(polkadotJs.tx.invulnerables.addInvulnerable(randomAccount.address))
@@ -83,7 +84,7 @@ describeSuite({
 
                 const fullRotationPeriod = (
                     await polkadotJs.query.configuration.activeConfig()
-                ).fullRotationPeriod.toString();
+                ).fullRotationPeriod.toNumber();
                 const sessionIndex = (await polkadotJs.query.session.currentIndex()).toNumber();
                 // Calculate the remaining sessions for next full rotation
                 // This is a workaround for running moonwall in run mode
@@ -170,10 +171,10 @@ describeSuite({
     },
 });
 
-async function deregisterAll(context) {
+async function deregisterAll(context: DevModeContext) {
     const polkadotJs = context.polkadotJs();
     const alice = context.keyring.alice;
-    const parasRegistered = (await polkadotJs.query.registrar.registeredParaIds()).toJSON();
+    const parasRegistered = await polkadotJs.query.registrar.registeredParaIds();
 
     const txs = [];
 
@@ -185,21 +186,21 @@ async function deregisterAll(context) {
     await context.createBlock([await polkadotJs.tx.sudo.sudo(polkadotJs.tx.utility.batchAll(txs)).signAsync(alice)]);
 }
 
-async function registerParathreads(context) {
+async function registerParathreads(context: DevModeContext) {
     const polkadotJs = context.polkadotJs();
     const alice = context.keyring.alice;
     await context.createBlock();
 
     const currentSesssion = await polkadotJs.query.session.currentIndex();
-    const sessionDelay = await polkadotJs.consts.registrar.sessionDelay;
+    const sessionDelay = polkadotJs.consts.registrar.sessionDelay;
     const expectedScheduledOnboarding = BigInt(currentSesssion.toString()) + BigInt(sessionDelay.toString());
 
-    const slotFrequency = polkadotJs.createType("TpTraitsSlotFrequency", {
+    const slotFrequency = polkadotJs.createType<TpTraitsSlotFrequency>("TpTraitsSlotFrequency", {
         min: 1,
         max: 1,
     });
 
-    const containerChainGenesisData = generateEmptyGenesisData(context.pjsapi);
+    const containerChainGenesisData = generateEmptyGenesisData(context.pjsApi);
 
     for (const paraId of [2002, 2003]) {
         const tx = polkadotJs.tx.registrar.registerParathread(paraId, slotFrequency, containerChainGenesisData, null);
