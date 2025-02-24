@@ -6,6 +6,7 @@ import type { ApiPromise } from "@polkadot/api";
 import type { Digest, DigestItem, HeadData, Header, ParaId, Slot } from "@polkadot/types/interfaces";
 import { stringToHex } from "@polkadot/util";
 import {
+    createBlockAndRemoveInvulnerables,
     DANCE,
     fetchIssuance,
     fetchRewardAuthorContainers,
@@ -13,20 +14,6 @@ import {
     filterRewardStakingDelegators,
     jumpSessions,
 } from "utils";
-
-export async function createBlockAndRemoveInvulnerables(context: DevModeContext, sudoKey: KeyringPair) {
-    let nonce = (await context.polkadotJs().rpc.system.accountNextIndex(sudoKey.address)).toNumber();
-    const invulnerables = await context.polkadotJs().query.tanssiInvulnerables.invulnerables();
-
-    const txs = invulnerables.map((invulnerable) =>
-        context
-            .polkadotJs()
-            .tx.sudo.sudo(context.polkadotJs().tx.tanssiInvulnerables.removeInvulnerable(invulnerable))
-            .signAsync(sudoKey, { nonce: nonce++ })
-    );
-
-    await context.createBlock(txs);
-}
 
 // Helper function to make rewards work for a specific block and slot.
 // We need to mock a proper HeadData object for AuthorNoting inherent to work, and thus
