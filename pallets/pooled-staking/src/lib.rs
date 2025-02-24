@@ -390,6 +390,7 @@ pub mod pallet {
 
     /// Switch to enable/disable marking offline feature.
     #[pallet::storage]
+    #[pallet::getter(fn is_marking_offline_enabled)]
     pub type EnableMarkingOffline<T: Config> = StorageValue<_, bool, ValueQuery>;
 
     /// A list of offline collators
@@ -704,7 +705,7 @@ pub mod pallet {
 
         #[pallet::call_index(7)]
         #[pallet::weight(T::WeightInfo::swap_pool())]
-        pub fn enable_marking_offline(origin: OriginFor<T>, value: bool) -> DispatchResult {
+        pub fn enable_offline_marking(origin: OriginFor<T>, value: bool) -> DispatchResult {
             ensure_root(origin)?;
             <EnableMarkingOffline<T>>::set(value);
             Ok(())
