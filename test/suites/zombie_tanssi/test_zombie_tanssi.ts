@@ -1,3 +1,5 @@
+import "@tanssi/api-augment";
+
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { generateKeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
@@ -136,11 +138,13 @@ describeSuite({
                 const paraId = (await container2000Api.query.parachainInfo.parachainId()).toString();
                 const containerChainCollators = (
                     await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)
-                ).unwrap().containerChains[paraId];
+                )
+                    .unwrap()
+                    .containerChains.toJSON()[paraId];
 
                 const writtenCollators = (await container2000Api.query.authoritiesNoting.authorities()).toJSON();
 
-                expect(containerChainCollators.toJSON()).to.deep.equal(writtenCollators);
+                expect(containerChainCollators).to.deep.equal(writtenCollators);
             },
         });
 
@@ -152,11 +156,13 @@ describeSuite({
                 const paraId = (await container2001Api.query.parachainInfo.parachainId()).toString();
                 const containerChainCollators = (
                     await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)
-                ).unwrap().containerChains[paraId];
+                )
+                    .unwrap()
+                    .containerChains.toJSON()[paraId];
 
                 const writtenCollators = (await container2001Api.query.authoritiesNoting.authorities()).toJSON();
 
-                expect(containerChainCollators.toJSON()).to.deep.equal(writtenCollators);
+                expect(containerChainCollators).to.deep.equal(writtenCollators);
             },
         });
 
