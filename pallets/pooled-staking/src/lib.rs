@@ -67,7 +67,7 @@ pub mod pallet {
             pallet_prelude::*,
             storage::types::{StorageDoubleMap, StorageValue, ValueQuery},
             traits::{fungible, tokens::Balance, IsType},
-            Blake2_128Concat,
+            Blake2_128Concat, StorageDoubleMap as StorageDoubleMapTrait,
         },
         frame_system::pallet_prelude::*,
         parity_scale_codec::{Decode, Encode, FullCodec},
@@ -394,7 +394,7 @@ pub mod pallet {
 
     /// A list of offline collators
     #[pallet::storage]
-    pub type OfflineCandidates<T: Config> = StorageValue<
+    pub type OfflineCollators<T: Config> = StorageValue<
         _,
         BoundedVec<
             crate::candidate::EligibleCandidate<Candidate<T>, T::Balance>,
@@ -600,6 +600,13 @@ pub mod pallet {
 
             Ok(())
         }
+        fn on_initialize(n: BlockNumberFor<T>) -> Weight {
+            Self::update_inactive_collator_info();
+            Weight::zero()
+        }
+        fn on_finalize(_n: BlockNumberFor<T>) {
+            Self::cleanup_inactive_collator_info();
+        }
     }
 
     #[pallet::call]
@@ -797,7 +804,7 @@ pub mod pallet {
                 Ok(())
             })?;
 
-            let _ = <OfflineCandidates<T>>::try_mutate(|offline_candidates| {
+            let _ = <OfflineCollators<T>>::try_mutate(|offline_candidates| {
                 offline_candidates.try_push(candidate)
             });
 
@@ -807,12 +814,12 @@ pub mod pallet {
             Ok(())
         }
         pub fn set_online_inner(collator: Candidate<T>) -> DispatchResult {
-            let offline_candidate = <OfflineCandidates<T>>::get()
+            let offline_candidate = <OfflineCollators<T>>::get()
                 .into_iter()
                 .find(|c| c.candidate == collator.clone())
                 .ok_or(Error::<T>::CollatorDoesNotExist)?;
 
-            let _ = <OfflineCandidates<T>>::try_mutate(|offline_candidates| -> DispatchResult {
+            let _ = <OfflineCollators<T>>::try_mutate(|offline_candidates| -> DispatchResult {
                 offline_candidates
                     .to_vec()
                     .retain(|c| c.candidate != collator.clone());
@@ -827,6 +834,29 @@ pub mod pallet {
                 candidate: collator,
             });
             Ok(())
+        }
+
+        fn update_inactive_collator_info() {
+            let current_session = T::CurrentSessionIndex::session_index();
+
+            if <InactiveCollators<T>>::contains_prefix(current_session) {
+                return;
+            }
+        }
+        fn cleanup_inactive_collator_info() {
+            let current_session = T::CurrentSessionIndex::session_index();
+            let minimum_sessions_required = T::MaxInactiveSessions::get() + 1;
+
+            if current_session < minimum_sessions_required
+                || !<InactiveCollators<T>>::contains_prefix(current_session)
+            {
+                return;
+            }
+
+            let _ =
+                <InactiveCollators<T>>::iter_prefix(current_session - minimum_sessions_required)
+                    .drain()
+                    .next();
         }
     }
 
