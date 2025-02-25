@@ -51,8 +51,6 @@
 use frame_support::{traits::Get, weights::{Weight, constants::RocksDbWeight}};
 use sp_std::marker::PhantomData;
 
-use crate::SlashingModeOption;
-
 /// Weight functions needed for pallet_external_validator_slashes.
 pub trait WeightInfo {
 	fn cancel_deferred_slash(s: u32, ) -> Weight;
