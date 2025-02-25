@@ -4125,11 +4125,10 @@ fn test_migration_registrar_reserves_to_hold() {
 fn test_migration_stream_payment_config_new_fields() {
     ExtBuilder::default().build().execute_with(|| {
         use pallet_stream_payment::{
-            migrations::{
-                MigrateStreamPaymentNewConfigFields, OldChangeRequest, OldStream, OldStreamConfig,
-            },
+            migrations::{OldChangeRequest, OldStream, OldStreamConfig},
             ChangeKind, ChangeRequest, DepositChange, Party, Stream, StreamConfig,
         };
+        use tanssi_runtime_common::migrations::MigrateStreamPaymentNewConfigFields;
 
         frame_support::storage::unhashed::put(
             &pallet_stream_payment::Streams::<Runtime>::hashed_key_for(0),

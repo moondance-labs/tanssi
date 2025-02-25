@@ -931,6 +931,32 @@ where
     }
 }
 
+pub struct MigrateStreamPaymentNewConfigFields<Runtime>(pub PhantomData<Runtime>);
+impl<Runtime> Migration for MigrateStreamPaymentNewConfigFields<Runtime>
+where
+    Runtime: pallet_stream_payment::Config,
+{
+    fn friendly_name(&self) -> &str {
+        "TM_MigrateStreamPaymentNewConfigFields"
+    }
+
+    fn migrate(&self, available_weight: Weight) -> Weight {
+        pallet_stream_payment::migrations::migrate_stream_payment_new_config_fields::<Runtime>(
+            available_weight,
+        )
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        Ok(vec![])
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(&self, _state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        Ok(())
+    }
+}
+
 pub struct FlashboxMigrations<Runtime>(PhantomData<Runtime>);
 
 impl<Runtime> GetMigrations for FlashboxMigrations<Runtime>
@@ -964,7 +990,7 @@ where
         //let migrate_registrar_reserves = RegistrarReserveToHoldMigration::<Runtime>(Default::default());
         //let migrate_config_max_parachain_percentage = MigrateConfigurationAddParachainPercentage::<Runtime>(Default::default());
         let migrate_config_full_rotation_mode = MigrateConfigurationAddFullRotationMode::<Runtime>(Default::default());
-        let migrate_stream_payment_new_config_items = pallet_stream_payment::migrations::MigrateStreamPaymentNewConfigFields::<Runtime>(Default::default());
+        let migrate_stream_payment_new_config_items = MigrateStreamPaymentNewConfigFields::<Runtime>(Default::default());
 
         vec![
             // Applied in runtime 400
@@ -1003,6 +1029,7 @@ where
     Runtime: cumulus_pallet_xcmp_queue::Config,
     Runtime: pallet_data_preservers::Config,
     Runtime: pallet_xcm::Config,
+    Runtime: pallet_stream_payment::Config,
     <Runtime as pallet_balances::Config>::RuntimeHoldReason:
         From<pallet_pooled_staking::HoldReason>,
     Runtime: pallet_foreign_asset_creator::Config,
@@ -1043,6 +1070,7 @@ where
         //    ForeignAssetCreatorMigration::<Runtime>(Default::default());
         //let migrate_registrar_reserves = RegistrarReserveToHoldMigration::<Runtime>(Default::default());
         let migrate_config_full_rotation_mode = MigrateConfigurationAddFullRotationMode::<Runtime>(Default::default());
+        let migrate_stream_payment_new_config_items = MigrateStreamPaymentNewConfigFields::<Runtime>(Default::default());
 
         vec![
             // Applied in runtime 200
@@ -1082,6 +1110,7 @@ where
             // Applied in runtime 900
             //Box::new(migrate_config_max_parachain_percentage),
             Box::new(migrate_config_full_rotation_mode),
+            Box::new(migrate_stream_payment_new_config_items),
         ]
     }
 }
