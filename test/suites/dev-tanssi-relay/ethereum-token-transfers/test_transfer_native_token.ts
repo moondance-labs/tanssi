@@ -1,11 +1,12 @@
+import "@tanssi/api-augment";
+
+import type { MultiLocation } from "utils";
 import { type DevModeContext, beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import { hexToU8a, u8aToHex } from "@polkadot/util";
 import { encodeAddress, keccakAsHex, xxhashAsU8a } from "@polkadot/util-crypto";
-import "@tanssi/api-augment";
 import { readFileSync } from "node:fs";
 import { expectEventCount } from "../../../helpers/events";
-import type { MultiLocation } from "../../../util/xcm";
 
 describeSuite({
     id: "DTR1702",

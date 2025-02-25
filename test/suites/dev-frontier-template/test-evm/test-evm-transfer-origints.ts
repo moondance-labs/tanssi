@@ -1,5 +1,5 @@
 import { describeSuite, expect } from "@moonwall/cli";
-import { ALITH_ADDRESS, DEFAULT_GENESIS_BALANCE, BALTATHAR_ADDRESS, baltathar, alith } from "@moonwall/util";
+import { ALITH_ADDRESS, BALTATHAR_ADDRESS, DEFAULT_GENESIS_BALANCE, alith, baltathar } from "@moonwall/util";
 
 // A call from root (sudo) can make a transfer directly in pallet_evm
 // A signed call cannot make a transfer directly in pallet_evm

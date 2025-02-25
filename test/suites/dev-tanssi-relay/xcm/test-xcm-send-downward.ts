@@ -1,12 +1,7 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type KeyringPair, alith } from "@moonwall/util";
-import {
-    type MultiLocation,
-    extractPaidDeliveryFeesDancelight,
-    getLastSentDmpMessageFee,
-    XcmFragment,
-} from "../../../util/xcm";
 import { type ApiPromise, Keyring } from "@polkadot/api";
+import { type MultiLocation, XcmFragment, extractPaidDeliveryFeesDancelight, getLastSentDmpMessageFee } from "utils";
 
 describeSuite({
     id: "DEVT1902",

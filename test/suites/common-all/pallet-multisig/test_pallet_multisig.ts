@@ -1,10 +1,10 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
+
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import { type KeyringPair, alith, baltathar, charleth, dorothy } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
-import type { KeyringPair } from "@moonwall/util";
-import { blake2AsHex, createKeyMulti } from "@polkadot/util-crypto";
 import { u8aToHex } from "@polkadot/util";
-import { alith, charleth, baltathar, dorothy } from "@moonwall/util";
+import { blake2AsHex, createKeyMulti } from "@polkadot/util-crypto";
 
 describeSuite({
     id: "C0201",

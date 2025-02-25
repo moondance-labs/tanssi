@@ -1,7 +1,6 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-
 import type { ApiPromise } from "@polkadot/api";
-import { fetchWithdrawnAmount, fetchDepositedAmount } from "util/block";
+import { fetchDepositedAmount, fetchWithdrawnAmount } from "utils";
 
 describeSuite({
     id: "S06",

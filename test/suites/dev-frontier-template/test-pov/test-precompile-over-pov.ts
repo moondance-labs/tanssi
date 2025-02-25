@@ -1,9 +1,10 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll, deployCreateCompiledContract, fetchCompiledContract } from "@moonwall/cli";
+
+import { beforeAll, deployCreateCompiledContract, describeSuite, expect, fetchCompiledContract } from "@moonwall/cli";
 import { type HeavyContract, deployHeavyContracts, expectEVMResult } from "../../../helpers";
 
-import { type Abi, encodeFunctionData } from "viem";
 import { ALITH_ADDRESS, createEthersTransaction } from "@moonwall/util";
+import { type Abi, encodeFunctionData } from "viem";
 
 const PRECOMPILE_BATCH_ADDRESS = "0x0000000000000000000000000000000000000801";
 

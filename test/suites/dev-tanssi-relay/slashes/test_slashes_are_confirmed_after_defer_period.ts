@@ -1,12 +1,11 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import type { ApiPromise } from "@polkadot/api";
+
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
 import { Keyring } from "@polkadot/keyring";
 import { u8aToHex } from "@polkadot/util";
-import { jumpToSession } from "../../../util/block";
-import { generateBabeEquivocationProof } from "../../../util/slashes";
-import { PRIMARY_GOVERNANCE_CHANNEL_ID } from "../../../util/constants";
+import { generateBabeEquivocationProof, jumpToSession, PRIMARY_GOVERNANCE_CHANNEL_ID } from "utils";
 
 describeSuite({
     id: "DEVT1703",

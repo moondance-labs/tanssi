@@ -1,4 +1,5 @@
 import "@tanssi/api-augment/dancelight";
+
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
 import { PRIMARY_GOVERNANCE_CHANNEL_ID } from "../../util/constants.ts";

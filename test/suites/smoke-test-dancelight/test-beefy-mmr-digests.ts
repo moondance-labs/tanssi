@@ -1,7 +1,8 @@
 import "@tanssi/api-augment/dancelight";
+
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { stringToHex } from "@polkadot/util";
 import type { ApiPromise } from "@polkadot/api";
+import { stringToHex } from "@polkadot/util";
 
 describeSuite({
     id: "SMOK03",

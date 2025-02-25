@@ -1,7 +1,6 @@
 import { MoonwallContext, beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { generateKeyringPair } from "@moonwall/util";
+import { alith, generateKeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
-import { alith } from "@moonwall/util";
 
 const MAX_BALANCE_TRANSFER_TRIES = 5;
 describeSuite({

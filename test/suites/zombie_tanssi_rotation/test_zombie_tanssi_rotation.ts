@@ -1,13 +1,20 @@
+import "@tanssi/api-augment";
+
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { MIN_GAS_PRICE, customWeb3Request, generateKeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import type { Signer } from "ethers";
-import fs from "node:fs/promises";
-import { getAuthorFromDigest } from "../../util/author";
-import { signAndSendAndInclude, waitToSession } from "../../util/block";
-import { createTransfer, waitUntilEthTxIncluded } from "../../util/ethereum";
-import { getKeyringNimbusIdHex } from "../../util/keys";
-import { getHeaderFromRelay } from "../../util/relayInterface";
+import {
+    createTransfer,
+    directoryExists,
+    getAuthorFromDigest,
+    getHeaderFromRelay,
+    getKeyringNimbusIdHex,
+    getTmpZombiePath,
+    signAndSendAndInclude,
+    waitToSession,
+    waitUntilEthTxIncluded,
+} from "utils";
 
 describeSuite({
     id: "ZOMBIETANSSIRO01",
@@ -222,10 +229,10 @@ describeSuite({
             title: "Test frontier template isEthereum",
             test: async () => {
                 // TODO: fix once we have types
-                const genesisData2000 = await paraApi.query.registrar.paraGenesisData(2000);
-                expect(genesisData2000.toJSON().properties.isEthereum).to.be.false;
-                const genesisData2001 = await paraApi.query.registrar.paraGenesisData(2001);
-                expect(genesisData2001.toJSON().properties.isEthereum).to.be.true;
+                const genesisData2000 = (await paraApi.query.registrar.paraGenesisData(2000)).unwrap();
+                expect(genesisData2000.properties.isEthereum.isTrue).toBe(false);
+                const genesisData2001 = (await paraApi.query.registrar.paraGenesisData(2001)).unwrap();
+                expect(genesisData2001.properties.isEthereum.isTrue).toBe(true);
             },
         });
         it({
@@ -372,20 +379,6 @@ describeSuite({
         });
     },
 });
-
-async function directoryExists(directoryPath) {
-    try {
-        await fs.access(directoryPath, fs.constants.F_OK);
-        return true;
-    } catch (err) {
-        return false;
-    }
-}
-
-/// Returns the /tmp/zombie-52234... path
-function getTmpZombiePath() {
-    return process.env.MOON_ZOMBIE_DIR;
-}
 
 /// Given a list of collators and a list of dbPaths, checks that the path does not exist for all the collators.
 /// This can be used to ensure that all the unassigned collators do not have any container chains running.
