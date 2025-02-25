@@ -1,14 +1,21 @@
+import "@tanssi/api-augment";
+
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { MIN_GAS_PRICE, customWeb3Request, generateKeyringPair } from "@moonwall/util";
+import { generateKeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import type { Signer } from "ethers";
 import fs from "node:fs/promises";
-import { getAuthorFromDigest, getAuthorFromDigestRange } from "../../util/author";
-import { signAndSendAndInclude, waitSessions } from "../../util/block";
-import { createTransfer, waitUntilEthTxIncluded } from "../../util/ethereum";
-import { chainSpecToContainerChainGenesisData } from "../../util/genesis_data";
-import { getKeyringNimbusIdHex } from "../../util/keys";
-import { getHeaderFromRelay } from "../../util/relayInterface";
+import {
+    checkLogsNotExist,
+    chainSpecToContainerChainGenesisData,
+    getAuthorFromDigest,
+    getHeaderFromRelay,
+    getKeyringNimbusIdHex,
+    signAndSendAndInclude,
+    waitSessions,
+    countUniqueBlockAuthors,
+    getTmpZombiePath,
+} from "utils";
 
 describeSuite({
     id: "ZOMBIE01",
@@ -131,9 +138,10 @@ describeSuite({
                 const paraId = (await container2000Api.query.parachainInfo.parachainId()).toString();
                 const containerChainCollators = (
                     await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)
-                ).toJSON().containerChains[paraId];
+                )
+                    .unwrap()
+                    .containerChains.toJSON()[paraId];
 
-                // TODO: fix once we have types
                 const writtenCollators = (await container2000Api.query.authoritiesNoting.authorities()).toJSON();
 
                 expect(containerChainCollators).to.deep.equal(writtenCollators);
@@ -148,7 +156,9 @@ describeSuite({
                 const paraId = (await container2001Api.query.parachainInfo.parachainId()).toString();
                 const containerChainCollators = (
                     await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)
-                ).toJSON().containerChains[paraId];
+                )
+                    .unwrap()
+                    .containerChains.toJSON()[paraId];
 
                 const writtenCollators = (await container2001Api.query.authoritiesNoting.authorities()).toJSON();
 
@@ -165,7 +175,6 @@ describeSuite({
                 const paraId2000 = await container2000Api.query.parachainInfo.parachainId();
                 const paraId2001 = await container2001Api.query.parachainInfo.parachainId();
 
-                // TODO: fix once we have types
                 const containerChainCollators2000 = assignment.containerChains.toJSON()[paraId2000.toString()];
                 const containerChainCollators2001 = assignment.containerChains.toJSON()[paraId2001.toString()];
 
@@ -185,8 +194,10 @@ describeSuite({
                 const sessionIndex = (await paraApi.query.session.currentIndex()).toNumber();
                 const authorities = await paraApi.query.authorityAssignment.collatorContainerChain(sessionIndex);
                 const author = await getAuthorFromDigest(paraApi);
-                // TODO: fix once we have types
-                expect(authorities.toJSON().orchestratorChain.includes(author.toString())).to.be.true;
+                const remappedAuthorities = authorities
+                    .unwrap()
+                    .orchestratorChain.map((authority) => authority.toString());
+                expect(remappedAuthorities.includes(author)).toBe(true);
             },
         });
 
@@ -194,11 +205,10 @@ describeSuite({
             id: "T10",
             title: "Test frontier template isEthereum",
             test: async () => {
-                // TODO: fix once we have types
                 const genesisData2000 = await paraApi.query.registrar.paraGenesisData(2000);
-                expect(genesisData2000.toJSON().properties.isEthereum).to.be.false;
+                expect(genesisData2000.unwrap().properties.isEthereum.isTrue).toBe(false);
                 const genesisData2001 = await paraApi.query.registrar.paraGenesisData(2001);
-                expect(genesisData2001.toJSON().properties.isEthereum).to.be.true;
+                expect(genesisData2001.unwrap().properties.isEthereum.isTrue).toBe(true);
             },
         });
         it({
@@ -231,8 +241,7 @@ describeSuite({
                 const header2002 = await getHeaderFromRelay(relayApi, 2002);
                 expect(header2002.number.toNumber()).to.be.equal(0);
                 const registered1 = await paraApi.query.registrar.registeredParaIds();
-                // TODO: fix once we have types
-                expect(registered1.toJSON().includes(2002)).to.be.false;
+                expect(registered1.map((id) => id.toNumber()).includes(2002)).toBe(false);
 
                 const chainSpec2002 = JSON.parse(spec2002);
                 const containerChainGenesisData = chainSpecToContainerChainGenesisData(paraApi, chainSpec2002);
@@ -264,23 +273,20 @@ describeSuite({
                 const registered2 = await paraApi.query.registrar.pendingParaIds();
                 const registered3 = await paraApi.query.registrar.registeredParaIds();
 
-                // TODO: fix once we have types
-                expect(registered2.toJSON()[0][1].includes(2002)).to.be.true;
+                expect(registered2[0][1].map((id) => id.toNumber()).includes(2002)).to.be.true;
                 // But registered does not contain 2002 yet
-                // TODO: fix once we have types
-                expect(registered3.toJSON().includes(2002)).to.be.false;
+                expect(registered3.map((id) => id.toNumber()).includes(2002)).to.be.false;
                 // Container chain will be registered after 2 sessions, but because `signAndSendAndInclude` waits
                 // until the block that includes the extrinsic is finalized, it is possible that we only need to wait
                 // 1 session. So use a callback to wait 1 or 2 sessions.
                 await waitSessions(context, paraApi, 2, async () => {
                     const registered = await paraApi.query.registrar.registeredParaIds();
                     // Stop waiting when 2002 is registered
-                    return registered.toJSON().includes(2002);
+                    return registered.map((id) => id.toNumber()).includes(2002);
                 });
                 // Check that registered para ids contains 2002
                 const registered5 = await paraApi.query.registrar.registeredParaIds();
-                // TODO: fix once we have types
-                expect(registered5.toJSON().includes(2002)).to.be.true;
+                expect(registered5.map((id) => id.toNumber()).includes(2002)).to.be.true;
 
                 const blockNum = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
                 // Round block number to start of session, sometimes the rpc returns the block number of the next block
@@ -305,10 +311,11 @@ describeSuite({
             test: async () => {
                 const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
                 const paraId = (await container2002Api.query.parachainInfo.parachainId()).toString();
-                // TODO: fix once we have types
                 const containerChainCollators = (
                     await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)
-                ).toJSON().containerChains[paraId];
+                )
+                    .unwrap()
+                    .containerChains.toJSON()[paraId];
 
                 const writtenCollators = (await container2002Api.query.authoritiesNoting.authorities()).toJSON();
 
@@ -325,8 +332,7 @@ describeSuite({
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 
                 const registered1 = await paraApi.query.registrar.registeredParaIds();
-                // TODO: fix once we have types
-                expect(registered1.toJSON().includes(2002)).to.be.true;
+                expect(registered1.map((id) => id.toNumber()).includes(2002)).to.be.true;
 
                 const tx = paraApi.tx.registrar.deregister(2002);
                 await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx), alice);
@@ -336,7 +342,7 @@ describeSuite({
                 await waitSessions(context, paraApi, 2, async () => {
                     const registered = await paraApi.query.registrar.registeredParaIds();
                     // Stop waiting if 2002 is no longer registered
-                    return !registered.toJSON().includes(2002);
+                    return !registered.map((id) => id.toNumber()).includes(2002);
                 });
                 const blockNum = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
                 // Round block number to start of session, sometimes the rpc returns the block number of the next block
@@ -345,7 +351,7 @@ describeSuite({
                 // Check that pending para ids removes 2002
                 const registered = await paraApi.query.registrar.registeredParaIds();
                 // TODO: fix once we have types
-                expect(registered.toJSON().includes(2002)).to.be.false;
+                expect(registered.map((id) => id.toNumber()).includes(2002)).to.be.false;
             },
         });
 
@@ -470,131 +476,3 @@ describeSuite({
         });
     },
 });
-
-// Read log file path and check that none of the specified logs are found.
-// Only supports single-line logs.
-async function checkLogsNotExist(logFilePath: string, logs: string[]): Promise<void> {
-    const fileContent = await fs.readFile(logFilePath, "utf8");
-    const lines = fileContent.split("\n");
-
-    for (let i = 0; i < lines.length; i++) {
-        for (const log of logs) {
-            if (lines[i].includes(log)) {
-                // In case any log is found, show some context around the found log
-                const contextSize = 3;
-                const contextStart = Math.max(0, i - contextSize);
-                const contextEnd = Math.min(lines.length - 1, i + contextSize);
-                const contextLines = lines.slice(contextStart, contextEnd + 1);
-                const contextStr = contextLines.join("\n");
-
-                expect.fail(
-                    `Log entry '${log}' was found in the log file.\nContext around the found log:\n${contextStr}`
-                );
-            }
-        }
-    }
-}
-
-/// Returns the /tmp/zombie-52234... path
-function getTmpZombiePath() {
-    return process.env.MOON_ZOMBIE_DIR;
-}
-
-/// Verify that the next `numBlocks` have no more than `numAuthors` different authors
-///
-/// Concepts: blocks and slots.
-/// A slot is a time-based period where one author can propose a block.
-/// Block numbers are always consecutive, but some slots may have no block.
-/// One session consists of a fixed number of blocks, but a variable number of slots.
-///
-/// We want to ensure that all the eligible block authors are trying to propose blocks.
-///
-/// If the authority set changes between `blockStart` and `blockEnd`, this test returns an error.
-async function countUniqueBlockAuthors(
-    paraApi: ApiPromise,
-    sessionPeriod: number,
-    blockStart: number,
-    blockEnd: number,
-    numAuthors: number
-) {
-    expect(blockEnd, "Called countUniqueBlockAuthors with empty block range").toBeGreaterThan(blockStart);
-    // If the expected numAuthors is greater than the session length, it is possible for some authors to never have a
-    // chance to produce a block, in that case this test will fail.
-    // This test can also fail if the values are close, because collators sometimes fail to produce a block.
-    // For optimal results use a value of `numAuthors` that is much smaller than `sessionPeriod`.
-    expect(numAuthors).toBeLessThanOrEqual(sessionPeriod);
-    // If the authority set changes at any point, the assumption that numAuthors === authorities.len is not valid:
-    // we can always have 1 collator assigned to this chain, but if the authority set changes once in the middle of this
-    // test, we will see 2 different block authors. We detect that and return an error, the caller is expected to avoid
-    // this case by passing a different block range.
-    const authoritiesBySession = await fetchAuthoritySetChanges(paraApi, sessionPeriod, blockStart, blockEnd);
-    // If there's more than one set of authorities, it means there was a change
-    expect(
-        authoritiesBySession.size,
-        `Authority set did change in the block range passed to countUniqueBlockAuthors, the results will not be consistent. Authority sets: ${formatAuthoritySets(
-            authoritiesBySession
-        )}`
-    ).toBe(1);
-    const actualAuthors = [];
-    const blockNumbers = [];
-
-    const authors = await getAuthorFromDigestRange(paraApi, blockStart, blockEnd);
-    for (let i = 0; i < authors.length; i++) {
-        const [blockNum, author] = authors[i];
-        blockNumbers.push(blockNum);
-        actualAuthors.push(author);
-    }
-
-    const uniq = [...new Set(actualAuthors)];
-
-    if (uniq.length > numAuthors || (uniq.length === 1 && numAuthors > 1)) {
-        console.error(
-            "Mismatch between authorities and actual block authors: authorities: ",
-            formatAuthoritySets(authoritiesBySession),
-            "",
-            actualAuthors,
-            ", block numbers: ",
-            blockNumbers,
-            `uniq.length=${uniq.length}, numAuthors=${numAuthors}`
-        );
-        expect(false).to.be.true;
-    }
-}
-
-// Returns the initial set of authorities at `blockStart`, and any different sets of authorities if they changed before
-// `blockEnd`, in a map indexed by session number.
-async function fetchAuthoritySetChanges(
-    paraApi: ApiPromise,
-    sessionPeriod: number,
-    blockStart: number,
-    blockEnd: number
-): Promise<Map<number, any>> {
-    const authoritiesBySession = new Map<number, any>();
-    let lastAuthorities: any = null;
-
-    for (let blockNum = blockStart; blockNum <= blockEnd; blockNum += sessionPeriod) {
-        const blockHash = await paraApi.rpc.chain.getBlockHash(blockNum);
-        const apiAt = await paraApi.at(blockHash);
-        const session = (await apiAt.query.session.currentIndex()).toNumber();
-        const authorities = (await apiAt.query.authorityAssignment.collatorContainerChain(session)).toJSON();
-
-        // If this is the first iteration or if the authorities have changed
-        if (!lastAuthorities || JSON.stringify(lastAuthorities) !== JSON.stringify(authorities)) {
-            authoritiesBySession.set(session, authorities);
-        }
-
-        lastAuthorities = authorities;
-    }
-
-    return authoritiesBySession;
-}
-
-function formatAuthoritySets(authoritiesBySession: Map<number, any>): string {
-    let logString = "";
-
-    authoritiesBySession.forEach((authorities, session) => {
-        logString += `Session ${session} authorities:\n${JSON.stringify(authorities, null, 4)}`;
-    });
-
-    return logString;
-}

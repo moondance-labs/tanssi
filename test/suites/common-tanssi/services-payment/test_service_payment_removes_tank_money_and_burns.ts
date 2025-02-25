@@ -1,9 +1,10 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import type { ApiPromise } from "@polkadot/api";
+
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
-import { jumpSessions, fetchIssuance } from "util/block";
-import { paraIdTank } from "util/payment";
+import type { ApiPromise } from "@polkadot/api";
+import { fetchIssuance, jumpSessions } from "utils";
+import { paraIdTank } from "utils";
 
 describeSuite({
     id: "COMM0201",

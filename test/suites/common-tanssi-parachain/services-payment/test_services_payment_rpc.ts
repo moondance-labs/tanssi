@@ -1,5 +1,6 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, customDevRpcRequest } from "@moonwall/cli";
+
+import { customDevRpcRequest, describeSuite, expect } from "@moonwall/cli";
 
 describeSuite({
     id: "COMMO0804",

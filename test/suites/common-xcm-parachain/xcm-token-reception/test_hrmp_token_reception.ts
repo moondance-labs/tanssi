@@ -3,8 +3,8 @@ import { type KeyringPair, alith } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import { u8aToHex } from "@polkadot/util";
 
-import { type RawXcmMessage, XcmFragment, injectHrmpMessageAndSeal } from "../../../util/xcm.ts";
-import { STATEMINT_LOCATION_EXAMPLE } from "../../../util/constants.ts";
+import { type RawXcmMessage, XcmFragment, injectHrmpMessageAndSeal } from "utils";
+import { STATEMINT_LOCATION_EXAMPLE } from "utils";
 
 describeSuite({
     id: "COMMON0208",

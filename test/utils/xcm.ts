@@ -944,16 +944,6 @@ type AnyObject = {
     [key: string]: any;
 };
 
-export const expectXcmEventMessage = async (context: DevModeContext, message: string) => {
-    const records = await context.polkadotJs().query.system.events();
-
-    const filteredEvents = records
-        .map(({ event }) => (context.polkadotJs().events.xcmpQueue.Fail.is(event) ? event : undefined))
-        .filter((event) => event);
-
-    return filteredEvents.length ? filteredEvents[0]?.data.error.toString() === message : false;
-};
-
 export const extractPaidDeliveryFees = async (context: DevModeContext) => {
     const records = await context.polkadotJs().query.system.events();
 

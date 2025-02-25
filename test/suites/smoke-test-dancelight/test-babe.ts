@@ -1,8 +1,11 @@
 import "@tanssi/api-augment/dancelight";
+
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { getBlockArray } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
+import type { ApiDecoration } from "@polkadot/api/types";
 import type { GenericExtrinsic, u64 } from "@polkadot/types";
+import type { AccountId32, BlockHash, DigestItem, Header } from "@polkadot/types/interfaces";
 import type {
     FrameSystemEventRecord,
     SpConsensusBabeAppPublic,
@@ -10,11 +13,9 @@ import type {
 } from "@polkadot/types/lookup";
 import type { AnyTuple } from "@polkadot/types/types";
 import { hexToU8a, stringToHex } from "@polkadot/util";
+import type { HexString } from "@polkadot/util/types";
 import { sr25519Verify } from "@polkadot/wasm-crypto";
 import Bottleneck from "bottleneck";
-import type { AccountId32, BlockHash, DigestItem, Header } from "@polkadot/types/interfaces";
-import type { HexString } from "@polkadot/util/types";
-import type { ApiDecoration } from "@polkadot/api/types";
 
 const timePeriod = process.env.TIME_PERIOD ? Number(process.env.TIME_PERIOD) : 1 * 60 * 60 * 1000;
 const timeout = Math.max(Math.floor(timePeriod / 12), 5000);

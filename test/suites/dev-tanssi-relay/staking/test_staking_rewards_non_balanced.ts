@@ -1,31 +1,19 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll, type DevModeContext } from "@moonwall/cli";
-import type { ApiPromise } from "@polkadot/api";
+
+import { type DevModeContext, beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
-import type { Header, ParaId, HeadData, Digest, DigestItem, Slot } from "@polkadot/types/interfaces";
+import type { ApiPromise } from "@polkadot/api";
+import type { Digest, DigestItem, HeadData, Header, ParaId, Slot } from "@polkadot/types/interfaces";
+import { stringToHex } from "@polkadot/util";
 import {
+    createBlockAndRemoveInvulnerables,
+    DANCE,
     fetchIssuance,
     fetchRewardAuthorContainers,
     filterRewardStakingCollator,
     filterRewardStakingDelegators,
     jumpSessions,
-} from "util/block";
-import { DANCE } from "util/constants";
-import { stringToHex } from "@polkadot/util";
-
-export async function createBlockAndRemoveInvulnerables(context: DevModeContext, sudoKey: KeyringPair) {
-    let nonce = (await context.polkadotJs().rpc.system.accountNextIndex(sudoKey.address)).toNumber();
-    const invulnerables = await context.polkadotJs().query.tanssiInvulnerables.invulnerables();
-
-    const txs = invulnerables.map((invulnerable) =>
-        context
-            .polkadotJs()
-            .tx.sudo.sudo(context.polkadotJs().tx.tanssiInvulnerables.removeInvulnerable(invulnerable))
-            .signAsync(sudoKey, { nonce: nonce++ })
-    );
-
-    await context.createBlock(txs);
-}
+} from "utils";
 
 // Helper function to make rewards work for a specific block and slot.
 // We need to mock a proper HeadData object for AuthorNoting inherent to work, and thus
@@ -88,7 +76,7 @@ describeSuite({
             charlie = context.keyring.charlie;
             dave = context.keyring.dave;
 
-            await createBlockAndRemoveInvulnerables(context, alice);
+            await createBlockAndRemoveInvulnerables(context, alice, true);
 
             // Add keys to pallet session. In dancebox they are already there in genesis.
             // We need 4 collators because we have 2 chains with 2 collators per chain.

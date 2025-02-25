@@ -1,7 +1,7 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type KeyringPair, alith } from "@moonwall/util";
 import { ApiPromise, Keyring, WsProvider } from "@polkadot/api";
-import { STATEMINT_LOCATION_EXAMPLE } from "../../../util/constants.ts";
+import { STATEMINT_LOCATION_EXAMPLE } from "utils";
 
 const runtimeApi = {
     runtime: {
@@ -126,7 +126,7 @@ describeSuite({
                 const weightToNativeAssets = await polkadotJs.call.xcmPaymentApi.queryWeightToAssetFee(
                     {
                         refTime: 10_000_000_000n,
-                        profSize: 0n,
+                        proofSize: 0n,
                     },
                     {
                         V3: {
@@ -143,7 +143,7 @@ describeSuite({
                 const weightToForeingAssets = await polkadotJs.call.xcmPaymentApi.queryWeightToAssetFee(
                     {
                         refTime: 10_000_000_000n,
-                        profSize: 0n,
+                        proofSize: 0n,
                     },
                     {
                         V3: {

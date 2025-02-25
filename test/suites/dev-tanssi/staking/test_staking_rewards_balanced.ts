@@ -1,16 +1,17 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import type { ApiPromise } from "@polkadot/api";
+
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
 import {
     fetchIssuance,
     fetchRewardAuthorOrchestrator,
     filterRewardStakingCollator,
     filterRewardStakingDelegators,
     jumpSessions,
-} from "util/block";
-import { DANCE } from "util/constants";
-import { createBlockAndRemoveInvulnerables } from "util/invulnerables";
+} from "utils";
+import { DANCE } from "utils";
+import { createBlockAndRemoveInvulnerables } from "utils";
 
 describeSuite({
     id: "DEV0802",

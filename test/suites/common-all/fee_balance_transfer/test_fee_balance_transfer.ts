@@ -1,9 +1,9 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { type KeyringPair, filterAndApply } from "@moonwall/util";
+
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import { type KeyringPair, extractWeight, filterAndApply } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
-import { extractWeight } from "@moonwall/util";
-import { extractFeeAuthor, filterRewardFromOrchestrator } from "util/block";
+import { extractFeeAuthor, filterRewardFromOrchestrator } from "utils";
 
 describeSuite({
     id: "C0101",

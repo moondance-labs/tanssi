@@ -9,7 +9,7 @@ import {
     createViemTransaction,
 } from "@moonwall/util";
 import type { u16 } from "@polkadot/types-codec";
-import { mockAssetCreation, RELAY_SOURCE_LOCATION, relayAssetMetadata } from "../../../helpers/assets";
+import { RELAY_SOURCE_LOCATION, mockAssetCreation, relayAssetMetadata } from "../../../helpers/assets";
 
 import { type Abi, encodeFunctionData } from "viem";
 

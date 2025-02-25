@@ -1,9 +1,10 @@
 import "@tanssi/api-augment";
-import type { ApiDecoration } from "@polkadot/api/types";
-import chalk from "chalk";
-import { expect, beforeAll, describeSuite } from "@moonwall/cli";
-import type { PalletProxyProxyDefinition } from "@polkadot/types/lookup";
+
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
+import type { ApiDecoration } from "@polkadot/api/types";
+import type { PalletProxyProxyDefinition } from "@polkadot/types/lookup";
+import chalk from "chalk";
 
 describeSuite({
     id: "S05",
