@@ -5,7 +5,7 @@ import { type DevModeContext, beforeAll, describeSuite, expect } from "@moonwall
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import { hexToU8a, u8aToHex } from "@polkadot/util";
 import { encodeAddress, keccakAsHex, xxhashAsU8a } from "@polkadot/util-crypto";
-import { type MultiLocation, sovereignAccountEncoded } from "utils";
+import { HOLESKY_SOVEREIGN_ACCOUNT_ADDRESS, type MultiLocation, sovereignAccountEncoded } from "utils";
 import { expectEventCount } from "../../../helpers/events";
 
 describeSuite({
@@ -247,7 +247,7 @@ describeSuite({
                 // Sovereign balance before
                 const {
                     data: { free: sovereignBalanceBefore },
-                } = await context.polkadotJs().query.system.account(sovereignAccountEncoded);
+                } = await context.polkadotJs().query.system.account(HOLESKY_SOVEREIGN_ACCOUNT_ADDRESS);
 
                 // Bob balance before
                 const {
@@ -265,7 +265,7 @@ describeSuite({
                 // Check balances were updated correctly.
                 const {
                     data: { free: sovereignBalanceAfter },
-                } = await context.polkadotJs().query.system.account(sovereignAccountEncoded);
+                } = await context.polkadotJs().query.system.account(HOLESKY_SOVEREIGN_ACCOUNT_ADDRESS);
 
                 const {
                     data: { free: bobBalanceAfter },

@@ -2,7 +2,7 @@ import "@tanssi/api-augment/dancelight";
 
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
-import { PRIMARY_GOVERNANCE_CHANNEL_ID, sovereignAccountEncoded } from "utils";
+import { HOLESKY_SOVEREIGN_ACCOUNT_ADDRESS, PRIMARY_GOVERNANCE_CHANNEL_ID } from "utils";
 import { getAccountBalance } from "../../utils/account.ts";
 
 describeSuite({
@@ -54,8 +54,14 @@ describeSuite({
                 const apiAtCheckpointA = await api.at(await api.rpc.chain.getBlockHash(blockNumberCheckpointB));
                 const apiAtCheckpointB = await api.at(await api.rpc.chain.getBlockHash(blockNumberCheckpointA));
 
-                const sovereignBalanceCheckpointB = await getAccountBalance(apiAtCheckpointB, sovereignAccountEncoded);
-                const sovereignBalanceCheckpointA = await getAccountBalance(apiAtCheckpointA, sovereignAccountEncoded);
+                const sovereignBalanceCheckpointB = await getAccountBalance(
+                    apiAtCheckpointB,
+                    HOLESKY_SOVEREIGN_ACCOUNT_ADDRESS
+                );
+                const sovereignBalanceCheckpointA = await getAccountBalance(
+                    apiAtCheckpointA,
+                    HOLESKY_SOVEREIGN_ACCOUNT_ADDRESS
+                );
 
                 const event = (await apiAtCheckpointB.query.system.events()).find(
                     (event) => event.event.method === "RewardsMessageSent"
