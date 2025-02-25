@@ -948,11 +948,71 @@ where
 
     #[cfg(feature = "try-runtime")]
     fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
-        Ok(vec![])
+        let Some(stream_id) = pallet_stream_payment::Streams::<T>::iter_keys().next() else {
+            return Ok(vec![]);
+        };
+
+        let old_stream: OldStream<AccountId, TimeUnit, StreamPaymentAssetId, Balance> =
+            frame_support::storage::unhashed::get(
+                &pallet_stream_payment::Streams::<Runtime>::hashed_key_for(stream_id),
+            )
+            .expect("key was found so entry must exist");
+
+        Ok((stream_id, old_stream).encode())
     }
 
     #[cfg(feature = "try-runtime")]
-    fn post_upgrade(&self, _state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+    fn post_upgrade(&self, mut state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        if state.is_empty() {
+            // there were no streams
+            return Ok(());
+        }
+
+        let (stream_id, old_stream) = <(
+            Runtime::StreamId,
+            OldStream<AccountId, TimeUnit, StreamPaymentAssetId, Balance>,
+        )>::decode(&mut state)
+        .expect("to decode properly");
+
+        let new_stream =
+            pallet_stream_payment::Streams::<T>::get(stream_id).expect("entry should still exist");
+
+        let mut expected = Stream {
+            source: old_stream.source,
+            target: old_stream.target,
+            deposit: old_stream.deposit,
+            last_time_updated: old_stream.last_time_updated,
+            pending_request: None, // will be replaced below
+            opening_deposit: old_stream.opening_deposit,
+            config: StreamConfig {
+                time_unit: old_stream.config.time_unit,
+                asset_id: old_stream.config.asset_id,
+                rate: old_stream.config.rate,
+                minimum_request_deadline_delay: 0u32.into(),
+                soft_minimum_deposit: 0u32.into(),
+            },
+        };
+
+        if let Some(pending_request) = old_stream.pending_request {
+            expected.pending_request = ChangeRequest {
+                requester: pending_request.requester,
+                kind: pending_request.kind,
+                deposit_change: pending_request.deposit_change,
+                new_config: StreamConfig {
+                    time_unit: pending_request.new_config.time_unit,
+                    asset_id: pending_request.new_config.config.asset_id,
+                    rate: pending_request.new_config.config.rate,
+                    minimum_request_deadline_delay: 0u32.into(),
+                    soft_minimum_deposit: 0u32.into(),
+                },
+            }
+        }
+
+        assert_eq!(
+            new_stream, expected,
+            "Migrated stream don't match expected value"
+        );
+
         Ok(())
     }
 }
