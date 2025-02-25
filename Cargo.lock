@@ -4486,7 +4486,7 @@ dependencies = [
 [[package]]
 name = "evm"
 version = "0.42.0"
-source = "git+https://github.com/moondance-labs/evm?branch=tanssi-polkadot-stable2412#3d55aa0f21b82b1a3c660c3be6a3e2341f050860"
+source = "git+https://github.com/moondance-labs/evm?branch=tanssi-polkadot-stable2412#4f16e4d093c992f86fd5ef98541d727c85c7145c"
 dependencies = [
  "auto_impl",
  "environmental",
@@ -4506,7 +4506,7 @@ dependencies = [
 [[package]]
 name = "evm-core"
 version = "0.42.0"
-source = "git+https://github.com/moondance-labs/evm?branch=tanssi-polkadot-stable2412#3d55aa0f21b82b1a3c660c3be6a3e2341f050860"
+source = "git+https://github.com/moondance-labs/evm?branch=tanssi-polkadot-stable2412#4f16e4d093c992f86fd5ef98541d727c85c7145c"
 dependencies = [
  "parity-scale-codec",
  "primitive-types 0.13.1",
@@ -4517,7 +4517,7 @@ dependencies = [
 [[package]]
 name = "evm-gasometer"
 version = "0.42.0"
-source = "git+https://github.com/moondance-labs/evm?branch=tanssi-polkadot-stable2412#3d55aa0f21b82b1a3c660c3be6a3e2341f050860"
+source = "git+https://github.com/moondance-labs/evm?branch=tanssi-polkadot-stable2412#4f16e4d093c992f86fd5ef98541d727c85c7145c"
 dependencies = [
  "environmental",
  "evm-core",
@@ -4528,7 +4528,7 @@ dependencies = [
 [[package]]
 name = "evm-runtime"
 version = "0.42.0"
-source = "git+https://github.com/moondance-labs/evm?branch=tanssi-polkadot-stable2412#3d55aa0f21b82b1a3c660c3be6a3e2341f050860"
+source = "git+https://github.com/moondance-labs/evm?branch=tanssi-polkadot-stable2412#4f16e4d093c992f86fd5ef98541d727c85c7145c"
 dependencies = [
  "auto_impl",
  "environmental",
@@ -4653,7 +4653,7 @@ dependencies = [
 [[package]]
 name = "fc-api"
 version = "1.0.0-dev"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#32898c6e28004007eca3799c7b275ff50264bb95"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#64fa2d771fe3445803bd07a6a6f36ce75a78c593"
 dependencies = [
  "async-trait",
  "fp-storage",
@@ -4665,7 +4665,7 @@ dependencies = [
 [[package]]
 name = "fc-cli"
 version = "1.0.0-dev"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#32898c6e28004007eca3799c7b275ff50264bb95"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#64fa2d771fe3445803bd07a6a6f36ce75a78c593"
 dependencies = [
  "clap",
  "ethereum-types 0.15.1",
@@ -4683,7 +4683,7 @@ dependencies = [
 [[package]]
 name = "fc-consensus"
 version = "2.0.0-dev"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#32898c6e28004007eca3799c7b275ff50264bb95"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#64fa2d771fe3445803bd07a6a6f36ce75a78c593"
 dependencies = [
  "async-trait",
  "fp-consensus",
@@ -4699,7 +4699,7 @@ dependencies = [
 [[package]]
 name = "fc-db"
 version = "2.0.0-dev"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#32898c6e28004007eca3799c7b275ff50264bb95"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#64fa2d771fe3445803bd07a6a6f36ce75a78c593"
 dependencies = [
  "async-trait",
  "ethereum",
@@ -4729,7 +4729,7 @@ dependencies = [
 [[package]]
 name = "fc-mapping-sync"
 version = "2.0.0-dev"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#32898c6e28004007eca3799c7b275ff50264bb95"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#64fa2d771fe3445803bd07a6a6f36ce75a78c593"
 dependencies = [
  "fc-db",
  "fc-storage",
@@ -4752,7 +4752,7 @@ dependencies = [
 [[package]]
 name = "fc-rpc"
 version = "2.0.0-dev"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#32898c6e28004007eca3799c7b275ff50264bb95"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#64fa2d771fe3445803bd07a6a6f36ce75a78c593"
 dependencies = [
  "ethereum",
  "ethereum-types 0.15.1",
@@ -4806,7 +4806,7 @@ dependencies = [
 [[package]]
 name = "fc-rpc-core"
 version = "1.1.0-dev"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#32898c6e28004007eca3799c7b275ff50264bb95"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#64fa2d771fe3445803bd07a6a6f36ce75a78c593"
 dependencies = [
  "ethereum",
  "ethereum-types 0.15.1",
@@ -4821,7 +4821,7 @@ dependencies = [
 [[package]]
 name = "fc-storage"
 version = "1.0.0-dev"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#32898c6e28004007eca3799c7b275ff50264bb95"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#64fa2d771fe3445803bd07a6a6f36ce75a78c593"
 dependencies = [
  "ethereum",
  "ethereum-types 0.15.1",
@@ -5137,7 +5137,7 @@ dependencies = [
 [[package]]
 name = "fp-account"
 version = "1.0.0-dev"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#32898c6e28004007eca3799c7b275ff50264bb95"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#64fa2d771fe3445803bd07a6a6f36ce75a78c593"
 dependencies = [
  "hex",
  "impl-serde 0.5.0",
@@ -5156,7 +5156,7 @@ dependencies = [
 [[package]]
 name = "fp-consensus"
 version = "2.0.0-dev"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#32898c6e28004007eca3799c7b275ff50264bb95"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#64fa2d771fe3445803bd07a6a6f36ce75a78c593"
 dependencies = [
  "ethereum",
  "parity-scale-codec",
@@ -5167,7 +5167,7 @@ dependencies = [
 [[package]]
 name = "fp-ethereum"
 version = "1.0.0-dev"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#32898c6e28004007eca3799c7b275ff50264bb95"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#64fa2d771fe3445803bd07a6a6f36ce75a78c593"
 dependencies = [
  "ethereum",
  "ethereum-types 0.15.1",
@@ -5179,7 +5179,7 @@ dependencies = [
 [[package]]
 name = "fp-evm"
 version = "3.0.0-dev"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#32898c6e28004007eca3799c7b275ff50264bb95"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#64fa2d771fe3445803bd07a6a6f36ce75a78c593"
 dependencies = [
  "environmental",
  "evm",
@@ -5195,7 +5195,7 @@ dependencies = [
 [[package]]
 name = "fp-rpc"
 version = "3.0.0-dev"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#32898c6e28004007eca3799c7b275ff50264bb95"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#64fa2d771fe3445803bd07a6a6f36ce75a78c593"
 dependencies = [
  "ethereum",
  "ethereum-types 0.15.1",
@@ -5211,7 +5211,7 @@ dependencies = [
 [[package]]
 name = "fp-self-contained"
 version = "1.0.0-dev"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#32898c6e28004007eca3799c7b275ff50264bb95"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#64fa2d771fe3445803bd07a6a6f36ce75a78c593"
 dependencies = [
  "frame-support",
  "parity-scale-codec",
@@ -5223,7 +5223,7 @@ dependencies = [
 [[package]]
 name = "fp-storage"
 version = "2.0.0"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#32898c6e28004007eca3799c7b275ff50264bb95"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#64fa2d771fe3445803bd07a6a6f36ce75a78c593"
 dependencies = [
  "parity-scale-codec",
  "serde",
@@ -9445,7 +9445,7 @@ dependencies = [
 [[package]]
 name = "pallet-base-fee"
 version = "1.0.0"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#32898c6e28004007eca3799c7b275ff50264bb95"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#64fa2d771fe3445803bd07a6a6f36ce75a78c593"
 dependencies = [
  "fp-evm",
  "frame-support",
@@ -9889,7 +9889,7 @@ dependencies = [
 [[package]]
 name = "pallet-ethereum"
 version = "4.0.0-dev"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#32898c6e28004007eca3799c7b275ff50264bb95"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#64fa2d771fe3445803bd07a6a6f36ce75a78c593"
 dependencies = [
  "ethereum",
  "ethereum-types 0.15.1",
@@ -9939,7 +9939,7 @@ dependencies = [
 [[package]]
 name = "pallet-evm"
 version = "6.0.0-dev"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#32898c6e28004007eca3799c7b275ff50264bb95"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#64fa2d771fe3445803bd07a6a6f36ce75a78c593"
 dependencies = [
  "environmental",
  "evm",
@@ -9962,7 +9962,7 @@ dependencies = [
 [[package]]
 name = "pallet-evm-chain-id"
 version = "1.0.0-dev"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#32898c6e28004007eca3799c7b275ff50264bb95"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#64fa2d771fe3445803bd07a6a6f36ce75a78c593"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -10040,7 +10040,7 @@ dependencies = [
 [[package]]
 name = "pallet-evm-precompile-modexp"
 version = "2.0.0-dev"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#32898c6e28004007eca3799c7b275ff50264bb95"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#64fa2d771fe3445803bd07a6a6f36ce75a78c593"
 dependencies = [
  "fp-evm",
  "num",
@@ -10070,7 +10070,7 @@ dependencies = [
 [[package]]
 name = "pallet-evm-precompile-sha3fips"
 version = "2.0.0-dev"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#32898c6e28004007eca3799c7b275ff50264bb95"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#64fa2d771fe3445803bd07a6a6f36ce75a78c593"
 dependencies = [
  "fp-evm",
  "tiny-keccak",
@@ -10079,7 +10079,7 @@ dependencies = [
 [[package]]
 name = "pallet-evm-precompile-simple"
 version = "2.0.0-dev"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#32898c6e28004007eca3799c7b275ff50264bb95"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#64fa2d771fe3445803bd07a6a6f36ce75a78c593"
 dependencies = [
  "fp-evm",
  "ripemd",
@@ -13237,7 +13237,7 @@ dependencies = [
 [[package]]
 name = "precompile-utils"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#32898c6e28004007eca3799c7b275ff50264bb95"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#64fa2d771fe3445803bd07a6a6f36ce75a78c593"
 dependencies = [
  "environmental",
  "evm",
@@ -13261,7 +13261,7 @@ dependencies = [
 [[package]]
 name = "precompile-utils-macro"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#32898c6e28004007eca3799c7b275ff50264bb95"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#64fa2d771fe3445803bd07a6a6f36ce75a78c593"
 dependencies = [
  "case",
  "num_enum",

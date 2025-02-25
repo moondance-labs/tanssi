@@ -428,6 +428,4 @@ impl snowbridge_pallet_inbound_queue::Config for Runtime {
     type RewardProcessor = RewardThroughTreasury<Self>;
     #[cfg(feature = "runtime-benchmarks")]
     type MessageProcessor = (benchmark_helper::DoNothingMessageProcessor,);
-    // TODO: copy from diego PR
-    type RewardProcessor = ();
 }
