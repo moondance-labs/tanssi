@@ -2,7 +2,7 @@ import "@tanssi/api-augment/dancelight";
 
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
-import { PRIMARY_GOVERNANCE_CHANNEL_ID } from "../../util/constants.ts";
+import { PRIMARY_GOVERNANCE_CHANNEL_ID } from "utils";
 
 describeSuite({
     id: "SMOK05",
@@ -26,7 +26,7 @@ describeSuite({
                     .map(([key, entry]) => {
                         const sum = [...entry.individual.entries()].reduce(
                             (acc, [key, points]) => acc + points.toNumber(),
-                            0,
+                            0
                         );
                         const failed = sum !== entry.total.toNumber();
                         return { failed, key: key.toHex() };
@@ -51,12 +51,12 @@ describeSuite({
                 const beforeCurrentEpochStartBlockNumber = currentEpochStartBlockNumber - 1;
 
                 const apiAtCheckpointA = await api.at(
-                    await api.rpc.chain.getBlockHash(beforeCurrentEpochStartBlockNumber),
+                    await api.rpc.chain.getBlockHash(beforeCurrentEpochStartBlockNumber)
                 );
                 const apiAtCheckpointB = await api.at(await api.rpc.chain.getBlockHash(currentEpochStartBlockNumber));
 
                 const event = (await apiAtCheckpointB.query.system.events()).find(
-                    (event) => event.event.method === "RewardsMessageSent",
+                    (event) => event.event.method === "RewardsMessageSent"
                 );
 
                 const checkpointAPrimaryChannelNonce =
