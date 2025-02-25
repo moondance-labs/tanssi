@@ -24,9 +24,7 @@ use {
         StartRelayChainTasksParams,
     },
     cumulus_primitives_core::ParaId,
-    cumulus_relay_chain_interface::{
-        call_remote_runtime_function, OverseerHandle, RelayChainInterface,
-    },
+    cumulus_relay_chain_interface::{call_runtime_api, OverseerHandle, RelayChainInterface},
     dancebox_runtime::{
         opaque::{Block, Hash},
         RuntimeApi,
@@ -477,7 +475,7 @@ fn start_consensus_container<RuntimeApi: MinimalContainerRuntimeApi>(
 
             async move {
                 if solochain {
-                    let authorities: Option<Vec<NimbusId>> = call_remote_runtime_function(
+                    let authorities: Option<Vec<NimbusId>> = call_runtime_api(
                         &relay_chain_interace_for_orch,
                         "TanssiAuthorityAssignmentApi_para_id_authorities",
                         relay_parent,
@@ -497,7 +495,7 @@ fn start_consensus_container<RuntimeApi: MinimalContainerRuntimeApi>(
                         relay_parent
                     );
 
-                    let slot_freq: Option<_> = call_remote_runtime_function(
+                    let slot_freq: Option<_> = call_runtime_api(
                         &relay_chain_interace_for_orch,
                         "OnDemandBlockProductionApi_parathread_slot_frequency",
                         relay_parent,

@@ -283,7 +283,7 @@ async fn try_spawn<
             .prometheus_params
             .prometheus_port = Some(random_ports[0]);
         container_chain_cli.base.base.network_params.port = Some(random_ports[1]);
-        container_chain_cli.base.base.rpc_port = Some(random_ports[2]);
+        container_chain_cli.base.base.rpc_params.rpc_port = Some(random_ports[2]);
     }
 
     let validator = collation_params.is_some();

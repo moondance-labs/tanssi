@@ -374,28 +374,28 @@ fn weights_assigned_to_extrinsics_are_correct() {
         assert_eq!(
             crate::Call::<Test>::set_max_collators { new: 1u32 }
                 .get_dispatch_info()
-                .weight,
+                .call_weight,
             <() as crate::weights::WeightInfo>::set_config_with_u32()
         );
 
         assert_eq!(
             crate::Call::<Test>::set_min_orchestrator_collators { new: 1u32 }
                 .get_dispatch_info()
-                .weight,
+                .call_weight,
             <() as crate::weights::WeightInfo>::set_config_with_u32()
         );
 
         assert_eq!(
             crate::Call::<Test>::set_collators_per_container { new: 1u32 }
                 .get_dispatch_info()
-                .weight,
+                .call_weight,
             <() as crate::weights::WeightInfo>::set_config_with_u32()
         );
 
         assert_eq!(
             crate::Call::<Test>::set_max_orchestrator_collators { new: 1u32 }
                 .get_dispatch_info()
-                .weight,
+                .call_weight,
             <() as crate::weights::WeightInfo>::set_config_with_u32()
         );
     });

@@ -52,7 +52,7 @@ fn transact_sudo_from_relay_hits_barrier_dancebox_without_buy_exec() {
         Westend::child_location_of(Dancebox::para_id()).into();
 
     let weight_limit = WeightLimit::Unlimited;
-    let require_weight_at_most = Weight::from_parts(1000000000, 200000);
+    let fallback_max_weight = Some(Weight::from_parts(1000000000, 200000));
     let origin_kind = OriginKind::Superuser;
     let check_origin = None;
 
@@ -62,7 +62,7 @@ fn transact_sudo_from_relay_hits_barrier_dancebox_without_buy_exec() {
             check_origin,
         },
         Transact {
-            require_weight_at_most,
+            fallback_max_weight,
             origin_kind,
             call,
         },
@@ -107,7 +107,7 @@ fn transact_sudo_from_relay_does_not_have_sudo_power() {
     let dancebox_para_destination: VersionedLocation =
         Westend::child_location_of(Dancebox::para_id()).into();
 
-    let require_weight_at_most = Weight::from_parts(1000000000, 200000);
+    let fallback_max_weight = Some(Weight::from_parts(1000000000, 200000));
     let origin_kind = OriginKind::Superuser;
 
     let buy_execution_fee_amount =
@@ -125,7 +125,7 @@ fn transact_sudo_from_relay_does_not_have_sudo_power() {
             weight_limit: Unlimited,
         },
         Transact {
-            require_weight_at_most,
+            fallback_max_weight,
             origin_kind,
             call,
         },
@@ -170,7 +170,7 @@ fn transact_sudo_from_relay_has_signed_origin_powers() {
     let dancebox_para_destination: VersionedLocation =
         Westend::child_location_of(Dancebox::para_id()).into();
 
-    let require_weight_at_most = Weight::from_parts(1000000000, 200000);
+    let fallback_max_weight = Some(Weight::from_parts(1000000000, 200000));
     let origin_kind = OriginKind::SovereignAccount;
 
     let buy_execution_fee_amount =
@@ -188,7 +188,7 @@ fn transact_sudo_from_relay_has_signed_origin_powers() {
             weight_limit: Unlimited,
         },
         Transact {
-            require_weight_at_most,
+            fallback_max_weight,
             origin_kind,
             call,
         },
@@ -248,7 +248,7 @@ fn transact_sudo_from_frontier_has_signed_origin_powers() {
     }
     .into();
 
-    let require_weight_at_most = Weight::from_parts(1000000000, 200000);
+    let fallback_max_weight = Some(Weight::from_parts(1000000000, 200000));
     let origin_kind = OriginKind::SovereignAccount;
 
     let buy_execution_fee_amount =
@@ -266,7 +266,7 @@ fn transact_sudo_from_frontier_has_signed_origin_powers() {
             weight_limit: Unlimited,
         },
         Transact {
-            require_weight_at_most,
+            fallback_max_weight,
             origin_kind,
             call,
         },
@@ -330,7 +330,7 @@ fn transact_sudo_from_simple_has_signed_origin_powers() {
     }
     .into();
 
-    let require_weight_at_most = Weight::from_parts(1000000000, 200000);
+    let fallback_max_weight = Some(Weight::from_parts(1000000000, 200000));
     let origin_kind = OriginKind::SovereignAccount;
 
     let buy_execution_fee_amount =
@@ -348,7 +348,7 @@ fn transact_sudo_from_simple_has_signed_origin_powers() {
             weight_limit: Unlimited,
         },
         Transact {
-            require_weight_at_most,
+            fallback_max_weight,
             origin_kind,
             call,
         },
