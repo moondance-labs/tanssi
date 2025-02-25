@@ -921,13 +921,12 @@ pub fn mock_validation_code() -> ValidationCode {
 
 /// Create a dummy collator id suitable to be used in a V1 candidate descriptor.
 pub fn junk_collator() -> CollatorId {
-    CollatorId::from_slice(&mut (0..32).into_iter().collect::<Vec<_>>().as_slice())
-        .expect("32 bytes; qed")
+    CollatorId::from_slice(&mut (0..32).collect::<Vec<_>>().as_slice()).expect("32 bytes; qed")
 }
 
 /// Creates a dummy collator signature suitable to be used in a V1 candidate descriptor.
 pub fn junk_collator_signature() -> CollatorSignature {
-    CollatorSignature::from_slice(&mut (0..64).into_iter().collect::<Vec<_>>().as_slice())
+    CollatorSignature::from_slice(&mut (0..64).collect::<Vec<_>>().as_slice())
         .expect("64 bytes; qed")
 }
 
@@ -1060,7 +1059,6 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
             }
             .into()
         }
-        .into()
     }
 
     /*
@@ -1262,11 +1260,8 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
                             // Claim queue offset must be `0` so this candidate is for the very
                             // next block.
                             candidate.commitments.upward_messages.force_push(
-                                UMPSignal::SelectCore(
-                                    CoreSelector(chain_idx as u8),
-                                    ClaimQueueOffset(0),
-                                )
-                                .encode(),
+                                UMPSignal::SelectCore(CoreSelector(chain_idx), ClaimQueueOffset(0))
+                                    .encode(),
                             );
                         }
 
@@ -1384,7 +1379,7 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
         backed_in_inherent.append(&mut self.backed_and_concluding_paras.clone());
         backed_in_inherent.append(&mut self.backed_in_inherent_paras.clone());
         let backed_candidates = self.create_backed_candidates(&backed_in_inherent);
-        let used_cores_set = (0..used_cores).into_iter().map(|x| x as u32).collect();
+        let used_cores_set = (0..used_cores).map(|x| x as u32).collect();
 
         let availability_bitvec = Self::availability_bitvec(&used_cores_set, max_cores);
 
