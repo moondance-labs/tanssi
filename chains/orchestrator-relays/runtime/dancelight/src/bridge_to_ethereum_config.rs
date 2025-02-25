@@ -42,8 +42,7 @@ use {
     pallet_xcm::EnsureXcm,
     parity_scale_codec::DecodeAll,
     snowbridge_beacon_primitives::{Fork, ForkVersions},
-    snowbridge_core::inbound::Message,
-    snowbridge_core::{gwei, meth, Channel, PricingParameters, Rewards},
+    snowbridge_core::{gwei, inbound::Message, meth, Channel, PricingParameters, Rewards},
     snowbridge_pallet_inbound_queue::RewardProcessor,
     snowbridge_pallet_outbound_queue::OnNewCommitment,
     snowbridge_router_primitives::inbound::{
