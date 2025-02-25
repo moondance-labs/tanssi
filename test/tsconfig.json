@@ -17,7 +17,7 @@
   },
   "include": [
     "*suites/**/*.ts",
-    "util/*.ts",
+    "utils/*.ts",
     "tools/*.ts",
     "helpers/compiled/*.json"
   ],

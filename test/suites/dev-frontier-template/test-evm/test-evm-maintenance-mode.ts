@@ -1,5 +1,5 @@
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { ALITH_ADDRESS, DEFAULT_GENESIS_BALANCE, BALTATHAR_ADDRESS, baltathar, alith } from "@moonwall/util";
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import { ALITH_ADDRESS, BALTATHAR_ADDRESS, DEFAULT_GENESIS_BALANCE, alith, baltathar } from "@moonwall/util";
 
 // When in maintenance mode:
 // A call from root (sudo) can make a transfer directly in pallet_evm

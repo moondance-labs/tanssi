@@ -1,8 +1,9 @@
 import "@tanssi/api-augment";
+
 import { beforeAll, deployCreateCompiledContract, describeSuite, expect } from "@moonwall/cli";
 import { ALITH_ADDRESS, createEthersTransaction } from "@moonwall/util";
 import { type Abi, encodeFunctionData } from "viem";
-import { expectEVMResult, type HeavyContract, deployHeavyContracts } from "../../../helpers";
+import { type HeavyContract, deployHeavyContracts, expectEVMResult } from "../../../helpers";
 
 describeSuite({
     id: "DE1201",

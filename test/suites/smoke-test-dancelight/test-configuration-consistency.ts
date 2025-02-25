@@ -1,8 +1,9 @@
 import "@tanssi/api-augment/dancelight";
+
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
-import { hasEnoughCredits } from "util/payment";
-import type { u32, Vec } from "@polkadot/types-codec";
+import type { Vec, u32 } from "@polkadot/types-codec";
+import { hasEnoughCredits } from "utils";
 
 describeSuite({
     id: "SMOK04",

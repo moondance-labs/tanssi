@@ -1,13 +1,14 @@
 import "@tanssi/api-augment/dancelight";
-import { beforeAll, describeSuite, expect, afterAll } from "@moonwall/cli";
-import { type ApiPromise, Keyring } from "@polkadot/api";
-import { spawn, exec, type ChildProcessWithoutNullStreams } from "node:child_process";
-import { signAndSendAndInclude, waitSessions } from "../../util/block.ts";
-import { ethers } from "ethers";
-import { decodeAddress } from "@polkadot/util-crypto";
-import { u8aToHex } from "@polkadot/util";
-import type { MultiLocation } from "@polkadot/types/interfaces/xcm/types";
+
+import { afterAll, beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
+import { type ApiPromise, Keyring } from "@polkadot/api";
+import type { MultiLocation } from "@polkadot/types/interfaces/xcm/types";
+import { u8aToHex } from "@polkadot/util";
+import { decodeAddress } from "@polkadot/util-crypto";
+import { ethers } from "ethers";
+import { type ChildProcessWithoutNullStreams, exec, spawn } from "node:child_process";
+import { signAndSendAndInclude, sleep, waitSessions } from "utils";
 
 // Change this if we change the storage parameter in runtime
 const GATEWAY_STORAGE_KEY = "0xaed97c7854d601808b98ae43079dafb3";
@@ -160,10 +161,10 @@ describeSuite({
                     })
                 ).stdout);
 
-            const tokenLocation: MultiLocation = {
+            const tokenLocation = relayApi.createType<MultiLocation>("MultiLocation", {
                 parents: 0,
                 interior: "Here",
-            };
+            });
             const versionedLocation = {
                 V3: tokenLocation,
             };
@@ -421,7 +422,3 @@ describeSuite({
         });
     },
 });
-
-const sleep = (ms: number): Promise<void> => {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-};

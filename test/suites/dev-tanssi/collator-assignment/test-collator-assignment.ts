@@ -1,10 +1,11 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import type { ApiPromise } from "@polkadot/api";
-import { jumpBlocks, jumpSessions, jumpToSession } from "util/block";
+
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { filterAndApply } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
+import type { Vec, bool, u8, u32 } from "@polkadot/types-codec";
 import type { EventRecord } from "@polkadot/types/interfaces";
-import type { bool, u32, u8, Vec } from "@polkadot/types-codec";
+import { jumpBlocks, jumpSessions, jumpToSession } from "utils";
 
 describeSuite({
     id: "DEV0201",

@@ -2,9 +2,9 @@ import "@moonbeam-network/api-augment";
 import { beforeAll, deployCreateCompiledContract, describeSuite, expect } from "@moonwall/cli";
 import { ALITH_ADDRESS, alith } from "@moonwall/util";
 import type { u16 } from "@polkadot/types-codec";
+import { RELAY_SOURCE_LOCATION } from "utils";
 import type { Abi } from "viem";
 import { mockAssetCreation, relayAssetMetadata } from "../../../helpers/assets.ts";
-import { RELAY_SOURCE_LOCATION } from "../../../util/constants.ts";
 
 describeSuite({
     id: "DE1301",
