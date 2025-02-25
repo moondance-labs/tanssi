@@ -1,10 +1,11 @@
 import "@tanssi/api-augment";
+
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { DANCE } from "util/constants";
-import type { ApiPromise } from "@polkadot/api";
 import type { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
 import type { Result } from "@polkadot/types-codec";
 import type { SpRuntimeDispatchError } from "@polkadot/types/lookup";
+import { DANCE } from "utils";
 
 describeSuite({
     id: "CO0201",

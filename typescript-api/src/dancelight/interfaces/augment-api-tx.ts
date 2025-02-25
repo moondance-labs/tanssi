@@ -1771,6 +1771,27 @@ declare module "@polkadot/api-base/types/submittable" {
              **/
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
+        ethereumTokenTransfers: {
+            setTokenTransferChannel: AugmentedSubmittable<
+                (
+                    channelId: SnowbridgeCoreChannelId | string | Uint8Array,
+                    agentId: H256 | string | Uint8Array,
+                    paraId: u32 | AnyNumber | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [SnowbridgeCoreChannelId, H256, u32]
+            >;
+            transferNativeToken: AugmentedSubmittable<
+                (
+                    amount: u128 | AnyNumber | Uint8Array,
+                    recipient: H160 | string | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [u128, H160]
+            >;
+            /**
+             * Generic tx
+             **/
+            [key: string]: SubmittableExtrinsicFunction<ApiType>;
+        };
         externalValidators: {
             /**
              * Add a new account `who` to the list of `WhitelistedValidators`.

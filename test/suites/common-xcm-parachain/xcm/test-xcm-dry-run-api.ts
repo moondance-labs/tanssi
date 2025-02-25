@@ -2,7 +2,7 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type KeyringPair, alith, generateKeyringPair } from "@moonwall/util";
 import { ApiPromise, Keyring, WsProvider } from "@polkadot/api";
 import { u8aToHex } from "@polkadot/util";
-import { XcmFragment } from "util/xcm.ts";
+import { XcmFragment } from "utils";
 
 const runtimeApi = {
     runtime: {

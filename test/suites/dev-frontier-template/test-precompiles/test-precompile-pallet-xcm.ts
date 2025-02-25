@@ -1,11 +1,11 @@
 import "@moonbeam-network/api-augment";
-import { beforeAll, describeSuite, fetchCompiledContract, expect } from "@moonwall/cli";
+import { beforeAll, describeSuite, expect, fetchCompiledContract } from "@moonwall/cli";
 import { ALITH_ADDRESS, BALTATHAR_ADDRESS, alith, createEthersTransaction } from "@moonwall/util";
 import type { u16 } from "@polkadot/types-codec";
-import { encodeFunctionData } from "viem";
 import { expectEVMResult } from "helpers";
+import { RELAY_SOURCE_LOCATION } from "utils";
+import { encodeFunctionData } from "viem";
 import { mockAssetCreation, relayAssetMetadata } from "../../../helpers/assets.ts";
-import { RELAY_SOURCE_LOCATION } from "../../../util/constants.ts";
 
 const PRECOMPILE_PALLET_XCM_ADDRESS: `0x${string}` = "0x0000000000000000000000000000000000000804";
 

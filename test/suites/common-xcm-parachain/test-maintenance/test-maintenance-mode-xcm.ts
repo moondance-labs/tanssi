@@ -1,9 +1,10 @@
 import "@tanssi/api-augment";
+
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
-import { initializeCustomCreateBlock } from "../../../util/block";
-import type { MultiLocation } from "../../../util/xcm";
+import { initializeCustomCreateBlock } from "utils";
+import type { MultiLocation } from "utils";
 
 describeSuite({
     id: "COMMON0102",

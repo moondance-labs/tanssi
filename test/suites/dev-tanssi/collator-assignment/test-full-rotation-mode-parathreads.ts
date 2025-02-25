@@ -1,10 +1,12 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll, customDevRpcRequest } from "@moonwall/cli";
+
+import { beforeAll, customDevRpcRequest, describeSuite, type DevModeContext, expect } from "@moonwall/cli";
+import { type KeyringPair, filterAndApply, generateKeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
-import { jumpBlocks, jumpSessions, jumpToSession } from "util/block";
-import { filterAndApply, generateKeyringPair, type KeyringPair } from "@moonwall/util";
+import type { Vec, bool, u8, u32 } from "@polkadot/types-codec";
 import type { EventRecord } from "@polkadot/types/interfaces";
-import type { bool, u32, u8, Vec } from "@polkadot/types-codec";
+import { generateEmptyGenesisData, jumpBlocks, jumpSessions, jumpToSession } from "utils";
+import type { TpTraitsSlotFrequency } from "@polkadot/types/lookup";
 
 describeSuite({
     id: "DEV0203",
@@ -65,7 +67,7 @@ describeSuite({
                 // Second block, add keys and register them as invulnerables
                 for (const randomAccount of randomAccounts) {
                     const newKey1 = await polkadotJs.rpc.author.rotateKeys();
-                    await polkadotJs.tx.session.setKeys(newKey1, []).signAndSend(randomAccount);
+                    await polkadotJs.tx.session.setKeys(newKey1, "0x").signAndSend(randomAccount);
 
                     await polkadotJs.tx.sudo
                         .sudo(polkadotJs.tx.invulnerables.addInvulnerable(randomAccount.address))
@@ -82,7 +84,7 @@ describeSuite({
 
                 const fullRotationPeriod = (
                     await polkadotJs.query.configuration.activeConfig()
-                ).fullRotationPeriod.toString();
+                ).fullRotationPeriod.toNumber();
                 const sessionIndex = (await polkadotJs.query.session.currentIndex()).toNumber();
                 // Calculate the remaining sessions for next full rotation
                 // This is a workaround for running moonwall in run mode
@@ -169,10 +171,10 @@ describeSuite({
     },
 });
 
-async function deregisterAll(context) {
+async function deregisterAll(context: DevModeContext) {
     const polkadotJs = context.polkadotJs();
     const alice = context.keyring.alice;
-    const parasRegistered = (await polkadotJs.query.registrar.registeredParaIds()).toJSON();
+    const parasRegistered = await polkadotJs.query.registrar.registeredParaIds();
 
     const txs = [];
 
@@ -184,44 +186,21 @@ async function deregisterAll(context) {
     await context.createBlock([await polkadotJs.tx.sudo.sudo(polkadotJs.tx.utility.batchAll(txs)).signAsync(alice)]);
 }
 
-async function registerParathreads(context) {
+async function registerParathreads(context: DevModeContext) {
     const polkadotJs = context.polkadotJs();
     const alice = context.keyring.alice;
     await context.createBlock();
 
     const currentSesssion = await polkadotJs.query.session.currentIndex();
-    const sessionDelay = await polkadotJs.consts.registrar.sessionDelay;
+    const sessionDelay = polkadotJs.consts.registrar.sessionDelay;
     const expectedScheduledOnboarding = BigInt(currentSesssion.toString()) + BigInt(sessionDelay.toString());
 
-    const slotFrequency = polkadotJs.createType("TpTraitsSlotFrequency", {
+    const slotFrequency = polkadotJs.createType<TpTraitsSlotFrequency>("TpTraitsSlotFrequency", {
         min: 1,
         max: 1,
     });
-    const emptyGenesisData = () => {
-        const g = polkadotJs.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
-            storage: [
-                {
-                    key: "0x636f6465",
-                    value: "0x010203040506",
-                },
-            ],
-            name: "0x436f6e7461696e657220436861696e2032303030",
-            id: "0x636f6e7461696e65722d636861696e2d32303030",
-            forkId: null,
-            extensions: "0x",
-            properties: {
-                tokenMetadata: {
-                    tokenSymbol: "0x61626364",
-                    ss58Format: 42,
-                    tokenDecimals: 12,
-                },
-                isEthereum: false,
-            },
-        });
-        return g;
-    };
 
-    const containerChainGenesisData = emptyGenesisData();
+    const containerChainGenesisData = generateEmptyGenesisData(context.pjsApi);
 
     for (const paraId of [2002, 2003]) {
         const tx = polkadotJs.tx.registrar.registerParathread(paraId, slotFrequency, containerChainGenesisData, null);
@@ -259,7 +238,7 @@ async function registerParathreads(context) {
     // Check that the on chain genesis data is set correctly
     const onChainGenesisData = await polkadotJs.query.registrar.paraGenesisData(2002);
     // TODO: fix once we have types
-    expect(emptyGenesisData().toJSON()).to.deep.equal(onChainGenesisData.toJSON());
+    expect(containerChainGenesisData.toJSON()).to.deep.equal(onChainGenesisData.toJSON());
 
     // Check the para id has been given some free credits
     const credits = (await polkadotJs.query.servicesPayment.blockProductionCredits(2002)).toJSON();

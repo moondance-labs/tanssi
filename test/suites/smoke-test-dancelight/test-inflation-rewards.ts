@@ -1,15 +1,15 @@
+import "@tanssi/api-augment/dancelight";
+
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
-
 import type { ApiDecoration } from "@polkadot/api/types";
-import { fetchIssuance, fetchRewardAuthorContainers } from "util/block";
-import { DANCELIGHT_BOND } from "util/constants";
+import { DANCELIGHT_BOND, fetchIssuance, fetchRewardAuthorContainers } from "utils";
 
 describeSuite({
     id: "SMOK06",
-    title: "Sample suite that only runs on Dancelight chains",
+    title: "Inflation and Reward Distribution Mechanisms",
     foundationMethods: "read_only",
-    testCases: ({ it, context }) => {
+    testCases: ({ it, context, log }) => {
         let apiAt: ApiDecoration<"promise">;
         let api: ApiPromise;
 
@@ -28,20 +28,26 @@ describeSuite({
             test: async () => {
                 // 70% is distributed across all rewards
                 const events = await apiAt.query.system.events();
-                const issuance = await fetchIssuance(events).amount.toBigInt();
+                const issuance = fetchIssuance(events).amount.toBigInt();
                 const chainRewards = (issuance * 7n) / 10n;
                 const numberOfChains = await apiAt.query.containerRegistrar.registeredParaIds();
                 const expectedChainReward = chainRewards / BigInt(numberOfChains.length);
-                const rewardEvents = await fetchRewardAuthorContainers(events);
-                for (const index in rewardEvents) {
-                    expect(
-                        rewardEvents[index].balance.toBigInt() >= expectedChainReward - 1n &&
-                            rewardEvents[index].balance.toBigInt() <= expectedChainReward + 1n,
-                        `rewardEvents not in the range, Index: ${index} Actual: ${rewardEvents[
-                            index
-                        ].balance.toBigInt()}, Expected:  ${expectedChainReward}`
-                    ).to.be.true;
+                const rewardEvents = fetchRewardAuthorContainers(events);
+                const failures = rewardEvents.filter(
+                    ({ balance }) =>
+                        !(
+                            balance.toBigInt() >= expectedChainReward - 1n &&
+                            balance.toBigInt() <= expectedChainReward + 1n
+                        )
+                );
+
+                for (const { accountId, balance } of failures) {
+                    log(
+                        `${accountId.toHuman()} reward ${balance.toBigInt()} , not in the range of ${expectedChainReward}`
+                    );
                 }
+
+                expect(failures.length).to.eq(0);
             },
         });
 
@@ -60,7 +66,7 @@ describeSuite({
 
                 const events = await apiAtIssuanceAfter.query.system.events();
 
-                const issuance = await fetchIssuance(events).amount.toBigInt();
+                const issuance = fetchIssuance(events).amount.toBigInt();
 
                 // expected issuance block increment in prod
                 const expectedIssuanceIncrement = (supplyBefore * 9n) / 1_000_000_000n;
@@ -104,7 +110,7 @@ describeSuite({
 
                 const currentChainRewards = await apiAtIssuanceAfter.query.inflationRewards.chainsToReward();
                 const events = await apiAtIssuanceAfter.query.system.events();
-                const issuance = await fetchIssuance(events).amount.toBigInt();
+                const issuance = fetchIssuance(events).amount.toBigInt();
 
                 // Dust from computations also goes to parachainBond
                 let dust = 0n;

@@ -25,44 +25,15 @@ jobs:
         steps:
             - name: Checkout
               uses: actions/checkout@v4
+            - name: Cargo build
+              uses: ./.github/workflow-templates/cargo-build
               with:
-                  ref: ${{ needs.set-tags.outputs.git_ref }}
-            - name: Run sccache-cache
-              uses: mozilla-actions/sccache-action@v0.0.7
-            - name: Setup Mold Linker
-              shell: bash
-              run: |
-                  if [ -z "$RUSTFLAGS" ]; then
-                      echo "RUSTFLAGS=-C opt-level=3 -D warnings -C linker=clang -C link-arg=-fuse-ld=$(pwd)/mold/bin/mold" >> $GITHUB_ENV
-                  fi
-                  mkdir -p mold
-                  curl -L --retry 10 --silent --show-error https://github.com/rui314/mold/releases/download/v2.30.0/mold-2.30.0-$(uname -m)-linux.tar.gz | tar -C $(realpath mold) --strip-components=1 -xzf -
-            - name: Setup Rust toolchain
-              run: rustup show
-            - name: Build
-              run: cargo build --features=fast-runtime --release --all
-            - name: Save runtime wasm
-              run: |
-                  mkdir -p runtimes
-                  cp $CARGO_TARGET_DIR/release/wbuild/container-chain-template-simple-runtime/container_chain_template_simple_runtime.compact.compressed.wasm runtimes/;
-                  cp $CARGO_TARGET_DIR/release/wbuild/container-chain-template-frontier-runtime/container_chain_template_frontier_runtime.compact.compressed.wasm runtimes/;
-                  cp $CARGO_TARGET_DIR/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm runtimes/;
-                  cp $CARGO_TARGET_DIR/release/wbuild/flashbox-runtime/flashbox_runtime.compact.compressed.wasm runtimes/;
-                  cp $CARGO_TARGET_DIR/release/wbuild/dancelight-runtime/dancelight_runtime.compact.compressed.wasm runtimes/;
+                features: "fast-runtime"
             - name: Upload runtimes
               uses: actions/upload-artifact@v4
               with:
                   name: runtimes
                   path: runtimes
-            - name: Save tanssi and template binaries
-              run: |
-                  mkdir -p binaries
-                  cp $CARGO_TARGET_DIR/release/tanssi-node binaries/tanssi-node;
-                  cp $CARGO_TARGET_DIR/release/tanssi-relay binaries/tanssi-relay;
-                  cp $CARGO_TARGET_DIR/release/tanssi-relay-prepare-worker binaries/tanssi-relay-prepare-worker;
-                  cp $CARGO_TARGET_DIR/release/tanssi-relay-execute-worker binaries/tanssi-relay-execute-worker;
-                  cp $CARGO_TARGET_DIR/release/container-chain-frontier-node binaries/container-chain-frontier-node;
-                  cp $CARGO_TARGET_DIR/release/container-chain-simple-node binaries/container-chain-simple-node;
             - name: Upload binary
               uses: actions/upload-artifact@v4
               with:
@@ -128,3 +99,46 @@ jobs:
             - name: Run Zombienet Test ${{ matrix.test_name }}
               id: e2e-test
               uses: ./.github/workflow-templates/bridge-e2e
+    build-benchmark:
+      needs: ["enforce-ready-to-merge-label"]
+      runs-on: self-hosted
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+        - name: Cargo build
+          uses: ./.github/workflow-templates/cargo-build
+          with:
+            features: "fast-runtime,runtime-benchmarks"
+        - name: Upload binary
+          uses: actions/upload-artifact@v4
+          with:
+            name: binaries-benchmark
+            path: binaries
+    benchmark-tests:
+        needs: ["enforce-ready-to-merge-label", "build-benchmark"]
+        runs-on: self-hosted
+        strategy:
+            fail-fast: false
+            matrix:
+                binary: [tanssi-relay, tanssi-node, container-chain-simple-node, container-chain-frontier-node]
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+            - name: "Download benchmark binaries"
+              uses: actions/download-artifact@v4
+              with:
+                  name: binaries-benchmark
+                  path: target/release
+            - name: "Make binaries executable"
+              shell: bash
+              run: |
+                  chmod uog+x target/release/tanssi-node
+                  chmod uog+x target/release/tanssi-relay
+                  chmod uog+x target/release/tanssi-relay-prepare-worker
+                  chmod uog+x target/release/tanssi-relay-execute-worker
+                  chmod uog+x target/release/container-chain-simple-node
+                  chmod uog+x target/release/container-chain-frontier-node
+            - name: "Benchmark test ${{ matrix.binary }}"
+              shell: bash
+              run: |
+                BINARY=./target/release/${{ matrix.binary }} TEMPLATE_PATH=./benchmarking/frame-weight-runtime-template.hbs tools/benchmarking.sh "*" "*" --check

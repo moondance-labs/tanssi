@@ -40,10 +40,11 @@ use {
         traits::Contains,
     },
     frame_system::unique,
+    parity_scale_codec::MaxEncodedLen,
     scale_info::TypeInfo,
     snowbridge_core::{
         outbound::{Fee, SendError},
-        ChannelId,
+        AgentId, Channel, ChannelId, ParaId,
     },
     snowbridge_pallet_outbound_queue::send_message_impl::Ticket,
     snowbridge_router_primitives::inbound::{
@@ -193,9 +194,18 @@ impl TicketInfo for () {
     }
 }
 
+#[cfg(not(feature = "runtime-benchmarks"))]
 impl<T: snowbridge_pallet_outbound_queue::Config> TicketInfo for Ticket<T> {
     fn message_id(&self) -> H256 {
         self.message_id
+    }
+}
+
+// Benchmarks check message_id so it must be deterministic.
+#[cfg(feature = "runtime-benchmarks")]
+impl<T: snowbridge_pallet_outbound_queue::Config> TicketInfo for Ticket<T> {
+    fn message_id(&self) -> H256 {
+        H256::default()
     }
 }
 
@@ -376,5 +386,71 @@ impl<AccountId> EthereumLocationsConverterFor<AccountId> {
     }
     pub fn from_chain_id_with_key(chain_id: &u64, key: [u8; 20]) -> [u8; 32] {
         (b"ethereum-chain", chain_id, key).using_encoded(blake2_256)
+    }
+}
+
+/// Information of a recently created channel.
+#[derive(Encode, Decode, RuntimeDebug, TypeInfo, Clone, PartialEq, MaxEncodedLen)]
+pub struct ChannelInfo {
+    pub channel_id: ChannelId,
+    pub para_id: ParaId,
+    pub agent_id: AgentId,
+}
+
+/// Trait to manage channel creation inside EthereumSystem pallet.
+pub trait EthereumSystemChannelManager {
+    fn create_channel(channel_id: ChannelId, agent_id: AgentId, para_id: ParaId) -> ChannelInfo;
+}
+
+/// Implementation struct for EthereumSystemChannelManager trait.
+pub struct EthereumSystemHandler<Runtime>(PhantomData<Runtime>);
+impl<Runtime> EthereumSystemChannelManager for EthereumSystemHandler<Runtime>
+where
+    Runtime: snowbridge_pallet_system::Config,
+{
+    fn create_channel(channel_id: ChannelId, agent_id: AgentId, para_id: ParaId) -> ChannelInfo {
+        if let Some(channel) = snowbridge_pallet_system::Channels::<Runtime>::get(channel_id) {
+            return ChannelInfo {
+                channel_id,
+                para_id: channel.para_id,
+                agent_id: channel.agent_id,
+            };
+        } else {
+            if !snowbridge_pallet_system::Agents::<Runtime>::contains_key(agent_id) {
+                snowbridge_pallet_system::Agents::<Runtime>::insert(agent_id, ());
+            }
+
+            let channel = Channel { agent_id, para_id };
+            snowbridge_pallet_system::Channels::<Runtime>::insert(channel_id, channel);
+
+            return ChannelInfo {
+                channel_id,
+                para_id,
+                agent_id,
+            };
+        }
+    }
+}
+
+/// Helper struct to set up token and channel characteristics needed for EthereumTokenTransfers
+/// pallet benchmarks.
+#[cfg(feature = "runtime-benchmarks")]
+pub struct EthereumTokenTransfersBenchHelper<Runtime>(PhantomData<Runtime>);
+
+#[cfg(feature = "runtime-benchmarks")]
+impl<Runtime> crate::TokenChannelSetterBenchmarkHelperTrait
+    for EthereumTokenTransfersBenchHelper<Runtime>
+where
+    Runtime: snowbridge_pallet_system::Config,
+{
+    fn set_up_token(location: Location, token_id: snowbridge_core::TokenId) {
+        snowbridge_pallet_system::ForeignToNativeId::<Runtime>::insert(&token_id, &location);
+        snowbridge_pallet_system::NativeToForeignId::<Runtime>::insert(&location, &token_id);
+    }
+
+    fn set_up_channel(channel_id: ChannelId, para_id: ParaId, agent_id: AgentId) {
+        let channel = Channel { agent_id, para_id };
+        snowbridge_pallet_system::Agents::<Runtime>::insert(agent_id, ());
+        snowbridge_pallet_system::Channels::<Runtime>::insert(channel_id, channel);
     }
 }

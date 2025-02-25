@@ -1,10 +1,13 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
-
 import type { ApiDecoration } from "@polkadot/api/types";
-import { getAuthorFromDigest } from "util/author";
-import { fetchIssuance, filterRewardFromOrchestratorWithFailure, fetchRewardAuthorContainers } from "util/block";
-import { PARACHAIN_BOND } from "util/constants";
+import {
+    fetchIssuance,
+    fetchRewardAuthorContainers,
+    filterRewardFromOrchestratorWithFailure,
+    getAuthorFromDigest,
+    PARACHAIN_BOND,
+} from "utils";
 
 describeSuite({
     id: "SM04",

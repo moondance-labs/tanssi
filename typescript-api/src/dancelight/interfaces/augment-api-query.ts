@@ -131,6 +131,7 @@ import type {
     SpWeightsWeightV2Weight,
     StagingXcmV4Instruction,
     StagingXcmV4Location,
+    TpBridgeChannelInfo,
     TpTraitsActiveEraInfo,
     TpTraitsContainerChainBlockInfo,
     TpTraitsParathreadParams,
@@ -910,6 +911,14 @@ declare module "@polkadot/api-base/types/storage" {
             > &
                 QueryableStorageEntry<ApiType, [StagingXcmV4Location]>;
             pricingParameters: AugmentedQuery<ApiType, () => Observable<SnowbridgeCorePricingPricingParameters>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * Generic query
+             **/
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
+        ethereumTokenTransfers: {
+            currentChannelInfo: AugmentedQuery<ApiType, () => Observable<Option<TpBridgeChannelInfo>>, []> &
                 QueryableStorageEntry<ApiType, []>;
             /**
              * Generic query

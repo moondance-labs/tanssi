@@ -1,17 +1,18 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
+
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
-import { jumpToSession } from "../../../util/block";
-import { u8aToHex, hexToU8a, stringToHex, numberToHex } from "@polkadot/util";
+import { Keyring } from "@polkadot/keyring";
 import type {
+    SpConsensusBeefyCommitment,
     SpConsensusBeefyDoubleVotingProof,
     SpConsensusBeefyPayload,
-    SpConsensusBeefyCommitment,
     SpConsensusBeefyVoteMessage,
 } from "@polkadot/types/lookup";
-import { Keyring } from "@polkadot/keyring";
+import { hexToU8a, numberToHex, stringToHex, u8aToHex } from "@polkadot/util";
 import { secp256k1Sign } from "@polkadot/util-crypto";
+import { jumpToSession } from "utils";
 
 describeSuite({
     id: "DEVT1402",

@@ -9,7 +9,7 @@ import {
     injectHrmpMessageAndSeal,
     sovereignAccountOfSiblingForAddress20,
     sovereignAccountOfSiblingForAddress32,
-} from "../../../util/xcm.ts";
+} from "utils";
 
 describeSuite({
     id: "COMMON0302",
