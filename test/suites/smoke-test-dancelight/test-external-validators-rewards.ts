@@ -2,7 +2,7 @@ import "@tanssi/api-augment/dancelight";
 
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
-import { HOLESKY_SOVEREIGN_ACCOUNT_ADDRESS, PRIMARY_GOVERNANCE_CHANNEL_ID } from "utils";
+import { HOLESKY_SOVEREIGN_ACCOUNT_ADDRESS, PRIMARY_GOVERNANCE_CHANNEL_ID, getCurrentEraStartBlock } from "utils";
 import { getAccountBalance } from "../../utils/account.ts";
 
 describeSuite({
@@ -47,12 +47,12 @@ describeSuite({
             title: "Check if message with rewards is sent in the end of the era and nonce is incremented",
             test: async () => {
                 // Checkpoint B: the block number of current epoch start
-                const blockNumberCheckpointA = (await api.query.babe.epochStart())[1].toNumber();
+                const blockNumberCheckpointB = await getCurrentEraStartBlock(api);
                 // Checkpoint A: the block number before Checkpoint B
-                const blockNumberCheckpointB = blockNumberCheckpointA - 1;
+                const blockNumberCheckpointA = blockNumberCheckpointB - 1;
 
-                const apiAtCheckpointA = await api.at(await api.rpc.chain.getBlockHash(blockNumberCheckpointB));
-                const apiAtCheckpointB = await api.at(await api.rpc.chain.getBlockHash(blockNumberCheckpointA));
+                const apiAtCheckpointA = await api.at(await api.rpc.chain.getBlockHash(blockNumberCheckpointA));
+                const apiAtCheckpointB = await api.at(await api.rpc.chain.getBlockHash(blockNumberCheckpointB));
 
                 const sovereignBalanceCheckpointB = await getAccountBalance(
                     apiAtCheckpointB,

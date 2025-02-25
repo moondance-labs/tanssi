@@ -2,6 +2,7 @@ import "@tanssi/api-augment/dancelight";
 
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
+import { getCurrentEraStartBlock } from "../../utils";
 
 describeSuite({
     id: "SMOK08",
@@ -19,19 +20,7 @@ describeSuite({
             title: "Validators should match external validators",
 
             test: async () => {
-                // Find the last block in which the era changed
-                const currentEra = await api.query.externalValidators.currentEra();
-                if (currentEra.isNone) {
-                    expect.fail("No external validators found");
-                }
-
-                let blockToCheck = (await api.query.babe.epochStart())[1].toNumber();
-                let apiBeforeLatestNewSession = await api.at(await api.rpc.chain.getBlockHash(blockToCheck - 1));
-
-                while (currentEra === (await apiBeforeLatestNewSession.query.externalValidators.currentEra())) {
-                    blockToCheck = (await apiBeforeLatestNewSession.query.babe.epochStart()).toJSON()[1];
-                    apiBeforeLatestNewSession = await api.at(await api.rpc.chain.getBlockHash(blockToCheck - 1));
-                }
+                const blockToCheck = await getCurrentEraStartBlock(api);
 
                 const externalValidatorsList = (
                     await (
