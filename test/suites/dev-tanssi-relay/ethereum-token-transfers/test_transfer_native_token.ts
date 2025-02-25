@@ -5,7 +5,7 @@ import { type DevModeContext, beforeAll, describeSuite, expect } from "@moonwall
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import { hexToU8a, u8aToHex } from "@polkadot/util";
 import { encodeAddress, keccakAsHex, xxhashAsU8a } from "@polkadot/util-crypto";
-import { HOLESKY_SOVEREIGN_ACCOUNT_ADDRESS, type MultiLocation, sovereignAccountEncoded } from "utils";
+import { HOLESKY_SOVEREIGN_ACCOUNT_ADDRESS, type MultiLocation } from "utils";
 import { expectEventCount } from "../../../helpers/events";
 
 describeSuite({
@@ -130,7 +130,7 @@ describeSuite({
 
                 // Ethereum sovereign account: send some balance to it
                 signedTx = await polkadotJs.tx.balances
-                    .transferKeepAlive(sovereignAccountEncoded, 100_000_000_000_000_000n)
+                    .transferKeepAlive(HOLESKY_SOVEREIGN_ACCOUNT_ADDRESS, 100_000_000_000_000_000n)
                     .signAsync(alice);
 
                 await context.createBlock([signedTx], { allowFailures: false });

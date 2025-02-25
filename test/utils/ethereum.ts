@@ -196,5 +196,3 @@ export function getSignatureParameters(signature: string) {
         v,
     };
 }
-
-export const sovereignAccountEncoded = encodeAddress(HOLESKY_SOVEREIGN_ACCOUNT_ADDRESS, 0);
