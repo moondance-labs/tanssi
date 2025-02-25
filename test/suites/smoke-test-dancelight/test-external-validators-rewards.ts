@@ -2,6 +2,8 @@ import "@tanssi/api-augment/dancelight";
 
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
+import { PRIMARY_GOVERNANCE_CHANNEL_ID, sovereignAccountEncoded } from "utils";
+import { getAccountBalance } from "../../utils/account.ts";
 
 describeSuite({
     id: "SMOK05",
@@ -37,6 +39,71 @@ describeSuite({
                 }
 
                 expect(failures.length).to.be.eq(0);
+            },
+        });
+
+        it({
+            id: "C02",
+            title: "Check if message with rewards is sent in the end of the era and nonce is incremented",
+            test: async () => {
+                // Checkpoint B: the block number of current epoch start
+                const blockNumberCheckpointA = (await api.query.babe.epochStart())[1].toNumber();
+                // Checkpoint A: the block number before Checkpoint B
+                const blockNumberCheckpointB = blockNumberCheckpointA - 1;
+
+                const apiAtCheckpointA = await api.at(await api.rpc.chain.getBlockHash(blockNumberCheckpointB));
+                const apiAtCheckpointB = await api.at(await api.rpc.chain.getBlockHash(blockNumberCheckpointA));
+
+                const sovereignBalanceCheckpointB = await getAccountBalance(apiAtCheckpointB, sovereignAccountEncoded);
+                const sovereignBalanceCheckpointA = await getAccountBalance(apiAtCheckpointA, sovereignAccountEncoded);
+
+                const event = (await apiAtCheckpointB.query.system.events()).find(
+                    (event) => event.event.method === "RewardsMessageSent"
+                );
+
+                const checkpointAPrimaryChannelNonce =
+                    await apiAtCheckpointA.query.ethereumOutboundQueue.nonce(PRIMARY_GOVERNANCE_CHANNEL_ID);
+
+                const checkpointBPrimaryChannelNonce =
+                    await api.query.ethereumOutboundQueue.nonce(PRIMARY_GOVERNANCE_CHANNEL_ID);
+
+                const nonceDiff = checkpointBPrimaryChannelNonce.toNumber() - checkpointAPrimaryChannelNonce.toNumber();
+
+                // The event is triggered, nonce should be incremented
+                if (event) {
+                    expect(nonceDiff).toEqual(1);
+                    expect(sovereignBalanceCheckpointA.toNumber()).to.be.lessThan(
+                        sovereignBalanceCheckpointB.toNumber()
+                    );
+
+                    // The event is not triggered, nonce should be the same
+                } else {
+                    expect(nonceDiff).toEqual(0);
+                }
+            },
+        });
+
+        it({
+            id: "C03",
+            title: "Check if RewardPointsForEra expires after HistoryDepth",
+            test: async () => {
+                const historyDepth = api.consts.externalValidatorsRewards.historyDepth;
+
+                // Checkpoint A: current era index - historyDepth
+                const eraIndexCheckpointA =
+                    (await api.query.externalValidators.activeEra()).unwrap().index.toNumber() -
+                    historyDepth.toNumber();
+                // Checkpoint B: eraIndexCheckpointA + 1
+                const eraIndexCheckpointB = eraIndexCheckpointA + 1;
+
+                const validatorRewardCheckpointA =
+                    await api.query.externalValidatorsRewards.rewardPointsForEra(eraIndexCheckpointA);
+
+                const validatorRewardCheckpointB =
+                    await api.query.externalValidatorsRewards.rewardPointsForEra(eraIndexCheckpointB);
+
+                expect(validatorRewardCheckpointA.isEmpty).toBe(true);
+                expect(validatorRewardCheckpointB.isEmpty).toBe(false);
             },
         });
     },

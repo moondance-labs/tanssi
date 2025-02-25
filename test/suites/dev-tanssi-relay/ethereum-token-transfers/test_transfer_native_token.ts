@@ -1,11 +1,11 @@
 import "@tanssi/api-augment";
 
-import type { MultiLocation } from "utils";
+import { readFileSync } from "node:fs";
 import { type DevModeContext, beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import { hexToU8a, u8aToHex } from "@polkadot/util";
 import { encodeAddress, keccakAsHex, xxhashAsU8a } from "@polkadot/util-crypto";
-import { readFileSync } from "node:fs";
+import { type MultiLocation, sovereignAccountEncoded } from "utils";
 import { expectEventCount } from "../../../helpers/events";
 
 describeSuite({
@@ -128,11 +128,9 @@ describeSuite({
 
                 await context.createBlock([signedTx], { allowFailures: false });
 
-                // Ethereum sovereign account and send some balance to it
-                const sovereign = encodeAddress("0x34cdd3f84040fb44d70e83b892797846a8c0a556ce08cd470bf6d4cf7b94ff77");
-
+                // Ethereum sovereign account: send some balance to it
                 signedTx = await polkadotJs.tx.balances
-                    .transferKeepAlive(sovereign, 100_000_000_000_000_000n)
+                    .transferKeepAlive(sovereignAccountEncoded, 100_000_000_000_000_000n)
                     .signAsync(alice);
 
                 await context.createBlock([signedTx], { allowFailures: false });
@@ -249,7 +247,7 @@ describeSuite({
                 // Sovereign balance before
                 const {
                     data: { free: sovereignBalanceBefore },
-                } = await context.polkadotJs().query.system.account(sovereign);
+                } = await context.polkadotJs().query.system.account(sovereignAccountEncoded);
 
                 // Bob balance before
                 const {
@@ -267,7 +265,7 @@ describeSuite({
                 // Check balances were updated correctly.
                 const {
                     data: { free: sovereignBalanceAfter },
-                } = await context.polkadotJs().query.system.account(sovereign);
+                } = await context.polkadotJs().query.system.account(sovereignAccountEncoded);
 
                 const {
                     data: { free: bobBalanceAfter },
