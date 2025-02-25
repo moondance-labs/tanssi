@@ -3,8 +3,10 @@ import { ALITH_PRIVATE_KEY, type TransactionOptions, alith, customWeb3Request } 
 import { type AccessList, ethers } from "ethers";
 import { FMT_BYTES, FMT_NUMBER, type Transaction } from "web3";
 
+import { encodeAddress } from "@polkadot/util-crypto";
 import Debug from "debug";
 import { fromHex } from "viem";
+import { ETH_SOVEREIGN_ACCOUNT_ADDRESS } from "./constants.ts";
 const debug = Debug("test:transaction");
 
 export const createTransaction = async (
@@ -194,3 +196,5 @@ export function getSignatureParameters(signature: string) {
         v,
     };
 }
+
+export const sovereignAccountEncoded = encodeAddress(ETH_SOVEREIGN_ACCOUNT_ADDRESS, 0);
