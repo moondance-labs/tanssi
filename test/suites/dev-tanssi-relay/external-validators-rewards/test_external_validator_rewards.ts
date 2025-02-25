@@ -90,8 +90,8 @@ describeSuite({
             id: "E02",
             title: "Check rewards storage clears after historyDepth",
             test: async () => {
-                const sessionsPerEra = await polkadotJs.consts.externalValidators.sessionsPerEra;
-                const historyDepth = await polkadotJs.consts.externalValidatorsRewards.historyDepth;
+                const sessionsPerEra = polkadotJs.consts.externalValidators.sessionsPerEra;
+                const historyDepth = polkadotJs.consts.externalValidatorsRewards.historyDepth;
 
                 const currentIndex = await polkadotJs.query.session.currentIndex();
 
