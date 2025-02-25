@@ -25,7 +25,7 @@ describeSuite({
                     .map(([key, entry]) => {
                         const sum = [...entry.individual.entries()].reduce(
                             (acc, [key, points]) => acc + points.toNumber(),
-                            0
+                            0,
                         );
                         const failed = sum !== entry.total.toNumber();
                         return { failed, key: key.toHex() };
@@ -49,10 +49,14 @@ describeSuite({
                 // Checkpoint A - the block number before Checkpoint B
                 const beforeCurrentEpochStartBlockNumber = currentEpochStartBlockNumber - 1;
 
-                const apiAtCheckpointA = await api.at(await api.rpc.chain.getBlockHash(beforeCurrentEpochStartBlockNumber));
+                const apiAtCheckpointA = await api.at(
+                    await api.rpc.chain.getBlockHash(beforeCurrentEpochStartBlockNumber),
+                );
                 const apiAtCheckpointB = await api.at(await api.rpc.chain.getBlockHash(currentEpochStartBlockNumber));
 
-                const event = (await apiAtCheckpointB.query.system.events()).find(event => event.event.method === 'RewardsMessageSent');
+                const event = (await apiAtCheckpointB.query.system.events()).find(
+                    (event) => event.event.method === "RewardsMessageSent",
+                );
 
                 const checkpointAPrimaryChannelNonce =
                     await apiAtCheckpointA.query.ethereumOutboundQueue.nonce(PRIMARY_GOVERNANCE_CHANNEL_ID);
@@ -60,13 +64,13 @@ describeSuite({
                 const checkpointBPrimaryChannelNonce =
                     await api.query.ethereumOutboundQueue.nonce(PRIMARY_GOVERNANCE_CHANNEL_ID);
 
-                const nonceDiff = checkpointBPrimaryChannelNonce.toNumber()  - checkpointAPrimaryChannelNonce.toNumber();
+                const nonceDiff = checkpointBPrimaryChannelNonce.toNumber() - checkpointAPrimaryChannelNonce.toNumber();
 
                 // The event is triggered, nonce should be incremented
                 if (event) {
                     expect(nonceDiff).toEqual(1);
 
-                // The event is not triggered, nonce should be the same
+                    // The event is not triggered, nonce should be the same
                 } else {
                     expect(nonceDiff).toEqual(0);
                 }
