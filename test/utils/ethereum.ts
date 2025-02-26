@@ -3,8 +3,10 @@ import { ALITH_PRIVATE_KEY, type TransactionOptions, alith, customWeb3Request } 
 import { type AccessList, ethers } from "ethers";
 import { FMT_BYTES, FMT_NUMBER, type Transaction } from "web3";
 
+import { encodeAddress } from "@polkadot/util-crypto";
 import Debug from "debug";
 import { fromHex } from "viem";
+import { HOLESKY_SOVEREIGN_ACCOUNT_ADDRESS } from "./constants.ts";
 const debug = Debug("test:transaction");
 
 export const createTransaction = async (
