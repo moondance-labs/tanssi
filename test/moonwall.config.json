@@ -980,6 +980,21 @@
             ]
         },
         {
+            "name": "dancelight_smoke",
+            "testFileDir": ["suites/smoke-test-dancelight", "suites/smoke-test-common-all"],
+            "foundation": {
+                "type": "read_only"
+            },
+            "reporters": ["basic","html"],
+            "connections": [
+                {
+                    "name": "para",
+                    "type": "polkadotJs",
+                    "endpoints": ["wss://dancelight.tanssi-api.network"]
+                }
+            ]
+        },
+        {
             "name": "chopsticks_stagenet_dancebox_upgrade",
             "testFileDir": ["suites/rt-upgrade-chopsticks-orchestrator"],
             "foundation": {
@@ -1068,6 +1083,32 @@
                         "name": "db",
                         "type": "parachain",
                         "configPath": "./configs/stagelight.yml",
+                        "address": "127.0.0.1"
+                    }
+                ]
+            },
+            "vitestArgs": {
+                "bail": 1
+            },
+            "connections": [
+                {
+                    "name": "db",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:8000"]
+                }
+            ]
+        },
+        {
+            "name": "chopsticks_dancelight_upgrade",
+            "testFileDir": ["suites/rt-upgrade-chopsticks-orchestrator"],
+            "foundation": {
+                "type": "chopsticks",
+                "rtUpgradePath": "../target/release/wbuild/dancelight-runtime/dancelight_runtime.compact.compressed.wasm",
+                "launchSpec": [
+                    {
+                        "name": "db",
+                        "type": "parachain",
+                        "configPath": "./configs/dancelight.yml",
                         "address": "127.0.0.1"
                     }
                 ]
