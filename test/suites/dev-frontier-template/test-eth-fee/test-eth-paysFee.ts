@@ -1,4 +1,4 @@
-import { describeSuite, extractInfo, expect } from "@moonwall/cli";
+import { describeSuite, expect, extractInfo } from "@moonwall/cli";
 import { BALTATHAR_ADDRESS, GLMR, createRawTransfer } from "@moonwall/util";
 
 // We use ethers library in this test as apparently web3js's types are not fully EIP-1559

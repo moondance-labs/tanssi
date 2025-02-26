@@ -3,7 +3,7 @@ import { ALITH_ADDRESS, BALTATHAR_ADDRESS, CHARLETH_ADDRESS, alith, createEthers
 import type { u16 } from "@polkadot/types";
 import { nToHex } from "@polkadot/util";
 import { type Abi, encodeFunctionData } from "viem";
-import { mockAssetCreation, relayAssetMetadata, RELAY_SOURCE_LOCATION } from "../../../helpers/assets";
+import { RELAY_SOURCE_LOCATION, mockAssetCreation, relayAssetMetadata } from "../../../helpers/assets";
 
 describeSuite({
     id: "DE1308",

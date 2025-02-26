@@ -1,10 +1,13 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
-import { getAuthorFromDigest } from "../../util/author";
-import { signAndSendAndInclude, waitSessions } from "../../util/block";
-import { getKeyringNimbusIdHex } from "../../util/keys";
-import { getHeaderFromRelay } from "../../util/relayInterface";
 import net from "node:net";
+import {
+    getAuthorFromDigest,
+    getHeaderFromRelay,
+    getKeyringNimbusIdHex,
+    signAndSendAndInclude,
+    waitSessions,
+} from "utils";
 
 describeSuite({
     id: "ZOMBIETA01",

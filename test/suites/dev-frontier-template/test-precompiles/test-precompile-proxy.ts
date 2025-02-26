@@ -12,9 +12,9 @@ import {
     alith,
     createViemTransaction,
 } from "@moonwall/util";
+import { expectEVMResult } from "helpers";
 import { encodeFunctionData, parseEther } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
-import { expectEVMResult } from "helpers";
 
 const PRECOMPILE_NATIVE_ERC20_ADDRESS = "0x0000000000000000000000000000000000000800";
 const PRECOMPILE_PROXY_ADDRESS = "0x0000000000000000000000000000000000000805";

@@ -8,7 +8,7 @@ import {
     sendRawTransaction,
 } from "@moonwall/util";
 import { expectEVMResult } from "helpers";
-import { getSignatureParameters } from "util/ethereum";
+import { getSignatureParameters } from "utils";
 import { encodeFunctionData, fromHex } from "viem";
 
 const PRECOMPILE_BATCH_ADDRESS = "0x0000000000000000000000000000000000000801";

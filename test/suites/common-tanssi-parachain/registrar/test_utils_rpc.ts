@@ -1,7 +1,8 @@
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import type { ApiPromise } from "@polkadot/api";
-import { chainSpecToContainerChainGenesisData, containerChainGenesisDataToChainSpec } from "../../../util/genesis_data";
 import "@tanssi/api-augment";
+
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import type { ApiPromise } from "@polkadot/api";
+import { chainSpecToContainerChainGenesisData, containerChainGenesisDataToChainSpec } from "utils";
 
 describeSuite({
     id: "COMMO1106",

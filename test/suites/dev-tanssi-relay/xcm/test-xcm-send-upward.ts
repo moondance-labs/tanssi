@@ -1,9 +1,8 @@
 import { beforeAll, customDevRpcRequest, describeSuite, expect } from "@moonwall/cli";
-import { generateKeyringPair, type KeyringPair } from "@moonwall/util";
+import { type KeyringPair, generateKeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import { u8aToHex } from "@polkadot/util";
-import { jumpToSession } from "util/block";
-import { injectUmpMessageAndSeal, type RawXcmMessage, XcmFragment } from "../../../util/xcm";
+import { type RawXcmMessage, XcmFragment, injectUmpMessageAndSeal, jumpToSession } from "utils";
 
 describeSuite({
     id: "DEVT1903",

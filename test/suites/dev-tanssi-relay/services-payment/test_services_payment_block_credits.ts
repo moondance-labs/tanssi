@@ -1,9 +1,9 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll, customDevRpcRequest } from "@moonwall/cli";
+
+import { beforeAll, customDevRpcRequest, describeSuite, expect } from "@moonwall/cli";
+import { type KeyringPair, generateKeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
-import { generateKeyringPair, type KeyringPair } from "@moonwall/util";
-import { jumpToSession, jumpSessions } from "util/block";
-import { paraIdTank } from "util/payment";
+import { jumpSessions, jumpToSession, paraIdTank } from "utils";
 
 describeSuite({
     id: "DEVT1201",
@@ -26,9 +26,11 @@ describeSuite({
                 await customDevRpcRequest("mock_enableParaInherentCandidate", []);
                 // Since collators are not assigned until session 2, we need to go till session 2 to actually see heads being injected
                 await jumpToSession(context, 2);
-                const parasRegistered = await polkadotJs.query.containerRegistrar.registeredParaIds();
+                const parasRegistered = (await polkadotJs.query.containerRegistrar.registeredParaIds())
+                    .toArray()
+                    .map((p) => p.toNumber());
 
-                for (const paraId of parasRegistered.toJSON()) {
+                for (const paraId of parasRegistered) {
                     // Should have credits
                     const credits = await polkadotJs.query.servicesPayment.blockProductionCredits(paraId);
                     expect(

@@ -1,11 +1,11 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll, type DevModeContext } from "@moonwall/cli";
-import type { ApiPromise } from "@polkadot/api";
-import type { Header, ParaId, HeadData, Digest, DigestItem, Slot } from "@polkadot/types/interfaces";
+
+import { type DevModeContext, beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
-import { fetchIssuance, filterRewardFromContainer, jumpToSession } from "util/block";
-import { DANCELIGHT_BOND } from "util/constants";
+import type { ApiPromise } from "@polkadot/api";
+import type { Digest, DigestItem, HeadData, Header, ParaId, Slot } from "@polkadot/types/interfaces";
 import { stringToHex } from "@polkadot/util";
+import { DANCELIGHT_BOND, fetchIssuance, filterRewardFromContainer, jumpToSession } from "utils";
 //5EYCAe5cHUC3LZehbwavqEb95LcNnpBzfQTsAxeUibSo1Gtb
 
 // Helper function to make rewards work for a specific block and slot.
