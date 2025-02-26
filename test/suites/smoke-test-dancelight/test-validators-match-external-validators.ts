@@ -2,7 +2,7 @@ import "@tanssi/api-augment/dancelight";
 
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
-import { getCurrentEraStartBlock } from "../../utils";
+import { getCurrentEraStartBlock } from "utils";
 
 describeSuite({
     id: "SMOK08",

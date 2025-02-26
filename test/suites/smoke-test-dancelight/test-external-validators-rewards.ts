@@ -2,8 +2,12 @@ import "@tanssi/api-augment/dancelight";
 
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
-import { HOLESKY_SOVEREIGN_ACCOUNT_ADDRESS, PRIMARY_GOVERNANCE_CHANNEL_ID, getCurrentEraStartBlock } from "utils";
-import { getAccountBalance } from "../../utils/account.ts";
+import {
+    HOLESKY_SOVEREIGN_ACCOUNT_ADDRESS,
+    PRIMARY_GOVERNANCE_CHANNEL_ID,
+    getAccountBalance,
+    getCurrentEraStartBlock,
+} from "utils";
 
 describeSuite({
     id: "SMOK05",
