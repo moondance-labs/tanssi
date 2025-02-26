@@ -228,7 +228,7 @@ fn notify_inactive_collator_fails_if_inactive_collators_storage_is_empty() {
                 .contains(&candidate),
             true
         );
-        roll_to(SESSION_BLOCK_LENGTH * MaxInactiveSessions::get() as u64 / 2 + 1);
+        roll_to(SESSION_BLOCK_LENGTH * MaxInactiveSessions::get() as u64 + 1);
         assert_ok!(Pallet::<Runtime>::enable_offline_marking(
             RuntimeOrigin::root(),
             true
@@ -240,11 +240,19 @@ fn notify_inactive_collator_fails_if_inactive_collators_storage_is_empty() {
             ),
             Error::<Runtime>::CollatorCannotBeNotifiedAsInactive
         );
+        roll_to(2 * SESSION_BLOCK_LENGTH * MaxInactiveSessions::get() as u64 + 1);
+        assert_noop!(
+            Pallet::<Runtime>::notify_inactive_collator(
+                RuntimeOrigin::signed(ACCOUNT_DELEGATOR_1),
+                ACCOUNT_CANDIDATE_2
+            ),
+            Error::<Runtime>::CollatorCannotBeNotifiedAsInactive
+        );
     });
 }
 
 #[test]
-fn notify_inactive_collator_fails_if_inactive_period_has_not_concluded() {
+fn notify_inactive_collator_fails_if_initial_inactive_period_has_not_concluded() {
     ExtBuilder::default().build().execute_with(|| {
         let share = InitialAutoCompoundingShareValue::get();
         let candidate = EligibleCandidate {
@@ -261,7 +269,7 @@ fn notify_inactive_collator_fails_if_inactive_period_has_not_concluded() {
             true
         );
 
-        let session_id = 2;
+        let session_id = 1;
 
         InactiveCollators::<Runtime>::insert(session_id, ACCOUNT_CANDIDATE_2, ());
         assert_eq!(
@@ -269,7 +277,7 @@ fn notify_inactive_collator_fails_if_inactive_period_has_not_concluded() {
             true
         );
 
-        roll_to(SESSION_BLOCK_LENGTH * (MaxInactiveSessions::get() as u64 + 1) + 1);
+        roll_to(SESSION_BLOCK_LENGTH * MaxInactiveSessions::get() as u64 - 1);
         assert_ok!(Pallet::<Runtime>::enable_offline_marking(
             RuntimeOrigin::root(),
             true
@@ -285,7 +293,7 @@ fn notify_inactive_collator_fails_if_inactive_period_has_not_concluded() {
 }
 
 #[test]
-fn notify_inactive_collator_fails_if_collator_produced_blocks_in_previous_activity_window() {
+fn notify_inactive_collator_fails_if_collator_produced_blocks_in_max_inactive_period() {
     ExtBuilder::default().build().execute_with(|| {
         let share = InitialAutoCompoundingShareValue::get();
 
@@ -303,7 +311,7 @@ fn notify_inactive_collator_fails_if_collator_produced_blocks_in_previous_activi
             true
         );
 
-        let session_id = 3;
+        let session_id = 1;
 
         InactiveCollators::<Runtime>::insert(session_id, ACCOUNT_CANDIDATE_2, ());
         assert_eq!(
