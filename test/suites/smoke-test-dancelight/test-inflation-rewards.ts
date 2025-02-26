@@ -12,7 +12,7 @@ describeSuite({
     testCases: ({ it, context, log }) => {
         let apiAt: ApiDecoration<"promise">;
         let api: ApiPromise;
-
+        let numberOfChains: number;
         beforeAll(async () => {
             api = context.polkadotJs();
             const latestBlock = await api.rpc.chain.getBlock();
@@ -20,18 +20,23 @@ describeSuite({
 
             // ApiAt to evaluate rewards
             apiAt = await api.at(latestBlockHash);
+
+            // If the number of registered chains is 0, there is no point on running this
+            numberOfChains = (await apiAt.query.containerRegistrar.registeredParaIds()).length;
         });
 
         it({
             id: "C01",
             title: "Inflation for containers should match with expected number of containers",
-            test: async () => {
+            test: async ({ skip }) => {
+                if (numberOfChains === 0) {
+                    skip();
+                }
                 // 70% is distributed across all rewards
                 const events = await apiAt.query.system.events();
                 const issuance = fetchIssuance(events).amount.toBigInt();
                 const chainRewards = (issuance * 7n) / 10n;
-                const numberOfChains = await apiAt.query.containerRegistrar.registeredParaIds();
-                const expectedChainReward = chainRewards / BigInt(numberOfChains.length);
+                const expectedChainReward = chainRewards / BigInt(numberOfChains);
                 const rewardEvents = fetchRewardAuthorContainers(events);
                 const failures = rewardEvents.filter(
                     ({ balance }) =>
@@ -54,7 +59,11 @@ describeSuite({
         it({
             id: "C02",
             title: "Issuance is correct",
-            test: async () => {
+            test: async ({ skip }) => {
+                if (numberOfChains === 0) {
+                    skip();
+                }
+
                 const latestBlock = await api.rpc.chain.getBlock();
 
                 const latestBlockHash = latestBlock.block.hash;
