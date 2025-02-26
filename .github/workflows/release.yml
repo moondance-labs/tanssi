@@ -658,6 +658,8 @@ jobs:
                       runtime: container-chain-template-frontier
                     - chain: stagelight
                       runtime: dancelight
+                    - chain: dancelight
+                      runtime: dancelight
         env:
           GH_WORKFLOW_MATRIX_CHAIN: ${{ matrix.chains.chain }}
           DEBUG_COLORS: 1

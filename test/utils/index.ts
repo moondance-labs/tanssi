@@ -1,3 +1,4 @@
+export * from "./account";
 export * from "./author";
 export * from "./block";
 export * from "./constants";
