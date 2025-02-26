@@ -1,10 +1,11 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { type ApiPromise, Keyring } from "@polkadot/api";
-import { jumpToSession } from "util/block";
-import { encodeAddress } from "@polkadot/util-crypto";
-import type { MultiLocation } from "../../../util/xcm";
+
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
+import { type ApiPromise, Keyring } from "@polkadot/api";
+import { encodeAddress } from "@polkadot/util-crypto";
+import { type MultiLocation, jumpToSession } from "utils";
+
 describeSuite({
     id: "DEVT0602",
     title: "Ethereum reward tests",

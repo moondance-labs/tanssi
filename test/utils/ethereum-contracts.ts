@@ -1,11 +1,9 @@
 import type Web3 from "web3";
 import fs from "node:fs";
 import path from "node:path";
-import type { TransactionReceipt } from "web3-core";
-import type { Contract } from "web3-eth-contract";
-import type { AbiItem } from "web3-utils";
 import { ALITH_PRIVATE_KEY, alith } from "@moonwall/util";
 import { customWeb3Request } from "@moonwall/util";
+import type { AbiItem } from "web3";
 
 export interface Compiled {
     byteCode: string;
@@ -43,7 +41,7 @@ export async function deployContractManualSeal(
     contractABI: AbiItem[],
     account: string = alith.address,
     privateKey: string = ALITH_PRIVATE_KEY
-): Promise<Contract> {
+) {
     const tx = await web3.eth.accounts.signTransaction(
         {
             from: account,
@@ -55,6 +53,6 @@ export async function deployContractManualSeal(
         privateKey
     );
     await customWeb3Request(web3, "eth_sendRawTransaction", [tx.rawTransaction]);
-    const rcpt: TransactionReceipt = await web3.eth.getTransactionReceipt(tx.transactionHash);
+    const rcpt = await web3.eth.getTransactionReceipt(tx.transactionHash);
     return new web3.eth.Contract(contractABI, rcpt.contractAddress);
 }

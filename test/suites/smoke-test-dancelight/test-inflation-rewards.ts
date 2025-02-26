@@ -1,9 +1,9 @@
 import "@tanssi/api-augment/dancelight";
+
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
 import type { ApiDecoration } from "@polkadot/api/types";
-import { fetchIssuance, fetchRewardAuthorContainers } from "util/block";
-import { DANCELIGHT_BOND } from "util/constants";
+import { DANCELIGHT_BOND, fetchIssuance, fetchRewardAuthorContainers } from "utils";
 
 describeSuite({
     id: "SMOK06",

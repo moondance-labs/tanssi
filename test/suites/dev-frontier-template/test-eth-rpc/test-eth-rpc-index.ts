@@ -1,4 +1,4 @@
-import { describeSuite, beforeAll, expect } from "@moonwall/cli";
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { BALTATHAR_ADDRESS, createRawTransfer } from "@moonwall/util";
 
 describeSuite({

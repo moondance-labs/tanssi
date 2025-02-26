@@ -1,4 +1,5 @@
 import "@tanssi/api-augment";
+
 import { describeSuite, expect } from "@moonwall/cli";
 import type { FrameSupportDispatchDispatchInfo } from "@polkadot/types/lookup";
 import { BN } from "@polkadot/util";

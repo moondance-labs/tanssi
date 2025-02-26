@@ -1,16 +1,17 @@
 import "@tanssi/api-augment/dancelight";
+
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { getBlockArray } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 import type { GenericExtrinsic } from "@polkadot/types";
-import type { FrameSystemEventRecord } from "@polkadot/types/lookup";
-import type { AnyTuple } from "@polkadot/types/types";
-import type {
-    PolkadotRuntimeParachainsConfigurationHostConfiguration,
-    PolkadotPrimitivesV8InherentData,
-} from "@polkadot/types/lookup";
-import Bottleneck from "bottleneck";
 import type { DigestItem } from "@polkadot/types/interfaces";
+import type {
+    FrameSystemEventRecord,
+    PolkadotPrimitivesV8InherentData,
+    PolkadotRuntimeParachainsConfigurationHostConfiguration,
+} from "@polkadot/types/lookup";
+import type { AnyTuple } from "@polkadot/types/types";
+import Bottleneck from "bottleneck";
 
 const timePeriod = process.env.TIME_PERIOD ? Number(process.env.TIME_PERIOD) : 1 * 60 * 60 * 1000;
 const timeout = Math.max(Math.floor(timePeriod / 12), 5000);

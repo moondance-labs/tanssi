@@ -1,11 +1,11 @@
 import { beforeEach, describeSuite, expect } from "@moonwall/cli";
 import {
     ALITH_ADDRESS,
+    BALTATHAR_ADDRESS,
     BALTATHAR_PRIVATE_KEY,
     CHARLETH_ADDRESS,
-    baltathar,
     ETHAN_ADDRESS,
-    BALTATHAR_ADDRESS,
+    baltathar,
 } from "@moonwall/util";
 import { expectEVMResult } from "helpers";
 import { type PrivateKeyAccount, keccak256, pad, parseEther, toBytes, toHex } from "viem";

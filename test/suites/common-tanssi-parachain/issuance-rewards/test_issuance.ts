@@ -1,7 +1,8 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
+
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
-import { fetchIssuance } from "util/block";
+import { fetchIssuance } from "utils";
 
 describeSuite({
     id: "COMMO0202",
