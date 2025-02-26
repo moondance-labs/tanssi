@@ -152,13 +152,15 @@ impl pallet_balances::Config for Runtime {
 pub const SHARE_INIT: u128 = MEGA;
 pub const BLOCKS_TO_WAIT: u64 = 2;
 
+pub const SESSION_BLOCK_LENGTH: u64 = 5;
+
 pub struct CurrentSessionIndexGetter;
 
 impl tp_traits::GetSessionIndex<u32> for CurrentSessionIndexGetter {
     /// Returns current session index.
     fn session_index() -> u32 {
         // For tests, let 1 session be 5 blocks
-        (System::block_number() / 5) as u32
+        (System::block_number() / SESSION_BLOCK_LENGTH) as u32
     }
 }
 
@@ -175,7 +177,11 @@ pub struct InvulnerableCheckHandler<AccountId>(PhantomData<AccountId>);
 
 impl tp_traits::CheckInvulnerables<AccountId> for InvulnerableCheckHandler<AccountId> {
     fn is_invulnerable(account: &AccountId) -> bool {
-        true
+        if *account == ACCOUNT_CANDIDATE_1 {
+            true
+        } else {
+            false
+        }
     }
 }
 

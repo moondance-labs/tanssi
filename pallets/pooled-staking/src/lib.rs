@@ -390,7 +390,6 @@ pub mod pallet {
 
     /// Switch to enable/disable marking offline feature.
     #[pallet::storage]
-    #[pallet::getter(fn is_marking_offline_enabled)]
     pub type EnableMarkingOffline<T: Config> = StorageValue<_, bool, ValueQuery>;
 
     /// A list of offline collators
@@ -398,7 +397,7 @@ pub mod pallet {
     pub type OfflineCollators<T: Config> = StorageValue<
         _,
         BoundedVec<
-            crate::candidate::EligibleCandidate<Candidate<T>, T::Balance>,
+            candidate::EligibleCandidate<Candidate<T>, T::Balance>,
             T::EligibleCandidatesBufferSize,
         >,
         ValueQuery,
@@ -533,9 +532,9 @@ pub mod pallet {
             released: T::Balance,
         },
         /// Candidate temporarily leave the set of collator candidates without unbonding.
-        CandidateOffline { candidate: Candidate<T> },
+        CollatorOffline { collator: Candidate<T> },
         /// Candidate rejoins the set of collator candidates.
-        CandidateOnline { candidate: Candidate<T> },
+        CollatorOnline { collator: Candidate<T> },
     }
 
     #[pallet::error]
@@ -601,7 +600,7 @@ pub mod pallet {
 
             Ok(())
         }
-        fn on_initialize(n: BlockNumberFor<T>) -> Weight {
+        fn on_initialize(_n: BlockNumberFor<T>) -> Weight {
             Self::update_inactive_collator_info();
             Weight::zero()
         }
@@ -809,9 +808,7 @@ pub mod pallet {
                 offline_candidates.try_push(candidate)
             });
 
-            Self::deposit_event(Event::<T>::CandidateOffline {
-                candidate: collator,
-            });
+            Self::deposit_event(Event::<T>::CollatorOffline { collator });
             Ok(())
         }
         pub fn set_online_inner(collator: Candidate<T>) -> DispatchResult {
@@ -831,9 +828,7 @@ pub mod pallet {
                 eligible_candidates.try_push(offline_candidate)
             });
 
-            Self::deposit_event(Event::<T>::CandidateOnline {
-                candidate: collator,
-            });
+            Self::deposit_event(Event::<T>::CollatorOnline { collator });
             Ok(())
         }
 
