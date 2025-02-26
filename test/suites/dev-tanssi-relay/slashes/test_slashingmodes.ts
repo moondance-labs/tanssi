@@ -3,7 +3,8 @@ import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
 import type { KeyringPair } from "@moonwall/util";
 import { Keyring } from "@polkadot/keyring";
-import { u8aToHex } from "@polkadot/util";import { generateBabeEquivocationProof } from "utils/slashes";
+import { u8aToHex } from "@polkadot/util";
+import { generateBabeEquivocationProof } from "utils/slashes";
 
 describeSuite({
     id: "DTR1309",
