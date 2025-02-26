@@ -230,15 +230,19 @@ check_tool() {
         exit 1
     fi
     if [[ "$(uname)" == "Darwin" && -z "${IN_NIX_SHELL:-}" ]]; then
-          if ! [ -x "$(command -v gdate)" ]; then
-              echo 'Error: gdate (GNU Date) is not installed.'
-              exit 1
-          fi
-      else
-          if ! [ -x "$(command -v date)" ]; then
-              echo 'Error: date is not installed.'
-              exit 1
-          fi
+        if ! [ -x "$(command -v gsed)" ]; then
+            echo 'Error: gsed is not installed.'
+            exit 1
+        fi
+        if ! [ -x "$(command -v gdate)" ]; then
+            echo 'Error: gdate (GNU Date) is not installed.'
+            exit 1
+        fi
+    else
+        if ! [ -x "$(command -v date)" ]; then
+            echo 'Error: date is not installed.'
+            exit 1
+        fi
     fi
 
     check_node_version 22
