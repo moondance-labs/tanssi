@@ -24,8 +24,8 @@ relay_bin="$relayer_root_dir/build/tanssi-bridge-relayer"
 
 RELAYER_COMMIT="6b4e60b905854fd72e2e972a4734b6cb6d308ac2" # TODO: Change to tag when we do releases
 TANSSI_SYMBIOTIC_COMMIT="224bf2dfc682b25bf8f757e222de0aa7003ffb9f" # TODO: Change to tag when we do release
-GETH_TAG="v1.14.11" # We will need to investigate if this is right
-LODESTAR_TAG="v1.19.0"
+GETH_TAG="v1.15.3" # We will need to investigate if this is right
+LODESTAR_TAG="v1.24.0"
 
 lodestar_dir=$artifacts_dir/lodestar
 

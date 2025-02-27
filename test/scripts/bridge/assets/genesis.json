@@ -15,7 +15,8 @@
         "ethash": {},
         "terminalTotalDifficulty": 0,
         "ShanghaiTime": 0,
-        "CancunTime": null,
+        "CancunTime": 0,
+        "PragueTime": null,
         "terminalTotalDifficultyPassed": true
     },
     "difficulty": "0x9FFE0",
