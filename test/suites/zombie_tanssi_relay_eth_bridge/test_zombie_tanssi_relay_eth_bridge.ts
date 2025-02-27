@@ -8,7 +8,7 @@ import { u8aToHex } from "@polkadot/util";
 import { decodeAddress } from "@polkadot/util-crypto";
 import { ethers } from "ethers";
 import { type ChildProcessWithoutNullStreams, exec, spawn } from "node:child_process";
-import { signAndSendAndInclude, sleep, waitSessions } from "utils";
+import { signAndSendAndInclude, sleep, waitSessions, SECONDARY_GOVERNANCE_CHANNEL_ID } from "utils";
 
 // Change this if we change the storage parameter in runtime
 const GATEWAY_STORAGE_KEY = "0xaed97c7854d601808b98ae43079dafb3";
@@ -407,6 +407,90 @@ describeSuite({
 
                 expect(rewardMessageSuccess).to.be.true;
                 expect(slashMessageSuccess).to.be.true;
+            },
+        });
+
+        it({
+            id: "T06",
+            title: "Native token is transferred to Ethereum successfully",
+            test: async () => {
+                // Get the channel info
+                const channelInfo = (await relayApi.query.ethereumSystem.channels(SECONDARY_GOVERNANCE_CHANNEL_ID))
+                    .unwrap()
+                    .toJSON();
+
+                // Create channel in EthereumTokenTransfers
+                const setTokenTransferChannelTx = await relayApi.tx.sudo
+                    .sudo(
+                        relayApi.tx.ethereumTokenTransfers.setTokenTransferChannel(
+                            SECONDARY_GOVERNANCE_CHANNEL_ID,
+                            channelInfo.agentId.toString(),
+                            Number(channelInfo.paraId)
+                        )
+                    )
+                    .signAndSend(alice);
+
+                console.log("Set token transfer channel tx was submitted:", setTokenTransferChannelTx.toHex());
+
+                await context.waitBlock(2, "Tanssi-relay");
+
+                // Ensure the channel is created on EthereumTokenTransfers
+                const channelInfoFromEthTokenTransfers = (
+                    await relayApi.query.ethereumTokenTransfers.currentChannelInfo()
+                ).toJSON();
+                expect(channelInfoFromEthTokenTransfers).to.not.be.undefined;
+
+                const recipient = "0x0000000000000000000000000000000000000007";
+                const amount = 1000;
+
+                // Send the token
+                const transferNativeTokenTx = await relayApi.tx.ethereumTokenTransfers
+                    .transferNativeToken(amount, recipient)
+                    .signAndSend(alice);
+
+                console.log("Transfer native token tx was submitted:", transferNativeTokenTx.toHex());
+
+                await context.waitBlock(1, "Tanssi-relay");
+
+                const events = await relayApi.query.system.events();
+                const filteredEventForTokenTransfers = events.filter((a) => {
+                    return a.event.method === "NativeTokenTransferred";
+                });
+
+                const tokenTransfersEventData = filteredEventForTokenTransfers[0].event.toJSON().data;
+
+                const tokenTransferMessageId = tokenTransfersEventData[0];
+                const tokenTransferChannelId = tokenTransfersEventData[1];
+                const tokenTransferSource = tokenTransfersEventData[2];
+                const tokenTransferRecipient = tokenTransfersEventData[3];
+                const tokenTransferTokenId = tokenTransfersEventData[4];
+                const tokenTransferAmount = tokenTransfersEventData[5];
+
+                expect(tokenTransferChannelId).to.be.eq(SECONDARY_GOVERNANCE_CHANNEL_ID);
+                expect(tokenTransferSource).to.be.eq(alice.address);
+                expect(tokenTransferRecipient).to.be.eq(recipient);
+                expect(tokenTransferAmount).to.be.eq(amount);
+
+                const expectedNativeToken = (
+                    await relayApi.query.ethereumSystem.foreignToNativeId(tokenTransferTokenId)
+                ).toJSON();
+                expect(expectedNativeToken).to.not.be.undefined;
+
+                let tokenTransferReceived = false;
+                let tokenTransferSuccess = false;
+
+                gatewayContract.on("InboundMessageDispatched", (_channelID, _nonce, messageID, success) => {
+                    if (tokenTransferMessageId === messageID) {
+                        tokenTransferReceived = true;
+                        tokenTransferSuccess = success;
+                    }
+                });
+
+                while (!tokenTransferReceived) {
+                    await sleep(1000);
+                }
+
+                expect(tokenTransferSuccess).to.be.true;
             },
         });
 
