@@ -1,14 +1,14 @@
 import "@tanssi/api-augment/dancelight";
 
+import { type ChildProcessWithoutNullStreams, exec, spawn } from "node:child_process";
 import { afterAll, beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import type { MultiLocation } from "@polkadot/types/interfaces/xcm/types";
-import { u8aToHex } from "@polkadot/util";
+import { hexToU8a, u8aToHex } from "@polkadot/util";
 import { decodeAddress } from "@polkadot/util-crypto";
 import { ethers } from "ethers";
-import { type ChildProcessWithoutNullStreams, exec, spawn } from "node:child_process";
-import { signAndSendAndInclude, sleep, waitSessions, SECONDARY_GOVERNANCE_CHANNEL_ID } from "utils";
+import { SECONDARY_GOVERNANCE_CHANNEL_ID, signAndSendAndInclude, sleep, waitSessions } from "utils";
 
 // Change this if we change the storage parameter in runtime
 const GATEWAY_STORAGE_KEY = "0xaed97c7854d601808b98ae43079dafb3";
@@ -440,7 +440,7 @@ describeSuite({
                 ).toJSON();
                 expect(channelInfoFromEthTokenTransfers).to.not.be.undefined;
 
-                const recipient = "0x0000000000000000000000000000000000000007";
+                const recipient = "0x90a987b944cb1dcce5564e5fdecd7a54d3de27fe";
                 const amount = 1000;
 
                 // Send the token
@@ -491,6 +491,38 @@ describeSuite({
                 }
 
                 expect(tokenTransferSuccess).to.be.true;
+
+                // Send the token back
+                const amountBackFromETH = "500";
+                const fee = "0";
+
+                console.log(`Sending ${amountBackFromETH} tokens back from ETH`)
+
+                const tx = await gatewayContract.sendToken(
+                    tokenTransferTokenId,
+                    BigInt(channelInfo.paraId as number),
+                    {
+                        kind: 1,
+                        data: hexToU8a(alice.address)
+                    },
+                    ethers.parseUnits(fee, 18),
+                    ethers.parseUnits(amountBackFromETH, 18),
+                )
+
+                await tx.wait();
+
+                let tokenTransferExecuted = false;
+                
+                gatewayContract.on("OutboundMessageAccepted", (_channelID, _nonce, _messageID, _ticketPayload) => {
+                    tokenTransferExecuted = true;
+                });
+
+                while (!tokenTransferExecuted) {
+                    console.log("Waiting for token transfer to be executed")
+                    await sleep(1000);
+                }
+
+                expect(tokenTransferExecuted).to.be.true;
             },
         });
 
