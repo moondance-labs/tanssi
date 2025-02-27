@@ -278,7 +278,7 @@ describeSuite({
                                 timeUnit: "BlockNumber",
                                 assetId: "Native",
                                 rate: "1,000,000",
-                                minimumDeadlineDelay: "0",
+                                minimumRequestDeadlineDelay: "0",
                                 softMinimumDeposit: "0",
                             },
                         },
@@ -324,7 +324,7 @@ describeSuite({
                         timeUnit: "BlockNumber",
                         assetId: "Native",
                         rate: 1000000,
-                        minimumDeadlineDelay: 0,
+                        minimumRequestDeadlineDelay: 0,
                         softMinimumDeposit: 0,
                     })
                 );
