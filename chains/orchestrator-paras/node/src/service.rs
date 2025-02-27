@@ -573,8 +573,9 @@ fn start_consensus_orchestrator(
                 // runtimes we continue to write all of them.
                 let para_ids = match client_set_aside_for_cidp
                     .runtime_api()
-                    .api_version::<dyn CollatorAssignmentApi<Block, AccountId, ParaId>>(block_hash)?
-                {
+                    .api_version::<dyn CollatorAssignmentApi<Block, AccountId, ParaId>>(
+                    block_hash,
+                )? {
                     Some(version) if version >= 2 => client_set_aside_for_cidp
                         .runtime_api()
                         .parachains_with_some_collators(block_hash)?,

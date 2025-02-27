@@ -163,13 +163,18 @@ impl nimbus_primitives::SlotBeacon for DummyBeacon {
 
 pub struct MockContainerChainGetter;
 
-impl tp_traits::GetCurrentContainerChainsWithCollators<AccountId> for MockContainerChainGetter {
-    fn current_container_chains_with_collators() -> Vec<(ParaId, Vec<AccountId>)> {
+impl tp_traits::GetContainerChainsWithCollators<AccountId> for MockContainerChainGetter {
+    fn container_chains_with_collators(
+        _for_session: tp_traits::ForSession,
+    ) -> Vec<(ParaId, Vec<AccountId>)> {
         mock_data::Mock::<Test>::get().container_chains
     }
 
     #[cfg(feature = "runtime-benchmarks")]
-    fn set_current_container_chains_with_collators(container_chains: &[(ParaId, Vec<AccountId>)]) {
+    fn set_container_chains_with_collators(
+        _for_session: tp_traits::ForSession,
+        container_chains: &[(ParaId, Vec<AccountId>)],
+    ) {
         MockData::mutate(|m| {
             m.container_chains = container_chains.to_vec().try_into().unwrap();
         });

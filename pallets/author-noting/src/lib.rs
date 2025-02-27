@@ -47,8 +47,8 @@ use {
     sp_std::vec::Vec,
     tp_author_noting_inherent::INHERENT_IDENTIFIER,
     tp_traits::{
-        AuthorNotingHook, AuthorNotingInfo, ContainerChainBlockInfo, GenericStateProof,
-        GenericStorageReader, GetContainerChainAuthor, GetCurrentContainerChainsWithCollators,
+        AuthorNotingHook, AuthorNotingInfo, ContainerChainBlockInfo, ForSession, GenericStateProof,
+        GenericStorageReader, GetContainerChainAuthor, GetContainerChainsWithCollators,
         LatestAuthorInfoFetcher, NativeStorageReader, ReadEntryErr,
     },
 };
@@ -77,7 +77,7 @@ pub mod pallet {
         /// The overarching event type.
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
-        type ContainerChains: GetCurrentContainerChainsWithCollators<Self::AccountId>;
+        type ContainerChains: GetContainerChainsWithCollators<Self::AccountId>;
 
         type SlotBeacon: SlotBeacon;
 
@@ -152,24 +152,24 @@ pub mod pallet {
                 "DidSetContainerAuthorData must be updated only once in a block",
             );
 
-            let registered_para_ids: Vec<_> =
-                T::ContainerChains::current_container_chains_with_collators()
+            let container_chains_to_check: Vec<_> =
+                T::ContainerChains::container_chains_with_collators(ForSession::Current)
                     .into_iter()
                     .filter_map(|(para_id, collators)| (!collators.is_empty()).then_some(para_id))
                     .collect();
             let mut total_weight =
-                T::WeightInfo::set_latest_author_data(registered_para_ids.len() as u32);
+                T::WeightInfo::set_latest_author_data(container_chains_to_check.len() as u32);
 
             // We do this first to make sure we don't do 2 reads (parachains and relay state)
             // when we have no containers registered
             // Essentially one can pass an empty proof if no container-chains are registered
-            if !registered_para_ids.is_empty() {
+            if !container_chains_to_check.is_empty() {
                 let storage_reader = T::RelayOrPara::create_storage_reader(data);
 
                 let parent_tanssi_slot = u64::from(T::SlotBeacon::slot()).into();
-                let mut infos = Vec::with_capacity(registered_para_ids.len());
+                let mut infos = Vec::with_capacity(container_chains_to_check.len());
 
-                for para_id in registered_para_ids {
+                for para_id in container_chains_to_check {
                     match Self::fetch_block_info_from_proof(
                         &storage_reader,
                         para_id,

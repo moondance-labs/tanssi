@@ -2536,10 +2536,18 @@ impl_runtime_apis! {
 
         /// Returns the list of `ParaId` of registered chains with at least some
         /// collators. This filters out parachains with no assigned collators.
+        /// Since runtime APIs are called on top of a parent block, we need to be carefull
+        /// at session boundaries. If the next block will change session, this function returns
+        /// the parachains relevant for the next session.
         fn parachains_with_some_collators() -> Vec<ParaId> {
-            use tp_traits::GetCurrentContainerChainsWithCollators;
+            use tp_traits::{GetContainerChainsWithCollators, ForSession};
 
-            CollatorAssignment::current_container_chains_with_collators()
+            // We should return the container-chains for the session in which we are kicking in
+            let parent_number = System::block_number();
+            let should_end_session = <Runtime as pallet_session::Config>::ShouldEndSession::should_end_session(parent_number + 1);
+            let for_session = if should_end_session { ForSession::Next } else { ForSession::Current };
+
+            CollatorAssignment::container_chains_with_collators(for_session)
                 .into_iter()
                 .filter_map(
                     |(para_id, collators)| (!collators.is_empty()).then_some(para_id)

@@ -26,7 +26,7 @@ use {
     parity_scale_codec::Encode,
     sp_std::{boxed::Box, vec},
     tp_traits::{
-        AuthorNotingHook, GetContainerChainAuthor, GetCurrentContainerChainsWithCollators,
+        AuthorNotingHook, ForSession, GetContainerChainAuthor, GetContainerChainsWithCollators,
     },
 };
 
@@ -138,7 +138,7 @@ benchmarks! {
             unreachable!("Unknown InherentArg")
         };
 
-        T::ContainerChains::set_current_container_chains_with_collators(&container_chains);
+        T::ContainerChains::set_container_chains_with_collators(ForSession::Current, &container_chains);
 
     }: _(RawOrigin::None, data)
 

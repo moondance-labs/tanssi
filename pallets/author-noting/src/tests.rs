@@ -33,7 +33,7 @@ use {
         traits::{BlakeTwo256, HashingFor},
     },
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
-    tp_traits::GetCurrentContainerChainsWithCollators,
+    tp_traits::{ForSession, GetContainerChainsWithCollators},
 };
 
 #[test]
@@ -694,8 +694,10 @@ fn weights_assigned_to_extrinsics_are_correct() {
         assert_eq!(
             inherent_weight.actual_weight.unwrap(),
             <() as crate::weights::WeightInfo>::set_latest_author_data(
-                <Test as crate::Config>::ContainerChains::current_container_chains_with_collators()
-                    .len() as u32
+                <Test as crate::Config>::ContainerChains::container_chains_with_collators(
+                    ForSession::Current
+                )
+                .len() as u32
             )
         );
     });
