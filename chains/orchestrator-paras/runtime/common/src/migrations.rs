@@ -948,11 +948,14 @@ where
 
     #[cfg(feature = "try-runtime")]
     fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
-        let Some(stream_id) = pallet_stream_payment::Streams::<T>::iter_keys().next() else {
+        use pallet_stream_payment::migrations::{OldStreamOf};
+        use parity_scale_codec::Encode;
+
+        let Some(stream_id) = pallet_stream_payment::Streams::<Runtime>::iter_keys().next() else {
             return Ok(vec![]);
         };
 
-        let old_stream: OldStream<AccountId, TimeUnit, StreamPaymentAssetId, Balance> =
+        let old_stream: OldStreamOf<Runtime> =
             frame_support::storage::unhashed::get(
                 &pallet_stream_payment::Streams::<Runtime>::hashed_key_for(stream_id),
             )
@@ -962,7 +965,10 @@ where
     }
 
     #[cfg(feature = "try-runtime")]
-    fn post_upgrade(&self, mut state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+    fn post_upgrade(&self, state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        use pallet_stream_payment::{migrations::{OldStreamOf}, StreamConfig, ChangeRequest, Stream};
+        use parity_scale_codec::Decode;
+    
         if state.is_empty() {
             // there were no streams
             return Ok(());
@@ -970,18 +976,19 @@ where
 
         let (stream_id, old_stream) = <(
             Runtime::StreamId,
-            OldStream<AccountId, TimeUnit, StreamPaymentAssetId, Balance>,
-        )>::decode(&mut state)
+            OldStreamOf<Runtime>,
+        )>::decode(&mut &state[..])
         .expect("to decode properly");
 
         let new_stream =
-            pallet_stream_payment::Streams::<T>::get(stream_id).expect("entry should still exist");
+            pallet_stream_payment::Streams::<Runtime>::get(stream_id).expect("entry should still exist");
 
         let mut expected = Stream {
             source: old_stream.source,
             target: old_stream.target,
             deposit: old_stream.deposit,
             last_time_updated: old_stream.last_time_updated,
+            request_nonce: old_stream.request_nonce,
             pending_request: None, // will be replaced below
             opening_deposit: old_stream.opening_deposit,
             config: StreamConfig {
@@ -994,18 +1001,18 @@ where
         };
 
         if let Some(pending_request) = old_stream.pending_request {
-            expected.pending_request = ChangeRequest {
+            expected.pending_request = Some(ChangeRequest {
                 requester: pending_request.requester,
                 kind: pending_request.kind,
                 deposit_change: pending_request.deposit_change,
                 new_config: StreamConfig {
                     time_unit: pending_request.new_config.time_unit,
-                    asset_id: pending_request.new_config.config.asset_id,
-                    rate: pending_request.new_config.config.rate,
+                    asset_id: pending_request.new_config.asset_id,
+                    rate: pending_request.new_config.rate,
                     minimum_request_deadline_delay: 0u32.into(),
                     soft_minimum_deposit: 0u32.into(),
                 },
-            }
+            });
         }
 
         assert_eq!(

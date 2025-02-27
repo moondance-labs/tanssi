@@ -34,7 +34,7 @@ pub struct OldStream<AccountId, Unit, AssetId, Balance> {
     pub opening_deposit: Balance,
 }
 
-type OldStreamOf<T> =
+pub type OldStreamOf<T> =
     OldStream<AccountIdOf<T>, <T as Config>::TimeUnit, AssetIdOf<T>, <T as Config>::Balance>;
 
 #[derive(Encode, Decode, Clone)]
