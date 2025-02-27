@@ -34,6 +34,8 @@
 //! This module acts as a registry where each migration is defined. Each migration should implement
 //! the "Migration" trait declared in the pallet-migrations crate.
 
+extern crate alloc;
+
 use {
     cumulus_primitives_core::ParaId,
     frame_support::{
@@ -931,6 +933,81 @@ where
     }
 }
 
+// Copied from
+// cumulus/parachains/runtimes/bridge-hubs/bridge-hub-westend/src/bridge_to_ethereum_config.rs
+// Changed westend => rococo
+pub mod snowbridge_system_migration {
+    use super::*;
+    use alloc::vec::Vec;
+    use frame_support::pallet_prelude::*;
+    use snowbridge_core::TokenId;
+    use staging_xcm as xcm;
+
+    #[frame_support::storage_alias]
+    pub type OldNativeToForeignId<T: snowbridge_pallet_system::Config> = StorageMap<
+        snowbridge_pallet_system::Pallet<T>,
+        Blake2_128Concat,
+        xcm::v4::Location,
+        TokenId,
+        OptionQuery,
+    >;
+
+    /// One shot migration for NetworkId::Westend to NetworkId::ByGenesis(WESTEND_GENESIS_HASH)
+    pub struct MigrationForXcmV5<T: snowbridge_pallet_system::Config>(core::marker::PhantomData<T>);
+    impl<T: snowbridge_pallet_system::Config> frame_support::traits::OnRuntimeUpgrade
+        for MigrationForXcmV5<T>
+    {
+        fn on_runtime_upgrade() -> Weight {
+            let mut weight = T::DbWeight::get().reads(1);
+
+            let translate_westend = |pre: xcm::v4::Location| -> Option<xcm::v5::Location> {
+                weight.saturating_accrue(T::DbWeight::get().reads_writes(1, 1));
+                Some(xcm::v5::Location::try_from(pre).expect("valid location"))
+            };
+            snowbridge_pallet_system::ForeignToNativeId::<T>::translate_values(translate_westend);
+
+            let old_keys = OldNativeToForeignId::<T>::iter_keys().collect::<Vec<_>>();
+            for old_key in old_keys {
+                if let Some(old_val) = OldNativeToForeignId::<T>::get(&old_key) {
+                    snowbridge_pallet_system::NativeToForeignId::<T>::insert(
+                        &xcm::v5::Location::try_from(old_key.clone()).expect("valid location"),
+                        old_val,
+                    );
+                }
+                OldNativeToForeignId::<T>::remove(old_key);
+                weight.saturating_accrue(T::DbWeight::get().reads_writes(1, 2));
+            }
+
+            weight
+        }
+    }
+}
+
+pub struct SnowbridgeEthereumSystemXcmV5<Runtime>(pub PhantomData<Runtime>);
+
+impl<Runtime> Migration for SnowbridgeEthereumSystemXcmV5<Runtime>
+where
+    Runtime: snowbridge_pallet_system::Config,
+{
+    fn friendly_name(&self) -> &str {
+        "TM_SnowbridgeEthereumSystemXCMv5"
+    }
+
+    fn migrate(&self, _available_weight: Weight) -> Weight {
+        snowbridge_system_migration::MigrationForXcmV5::<Runtime>::on_runtime_upgrade()
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        Ok(vec![])
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(&self, state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        Ok(())
+    }
+}
+
 pub struct FlashboxMigrations<Runtime>(PhantomData<Runtime>);
 
 impl<Runtime> GetMigrations for FlashboxMigrations<Runtime>
@@ -1093,6 +1170,7 @@ where
         ValidatorId = <Runtime as pallet_external_validators::Config>::ValidatorId,
     >,
     Runtime: pallet_external_validator_slashes::Config,
+    Runtime: snowbridge_pallet_system::Config,
 {
     fn get_migrations() -> Vec<Box<dyn Migration>> {
         let migrate_config_full_rotation_mode =
@@ -1100,6 +1178,8 @@ where
 
         let external_validator_slashes_bonded_eras_timestamp =
             BondedErasTimestampMigration::<Runtime>(Default::default());
+        let snowbridge_ethereum_system_xcm_v5 =
+            SnowbridgeEthereumSystemXcmV5::<Runtime>(Default::default());
 
         vec![
             // Applied in runtime 1000
@@ -1108,6 +1188,7 @@ where
             //Box::new(migrate_external_validators),
             Box::new(migrate_config_full_rotation_mode),
             Box::new(external_validator_slashes_bonded_eras_timestamp),
+            Box::new(snowbridge_ethereum_system_xcm_v5),
         ]
     }
 }

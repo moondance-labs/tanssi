@@ -48,7 +48,8 @@ cumulus-pallet-xcmp-queue = { workspace = true }
 # Polkadot
 pallet-xcm = { workspace = true }
 staging-xcm = { workspace = true }
-
+snowbridge-core = { workspace = true }
+snowbridge-pallet-system = { workspace = true }
 sp-core = { workspace = true }
 sp-runtime = { workspace = true }
 sp-staking = { workspace = true }

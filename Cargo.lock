@@ -19124,6 +19124,8 @@ dependencies = [
  "pallet-xcm",
  "parity-scale-codec",
  "scale-info",
+ "snowbridge-core",
+ "snowbridge-pallet-system",
  "sp-core",
  "sp-runtime",
  "sp-staking",
