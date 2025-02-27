@@ -20,7 +20,7 @@ use {
     beefy_primitives::ecdsa_crypto::AuthorityId as BeefyId,
     cumulus_primitives_core::ParaId,
     dancelight_runtime::genesis_config_presets::{
-        dancelight_development_config_genesis, dancelight_local_testnet_genesis,
+        dancelight_development_config_genesis,
     },
     dp_container_chain_genesis_data::{
         json::container_chain_genesis_data_from_path, ContainerChainGenesisData,
@@ -213,45 +213,6 @@ pub fn dancelight_development_config(
     .build())
 }
 
-/// Dancelight local testnet config (multivalidator Alice + Bob)
-#[cfg(feature = "dancelight-native")]
-pub fn dancelight_local_testnet_config(
-    container_chains: Vec<String>,
-    mock_container_chains: Vec<ParaId>,
-    invulnerables: Vec<String>,
-) -> Result<DancelightChainSpec, String> {
-    let container_chains: Vec<_> = container_chains
-        .iter()
-        .map(|x| {
-            container_chain_genesis_data_from_path(x).unwrap_or_else(|e| {
-                panic!(
-                    "Failed to build genesis data for container chain {:?}: {}",
-                    x, e
-                )
-            })
-        })
-        .chain(
-            mock_container_chains
-                .iter()
-                .map(|x| (*x, mock_container_chain_genesis_data(*x), vec![])),
-        )
-        .collect();
-
-    Ok(DancelightChainSpec::builder(
-        dancelight::fast_runtime_binary::WASM_BINARY
-            .ok_or("Dancelight development wasm not available")?,
-        Default::default(),
-    )
-    .with_name("Dancelight Local Testnet")
-    .with_id("dancelight_local_testnet")
-    .with_chain_type(ChainType::Local)
-    .with_genesis_config_patch(dancelight_local_testnet_genesis(
-        container_chains,
-        invulnerables,
-    ))
-    .with_protocol_id(DEFAULT_PROTOCOL_ID)
-    .build())
-}
 
 fn mock_container_chain_genesis_data(para_id: ParaId) -> ContainerChainGenesisData {
     ContainerChainGenesisData {
