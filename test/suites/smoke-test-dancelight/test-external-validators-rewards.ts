@@ -99,8 +99,6 @@ describeSuite({
             test: async () => {
                 const historyDepth = api.consts.externalValidatorsRewards.historyDepth;
 
-                console.log(historyDepth);
-
                 // Checkpoint A: current era index - historyDepth
                 const eraIndexCheckpointA =
                     (await api.query.externalValidators.activeEra()).unwrap().index.toNumber() -
