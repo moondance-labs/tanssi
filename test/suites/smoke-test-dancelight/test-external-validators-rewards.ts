@@ -108,10 +108,7 @@ describeSuite({
 
                 // The mapping only contains the keys that are in `externalValidatorsRewards`
                 const rewardMappingKeys = (await api.query.externalValidatorsRewards.rewardPointsForEra.keys()).map(
-                    (key) => {
-                        // Convert "1,020" into 1020
-                        return Number.parseInt(key.toHuman().toString().replace(",", ""));
-                    }
+                    (key) => key.args[0].toNumber()
                 );
                 expect(rewardMappingKeys.includes(eraIndexCheckpointB)).toBe(true);
                 expect(rewardMappingKeys.includes(eraIndexCheckpointA)).toBe(false);
