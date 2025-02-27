@@ -45,7 +45,10 @@ use {
         traits::{CheckedAdd, CheckedMul},
         ArithmeticError, DispatchResult, Perbill, RuntimeDebug,
     },
-    sp_std::{collections::btree_map::BTreeMap, collections::btree_set::BTreeSet, vec::Vec},
+    sp_std::{
+        collections::{btree_map::BTreeMap, btree_set::BTreeSet},
+        vec::Vec,
+    },
 };
 
 // Separate import as rustfmt wrongly change it to `sp_std::vec::self`, which is the module instead

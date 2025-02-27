@@ -14,13 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use frame_support::__private::sp_tracing::tracing::Instrument;
 use {
     crate::spawner::{wait_for_paritydb_lock, Spawner},
     dc_orchestrator_chain_interface::{
         DataPreserverAssignment, OrchestratorChainError, OrchestratorChainInterface,
         OrchestratorChainResult,
     },
+    frame_support::__private::sp_tracing::tracing::Instrument,
     futures::stream::StreamExt,
     std::{future::Future, time::Duration},
     tc_consensus::ParaId,

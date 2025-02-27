@@ -1304,11 +1304,13 @@ pub fn generate_ethereum_pub_keys(n: u32) -> Vec<Keypair> {
     keys
 }
 
-use babe_primitives::AuthorityPair as BabeAuthorityPair;
-use grandpa_primitives::{
-    AuthorityPair as GrandpaAuthorityPair, Equivocation, EquivocationProof, RoundNumber, SetId,
+use {
+    babe_primitives::AuthorityPair as BabeAuthorityPair,
+    grandpa_primitives::{
+        AuthorityPair as GrandpaAuthorityPair, Equivocation, EquivocationProof, RoundNumber, SetId,
+    },
+    sp_core::H256,
 };
-use sp_core::H256;
 pub fn generate_grandpa_equivocation_proof(
     set_id: SetId,
     vote1: (RoundNumber, H256, u32, &GrandpaAuthorityPair),
