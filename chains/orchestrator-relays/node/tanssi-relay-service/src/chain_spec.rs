@@ -19,9 +19,7 @@
 use {
     beefy_primitives::ecdsa_crypto::AuthorityId as BeefyId,
     cumulus_primitives_core::ParaId,
-    dancelight_runtime::genesis_config_presets::{
-        dancelight_development_config_genesis,
-    },
+    dancelight_runtime::genesis_config_presets::dancelight_development_config_genesis,
     dp_container_chain_genesis_data::{
         json::container_chain_genesis_data_from_path, ContainerChainGenesisData,
     },
@@ -212,7 +210,6 @@ pub fn dancelight_development_config(
     .with_properties(properties)
     .build())
 }
-
 
 fn mock_container_chain_genesis_data(para_id: ParaId) -> ContainerChainGenesisData {
     ContainerChainGenesisData {
