@@ -948,40 +948,37 @@ where
 
     #[cfg(feature = "try-runtime")]
     fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
-        use pallet_stream_payment::migrations::{OldStreamOf};
+        use pallet_stream_payment::migrations::OldStreamOf;
         use parity_scale_codec::Encode;
 
         let Some(stream_id) = pallet_stream_payment::Streams::<Runtime>::iter_keys().next() else {
             return Ok(vec![]);
         };
 
-        let old_stream: OldStreamOf<Runtime> =
-            frame_support::storage::unhashed::get(
-                &pallet_stream_payment::Streams::<Runtime>::hashed_key_for(stream_id),
-            )
-            .expect("key was found so entry must exist");
+        let old_stream: OldStreamOf<Runtime> = frame_support::storage::unhashed::get(
+            &pallet_stream_payment::Streams::<Runtime>::hashed_key_for(stream_id),
+        )
+        .expect("key was found so entry must exist");
 
         Ok((stream_id, old_stream).encode())
     }
 
     #[cfg(feature = "try-runtime")]
     fn post_upgrade(&self, state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
-        use pallet_stream_payment::{migrations::{OldStreamOf}, StreamConfig, ChangeRequest, Stream};
+        use pallet_stream_payment::{migrations::OldStreamOf, ChangeRequest, Stream, StreamConfig};
         use parity_scale_codec::Decode;
-    
+
         if state.is_empty() {
             // there were no streams
             return Ok(());
         }
 
-        let (stream_id, old_stream) = <(
-            Runtime::StreamId,
-            OldStreamOf<Runtime>,
-        )>::decode(&mut &state[..])
-        .expect("to decode properly");
+        let (stream_id, old_stream) =
+            <(Runtime::StreamId, OldStreamOf<Runtime>)>::decode(&mut &state[..])
+                .expect("to decode properly");
 
-        let new_stream =
-            pallet_stream_payment::Streams::<Runtime>::get(stream_id).expect("entry should still exist");
+        let new_stream = pallet_stream_payment::Streams::<Runtime>::get(stream_id)
+            .expect("entry should still exist");
 
         let mut expected = Stream {
             source: old_stream.source,
