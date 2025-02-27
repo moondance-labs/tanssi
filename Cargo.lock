@@ -4356,32 +4356,11 @@ dependencies = [
 
 [[package]]
 name = "ethabi-decode"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "09d398648d65820a727d6a81e58b962f874473396a047e4c30bafe3240953417"
-dependencies = [
- "ethereum-types 0.14.1",
- "tiny-keccak",
-]
-
-[[package]]
-name = "ethabi-decode"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "52029c4087f9f01108f851d0d02df9c21feb5660a19713466724b7f95bd2d773"
 dependencies = [
- "ethereum-types 0.15.1",
- "tiny-keccak",
-]
-
-[[package]]
-name = "ethbloom"
-version = "0.13.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c22d4b5885b6aa2fe5e8b9329fb8d232bf739e434e6b87347c63bdd00c120f60"
-dependencies = [
- "crunchy",
- "fixed-hash",
+ "ethereum-types",
  "tiny-keccak",
 ]
 
@@ -4406,7 +4385,7 @@ version = "0.15.0"
 source = "git+https://github.com/rust-ethereum/ethereum?rev=3be0d8fd4c2ad1ba216b69ef65b9382612efc8ba#3be0d8fd4c2ad1ba216b69ef65b9382612efc8ba"
 dependencies = [
  "bytes",
- "ethereum-types 0.15.1",
+ "ethereum-types",
  "hash-db",
  "hash256-std-hasher",
  "parity-scale-codec",
@@ -4419,23 +4398,11 @@ dependencies = [
 
 [[package]]
 name = "ethereum-types"
-version = "0.14.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "02d215cbf040552efcbe99a38372fe80ab9d00268e20012b79fcd0f073edd8ee"
-dependencies = [
- "ethbloom 0.13.0",
- "fixed-hash",
- "primitive-types 0.12.2",
- "uint 0.9.5",
-]
-
-[[package]]
-name = "ethereum-types"
 version = "0.15.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1ab15ed80916029f878e0267c3a9f92b67df55e79af370bf66199059ae2b4ee3"
 dependencies = [
- "ethbloom 0.14.1",
+ "ethbloom",
  "fixed-hash",
  "impl-codec 0.7.0",
  "impl-rlp",
@@ -4678,7 +4645,7 @@ version = "1.0.0-dev"
 source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#64fa2d771fe3445803bd07a6a6f36ce75a78c593"
 dependencies = [
  "clap",
- "ethereum-types 0.15.1",
+ "ethereum-types",
  "fc-db",
  "fp-rpc",
  "fp-storage",
@@ -4765,7 +4732,7 @@ version = "2.0.0-dev"
 source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#64fa2d771fe3445803bd07a6a6f36ce75a78c593"
 dependencies = [
  "ethereum",
- "ethereum-types 0.15.1",
+ "ethereum-types",
  "evm",
  "fc-api",
  "fc-mapping-sync",
@@ -4819,7 +4786,7 @@ version = "1.1.0-dev"
 source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#64fa2d771fe3445803bd07a6a6f36ce75a78c593"
 dependencies = [
  "ethereum",
- "ethereum-types 0.15.1",
+ "ethereum-types",
  "jsonrpsee 0.24.7",
  "rlp 0.6.1",
  "rustc-hex",
@@ -4834,7 +4801,7 @@ version = "1.0.0-dev"
 source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#64fa2d771fe3445803bd07a6a6f36ce75a78c593"
 dependencies = [
  "ethereum",
- "ethereum-types 0.15.1",
+ "ethereum-types",
  "fp-rpc",
  "fp-storage",
  "parity-scale-codec",
@@ -5180,7 +5147,7 @@ version = "1.0.0-dev"
 source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#64fa2d771fe3445803bd07a6a6f36ce75a78c593"
 dependencies = [
  "ethereum",
- "ethereum-types 0.15.1",
+ "ethereum-types",
  "fp-evm",
  "frame-support",
  "parity-scale-codec",
@@ -5208,7 +5175,7 @@ version = "3.0.0-dev"
 source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#64fa2d771fe3445803bd07a6a6f36ce75a78c593"
 dependencies = [
  "ethereum",
- "ethereum-types 0.15.1",
+ "ethereum-types",
  "fp-evm",
  "parity-scale-codec",
  "scale-info",
@@ -9902,7 +9869,7 @@ version = "4.0.0-dev"
 source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2412#64fa2d771fe3445803bd07a6a6f36ce75a78c593"
 dependencies = [
  "ethereum",
- "ethereum-types 0.15.1",
+ "ethereum-types",
  "evm",
  "fp-consensus",
  "fp-ethereum",
@@ -16944,7 +16911,7 @@ name = "snowbridge-core"
 version = "0.2.0"
 source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2412#53413020d96f3856f48e7a439c757be7823a67ee"
 dependencies = [
- "ethabi-decode 2.0.0",
+ "ethabi-decode",
  "frame-support",
  "frame-system",
  "hex-literal 0.4.1",
@@ -16967,9 +16934,9 @@ name = "snowbridge-ethereum"
 version = "0.3.0"
 source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2412#53413020d96f3856f48e7a439c757be7823a67ee"
 dependencies = [
- "ethabi-decode 2.0.0",
- "ethbloom 0.14.1",
- "ethereum-types 0.15.1",
+ "ethabi-decode",
+ "ethbloom",
+ "ethereum-types",
  "hex-literal 0.4.1",
  "parity-bytes",
  "parity-scale-codec",
@@ -17105,7 +17072,7 @@ version = "0.2.0"
 source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2412#53413020d96f3856f48e7a439c757be7823a67ee"
 dependencies = [
  "bridge-hub-common",
- "ethabi-decode 2.0.0",
+ "ethabi-decode",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
@@ -19847,7 +19814,7 @@ dependencies = [
  "cumulus-primitives-core",
  "dp-chain-state-snapshot",
  "dp-container-chain-genesis-data",
- "ethabi-decode 1.0.0",
+ "ethabi-decode",
  "frame-support",
  "frame-system",
  "hex-literal 0.3.4",
