@@ -82,6 +82,7 @@ impl system::Config for Test {
     type PreInherents = ();
     type PostInherents = ();
     type PostTransactions = ();
+    type ExtensionsWeightInfo = ();
 }
 
 parameter_types! {
@@ -103,6 +104,7 @@ impl pallet_balances::Config for Test {
     type MaxLocks = ();
     type MaxReserves = MaxReserves;
     type MaxFreezes = ConstU32<0>;
+    type DoneSlashHandler = ();
 }
 
 impl pallet_timestamp::Config for Test {
