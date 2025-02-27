@@ -44,24 +44,17 @@ if [ -f "$output_bin_dir/geth" ] && [ -x "$output_bin_dir/geth" ]; then
 else
     echo "Downloading geth from Docker image (version $GETH_TAG)"
     
-    container_id=$(docker create ethereum/client-go:$GETH_TAG)
+    container_id=$(docker create ethereum/client-go:alltools-${GETH_TAG})
     echo "Extracting geth binary..."
     docker cp $container_id:/usr/local/bin/geth $output_bin_dir/
     
-    if docker exec $container_id which abigen &> /dev/null; then
-        echo "Extracting abigen binary..."
-        docker cp $container_id:/usr/local/bin/abigen $output_bin_dir/
-    else
-        echo "Abigen binary not found in Docker image. Using simpler image for basic Geth functionality."
-    fi
+    echo "Extracting abigen binary..."
+    docker cp $container_id:/usr/local/bin/abigen $output_bin_dir/
     
     docker rm $container_id
     
-    # Ensure binaries are executable
     chmod +x $output_bin_dir/geth
-    if [ -f "$output_bin_dir/abigen" ]; then
-        chmod +x $output_bin_dir/abigen
-    fi
+    chmod +x $output_bin_dir/abigen
     
     echo "Geth binaries (version $GETH_TAG) have been downloaded and placed in $output_bin_dir"
 fi
