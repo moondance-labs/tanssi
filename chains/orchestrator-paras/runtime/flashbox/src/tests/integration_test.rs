@@ -3073,6 +3073,8 @@ fn stream_payment_works() {
                     rate: 2 * UNIT,
                     asset_id: StreamPaymentAssetId::Native,
                     time_unit: TimeUnit::BlockNumber,
+                    minimum_request_deadline_delay: 0,
+                    soft_minimum_deposit: 0,
                 },
                 1_000 * UNIT,
             ));
@@ -3093,6 +3095,8 @@ fn stream_payment_works() {
                     rate: 1 * UNIT,
                     asset_id: StreamPaymentAssetId::Native,
                     time_unit: TimeUnit::BlockNumber,
+                    minimum_request_deadline_delay: 0,
+                    soft_minimum_deposit: 0,
                 },
                 None,
             ));
@@ -4115,6 +4119,116 @@ fn test_migration_registrar_reserves_to_hold() {
                 deposit
             );
         })
+}
+
+#[test]
+fn test_migration_stream_payment_config_new_fields() {
+    ExtBuilder::default().build().execute_with(|| {
+        use pallet_stream_payment::{
+            migrations::{OldChangeRequest, OldStream, OldStreamConfig},
+            ChangeKind, ChangeRequest, DepositChange, Party, Stream, StreamConfig,
+        };
+        use tanssi_runtime_common::migrations::MigrateStreamPaymentNewConfigFields;
+
+        frame_support::storage::unhashed::put(
+            &pallet_stream_payment::Streams::<Runtime>::hashed_key_for(0),
+            &OldStream::<AccountId, TimeUnit, StreamPaymentAssetId, Balance> {
+                source: ALICE.into(),
+                target: BOB.into(),
+                config: OldStreamConfig {
+                    time_unit: TimeUnit::Timestamp,
+                    asset_id: StreamPaymentAssetId::Native,
+                    rate: 41,
+                },
+                deposit: 42,
+                last_time_updated: 43,
+                request_nonce: 44,
+                pending_request: Some(OldChangeRequest {
+                    requester: Party::Source,
+                    kind: ChangeKind::Mandatory { deadline: 45 },
+                    new_config: OldStreamConfig {
+                        time_unit: TimeUnit::BlockNumber,
+                        asset_id: StreamPaymentAssetId::Native,
+                        rate: 46,
+                    },
+                    deposit_change: Some(DepositChange::Absolute(47)),
+                }),
+                opening_deposit: 48,
+            },
+        );
+
+        frame_support::storage::unhashed::put(
+            &pallet_stream_payment::Streams::<Runtime>::hashed_key_for(1),
+            &OldStream::<AccountId, TimeUnit, StreamPaymentAssetId, Balance> {
+                source: CHARLIE.into(),
+                target: ALICE.into(),
+                config: OldStreamConfig {
+                    time_unit: TimeUnit::Timestamp,
+                    asset_id: StreamPaymentAssetId::Native,
+                    rate: 100,
+                },
+                deposit: 101,
+                last_time_updated: 102,
+                request_nonce: 103,
+                pending_request: None,
+                opening_deposit: 104,
+            },
+        );
+
+        let migration = MigrateStreamPaymentNewConfigFields::<Runtime>(Default::default());
+        migration.migrate(Default::default());
+
+        assert_eq!(
+            pallet_stream_payment::Streams::<Runtime>::get(0).unwrap(),
+            Stream {
+                source: ALICE.into(),
+                target: BOB.into(),
+                config: StreamConfig {
+                    time_unit: TimeUnit::Timestamp,
+                    asset_id: StreamPaymentAssetId::Native,
+                    rate: 41,
+                    minimum_request_deadline_delay: 0,
+                    soft_minimum_deposit: 0,
+                },
+                deposit: 42,
+                last_time_updated: 43,
+                request_nonce: 44,
+                pending_request: Some(ChangeRequest {
+                    requester: Party::Source,
+                    kind: ChangeKind::Mandatory { deadline: 45 },
+                    new_config: StreamConfig {
+                        time_unit: TimeUnit::BlockNumber,
+                        asset_id: StreamPaymentAssetId::Native,
+                        rate: 46,
+                        minimum_request_deadline_delay: 0,
+                        soft_minimum_deposit: 0,
+                    },
+                    deposit_change: Some(DepositChange::Absolute(47)),
+                }),
+                opening_deposit: 48,
+            }
+        );
+
+        assert_eq!(
+            pallet_stream_payment::Streams::<Runtime>::get(1).unwrap(),
+            Stream {
+                source: CHARLIE.into(),
+                target: ALICE.into(),
+                config: StreamConfig {
+                    time_unit: TimeUnit::Timestamp,
+                    asset_id: StreamPaymentAssetId::Native,
+                    rate: 100,
+                    minimum_request_deadline_delay: 0,
+                    soft_minimum_deposit: 0,
+                },
+                deposit: 101,
+                last_time_updated: 102,
+                request_nonce: 103,
+                pending_request: None,
+                opening_deposit: 104,
+            }
+        );
+    })
 }
 
 #[test]
