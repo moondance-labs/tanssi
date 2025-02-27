@@ -40,6 +40,18 @@ runs:
       id: check_mage
       run: |
         mage --version
+
+    # Cache Foundry installation and build artifacts
+    - name: Cache Foundry
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.foundry
+          ~/.cache/foundry
+        key: foundry-${{ runner.os }}-${{ hashFiles('**/foundry.toml', '**/remappings.txt') }}
+        restore-keys: |
+          foundry-${{ runner.os }}-
+
     - name: Install Foundry
       uses: foundry-rs/foundry-toolchain@v1
     - name: Check forge
@@ -47,6 +59,33 @@ runs:
       id: check_forge
       run: |
         forge --version
+
+    # Cache Symbiotic contracts and built artifacts
+    - name: Cache Symbiotic Contracts
+      uses: actions/cache@v3
+      id: cache-symbiotic
+      with:
+        path: |
+          tmp/bridge/tanssi-symbiotic
+          tmp/bridge/tanssi-symbiotic/out
+          tmp/bridge/tanssi-symbiotic/cache
+        key: symbiotic-${{ runner.os }}-${{ hashFiles('**/scripts/bridge/set-env.sh') }}
+        restore-keys: |
+          symbiotic-${{ runner.os }}-
+
+    # Cache Snowbridge relayer and contracts
+    - name: Cache Snowbridge Relayer
+      uses: actions/cache@v3
+      id: cache-relayer
+      with:
+        path: |
+          tmp/bridge/relayer
+          tmp/bridge/relayer/snowbridge/contracts/out
+          tmp/bridge/relayer/snowbridge/contracts/cache
+        key: relayer-${{ runner.os }}-${{ hashFiles('**/scripts/bridge/set-env.sh') }}
+        restore-keys: |
+          relayer-${{ runner.os }}-
+
     - name: Pnpm
       uses: pnpm/action-setup@v4.0.0
       with:
@@ -55,18 +94,7 @@ runs:
       uses: actions/setup-node@v4
       with:
         node-version: 22.x
-    - name: Install yarn
-      shell: bash
-      run: |-
-        curl -fsSL --create-dirs -o $HOME/bin/yarn \
-        https://github.com/yarnpkg/yarn/releases/download/v1.22.22/yarn-1.22.22.js
-        chmod +x $HOME/bin/yarn
-        echo "$HOME/bin" >> $GITHUB_PATH
-    - name: Check yarn
-      shell: bash
-      id: check_yarn
-      run: |
-        yarn --version
+        cache: 'pnpm'
     - name: Check date
       shell: bash
       id: check_date
