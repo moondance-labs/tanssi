@@ -43,10 +43,7 @@ use {
         offence::{OffenceDetails, OnOffenceHandler},
         EraIndex, SessionIndex,
     },
-    sp_std::{
-        collections::vec_deque::VecDeque,
-        vec, vec::Vec,
-    },
+    sp_std::{collections::vec_deque::VecDeque, vec, vec::Vec},
     tp_traits::{
         apply, derive_storage_traits, EraIndexProvider, ExternalIndexProvider,
         InvulnerablesProvider, OnEraStart,
