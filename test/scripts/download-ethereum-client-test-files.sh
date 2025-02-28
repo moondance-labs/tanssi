@@ -21,5 +21,5 @@ mkdir -p tmp
 wget -O - tmp/ethereum_client_test https://github.com/moondance-labs/polkadot-sdk/archive/$polkadot_release.tar.gz | tar -xz --strip=6 "polkadot-sdk-$polkadot_release/bridges/snowbridge/pallets/ethereum-client/tests/electra"
 # remove for a clean move
 rm -rf tmp/ethereum_client_test
-mv fixtures tmp/ethereum_client_test
+mv electra tmp/ethereum_client_test
 echo $polkadot_release > tmp/ethereum_client_test/latest_version.txt
