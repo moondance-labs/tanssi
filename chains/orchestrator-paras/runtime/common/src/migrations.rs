@@ -943,8 +943,10 @@ pub mod snowbridge_system_migration {
     use snowbridge_core::TokenId;
     use staging_xcm as xcm;
 
+    // Important: this cannot be called OldNativeToForeignId because that will be a different storage
+    // item. Polkadot has a bug here.
     #[frame_support::storage_alias]
-    pub type OldNativeToForeignId<T: snowbridge_pallet_system::Config> = StorageMap<
+    pub type NativeToForeignId<T: snowbridge_pallet_system::Config> = StorageMap<
         snowbridge_pallet_system::Pallet<T>,
         Blake2_128Concat,
         xcm::v4::Location,
@@ -959,24 +961,32 @@ pub mod snowbridge_system_migration {
     {
         fn on_runtime_upgrade() -> Weight {
             let mut weight = T::DbWeight::get().reads(1);
+            let mut len_map1 = 0;
+            let mut len_map2 = 0;
 
             let translate_westend = |pre: xcm::v4::Location| -> Option<xcm::v5::Location> {
                 weight.saturating_accrue(T::DbWeight::get().reads_writes(1, 1));
+                len_map1 += 1;
                 Some(xcm::v5::Location::try_from(pre).expect("valid location"))
             };
             snowbridge_pallet_system::ForeignToNativeId::<T>::translate_values(translate_westend);
 
-            let old_keys = OldNativeToForeignId::<T>::iter_keys().collect::<Vec<_>>();
+            let old_keys = NativeToForeignId::<T>::iter_keys().collect::<Vec<_>>();
+
             for old_key in old_keys {
-                if let Some(old_val) = OldNativeToForeignId::<T>::get(&old_key) {
+                if let Some(old_val) = NativeToForeignId::<T>::get(&old_key) {
                     snowbridge_pallet_system::NativeToForeignId::<T>::insert(
                         &xcm::v5::Location::try_from(old_key.clone()).expect("valid location"),
                         old_val,
                     );
                 }
-                OldNativeToForeignId::<T>::remove(old_key);
+                NativeToForeignId::<T>::remove(old_key);
                 weight.saturating_accrue(T::DbWeight::get().reads_writes(1, 2));
+                len_map2 += 1;
             }
+
+            // Additional sanity check that both mappings have the same number of elements
+            assert_eq!(len_map1, len_map2);
 
             weight
         }
@@ -1003,7 +1013,7 @@ where
     }
 
     #[cfg(feature = "try-runtime")]
-    fn post_upgrade(&self, state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+    fn post_upgrade(&self, _state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
         Ok(())
     }
 }
