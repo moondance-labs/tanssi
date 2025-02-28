@@ -84,14 +84,16 @@ runs:
         restore-keys: |
           relayer-${{ runner.os }}-
 
+    - run: |
+        cd test/tmp/bridge/output/bin
+        ls -la
+      shell: bash
     - name: Cache Ethereum Node Binaries
       uses: actions/cache@v3
       id: cache-ethereum-binaries
       with:
         path: |
-          test/tmp/bridge/output/bin/geth
-          test/tmp/bridge/output/bin/abigen
-          test/tmp/bridge/output/bin/lodestar
+          test/tmp/bridge/output/bin
         key: ethereum-bins-${{ runner.os }}-${{ hashFiles('**/scripts/bridge/set-env.sh') }}
         restore-keys: |
           ethereum-bins-${{ runner.os }}-
