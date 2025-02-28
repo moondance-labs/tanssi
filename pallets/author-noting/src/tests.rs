@@ -16,7 +16,6 @@
 
 use {
     crate::{mock::*, ContainerChainBlockInfo, Event},
-    bounded_collections::bounded_vec,
     cumulus_primitives_core::ParaId,
     frame_support::{
         assert_ok,
@@ -34,7 +33,7 @@ use {
         traits::{BlakeTwo256, HashingFor},
     },
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
-    tp_traits::GetCurrentContainerChains,
+    tp_traits::{ForSession, GetContainerChainsWithCollators},
 };
 
 #[test]
@@ -182,7 +181,7 @@ fn test_author_id_insertion_many_paras() {
             // Writing to this pallet storage will only change the sproofs of the next block,
             // not the ones of the current block
             MockData::mutate(|m| {
-                m.container_chains = bounded_vec![1001.into(), 1002.into()];
+                m.container_chains = vec![(1001.into(), vec![1]), (1002.into(), vec![2])];
             });
             assert_eq!(
                 AuthorNoting::latest_author(ParaId::from(1001)),
@@ -695,7 +694,10 @@ fn weights_assigned_to_extrinsics_are_correct() {
         assert_eq!(
             inherent_weight.actual_weight.unwrap(),
             <() as crate::weights::WeightInfo>::set_latest_author_data(
-                <Test as crate::Config>::ContainerChains::current_container_chains().len() as u32
+                <Test as crate::Config>::ContainerChains::container_chains_with_collators(
+                    ForSession::Current
+                )
+                .len() as u32
             )
         );
     });
