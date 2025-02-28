@@ -84,6 +84,18 @@ runs:
         restore-keys: |
           relayer-${{ runner.os }}-
 
+    - name: Cache Ethereum Node Binaries
+      uses: actions/cache@v3
+      id: cache-ethereum-binaries
+      with:
+        path: |
+          test/tmp/bridge/output/bin/geth
+          test/tmp/bridge/output/bin/abigen
+          test/tmp/bridge/output/bin/lodestar
+        key: ethereum-bins-${{ runner.os }}-${{ hashFiles('**/scripts/bridge/set-env.sh') }}
+        restore-keys: |
+          ethereum-bins-${{ runner.os }}-
+
     - name: Pnpm
       uses: pnpm/action-setup@v4.0.0
       with:
