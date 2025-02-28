@@ -83,11 +83,10 @@ runs:
         key: relayer-${{ runner.os }}-${{ hashFiles('**/scripts/bridge/set-env.sh') }}
         restore-keys: |
           relayer-${{ runner.os }}-
-
-    - run: |
-        cd test/tmp/bridge/output/bin
-        ls -la
+    - name: Prepare Bin Folders
       shell: bash
+      run: |
+        mkdir -p test/tmp/bridge/output/bin
     - name: Cache Ethereum Node Binaries
       uses: actions/cache@v3
       id: cache-ethereum-binaries
