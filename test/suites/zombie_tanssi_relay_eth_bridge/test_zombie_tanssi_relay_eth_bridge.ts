@@ -418,7 +418,7 @@ describeSuite({
             if (relayerChildProcess) {
                 relayerChildProcess.kill("SIGINT");
             }
-            await execCommand("./scripts/bridge/cleanup.sh olep");
+            await execCommand("./scripts/bridge/cleanup.sh lep");
         });
     },
 });
