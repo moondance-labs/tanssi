@@ -37,7 +37,7 @@ start_geth() {
         --password /dev/null \
         --rpc.gascap 0 \
         --ws.origins "*" \
-        --trace "$ethereum_data_dir/trace" \
+        --go-execution-trace "$ethereum_data_dir/trace" \
         --gcmode archive \
         --syncmode=full \
         --state.scheme=hash \
