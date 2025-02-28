@@ -39,7 +39,7 @@ use {
     polkadot_runtime_common::xcm_sender::ExponentialPrice,
     sp_core::ConstU32,
     sp_runtime::Perbill,
-    staging_xcm::latest::prelude::*,
+    staging_xcm::latest::{prelude::*, WESTEND_GENESIS_HASH},
     staging_xcm_builder::{
         AccountId32Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
         AllowTopLevelPaidExecutionFrom, ConvertedConcreteId, EnsureXcmOrigin, FungibleAdapter,
@@ -67,7 +67,7 @@ parameter_types! {
     pub UnitWeightCost: Weight = Weight::from_parts(1_000_000_000, 64 * 1024);
 
     // TODO: revisit
-    pub const RelayNetwork: NetworkId = NetworkId::Westend;
+    pub const RelayNetwork: NetworkId = NetworkId::ByGenesis(WESTEND_GENESIS_HASH);
 
     // The relay chain Origin type
     pub RelayChainOrigin: RuntimeOrigin = cumulus_pallet_xcm::Origin::Relay.into();

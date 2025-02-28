@@ -15,21 +15,30 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use crate::tests::common::ExtBuilder;
+use crate::xcm_config::UniversalLocation;
 use crate::{
     BeefyMmrLeaf, CollatorConfiguration, ExternalValidators, PalletInfo, Runtime, Session,
 };
 use beefy_primitives::mmr::BeefyAuthoritySet;
+use cumulus_primitives_core::Weight;
+use dancelight_runtime_constants::snowbridge::EthereumLocation;
 use frame_support::migration::clear_storage_prefix;
 use frame_support::storage::unhashed;
 use frame_support::traits::PalletInfo as _;
 use pallet_migrations::Migration;
 use parity_scale_codec::Encode;
+use snowbridge_core::TokenIdOf;
 use sp_arithmetic::Perbill;
 use tanssi_runtime_common::migrations::{
     BondedErasTimestampMigration, ExternalValidatorsInitialMigration, HostConfigurationV3,
-    MigrateConfigurationAddFullRotationMode, MigrateMMRLeafPallet,
+    MigrateConfigurationAddFullRotationMode, MigrateMMRLeafPallet, SnowbridgeEthereumSystemXcmV5,
 };
-use xcm::v3::Weight;
+use xcm::latest::Junction::GlobalConsensus;
+use xcm::latest::Junctions::Here;
+use xcm::latest::Junctions::X1;
+use xcm::latest::NetworkId;
+use xcm::latest::{Location, Reanchorable, ROCOCO_GENESIS_HASH};
+use xcm_executor::traits::ConvertLocation;
 
 #[test]
 fn test_migration_mmr_leaf_pallet_renaming() {
@@ -261,4 +270,85 @@ fn test_add_timestamp_to_bonded_eras_migration() {
             expected_bonded_eras_after
         );
     });
+}
+
+#[test]
+fn test_snowbridge_ethereum_system_xcm_v5_migration() {
+    ExtBuilder::default().build().execute_with(|| {
+        // Raw values copied from stagelight runtime 1100
+        const FOREIGN_TO_NATIVE_ID_KEY: &[u8] =
+            &hex_literal::hex!("ccee781f0b9380204db9882d1b1c771d53e99bc228247291bd1d0d34fa7f53993faff06e7c800c84bd5d1f5ea566d14962e8f33b7fb0e7e2d2276564061a2f3c7bcb612e733b8bf5733ea16cee0ecba6");
+        const FOREIGN_TO_NATIVE_ID_VALUE: &[u8] =
+            &hex_literal::hex!("01010905");
+        const NATIVE_TO_FOREIGN_ID_KEY: &[u8] =
+            &hex_literal::hex!("ccee781f0b9380204db9882d1b1c771ddec2be471806c468b349224cf542e742627f68650cbf12ff5b6ab3d5751bc1ea01010905");
+        const NATIVE_TO_FOREIGN_ID_VALUE: &[u8] =
+            &hex_literal::hex!("62e8f33b7fb0e7e2d2276564061a2f3c7bcb612e733b8bf5733ea16cee0ecba6");
+
+        // Write foreign assets to pallet storage
+        frame_support::storage::unhashed::put_raw(
+            FOREIGN_TO_NATIVE_ID_KEY,
+            FOREIGN_TO_NATIVE_ID_VALUE,
+        );
+        frame_support::storage::unhashed::put_raw(
+            NATIVE_TO_FOREIGN_ID_KEY,
+            NATIVE_TO_FOREIGN_ID_VALUE,
+        );
+
+        let migration = SnowbridgeEthereumSystemXcmV5::<Runtime>(Default::default());
+        migration.migrate(Default::default());
+
+        let f_n = snowbridge_pallet_system::ForeignToNativeId::<Runtime>::iter().collect::<Vec<_>>();
+        let n_f = snowbridge_pallet_system::NativeToForeignId::<Runtime>::iter().collect::<Vec<_>>();
+
+        assert_eq!(f_n, [(
+            hex_literal::hex!("62e8f33b7fb0e7e2d2276564061a2f3c7bcb612e733b8bf5733ea16cee0ecba6").into(),
+            Location {
+                parents: 1,
+                interior: X1([GlobalConsensus(NetworkId::ByGenesis(ROCOCO_GENESIS_HASH))].into()),
+            },
+        )]);
+        assert_eq!(n_f, [(
+            Location {
+                parents: 1,
+                interior: X1([GlobalConsensus(NetworkId::ByGenesis(ROCOCO_GENESIS_HASH))].into()),
+            },
+            hex_literal::hex!("62e8f33b7fb0e7e2d2276564061a2f3c7bcb612e733b8bf5733ea16cee0ecba6").into(),
+        )]);
+    });
+}
+
+#[test]
+fn snowbridge_ethereum_system_token_id_does_not_change() {
+    // If a new XCM version is released, we need to check that this location still encodes to the same
+    // token id.
+    // If this test fails, we need a migration in snowbridge_pallet_system to migrate the mappings
+    // ForeignToNativeId and NativeToForeignId. Use migration SnowbridgeEthereumSystemXcmV5 as base.
+
+    // Location of native starlight token.
+    // When we support other token locations, maybe add them to this test as well.
+    let location = Location {
+        parents: 0,
+        interior: Here,
+    };
+
+    let ethereum_location = EthereumLocation::get();
+    // reanchor to Ethereum context
+    // This means to add this junction: GlobalConsensus(NetworkId::ByGenesis(ROCOCO_GENESIS_HASH))
+    let location = location
+        .clone()
+        .reanchored(&ethereum_location, &UniversalLocation::get())
+        .unwrap();
+
+    let token_id = TokenIdOf::convert_location(&location).unwrap();
+
+    // The token id from stagelight has been derived using xcm v4, but we are in xcm v5.
+    // The derived token id from xcm v4 (the one you will find on chain) is:
+    // 0x62e8f33b7fb0e7e2d2276564061a2f3c7bcb612e733b8bf5733ea16cee0ecba6
+    // So the exact token id from below is not important, as long as it does not change:
+    assert_eq!(
+        token_id,
+        hex_literal::hex!("bcd4282ca0c30cbd9c578b5c790e88c803d80cd9cc91f28686f24ac25a61e06e")
+            .into()
+    );
 }

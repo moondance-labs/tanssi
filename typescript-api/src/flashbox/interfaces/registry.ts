@@ -35,7 +35,6 @@ import type {
     FlashboxRuntimeStreamPaymentAssetId,
     FlashboxRuntimeTimeUnit,
     FrameSupportDispatchDispatchClass,
-    FrameSupportDispatchDispatchInfo,
     FrameSupportDispatchPays,
     FrameSupportDispatchPerDispatchClassU32,
     FrameSupportDispatchPerDispatchClassWeight,
@@ -48,6 +47,7 @@ import type {
     FrameSystemAccountInfo,
     FrameSystemCall,
     FrameSystemCodeUpgradeAuthorization,
+    FrameSystemDispatchEventInfo,
     FrameSystemError,
     FrameSystemEvent,
     FrameSystemEventRecord,
@@ -96,8 +96,10 @@ import type {
     PalletIdentityEvent,
     PalletIdentityJudgement,
     PalletIdentityLegacyIdentityInfo,
+    PalletIdentityProvider,
     PalletIdentityRegistrarInfo,
     PalletIdentityRegistration,
+    PalletIdentityUsernameInformation,
     PalletInflationRewardsChainsToRewardValue,
     PalletInflationRewardsEvent,
     PalletInvulnerablesCall,
@@ -182,6 +184,7 @@ import type {
     SpRuntimeDispatchError,
     SpRuntimeModuleError,
     SpRuntimeMultiSignature,
+    SpRuntimeProvingTrieTrieError,
     SpRuntimeTokenError,
     SpRuntimeTransactionalError,
     SpTrieStorageProof,
@@ -228,7 +231,6 @@ declare module "@polkadot/types/types/registry" {
         FlashboxRuntimeStreamPaymentAssetId: FlashboxRuntimeStreamPaymentAssetId;
         FlashboxRuntimeTimeUnit: FlashboxRuntimeTimeUnit;
         FrameSupportDispatchDispatchClass: FrameSupportDispatchDispatchClass;
-        FrameSupportDispatchDispatchInfo: FrameSupportDispatchDispatchInfo;
         FrameSupportDispatchPays: FrameSupportDispatchPays;
         FrameSupportDispatchPerDispatchClassU32: FrameSupportDispatchPerDispatchClassU32;
         FrameSupportDispatchPerDispatchClassWeight: FrameSupportDispatchPerDispatchClassWeight;
@@ -241,6 +243,7 @@ declare module "@polkadot/types/types/registry" {
         FrameSystemAccountInfo: FrameSystemAccountInfo;
         FrameSystemCall: FrameSystemCall;
         FrameSystemCodeUpgradeAuthorization: FrameSystemCodeUpgradeAuthorization;
+        FrameSystemDispatchEventInfo: FrameSystemDispatchEventInfo;
         FrameSystemError: FrameSystemError;
         FrameSystemEvent: FrameSystemEvent;
         FrameSystemEventRecord: FrameSystemEventRecord;
@@ -289,8 +292,10 @@ declare module "@polkadot/types/types/registry" {
         PalletIdentityEvent: PalletIdentityEvent;
         PalletIdentityJudgement: PalletIdentityJudgement;
         PalletIdentityLegacyIdentityInfo: PalletIdentityLegacyIdentityInfo;
+        PalletIdentityProvider: PalletIdentityProvider;
         PalletIdentityRegistrarInfo: PalletIdentityRegistrarInfo;
         PalletIdentityRegistration: PalletIdentityRegistration;
+        PalletIdentityUsernameInformation: PalletIdentityUsernameInformation;
         PalletInflationRewardsChainsToRewardValue: PalletInflationRewardsChainsToRewardValue;
         PalletInflationRewardsEvent: PalletInflationRewardsEvent;
         PalletInvulnerablesCall: PalletInvulnerablesCall;
@@ -375,6 +380,7 @@ declare module "@polkadot/types/types/registry" {
         SpRuntimeDispatchError: SpRuntimeDispatchError;
         SpRuntimeModuleError: SpRuntimeModuleError;
         SpRuntimeMultiSignature: SpRuntimeMultiSignature;
+        SpRuntimeProvingTrieTrieError: SpRuntimeProvingTrieTrieError;
         SpRuntimeTokenError: SpRuntimeTokenError;
         SpRuntimeTransactionalError: SpRuntimeTransactionalError;
         SpTrieStorageProof: SpTrieStorageProof;

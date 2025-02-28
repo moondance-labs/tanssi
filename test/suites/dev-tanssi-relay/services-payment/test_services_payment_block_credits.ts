@@ -74,16 +74,18 @@ describeSuite({
 
                 // Create a block, the block number should increase, and the number of credits should decrease
                 const credits1 = (await polkadotJs.query.servicesPayment.blockProductionCredits(paraId)).toJSON();
-                const containerBlockNum1 = await (await polkadotJs.query.authorNoting.latestAuthor(paraId)).toJSON()
-                    .blockNumber;
+                const containerBlockNum1 = (await polkadotJs.query.authorNoting.latestAuthor(paraId))
+                    .unwrap()
+                    .blockNumber.toNumber();
 
                 // create at least a couple blocks to at least see one block being consumed
                 await context.createBlock();
                 await context.createBlock();
 
                 const credits2 = (await polkadotJs.query.servicesPayment.blockProductionCredits(paraId)).toJSON();
-                const containerBlockNum2 = await (await polkadotJs.query.authorNoting.latestAuthor(paraId)).toJSON()
-                    .blockNumber;
+                const containerBlockNum2 = (await polkadotJs.query.authorNoting.latestAuthor(paraId))
+                    .unwrap()
+                    .blockNumber.toNumber();
                 expect(containerBlockNum1, "container chain 2000 did not create a block").toBeLessThan(
                     containerBlockNum2
                 );
@@ -109,15 +111,17 @@ describeSuite({
 
                 // Create blocks until the block number stops increasing
                 let containerBlockNum3 = -1;
-                let containerBlockNum4 = await (await polkadotJs.query.authorNoting.latestAuthor(paraId)).toJSON()
-                    .blockNumber;
+                let containerBlockNum4 = (await polkadotJs.query.authorNoting.latestAuthor(paraId))
+                    .unwrap()
+                    .blockNumber.toNumber();
 
                 while (containerBlockNum3 !== containerBlockNum4) {
                     await context.createBlock();
                     await context.createBlock();
                     containerBlockNum3 = containerBlockNum4;
-                    containerBlockNum4 = await (await polkadotJs.query.authorNoting.latestAuthor(paraId)).toJSON()
-                        .blockNumber;
+                    containerBlockNum4 = (await polkadotJs.query.authorNoting.latestAuthor(paraId))
+                        .unwrap()
+                        .blockNumber.toNumber();
                 }
 
                 // Now the container chain should have less than 2 sessions worth of credits
@@ -157,16 +161,20 @@ describeSuite({
 
                 await context.createBlock();
                 await context.createBlock();
+                await context.createBlock();
 
                 // Create a block, the block number should increase, and the number of credits should decrease
                 const credits1 = (await polkadotJs.query.servicesPayment.blockProductionCredits(paraId)).toJSON();
-                const containerBlockNum1 = await (await polkadotJs.query.authorNoting.latestAuthor(paraId)).toJSON()
-                    .blockNumber;
+                const containerBlockNum1 = (await polkadotJs.query.authorNoting.latestAuthor(paraId))
+                    .unwrap()
+                    .blockNumber.toNumber();
+
                 await context.createBlock();
                 await context.createBlock();
                 const credits2 = (await polkadotJs.query.servicesPayment.blockProductionCredits(paraId)).toJSON();
-                const containerBlockNum2 = await (await polkadotJs.query.authorNoting.latestAuthor(paraId)).toJSON()
-                    .blockNumber;
+                const containerBlockNum2 = (await polkadotJs.query.authorNoting.latestAuthor(paraId))
+                    .unwrap()
+                    .blockNumber.toNumber();
                 expect(containerBlockNum1, "container chain 2001 did not create a block").toBeLessThan(
                     containerBlockNum2
                 );
@@ -181,13 +189,15 @@ describeSuite({
                 const credits3 = (await polkadotJs.query.servicesPayment.blockProductionCredits(paraId)).toJSON() || 0;
                 expect(credits3).toBe(0);
                 // Can still create blocks
-                const containerBlockNum3 = await (await polkadotJs.query.authorNoting.latestAuthor(paraId)).toJSON()
-                    .blockNumber;
+                const containerBlockNum3 = (await polkadotJs.query.authorNoting.latestAuthor(paraId))
+                    .unwrap()
+                    .blockNumber.toNumber();
                 await context.createBlock();
                 await context.createBlock();
                 const credits4 = (await polkadotJs.query.servicesPayment.blockProductionCredits(paraId)).toJSON() || 0;
-                const containerBlockNum4 = await (await polkadotJs.query.authorNoting.latestAuthor(paraId)).toJSON()
-                    .blockNumber;
+                const containerBlockNum4 = (await polkadotJs.query.authorNoting.latestAuthor(paraId))
+                    .unwrap()
+                    .blockNumber.toNumber();
                 expect(
                     containerBlockNum3,
                     "container chain 2001 did not create a block after root set credits to 0"
@@ -261,12 +271,14 @@ describeSuite({
                 expect(balanceTank).toBe(requiredBalance);
 
                 // Create a block, the block number should increase, and the number of credits should decrease
-                const containerBlockNum3 = await (await polkadotJs.query.authorNoting.latestAuthor(paraId)).toJSON()
-                    .blockNumber;
+                const containerBlockNum3 = (await polkadotJs.query.authorNoting.latestAuthor(paraId))
+                    .unwrap()
+                    .blockNumber.toNumber();
                 await context.createBlock();
                 await context.createBlock();
-                const containerBlockNum4 = await (await polkadotJs.query.authorNoting.latestAuthor(paraId)).toJSON()
-                    .blockNumber;
+                const containerBlockNum4 = (await polkadotJs.query.authorNoting.latestAuthor(paraId))
+                    .unwrap()
+                    .blockNumber.toNumber();
                 expect(containerBlockNum3, "container chain 2000 did not create a block").toBeLessThan(
                     containerBlockNum4
                 );
