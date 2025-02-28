@@ -84,6 +84,16 @@ impl snowbridge_pallet_outbound_queue::Config for Runtime {
     type OnNewCommitment = CommitmentRecorder;
 }
 
+// Very stupid, but benchmarks are written assuming a fork eopch,
+// and test vectors assuming another one
+// We need allow dead code here because for regular builds this variable is not used
+// This variable is only used in test, fast-runtime or runtime-benchmarks
+#[cfg(not(feature = "runtime-benchmarks"))]
+#[allow(dead_code)]
+pub const ELECTRA_TEST_FORK_EPOCH: u64 = 0;
+#[cfg(feature = "runtime-benchmarks")]
+pub const ELECTRA_TEST_FORK_EPOCH: u64 = 80000000000;
+
 // For tests, benchmarks and fast-runtime configurations we use the mocked fork versions
 #[cfg(any(
     feature = "std",
@@ -112,6 +122,11 @@ parameter_types! {
         deneb: Fork {
             version: [4, 0, 0, 0], // 0x04000000
             epoch: 0,
+        },
+        electra: Fork {
+            version: [5, 0, 0, 0], // 0x05000000
+            epoch:
+            ELECTRA_TEST_FORK_EPOCH,
         }
     };
 }
@@ -145,6 +160,10 @@ parameter_types! {
         deneb: Fork {
             version: hex_literal::hex!("05017000"), // 0x05017000
             epoch: 29696,
+        },
+        electra: Fork {
+            version: hex_literal::hex!("06017000"), // 0x06017000
+            epoch: 115968,
         },
     };
 }
@@ -267,6 +286,7 @@ impl snowbridge_pallet_inbound_queue::Config for Runtime {
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
     // TODO: Revisit this when we enable xcmp messages
     type MaxMessageSize = ConstU32<2048>;
+    type RewardProcessor = snowbridge_pallet_inbound_queue::RewardThroughSovereign<Runtime>;
     type AssetTransactor = <xcm_config::XcmConfig as xcm_executor::Config>::AssetTransactor;
     #[cfg(not(feature = "runtime-benchmarks"))]
     type MessageProcessor = (SymbioticMessageProcessor<Runtime>,);

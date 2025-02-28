@@ -62,7 +62,7 @@ describeSuite({
 
                 expect(result[0].successful).to.be.false;
                 expect(result[0].error.section).to.eq("ethereumBeaconClient");
-                expect(result[0].error.name).to.eq("SyncCommitteeUpdateRequired");
+                expect(result[0].error.name).to.eq("InvalidFinalizedHeaderGap");
 
                 const latestFinalizedBlockRoot = await polkadotJs.query.ethereumBeaconClient.latestFinalizedBlockRoot();
                 const latestFinalizedSlot = await polkadotJs.query.ethereumBeaconClient.finalizedBeaconState(

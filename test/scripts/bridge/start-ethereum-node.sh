@@ -16,11 +16,11 @@ mkdir -p $logs_dir
 
 start_geth() {
     echo "Starting geth local node"
-    local timestamp="0" #start Cancun from genesis
+    local timestamp="0" #start Prague from genesis
     jq \
         --argjson timestamp "$timestamp" \
         '
-        .config.CancunTime = $timestamp
+        .config.PragueTime = $timestamp
         ' \
         $assets_dir/genesis.json > $output_dir/genesis.json
     geth init --datadir "$ethereum_data_dir" --state.scheme=hash "$output_dir/genesis.json"
@@ -37,7 +37,7 @@ start_geth() {
         --password /dev/null \
         --rpc.gascap 0 \
         --ws.origins "*" \
-        --trace "$ethereum_data_dir/trace" \
+        --go-execution-trace "$ethereum_data_dir/trace" \
         --gcmode archive \
         --syncmode=full \
         --state.scheme=hash \
@@ -79,6 +79,7 @@ start_lodestar() {
         --params.BELLATRIX_FORK_EPOCH 0 \
         --params.CAPELLA_FORK_EPOCH 0 \
         --params.DENEB_FORK_EPOCH 0 \
+        --params.ELECTRA_FORK_EPOCH 0 \
         --eth1=true \
         --rest.namespace="*" \
         --jwt-secret $assets_dir/jwtsecret \

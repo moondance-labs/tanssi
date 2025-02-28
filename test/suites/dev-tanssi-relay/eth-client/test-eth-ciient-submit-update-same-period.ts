@@ -41,8 +41,8 @@ describeSuite({
                     latestFinalizedBlockRoot
                 );
 
-                expect(latestFinalizedSlot.toHuman().slot).to.equal(
-                    samePeriodUpdate["finalized_header"]["slot"].toString()
+                expect(latestFinalizedSlot.unwrap().slot.toString()).to.equal(
+                    samePeriodUpdate.finalized_header.slot.toString()
                 );
             },
         });
