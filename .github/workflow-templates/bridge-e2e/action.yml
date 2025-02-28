@@ -41,7 +41,6 @@ runs:
       run: |
         mage --version
 
-    # Cache Foundry installation and build artifacts
     - name: Cache Foundry
       uses: actions/cache@v3
       with:
@@ -60,7 +59,6 @@ runs:
       run: |
         forge --version
 
-    # Cache Symbiotic contracts and built artifacts
     - name: Cache Symbiotic Contracts
       uses: actions/cache@v3
       id: cache-symbiotic
@@ -73,7 +71,6 @@ runs:
         restore-keys: |
           symbiotic-${{ runner.os }}-
 
-    # Cache Snowbridge relayer and contracts
     - name: Cache Snowbridge Relayer
       uses: actions/cache@v3
       id: cache-relayer
@@ -94,7 +91,19 @@ runs:
       uses: actions/setup-node@v4
       with:
         node-version: 22.x
-        cache: 'pnpm'
+        cache: 'yarn'
+    - name: Install yarn
+      shell: bash
+      run: |-
+        curl -fsSL --create-dirs -o $HOME/bin/yarn \
+        https://github.com/yarnpkg/yarn/releases/download/v1.22.22/yarn-1.22.22.js
+        chmod +x $HOME/bin/yarn
+        echo "$HOME/bin" >> $GITHUB_PATH
+    - name: Check yarn
+      shell: bash
+      id: check_yarn
+      run: |
+        yarn --version
     - name: Check date
       shell: bash
       id: check_date
