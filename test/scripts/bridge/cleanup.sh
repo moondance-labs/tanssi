@@ -19,9 +19,9 @@ elif [ $1 = "ole" ]; then
   rm -rf $logs_dir
   rm -rf $output_dir
   rm -rf $ethereum_data_dir
-elif [ $1 = "olep" ]; then
+elif [ $1 = "lep" ]; then
   rm -rf $logs_dir
-  rm -rf $output_dir
+  # rm -rf $output_dir
   rm -rf $ethereum_data_dir
 
   beacon_relay=""
