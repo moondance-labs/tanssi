@@ -193,7 +193,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: create_runtime_str!("dancelight"),
     impl_name: create_runtime_str!("tanssi-dancelight-v2.0"),
     authoring_version: 0,
-    spec_version: 1100,
+    spec_version: 1101,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 26,
