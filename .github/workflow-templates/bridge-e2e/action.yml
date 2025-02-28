@@ -64,9 +64,9 @@ runs:
       id: cache-symbiotic
       with:
         path: |
-          tmp/bridge/tanssi-symbiotic
-          tmp/bridge/tanssi-symbiotic/out
-          tmp/bridge/tanssi-symbiotic/cache
+          test/tmp/bridge/tanssi-symbiotic
+          test/tmp/bridge/tanssi-symbiotic/out
+          test/tmp/bridge/tanssi-symbiotic/cache
         key: symbiotic-${{ runner.os }}-${{ hashFiles('**/scripts/bridge/set-env.sh') }}
         restore-keys: |
           symbiotic-${{ runner.os }}-
@@ -76,9 +76,9 @@ runs:
       id: cache-relayer
       with:
         path: |
-          tmp/bridge/relayer
-          tmp/bridge/relayer/snowbridge/contracts/out
-          tmp/bridge/relayer/snowbridge/contracts/cache
+          test/tmp/bridge/relayer
+          test/tmp/bridge/relayer/snowbridge/contracts/out
+          test/tmp/bridge/relayer/snowbridge/contracts/cache
         key: relayer-${{ runner.os }}-${{ hashFiles('**/scripts/bridge/set-env.sh') }}
         restore-keys: |
           relayer-${{ runner.os }}-
