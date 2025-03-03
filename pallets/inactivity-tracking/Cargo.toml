@@ -16,14 +16,13 @@ workspace = true
 parity-scale-codec = { workspace = true }
 scale-info = { workspace = true, features = [ "derive" ] }
 
-frame-system = { workspace = true }
-frame-support = { workspace = true }
 frame-benchmarking = { workspace = true }
+frame-support = { workspace = true }
+frame-system = { workspace = true }
 
 sp-runtime = { workspace = true }
-sp-std = { workspace = true }
 sp-staking = { workspace = true }
-pallet-session = { workspace = true }
+sp-std = { workspace = true }
 
 tp-traits = { workspace = true }
 
@@ -34,31 +33,29 @@ sp-io = { workspace = true }
 [features]
 default = [ "std" ]
 std = [
-    "frame-benchmarking/std",
-    "frame-support/std",
-    "frame-system/std",
-    "pallet-session/std",
-    "parity-scale-codec/std",
-    "scale-info/std",
-    "sp-core/std",
-    "sp-io/std",
-    "sp-runtime/std",
-    "sp-staking/std",
-    "sp-std/std",
-    "tp-traits/std",
+	"frame-benchmarking/std",
+	"frame-support/std",
+	"frame-system/std",
+	"parity-scale-codec/std",
+	"scale-info/std",
+	"sp-core/std",
+	"sp-io/std",
+	"sp-runtime/std",
+	"sp-staking/std",
+	"sp-std/std",
+	"tp-traits/std",
 ]
 runtime-benchmarks = [
-    "frame-benchmarking/runtime-benchmarks",
-    "frame-support/runtime-benchmarks",
-    "frame-system/runtime-benchmarks",
-    "sp-runtime/runtime-benchmarks",
-    "sp-staking/runtime-benchmarks",
-    "tp-traits/runtime-benchmarks",
+	"frame-benchmarking/runtime-benchmarks",
+	"frame-support/runtime-benchmarks",
+	"frame-system/runtime-benchmarks",
+	"sp-runtime/runtime-benchmarks",
+	"sp-staking/runtime-benchmarks",
+	"tp-traits/runtime-benchmarks",
 ]
 
 try-runtime = [
-    "frame-support/try-runtime",
-    "frame-system/try-runtime",
-    "pallet-session/try-runtime",
-    "sp-runtime/try-runtime",
+	"frame-support/try-runtime",
+	"frame-system/try-runtime",
+	"sp-runtime/try-runtime",
 ]

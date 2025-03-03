@@ -14,17 +14,18 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 #![cfg_attr(not(feature = "std"), no_std)]
-use {
-    parity_scale_codec::{Decode, Encode, MaxEncodedLen},
-    scale_info::TypeInfo,
-    sp_runtime::traits::Get,
-    sp_runtime::RuntimeDebug,
-    sp_staking::SessionIndex,
-    tp_traits::{CheckInvulnerables, GetSessionIndex},
-};
+use {sp_runtime::traits::Get, sp_staking::SessionIndex};
 
 #[frame_support::pallet]
 pub mod pallet {
+    use {
+        super::*, core::marker::PhantomData, frame_support::pallet_prelude::*,
+        frame_support::StorageDoubleMap, frame_system::pallet_prelude::*,
+        tp_traits::GetSessionIndex,
+    };
+
+    #[pallet::pallet]
+    pub struct Pallet<T>(PhantomData<T>);
     #[pallet::config]
     pub trait Config: frame_system::Config {
         /// Overarching event type.
@@ -45,15 +46,26 @@ pub mod pallet {
 
         /// Helper that returns the current session index.
         type CurrentSessionIndex: GetSessionIndex<SessionIndex>;
-
-        /// Helper for dealing with invulnerables.
-        type InvulnerablesHelper: CheckInvulnerables<Self::AccountId>;
     }
 
-    /// A list of inactive collators for a session
+    /// A list of double map of inactive collators for a session
     #[pallet::storage]
-    pub type InactiveCollators<T: Config> =
-        StorageDoubleMap<_, Twox64Concat, SessionIndex, Twox64Concat, CollatorId, (), OptionQuery>;
+    pub type InactiveCollators<T: Config> = StorageDoubleMap<
+        _,
+        Twox64Concat,
+        SessionIndex,
+        Twox64Concat,
+        T::CollatorId,
+        (),
+        OptionQuery,
+    >;
+
+    #[pallet::event]
+    #[pallet::generate_deposit(pub(super) fn deposit_event)]
+    pub enum Event<T: Config> {}
+
+    #[pallet::error]
+    pub enum Error<T> {}
 
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
@@ -68,9 +80,12 @@ pub mod pallet {
         }
     }
 
+    #[pallet::call]
+    impl<T: Config> Pallet<T> {}
+
     impl<T: Config> Pallet<T> {
         fn update_inactive_collator_info() {
-            let current_session = T::CurrentSessionIndex::session_index();
+            let _current_session = T::CurrentSessionIndex::session_index();
             // TO DO: implement inactivity tracking
             if false {
                 //<InactiveCollators<T>>::insert(current_session, collator_id, ());
