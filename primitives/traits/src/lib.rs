@@ -587,3 +587,8 @@ impl FullRotationModes {
 pub trait ExternalIndexProvider {
     fn get_external_index() -> u64;
 }
+
+// A trait to verify if a node has been inactive during the last N sessions
+pub trait NodeInactivityTrackingHelper<AccountId> {
+    fn is_node_inactive(node: &AccountId) -> bool;
+}

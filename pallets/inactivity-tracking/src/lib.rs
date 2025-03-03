@@ -14,14 +14,23 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 #![cfg_attr(not(feature = "std"), no_std)]
-use {sp_runtime::traits::Get, sp_staking::SessionIndex};
+use {
+    sp_runtime::traits::Get,
+    sp_staking::SessionIndex,
+    tp_traits::{GetSessionIndex, NodeInactivityTrackingHelper},
+};
 
+pub use pallet::*;
 #[frame_support::pallet]
 pub mod pallet {
     use {
-        super::*, core::marker::PhantomData, frame_support::pallet_prelude::*,
-        frame_support::StorageDoubleMap, frame_system::pallet_prelude::*,
-        tp_traits::GetSessionIndex,
+        super::*,
+        core::marker::PhantomData,
+        frame_support::{
+            pallet_prelude::*, storage::types::StorageDoubleMap,
+            StorageDoubleMap as StorageDoubleMapTrait,
+        },
+        frame_system::pallet_prelude::*,
     };
 
     #[pallet::pallet]
@@ -61,11 +70,13 @@ pub mod pallet {
     >;
 
     #[pallet::event]
-    #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {}
 
     #[pallet::error]
     pub enum Error<T> {}
+
+    #[pallet::call]
+    impl<T: Config> Pallet<T> {}
 
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
@@ -80,13 +91,13 @@ pub mod pallet {
         }
     }
 
-    #[pallet::call]
-    impl<T: Config> Pallet<T> {}
-
     impl<T: Config> Pallet<T> {
         fn update_inactive_collator_info() {
             let _current_session = T::CurrentSessionIndex::session_index();
             // TO DO: implement inactivity tracking
+            // A node has to be marked as inactive if
+            // 1. It has not produced a block in the last session
+            // 2. Chain has not advanced at all in the previous session
             if false {
                 //<InactiveCollators<T>>::insert(current_session, collator_id, ());
             }
@@ -106,5 +117,25 @@ pub mod pallet {
                     .drain()
                     .next();
         }
+    }
+}
+
+impl<T: Config> NodeInactivityTrackingHelper<T::CollatorId> for Pallet<T> {
+    fn is_node_inactive(node: &T::CollatorId) -> bool {
+        let current_session = T::CurrentSessionIndex::session_index();
+
+        let minimum_sessions_required = T::MaxInactiveSessions::get() + 1;
+        if current_session < minimum_sessions_required {
+            return false;
+        }
+
+        for session_index in current_session.saturating_sub(T::MaxInactiveSessions::get().into())
+            ..current_session.saturating_sub(1u32.into())
+        {
+            if !<InactiveCollators<T>>::contains_key(session_index, node.clone()) {
+                return false;
+            }
+        }
+        true
     }
 }

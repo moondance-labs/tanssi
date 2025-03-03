@@ -1873,8 +1873,7 @@ impl pallet_pooled_staking::Config for Runtime {
 
 impl pallet_inactivity_tracking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type CollatorId = CollatorId;
-
+    type CollatorId = AccountId;
     type MaxInactiveSessions = ConstU32<5>;
 
     type CurrentSessionIndex = CurrentSessionIndexGetter;
