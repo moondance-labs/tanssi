@@ -26,6 +26,9 @@ mod tests;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
+#[cfg(feature = "migrations")]
+pub mod migrations;
+
 pub mod weights;
 pub use weights::WeightInfo;
 
@@ -165,8 +168,8 @@ pub mod pallet {
         type WeightInfo: weights::WeightInfo;
     }
 
-    type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
-    type AssetIdOf<T> = <T as Config>::AssetId;
+    pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
+    pub type AssetIdOf<T> = <T as Config>::AssetId;
 
     pub type RequestNonce = u32;
 
@@ -190,7 +193,7 @@ pub mod pallet {
         pub source: AccountId,
         /// Payee, target of the stream.
         pub target: AccountId,
-        /// Steam config (time unit, asset id, rate)
+        /// Stream config
         pub config: StreamConfig<Unit, AssetId, Balance>,
         /// How much is deposited to fund this stream.
         pub deposit: Balance,
@@ -230,13 +233,26 @@ pub mod pallet {
         Deserialize,
         MaxEncodedLen,
     )]
-    pub struct StreamConfig<Unit, AssetId, Balance> {
+    pub struct StreamConfig<Unit, AssetId, BalanceOrDuration> {
         /// Unit in which time is measured using a `TimeProvider`.
         pub time_unit: Unit,
         /// Asset used for payment.
         pub asset_id: AssetId,
         /// Amount of asset / unit.
-        pub rate: Balance,
+        pub rate: BalanceOrDuration,
+        /// Minimum amount of time that can be used for mandatory change requests.
+        pub minimum_request_deadline_delay: BalanceOrDuration,
+        /// Minimal amount the source must deposit in the stream. Deposit can go
+        /// lower due to time passing, but deposit cannot be **decreased** lower
+        /// explicitly by the source. If this is non-zero, the stream can only
+        /// be closed by the target or if the deposit is zero. If deposit is lower
+        /// than minimum due to time passing, source is allowed to **increase** the
+        /// deposit to a value lower than the soft minimum.
+        ///
+        /// This system guarantees to the target that the source cannot instantly
+        /// stop paying, and may prepare for termination of service if the deposit
+        /// is below this minimum.
+        pub soft_minimum_deposit: BalanceOrDuration,
     }
 
     /// Origin of a change request.
@@ -415,6 +431,10 @@ pub mod pallet {
         ImmediateDepositChangeRequiresSameAssetId,
         DeadlineCantBeInPast,
         CantFetchStatusBeforeLastTimeUpdated,
+        DeadlineDelayIsBelowMinium,
+        CantDecreaseDepositUnderSoftDepositMinimum,
+        SourceCantCloseActiveStreamWithSoftDepositMinimum,
+        CantCreateStreamWithDepositUnderSoftMinimum,
     }
 
     #[pallet::event]
@@ -501,6 +521,14 @@ pub mod pallet {
             // Update stream before closing it to ensure fair payment.
             Self::perform_stream_payment(stream_id, &mut stream)?;
 
+            // If there is a soft minimum deposit, stream can be closed only by target or if deposit is empty.
+            ensure!(
+                stream.config.soft_minimum_deposit.is_zero()
+                    || stream.deposit.is_zero()
+                    || origin == stream.target,
+                Error::<T>::SourceCantCloseActiveStreamWithSoftDepositMinimum
+            );
+
             // Unfreeze funds left in the stream.
             T::Assets::decrease_deposit(&stream.config.asset_id, &stream.source, stream.deposit)?;
 
@@ -522,6 +550,7 @@ pub mod pallet {
             // Emit event.
             Pallet::<T>::deposit_event(Event::<T>::StreamClosed {
                 stream_id,
+                // TODO: Should `refunded` in event really include the opening_deposit?
                 refunded: stream.deposit.saturating_add(stream.opening_deposit),
             });
 
@@ -586,12 +615,21 @@ pub mod pallet {
                 let now = T::TimeProvider::now(&stream.config.time_unit)
                     .ok_or(Error::<T>::CantFetchCurrentTime)?;
 
-                ensure!(deadline >= now, Error::<T>::DeadlineCantBeInPast);
+                let Some(diff) = deadline.checked_sub(&now) else {
+                    return Err(Error::<T>::DeadlineCantBeInPast.into());
+                };
+
+                ensure!(
+                    diff >= stream.config.minimum_request_deadline_delay,
+                    Error::<T>::DeadlineDelayIsBelowMinium
+                );
             }
 
             // If asset id and time unit are the same, we allow to make the change
             // immediatly if the origin is at a disadvantage.
             // We allow this even if there is already a pending request.
+            // This checks that the deposit can't be **decreased** under
+            // config.soft_minimum_deposit.
             if Self::maybe_immediate_change(
                 stream_id,
                 &mut stream,
@@ -687,9 +725,14 @@ pub mod pallet {
             Self::perform_stream_payment(stream_id, &mut stream)?;
 
             // Apply change.
+            // It is safe to override config now as we have already performed the payment.
+            // Checks made in apply_deposit_change needs to be done with new config.
+            let old_config = stream.config;
+            stream.config = request.new_config;
             let deposit_change = deposit_change.or(request.deposit_change);
+
             match (
-                stream.config.asset_id == request.new_config.asset_id,
+                old_config.asset_id == stream.config.asset_id,
                 deposit_change,
             ) {
                 // Same asset and a change, we apply it like in `change_deposit` call.
@@ -700,19 +743,22 @@ pub mod pallet {
                 (true, None) => (),
                 // Change in asset with absolute new amount
                 (false, Some(DepositChange::Absolute(amount))) => {
+                    // As target chooses the deposit amount in new currency, we must ensure
+                    // it is greater than the soft minimum deposit.
+                    ensure!(
+                        amount >= stream.config.soft_minimum_deposit,
+                        Error::<T>::CantDecreaseDepositUnderSoftDepositMinimum
+                    );
+
                     // Release deposit in old asset.
                     T::Assets::decrease_deposit(
-                        &stream.config.asset_id,
+                        &old_config.asset_id,
                         &stream.source,
                         stream.deposit,
                     )?;
 
                     // Make deposit in new asset.
-                    T::Assets::increase_deposit(
-                        &request.new_config.asset_id,
-                        &stream.source,
-                        amount,
-                    )?;
+                    T::Assets::increase_deposit(&stream.config.asset_id, &stream.source, amount)?;
                     stream.deposit = amount;
                 }
                 // It doesn't make sense to change asset while not providing an absolute new
@@ -722,21 +768,20 @@ pub mod pallet {
 
             // If time unit changes we need to update `last_time_updated` to be in the
             // new unit.
-            if stream.config.time_unit != request.new_config.time_unit {
-                stream.last_time_updated = T::TimeProvider::now(&request.new_config.time_unit)
+            if old_config.time_unit != stream.config.time_unit {
+                stream.last_time_updated = T::TimeProvider::now(&stream.config.time_unit)
                     .ok_or(Error::<T>::CantFetchCurrentTime)?;
             }
 
             // Event
             Pallet::<T>::deposit_event(Event::<T>::StreamConfigChanged {
                 stream_id,
-                old_config: stream.config,
-                new_config: request.new_config.clone(),
+                old_config,
+                new_config: stream.config.clone(),
                 deposit_change,
             });
 
-            // Update config in storage.
-            stream.config = request.new_config;
+            // Update stream in storage.
             stream.pending_request = None;
             Streams::<T>::insert(stream_id, stream);
 
@@ -826,6 +871,11 @@ pub mod pallet {
             initial_deposit: T::Balance,
         ) -> Result<T::StreamId, DispatchErrorWithPostInfo> {
             ensure!(origin != target, Error::<T>::CantBeBothSourceAndTarget);
+
+            ensure!(
+                initial_deposit >= config.soft_minimum_deposit,
+                Error::<T>::CantCreateStreamWithDepositUnderSoftMinimum
+            );
 
             // Generate a new stream id.
             let stream_id = NextStreamId::<T>::get();
@@ -1032,6 +1082,12 @@ pub mod pallet {
                             increase,
                         )?;
                     } else if let Some(decrease) = stream.deposit.checked_sub(&amount) {
+                        if amount < stream.config.soft_minimum_deposit {
+                            return Err(
+                                Error::<T>::CantDecreaseDepositUnderSoftDepositMinimum.into()
+                            );
+                        }
+
                         T::Assets::decrease_deposit(
                             &stream.config.asset_id,
                             &stream.source,
@@ -1048,10 +1104,16 @@ pub mod pallet {
                     T::Assets::increase_deposit(&stream.config.asset_id, &stream.source, increase)?;
                 }
                 DepositChange::Decrease(decrease) => {
-                    stream.deposit = stream
+                    let new_deposit = stream
                         .deposit
                         .checked_sub(&decrease)
                         .ok_or(ArithmeticError::Underflow)?;
+
+                    if new_deposit < stream.config.soft_minimum_deposit {
+                        return Err(Error::<T>::CantDecreaseDepositUnderSoftDepositMinimum.into());
+                    }
+
+                    stream.deposit = new_deposit;
                     T::Assets::decrease_deposit(&stream.config.asset_id, &stream.source, decrease)?;
                 }
             }

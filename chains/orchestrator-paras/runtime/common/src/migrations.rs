@@ -931,6 +931,96 @@ where
     }
 }
 
+pub struct MigrateStreamPaymentNewConfigFields<Runtime>(pub PhantomData<Runtime>);
+impl<Runtime> Migration for MigrateStreamPaymentNewConfigFields<Runtime>
+where
+    Runtime: pallet_stream_payment::Config,
+{
+    fn friendly_name(&self) -> &str {
+        "TM_MigrateStreamPaymentNewConfigFields"
+    }
+
+    fn migrate(&self, available_weight: Weight) -> Weight {
+        pallet_stream_payment::migrations::migrate_stream_payment_new_config_fields::<Runtime>(
+            available_weight,
+        )
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        use pallet_stream_payment::migrations::OldStreamOf;
+        use parity_scale_codec::Encode;
+
+        let Some(stream_id) = pallet_stream_payment::Streams::<Runtime>::iter_keys().next() else {
+            return Ok(vec![]);
+        };
+
+        let old_stream: OldStreamOf<Runtime> = frame_support::storage::unhashed::get(
+            &pallet_stream_payment::Streams::<Runtime>::hashed_key_for(stream_id),
+        )
+        .expect("key was found so entry must exist");
+
+        Ok((stream_id, old_stream).encode())
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(&self, state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        use pallet_stream_payment::{migrations::OldStreamOf, ChangeRequest, Stream, StreamConfig};
+        use parity_scale_codec::Decode;
+
+        if state.is_empty() {
+            // there were no streams
+            return Ok(());
+        }
+
+        let (stream_id, old_stream) =
+            <(Runtime::StreamId, OldStreamOf<Runtime>)>::decode(&mut &state[..])
+                .expect("to decode properly");
+
+        let new_stream = pallet_stream_payment::Streams::<Runtime>::get(stream_id)
+            .expect("entry should still exist");
+
+        let mut expected = Stream {
+            source: old_stream.source,
+            target: old_stream.target,
+            deposit: old_stream.deposit,
+            last_time_updated: old_stream.last_time_updated,
+            request_nonce: old_stream.request_nonce,
+            pending_request: None, // will be replaced below
+            opening_deposit: old_stream.opening_deposit,
+            config: StreamConfig {
+                time_unit: old_stream.config.time_unit,
+                asset_id: old_stream.config.asset_id,
+                rate: old_stream.config.rate,
+                minimum_request_deadline_delay: 0u32.into(),
+                soft_minimum_deposit: 0u32.into(),
+            },
+        };
+
+        if let Some(pending_request) = old_stream.pending_request {
+            expected.pending_request = Some(ChangeRequest {
+                requester: pending_request.requester,
+                kind: pending_request.kind,
+                deposit_change: pending_request.deposit_change,
+                new_config: StreamConfig {
+                    time_unit: pending_request.new_config.time_unit,
+                    asset_id: pending_request.new_config.asset_id,
+                    rate: pending_request.new_config.rate,
+                    minimum_request_deadline_delay: 0u32.into(),
+                    soft_minimum_deposit: 0u32.into(),
+                },
+            });
+        }
+
+        assert_eq!(
+            new_stream, expected,
+            "Migrated stream don't match expected value"
+        );
+
+        Ok(())
+    }
+}
+
 pub struct FlashboxMigrations<Runtime>(PhantomData<Runtime>);
 
 impl<Runtime> GetMigrations for FlashboxMigrations<Runtime>
@@ -938,9 +1028,9 @@ where
     Runtime: pallet_balances::Config,
     Runtime: pallet_configuration::Config,
     Runtime: pallet_registrar::Config,
-    Runtime: pallet_data_preservers::Config,
     Runtime: pallet_services_payment::Config,
     Runtime: pallet_data_preservers::Config,
+    Runtime: pallet_stream_payment::Config,
     Runtime::AccountId: From<[u8; 32]>,
     <Runtime as pallet_balances::Config>::RuntimeHoldReason: From<pallet_registrar::HoldReason>,
     <Runtime as pallet_balances::Config>::Balance: From<<<Runtime as pallet_registrar::Config>::Currency as frame_support::traits::fungible::Inspect<Runtime::AccountId>>::Balance>,
@@ -964,6 +1054,7 @@ where
         //let migrate_registrar_reserves = RegistrarReserveToHoldMigration::<Runtime>(Default::default());
         //let migrate_config_max_parachain_percentage = MigrateConfigurationAddParachainPercentage::<Runtime>(Default::default());
         let migrate_config_full_rotation_mode = MigrateConfigurationAddFullRotationMode::<Runtime>(Default::default());
+        let migrate_stream_payment_new_config_items = MigrateStreamPaymentNewConfigFields::<Runtime>(Default::default());
 
         vec![
             // Applied in runtime 400
@@ -985,6 +1076,7 @@ where
             // Applied in runtime 900
             //Box::new(migrate_config_max_parachain_percentage),
             Box::new(migrate_config_full_rotation_mode),
+            Box::new(migrate_stream_payment_new_config_items),
         ]
     }
 }
@@ -1001,6 +1093,7 @@ where
     Runtime: cumulus_pallet_xcmp_queue::Config,
     Runtime: pallet_data_preservers::Config,
     Runtime: pallet_xcm::Config,
+    Runtime: pallet_stream_payment::Config,
     <Runtime as pallet_balances::Config>::RuntimeHoldReason:
         From<pallet_pooled_staking::HoldReason>,
     Runtime: pallet_foreign_asset_creator::Config,
@@ -1041,6 +1134,7 @@ where
         //    ForeignAssetCreatorMigration::<Runtime>(Default::default());
         //let migrate_registrar_reserves = RegistrarReserveToHoldMigration::<Runtime>(Default::default());
         let migrate_config_full_rotation_mode = MigrateConfigurationAddFullRotationMode::<Runtime>(Default::default());
+        let migrate_stream_payment_new_config_items = MigrateStreamPaymentNewConfigFields::<Runtime>(Default::default());
 
         vec![
             // Applied in runtime 200
@@ -1080,6 +1174,7 @@ where
             // Applied in runtime 900
             //Box::new(migrate_config_max_parachain_percentage),
             Box::new(migrate_config_full_rotation_mode),
+            Box::new(migrate_stream_payment_new_config_items),
         ]
     }
 }

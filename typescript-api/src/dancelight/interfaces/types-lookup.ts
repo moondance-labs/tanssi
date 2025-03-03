@@ -8818,6 +8818,7 @@ declare module "@polkadot/types/lookup" {
         readonly bellatrix: SnowbridgeBeaconPrimitivesFork;
         readonly capella: SnowbridgeBeaconPrimitivesFork;
         readonly deneb: SnowbridgeBeaconPrimitivesFork;
+        readonly electra: SnowbridgeBeaconPrimitivesFork;
     }
 
     /** @name SnowbridgeBeaconPrimitivesFork (881) */
