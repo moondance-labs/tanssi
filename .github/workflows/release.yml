@@ -74,7 +74,7 @@ jobs:
               id: check-docker-image
               run: |
                   TAG=sha-${{ steps.get-sha.outputs.sha8 }}
-                  echo "image_exists=$(docker image inspect moondancelabs/tanssi:$TAG > /dev/null && echo \"true\" || echo \"false\")" >> $GITHUB_OUTPUT
+                  echo "image_exists=$(docker image inspect moondancelabs/tanssi:$TAG > /dev/null && echo "true" || echo "false")" >> $GITHUB_OUTPUT
             - name: Display variables
               run: |
                   echo git_ref: ${{ steps.check-git-ref.outputs.git_ref }}
@@ -83,9 +83,6 @@ jobs:
                   echo image_exists: ${{ steps.check-docker-image.outputs.image_exists }}
                   echo latest_rt: ${{ steps.get-latest-rt.outputs.latest_rt }}
                   echo latest_rt_sha8: ${{ steps.get-sha.outputs.latest_rt_sha8 }}
-                  echo ${{ github.event.pull_request.head.repo.full_name == github.repository }}
-                  echo ${{ github.event_name == 'push' }}
-
 
     check-copyright:
         runs-on: ubuntu-latest
