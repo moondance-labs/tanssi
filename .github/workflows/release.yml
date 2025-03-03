@@ -83,6 +83,9 @@ jobs:
                   echo image_exists: ${{ steps.check-docker-image.outputs.image_exists }}
                   echo latest_rt: ${{ steps.get-latest-rt.outputs.latest_rt }}
                   echo latest_rt_sha8: ${{ steps.get-sha.outputs.latest_rt_sha8 }}
+                  echo ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+                  echo ${{ github.event_name == 'push' }}
+
 
     check-copyright:
         runs-on: ubuntu-latest
