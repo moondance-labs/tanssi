@@ -17,11 +17,6 @@
 #[cfg(feature = "std")]
 fn main() {
     substrate_wasm_builder::WasmBuilder::build_using_defaults();
-
-    substrate_wasm_builder::WasmBuilder::init_with_defaults()
-        .set_file_name("fast_runtime_binary.rs")
-        .enable_feature("fast-runtime")
-        .build();
 }
 
 #[cfg(not(feature = "std"))]
