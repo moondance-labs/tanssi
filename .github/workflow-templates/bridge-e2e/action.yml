@@ -100,8 +100,6 @@ runs:
         path: |
           test/tmp/bridge/output/bin
         key: ethereum-bins-${{ runner.os }}-${{ hashFiles('**/scripts/bridge/set-env.sh') }}
-        restore-keys: |
-          ethereum-bins-${{ runner.os }}-
 
     - name: Pnpm
       uses: pnpm/action-setup@v4.0.0
