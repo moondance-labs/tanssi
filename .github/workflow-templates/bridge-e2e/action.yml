@@ -55,8 +55,6 @@ runs:
           ~/.foundry
           ~/.cache/foundry
         key: foundry-${{ runner.os }}-${{ hashFiles('**/foundry.toml', '**/remappings.txt') }}
-        restore-keys: |
-          foundry-${{ runner.os }}-
 
     - name: Install Foundry
       uses: foundry-rs/foundry-toolchain@v1
@@ -75,8 +73,6 @@ runs:
           test/tmp/bridge/tanssi-symbiotic/out
           test/tmp/bridge/tanssi-symbiotic/cache
         key: symbiotic-${{ runner.os }}-${{ hashFiles('**/scripts/bridge/set-env.sh') }}
-        restore-keys: |
-          symbiotic-${{ runner.os }}-
 
     - name: Cache Snowbridge Relayer
       uses: actions/cache@v3
@@ -87,8 +83,7 @@ runs:
           test/tmp/bridge/relayer/snowbridge/contracts/out
           test/tmp/bridge/relayer/snowbridge/contracts/cache
         key: relayer-${{ runner.os }}-${{ hashFiles('**/scripts/bridge/set-env.sh') }}
-        restore-keys: |
-          relayer-${{ runner.os }}-
+
     - name: Prepare Bin Folders
       shell: bash
       run: |
