@@ -17,7 +17,7 @@ describeSuite({
                 const expectedRefTime = { avg: new BN(786288068) };
                 expectedRefTime.min = expectedRefTime.avg.divn(1.1);
                 expectedRefTime.max = expectedRefTime.avg.muln(1.1);
-                const expectedProofSize = { avg: new BN(8046) };
+                const expectedProofSize = { avg: new BN(5507) };
                 expectedProofSize.min = expectedProofSize.avg.divn(1.1);
                 expectedProofSize.max = expectedProofSize.avg.muln(1.1);
 
