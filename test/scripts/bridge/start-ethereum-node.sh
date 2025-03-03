@@ -15,13 +15,13 @@ mkdir -p $logs_dir
 
 start_geth() {
     echo "Starting geth local node"
-    local timestamp="0" #start Cancun from genesis
+    local timestamp="0" #start Prague from genesis
     jq \
-    --argjson timestamp "$timestamp" \
-    '
-        .config.CancunTime = $timestamp
-    ' \
-    $assets_dir/genesis.json > $output_dir/genesis.json
+        --argjson timestamp "$timestamp" \
+        '
+        .config.PragueTime = $timestamp
+        ' \
+        $assets_dir/genesis.json > $output_dir/genesis.json
     geth init --datadir "$ethereum_data_dir" --state.scheme=hash "$output_dir/genesis.json"
     geth --vmdebug --datadir "$ethereum_data_dir" --networkid 11155111 \
     --http --http.api debug,personal,eth,net,web3,txpool,engine,miner --ws --ws.api debug,eth,net,web3 \
@@ -36,7 +36,7 @@ start_geth() {
     --password /dev/null \
     --rpc.gascap 0 \
     --ws.origins "*" \
-    --trace "$ethereum_data_dir/trace" \
+    --go-execution-trace "$ethereum_data_dir/trace" \
     --gcmode archive \
     --syncmode=full \
     --state.scheme=hash \
@@ -60,29 +60,31 @@ start_lodestar() {
     fi
     
     export LODESTAR_PRESET="mainnet"
-    
+
+    pushd $artifacts_dir/lodestar
     $output_bin_dir/lodestar dev \
-    --genesisValidators 8 \
-    --genesisTime $timestamp \
-    --startValidators "0..7" \
-    --enr.ip6 "127.0.0.1" \
-    --rest.address "0.0.0.0" \
-    --eth1.providerUrls "http://127.0.0.1:8545" \
-    --execution.urls "http://127.0.0.1:8551" \
-    --dataDir "$ethereum_data_dir" \
-    --reset \
-    --terminal-total-difficulty-override 0 \
-    --genesisEth1Hash $genesisHash \
-    --params.ALTAIR_FORK_EPOCH 0 \
-    --params.BELLATRIX_FORK_EPOCH 0 \
-    --params.CAPELLA_FORK_EPOCH 0 \
-    --params.DENEB_FORK_EPOCH 0 \
-    --params.SECONDS_PER_SLOT 1 \
-    --eth1=true \
-    --rest.namespace="*" \
-    --jwt-secret $assets_dir/jwtsecret \
-    --chain.archiveStateEpochFrequency 1 \
-    >"$logs_dir/lodestar.log" 2>&1 &
+        --genesisValidators 8 \
+        --genesisTime $timestamp \
+        --startValidators "0..7" \
+        --enr.ip6 "127.0.0.1" \
+        --rest.address "0.0.0.0" \
+        --eth1.providerUrls "http://127.0.0.1:8545" \
+        --execution.urls "http://127.0.0.1:8551" \
+        --dataDir "$ethereum_data_dir" \
+        --reset \
+        --terminal-total-difficulty-override 0 \
+        --genesisEth1Hash $genesisHash \
+        --params.ALTAIR_FORK_EPOCH 0 \
+        --params.BELLATRIX_FORK_EPOCH 0 \
+        --params.CAPELLA_FORK_EPOCH 0 \
+        --params.DENEB_FORK_EPOCH 0 \
+        --params.ELECTRA_FORK_EPOCH 0 \
+        --params.SECONDS_PER_SLOT 1 \
+        --eth1=true \
+        --rest.namespace="*" \
+        --jwt-secret $assets_dir/jwtsecret \
+        --chain.archiveStateEpochFrequency 1 \
+        >"$logs_dir/lodestar.log" 2>&1 &
     echo "lodestar=$!" >> $artifacts_dir/daemons.pid
 }
 
