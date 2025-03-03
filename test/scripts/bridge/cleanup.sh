@@ -19,9 +19,9 @@ elif [ $1 = "ole" ]; then
   rm -rf $logs_dir
   rm -rf $output_dir
   rm -rf $ethereum_data_dir
-elif [ $1 = "lep" ]; then
+elif [ $1 = "olep" ]; then
   rm -rf $logs_dir
-  # rm -rf $output_dir
+  find "$output_dir" -mindepth 1 -maxdepth 1 ! -name 'bin' -exec rm -rf {} +
   rm -rf $ethereum_data_dir
 
   beacon_relay=""
