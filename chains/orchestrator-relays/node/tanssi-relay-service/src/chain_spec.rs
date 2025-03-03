@@ -238,19 +238,18 @@ pub fn dancelight_local_testnet_config(
         .collect();
 
     Ok(DancelightChainSpec::builder(
-        dancelight::WASM_BINARY
-            .ok_or("Dancelight development wasm not available")?,
+        dancelight::WASM_BINARY.ok_or("Dancelight development wasm not available")?,
         Default::default(),
     )
-        .with_name("Dancelight Local Testnet")
-        .with_id("dancelight_local_testnet")
-        .with_chain_type(ChainType::Local)
-        .with_genesis_config_patch(dancelight_local_testnet_genesis(
-            container_chains,
-            invulnerables,
-        ))
-        .with_protocol_id(DEFAULT_PROTOCOL_ID)
-        .build())
+    .with_name("Dancelight Local Testnet")
+    .with_id("dancelight_local_testnet")
+    .with_chain_type(ChainType::Local)
+    .with_genesis_config_patch(dancelight_local_testnet_genesis(
+        container_chains,
+        invulnerables,
+    ))
+    .with_protocol_id(DEFAULT_PROTOCOL_ID)
+    .build())
 }
 fn mock_container_chain_genesis_data(para_id: ParaId) -> ContainerChainGenesisData {
     ContainerChainGenesisData {
