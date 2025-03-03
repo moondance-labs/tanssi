@@ -61,7 +61,6 @@ start_lodestar() {
     
     export LODESTAR_PRESET="mainnet"
 
-    pushd $artifacts_dir/lodestar
     $output_bin_dir/lodestar dev \
         --genesisValidators 8 \
         --genesisTime $timestamp \
