@@ -106,14 +106,12 @@ describeSuite({
                 // Checkpoint B: eraIndexCheckpointA + 1
                 const eraIndexCheckpointB = eraIndexCheckpointA + 1;
 
-                const validatorRewardCheckpointA =
-                    await api.query.externalValidatorsRewards.rewardPointsForEra(eraIndexCheckpointA);
-
-                const validatorRewardCheckpointB =
-                    await api.query.externalValidatorsRewards.rewardPointsForEra(eraIndexCheckpointB);
-
-                expect(validatorRewardCheckpointA.isEmpty).toBe(true);
-                expect(validatorRewardCheckpointB.isEmpty).toBe(false);
+                // The mapping only contains the keys that are in `externalValidatorsRewards`
+                const rewardMappingKeys = (await api.query.externalValidatorsRewards.rewardPointsForEra.keys()).map(
+                    (key) => key.args[0].toNumber()
+                );
+                expect(rewardMappingKeys.includes(eraIndexCheckpointB)).toBe(true);
+                expect(rewardMappingKeys.includes(eraIndexCheckpointA)).toBe(false);
             },
         });
     },

@@ -109,7 +109,9 @@ describeSuite({
         it({
             id: "E02",
             title: "receive native token from Ethereum",
-            test: async () => {
+            test: async ({ skip }) => {
+                // Uncomment once we have automated proof generation
+                skip();
                 const transferAmount = BigInt(10_000);
 
                 const keyring = new Keyring({ type: "sr25519" });
