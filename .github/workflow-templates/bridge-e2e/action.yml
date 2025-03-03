@@ -1,6 +1,12 @@
 name: Bridge e2e tests
 description: |
   Setup and run bridge e2e tests between tanssi and ethereum
+  
+inputs:
+  node-version:
+    description: which version of node to use
+    required: false
+    default: "22.x"
 
 runs:
   using: "composite"
@@ -114,10 +120,9 @@ runs:
       id: check_yarn
       run: |
         yarn --version
-    - name: Use Node.js 22.x
-      uses: actions/setup-node@v4
+    - uses: actions/setup-node@v4
       with:
-        node-version: 22.x
+        node-version: ${{ inputs.node-version }}
         cache: pnpm
     - name: Check date
       shell: bash
