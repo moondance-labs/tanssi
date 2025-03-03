@@ -96,15 +96,19 @@ describeSuite({
         it({
             id: "C03",
             title: "Check if RewardPointsForEra expires after HistoryDepth",
-            test: async () => {
-                const historyDepth = api.consts.externalValidatorsRewards.historyDepth;
+            test: async ({ skip }) => {
+                const historyDepth = api.consts.externalValidatorsRewards.historyDepth.toNumber();
+                const currentEra = (await api.query.externalValidators.activeEra()).unwrap().index.toNumber();
 
                 // Checkpoint A: current era index - historyDepth
-                const eraIndexCheckpointA =
-                    (await api.query.externalValidators.activeEra()).unwrap().index.toNumber() -
-                    historyDepth.toNumber();
+                const eraIndexCheckpointA = currentEra - historyDepth;
                 // Checkpoint B: eraIndexCheckpointA + 1
                 const eraIndexCheckpointB = eraIndexCheckpointA + 1;
+
+                if (eraIndexCheckpointA < 0) {
+                    log("Current era is less than historyDepth, skipping the test");
+                    skip();
+                }
 
                 // The mapping only contains the keys that are in `externalValidatorsRewards`
                 const rewardMappingKeys = (await api.query.externalValidatorsRewards.rewardPointsForEra.keys()).map(
