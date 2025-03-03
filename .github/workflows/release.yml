@@ -74,7 +74,7 @@ jobs:
               id: check-docker-image
               run: |
                   TAG=sha-${{ steps.get-sha.outputs.sha8 }}
-                  echo "image_exists=$(docker image inspect moondancelabs/tanssi:$TAG > /dev/null && echo \"true\" || echo \"false\")" >> $GITHUB_OUTPUT
+                  echo "image_exists=$(docker image inspect moondancelabs/tanssi:$TAG > /dev/null && echo "true" || echo "false")" >> $GITHUB_OUTPUT
             - name: Display variables
               run: |
                   echo git_ref: ${{ steps.check-git-ref.outputs.git_ref }}
