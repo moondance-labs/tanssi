@@ -3538,7 +3538,13 @@ declare module "@polkadot/api-base/types/submittable" {
                     target: AccountId32 | string | Uint8Array,
                     config:
                         | PalletStreamPaymentStreamConfig
-                        | { timeUnit?: any; assetId?: any; rate?: any }
+                        | {
+                              timeUnit?: any;
+                              assetId?: any;
+                              rate?: any;
+                              minimumRequestDeadlineDelay?: any;
+                              softMinimumDeposit?: any;
+                          }
                         | string
                         | Uint8Array,
                     initialDeposit: u128 | AnyNumber | Uint8Array
@@ -3574,7 +3580,13 @@ declare module "@polkadot/api-base/types/submittable" {
                         | Uint8Array,
                     newConfig:
                         | PalletStreamPaymentStreamConfig
-                        | { timeUnit?: any; assetId?: any; rate?: any }
+                        | {
+                              timeUnit?: any;
+                              assetId?: any;
+                              rate?: any;
+                              minimumRequestDeadlineDelay?: any;
+                              softMinimumDeposit?: any;
+                          }
                         | string
                         | Uint8Array,
                     depositChange:
