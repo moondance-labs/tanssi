@@ -29,6 +29,7 @@ pallet-pooled-staking = { workspace = true }
 pallet-registrar = { workspace = true }
 pallet-services-payment = { workspace = true }
 pallet-session = { workspace = true }
+pallet-stream-payment = { workspace = true, features = [ "migrations" ] }
 pallet-treasury = { workspace = true }
 
 # Moonkit
@@ -82,6 +83,7 @@ std = [
 	"pallet-registrar/std",
 	"pallet-services-payment/std",
 	"pallet-session/std",
+	"pallet-stream-payment/std",
 	"pallet-treasury/std",
 	"pallet-xcm/std",
 	"parity-scale-codec/std",
@@ -112,6 +114,7 @@ runtime-benchmarks = [
 	"pallet-pooled-staking/runtime-benchmarks",
 	"pallet-registrar/runtime-benchmarks",
 	"pallet-services-payment/runtime-benchmarks",
+	"pallet-stream-payment/runtime-benchmarks",
 	"pallet-treasury/runtime-benchmarks",
 	"pallet-xcm/runtime-benchmarks",
 	"snowbridge-core/runtime-benchmarks",
@@ -138,6 +141,7 @@ try-runtime = [
 	"pallet-registrar/try-runtime",
 	"pallet-services-payment/try-runtime",
 	"pallet-session/try-runtime",
+	"pallet-stream-payment/try-runtime",
 	"pallet-treasury/try-runtime",
 	"pallet-xcm/try-runtime",
 	"snowbridge-pallet-system/try-runtime",

@@ -875,13 +875,17 @@ declare module "@polkadot/api-base/types/errors" {
             CanOnlyCancelOwnRequest: AugmentedError<ApiType>;
             CantAcceptOwnRequest: AugmentedError<ApiType>;
             CantBeBothSourceAndTarget: AugmentedError<ApiType>;
+            CantCreateStreamWithDepositUnderSoftMinimum: AugmentedError<ApiType>;
+            CantDecreaseDepositUnderSoftDepositMinimum: AugmentedError<ApiType>;
             CantFetchCurrentTime: AugmentedError<ApiType>;
             CantFetchStatusBeforeLastTimeUpdated: AugmentedError<ApiType>;
             CantOverrideMandatoryChange: AugmentedError<ApiType>;
             ChangingAssetRequiresAbsoluteDepositChange: AugmentedError<ApiType>;
             DeadlineCantBeInPast: AugmentedError<ApiType>;
+            DeadlineDelayIsBelowMinium: AugmentedError<ApiType>;
             ImmediateDepositChangeRequiresSameAssetId: AugmentedError<ApiType>;
             NoPendingRequest: AugmentedError<ApiType>;
+            SourceCantCloseActiveStreamWithSoftDepositMinimum: AugmentedError<ApiType>;
             SourceCantDecreaseRate: AugmentedError<ApiType>;
             StreamIdOverflow: AugmentedError<ApiType>;
             TargetCantChangeDeposit: AugmentedError<ApiType>;

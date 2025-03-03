@@ -28,16 +28,16 @@ config_relayer() {
         $assets_dir/beefy-relay.json > $output_dir/beefy-relay.json
 
     # Configure beacon relay
-    local deneb_forked_epoch=132608
-    deneb_forked_epoch=0
+    local electra_forked_epoch=132608
+    electra_forked_epoch=0
     jq \
         --arg beacon_endpoint_http $beacon_endpoint_http \
-        --argjson deneb_forked_epoch $deneb_forked_epoch \
+        --argjson electra_forked_epoch $electra_forked_epoch \
         --arg relay_chain_endpoint $RELAYCHAIN_ENDPOINT \
         --arg data_store_dir $data_store_dir \
         '
       .source.beacon.endpoint = $beacon_endpoint_http
-    | .source.beacon.spec.denebForkedEpoch = $deneb_forked_epoch
+    | .source.beacon.spec.forkVersions.electra = $electra_forked_epoch
     | .sink.parachain.endpoint = $relay_chain_endpoint
     | .source.beacon.datastore.location = $data_store_dir
     ' \

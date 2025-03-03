@@ -7827,6 +7827,7 @@ export default {
         bellatrix: "SnowbridgeBeaconPrimitivesFork",
         capella: "SnowbridgeBeaconPrimitivesFork",
         deneb: "SnowbridgeBeaconPrimitivesFork",
+        electra: "SnowbridgeBeaconPrimitivesFork",
     },
     /**
      * Lookup904: snowbridge_beacon_primitives::types::Fork

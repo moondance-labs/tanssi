@@ -675,6 +675,8 @@ declare module "@polkadot/types/lookup" {
         readonly timeUnit: FlashboxRuntimeTimeUnit;
         readonly assetId: FlashboxRuntimeStreamPaymentAssetId;
         readonly rate: u128;
+        readonly minimumRequestDeadlineDelay: u128;
+        readonly softMinimumDeposit: u128;
     }
 
     /** @name FlashboxRuntimeTimeUnit (55) */
@@ -2721,6 +2723,10 @@ declare module "@polkadot/types/lookup" {
         readonly isImmediateDepositChangeRequiresSameAssetId: boolean;
         readonly isDeadlineCantBeInPast: boolean;
         readonly isCantFetchStatusBeforeLastTimeUpdated: boolean;
+        readonly isDeadlineDelayIsBelowMinium: boolean;
+        readonly isCantDecreaseDepositUnderSoftDepositMinimum: boolean;
+        readonly isSourceCantCloseActiveStreamWithSoftDepositMinimum: boolean;
+        readonly isCantCreateStreamWithDepositUnderSoftMinimum: boolean;
         readonly type:
             | "UnknownStreamId"
             | "StreamIdOverflow"
@@ -2738,7 +2744,11 @@ declare module "@polkadot/types/lookup" {
             | "TargetCantChangeDeposit"
             | "ImmediateDepositChangeRequiresSameAssetId"
             | "DeadlineCantBeInPast"
-            | "CantFetchStatusBeforeLastTimeUpdated";
+            | "CantFetchStatusBeforeLastTimeUpdated"
+            | "DeadlineDelayIsBelowMinium"
+            | "CantDecreaseDepositUnderSoftDepositMinimum"
+            | "SourceCantCloseActiveStreamWithSoftDepositMinimum"
+            | "CantCreateStreamWithDepositUnderSoftMinimum";
     }
 
     /** @name PalletIdentityRegistration (300) */
