@@ -24,6 +24,16 @@ export type __AugmentedConst<ApiType extends ApiTypes> = AugmentedConst<ApiType>
 
 declare module "@polkadot/api-base/types/consts" {
     interface AugmentedConsts<ApiType extends ApiTypes> {
+        authorNoting: {
+            /**
+             * Max length of para id list, should be the same value as in other pallets.
+             **/
+            maxContainerChains: u32 & AugmentedConst<ApiType>;
+            /**
+             * Generic const
+             **/
+            [key: string]: Codec;
+        };
         babe: {
             /**
              * The amount of time, in slots, that each epoch should last.

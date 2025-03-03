@@ -54,9 +54,9 @@ use {
     },
     sp_std::{collections::btree_set::BTreeSet, fmt::Debug, prelude::*, vec},
     tp_traits::{
-        CollatorAssignmentTip, FullRotationModes, GetContainerChainAuthor, GetHostConfiguration,
-        GetSessionContainerChains, ParaId, ParaIdAssignmentHooks, RemoveInvulnerables,
-        ShouldRotateAllCollators, Slot,
+        CollatorAssignmentTip, ForSession, FullRotationModes, GetContainerChainAuthor,
+        GetContainerChainsWithCollators, GetHostConfiguration, GetSessionContainerChains, ParaId,
+        ParaIdAssignmentHooks, RemoveInvulnerables, ShouldRotateAllCollators, Slot,
     },
 };
 pub use {dp_collator_assignment::AssignedCollators, pallet::*};
@@ -623,6 +623,40 @@ pub mod pallet {
             if T::GetRandomnessForNextBlock::should_end_session(n.saturating_add(One::one())) {
                 let random_seed = T::GetRandomnessForNextBlock::get_randomness();
                 Randomness::<T>::put(random_seed);
+            }
+        }
+    }
+
+    impl<T: Config> GetContainerChainsWithCollators<T::AccountId> for Pallet<T> {
+        fn container_chains_with_collators(
+            for_session: ForSession,
+        ) -> Vec<(ParaId, Vec<T::AccountId>)> {
+            // If next session has None then current session data will stay.
+            let chains = (for_session == ForSession::Next)
+                .then(|| PendingCollatorContainerChain::<T>::get())
+                .flatten()
+                .unwrap_or_else(|| CollatorContainerChain::<T>::get());
+
+            chains.container_chains.into_iter().collect()
+        }
+
+        #[cfg(feature = "runtime-benchmarks")]
+        fn set_container_chains_with_collators(
+            for_session: ForSession,
+            container_chains: &[(ParaId, Vec<T::AccountId>)],
+        ) {
+            match for_session {
+                ForSession::Current => {
+                    let mut collators = CollatorContainerChain::<T>::get();
+                    collators.container_chains = container_chains.iter().cloned().collect();
+                    CollatorContainerChain::<T>::put(collators);
+                }
+                ForSession::Next => {
+                    let mut collators =
+                        PendingCollatorContainerChain::<T>::get().unwrap_or_default();
+                    collators.container_chains = container_chains.iter().cloned().collect();
+                    PendingCollatorContainerChain::<T>::put(Some(collators));
+                }
             }
         }
     }
