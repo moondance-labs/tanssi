@@ -24,11 +24,15 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 pub mod xcm_config;
 
-use frame_support::storage::{with_storage_layer, with_transaction};
-use frame_support::traits::{ExistenceRequirement, WithdrawReasons};
-use polkadot_runtime_common::SlowAdjustingFeeUpdate;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
+use {
+    frame_support::{
+        storage::{with_storage_layer, with_transaction},
+        traits::{ExistenceRequirement, WithdrawReasons},
+    },
+    polkadot_runtime_common::SlowAdjustingFeeUpdate,
+};
 
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
@@ -39,7 +43,6 @@ pub mod weights;
 #[cfg(test)]
 mod tests;
 
-use pallet_services_payment::BalanceOf;
 use {
     cumulus_pallet_parachain_system::{
         RelayChainStateProof, RelayNumberMonotonicallyIncreases, RelaychainDataProvider,
@@ -85,7 +88,9 @@ use {
     pallet_pooled_staking::traits::{IsCandidateEligible, Timer},
     pallet_registrar::RegistrarHooks,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
-    pallet_services_payment::{ProvideBlockProductionCost, ProvideCollatorAssignmentCost},
+    pallet_services_payment::{
+        BalanceOf, ProvideBlockProductionCost, ProvideCollatorAssignmentCost,
+    },
     pallet_session::{SessionManager, ShouldEndSession},
     pallet_stream_payment_runtime_api::{StreamPaymentApiError, StreamPaymentApiStatus},
     pallet_transaction_payment::FungibleAdapter,
@@ -107,8 +112,11 @@ use {
         transaction_validity::{TransactionSource, TransactionValidity},
         AccountId32, ApplyExtrinsicResult,
     },
-    sp_std::collections::btree_map::BTreeMap,
-    sp_std::{collections::btree_set::BTreeSet, marker::PhantomData, prelude::*},
+    sp_std::{
+        collections::{btree_map::BTreeMap, btree_set::BTreeSet},
+        marker::PhantomData,
+        prelude::*,
+    },
     sp_version::RuntimeVersion,
     staging_xcm::{
         IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation, VersionedXcm,

@@ -946,8 +946,10 @@ fn new_partial_basics(
     })
 }
 
-use polkadot_primitives::{AvailabilityBitfield, UncheckedSigned, ValidatorId, ValidatorIndex};
-use sp_keystore::Error as KeystoreError;
+use {
+    polkadot_primitives::{AvailabilityBitfield, UncheckedSigned, ValidatorId, ValidatorIndex},
+    sp_keystore::Error as KeystoreError,
+};
 fn keystore_sign<H: Encode, Payload: Encode>(
     keystore: &KeystorePtr,
     payload: Payload,

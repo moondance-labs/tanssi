@@ -44,6 +44,7 @@ import type {
     PalletConvictionVotingConviction,
     PalletConvictionVotingVoteAccountVote,
     PalletDataPreserversProfile,
+    PalletExternalValidatorSlashesSlashingModeOption,
     PalletExternalValidatorsForcing,
     PalletIdentityJudgement,
     PalletIdentityLegacyIdentityInfo,
@@ -1878,6 +1879,18 @@ declare module "@polkadot/api-base/types/submittable" {
                     msgSize: u32 | AnyNumber | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
                 [H256, u32, u32]
+            >;
+            setSlashingMode: AugmentedSubmittable<
+                (
+                    mode:
+                        | PalletExternalValidatorSlashesSlashingModeOption
+                        | "Enabled"
+                        | "LogOnly"
+                        | "Disabled"
+                        | number
+                        | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [PalletExternalValidatorSlashesSlashingModeOption]
             >;
             /**
              * Generic tx

@@ -121,6 +121,7 @@ import type {
     PalletExternalValidatorSlashesError,
     PalletExternalValidatorSlashesEvent,
     PalletExternalValidatorSlashesSlash,
+    PalletExternalValidatorSlashesSlashingModeOption,
     PalletExternalValidatorsCall,
     PalletExternalValidatorsError,
     PalletExternalValidatorsEvent,
@@ -631,6 +632,7 @@ declare module "@polkadot/types/types/registry" {
         PalletExternalValidatorSlashesError: PalletExternalValidatorSlashesError;
         PalletExternalValidatorSlashesEvent: PalletExternalValidatorSlashesEvent;
         PalletExternalValidatorSlashesSlash: PalletExternalValidatorSlashesSlash;
+        PalletExternalValidatorSlashesSlashingModeOption: PalletExternalValidatorSlashesSlashingModeOption;
         PalletExternalValidatorsCall: PalletExternalValidatorsCall;
         PalletExternalValidatorsError: PalletExternalValidatorsError;
         PalletExternalValidatorsEvent: PalletExternalValidatorsEvent;

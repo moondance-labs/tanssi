@@ -30,9 +30,9 @@ use {
     core::marker::PhantomData,
     cumulus_primitives_core::{
         relay_chain::{AccountId, Balance},
-        Assets, Location, SendResult, SendXcm, Xcm, XcmHash,
+        AccountKey20, Assets, Ethereum, GlobalConsensus, Location, SendResult, SendXcm, Xcm,
+        XcmHash,
     },
-    cumulus_primitives_core::{AccountKey20, Ethereum, GlobalConsensus},
     ethabi::{Token, U256},
     frame_support::{
         ensure,
@@ -50,9 +50,7 @@ use {
     snowbridge_router_primitives::inbound::{
         ConvertMessage, ConvertMessageError, VersionedXcmMessage,
     },
-    sp_core::blake2_256,
-    sp_core::hashing,
-    sp_core::H256,
+    sp_core::{blake2_256, hashing, H256},
     sp_runtime::{app_crypto::sp_core, traits::Convert, RuntimeDebug},
     sp_std::vec::Vec,
 };

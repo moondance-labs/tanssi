@@ -14,8 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use snowbridge_core::{AgentId, ChannelId, ParaId, TokenId};
-use xcm::latest::prelude::*;
+use {
+    snowbridge_core::{AgentId, ChannelId, ParaId, TokenId},
+    xcm::latest::prelude::*,
+};
 /// Helper trait to set up token and channel characteristics
 pub trait TokenChannelSetterBenchmarkHelperTrait {
     /// Set up the token and location info

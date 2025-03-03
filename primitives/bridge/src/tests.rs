@@ -14,8 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use super::*;
-use hex_literal::hex;
+use {super::*, hex_literal::hex};
 
 #[test]
 fn test_command_encoding() {
