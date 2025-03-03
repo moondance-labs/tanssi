@@ -251,6 +251,7 @@ pub fn dancelight_local_testnet_config(
     .with_protocol_id(DEFAULT_PROTOCOL_ID)
     .build())
 }
+
 fn mock_container_chain_genesis_data(para_id: ParaId) -> ContainerChainGenesisData {
     ContainerChainGenesisData {
         storage: vec![
