@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use std::marker::PhantomData;
 use {
     crate::{
         self as pallet_pooled_staking,
@@ -151,6 +152,18 @@ impl pallet_balances::Config for Runtime {
 pub const SHARE_INIT: u128 = MEGA;
 pub const BLOCKS_TO_WAIT: u64 = 2;
 
+pub const SESSION_BLOCK_LENGTH: u64 = 5;
+
+pub struct CurrentSessionIndexGetter;
+
+impl tp_traits::GetSessionIndex<u32> for CurrentSessionIndexGetter {
+    /// Returns current session index.
+    fn session_index() -> u32 {
+        // For tests, let 1 session be 5 blocks
+        (System::block_number() / SESSION_BLOCK_LENGTH) as u32
+    }
+}
+
 parameter_types! {
     pub const StakingAccount: u64 = ACCOUNT_STAKING;
     pub const InitialManualClaimShareValue: u128 = SHARE_INIT;
@@ -158,6 +171,18 @@ parameter_types! {
     pub const MinimumSelfDelegation: u128 = 10 * MEGA;
     pub const RewardsCollatorCommission: Perbill = Perbill::from_percent(20);
     pub const BlocksToWait: u64 = BLOCKS_TO_WAIT;
+    pub const MaxInactiveSessions: u32 = 2;
+}
+pub struct InvulnerableCheckHandler<AccountId>(PhantomData<AccountId>);
+
+impl tp_traits::CheckInvulnerables<AccountId> for InvulnerableCheckHandler<AccountId> {
+    fn is_invulnerable(account: &AccountId) -> bool {
+        if *account == ACCOUNT_CANDIDATE_1 {
+            true
+        } else {
+            false
+        }
+    }
 }
 
 impl pallet_pooled_staking::Config for Runtime {
@@ -176,6 +201,9 @@ impl pallet_pooled_staking::Config for Runtime {
     type EligibleCandidatesFilter = ();
     type WeightInfo = ();
     type RuntimeHoldReason = RuntimeHoldReason;
+    type MaxInactiveSessions = MaxInactiveSessions;
+    type InvulnerablesHelper = InvulnerableCheckHandler<AccountId>;
+    type CurrentSessionIndex = CurrentSessionIndexGetter;
 }
 
 pub trait PoolExt<T: crate::Config>: Pool<T> {
