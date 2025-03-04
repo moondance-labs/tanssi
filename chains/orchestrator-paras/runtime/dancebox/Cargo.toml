@@ -266,9 +266,6 @@ std = [
 	"sp-transaction-pool/std",
 	"sp-trie/std",
 	"sp-version/std",
-	"xcm-builder/std",
-	"xcm-executor/std",
-	"xcm/std",
 	"tanssi-relay-encoder/std",
 	"tanssi-runtime-common/std",
 	"test-relay-sproof-builder/std",
@@ -278,8 +275,11 @@ std = [
 	"tp-xcm-core-buyer/std",
 	"westend-runtime-constants/std",
 	"westend-runtime/std",
+	"xcm-builder/std",
+	"xcm-executor/std",
 	"xcm-primitives/std",
 	"xcm-runtime-apis/std",
+	"xcm/std",
 ]
 
 # Allow to print logs details (no wasm:stripped)
@@ -341,12 +341,12 @@ runtime-benchmarks = [
 	"rococo-runtime/runtime-benchmarks",
 	"sc-service/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
-	"xcm-builder/runtime-benchmarks",
-	"xcm-executor/runtime-benchmarks",
 	"tanssi-runtime-common/runtime-benchmarks",
 	"tp-traits/runtime-benchmarks",
 	"tp-xcm-core-buyer/runtime-benchmarks",
 	"westend-runtime/runtime-benchmarks",
+	"xcm-builder/runtime-benchmarks",
+	"xcm-executor/runtime-benchmarks",
 	"xcm-primitives/runtime-benchmarks",
 	"xcm-runtime-apis/runtime-benchmarks",
 ]

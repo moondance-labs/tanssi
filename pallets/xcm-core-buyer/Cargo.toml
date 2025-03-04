@@ -68,10 +68,10 @@ std = [
 	"sp-keystore/std",
 	"sp-runtime/std",
 	"sp-std/std",
-	"xcm/std",
-	"xcm/std",
 	"tp-traits/std",
 	"tp-xcm-core-buyer/std",
+	"xcm/std",
+	"xcm/std",
 ]
 runtime-benchmarks = [
 	"frame-benchmarking",
