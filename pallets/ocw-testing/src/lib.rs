@@ -15,6 +15,8 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 #![cfg_attr(not(feature = "std"), no_std)]
+use frame_system::offchain::CreateInherent;
+use frame_system::offchain::CreateSignedTransaction;
 use {
     frame_system::{
         self as system, ensure_none, ensure_root, offchain::SubmitTransaction,
@@ -22,8 +24,6 @@ use {
     },
     sp_runtime::transaction_validity::{InvalidTransaction, TransactionValidity, ValidTransaction},
 };
-use frame_system::offchain::CreateInherent;
-use frame_system::offchain::CreateSignedTransaction;
 
 pub use pallet::*;
 #[frame_support::pallet]

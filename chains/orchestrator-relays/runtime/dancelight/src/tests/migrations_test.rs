@@ -14,6 +14,15 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use crate::xcm_config::UniversalLocation;
+use crate::EthereumLocation;
+use snowbridge_core::TokenIdOf;
+use xcm::latest::Junction::GlobalConsensus;
+use xcm::latest::Junctions::Here;
+use xcm::latest::Junctions::X1;
+use xcm::latest::NetworkId;
+use xcm::latest::{Location, Reanchorable, ROCOCO_GENESIS_HASH};
+use xcm_executor::traits::ConvertLocation;
 use {
     crate::{
         tests::common::ExtBuilder, BeefyMmrLeaf, CollatorConfiguration, ExternalValidators,
@@ -27,6 +36,7 @@ use {
     tanssi_runtime_common::migrations::{
         BondedErasTimestampMigration, ExternalValidatorsInitialMigration, HostConfigurationV3,
         MigrateConfigurationAddFullRotationMode, MigrateMMRLeafPallet,
+        SnowbridgeEthereumSystemXcmV5,
     },
     xcm::v3::Weight,
 };

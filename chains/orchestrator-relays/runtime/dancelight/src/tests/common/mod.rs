@@ -1485,6 +1485,9 @@ pub fn generate_ethereum_pub_keys(n: u32) -> Vec<Keypair> {
     keys
 }
 
+use primitives::vstaging::{ClaimQueueOffset, CoreSelector, UMPSignal, UMP_SEPARATOR};
+use primitives::{CandidateDescriptor, CollatorId, CollatorSignature};
+use sp_core::ByteArray;
 use {
     babe_primitives::AuthorityPair as BabeAuthorityPair,
     grandpa_primitives::{
@@ -1492,9 +1495,6 @@ use {
     },
     sp_core::H256,
 };
-use primitives::vstaging::{ClaimQueueOffset, CoreSelector, UMPSignal, UMP_SEPARATOR};
-use primitives::{CandidateDescriptor, CollatorId, CollatorSignature};
-use sp_core::{ByteArray, H256};
 
 pub fn generate_grandpa_equivocation_proof(
     set_id: SetId,
