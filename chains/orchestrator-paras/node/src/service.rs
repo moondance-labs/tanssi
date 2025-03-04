@@ -49,6 +49,7 @@ use {
     nimbus_primitives::{NimbusId, NimbusPair},
     node_common::service::{ManualSealConfiguration, NodeBuilder, NodeBuilderConfig, Sealing},
     pallet_author_noting_runtime_api::AuthorNotingApi,
+    pallet_collator_assignment_runtime_api::CollatorAssignmentApi,
     pallet_data_preservers_runtime_api::DataPreserversApi,
     pallet_registrar_runtime_api::RegistrarApi,
     parity_scale_codec::{Decode, Encode},
@@ -66,6 +67,7 @@ use {
     sc_service::{Configuration, KeystoreContainer, SpawnTaskHandle, TFullBackend, TaskManager},
     sc_telemetry::TelemetryHandle,
     sc_transaction_pool::TransactionPoolHandle,
+    sp_api::ApiExt,
     sp_api::StorageProof,
     sp_consensus::SyncOracle,
     sp_consensus_slots::Slot,
@@ -566,9 +568,21 @@ fn start_consensus_orchestrator(
             let relay_chain_interface = relay_chain_interace_for_cidp.clone();
             let client_set_aside_for_cidp = client_set_aside_for_cidp.clone();
             async move {
-                let para_ids = client_set_aside_for_cidp
+                // We added a new runtime api that allows to know which parachains have
+                // some collators assigned to them. We'll now only include those. For older
+                // runtimes we continue to write all of them.
+                let para_ids = match client_set_aside_for_cidp
                     .runtime_api()
-                    .registered_paras(block_hash)?;
+                    .api_version::<dyn CollatorAssignmentApi<Block, AccountId, ParaId>>(
+                    block_hash,
+                )? {
+                    Some(version) if version >= 2 => client_set_aside_for_cidp
+                        .runtime_api()
+                        .parachains_with_some_collators(block_hash)?,
+                    _ => client_set_aside_for_cidp
+                        .runtime_api()
+                        .registered_paras(block_hash)?,
+                };
                 let para_ids: Vec<_> = para_ids.into_iter().collect();
                 let author_noting_inherent =
                     tp_author_noting_inherent::OwnParachainInherentData::create_at(

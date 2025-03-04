@@ -39,6 +39,16 @@ declare module "@polkadot/api-base/types/consts" {
              **/
             [key: string]: Codec;
         };
+        authorNoting: {
+            /**
+             * Max length of para id list, should be the same value as in other pallets.
+             **/
+            maxContainerChains: u32 & AugmentedConst<ApiType>;
+            /**
+             * Generic const
+             **/
+            [key: string]: Codec;
+        };
         balances: {
             /**
              * The minimum amount required to keep an account open. MUST BE GREATER THAN ZERO!
