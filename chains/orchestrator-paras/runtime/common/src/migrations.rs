@@ -1033,13 +1033,7 @@ where
         )
     }
 
-    #[cfg(feature = "try-runtime")]
     fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
-        Ok(vec![])
-    }
-
-    #[cfg(feature = "try-runtime")]
-    fn post_upgrade(&self, _state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
         use pallet_stream_payment::migrations::OldStreamOf;
         use parity_scale_codec::Encode;
 
