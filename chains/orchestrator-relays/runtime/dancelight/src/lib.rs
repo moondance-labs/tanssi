@@ -627,14 +627,16 @@ pub struct TreasuryBenchmarkHelper<T>(PhantomData<T>);
 
 #[cfg(feature = "runtime-benchmarks")]
 use frame_support::traits::Currency;
-use frame_support::traits::{
-    ExistenceRequirement, OnUnbalanced, ValidatorRegistration, WithdrawReasons,
-};
-use pallet_services_payment::BalanceOf;
 #[cfg(feature = "runtime-benchmarks")]
 use pallet_treasury::ArgumentsFactory;
-use runtime_parachains::configuration::HostConfiguration;
-use sp_runtime::{DispatchError, TransactionOutcome};
+use {
+    frame_support::traits::{
+        ExistenceRequirement, OnUnbalanced, ValidatorRegistration, WithdrawReasons,
+    },
+    pallet_services_payment::BalanceOf,
+    runtime_parachains::configuration::HostConfiguration,
+    sp_runtime::{DispatchError, TransactionOutcome},
+};
 
 #[cfg(feature = "runtime-benchmarks")]
 impl<T> ArgumentsFactory<(), T::AccountId> for TreasuryBenchmarkHelper<T>
@@ -1375,8 +1377,10 @@ impl pallet_beefy_mmr::Config for Runtime {
 
 impl paras_sudo_wrapper::Config for Runtime {}
 
-use pallet_pooled_staking::traits::{IsCandidateEligible, Timer};
-use pallet_staking::SessionInterface;
+use {
+    pallet_pooled_staking::traits::{IsCandidateEligible, Timer},
+    pallet_staking::SessionInterface,
+};
 
 pub struct DancelightSessionInterface;
 impl SessionInterface<AccountId> for DancelightSessionInterface {

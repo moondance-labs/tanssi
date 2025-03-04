@@ -42,8 +42,7 @@ use {
     pallet_xcm::EnsureXcm,
     parity_scale_codec::DecodeAll,
     snowbridge_beacon_primitives::{Fork, ForkVersions},
-    snowbridge_core::inbound::Message,
-    snowbridge_core::{gwei, meth, Channel, PricingParameters, Rewards},
+    snowbridge_core::{gwei, inbound::Message, meth, Channel, PricingParameters, Rewards},
     snowbridge_pallet_inbound_queue::RewardProcessor,
     snowbridge_pallet_outbound_queue::OnNewCommitment,
     snowbridge_router_primitives::inbound::{
@@ -319,14 +318,14 @@ where
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmark_helper {
-    use snowbridge_beacon_primitives::BeaconHeader;
-    use snowbridge_core::Channel;
-    use snowbridge_pallet_system::Channels;
-    use snowbridge_router_primitives::inbound::envelope::Envelope;
-    use snowbridge_router_primitives::inbound::MessageProcessor;
-    use sp_core::H256;
     use {
-        crate::EthereumBeaconClient, crate::Runtime, crate::RuntimeOrigin, xcm::latest::Location,
+        crate::{EthereumBeaconClient, Runtime, RuntimeOrigin},
+        snowbridge_beacon_primitives::BeaconHeader,
+        snowbridge_core::Channel,
+        snowbridge_pallet_system::Channels,
+        snowbridge_router_primitives::inbound::{envelope::Envelope, MessageProcessor},
+        sp_core::H256,
+        xcm::latest::Location,
     };
 
     pub struct EthSystemBenchHelper;
