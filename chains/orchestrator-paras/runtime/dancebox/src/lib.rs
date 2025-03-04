@@ -1181,13 +1181,14 @@ impl pallet_data_preservers::Config for Runtime {
 
 impl pallet_author_noting::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type ContainerChains = Registrar;
+    type ContainerChains = CollatorAssignment;
     type SlotBeacon = dp_consensus::AuraDigestSlotBeacon<Runtime>;
     type ContainerChainAuthor = CollatorAssignment;
     type AuthorNotingHook = (XcmCoreBuyer, InflationRewards, ServicesPayment);
     type RelayOrPara = pallet_author_noting::ParaMode<
         cumulus_pallet_parachain_system::RelaychainDataProvider<Self>,
     >;
+    type MaxContainerChains = MaxLengthParaIds;
     type WeightInfo = weights::pallet_author_noting::SubstrateWeight<Runtime>;
 }
 
@@ -2547,6 +2548,26 @@ impl_runtime_apis! {
             } else {
                 assigned_collators.container_chains.get(&para_id).cloned()
             }
+        }
+
+        /// Returns the list of `ParaId` of registered chains with at least some
+        /// collators. This filters out parachains with no assigned collators.
+        /// Since runtime APIs are called on top of a parent block, we need to be carefull
+        /// at session boundaries. If the next block will change session, this function returns
+        /// the parachains relevant for the next session.
+        fn parachains_with_some_collators() -> Vec<ParaId> {
+            use tp_traits::{GetContainerChainsWithCollators, ForSession};
+
+            // We should return the container-chains for the session in which we are kicking in
+            let parent_number = System::block_number();
+            let should_end_session = <Runtime as pallet_session::Config>::ShouldEndSession::should_end_session(parent_number + 1);
+            let for_session = if should_end_session { ForSession::Next } else { ForSession::Current };
+
+            CollatorAssignment::container_chains_with_collators(for_session)
+                .into_iter()
+                .filter_map(
+                    |(para_id, collators)| (!collators.is_empty()).then_some(para_id)
+                ).collect()
         }
     }
 

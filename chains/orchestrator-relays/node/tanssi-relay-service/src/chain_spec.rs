@@ -238,8 +238,7 @@ pub fn dancelight_local_testnet_config(
         .collect();
 
     Ok(DancelightChainSpec::builder(
-        dancelight::fast_runtime_binary::WASM_BINARY
-            .ok_or("Dancelight development wasm not available")?,
+        dancelight::WASM_BINARY.ok_or("Dancelight development wasm not available")?,
         Default::default(),
     )
     .with_name("Dancelight Local Testnet")
