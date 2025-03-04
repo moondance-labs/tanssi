@@ -120,15 +120,13 @@ use {
         prelude::*,
     },
     sp_version::RuntimeVersion,
-    xcm::{
-        IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation, VersionedXcm,
-    },
     tp_traits::{
         apply, derive_storage_traits, GetContainerChainAuthor, GetHostConfiguration,
         GetSessionContainerChains, MaybeSelfChainBlockAuthor, ParaIdAssignmentHooks,
         RelayStorageRootProvider, RemoveInvulnerables, SlotFrequency,
     },
     tp_xcm_core_buyer::BuyCoreCollatorProof,
+    xcm::{IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation, VersionedXcm},
     xcm_runtime_apis::{
         dry_run::{CallDryRunEffects, Error as XcmDryRunApiError, XcmDryRunEffects},
         fees::Error as XcmPaymentApiError,

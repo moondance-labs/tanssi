@@ -81,9 +81,7 @@ use {
     },
     sp_std::prelude::*,
     sp_version::RuntimeVersion,
-    xcm::{
-        IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation, VersionedXcm,
-    },
+    xcm::{IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation, VersionedXcm},
     xcm_runtime_apis::{
         dry_run::{CallDryRunEffects, Error as XcmDryRunApiError, XcmDryRunEffects},
         fees::Error as XcmPaymentApiError,

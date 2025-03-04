@@ -32,8 +32,8 @@ use {
         VersionedLocation, VersionedXcm,
     },
     xcm_builder::{ParentIsPreset, SiblingParachainConvertsVia},
-    xcm_executor::traits::ConvertLocation,
     xcm_emulator::{assert_expected_events, Chain},
+    xcm_executor::traits::ConvertLocation,
 };
 
 #[test]

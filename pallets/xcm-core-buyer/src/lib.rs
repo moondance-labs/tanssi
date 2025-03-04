@@ -48,15 +48,15 @@ use {
     sp_consensus_slots::Slot,
     sp_runtime::traits::{AccountIdConversion, Convert, Get},
     sp_std::{vec, vec::Vec},
-    xcm::{
-        latest::{Asset, Assets, InteriorLocation, Response, Xcm},
-        prelude::*,
-    },
     tp_traits::{
         AuthorNotingHook, AuthorNotingInfo, LatestAuthorInfoFetcher, ParathreadParams,
         SlotFrequency,
     },
     tp_xcm_core_buyer::BuyCoreCollatorProof,
+    xcm::{
+        latest::{Asset, Assets, InteriorLocation, Response, Xcm},
+        prelude::*,
+    },
 };
 
 pub trait XCMNotifier<T: Config> {

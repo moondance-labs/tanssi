@@ -941,7 +941,7 @@ pub mod snowbridge_system_migration {
     use alloc::vec::Vec;
     use frame_support::pallet_prelude::*;
     use snowbridge_core::TokenId;
-    use xcm as xcm;
+    use xcm;
 
     // Important: this cannot be called OldNativeToForeignId because that will be a different storage
     // item. Polkadot has a bug here.

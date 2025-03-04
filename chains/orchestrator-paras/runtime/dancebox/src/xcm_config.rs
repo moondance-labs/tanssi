@@ -20,9 +20,9 @@ use crate::{CollatorAssignment, Session, System};
 use pallet_session::ShouldEndSession;
 #[cfg(feature = "runtime-benchmarks")]
 use sp_std::{collections::btree_map::BTreeMap, vec};
-use xcm::latest::WESTEND_GENESIS_HASH;
 #[cfg(feature = "runtime-benchmarks")]
 use tp_traits::GetContainerChainAuthor;
+use xcm::latest::WESTEND_GENESIS_HASH;
 use {
     super::{
         currency::MICRODANCE, weights::xcm::XcmWeight as XcmGenericWeights, AccountId,
@@ -53,6 +53,8 @@ use {
     sp_core::{ConstU32, MaxEncodedLen},
     sp_runtime::{transaction_validity::TransactionPriority, Perbill},
     sp_std::vec::Vec,
+    tp_traits::ParathreadParams,
+    tp_xcm_commons::NativeAssetReserve,
     xcm::latest::prelude::*,
     xcm_builder::{
         AccountId32Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
@@ -63,8 +65,6 @@ use {
         UsingComponents, WeightInfoBounds, WithComputedOrigin,
     },
     xcm_executor::{traits::JustTry, XcmExecutor},
-    tp_traits::ParathreadParams,
-    tp_xcm_commons::NativeAssetReserve,
 };
 
 parameter_types! {
@@ -405,11 +405,8 @@ impl pallet_message_queue::Config for Runtime {
         cumulus_primitives_core::AggregateMessageOrigin,
     >;
     #[cfg(not(feature = "runtime-benchmarks"))]
-    type MessageProcessor = xcm_builder::ProcessXcmMessage<
-        AggregateMessageOrigin,
-        XcmExecutor<XcmConfig>,
-        RuntimeCall,
-    >;
+    type MessageProcessor =
+        xcm_builder::ProcessXcmMessage<AggregateMessageOrigin, XcmExecutor<XcmConfig>, RuntimeCall>;
     type Size = u32;
     // The XCMP queue pallet is only ever able to handle the `Sibling(ParaId)` origin:
     type QueueChangeHandler = NarrowOriginToSibling<XcmpQueue>;

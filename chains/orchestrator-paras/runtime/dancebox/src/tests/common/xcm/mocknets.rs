@@ -30,8 +30,8 @@ use {
     sp_runtime::generic::DigestItem,
     xcm::prelude::*,
     xcm_builder::{ParentIsPreset, SiblingParachainConvertsVia},
-    xcm_executor::traits::ConvertLocation,
     xcm_emulator::{decl_test_networks, decl_test_relay_chains, Chain},
+    xcm_executor::traits::ConvertLocation,
 };
 
 decl_test_relay_chains! {

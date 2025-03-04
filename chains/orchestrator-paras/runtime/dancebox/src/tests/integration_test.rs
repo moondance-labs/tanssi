@@ -47,13 +47,13 @@ use {
         DigestItem, FixedU128,
     },
     sp_std::vec,
-    xcm::latest::prelude::*,
     tanssi_runtime_common::migrations::{
         HostConfigurationV3, MigrateConfigurationAddFullRotationMode,
         MigrateServicesPaymentAddCollatorAssignmentCredits, RegistrarPendingVerificationValueToMap,
     },
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
     tp_traits::{ContainerChainBlockInfo, SlotFrequency},
+    xcm::latest::prelude::*,
 };
 
 #[test]

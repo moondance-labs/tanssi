@@ -37,8 +37,8 @@ use {
         opaque::latest::WESTEND_GENESIS_HASH,
         VersionedLocation, VersionedXcm,
     },
-    xcm_executor::traits::ConvertLocation,
     xcm_emulator::{assert_expected_events, Chain},
+    xcm_executor::traits::ConvertLocation,
 };
 
 #[test]
