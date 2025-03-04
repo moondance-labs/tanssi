@@ -24,8 +24,6 @@ include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
 extern crate alloc;
 
-use frame_support::storage::{with_storage_layer, with_transaction};
-use frame_support::traits::{ExistenceRequirement, WithdrawReasons};
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 use {
