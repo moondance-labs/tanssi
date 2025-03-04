@@ -182,14 +182,6 @@ impl_runtime_weights!(dancelight_runtime_constants);
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-/// Provides the `WASM_BINARY` build with `fast-runtime` feature enabled.
-///
-/// This is for example useful for local test chains.
-#[cfg(feature = "std")]
-pub mod fast_runtime_binary {
-    include!(concat!(env!("OUT_DIR"), "/fast_runtime_binary.rs"));
-}
-
 /// Runtime version (Dancelight).
 #[sp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
@@ -627,14 +619,16 @@ pub struct TreasuryBenchmarkHelper<T>(PhantomData<T>);
 
 #[cfg(feature = "runtime-benchmarks")]
 use frame_support::traits::Currency;
-use frame_support::traits::{
-    ExistenceRequirement, OnUnbalanced, ValidatorRegistration, WithdrawReasons,
-};
-use pallet_services_payment::BalanceOf;
 #[cfg(feature = "runtime-benchmarks")]
 use pallet_treasury::ArgumentsFactory;
-use runtime_parachains::configuration::HostConfiguration;
-use sp_runtime::{DispatchError, TransactionOutcome};
+use {
+    frame_support::traits::{
+        ExistenceRequirement, OnUnbalanced, ValidatorRegistration, WithdrawReasons,
+    },
+    pallet_services_payment::BalanceOf,
+    runtime_parachains::configuration::HostConfiguration,
+    sp_runtime::{DispatchError, TransactionOutcome},
+};
 
 #[cfg(feature = "runtime-benchmarks")]
 impl<T> ArgumentsFactory<(), T::AccountId> for TreasuryBenchmarkHelper<T>
@@ -1375,8 +1369,10 @@ impl pallet_beefy_mmr::Config for Runtime {
 
 impl paras_sudo_wrapper::Config for Runtime {}
 
-use pallet_pooled_staking::traits::{IsCandidateEligible, Timer};
-use pallet_staking::SessionInterface;
+use {
+    pallet_pooled_staking::traits::{IsCandidateEligible, Timer},
+    pallet_staking::SessionInterface,
+};
 
 pub struct DancelightSessionInterface;
 impl SessionInterface<AccountId> for DancelightSessionInterface {
