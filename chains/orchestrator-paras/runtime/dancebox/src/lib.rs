@@ -120,7 +120,7 @@ use {
         prelude::*,
     },
     sp_version::RuntimeVersion,
-    staging_xcm::{
+    xcm::{
         IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation, VersionedXcm,
     },
     tp_traits::{
@@ -2270,7 +2270,7 @@ impl_runtime_apis! {
                 }
             }
 
-            use staging_xcm::latest::prelude::*;
+            use xcm::latest::prelude::*;
             use crate::xcm_config::SelfReserve;
             parameter_types! {
                 pub ExistentialDepositAsset: Option<Asset> = Some((
@@ -2776,7 +2776,7 @@ impl_runtime_apis! {
     }
 
     impl xcm_runtime_apis::fees::XcmPaymentApi<Block> for Runtime {
-        fn query_acceptable_payment_assets(xcm_version: staging_xcm::Version) -> Result<Vec<VersionedAssetId>, XcmPaymentApiError> {
+        fn query_acceptable_payment_assets(xcm_version: xcm::Version) -> Result<Vec<VersionedAssetId>, XcmPaymentApiError> {
             if !matches!(xcm_version, 3..=5) {
                 return Err(XcmPaymentApiError::UnhandledXcmVersion);
             }
@@ -2809,8 +2809,8 @@ impl_runtime_apis! {
                 Ok(WeightToFee::weight_to_fee(&weight))
             } else {
                 let native_fee = WeightToFee::weight_to_fee(&weight);
-                let asset_v5: staging_xcm::latest::AssetId = asset.try_into().map_err(|_| XcmPaymentApiError::VersionedConversionFailed)?;
-                let location: staging_xcm::latest::Location = asset_v5.0;
+                let asset_v5: xcm::latest::AssetId = asset.try_into().map_err(|_| XcmPaymentApiError::VersionedConversionFailed)?;
+                let location: xcm::latest::Location = asset_v5.0;
                 let asset_id = pallet_foreign_asset_creator::ForeignAssetToAssetId::<Runtime>::get(location).ok_or(XcmPaymentApiError::AssetNotFound)?;
                 let asset_rate = AssetRate::to_asset_balance(native_fee, asset_id);
                 match asset_rate {

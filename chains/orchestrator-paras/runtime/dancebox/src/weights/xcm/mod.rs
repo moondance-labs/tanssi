@@ -21,7 +21,7 @@ use {
     frame_support::{weights::Weight, BoundedVec},
     pallet_xcm_benchmarks_generic::WeightInfo as XcmGeneric,
     sp_std::prelude::*,
-    staging_xcm::{
+    xcm::{
         latest::{prelude::*, AssetTransferFilter, Weight as XCMWeight},
         DoubleEncoded,
     },

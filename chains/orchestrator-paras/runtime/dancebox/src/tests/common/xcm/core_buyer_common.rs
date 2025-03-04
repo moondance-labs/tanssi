@@ -38,8 +38,8 @@ use {
     polkadot_runtime_parachains::{configuration, on_demand as parachains_assigner_on_demand},
     sp_core::Pair,
     sp_runtime::{traits::ValidateUnsigned, AccountId32},
-    staging_xcm::v3::QueryId,
-    staging_xcm_executor::traits::ConvertLocation,
+    xcm::v3::QueryId,
+    xcm_executor::traits::ConvertLocation,
     tp_traits::{ParaId, SlotFrequency},
     xcm_emulator::{assert_expected_events, Chain, RelayChain},
 };

@@ -26,7 +26,7 @@ use {
     },
     frame_support::{assert_ok, traits::EnsureOrigin},
     paste::paste,
-    staging_xcm::{
+    xcm::{
         latest::prelude::{Junctions::X1, *},
         VersionedLocation, VersionedXcm,
     },

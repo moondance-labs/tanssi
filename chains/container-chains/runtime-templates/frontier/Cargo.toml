@@ -92,9 +92,9 @@ pallet-xcm = { workspace = true }
 pallet-xcm-benchmarks = { workspace = true, optional = true }
 polkadot-parachain-primitives = { workspace = true }
 polkadot-runtime-common = { workspace = true }
-staging-xcm = { workspace = true }
-staging-xcm-builder = { workspace = true }
-staging-xcm-executor = { workspace = true }
+xcm = { workspace = true }
+xcm-builder = { workspace = true }
+xcm-executor = { workspace = true }
 xcm-runtime-apis = { workspace = true }
 
 # Cumulus
@@ -222,9 +222,9 @@ std = [
 	"sp-transaction-pool/std",
 	"sp-trie/std",
 	"sp-version/std",
-	"staging-xcm-builder/std",
-	"staging-xcm-executor/std",
-	"staging-xcm/std",
+	"xcm-builder/std",
+	"xcm-executor/std",
+	"xcm/std",
 	"tanssi-runtime-common/std",
 	"xcm-primitives/std",
 	"xcm-runtime-apis/std",
@@ -274,8 +274,8 @@ runtime-benchmarks = [
 	"polkadot-parachain-primitives/runtime-benchmarks",
 	"polkadot-runtime-common/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
-	"staging-xcm-builder/runtime-benchmarks",
-	"staging-xcm-executor/runtime-benchmarks",
+	"xcm-builder/runtime-benchmarks",
+	"xcm-executor/runtime-benchmarks",
 	"tanssi-runtime-common/runtime-benchmarks",
 	"xcm-primitives/runtime-benchmarks",
 	"xcm-runtime-apis/runtime-benchmarks",

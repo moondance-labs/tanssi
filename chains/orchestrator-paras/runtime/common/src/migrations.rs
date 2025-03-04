@@ -725,7 +725,7 @@ impl<Runtime> Migration for ForeignAssetCreatorMigration<Runtime>
 where
     Runtime: pallet_foreign_asset_creator::Config,
     <Runtime as pallet_foreign_asset_creator::Config>::ForeignAsset:
-        TryFrom<staging_xcm::v3::MultiLocation>,
+        TryFrom<xcm::v3::MultiLocation>,
 {
     fn friendly_name(&self) -> &str {
         "TM_ForeignAssetCreatorMigration"
@@ -734,7 +734,7 @@ where
     fn migrate(&self, _available_weight: Weight) -> Weight {
         use frame_support::pallet_prelude::*;
 
-        use staging_xcm::v3::MultiLocation as OldLocation;
+        use xcm::v3::MultiLocation as OldLocation;
 
         let pallet_prefix = AssetIdToForeignAsset::<Runtime>::pallet_prefix();
         let asset_id_to_foreign_asset_storage_prefix =
@@ -941,7 +941,7 @@ pub mod snowbridge_system_migration {
     use alloc::vec::Vec;
     use frame_support::pallet_prelude::*;
     use snowbridge_core::TokenId;
-    use staging_xcm as xcm;
+    use xcm as xcm;
 
     // Important: this cannot be called OldNativeToForeignId because that will be a different storage
     // item. Polkadot has a bug here.

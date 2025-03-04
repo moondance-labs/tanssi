@@ -81,7 +81,7 @@ use {
     },
     sp_std::prelude::*,
     sp_version::RuntimeVersion,
-    staging_xcm::{
+    xcm::{
         IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation, VersionedXcm,
     },
     xcm_runtime_apis::{
@@ -977,7 +977,7 @@ impl_runtime_apis! {
         ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, alloc::string::String> {
             use frame_benchmarking::{BenchmarkBatch, Benchmarking, BenchmarkError};
             use sp_core::storage::TrackedStorageKey;
-            use staging_xcm::latest::prelude::*;
+            use xcm::latest::prelude::*;
             impl frame_system_benchmarking::Config for Runtime {
                 fn setup_set_code_requirements(code: &sp_std::vec::Vec<u8>) -> Result<(), BenchmarkError> {
                     ParachainSystem::initialize_for_set_code_benchmark(code.len() as u32);
@@ -1258,7 +1258,7 @@ impl_runtime_apis! {
     }
 
     impl xcm_runtime_apis::fees::XcmPaymentApi<Block> for Runtime {
-        fn query_acceptable_payment_assets(xcm_version: staging_xcm::Version) -> Result<Vec<VersionedAssetId>, XcmPaymentApiError> {
+        fn query_acceptable_payment_assets(xcm_version: xcm::Version) -> Result<Vec<VersionedAssetId>, XcmPaymentApiError> {
             if !matches!(xcm_version, 3..=5) {
                 return Err(XcmPaymentApiError::UnhandledXcmVersion);
             }
@@ -1291,8 +1291,8 @@ impl_runtime_apis! {
                 Ok(WeightToFee::weight_to_fee(&weight))
             } else {
                 let native_fee = WeightToFee::weight_to_fee(&weight);
-                let asset_v5: staging_xcm::latest::AssetId = asset.try_into().map_err(|_| XcmPaymentApiError::VersionedConversionFailed)?;
-                let location: staging_xcm::latest::Location = asset_v5.0;
+                let asset_v5: xcm::latest::AssetId = asset.try_into().map_err(|_| XcmPaymentApiError::VersionedConversionFailed)?;
+                let location: xcm::latest::Location = asset_v5.0;
                 let asset_id = pallet_foreign_asset_creator::ForeignAssetToAssetId::<Runtime>::get(location).ok_or(XcmPaymentApiError::AssetNotFound)?;
                 let asset_rate = AssetRate::to_asset_balance(native_fee, asset_id);
                 match asset_rate {

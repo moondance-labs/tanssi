@@ -38,7 +38,7 @@ use {
         BuildStorage, RuntimeAppPublic,
     },
     sp_std::collections::btree_map::BTreeMap,
-    staging_xcm::{
+    xcm::{
         latest::{Assets, Location, SendError, SendResult, SendXcm, Xcm, XcmHash},
         opaque::latest::WESTEND_GENESIS_HASH,
         prelude::{GlobalConsensus, InteriorLocation, Junctions::X2, NetworkId, Parachain},

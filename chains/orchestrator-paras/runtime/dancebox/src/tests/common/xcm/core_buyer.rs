@@ -21,7 +21,7 @@ use {
         *,
     },
     polkadot_runtime_parachains::on_demand as parachains_assigner_on_demand,
-    staging_xcm::latest::{MaybeErrorCode, Response},
+    xcm::latest::{MaybeErrorCode, Response},
     tp_traits::ParaId,
     xcm_emulator::{assert_expected_events, Chain},
 };

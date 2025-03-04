@@ -54,7 +54,7 @@ sp-core = { workspace = true }
 sp-runtime = { workspace = true }
 sp-staking = { workspace = true }
 sp-std = { workspace = true }
-staging-xcm = { workspace = true }
+xcm = { workspace = true }
 
 # Cumulus
 cumulus-primitives-core = { workspace = true }
@@ -94,7 +94,7 @@ std = [
 	"sp-runtime/std",
 	"sp-staking/std",
 	"sp-std/std",
-	"staging-xcm/std",
+	"xcm/std",
 ]
 
 runtime-benchmarks = [

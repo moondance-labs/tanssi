@@ -48,15 +48,15 @@ use {
     sp_core::{ConstU32, H160},
     sp_runtime::Perbill,
     sp_std::vec::Vec,
-    staging_xcm::latest::prelude::*,
-    staging_xcm_builder::{
+    xcm::latest::prelude::*,
+    xcm_builder::{
         AccountKey20Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
         AllowTopLevelPaidExecutionFrom, ConvertedConcreteId, EnsureXcmOrigin, FungibleAdapter,
         IsConcrete, ParentIsPreset, RelayChainAsNative, SiblingParachainAsNative,
         SiblingParachainConvertsVia, SignedAccountKey20AsNative, SovereignSignedViaLocation,
         TakeWeightCredit, UsingComponents, WeightInfoBounds, WithComputedOrigin,
     },
-    staging_xcm_executor::XcmExecutor,
+    xcm_executor::XcmExecutor,
     xcm_primitives::AccountIdAssetIdConversion,
 };
 parameter_types! {
@@ -118,9 +118,9 @@ pub type XcmBarrier = (
 // For benchmarking, we cannot use the describeFamily
 // the benchmark is written to be able to convert an AccountId32, but describeFamily prevents this
 #[cfg(not(feature = "runtime-benchmarks"))]
-type Descriptor = staging_xcm_builder::DescribeFamily<staging_xcm_builder::DescribeAllTerminal>;
+type Descriptor = xcm_builder::DescribeFamily<xcm_builder::DescribeAllTerminal>;
 #[cfg(feature = "runtime-benchmarks")]
-type Descriptor = staging_xcm_builder::DescribeAllTerminal;
+type Descriptor = xcm_builder::DescribeAllTerminal;
 
 /// Type for specifying how a `Location` can be converted into an `AccountId`. This is used
 /// when determining ownership of accounts for asset transacting and when attempting to use XCM
@@ -133,7 +133,7 @@ pub type LocationToAccountId = (
     // If we receive a Location of type AccountKey20, just generate a native account
     AccountKey20Aliases<RelayNetwork, AccountId>,
     // Generate remote accounts according to polkadot standards
-    staging_xcm_builder::HashedDescription<AccountId, Descriptor>,
+    xcm_builder::HashedDescription<AccountId, Descriptor>,
 );
 
 /// Local origins on this chain are allowed to dispatch XCM sends/executions.
@@ -189,7 +189,7 @@ pub type XcmRouter = (
 );
 
 pub struct XcmConfig;
-impl staging_xcm_executor::Config for XcmConfig {
+impl xcm_executor::Config for XcmConfig {
     type RuntimeCall = RuntimeCall;
     type XcmSender = XcmRouter;
     type AssetTransactor = AssetTransactors;
@@ -224,7 +224,7 @@ impl staging_xcm_executor::Config for XcmConfig {
     type CallDispatcher = RuntimeCall;
     type SafeCallFilter = Everything;
     type Aliasers = Nothing;
-    type TransactionalProcessor = staging_xcm_builder::FrameTransactionalProcessor;
+    type TransactionalProcessor = xcm_builder::FrameTransactionalProcessor;
     type HrmpNewChannelOpenRequestHandler = ();
     type HrmpChannelAcceptedHandler = ();
     type HrmpChannelClosingHandler = ();
@@ -295,7 +295,7 @@ impl pallet_message_queue::Config for Runtime {
         cumulus_primitives_core::AggregateMessageOrigin,
     >;
     #[cfg(not(feature = "runtime-benchmarks"))]
-    type MessageProcessor = staging_xcm_builder::ProcessXcmMessage<
+    type MessageProcessor = xcm_builder::ProcessXcmMessage<
         AggregateMessageOrigin,
         XcmExecutor<XcmConfig>,
         RuntimeCall,
@@ -465,8 +465,8 @@ impl pallet_xcm_executor_utils::Config for Runtime {
 
 use {
     crate::ForeignAssets,
-    staging_xcm_builder::{FungiblesAdapter, NoChecking},
-    staging_xcm_executor::traits::JustTry,
+    xcm_builder::{FungiblesAdapter, NoChecking},
+    xcm_executor::traits::JustTry,
 };
 
 /// Means for transacting foreign assets from different global consensus.

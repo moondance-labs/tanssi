@@ -20,7 +20,7 @@ use crate::{CollatorAssignment, Session, System};
 use pallet_session::ShouldEndSession;
 #[cfg(feature = "runtime-benchmarks")]
 use sp_std::{collections::btree_map::BTreeMap, vec};
-use staging_xcm::latest::WESTEND_GENESIS_HASH;
+use xcm::latest::WESTEND_GENESIS_HASH;
 #[cfg(feature = "runtime-benchmarks")]
 use tp_traits::GetContainerChainAuthor;
 use {
@@ -53,8 +53,8 @@ use {
     sp_core::{ConstU32, MaxEncodedLen},
     sp_runtime::{transaction_validity::TransactionPriority, Perbill},
     sp_std::vec::Vec,
-    staging_xcm::latest::prelude::*,
-    staging_xcm_builder::{
+    xcm::latest::prelude::*,
+    xcm_builder::{
         AccountId32Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
         AllowTopLevelPaidExecutionFrom, ConvertedConcreteId, EnsureXcmOrigin, FungibleAdapter,
         FungiblesAdapter, IsConcrete, NoChecking, ParentIsPreset, RelayChainAsNative,
@@ -62,7 +62,7 @@ use {
         SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId,
         UsingComponents, WeightInfoBounds, WithComputedOrigin,
     },
-    staging_xcm_executor::{traits::JustTry, XcmExecutor},
+    xcm_executor::{traits::JustTry, XcmExecutor},
     tp_traits::ParathreadParams,
     tp_xcm_commons::NativeAssetReserve,
 };
@@ -134,9 +134,9 @@ pub type LocationToAccountId = (
     // If we receive a Location of type AccountKey20, just generate a native account
     AccountId32Aliases<RelayNetwork, AccountId>,
     // Generate remote accounts according to polkadot standards
-    staging_xcm_builder::HashedDescription<
+    xcm_builder::HashedDescription<
         AccountId,
-        staging_xcm_builder::DescribeFamily<staging_xcm_builder::DescribeAllTerminal>,
+        xcm_builder::DescribeFamily<xcm_builder::DescribeAllTerminal>,
     >,
 );
 
@@ -193,7 +193,7 @@ pub type XcmRouter = (
 );
 
 pub struct XcmConfig;
-impl staging_xcm_executor::Config for XcmConfig {
+impl xcm_executor::Config for XcmConfig {
     type RuntimeCall = RuntimeCall;
     type XcmSender = XcmRouter;
     type AssetTransactor = AssetTransactors;
@@ -230,7 +230,7 @@ impl staging_xcm_executor::Config for XcmConfig {
     type CallDispatcher = RuntimeCall;
     type SafeCallFilter = Everything;
     type Aliasers = Nothing;
-    type TransactionalProcessor = staging_xcm_builder::FrameTransactionalProcessor;
+    type TransactionalProcessor = xcm_builder::FrameTransactionalProcessor;
     type HrmpNewChannelOpenRequestHandler = ();
     type HrmpChannelAcceptedHandler = ();
     type HrmpChannelClosingHandler = ();
@@ -405,7 +405,7 @@ impl pallet_message_queue::Config for Runtime {
         cumulus_primitives_core::AggregateMessageOrigin,
     >;
     #[cfg(not(feature = "runtime-benchmarks"))]
-    type MessageProcessor = staging_xcm_builder::ProcessXcmMessage<
+    type MessageProcessor = xcm_builder::ProcessXcmMessage<
         AggregateMessageOrigin,
         XcmExecutor<XcmConfig>,
         RuntimeCall,

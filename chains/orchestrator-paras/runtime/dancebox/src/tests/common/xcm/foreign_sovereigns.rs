@@ -28,11 +28,11 @@ use {
         assert_ok,
         weights::{Weight, WeightToFee},
     },
-    staging_xcm::{
+    xcm::{
         latest::prelude::{Junctions::X1, *},
         VersionedLocation, VersionedXcm,
     },
-    staging_xcm_executor::traits::ConvertLocation,
+    xcm_executor::traits::ConvertLocation,
     westend_runtime_constants::currency::UNITS as WND,
     xcm_emulator::{assert_expected_events, Chain},
 };

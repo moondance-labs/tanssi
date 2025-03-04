@@ -48,7 +48,7 @@ use {
     sp_consensus_slots::Slot,
     sp_runtime::traits::{AccountIdConversion, Convert, Get},
     sp_std::{vec, vec::Vec},
-    staging_xcm::{
+    xcm::{
         latest::{Asset, Assets, InteriorLocation, Response, Xcm},
         prelude::*,
     },

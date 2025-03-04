@@ -17,13 +17,13 @@
 pub mod pallet_xcm_benchmarks_generic;
 
 use frame_support::BoundedVec;
-use staging_xcm::latest::AssetTransferFilter;
+use xcm::latest::AssetTransferFilter;
 use {
     crate::Runtime,
     frame_support::weights::Weight,
     pallet_xcm_benchmarks_generic::WeightInfo as XcmGeneric,
     sp_std::prelude::*,
-    staging_xcm::{
+    xcm::{
         latest::{prelude::*, Weight as XCMWeight},
         DoubleEncoded,
     },

@@ -47,7 +47,7 @@ use {
         DigestItem, FixedU128,
     },
     sp_std::vec,
-    staging_xcm::latest::prelude::*,
+    xcm::latest::prelude::*,
     tanssi_runtime_common::migrations::{
         HostConfigurationV3, MigrateConfigurationAddFullRotationMode,
         MigrateServicesPaymentAddCollatorAssignmentCredits, RegistrarPendingVerificationValueToMap,

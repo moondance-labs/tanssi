@@ -28,9 +28,9 @@ use {
     parity_scale_codec::Encode,
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_runtime::generic::DigestItem,
-    staging_xcm::prelude::*,
-    staging_xcm_builder::{ParentIsPreset, SiblingParachainConvertsVia},
-    staging_xcm_executor::traits::ConvertLocation,
+    xcm::prelude::*,
+    xcm_builder::{ParentIsPreset, SiblingParachainConvertsVia},
+    xcm_executor::traits::ConvertLocation,
     xcm_emulator::{decl_test_networks, decl_test_relay_chains, Chain},
 };
 
