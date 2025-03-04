@@ -33,24 +33,27 @@ use {
     frame_system::pallet_prelude::*,
     log::log,
     pallet_staking::SessionInterface,
-    parity_scale_codec::FullCodec,
-    parity_scale_codec::{Decode, Encode},
+    parity_scale_codec::{Decode, Encode, FullCodec},
     sp_core::H256,
-    sp_runtime::traits::{Convert, Debug, One, Saturating, Zero},
-    sp_runtime::DispatchResult,
-    sp_runtime::Perbill,
+    sp_runtime::{
+        traits::{Convert, Debug, One, Saturating, Zero},
+        DispatchResult, Perbill,
+    },
     sp_staking::{
         offence::{OffenceDetails, OnOffenceHandler},
         EraIndex, SessionIndex,
     },
-    sp_std::collections::vec_deque::VecDeque,
-    sp_std::vec,
-    sp_std::vec::Vec,
-    tp_traits::{EraIndexProvider, ExternalIndexProvider, InvulnerablesProvider, OnEraStart},
+    sp_std::{collections::vec_deque::VecDeque, vec, vec::Vec},
+    tp_traits::{
+        apply, derive_storage_traits, EraIndexProvider, ExternalIndexProvider,
+        InvulnerablesProvider, OnEraStart,
+    },
 };
 
-use snowbridge_core::ChannelId;
-use tp_bridge::{Command, DeliverMessage, Message, SlashData, TicketInfo, ValidateMessage};
+use {
+    snowbridge_core::ChannelId,
+    tp_bridge::{Command, DeliverMessage, Message, SlashData, TicketInfo, ValidateMessage},
+};
 
 pub use pallet::*;
 
@@ -174,6 +177,15 @@ pub mod pallet {
         EthereumDeliverFail,
     }
 
+    #[apply(derive_storage_traits)]
+    #[derive(MaxEncodedLen, Default)]
+    pub enum SlashingModeOption {
+        #[default]
+        Enabled,
+        LogOnly,
+        Disabled,
+    }
+
     #[pallet::pallet]
     pub struct Pallet<T>(PhantomData<T>);
 
@@ -210,6 +222,10 @@ pub mod pallet {
     #[pallet::getter(fn unreported_slashes)]
     pub type UnreportedSlashesQueue<T: Config> =
         StorageValue<_, VecDeque<Slash<T::AccountId, T::SlashId>>, ValueQuery>;
+
+    // Turns slashing on or off
+    #[pallet::storage]
+    pub type SlashingMode<T: Config> = StorageValue<_, SlashingModeOption, ValueQuery>;
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
@@ -351,6 +367,16 @@ pub mod pallet {
 
             Ok(())
         }
+
+        #[pallet::call_index(3)]
+        #[pallet::weight(T::WeightInfo::set_slashing_mode())]
+        pub fn set_slashing_mode(origin: OriginFor<T>, mode: SlashingModeOption) -> DispatchResult {
+            ensure_root(origin)?;
+
+            SlashingMode::<T>::put(mode);
+
+            Ok(())
+        }
     }
 
     #[pallet::hooks]
@@ -385,6 +411,11 @@ where
         slash_fraction: &[Perbill],
         slash_session: SessionIndex,
     ) -> Weight {
+        let slashing_mode = SlashingMode::<T>::get();
+        if slashing_mode == SlashingModeOption::Disabled {
+            return Weight::default();
+        }
+
         let active_era = {
             let active_era = T::EraIndexProvider::active_era().index;
             active_era
@@ -428,6 +459,16 @@ where
                 continue;
             }
 
+            Self::deposit_event(Event::<T>::SlashReported {
+                validator: stash.clone(),
+                fraction: *slash_fraction,
+                slash_era,
+            });
+
+            if slashing_mode == SlashingModeOption::LogOnly {
+                continue;
+            }
+
             let slash = compute_slash::<T>(
                 *slash_fraction,
                 next_slash_id,
@@ -436,12 +477,6 @@ where
                 slash_defer_duration,
                 external_idx,
             );
-
-            Self::deposit_event(Event::<T>::SlashReported {
-                validator: stash.clone(),
-                fraction: *slash_fraction,
-                slash_era,
-            });
 
             if let Some(mut slash) = slash {
                 slash.reporters = details.reporters.clone();

@@ -14,21 +14,25 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use crate::tests::common::{mock_snowbridge_message_proof, ExtBuilder, ALICE, BOB, UNIT};
-use crate::{AccountId, EthereumInboundQueue, ExternalValidators, Runtime};
-use alloy_sol_types::SolEvent;
-use frame_system::pallet_prelude::OriginFor;
-use keyring::AccountKeyring;
-use parity_scale_codec::Encode;
-use snowbridge_core::{
-    inbound::{Log, Message},
-    Channel, PRIMARY_GOVERNANCE_CHANNEL,
-};
-use snowbridge_router_primitives::inbound::envelope::OutboundMessageAccepted;
-use sp_core::H256;
-use sp_runtime::DispatchError;
-use tp_bridge::symbiotic_message_processor::{
-    InboundCommand, Message as SymbioticMessage, Payload, MAGIC_BYTES,
+use {
+    crate::{
+        tests::common::{mock_snowbridge_message_proof, ExtBuilder, ALICE, BOB, UNIT},
+        AccountId, EthereumInboundQueue, ExternalValidators, Runtime,
+    },
+    alloy_sol_types::SolEvent,
+    frame_system::pallet_prelude::OriginFor,
+    keyring::AccountKeyring,
+    parity_scale_codec::Encode,
+    snowbridge_core::{
+        inbound::{Log, Message},
+        Channel, PRIMARY_GOVERNANCE_CHANNEL,
+    },
+    snowbridge_router_primitives::inbound::envelope::OutboundMessageAccepted,
+    sp_core::H256,
+    sp_runtime::DispatchError,
+    tp_bridge::symbiotic_message_processor::{
+        InboundCommand, Message as SymbioticMessage, Payload, MAGIC_BYTES,
+    },
 };
 
 #[test]
