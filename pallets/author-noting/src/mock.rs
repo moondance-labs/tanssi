@@ -16,7 +16,6 @@
 
 use {
     crate::{self as author_noting_pallet, Config, ParaMode},
-    bounded_collections::bounded_vec,
     cumulus_pallet_parachain_system::{RelayChainState, RelaychainStateProvider},
     cumulus_primitives_core::ParaId,
     frame_support::{
@@ -33,7 +32,7 @@ use {
     sp_core::H256,
     sp_runtime::{
         traits::{BlakeTwo256, IdentityLookup},
-        BoundedVec, BuildStorage,
+        BuildStorage,
     },
     sp_state_machine::StorageProof,
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
@@ -131,13 +130,13 @@ impl mock_data::Config for Test {}
     serde::Deserialize,
 )]
 pub struct Mocks {
-    pub container_chains: BoundedVec<ParaId, ConstU32<100>>,
+    pub container_chains: Vec<(ParaId, Vec<AccountId>)>,
 }
 
 impl Default for Mocks {
     fn default() -> Self {
         Self {
-            container_chains: bounded_vec![1001.into()],
+            container_chains: vec![(1001.into(), vec![1])],
         }
     }
 }
@@ -164,17 +163,20 @@ impl nimbus_primitives::SlotBeacon for DummyBeacon {
 
 pub struct MockContainerChainGetter;
 
-impl tp_traits::GetCurrentContainerChains for MockContainerChainGetter {
-    type MaxContainerChains = ConstU32<100>;
-
-    fn current_container_chains() -> BoundedVec<ParaId, Self::MaxContainerChains> {
+impl tp_traits::GetContainerChainsWithCollators<AccountId> for MockContainerChainGetter {
+    fn container_chains_with_collators(
+        _for_session: tp_traits::ForSession,
+    ) -> Vec<(ParaId, Vec<AccountId>)> {
         mock_data::Mock::<Test>::get().container_chains
     }
 
     #[cfg(feature = "runtime-benchmarks")]
-    fn set_current_container_chains(container_chains: &[ParaId]) {
+    fn set_container_chains_with_collators(
+        _for_session: tp_traits::ForSession,
+        container_chains: &[(ParaId, Vec<AccountId>)],
+    ) {
         MockData::mutate(|m| {
-            m.container_chains = container_chains.to_vec().try_into().unwrap();
+            m.container_chains = container_chains.to_vec();
         });
     }
 }
@@ -207,6 +209,7 @@ impl Config for Test {
     type SlotBeacon = DummyBeacon;
     type ContainerChains = MockContainerChainGetter;
     type AuthorNotingHook = ();
+    type MaxContainerChains = ConstU32<100>;
     // Unit tests only check ParaMode, for RelayMode see integration tests
     type RelayOrPara = ParaMode<MockRelayStateProvider>;
 }
