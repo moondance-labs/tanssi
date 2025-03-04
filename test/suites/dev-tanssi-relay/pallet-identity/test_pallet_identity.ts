@@ -94,11 +94,11 @@ describeSuite({
 
                 const charlie_identity = await polkadotJs.query.identity.identityOf(general_user_charlie.address);
                 // Display has been set
-                const charlie_display = hexToString(charlie_identity.toJSON()[0].info.display.raw);
+                const charlie_display = hexToString(charlie_identity.toJSON().info.display.raw);
                 expect(charlie_display).to.equal("It's me, Charlie");
 
                 // Web has been set
-                const charlie_web = hexToString(charlie_identity.toJSON()[0].info.web.raw);
+                const charlie_web = hexToString(charlie_identity.toJSON().info.web.raw);
                 expect(charlie_web).to.equal("https://charlie.io");
 
                 // Event triggered

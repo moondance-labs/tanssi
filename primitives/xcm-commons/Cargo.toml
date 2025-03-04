@@ -13,7 +13,7 @@ workspace = true
 [dependencies]
 frame-support = { workspace = true }
 log = { workspace = true }
-staging-xcm = { workspace = true }
+xcm = { workspace = true }
 
 [features]
 default = [
@@ -22,5 +22,5 @@ default = [
 std = [
 	"frame-support/std",
 	"log/std",
-	"staging-xcm/std",
+	"xcm/std",
 ]

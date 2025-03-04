@@ -32,12 +32,13 @@ use {
         assert_ok,
         weights::{Weight, WeightToFee},
     },
-    staging_xcm::{
+    xcm::{
         latest::prelude::{Junctions::*, *},
+        opaque::latest::WESTEND_GENESIS_HASH,
         VersionedLocation, VersionedXcm,
     },
-    staging_xcm_executor::traits::ConvertLocation,
     xcm_emulator::{assert_expected_events, Chain},
+    xcm_executor::traits::ConvertLocation,
 };
 
 #[test]
@@ -76,13 +77,13 @@ fn using_signed_based_sovereign_works_in_tanssi() {
         },
     ]));
 
-    let alice_westend_account_dancebox = staging_xcm_builder::HashedDescription::<
+    let alice_westend_account_dancebox = xcm_builder::HashedDescription::<
         crate::AccountId,
-        staging_xcm_builder::DescribeFamily<staging_xcm_builder::DescribeAllTerminal>,
+        xcm_builder::DescribeFamily<xcm_builder::DescribeAllTerminal>,
     >::convert_location(&Location {
         parents: 1,
         interior: X1([AccountId32 {
-            network: Some(NetworkId::Westend),
+            network: Some(NetworkId::ByGenesis(WESTEND_GENESIS_HASH)),
             id: WestendSender::get().into(),
         }]
         .into()),
@@ -165,15 +166,15 @@ fn using_signed_based_sovereign_works_from_tanssi_to_frontier_template() {
     FrontierTemplate::execute_with(|| {
         // We also need to transfer first sufficient amount to the signed-based sovereign
 
-        let alice_dancebox_account_frontier = staging_xcm_builder::HashedDescription::<
+        let alice_dancebox_account_frontier = xcm_builder::HashedDescription::<
             container_chain_template_frontier_runtime::AccountId,
-            staging_xcm_builder::DescribeFamily<staging_xcm_builder::DescribeAllTerminal>,
+            xcm_builder::DescribeFamily<xcm_builder::DescribeAllTerminal>,
         >::convert_location(&Location {
             parents: 1,
             interior: X2([
                 Parachain(2000u32),
                 AccountId32 {
-                    network: Some(NetworkId::Westend),
+                    network: Some(NetworkId::ByGenesis(WESTEND_GENESIS_HASH)),
                     id: DanceboxSender::get().into(),
                 },
             ]

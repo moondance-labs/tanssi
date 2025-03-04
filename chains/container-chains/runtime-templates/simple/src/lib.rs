@@ -18,6 +18,8 @@
 // `construct_runtime!` does a lot of recursion and requires us to increase the limit to 256.
 #![recursion_limit = "256"]
 
+extern crate alloc;
+
 // Make the WASM binary available.
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
@@ -32,7 +34,7 @@ pub use sp_runtime::BuildStorage;
 pub mod migrations;
 pub mod weights;
 
-pub use sp_runtime::{traits::Extrinsic as ExtrinsicT, MultiAddress, Perbill, Permill};
+pub use sp_runtime::{traits::ExtrinsicLike, MultiAddress, Perbill, Permill};
 use {
     cumulus_primitives_core::AggregateMessageOrigin,
     dp_impl_tanssi_pallets_config::impl_tanssi_pallets_config,
@@ -70,16 +72,16 @@ use {
     sp_consensus_slots::{Slot, SlotDuration},
     sp_core::{MaxEncodedLen, OpaqueMetadata},
     sp_runtime::{
-        create_runtime_str, generic, impl_opaque_keys,
+        generic,
+        generic::SignedPayload,
+        impl_opaque_keys,
         traits::{AccountIdLookup, BlakeTwo256, Block as BlockT, IdentifyAccount, Verify},
         transaction_validity::{TransactionSource, TransactionValidity},
-        ApplyExtrinsicResult, MultiSignature,
+        ApplyExtrinsicResult, Cow, MultiSignature, SaturatedConversion,
     },
     sp_std::prelude::*,
     sp_version::RuntimeVersion,
-    staging_xcm::{
-        IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation, VersionedXcm,
-    },
+    xcm::{IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation, VersionedXcm},
     xcm_runtime_apis::{
         dry_run::{CallDryRunEffects, Error as XcmDryRunApiError, XcmDryRunEffects},
         fees::Error as XcmPaymentApiError,
@@ -126,7 +128,7 @@ pub type SignedBlock = generic::SignedBlock<Block>;
 pub type BlockId = generic::BlockId<Block>;
 
 /// The SignedExtension to the basic transaction logic.
-pub type SignedExtra = (
+pub type TxExtension = (
     frame_system::CheckNonZeroSender<Runtime>,
     frame_system::CheckSpecVersion<Runtime>,
     frame_system::CheckTxVersion<Runtime>,
@@ -140,10 +142,10 @@ pub type SignedExtra = (
 
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic =
-    generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, SignedExtra>;
+    generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, TxExtension>;
 
 /// Extrinsic type that has already been checked.
-pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, RuntimeCall, SignedExtra>;
+pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, RuntimeCall, TxExtension>;
 
 /// Executive: handles dispatch to the various modules.
 pub type Executive = frame_executive::Executive<
@@ -221,14 +223,14 @@ impl_opaque_keys! {
 
 #[sp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
-    spec_name: create_runtime_str!("container-chain-template"),
-    impl_name: create_runtime_str!("container-chain-template"),
+    spec_name: Cow::Borrowed("container-chain-template"),
+    impl_name: Cow::Borrowed("container-chain-template"),
     authoring_version: 1,
     spec_version: 1200,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
-    state_version: 1,
+    system_version: 1,
 };
 
 /// This determines the average expected block time that we are targeting.
@@ -371,6 +373,7 @@ impl frame_system::Config for Runtime {
     type PreInherents = ();
     type PostInherents = ();
     type PostTransactions = ();
+    type ExtensionsWeightInfo = ();
 }
 
 parameter_types! {
@@ -392,6 +395,7 @@ impl pallet_balances::Config for Runtime {
     type MaxFreezes = ConstU32<0>;
     type RuntimeHoldReason = RuntimeHoldReason;
     type RuntimeFreezeReason = RuntimeFreezeReason;
+    type DoneSlashHandler = ();
     type WeightInfo = weights::pallet_balances::SubstrateWeight<Runtime>;
 }
 
@@ -407,6 +411,7 @@ impl pallet_transaction_payment::Config for Runtime {
     type WeightToFee = WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
     type FeeMultiplierUpdate = SlowAdjustingFeeUpdate<Self>;
+    type WeightInfo = ();
 }
 
 parameter_types! {
@@ -437,6 +442,7 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
     type ReservedXcmpWeight = ReservedXcmpWeight;
     type CheckAssociatedRelayNumber = RelayNumberMonotonicallyIncreases;
     type ConsensusHook = ConsensusHook;
+    type SelectCore = cumulus_pallet_parachain_system::DefaultCoreSelector<Runtime>;
 }
 
 pub struct ParaSlotProvider;
@@ -683,12 +689,76 @@ impl frame_system::offchain::SigningTypes for Runtime {
     type Signature = Signature;
 }
 
-impl<C> frame_system::offchain::SendTransactionTypes<C> for Runtime
+/// Submits a transaction with the node's public and signature type. Adheres to the signed extension
+/// format of the chain.
+impl<LocalCall> frame_system::offchain::CreateSignedTransaction<LocalCall> for Runtime
+where
+    RuntimeCall: From<LocalCall>,
+{
+    fn create_signed_transaction<
+        C: frame_system::offchain::AppCrypto<Self::Public, Self::Signature>,
+    >(
+        call: RuntimeCall,
+        public: <Signature as Verify>::Signer,
+        account: AccountId,
+        nonce: <Runtime as frame_system::Config>::Nonce,
+    ) -> Option<UncheckedExtrinsic> {
+        use sp_runtime::traits::StaticLookup;
+        // take the biggest period possible.
+        let period = BlockHashCount::get()
+            .checked_next_power_of_two()
+            .map(|c| c / 2)
+            .unwrap_or(2) as u64;
+
+        let current_block = System::block_number()
+            .saturated_into::<u64>()
+            // The `System::block_number` is initialized with `n+1`,
+            // so the actual block number is `n`.
+            .saturating_sub(1);
+        let tip = 0;
+        let tx_ext: TxExtension = (
+            frame_system::CheckNonZeroSender::<Runtime>::new(),
+            frame_system::CheckSpecVersion::<Runtime>::new(),
+            frame_system::CheckTxVersion::<Runtime>::new(),
+            frame_system::CheckGenesis::<Runtime>::new(),
+            frame_system::CheckMortality::<Runtime>::from(generic::Era::mortal(
+                period,
+                current_block,
+            )),
+            frame_system::CheckNonce::<Runtime>::from(nonce),
+            frame_system::CheckWeight::<Runtime>::new(),
+            pallet_transaction_payment::ChargeTransactionPayment::<Runtime>::from(tip),
+            cumulus_primitives_storage_weight_reclaim::StorageWeightReclaim::<Runtime>::new(),
+            //frame_metadata_hash_extension::CheckMetadataHash::new(true),
+        );
+        let raw_payload = SignedPayload::new(call, tx_ext)
+            .map_err(|e| {
+                log::warn!("Unable to create signed payload: {:?}", e);
+            })
+            .ok()?;
+        let signature = raw_payload.using_encoded(|payload| C::sign(payload, public))?;
+        let (call, tx_ext, _) = raw_payload.deconstruct();
+        let address = <Runtime as frame_system::Config>::Lookup::unlookup(account);
+        let transaction = UncheckedExtrinsic::new_signed(call, address, signature, tx_ext);
+        Some(transaction)
+    }
+}
+
+impl<C> frame_system::offchain::CreateTransactionBase<C> for Runtime
 where
     RuntimeCall: From<C>,
 {
     type Extrinsic = UncheckedExtrinsic;
-    type OverarchingCall = RuntimeCall;
+    type RuntimeCall = RuntimeCall;
+}
+
+impl<LocalCall> frame_system::offchain::CreateInherent<LocalCall> for Runtime
+where
+    RuntimeCall: From<LocalCall>,
+{
+    fn create_inherent(call: RuntimeCall) -> UncheckedExtrinsic {
+        UncheckedExtrinsic::new_bare(call)
+    }
 }
 
 impl pallet_ocw_testing::Config for Runtime {
@@ -902,10 +972,10 @@ impl_runtime_apis! {
 
         fn dispatch_benchmark(
             config: frame_benchmarking::BenchmarkConfig,
-        ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
+        ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, alloc::string::String> {
             use frame_benchmarking::{BenchmarkBatch, Benchmarking, BenchmarkError};
             use sp_core::storage::TrackedStorageKey;
-            use staging_xcm::latest::prelude::*;
+            use xcm::latest::prelude::*;
             impl frame_system_benchmarking::Config for Runtime {
                 fn setup_set_code_requirements(code: &sp_std::vec::Vec<u8>) -> Result<(), BenchmarkError> {
                     ParachainSystem::initialize_for_set_code_benchmark(code.len() as u32);
@@ -1186,17 +1256,17 @@ impl_runtime_apis! {
     }
 
     impl xcm_runtime_apis::fees::XcmPaymentApi<Block> for Runtime {
-        fn query_acceptable_payment_assets(xcm_version: staging_xcm::Version) -> Result<Vec<VersionedAssetId>, XcmPaymentApiError> {
-            if !matches!(xcm_version, 3 | 4) {
+        fn query_acceptable_payment_assets(xcm_version: xcm::Version) -> Result<Vec<VersionedAssetId>, XcmPaymentApiError> {
+            if !matches!(xcm_version, 3..=5) {
                 return Err(XcmPaymentApiError::UnhandledXcmVersion);
             }
 
-            Ok([VersionedAssetId::V4(xcm_config::SelfReserve::get().into())]
+            Ok([VersionedAssetId::V5(xcm_config::SelfReserve::get().into())]
                 .into_iter()
                 .chain(
                     pallet_asset_rate::ConversionRateToNative::<Runtime>::iter_keys().filter_map(|asset_id_u16| {
                         pallet_foreign_asset_creator::AssetIdToForeignAsset::<Runtime>::get(asset_id_u16).map(|location| {
-                            VersionedAssetId::V4(location.into())
+                            VersionedAssetId::V5(location.into())
                         }).or_else(|| {
                             log::warn!("Asset `{}` is present in pallet_asset_rate but not in pallet_foreign_asset_creator", asset_id_u16);
                             None
@@ -1210,17 +1280,17 @@ impl_runtime_apis! {
         }
 
         fn query_weight_to_asset_fee(weight: Weight, asset: VersionedAssetId) -> Result<u128, XcmPaymentApiError> {
-            let local_asset = VersionedAssetId::V4(xcm_config::SelfReserve::get().into());
+            let local_asset = VersionedAssetId::V5(xcm_config::SelfReserve::get().into());
             let asset = asset
-                .into_version(4)
+                .into_version(5)
                 .map_err(|_| XcmPaymentApiError::VersionedConversionFailed)?;
 
             if asset == local_asset {
                 Ok(WeightToFee::weight_to_fee(&weight))
             } else {
                 let native_fee = WeightToFee::weight_to_fee(&weight);
-                let asset_v4: staging_xcm::opaque::lts::AssetId = asset.try_into().map_err(|_| XcmPaymentApiError::VersionedConversionFailed)?;
-                let location: staging_xcm::opaque::lts::Location = asset_v4.0;
+                let asset_v5: xcm::latest::AssetId = asset.try_into().map_err(|_| XcmPaymentApiError::VersionedConversionFailed)?;
+                let location: xcm::latest::Location = asset_v5.0;
                 let asset_id = pallet_foreign_asset_creator::ForeignAssetToAssetId::<Runtime>::get(location).ok_or(XcmPaymentApiError::AssetNotFound)?;
                 let asset_rate = AssetRate::to_asset_balance(native_fee, asset_id);
                 match asset_rate {

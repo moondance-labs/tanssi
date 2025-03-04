@@ -6,7 +6,7 @@ import type { XcmVersionedXcm } from "@polkadot/types/lookup";
 import { u8aToHex } from "@polkadot/util";
 import { descendOriginFromAddress20, expectEVMResult } from "../../../helpers";
 
-export const CLEAR_ORIGIN_WEIGHT = 983000n;
+export const CLEAR_ORIGIN_WEIGHT = 2966000n;
 const XCM_UTILS_ADDRESS = "0x0000000000000000000000000000000000000803";
 
 describeSuite({
@@ -112,32 +112,27 @@ describeSuite({
             title: "allows to retrieve weight of message",
             test: async () => {
                 const message = {
-                    V2: [
+                    V4: [
                         {
                             ClearOrigin: null,
                         },
                     ],
                 };
                 const xcm = context.polkadotJs().createType("VersionedXcm", message);
-                expect(
-                    (await context.readContract?.({
-                        contractAddress: XCM_UTILS_ADDRESS,
-                        contractName: "XcmUtils",
-                        functionName: "weightMessage",
-                        args: [xcm.toHex()],
-                    })) >=
-                        (CLEAR_ORIGIN_WEIGHT * 90n) / 100n
-                ).to.be.true;
+                const weight = await context.readContract?.({
+                    contractAddress: XCM_UTILS_ADDRESS,
+                    contractName: "XcmUtils",
+                    functionName: "weightMessage",
+                    args: [xcm.toHex()],
+                });
+
+                const min = (CLEAR_ORIGIN_WEIGHT * 90n) / 100n;
+                const max = (CLEAR_ORIGIN_WEIGHT * 110n) / 100n;
 
                 expect(
-                    (await context.readContract?.({
-                        contractAddress: XCM_UTILS_ADDRESS,
-                        contractName: "XcmUtils",
-                        functionName: "weightMessage",
-                        args: [xcm.toHex()],
-                    })) <=
-                        (CLEAR_ORIGIN_WEIGHT * 110n) / 100n
-                ).to.be.true;
+                    weight,
+                    `weightMessage returned ${weight} but expected a value between ${min} and ${max}`
+                ).to.satisfy((val) => val >= min && val <= max);
             },
         });
 
@@ -187,11 +182,14 @@ describeSuite({
                 const transferCallEncoded = transferCall?.method.toHex();
 
                 const xcmMessage = {
-                    V2: [
+                    V4: [
                         {
                             Transact: {
                                 originType: "SovereignAccount",
-                                requireWeightAtMost: 525_000_000n + 100_000_000n, // 21_000 gas limit
+                                requireWeightAtMost: {
+                                    refTime: 525_000_000n + 100_000_000n, // 21_000 gas limit
+                                    proofSize: 0n,
+                                },
                                 call: {
                                     encoded: transferCallEncoded,
                                 },
@@ -323,7 +321,7 @@ describeSuite({
                 ];
 
                 const xcmMessage = {
-                    V2: [
+                    V4: [
                         {
                             ClearOrigin: null,
                         },
@@ -425,7 +423,7 @@ describeSuite({
                 ];
 
                 const xcmMessage = {
-                    V2: [
+                    V4: [
                         {
                             ClearOrigin: null,
                         },

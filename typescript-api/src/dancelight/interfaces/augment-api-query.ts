@@ -55,8 +55,10 @@ import type {
     PalletGrandpaStoredPendingChange,
     PalletGrandpaStoredState,
     PalletIdentityAuthorityProperties,
+    PalletIdentityProvider,
     PalletIdentityRegistrarInfo,
     PalletIdentityRegistration,
+    PalletIdentityUsernameInformation,
     PalletInflationRewardsChainsToRewardValue,
     PalletMessageQueueBookState,
     PalletMessageQueuePage,
@@ -88,12 +90,12 @@ import type {
     PolkadotPrimitivesV8AssignmentAppPublic,
     PolkadotPrimitivesV8DisputeState,
     PolkadotPrimitivesV8ExecutorParams,
-    PolkadotPrimitivesV8ScrapedOnChainVotes,
     PolkadotPrimitivesV8SessionInfo,
     PolkadotPrimitivesV8SlashingPendingSlashes,
     PolkadotPrimitivesV8UpgradeGoAhead,
     PolkadotPrimitivesV8UpgradeRestriction,
     PolkadotPrimitivesV8ValidatorAppPublic,
+    PolkadotPrimitivesVstagingScrapedOnChainVotes,
     PolkadotRuntimeCommonParasRegistrarParaInfo,
     PolkadotRuntimeParachainsConfigurationHostConfiguration,
     PolkadotRuntimeParachainsHrmpHrmpChannel,
@@ -107,8 +109,7 @@ import type {
     PolkadotRuntimeParachainsParasParaLifecycle,
     PolkadotRuntimeParachainsParasParaPastCodeMeta,
     PolkadotRuntimeParachainsParasPvfCheckActiveVoteState,
-    PolkadotRuntimeParachainsSchedulerPalletCoreOccupied,
-    PolkadotRuntimeParachainsSchedulerPalletParasEntry,
+    PolkadotRuntimeParachainsSchedulerCommonAssignment,
     PolkadotRuntimeParachainsSharedAllowedRelayParentsTracker,
     SnowbridgeBeaconPrimitivesCompactBeaconState,
     SnowbridgeBeaconPrimitivesSyncCommitteePrepared,
@@ -129,8 +130,9 @@ import type {
     SpRuntimeDigest,
     SpStakingOffenceOffenceDetails,
     SpWeightsWeightV2Weight,
-    StagingXcmV4Instruction,
-    StagingXcmV4Location,
+    StagingXcmV5Instruction,
+    StagingXcmV5Location,
+    StagingXcmV5Xcm,
     TpBridgeChannelInfo,
     TpTraitsActiveEraInfo,
     TpTraitsContainerChainBlockInfo,
@@ -895,7 +897,7 @@ declare module "@polkadot/api-base/types/storage" {
              **/
             foreignToNativeId: AugmentedQuery<
                 ApiType,
-                (arg: H256 | string | Uint8Array) => Observable<Option<StagingXcmV4Location>>,
+                (arg: H256 | string | Uint8Array) => Observable<Option<StagingXcmV5Location>>,
                 [H256]
             > &
                 QueryableStorageEntry<ApiType, [H256]>;
@@ -905,11 +907,11 @@ declare module "@polkadot/api-base/types/storage" {
             nativeToForeignId: AugmentedQuery<
                 ApiType,
                 (
-                    arg: StagingXcmV4Location | { parents?: any; interior?: any } | string | Uint8Array
+                    arg: StagingXcmV5Location | { parents?: any; interior?: any } | string | Uint8Array
                 ) => Observable<Option<H256>>,
-                [StagingXcmV4Location]
+                [StagingXcmV5Location]
             > &
-                QueryableStorageEntry<ApiType, [StagingXcmV4Location]>;
+                QueryableStorageEntry<ApiType, [StagingXcmV5Location]>;
             pricingParameters: AugmentedQuery<ApiType, () => Observable<SnowbridgeCorePricingPricingParameters>, []> &
                 QueryableStorageEntry<ApiType, []>;
             /**
@@ -1433,15 +1435,11 @@ declare module "@polkadot/api-base/types/storage" {
         };
         identity: {
             /**
-             * Reverse lookup from `username` to the `AccountId` that has registered it. The value should
-             * be a key in the `IdentityOf` map, but it may not if the user has cleared their identity.
-             *
-             * Multiple usernames may map to the same `AccountId`, but `IdentityOf` will only map to one
-             * primary username.
+             * A map of the accounts who are authorized to grant usernames.
              **/
-            accountOfUsername: AugmentedQuery<
+            authorityOf: AugmentedQuery<
                 ApiType,
-                (arg: Bytes | string | Uint8Array) => Observable<Option<AccountId32>>,
+                (arg: Bytes | string | Uint8Array) => Observable<Option<PalletIdentityAuthorityProperties>>,
                 [Bytes]
             > &
                 QueryableStorageEntry<ApiType, [Bytes]>;
@@ -1453,9 +1451,7 @@ declare module "@polkadot/api-base/types/storage" {
              **/
             identityOf: AugmentedQuery<
                 ApiType,
-                (
-                    arg: AccountId32 | string | Uint8Array
-                ) => Observable<Option<ITuple<[PalletIdentityRegistration, Option<Bytes>]>>>,
+                (arg: AccountId32 | string | Uint8Array) => Observable<Option<PalletIdentityRegistration>>,
                 [AccountId32]
             > &
                 QueryableStorageEntry<ApiType, [AccountId32]>;
@@ -1463,13 +1459,15 @@ declare module "@polkadot/api-base/types/storage" {
              * Usernames that an authority has granted, but that the account controller has not confirmed
              * that they want it. Used primarily in cases where the `AccountId` cannot provide a signature
              * because they are a pure proxy, multisig, etc. In order to confirm it, they should call
-             * [`Call::accept_username`].
+             * [accept_username](`Call::accept_username`).
              *
              * First tuple item is the account and second is the acceptance deadline.
              **/
             pendingUsernames: AugmentedQuery<
                 ApiType,
-                (arg: Bytes | string | Uint8Array) => Observable<Option<ITuple<[AccountId32, u32]>>>,
+                (
+                    arg: Bytes | string | Uint8Array
+                ) => Observable<Option<ITuple<[AccountId32, u32, PalletIdentityProvider]>>>,
                 [Bytes]
             > &
                 QueryableStorageEntry<ApiType, [Bytes]>;
@@ -1505,11 +1503,37 @@ declare module "@polkadot/api-base/types/storage" {
             > &
                 QueryableStorageEntry<ApiType, [AccountId32]>;
             /**
-             * A map of the accounts who are authorized to grant usernames.
+             * Usernames for which the authority that granted them has started the removal process by
+             * unbinding them. Each unbinding username maps to its grace period expiry, which is the first
+             * block in which the username could be deleted through a
+             * [remove_username](`Call::remove_username`) call.
              **/
-            usernameAuthorities: AugmentedQuery<
+            unbindingUsernames: AugmentedQuery<
                 ApiType,
-                (arg: AccountId32 | string | Uint8Array) => Observable<Option<PalletIdentityAuthorityProperties>>,
+                (arg: Bytes | string | Uint8Array) => Observable<Option<u32>>,
+                [Bytes]
+            > &
+                QueryableStorageEntry<ApiType, [Bytes]>;
+            /**
+             * Reverse lookup from `username` to the `AccountId` that has registered it and the provider of
+             * the username. The `owner` value should be a key in the `UsernameOf` map, but it may not if
+             * the user has cleared their username or it has been removed.
+             *
+             * Multiple usernames may map to the same `AccountId`, but `UsernameOf` will only map to one
+             * primary username.
+             **/
+            usernameInfoOf: AugmentedQuery<
+                ApiType,
+                (arg: Bytes | string | Uint8Array) => Observable<Option<PalletIdentityUsernameInformation>>,
+                [Bytes]
+            > &
+                QueryableStorageEntry<ApiType, [Bytes]>;
+            /**
+             * Identifies the primary username of an account.
+             **/
+            usernameOf: AugmentedQuery<
+                ApiType,
+                (arg: AccountId32 | string | Uint8Array) => Observable<Option<Bytes>>,
                 [AccountId32]
             > &
                 QueryableStorageEntry<ApiType, [AccountId32]>;
@@ -1535,7 +1559,7 @@ declare module "@polkadot/api-base/types/storage" {
         };
         initializer: {
             /**
-             * Buffered session changes along with the block number at which they should be applied.
+             * Buffered session changes.
              *
              * Typically this will be empty or one element long. Apart from that this item never hits
              * the storage.
@@ -1820,7 +1844,7 @@ declare module "@polkadot/api-base/types/storage" {
              **/
             onChainVotes: AugmentedQuery<
                 ApiType,
-                () => Observable<Option<PolkadotPrimitivesV8ScrapedOnChainVotes>>,
+                () => Observable<Option<PolkadotPrimitivesVstagingScrapedOnChainVotes>>,
                 []
             > &
                 QueryableStorageEntry<ApiType, []>;
@@ -2072,27 +2096,12 @@ declare module "@polkadot/api-base/types/storage" {
         };
         paraScheduler: {
             /**
-             * One entry for each availability core. The i'th parachain belongs to the i'th core, with the
-             * remaining cores all being on demand parachain multiplexers.
-             *
-             * Bounded by the maximum of either of these two values:
-             * * The number of parachains and parathread multiplexers
-             * * The number of validators divided by `configuration.max_validators_per_core`.
-             **/
-            availabilityCores: AugmentedQuery<
-                ApiType,
-                () => Observable<Vec<PolkadotRuntimeParachainsSchedulerPalletCoreOccupied>>,
-                []
-            > &
-                QueryableStorageEntry<ApiType, []>;
-            /**
              * One entry for each availability core. The `VecDeque` represents the assignments to be
-             * scheduled on that core. The value contained here will not be valid after the end of
-             * a block. Runtime APIs should be used to determine scheduled cores for the upcoming block.
+             * scheduled on that core.
              **/
             claimQueue: AugmentedQuery<
                 ApiType,
-                () => Observable<BTreeMap<u32, Vec<PolkadotRuntimeParachainsSchedulerPalletParasEntry>>>,
+                () => Observable<BTreeMap<u32, Vec<PolkadotRuntimeParachainsSchedulerCommonAssignment>>>,
                 []
             > &
                 QueryableStorageEntry<ApiType, []>;
@@ -2888,6 +2897,9 @@ declare module "@polkadot/api-base/types/storage" {
         };
         treasury: {
             /**
+             * DEPRECATED: associated with `spend_local` call and will be removed in May 2025.
+             * Refer to <https://github.com/paritytech/polkadot-sdk/pull/5961> for migration to `spend`.
+             *
              * Proposal indices that have been approved but not yet awarded.
              **/
             approvals: AugmentedQuery<ApiType, () => Observable<Vec<u32>>, []> & QueryableStorageEntry<ApiType, []>;
@@ -2896,10 +2908,21 @@ declare module "@polkadot/api-base/types/storage" {
              **/
             deactivated: AugmentedQuery<ApiType, () => Observable<u128>, []> & QueryableStorageEntry<ApiType, []>;
             /**
+             * The blocknumber for the last triggered spend period.
+             **/
+            lastSpendPeriod: AugmentedQuery<ApiType, () => Observable<Option<u32>>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * DEPRECATED: associated with `spend_local` call and will be removed in May 2025.
+             * Refer to <https://github.com/paritytech/polkadot-sdk/pull/5961> for migration to `spend`.
+             *
              * Number of proposals that have been made.
              **/
             proposalCount: AugmentedQuery<ApiType, () => Observable<u32>, []> & QueryableStorageEntry<ApiType, []>;
             /**
+             * DEPRECATED: associated with `spend_local` call and will be removed in May 2025.
+             * Refer to <https://github.com/paritytech/polkadot-sdk/pull/5961> for migration to `spend`.
+             *
              * Proposals that have been made.
              **/
             proposals: AugmentedQuery<
@@ -2984,7 +3007,7 @@ declare module "@polkadot/api-base/types/storage" {
              * Only relevant if this pallet is being used as the [`xcm_executor::traits::RecordXcm`]
              * implementation in the XCM executor configuration.
              **/
-            recordedXcm: AugmentedQuery<ApiType, () => Observable<Option<Vec<StagingXcmV4Instruction>>>, []> &
+            recordedXcm: AugmentedQuery<ApiType, () => Observable<Option<Vec<StagingXcmV5Instruction>>>, []> &
                 QueryableStorageEntry<ApiType, []>;
             /**
              * Fungible assets which we know are locked on a remote chain.
@@ -2994,7 +3017,7 @@ declare module "@polkadot/api-base/types/storage" {
                 (
                     arg1: u32 | AnyNumber | Uint8Array,
                     arg2: AccountId32 | string | Uint8Array,
-                    arg3: XcmVersionedAssetId | { V3: any } | { V4: any } | string | Uint8Array
+                    arg3: XcmVersionedAssetId | { V3: any } | { V4: any } | { V5: any } | string | Uint8Array
                 ) => Observable<Option<PalletXcmRemoteLockedFungibleRecord>>,
                 [u32, AccountId32, XcmVersionedAssetId]
             > &
@@ -3022,7 +3045,7 @@ declare module "@polkadot/api-base/types/storage" {
                 ApiType,
                 (
                     arg1: u32 | AnyNumber | Uint8Array,
-                    arg2: XcmVersionedLocation | { V2: any } | { V3: any } | { V4: any } | string | Uint8Array
+                    arg2: XcmVersionedLocation | { V3: any } | { V4: any } | { V5: any } | string | Uint8Array
                 ) => Observable<Option<u32>>,
                 [u32, XcmVersionedLocation]
             > &
@@ -3045,7 +3068,7 @@ declare module "@polkadot/api-base/types/storage" {
                 ApiType,
                 (
                     arg1: u32 | AnyNumber | Uint8Array,
-                    arg2: XcmVersionedLocation | { V2: any } | { V3: any } | { V4: any } | string | Uint8Array
+                    arg2: XcmVersionedLocation | { V3: any } | { V4: any } | { V5: any } | string | Uint8Array
                 ) => Observable<Option<u64>>,
                 [u32, XcmVersionedLocation]
             > &
@@ -3058,7 +3081,7 @@ declare module "@polkadot/api-base/types/storage" {
                 ApiType,
                 (
                     arg1: u32 | AnyNumber | Uint8Array,
-                    arg2: XcmVersionedLocation | { V2: any } | { V3: any } | { V4: any } | string | Uint8Array
+                    arg2: XcmVersionedLocation | { V3: any } | { V4: any } | { V5: any } | string | Uint8Array
                 ) => Observable<Option<ITuple<[u64, SpWeightsWeightV2Weight, u32]>>>,
                 [u32, XcmVersionedLocation]
             > &

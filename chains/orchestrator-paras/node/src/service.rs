@@ -30,11 +30,9 @@ use {
     },
     cumulus_primitives_core::{
         relay_chain::{well_known_keys as RelayWellKnownKeys, CollatorPair},
-        ParaId,
+        CollectCollationInfo, ParaId,
     },
-    cumulus_relay_chain_interface::{
-        call_remote_runtime_function, OverseerHandle, RelayChainInterface,
-    },
+    cumulus_relay_chain_interface::{call_runtime_api, OverseerHandle, RelayChainInterface},
     dancebox_runtime::{
         opaque::{Block, Hash},
         AccountId, RuntimeApi,
@@ -55,6 +53,7 @@ use {
     parity_scale_codec::{Decode, Encode},
     polkadot_cli::ProvideRuntimeApi,
     polkadot_parachain_primitives::primitives::HeadData,
+    polkadot_primitives::UpgradeGoAhead,
     polkadot_service::Handle,
     sc_cli::CliConfiguration,
     sc_client_api::{
@@ -1010,6 +1009,7 @@ pub fn start_dev_node(
                     .expect("Should be able to query aux storage; qed").unwrap_or((false, Option::<[u8; 32]>::None).encode());
                 let (mock_additional_randomness, mock_randomness_seed): (bool, Option<[u8; 32]>) = Decode::decode(&mut value.as_slice()).expect("Boolean non-decodable");
 
+                let client_set_aside_for_cidp = client.clone();
                 let client_for_xcm = client.clone();
                 async move {
                     let mocked_author_noting =
@@ -1038,6 +1038,21 @@ pub fn start_dev_node(
                         log::info!("mokcing randomnessss!!! {}", current_para_block);
                     }
 
+                    let current_para_head = client_set_aside_for_cidp
+                            .header(block)
+                            .expect("Header lookup should succeed")
+                            .expect("Header passed in as parent should be present in backend.");
+                    let should_send_go_ahead = match client_set_aside_for_cidp
+                            .runtime_api()
+                            .collect_collation_info(block, &current_para_head)
+                    {
+                            Ok(info) => info.new_validation_code.is_some(),
+                            Err(e) => {
+                                    log::error!("Failed to collect collation info: {:?}", e);
+                                    false
+                            },
+                    };
+
                     let time = MockTimestampInherentDataProvider;
                     let mocked_parachain = MockValidationDataInherentDataProvider {
                         current_para_block,
@@ -1056,6 +1071,12 @@ pub fn start_dev_node(
                         raw_horizontal_messages: hrmp_xcm_receiver.drain().collect(),
                         additional_key_values: Some(additional_keys),
                         para_id,
+                        upgrade_go_ahead: should_send_go_ahead.then(|| {
+                            log::info!(
+                                "Detected pending validation code, sending go-ahead signal."
+                            );
+                            UpgradeGoAhead::GoAhead
+                        }),
                     };
 
                     Ok((time, mocked_parachain, mocked_author_noting))
@@ -1424,7 +1445,7 @@ impl OrchestratorChainInterface for OrchestratorChainSolochainInterface {
         relay_parent: PHash,
         para_id: ParaId,
     ) -> OrchestratorChainResult<Option<ContainerChainGenesisData>> {
-        let res: Option<ContainerChainGenesisData> = call_remote_runtime_function(
+        let res: Option<ContainerChainGenesisData> = call_runtime_api(
             &self.relay_chain_interface,
             "RegistrarApi_genesis_data",
             relay_parent,
@@ -1441,7 +1462,7 @@ impl OrchestratorChainInterface for OrchestratorChainSolochainInterface {
         relay_parent: PHash,
         para_id: ParaId,
     ) -> OrchestratorChainResult<Vec<Vec<u8>>> {
-        let res: Vec<Vec<u8>> = call_remote_runtime_function(
+        let res: Vec<Vec<u8>> = call_runtime_api(
             &self.relay_chain_interface,
             "RegistrarApi_boot_nodes",
             relay_parent,
@@ -1458,7 +1479,7 @@ impl OrchestratorChainInterface for OrchestratorChainSolochainInterface {
         relay_parent: PHash,
         para_id: ParaId,
     ) -> OrchestratorChainResult<Option<BlockNumber>> {
-        let res: Option<BlockNumber> = call_remote_runtime_function(
+        let res: Option<BlockNumber> = call_runtime_api(
             &self.relay_chain_interface,
             "AuthorNotingApi_latest_block_number",
             relay_parent,
@@ -1497,7 +1518,7 @@ impl OrchestratorChainInterface for OrchestratorChainSolochainInterface {
         relay_parent: PHash,
         authority: NimbusId,
     ) -> OrchestratorChainResult<Option<ParaId>> {
-        let res: Option<ParaId> = call_remote_runtime_function(
+        let res: Option<ParaId> = call_runtime_api(
             &self.relay_chain_interface,
             "TanssiAuthorityAssignmentApi_check_para_id_assignment",
             relay_parent,
@@ -1514,7 +1535,7 @@ impl OrchestratorChainInterface for OrchestratorChainSolochainInterface {
         relay_parent: PHash,
         authority: NimbusId,
     ) -> OrchestratorChainResult<Option<ParaId>> {
-        let res: Option<ParaId> = call_remote_runtime_function(
+        let res: Option<ParaId> = call_runtime_api(
             &self.relay_chain_interface,
             "TanssiAuthorityAssignmentApi_check_para_id_assignment_next_session",
             relay_parent,

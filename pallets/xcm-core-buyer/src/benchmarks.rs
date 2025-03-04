@@ -42,9 +42,9 @@ mod benchmarks {
         },
         frame_system::pallet_prelude::BlockNumberFor,
         sp_runtime::RuntimeAppPublic,
-        staging_xcm::{
+        xcm::{
             latest::{MaybeErrorCode, QueryId},
-            v4::{Location, Response},
+            v5::{Location, Response},
         },
     };
 
