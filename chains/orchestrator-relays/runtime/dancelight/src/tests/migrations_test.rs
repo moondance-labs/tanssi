@@ -14,31 +14,22 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use crate::tests::common::ExtBuilder;
-use crate::xcm_config::UniversalLocation;
-use crate::{
-    BeefyMmrLeaf, CollatorConfiguration, ExternalValidators, PalletInfo, Runtime, Session,
+use {
+    crate::{
+        tests::common::ExtBuilder, BeefyMmrLeaf, CollatorConfiguration, ExternalValidators,
+        PalletInfo, Runtime, Session,
+    },
+    beefy_primitives::mmr::BeefyAuthoritySet,
+    frame_support::{migration::clear_storage_prefix, storage::unhashed, traits::PalletInfo as _},
+    pallet_migrations::Migration,
+    parity_scale_codec::Encode,
+    sp_arithmetic::Perbill,
+    tanssi_runtime_common::migrations::{
+        BondedErasTimestampMigration, ExternalValidatorsInitialMigration, HostConfigurationV3,
+        MigrateConfigurationAddFullRotationMode, MigrateMMRLeafPallet,
+    },
+    xcm::v3::Weight,
 };
-use beefy_primitives::mmr::BeefyAuthoritySet;
-use cumulus_primitives_core::Weight;
-use dancelight_runtime_constants::snowbridge::EthereumLocation;
-use frame_support::migration::clear_storage_prefix;
-use frame_support::storage::unhashed;
-use frame_support::traits::PalletInfo as _;
-use pallet_migrations::Migration;
-use parity_scale_codec::Encode;
-use snowbridge_core::TokenIdOf;
-use sp_arithmetic::Perbill;
-use tanssi_runtime_common::migrations::{
-    BondedErasTimestampMigration, ExternalValidatorsInitialMigration, HostConfigurationV3,
-    MigrateConfigurationAddFullRotationMode, MigrateMMRLeafPallet, SnowbridgeEthereumSystemXcmV5,
-};
-use xcm::latest::Junction::GlobalConsensus;
-use xcm::latest::Junctions::Here;
-use xcm::latest::Junctions::X1;
-use xcm::latest::NetworkId;
-use xcm::latest::{Location, Reanchorable, ROCOCO_GENESIS_HASH};
-use xcm_executor::traits::ConvertLocation;
 
 #[test]
 fn test_migration_mmr_leaf_pallet_renaming() {

@@ -63,9 +63,7 @@ use {
 
 #[allow(deprecated)]
 use sc_executor::NativeElseWasmExecutor;
-use sc_transaction_pool_api::TransactionPool;
-use sp_api::StorageProof;
-use sp_core::traits::SpawnNamed;
+use {sc_transaction_pool_api::TransactionPool, sp_api::StorageProof, sp_core::traits::SpawnNamed};
 
 tp_traits::alias!(
     pub trait MinimalRuntimeApi<

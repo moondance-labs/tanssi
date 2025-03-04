@@ -15,19 +15,18 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 #![cfg_attr(not(feature = "std"), no_std)]
-use frame_system::{
-    self as system, ensure_none, ensure_root,
-    offchain::{CreateInherent, CreateSignedTransaction, SubmitTransaction},
-    pallet_prelude::BlockNumberFor,
+use {
+    frame_system::{
+        self as system, ensure_none, ensure_root, offchain::SubmitTransaction,
+        pallet_prelude::BlockNumberFor,
+    },
+    sp_runtime::transaction_validity::{InvalidTransaction, TransactionValidity, ValidTransaction},
 };
-use sp_runtime::transaction_validity::{InvalidTransaction, TransactionValidity, ValidTransaction};
 
 pub use pallet::*;
 #[frame_support::pallet]
 pub mod pallet {
-    use super::*;
-    use frame_support::pallet_prelude::*;
-    use frame_system::pallet_prelude::*;
+    use {super::*, frame_support::pallet_prelude::*, frame_system::pallet_prelude::*};
 
     #[pallet::pallet]
     pub struct Pallet<T>(_);
