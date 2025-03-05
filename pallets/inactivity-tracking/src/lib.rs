@@ -119,7 +119,7 @@ pub mod pallet {
                 Self::process_ended_session(current_unprocessed_session);
 
                 <LastUnprocessedSession<T>>::put(current_session);
-            } 
+            }
             Weight::zero()
         }
         fn on_finalize(_n: BlockNumberFor<T>) {
@@ -132,11 +132,7 @@ pub mod pallet {
             <CurrentSessionInactiveCollators<T>>::get()
                 .into_iter()
                 .for_each(|collator_id| {
-                    <InactiveCollators<T>>::insert(
-                        session_id,
-                        collator_id,
-                        (),
-                    );
+                    <InactiveCollators<T>>::insert(session_id, collator_id, ());
                 });
             let eligible_collators = T::CurrentCollatorsListFetcher::get_eligible_collators();
             // TO DO: Remove from the list collators assigned to container chains that have not advanced
@@ -144,7 +140,7 @@ pub mod pallet {
                 eligible_collators,
             ));
         }
-      
+
         fn update_collators_activity() {
             T::RegisteredContainerChainsFetcher::current_container_chains()
                 .into_iter()
