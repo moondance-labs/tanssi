@@ -279,6 +279,7 @@ jobs:
                   echo "LATEST_TARGET_BRANCH_BUILD=$LATEST_TARGET_BRANCH_BUILD" >> $GITHUB_OUTPUT
             - name: Download latest target branch build artifacts
               run: |
+                  echo $LATEST_TARGET_BRANCH_BUILD
                   gh run download $LATEST_TARGET_BRANCH_BUILD -n runtimes --dir runtimes-target-branch
             - name: "Download branch built runtime"
               uses: actions/download-artifact@v4
