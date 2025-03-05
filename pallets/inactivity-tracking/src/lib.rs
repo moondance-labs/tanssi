@@ -106,32 +106,20 @@ pub mod pallet {
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         fn on_initialize(_n: BlockNumberFor<T>) -> Weight {
-            let current_session = T::CurrentSessionIndex::session_index();
-            let current_unprocessed_session = <LastUnprocessedSession<T>>::get();
+            Self::update_collators_activity();
 
             // Update inactive collator records only after a session has ended
+            let current_session = T::CurrentSessionIndex::session_index();
+            let current_unprocessed_session = <LastUnprocessedSession<T>>::get();
             if current_unprocessed_session < current_session {
                 // Update the inactive collator records for the previous session
                 // Collator can be marked as inactive only if:
                 // 1. It has not produced a block in the previous session
                 // 2. Chain has advanced in the previous session
-
-                <CurrentSessionInactiveCollators<T>>::get()
-                    .into_iter()
-                    .for_each(|collator_id| {
-                        <InactiveCollators<T>>::insert(
-                            current_unprocessed_session,
-                            collator_id,
-                            (),
-                        );
-                    });
-
-                Self::resest_session_inactive_collators();
+                Self::process_ended_session(current_unprocessed_session);
 
                 <LastUnprocessedSession<T>>::put(current_session);
-            } else {
-                Self::update_collators_activity();
-            }
+            } 
             Weight::zero()
         }
         fn on_finalize(_n: BlockNumberFor<T>) {
@@ -140,13 +128,23 @@ pub mod pallet {
     }
 
     impl<T: Config> Pallet<T> {
-        fn resest_session_inactive_collators() {
+        fn process_ended_session(session_id: SessionIndex) {
+            <CurrentSessionInactiveCollators<T>>::get()
+                .into_iter()
+                .for_each(|collator_id| {
+                    <InactiveCollators<T>>::insert(
+                        session_id,
+                        collator_id,
+                        (),
+                    );
+                });
             let eligible_collators = T::CurrentCollatorsListFetcher::get_eligible_collators();
             // TO DO: Remove from the list collators assigned to container chains that have not advanced
             <CurrentSessionInactiveCollators<T>>::put(BoundedVec::truncate_from(
                 eligible_collators,
             ));
         }
+      
         fn update_collators_activity() {
             T::RegisteredContainerChainsFetcher::current_container_chains()
                 .into_iter()
