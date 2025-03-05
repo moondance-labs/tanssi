@@ -23,6 +23,7 @@
 use scale_info::prelude::vec::Vec;
 
 sp_api::decl_runtime_apis! {
+    #[api_version(2)]
     pub trait CollatorAssignmentApi<AccountId, ParaId> where
         AccountId: parity_scale_codec::Codec,
         ParaId: parity_scale_codec::Codec,
@@ -37,5 +38,10 @@ sp_api::decl_runtime_apis! {
         /// Return the list of collators of the given `ParaId`.
         /// Returns `None` if the `ParaId` is not in the registrar.
         fn parachain_collators(para_id: ParaId) -> Option<Vec<AccountId>>;
+
+        /// Returns the list of `ParaId` of registered chains with at least some
+        /// collators. This filters out parachains with no assigned collators.
+        #[api_version(2)]
+        fn parachains_with_some_collators() -> Vec<ParaId>;
     }
 }

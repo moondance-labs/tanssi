@@ -298,7 +298,7 @@ declare module "@polkadot/api-base/types/calls" {
             convertLocation: AugmentedCall<
                 ApiType,
                 (
-                    location: XcmVersionedLocation | { V2: any } | { V3: any } | { V4: any } | string | Uint8Array
+                    location: XcmVersionedLocation | { V3: any } | { V4: any } | { V5: any } | string | Uint8Array
                 ) => Observable<Result<AccountId, Error>>
             >;
             /**
@@ -710,7 +710,7 @@ declare module "@polkadot/api-base/types/calls" {
                 ApiType,
                 (
                     weight: WeightV2 | { refTime?: any; proofSize?: any } | string | Uint8Array,
-                    asset: XcmVersionedAssetId | { V3: any } | { V4: any } | string | Uint8Array
+                    asset: XcmVersionedAssetId | { V3: any } | { V4: any } | { V5: any } | string | Uint8Array
                 ) => Observable<Result<u128, XcmPaymentApiError>>
             >;
             /**
@@ -719,7 +719,7 @@ declare module "@polkadot/api-base/types/calls" {
             queryXcmWeight: AugmentedCall<
                 ApiType,
                 (
-                    message: XcmVersionedXcm | { V2: any } | { V3: any } | { V4: any } | string | Uint8Array
+                    message: XcmVersionedXcm | { V3: any } | { V4: any } | { V5: any } | string | Uint8Array
                 ) => Observable<Result<WeightV2, XcmPaymentApiError>>
             >;
             /**

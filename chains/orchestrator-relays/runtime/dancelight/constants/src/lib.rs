@@ -69,8 +69,10 @@ pub mod time {
 }
 
 pub mod snowbridge {
-    use frame_support::parameter_types;
-    use staging_xcm::prelude::{Location, NetworkId};
+    use {
+        frame_support::parameter_types,
+        xcm::prelude::{Location, NetworkId},
+    };
 
     parameter_types! {
             /// Network and location for the Ethereum chain. On Stagelight, the Ethereum chain bridged

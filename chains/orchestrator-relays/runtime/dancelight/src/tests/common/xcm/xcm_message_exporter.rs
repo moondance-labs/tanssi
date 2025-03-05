@@ -23,7 +23,7 @@ use {
     frame_support::{assert_err, weights::Weight},
     pallet_xcm::Error,
     sp_runtime::DispatchError,
-    xcm::{latest::prelude::*, v4::Location, VersionedXcm},
+    xcm::{latest::prelude::*, v5::Location, VersionedXcm},
     xcm_emulator::Chain,
 };
 
@@ -42,7 +42,7 @@ fn test_message_exporter_disabled_for_origin_account() {
         assert_eq!(
             <Dancelight as DancelightRelayPallet>::XcmPallet::execute(
                 origin,
-                Box::new(VersionedXcm::V4(message)),
+                Box::new(VersionedXcm::V5(message)),
                 Weight::from_parts(0, 0)
             )
             .unwrap_err()
