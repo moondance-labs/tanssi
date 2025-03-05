@@ -1955,6 +1955,7 @@ impl pallet_inactivity_tracking::Config for Runtime {
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type RegisteredContainerChainsFetcher = Registrar;
     type ContainerChainBlockAuthorInfoFetcher = AuthorNoting;
+    type CurrentCollatorsListFetcher = PooledStaking;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.

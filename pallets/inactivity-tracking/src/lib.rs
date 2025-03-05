@@ -18,8 +18,8 @@ use {
     sp_runtime::{traits::Get, BoundedVec},
     sp_staking::SessionIndex,
     tp_traits::{
-        GetCurrentContainerChains, GetSessionIndex, LatestAuthorInfoFetcher,
-        NodeInactivityTrackingHelper,
+        CurrentEligibleCollatorsHelper, GetCurrentContainerChains, GetSessionIndex,
+        LatestAuthorInfoFetcher, NodeInactivityTrackingHelper,
     },
 };
 
@@ -68,6 +68,9 @@ pub mod pallet {
 
         /// Helper that fetches the latest block author info for a container chain
         type ContainerChainBlockAuthorInfoFetcher: LatestAuthorInfoFetcher<Self::CollatorId>;
+
+        /// Helper that fetches a list of collators eligible for to produce blocks for the current session
+        type CurrentCollatorsListFetcher: CurrentEligibleCollatorsHelper<Self::CollatorId>;
     }
 
     /// A list of double map of inactive collators for a session
@@ -109,6 +112,10 @@ pub mod pallet {
             // Update inactive collator records only after a session has ended
             if current_unprocessed_session < current_session {
                 // Update the inactive collator records for the previous session
+                // Collator can be marked as inactive only if:
+                // 1. It has not produced a block in the previous session
+                // 2. Chain has advanced in the previous session
+
                 <CurrentSessionInactiveCollators<T>>::get()
                     .into_iter()
                     .for_each(|collator_id| {
@@ -119,43 +126,49 @@ pub mod pallet {
                         );
                     });
 
+                Self::resest_session_inactive_collators();
+
                 <LastUnprocessedSession<T>>::put(current_session);
             } else {
                 Self::update_collators_activity();
             }
-            // Self::update_inactive_validator_info();
             Weight::zero()
         }
         fn on_finalize(_n: BlockNumberFor<T>) {
             Self::cleanup_inactive_collator_info();
-            // Self::cleanup_inactive_validator_info();
         }
     }
 
     impl<T: Config> Pallet<T> {
+        fn resest_session_inactive_collators() {
+            let eligible_collators = T::CurrentCollatorsListFetcher::get_eligible_collators();
+            // TO DO: Remove from the list collators assigned to container chains that have not advanced
+            <CurrentSessionInactiveCollators<T>>::put(BoundedVec::truncate_from(
+                eligible_collators,
+            ));
+        }
         fn update_collators_activity() {
-            // Collator can be marked as inactive only if:
-            // 1. It has not produced a block in the previous session
-            // 2. Chain has not advanced at all in the previous session
-
             T::RegisteredContainerChainsFetcher::current_container_chains()
                 .into_iter()
                 .for_each(|chain_id| {
-                    let latest_container_chain_author =
-                        T::ContainerChainBlockAuthorInfoFetcher::get_latest_author_info(chain_id)
-                            .unwrap()
-                            .author;
+                    let container_chain_block_info =
+                        T::ContainerChainBlockAuthorInfoFetcher::get_latest_author_info(chain_id);
 
-                    if <CurrentSessionInactiveCollators<T>>::get()
-                        .contains(&latest_container_chain_author)
-                    {
-                        let _ = <CurrentSessionInactiveCollators<T>>::try_mutate(
-                            |current_seesion_collators| -> DispatchResult {
-                                current_seesion_collators
-                                    .retain(|c| c != &latest_container_chain_author);
-                                Ok(())
-                            },
-                        );
+                    if container_chain_block_info.is_some() {
+                        let container_chain_block_author =
+                            container_chain_block_info.unwrap().author;
+
+                        if <CurrentSessionInactiveCollators<T>>::get()
+                            .contains(&container_chain_block_author)
+                        {
+                            let _ = <CurrentSessionInactiveCollators<T>>::try_mutate(
+                                |current_seesion_collators| -> DispatchResult {
+                                    current_seesion_collators
+                                        .retain(|c| c != &container_chain_block_author);
+                                    Ok(())
+                                },
+                            );
+                        }
                     }
                 });
         }

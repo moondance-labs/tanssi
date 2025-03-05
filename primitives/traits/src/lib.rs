@@ -592,3 +592,8 @@ pub trait ExternalIndexProvider {
 pub trait NodeInactivityTrackingHelper<AccountId> {
     fn is_node_inactive(node: &AccountId) -> bool;
 }
+
+// A trait to retrieve the current set of collators that are eligible to produce blocks
+pub trait CurrentEligibleCollatorsHelper<AccountId> {
+    fn get_eligible_collators() -> Vec<AccountId>;
+}

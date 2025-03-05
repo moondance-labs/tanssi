@@ -1879,6 +1879,7 @@ impl pallet_inactivity_tracking::Config for Runtime {
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type ContainerChainBlockAuthorInfoFetcher = AuthorNoting;
     type RegisteredContainerChainsFetcher = ContainerRegistrar;
+    type CurrentCollatorsListFetcher = PooledStaking;
 }
 
 construct_runtime! {
