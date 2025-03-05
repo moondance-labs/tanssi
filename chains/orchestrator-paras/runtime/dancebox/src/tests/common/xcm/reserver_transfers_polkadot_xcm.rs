@@ -30,7 +30,7 @@ use {
         weights::{Weight, WeightToFee},
     },
     sp_runtime::FixedU128,
-    staging_xcm::{
+    xcm::{
         latest::prelude::{Junctions::*, *},
         VersionedLocation,
     },

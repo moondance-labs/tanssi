@@ -32,7 +32,7 @@ mod tests;
 pub use {
     crate::consensus_orchestrator::OrchestratorAuraWorkerAuxData,
     cumulus_primitives_core::ParaId,
-    cumulus_relay_chain_interface::{call_remote_runtime_function, RelayChainInterface},
+    cumulus_relay_chain_interface::{call_runtime_api, RelayChainInterface},
     dc_orchestrator_chain_interface::OrchestratorChainInterface,
     dp_consensus::TanssiAuthorityAssignmentApi,
     manual_seal::{

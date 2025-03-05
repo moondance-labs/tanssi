@@ -71,7 +71,7 @@ pub mod time {
 pub mod snowbridge {
     use {
         frame_support::parameter_types,
-        staging_xcm::prelude::{Location, NetworkId},
+        xcm::prelude::{Location, NetworkId},
     };
 
     parameter_types! {

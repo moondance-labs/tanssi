@@ -24,7 +24,7 @@ use {
         assert_ok,
         weights::{Weight, WeightToFee},
     },
-    staging_xcm::{latest::prelude::*, VersionedLocation, VersionedXcm},
+    xcm::{latest::prelude::*, VersionedLocation, VersionedXcm},
     xcm_emulator::{assert_expected_events, Chain},
 };
 

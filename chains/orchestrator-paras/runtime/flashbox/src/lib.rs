@@ -22,6 +22,8 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+extern crate alloc;
+
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 use {
@@ -91,13 +93,13 @@ use {
     sp_consensus_slots::{Slot, SlotDuration},
     sp_core::{crypto::KeyTypeId, Get, MaxEncodedLen, OpaqueMetadata, H256},
     sp_runtime::{
-        create_runtime_str, generic, impl_opaque_keys,
+        generic, impl_opaque_keys,
         traits::{
             AccountIdConversion, AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto,
             IdentityLookup, Verify,
         },
         transaction_validity::{TransactionSource, TransactionValidity},
-        AccountId32, ApplyExtrinsicResult,
+        AccountId32, ApplyExtrinsicResult, Cow,
     },
     sp_std::{
         collections::{btree_map::BTreeMap, btree_set::BTreeSet},
@@ -126,8 +128,8 @@ pub type BlockId = generic::BlockId<Block>;
 /// CollatorId type expected by this runtime.
 pub type CollatorId = AccountId;
 
-/// The SignedExtension to the basic transaction logic.
-pub type SignedExtra = (
+/// The `TxExtension` to the basic transaction logic.
+pub type TxExtension = (
     frame_system::CheckNonZeroSender<Runtime>,
     frame_system::CheckSpecVersion<Runtime>,
     frame_system::CheckTxVersion<Runtime>,
@@ -141,10 +143,10 @@ pub type SignedExtra = (
 
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic =
-    generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, SignedExtra>;
+    generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, TxExtension>;
 
 /// Extrinsic type that has already been checked.
-pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, RuntimeCall, SignedExtra>;
+pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, RuntimeCall, TxExtension>;
 
 /// Executive: handles dispatch to the various modules.
 pub type Executive = frame_executive::Executive<
@@ -229,14 +231,14 @@ impl_opaque_keys! {
 
 #[sp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
-    spec_name: create_runtime_str!("flashbox"),
-    impl_name: create_runtime_str!("flashbox"),
+    spec_name: Cow::Borrowed("flashbox"),
+    impl_name: Cow::Borrowed("flashbox"),
     authoring_version: 1,
     spec_version: 1200,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
-    state_version: 1,
+    system_version: 1,
 };
 
 /// This determines the average expected block time that we are targeting.
@@ -371,6 +373,7 @@ impl frame_system::Config for Runtime {
     type PreInherents = ();
     type PostInherents = ();
     type PostTransactions = ();
+    type ExtensionsWeightInfo = ();
 }
 
 impl pallet_timestamp::Config for Runtime {
@@ -435,6 +438,7 @@ impl pallet_balances::Config for Runtime {
     type MaxFreezes = ConstU32<10>;
     type RuntimeHoldReason = RuntimeHoldReason;
     type RuntimeFreezeReason = RuntimeFreezeReason;
+    type DoneSlashHandler = ();
     type WeightInfo = weights::pallet_balances::SubstrateWeight<Runtime>;
 }
 
@@ -490,6 +494,7 @@ impl pallet_transaction_payment::Config for Runtime {
     type WeightToFee = WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
     type FeeMultiplierUpdate = SlowAdjustingFeeUpdate<Self>;
+    type WeightInfo = ();
 }
 
 pub const RELAY_CHAIN_SLOT_DURATION_MILLIS: u32 = 6000;
@@ -515,6 +520,7 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
     type ReservedXcmpWeight = ();
     type CheckAssociatedRelayNumber = RelayNumberMonotonicallyIncreases;
     type ConsensusHook = ConsensusHook;
+    type SelectCore = cumulus_pallet_parachain_system::DefaultCoreSelector<Runtime>;
 }
 
 pub struct ParaSlotProvider;
@@ -1348,7 +1354,7 @@ parameter_types! {
 impl pallet_multiblock_migrations::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     #[cfg(not(feature = "runtime-benchmarks"))]
-    type Migrations = ();
+    type Migrations = pallet_identity::migration::v2::LazyMigrationV1ToV2<Runtime>;
     // Benchmarks need mocked migrations to guarantee that they succeed.
     #[cfg(feature = "runtime-benchmarks")]
     type Migrations = pallet_multiblock_migrations::mock_helpers::MockedMigrations;
@@ -1624,6 +1630,7 @@ parameter_types! {
     pub const SubAccountDeposit: Balance = currency::deposit(1, 53);
     // Additional bytes adds 0 entries, storing 1 byte on-chain
     pub const ByteDeposit: Balance = currency::deposit(0, 1);
+    pub const UsernameDeposit: Balance = currency::deposit(0, 32);
     pub const MaxSubAccounts: u32 = 100;
     pub const MaxAdditionalFields: u32 = 100;
     pub const MaxRegistrars: u32 = 20;
@@ -1634,6 +1641,7 @@ impl pallet_identity::Config for Runtime {
     type Currency = Balances;
     type BasicDeposit = BasicDeposit;
     type ByteDeposit = ByteDeposit;
+    type UsernameDeposit = UsernameDeposit;
     type SubAccountDeposit = SubAccountDeposit;
     type MaxSubAccounts = MaxSubAccounts;
     type MaxRegistrars = MaxRegistrars;
@@ -1646,6 +1654,7 @@ impl pallet_identity::Config for Runtime {
     type SigningPublicKey = <Signature as Verify>::Signer;
     type UsernameAuthorityOrigin = EnsureRoot<Self::AccountId>;
     type PendingUsernameExpiration = ConstU32<{ 7 * DAYS }>;
+    type UsernameGracePeriod = ConstU32<{ 30 * DAYS }>;
     type MaxSuffixLength = ConstU32<7>;
     type MaxUsernameLength = ConstU32<32>;
     type WeightInfo = weights::pallet_identity::SubstrateWeight<Runtime>;
@@ -1680,6 +1689,7 @@ impl pallet_treasury::Config for Runtime {
     type Paymaster = PayFromAccount<Balances, TreasuryAccount>;
     type BalanceConverter = UnityAssetBalanceConversion;
     type PayoutPeriod = ConstU32<{ 30 * DAYS }>;
+    type BlockNumberProvider = System;
     #[cfg(feature = "runtime-benchmarks")]
     type BenchmarkHelper = tanssi_runtime_common::benchmarking::TreasuryBenchmarkHelper<Runtime>;
 }
@@ -1934,7 +1944,7 @@ impl_runtime_apis! {
 
         fn dispatch_benchmark(
             config: frame_benchmarking::BenchmarkConfig,
-        ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
+        ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, alloc::string::String> {
             use frame_benchmarking::{BenchmarkBatch, Benchmarking, BenchmarkError};
             use sp_core::storage::TrackedStorageKey;
 
