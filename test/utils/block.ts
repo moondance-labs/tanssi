@@ -479,8 +479,9 @@ export async function isEventEmittedInTheNextBlocks(
     return false;
 }
 
+// we should always use active era
 export const getCurrentEraStartBlock = async (api: ApiPromise): Promise<number> => {
-    const currentEra = await api.query.externalValidators.currentEra();
+    const currentEra = await api.query.externalValidators.activeEra();
     if (currentEra.isNone) {
         expect.fail("No external validators found");
     }
@@ -489,9 +490,36 @@ export const getCurrentEraStartBlock = async (api: ApiPromise): Promise<number> 
 
     let apiAtPreviousEpochBlock = await api.at(await api.rpc.chain.getBlockHash(epochStartBlock - 1));
 
-    while (currentEra === (await apiAtPreviousEpochBlock.query.externalValidators.currentEra())) {
+    while (
+        currentEra.unwrap().index.toNumber() ===
+        (await apiAtPreviousEpochBlock.query.externalValidators.activeEra()).unwrap().index.toNumber()
+    ) {
         epochStartBlock = (await apiAtPreviousEpochBlock.query.babe.epochStart()).toJSON()[1];
         apiAtPreviousEpochBlock = await api.at(await api.rpc.chain.getBlockHash(epochStartBlock - 1));
+    }
+
+    return epochStartBlock;
+};
+
+// getBlockHash is not available unless we use the current api, hence the reason to use 2
+export const getPastEraStartBlock = async (currentApi: ApiPromise, block: Number): Promise<number> => {
+    const apiAtCheckpointForEra = await currentApi.at(await currentApi.rpc.chain.getBlockHash(block));
+
+    const currentEra = await apiAtCheckpointForEra.query.externalValidators.activeEra();
+    if (currentEra.isNone) {
+        expect.fail("No external validators found");
+    }
+
+    let epochStartBlock = (await apiAtCheckpointForEra.query.babe.epochStart())[1].toNumber();
+
+    let apiAtPreviousEpochBlock = await currentApi.at(await currentApi.rpc.chain.getBlockHash(epochStartBlock - 1));
+
+    while (
+        currentEra.unwrap().index.toNumber() ===
+        (await apiAtPreviousEpochBlock.query.externalValidators.activeEra()).unwrap().index.toNumber()
+    ) {
+        epochStartBlock = (await apiAtPreviousEpochBlock.query.babe.epochStart()).toJSON()[1];
+        apiAtPreviousEpochBlock = await currentApi.at(await currentApi.rpc.chain.getBlockHash(epochStartBlock - 1));
     }
 
     return epochStartBlock;
