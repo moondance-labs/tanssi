@@ -22,12 +22,11 @@ if [[ "$(uname)" == "Darwin" ]]; then
         popd
     fi
 
-    echo "Building lodestar"
+    echo "Building lodestar in $artifacts_dir/lodestar"
     pushd "$artifacts_dir/lodestar"
     yarn install && yarn run build
-    # Create a symlink or copy binary to output directory
-    ln -sf "$(pwd)/packages/cli/bin/lodestar" "$output_bin_dir/lodestar"
-    chmod +x "$output_bin_dir/lodestar"
+    # Create a symlink to the actual lodestar executable
+    ln -sf "$artifacts_dir/lodestar/packages/cli/bin/lodestar.js" "$output_bin_dir/lodestar"
     popd
     
     # Build Geth from source
