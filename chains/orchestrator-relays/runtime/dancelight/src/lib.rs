@@ -1883,6 +1883,17 @@ impl pallet_pooled_staking::Config for Runtime {
     type WeightInfo = weights::pallet_pooled_staking::SubstrateWeight<Runtime>;
 }
 
+impl pallet_inactivity_tracking::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type CollatorId = AccountId;
+    type MaxInactiveSessions = ConstU32<5>;
+    type MaxCollatorsPerSession = ConstU32<100>;
+    type CurrentSessionIndex = CurrentSessionIndexGetter;
+    type ContainerChainBlockAuthorInfoFetcher = AuthorNoting;
+    type RegisteredContainerChainsFetcher = ContainerRegistrar;
+    type CurrentCollatorsListFetcher = PooledStaking;
+}
+
 construct_runtime! {
     pub enum Runtime
     {
@@ -1936,6 +1947,7 @@ construct_runtime! {
         // InflationRewards must be after Session
         InflationRewards: pallet_inflation_rewards = 33,
         PooledStaking: pallet_pooled_staking = 34,
+        InactivityTracking: pallet_inactivity_tracking = 35,
 
         // Governance stuff; uncallable initially.
         Treasury: pallet_treasury = 40,

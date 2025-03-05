@@ -1964,6 +1964,17 @@ impl pallet_multisig::Config for Runtime {
     type WeightInfo = weights::pallet_multisig::SubstrateWeight<Runtime>;
 }
 
+impl pallet_inactivity_tracking::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type CollatorId = CollatorId;
+    type MaxInactiveSessions = ConstU32<5>;
+    type MaxCollatorsPerSession = ConstU32<100>;
+    type CurrentSessionIndex = CurrentSessionIndexGetter;
+    type RegisteredContainerChainsFetcher = Registrar;
+    type ContainerChainBlockAuthorInfoFetcher = AuthorNoting;
+    type CurrentCollatorsListFetcher = PooledStaking;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime
@@ -2008,6 +2019,7 @@ construct_runtime!(
         PooledStaking: pallet_pooled_staking = 34,
         // InflationRewards must be after Session and AuthorInherent
         InflationRewards: pallet_inflation_rewards = 35,
+        InactivityTracking: pallet_inactivity_tracking = 36,
 
         // Treasury stuff.
         Treasury: pallet_treasury::{Pallet, Storage, Config<T>, Event<T>, Call} = 40,
