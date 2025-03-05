@@ -20,7 +20,7 @@ describeSuite({
             title: "Number of bonded eras does not exceed bonding duration",
             test: async () => {
                 const bondedEras = await api.query.externalValidatorSlashes.bondedEras();
-                const bondedDuration = await api.consts.externalValidatorSlashes.bondingDuration;
+                const bondedDuration = api.consts.externalValidatorSlashes.bondingDuration;
                 const currentEra = (await api.query.externalValidators.activeEra()).unwrap();
 
                 if (currentEra.index < bondedDuration) {
@@ -36,7 +36,7 @@ describeSuite({
             title: "Slash message should increase nonce",
             timeout: 600000,
             test: async () => {
-                const bondedDuration = await api.consts.externalValidatorSlashes.bondingDuration;
+                const bondedDuration = api.consts.externalValidatorSlashes.bondingDuration;
                 const currentEra = (await api.query.externalValidators.activeEra()).unwrap();
 
                 let eraToBeAnalyzed = currentEra.index;
