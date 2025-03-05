@@ -480,6 +480,9 @@ export async function isEventEmittedInTheNextBlocks(
 }
 
 // we should always use active era
+// currentEra is used for scheduling an era change in the next session
+// active era informs about the era that is now active
+// for checking rewards and slashes, we should always use active
 export const getCurrentEraStartBlock = async (api: ApiPromise): Promise<number> => {
     const currentEra = await api.query.externalValidators.activeEra();
     if (currentEra.isNone) {
@@ -501,8 +504,10 @@ export const getCurrentEraStartBlock = async (api: ApiPromise): Promise<number> 
     return epochStartBlock;
 };
 
-// getBlockHash is not available unless we use the current api, hence the reason to use 2
-export const getPastEraStartBlock = async (currentApi: ApiPromise, block: Number): Promise<number> => {
+// Same as getCurrentEraStartBlock, but using and api at a certain block height
+// the block that you pass is the block from which we will get the active era
+// and from which we will get the era start block number
+export const getPastEraStartBlock = async (currentApi: ApiPromise, block: number): Promise<number> => {
     const apiAtCheckpointForEra = await currentApi.at(await currentApi.rpc.chain.getBlockHash(block));
 
     const currentEra = await apiAtCheckpointForEra.query.externalValidators.activeEra();
