@@ -52,12 +52,12 @@ use {
     parachains_scheduler::common::Assignment,
     parity_scale_codec::{Decode, Encode, MaxEncodedLen},
     primitives::{
-        slashing, vstaging::CandidateEvent, vstaging::CommittedCandidateReceiptV2,
-        vstaging::CoreState, vstaging::ScrapedOnChainVotes, ApprovalVotingParams, BlockNumber,
-        CandidateHash, CoreIndex, DisputeState, ExecutorParams, GroupRotationInfo, Hash,
-        Id as ParaId, InboundDownwardMessage, InboundHrmpMessage, Moment, NodeFeatures, Nonce,
-        OccupiedCoreAssumption, PersistedValidationData, SessionInfo, Signature,
-        ValidationCodeHash, ValidatorId, ValidatorIndex, PARACHAIN_KEY_TYPE_ID,
+        slashing,
+        vstaging::{CandidateEvent, CommittedCandidateReceiptV2, CoreState, ScrapedOnChainVotes},
+        ApprovalVotingParams, BlockNumber, CandidateHash, CoreIndex, DisputeState, ExecutorParams,
+        GroupRotationInfo, Hash, Id as ParaId, InboundDownwardMessage, InboundHrmpMessage, Moment,
+        NodeFeatures, Nonce, OccupiedCoreAssumption, PersistedValidationData, SessionInfo,
+        Signature, ValidationCodeHash, ValidatorId, ValidatorIndex, PARACHAIN_KEY_TYPE_ID,
     },
     runtime_common::{
         self as polkadot_runtime_common, impl_runtime_weights, impls::ToAuthor, paras_registrar,
@@ -2166,7 +2166,8 @@ where
 
 impl pallet_registrar::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type RegistrarOrigin = EnsureRoot<AccountId>;
+    type RegistrarOrigin =
+        EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;
     type MarkValidForCollatingOrigin = EnsureRoot<AccountId>;
     type MaxLengthParaIds = MaxLengthParaIds;
     type MaxGenesisDataSize = MaxEncodedGenesisDataSize;
