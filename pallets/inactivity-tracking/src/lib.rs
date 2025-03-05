@@ -15,9 +15,12 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 #![cfg_attr(not(feature = "std"), no_std)]
 use {
-    sp_runtime::traits::Get,
+    sp_runtime::{traits::Get, BoundedVec},
     sp_staking::SessionIndex,
-    tp_traits::{GetSessionIndex, NodeInactivityTrackingHelper},
+    tp_traits::{
+        GetCurrentContainerChains, GetSessionIndex, LatestAuthorInfoFetcher,
+        NodeInactivityTrackingHelper,
+    },
 };
 
 pub use pallet::*;
@@ -53,8 +56,18 @@ pub mod pallet {
         #[pallet::constant]
         type MaxInactiveSessions: Get<u32>;
 
+        /// The maximum amount of collators that can stored for a session
+        #[pallet::constant]
+        type MaxCollatorsPerSession: Get<u32>;
+
         /// Helper that returns the current session index.
         type CurrentSessionIndex: GetSessionIndex<SessionIndex>;
+
+        /// Helper that fetches the latest set of container chains valid for collation
+        type RegisteredContainerChainsFetcher: GetCurrentContainerChains;
+
+        /// Helper that fetches the latest block author info for a container chain
+        type ContainerChainBlockAuthorInfoFetcher: LatestAuthorInfoFetcher<Self::CollatorId>;
     }
 
     /// A list of double map of inactive collators for a session
@@ -69,6 +82,15 @@ pub mod pallet {
         OptionQuery,
     >;
 
+    /// A list of inactive collators for a session. Repopulated at the start of every session
+    #[pallet::storage]
+    pub type CurrentSessionInactiveCollators<T: Config> =
+        StorageValue<_, BoundedVec<T::CollatorId, T::MaxCollatorsPerSession>, ValueQuery>;
+
+    ///
+    #[pallet::storage]
+    pub type LastUnprocessedSession<T: Config> = StorageValue<_, SessionIndex, ValueQuery>;
+
     #[pallet::event]
     pub enum Event<T: Config> {}
 
@@ -81,7 +103,26 @@ pub mod pallet {
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         fn on_initialize(_n: BlockNumberFor<T>) -> Weight {
-            Self::update_inactive_collator_info();
+            let current_session = T::CurrentSessionIndex::session_index();
+            let current_unprocessed_session = <LastUnprocessedSession<T>>::get();
+
+            // Update inactive collator records only after a session has ended
+            if current_unprocessed_session < current_session {
+                // Update the inactive collator records for the previous session
+                <CurrentSessionInactiveCollators<T>>::get()
+                    .into_iter()
+                    .for_each(|collator_id| {
+                        <InactiveCollators<T>>::insert(
+                            current_unprocessed_session,
+                            collator_id,
+                            (),
+                        );
+                    });
+
+                <LastUnprocessedSession<T>>::put(current_session);
+            } else {
+                Self::update_collators_activity();
+            }
             // Self::update_inactive_validator_info();
             Weight::zero()
         }
@@ -92,16 +133,33 @@ pub mod pallet {
     }
 
     impl<T: Config> Pallet<T> {
-        fn update_inactive_collator_info() {
-            let _current_session = T::CurrentSessionIndex::session_index();
-            // TO DO: implement inactivity tracking
-            // A node has to be marked as inactive if
-            // 1. It has not produced a block in the last session
+        fn update_collators_activity() {
+            // Collator can be marked as inactive only if:
+            // 1. It has not produced a block in the previous session
             // 2. Chain has not advanced at all in the previous session
-            if false {
-                //<InactiveCollators<T>>::insert(current_session, collator_id, ());
-            }
+
+            T::RegisteredContainerChainsFetcher::current_container_chains()
+                .into_iter()
+                .for_each(|chain_id| {
+                    let latest_container_chain_author =
+                        T::ContainerChainBlockAuthorInfoFetcher::get_latest_author_info(chain_id)
+                            .unwrap()
+                            .author;
+
+                    if <CurrentSessionInactiveCollators<T>>::get()
+                        .contains(&latest_container_chain_author)
+                    {
+                        let _ = <CurrentSessionInactiveCollators<T>>::try_mutate(
+                            |current_seesion_collators| -> DispatchResult {
+                                current_seesion_collators
+                                    .retain(|c| c != &latest_container_chain_author);
+                                Ok(())
+                            },
+                        );
+                    }
+                });
         }
+
         fn cleanup_inactive_collator_info() {
             let current_session = T::CurrentSessionIndex::session_index();
             let minimum_sessions_required = T::MaxInactiveSessions::get() + 1;

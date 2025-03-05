@@ -1950,10 +1950,11 @@ impl pallet_multisig::Config for Runtime {
 impl pallet_inactivity_tracking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type CollatorId = CollatorId;
-
     type MaxInactiveSessions = ConstU32<5>;
-
+    type MaxCollatorsPerSession = ConstU32<100>;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
+    type RegisteredContainerChainsFetcher = Registrar;
+    type ContainerChainBlockAuthorInfoFetcher = AuthorNoting;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
