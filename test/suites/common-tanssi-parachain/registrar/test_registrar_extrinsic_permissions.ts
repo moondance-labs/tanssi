@@ -30,7 +30,7 @@ describeSuite({
                 const { result: pauseContainerResultAttempt1 } = await context.createBlock(
                     await polkadotJs.tx.registrar.pauseContainerChain(paraId).signAsync(bob)
                 );
-                expect(pauseContainerResultAttempt1.successful).to.be.false;
+                expect(pauseContainerResultAttempt1.successful).toEqual(false);
                 expect(pauseContainerResultAttempt1.error.name).toEqual("BadOrigin");
 
                 // Set bob as manager
@@ -40,7 +40,7 @@ describeSuite({
                     await polkadotJs.tx.sudo.sudo(tx).signAsync(alice)
                 );
 
-                expect(sudoResult.successful).to.be.true;
+                expect(sudoResult.successful).toEqual(true);
 
                 // Now it should show ParaIdNotRegistered error but not the BadOrigin
                 const { result: pauseContainerResultAttempt2 } = await context.createBlock(
