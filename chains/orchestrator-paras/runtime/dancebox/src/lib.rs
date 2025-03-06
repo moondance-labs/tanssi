@@ -2034,11 +2034,13 @@ construct_runtime!(
 mod benches {
     frame_benchmarking::define_benchmarks!(
         [frame_system, frame_system_benchmarking::Pallet::<Runtime>]
+        [frame_system_extensions, frame_system_benchmarking::extensions::Pallet::<Runtime>]
         [cumulus_pallet_parachain_system, ParachainSystem]
         [pallet_timestamp, Timestamp]
         [pallet_sudo, Sudo]
         [pallet_utility, Utility]
         [pallet_proxy, Proxy]
+        [pallet_transaction_payment, TransactionPayment]
         [pallet_tx_pause, TxPause]
         [pallet_balances, Balances]
         [pallet_stream_payment, StreamPayment]
