@@ -22,13 +22,19 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+extern crate alloc;
+
 pub mod xcm_config;
 
-use frame_support::storage::{with_storage_layer, with_transaction};
-use frame_support::traits::{ExistenceRequirement, WithdrawReasons};
-use polkadot_runtime_common::SlowAdjustingFeeUpdate;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
+use {
+    frame_support::{
+        storage::{with_storage_layer, with_transaction},
+        traits::{ExistenceRequirement, WithdrawReasons},
+    },
+    polkadot_runtime_common::SlowAdjustingFeeUpdate,
+};
 
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
@@ -39,7 +45,6 @@ pub mod weights;
 #[cfg(test)]
 mod tests;
 
-use pallet_services_payment::BalanceOf;
 use {
     cumulus_pallet_parachain_system::{
         RelayChainStateProof, RelayNumberMonotonicallyIncreases, RelaychainDataProvider,
@@ -85,7 +90,9 @@ use {
     pallet_pooled_staking::traits::{IsCandidateEligible, Timer},
     pallet_registrar::RegistrarHooks,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
-    pallet_services_payment::{ProvideBlockProductionCost, ProvideCollatorAssignmentCost},
+    pallet_services_payment::{
+        BalanceOf, ProvideBlockProductionCost, ProvideCollatorAssignmentCost,
+    },
     pallet_session::{SessionManager, ShouldEndSession},
     pallet_stream_payment_runtime_api::{StreamPaymentApiError, StreamPaymentApiStatus},
     pallet_transaction_payment::FungibleAdapter,
@@ -99,26 +106,27 @@ use {
     sp_consensus_slots::Slot,
     sp_core::{crypto::KeyTypeId, Get, MaxEncodedLen, OpaqueMetadata, H256},
     sp_runtime::{
-        create_runtime_str, generic, impl_opaque_keys,
+        generic, impl_opaque_keys,
         traits::{
             AccountIdConversion, AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto,
             Hash as HashT, IdentityLookup, Verify,
         },
         transaction_validity::{TransactionSource, TransactionValidity},
-        AccountId32, ApplyExtrinsicResult,
+        AccountId32, ApplyExtrinsicResult, Cow,
     },
-    sp_std::collections::btree_map::BTreeMap,
-    sp_std::{collections::btree_set::BTreeSet, marker::PhantomData, prelude::*},
+    sp_std::{
+        collections::{btree_map::BTreeMap, btree_set::BTreeSet},
+        marker::PhantomData,
+        prelude::*,
+    },
     sp_version::RuntimeVersion,
-    staging_xcm::{
-        IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation, VersionedXcm,
-    },
     tp_traits::{
         apply, derive_storage_traits, GetContainerChainAuthor, GetHostConfiguration,
         GetSessionContainerChains, MaybeSelfChainBlockAuthor, ParaIdAssignmentHooks,
         RelayStorageRootProvider, RemoveInvulnerables, SlotFrequency,
     },
     tp_xcm_core_buyer::BuyCoreCollatorProof,
+    xcm::{IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation, VersionedXcm},
     xcm_runtime_apis::{
         dry_run::{CallDryRunEffects, Error as XcmDryRunApiError, XcmDryRunEffects},
         fees::Error as XcmPaymentApiError,
@@ -139,8 +147,8 @@ pub type BlockId = generic::BlockId<Block>;
 /// CollatorId type expected by this runtime.
 pub type CollatorId = AccountId;
 
-/// The SignedExtension to the basic transaction logic.
-pub type SignedExtra = (
+/// The `TxExtension` to the basic transaction logic.
+pub type TxExtension = (
     frame_system::CheckNonZeroSender<Runtime>,
     frame_system::CheckSpecVersion<Runtime>,
     frame_system::CheckTxVersion<Runtime>,
@@ -154,10 +162,10 @@ pub type SignedExtra = (
 
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic =
-    generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, SignedExtra>;
+    generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, TxExtension>;
 
 /// Extrinsic type that has already been checked.
-pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, RuntimeCall, SignedExtra>;
+pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, RuntimeCall, TxExtension>;
 
 /// Executive: handles dispatch to the various modules.
 pub type Executive = frame_executive::Executive<
@@ -249,14 +257,14 @@ impl_opaque_keys! {
 
 #[sp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
-    spec_name: create_runtime_str!("dancebox"),
-    impl_name: create_runtime_str!("dancebox"),
+    spec_name: Cow::Borrowed("dancebox"),
+    impl_name: Cow::Borrowed("dancebox"),
     authoring_version: 1,
     spec_version: 1200,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
-    state_version: 1,
+    system_version: 1,
 };
 
 /// This determines the average expected block time that we are targeting.
@@ -390,6 +398,7 @@ impl frame_system::Config for Runtime {
     type PreInherents = ();
     type PostInherents = ();
     type PostTransactions = ();
+    type ExtensionsWeightInfo = ();
 }
 
 impl pallet_timestamp::Config for Runtime {
@@ -454,6 +463,7 @@ impl pallet_balances::Config for Runtime {
     type MaxFreezes = ConstU32<10>;
     type RuntimeHoldReason = RuntimeHoldReason;
     type RuntimeFreezeReason = RuntimeFreezeReason;
+    type DoneSlashHandler = ();
     type WeightInfo = weights::pallet_balances::SubstrateWeight<Runtime>;
 }
 
@@ -508,6 +518,7 @@ impl pallet_transaction_payment::Config for Runtime {
     type WeightToFee = WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
     type FeeMultiplierUpdate = SlowAdjustingFeeUpdate<Self>;
+    type WeightInfo = ();
 }
 
 parameter_types! {
@@ -538,6 +549,7 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
     type ReservedXcmpWeight = ReservedXcmpWeight;
     type CheckAssociatedRelayNumber = RelayNumberMonotonicallyIncreases;
     type ConsensusHook = ConsensusHook;
+    type SelectCore = cumulus_pallet_parachain_system::DefaultCoreSelector<Runtime>;
 }
 pub struct ParaSlotProvider;
 impl Get<(Slot, SlotDuration)> for ParaSlotProvider {
@@ -1169,13 +1181,14 @@ impl pallet_data_preservers::Config for Runtime {
 
 impl pallet_author_noting::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type ContainerChains = Registrar;
+    type ContainerChains = CollatorAssignment;
     type SlotBeacon = dp_consensus::AuraDigestSlotBeacon<Runtime>;
     type ContainerChainAuthor = CollatorAssignment;
     type AuthorNotingHook = (XcmCoreBuyer, InflationRewards, ServicesPayment);
     type RelayOrPara = pallet_author_noting::ParaMode<
         cumulus_pallet_parachain_system::RelaychainDataProvider<Self>,
     >;
+    type MaxContainerChains = MaxLengthParaIds;
     type WeightInfo = weights::pallet_author_noting::SubstrateWeight<Runtime>;
 }
 
@@ -1515,7 +1528,7 @@ parameter_types! {
 impl pallet_multiblock_migrations::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     #[cfg(not(feature = "runtime-benchmarks"))]
-    type Migrations = ();
+    type Migrations = pallet_identity::migration::v2::LazyMigrationV1ToV2<Runtime>;
     // Benchmarks need mocked migrations to guarantee that they succeed.
     #[cfg(feature = "runtime-benchmarks")]
     type Migrations = pallet_multiblock_migrations::mock_helpers::MockedMigrations;
@@ -1867,6 +1880,7 @@ parameter_types! {
     pub const SubAccountDeposit: Balance = currency::deposit(1, 53);
     // Additional bytes adds 0 entries, storing 1 byte on-chain
     pub const ByteDeposit: Balance = currency::deposit(0, 1);
+    pub const UsernameDeposit: Balance = currency::deposit(0, 32);
     pub const MaxSubAccounts: u32 = 100;
     pub const MaxAdditionalFields: u32 = 100;
     pub const MaxRegistrars: u32 = 20;
@@ -1877,6 +1891,7 @@ impl pallet_identity::Config for Runtime {
     type Currency = Balances;
     type BasicDeposit = BasicDeposit;
     type ByteDeposit = ByteDeposit;
+    type UsernameDeposit = UsernameDeposit;
     type SubAccountDeposit = SubAccountDeposit;
     type MaxSubAccounts = MaxSubAccounts;
     type MaxRegistrars = MaxRegistrars;
@@ -1889,6 +1904,7 @@ impl pallet_identity::Config for Runtime {
     type SigningPublicKey = <Signature as Verify>::Signer;
     type UsernameAuthorityOrigin = EnsureRoot<Self::AccountId>;
     type PendingUsernameExpiration = ConstU32<{ 7 * DAYS }>;
+    type UsernameGracePeriod = ConstU32<{ 30 * DAYS }>;
     type MaxSuffixLength = ConstU32<7>;
     type MaxUsernameLength = ConstU32<32>;
     type WeightInfo = weights::pallet_identity::SubstrateWeight<Runtime>;
@@ -1925,6 +1941,7 @@ impl pallet_treasury::Config for Runtime {
     // TODO: implement pallet-asset-rate to allow the treasury to spend other assets
     type BalanceConverter = UnityAssetBalanceConversion;
     type PayoutPeriod = ConstU32<{ 30 * DAYS }>;
+    type BlockNumberProvider = System;
     #[cfg(feature = "runtime-benchmarks")]
     type BenchmarkHelper = tanssi_runtime_common::benchmarking::TreasuryBenchmarkHelper<Runtime>;
 }
@@ -2247,7 +2264,7 @@ impl_runtime_apis! {
 
         fn dispatch_benchmark(
             config: frame_benchmarking::BenchmarkConfig,
-        ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
+        ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, alloc::string::String> {
             use frame_benchmarking::{BenchmarkBatch, Benchmarking, BenchmarkError};
             use sp_core::storage::TrackedStorageKey;
             use cumulus_pallet_session_benchmarking::Pallet as SessionBench;
@@ -2264,7 +2281,7 @@ impl_runtime_apis! {
                 }
             }
 
-            use staging_xcm::latest::prelude::*;
+            use xcm::latest::prelude::*;
             use crate::xcm_config::SelfReserve;
             parameter_types! {
                 pub ExistentialDepositAsset: Option<Asset> = Some((
@@ -2544,6 +2561,26 @@ impl_runtime_apis! {
                 assigned_collators.container_chains.get(&para_id).cloned()
             }
         }
+
+        /// Returns the list of `ParaId` of registered chains with at least some
+        /// collators. This filters out parachains with no assigned collators.
+        /// Since runtime APIs are called on top of a parent block, we need to be carefull
+        /// at session boundaries. If the next block will change session, this function returns
+        /// the parachains relevant for the next session.
+        fn parachains_with_some_collators() -> Vec<ParaId> {
+            use tp_traits::{GetContainerChainsWithCollators, ForSession};
+
+            // We should return the container-chains for the session in which we are kicking in
+            let parent_number = System::block_number();
+            let should_end_session = <Runtime as pallet_session::Config>::ShouldEndSession::should_end_session(parent_number + 1);
+            let for_session = if should_end_session { ForSession::Next } else { ForSession::Current };
+
+            CollatorAssignment::container_chains_with_collators(for_session)
+                .into_iter()
+                .filter_map(
+                    |(para_id, collators)| (!collators.is_empty()).then_some(para_id)
+                ).collect()
+        }
     }
 
     impl pallet_registrar_runtime_api::RegistrarApi<Block, ParaId> for Runtime {
@@ -2755,7 +2792,7 @@ impl_runtime_apis! {
                 proof
             });
 
-            let unsigned_extrinsic = UncheckedExtrinsic::new_unsigned(call);
+            let unsigned_extrinsic = UncheckedExtrinsic::new_bare(call);
 
             Box::new(unsigned_extrinsic)
         }
@@ -2770,17 +2807,17 @@ impl_runtime_apis! {
     }
 
     impl xcm_runtime_apis::fees::XcmPaymentApi<Block> for Runtime {
-        fn query_acceptable_payment_assets(xcm_version: staging_xcm::Version) -> Result<Vec<VersionedAssetId>, XcmPaymentApiError> {
-            if !matches!(xcm_version, 3 | 4) {
+        fn query_acceptable_payment_assets(xcm_version: xcm::Version) -> Result<Vec<VersionedAssetId>, XcmPaymentApiError> {
+            if !matches!(xcm_version, 3..=5) {
                 return Err(XcmPaymentApiError::UnhandledXcmVersion);
             }
 
-            Ok([VersionedAssetId::V4(xcm_config::SelfReserve::get().into())]
+            Ok([VersionedAssetId::V5(xcm_config::SelfReserve::get().into())]
                 .into_iter()
                 .chain(
                     pallet_asset_rate::ConversionRateToNative::<Runtime>::iter_keys().filter_map(|asset_id_u16| {
                         pallet_foreign_asset_creator::AssetIdToForeignAsset::<Runtime>::get(asset_id_u16).map(|location| {
-                            VersionedAssetId::V4(location.into())
+                            VersionedAssetId::V5(location.into())
                         }).or_else(|| {
                             log::warn!("Asset `{}` is present in pallet_asset_rate but not in pallet_foreign_asset_creator", asset_id_u16);
                             None
@@ -2794,17 +2831,17 @@ impl_runtime_apis! {
         }
 
         fn query_weight_to_asset_fee(weight: Weight, asset: VersionedAssetId) -> Result<u128, XcmPaymentApiError> {
-            let local_asset = VersionedAssetId::V4(xcm_config::SelfReserve::get().into());
+            let local_asset = VersionedAssetId::V5(xcm_config::SelfReserve::get().into());
             let asset = asset
-                .into_version(4)
+                .into_version(5)
                 .map_err(|_| XcmPaymentApiError::VersionedConversionFailed)?;
 
             if asset == local_asset {
                 Ok(WeightToFee::weight_to_fee(&weight))
             } else {
                 let native_fee = WeightToFee::weight_to_fee(&weight);
-                let asset_v4: staging_xcm::opaque::lts::AssetId = asset.try_into().map_err(|_| XcmPaymentApiError::VersionedConversionFailed)?;
-                let location: staging_xcm::opaque::lts::Location = asset_v4.0;
+                let asset_v5: xcm::latest::AssetId = asset.try_into().map_err(|_| XcmPaymentApiError::VersionedConversionFailed)?;
+                let location: xcm::latest::Location = asset_v5.0;
                 let asset_id = pallet_foreign_asset_creator::ForeignAssetToAssetId::<Runtime>::get(location).ok_or(XcmPaymentApiError::AssetNotFound)?;
                 let asset_rate = AssetRate::to_asset_balance(native_fee, asset_id);
                 match asset_rate {

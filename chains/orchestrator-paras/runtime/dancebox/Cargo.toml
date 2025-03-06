@@ -109,9 +109,9 @@ pallet-xcm = { workspace = true }
 pallet-xcm-benchmarks = { workspace = true, optional = true }
 polkadot-parachain-primitives = { workspace = true }
 polkadot-runtime-common = { workspace = true }
-staging-xcm = { workspace = true }
-staging-xcm-builder = { workspace = true }
-staging-xcm-executor = { workspace = true }
+xcm = { workspace = true }
+xcm-builder = { workspace = true }
+xcm-executor = { workspace = true }
 xcm-runtime-apis = { workspace = true }
 
 # Cumulus
@@ -268,9 +268,6 @@ std = [
 	"sp-transaction-pool/std",
 	"sp-trie/std",
 	"sp-version/std",
-	"staging-xcm-builder/std",
-	"staging-xcm-executor/std",
-	"staging-xcm/std",
 	"tanssi-relay-encoder/std",
 	"tanssi-runtime-common/std",
 	"test-relay-sproof-builder/std",
@@ -280,8 +277,11 @@ std = [
 	"tp-xcm-core-buyer/std",
 	"westend-runtime-constants/std",
 	"westend-runtime/std",
+	"xcm-builder/std",
+	"xcm-executor/std",
 	"xcm-primitives/std",
 	"xcm-runtime-apis/std",
+	"xcm/std",
 ]
 
 # Allow to print logs details (no wasm:stripped)
@@ -329,6 +329,7 @@ runtime-benchmarks = [
 	"pallet-stream-payment/runtime-benchmarks",
 	"pallet-sudo/runtime-benchmarks",
 	"pallet-timestamp/runtime-benchmarks",
+	"pallet-transaction-payment/runtime-benchmarks",
 	"pallet-treasury/runtime-benchmarks",
 	"pallet-tx-pause/runtime-benchmarks",
 	"pallet-utility/runtime-benchmarks",
@@ -343,12 +344,12 @@ runtime-benchmarks = [
 	"rococo-runtime/runtime-benchmarks",
 	"sc-service/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
-	"staging-xcm-builder/runtime-benchmarks",
-	"staging-xcm-executor/runtime-benchmarks",
 	"tanssi-runtime-common/runtime-benchmarks",
 	"tp-traits/runtime-benchmarks",
 	"tp-xcm-core-buyer/runtime-benchmarks",
 	"westend-runtime/runtime-benchmarks",
+	"xcm-builder/runtime-benchmarks",
+	"xcm-executor/runtime-benchmarks",
 	"xcm-primitives/runtime-benchmarks",
 	"xcm-runtime-apis/runtime-benchmarks",
 ]

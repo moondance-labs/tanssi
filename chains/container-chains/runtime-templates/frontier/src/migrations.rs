@@ -176,8 +176,8 @@ where
             XcmpQueueMigrationFixVersion::<Runtime, XcmpQueue>(Default::default());
         let migrate_xcmp_queue_v3 = XcmpQueueMigrationV3::<Runtime>(Default::default());
         let migrate_xcmp_queue_v4 = XcmpQueueMigrationV4::<Runtime>(Default::default());
-        let migrate_xcm_executor_utils_v4 =
-            pallet_xcm_executor_utils::migrations::MigrateToV1::<Runtime>(Default::default());
+        //let migrate_xcm_executor_utils_v4 =
+        //    pallet_xcm_executor_utils::migrations::MigrateToV1::<Runtime>(Default::default());
         let migrate_pallet_xcm_v4 = MigrateToLatestXcmVersion::<Runtime>(Default::default());
         let migrate_precompile_proxy_code =
             MigratePrecompileProxyDummyCode::<Runtime>(Default::default());
@@ -190,7 +190,7 @@ where
             Box::new(migrate_xcmp_queue_v2),
             Box::new(migrate_xcmp_queue_v3),
             Box::new(migrate_xcmp_queue_v4),
-            Box::new(migrate_xcm_executor_utils_v4),
+            //Box::new(migrate_xcm_executor_utils_v4),
             Box::new(migrate_pallet_xcm_v4),
             Box::new(migrate_precompile_proxy_code),
             Box::new(migrate_precompile_xcm_code),

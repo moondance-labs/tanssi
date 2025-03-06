@@ -14,18 +14,18 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use crate::tests::common::ExtBuilder;
-use crate::{ExternalValidators, Runtime};
-use frame_support::pallet_prelude::*;
-use hex_literal::hex;
-use keyring::AccountKeyring;
-use snowbridge_core::{Channel, PRIMARY_GOVERNANCE_CHANNEL};
-use snowbridge_router_primitives::inbound::envelope::Envelope;
-use snowbridge_router_primitives::inbound::MessageProcessor;
-use sp_core::{H160, H256};
-use sp_runtime::DispatchError;
-use tp_bridge::symbiotic_message_processor::{
-    InboundCommand, Message, Payload, SymbioticMessageProcessor, MAGIC_BYTES,
+use {
+    crate::{tests::common::ExtBuilder, ExternalValidators, Runtime},
+    frame_support::pallet_prelude::*,
+    hex_literal::hex,
+    keyring::AccountKeyring,
+    snowbridge_core::{Channel, PRIMARY_GOVERNANCE_CHANNEL},
+    snowbridge_router_primitives::inbound::{envelope::Envelope, MessageProcessor},
+    sp_core::{H160, H256},
+    sp_runtime::DispatchError,
+    tp_bridge::symbiotic_message_processor::{
+        InboundCommand, Message, Payload, SymbioticMessageProcessor, MAGIC_BYTES,
+    },
 };
 
 #[test]

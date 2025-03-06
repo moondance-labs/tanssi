@@ -22,11 +22,15 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-use frame_support::storage::{with_storage_layer, with_transaction};
-use frame_support::traits::{ExistenceRequirement, WithdrawReasons};
+extern crate alloc;
+
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 use {
+    frame_support::{
+        storage::{with_storage_layer, with_transaction},
+        traits::{ExistenceRequirement, WithdrawReasons},
+    },
     pallet_services_payment::ProvideCollatorAssignmentCost,
     polkadot_runtime_common::SlowAdjustingFeeUpdate,
 };
@@ -40,7 +44,6 @@ pub mod weights;
 #[cfg(test)]
 mod tests;
 
-use pallet_services_payment::BalanceOf;
 use {
     cumulus_pallet_parachain_system::RelayNumberMonotonicallyIncreases,
     cumulus_primitives_core::{relay_chain::SessionIndex, BodyId, ParaId},
@@ -78,7 +81,7 @@ use {
     pallet_invulnerables::InvulnerableRewardDistribution,
     pallet_registrar::RegistrarHooks,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
-    pallet_services_payment::ProvideBlockProductionCost,
+    pallet_services_payment::{BalanceOf, ProvideBlockProductionCost},
     pallet_session::{SessionManager, ShouldEndSession},
     pallet_stream_payment_runtime_api::{StreamPaymentApiError, StreamPaymentApiStatus},
     pallet_transaction_payment::FungibleAdapter,
@@ -90,16 +93,19 @@ use {
     sp_consensus_slots::{Slot, SlotDuration},
     sp_core::{crypto::KeyTypeId, Get, MaxEncodedLen, OpaqueMetadata, H256},
     sp_runtime::{
-        create_runtime_str, generic, impl_opaque_keys,
+        generic, impl_opaque_keys,
         traits::{
             AccountIdConversion, AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto,
             IdentityLookup, Verify,
         },
         transaction_validity::{TransactionSource, TransactionValidity},
-        AccountId32, ApplyExtrinsicResult,
+        AccountId32, ApplyExtrinsicResult, Cow,
     },
-    sp_std::collections::btree_map::BTreeMap,
-    sp_std::{collections::btree_set::BTreeSet, marker::PhantomData, prelude::*},
+    sp_std::{
+        collections::{btree_map::BTreeMap, btree_set::BTreeSet},
+        marker::PhantomData,
+        prelude::*,
+    },
     sp_version::RuntimeVersion,
     tp_traits::{
         apply, derive_storage_traits, GetContainerChainAuthor, GetHostConfiguration,
@@ -122,8 +128,8 @@ pub type BlockId = generic::BlockId<Block>;
 /// CollatorId type expected by this runtime.
 pub type CollatorId = AccountId;
 
-/// The SignedExtension to the basic transaction logic.
-pub type SignedExtra = (
+/// The `TxExtension` to the basic transaction logic.
+pub type TxExtension = (
     frame_system::CheckNonZeroSender<Runtime>,
     frame_system::CheckSpecVersion<Runtime>,
     frame_system::CheckTxVersion<Runtime>,
@@ -137,10 +143,10 @@ pub type SignedExtra = (
 
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic =
-    generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, SignedExtra>;
+    generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, TxExtension>;
 
 /// Extrinsic type that has already been checked.
-pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, RuntimeCall, SignedExtra>;
+pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, RuntimeCall, TxExtension>;
 
 /// Executive: handles dispatch to the various modules.
 pub type Executive = frame_executive::Executive<
@@ -225,14 +231,14 @@ impl_opaque_keys! {
 
 #[sp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
-    spec_name: create_runtime_str!("flashbox"),
-    impl_name: create_runtime_str!("flashbox"),
+    spec_name: Cow::Borrowed("flashbox"),
+    impl_name: Cow::Borrowed("flashbox"),
     authoring_version: 1,
     spec_version: 1200,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
-    state_version: 1,
+    system_version: 1,
 };
 
 /// This determines the average expected block time that we are targeting.
@@ -367,6 +373,7 @@ impl frame_system::Config for Runtime {
     type PreInherents = ();
     type PostInherents = ();
     type PostTransactions = ();
+    type ExtensionsWeightInfo = ();
 }
 
 impl pallet_timestamp::Config for Runtime {
@@ -431,6 +438,7 @@ impl pallet_balances::Config for Runtime {
     type MaxFreezes = ConstU32<10>;
     type RuntimeHoldReason = RuntimeHoldReason;
     type RuntimeFreezeReason = RuntimeFreezeReason;
+    type DoneSlashHandler = ();
     type WeightInfo = weights::pallet_balances::SubstrateWeight<Runtime>;
 }
 
@@ -486,6 +494,7 @@ impl pallet_transaction_payment::Config for Runtime {
     type WeightToFee = WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
     type FeeMultiplierUpdate = SlowAdjustingFeeUpdate<Self>;
+    type WeightInfo = ();
 }
 
 pub const RELAY_CHAIN_SLOT_DURATION_MILLIS: u32 = 6000;
@@ -511,6 +520,7 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
     type ReservedXcmpWeight = ();
     type CheckAssociatedRelayNumber = RelayNumberMonotonicallyIncreases;
     type ConsensusHook = ConsensusHook;
+    type SelectCore = cumulus_pallet_parachain_system::DefaultCoreSelector<Runtime>;
 }
 
 pub struct ParaSlotProvider;
@@ -1017,13 +1027,14 @@ impl pallet_data_preservers::Config for Runtime {
 
 impl pallet_author_noting::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type ContainerChains = Registrar;
+    type ContainerChains = CollatorAssignment;
     type SlotBeacon = dp_consensus::AuraDigestSlotBeacon<Runtime>;
     type ContainerChainAuthor = CollatorAssignment;
     type AuthorNotingHook = (InflationRewards, ServicesPayment);
     type RelayOrPara = pallet_author_noting::ParaMode<
         cumulus_pallet_parachain_system::RelaychainDataProvider<Self>,
     >;
+    type MaxContainerChains = MaxLengthParaIds;
     type WeightInfo = weights::pallet_author_noting::SubstrateWeight<Runtime>;
 }
 
@@ -1343,7 +1354,7 @@ parameter_types! {
 impl pallet_multiblock_migrations::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     #[cfg(not(feature = "runtime-benchmarks"))]
-    type Migrations = ();
+    type Migrations = pallet_identity::migration::v2::LazyMigrationV1ToV2<Runtime>;
     // Benchmarks need mocked migrations to guarantee that they succeed.
     #[cfg(feature = "runtime-benchmarks")]
     type Migrations = pallet_multiblock_migrations::mock_helpers::MockedMigrations;
@@ -1619,6 +1630,7 @@ parameter_types! {
     pub const SubAccountDeposit: Balance = currency::deposit(1, 53);
     // Additional bytes adds 0 entries, storing 1 byte on-chain
     pub const ByteDeposit: Balance = currency::deposit(0, 1);
+    pub const UsernameDeposit: Balance = currency::deposit(0, 32);
     pub const MaxSubAccounts: u32 = 100;
     pub const MaxAdditionalFields: u32 = 100;
     pub const MaxRegistrars: u32 = 20;
@@ -1629,6 +1641,7 @@ impl pallet_identity::Config for Runtime {
     type Currency = Balances;
     type BasicDeposit = BasicDeposit;
     type ByteDeposit = ByteDeposit;
+    type UsernameDeposit = UsernameDeposit;
     type SubAccountDeposit = SubAccountDeposit;
     type MaxSubAccounts = MaxSubAccounts;
     type MaxRegistrars = MaxRegistrars;
@@ -1641,6 +1654,7 @@ impl pallet_identity::Config for Runtime {
     type SigningPublicKey = <Signature as Verify>::Signer;
     type UsernameAuthorityOrigin = EnsureRoot<Self::AccountId>;
     type PendingUsernameExpiration = ConstU32<{ 7 * DAYS }>;
+    type UsernameGracePeriod = ConstU32<{ 30 * DAYS }>;
     type MaxSuffixLength = ConstU32<7>;
     type MaxUsernameLength = ConstU32<32>;
     type WeightInfo = weights::pallet_identity::SubstrateWeight<Runtime>;
@@ -1675,6 +1689,7 @@ impl pallet_treasury::Config for Runtime {
     type Paymaster = PayFromAccount<Balances, TreasuryAccount>;
     type BalanceConverter = UnityAssetBalanceConversion;
     type PayoutPeriod = ConstU32<{ 30 * DAYS }>;
+    type BlockNumberProvider = System;
     #[cfg(feature = "runtime-benchmarks")]
     type BenchmarkHelper = tanssi_runtime_common::benchmarking::TreasuryBenchmarkHelper<Runtime>;
 }
@@ -1929,7 +1944,7 @@ impl_runtime_apis! {
 
         fn dispatch_benchmark(
             config: frame_benchmarking::BenchmarkConfig,
-        ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
+        ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, alloc::string::String> {
             use frame_benchmarking::{BenchmarkBatch, Benchmarking, BenchmarkError};
             use sp_core::storage::TrackedStorageKey;
 
@@ -2047,6 +2062,26 @@ impl_runtime_apis! {
             } else {
                 assigned_collators.container_chains.get(&para_id).cloned()
             }
+        }
+
+        /// Returns the list of `ParaId` of registered chains with at least some
+        /// collators. This filters out parachains with no assigned collators.
+        /// Since runtime APIs are called on top of a parent block, we need to be carefull
+        /// at session boundaries. If the next block will change session, this function returns
+        /// the parachains relevant for the next session.
+        fn parachains_with_some_collators() -> Vec<ParaId> {
+            use tp_traits::{GetContainerChainsWithCollators, ForSession};
+
+            // We should return the container-chains for the session in which we are kicking in
+            let parent_number = System::block_number();
+            let should_end_session = <Runtime as pallet_session::Config>::ShouldEndSession::should_end_session(parent_number + 1);
+            let for_session = if should_end_session { ForSession::Next } else { ForSession::Current };
+
+            CollatorAssignment::container_chains_with_collators(for_session)
+                .into_iter()
+                .filter_map(
+                    |(para_id, collators)| (!collators.is_empty()).then_some(para_id)
+                ).collect()
         }
     }
 
