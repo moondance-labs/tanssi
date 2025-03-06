@@ -18,18 +18,13 @@
 
 use {
     crate::{
-        tests::common::*, xcm_config::ForeignAssetsInstance, PreserversAssignmentPaymentWitness,
-        RewardsCollatorCommission, StreamPayment, StreamPaymentAssetId, TimeUnit,
-        TransactionPayment,
+        tests::common::*, PreserversAssignmentPaymentWitness, RewardsCollatorCommission,
+        StreamPayment, StreamPaymentAssetId, TimeUnit, TransactionPayment,
     },
     cumulus_primitives_core::ParaId,
     dp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApiV1,
     dp_core::well_known_keys,
-    frame_support::{
-        assert_err, assert_noop, assert_ok, migration::put_storage_value,
-        storage::generator::StorageMap, BoundedVec, Hashable,
-    },
-    frame_support::{assert_noop, assert_ok, BoundedVec},
+    frame_support::{assert_err, assert_noop, assert_ok, BoundedVec},
     frame_system::ConsumedWeight,
     nimbus_primitives::NIMBUS_KEY_ID,
     pallet_author_noting_runtime_api::runtime_decl_for_author_noting_api::AuthorNotingApi,

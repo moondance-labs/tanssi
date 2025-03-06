@@ -1726,6 +1726,8 @@ impl pallet_stream_payment::Assets<AccountId, StreamPaymentAssetId, Balance>
     /// Benchmarks: should set the balance for the asset id returned by `bench_worst_case_asset_id`.
     #[cfg(feature = "runtime-benchmarks")]
     fn bench_set_balance(asset_id: &StreamPaymentAssetId, account: &AccountId, amount: Balance) {
+        use frame_support::traits::fungible::Mutate;
+
         // only one asset id
         let StreamPaymentAssetId::Native = asset_id;
 
