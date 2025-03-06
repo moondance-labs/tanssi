@@ -5,7 +5,7 @@ import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 
 describeSuite({
-    id: "COMM0301",
+    id: "DEVT1601",
     title: "Registrar extrinsics permissions",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -22,32 +22,19 @@ describeSuite({
 
         it({
             id: "E01",
-            title: "Para manager can execute registrar pallet extrinsics",
+            title: "Deregister through extrinsic should fail",
             test: async () => {
-                // Bob is not a manager, extrinsic requiring RegistrarOrigin should fail with BadOrigin error
+                await context.createBlock();
+
                 const { result: pauseContainerResultAttempt1 } = await context.createBlock(
-                    await api.tx.registrar.pauseContainerChain(paraId).signAsync(bob)
+                    await api.tx.registrar.deregister(paraId).signAsync(bob)
                 );
                 expect(pauseContainerResultAttempt1).toEqual(
                     expect.objectContaining({
                         successful: false,
-                        error: { name: "BadOrigin" },
+                        error: { name: "CallFiltered" },
                     })
                 );
-
-                // Set bob as manager
-                const { result: sudoResult } = await context.createBlock(
-                    await api.tx.sudo.sudo(api.tx.registrar.setParaManager(paraId, bob.address)).signAsync(alice)
-                );
-
-                expect(sudoResult.successful).toEqual(true);
-
-                // Now it should show ParaIdNotRegistered error but not the BadOrigin
-                const { result: pauseContainerResultAttempt2 } = await context.createBlock(
-                    await api.tx.registrar.pauseContainerChain(paraId).signAsync(bob)
-                );
-
-                expect(pauseContainerResultAttempt2.successful).toEqual(true);
             },
         });
     },
