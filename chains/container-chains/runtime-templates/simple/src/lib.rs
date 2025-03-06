@@ -373,7 +373,7 @@ impl frame_system::Config for Runtime {
     type PreInherents = ();
     type PostInherents = ();
     type PostTransactions = ();
-    type ExtensionsWeightInfo = ();
+    type ExtensionsWeightInfo = weights::frame_system_extensions::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -411,7 +411,7 @@ impl pallet_transaction_payment::Config for Runtime {
     type WeightToFee = WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
     type FeeMultiplierUpdate = SlowAdjustingFeeUpdate<Self>;
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_transaction_payment::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {

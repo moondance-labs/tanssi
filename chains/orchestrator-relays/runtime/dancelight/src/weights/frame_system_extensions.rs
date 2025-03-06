@@ -21,10 +21,10 @@
 //! DATE: 2025-03-06, STEPS: `16`, REPEAT: `1`, LOW RANGE: `[]`, HIGH RANGE: `[]`
 //! WORST CASE MAP SIZE: `1000000`
 //! HOSTNAME: `tomasz-XPS-15-9520`, CPU: `12th Gen Intel(R) Core(TM) i7-12700H`
-//! EXECUTION: , WASM-EXECUTION: Compiled, CHAIN: Some("dev"), DB CACHE: 1024
+//! EXECUTION: , WASM-EXECUTION: Compiled, CHAIN: Some("dancelight-dev"), DB CACHE: 1024
 
 // Executed Command:
-// target/release/container-chain-frontier-node
+// target/release/tanssi-relay
 // benchmark
 // pallet
 // --execution=wasm
@@ -33,7 +33,7 @@
 // frame_system_extensions
 // --extrinsic
 // *
-// --chain=dev
+// --chain=dancelight-dev
 // --steps
 // 16
 // --repeat
@@ -42,7 +42,7 @@
 // --json-file
 // raw.json
 // --output
-// tmp/frontier_template_weights/frame_system_extensions.rs
+// tmp/dancelight_weights/frame_system_extensions.rs
 
 #![cfg_attr(rustfmt, rustfmt_skip)]
 #![allow(unused_parens)]
@@ -56,40 +56,40 @@ pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> frame_system::ExtensionsWeightInfo for SubstrateWeight<T> {
 	fn check_genesis() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `54`
+		//  Measured:  `30`
 		//  Estimated: `0`
-		// Minimum execution time: 134_517_000 picoseconds.
-		Weight::from_parts(134_517_000, 0)
+		// Minimum execution time: 6_824_000 picoseconds.
+		Weight::from_parts(6_824_000, 0)
 	}
 	fn check_mortality_mortal_transaction() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `92`
+		//  Measured:  `68`
 		//  Estimated: `0`
-		// Minimum execution time: 174_952_000 picoseconds.
-		Weight::from_parts(174_952_000, 0)
+		// Minimum execution time: 19_182_000 picoseconds.
+		Weight::from_parts(19_182_000, 0)
 	}
 	fn check_mortality_immortal_transaction() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `92`
+		//  Measured:  `68`
 		//  Estimated: `0`
-		// Minimum execution time: 16_630_000 picoseconds.
-		Weight::from_parts(16_630_000, 0)
+		// Minimum execution time: 17_569_000 picoseconds.
+		Weight::from_parts(17_569_000, 0)
 	}
 	fn check_non_zero_sender() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 1_342_000 picoseconds.
-		Weight::from_parts(1_342_000, 0)
+		// Minimum execution time: 1_373_000 picoseconds.
+		Weight::from_parts(1_373_000, 0)
 	}
 	/// Storage: `System::Account` (r:1 w:1)
-	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(116), added: 2591, mode: `MaxEncodedLen`)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
 	fn check_nonce() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `91`
-		//  Estimated: `3581`
-		// Minimum execution time: 19_788_000 picoseconds.
-		Weight::from_parts(19_788_000, 3581)
+		//  Measured:  `101`
+		//  Estimated: `3593`
+		// Minimum execution time: 22_022_000 picoseconds.
+		Weight::from_parts(22_022_000, 3593)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
@@ -97,27 +97,21 @@ impl<T: frame_system::Config> frame_system::ExtensionsWeightInfo for SubstrateWe
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 1_890_000 picoseconds.
-		Weight::from_parts(1_890_000, 0)
+		// Minimum execution time: 1_052_000 picoseconds.
+		Weight::from_parts(1_052_000, 0)
 	}
 	fn check_tx_version() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 12_355_000 picoseconds.
-		Weight::from_parts(12_355_000, 0)
+		// Minimum execution time: 1_051_000 picoseconds.
+		Weight::from_parts(1_051_000, 0)
 	}
-	/// Storage: `System::AllExtrinsicsLen` (r:1 w:1)
-	/// Proof: `System::AllExtrinsicsLen` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
-	/// Storage: `System::BlockWeight` (r:1 w:1)
-	/// Proof: `System::BlockWeight` (`max_values`: Some(1), `max_size`: Some(48), added: 543, mode: `MaxEncodedLen`)
 	fn check_weight() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `24`
-		//  Estimated: `1533`
-		// Minimum execution time: 10_458_000 picoseconds.
-		Weight::from_parts(10_458_000, 1533)
-			.saturating_add(T::DbWeight::get().reads(2_u64))
-			.saturating_add(T::DbWeight::get().writes(2_u64))
+		//  Measured:  `0`
+		//  Estimated: `0`
+		// Minimum execution time: 7_176_000 picoseconds.
+		Weight::from_parts(7_176_000, 0)
 	}
 }

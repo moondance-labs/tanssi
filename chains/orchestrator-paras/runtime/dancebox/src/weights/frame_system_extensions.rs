@@ -24,7 +24,7 @@
 //! EXECUTION: , WASM-EXECUTION: Compiled, CHAIN: Some("dev"), DB CACHE: 1024
 
 // Executed Command:
-// target/release/container-chain-frontier-node
+// ./target/release/tanssi-node
 // benchmark
 // pallet
 // --execution=wasm
@@ -42,7 +42,7 @@
 // --json-file
 // raw.json
 // --output
-// tmp/frontier_template_weights/frame_system_extensions.rs
+// tmp/dancebox_weights/frame_system_extensions.rs
 
 #![cfg_attr(rustfmt, rustfmt_skip)]
 #![allow(unused_parens)]
@@ -58,38 +58,38 @@ impl<T: frame_system::Config> frame_system::ExtensionsWeightInfo for SubstrateWe
 		// Proof Size summary in bytes:
 		//  Measured:  `54`
 		//  Estimated: `0`
-		// Minimum execution time: 134_517_000 picoseconds.
-		Weight::from_parts(134_517_000, 0)
+		// Minimum execution time: 11_364_000 picoseconds.
+		Weight::from_parts(11_364_000, 0)
 	}
 	fn check_mortality_mortal_transaction() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `92`
 		//  Estimated: `0`
-		// Minimum execution time: 174_952_000 picoseconds.
-		Weight::from_parts(174_952_000, 0)
+		// Minimum execution time: 15_882_000 picoseconds.
+		Weight::from_parts(15_882_000, 0)
 	}
 	fn check_mortality_immortal_transaction() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `92`
 		//  Estimated: `0`
-		// Minimum execution time: 16_630_000 picoseconds.
-		Weight::from_parts(16_630_000, 0)
+		// Minimum execution time: 15_052_000 picoseconds.
+		Weight::from_parts(15_052_000, 0)
 	}
 	fn check_non_zero_sender() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 1_342_000 picoseconds.
-		Weight::from_parts(1_342_000, 0)
+		// Minimum execution time: 1_157_000 picoseconds.
+		Weight::from_parts(1_157_000, 0)
 	}
 	/// Storage: `System::Account` (r:1 w:1)
-	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(116), added: 2591, mode: `MaxEncodedLen`)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
 	fn check_nonce() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `91`
-		//  Estimated: `3581`
-		// Minimum execution time: 19_788_000 picoseconds.
-		Weight::from_parts(19_788_000, 3581)
+		//  Measured:  `101`
+		//  Estimated: `3593`
+		// Minimum execution time: 14_837_000 picoseconds.
+		Weight::from_parts(14_837_000, 3593)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
@@ -97,15 +97,15 @@ impl<T: frame_system::Config> frame_system::ExtensionsWeightInfo for SubstrateWe
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 1_890_000 picoseconds.
-		Weight::from_parts(1_890_000, 0)
+		// Minimum execution time: 1_021_000 picoseconds.
+		Weight::from_parts(1_021_000, 0)
 	}
 	fn check_tx_version() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 12_355_000 picoseconds.
-		Weight::from_parts(12_355_000, 0)
+		// Minimum execution time: 956_000 picoseconds.
+		Weight::from_parts(956_000, 0)
 	}
 	/// Storage: `System::AllExtrinsicsLen` (r:1 w:1)
 	/// Proof: `System::AllExtrinsicsLen` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
@@ -115,8 +115,8 @@ impl<T: frame_system::Config> frame_system::ExtensionsWeightInfo for SubstrateWe
 		// Proof Size summary in bytes:
 		//  Measured:  `24`
 		//  Estimated: `1533`
-		// Minimum execution time: 10_458_000 picoseconds.
-		Weight::from_parts(10_458_000, 1533)
+		// Minimum execution time: 12_786_000 picoseconds.
+		Weight::from_parts(12_786_000, 1533)
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
