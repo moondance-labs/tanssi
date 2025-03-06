@@ -29,10 +29,7 @@ pub mod pallet {
     use {
         super::*,
         core::marker::PhantomData,
-        frame_support::{
-            pallet_prelude::*, storage::types::StorageDoubleMap,
-            StorageDoubleMap as StorageDoubleMapTrait,
-        },
+        frame_support::{pallet_prelude::*, storage::types::StorageMap},
         frame_system::pallet_prelude::*,
     };
 
@@ -75,22 +72,20 @@ pub mod pallet {
 
     /// A list of double map of inactive collators for a session
     #[pallet::storage]
-    pub type InactiveCollators<T: Config> = StorageDoubleMap<
+    pub type InactiveCollators<T: Config> = StorageMap<
         _,
         Twox64Concat,
         SessionIndex,
-        Twox64Concat,
-        T::CollatorId,
-        (),
-        OptionQuery,
+        BoundedVec<T::CollatorId, T::MaxCollatorsPerSession>,
+        ValueQuery,
     >;
 
     /// A list of inactive collators for a session. Repopulated at the start of every session
     #[pallet::storage]
-    pub type CurrentSessionInactiveCollators<T: Config> =
+    pub type InactiveCollatorsForCurrentSession<T: Config> =
         StorageValue<_, BoundedVec<T::CollatorId, T::MaxCollatorsPerSession>, ValueQuery>;
 
-    ///
+    /// The last session index for which the inactive collators have not been processed
     #[pallet::storage]
     pub type LastUnprocessedSession<T: Config> = StorageValue<_, SessionIndex, ValueQuery>;
 
@@ -122,23 +117,23 @@ pub mod pallet {
             }
             Weight::zero()
         }
-        fn on_finalize(_n: BlockNumberFor<T>) {
-            Self::cleanup_inactive_collator_info();
-        }
     }
 
     impl<T: Config> Pallet<T> {
         fn process_ended_session(session_id: SessionIndex) {
-            <CurrentSessionInactiveCollators<T>>::get()
-                .into_iter()
-                .for_each(|collator_id| {
-                    <InactiveCollators<T>>::insert(session_id, collator_id, ());
-                });
+            InactiveCollators::<T>::insert(
+                session_id,
+                <InactiveCollatorsForCurrentSession<T>>::get(),
+            );
+
             let eligible_collators = T::CurrentCollatorsListFetcher::get_eligible_collators();
+
             // TO DO: Remove from the list collators assigned to container chains that have not advanced
-            <CurrentSessionInactiveCollators<T>>::put(BoundedVec::truncate_from(
+            <InactiveCollatorsForCurrentSession<T>>::put(BoundedVec::truncate_from(
                 eligible_collators,
             ));
+
+            Self::cleanup_inactive_collator_info();
         }
 
         fn update_collators_activity() {
@@ -152,10 +147,10 @@ pub mod pallet {
                         let container_chain_block_author =
                             container_chain_block_info.unwrap().author;
 
-                        if <CurrentSessionInactiveCollators<T>>::get()
+                        if <InactiveCollatorsForCurrentSession<T>>::get()
                             .contains(&container_chain_block_author)
                         {
-                            let _ = <CurrentSessionInactiveCollators<T>>::try_mutate(
+                            let _ = <InactiveCollatorsForCurrentSession<T>>::try_mutate(
                                 |current_seesion_collators| -> DispatchResult {
                                     current_seesion_collators
                                         .retain(|c| c != &container_chain_block_author);
@@ -171,16 +166,11 @@ pub mod pallet {
             let current_session = T::CurrentSessionIndex::session_index();
             let minimum_sessions_required = T::MaxInactiveSessions::get() + 1;
 
-            if current_session < minimum_sessions_required
-                || !<InactiveCollators<T>>::contains_prefix(current_session)
-            {
+            if current_session < minimum_sessions_required {
                 return;
             }
 
-            let _ =
-                <InactiveCollators<T>>::iter_prefix(current_session - minimum_sessions_required)
-                    .drain()
-                    .next();
+            let _ = <InactiveCollators<T>>::remove(current_session - minimum_sessions_required);
         }
     }
 }
@@ -197,7 +187,7 @@ impl<T: Config> NodeInactivityTrackingHelper<T::CollatorId> for Pallet<T> {
         for session_index in current_session.saturating_sub(T::MaxInactiveSessions::get().into())
             ..current_session.saturating_sub(1u32.into())
         {
-            if !<InactiveCollators<T>>::contains_key(session_index, node.clone()) {
+            if !<InactiveCollators<T>>::get(session_index).contains(node) {
                 return false;
             }
         }
