@@ -574,7 +574,7 @@ where
                     is_validator: parachain_config.role.is_authority(),
                     enable_http_requests: false,
                     custom_extensions: move |_| vec![],
-                })
+                })?
                 .run(client.clone(), task_manager.spawn_handle())
                 .boxed(),
             );

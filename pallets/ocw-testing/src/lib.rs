@@ -15,6 +15,8 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 #![cfg_attr(not(feature = "std"), no_std)]
+use frame_system::offchain::CreateInherent;
+use frame_system::offchain::CreateSignedTransaction;
 use {
     frame_system::{
         self as system, ensure_none, ensure_root, offchain::SubmitTransaction,
@@ -33,7 +35,7 @@ pub mod pallet {
 
     #[pallet::config]
     pub trait Config:
-        frame_system::offchain::SendTransactionTypes<Call<Self>> + frame_system::Config
+        CreateSignedTransaction<Call<Self>> + CreateInherent<Call<Self>> + frame_system::Config
     {
         /// The overarching event type.
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
@@ -182,7 +184,8 @@ impl<T: Config> Pallet<T> {
 
         let call = Call::submit_event_unsigned { block_number };
 
-        SubmitTransaction::<T, Call<T>>::submit_unsigned_transaction(call.into())
+        let xt = T::create_inherent(call.into());
+        SubmitTransaction::<T, Call<T>>::submit_transaction(xt)
             .map_err(|()| "Unable to submit unsigned transaction.")?;
 
         Ok(())

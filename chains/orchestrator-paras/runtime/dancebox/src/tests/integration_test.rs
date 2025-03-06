@@ -18,23 +18,24 @@
 
 use {
     crate::{
-        tests::common::*, xcm_config::ForeignAssetsInstance, PreserversAssignmentPaymentWitness,
-        RewardsCollatorCommission, StreamPayment, StreamPaymentAssetId, TimeUnit,
+        tests::common::*, xcm_config::ForeignAssetsInstance,
+        PreserversAssignmentPaymentWitness, RewardsCollatorCommission,
+        StreamPayment, StreamPaymentAssetId, TimeUnit,
         TransactionPayment,
     },
     cumulus_primitives_core::ParaId,
     dp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApiV1,
     dp_core::well_known_keys,
     frame_support::{
-        assert_noop, assert_ok, migration::put_storage_value, storage::generator::StorageMap,
-        BoundedVec, Hashable, assert_err,
+        assert_err, assert_noop, assert_ok, migration::put_storage_value,
+        storage::generator::StorageMap, BoundedVec, Hashable,
     },
+    frame_support::{assert_noop, assert_ok, BoundedVec},
     frame_system::ConsumedWeight,
     nimbus_primitives::NIMBUS_KEY_ID,
     pallet_author_noting_runtime_api::runtime_decl_for_author_noting_api::AuthorNotingApi,
     pallet_balances::Instance1,
     pallet_collator_assignment_runtime_api::runtime_decl_for_collator_assignment_api::CollatorAssignmentApi,
-    pallet_foreign_asset_creator::{AssetIdToForeignAsset, ForeignAssetToAssetId},
     pallet_migrations::Migration,
     pallet_pooled_staking::{
         traits::IsCandidateEligible, AllTargetPool, EligibleCandidate, PendingOperationKey,
@@ -53,20 +54,13 @@ use {
         DigestItem, FixedU128,
     },
     sp_std::vec,
-    staging_xcm::{
-        latest::prelude::*,
-        v3::{
-            Junction as V3Junction, Junctions as V3Junctions, MultiLocation as V3MultiLocation,
-            NetworkId as V3NetworkId,
-        },
-    },
-    std::marker::PhantomData,
     tanssi_runtime_common::migrations::{
-        ForeignAssetCreatorMigration, HostConfigurationV3, MigrateConfigurationAddFullRotationMode,
+        HostConfigurationV3, MigrateConfigurationAddFullRotationMode,
         MigrateServicesPaymentAddCollatorAssignmentCredits, RegistrarPendingVerificationValueToMap,
     },
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
     tp_traits::{ContainerChainBlockInfo, SlotFrequency},
+    xcm::latest::prelude::*,
 };
 
 #[test]
@@ -5514,94 +5508,6 @@ fn test_migration_services_collator_assignment_payment() {
             pallet_services_payment::CollatorAssignmentCredits::<Runtime>::get(ParaId::from(1002))
                 .unwrap_or_default();
         assert_eq!(credits_1002, crate::FreeCollatorAssignmentCredits::get());
-    });
-}
-
-#[test]
-fn test_migration_foreign_asset_creator() {
-    ExtBuilder::default().build().execute_with(|| {
-        // Sample pairs of asset id with v3 location
-        let (asset_id1, location_1) = (
-            <Runtime as pallet_assets::Config<ForeignAssetsInstance>>::AssetId::from(13u16),
-            V3MultiLocation::new(
-                1,
-                V3Junctions::X2(
-                    V3Junction::PalletInstance(1),
-                    V3Junction::AccountIndex64 {
-                        network: Some(V3NetworkId::BitcoinCore),
-                        index: 5,
-                    },
-                ),
-            ),
-        );
-
-        let (asset_id2, location_2) = (
-            <Runtime as pallet_assets::Config<ForeignAssetsInstance>>::AssetId::from(14u16),
-            V3MultiLocation::new(
-                1,
-                V3Junctions::X2(
-                    V3Junction::PalletInstance(2),
-                    V3Junction::AccountIndex64 {
-                        network: Some(V3NetworkId::Kusama),
-                        index: 10,
-                    },
-                ),
-            ),
-        );
-
-        put_storage_value(
-            AssetIdToForeignAsset::<Runtime>::pallet_prefix(),
-            AssetIdToForeignAsset::<Runtime>::storage_prefix(),
-            &asset_id1.blake2_128_concat(),
-            location_1,
-        );
-        put_storage_value(
-            AssetIdToForeignAsset::<Runtime>::pallet_prefix(),
-            AssetIdToForeignAsset::<Runtime>::storage_prefix(),
-            &asset_id2.blake2_128_concat(),
-            location_2,
-        );
-
-        put_storage_value(
-            ForeignAssetToAssetId::<Runtime>::pallet_prefix(),
-            ForeignAssetToAssetId::<Runtime>::storage_prefix(),
-            &location_1.blake2_128_concat(),
-            asset_id1,
-        );
-        put_storage_value(
-            ForeignAssetToAssetId::<Runtime>::pallet_prefix(),
-            ForeignAssetToAssetId::<Runtime>::storage_prefix(),
-            &location_2.blake2_128_concat(),
-            asset_id2,
-        );
-
-        // Let's run the migration now
-        let foreign_asset_creator_migration: ForeignAssetCreatorMigration<Runtime> =
-            ForeignAssetCreatorMigration(PhantomData);
-        let weight_consumed = foreign_asset_creator_migration.migrate(Default::default());
-        assert_eq!(
-            weight_consumed,
-            <Runtime as frame_system::Config>::DbWeight::get().reads_writes(1 * 4, 2 * 4)
-        );
-
-        // Let's check if everything is migrated properly
-        assert_eq!(
-            AssetIdToForeignAsset::<Runtime>::get(asset_id1),
-            Some(Location::try_from(location_1).unwrap())
-        );
-        assert_eq!(
-            AssetIdToForeignAsset::<Runtime>::get(asset_id2),
-            Some(Location::try_from(location_2).unwrap())
-        );
-
-        assert_eq!(
-            ForeignAssetToAssetId::<Runtime>::get(Location::try_from(location_1).unwrap()),
-            Some(asset_id1)
-        );
-        assert_eq!(
-            ForeignAssetToAssetId::<Runtime>::get(Location::try_from(location_2).unwrap()),
-            Some(asset_id2)
-        );
     });
 }
 

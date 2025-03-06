@@ -19,11 +19,12 @@
 use {
     crate::{
         tests::common::*, Balances, CollatorConfiguration, ContainerRegistrar, DataPreservers,
-        Registrar, StreamPayment, StreamPaymentAssetId, TimeUnit, PreserversAssignmentPaymentWitness
+        PreserversAssignmentPaymentWitness, Registrar, StreamPayment, StreamPaymentAssetId,
+        TimeUnit,
     },
     cumulus_primitives_core::{relay_chain::HeadData, ParaId},
     dancelight_runtime_constants::currency::EXISTENTIAL_DEPOSIT,
-    frame_support::{assert_noop, assert_ok, BoundedVec, assert_err},
+    frame_support::{assert_err, assert_noop, assert_ok, BoundedVec},
     pallet_registrar_runtime_api::{
         runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
     },
@@ -428,7 +429,6 @@ fn stream_payment_works() {
             );
         });
 }
-
 
 #[test]
 fn test_data_preserver_with_stream_payment() {
