@@ -45,10 +45,10 @@ Typescript tests are run with [Moonwall](https://github.com/Moonsong-Labs/moonwa
 # Use the correct Node version
 nvm use
 
-# Install moonwall
+# Install pnpm
 sudo npm i -g pnpm
 
-# Install dependencies
+# Install dependencies (alongwith moonwall)
 pnpm i
 
 # Create typescript-api local interfaces
@@ -67,7 +67,7 @@ pnpm moonwall test dev_tanssi
 pnpm moonwall test zombie_tanssi
 ```
 
-Moonwall lets you also run the testing environment wihtout performing any tests on it, as a method for you to manually test certain things:
+Moonwall lets you also run the testing environment without performing any tests on it, as a method for you to manually test certain things:
 
 ```bash
 # Spin up single manual-seal orchestrator
@@ -91,7 +91,7 @@ The command above will start the node in instant seal mode. It creates a block w
 
 ### Prefunded Development Addresses
 
-Running Tanssi in development mode will pre-fund several well-known addresses that (mostly) These addresses are derived from
+Running Tanssi in development mode will pre-fund several well-known addresses that (mostly) are derived from
 using the well known private key `bottom drive obey lake curtain smoke basket hold race lonely fit walk` and appending the account name as a hard derivation key to the seed above, e.g., `bottom drive obey lake curtain smoke basket hold race lonely fit walk//Alice`:
 
 ```
@@ -120,11 +120,10 @@ The Tanssi Runtime is built using FRAME and consists of pallets from substrate, 
 
 From substrate:
 
-- _Balances_: Tracks token balances
-- _Sudo_: Allows a privileged account to make arbitrary runtime changes - will be removed before
-  launch
+- _Balances_: Tracks token balances. can have negative balances
+- _Sudo_: Allows a privileged account to make arbitrary runtime changes
 - _Timestamp_: On-Chain notion of time
-- _Transaction Payment_: Transaction payment (fee) management
+- _Transaction Payment_: Transaction payment (fee) management (paid to txn submitter node)
 - _Authorship_: A pallet where authorship information for orchestrator is stored
 - _Invulnerables_: A pallet that selects invulnerable collators to be assigned to author in container-chains and orchestrator
 - _Session_: A pallet that handles session-changes and keys
@@ -137,12 +136,12 @@ From cumulus:
 
 The following pallets are stored in `pallets/`. They are designed for Tanssi's specific requirements:
 
-- _Registrar_: A pallet that stores all registered container-chains
-- _Configuration_: A pallet storing the current configuration from which several other components depend
-- _CollatorAssignment_: A pallet implementing collator account to orchestrator/container-chain assignment
-- _AuthorityAssignment_: A pallet implementing collator authority key to orchestrator/container-chain assignment
-- _Initializer_: A pallet that handles everything that happens on a session-change
-- _AuthorNoting_: A pallet that stores the latest author of each of the container-chains
+- _Registrar_: stores all registered container-chains
+- _Configuration_: storing the current configuration from which several other components depend
+- _CollatorAssignment_: implementing collator account to orchestrator/container-chain assignment
+- _AuthorityAssignment_: implementing collator authority key to orchestrator/container-chain assignment
+- _Initializer_: handles everything that happens on a session-change
+- _AuthorNoting_: stores the latest author of each of the container-chains
 
 When modifying the git repository for these dependencies, a tool called [diener](https://github.com/bkchr/diener) can be used to replace the git URL and branch for each reference in all `Cargo.toml` files with a single command. This alleviates a lot of the repetitive modifications necessary when changing dependency versions.
 
