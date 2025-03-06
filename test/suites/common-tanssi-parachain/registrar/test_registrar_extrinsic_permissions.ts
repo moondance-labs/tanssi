@@ -24,16 +24,15 @@ describeSuite({
             id: "E01",
             title: "Para manager can execute registrar pallet extrinsics",
             test: async () => {
+                const runtimeName = api.runtimeVersion.specName.toString();
+                console.log("runtimeName", runtimeName);
+
                 // Bob is not a manager, extrinsic requiring RegistrarOrigin should fail with BadOrigin error
                 const { result: pauseContainerResultAttempt1 } = await context.createBlock(
                     await api.tx.registrar.pauseContainerChain(paraId).signAsync(bob)
                 );
-                expect(pauseContainerResultAttempt1).toEqual(
-                    expect.objectContaining({
-                        successful: false,
-                        error: { name: "BadOrigin" },
-                    })
-                );
+                expect(pauseContainerResultAttempt1.successful).toEqual(false);
+                expect(pauseContainerResultAttempt1.error.name).toEqual("BadOrigin");
 
                 // Set bob as manager
                 const { result: sudoResult } = await context.createBlock(

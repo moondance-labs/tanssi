@@ -24,17 +24,14 @@ describeSuite({
             id: "E01",
             title: "Deregister through extrinsic should fail",
             test: async () => {
-                await context.createBlock();
+                const runtimeName = api.runtimeVersion.specName.toString();
+                console.log("runtimeName", runtimeName);
 
-                const { result: pauseContainerResultAttempt1 } = await context.createBlock(
+                const { result: deregisterResult } = await context.createBlock(
                     await api.tx.registrar.deregister(paraId).signAsync(bob)
                 );
-                expect(pauseContainerResultAttempt1).toEqual(
-                    expect.objectContaining({
-                        successful: false,
-                        error: { name: "CallFiltered" },
-                    })
-                );
+                expect(deregisterResult.successful).toEqual(false);
+                expect(deregisterResult.error.name).toEqual("CallFiltered");
             },
         });
     },
