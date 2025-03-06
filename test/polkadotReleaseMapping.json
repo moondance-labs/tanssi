@@ -1,7 +1,12 @@
 {
-    "stable2409": {
-        "polkadot": "599cb6b8a0f67098717315c6db33e28983873e6c94a4272c9d0a03dd06b70428",
-        "polkadot-prepare-worker": "4dc5964da9052faee01f0d727fda08ab573989ac6c81f597d21028e76ae22f9c",
-        "polkadot-execute-worker": "8932f0b07323a497470de2c7d8b9b7583af27de3836518fbf62047a68bc788f9"
-    }
+  "stable2409": {
+    "polkadot": "599cb6b8a0f67098717315c6db33e28983873e6c94a4272c9d0a03dd06b70428",
+    "polkadot-prepare-worker": "4dc5964da9052faee01f0d727fda08ab573989ac6c81f597d21028e76ae22f9c",
+    "polkadot-execute-worker": "8932f0b07323a497470de2c7d8b9b7583af27de3836518fbf62047a68bc788f9"
+  },
+  "stable2412": {
+    "polkadot": "815cf5ee797c07e4f5ebf0f925d6f737e7abf110e2fb8b9776da1ad965ee0fc0",
+    "polkadot-execute-worker": "c6e7228c34979794791a82ff153b9ade4c262b07345f93b8c003a158ba4d7351",
+    "polkadot-prepare-worker": "eae795259656b7acd07effc4921a99cf116a15cdabab331cef8f798c25499636"
+  }
 }

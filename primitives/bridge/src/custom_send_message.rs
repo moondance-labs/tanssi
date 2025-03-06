@@ -16,7 +16,6 @@
 
 use {
     super::*,
-    ethabi::H256,
     frame_support::traits::EnqueueMessage,
     snowbridge_core::{outbound::SendError, PRIMARY_GOVERNANCE_CHANNEL},
     sp_std::marker::PhantomData,
@@ -37,7 +36,7 @@ where
 {
     type Ticket = Ticket<T>;
 
-    fn deliver(ticket: Self::Ticket) -> Result<H256, SendError> {
+    fn deliver(ticket: Self::Ticket) -> Result<sp_core::H256, SendError> {
         let origin = GetAggregateMessageOrigin::convert(ticket.channel_id);
 
         if ticket.channel_id != PRIMARY_GOVERNANCE_CHANNEL {

@@ -214,7 +214,9 @@ fn default_parachains_host_configuration(
             allowed_ancestry_len: 2,
         },
         node_features: bitvec::vec::BitVec::from_element(
-            1u8 << (FeatureIndex::ElasticScalingMVP as usize),
+            (1u8 << (FeatureIndex::ElasticScalingMVP as usize)) |
+            // TODO: this may not be needed, we could still support v1 only
+                           (1u8 << (FeatureIndex::CandidateReceiptV2 as usize)),
         ),
         scheduler_params: SchedulerParams {
             lookahead: 2,
@@ -740,10 +742,10 @@ pub fn dancelight_local_testnet_genesis(
 
 /// Provides the JSON representation of predefined genesis config for given `id`.
 pub fn get_preset(id: &sp_genesis_builder::PresetId) -> Option<sp_std::vec::Vec<u8>> {
-    let patch = match id.try_into() {
-        Ok("local_testnet") => dancelight_local_testnet_genesis(vec![], vec![]),
-        Ok("development") => dancelight_development_config_genesis(vec![], vec![]),
-        Ok("staging_testnet") => dancelight_staging_testnet_config_genesis(),
+    let patch = match id.as_ref() {
+        "local_testnet" => dancelight_local_testnet_genesis(vec![], vec![]),
+        "development" => dancelight_development_config_genesis(vec![], vec![]),
+        "staging_testnet" => dancelight_staging_testnet_config_genesis(),
         _ => return None,
     };
     Some(

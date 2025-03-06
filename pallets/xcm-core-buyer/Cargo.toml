@@ -24,7 +24,7 @@ tp-xcm-core-buyer = { workspace = true }
 pallet-xcm = { workspace = true }
 sp-consensus-slots = { workspace = true }
 sp-keystore = { workspace = true }
-staging-xcm = { workspace = true }
+xcm = { workspace = true }
 
 # Substrate
 frame-benchmarking = { workspace = true, optional = true }
@@ -68,10 +68,10 @@ std = [
 	"sp-keystore/std",
 	"sp-runtime/std",
 	"sp-std/std",
-	"staging-xcm/std",
-	"staging-xcm/std",
 	"tp-traits/std",
 	"tp-xcm-core-buyer/std",
+	"xcm/std",
+	"xcm/std",
 ]
 runtime-benchmarks = [
 	"frame-benchmarking",
