@@ -1,4 +1,5 @@
 import "@tanssi/api-augment";
+
 import { deployCreateCompiledContract, describeSuite, expect } from "@moonwall/cli";
 import {
     ALITH_ADDRESS,

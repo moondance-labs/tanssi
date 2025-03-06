@@ -1,4 +1,4 @@
-import type { ApiPromise } from "@moonwall/cli";
+import type { ApiPromise } from "@polkadot/api";
 import { stringToHex } from "@polkadot/util";
 
 export async function getAuthorFromDigest(paraApi: ApiPromise): Promise<string | null> {

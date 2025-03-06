@@ -1,8 +1,9 @@
 import "@tanssi/api-augment";
-import { describeSuite, customDevRpcRequest, expect, beforeAll } from "@moonwall/cli";
-import { type ApiPromise, Keyring } from "@polkadot/api";
-import { jumpToSession } from "util/block";
+
+import { beforeAll, customDevRpcRequest, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
+import { type ApiPromise, Keyring } from "@polkadot/api";
+import { jumpToSession } from "utils";
 
 describeSuite({
     id: "DEVT0601",

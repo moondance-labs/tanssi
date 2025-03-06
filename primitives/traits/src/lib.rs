@@ -45,7 +45,10 @@ use {
         traits::{CheckedAdd, CheckedMul},
         ArithmeticError, DispatchResult, Perbill, RuntimeDebug,
     },
-    sp_std::{collections::btree_map::BTreeMap, collections::btree_set::BTreeSet, vec::Vec},
+    sp_std::{
+        collections::{btree_map::BTreeMap, btree_set::BTreeSet},
+        vec::Vec,
+    },
 };
 
 // Separate import as rustfmt wrongly change it to `sp_std::vec::self`, which is the module instead
@@ -139,6 +142,24 @@ pub trait GetCurrentContainerChains {
 
     #[cfg(feature = "runtime-benchmarks")]
     fn set_current_container_chains(container_chains: &[ParaId]);
+}
+
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub enum ForSession {
+    Current,
+    Next,
+}
+
+/// Get the current list of container chains parachain ids with its assigned collators.
+/// It can return a para id with an empty list of collators.
+pub trait GetContainerChainsWithCollators<AccountId> {
+    fn container_chains_with_collators(for_session: ForSession) -> Vec<(ParaId, Vec<AccountId>)>;
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn set_container_chains_with_collators(
+        for_session: ForSession,
+        container_chains: &[(ParaId, Vec<AccountId>)],
+    );
 }
 
 /// How often should a parathread collator propose blocks. The units are "1 out of n slots", where the slot time is the

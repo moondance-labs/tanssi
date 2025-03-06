@@ -1,8 +1,9 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import type { ApiPromise } from "@polkadot/api";
+
 import { readFileSync } from "node:fs";
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
 
 describeSuite({
     id: "DEVT0404",
@@ -62,7 +63,7 @@ describeSuite({
 
                 expect(result[0].successful).to.be.false;
                 expect(result[0].error.section).to.eq("ethereumBeaconClient");
-                expect(result[0].error.name).to.eq("SyncCommitteeUpdateRequired");
+                expect(result[0].error.name).to.eq("InvalidFinalizedHeaderGap");
 
                 const latestFinalizedBlockRoot = await polkadotJs.query.ethereumBeaconClient.latestFinalizedBlockRoot();
                 const latestFinalizedSlot =

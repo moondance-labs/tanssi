@@ -1,4 +1,5 @@
 import "@tanssi/api-augment";
+
 import { describeSuite, expect } from "@moonwall/cli";
 import type { FrameSupportDispatchDispatchInfo } from "@polkadot/types/lookup";
 import { BN } from "@polkadot/util";
@@ -13,8 +14,12 @@ describeSuite({
             title: "Weight should be match expected",
             test: async () => {
                 // TODO: is it expected that this test breaks, just copy the new weights
-                const expectedRefTime = new BN(912947136);
-                const expectedProofSize = new BN(8046);
+                const expectedRefTime = { avg: new BN(786288068) };
+                expectedRefTime.min = expectedRefTime.avg.divn(1.1);
+                expectedRefTime.max = expectedRefTime.avg.muln(1.1);
+                const expectedProofSize = { avg: new BN(5507) };
+                expectedProofSize.min = expectedProofSize.avg.divn(1.1);
+                expectedProofSize.max = expectedProofSize.avg.muln(1.1);
 
                 await context.createBlock();
 
@@ -44,9 +49,15 @@ describeSuite({
                 const proofSize = usedWeight.proofSize.toBn();
 
                 // Allow 10% variance
-                expect(refTime.gte(expectedRefTime.divn(1.1)) && refTime.lte(expectedRefTime.muln(1.1))).to.be.true;
-                expect(proofSize.gte(expectedProofSize.divn(1.1)) && proofSize.lte(expectedProofSize.muln(1.1))).to.be
-                    .true;
+                expect(
+                    refTime,
+                    `refTime is ${refTime} but expected a value between ${expectedRefTime.min} and ${expectedRefTime.max}`
+                ).to.satisfy((val) => val >= expectedRefTime.min && val <= expectedRefTime.max);
+
+                expect(
+                    proofSize,
+                    `proofSize is ${proofSize} but expected a value between ${expectedProofSize.min} and ${expectedProofSize.max}`
+                ).to.satisfy((val) => val >= expectedProofSize.min && val <= expectedProofSize.max);
             },
         });
     },

@@ -1,7 +1,7 @@
 import { beforeAll, customDevRpcRequest, describeSuite, expect } from "@moonwall/cli";
-import { type ApiPromise, Keyring } from "@polkadot/api";
 import type { KeyringPair } from "@moonwall/util";
-import { jumpToSession } from "util/block";
+import { type ApiPromise, Keyring } from "@polkadot/api";
+import { jumpToSession } from "utils";
 
 describeSuite({
     id: "DEVT0603",

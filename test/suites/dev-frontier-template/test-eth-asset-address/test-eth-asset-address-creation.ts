@@ -1,6 +1,6 @@
-import { expect, describeSuite } from "@moonwall/cli";
-import { STATEMINT_LOCATION_EXAMPLE } from "../../../util/constants.ts";
+import { describeSuite, expect } from "@moonwall/cli";
 import { alith } from "@moonwall/util";
+import { STATEMINT_LOCATION_EXAMPLE } from "utils";
 
 describeSuite({
     id: "DE0301",

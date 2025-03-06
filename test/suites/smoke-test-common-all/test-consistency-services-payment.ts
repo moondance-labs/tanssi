@@ -1,7 +1,8 @@
 import "@tanssi/api-augment";
+
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
-import { hasEnoughCredits } from "util/payment";
+import { hasEnoughCredits } from "utils";
 
 describeSuite({
     id: "S03",

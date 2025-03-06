@@ -1,6 +1,6 @@
-import { describeSuite, expect, beforeAll, deployCreateCompiledContract } from "@moonwall/cli";
-import type { TransactionReceipt } from "viem";
+import { beforeAll, deployCreateCompiledContract, describeSuite, expect } from "@moonwall/cli";
 import { customWeb3Request } from "@moonwall/util";
+import type { TransactionReceipt } from "viem";
 
 describeSuite({
     id: "DE0703",

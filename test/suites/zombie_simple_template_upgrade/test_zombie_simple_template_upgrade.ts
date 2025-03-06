@@ -1,8 +1,9 @@
 import "@tanssi/api-augment";
+
 import { MoonwallContext, beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
-import { type ApiPromise, Keyring } from "@polkadot/api";
 import { alith, generateKeyringPair } from "@moonwall/util";
+import { type ApiPromise, Keyring } from "@polkadot/api";
 import fs from "node:fs";
 
 describeSuite({

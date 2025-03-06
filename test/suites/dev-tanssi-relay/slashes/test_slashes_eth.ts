@@ -1,8 +1,10 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import type { ApiPromise } from "@polkadot/api";
+
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
-import { jumpToSession } from "../../../util/block";
+import type { ApiPromise } from "@polkadot/api";
+import { jumpToSession } from "utils";
+import { expectEventCount } from "../../../helpers/events";
 
 describeSuite({
     id: "DEVT1708",
@@ -261,16 +263,3 @@ describeSuite({
         });
     },
 });
-
-async function expectEventCount(polkadotJs, eventCounts: Record<string, number>): Promise<void> {
-    const events = await polkadotJs.query.system.events();
-
-    for (const [eventMethod, expectedCount] of Object.entries(eventCounts)) {
-        const matchingEvents = events.filter(({ event }) => event.method === eventMethod);
-
-        expect(
-            matchingEvents.length,
-            `Expected ${expectedCount} occurrences of event '${eventMethod}', but found ${matchingEvents.length}`
-        ).to.equal(expectedCount);
-    }
-}

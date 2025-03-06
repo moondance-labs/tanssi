@@ -1,8 +1,8 @@
 import "@tanssi/api-augment";
-import { describeSuite, customDevRpcRequest, expect, beforeAll } from "@moonwall/cli";
+
+import { beforeAll, customDevRpcRequest, describeSuite, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
-import { jumpToSession } from "util/block";
-import { getHeaderFromRelay } from "util/relayInterface.ts";
+import { getHeaderFromRelay, jumpToSession } from "utils";
 
 describeSuite({
     id: "DEVT1101",

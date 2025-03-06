@@ -1,7 +1,8 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 
 import type { ApiPromise } from "@polkadot/api";
-import { fetchRandomnessEvent } from "util/block";
+import { fetchRandomnessEvent } from "utils";
+
 describeSuite({
     id: "SMO02",
     title: "Sample suite that only runs on Dancebox chains",

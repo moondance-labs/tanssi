@@ -1,11 +1,11 @@
-import { type DevModeContext, expect, type ZombieContext } from "@moonwall/cli";
+import { type DevModeContext, type ZombieContext, expect } from "@moonwall/cli";
 import { filterAndApply } from "@moonwall/util";
 
 import type { ApiPromise } from "@polkadot/api";
-import type { AccountId32, EventRecord, ParaId } from "@polkadot/types/interfaces";
-import type { Vec, u8, u32, bool, u128 } from "@polkadot/types-codec";
-import { TypeRegistry } from "@polkadot/types";
 import type { SubmittableExtrinsic } from "@polkadot/api/types";
+import { TypeRegistry } from "@polkadot/types";
+import type { Vec, bool, u8, u32, u128 } from "@polkadot/types-codec";
+import type { AccountId32, EventRecord, ParaId } from "@polkadot/types/interfaces";
 
 export async function jumpSessions(context: DevModeContext, count: number): Promise<string | null> {
     const session = (await context.polkadotJs().query.session.currentIndex()).addn(count.valueOf()).toNumber();
@@ -478,3 +478,54 @@ export async function isEventEmittedInTheNextBlocks(
     }
     return false;
 }
+
+// we should always use active era
+// currentEra is used for scheduling an era change in the next session
+// active era informs about the era that is now active
+// for checking rewards and slashes, we should always use active
+export const getCurrentEraStartBlock = async (api: ApiPromise): Promise<number> => {
+    const currentEra = await api.query.externalValidators.activeEra();
+    if (currentEra.isNone) {
+        expect.fail("No external validators found");
+    }
+
+    let epochStartBlock = (await api.query.babe.epochStart())[1].toNumber();
+
+    let apiAtPreviousEpochBlock = await api.at(await api.rpc.chain.getBlockHash(epochStartBlock - 1));
+
+    while (
+        currentEra.unwrap().index.toNumber() ===
+        (await apiAtPreviousEpochBlock.query.externalValidators.activeEra()).unwrap().index.toNumber()
+    ) {
+        epochStartBlock = (await apiAtPreviousEpochBlock.query.babe.epochStart()).toJSON()[1];
+        apiAtPreviousEpochBlock = await api.at(await api.rpc.chain.getBlockHash(epochStartBlock - 1));
+    }
+
+    return epochStartBlock;
+};
+
+// Same as getCurrentEraStartBlock, but using and api at a certain block height
+// the block that you pass is the block from which we will get the active era
+// and from which we will get the era start block number
+export const getPastEraStartBlock = async (currentApi: ApiPromise, block: number): Promise<number> => {
+    const apiAtCheckpointForEra = await currentApi.at(await currentApi.rpc.chain.getBlockHash(block));
+
+    const currentEra = await apiAtCheckpointForEra.query.externalValidators.activeEra();
+    if (currentEra.isNone) {
+        expect.fail("No external validators found");
+    }
+
+    let epochStartBlock = (await apiAtCheckpointForEra.query.babe.epochStart())[1].toNumber();
+
+    let apiAtPreviousEpochBlock = await currentApi.at(await currentApi.rpc.chain.getBlockHash(epochStartBlock - 1));
+
+    while (
+        currentEra.unwrap().index.toNumber() ===
+        (await apiAtPreviousEpochBlock.query.externalValidators.activeEra()).unwrap().index.toNumber()
+    ) {
+        epochStartBlock = (await apiAtPreviousEpochBlock.query.babe.epochStart()).toJSON()[1];
+        apiAtPreviousEpochBlock = await currentApi.at(await currentApi.rpc.chain.getBlockHash(epochStartBlock - 1));
+    }
+
+    return epochStartBlock;
+};

@@ -8,7 +8,7 @@ import {
     descendParentOriginForAddress20,
     descendParentOriginFromAddress32,
     injectDmpMessageAndSeal,
-} from "../../../util/xcm.ts";
+} from "utils";
 
 describeSuite({
     id: "COMMON0301",

@@ -16,20 +16,19 @@
 
 #![cfg(test)]
 
-use sp_core::H256;
 use {
     crate::{
         tests::common::*, EthereumSystem, ExternalValidators, ExternalValidatorsRewards,
-        MaxExternalValidators, RewardTokenLocation, RuntimeEvent, SessionKeys, SessionsPerEra,
-        System,
+        MaxExternalValidators, RuntimeEvent, SessionKeys, SessionsPerEra, System,
+        TokenLocationReanchored,
     },
     frame_support::{assert_ok, traits::fungible::Mutate},
     pallet_external_validators::Forcing,
+    sp_core::H256,
     sp_runtime::traits::MaybeEquivalence,
     std::{collections::HashMap, ops::RangeInclusive},
     tp_bridge::Command,
-    xcm::latest::prelude::*,
-    xcm::VersionedLocation,
+    xcm::{latest::prelude::*, VersionedLocation},
 };
 
 fn assert_validators_do_not_change(
@@ -1069,7 +1068,7 @@ fn external_validators_rewards_test_command_integrity() {
                 }
             ));
 
-            let token_id = EthereumSystem::convert_back(&RewardTokenLocation::get()).unwrap();
+            let token_id = EthereumSystem::convert_back(&TokenLocationReanchored::get()).unwrap();
 
             // SessionsPerEra depends on fast-runtime feature, this test should pass regardless
             let sessions_per_era = SessionsPerEra::get();
