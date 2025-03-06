@@ -139,7 +139,7 @@ pub mod pallet {
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
         /// Origin that is allowed to call register and deregister
-        type RegistrarOrigin: EnsureOrigin<Self::RuntimeOrigin>;
+        type RegistrarOrigin: EnsureOriginWithArg<Self::RuntimeOrigin, ParaId>;
 
         /// Origin that is allowed to call mark_valid_for_collating
         type MarkValidForCollatingOrigin: EnsureOrigin<Self::RuntimeOrigin>;
@@ -497,7 +497,7 @@ pub mod pallet {
         ).max(T::WeightInfo::deregister_scheduled(
         )))]
         pub fn deregister(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
-            T::RegistrarOrigin::ensure_origin(origin)?;
+            T::RegistrarOrigin::ensure_origin(origin, &para_id)?;
 
             Self::do_deregister(para_id)?;
 
@@ -520,7 +520,7 @@ pub mod pallet {
         #[pallet::call_index(4)]
         #[pallet::weight(T::WeightInfo::pause_container_chain())]
         pub fn pause_container_chain(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
-            T::RegistrarOrigin::ensure_origin(origin)?;
+            T::RegistrarOrigin::ensure_origin(origin, &para_id)?;
 
             Self::schedule_paused_parachain_change(|para_ids, paused| {
                 match paused.binary_search(&para_id) {
@@ -552,7 +552,7 @@ pub mod pallet {
         #[pallet::call_index(5)]
         #[pallet::weight(T::WeightInfo::unpause_container_chain())]
         pub fn unpause_container_chain(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
-            T::RegistrarOrigin::ensure_origin(origin)?;
+            T::RegistrarOrigin::ensure_origin(origin, &para_id)?;
 
             Self::schedule_paused_parachain_change(|para_ids, paused| {
                 match paused.binary_search(&para_id) {
@@ -606,7 +606,7 @@ pub mod pallet {
             para_id: ParaId,
             slot_frequency: SlotFrequency,
         ) -> DispatchResult {
-            T::RegistrarOrigin::ensure_origin(origin)?;
+            T::RegistrarOrigin::ensure_origin(origin, &para_id)?;
 
             Self::schedule_parathread_params_change(para_id, |params| {
                 params.slot_frequency = slot_frequency;
