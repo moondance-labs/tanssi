@@ -18,9 +18,8 @@
 
 use {
     crate::{
-        tests::common::*, xcm_config::ForeignAssetsInstance,
-        PreserversAssignmentPaymentWitness, RewardsCollatorCommission,
-        StreamPayment, StreamPaymentAssetId, TimeUnit,
+        tests::common::*, xcm_config::ForeignAssetsInstance, PreserversAssignmentPaymentWitness,
+        RewardsCollatorCommission, StreamPayment, StreamPaymentAssetId, TimeUnit,
         TransactionPayment,
     },
     cumulus_primitives_core::ParaId,
