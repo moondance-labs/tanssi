@@ -458,9 +458,10 @@ fn test_data_preserver_with_stream_payment() {
                 },
             };
 
-            let para_id = ParaId::from(1002);
+            let para_id = ParaId::from(2000);
             let profile_id = 0u64;
 
+            assert_ok!(Registrar::reserve(origin_of(ALICE.into())));
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
                 para_id,
@@ -516,9 +517,10 @@ fn test_data_preserver_kind_needs_to_match() {
                 assignment_request: ProviderRequestOf::<Runtime>::Free,
             };
 
-            let para_id = ParaId::from(1002);
+            let para_id = ParaId::from(2000);
             let profile_id = 0u64;
 
+            assert_ok!(Registrar::reserve(origin_of(ALICE.into())));
             assert_ok!(ContainerRegistrar::register(
                 origin_of(ALICE.into()),
                 para_id,
