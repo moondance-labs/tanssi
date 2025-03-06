@@ -42,6 +42,7 @@ pub mod pallet_referenda;
 pub mod pallet_registrar;
 pub mod pallet_scheduler;
 pub mod pallet_services_payment;
+pub mod pallet_stream_payment;
 pub mod pallet_sudo;
 pub mod pallet_timestamp;
 pub mod pallet_treasury;

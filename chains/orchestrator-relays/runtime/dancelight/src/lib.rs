@@ -1768,8 +1768,7 @@ impl pallet_stream_payment::Config for Runtime {
     type OpenStreamHoldAmount = OpenStreamHoldAmount;
     type RuntimeHoldReason = RuntimeHoldReason;
     type TimeProvider = TimeProvider;
-    // type WeightInfo = weights::pallet_stream_payment::SubstrateWeight<Runtime>;
-    type WeightInfo = (); // TODO: Benchmark
+    type WeightInfo = weights::pallet_stream_payment::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
