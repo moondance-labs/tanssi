@@ -24,9 +24,9 @@ import type {
     DpContainerChainGenesisDataProperties,
     DpContainerChainGenesisDataTokenMetadata,
     FlashboxRuntimeOriginCaller,
-    FlashboxRuntimePreserversAssignementPaymentExtra,
-    FlashboxRuntimePreserversAssignementPaymentRequest,
-    FlashboxRuntimePreserversAssignementPaymentWitness,
+    FlashboxRuntimePreserversAssignmentPaymentExtra,
+    FlashboxRuntimePreserversAssignmentPaymentRequest,
+    FlashboxRuntimePreserversAssignmentPaymentWitness,
     FlashboxRuntimeProxyType,
     FlashboxRuntimeRuntime,
     FlashboxRuntimeRuntimeFreezeReason,
@@ -217,9 +217,9 @@ declare module "@polkadot/types/types/registry" {
         DpContainerChainGenesisDataProperties: DpContainerChainGenesisDataProperties;
         DpContainerChainGenesisDataTokenMetadata: DpContainerChainGenesisDataTokenMetadata;
         FlashboxRuntimeOriginCaller: FlashboxRuntimeOriginCaller;
-        FlashboxRuntimePreserversAssignementPaymentExtra: FlashboxRuntimePreserversAssignementPaymentExtra;
-        FlashboxRuntimePreserversAssignementPaymentRequest: FlashboxRuntimePreserversAssignementPaymentRequest;
-        FlashboxRuntimePreserversAssignementPaymentWitness: FlashboxRuntimePreserversAssignementPaymentWitness;
+        FlashboxRuntimePreserversAssignmentPaymentExtra: FlashboxRuntimePreserversAssignmentPaymentExtra;
+        FlashboxRuntimePreserversAssignmentPaymentRequest: FlashboxRuntimePreserversAssignmentPaymentRequest;
+        FlashboxRuntimePreserversAssignmentPaymentWitness: FlashboxRuntimePreserversAssignmentPaymentWitness;
         FlashboxRuntimeProxyType: FlashboxRuntimeProxyType;
         FlashboxRuntimeRuntime: FlashboxRuntimeRuntime;
         FlashboxRuntimeRuntimeFreezeReason: FlashboxRuntimeRuntimeFreezeReason;

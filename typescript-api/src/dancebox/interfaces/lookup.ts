@@ -3282,7 +3282,7 @@ export default {
             start_assignment: {
                 profileId: "u64",
                 paraId: "u32",
-                assignerParam: "DanceboxRuntimePreserversAssignementPaymentExtra",
+                assignerParam: "DanceboxRuntimePreserversAssignmentPaymentExtra",
             },
             stop_assignment: {
                 profileId: "u64",
@@ -3291,7 +3291,7 @@ export default {
             force_start_assignment: {
                 profileId: "u64",
                 paraId: "u32",
-                assignmentWitness: "DanceboxRuntimePreserversAssignementPaymentWitness",
+                assignmentWitness: "DanceboxRuntimePreserversAssignmentPaymentWitness",
             },
         },
     },
@@ -3302,7 +3302,7 @@ export default {
         url: "Bytes",
         paraIds: "PalletDataPreserversParaIdsFilter",
         mode: "PalletDataPreserversProfileMode",
-        assignmentRequest: "DanceboxRuntimePreserversAssignementPaymentRequest",
+        assignmentRequest: "DanceboxRuntimePreserversAssignmentPaymentRequest",
     },
     /**
      * Lookup326: pallet_data_preservers::types::ParaIdsFilter<T>
@@ -3326,9 +3326,9 @@ export default {
         },
     },
     /**
-     * Lookup330: dancebox_runtime::PreserversAssignementPaymentRequest
+     * Lookup330: dancebox_runtime::PreserversAssignmentPaymentRequest
      **/
-    DanceboxRuntimePreserversAssignementPaymentRequest: {
+    DanceboxRuntimePreserversAssignmentPaymentRequest: {
         _enum: {
             Free: "Null",
             StreamPayment: {
@@ -3337,9 +3337,9 @@ export default {
         },
     },
     /**
-     * Lookup331: dancebox_runtime::PreserversAssignementPaymentExtra
+     * Lookup331: dancebox_runtime::PreserversAssignmentPaymentExtra
      **/
-    DanceboxRuntimePreserversAssignementPaymentExtra: {
+    DanceboxRuntimePreserversAssignmentPaymentExtra: {
         _enum: {
             Free: "Null",
             StreamPayment: {
@@ -3348,9 +3348,9 @@ export default {
         },
     },
     /**
-     * Lookup332: dancebox_runtime::PreserversAssignementPaymentWitness
+     * Lookup332: dancebox_runtime::PreserversAssignmentPaymentWitness
      **/
-    DanceboxRuntimePreserversAssignementPaymentWitness: {
+    DanceboxRuntimePreserversAssignmentPaymentWitness: {
         _enum: {
             Free: "Null",
             StreamPayment: {
@@ -4783,7 +4783,7 @@ export default {
         account: "AccountId32",
         deposit: "u128",
         profile: "PalletDataPreserversProfile",
-        assignment: "Option<(u32,DanceboxRuntimePreserversAssignementPaymentWitness)>",
+        assignment: "Option<(u32,DanceboxRuntimePreserversAssignmentPaymentWitness)>",
     },
     /**
      * Lookup495: pallet_data_preservers::pallet::Error<T>
