@@ -34,7 +34,7 @@ use {
         dispatch::{DispatchErrorWithPostInfo, DispatchResult},
         dynamic_params::{dynamic_pallet_params, dynamic_params},
         traits::{
-            fungible::{self, Inspect, InspectHold, Mutate, MutateHold},
+            fungible::{self, Inspect, InspectHold, MutateHold},
             tokens::{PayFromAccount, Precision, Preservation, UnityAssetBalanceConversion},
             ConstBool, Contains, EverythingBut,
         },
