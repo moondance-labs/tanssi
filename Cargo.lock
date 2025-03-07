@@ -2101,6 +2101,7 @@ dependencies = [
  "sp-core",
  "sp-inherents",
  "sp-io",
+ "sp-keyring",
  "sp-keystore",
  "sp-offchain",
  "sp-runtime",
