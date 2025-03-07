@@ -13,8 +13,8 @@
 
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
+use keyring::{Ed25519Keyring, Sr25519Keyring};
 use sp_core::crypto::get_public_from_string_or_panic;
-use sp_keyring::{Ed25519Keyring, Sr25519Keyring};
 use {
     babe_primitives::AuthorityId as BabeId,
     beefy_primitives::ecdsa_crypto::AuthorityId as BeefyId,

@@ -59,6 +59,7 @@ pub mod accounts {
     use super::*;
     pub const ALICE: &str = "Alice";
     pub const BOB: &str = "Bob";
+    pub const RANDOM: &str = "Random//stash";
 
     pub fn init_balances() -> Vec<AccountId> {
         Sr25519Keyring::well_known()
