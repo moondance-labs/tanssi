@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
+pub use sp_core::{crypto::get_public_from_string_or_panic, parameter_types, storage::Storage};
 pub use tc_service_container_chain::chain_spec::Extensions;
 use {
     dancebox_runtime::{AccountId, Signature},
@@ -25,28 +26,13 @@ use {
 pub mod dancebox;
 pub mod flashbox;
 
-/// Helper function to generate a crypto pair from seed
-pub fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
-    TPublic::Pair::from_string(&format!("//{}", seed), None)
-        .expect("static values are valid; qed")
-        .public()
-}
-
 type AccountPublic = <Signature as Verify>::Signer;
 
 /// Generate collator keys from seed.
 ///
 /// This function's return type must always match the session keys of the chain in tuple format.
 pub fn get_collator_keys_from_seed(seed: &str) -> NimbusId {
-    get_from_seed::<NimbusId>(seed)
-}
-
-/// Helper function to generate an account ID from seed
-pub fn get_account_id_from_seed<TPublic: Public>(seed: &str) -> AccountId
-where
-    AccountPublic: From<<TPublic::Pair as Pair>::Public>,
-{
-    AccountPublic::from(get_from_seed::<TPublic>(seed)).into_account()
+    get_public_from_string_or_panic::<NimbusId>(seed)
 }
 
 /// Helper function to turn a list of names into a list of `(AccountId, NimbusId)`
@@ -57,7 +43,7 @@ pub fn invulnerables_from_seeds<S: AsRef<str>, I: Iterator<Item = S>>(
         .map(|name| {
             let name = name.as_ref();
             (
-                get_account_id_from_seed::<sr25519::Public>(name),
+                get_public_from_string_or_panic::<sr25519::Public>(name).into(),
                 get_collator_keys_from_seed(name),
             )
         })
@@ -68,6 +54,6 @@ pub fn invulnerables_from_seeds<S: AsRef<str>, I: Iterator<Item = S>>(
 pub fn account_ids(names: &[&str]) -> Vec<AccountId> {
     names
         .iter()
-        .map(|name| get_account_id_from_seed::<sr25519::Public>(name))
+        .map(|name| get_public_from_string_or_panic::<sr25519::Public>(name).into())
         .collect()
 }

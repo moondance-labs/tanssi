@@ -14,7 +14,7 @@ workspace = true
 async-io = { workspace = true }
 async-trait = { workspace = true }
 chrono = { workspace = true }
-clap = { workspace = true, features = [ "derive" ] }
+clap = { workspace = true, features = ["derive"] }
 color-eyre = { workspace = true }
 exit-future = { workspace = true }
 fdlimit = { workspace = true }
@@ -22,39 +22,39 @@ flume = { workspace = true }
 fs2 = { workspace = true }
 futures = { workspace = true }
 hex-literal = { workspace = true }
-jsonrpsee = { workspace = true, features = [ "server" ] }
+jsonrpsee = { workspace = true, features = ["server"] }
 log = { workspace = true }
 parity-scale-codec = { workspace = true }
-serde = { workspace = true, features = [ "derive" ] }
+serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 tokio = { workspace = true }
 tokio-util = { workspace = true }
 
 # Local
-ccp-authorities-noting-inherent = { workspace = true, features = [ "std" ] }
-dancebox-runtime = { workspace = true, features = [ "std" ] }
-dp-container-chain-genesis-data = { workspace = true, features = [ "json", "std" ] }
+ccp-authorities-noting-inherent = { workspace = true, features = ["std"] }
+dancebox-runtime = { workspace = true, features = ["std"] }
+dp-container-chain-genesis-data = { workspace = true, features = ["json", "std"] }
 dp-slot-duration-runtime-api = { workspace = true }
-flashbox-runtime = { workspace = true, features = [ "std" ] }
+flashbox-runtime = { workspace = true, features = ["std"] }
 manual-randomness-rpc = { workspace = true }
 manual-xcm-rpc = { workspace = true }
 node-common = { workspace = true }
-pallet-author-noting-runtime-api = { workspace = true, features = [ "std" ] }
-pallet-collator-assignment-runtime-api = { workspace = true, features = [ "std" ] }
-pallet-configuration = { workspace = true, features = [ "std" ] }
-pallet-data-preservers-runtime-api = { workspace = true, features = [ "std" ] }
-pallet-registrar-runtime-api = { workspace = true, features = [ "std" ] }
+pallet-author-noting-runtime-api = { workspace = true, features = ["std"] }
+pallet-collator-assignment-runtime-api = { workspace = true, features = ["std"] }
+pallet-configuration = { workspace = true, features = ["std"] }
+pallet-data-preservers-runtime-api = { workspace = true, features = ["std"] }
+pallet-registrar-runtime-api = { workspace = true, features = ["std"] }
 services-payment-rpc = { workspace = true }
 stream-payment-rpc = { workspace = true }
 tc-service-container-chain = { workspace = true }
-tp-author-noting-inherent = { workspace = true, features = [ "std" ] }
+tp-author-noting-inherent = { workspace = true, features = ["std"] }
 
 dc-orchestrator-chain-interface = { workspace = true }
 tc-consensus = { workspace = true }
 
 # Nimbus
 nimbus-consensus = { workspace = true }
-nimbus-primitives = { workspace = true, features = [ "std" ] }
+nimbus-primitives = { workspace = true, features = ["std"] }
 
 # Substrate
 frame-benchmarking = { workspace = true }
@@ -79,22 +79,23 @@ sc-telemetry = { workspace = true }
 sc-tracing = { workspace = true }
 sc-transaction-pool = { workspace = true }
 sc-transaction-pool-api = { workspace = true }
-sp-api = { workspace = true, features = [ "std" ] }
+sp-api = { workspace = true, features = ["std"] }
 sp-block-builder = { workspace = true }
 sp-blockchain = { workspace = true }
 sp-consensus = { workspace = true }
 sp-consensus-aura = { workspace = true }
 sp-consensus-slots = { workspace = true }
-sp-core = { workspace = true, features = [ "std" ] }
-sp-inherents = { workspace = true, features = [ "std" ] }
-sp-io = { workspace = true, features = [ "std" ] }
-sp-keystore = { workspace = true, features = [ "std" ] }
-sp-offchain = { workspace = true, features = [ "std" ] }
+sp-core = { workspace = true, features = ["std"] }
+sp-inherents = { workspace = true, features = ["std"] }
+sp-io = { workspace = true, features = ["std"] }
+sp-keystore = { workspace = true, features = ["std"] }
+sp-keyring = { workspace = true, features = ["std"] }
+sp-offchain = { workspace = true, features = ["std"] }
 sp-panic-handler = { workspace = true }
-sp-runtime = { workspace = true, features = [ "std" ] }
-sp-session = { workspace = true, features = [ "std" ] }
-sp-state-machine = { workspace = true, features = [ "std" ] }
-sp-timestamp = { workspace = true, features = [ "std" ] }
+sp-runtime = { workspace = true, features = ["std"] }
+sp-session = { workspace = true, features = ["std"] }
+sp-state-machine = { workspace = true, features = ["std"] }
+sp-timestamp = { workspace = true, features = ["std"] }
 
 sp-transaction-pool = { workspace = true }
 substrate-frame-rpc-system = { workspace = true }
@@ -128,32 +129,32 @@ substrate-build-script-utils = { workspace = true }
 [features]
 default = []
 runtime-benchmarks = [
-	"cumulus-primitives-core/runtime-benchmarks",
-	"dancebox-runtime/runtime-benchmarks",
-	"flashbox-runtime/runtime-benchmarks",
-	"frame-benchmarking-cli/runtime-benchmarks",
-	"frame-benchmarking/runtime-benchmarks",
-	"frame-support/runtime-benchmarks",
-	"nimbus-primitives/runtime-benchmarks",
-	"pallet-configuration/runtime-benchmarks",
-	"polkadot-cli/runtime-benchmarks",
-	"polkadot-parachain-primitives/runtime-benchmarks",
-	"polkadot-primitives/runtime-benchmarks",
-	"polkadot-service/runtime-benchmarks",
-	"sc-service/runtime-benchmarks",
-	"sp-runtime/runtime-benchmarks",
-	"tc-service-container-chain/runtime-benchmarks",
+    "cumulus-primitives-core/runtime-benchmarks",
+    "dancebox-runtime/runtime-benchmarks",
+    "flashbox-runtime/runtime-benchmarks",
+    "frame-benchmarking-cli/runtime-benchmarks",
+    "frame-benchmarking/runtime-benchmarks",
+    "frame-support/runtime-benchmarks",
+    "nimbus-primitives/runtime-benchmarks",
+    "pallet-configuration/runtime-benchmarks",
+    "polkadot-cli/runtime-benchmarks",
+    "polkadot-parachain-primitives/runtime-benchmarks",
+    "polkadot-primitives/runtime-benchmarks",
+    "polkadot-service/runtime-benchmarks",
+    "sc-service/runtime-benchmarks",
+    "sp-runtime/runtime-benchmarks",
+    "tc-service-container-chain/runtime-benchmarks",
 ]
 try-runtime = [
-	"dancebox-runtime/try-runtime",
-	"flashbox-runtime/try-runtime",
-	"frame-support/try-runtime",
-	"nimbus-primitives/try-runtime",
-	"pallet-configuration/try-runtime",
-	"polkadot-cli/try-runtime",
-	"polkadot-service/try-runtime",
-	"sp-runtime/try-runtime",
-	"tc-service-container-chain/try-runtime",
+    "dancebox-runtime/try-runtime",
+    "flashbox-runtime/try-runtime",
+    "frame-support/try-runtime",
+    "nimbus-primitives/try-runtime",
+    "pallet-configuration/try-runtime",
+    "polkadot-cli/try-runtime",
+    "polkadot-service/try-runtime",
+    "sp-runtime/try-runtime",
+    "tc-service-container-chain/try-runtime",
 ]
 
-fast-runtime = [ "dancebox-runtime/fast-runtime", "flashbox-runtime/fast-runtime" ]
+fast-runtime = ["dancebox-runtime/fast-runtime", "flashbox-runtime/fast-runtime"]
