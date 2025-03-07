@@ -9,7 +9,7 @@ sudo npm i -g pnpm
 pnpm i
 ```
 
-The expected node version is 20, check the CI workflow file to find the exact version as it can change. For example, this works:
+The expected node version is 22, check the CI workflow file to find the exact version as it can change. For example, this works:
 
 ```sh
 $ node --version
@@ -76,6 +76,21 @@ running the test, allowing you to use polkadot.js to see all the blocks, events,
 ```sh
 pnpm moonwall run zombie_tanssi
 ```
+
+## E2E Tests
+
+To run the full end-to-end network, run the following:
+
+```sh
+pnpm moonwall test zombie_tanssi_relay_eth_bridge;
+```
+
+> [!IMPORTANT]  
+> These tests take a long time! Due to block waits, a standard run is in excess of 25 minutes 🥵
+
+
+> [!TIP]  
+> For **macOS** this must be run with `sudo` due to the folder ownership created by the scripts
 
 ## Dev test organization
 
@@ -227,6 +242,7 @@ The easiest way to find out the block number of the last session change is to us
 If testing a network with no available block explorer, you can either try to guess by finding the highest multiple of the session length smaller than the current block number (so with session length 600 and block number 10_000, open python and run `10000 // 600 * 600`); or you can add a log somewhere in the runtime that logs the next session start and the session length, and calculate the previous session start from that.
 
 # Spawns Tanssi and container-chains with zombienet
+
 You can directly use the zombieTanssi.json file and pass it to zombienet to spawn yourself the network. From the test directory you can do:
 
 ```sh

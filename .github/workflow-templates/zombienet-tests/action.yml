@@ -25,10 +25,9 @@ runs:
     - name: "Run zombie test"
       shell: bash
       run: |
-        cd test
         pnpm install
 
-        ## Run tests
+        cd test
         pnpm moonwall test ${{ inputs.test_name }}
 
     - name: "Gather zombie logs"
