@@ -49,7 +49,7 @@ describeSuite({
                         url: "0x6578656d706c65",
                         paraIds: { whitelist: [42, 43] },
                         mode: { bootnode: null },
-                        assignmentRequest: "Free",
+                        assignmentRequest: { free: null },
                     },
                     assignment: null,
                 });
@@ -101,7 +101,7 @@ describeSuite({
                         url: "0x6578656d706c6532",
                         paraIds: { whitelist: [42, 43] },
                         mode: { rpc: { supportsEthereumRpcs: false } },
-                        assignmentRequest: "Free",
+                        assignmentRequest: { free: null },
                     },
                     assignment: null,
                 });
@@ -130,7 +130,7 @@ describeSuite({
                         url: "0x6578656d706c65",
                         paraIds: { whitelist: [42, 43] },
                         mode: { bootnode: null },
-                        assignmentRequest: "Free",
+                        assignmentRequest: { free: null },
                     },
                     assignment: null,
                 });
@@ -166,7 +166,7 @@ describeSuite({
                         url: "0x6578656d706c65",
                         paraIds: { whitelist: [42, 43] },
                         mode: { bootnode: null },
-                        assignmentRequest: "Free",
+                        assignmentRequest: { free: null },
                     },
                     assignment: null,
                 });
@@ -195,7 +195,7 @@ describeSuite({
                         url: "0x6578656d706c65",
                         paraIds: { whitelist: [42, 43] },
                         mode: { bootnode: null },
-                        assignmentRequest: "Free",
+                        assignmentRequest: { free: null },
                     },
                     assignment: null,
                 });
@@ -218,7 +218,7 @@ describeSuite({
                         url: "0x6578656d706c6532",
                         paraIds: { whitelist: [42, 43] },
                         mode: { rpc: { supportsEthereumRpcs: false } },
-                        assignmentRequest: "Free",
+                        assignmentRequest: { free: null },
                     },
                     assignment: null,
                 });
@@ -247,7 +247,7 @@ describeSuite({
                         url: "0x6578656d706c65",
                         paraIds: { whitelist: [42, 43] },
                         mode: { bootnode: null },
-                        assignmentRequest: "Free",
+                        assignmentRequest: { free: null },
                     },
                     assignment: null,
                 });
@@ -299,9 +299,9 @@ describeSuite({
                         url: "0x6578656d706c65",
                         paraIds: { whitelist: [paraId] },
                         mode: { bootnode: null },
-                        assignmentRequest: "Free",
+                        assignmentRequest: { free: null },
                     },
-                    assignment: [paraId, "Free"],
+                    assignment: [paraId, { free: null }],
                 });
             },
         });
@@ -343,9 +343,9 @@ describeSuite({
                         url: "0x6578656d706c65",
                         paraIds: { whitelist: [paraId] },
                         mode: { bootnode: null },
-                        assignmentRequest: "Free",
+                        assignmentRequest: { free: null },
                     },
-                    assignment: [paraId, "Free"],
+                    assignment: [paraId, { free: null }],
                 });
             },
         });
@@ -391,7 +391,7 @@ describeSuite({
                         url: "0x6578656d706c65",
                         paraIds: { whitelist: [paraId] },
                         mode: { bootnode: null },
-                        assignmentRequest: "Free",
+                        assignmentRequest: { free: null },
                     },
                     assignment: null,
                 });
@@ -437,7 +437,7 @@ describeSuite({
                         url: "0x6578656d706c65",
                         paraIds: { whitelist: [paraId] },
                         mode: { bootnode: null },
-                        assignmentRequest: "Free",
+                        assignmentRequest: { free: null },
                     },
                     assignment: null,
                 });
