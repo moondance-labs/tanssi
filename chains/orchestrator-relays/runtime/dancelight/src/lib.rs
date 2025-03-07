@@ -1889,6 +1889,7 @@ impl pallet_inactivity_tracking::Config for Runtime {
     type MaxInactiveSessions = ConstU32<5>;
     type MaxCollatorsPerSession = ConstU32<100>;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
+    type GetSelfChainBlockAuthor = ();
     type RegisteredContainerChainsFetcher = ContainerRegistrar;
 }
 

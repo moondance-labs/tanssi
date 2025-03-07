@@ -20,7 +20,7 @@ use {
     sp_staking::SessionIndex,
     tp_traits::{
         AuthorNotingHook, AuthorNotingInfo, GetCurrentContainerChains, GetSessionIndex,
-        NodeActivityTrackingHelper,
+        MaybeSelfChainBlockAuthor, NodeActivityTrackingHelper,
     },
 };
 
@@ -65,6 +65,9 @@ pub mod pallet {
         /// Helper that returns the current session index.
         type CurrentSessionIndex: GetSessionIndex<SessionIndex>;
 
+        /// Helper that returns the block author for the orchestrator chain (if it exists)
+        type GetSelfChainBlockAuthor: MaybeSelfChainBlockAuthor<Self::CollatorId>;
+
         /// Helper that fetches the latest set of container chains valid for collation
         type RegisteredContainerChainsFetcher: GetCurrentContainerChains;
     }
@@ -103,6 +106,13 @@ pub mod pallet {
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         fn on_initialize(_n: BlockNumberFor<T>) -> Weight {
             let mut total_weight = T::DbWeight::get().reads_writes(1, 0);
+
+            // Process the orchestrator chain block author (if it exists)
+            if let Some(orchestrator_chain_author) = T::GetSelfChainBlockAuthor::get_block_author()
+            {
+                total_weight += Self::on_author_noted(orchestrator_chain_author);
+            }
+
             // Update inactive collator records only after a session has ended
             let current_session = T::CurrentSessionIndex::session_index();
             let current_unprocessed_session = <LastUnprocessedSession<T>>::get();
@@ -139,6 +149,21 @@ pub mod pallet {
             <LastUnprocessedSession<T>>::put(current_session_id);
             total_weight
         }
+        pub fn on_author_noted(author: T::CollatorId) -> Weight {
+            let mut total_weight = T::DbWeight::get().reads_writes(1, 0);
+            let _ = <ActiveCollatorsForCurrentSession<T>>::try_mutate(
+                |active_collators| -> DispatchResult {
+                    if !active_collators.contains(&author) {
+                        total_weight += T::DbWeight::get().writes(1);
+                        active_collators
+                            .try_push(author)
+                            .map_err(|_| Error::<T>::MaxCollatorsPerSessionReached)?;
+                    }
+                    Ok(())
+                },
+            );
+            total_weight
+        }
     }
 }
 
@@ -167,19 +192,7 @@ impl<T: Config> AuthorNotingHook<T::CollatorId> for Pallet<T> {
         let mut total_weight = T::DbWeight::get().reads_writes(0, 0);
         for author_info in info {
             let author = author_info.author.clone();
-            let _ = <ActiveCollatorsForCurrentSession<T>>::try_mutate(
-                |active_collators| -> DispatchResult {
-                    total_weight += T::DbWeight::get().reads(1);
-                    if !active_collators.contains(&author) {
-                        total_weight += T::DbWeight::get().writes(1);
-                        active_collators
-                            .try_push(author)
-                            .map_err(|_| Error::<T>::MaxCollatorsPerSessionReached)?;
-                    }
-
-                    Ok(())
-                },
-            );
+            total_weight += Self::on_author_noted(author);
         }
         total_weight
     }
