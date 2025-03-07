@@ -1889,7 +1889,6 @@ impl pallet_inactivity_tracking::Config for Runtime {
     type MaxInactiveSessions = ConstU32<5>;
     type MaxCollatorsPerSession = ConstU32<100>;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
-    type ContainerChainBlockAuthorInfoFetcher = AuthorNoting;
     type RegisteredContainerChainsFetcher = ContainerRegistrar;
     type CurrentCollatorsListFetcher = PooledStaking;
 }
@@ -2296,7 +2295,7 @@ impl pallet_author_noting::Config for Runtime {
     type ContainerChains = TanssiCollatorAssignment;
     type SlotBeacon = BabeSlotBeacon;
     type ContainerChainAuthor = TanssiCollatorAssignment;
-    type AuthorNotingHook = (InflationRewards, ServicesPayment);
+    type AuthorNotingHook = (InflationRewards, ServicesPayment, InactivityTracking);
     type RelayOrPara = pallet_author_noting::RelayMode;
     type MaxContainerChains = MaxLengthParaIds;
     type WeightInfo = weights::pallet_author_noting::SubstrateWeight<Runtime>;

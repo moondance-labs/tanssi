@@ -1184,7 +1184,12 @@ impl pallet_author_noting::Config for Runtime {
     type ContainerChains = CollatorAssignment;
     type SlotBeacon = dp_consensus::AuraDigestSlotBeacon<Runtime>;
     type ContainerChainAuthor = CollatorAssignment;
-    type AuthorNotingHook = (XcmCoreBuyer, InflationRewards, ServicesPayment);
+    type AuthorNotingHook = (
+        XcmCoreBuyer,
+        InflationRewards,
+        ServicesPayment,
+        InactivityTracking,
+    );
     type RelayOrPara = pallet_author_noting::ParaMode<
         cumulus_pallet_parachain_system::RelaychainDataProvider<Self>,
     >;
@@ -1971,7 +1976,6 @@ impl pallet_inactivity_tracking::Config for Runtime {
     type MaxCollatorsPerSession = ConstU32<100>;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type RegisteredContainerChainsFetcher = Registrar;
-    type ContainerChainBlockAuthorInfoFetcher = AuthorNoting;
     type CurrentCollatorsListFetcher = PooledStaking;
 }
 

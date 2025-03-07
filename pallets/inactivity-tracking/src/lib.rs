@@ -15,15 +15,18 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 #![cfg_attr(not(feature = "std"), no_std)]
 use {
+    frame_support::{dispatch::DispatchResult, pallet_prelude::Weight},
     sp_runtime::{traits::Get, BoundedVec},
     sp_staking::SessionIndex,
     tp_traits::{
-        CurrentEligibleCollatorsHelper, GetCurrentContainerChains, GetSessionIndex,
-        LatestAuthorInfoFetcher, NodeInactivityTrackingHelper,
+        AuthorNotingHook, AuthorNotingInfo, BlockNumber, CurrentEligibleCollatorsHelper,
+        GetCurrentContainerChains, GetSessionIndex, LatestAuthorInfoFetcher,
+        NodeInactivityTrackingHelper, ParaId,
     },
 };
 
 pub use pallet::*;
+
 #[frame_support::pallet]
 pub mod pallet {
     use {
@@ -63,9 +66,6 @@ pub mod pallet {
         /// Helper that fetches the latest set of container chains valid for collation
         type RegisteredContainerChainsFetcher: GetCurrentContainerChains;
 
-        /// Helper that fetches the latest block author info for a container chain
-        type ContainerChainBlockAuthorInfoFetcher: LatestAuthorInfoFetcher<Self::CollatorId>;
-
         /// Helper that fetches a list of collators eligible for to produce blocks for the current session
         type CurrentCollatorsListFetcher: CurrentEligibleCollatorsHelper<Self::CollatorId>;
     }
@@ -101,8 +101,6 @@ pub mod pallet {
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         fn on_initialize(_n: BlockNumberFor<T>) -> Weight {
-            Self::update_collators_activity();
-
             // Update inactive collator records only after a session has ended
             let current_session = T::CurrentSessionIndex::session_index();
             let current_unprocessed_session = <LastUnprocessedSession<T>>::get();
@@ -136,32 +134,6 @@ pub mod pallet {
             Self::cleanup_inactive_collator_info();
         }
 
-        fn update_collators_activity() {
-            T::RegisteredContainerChainsFetcher::current_container_chains()
-                .into_iter()
-                .for_each(|chain_id| {
-                    let container_chain_block_info =
-                        T::ContainerChainBlockAuthorInfoFetcher::get_latest_author_info(chain_id);
-
-                    if container_chain_block_info.is_some() {
-                        let container_chain_block_author =
-                            container_chain_block_info.unwrap().author;
-
-                        if <InactiveCollatorsForCurrentSession<T>>::get()
-                            .contains(&container_chain_block_author)
-                        {
-                            let _ = <InactiveCollatorsForCurrentSession<T>>::try_mutate(
-                                |current_seesion_collators| -> DispatchResult {
-                                    current_seesion_collators
-                                        .retain(|c| c != &container_chain_block_author);
-                                    Ok(())
-                                },
-                            );
-                        }
-                    }
-                });
-        }
-
         fn cleanup_inactive_collator_info() {
             let current_session = T::CurrentSessionIndex::session_index();
             let minimum_sessions_required = T::MaxInactiveSessions::get() + 1;
@@ -193,4 +165,24 @@ impl<T: Config> NodeInactivityTrackingHelper<T::CollatorId> for Pallet<T> {
         }
         true
     }
+}
+
+impl<T: Config> AuthorNotingHook<T::CollatorId> for Pallet<T> {
+    fn on_container_authors_noted(info: &[AuthorNotingInfo<T::CollatorId>]) -> Weight {
+        for author_info in info {
+            let author = author_info.author.clone();
+            if <InactiveCollatorsForCurrentSession<T>>::get().contains(&author) {
+                <InactiveCollatorsForCurrentSession<T>>::try_mutate(
+                    |current_seesion_collators| -> DispatchResult {
+                        current_seesion_collators.retain(|c| c != &author);
+                        Ok(())
+                    },
+                )
+                .expect("Failed to update inactive collators list");
+            }
+        }
+        Weight::zero()
+    }
+    #[cfg(feature = "runtime-benchmarks")]
+    fn prepare_worst_case_for_bench(_a: &T::CollatorId, _b: BlockNumber, para_id: ParaId) {}
 }
