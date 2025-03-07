@@ -19,8 +19,8 @@ import type {
     CumulusPrimitivesParachainInherentParachainInherentData,
     DpContainerChainGenesisDataContainerChainGenesisData,
     FlashboxRuntimeOriginCaller,
-    FlashboxRuntimePreserversAssignementPaymentExtra,
-    FlashboxRuntimePreserversAssignementPaymentWitness,
+    FlashboxRuntimePreserversAssignmentPaymentExtra,
+    FlashboxRuntimePreserversAssignmentPaymentWitness,
     FlashboxRuntimeProxyType,
     FlashboxRuntimeSessionKeys,
     FlashboxRuntimeStreamPaymentAssetId,
@@ -418,13 +418,13 @@ declare module "@polkadot/api-base/types/submittable" {
                     profileId: u64 | AnyNumber | Uint8Array,
                     paraId: u32 | AnyNumber | Uint8Array,
                     assignmentWitness:
-                        | FlashboxRuntimePreserversAssignementPaymentWitness
+                        | FlashboxRuntimePreserversAssignmentPaymentWitness
                         | { Free: any }
                         | { StreamPayment: any }
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [u64, u32, FlashboxRuntimePreserversAssignementPaymentWitness]
+                [u64, u32, FlashboxRuntimePreserversAssignmentPaymentWitness]
             >;
             forceUpdateProfile: AugmentedSubmittable<
                 (
@@ -442,13 +442,13 @@ declare module "@polkadot/api-base/types/submittable" {
                     profileId: u64 | AnyNumber | Uint8Array,
                     paraId: u32 | AnyNumber | Uint8Array,
                     assignerParam:
-                        | FlashboxRuntimePreserversAssignementPaymentExtra
+                        | FlashboxRuntimePreserversAssignmentPaymentExtra
                         | { Free: any }
                         | { StreamPayment: any }
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [u64, u32, FlashboxRuntimePreserversAssignementPaymentExtra]
+                [u64, u32, FlashboxRuntimePreserversAssignmentPaymentExtra]
             >;
             stopAssignment: AugmentedSubmittable<
                 (

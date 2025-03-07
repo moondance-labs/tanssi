@@ -666,7 +666,7 @@ pub const FERDIE: [u8; 32] = [9u8; 32];
 
 pub fn set_dummy_boot_node(para_manager: RuntimeOrigin, para_id: ParaId) {
     use {
-        crate::{PreserversAssignementPaymentExtra, PreserversAssignementPaymentRequest},
+        crate::{PreserversAssignmentPaymentExtra, PreserversAssignmentPaymentRequest},
         pallet_data_preservers::{ParaIdsFilter, Profile, ProfileMode},
     };
 
@@ -678,7 +678,7 @@ pub fn set_dummy_boot_node(para_manager: RuntimeOrigin, para_id: ParaId) {
                 .expect("to fit in BoundedVec"),
         para_ids: ParaIdsFilter::AnyParaId,
         mode: ProfileMode::Bootnode,
-        assignment_request: PreserversAssignementPaymentRequest::Free,
+        assignment_request: PreserversAssignmentPaymentRequest::Free,
     };
 
     let profile_id = pallet_data_preservers::NextProfileId::<Runtime>::get();
@@ -690,7 +690,7 @@ pub fn set_dummy_boot_node(para_manager: RuntimeOrigin, para_id: ParaId) {
         para_manager,
         profile_id,
         para_id,
-        PreserversAssignementPaymentExtra::Free,
+        PreserversAssignmentPaymentExtra::Free,
     )
     .expect("assignement to work");
 

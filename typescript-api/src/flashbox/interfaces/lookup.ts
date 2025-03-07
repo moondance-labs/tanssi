@@ -2009,7 +2009,7 @@ export default {
             start_assignment: {
                 profileId: "u64",
                 paraId: "u32",
-                assignerParam: "FlashboxRuntimePreserversAssignementPaymentExtra",
+                assignerParam: "FlashboxRuntimePreserversAssignmentPaymentExtra",
             },
             stop_assignment: {
                 profileId: "u64",
@@ -2018,7 +2018,7 @@ export default {
             force_start_assignment: {
                 profileId: "u64",
                 paraId: "u32",
-                assignmentWitness: "FlashboxRuntimePreserversAssignementPaymentWitness",
+                assignmentWitness: "FlashboxRuntimePreserversAssignmentPaymentWitness",
             },
         },
     },
@@ -2029,7 +2029,7 @@ export default {
         url: "Bytes",
         paraIds: "PalletDataPreserversParaIdsFilter",
         mode: "PalletDataPreserversProfileMode",
-        assignmentRequest: "FlashboxRuntimePreserversAssignementPaymentRequest",
+        assignmentRequest: "FlashboxRuntimePreserversAssignmentPaymentRequest",
     },
     /**
      * Lookup244: pallet_data_preservers::types::ParaIdsFilter<T>
@@ -2053,9 +2053,9 @@ export default {
         },
     },
     /**
-     * Lookup249: flashbox_runtime::PreserversAssignementPaymentRequest
+     * Lookup249: flashbox_runtime::PreserversAssignmentPaymentRequest
      **/
-    FlashboxRuntimePreserversAssignementPaymentRequest: {
+    FlashboxRuntimePreserversAssignmentPaymentRequest: {
         _enum: {
             Free: "Null",
             StreamPayment: {
@@ -2064,9 +2064,9 @@ export default {
         },
     },
     /**
-     * Lookup250: flashbox_runtime::PreserversAssignementPaymentExtra
+     * Lookup250: flashbox_runtime::PreserversAssignmentPaymentExtra
      **/
-    FlashboxRuntimePreserversAssignementPaymentExtra: {
+    FlashboxRuntimePreserversAssignmentPaymentExtra: {
         _enum: {
             Free: "Null",
             StreamPayment: {
@@ -2075,9 +2075,9 @@ export default {
         },
     },
     /**
-     * Lookup251: flashbox_runtime::PreserversAssignementPaymentWitness
+     * Lookup251: flashbox_runtime::PreserversAssignmentPaymentWitness
      **/
-    FlashboxRuntimePreserversAssignementPaymentWitness: {
+    FlashboxRuntimePreserversAssignmentPaymentWitness: {
         _enum: {
             Free: "Null",
             StreamPayment: {
@@ -2631,7 +2631,7 @@ export default {
         account: "AccountId32",
         deposit: "u128",
         profile: "PalletDataPreserversProfile",
-        assignment: "Option<(u32,FlashboxRuntimePreserversAssignementPaymentWitness)>",
+        assignment: "Option<(u32,FlashboxRuntimePreserversAssignmentPaymentWitness)>",
     },
     /**
      * Lookup353: pallet_data_preservers::pallet::Error<T>
