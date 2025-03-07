@@ -16,6 +16,7 @@
 
 //! Polkadot chain configurations.
 
+use sp_core::crypto::get_public_from_string_or_panic;
 use {
     beefy_primitives::ecdsa_crypto::AuthorityId as BeefyId,
     cumulus_primitives_core::ParaId,
@@ -102,21 +103,6 @@ pub fn dancelight_staging_testnet_config() -> Result<DancelightChainSpec, String
     .build())
 }
 
-/// Helper function to generate a crypto pair from seed
-pub fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
-    TPublic::Pair::from_string(&format!("//{}", seed), None)
-        .expect("static values are valid; qed")
-        .public()
-}
-
-/// Helper function to generate an account ID from seed
-pub fn get_account_id_from_seed<TPublic: Public>(seed: &str) -> AccountId
-where
-    AccountPublic: From<<TPublic::Pair as Pair>::Public>,
-{
-    AccountPublic::from(get_from_seed::<TPublic>(seed)).into_account()
-}
-
 /// Helper function to generate stash, controller and session key from seed
 pub fn get_authority_keys_from_seed(
     seed: &str,
@@ -139,7 +125,7 @@ pub fn get_authority_keys_from_seed(
         keys.4,
         keys.5,
         keys.6,
-        get_from_seed::<BeefyId>(seed),
+        get_public_from_string_or_panic::<BeefyId>(seed),
     )
 }
 
@@ -156,13 +142,13 @@ pub fn get_authority_keys_from_seed_no_beefy(
     AuthorityDiscoveryId,
 ) {
     (
-        get_account_id_from_seed::<sr25519::Public>(&format!("{}//stash", seed)),
-        get_account_id_from_seed::<sr25519::Public>(seed),
-        get_from_seed::<BabeId>(seed),
-        get_from_seed::<GrandpaId>(seed),
-        get_from_seed::<ValidatorId>(seed),
-        get_from_seed::<AssignmentId>(seed),
-        get_from_seed::<AuthorityDiscoveryId>(seed),
+        get_public_from_string_or_panic::<sr25519::Public>(&format!("{}//stash", seed)).into(),
+        get_public_from_string_or_panic::<sr25519::Public>(seed).into(),
+        get_public_from_string_or_panic::<BabeId>(seed),
+        get_public_from_string_or_panic::<GrandpaId>(seed),
+        get_public_from_string_or_panic::<ValidatorId>(seed),
+        get_public_from_string_or_panic::<AssignmentId>(seed),
+        get_public_from_string_or_panic::<AuthorityDiscoveryId>(seed),
     )
 }
 
