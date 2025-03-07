@@ -1976,7 +1976,6 @@ impl pallet_inactivity_tracking::Config for Runtime {
     type MaxCollatorsPerSession = ConstU32<100>;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type RegisteredContainerChainsFetcher = Registrar;
-    type CurrentCollatorsListFetcher = PooledStaking;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.

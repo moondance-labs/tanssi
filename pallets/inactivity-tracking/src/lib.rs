@@ -19,11 +19,13 @@ use {
     sp_runtime::{traits::Get, BoundedVec},
     sp_staking::SessionIndex,
     tp_traits::{
-        AuthorNotingHook, AuthorNotingInfo, BlockNumber, CurrentEligibleCollatorsHelper,
-        GetCurrentContainerChains, GetSessionIndex, LatestAuthorInfoFetcher,
-        NodeInactivityTrackingHelper, ParaId,
+        AuthorNotingHook, AuthorNotingInfo, GetCurrentContainerChains, GetSessionIndex,
+        NodeActivityTrackingHelper,
     },
 };
+
+#[cfg(feature = "runtime-benchmarks")]
+use tp_traits::{BlockNumber, ParaId};
 
 pub use pallet::*;
 
@@ -65,14 +67,11 @@ pub mod pallet {
 
         /// Helper that fetches the latest set of container chains valid for collation
         type RegisteredContainerChainsFetcher: GetCurrentContainerChains;
-
-        /// Helper that fetches a list of collators eligible for to produce blocks for the current session
-        type CurrentCollatorsListFetcher: CurrentEligibleCollatorsHelper<Self::CollatorId>;
     }
 
     /// A list of double map of inactive collators for a session
     #[pallet::storage]
-    pub type InactiveCollators<T: Config> = StorageMap<
+    pub type ActiveCollators<T: Config> = StorageMap<
         _,
         Twox64Concat,
         SessionIndex,
@@ -82,7 +81,7 @@ pub mod pallet {
 
     /// A list of inactive collators for a session. Repopulated at the start of every session
     #[pallet::storage]
-    pub type InactiveCollatorsForCurrentSession<T: Config> =
+    pub type ActiveCollatorsForCurrentSession<T: Config> =
         StorageValue<_, BoundedVec<T::CollatorId, T::MaxCollatorsPerSession>, ValueQuery>;
 
     /// The last session index for which the inactive collators have not been processed
@@ -93,7 +92,9 @@ pub mod pallet {
     pub enum Event<T: Config> {}
 
     #[pallet::error]
-    pub enum Error<T> {}
+    pub enum Error<T> {
+        MaxCollatorsPerSessionReached,
+    }
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {}
@@ -101,53 +102,47 @@ pub mod pallet {
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         fn on_initialize(_n: BlockNumberFor<T>) -> Weight {
+            let mut total_weight = T::DbWeight::get().reads_writes(1, 0);
             // Update inactive collator records only after a session has ended
             let current_session = T::CurrentSessionIndex::session_index();
             let current_unprocessed_session = <LastUnprocessedSession<T>>::get();
             if current_unprocessed_session < current_session {
-                // Update the inactive collator records for the previous session
-                // Collator can be marked as inactive only if:
-                // 1. It has not produced a block in the previous session
-                // 2. Chain has advanced in the previous session
-                Self::process_ended_session(current_unprocessed_session);
-
-                <LastUnprocessedSession<T>>::put(current_session);
+                total_weight +=
+                    Self::process_ended_session(current_unprocessed_session, current_session);
             }
-            Weight::zero()
+            total_weight
         }
     }
 
     impl<T: Config> Pallet<T> {
-        fn process_ended_session(session_id: SessionIndex) {
-            InactiveCollators::<T>::insert(
-                session_id,
-                <InactiveCollatorsForCurrentSession<T>>::get(),
+        fn process_ended_session(
+            unprocessed_session_id: SessionIndex,
+            current_session_id: SessionIndex,
+        ) -> Weight {
+            let mut total_weight = T::DbWeight::get().reads_writes(0, 3);
+            ActiveCollators::<T>::insert(
+                unprocessed_session_id,
+                <ActiveCollatorsForCurrentSession<T>>::get(),
             );
 
-            let eligible_collators = T::CurrentCollatorsListFetcher::get_eligible_collators();
+            // TO DO: Add to the list collators assigned to container chains that have not advanced
+            <ActiveCollatorsForCurrentSession<T>>::put(BoundedVec::new());
 
-            // TO DO: Remove from the list collators assigned to container chains that have not advanced
-            <InactiveCollatorsForCurrentSession<T>>::put(BoundedVec::truncate_from(
-                eligible_collators,
-            ));
-
-            Self::cleanup_inactive_collator_info();
-        }
-
-        fn cleanup_inactive_collator_info() {
-            let current_session = T::CurrentSessionIndex::session_index();
+            // Cleanup active collator info for sessions that are older than the maximum allowed
             let minimum_sessions_required = T::MaxInactiveSessions::get() + 1;
-
-            if current_session < minimum_sessions_required {
-                return;
+            if current_session_id >= minimum_sessions_required {
+                total_weight += T::DbWeight::get().writes(1);
+                let _ = <crate::pallet::ActiveCollators<T>>::remove(
+                    current_session_id - minimum_sessions_required,
+                );
             }
-
-            let _ = <InactiveCollators<T>>::remove(current_session - minimum_sessions_required);
+            <LastUnprocessedSession<T>>::put(current_session_id);
+            total_weight
         }
     }
 }
 
-impl<T: Config> NodeInactivityTrackingHelper<T::CollatorId> for Pallet<T> {
+impl<T: Config> NodeActivityTrackingHelper<T::CollatorId> for Pallet<T> {
     fn is_node_inactive(node: &T::CollatorId) -> bool {
         let current_session = T::CurrentSessionIndex::session_index();
 
@@ -159,7 +154,7 @@ impl<T: Config> NodeInactivityTrackingHelper<T::CollatorId> for Pallet<T> {
         for session_index in current_session.saturating_sub(T::MaxInactiveSessions::get().into())
             ..current_session.saturating_sub(1u32.into())
         {
-            if !<InactiveCollators<T>>::get(session_index).contains(node) {
+            if <ActiveCollators<T>>::get(session_index).contains(node) {
                 return false;
             }
         }
@@ -169,19 +164,24 @@ impl<T: Config> NodeInactivityTrackingHelper<T::CollatorId> for Pallet<T> {
 
 impl<T: Config> AuthorNotingHook<T::CollatorId> for Pallet<T> {
     fn on_container_authors_noted(info: &[AuthorNotingInfo<T::CollatorId>]) -> Weight {
+        let mut total_weight = T::DbWeight::get().reads_writes(0, 0);
         for author_info in info {
             let author = author_info.author.clone();
-            if <InactiveCollatorsForCurrentSession<T>>::get().contains(&author) {
-                <InactiveCollatorsForCurrentSession<T>>::try_mutate(
-                    |current_seesion_collators| -> DispatchResult {
-                        current_seesion_collators.retain(|c| c != &author);
-                        Ok(())
-                    },
-                )
-                .expect("Failed to update inactive collators list");
-            }
+            let _ = <ActiveCollatorsForCurrentSession<T>>::try_mutate(
+                |active_collators| -> DispatchResult {
+                    total_weight += T::DbWeight::get().reads(1);
+                    if !active_collators.contains(&author) {
+                        total_weight += T::DbWeight::get().writes(1);
+                        active_collators
+                            .try_push(author)
+                            .map_err(|_| Error::<T>::MaxCollatorsPerSessionReached)?;
+                    }
+
+                    Ok(())
+                },
+            );
         }
-        Weight::zero()
+        total_weight
     }
     #[cfg(feature = "runtime-benchmarks")]
     fn prepare_worst_case_for_bench(_a: &T::CollatorId, _b: BlockNumber, para_id: ParaId) {}

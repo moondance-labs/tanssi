@@ -609,8 +609,8 @@ pub trait ExternalIndexProvider {
     fn get_external_index() -> u64;
 }
 
-// A trait to verify if a node has been inactive during the last N sessions
-pub trait NodeInactivityTrackingHelper<AccountId> {
+// A trait to verify if a node has been inactive during the last minimum activity
+pub trait NodeActivityTrackingHelper<AccountId> {
     fn is_node_inactive(node: &AccountId) -> bool;
 }
 
