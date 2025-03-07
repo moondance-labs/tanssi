@@ -18,6 +18,7 @@
 
 pub mod cumulus_pallet_parachain_system;
 pub mod frame_system;
+pub mod frame_system_extensions;
 pub mod pallet_author_inherent;
 pub mod pallet_author_noting;
 pub mod pallet_balances;
@@ -36,6 +37,7 @@ pub mod pallet_session;
 pub mod pallet_stream_payment;
 pub mod pallet_sudo;
 pub mod pallet_timestamp;
+pub mod pallet_transaction_payment;
 pub mod pallet_treasury;
 pub mod pallet_tx_pause;
 pub mod pallet_utility;
