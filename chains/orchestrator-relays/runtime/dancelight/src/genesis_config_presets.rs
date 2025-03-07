@@ -44,35 +44,14 @@ use {
     tp_traits::ParaId,
 };
 
+use keyring::{Ed25519Keyring, Sr25519Keyring};
+use sp_runtime::traits::AccountIdConversion;
+
 // import macro, separate due to rustfmt thinking it's the module with the
 // same name ^^'
 use sp_std::vec;
 
-/// Helper function to generate a crypto pair from seed
-fn get_from_seed<TPublic: Public>(
-    seed: &str,
-    add_to_keystore: Option<(&KeystorePtr, KeyTypeId)>,
-) -> <TPublic::Pair as Pair>::Public {
-    let secret_uri = format!("//{}", seed);
-    let pair = TPublic::Pair::from_string(&secret_uri, None).expect("static values are valid; qed");
-
-    let public = pair.public();
-
-    if let Some((keystore, key_type)) = add_to_keystore {
-        keystore
-            .insert(key_type, &secret_uri, &public.to_raw_vec())
-            .unwrap();
-    }
-    public
-}
-
-/// Helper function to generate an account ID from seed
-fn get_account_id_from_seed<TPublic: Public>(seed: &str) -> AccountId
-where
-    AccountPublic: From<<TPublic::Pair as Pair>::Public>,
-{
-    AccountPublic::from(get_from_seed::<TPublic>(seed, None)).into_account()
-}
+use sp_core::crypto::{get_public_from_string_or_panic, AccountId32};
 
 #[derive(Clone, Debug)]
 pub struct AuthorityKeys {
@@ -99,7 +78,7 @@ pub fn get_authority_keys_from_seed(seed: &str, keystore: Option<&KeystorePtr>) 
         para_validator: keys.4,
         para_assignment: keys.5,
         authority_discovery: keys.6,
-        beefy: get_from_seed::<BeefyId>(seed, None),
+        beefy: get_public_from_string_or_panic::<BeefyId>(seed),
         nimbus: get_aura_id_from_seed(seed),
     }
 }
@@ -126,34 +105,20 @@ fn get_authority_keys_from_seed_no_beefy(
     AuthorityDiscoveryId,
 ) {
     (
-        get_account_id_from_seed::<sr25519::Public>(&format!("{}//stash", seed)),
-        get_account_id_from_seed::<sr25519::Public>(seed),
-        get_from_seed::<BabeId>(seed, keystore.map(|k| (k, key_types::BABE))),
-        get_from_seed::<GrandpaId>(seed, keystore.map(|k| (k, key_types::GRANDPA))),
-        get_from_seed::<ValidatorId>(seed, keystore.map(|k| (k, PARACHAIN_KEY_TYPE_ID))),
-        get_from_seed::<AssignmentId>(seed, keystore.map(|k| (k, ASSIGNMENT_KEY_TYPE_ID))),
-        get_from_seed::<AuthorityDiscoveryId>(
-            seed,
-            keystore.map(|k| (k, key_types::AUTHORITY_DISCOVERY)),
-        ),
+        get_public_from_string_or_panic::<sr25519::Public>(&format!("{}//stash", seed)).into(),
+        get_public_from_string_or_panic::<sr25519::Public>(seed).into(),
+        get_public_from_string_or_panic::<BabeId>(seed),
+        get_public_from_string_or_panic::<GrandpaId>(seed),
+        get_public_from_string_or_panic::<ValidatorId>(seed),
+        get_public_from_string_or_panic::<AssignmentId>(seed),
+        get_public_from_string_or_panic::<AuthorityDiscoveryId>(seed),
     )
 }
 
 fn testnet_accounts() -> Vec<AccountId> {
-    Vec::from([
-        get_account_id_from_seed::<sr25519::Public>("Alice"),
-        get_account_id_from_seed::<sr25519::Public>("Bob"),
-        get_account_id_from_seed::<sr25519::Public>("Charlie"),
-        get_account_id_from_seed::<sr25519::Public>("Dave"),
-        get_account_id_from_seed::<sr25519::Public>("Eve"),
-        get_account_id_from_seed::<sr25519::Public>("Ferdie"),
-        get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
-        get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
-        get_account_id_from_seed::<sr25519::Public>("Charlie//stash"),
-        get_account_id_from_seed::<sr25519::Public>("Dave//stash"),
-        get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
-        get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
-    ])
+    Sr25519Keyring::well_known()
+        .map(|k| k.to_account_id())
+        .collect()
 }
 
 fn dancelight_session_keys(
@@ -248,9 +213,9 @@ fn dancelight_testnet_genesis(
         .map(|seed| get_authority_keys_from_seed(seed, None))
         .collect();
 
-    let invulnerable_accounts: Vec<_> = invulnerables
+    let invulnerable_accounts: Vec<AccountId32> = invulnerables
         .iter()
-        .map(|seed| get_account_id_from_seed::<sr25519::Public>(seed))
+        .map(|seed| get_public_from_string_or_panic::<sr25519::Public>(seed).into())
         .collect();
 
     let data_preservers_bootnodes: Vec<_> = container_chains
@@ -698,7 +663,7 @@ pub fn dancelight_development_config_genesis(
 ) -> serde_json::Value {
     dancelight_testnet_genesis(
         Vec::from([get_authority_keys_from_seed("Alice", None)]),
-        get_account_id_from_seed::<sr25519::Public>("Alice"),
+        Sr25519Keyring::Alice.to_account_id(),
         None,
         container_chains,
         invulnerables,
@@ -724,7 +689,7 @@ pub fn dancelight_local_testnet_genesis(
             get_authority_keys_from_seed("Alice", None),
             get_authority_keys_from_seed("Bob", None),
         ]),
-        get_account_id_from_seed::<sr25519::Public>("Alice"),
+        Sr25519Keyring::Alice.to_account_id(),
         None,
         container_chains,
         invulnerables,
