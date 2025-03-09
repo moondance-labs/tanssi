@@ -43,7 +43,7 @@ use {
     tp_traits::ParaId,
 };
 
-use keyring::{Sr25519Keyring};
+use keyring::Sr25519Keyring;
 
 // import macro, separate due to rustfmt thinking it's the module with the
 // same name ^^'
