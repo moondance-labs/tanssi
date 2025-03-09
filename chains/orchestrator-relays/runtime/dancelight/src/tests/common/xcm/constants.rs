@@ -13,8 +13,6 @@
 
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
-use keyring::{Ed25519Keyring, Sr25519Keyring};
-use sp_core::crypto::get_public_from_string_or_panic;
 use {
     babe_primitives::AuthorityId as BabeId,
     beefy_primitives::ecdsa_crypto::AuthorityId as BeefyId,
@@ -22,8 +20,9 @@ use {
         AccountId, AssignmentId, AuthorityDiscoveryId, ValidatorId,
     },
     emulated_integration_tests_common::build_genesis_storage,
+    keyring::{Ed25519Keyring, Sr25519Keyring},
     sc_consensus_grandpa::AuthorityId as GrandpaId,
-    sp_core::{sr25519, storage::Storage, Pair, Public},
+    sp_core::{crypto::get_public_from_string_or_panic, sr25519, storage::Storage, Pair, Public},
     sp_runtime::{
         traits::{IdentifyAccount, Verify},
         MultiSignature,
@@ -59,6 +58,16 @@ pub mod accounts {
     use super::*;
     pub const ALICE: &str = "Alice";
     pub const BOB: &str = "Bob";
+    pub const CHARLIE: &str = "Charlie";
+    pub const DAVE: &str = "Dave";
+    pub const EVE: &str = "Eve";
+    pub const FERDIE: &str = "Ferdei";
+    pub const ALICE_STASH: &str = "Alice//stash";
+    pub const BOB_STASH: &str = "Bob//stash";
+    pub const CHARLIE_STASH: &str = "Charlie//stash";
+    pub const DAVE_STASH: &str = "Dave//stash";
+    pub const EVE_STASH: &str = "Eve//stash";
+    pub const FERDIE_STASH: &str = "Ferdie//stash";
     pub const RANDOM: &str = "Random//stash";
 
     pub fn init_balances() -> Vec<AccountId> {
@@ -86,9 +95,9 @@ pub mod validators {
 
 // Westend
 pub mod westend {
-    use beefy_primitives::test_utils::Keyring;
     use {
-        super::*, cumulus_primitives_core::relay_chain::BlockNumber,
+        super::*, beefy_primitives::test_utils::Keyring,
+        cumulus_primitives_core::relay_chain::BlockNumber,
         runtime_parachains::configuration::HostConfiguration, sp_runtime::Perbill,
         westend_runtime_constants::currency::UNITS as WND,
     };
@@ -191,9 +200,9 @@ pub mod westend {
 
 // Rococo
 pub mod rococo {
-    use beefy_primitives::test_utils::Keyring;
     use {
         super::*,
+        beefy_primitives::test_utils::Keyring,
         cumulus_primitives_core::relay_chain::BlockNumber,
         polkadot_parachain_primitives::primitives::ValidationCode,
         rococo_runtime_constants::currency::UNITS as ROC,
