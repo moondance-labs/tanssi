@@ -53,13 +53,6 @@ use sp_std::vec;
 
 use sp_core::crypto::{get_public_from_string_or_panic, AccountId32};
 
-/// Helper function to generate a crypto pair from seed
-fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
-    TPublic::Pair::from_string(&format!("//{}", seed), None)
-        .expect("static values are valid; qed")
-        .public()
-}
-
 pub fn insert_authority_keys_into_keystore(seed: &str, keystore: &KeystorePtr) {
     insert_into_keystore::<BabeId>(seed, keystore, key_types::BABE);
     insert_into_keystore::<GrandpaId>(seed, keystore, key_types::GRANDPA);
@@ -69,7 +62,8 @@ pub fn insert_authority_keys_into_keystore(seed: &str, keystore: &KeystorePtr) {
 }
 
 fn insert_into_keystore<TPublic: Public>(seed: &str, keystore: &KeystorePtr, key_type: KeyTypeId) {
-    let public = get_from_seed::<TPublic>(seed);
+    let public = get_public_from_string_or_panic::<TPublic>(seed);
+
     let secret_uri = format!("//{}", seed);
     keystore
         .insert(key_type, &secret_uri, &public.to_raw_vec())
