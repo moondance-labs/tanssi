@@ -149,6 +149,7 @@ tanssi-runtime-common = { workspace = true }
 pallet-migrations = { workspace = true }
 
 # Bridges
+keyring = { workspace = true }
 snowbridge-beacon-primitives = { workspace = true }
 snowbridge-core = { workspace = true }
 snowbridge-outbound-queue-runtime-api = { workspace = true }
@@ -159,7 +160,6 @@ snowbridge-pallet-outbound-queue = { workspace = true }
 snowbridge-pallet-system = { workspace = true }
 snowbridge-router-primitives = { workspace = true }
 tp-bridge = { workspace = true }
-keyring = { workspace = true }
 
 [dev-dependencies]
 alloy-sol-types = { workspace = true, default-features = true }
@@ -213,6 +213,7 @@ std = [
 	"frame-try-runtime/std",
 	"grandpa_primitives/std",
 	"inherents/std",
+	"keyring/std",
 	"keyring/std",
 	"log/std",
 	"milagro-bls/std",
@@ -305,7 +306,6 @@ std = [
 	"sp-arithmetic/std",
 	"sp-consensus-aura/std",
 	"sp-core/std",
-	"keyring/std",
 	"sp-debug-derive/std",
 	"sp-genesis-builder/std",
 	"sp-io/std",
