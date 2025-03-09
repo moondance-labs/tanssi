@@ -365,8 +365,7 @@ fn test_parathread_that_does_not_buy_core_does_not_have_affinity() {
             run_to_block(2);
             // Now the parathread should be there
             assert!(Paras::is_parathread(1000u32.into()));
-            let alice_keys =
-                get_authority_keys_from_seed(&AccountId::from(ALICE).to_string(), None);
+            let alice_keys = get_authority_keys_from_seed(&AccountId::from(ALICE).to_string());
 
             // Parathread should have collators
             assert!(
@@ -453,8 +452,7 @@ fn test_parathread_that_buys_core_has_affinity_and_can_produce() {
             run_to_block(2);
             // Now the parathread should be there
             assert!(Paras::is_parathread(1000u32.into()));
-            let alice_keys =
-                get_authority_keys_from_seed(&AccountId::from(ALICE).to_string(), None);
+            let alice_keys = get_authority_keys_from_seed(&AccountId::from(ALICE).to_string());
 
             // Parathread should have collators
             assert!(
@@ -562,8 +560,7 @@ fn test_on_demand_core_affinity_bound_to_core_gets_expired_at_session_boundaries
             run_to_block(2);
             // Now the parathread should be there
             assert!(Paras::is_parathread(1000u32.into()));
-            let alice_keys =
-                get_authority_keys_from_seed(&AccountId::from(ALICE).to_string(), None);
+            let alice_keys = get_authority_keys_from_seed(&AccountId::from(ALICE).to_string());
 
             // Parathread should have collators
             assert!(
@@ -682,8 +679,7 @@ fn test_parathread_uses_0_and_then_1_after_parachain_onboarded() {
 
             // Now the parathread should be there
             assert!(Paras::is_parathread(2001u32.into()));
-            let alice_keys =
-                get_authority_keys_from_seed(&AccountId::from(ALICE).to_string(), None);
+            let alice_keys = get_authority_keys_from_seed(&AccountId::from(ALICE).to_string());
 
             // Parathread should have collators
             assert!(
@@ -796,7 +792,7 @@ fn test_parathread_uses_0_and_then_1_after_parachain_onboarded() {
             // Now the parachain should be there
             assert!(Paras::is_parachain(2000u32.into()));
 
-            let bob_keys = get_authority_keys_from_seed(&AccountId::from(BOB).to_string(), None);
+            let bob_keys = get_authority_keys_from_seed(&AccountId::from(BOB).to_string());
             // we should have authorities now: two sessions elapsed and para is parachain already
             assert_eq!(
                 authorities_for_container(2000u32.into()),
@@ -932,9 +928,8 @@ fn test_should_have_availability_for_registered_parachain() {
                 vec![(1000u32, Session::validators().len() as u32)]
                     .into_iter()
                     .collect();
-            let alice_keys =
-                get_authority_keys_from_seed(&AccountId::from(ALICE).to_string(), None);
-            let bob_keys = get_authority_keys_from_seed(&AccountId::from(BOB).to_string(), None);
+            let alice_keys = get_authority_keys_from_seed(&AccountId::from(ALICE).to_string());
+            let bob_keys = get_authority_keys_from_seed(&AccountId::from(BOB).to_string());
 
             // This should make sure we have a core-assigned
             assert!(

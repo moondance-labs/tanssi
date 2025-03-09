@@ -96,12 +96,10 @@ fn test_session_change_updates_beefy_authorities_digest() {
             assert_eq!(ValidatorSetId::<Runtime>::get(), 1);
 
             // Get beefy keys for our validators
-            let alice_keys =
-                get_authority_keys_from_seed(&AccountId::from(ALICE).to_string(), None);
-            let bob_keys = get_authority_keys_from_seed(&AccountId::from(BOB).to_string(), None);
-            let charlie_keys =
-                get_authority_keys_from_seed(&AccountId::from(CHARLIE).to_string(), None);
-            let dave_keys = get_authority_keys_from_seed(&AccountId::from(DAVE).to_string(), None);
+            let alice_keys = get_authority_keys_from_seed(&AccountId::from(ALICE).to_string());
+            let bob_keys = get_authority_keys_from_seed(&AccountId::from(BOB).to_string());
+            let charlie_keys = get_authority_keys_from_seed(&AccountId::from(CHARLIE).to_string());
+            let dave_keys = get_authority_keys_from_seed(&AccountId::from(DAVE).to_string());
 
             let expected_digest = get_beefy_digest(ConsensusLog::AuthoritiesChange(
                 ValidatorSet::new(
@@ -385,12 +383,10 @@ fn test_mmr_digest_updates_after_session_and_single_block() {
             assert_eq!(ValidatorSetId::<Runtime>::get(), 1);
 
             // Get beefy keys for our validators
-            let alice_keys =
-                get_authority_keys_from_seed(&AccountId::from(ALICE).to_string(), None);
-            let bob_keys = get_authority_keys_from_seed(&AccountId::from(BOB).to_string(), None);
-            let charlie_keys =
-                get_authority_keys_from_seed(&AccountId::from(CHARLIE).to_string(), None);
-            let dave_keys = get_authority_keys_from_seed(&AccountId::from(DAVE).to_string(), None);
+            let alice_keys = get_authority_keys_from_seed(&AccountId::from(ALICE).to_string());
+            let bob_keys = get_authority_keys_from_seed(&AccountId::from(BOB).to_string());
+            let charlie_keys = get_authority_keys_from_seed(&AccountId::from(CHARLIE).to_string());
+            let dave_keys = get_authority_keys_from_seed(&AccountId::from(DAVE).to_string());
 
             let expected_authorities_digest = get_beefy_digest(ConsensusLog::AuthoritiesChange(
                 ValidatorSet::new(

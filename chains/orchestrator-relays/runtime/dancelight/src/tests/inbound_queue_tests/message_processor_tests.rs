@@ -18,7 +18,7 @@ use {
     crate::{tests::common::ExtBuilder, ExternalValidators, Runtime},
     frame_support::pallet_prelude::*,
     hex_literal::hex,
-    keyring::AccountKeyring,
+    keyring::Sr25519Keyring,
     snowbridge_core::{Channel, PRIMARY_GOVERNANCE_CHANNEL},
     snowbridge_router_primitives::inbound::{envelope::Envelope, MessageProcessor},
     sp_core::{H160, H256},
@@ -85,9 +85,9 @@ fn test_symbiotic_message_processor() {
         );
 
         let payload_validators = vec![
-            AccountKeyring::Alice.to_account_id(),
-            AccountKeyring::Charlie.to_account_id(),
-            AccountKeyring::Bob.to_account_id(),
+            Sr25519Keyring::Alice.to_account_id(),
+            Sr25519Keyring::Charlie.to_account_id(),
+            Sr25519Keyring::Bob.to_account_id(),
         ];
 
         let payload_with_correct_magic_bytes = Payload {
@@ -140,9 +140,9 @@ fn test_symbiotic_message_processor_rejects_invalid_channel_id() {
         );
 
         let payload_validators = vec![
-            AccountKeyring::Alice.to_account_id(),
-            AccountKeyring::Charlie.to_account_id(),
-            AccountKeyring::Bob.to_account_id(),
+            Sr25519Keyring::Alice.to_account_id(),
+            Sr25519Keyring::Charlie.to_account_id(),
+            Sr25519Keyring::Bob.to_account_id(),
         ];
 
         let payload_with_correct_magic_bytes = Payload {
