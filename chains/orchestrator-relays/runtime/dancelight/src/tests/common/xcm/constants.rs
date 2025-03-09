@@ -20,13 +20,10 @@ use {
         AccountId, AssignmentId, AuthorityDiscoveryId, ValidatorId,
     },
     emulated_integration_tests_common::build_genesis_storage,
-    keyring::{Ed25519Keyring, Sr25519Keyring},
+    keyring::Sr25519Keyring,
     sc_consensus_grandpa::AuthorityId as GrandpaId,
-    sp_core::{crypto::get_public_from_string_or_panic, sr25519, storage::Storage, Pair, Public},
-    sp_runtime::{
-        traits::{IdentifyAccount, Verify},
-        MultiSignature,
-    },
+    sp_core::{crypto::get_public_from_string_or_panic, sr25519, storage::Storage},
+    sp_runtime::{traits::Verify, MultiSignature},
 };
 
 type AccountPublic = <MultiSignature as Verify>::Signer;
@@ -62,12 +59,6 @@ pub mod accounts {
     pub const DAVE: &str = "Dave";
     pub const EVE: &str = "Eve";
     pub const FERDIE: &str = "Ferdei";
-    pub const ALICE_STASH: &str = "Alice//stash";
-    pub const BOB_STASH: &str = "Bob//stash";
-    pub const CHARLIE_STASH: &str = "Charlie//stash";
-    pub const DAVE_STASH: &str = "Dave//stash";
-    pub const EVE_STASH: &str = "Eve//stash";
-    pub const FERDIE_STASH: &str = "Ferdie//stash";
     pub const RANDOM: &str = "Random//stash";
 
     pub fn init_balances() -> Vec<AccountId> {
