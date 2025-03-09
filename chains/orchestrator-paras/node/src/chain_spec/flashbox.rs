@@ -28,7 +28,6 @@ use {
     nimbus_primitives::NimbusId,
     pallet_configuration::HostConfiguration,
     sc_service::ChainType,
-    sp_core::sr25519,
     sp_runtime::Perbill,
 };
 

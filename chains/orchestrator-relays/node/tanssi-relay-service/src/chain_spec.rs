@@ -27,7 +27,7 @@ use {
         json::container_chain_genesis_data_from_path, ContainerChainGenesisData,
     },
     grandpa::AuthorityId as GrandpaId,
-    polkadot_primitives::{AccountId, AccountPublic, AssignmentId, ValidatorId},
+    polkadot_primitives::{AccountId, AssignmentId, ValidatorId},
     sp_authority_discovery::AuthorityId as AuthorityDiscoveryId,
     sp_consensus_babe::AuthorityId as BabeId,
 };
@@ -41,8 +41,7 @@ use telemetry::TelemetryEndpoints;
 use {
     sc_chain_spec::ChainSpecExtension,
     serde::{Deserialize, Serialize},
-    sp_core::{sr25519, storage::well_known_keys as StorageWellKnownKeys, Pair, Public},
-    sp_runtime::traits::IdentifyAccount,
+    sp_core::{sr25519, storage::well_known_keys as StorageWellKnownKeys},
 };
 
 #[cfg(feature = "dancelight-native")]

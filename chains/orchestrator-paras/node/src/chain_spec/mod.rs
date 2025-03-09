@@ -14,19 +14,16 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-pub use sp_core::{crypto::get_public_from_string_or_panic, parameter_types, storage::Storage};
+pub use sp_core::{crypto::get_public_from_string_or_panic};
 pub use tc_service_container_chain::chain_spec::Extensions;
 use {
-    dancebox_runtime::{AccountId, Signature},
+    dancebox_runtime::{AccountId},
     nimbus_primitives::NimbusId,
-    sp_core::{sr25519, Pair, Public},
-    sp_runtime::traits::{IdentifyAccount, Verify},
+    sp_core::{sr25519},
 };
 
 pub mod dancebox;
 pub mod flashbox;
-
-type AccountPublic = <Signature as Verify>::Signer;
 
 /// Generate collator keys from seed.
 ///

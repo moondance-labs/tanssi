@@ -14,18 +14,16 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-use sp_keyring::{Ed25519Keyring, Sr25519Keyring};
+use sp_keyring::{Sr25519Keyring};
 use {
     container_chain_template_simple_runtime::{
-        AccountId, MaintenanceModeConfig, MigrationsConfig, PolkadotXcmConfig, Signature,
+        AccountId, MaintenanceModeConfig, MigrationsConfig, PolkadotXcmConfig,
     },
     cumulus_primitives_core::ParaId,
     sc_chain_spec::{ChainSpecExtension, ChainSpecGroup},
     sc_network::config::MultiaddrWithPeerId,
     sc_service::ChainType,
     serde::{Deserialize, Serialize},
-    sp_core::{sr25519, Pair, Public},
-    sp_runtime::traits::{IdentifyAccount, Verify},
 };
 
 /// Specialized `ChainSpec` for the normal parachain runtime.
@@ -50,8 +48,6 @@ impl Extensions {
         sc_chain_spec::get_extension(chain_spec.extensions())
     }
 }
-
-type AccountPublic = <Signature as Verify>::Signer;
 
 pub fn development_config(para_id: ParaId, boot_nodes: Vec<String>) -> ChainSpec {
     // Give your base currency a unit name and decimal places

@@ -31,7 +31,7 @@ use {
     grandpa_primitives::AuthorityId as GrandpaId,
     nimbus_primitives::NimbusId,
     pallet_configuration::HostConfiguration,
-    primitives::{AccountId, AccountPublic, AssignmentId, ValidatorId},
+    primitives::{AccountId, AssignmentId, ValidatorId},
     scale_info::prelude::string::String,
     sp_arithmetic::{traits::Saturating, Perbill},
     sp_core::{
@@ -39,13 +39,11 @@ use {
         sr25519, ByteArray, Pair, Public,
     },
     sp_keystore::{Keystore, KeystorePtr},
-    sp_runtime::traits::IdentifyAccount,
     sp_std::{cmp::max, vec::Vec},
     tp_traits::ParaId,
 };
 
-use keyring::{Ed25519Keyring, Sr25519Keyring};
-use sp_runtime::traits::AccountIdConversion;
+use keyring::{Sr25519Keyring};
 
 // import macro, separate due to rustfmt thinking it's the module with the
 // same name ^^'
