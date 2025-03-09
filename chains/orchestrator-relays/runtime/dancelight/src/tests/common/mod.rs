@@ -628,7 +628,7 @@ impl ExtBuilder {
                 .clone()
                 .into_iter()
                 .map(|(account, _balance)| {
-                    let authority_keys = get_authority_keys_from_seed(&account.to_string()); // RECHECK
+                    let authority_keys = get_authority_keys_from_seed(&account.to_string());
                     if let Some(keystore) = self.keystore.as_ref() {
                         insert_authority_keys_into_keystore(&account.to_string(), keystore)
                     }
@@ -656,7 +656,7 @@ impl ExtBuilder {
                 .clone()
                 .into_iter()
                 .map(|(account, _balance)| {
-                    let authority_keys = get_authority_keys_from_seed(&account.to_string()); // RECHECK
+                    let authority_keys = get_authority_keys_from_seed(&account.to_string());
                     if let Some(keystore) = self.keystore.as_ref() {
                         insert_authority_keys_into_keystore(&account.to_string(), keystore)
                     }
@@ -710,7 +710,7 @@ impl ExtBuilder {
                     if validator_unique_accounts.contains(&account) {
                         None
                     } else {
-                        let authority_keys = get_authority_keys_from_seed(&account.to_string()); // RECHECK
+                        let authority_keys = get_authority_keys_from_seed(&account.to_string());
                         if let Some(keystore) = self.keystore.as_ref() {
                             insert_authority_keys_into_keystore(&account.to_string(), keystore)
                         }
