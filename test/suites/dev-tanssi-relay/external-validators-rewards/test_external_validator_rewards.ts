@@ -115,7 +115,7 @@ describeSuite({
             title: "Ethereum Sovereign Account balance should increase on session change",
             test: async function () {
                 const currentIndex = (await polkadotJs.query.session.currentIndex()).toNumber();
-                const account = encodeAddress("0x34cdd3f84040fb44d70e83b892797846a8c0a556ce08cd470bf6d4cf7b94ff77", 0);
+                const account = encodeAddress("0xce796ae65569a670d0c1cc1ac12515a3ce21b5fbf729d63d7b289baad070139d", 0);
                 const sessionsPerEra = await polkadotJs.consts.externalValidators.sessionsPerEra;
 
                 const {

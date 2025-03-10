@@ -7,9 +7,11 @@ describeSuite({
     foundationMethods: "read_only",
     testCases: ({ it, context }) => {
         let api: ApiPromise;
+        let runtimeVersion: number;
 
         beforeAll(async () => {
             api = context.polkadotJs();
+            runtimeVersion = api.runtimeVersion.specVersion.toNumber();
         });
 
         it({
