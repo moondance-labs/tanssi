@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-use sp_keyring::Sr25519Keyring;
 use {
     container_chain_template_simple_runtime::{
         AccountId, MaintenanceModeConfig, MigrationsConfig, PolkadotXcmConfig,
@@ -24,6 +23,7 @@ use {
     sc_network::config::MultiaddrWithPeerId,
     sc_service::ChainType,
     serde::{Deserialize, Serialize},
+    sp_keyring::Sr25519Keyring,
 };
 
 /// Specialized `ChainSpec` for the normal parachain runtime.
