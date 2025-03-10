@@ -5,7 +5,7 @@ import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 
 describeSuite({
-    id: "DEVT1602",
+    id: "COMM0301",
     title: "Registrar extrinsics permissions",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -25,27 +25,42 @@ describeSuite({
             title: "Para manager can execute registrar pallet extrinsics",
             test: async () => {
                 const runtimeName = api.runtimeVersion.specName.toString();
-                console.log("runtimeName", runtimeName);
+                console.log(`Current Runtime name: ${runtimeName}`);
+
+                let registerAlias: typeof api.tx.registrar | typeof api.tx.containerRegistrar;
+
+                switch (runtimeName) {
+                    case "flashbox":
+                    case "dancebox": {
+                        registerAlias = api.tx.registrar;
+                        break;
+                    }
+                    case "dancelight": {
+                        registerAlias = api.tx.containerRegistrar;
+                        break;
+                    }
+                    default: {
+                        throw new Error(`Unsupported runtime: ${runtimeName}`);
+                    }
+                }
 
                 // Bob is not a manager, extrinsic requiring RegistrarOrigin should fail with BadOrigin error
                 const { result: pauseContainerResultAttempt1 } = await context.createBlock(
-                    await api.tx.containerRegistrar.pauseContainerChain(paraId).signAsync(bob)
+                    await registerAlias.pauseContainerChain(paraId).signAsync(bob)
                 );
                 expect(pauseContainerResultAttempt1.successful).toEqual(false);
                 expect(pauseContainerResultAttempt1.error.name).toEqual("BadOrigin");
 
                 // Set bob as manager
                 const { result: sudoResult } = await context.createBlock(
-                    await api.tx.sudo
-                        .sudo(api.tx.containerRegistrar.setParaManager(paraId, bob.address))
-                        .signAsync(alice)
+                    await api.tx.sudo.sudo(registerAlias.setParaManager(paraId, bob.address)).signAsync(alice)
                 );
 
                 expect(sudoResult.successful).toEqual(true);
 
                 // Now it should show ParaIdNotRegistered error but not the BadOrigin
                 const { result: pauseContainerResultAttempt2 } = await context.createBlock(
-                    await api.tx.containerRegistrar.pauseContainerChain(paraId).signAsync(bob)
+                    await registerAlias.pauseContainerChain(paraId).signAsync(bob)
                 );
 
                 expect(pauseContainerResultAttempt2.successful).toEqual(true);
