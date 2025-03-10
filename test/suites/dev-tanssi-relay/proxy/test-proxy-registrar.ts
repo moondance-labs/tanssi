@@ -160,7 +160,7 @@ describeSuite({
                         url: "0x5468652055524c",
                         paraIds: { whitelist: [reservedParaId] },
                         mode: { bootnode: null },
-                        assignmentRequest: "Free",
+                        assignmentRequest: { free: null },
                     },
                     assignment: null,
                 });
