@@ -26,22 +26,7 @@ describeSuite({
             test: async () => {
                 const runtimeName = api.runtimeVersion.specName.toString();
 
-                let registerAlias: typeof api.tx.registrar | typeof api.tx.containerRegistrar;
-
-                switch (runtimeName) {
-                    case "flashbox":
-                    case "dancebox": {
-                        registerAlias = api.tx.registrar;
-                        break;
-                    }
-                    case "dancelight": {
-                        registerAlias = api.tx.containerRegistrar;
-                        break;
-                    }
-                    default: {
-                        throw new Error(`Unsupported runtime: ${runtimeName}`);
-                    }
-                }
+                let registerAlias = runtimeName.includes("light") ? polkadotJs.tx.containerRegistrar : polkadotJs.tx.registrar;
 
                 // Bob is not a manager, extrinsic requiring RegistrarOrigin should fail with BadOrigin error
                 const { result: pauseContainerResultAttempt1 } = await context.createBlock(
