@@ -44,7 +44,7 @@ config_relayer() {
         $assets_dir/beacon-relay.json >$output_dir/beacon-relay.json
 
 
-    # Configure execution relay for starlight
+    # Configure execution relay for starlight (eth to starlight)
     jq \
         --arg eth_endpoint_ws $eth_endpoint_ws \
         --arg k1 "$(snowbridge_address_for GatewayProxy)" \
@@ -62,7 +62,7 @@ config_relayer() {
         $assets_dir/execution-relay.json >$output_dir/execution-relay.json
 
 
-    # Configure substrate relay for ethereum for primary channel
+    # Configure substrate relay for ethereum for primary channel (starlight to eth)
     jq \
         --arg k1 "$(snowbridge_address_for GatewayProxy)" \
         --arg k2 "$(snowbridge_address_for BeefyClient)" \
@@ -99,6 +99,42 @@ config_relayer() {
     | .sink.ethereum.endpoint = $eth_writer_endpoint
     ' \
         $assets_dir/substrate-relay.json >$output_dir/substrate-relay-secondary.json
+
+    # Configure execution relay for AssetHub channel (eth to starlight)
+    jq \
+        --arg eth_endpoint_ws $eth_endpoint_ws \
+        --arg k1 "$(snowbridge_address_for GatewayProxy)" \
+        --arg relay_chain_endpoint $RELAYCHAIN_ENDPOINT \
+        --arg channelID $ASSET_HUB_CHANNEL_ID \
+        --arg data_store_dir $data_store_dir \
+        '
+      .source.ethereum.endpoint = $eth_endpoint_ws
+    | .source.contracts.Gateway = $k1
+    | .source."channel-id" = $channelID
+    | .source.beacon.datastore.location = $data_store_dir
+    | .sink.parachain.endpoint = $relay_chain_endpoint
+    | .schedule.id = 0
+    ' \
+        $assets_dir/execution-relay.json >$output_dir/execution-relay-asset-hub.json
+    
+    # Configure substrate relay (starlight to eth) for AssetHub channel
+    jq \
+        --arg k1 "$(snowbridge_address_for GatewayProxy)" \
+        --arg k2 "$(snowbridge_address_for BeefyClient)" \
+        --arg eth_endpoint_ws $eth_endpoint_ws \
+        --arg eth_writer_endpoint $eth_writer_endpoint \
+        --arg channelID $ASSET_HUB_CHANNEL_ID \
+        --arg relay_chain_endpoint $RELAYCHAIN_ENDPOINT \
+        '
+      .source.ethereum.endpoint = $eth_endpoint_ws
+    | .source.polkadot.endpoint = $relay_chain_endpoint
+    | .source.contracts.BeefyClient = $k2
+    | .source.contracts.Gateway = $k1
+    | .source."channel-id" = $channelID
+    | .sink.contracts.Gateway = $k1
+    | .sink.ethereum.endpoint = $eth_writer_endpoint
+    ' \
+        $assets_dir/substrate-relay.json >$output_dir/substrate-relay-asset-hub.json
 
 }
 

@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import type { MultiLocation } from "@polkadot/types/interfaces/xcm/types";
-import { u8aToHex } from "@polkadot/util";
+import { numberToHex, u8aToHex } from "@polkadot/util";
 import { decodeAddress } from "@polkadot/util-crypto";
 import { ethers } from "ethers";
 import {
@@ -14,10 +14,17 @@ import {
 } from "node:child_process";
 import {
   SECONDARY_GOVERNANCE_CHANNEL_ID,
+  ASSET_HUB_PARA_ID,
+  ASSET_HUB_AGENT_ID,
   signAndSendAndInclude,
   sleep,
   waitSessions,
+  ASSET_HUB_CHANNEL_ID,
 } from "utils";
+
+import { Tuple, u32, Text } from '@polkadot/types-codec';
+
+import { keccak256 } from "viem";
 
 // Change this if we change the storage parameter in runtime
 const GATEWAY_STORAGE_KEY = "0xaed97c7854d601808b98ae43079dafb3";
@@ -71,8 +78,14 @@ describeSuite({
     let ethereumWallet: ethers.Wallet;
     let middlewareContract: ethers.Contract;
     let gatewayContract: ethers.Contract;
+    let tokenContract: ethers.Contract;
+    let assetsContract: ethers.Contract;
+    let tokenContractAddress: string;
     let gatewayProxyAddress: string;
     let middlewareDetails: any;
+    let tokenContractDetails: any;
+    
+    let ethInfo: any;
 
     let operatorAccount: KeyringPair;
     let operatorNimbusKey: string;
@@ -156,7 +169,7 @@ describeSuite({
 
       console.log("Contracts deployed");
 
-      const ethInfo = JSON.parse(
+      ethInfo = JSON.parse(
         <string>(
           (await execCommand("./scripts/bridge/generate-eth-info.sh")).stdout
         )
@@ -180,6 +193,16 @@ describeSuite({
         ethInfo.symbiotic_info.contracts.Middleware.address
       );
       middlewareDetails = ethInfo.symbiotic_info.contracts.Middleware;
+
+      console.log("ETH INFO: ", ethInfo.snowbridge_info.contracts);
+
+      console.log("SYMB INFO: ", ethInfo.symbiotic_info.contracts);
+
+/*       console.log(
+        "Token contract address is: ",
+        ethInfo.snowbridge_info.contracts.Token.address
+      );
+      tokenContractDetails = ethInfo.snowbridge_info.contracts.Token; */
 
       console.log(
         "Setting gateway address to proxy contract:",
@@ -222,6 +245,12 @@ describeSuite({
         middlewareDetails.address
       );
       await setMiddlewareTx.wait();
+
+      assetsContract = new ethers.Contract(
+        ethInfo.snowbridge_info.contracts.Assets.address,
+        ethInfo.snowbridge_info.contracts.Assets.abi,
+        ethereumWallet
+      );
 
       const initialBeaconUpdate = JSON.parse(
         <string>(
@@ -541,20 +570,30 @@ describeSuite({
       id: "T06",
       title: "Native token is transferred to Ethereum successfully",
       test: async () => {
+        // How to encode the channel id for it to be compliant with Solidity
+        const assetHubParaId = relayApi.createType("ParaId", ASSET_HUB_PARA_ID);
+        const assetHubChannelId = keccak256(new Uint8Array([...new TextEncoder().encode("para"), ...assetHubParaId.toU8a().reverse()]));
+
+        expect(assetHubChannelId).to.be.eq(ASSET_HUB_CHANNEL_ID);
+        console.log("Asset hub channel id: ", assetHubChannelId);
+
         // Get the channel info
         const channelInfo = (
           await relayApi.query.ethereumSystem.channels(
-            SECONDARY_GOVERNANCE_CHANNEL_ID
+            assetHubChannelId
           )
         )
           .unwrap()
           .toJSON();
 
+        const channelOperatingModeOf = await gatewayContract.channelOperatingModeOf(assetHubChannelId);
+        console.log("Channel operating mode of: ", channelOperatingModeOf);
+
         // Create channel in EthereumTokenTransfers
         const setTokenTransferChannelTx = await relayApi.tx.sudo
           .sudo(
             relayApi.tx.ethereumTokenTransfers.setTokenTransferChannel(
-              SECONDARY_GOVERNANCE_CHANNEL_ID,
+              assetHubChannelId,
               channelInfo.agentId.toString(),
               Number(channelInfo.paraId)
             )
@@ -605,8 +644,8 @@ describeSuite({
         const tokenTransferAmount = tokenTransfersEventData[5];
 
         expect(tokenTransferChannelId).to.be.eq(
-          SECONDARY_GOVERNANCE_CHANNEL_ID
-        );
+          assetHubChannelId
+        ); 
         expect(tokenTransferSource).to.be.eq(alice.address);
         expect(tokenTransferRecipient).to.be.eq(recipient);
         expect(tokenTransferAmount).to.be.eq(amount);
@@ -620,6 +659,15 @@ describeSuite({
 
         let tokenTransferReceived = false;
         let tokenTransferSuccess = false;
+
+        const tokenAddress = await gatewayContract.tokenAddressOf(
+          tokenTransferTokenId
+        );
+
+        const isRegistered = await gatewayContract.isTokenRegistered(tokenAddress);
+        console.log("Token is registered:", isRegistered); 
+        console.log("Token address:", tokenAddress);
+        console.log("Waiting for InboundMessageDispatched event...");
 
         gatewayContract.on(
           "InboundMessageDispatched",
@@ -638,32 +686,46 @@ describeSuite({
         expect(tokenTransferSuccess).to.be.true;
 
         // Send the token back
-        const amountBackFromETH = "500";
-        const fee = "0";
+        const amountBackFromETH = 100n;
+        const fee = 0n;
 
         console.log(`Sending ${amountBackFromETH} tokens back from ETH`);
 
-        const tokenAddress = await gatewayContract.tokenAddressOf(
-          tokenTransferTokenId
+        tokenContract = new ethers.Contract(
+          tokenAddress,
+          ethInfo.symbiotic_info.contracts.Token.abi,
+          ethereumWallet
         );
+
+        const approvalTx = await tokenContract.approve(
+          gatewayProxyAddress, amountBackFromETH);
+
+        const isApproved = await approvalTx.wait();
+
+        const balanceOwnerBefore = await tokenContract.balanceOf(recipient);
+
+        console.log("Owner balance before:", balanceOwnerBefore.toString());
+        console.log("Token is approved:", isApproved);
+        
+        console.log("Token contract address:", await tokenContract.getAddress()); 
 
         const neededFeeWei = await gatewayContract.quoteSendTokenFee(
           tokenAddress,
-          channelInfo.paraId,
-          ethers.parseUnits(fee, 18)
+          ASSET_HUB_PARA_ID,
+          fee
         );
 
         console.log("Needed fee (wei):", neededFeeWei.toString());
 
         const tx = await gatewayContract.sendToken(
           tokenAddress,
-          channelInfo.paraId as number,
+          ASSET_HUB_PARA_ID,
           {
             kind: 1,
             data: ethers.hexlify(ethers.toUtf8Bytes(alice.address)),
           },
-          ethers.parseUnits(fee, 18),
-          ethers.parseUnits(amountBackFromETH, 18),
+          fee,
+          amountBackFromETH,
           {
             value: neededFeeWei * 10n,
           }
@@ -671,7 +733,28 @@ describeSuite({
 
         await tx.wait();
 
+        const balanceOwnerAfter = await tokenContract.balanceOf(recipient);
+
+        console.log("Owner balance after:", balanceOwnerAfter.toString());
+
+        // Ensure the token has been sent
+        expect(balanceOwnerAfter).to.be.eq(balanceOwnerBefore - amountBackFromETH);
+
+        let tokenSent = false;
+
+        console.log("Waiting for TokenSent event...");
+
+        gatewayContract.on(
+          "TokenSent",
+          (_channelID, _nonce, _messageID, _ticketPayload) => {
+            console.log("Token sent!!");
+            tokenSent = true;
+          }
+        );
+
         let tokenTransferExecuted = false;
+
+        console.log("Waiting for OutboundMessageAccepted event...");
 
         gatewayContract.on(
           "OutboundMessageAccepted",
@@ -680,12 +763,13 @@ describeSuite({
           }
         );
 
-        while (!tokenTransferExecuted) {
-          console.log("Waiting for token transfer to be executed");
+        while (!tokenTransferExecuted && !tokenSent) {
+          //console.log("Waiting for token transfer to be executed");
           await sleep(1000);
         }
 
         expect(tokenTransferExecuted).to.be.true;
+        expect(tokenSent).to.be.true;
       },
     });
 

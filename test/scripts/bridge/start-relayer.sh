@@ -84,6 +84,35 @@ start_relayer() {
         done
     ) &
     echo "substrate_relay_secondary=$!" >> $artifacts_dir/daemons.pid
+
+    #todo add commands for AH channel
+    # Launch execution relay for AssetHub (eth to starlight)
+    (
+        : >$output_dir/execution-relay-asset-hub.log
+        while :; do
+            echo "Starting execution relay asset hub at $(date)"
+            "${relay_bin}" run execution \
+                --config $output_dir/execution-relay-asset-hub.json \
+                --substrate.private-key "//ExecutionRelay" \
+                >>"$logs_dir"/execution-relay-asset-hub.log 2>&1 || true
+            sleep 20
+        done
+    ) &
+    echo "execution_relay_asset_hub=$!" >> $artifacts_dir/daemons.pid
+
+    # Launch substrate relay for AssetHub channel (starlight to eth)
+    (
+        : >$output_dir/substrate-relay-asset-hub.log
+        while :; do
+            echo "Starting substrate relay asset hub at $(date)"
+            "${relay_bin}" run solochain \
+                --config $output_dir/substrate-relay-asset-hub.json \
+                --ethereum.private-key $ethereum_key \
+                >>"$logs_dir"/substrate-relay-asset-hub.log 2>&1 || true
+            sleep 20
+        done
+    ) &
+    echo "substrate_relay_asset_hub=$!" >> $artifacts_dir/daemons.pid
 }
 
 echo "start relayers only!"
