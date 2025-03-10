@@ -25,7 +25,6 @@ describeSuite({
             title: "Para manager can execute registrar pallet extrinsics",
             test: async () => {
                 const runtimeName = api.runtimeVersion.specName.toString();
-                console.log(`Current Runtime name: ${runtimeName}`);
 
                 let registerAlias: typeof api.tx.registrar | typeof api.tx.containerRegistrar;
 
