@@ -31,6 +31,7 @@ mod ethereum_system;
 mod ethereum_token_transfers;
 mod external_validators_tests;
 mod inbound_queue_tests;
+mod inflation_rates;
 mod inflation_rewards;
 mod integration_test;
 mod migrations_test;
