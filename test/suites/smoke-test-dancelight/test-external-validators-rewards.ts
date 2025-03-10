@@ -5,6 +5,7 @@ import type { ApiPromise } from "@polkadot/api";
 import {
     HOLESKY_SOVEREIGN_ACCOUNT_ADDRESS,
     PRIMARY_GOVERNANCE_CHANNEL_ID,
+    SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS,
     getAccountBalance,
     getCurrentEraStartBlock,
 } from "utils";
@@ -15,9 +16,11 @@ describeSuite({
     foundationMethods: "read_only",
     testCases: ({ it, context, log }) => {
         let api: ApiPromise;
+        let runtimeVersion: number;
 
         beforeAll(async () => {
             api = context.polkadotJs();
+            runtimeVersion = api.runtimeVersion.specVersion.toNumber();
         });
 
         it({
@@ -58,14 +61,11 @@ describeSuite({
                 const apiAtCheckpointA = await api.at(await api.rpc.chain.getBlockHash(blockNumberCheckpointA));
                 const apiAtCheckpointB = await api.at(await api.rpc.chain.getBlockHash(blockNumberCheckpointB));
 
-                const sovereignBalanceCheckpointB = await getAccountBalance(
-                    apiAtCheckpointB,
-                    HOLESKY_SOVEREIGN_ACCOUNT_ADDRESS
-                );
-                const sovereignBalanceCheckpointA = await getAccountBalance(
-                    apiAtCheckpointA,
-                    HOLESKY_SOVEREIGN_ACCOUNT_ADDRESS
-                );
+                const sovereignAccount =
+                    runtimeVersion > 1101 ? SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS : HOLESKY_SOVEREIGN_ACCOUNT_ADDRESS;
+
+                const sovereignBalanceCheckpointB = await getAccountBalance(apiAtCheckpointB, sovereignAccount);
+                const sovereignBalanceCheckpointA = await getAccountBalance(apiAtCheckpointA, sovereignAccount);
 
                 const event = (await apiAtCheckpointB.query.system.events()).find(
                     (event) => event.event.method === "RewardsMessageSent"

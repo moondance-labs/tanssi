@@ -3,7 +3,7 @@ import "@tanssi/api-augment";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
-import { HOLESKY_SOVEREIGN_ACCOUNT_ADDRESS, type MultiLocation, jumpToSession } from "utils";
+import { SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS, type MultiLocation, jumpToSession } from "utils";
 
 describeSuite({
     id: "DEVT0602",
@@ -119,14 +119,14 @@ describeSuite({
 
                 const {
                     data: { free: balanceBefore },
-                } = await context.polkadotJs().query.system.account(HOLESKY_SOVEREIGN_ACCOUNT_ADDRESS);
+                } = await context.polkadotJs().query.system.account(SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS);
 
                 // We need to jump at least one era
                 await jumpToSession(context, currentIndex + sessionsPerEra.toNumber());
 
                 const {
                     data: { free: balanceAfter },
-                } = await context.polkadotJs().query.system.account(HOLESKY_SOVEREIGN_ACCOUNT_ADDRESS);
+                } = await context.polkadotJs().query.system.account(SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS);
 
                 expect(balanceAfter.toBigInt()).to.be.greaterThan(balanceBefore.toBigInt());
             },
