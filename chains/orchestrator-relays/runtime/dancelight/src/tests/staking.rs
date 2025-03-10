@@ -213,7 +213,7 @@ fn test_staking_register_keys_after_joining() {
             assert_eq!(System::account(new_account.clone()).data.reserved, stake);
 
             // Now register the keys
-            let new_keys = get_authority_keys_from_seed(&new_account.to_string(), None);
+            let new_keys = get_authority_keys_from_seed(&new_account.to_string());
             assert_ok!(Session::set_keys(
                 origin_of(new_account.clone()),
                 crate::SessionKeys {

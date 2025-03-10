@@ -1847,7 +1847,7 @@ impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
         if eligible {
             let a_u8: &[u8] = a.as_ref();
             let seed = scale_info::prelude::format!("{:?}", a_u8);
-            let authority_keys = get_authority_keys_from_seed(&seed, None);
+            let authority_keys = get_authority_keys_from_seed(&seed);
             let _ = Session::set_keys(
                 RuntimeOrigin::signed(a.clone()),
                 SessionKeys {
@@ -3493,7 +3493,7 @@ impl ParaIdAssignmentHooksImpl {
 
         // Check if the container chain has enough credits for a session assignments
         let maybe_assignment_imbalance =
-            if  pallet_services_payment::Pallet::<Runtime>::burn_collator_assignment_free_credit_for_para(&para_id).is_err() {
+            if pallet_services_payment::Pallet::<Runtime>::burn_collator_assignment_free_credit_for_para(&para_id).is_err() {
                 let (amount_to_charge, _weight) =
                     <Runtime as pallet_services_payment::Config>::ProvideCollatorAssignmentCost::collator_assignment_cost(&para_id);
                 Some(<ServicePaymentCurrency as Currency<AccountId>>::withdraw(
