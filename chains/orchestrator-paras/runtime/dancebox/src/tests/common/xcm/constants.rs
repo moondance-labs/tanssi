@@ -11,10 +11,8 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 
-use sp_core::crypto::get_public_from_string_or_panic;
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
-use sp_keyring::Sr25519Keyring;
 use {
     cumulus_primitives_core::relay_chain::{
         AccountId, AssignmentId, AuthorityDiscoveryId, ValidatorId,
@@ -23,7 +21,9 @@ use {
     sc_consensus_grandpa::AuthorityId as GrandpaId,
     sp_consensus_babe::AuthorityId as BabeId,
     sp_consensus_beefy::ecdsa_crypto::AuthorityId as BeefyId,
+    sp_core::crypto::get_public_from_string_or_panic,
     sp_core::{sr25519, storage::Storage},
+    sp_keyring::Sr25519Keyring,
 };
 
 /// Helper function to generate stash, controller and session key from seed

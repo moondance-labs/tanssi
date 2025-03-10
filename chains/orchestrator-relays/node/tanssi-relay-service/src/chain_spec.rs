@@ -16,7 +16,6 @@
 
 //! Polkadot chain configurations.
 
-use sp_core::crypto::get_public_from_string_or_panic;
 use {
     beefy_primitives::ecdsa_crypto::AuthorityId as BeefyId,
     cumulus_primitives_core::ParaId,
@@ -30,6 +29,7 @@ use {
     polkadot_primitives::{AccountId, AssignmentId, ValidatorId},
     sp_authority_discovery::AuthorityId as AuthorityDiscoveryId,
     sp_consensus_babe::AuthorityId as BabeId,
+    sp_core::crypto::get_public_from_string_or_panic,
 };
 
 #[cfg(feature = "dancelight-native")]
