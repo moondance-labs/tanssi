@@ -30,7 +30,7 @@ use {
     },
     alloy_sol_types::SolEvent,
     frame_support::assert_ok,
-    keyring::AccountKeyring,
+    keyring::Sr25519Keyring,
     parity_scale_codec::Encode,
     snowbridge_core::{
         inbound::{Log, Message},
@@ -92,9 +92,9 @@ fn receive_msg_from_eth_validators_are_updated() {
 
         // New validators to be added
         let payload_validators = vec![
-            AccountKeyring::Alice.to_account_id(),
-            AccountKeyring::Charlie.to_account_id(),
-            AccountKeyring::Bob.to_account_id(),
+            Sr25519Keyring::Alice.to_account_id(),
+            Sr25519Keyring::Charlie.to_account_id(),
+            Sr25519Keyring::Bob.to_account_id(),
         ];
 
         let payload = Payload {
