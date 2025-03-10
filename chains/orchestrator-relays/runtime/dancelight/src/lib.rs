@@ -1444,9 +1444,7 @@ parameter_types! {
             &EthereumLocation::get()
         ).expect("to convert EthereumSovereignAccount");
 
-    // TODO: Use a potentially different formula/inflation rate. We need the output to be non-zero
-    // to properly write integration tests.
-    pub ExternalRewardsEraInflationProvider: u128 = InflationRate::get() * Balances::total_issuance();
+    pub ExternalRewardsEraInflationProvider: u128 = CollatorsInflationRatePerBlock::get() * Balances::total_issuance();
 
     pub TokenLocationReanchored: Location = xcm_config::TokenLocation::get().reanchored(
         &EthereumLocation::get(),
@@ -1757,14 +1755,18 @@ impl pallet_data_preservers::Config for Runtime {
 parameter_types! {
     pub DancelightBondAccount: AccountId32 = PalletId(*b"StarBond").into_account_truncating();
     pub PendingRewardsAccount: AccountId32 = PalletId(*b"PENDREWD").into_account_truncating();
-    // The equation to solve is:
-    // initial_supply * (1.05) = initial_supply * (1+x)^5_259_600
-    // we should solve for x = (1.05)^(1/5_259_600) -1 -> 0.000000009 per block or 9/1_000_000_000
-    // 1% in the case of dev mode
-    // TODO: check if we can put the prod inflation for tests too
-    // TODO: better calculus for going from annual to block inflation (if it can be done)
-    // TODO: check if we need to change inflation in the future
-    pub const InflationRate: Perbill = runtime_common::prod_or_fast!(Perbill::from_parts(9), Perbill::from_percent(1));
+
+    // We want a global annual inflation rate of 10%.
+    // It is compounded throught era inflations, which itself is split between:
+    // - Inflation for collators per block
+    // - Inflation for validators per era
+    // Computation is implemented in tests/inflation_rates.rs, with a test ensuring values from the
+    // runtime match the formulas. We write the results as constants here to ensure we don't perform
+    // computations at runtime.
+    // Run test without fast runtime to ensure prod values are correct too
+    // cargo test --release -p dancelight-runtime runtime_inflations_values_are_correct
+    pub const CollatorsInflationRatePerBlock: Perbill = runtime_common::prod_or_fast!(Perbill::from_parts(228), Perbill::from_parts(228));
+    pub const ValidatorsInflationRatePerEra: Perbill = runtime_common::prod_or_fast!(Perbill::from_parts(821534), Perbill::from_parts(6843));
 
     // 30% for dancelight bond, so 70% for staking
     pub const RewardsPortion: Perbill = Perbill::from_percent(70);
@@ -1781,7 +1783,7 @@ impl pallet_inflation_rewards::Config for Runtime {
     type Currency = Balances;
     type ContainerChains = ContainerRegistrar;
     type GetSelfChainBlockAuthor = ();
-    type InflationRate = InflationRate;
+    type InflationRate = ValidatorsInflationRatePerEra;
     type OnUnbalanced = OnUnbalancedInflation;
     type PendingRewardsAccount = PendingRewardsAccount;
     type StakingRewardsDistributor = InvulnerableRewardDistribution<Self, Balances, PooledStaking>;
