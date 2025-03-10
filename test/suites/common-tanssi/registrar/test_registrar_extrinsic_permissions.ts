@@ -26,7 +26,7 @@ describeSuite({
             test: async () => {
                 const runtimeName = api.runtimeVersion.specName.toString();
 
-                let registerAlias = runtimeName.includes("light") ? polkadotJs.tx.containerRegistrar : polkadotJs.tx.registrar;
+                const registerAlias = runtimeName.includes("light") ? api.tx.containerRegistrar : api.tx.registrar;
 
                 // Bob is not a manager, extrinsic requiring RegistrarOrigin should fail with BadOrigin error
                 const { result: pauseContainerResultAttempt1 } = await context.createBlock(
@@ -42,7 +42,7 @@ describeSuite({
 
                 expect(sudoResult.successful).toEqual(true);
 
-                // Now it should show ParaIdNotRegistered error but not the BadOrigin
+                // Now it should succeed
                 const { result: pauseContainerResultAttempt2 } = await context.createBlock(
                     await registerAlias.pauseContainerChain(paraId).signAsync(bob)
                 );
