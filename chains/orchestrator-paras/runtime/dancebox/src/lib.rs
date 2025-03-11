@@ -398,7 +398,7 @@ impl frame_system::Config for Runtime {
     type PreInherents = ();
     type PostInherents = ();
     type PostTransactions = ();
-    type ExtensionsWeightInfo = ();
+    type ExtensionsWeightInfo = weights::frame_system_extensions::SubstrateWeight<Runtime>;
 }
 
 impl pallet_timestamp::Config for Runtime {
@@ -518,7 +518,7 @@ impl pallet_transaction_payment::Config for Runtime {
     type WeightToFee = WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
     type FeeMultiplierUpdate = SlowAdjustingFeeUpdate<Self>;
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_transaction_payment::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -1354,7 +1354,8 @@ parameter_types! {
 }
 impl pallet_registrar::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type RegistrarOrigin = EnsureRoot<AccountId>;
+    type RegistrarOrigin =
+        EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;
     type MarkValidForCollatingOrigin = EnsureRoot<AccountId>;
     type MaxLengthParaIds = MaxLengthParaIds;
     type MaxGenesisDataSize = MaxEncodedGenesisDataSize;
@@ -2034,11 +2035,13 @@ construct_runtime!(
 mod benches {
     frame_benchmarking::define_benchmarks!(
         [frame_system, frame_system_benchmarking::Pallet::<Runtime>]
+        [frame_system_extensions, frame_system_benchmarking::extensions::Pallet::<Runtime>]
         [cumulus_pallet_parachain_system, ParachainSystem]
         [pallet_timestamp, Timestamp]
         [pallet_sudo, Sudo]
         [pallet_utility, Utility]
         [pallet_proxy, Proxy]
+        [pallet_transaction_payment, TransactionPayment]
         [pallet_tx_pause, TxPause]
         [pallet_balances, Balances]
         [pallet_stream_payment, StreamPayment]
