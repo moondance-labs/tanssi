@@ -149,6 +149,7 @@ tanssi-runtime-common = { workspace = true }
 pallet-migrations = { workspace = true }
 
 # Bridges
+keyring = { workspace = true }
 snowbridge-beacon-primitives = { workspace = true }
 snowbridge-core = { workspace = true }
 snowbridge-outbound-queue-runtime-api = { workspace = true }
@@ -166,7 +167,6 @@ container-chain-template-frontier-runtime  = { workspace = true, features = [ "s
 container-chain-template-simple-runtime  = { workspace = true, features = [ "std" ] }
 emulated-integration-tests-common = { workspace = true }
 finality-grandpa = { workspace = true, default-features = true, features = [ "derive-codec" ] }
-keyring = { workspace = true }
 milagro-bls = { workspace = true, features = [ "std" ] }
 rand = { workspace = true, features = [ "std", "std_rng" ] }
 remote-externalities = { workspace = true }
@@ -213,6 +213,7 @@ std = [
 	"frame-try-runtime/std",
 	"grandpa_primitives/std",
 	"inherents/std",
+	"keyring/std",
 	"keyring/std",
 	"log/std",
 	"milagro-bls/std",
@@ -389,6 +390,7 @@ runtime-benchmarks = [
 	"pallet-sudo/runtime-benchmarks",
 	"pallet-timestamp/runtime-benchmarks",
 	"pallet-tips/runtime-benchmarks",
+	"pallet-transaction-payment/runtime-benchmarks",
 	"pallet-treasury/runtime-benchmarks",
 	"pallet-utility/runtime-benchmarks",
 	"pallet-whitelist/runtime-benchmarks",

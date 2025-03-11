@@ -16,7 +16,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use staging_xcm::latest::prelude::*;
+use xcm::latest::prelude::*;
 trait Parse {
     /// Returns the "chain" location part. It could be parent, sibling
     /// parachain, or child parachain.

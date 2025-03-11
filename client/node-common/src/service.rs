@@ -63,9 +63,7 @@ use {
 
 #[allow(deprecated)]
 use sc_executor::NativeElseWasmExecutor;
-use sc_transaction_pool_api::TransactionPool;
-use sp_api::StorageProof;
-use sp_core::traits::SpawnNamed;
+use {sc_transaction_pool_api::TransactionPool, sp_api::StorageProof, sp_core::traits::SpawnNamed};
 
 tp_traits::alias!(
     pub trait MinimalRuntimeApi<
@@ -576,7 +574,7 @@ where
                     is_validator: parachain_config.role.is_authority(),
                     enable_http_requests: false,
                     custom_extensions: move |_| vec![],
-                })
+                })?
                 .run(client.clone(), task_manager.spawn_handle())
                 .boxed(),
             );

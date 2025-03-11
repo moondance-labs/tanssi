@@ -26,9 +26,10 @@ use {
         json::container_chain_genesis_data_from_path, ContainerChainGenesisData,
     },
     grandpa::AuthorityId as GrandpaId,
-    polkadot_primitives::{AccountId, AccountPublic, AssignmentId, ValidatorId},
+    polkadot_primitives::{AccountId, AssignmentId, ValidatorId},
     sp_authority_discovery::AuthorityId as AuthorityDiscoveryId,
     sp_consensus_babe::AuthorityId as BabeId,
+    sp_core::crypto::get_public_from_string_or_panic,
 };
 
 #[cfg(feature = "dancelight-native")]
@@ -40,8 +41,7 @@ use telemetry::TelemetryEndpoints;
 use {
     sc_chain_spec::ChainSpecExtension,
     serde::{Deserialize, Serialize},
-    sp_core::{sr25519, storage::well_known_keys as StorageWellKnownKeys, Pair, Public},
-    sp_runtime::traits::IdentifyAccount,
+    sp_core::{sr25519, storage::well_known_keys as StorageWellKnownKeys},
 };
 
 #[cfg(feature = "dancelight-native")]
@@ -102,21 +102,6 @@ pub fn dancelight_staging_testnet_config() -> Result<DancelightChainSpec, String
     .build())
 }
 
-/// Helper function to generate a crypto pair from seed
-pub fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
-    TPublic::Pair::from_string(&format!("//{}", seed), None)
-        .expect("static values are valid; qed")
-        .public()
-}
-
-/// Helper function to generate an account ID from seed
-pub fn get_account_id_from_seed<TPublic: Public>(seed: &str) -> AccountId
-where
-    AccountPublic: From<<TPublic::Pair as Pair>::Public>,
-{
-    AccountPublic::from(get_from_seed::<TPublic>(seed)).into_account()
-}
-
 /// Helper function to generate stash, controller and session key from seed
 pub fn get_authority_keys_from_seed(
     seed: &str,
@@ -139,7 +124,7 @@ pub fn get_authority_keys_from_seed(
         keys.4,
         keys.5,
         keys.6,
-        get_from_seed::<BeefyId>(seed),
+        get_public_from_string_or_panic::<BeefyId>(seed),
     )
 }
 
@@ -156,13 +141,13 @@ pub fn get_authority_keys_from_seed_no_beefy(
     AuthorityDiscoveryId,
 ) {
     (
-        get_account_id_from_seed::<sr25519::Public>(&format!("{}//stash", seed)),
-        get_account_id_from_seed::<sr25519::Public>(seed),
-        get_from_seed::<BabeId>(seed),
-        get_from_seed::<GrandpaId>(seed),
-        get_from_seed::<ValidatorId>(seed),
-        get_from_seed::<AssignmentId>(seed),
-        get_from_seed::<AuthorityDiscoveryId>(seed),
+        get_public_from_string_or_panic::<sr25519::Public>(&format!("{}//stash", seed)).into(),
+        get_public_from_string_or_panic::<sr25519::Public>(seed).into(),
+        get_public_from_string_or_panic::<BabeId>(seed),
+        get_public_from_string_or_panic::<GrandpaId>(seed),
+        get_public_from_string_or_panic::<ValidatorId>(seed),
+        get_public_from_string_or_panic::<AssignmentId>(seed),
+        get_public_from_string_or_panic::<AuthorityDiscoveryId>(seed),
     )
 }
 
@@ -238,8 +223,7 @@ pub fn dancelight_local_testnet_config(
         .collect();
 
     Ok(DancelightChainSpec::builder(
-        dancelight::fast_runtime_binary::WASM_BINARY
-            .ok_or("Dancelight development wasm not available")?,
+        dancelight::WASM_BINARY.ok_or("Dancelight development wasm not available")?,
         Default::default(),
     )
     .with_name("Dancelight Local Testnet")
