@@ -16,8 +16,7 @@
 
 use {
     clap::Parser,
-    node_common::service::Sealing,
-    sc_cli::{CliConfiguration, NodeKeyParams, SharedParams},
+    node_common::{cli::BuildSpecCmd, service::Sealing},
     std::path::PathBuf,
     url::Url,
 };
@@ -197,32 +196,6 @@ impl RelayChainCli {
             chain_id,
             base: clap::Parser::parse_from(relay_chain_args),
         }
-    }
-}
-
-/// The `build-spec` command used to build a specification.
-#[derive(Debug, Clone, clap::Parser)]
-pub struct BuildSpecCmd {
-    #[clap(flatten)]
-    pub base: sc_cli::BuildSpecCmd,
-
-    /// Id of the parachain this spec is for. Note that this overrides the `--chain` param.
-    #[arg(long, conflicts_with = "chain")]
-    #[arg(long)]
-    pub parachain_id: Option<u32>,
-
-    /// List of bootnodes to add to chain spec
-    #[arg(long)]
-    pub add_bootnode: Vec<String>,
-}
-
-impl CliConfiguration for BuildSpecCmd {
-    fn shared_params(&self) -> &SharedParams {
-        &self.base.shared_params
-    }
-
-    fn node_key_params(&self) -> Option<&NodeKeyParams> {
-        Some(&self.base.node_key_params)
     }
 }
 
