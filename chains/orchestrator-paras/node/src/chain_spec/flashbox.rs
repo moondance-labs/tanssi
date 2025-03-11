@@ -14,10 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
+use sp_keyring::Sr25519Keyring;
 use {
-    crate::chain_spec::{
-        account_ids, get_account_id_from_seed, invulnerables_from_seeds, Extensions,
-    },
+    crate::chain_spec::{account_ids, invulnerables_from_seeds, Extensions},
     cumulus_primitives_core::ParaId,
     dp_container_chain_genesis_data::{
         json::container_chain_genesis_data_from_path, ContainerChainGenesisData,
@@ -29,7 +28,6 @@ use {
     nimbus_primitives::NimbusId,
     pallet_configuration::HostConfiguration,
     sc_service::ChainType,
-    sp_core::sr25519,
     sp_runtime::Perbill,
 };
 
@@ -84,7 +82,7 @@ pub fn development_config(
             "Ferdie//stash",
         ]),
         para_id,
-        get_account_id_from_seed::<sr25519::Public>("Alice"),
+        Sr25519Keyring::Alice.to_account_id(),
         &container_chains,
         &mock_container_chains,
         pallet_configuration::GenesisConfig {
@@ -148,7 +146,7 @@ pub fn local_flashbox_config(
             "Ferdie//stash",
         ]),
         para_id,
-        get_account_id_from_seed::<sr25519::Public>("Alice"),
+        Sr25519Keyring::Alice.to_account_id(),
         &container_chains,
         &mock_container_chains,
         pallet_configuration::GenesisConfig {

@@ -4402,3 +4402,41 @@ fn test_data_preserver_kind_needs_to_match() {
             );
         });
 }
+
+fn test_registrar_extrinsic_permissions() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (
+                cumulus_primitives_core::relay_chain::AccountId::from(ALICE),
+                210_000 * UNIT,
+            ),
+            (
+                cumulus_primitives_core::relay_chain::AccountId::from(BOB),
+                100_000 * UNIT,
+            ),
+        ])
+        .with_empty_parachains(vec![1001])
+        .build()
+        .execute_with(|| {
+            let para_id = ParaId::from(1001);
+
+            // Pause container chain should fail if not para manager
+            assert_noop!(
+                Registrar::pause_container_chain(origin_of(BOB.into()), para_id),
+                BadOrigin
+            );
+
+            // Set Bob as para manager
+            assert_ok!(Registrar::set_para_manager(
+                root_origin(),
+                para_id,
+                AccountId::from(BOB)
+            ));
+
+            // Pause container chain should succeed if para manager
+            assert_ok!(
+                Registrar::pause_container_chain(origin_of(BOB.into()), para_id),
+                ()
+            );
+        });
+}

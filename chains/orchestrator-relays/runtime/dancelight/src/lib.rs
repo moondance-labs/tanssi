@@ -1437,7 +1437,7 @@ impl Get<u64> for TimestampProvider {
 }
 
 parameter_types! {
-    // Chain ID of Holesky.
+    // Chain ID of Sepolia.
     // Output is: 34cdd3f84040fb44d70e83b892797846a8c0a556ce08cd470bf6d4cf7b94ff77
     pub EthereumSovereignAccount: AccountId =
         tp_bridge::EthereumLocationsConverterFor::<AccountId>::convert_location(
@@ -2021,7 +2021,7 @@ impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
         if eligible {
             let a_u8: &[u8] = a.as_ref();
             let seed = scale_info::prelude::format!("{:?}", a_u8);
-            let authority_keys = get_authority_keys_from_seed(&seed, None);
+            let authority_keys = get_authority_keys_from_seed(&seed);
             let _ = Session::set_keys(
                 RuntimeOrigin::signed(a.clone()),
                 SessionKeys {
@@ -2343,7 +2343,8 @@ where
 
 impl pallet_registrar::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type RegistrarOrigin = EnsureRoot<AccountId>;
+    type RegistrarOrigin =
+        EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;
     type MarkValidForCollatingOrigin = EnsureRoot<AccountId>;
     type MaxLengthParaIds = MaxLengthParaIds;
     type MaxGenesisDataSize = MaxEncodedGenesisDataSize;
@@ -3670,7 +3671,7 @@ impl ParaIdAssignmentHooksImpl {
 
         // Check if the container chain has enough credits for a session assignments
         let maybe_assignment_imbalance =
-            if  pallet_services_payment::Pallet::<Runtime>::burn_collator_assignment_free_credit_for_para(&para_id).is_err() {
+            if pallet_services_payment::Pallet::<Runtime>::burn_collator_assignment_free_credit_for_para(&para_id).is_err() {
                 let (amount_to_charge, _weight) =
                     <Runtime as pallet_services_payment::Config>::ProvideCollatorAssignmentCost::collator_assignment_cost(&para_id);
                 Some(<ServicePaymentCurrency as Currency<AccountId>>::withdraw(
