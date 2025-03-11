@@ -202,7 +202,7 @@ pub fn run() -> Result<()> {
             runner.sync_run(|config| {
                 let chain_spec = load_spec(
                     &cmd.base.chain_id(cmd.base.is_dev()?)?,
-                    cmd.parachain_id,
+                    cmd.extra.parachain_id,
                     cmd.extra.add_container_chain.clone().unwrap_or_default(),
                     cmd.extra.mock_container_chain.clone().unwrap_or_default(),
                     cmd.extra.invulnerable.clone(),
@@ -253,7 +253,7 @@ pub fn run() -> Result<()> {
                     &polkadot_cli,
                     config.tokio_handle.clone(),
                 )
-                .map_err(|err| format!("Relay chain argument error: {}", err))?;
+                    .map_err(|err| format!("Relay chain argument error: {}", err))?;
 
                 cmd.run(config, polkadot_config)
             })
@@ -409,8 +409,8 @@ pub fn run() -> Result<()> {
                     collator_options,
                     hwbench,
                 )
-                .await
-                .map_err(Into::into)
+                    .await
+                    .map_err(Into::into)
             })
         }
         None => {

@@ -25,11 +25,6 @@ where
     #[clap(flatten)]
     pub base: sc_cli::BuildSpecCmd,
 
-    /// Id of the parachain this spec is for. Note that this overrides the `--chain` param.
-    #[arg(long, conflicts_with = "chain")]
-    #[arg(long)]
-    pub parachain_id: Option<u32>,
-
     #[clap(flatten)]
     pub extra: ExtraFields,
 }

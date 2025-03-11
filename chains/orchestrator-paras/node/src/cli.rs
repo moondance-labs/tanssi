@@ -103,6 +103,9 @@ pub struct BuildSpecCmdExtraFields {
     /// List of invulnerable collators to write to pallet_invulnerables genesis.
     #[arg(long)]
     pub invulnerable: Option<Vec<String>>,
+
+    #[arg(long)]
+    pub parachain_id: Option<u32>,
 }
 
 pub type BuildSpecCmdCollator = BuildSpecCmd<BuildSpecCmdExtraFields>;

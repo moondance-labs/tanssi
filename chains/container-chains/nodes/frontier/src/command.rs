@@ -154,7 +154,7 @@ pub fn run() -> Result<()> {
         Some(Subcommand::BuildSpec(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             runner.sync_run(|config| {
-                let chain_spec = if let Some(para_id) = cmd.parachain_id {
+                let chain_spec = if let Some(para_id) = cmd.extra.parachain_id {
                     if cmd.base.shared_params.dev {
                         Box::new(chain_spec::development_config(
                             para_id.into(),
@@ -231,7 +231,7 @@ pub fn run() -> Result<()> {
                     &polkadot_cli,
                     config.tokio_handle.clone(),
                 )
-                .map_err(|err| format!("Relay chain argument error: {}", err))?;
+                    .map_err(|err| format!("Relay chain argument error: {}", err))?;
 
                 cmd.run(config, polkadot_config)
             })
@@ -543,9 +543,9 @@ fn rpc_provider_mode(cli: Cli, profile_id: u64) -> Result<()> {
                     &mut task_manager,
                     None,
                 )
-                .await
-                .map(Arc::new)
-                .map_err(|e| sc_cli::Error::Application(Box::new(e)))?;
+                    .await
+                    .map(Arc::new)
+                    .map_err(|e| sc_cli::Error::Application(Box::new(e)))?;
         };
 
         // Spawn assignment watcher
@@ -620,8 +620,8 @@ fn rpc_provider_mode(cli: Cli, profile_id: u64) -> Result<()> {
                 collator_options,
                 None,
             )
-            .await
-            .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
+                .await
+                .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
 
             let relay_chain = crate::chain_spec::Extensions::try_get(&*config.chain_spec)
                 .map(|e| e.relay_chain.clone())

@@ -188,6 +188,11 @@ pub struct BuildSpecCmdExtraFields {
     /// List of bootnodes to add to chain spec
     #[arg(long)]
     pub add_bootnode: Vec<String>,
+
+    /// Id of the parachain this spec is for. Note that this overrides the `--chain` param.
+    #[arg(long, conflicts_with = "chain")]
+    #[arg(long)]
+    pub parachain_id: Option<u32>,
 }
 
 pub type BuildSpecCmdSimple = BuildSpecCmd<BuildSpecCmdExtraFields>;
