@@ -1050,7 +1050,7 @@ parameter_types! {
 
 #[apply(derive_storage_traits)]
 #[derive(Copy, Serialize, Deserialize, MaxEncodedLen)]
-pub enum PreserversAssignementPaymentRequest {
+pub enum PreserversAssignmentPaymentRequest {
     Free,
     StreamPayment {
         config: pallet_stream_payment::StreamConfigOf<Runtime>,
@@ -1059,29 +1059,29 @@ pub enum PreserversAssignementPaymentRequest {
 
 #[apply(derive_storage_traits)]
 #[derive(Copy, Serialize, Deserialize)]
-pub enum PreserversAssignementPaymentExtra {
+pub enum PreserversAssignmentPaymentExtra {
     Free,
     StreamPayment { initial_deposit: Balance },
 }
 
 #[apply(derive_storage_traits)]
 #[derive(Copy, Serialize, Deserialize, MaxEncodedLen)]
-pub enum PreserversAssignementPaymentWitness {
+pub enum PreserversAssignmentPaymentWitness {
     Free,
     StreamPayment {
         stream_id: <Runtime as pallet_stream_payment::Config>::StreamId,
     },
 }
 
-pub struct PreserversAssignementPayment;
+pub struct PreserversAssignmentPayment;
 
-impl pallet_data_preservers::AssignmentPayment<AccountId> for PreserversAssignementPayment {
+impl pallet_data_preservers::AssignmentPayment<AccountId> for PreserversAssignmentPayment {
     /// Providers requests which kind of payment it accepts.
-    type ProviderRequest = PreserversAssignementPaymentRequest;
+    type ProviderRequest = PreserversAssignmentPaymentRequest;
     /// Extra parameter the assigner provides.
-    type AssignerParameter = PreserversAssignementPaymentExtra;
+    type AssignerParameter = PreserversAssignmentPaymentExtra;
     /// Represents the succesful outcome of the assignment.
-    type AssignmentWitness = PreserversAssignementPaymentWitness;
+    type AssignmentWitness = PreserversAssignmentPaymentWitness;
 
     fn try_start_assignment(
         assigner: AccountId,
@@ -1145,17 +1145,17 @@ impl pallet_data_preservers::AssignmentPayment<AccountId> for PreserversAssignem
     // The values returned by the following functions should match with each other.
     #[cfg(feature = "runtime-benchmarks")]
     fn benchmark_provider_request() -> Self::ProviderRequest {
-        PreserversAssignementPaymentRequest::Free
+        PreserversAssignmentPaymentRequest::Free
     }
 
     #[cfg(feature = "runtime-benchmarks")]
     fn benchmark_assigner_parameter() -> Self::AssignerParameter {
-        PreserversAssignementPaymentExtra::Free
+        PreserversAssignmentPaymentExtra::Free
     }
 
     #[cfg(feature = "runtime-benchmarks")]
     fn benchmark_assignment_witness() -> Self::AssignmentWitness {
-        PreserversAssignementPaymentWitness::Free
+        PreserversAssignmentPaymentWitness::Free
     }
 }
 
@@ -1169,7 +1169,7 @@ impl pallet_data_preservers::Config for Runtime {
 
     type ProfileId = DataPreserversProfileId;
     type ProfileDeposit = tp_traits::BytesDeposit<ProfileDepositBaseFee, ProfileDepositByteFee>;
-    type AssignmentPayment = PreserversAssignementPayment;
+    type AssignmentPayment = PreserversAssignmentPayment;
 
     type AssignmentOrigin = pallet_registrar::EnsureSignedByManager<Runtime>;
     type ForceSetProfileOrigin = EnsureRoot<AccountId>;
@@ -1282,7 +1282,7 @@ impl RegistrarHooks for DanceboxRegistrarHooks {
                     .expect("to fit in BoundedVec"),
             para_ids: ParaIdsFilter::AnyParaId,
             mode: ProfileMode::Bootnode,
-            assignment_request: PreserversAssignementPaymentRequest::Free,
+            assignment_request: PreserversAssignmentPaymentRequest::Free,
         };
 
         let profile_id = pallet_data_preservers::NextProfileId::<Runtime>::get();
@@ -1300,7 +1300,7 @@ impl RegistrarHooks for DanceboxRegistrarHooks {
             para_manager,
             profile_id,
             para_id,
-            PreserversAssignementPaymentExtra::Free,
+            PreserversAssignmentPaymentExtra::Free,
         )
         .expect("assignement to work");
 
@@ -2736,8 +2736,8 @@ impl_runtime_apis! {
             };
 
             match witness {
-                PreserversAssignementPaymentWitness::Free => Assignment::Active(para_id),
-                PreserversAssignementPaymentWitness::StreamPayment { stream_id } => {
+                PreserversAssignmentPaymentWitness::Free => Assignment::Active(para_id),
+                PreserversAssignmentPaymentWitness::StreamPayment { stream_id } => {
                     // Error means no Stream exists with that ID or some issue occured when computing
                     // the status. In that case we cannot consider the assignment as active.
                     let Ok(StreamPaymentStatus { stalled, .. }) = StreamPayment::stream_payment_status( stream_id, None) else {

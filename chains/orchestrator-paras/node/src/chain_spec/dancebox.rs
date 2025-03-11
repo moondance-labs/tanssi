@@ -208,8 +208,8 @@ fn testnet_genesis(
                     *para_id,
                     AccountId::from([0u8; 32]),
                     bootnode,
-                    dancebox_runtime::PreserversAssignementPaymentRequest::Free,
-                    dancebox_runtime::PreserversAssignementPaymentWitness::Free,
+                    dancebox_runtime::PreserversAssignmentPaymentRequest::Free,
+                    dancebox_runtime::PreserversAssignmentPaymentWitness::Free,
                 )
             })
         })
