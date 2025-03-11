@@ -1,9 +1,10 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
+
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import type { ApiPromise } from "@polkadot/api";
 
 describeSuite({
-    id: "CPT0801",
+    id: "COMMO0701",
     title: "RelayStorageRoots pallet test suite",
     foundationMethods: "dev",
 
@@ -17,7 +18,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Only 10 latest blocks are stored",
-            test: async function () {
+            test: async () => {
                 // Relay block list starts empty
                 const relayBlocksEmpty = (await polkadotJs.query.relayStorageRoots.relayStorageRootKeys()).toJSON();
                 expect(relayBlocksEmpty).to.deep.equal([]);
@@ -35,7 +36,7 @@ describeSuite({
                 // The mapping only contains the keys that are in `relayStorageRootKeys`
                 const mappingKeys = (await polkadotJs.query.relayStorageRoots.relayStorageRoot.keys()).map((key) => {
                     // Convert "1,020" into 1020
-                    return parseInt(key.toHuman().toString().replace(",", ""));
+                    return Number.parseInt(key.toHuman().toString().replace(",", ""));
                 });
                 mappingKeys.sort();
                 expect(relayBlocks).to.deep.equal(mappingKeys);

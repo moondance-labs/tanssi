@@ -45,7 +45,6 @@ import type {
     DpContainerChainGenesisDataProperties,
     DpContainerChainGenesisDataTokenMetadata,
     FrameSupportDispatchDispatchClass,
-    FrameSupportDispatchDispatchInfo,
     FrameSupportDispatchPays,
     FrameSupportDispatchPerDispatchClassU32,
     FrameSupportDispatchPerDispatchClassWeight,
@@ -59,6 +58,7 @@ import type {
     FrameSystemAccountInfo,
     FrameSystemCall,
     FrameSystemCodeUpgradeAuthorization,
+    FrameSystemDispatchEventInfo,
     FrameSystemError,
     FrameSystemEvent,
     FrameSystemEventRecord,
@@ -124,8 +124,10 @@ import type {
     PalletIdentityEvent,
     PalletIdentityJudgement,
     PalletIdentityLegacyIdentityInfo,
+    PalletIdentityProvider,
     PalletIdentityRegistrarInfo,
     PalletIdentityRegistration,
+    PalletIdentityUsernameInformation,
     PalletInflationRewardsChainsToRewardValue,
     PalletInflationRewardsEvent,
     PalletInvulnerablesCall,
@@ -140,8 +142,12 @@ import type {
     PalletMessageQueueEvent,
     PalletMessageQueueNeighbours,
     PalletMessageQueuePage,
+    PalletMigrationsActiveCursor,
+    PalletMigrationsCall,
     PalletMigrationsError,
     PalletMigrationsEvent,
+    PalletMigrationsHistoricCleanupSelector,
+    PalletMigrationsMigrationCursor,
     PalletMultisigCall,
     PalletMultisigError,
     PalletMultisigEvent,
@@ -235,6 +241,7 @@ import type {
     SpRuntimeDispatchError,
     SpRuntimeModuleError,
     SpRuntimeMultiSignature,
+    SpRuntimeProvingTrieTrieError,
     SpRuntimeTokenError,
     SpRuntimeTransactionalError,
     SpTrieStorageProof,
@@ -260,8 +267,27 @@ import type {
     StagingXcmV4PalletInfo,
     StagingXcmV4QueryResponseInfo,
     StagingXcmV4Response,
-    StagingXcmV4TraitsOutcome,
     StagingXcmV4Xcm,
+    StagingXcmV5Asset,
+    StagingXcmV5AssetAssetFilter,
+    StagingXcmV5AssetAssetId,
+    StagingXcmV5AssetAssetInstance,
+    StagingXcmV5AssetAssetTransferFilter,
+    StagingXcmV5AssetAssets,
+    StagingXcmV5AssetFungibility,
+    StagingXcmV5AssetWildAsset,
+    StagingXcmV5AssetWildFungibility,
+    StagingXcmV5Hint,
+    StagingXcmV5Instruction,
+    StagingXcmV5Junction,
+    StagingXcmV5JunctionNetworkId,
+    StagingXcmV5Junctions,
+    StagingXcmV5Location,
+    StagingXcmV5PalletInfo,
+    StagingXcmV5QueryResponseInfo,
+    StagingXcmV5Response,
+    StagingXcmV5TraitsOutcome,
+    StagingXcmV5Xcm,
     TpAuthorNotingInherentOwnParachainInherentData,
     TpTraitsContainerChainBlockInfo,
     TpTraitsFullRotationMode,
@@ -270,26 +296,6 @@ import type {
     TpTraitsSlotFrequency,
     TpXcmCoreBuyerBuyCoreCollatorProof,
     XcmDoubleEncoded,
-    XcmV2BodyId,
-    XcmV2BodyPart,
-    XcmV2Instruction,
-    XcmV2Junction,
-    XcmV2MultiAsset,
-    XcmV2MultiLocation,
-    XcmV2MultiassetAssetId,
-    XcmV2MultiassetAssetInstance,
-    XcmV2MultiassetFungibility,
-    XcmV2MultiassetMultiAssetFilter,
-    XcmV2MultiassetMultiAssets,
-    XcmV2MultiassetWildFungibility,
-    XcmV2MultiassetWildMultiAsset,
-    XcmV2MultilocationJunctions,
-    XcmV2NetworkId,
-    XcmV2OriginKind,
-    XcmV2Response,
-    XcmV2TraitsError,
-    XcmV2WeightLimit,
-    XcmV2Xcm,
     XcmV3Instruction,
     XcmV3Junction,
     XcmV3JunctionBodyId,
@@ -312,6 +318,7 @@ import type {
     XcmV3TraitsError,
     XcmV3WeightLimit,
     XcmV3Xcm,
+    XcmV5TraitsError,
     XcmVersionedAssetId,
     XcmVersionedAssets,
     XcmVersionedLocation,
@@ -360,7 +367,6 @@ declare module "@polkadot/types/types/registry" {
         DpContainerChainGenesisDataProperties: DpContainerChainGenesisDataProperties;
         DpContainerChainGenesisDataTokenMetadata: DpContainerChainGenesisDataTokenMetadata;
         FrameSupportDispatchDispatchClass: FrameSupportDispatchDispatchClass;
-        FrameSupportDispatchDispatchInfo: FrameSupportDispatchDispatchInfo;
         FrameSupportDispatchPays: FrameSupportDispatchPays;
         FrameSupportDispatchPerDispatchClassU32: FrameSupportDispatchPerDispatchClassU32;
         FrameSupportDispatchPerDispatchClassWeight: FrameSupportDispatchPerDispatchClassWeight;
@@ -374,6 +380,7 @@ declare module "@polkadot/types/types/registry" {
         FrameSystemAccountInfo: FrameSystemAccountInfo;
         FrameSystemCall: FrameSystemCall;
         FrameSystemCodeUpgradeAuthorization: FrameSystemCodeUpgradeAuthorization;
+        FrameSystemDispatchEventInfo: FrameSystemDispatchEventInfo;
         FrameSystemError: FrameSystemError;
         FrameSystemEvent: FrameSystemEvent;
         FrameSystemEventRecord: FrameSystemEventRecord;
@@ -439,8 +446,10 @@ declare module "@polkadot/types/types/registry" {
         PalletIdentityEvent: PalletIdentityEvent;
         PalletIdentityJudgement: PalletIdentityJudgement;
         PalletIdentityLegacyIdentityInfo: PalletIdentityLegacyIdentityInfo;
+        PalletIdentityProvider: PalletIdentityProvider;
         PalletIdentityRegistrarInfo: PalletIdentityRegistrarInfo;
         PalletIdentityRegistration: PalletIdentityRegistration;
+        PalletIdentityUsernameInformation: PalletIdentityUsernameInformation;
         PalletInflationRewardsChainsToRewardValue: PalletInflationRewardsChainsToRewardValue;
         PalletInflationRewardsEvent: PalletInflationRewardsEvent;
         PalletInvulnerablesCall: PalletInvulnerablesCall;
@@ -455,8 +464,12 @@ declare module "@polkadot/types/types/registry" {
         PalletMessageQueueEvent: PalletMessageQueueEvent;
         PalletMessageQueueNeighbours: PalletMessageQueueNeighbours;
         PalletMessageQueuePage: PalletMessageQueuePage;
+        PalletMigrationsActiveCursor: PalletMigrationsActiveCursor;
+        PalletMigrationsCall: PalletMigrationsCall;
         PalletMigrationsError: PalletMigrationsError;
         PalletMigrationsEvent: PalletMigrationsEvent;
+        PalletMigrationsHistoricCleanupSelector: PalletMigrationsHistoricCleanupSelector;
+        PalletMigrationsMigrationCursor: PalletMigrationsMigrationCursor;
         PalletMultisigCall: PalletMultisigCall;
         PalletMultisigError: PalletMultisigError;
         PalletMultisigEvent: PalletMultisigEvent;
@@ -550,6 +563,7 @@ declare module "@polkadot/types/types/registry" {
         SpRuntimeDispatchError: SpRuntimeDispatchError;
         SpRuntimeModuleError: SpRuntimeModuleError;
         SpRuntimeMultiSignature: SpRuntimeMultiSignature;
+        SpRuntimeProvingTrieTrieError: SpRuntimeProvingTrieTrieError;
         SpRuntimeTokenError: SpRuntimeTokenError;
         SpRuntimeTransactionalError: SpRuntimeTransactionalError;
         SpTrieStorageProof: SpTrieStorageProof;
@@ -575,8 +589,27 @@ declare module "@polkadot/types/types/registry" {
         StagingXcmV4PalletInfo: StagingXcmV4PalletInfo;
         StagingXcmV4QueryResponseInfo: StagingXcmV4QueryResponseInfo;
         StagingXcmV4Response: StagingXcmV4Response;
-        StagingXcmV4TraitsOutcome: StagingXcmV4TraitsOutcome;
         StagingXcmV4Xcm: StagingXcmV4Xcm;
+        StagingXcmV5Asset: StagingXcmV5Asset;
+        StagingXcmV5AssetAssetFilter: StagingXcmV5AssetAssetFilter;
+        StagingXcmV5AssetAssetId: StagingXcmV5AssetAssetId;
+        StagingXcmV5AssetAssetInstance: StagingXcmV5AssetAssetInstance;
+        StagingXcmV5AssetAssetTransferFilter: StagingXcmV5AssetAssetTransferFilter;
+        StagingXcmV5AssetAssets: StagingXcmV5AssetAssets;
+        StagingXcmV5AssetFungibility: StagingXcmV5AssetFungibility;
+        StagingXcmV5AssetWildAsset: StagingXcmV5AssetWildAsset;
+        StagingXcmV5AssetWildFungibility: StagingXcmV5AssetWildFungibility;
+        StagingXcmV5Hint: StagingXcmV5Hint;
+        StagingXcmV5Instruction: StagingXcmV5Instruction;
+        StagingXcmV5Junction: StagingXcmV5Junction;
+        StagingXcmV5JunctionNetworkId: StagingXcmV5JunctionNetworkId;
+        StagingXcmV5Junctions: StagingXcmV5Junctions;
+        StagingXcmV5Location: StagingXcmV5Location;
+        StagingXcmV5PalletInfo: StagingXcmV5PalletInfo;
+        StagingXcmV5QueryResponseInfo: StagingXcmV5QueryResponseInfo;
+        StagingXcmV5Response: StagingXcmV5Response;
+        StagingXcmV5TraitsOutcome: StagingXcmV5TraitsOutcome;
+        StagingXcmV5Xcm: StagingXcmV5Xcm;
         TpAuthorNotingInherentOwnParachainInherentData: TpAuthorNotingInherentOwnParachainInherentData;
         TpTraitsContainerChainBlockInfo: TpTraitsContainerChainBlockInfo;
         TpTraitsFullRotationMode: TpTraitsFullRotationMode;
@@ -585,26 +618,6 @@ declare module "@polkadot/types/types/registry" {
         TpTraitsSlotFrequency: TpTraitsSlotFrequency;
         TpXcmCoreBuyerBuyCoreCollatorProof: TpXcmCoreBuyerBuyCoreCollatorProof;
         XcmDoubleEncoded: XcmDoubleEncoded;
-        XcmV2BodyId: XcmV2BodyId;
-        XcmV2BodyPart: XcmV2BodyPart;
-        XcmV2Instruction: XcmV2Instruction;
-        XcmV2Junction: XcmV2Junction;
-        XcmV2MultiAsset: XcmV2MultiAsset;
-        XcmV2MultiLocation: XcmV2MultiLocation;
-        XcmV2MultiassetAssetId: XcmV2MultiassetAssetId;
-        XcmV2MultiassetAssetInstance: XcmV2MultiassetAssetInstance;
-        XcmV2MultiassetFungibility: XcmV2MultiassetFungibility;
-        XcmV2MultiassetMultiAssetFilter: XcmV2MultiassetMultiAssetFilter;
-        XcmV2MultiassetMultiAssets: XcmV2MultiassetMultiAssets;
-        XcmV2MultiassetWildFungibility: XcmV2MultiassetWildFungibility;
-        XcmV2MultiassetWildMultiAsset: XcmV2MultiassetWildMultiAsset;
-        XcmV2MultilocationJunctions: XcmV2MultilocationJunctions;
-        XcmV2NetworkId: XcmV2NetworkId;
-        XcmV2OriginKind: XcmV2OriginKind;
-        XcmV2Response: XcmV2Response;
-        XcmV2TraitsError: XcmV2TraitsError;
-        XcmV2WeightLimit: XcmV2WeightLimit;
-        XcmV2Xcm: XcmV2Xcm;
         XcmV3Instruction: XcmV3Instruction;
         XcmV3Junction: XcmV3Junction;
         XcmV3JunctionBodyId: XcmV3JunctionBodyId;
@@ -627,6 +640,7 @@ declare module "@polkadot/types/types/registry" {
         XcmV3TraitsError: XcmV3TraitsError;
         XcmV3WeightLimit: XcmV3WeightLimit;
         XcmV3Xcm: XcmV3Xcm;
+        XcmV5TraitsError: XcmV5TraitsError;
         XcmVersionedAssetId: XcmVersionedAssetId;
         XcmVersionedAssets: XcmVersionedAssets;
         XcmVersionedLocation: XcmVersionedLocation;

@@ -1,11 +1,13 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { KeyringPair } from "@moonwall/util";
-import { ApiPromise } from "@polkadot/api";
-import { jumpSessions } from "../../../util/block";
+
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import type { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
+import { generateEmptyGenesisData, jumpSessions } from "utils";
+import type { TpTraitsSlotFrequency } from "@polkadot/types/lookup";
 
 describeSuite({
-    id: "CPT0505",
+    id: "DEV0701",
     title: "Registrar test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -20,7 +22,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Checking that fetching registered paraIds is possible",
-            test: async function () {
+            test: async () => {
                 const parasRegistered = await polkadotJs.query.registrar.registeredParaIds();
 
                 // These are registered in genesis
@@ -32,7 +34,7 @@ describeSuite({
         it({
             id: "E02",
             title: "Checking that registering paraIds is possible",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
 
                 const currentSesssion = await polkadotJs.query.session.currentIndex();
@@ -40,34 +42,11 @@ describeSuite({
                 const expectedScheduledOnboarding =
                     BigInt(currentSesssion.toString()) + BigInt(sessionDelay.toString());
 
-                const slotFrequency = polkadotJs.createType("TpTraitsSlotFrequency", {
+                const slotFrequency = polkadotJs.createType<TpTraitsSlotFrequency>("TpTraitsSlotFrequency", {
                     min: 1,
                     max: 1,
                 });
-                const emptyGenesisData = () => {
-                    const g = polkadotJs.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
-                        storage: [
-                            {
-                                key: "0x636f6465",
-                                value: "0x010203040506",
-                            },
-                        ],
-                        name: "0x436f6e7461696e657220436861696e2032303030",
-                        id: "0x636f6e7461696e65722d636861696e2d32303030",
-                        forkId: null,
-                        extensions: "0x",
-                        properties: {
-                            tokenMetadata: {
-                                tokenSymbol: "0x61626364",
-                                ss58Format: 42,
-                                tokenDecimals: 12,
-                            },
-                            isEthereum: false,
-                        },
-                    });
-                    return g;
-                };
-                const containerChainGenesisData = emptyGenesisData();
+                const containerChainGenesisData = generateEmptyGenesisData(context.pjsApi);
 
                 const tx = polkadotJs.tx.registrar.registerParathread(
                     2002,
@@ -108,7 +87,7 @@ describeSuite({
                 // Check that the on chain genesis data is set correctly
                 const onChainGenesisData = await polkadotJs.query.registrar.paraGenesisData(2002);
                 // TODO: fix once we have types
-                expect(emptyGenesisData().toJSON()).to.deep.equal(onChainGenesisData.toJSON());
+                expect(containerChainGenesisData.toJSON()).to.deep.equal(onChainGenesisData.toJSON());
 
                 // Check the para id has been given some free credits
                 const credits = (await polkadotJs.query.servicesPayment.blockProductionCredits(2002)).toJSON();
@@ -127,7 +106,7 @@ describeSuite({
         it({
             id: "E03",
             title: "Registered paraId has been given free credits, and flag can be cleared",
-            test: async function () {
+            test: async () => {
                 const paraId = 2002;
                 const givenFreeCredits = await polkadotJs.query.servicesPayment.givenFreeCredits(paraId);
                 expect(givenFreeCredits.isNone).to.be.false;
@@ -144,9 +123,9 @@ describeSuite({
         it({
             id: "E04",
             title: "Parathread params can be changed",
-            test: async function () {
+            test: async () => {
                 const paraId = 2002;
-                const slotFrequency = polkadotJs.createType("TpTraitsSlotFrequency", {
+                const slotFrequency = polkadotJs.createType<TpTraitsSlotFrequency>("TpTraitsSlotFrequency", {
                     min: 2,
                     max: 2,
                 });

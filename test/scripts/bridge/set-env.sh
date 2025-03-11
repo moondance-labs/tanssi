@@ -22,10 +22,10 @@ export contract_dir="$relayer_root_dir/snowbridge/contracts"
 test_helpers_dir="$web_dir/packages/test-helpers"
 relay_bin="$relayer_root_dir/build/tanssi-bridge-relayer"
 
-RELAYER_BRANCH="main" # TODO: Change to tag when we do releases
-TANSSI_SYMBIOTIC_COMMIT="695c7d1c5c0541f93587a607bc193c4e9944e985" # TODO: Change to tag when we do release
-GETH_TAG="v1.14.11" # We will need to investigate if this is right
-LODESTAR_TAG="v1.19.0"
+RELAYER_COMMIT="05b5e6cf8fe836690cca4e88d2dff3307bf17fa4" # TODO: Change to tag when we do releases
+TANSSI_SYMBIOTIC_COMMIT="224bf2dfc682b25bf8f757e222de0aa7003ffb9f" # TODO: Change to tag when we do release
+GETH_TAG="v1.15.3" # We will need to investigate if this is right
+LODESTAR_TAG="v1.27.0"
 
 lodestar_dir=$artifacts_dir/lodestar
 
@@ -69,13 +69,6 @@ export FOREIGN_TOKEN_DECIMALS=12
 # Beacon relay account (//BeaconRelay 5GWFwdZb6JyU46e6ZiLxjGxogAHe8SenX76btfq8vGNAaq8c in testnet)
 beacon_relayer_pub_key="${BEACON_RELAYER_PUB_KEY:-0xc46e141b5083721ad5f5056ba1cded69dce4a65f027ed3362357605b1687986a}"
 
-
-# Config for deploying contracts
-
-## Deployment key
-export PRIVATE_KEY="${DEPLOYER_ETH_KEY:-0x4e9444a6efd6d42725a250b650a781da2737ea308c839eaccb0f7f3dbd2fea77}"
-export ETHERSCAN_API_KEY="${ETHERSCAN_API_KEY:-0x0}"
-
 ## BeefyClient
 # For max safety delay should be MAX_SEED_LOOKAHEAD=4 epochs=4*8*6=192s
 # but for rococo-local each session is only 20 slots=120s
@@ -103,12 +96,19 @@ export BRIDGE_HUB_INITIAL_DEPOSIT="${ETH_BRIDGE_HUB_INITIAL_DEPOSIT:-10000000000
 
 ## Message passing
 export PRIMARY_GOVERNANCE_CHANNEL_ID="0x0000000000000000000000000000000000000000000000000000000000000001"
+export SECONDARY_GOVERNANCE_CHANNEL_ID="0x0000000000000000000000000000000000000000000000000000000000000002"
 # Execution relay account (//ExecutionRelay 5CFNWKMFPsw5Cs2Teo6Pvg7rWyjKiFfqPZs8U4MZXzMYFwXL in testnet)
 execution_relayer_assethub_pub_key="${EXECUTION_RELAYER_PUB_KEY:-0x08228efd065c58a043da95c8bf177659fc587643e71e7ed1534666177730196f}"
 # Funded ethereum key
 ethereum_key="0x5e002a1af63fd31f1c25258f3082dc889762664cb8f218d86da85dff8b07b342"
 # Above key's address
 ethereum_address="90A987B944Cb1dCcE5564e5FDeCD7a54D3de27Fe"
+
+# Config for deploying contracts
+
+## Deployment key
+export PRIVATE_KEY="${DEPLOYER_ETH_KEY:-$ethereum_key}"
+export ETHERSCAN_API_KEY="${ETHERSCAN_API_KEY:-0x0}"
 
 
 snowbridge_address_for() {
@@ -230,15 +230,19 @@ check_tool() {
         exit 1
     fi
     if [[ "$(uname)" == "Darwin" && -z "${IN_NIX_SHELL:-}" ]]; then
-          if ! [ -x "$(command -v gdate)" ]; then
-              echo 'Error: gdate (GNU Date) is not installed.'
-              exit 1
-          fi
-      else
-          if ! [ -x "$(command -v date)" ]; then
-              echo 'Error: date is not installed.'
-              exit 1
-          fi
+        if ! [ -x "$(command -v gsed)" ]; then
+            echo 'Error: gsed is not installed.'
+            exit 1
+        fi
+        if ! [ -x "$(command -v gdate)" ]; then
+            echo 'Error: gdate (GNU Date) is not installed.'
+            exit 1
+        fi
+    else
+        if ! [ -x "$(command -v date)" ]; then
+            echo 'Error: date is not installed.'
+            exit 1
+        fi
     fi
 
     check_node_version 22

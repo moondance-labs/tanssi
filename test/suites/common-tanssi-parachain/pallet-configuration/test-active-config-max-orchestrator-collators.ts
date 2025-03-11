@@ -1,14 +1,14 @@
-import { expect, beforeAll, describeSuite } from "@moonwall/cli";
-import { jumpSessions } from "../../../util/block";
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import { jumpSessions } from "utils";
 
 describeSuite({
-    id: "CPT0403",
+    id: "COMMO0303",
     title: "Configuration - ActiveConfig - MaxOrchestratorCollators",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
-        beforeAll(async function () {
+        beforeAll(async () => {
             const config = await context.polkadotJs().query.configuration.activeConfig();
-            expect(config["maxOrchestratorCollators"].toString()).toBe("1");
+            expect(config.maxOrchestratorCollators.toString()).toBe("1");
 
             const { result } = await context.createBlock(
                 context
@@ -16,7 +16,7 @@ describeSuite({
                     .tx.sudo.sudo(context.polkadotJs().tx.configuration.setMaxOrchestratorCollators(2))
                     .signAsync(context.keyring.alice)
             );
-            expect(result!.successful, result!.error?.name).to.be.true;
+            expect(result?.successful, result?.error?.name).to.be.true;
 
             await jumpSessions(context, 2);
         });
@@ -24,9 +24,9 @@ describeSuite({
         it({
             id: "T01",
             title: "should set max orchestrator collators after 2 sessions",
-            test: async function () {
+            test: async () => {
                 const config = await context.polkadotJs().query.configuration.activeConfig();
-                expect(config["maxOrchestratorCollators"].toString()).toBe("2");
+                expect(config.maxOrchestratorCollators.toString()).toBe("2");
             },
         });
     },

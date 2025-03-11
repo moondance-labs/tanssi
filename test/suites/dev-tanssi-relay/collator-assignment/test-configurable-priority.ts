@@ -1,50 +1,11 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise, Keyring } from "@polkadot/api";
-import { jumpSessions } from "util/block";
 
-const emptyGenesisData = (api) => {
-    const g = api.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
-        storage: [
-            {
-                key: "0x3a636f6465",
-                value: "0x0102030405060708090a",
-            },
-        ],
-        name: "0x436f6e7461696e657220436861696e2032303030",
-        id: "0x636f6e7461696e65722d636861696e2d32303030",
-        forkId: null,
-        extensions: "0x",
-        properties: {
-            tokenMetadata: {
-                tokenSymbol: "0x61626364",
-                ss58Format: 42,
-                tokenDecimals: 12,
-            },
-            isEthereum: false,
-        },
-    });
-    return g;
-};
-
-const sortCollatorAssignment = (collatorAssignment) => {
-    return Object.keys(collatorAssignment["containerChains"])
-        .sort((a, b) => {
-            const b_collators = collatorAssignment["containerChains"][b].length;
-            const a_collators = collatorAssignment["containerChains"][a].length;
-            if (a_collators !== b_collators) {
-                return (
-                    collatorAssignment["containerChains"][b].length - collatorAssignment["containerChains"][a].length
-                );
-            } else {
-                return Number(a) - Number(b);
-            }
-        })
-        .map((x) => Number(x));
-};
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import { type ApiPromise, Keyring } from "@polkadot/api";
+import { jumpSessions } from "utils";
 
 describeSuite({
-    id: "DTR0401",
+    id: "DEVT0302",
     title: "Collator assignment tests",
     foundationMethods: "dev",
 
@@ -65,7 +26,7 @@ describeSuite({
                 alice.address,
                 2002,
                 slotFrequency,
-                nextProfileId,
+                nextProfileId.toNumber(),
                 emptyGenesisData(polkadotJs),
                 "0x01"
             );
@@ -113,6 +74,7 @@ describeSuite({
             ]);
 
             const pendingParas = await polkadotJs.query.containerRegistrar.pendingParaIds();
+            // @ts-expect-error Missing Orchestrator Pallets in api-augment
             expect(pendingParas.length).to.be.eq(1);
             const parasScheduled = pendingParas[0][1];
             expect(parasScheduled.toJSON()).to.deep.equal([2000, 2001, 2002, 2003, 2004]);
@@ -127,13 +89,15 @@ describeSuite({
 
             const activeConfig = (await polkadotJs.query.collatorConfiguration.activeConfig()).toJSON();
 
-            // Existing collators
+            // @ts-expect-error Missing Orchestrator Pallets in api-augment
             const numberOfInvulnerables = (await polkadotJs.query.tanssiInvulnerables.invulnerables()).length;
 
             // We will have two collators less than we need so that we can detect changes in order
             // in below tests easily.
             const numberOfInvulnerablesNeeded =
+                // @ts-expect-error Missing Orchestrator Pallets in api-augment
                 activeConfig.collatorsPerContainer * 2 +
+                // @ts-expect-error Missing Orchestrator Pallets in api-augment
                 activeConfig.collatorsPerParathread * 3 -
                 numberOfInvulnerables -
                 2;
@@ -188,7 +152,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Set of Parathreads would not be truncated",
-            test: async function () {
+            test: async () => {
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 
@@ -222,7 +186,7 @@ describeSuite({
         it({
             id: "E02",
             title: "Set of Parachains should be sort by tip and truncated according to max cores allocated if we have less cores",
-            test: async function () {
+            test: async () => {
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 
@@ -268,7 +232,7 @@ describeSuite({
 });
 
 async function getRegisterCollatorKeyTx(ed25519Keyring, sr25519Keyring, ecdsaKeyring, api, name, sudoKey, nonce) {
-    const collatorKey = sr25519Keyring.addFromUri("//" + name + "COLLATOR_ACC", { name: "COLLATOR" + name + " ACC" });
+    const collatorKey = sr25519Keyring.addFromUri(`//${name}COLLATOR_ACC`, { name: `COLLATOR${name} ACC` });
     const existentialDeposit = api.consts.balances.existentialDeposit.toBigInt();
 
     return {
@@ -278,22 +242,21 @@ async function getRegisterCollatorKeyTx(ed25519Keyring, sr25519Keyring, ecdsaKey
         setKeysTx: await api.tx.session
             .setKeys(
                 {
-                    grandpa: ed25519Keyring.addFromUri("//" + name + "COLLATOR_GRANDPA", {
+                    grandpa: ed25519Keyring.addFromUri(`//${name}COLLATOR_GRANDPA`, {
                         name: "COLLATOR" + " GRANDPA",
                     }).publicKey,
-                    babe: sr25519Keyring.addFromUri("//" + name + "COLLATOR_BABE", { name: "COLLATOR" + " BABE" })
+                    babe: sr25519Keyring.addFromUri(`//${name}COLLATOR_BABE`, { name: "COLLATOR" + " BABE" }).publicKey,
+                    para_validator: sr25519Keyring.addFromUri(`//${name}COLLATOR_PV`, { name: "COLLATOR" + " PV" })
                         .publicKey,
-                    para_validator: sr25519Keyring.addFromUri("//" + name + "COLLATOR_PV", { name: "COLLATOR" + " PV" })
-                        .publicKey,
-                    para_assignment: sr25519Keyring.addFromUri("//" + name + "COLLATOR_PA", {
+                    para_assignment: sr25519Keyring.addFromUri(`//${name}COLLATOR_PA`, {
                         name: "COLLATOR" + " PA",
                     }).publicKey,
-                    authority_discovery: sr25519Keyring.addFromUri("//" + name + "COLLATOR_AD", {
+                    authority_discovery: sr25519Keyring.addFromUri(`//${name}COLLATOR_AD`, {
                         name: "COLLATOR" + " AD",
                     }).publicKey,
-                    beefy: ecdsaKeyring.addFromUri("//" + name + "COLLATOR_BEEFY", { name: "COLLATOR" + " BEEFY" })
+                    beefy: ecdsaKeyring.addFromUri(`//${name}COLLATOR_BEEFY`, { name: "COLLATOR" + " BEEFY" })
                         .publicKey,
-                    nimbus: sr25519Keyring.addFromUri("//" + name + "COLLATOR_NIMBUS", { name: "COLLATOR" + " NIMBUS" })
+                    nimbus: sr25519Keyring.addFromUri(`//${name}COLLATOR_NIMBUS`, { name: "COLLATOR" + " NIMBUS" })
                         .publicKey,
                 },
                 []
@@ -314,10 +277,11 @@ async function createTxBatchForCreatingPara(
     manager,
     paraId,
     slotFreq,
-    nextProfileId,
+    nextProfileId: number,
     containerChainGenesisData,
     headData
 ) {
+    let nextProfile = nextProfileId;
     const txs = [];
     const reserveTx = api.tx.registrar.reserve();
     txs.push(
@@ -329,7 +293,7 @@ async function createTxBatchForCreatingPara(
         )
     );
 
-    let registerTx;
+    let registerTx: any;
     if (slotFreq == null) {
         registerTx = api.tx.containerRegistrar.register(paraId, containerChainGenesisData, headData);
     } else {
@@ -358,12 +322,49 @@ async function createTxBatchForCreatingPara(
         manager
     );
     txs.push(profileTx);
-    const assignmentTx = api.tx.sudo.sudo(api.tx.dataPreservers.forceStartAssignment(nextProfileId++, paraId, "Free"));
+    const assignmentTx = api.tx.sudo.sudo(api.tx.dataPreservers.forceStartAssignment(nextProfile++, paraId, "Free"));
     txs.push(assignmentTx);
     const trustedValidationCodeTx = api.tx.paras.addTrustedValidationCode("0x0102030405060708090a");
     txs.push(trustedValidationCodeTx);
     const markValidForCollating = api.tx.containerRegistrar.markValidForCollating(paraId);
     txs.push(markValidForCollating);
 
-    return { txs: txs, nextProfileId: nextProfileId };
+    return { txs: txs, nextProfileId: nextProfile };
 }
+
+const emptyGenesisData = (api) => {
+    const g = api.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
+        storage: [
+            {
+                key: "0x3a636f6465",
+                value: "0x0102030405060708090a",
+            },
+        ],
+        name: "0x436f6e7461696e657220436861696e2032303030",
+        id: "0x636f6e7461696e65722d636861696e2d32303030",
+        forkId: null,
+        extensions: "0x",
+        properties: {
+            tokenMetadata: {
+                tokenSymbol: "0x61626364",
+                ss58Format: 42,
+                tokenDecimals: 12,
+            },
+            isEthereum: false,
+        },
+    });
+    return g;
+};
+
+const sortCollatorAssignment = (collatorAssignment) => {
+    return Object.keys(collatorAssignment.containerChains)
+        .sort((a, b) => {
+            const b_collators = collatorAssignment.containerChains[b].length;
+            const a_collators = collatorAssignment.containerChains[a].length;
+            if (a_collators !== b_collators) {
+                return collatorAssignment.containerChains[b].length - collatorAssignment.containerChains[a].length;
+            }
+            return Number(a) - Number(b);
+        })
+        .map((x) => Number(x));
+};

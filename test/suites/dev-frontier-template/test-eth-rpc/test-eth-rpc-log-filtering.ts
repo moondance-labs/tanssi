@@ -1,9 +1,9 @@
-import { describeSuite, expect, beforeAll, deployCreateCompiledContract } from "@moonwall/cli";
-import { TransactionReceipt } from "viem";
+import { beforeAll, deployCreateCompiledContract, describeSuite, expect } from "@moonwall/cli";
 import { customWeb3Request } from "@moonwall/util";
+import type { TransactionReceipt } from "viem";
 
 describeSuite({
-    id: "DF0603",
+    id: "DE0703",
     title: "Ethereum RPC - Filtering non-matching logs",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
@@ -49,11 +49,13 @@ describeSuite({
         it({
             id: "T01",
             title: "EthFilterApi::getFilterLogs - should filter out non-matching cases.",
-            test: async function () {
-                let create_filter;
+            test: async () => {
+                let create_filter: any;
                 for (const item of nonMatchingCases) {
                     create_filter = await customWeb3Request(context.web3(), "eth_newFilter", [item]);
-                    const poll = await customWeb3Request(context.web3(), "eth_getFilterLogs", [create_filter.result]);
+                    const poll = (await customWeb3Request(context.web3(), "eth_getFilterLogs", [
+                        create_filter.result,
+                    ])) as any;
                     expect(poll.result.length).to.be.eq(0);
                 }
             },
@@ -61,9 +63,9 @@ describeSuite({
         it({
             id: "T02",
             title: "EthApi::getLogs - should filter out non-matching cases.",
-            test: async function () {
+            test: async () => {
                 for (const item of nonMatchingCases) {
-                    const request = await customWeb3Request(context.web3(), "eth_getLogs", [item]);
+                    const request = (await customWeb3Request(context.web3(), "eth_getLogs", [item])) as any;
                     expect(request.result.length).to.be.eq(0);
                 }
             },

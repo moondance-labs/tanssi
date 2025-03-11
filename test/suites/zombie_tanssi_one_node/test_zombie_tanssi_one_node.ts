@@ -1,15 +1,14 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { ApiPromise, Keyring } from "@polkadot/api";
-import fs from "fs/promises";
-import { stat } from "fs/promises";
-import { signAndSendAndInclude, waitSessions } from "../../util/block";
-import { getKeyringNimbusIdHex } from "../../util/keys";
+import { type ApiPromise, Keyring } from "@polkadot/api";
+import type { TpTraitsSlotFrequency } from "@polkadot/types/lookup";
+import fs, { stat } from "node:fs/promises";
+import { generateEmptyGenesisData, getKeyringNimbusIdHex, signAndSendAndInclude, waitSessions } from "utils";
 
 describeSuite({
-    id: "N01",
+    id: "ZOMBIETAN01",
     title: "Zombie Tanssi Rotation Test",
     foundationMethods: "zombie",
-    testCases: function ({ it, context }) {
+    testCases: ({ it, context }) => {
         let paraApi: ApiPromise;
         let relayApi: ApiPromise;
         let allCollators: string[];
@@ -37,7 +36,7 @@ describeSuite({
         it({
             id: "T01",
             title: "Blocks are being produced on parachain",
-            test: async function () {
+            test: async () => {
                 const blockNum = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
                 expect(blockNum).to.be.greaterThan(0);
             },
@@ -47,7 +46,7 @@ describeSuite({
             id: "T02",
             title: "Disable full_rotation, set to 1 collator",
             timeout: 120000,
-            test: async function () {
+            test: async () => {
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
                 const tx1 = paraApi.tx.configuration.setMinOrchestratorCollators(1);
@@ -62,7 +61,7 @@ describeSuite({
             id: "T03",
             title: "Register empty wasm as parathread 2000",
             timeout: 240000,
-            test: async function () {
+            test: async () => {
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
                 const txs2000 = await registerEmptyParathread(paraApi, alice.address, 2000);
@@ -75,14 +74,14 @@ describeSuite({
             id: "T04",
             title: "Wait for parathread 2000 to be assigned collators",
             timeout: 600000,
-            test: async function () {
+            test: async () => {
                 await waitSessions(context, paraApi, 2, async () => {
                     const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
                     const containerChainCollators = (
                         await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)
                     ).toJSON().containerChains;
                     // Stop waiting when parathread has been assigned collators
-                    return containerChainCollators[2000] != undefined;
+                    return containerChainCollators[2000] !== undefined;
                 });
 
                 const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
@@ -90,7 +89,7 @@ describeSuite({
                     await paraApi.query.authorityAssignment.collatorContainerChain(currentSession)
                 ).toJSON().containerChains;
                 expect(
-                    containerChainCollators[2000] != undefined,
+                    containerChainCollators[2000] !== undefined,
                     "Failed to register parathread: no collators assigned"
                 ).to.be.true;
             },
@@ -99,11 +98,11 @@ describeSuite({
         it({
             id: "T05",
             title: "Check logs, collator failed to start",
-            test: async function () {
+            test: async () => {
                 // We registered an empty wasm as a parathread. Collator should fail to start, but never panic.
                 const assignment = (await paraApi.query.collatorAssignment.collatorContainerChain()).toJSON();
                 const oldC2000 = collatorName[assignment.containerChains[2000][0]];
-                const logFilePath = getTmpZombiePath() + `/${oldC2000}.log`;
+                const logFilePath = `${getTmpZombiePath()}/${oldC2000}.log`;
                 await checkLogs(logFilePath, [
                     "[Orchestrator] Detected assignment for container chain 2000",
                     "[Orchestrator] Loaded chain spec for container chain 2000",
@@ -117,10 +116,10 @@ describeSuite({
         it({
             id: "T06",
             title: "Check logs, collator did not panic",
-            test: async function () {
+            test: async () => {
                 const assignment = (await paraApi.query.collatorAssignment.collatorContainerChain()).toJSON();
                 const oldC2000 = collatorName[assignment.containerChains[2000][0]];
-                const logFilePath = getTmpZombiePath() + `/${oldC2000}.log`;
+                const logFilePath = `${getTmpZombiePath()}/${oldC2000}.log`;
                 // Best effort, if anything else panics this test will breaks
                 await assertLogsDoNotContain(logFilePath, "panic");
             },
@@ -129,10 +128,10 @@ describeSuite({
         it({
             id: "T06",
             title: "Check logs, collator is still running",
-            test: async function () {
+            test: async () => {
                 const assignment = (await paraApi.query.collatorAssignment.collatorContainerChain()).toJSON();
                 const oldC2000 = collatorName[assignment.containerChains[2000][0]];
-                const logFilePath = getTmpZombiePath() + `/${oldC2000}.log`;
+                const logFilePath = `${getTmpZombiePath()}/${oldC2000}.log`;
                 await waitForNewLogs(logFilePath);
             },
         });
@@ -152,39 +151,15 @@ function createCollatorKeyToNameMap(paraApi, collatorNames: string[]): Record<st
     return collatorName;
 }
 
-async function registerEmptyParathread(api, manager, paraId) {
+async function registerEmptyParathread(api: ApiPromise, manager: any, paraIdString: string) {
     const parathread = true;
-    paraId = parseInt(paraId);
-
-    const emptyGenesisData = () => {
-        const g = api.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
-            storage: [
-                {
-                    key: "0x636f6465",
-                    value: "0x010203040506",
-                },
-            ],
-            name: "0x436f6e7461696e657220436861696e2032303030",
-            id: "0x636f6e7461696e65722d636861696e2d32303030",
-            forkId: null,
-            extensions: "0x",
-            properties: {
-                tokenMetadata: {
-                    tokenSymbol: "0x61626364",
-                    ss58Format: 42,
-                    tokenDecimals: 12,
-                },
-                isEthereum: false,
-            },
-        });
-        return g;
-    };
-    const containerChainGenesisData = emptyGenesisData();
+    const paraId = Number.parseInt(paraIdString);
+    const containerChainGenesisData = generateEmptyGenesisData(api);
 
     const txs = [];
-    let tx1;
+    let tx1: any;
     if (parathread) {
-        const slotFreq = api.createType("TpTraitsSlotFrequency", {
+        const slotFreq = api.createType<TpTraitsSlotFrequency>("TpTraitsSlotFrequency", {
             min: 1,
             max: 1,
         });

@@ -1,11 +1,11 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
+import type { ApiPromise } from "@polkadot/api";
 
 describeSuite({
-    id: "DTR0201",
+    id: "DEVT0201",
     title: "Tanssi Relay Chain Spec",
     foundationMethods: "dev",
-    testCases: function ({ it, context }) {
+    testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
 
         beforeAll(() => {
@@ -15,7 +15,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Checking runtime version",
-            test: async function () {
+            test: async () => {
                 const specName = polkadotJs.consts.system.version.specName.toString();
                 expect(specName, "Relay API incorrect").to.toBe("dancelight");
 
@@ -31,15 +31,15 @@ describeSuite({
                 const transactionVersion = polkadotJs.consts.system.version.transactionVersion.toNumber();
                 expect(transactionVersion, "Relay API incorrect").to.toBe(26);
 
-                const stateVersion = polkadotJs.consts.system.version.stateVersion.toNumber();
-                expect(stateVersion, "Relay API incorrect").to.toBe(1);
+                const systemVersion = polkadotJs.consts.system.version.systemVersion.toNumber();
+                expect(systemVersion, "Relay API incorrect").to.toBe(1);
             },
         });
 
         it({
             id: "E02",
             title: "Checking ss58 Prefix",
-            test: async function () {
+            test: async () => {
                 const ss58Prefix = polkadotJs.consts.system.ss58Prefix.toNumber();
                 expect(ss58Prefix, "Relay API incorrect").toBe(42);
             },

@@ -1,14 +1,14 @@
-import { expect, beforeAll, describeSuite } from "@moonwall/cli";
-import { jumpSessions } from "../../../util/block";
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import { jumpSessions } from "utils";
 
 describeSuite({
-    id: "CPT0406",
+    id: "COMMO0306",
     title: "Configuration - ActiveConfig - targetContainerChainFullness",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
-        beforeAll(async function () {
+        beforeAll(async () => {
             const config = await context.polkadotJs().query.configuration.activeConfig();
-            expect(config["targetContainerChainFullness"].toString()).toBe("800000000");
+            expect(config.targetContainerChainFullness.toString()).toBe("800000000");
 
             const { result } = await context.createBlock(
                 context
@@ -16,7 +16,7 @@ describeSuite({
                     .tx.sudo.sudo(context.polkadotJs().tx.configuration.setTargetContainerChainFullness(500000000n))
                     .signAsync(context.keyring.alice)
             );
-            expect(result!.successful, result!.error?.name).to.be.true;
+            expect(result?.successful, result?.error?.name).to.be.true;
 
             await jumpSessions(context, 2);
         });
@@ -24,9 +24,9 @@ describeSuite({
         it({
             id: "T01",
             title: "should set target fullness after 2 sessions",
-            test: async function () {
+            test: async () => {
                 const config = await context.polkadotJs().query.configuration.activeConfig();
-                expect(config["targetContainerChainFullness"].toString()).toBe("500000000");
+                expect(config.targetContainerChainFullness.toString()).toBe("500000000");
             },
         });
     },

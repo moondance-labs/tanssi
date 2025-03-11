@@ -1,10 +1,12 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { KeyringPair } from "@moonwall/util";
-import { ApiPromise } from "@polkadot/api";
+
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import type { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
+import { generateEmptyGenesisData } from "utils";
 
 describeSuite({
-    id: "CPT0502",
+    id: "COMMO1102",
     title: "Registrar para manager",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -22,33 +24,9 @@ describeSuite({
         it({
             id: "E01",
             title: "Para manager can be set and is recognized as ManagerOrigin",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
-
-                const emptyGenesisData = () => {
-                    const g = polkadotJs.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
-                        storage: [
-                            {
-                                key: "0x636f6465",
-                                value: "0x010203040506",
-                            },
-                        ],
-                        name: "0x436f6e7461696e657220436861696e2032303030",
-                        id: "0x636f6e7461696e65722d636861696e2d32303030",
-                        forkId: null,
-                        extensions: "0x",
-                        properties: {
-                            tokenMetadata: {
-                                tokenSymbol: "0x61626364",
-                                ss58Format: 42,
-                                tokenDecimals: 12,
-                            },
-                            isEthereum: false,
-                        },
-                    });
-                    return g;
-                };
-                const containerChainGenesisData = emptyGenesisData();
+                const containerChainGenesisData = generateEmptyGenesisData(context.pjsApi);
 
                 await context.createBlock([
                     await polkadotJs.tx.registrar.register(paraId, containerChainGenesisData, null).signAsync(alice),

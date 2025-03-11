@@ -1,27 +1,27 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { KeyringPair, alith } from "@moonwall/util";
-import { ApiPromise, Keyring } from "@polkadot/api";
+import { type KeyringPair, alith } from "@moonwall/util";
+import { type ApiPromise, Keyring } from "@polkadot/api";
 import { u8aToHex } from "@polkadot/util";
 
-import { RawXcmMessage, XcmFragment, injectDmpMessageAndSeal } from "../../../util/xcm.ts";
-import { RELAY_SOURCE_LOCATION } from "../../../util/constants.ts";
+import { type RawXcmMessage, XcmFragment, injectDmpMessageAndSeal } from "utils";
+import { RELAY_SOURCE_LOCATION } from "utils";
 
 describeSuite({
-    id: "CPX0103",
+    id: "COMMON0201",
     title: "Mock XCM - downward transfer with always triggered appendix",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
         let polkadotJs: ApiPromise;
-        let transferredBalance;
+        let transferredBalance: bigint;
         let alice: KeyringPair;
-        let chain;
+        let chain: any;
 
-        beforeAll(async function () {
+        beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             chain = polkadotJs.consts.system.version.specName.toString();
             // since in the future is likely that we are going to add this to containers, I leave it here
             alice =
-                chain == "frontier-template"
+                chain === "frontier-template"
                     ? alith
                     : new Keyring({ type: "sr25519" }).addFromUri("//Alice", {
                           name: "Alice default",
@@ -58,7 +58,7 @@ describeSuite({
         it({
             id: "T01",
             title: "Should make sure Alice receives 10 dot with appendix and without error",
-            test: async function () {
+            test: async () => {
                 // Send an XCM and create block to execute it
                 const xcmMessage = new XcmFragment({
                     assets: [

@@ -22,6 +22,7 @@ use pallet_session::ShouldEndSession;
 use sp_std::{collections::btree_map::BTreeMap, vec};
 #[cfg(feature = "runtime-benchmarks")]
 use tp_traits::GetContainerChainAuthor;
+use xcm::latest::WESTEND_GENESIS_HASH;
 use {
     super::{
         currency::MICRODANCE, weights::xcm::XcmWeight as XcmGenericWeights, AccountId,
@@ -52,8 +53,10 @@ use {
     sp_core::{ConstU32, MaxEncodedLen},
     sp_runtime::{transaction_validity::TransactionPriority, Perbill},
     sp_std::vec::Vec,
-    staging_xcm::latest::prelude::*,
-    staging_xcm_builder::{
+    tp_traits::ParathreadParams,
+    tp_xcm_commons::NativeAssetReserve,
+    xcm::latest::prelude::*,
+    xcm_builder::{
         AccountId32Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
         AllowTopLevelPaidExecutionFrom, ConvertedConcreteId, EnsureXcmOrigin, FungibleAdapter,
         FungiblesAdapter, IsConcrete, NoChecking, ParentIsPreset, RelayChainAsNative,
@@ -61,9 +64,7 @@ use {
         SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId,
         UsingComponents, WeightInfoBounds, WithComputedOrigin,
     },
-    staging_xcm_executor::{traits::JustTry, XcmExecutor},
-    tp_traits::ParathreadParams,
-    tp_xcm_commons::NativeAssetReserve,
+    xcm_executor::{traits::JustTry, XcmExecutor},
 };
 
 parameter_types! {
@@ -82,7 +83,7 @@ parameter_types! {
     pub UnitWeightCost: Weight = Weight::from_parts(1_000_000_000, 64 * 1024);
 
     // TODO: revisit
-    pub const RelayNetwork: NetworkId = NetworkId::Westend;
+    pub const RelayNetwork: NetworkId = NetworkId::ByGenesis(WESTEND_GENESIS_HASH);
 
     // The relay chain Origin type
     pub RelayChainOrigin: RuntimeOrigin = cumulus_pallet_xcm::Origin::Relay.into();
@@ -133,9 +134,9 @@ pub type LocationToAccountId = (
     // If we receive a Location of type AccountKey20, just generate a native account
     AccountId32Aliases<RelayNetwork, AccountId>,
     // Generate remote accounts according to polkadot standards
-    staging_xcm_builder::HashedDescription<
+    xcm_builder::HashedDescription<
         AccountId,
-        staging_xcm_builder::DescribeFamily<staging_xcm_builder::DescribeAllTerminal>,
+        xcm_builder::DescribeFamily<xcm_builder::DescribeAllTerminal>,
     >,
 );
 
@@ -192,7 +193,7 @@ pub type XcmRouter = (
 );
 
 pub struct XcmConfig;
-impl staging_xcm_executor::Config for XcmConfig {
+impl xcm_executor::Config for XcmConfig {
     type RuntimeCall = RuntimeCall;
     type XcmSender = XcmRouter;
     type AssetTransactor = AssetTransactors;
@@ -229,7 +230,7 @@ impl staging_xcm_executor::Config for XcmConfig {
     type CallDispatcher = RuntimeCall;
     type SafeCallFilter = Everything;
     type Aliasers = Nothing;
-    type TransactionalProcessor = staging_xcm_builder::FrameTransactionalProcessor;
+    type TransactionalProcessor = xcm_builder::FrameTransactionalProcessor;
     type HrmpNewChannelOpenRequestHandler = ();
     type HrmpChannelAcceptedHandler = ();
     type HrmpChannelClosingHandler = ();
@@ -404,11 +405,8 @@ impl pallet_message_queue::Config for Runtime {
         cumulus_primitives_core::AggregateMessageOrigin,
     >;
     #[cfg(not(feature = "runtime-benchmarks"))]
-    type MessageProcessor = staging_xcm_builder::ProcessXcmMessage<
-        AggregateMessageOrigin,
-        XcmExecutor<XcmConfig>,
-        RuntimeCall,
-    >;
+    type MessageProcessor =
+        xcm_builder::ProcessXcmMessage<AggregateMessageOrigin, XcmExecutor<XcmConfig>, RuntimeCall>;
     type Size = u32;
     // The XCMP queue pallet is only ever able to handle the `Sibling(ParaId)` origin:
     type QueueChangeHandler = NarrowOriginToSibling<XcmpQueue>;

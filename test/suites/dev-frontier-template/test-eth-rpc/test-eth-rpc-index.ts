@@ -1,8 +1,8 @@
-import { describeSuite, beforeAll, expect } from "@moonwall/cli";
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { BALTATHAR_ADDRESS, createRawTransfer } from "@moonwall/util";
 
 describeSuite({
-    id: "DF0602",
+    id: "DE0702",
     title: "Transaction Index",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
@@ -13,7 +13,7 @@ describeSuite({
         it({
             id: "T01",
             title: "should get transaction by index",
-            test: async function () {
+            test: async () => {
                 const block = 1n;
                 const index = 0;
                 const result = await context.viem("public").getTransaction({ blockNumber: block, index });
@@ -24,7 +24,7 @@ describeSuite({
         it({
             id: "T02",
             title: "should return out of bounds message",
-            test: async function () {
+            test: async () => {
                 const block = 0n;
                 const index = 0;
 

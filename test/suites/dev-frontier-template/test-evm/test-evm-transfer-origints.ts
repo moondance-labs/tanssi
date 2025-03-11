@@ -1,17 +1,17 @@
 import { describeSuite, expect } from "@moonwall/cli";
-import { ALITH_ADDRESS, DEFAULT_GENESIS_BALANCE, BALTATHAR_ADDRESS, baltathar, alith } from "@moonwall/util";
+import { ALITH_ADDRESS, BALTATHAR_ADDRESS, DEFAULT_GENESIS_BALANCE, alith, baltathar } from "@moonwall/util";
 
 // A call from root (sudo) can make a transfer directly in pallet_evm
 // A signed call cannot make a transfer directly in pallet_evm
 describeSuite({
-    id: "DF0803",
+    id: "DE0903",
     title: "Pallet EVM - call",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
         it({
             id: "T01",
             title: "should fail without sudo",
-            test: async function () {
+            test: async () => {
                 const tx = context
                     .polkadotJs()
                     .tx.evm.call(
@@ -38,7 +38,7 @@ describeSuite({
         it({
             id: "T02",
             title: "should succeed with sudo",
-            test: async function () {
+            test: async () => {
                 const { result } = await context.createBlock(
                     context
                         .polkadotJs()
@@ -61,7 +61,7 @@ describeSuite({
 
                 expect(
                     result?.events.find(
-                        ({ event: { section, method } }) => section == "system" && method == "ExtrinsicSuccess"
+                        ({ event: { section, method } }) => section === "system" && method === "ExtrinsicSuccess"
                     )
                 ).to.exist;
                 expect(await context.viem("public").getBalance({ address: baltathar.address })).to.equal(

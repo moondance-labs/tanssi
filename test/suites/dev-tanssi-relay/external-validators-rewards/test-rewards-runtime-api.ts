@@ -1,16 +1,17 @@
 import { beforeAll, customDevRpcRequest, describeSuite, expect } from "@moonwall/cli";
-import { ApiPromise, Keyring } from "@polkadot/api";
-import { jumpToSession } from "util/block";
+import type { KeyringPair } from "@moonwall/util";
+import { type ApiPromise, Keyring } from "@polkadot/api";
+import { jumpToSession } from "utils";
 
 describeSuite({
-    id: "DTR0820",
+    id: "DEVT0603",
     title: "Starlight <> Ethereum - Rewards mapping",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
-        let alice;
+        let alice: KeyringPair;
 
-        beforeAll(async function () {
+        beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             alice = context.keyring.alice;
         });
@@ -18,7 +19,7 @@ describeSuite({
         it({
             id: "T01",
             title: "Should succeed calling runtimeApi for generating/validating merkle proofs",
-            test: async function () {
+            test: async () => {
                 const keyring = new Keyring({ type: "sr25519" });
                 const aliceStash = keyring.addFromUri("//Alice//stash");
                 await context.createBlock();
@@ -34,7 +35,7 @@ describeSuite({
                         .sudo(polkadotJs.tx.externalValidators.removeWhitelisted(aliceStash.address))
                         .signAsync(context.keyring.alice, { nonce: aliceNonce++ }),
                     await polkadotJs.tx.sudo
-                        .sudo(polkadotJs.tx.externalValidators.setExternalValidators([aliceStash.address]))
+                        .sudo(polkadotJs.tx.externalValidators.setExternalValidators([aliceStash.address], 1))
                         .signAsync(context.keyring.alice, { nonce: aliceNonce++ }),
                 ]);
 

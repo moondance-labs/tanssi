@@ -1,13 +1,14 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
-import { jumpBlocks, jumpSessions, jumpToSession } from "util/block";
+
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { filterAndApply } from "@moonwall/util";
-import { EventRecord } from "@polkadot/types/interfaces";
-import { bool, u32, u8, Vec } from "@polkadot/types-codec";
+import type { ApiPromise } from "@polkadot/api";
+import type { Vec, bool, u32, u8 } from "@polkadot/types-codec";
+import type { EventRecord } from "@polkadot/types/interfaces";
+import { jumpBlocks, jumpSessions, jumpToSession } from "utils";
 
 describeSuite({
-    id: "DTR0301",
+    id: "DEVT0301",
     title: "Collator assignment tests",
     foundationMethods: "dev",
 
@@ -21,10 +22,10 @@ describeSuite({
         it({
             id: "E01",
             title: "Collator should rotate",
-            test: async function () {
-                const fullRotationPeriod = (await context.polkadotJs().query.collatorConfiguration.activeConfig())[
-                    "fullRotationPeriod"
-                ].toString();
+            test: async () => {
+                const fullRotationPeriod = (
+                    await context.polkadotJs().query.collatorConfiguration.activeConfig()
+                ).fullRotationPeriod.toString();
                 const sessionIndex = (await polkadotJs.query.session.currentIndex()).toNumber();
                 // Calculate the remaining sessions for next full rotation
                 // This is a workaround for running moonwall in run mode

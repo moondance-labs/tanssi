@@ -17,16 +17,18 @@
 //! Development Polkadot service. Adapted from `polkadot_service` crate
 //! and removed un-necessary components which are not required in dev node.
 
-use codec::Encode;
-use jsonrpsee::{
-    core::RpcResult,
-    proc_macros::rpc,
-    types::{
-        error::{INTERNAL_ERROR_CODE, INTERNAL_ERROR_MSG},
-        ErrorObjectOwned,
+use {
+    codec::Encode,
+    jsonrpsee::{
+        core::RpcResult,
+        proc_macros::rpc,
+        types::{
+            error::{INTERNAL_ERROR_CODE, INTERNAL_ERROR_MSG},
+            ErrorObjectOwned,
+        },
     },
+    xcm::latest::prelude::*,
 };
-use xcm::latest::prelude::*;
 
 /// This RPC interface is used to provide methods in dev mode only
 #[rpc(server)]
@@ -81,7 +83,7 @@ impl DevApiServer for DevRpc {
         // If no message is supplied, inject a default one.
         let msg = if msg.is_empty() {
             // Note: Sovereign account of the origin parachain must be funded before injecting the message.
-            xcm::VersionedXcm::<()>::V4(Xcm(vec![
+            xcm::VersionedXcm::<()>::V5(Xcm(vec![
                 WithdrawAsset((Here, 10000000000000u128).into()),
                 BuyExecution {
                     fees: (Here, 10000000000000u128).into(),

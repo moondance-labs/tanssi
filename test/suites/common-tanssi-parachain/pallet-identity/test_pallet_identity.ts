@@ -1,11 +1,12 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
-import { KeyringPair } from "@moonwall/util";
+
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import type { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
 import { hexToString } from "viem";
 
 describeSuite({
-    id: "CPT0701",
+    id: "COMMO0501",
     title: "Identity pallet test suite",
     foundationMethods: "dev",
 
@@ -25,7 +26,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Sudo account can add registrars",
-            test: async function () {
+            test: async () => {
                 const initial_identity_registrars = await polkadotJs.query.identity.registrars();
 
                 const tx = polkadotJs.tx.identity.addRegistrar({
@@ -42,13 +43,13 @@ describeSuite({
                 // Bob is included in the registrars list
                 const bob_exists = identity_registrars
                     .toArray()
-                    .filter((registrar) => registrar.toJSON().account == registrar_bob.address);
+                    .filter((registrar) => registrar.toJSON().account === registrar_bob.address);
                 expect(bob_exists.length).to.be.equal(1);
 
                 // Registrar addition shows in the events
                 const events = await polkadotJs.query.system.events();
                 const eventCount = events.filter((a) => {
-                    return a.event.method == "RegistrarAdded";
+                    return a.event.method === "RegistrarAdded";
                 });
                 expect(eventCount.length).to.be.equal(1);
             },
@@ -57,7 +58,7 @@ describeSuite({
         it({
             id: "E02",
             title: "Non-Sudo account fails when adding registrars",
-            test: async function () {
+            test: async () => {
                 const initial_identity_registrars = await polkadotJs.query.identity.registrars();
 
                 const tx = polkadotJs.tx.identity.addRegistrar({
@@ -74,7 +75,7 @@ describeSuite({
                 // No addition event
                 const events = await polkadotJs.query.system.events();
                 const eventCount = events.filter((a) => {
-                    return a.event.method == "RegistrarAdded";
+                    return a.event.method === "RegistrarAdded";
                 });
                 expect(eventCount.length).to.be.equal(0);
             },
@@ -83,7 +84,7 @@ describeSuite({
         it({
             id: "E03",
             title: "User sets its identity",
-            test: async function () {
+            test: async () => {
                 const tx = polkadotJs.tx.identity.setIdentity({
                     display: { raw: "0x49742773206D652C20436861726C6965" },
                     web: { raw: "0x68747470733A2F2F636861726C69652E696F" },
@@ -93,17 +94,17 @@ describeSuite({
 
                 const charlie_identity = await polkadotJs.query.identity.identityOf(general_user_charlie.address);
                 // Display has been set
-                const charlie_display = hexToString(charlie_identity.toJSON()[0].info.display["raw"]);
+                const charlie_display = hexToString(charlie_identity.toJSON().info.display.raw);
                 expect(charlie_display).to.equal("It's me, Charlie");
 
                 // Web has been set
-                const charlie_web = hexToString(charlie_identity.toJSON()[0].info.web["raw"]);
+                const charlie_web = hexToString(charlie_identity.toJSON().info.web.raw);
                 expect(charlie_web).to.equal("https://charlie.io");
 
                 // Event triggered
                 const events = await polkadotJs.query.system.events();
                 const eventCount = events.filter((a) => {
-                    return a.event.method == "IdentitySet";
+                    return a.event.method === "IdentitySet";
                 });
                 expect(eventCount.length).to.be.equal(1);
 
@@ -118,7 +119,7 @@ describeSuite({
         it({
             id: "E04",
             title: "Registrar sets fee and fields",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
 
                 const tx1 = polkadotJs.tx.identity.addRegistrar({

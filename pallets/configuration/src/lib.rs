@@ -42,14 +42,13 @@ pub use weights::WeightInfo;
 mod benchmarks;
 
 pub use pallet::*;
-use tp_traits::FullRotationModes;
 use {
     frame_support::pallet_prelude::*,
     frame_system::pallet_prelude::*,
     serde::{Deserialize, Serialize},
     sp_runtime::{traits::AtLeast32BitUnsigned, Perbill, Saturating},
     sp_std::prelude::*,
-    tp_traits::GetSessionIndex,
+    tp_traits::{FullRotationModes, GetSessionIndex},
 };
 
 const LOG_TARGET: &str = "pallet_configuration";

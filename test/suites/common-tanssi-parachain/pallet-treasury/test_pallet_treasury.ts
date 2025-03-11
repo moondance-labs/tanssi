@@ -1,11 +1,12 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
-import { KeyringPair } from "@moonwall/util";
-import { extractFeeAuthor } from "util/block";
+
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import type { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
+import { extractFeeAuthor } from "utils";
 
 describeSuite({
-    id: "CPT0901",
+    id: "COMMO0601",
     title: "Treasury pallet test suite",
     foundationMethods: "dev",
 
@@ -25,7 +26,7 @@ describeSuite({
         it({
             id: "E01",
             title: "20% of fees & tips go for treasury account",
-            test: async function () {
+            test: async () => {
                 // Gets the initial pot deposit value
                 const initial_pot = await polkadotJs.query.system.account(treasury_address);
                 const initial_free_pot = initial_pot.data.free.toBigInt();

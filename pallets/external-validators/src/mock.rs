@@ -82,6 +82,7 @@ impl system::Config for Test {
     type PreInherents = ();
     type PostInherents = ();
     type PostTransactions = ();
+    type ExtensionsWeightInfo = ();
 }
 
 parameter_types! {
@@ -103,6 +104,7 @@ impl pallet_balances::Config for Test {
     type MaxLocks = ();
     type MaxReserves = MaxReserves;
     type MaxFreezes = ConstU32<0>;
+    type DoneSlashHandler = ();
 }
 
 impl pallet_timestamp::Config for Test {
@@ -228,8 +230,14 @@ pub mod mock_data {
 
 #[derive(Clone, Encode, Decode, PartialEq, sp_core::RuntimeDebug, scale_info::TypeInfo)]
 pub enum HookCall {
-    OnEraStart { era: u32, session: u32 },
-    OnEraEnd { era: u32 },
+    OnEraStart {
+        era: u32,
+        session: u32,
+        external_index: u64,
+    },
+    OnEraEnd {
+        era: u32,
+    },
 }
 
 impl mock_data::Config for Test {}
@@ -244,11 +252,12 @@ pub struct Mocks {
 // We use the mock_data pallet to test hooks: we store a list of all the calls, and then check that
 // no eras are skipped.
 impl<T> OnEraStart for mock_data::Pallet<T> {
-    fn on_era_start(era_index: EraIndex, session_start: u32) {
+    fn on_era_start(era_index: EraIndex, session_start: u32, external_idx: u64) {
         Mock::mutate(|m| {
             m.called_hooks.push(HookCall::OnEraStart {
                 era: era_index,
                 session: session_start,
+                external_index: external_idx,
             });
         });
     }
@@ -291,6 +300,7 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
     pallet_external_validators::GenesisConfig::<Test> {
         skip_external_validators: false,
         whitelisted_validators,
+        ..Default::default()
     }
     .assimilate_storage(&mut t)
     .unwrap();
@@ -339,4 +349,8 @@ pub fn run_to_block(n: u64) {
         ExternalValidators::on_initialize(System::block_number());
         Session::on_initialize(System::block_number());
     }
+}
+
+pub fn last_event() -> RuntimeEvent {
+    System::events().pop().expect("Event expected").event
 }

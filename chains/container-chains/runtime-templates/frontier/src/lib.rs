@@ -22,6 +22,8 @@
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+extern crate alloc;
+
 use cumulus_pallet_parachain_system::RelayNumberMonotonicallyIncreases;
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
@@ -82,7 +84,7 @@ use {
     sp_consensus_slots::{Slot, SlotDuration},
     sp_core::{Get, MaxEncodedLen, OpaqueMetadata, H160, H256, U256},
     sp_runtime::{
-        create_runtime_str, generic, impl_opaque_keys,
+        generic, impl_opaque_keys,
         traits::{
             BlakeTwo256, Block as BlockT, DispatchInfoOf, Dispatchable, IdentifyAccount,
             IdentityLookup, PostDispatchInfoOf, UniqueSaturatedInto, Verify,
@@ -90,13 +92,11 @@ use {
         transaction_validity::{
             InvalidTransaction, TransactionSource, TransactionValidity, TransactionValidityError,
         },
-        ApplyExtrinsicResult, BoundedVec,
+        ApplyExtrinsicResult, BoundedVec, Cow,
     },
     sp_std::prelude::*,
     sp_version::RuntimeVersion,
-    staging_xcm::{
-        IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation, VersionedXcm,
-    },
+    xcm::{IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation, VersionedXcm},
     xcm_runtime_apis::{
         dry_run::{CallDryRunEffects, Error as XcmDryRunApiError, XcmDryRunEffects},
         fees::Error as XcmPaymentApiError,
@@ -146,8 +146,8 @@ pub type SignedBlock = generic::SignedBlock<Block>;
 /// BlockId type as expected by this runtime.
 pub type BlockId = generic::BlockId<Block>;
 
-/// The SignedExtension to the basic transaction logic.
-pub type SignedExtra = (
+/// The `TxExtension` to the basic transaction logic.
+pub type TxExtension = (
     frame_system::CheckNonZeroSender<Runtime>,
     frame_system::CheckSpecVersion<Runtime>,
     frame_system::CheckTxVersion<Runtime>,
@@ -161,12 +161,12 @@ pub type SignedExtra = (
 
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic =
-    fp_self_contained::UncheckedExtrinsic<Address, RuntimeCall, Signature, SignedExtra>;
+    fp_self_contained::UncheckedExtrinsic<Address, RuntimeCall, Signature, TxExtension>;
 /// Extrinsic type that has already been checked.
 pub type CheckedExtrinsic =
-    fp_self_contained::CheckedExtrinsic<AccountId, RuntimeCall, SignedExtra, H160>;
+    fp_self_contained::CheckedExtrinsic<AccountId, RuntimeCall, TxExtension, H160>;
 /// The payload being signed in transactions.
-pub type SignedPayload = generic::SignedPayload<RuntimeCall, SignedExtra>;
+pub type SignedPayload = generic::SignedPayload<RuntimeCall, TxExtension>;
 
 /// Executive: handles dispatch to the various modules.
 pub type Executive = frame_executive::Executive<
@@ -255,7 +255,7 @@ pub struct TransactionConverter;
 
 impl fp_rpc::ConvertTransaction<UncheckedExtrinsic> for TransactionConverter {
     fn convert_transaction(&self, transaction: pallet_ethereum::Transaction) -> UncheckedExtrinsic {
-        UncheckedExtrinsic::new_unsigned(
+        UncheckedExtrinsic::new_bare(
             pallet_ethereum::Call::<Runtime>::transact { transaction }.into(),
         )
     }
@@ -266,7 +266,7 @@ impl fp_rpc::ConvertTransaction<opaque::UncheckedExtrinsic> for TransactionConve
         &self,
         transaction: pallet_ethereum::Transaction,
     ) -> opaque::UncheckedExtrinsic {
-        let extrinsic = UncheckedExtrinsic::new_unsigned(
+        let extrinsic = UncheckedExtrinsic::new_bare(
             pallet_ethereum::Call::<Runtime>::transact { transaction }.into(),
         );
         let encoded = extrinsic.encode();
@@ -329,14 +329,14 @@ impl_opaque_keys! {
 
 #[sp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
-    spec_name: create_runtime_str!("frontier-template"),
-    impl_name: create_runtime_str!("frontier-template"),
+    spec_name: Cow::Borrowed("frontier-template"),
+    impl_name: Cow::Borrowed("frontier-template"),
     authoring_version: 1,
-    spec_version: 1100,
+    spec_version: 1200,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
-    state_version: 1,
+    system_version: 1,
 };
 
 /// This determines the average expected block time that we are targeting.
@@ -356,12 +356,6 @@ pub const MINUTES: BlockNumber = 60_000 / (MILLISECS_PER_BLOCK as BlockNumber);
 pub const HOURS: BlockNumber = MINUTES * 60;
 pub const DAYS: BlockNumber = HOURS * 24;
 
-/// The existential deposit. Set to 0 because this is an ethereum-like chain
-/// We set this to one for runtime-benchmarks because plenty of the benches we
-/// incorporate from parity assume ED != 0
-#[cfg(feature = "runtime-benchmarks")]
-pub const EXISTENTIAL_DEPOSIT: Balance = 1 * currency::MILLIUNIT;
-#[cfg(not(feature = "runtime-benchmarks"))]
 pub const EXISTENTIAL_DEPOSIT: Balance = 0;
 
 /// We assume that ~5% of the block weight is consumed by `on_initialize` handlers. This is
@@ -469,10 +463,11 @@ impl frame_system::Config for Runtime {
     type MaxConsumers = frame_support::traits::ConstU32<16>;
     type RuntimeTask = RuntimeTask;
     type SingleBlockMigrations = ();
-    type MultiBlockMigrator = ();
+    type MultiBlockMigrator = MultiBlockMigrations;
     type PreInherents = ();
     type PostInherents = ();
     type PostTransactions = ();
+    type ExtensionsWeightInfo = weights::frame_system_extensions::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -487,6 +482,8 @@ impl pallet_transaction_payment::Config for Runtime {
     type WeightToFee = WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
     type FeeMultiplierUpdate = SlowAdjustingFeeUpdate<Self>;
+    type WeightInfo = ();
+    //type WeightInfo = weights::pallet_transaction_payment::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -508,6 +505,7 @@ impl pallet_balances::Config for Runtime {
     type MaxFreezes = ConstU32<0>;
     type RuntimeHoldReason = RuntimeHoldReason;
     type RuntimeFreezeReason = RuntimeFreezeReason;
+    type DoneSlashHandler = ();
     type WeightInfo = weights::pallet_balances::SubstrateWeight<Runtime>;
 }
 
@@ -539,6 +537,7 @@ impl cumulus_pallet_parachain_system::Config for Runtime {
     type ReservedXcmpWeight = ReservedXcmpWeight;
     type CheckAssociatedRelayNumber = RelayNumberMonotonicallyIncreases;
     type ConsensusHook = ConsensusHook;
+    type SelectCore = cumulus_pallet_parachain_system::DefaultCoreSelector<Runtime>;
 }
 
 pub struct ParaSlotProvider;
@@ -710,6 +709,25 @@ impl pallet_migrations::Config for Runtime {
     type XcmExecutionManager = XcmExecutionManager;
 }
 
+parameter_types! {
+    pub MbmServiceWeight: Weight = Perbill::from_percent(80) * RuntimeBlockWeights::get().max_block;
+}
+
+impl pallet_multiblock_migrations::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    #[cfg(not(feature = "runtime-benchmarks"))]
+    type Migrations = ();
+    // Benchmarks need mocked migrations to guarantee that they succeed.
+    #[cfg(feature = "runtime-benchmarks")]
+    type Migrations = pallet_multiblock_migrations::mock_helpers::MockedMigrations;
+    type CursorMaxLen = ConstU32<65_536>;
+    type IdentifierMaxLen = ConstU32<256>;
+    type MigrationStatusHandler = ();
+    type FailedMigrationHandler = frame_support::migrations::FreezeChainOnFailedMigration;
+    type MaxServiceWeight = MbmServiceWeight;
+    type WeightInfo = weights::pallet_multiblock_migrations::SubstrateWeight<Runtime>;
+}
+
 /// Maintenance mode Call filter
 pub struct MaintenanceFilter;
 impl Contains<RuntimeCall> for MaintenanceFilter {
@@ -845,6 +863,7 @@ parameter_types! {
     pub WeightPerGas: Weight = Weight::from_parts(WEIGHT_PER_GAS, 0);
     pub SuicideQuickClearLimit: u32 = 0;
     pub GasLimitPovSizeRatio: u32 = 16;
+    pub GasLimitStorageGrowthRatio: u64 = 366;
 }
 
 impl_on_charge_evm_transaction!();
@@ -874,7 +893,7 @@ impl pallet_evm::Config for Runtime {
     type OnCreate = ();
     type FindAuthor = FindAuthorAdapter;
     type GasLimitPovSizeRatio = GasLimitPovSizeRatio;
-    type SuicideQuickClearLimit = SuicideQuickClearLimit;
+    type GasLimitStorageGrowthRatio = ();
     type Timestamp = Timestamp;
     type WeightInfo = ();
 }
@@ -973,6 +992,7 @@ construct_runtime!(
         Utility: pallet_utility = 5,
         Proxy: pallet_proxy = 6,
         Migrations: pallet_migrations = 7,
+        MultiBlockMigrations: pallet_multiblock_migrations = 121,
         MaintenanceMode: pallet_maintenance_mode = 8,
         TxPause: pallet_tx_pause = 9,
 
@@ -1013,13 +1033,17 @@ construct_runtime!(
 mod benches {
     frame_benchmarking::define_benchmarks!(
         [frame_system, frame_system_benchmarking::Pallet::<Runtime>]
+        [frame_system_extensions, frame_system_benchmarking::extensions::Pallet::<Runtime>]
         [cumulus_pallet_parachain_system, ParachainSystem]
         [pallet_timestamp, Timestamp]
         [pallet_sudo, Sudo]
         [pallet_utility, Utility]
         [pallet_proxy, Proxy]
+        // TODO: this benchmark fails :(
+        //[pallet_transaction_payment, TransactionPayment]
         [pallet_tx_pause, TxPause]
         [pallet_balances, Balances]
+        [pallet_multiblock_migrations, MultiBlockMigrations]
         [pallet_multisig, Multisig]
         [pallet_parameters, Parameters]
         [pallet_cc_authorities_noting, AuthoritiesNoting]
@@ -1124,7 +1148,7 @@ impl_runtime_apis! {
                 RuntimeCall::Ethereum(transact { .. }) => intermediate_valid,
                 _ if dispatch_info.class != DispatchClass::Normal => intermediate_valid,
                 _ => {
-                    let tip = match xt.0.signature {
+                    let tip = match xt.0.preamble.to_signed() {
                         None => 0,
                         Some((_, _, ref signed_extra)) => {
                             // Yuck, this depends on the index of charge transaction in Signed Extra
@@ -1133,9 +1157,13 @@ impl_runtime_apis! {
                         }
                     };
 
+                    // TODO: call_weight or call_weight+extension_weight
+                    // In stable2412, polkadot has added extension weight, which is an extra weight
+                    // for some transaction validations such as nonce, age, signature, etc.
+                    // Currently we ignore that in the frontier template
                     let effective_gas =
                         <Runtime as pallet_evm::Config>::GasWeightMapping::weight_to_gas(
-                            dispatch_info.weight
+                            dispatch_info.call_weight
                         );
                     let tip_per_gas = if effective_gas > 0 {
                         tip.saturating_div(u128::from(effective_gas))
@@ -1224,10 +1252,10 @@ impl_runtime_apis! {
 
         fn dispatch_benchmark(
             config: frame_benchmarking::BenchmarkConfig,
-        ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, sp_runtime::RuntimeString> {
+        ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, alloc::string::String> {
             use frame_benchmarking::{BenchmarkBatch, Benchmarking, BenchmarkError};
             use sp_core::storage::TrackedStorageKey;
-            use staging_xcm::latest::prelude::*;
+            use xcm::latest::prelude::*;
             impl frame_system_benchmarking::Config for Runtime {
                 fn setup_set_code_requirements(code: &sp_std::vec::Vec<u8>) -> Result<(), BenchmarkError> {
                     ParachainSystem::initialize_for_set_code_benchmark(code.len() as u32);
@@ -1295,7 +1323,7 @@ impl_runtime_apis! {
                 fn fee_asset() -> Result<Asset, BenchmarkError> {
                     Ok(Asset {
                         id: AssetId(SelfReserve::get()),
-                        fun: Fungible(ExistentialDeposit::get()*100),
+                        fun: Fungible(crate::currency::MICROUNIT*100),
                     })
                 }
 
@@ -1326,7 +1354,7 @@ impl_runtime_apis! {
                 fn get_asset() -> Asset {
                     Asset {
                         id: AssetId(SelfReserve::get()),
-                        fun: Fungible(ExistentialDeposit::get()),
+                        fun: Fungible(crate::currency::MICROUNIT),
                     }
                 }
 
@@ -1335,10 +1363,11 @@ impl_runtime_apis! {
                 }
 
                 fn teleportable_asset_and_dest() -> Option<(Asset, Location)> {
+                    let teleportable = crate::currency::MICROUNIT;
                     // Relay/native token can be teleported between AH and Relay.
                     Some((
                         Asset {
-                            fun: Fungible(EXISTENTIAL_DEPOSIT),
+                            fun: Fungible(teleportable),
                             id: Parent.into()
                         },
                         Parent.into(),
@@ -1354,8 +1383,9 @@ impl_runtime_apis! {
                         random_para_id.into()
                     );
                     let who = frame_benchmarking::whitelisted_caller();
+
                     // Give some multiple of the existential deposit
-                    let balance = EXISTENTIAL_DEPOSIT * 1000;
+                    let balance = crate::currency::MICROUNIT* 1000;
                     let _ = <Balances as frame_support::traits::Currency<_>>::make_free_balance_be(
                         &who, balance,
                     );
@@ -1376,12 +1406,12 @@ impl_runtime_apis! {
                     // (We don't care that Relay doesn't accept incoming unknown AH local asset)
                     let dest = Parent.into();
 
-                    let fee_amount = EXISTENTIAL_DEPOSIT;
+                    let fee_amount = crate::currency::MICROUNIT;
                     let fee_asset: Asset = (SelfReserve::get(), fee_amount).into();
 
                     let who = frame_benchmarking::whitelisted_caller();
                     // Give some multiple of the existential deposit
-                    let balance = fee_amount + EXISTENTIAL_DEPOSIT * 1000;
+                    let balance = fee_amount + crate::currency::MICROUNIT * 1000;
                     let _ = <Balances as frame_support::traits::Currency<_>>::make_free_balance_be(
                         &who, balance,
                     );
@@ -1502,8 +1532,7 @@ impl_runtime_apis! {
         }
 
         fn storage_at(address: H160, index: U256) -> H256 {
-            let mut tmp = [0u8; 32];
-            index.to_big_endian(&mut tmp);
+            let tmp = index.to_big_endian();
             pallet_evm::AccountStorages::<Runtime>::get(address, H256::from_slice(&tmp[..]))
         }
 
@@ -1664,7 +1693,7 @@ impl_runtime_apis! {
         fn convert_transaction(
             transaction: pallet_ethereum::Transaction
         ) -> <Block as BlockT>::Extrinsic {
-            UncheckedExtrinsic::new_unsigned(
+            UncheckedExtrinsic::new_bare(
                 pallet_ethereum::Call::<Runtime>::transact { transaction }.into(),
             )
         }
@@ -1702,17 +1731,17 @@ impl_runtime_apis! {
     }
 
     impl xcm_runtime_apis::fees::XcmPaymentApi<Block> for Runtime {
-        fn query_acceptable_payment_assets(xcm_version: staging_xcm::Version) -> Result<Vec<VersionedAssetId>, XcmPaymentApiError> {
-            if !matches!(xcm_version, 3 | 4) {
+        fn query_acceptable_payment_assets(xcm_version: xcm::Version) -> Result<Vec<VersionedAssetId>, XcmPaymentApiError> {
+            if !matches!(xcm_version, 3..=5) {
                 return Err(XcmPaymentApiError::UnhandledXcmVersion);
             }
 
-            Ok([VersionedAssetId::V4(xcm_config::SelfReserve::get().into())]
+            Ok([VersionedAssetId::V5(xcm_config::SelfReserve::get().into())]
                 .into_iter()
                 .chain(
                     pallet_asset_rate::ConversionRateToNative::<Runtime>::iter_keys().filter_map(|asset_id_u16| {
                         pallet_foreign_asset_creator::AssetIdToForeignAsset::<Runtime>::get(asset_id_u16).map(|location| {
-                            VersionedAssetId::V4(location.into())
+                            VersionedAssetId::V5(location.into())
                         }).or_else(|| {
                             log::warn!("Asset `{}` is present in pallet_asset_rate but not in pallet_foreign_asset_creator", asset_id_u16);
                             None
@@ -1726,17 +1755,17 @@ impl_runtime_apis! {
         }
 
         fn query_weight_to_asset_fee(weight: Weight, asset: VersionedAssetId) -> Result<u128, XcmPaymentApiError> {
-            let local_asset = VersionedAssetId::V4(xcm_config::SelfReserve::get().into());
+            let local_asset = VersionedAssetId::V5(xcm_config::SelfReserve::get().into());
             let asset = asset
-                .into_version(4)
+                .into_version(5)
                 .map_err(|_| XcmPaymentApiError::VersionedConversionFailed)?;
 
             if asset == local_asset {
                 Ok(WeightToFee::weight_to_fee(&weight))
             } else {
                 let native_fee = WeightToFee::weight_to_fee(&weight);
-                let asset_v4: staging_xcm::opaque::lts::AssetId = asset.try_into().map_err(|_| XcmPaymentApiError::VersionedConversionFailed)?;
-                let location: staging_xcm::opaque::lts::Location = asset_v4.0;
+                let asset_v5: xcm::latest::AssetId = asset.try_into().map_err(|_| XcmPaymentApiError::VersionedConversionFailed)?;
+                let location: xcm::latest::Location = asset_v5.0;
                 let asset_id = pallet_foreign_asset_creator::ForeignAssetToAssetId::<Runtime>::get(location).ok_or(XcmPaymentApiError::AssetNotFound)?;
                 let asset_rate = AssetRate::to_asset_balance(native_fee, asset_id);
                 match asset_rate {

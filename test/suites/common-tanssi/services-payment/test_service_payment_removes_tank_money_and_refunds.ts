@@ -1,24 +1,25 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
-import { KeyringPair, generateKeyringPair } from "@moonwall/util";
-import { jumpSessions } from "util/block";
-import { paraIdTank } from "util/payment";
+
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import { type KeyringPair, generateKeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
+import { jumpSessions } from "utils";
+import { paraIdTank } from "utils";
 
 describeSuite({
-    id: "CT0102",
+    id: "COMM0202",
     title: "Services payment test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
         const blocksPerSession = 10n;
-        const paraId2001 = 2001n;
+        const paraId2001 = 2001;
         const costPerBlock = 1_000_000n;
-        let refundAddress;
-        let balanceTankBefore;
-        let purchasedCredits;
-        let registerAlias;
+        let refundAddress: KeyringPair;
+        let balanceTankBefore: bigint;
+        let purchasedCredits: bigint;
+        let registerAlias: any;
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             alice = context.keyring.alice;
@@ -34,12 +35,12 @@ describeSuite({
             const tx = polkadotJs.tx.servicesPayment.purchaseCredits(paraId2001, purchasedCredits);
             await context.createBlock([await tx.signAsync(alice)]);
             balanceTankBefore = (await polkadotJs.query.system.account(paraIdTank(paraId2001))).data.free.toBigInt();
-            expect(balanceTankBefore, `Tank should have been filled`).toBe(purchasedCredits);
+            expect(balanceTankBefore, "Tank should have been filled").toBe(purchasedCredits);
         });
         it({
             id: "E01",
             title: "Sudo can set refund address",
-            test: async function () {
+            test: async () => {
                 // We deregister the chain
                 const setRefundAddress = polkadotJs.tx.sudo.sudo(
                     polkadotJs.tx.servicesPayment.setRefundAddress(paraId2001, refundAddress.address)
@@ -47,13 +48,13 @@ describeSuite({
                 await context.createBlock([await setRefundAddress.signAsync(alice)]);
                 // Check that we can fetch the address
                 const refundAddressOnChain = await polkadotJs.query.servicesPayment.refundAddress(paraId2001);
-                expect(refundAddressOnChain.toString(), `Refund address should be set`).toBe(refundAddress.address);
+                expect(refundAddressOnChain.toString(), "Refund address should be set").toBe(refundAddress.address);
             },
         });
         it({
             id: "E02",
             title: "On deregistration we refund the address",
-            test: async function () {
+            test: async () => {
                 // We deregister the chain
                 const deregister2001 = polkadotJs.tx.sudo.sudo(registerAlias.deregister(paraId2001));
                 await context.createBlock([await deregister2001.signAsync(alice)]);
@@ -62,7 +63,7 @@ describeSuite({
                 const balanceTank = (
                     await polkadotJs.query.system.account(paraIdTank(paraId2001))
                 ).data.free.toBigInt();
-                expect(balanceTank, `Tank should have been removed`).toBe(0n);
+                expect(balanceTank, "Tank should have been removed").toBe(0n);
 
                 const balanceRefundAddress = (
                     await polkadotJs.query.system.account(refundAddress.address)

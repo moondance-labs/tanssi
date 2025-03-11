@@ -71,6 +71,7 @@ pallet-collective = { workspace = true }
 pallet-conviction-voting = { workspace = true }
 pallet-democracy = { workspace = true }
 pallet-elections-phragmen = { workspace = true }
+pallet-ethereum-token-transfers = { workspace = true }
 pallet-external-validator-slashes = { workspace = true }
 pallet-external-validators = { workspace = true }
 pallet-external-validators-rewards = { workspace = true }
@@ -148,6 +149,7 @@ tanssi-runtime-common = { workspace = true }
 pallet-migrations = { workspace = true }
 
 # Bridges
+keyring = { workspace = true }
 snowbridge-beacon-primitives = { workspace = true }
 snowbridge-core = { workspace = true }
 snowbridge-outbound-queue-runtime-api = { workspace = true }
@@ -165,7 +167,6 @@ container-chain-template-frontier-runtime  = { workspace = true, features = [ "s
 container-chain-template-simple-runtime  = { workspace = true, features = [ "std" ] }
 emulated-integration-tests-common = { workspace = true }
 finality-grandpa = { workspace = true, default-features = true, features = [ "derive-codec" ] }
-keyring = { workspace = true }
 milagro-bls = { workspace = true, features = [ "std" ] }
 rand = { workspace = true, features = [ "std", "std_rng" ] }
 remote-externalities = { workspace = true }
@@ -213,6 +214,7 @@ std = [
 	"grandpa_primitives/std",
 	"inherents/std",
 	"keyring/std",
+	"keyring/std",
 	"log/std",
 	"milagro-bls/std",
 	"nimbus-primitives/std",
@@ -235,6 +237,7 @@ std = [
 	"pallet-data-preservers/std",
 	"pallet-democracy/std",
 	"pallet-elections-phragmen/std",
+	"pallet-ethereum-token-transfers/std",
 	"pallet-external-validator-slashes/std",
 	"pallet-external-validators-rewards-runtime-api/std",
 	"pallet-external-validators-rewards/std",
@@ -338,6 +341,7 @@ runtime-benchmarks = [
 	"container-chain-template-simple-runtime/runtime-benchmarks",
 	"cumulus-pallet-parachain-system/runtime-benchmarks",
 	"cumulus-primitives-core/runtime-benchmarks",
+	"dancelight-runtime-constants/runtime-benchmarks",
 	"dp-consensus/runtime-benchmarks",
 	"frame-benchmarking/runtime-benchmarks",
 	"frame-support/runtime-benchmarks",
@@ -357,6 +361,7 @@ runtime-benchmarks = [
 	"pallet-data-preservers/runtime-benchmarks",
 	"pallet-democracy/runtime-benchmarks",
 	"pallet-elections-phragmen/runtime-benchmarks",
+	"pallet-ethereum-token-transfers/runtime-benchmarks",
 	"pallet-external-validator-slashes/runtime-benchmarks",
 	"pallet-external-validators-rewards/runtime-benchmarks",
 	"pallet-external-validators/runtime-benchmarks",
@@ -385,6 +390,7 @@ runtime-benchmarks = [
 	"pallet-sudo/runtime-benchmarks",
 	"pallet-timestamp/runtime-benchmarks",
 	"pallet-tips/runtime-benchmarks",
+	"pallet-transaction-payment/runtime-benchmarks",
 	"pallet-treasury/runtime-benchmarks",
 	"pallet-utility/runtime-benchmarks",
 	"pallet-whitelist/runtime-benchmarks",
@@ -440,6 +446,7 @@ try-runtime = [
 	"pallet-data-preservers/try-runtime",
 	"pallet-democracy/try-runtime",
 	"pallet-elections-phragmen/try-runtime",
+	"pallet-ethereum-token-transfers/try-runtime",
 	"pallet-external-validator-slashes/try-runtime",
 	"pallet-external-validators-rewards/try-runtime",
 	"pallet-external-validators/try-runtime",

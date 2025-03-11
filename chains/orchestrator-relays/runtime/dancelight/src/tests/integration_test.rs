@@ -16,6 +16,7 @@
 
 #![cfg(test)]
 
+use sp_runtime::traits::BadOrigin;
 use {
     crate::{
         tests::common::*, Balances, CollatorConfiguration, ContainerRegistrar, DataPreservers,
@@ -24,16 +25,10 @@ use {
     cumulus_primitives_core::{relay_chain::HeadData, ParaId},
     dancelight_runtime_constants::currency::EXISTENTIAL_DEPOSIT,
     frame_support::{assert_noop, assert_ok, BoundedVec},
-    pallet_migrations::Migration,
     pallet_registrar_runtime_api::{
         runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
     },
-    sp_arithmetic::Perbill,
-    sp_core::Encode,
     sp_std::vec,
-    tanssi_runtime_common::migrations::{
-        HostConfigurationV3, MigrateConfigurationAddFullRotationMode,
-    },
 };
 
 #[test]
@@ -362,114 +357,34 @@ fn test_container_deregister_unassign_data_preserver() {
 }
 
 #[test]
-fn test_migration_config_add_full_rotation_mode() {
-    ExtBuilder::default().build().execute_with(|| {
-        const CONFIGURATION_ACTIVE_CONFIG_KEY: &[u8] =
-            &hex_literal::hex!("86e86c1d728ee2b18f76dd0e04d96cdbb4b49d95320d9021994c850f25b8e385");
-        const CONFIGURATION_PENDING_CONFIGS_KEY: &[u8] =
-            &hex_literal::hex!("86e86c1d728ee2b18f76dd0e04d96cdb53b4123b2e186e07fb7bad5dda5f55c0");
+fn test_registrar_extrinsic_permissions() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .with_empty_parachains(vec![1001])
+        .build()
+        .execute_with(|| {
+            let para_id = ParaId::from(1001);
 
-        // Modify active config
-        frame_support::storage::unhashed::put_raw(
-            CONFIGURATION_ACTIVE_CONFIG_KEY,
-            &HostConfigurationV3 {
-                max_collators: 5,
-                min_orchestrator_collators: 2,
-                max_orchestrator_collators: 1,
-                collators_per_container: 3,
-                full_rotation_period: 4,
-                collators_per_parathread: 2,
-                parathreads_per_collator: 1,
-                target_container_chain_fullness: Perbill::from_percent(45),
-                max_parachain_cores_percentage: Some(Perbill::from_percent(75)),
-            }
-            .encode(),
-        );
-        // Modify pending configs
-        frame_support::storage::unhashed::put_raw(
-            CONFIGURATION_PENDING_CONFIGS_KEY,
-            &vec![
-                (
-                    1234u32,
-                    HostConfigurationV3 {
-                        max_collators: 1,
-                        min_orchestrator_collators: 4,
-                        max_orchestrator_collators: 45,
-                        collators_per_container: 5,
-                        full_rotation_period: 1,
-                        collators_per_parathread: 1,
-                        parathreads_per_collator: 1,
-                        target_container_chain_fullness: Perbill::from_percent(65),
-                        max_parachain_cores_percentage: Some(Perbill::from_percent(75)),
-                    },
-                ),
-                (
-                    5678u32,
-                    HostConfigurationV3 {
-                        max_collators: 1,
-                        min_orchestrator_collators: 4,
-                        max_orchestrator_collators: 45,
-                        collators_per_container: 5,
-                        full_rotation_period: 1,
-                        collators_per_parathread: 1,
-                        parathreads_per_collator: 1,
-                        target_container_chain_fullness: Perbill::from_percent(65),
-                        max_parachain_cores_percentage: Some(Perbill::from_percent(75)),
-                    },
-                ),
-            ]
-            .encode(),
-        );
+            // Pause container chain should fail if not para manager
+            assert_noop!(
+                ContainerRegistrar::pause_container_chain(origin_of(BOB.into()), para_id),
+                BadOrigin
+            );
 
-        let migration = MigrateConfigurationAddFullRotationMode::<Runtime>(Default::default());
-        migration.migrate(Default::default());
+            // Set Bob as para manager
+            assert_ok!(ContainerRegistrar::set_para_manager(
+                root_origin(),
+                para_id,
+                AccountId::from(BOB)
+            ));
 
-        let expected_active = pallet_configuration::HostConfiguration {
-            max_collators: 5,
-            min_orchestrator_collators: 2,
-            max_orchestrator_collators: 1,
-            collators_per_container: 3,
-            full_rotation_period: 4,
-            collators_per_parathread: 2,
-            parathreads_per_collator: 1,
-            target_container_chain_fullness: Perbill::from_percent(45),
-            max_parachain_cores_percentage: Some(Perbill::from_percent(75)),
-            ..Default::default()
-        };
-        assert_eq!(CollatorConfiguration::config(), expected_active);
-
-        let expected_pending = vec![
-            (
-                1234u32,
-                pallet_configuration::HostConfiguration {
-                    max_collators: 1,
-                    min_orchestrator_collators: 4,
-                    max_orchestrator_collators: 45,
-                    collators_per_container: 5,
-                    full_rotation_period: 1,
-                    collators_per_parathread: 1,
-                    parathreads_per_collator: 1,
-                    target_container_chain_fullness: Perbill::from_percent(65),
-                    max_parachain_cores_percentage: Some(Perbill::from_percent(75)),
-                    ..Default::default()
-                },
-            ),
-            (
-                5678u32,
-                pallet_configuration::HostConfiguration {
-                    max_collators: 1,
-                    min_orchestrator_collators: 4,
-                    max_orchestrator_collators: 45,
-                    collators_per_container: 5,
-                    full_rotation_period: 1,
-                    collators_per_parathread: 1,
-                    parathreads_per_collator: 1,
-                    target_container_chain_fullness: Perbill::from_percent(65),
-                    max_parachain_cores_percentage: Some(Perbill::from_percent(75)),
-                    ..Default::default()
-                },
-            ),
-        ];
-        assert_eq!(CollatorConfiguration::pending_configs(), expected_pending);
-    });
+            // Pause container chain should succeed if para manager
+            assert_ok!(
+                ContainerRegistrar::pause_container_chain(origin_of(BOB.into()), para_id),
+                ()
+            );
+        });
 }

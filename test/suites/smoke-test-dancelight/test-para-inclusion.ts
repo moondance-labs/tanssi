@@ -1,9 +1,16 @@
+import "@tanssi/api-augment/dancelight";
+
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { getBlockArray } from "@moonwall/util";
-import { ApiPromise } from "@polkadot/api";
-import { GenericExtrinsic } from "@polkadot/types";
-import { FrameSystemEventRecord } from "@polkadot/types/lookup";
-import { AnyTuple } from "@polkadot/types/types";
+import type { ApiPromise } from "@polkadot/api";
+import type { GenericExtrinsic } from "@polkadot/types";
+import type { DigestItem } from "@polkadot/types/interfaces";
+import type {
+    FrameSystemEventRecord,
+    PolkadotPrimitivesV8InherentData,
+    PolkadotRuntimeParachainsConfigurationHostConfiguration,
+} from "@polkadot/types/lookup";
+import type { AnyTuple } from "@polkadot/types/types";
 import Bottleneck from "bottleneck";
 
 const timePeriod = process.env.TIME_PERIOD ? Number(process.env.TIME_PERIOD) : 1 * 60 * 60 * 1000;
@@ -14,22 +21,25 @@ type BlockFilteredRecord = {
     blockNum: number;
     extrinsics: GenericExtrinsic<AnyTuple>[];
     events: FrameSystemEventRecord[];
-    logs;
-    config;
-    paraInherent;
+    logs: DigestItem[];
+    config: PolkadotRuntimeParachainsConfigurationHostConfiguration;
+    paraInherents: GenericExtrinsic[];
 };
 
+interface CollatorAssignment {
+    orchestratorChain: string[];
+    containerChains: { [paraId: number]: string[] };
+}
+
 describeSuite({
-    id: "S21",
+    id: "SMOK07",
     title: "Sample suite that only runs on Dancelight chains",
     foundationMethods: "read_only",
     testCases: ({ it, context, log }) => {
         let api: ApiPromise;
         let blockData: BlockFilteredRecord[];
-        // block hash to block number
         const blockNumberMap: Map<string, number> = new Map();
-        // block hash to collators
-        const collatorsMap: Map<string, any> = new Map();
+        const collatorsMap: Map<string, CollatorAssignment> = new Map();
 
         beforeAll(async () => {
             api = context.polkadotJs();
@@ -41,23 +51,19 @@ describeSuite({
                 const blockHash = await api.rpc.chain.getBlockHash(blockNum);
                 const signedBlock = await api.rpc.chain.getBlock(blockHash);
                 const apiAt = await api.at(blockHash);
-                const config = await apiAt.query.configuration.activeConfig();
+                const config =
+                    (await apiAt.query.configuration.activeConfig()) as unknown as PolkadotRuntimeParachainsConfigurationHostConfiguration;
                 const extrinsics = signedBlock.block.extrinsics;
 
-                const paraInherent = extrinsics.filter((ex) => {
-                    const {
-                        method: { method, section },
-                    } = ex;
-                    return section == "paraInherent" && method == "enter";
-                });
+                const paraInherents = extrinsics.filter(
+                    ({ method: { method, section } }) => section === "paraInherent" && method === "enter"
+                );
 
                 const {
                     method: { args },
-                } = paraInherent[0];
+                } = paraInherents[0];
 
-                const arg = args[0];
-
-                const backedCandidates = arg.backedCandidates;
+                const { backedCandidates } = args[0] as PolkadotPrimitivesV8InherentData;
 
                 for (const cand of backedCandidates) {
                     const relayParent = cand.candidate.descriptor.relayParent.toHex();
@@ -71,11 +77,20 @@ describeSuite({
 
                     if (!collatorsMap.has(relayParent)) {
                         const apiAtP = await api.at(relayParent);
-                        const collators = (
-                            await apiAtP.query.tanssiCollatorAssignment.collatorContainerChain()
-                        ).toJSON();
+                        const collators = await apiAtP.query.tanssiCollatorAssignment.collatorContainerChain();
+                        const containerChainsMap = [...collators.containerChains.entries()].reduce(
+                            (acc, [key, value]) => {
+                                acc[key.toNumber()] = value.map((a) => a.toHuman());
+                                return acc;
+                            },
+                            {} as { [paraId: number]: string[] }
+                        );
 
-                        collatorsMap.set(relayParent, collators);
+                        const blob: CollatorAssignment = {
+                            orchestratorChain: collators.orchestratorChain.map((a) => a.toHuman()),
+                            containerChains: containerChainsMap,
+                        };
+                        collatorsMap.set(relayParent, blob);
                     }
                 }
 
@@ -85,7 +100,7 @@ describeSuite({
                     events: await apiAt.query.system.events(),
                     logs: signedBlock.block.header.digest.logs,
                     config,
-                    paraInherent,
+                    paraInherents,
                 };
             };
             const limiter = new Bottleneck({ maxConcurrent: 5, minTime: 100 });
@@ -95,18 +110,17 @@ describeSuite({
         it({
             id: "C01",
             title: "Included paras valid",
-            test: async function () {
-                blockData.map(({ blockNum, config, paraInherent }) => {
+            test: async () => {
+                blockData.map(({ blockNum, config, paraInherents }) => {
                     // Should have exactly 1 paraInherent
-                    expect(paraInherent.length, `Block #{blockNum}: missing paraInherent in block`).toBeGreaterThan(0);
-                    expect(paraInherent.length, `Block #{blockNum}: duplicate paraInherent in block`).toBeLessThan(2);
+                    expect(paraInherents.length, `Block ${blockNum}: missing paraInherent in block`).toBeGreaterThan(0);
+                    expect(paraInherents.length, `Block ${blockNum}: duplicate paraInherent in block`).toBeLessThan(2);
 
                     const {
                         method: { args },
-                    } = paraInherent[0];
-                    const arg = args[0];
+                    } = paraInherents[0];
 
-                    const backedCandidates = arg.backedCandidates;
+                    const { backedCandidates } = args[0] as PolkadotPrimitivesV8InherentData;
 
                     const numBackedCandidates = backedCandidates.length;
 
@@ -124,7 +138,6 @@ describeSuite({
                     for (const cand of backedCandidates) {
                         const paraId = cand.candidate.descriptor.paraId.toNumber();
                         const relayParent = cand.candidate.descriptor.relayParent.toHex();
-
                         const parentBlockNumber = blockNumberMap.get(relayParent);
 
                         // allowedAncestryLen = 0 means that we only allow building on top of the parent block
@@ -139,7 +152,7 @@ describeSuite({
                         const collators = collatorsMap.get(relayParent);
                         expect(
                             collators.containerChains[paraId],
-                            `Block #${blockNum}: Found backed candidate for para id ${paraId}, but that para id has no collators assigned. Collator assignment: ${collators}`
+                            `Block #${blockNum}: Found backed candidate for para id ${paraId}, but that para id has no collators assigned. Collator assignment: {containerChains: ${collators.containerChains} , orchestratorChain: ${collators.orchestratorChain}}`
                         ).toBeTruthy();
                     }
                 });

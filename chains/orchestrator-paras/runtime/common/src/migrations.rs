@@ -34,6 +34,8 @@
 //! This module acts as a registry where each migration is defined. Each migration should implement
 //! the "Migration" trait declared in the pallet-migrations crate.
 
+extern crate alloc;
+
 use {
     cumulus_primitives_core::ParaId,
     frame_support::{
@@ -149,6 +151,10 @@ where
     /// Run a standard pre-runtime test. This works the same way as in a normal runtime upgrade.
     #[cfg(feature = "try-runtime")]
     fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        log::info!(
+            "hashed key {:?}",
+            pallet_configuration::ActiveConfig::<T>::hashed_key()
+        );
         let old_config_bytes = frame_support::storage::unhashed::get_raw(
             &pallet_configuration::ActiveConfig::<T>::hashed_key(),
         )
@@ -719,7 +725,7 @@ impl<Runtime> Migration for ForeignAssetCreatorMigration<Runtime>
 where
     Runtime: pallet_foreign_asset_creator::Config,
     <Runtime as pallet_foreign_asset_creator::Config>::ForeignAsset:
-        TryFrom<staging_xcm::v3::MultiLocation>,
+        TryFrom<xcm::v3::MultiLocation>,
 {
     fn friendly_name(&self) -> &str {
         "TM_ForeignAssetCreatorMigration"
@@ -728,7 +734,7 @@ where
     fn migrate(&self, _available_weight: Weight) -> Weight {
         use frame_support::pallet_prelude::*;
 
-        use staging_xcm::v3::MultiLocation as OldLocation;
+        use xcm::v3::MultiLocation as OldLocation;
 
         let pallet_prefix = AssetIdToForeignAsset::<Runtime>::pallet_prefix();
         let asset_id_to_foreign_asset_storage_prefix =
@@ -837,6 +843,271 @@ where
     }
 }
 
+pub struct MigrateMMRLeafPallet<T>(pub PhantomData<T>);
+
+impl<T: frame_system::Config> Migration for MigrateMMRLeafPallet<T> {
+    fn friendly_name(&self) -> &str {
+        "SM_MigrateMMRLeafPallet"
+    }
+
+    fn migrate(&self, available_weight: Weight) -> Weight {
+        let new_name =
+            <<T as frame_system::Config>::PalletInfo as frame_support::traits::PalletInfo>::name::<
+                pallet_beefy_mmr::Pallet<T>,
+            >()
+            .expect("pallet_beefy_mmr must be part of dancelight before this migration");
+        move_pallet(Self::old_pallet_name().as_bytes(), new_name.as_bytes());
+        available_weight
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        Ok(vec![])
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(&self, _state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        Ok(())
+    }
+}
+
+impl<T> MigrateMMRLeafPallet<T> {
+    pub fn old_pallet_name() -> &'static str {
+        "MMRLeaf"
+    }
+}
+
+pub struct BondedErasTimestampMigration<Runtime>(pub PhantomData<Runtime>);
+
+impl<Runtime> Migration for BondedErasTimestampMigration<Runtime>
+where
+    Runtime: pallet_external_validator_slashes::Config,
+{
+    fn friendly_name(&self) -> &str {
+        "TM_ExternalValidatorSlashesBondedErasTimestampMigration"
+    }
+
+    fn migrate(&self, _available_weight: Weight) -> Weight {
+        use frame_support::pallet_prelude::*;
+
+        let bonded_eras: Vec<(sp_staking::EraIndex, sp_staking::SessionIndex)> =
+            frame_support::storage::unhashed::get(
+                &pallet_external_validator_slashes::BondedEras::<Runtime>::hashed_key(),
+            )
+            .unwrap_or_default();
+        let new_eras = bonded_eras
+            .iter()
+            .map(|(era, session)| (*era, *session, 0u64))
+            .collect();
+        pallet_external_validator_slashes::BondedEras::<Runtime>::set(new_eras);
+
+        // One db read and one db write per element, plus the on-chain storage
+        Runtime::DbWeight::get().reads_writes(1, 1)
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        use frame_support::pallet_prelude::*;
+
+        let previous_bonded_eras: Vec<(sp_staking::EraIndex, sp_staking::SessionIndex)> =
+            frame_support::storage::unhashed::get(
+                &pallet_external_validator_slashes::BondedEras::<Runtime>::hashed_key(),
+            )
+            .unwrap_or_default();
+
+        Ok(previous_bonded_eras.encode())
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(&self, state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        use parity_scale_codec::Decode;
+        let previous_bonded_eras: Vec<(sp_staking::EraIndex, sp_staking::SessionIndex)> =
+            Decode::decode(&mut &state[..]).expect("state to be decoded properly");
+        let new_eras = pallet_external_validator_slashes::BondedEras::<Runtime>::get();
+        for (i, bonded) in new_eras.iter().enumerate() {
+            assert_eq!(previous_bonded_eras[i].0, bonded.0);
+            assert_eq!(previous_bonded_eras[i].1, bonded.1);
+            assert_eq!(bonded.2, 0u64);
+        }
+        Ok(())
+    }
+}
+
+// Copied from
+// cumulus/parachains/runtimes/bridge-hubs/bridge-hub-westend/src/bridge_to_ethereum_config.rs
+// Changed westend => rococo
+pub mod snowbridge_system_migration {
+    use super::*;
+    use alloc::vec::Vec;
+    use frame_support::pallet_prelude::*;
+    use snowbridge_core::TokenId;
+    use xcm;
+
+    // Important: this cannot be called OldNativeToForeignId because that will be a different storage
+    // item. Polkadot has a bug here.
+    #[frame_support::storage_alias]
+    pub type NativeToForeignId<T: snowbridge_pallet_system::Config> = StorageMap<
+        snowbridge_pallet_system::Pallet<T>,
+        Blake2_128Concat,
+        xcm::v4::Location,
+        TokenId,
+        OptionQuery,
+    >;
+
+    /// One shot migration for NetworkId::Westend to NetworkId::ByGenesis(WESTEND_GENESIS_HASH)
+    pub struct MigrationForXcmV5<T: snowbridge_pallet_system::Config>(core::marker::PhantomData<T>);
+    impl<T: snowbridge_pallet_system::Config> frame_support::traits::OnRuntimeUpgrade
+        for MigrationForXcmV5<T>
+    {
+        fn on_runtime_upgrade() -> Weight {
+            let mut weight = T::DbWeight::get().reads(1);
+            let mut len_map1 = 0;
+            let mut len_map2 = 0;
+
+            let translate_westend = |pre: xcm::v4::Location| -> Option<xcm::v5::Location> {
+                weight.saturating_accrue(T::DbWeight::get().reads_writes(1, 1));
+                len_map1 += 1;
+                Some(xcm::v5::Location::try_from(pre).expect("valid location"))
+            };
+            snowbridge_pallet_system::ForeignToNativeId::<T>::translate_values(translate_westend);
+
+            let old_keys = NativeToForeignId::<T>::iter_keys().collect::<Vec<_>>();
+
+            for old_key in old_keys {
+                if let Some(old_val) = NativeToForeignId::<T>::get(&old_key) {
+                    snowbridge_pallet_system::NativeToForeignId::<T>::insert(
+                        &xcm::v5::Location::try_from(old_key.clone()).expect("valid location"),
+                        old_val,
+                    );
+                }
+                NativeToForeignId::<T>::remove(old_key);
+                weight.saturating_accrue(T::DbWeight::get().reads_writes(1, 2));
+                len_map2 += 1;
+            }
+
+            // Additional sanity check that both mappings have the same number of elements
+            assert_eq!(len_map1, len_map2);
+
+            weight
+        }
+    }
+}
+
+pub struct SnowbridgeEthereumSystemXcmV5<Runtime>(pub PhantomData<Runtime>);
+
+impl<Runtime> Migration for SnowbridgeEthereumSystemXcmV5<Runtime>
+where
+    Runtime: snowbridge_pallet_system::Config,
+{
+    fn friendly_name(&self) -> &str {
+        "TM_SnowbridgeEthereumSystemXCMv5"
+    }
+
+    fn migrate(&self, _available_weight: Weight) -> Weight {
+        snowbridge_system_migration::MigrationForXcmV5::<Runtime>::on_runtime_upgrade()
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        Ok(vec![])
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(&self, _state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        Ok(())
+    }
+}
+
+pub struct MigrateStreamPaymentNewConfigFields<Runtime>(pub PhantomData<Runtime>);
+impl<Runtime> Migration for MigrateStreamPaymentNewConfigFields<Runtime>
+where
+    Runtime: pallet_stream_payment::Config,
+{
+    fn friendly_name(&self) -> &str {
+        "TM_MigrateStreamPaymentNewConfigFields"
+    }
+
+    fn migrate(&self, available_weight: Weight) -> Weight {
+        pallet_stream_payment::migrations::migrate_stream_payment_new_config_fields::<Runtime>(
+            available_weight,
+        )
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        use pallet_stream_payment::migrations::OldStreamOf;
+        use parity_scale_codec::Encode;
+
+        let Some(stream_id) = pallet_stream_payment::Streams::<Runtime>::iter_keys().next() else {
+            return Ok(vec![]);
+        };
+
+        let old_stream: OldStreamOf<Runtime> = frame_support::storage::unhashed::get(
+            &pallet_stream_payment::Streams::<Runtime>::hashed_key_for(stream_id),
+        )
+        .expect("key was found so entry must exist");
+
+        Ok((stream_id, old_stream).encode())
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(&self, state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        use pallet_stream_payment::{migrations::OldStreamOf, ChangeRequest, Stream, StreamConfig};
+        use parity_scale_codec::Decode;
+
+        if state.is_empty() {
+            // there were no streams
+            return Ok(());
+        }
+
+        let (stream_id, old_stream) =
+            <(Runtime::StreamId, OldStreamOf<Runtime>)>::decode(&mut &state[..])
+                .expect("to decode properly");
+
+        let new_stream = pallet_stream_payment::Streams::<Runtime>::get(stream_id)
+            .expect("entry should still exist");
+
+        let mut expected = Stream {
+            source: old_stream.source,
+            target: old_stream.target,
+            deposit: old_stream.deposit,
+            last_time_updated: old_stream.last_time_updated,
+            request_nonce: old_stream.request_nonce,
+            pending_request: None, // will be replaced below
+            opening_deposit: old_stream.opening_deposit,
+            config: StreamConfig {
+                time_unit: old_stream.config.time_unit,
+                asset_id: old_stream.config.asset_id,
+                rate: old_stream.config.rate,
+                minimum_request_deadline_delay: 0u32.into(),
+                soft_minimum_deposit: 0u32.into(),
+            },
+        };
+
+        if let Some(pending_request) = old_stream.pending_request {
+            expected.pending_request = Some(ChangeRequest {
+                requester: pending_request.requester,
+                kind: pending_request.kind,
+                deposit_change: pending_request.deposit_change,
+                new_config: StreamConfig {
+                    time_unit: pending_request.new_config.time_unit,
+                    asset_id: pending_request.new_config.asset_id,
+                    rate: pending_request.new_config.rate,
+                    minimum_request_deadline_delay: 0u32.into(),
+                    soft_minimum_deposit: 0u32.into(),
+                },
+            });
+        }
+
+        assert_eq!(
+            new_stream, expected,
+            "Migrated stream don't match expected value"
+        );
+
+        Ok(())
+    }
+}
+
 pub struct FlashboxMigrations<Runtime>(PhantomData<Runtime>);
 
 impl<Runtime> GetMigrations for FlashboxMigrations<Runtime>
@@ -844,9 +1115,9 @@ where
     Runtime: pallet_balances::Config,
     Runtime: pallet_configuration::Config,
     Runtime: pallet_registrar::Config,
-    Runtime: pallet_data_preservers::Config,
     Runtime: pallet_services_payment::Config,
     Runtime: pallet_data_preservers::Config,
+    Runtime: pallet_stream_payment::Config,
     Runtime::AccountId: From<[u8; 32]>,
     <Runtime as pallet_balances::Config>::RuntimeHoldReason: From<pallet_registrar::HoldReason>,
     <Runtime as pallet_balances::Config>::Balance: From<<<Runtime as pallet_registrar::Config>::Currency as frame_support::traits::fungible::Inspect<Runtime::AccountId>>::Balance>,
@@ -870,6 +1141,7 @@ where
         //let migrate_registrar_reserves = RegistrarReserveToHoldMigration::<Runtime>(Default::default());
         //let migrate_config_max_parachain_percentage = MigrateConfigurationAddParachainPercentage::<Runtime>(Default::default());
         let migrate_config_full_rotation_mode = MigrateConfigurationAddFullRotationMode::<Runtime>(Default::default());
+        let migrate_stream_payment_new_config_items = MigrateStreamPaymentNewConfigFields::<Runtime>(Default::default());
 
         vec![
             // Applied in runtime 400
@@ -891,6 +1163,7 @@ where
             // Applied in runtime 900
             //Box::new(migrate_config_max_parachain_percentage),
             Box::new(migrate_config_full_rotation_mode),
+            Box::new(migrate_stream_payment_new_config_items),
         ]
     }
 }
@@ -907,11 +1180,10 @@ where
     Runtime: cumulus_pallet_xcmp_queue::Config,
     Runtime: pallet_data_preservers::Config,
     Runtime: pallet_xcm::Config,
+    Runtime: pallet_stream_payment::Config,
     <Runtime as pallet_balances::Config>::RuntimeHoldReason:
         From<pallet_pooled_staking::HoldReason>,
     Runtime: pallet_foreign_asset_creator::Config,
-    <Runtime as pallet_foreign_asset_creator::Config>::ForeignAsset:
-        TryFrom<staging_xcm::v3::MultiLocation>,
     <Runtime as pallet_balances::Config>::RuntimeHoldReason:
         From<pallet_registrar::HoldReason>,
     Runtime::AccountId: From<[u8; 32]>,
@@ -947,6 +1219,7 @@ where
         //    ForeignAssetCreatorMigration::<Runtime>(Default::default());
         //let migrate_registrar_reserves = RegistrarReserveToHoldMigration::<Runtime>(Default::default());
         let migrate_config_full_rotation_mode = MigrateConfigurationAddFullRotationMode::<Runtime>(Default::default());
+        let migrate_stream_payment_new_config_items = MigrateStreamPaymentNewConfigFields::<Runtime>(Default::default());
 
         vec![
             // Applied in runtime 200
@@ -986,41 +1259,8 @@ where
             // Applied in runtime 900
             //Box::new(migrate_config_max_parachain_percentage),
             Box::new(migrate_config_full_rotation_mode),
+            Box::new(migrate_stream_payment_new_config_items),
         ]
-    }
-}
-
-pub struct MigrateMMRLeafPallet<T>(pub PhantomData<T>);
-
-impl<T: frame_system::Config> Migration for MigrateMMRLeafPallet<T> {
-    fn friendly_name(&self) -> &str {
-        "SM_MigrateMMRLeafPallet"
-    }
-
-    fn migrate(&self, available_weight: Weight) -> Weight {
-        let new_name =
-            <<T as frame_system::Config>::PalletInfo as frame_support::traits::PalletInfo>::name::<
-                pallet_beefy_mmr::Pallet<T>,
-            >()
-            .expect("pallet_beefy_mmr must be part of dancelight before this migration");
-        move_pallet(Self::old_pallet_name().as_bytes(), new_name.as_bytes());
-        available_weight
-    }
-
-    #[cfg(feature = "try-runtime")]
-    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
-        Ok(vec![])
-    }
-
-    #[cfg(feature = "try-runtime")]
-    fn post_upgrade(&self, _state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
-        Ok(())
-    }
-}
-
-impl<T> MigrateMMRLeafPallet<T> {
-    pub fn old_pallet_name() -> &'static str {
-        "MMRLeaf"
     }
 }
 
@@ -1034,18 +1274,26 @@ where
     Runtime: pallet_session::Config<
         ValidatorId = <Runtime as pallet_external_validators::Config>::ValidatorId,
     >,
+    Runtime: pallet_external_validator_slashes::Config,
+    Runtime: snowbridge_pallet_system::Config,
 {
     fn get_migrations() -> Vec<Box<dyn Migration>> {
-        let migrate_mmr_leaf_pallet = MigrateMMRLeafPallet::<Runtime>(Default::default());
-        let migrate_external_validators =
-            ExternalValidatorsInitialMigration::<Runtime>(Default::default());
         let migrate_config_full_rotation_mode =
             MigrateConfigurationAddFullRotationMode::<Runtime>(Default::default());
 
+        let external_validator_slashes_bonded_eras_timestamp =
+            BondedErasTimestampMigration::<Runtime>(Default::default());
+        let snowbridge_ethereum_system_xcm_v5 =
+            SnowbridgeEthereumSystemXcmV5::<Runtime>(Default::default());
+
         vec![
-            Box::new(migrate_mmr_leaf_pallet),
-            Box::new(migrate_external_validators),
+            // Applied in runtime 1000
+            //Box::new(migrate_mmr_leaf_pallet),
+            // Applied in runtime 900
+            //Box::new(migrate_external_validators),
             Box::new(migrate_config_full_rotation_mode),
+            Box::new(external_validator_slashes_bonded_eras_timestamp),
+            Box::new(snowbridge_ethereum_system_xcm_v5),
         ]
     }
 }

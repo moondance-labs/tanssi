@@ -1,12 +1,12 @@
 import { TransactionTypes, beforeAll, deployCreateCompiledContract, describeSuite, expect } from "@moonwall/cli";
 import { ALITH_ADDRESS, BALTATHAR_ADDRESS, CHARLETH_ADDRESS, alith, createEthersTransaction } from "@moonwall/util";
-import { u16 } from "@polkadot/types";
+import type { u16 } from "@polkadot/types";
 import { nToHex } from "@polkadot/util";
-import { Abi, encodeFunctionData } from "viem";
-import { mockAssetCreation, relayAssetMetadata, RELAY_SOURCE_LOCATION } from "../../../helpers/assets";
+import { type Abi, encodeFunctionData } from "viem";
+import { RELAY_SOURCE_LOCATION, mockAssetCreation, relayAssetMetadata } from "../../../helpers/assets";
 
 describeSuite({
-    id: "DF1108",
+    id: "DE1308",
     title: "Precompiles - Low Level Transactions",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
@@ -17,7 +17,7 @@ describeSuite({
         const ASSET_ID = 15n;
         const MAX_SUPPLY = 100000000000000n;
 
-        beforeAll(async function () {
+        beforeAll(async () => {
             assetId = context.polkadotJs().createType("u16", ASSET_ID);
 
             const { contractAddress, abi } = await deployCreateCompiledContract(context, "ERC20Instance");
@@ -44,7 +44,7 @@ describeSuite({
         it({
             id: "T01",
             title: "can make static calls to view functions",
-            test: async function () {
+            test: async () => {
                 const callResult = await context.viem().call({
                     account: ALITH_ADDRESS,
                     to: contractInstanceAddress,
@@ -62,7 +62,7 @@ describeSuite({
             it({
                 id: `T${testCounter < 10 ? "0" : ""}${testCounter++}`,
                 title: `can make static calls to view functions and transact ${txnType}`,
-                test: async function () {
+                test: async () => {
                     await context.createBlock(
                         await createEthersTransaction(context, {
                             to: contractInstanceAddress,
@@ -86,7 +86,7 @@ describeSuite({
             it({
                 id: `T${testCounter < 10 ? "0" : ""}${testCounter++}`,
                 title: `has unchanged state when submitting static call ${txnType}`,
-                test: async function () {
+                test: async () => {
                     const { result } = await context.createBlock(
                         await createEthersTransaction(context, {
                             to: contractInstanceAddress,
@@ -110,7 +110,7 @@ describeSuite({
             it({
                 id: `T${testCounter < 10 ? "0" : ""}${testCounter++}`,
                 title: `visibility preserved for static calls ${txnType}`,
-                test: async function () {
+                test: async () => {
                     const { result } = await context.createBlock(
                         await createEthersTransaction(context, {
                             to: contractInstanceAddress,
@@ -134,7 +134,7 @@ describeSuite({
             it({
                 id: `T${testCounter < 10 ? "0" : ""}${testCounter++}`,
                 title: `visibility preserved for delegate->static calls ${txnType}`,
-                test: async function () {
+                test: async () => {
                     const { result } = await context.createBlock(
                         await createEthersTransaction(context, {
                             to: contractInstanceAddress,
@@ -158,7 +158,7 @@ describeSuite({
             it({
                 id: `T${testCounter < 10 ? "0" : ""}${testCounter++}`,
                 title: `visibility preserved for static->delegate calls ${txnType}`,
-                test: async function () {
+                test: async () => {
                     const { result } = await context.createBlock(
                         await createEthersTransaction(context, {
                             to: contractInstanceAddress,

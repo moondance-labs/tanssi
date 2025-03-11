@@ -1,17 +1,18 @@
-import "@polkadot/api-augment";
+import "@tanssi/api-augment";
+
 import { describeSuite, expect } from "@moonwall/cli";
-import { FrameSupportDispatchDispatchInfo } from "@polkadot/types/lookup";
+import type { FrameSupportDispatchDispatchInfo } from "@polkadot/types/lookup";
 import { BN } from "@polkadot/util";
 
 describeSuite({
-    id: "DF1201",
+    id: "DE1401",
     title: "On set latest authorities data weight check",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
         it({
             id: "T01",
             title: "Weight should be match expected",
-            test: async function () {
+            test: async () => {
                 const expectedRefTime = new BN(428_360_000);
                 const expectedProofSize = new BN(1626);
 

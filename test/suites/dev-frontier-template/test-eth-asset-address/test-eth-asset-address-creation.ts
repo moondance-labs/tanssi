@@ -1,22 +1,22 @@
-import { expect, describeSuite } from "@moonwall/cli";
-import { STATEMINT_LOCATION_EXAMPLE } from "../../../util/constants.ts";
+import { describeSuite, expect } from "@moonwall/cli";
 import { alith } from "@moonwall/util";
+import { STATEMINT_LOCATION_EXAMPLE } from "utils";
 
 describeSuite({
-    id: "DF0201",
+    id: "DE0301",
     title: "Ethereum asset dummy precompile address creation",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
         it({
             id: "T01",
             title: "dummy precompile address is created when creating the asset and removed when destroyed",
-            test: async function () {
+            test: async () => {
                 const assetId = 5;
                 const assetIdAddress = new Uint8Array([
                     255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 0, 5,
                 ]);
                 const revertBytecode = "0x60006000fd";
-                const addressInHex = "0x" + Buffer.from(assetIdAddress).toString("hex");
+                const addressInHex = `0x${Buffer.from(assetIdAddress).toString("hex")}`;
 
                 await context.createBlock(
                     context

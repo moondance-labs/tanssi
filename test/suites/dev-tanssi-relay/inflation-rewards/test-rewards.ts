@@ -1,11 +1,11 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll, DevModeContext } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
-import { Header, ParaId, HeadData, Digest, DigestItem, Slot } from "@polkadot/types/interfaces";
-import { KeyringPair } from "@moonwall/util";
-import { fetchIssuance, filterRewardFromContainer, jumpToSession } from "util/block";
-import { DANCELIGHT_BOND } from "util/constants";
+
+import { type DevModeContext, beforeAll, describeSuite, expect } from "@moonwall/cli";
+import type { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
+import type { Digest, DigestItem, HeadData, Header, ParaId, Slot } from "@polkadot/types/interfaces";
 import { stringToHex } from "@polkadot/util";
+import { DANCELIGHT_BOND, fetchIssuance, filterRewardFromContainer, jumpToSession } from "utils";
 //5EYCAe5cHUC3LZehbwavqEb95LcNnpBzfQTsAxeUibSo1Gtb
 
 // Helper function to make rewards work for a specific block and slot.
@@ -52,7 +52,7 @@ async function mockAndInsertHeadData(
 }
 
 describeSuite({
-    id: "DTR1101",
+    id: "DEVT0701",
     title: "Dancelight: InflationRewards test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -67,7 +67,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Parachain bond receives 30% of the inflation and pending rewards plus division dust",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
                 let expectedAmountParachainBond = 0n;
 
@@ -109,7 +109,7 @@ describeSuite({
         it({
             id: "E02",
             title: "Collator receives the reward from container-chain block proposal",
-            test: async function () {
+            test: async () => {
                 // Jump 2 sessions to have collators assigned to containers.
                 await jumpToSession(context, 2);
                 const assignment = (await polkadotJs.query.tanssiCollatorAssignment.collatorContainerChain()).toJSON();

@@ -24,6 +24,7 @@ use {
     frame_benchmarking::{account, v2::*, BenchmarkError},
     frame_support::traits::{Currency, Get},
     sp_std::prelude::*,
+    tp_bridge::TokenChannelSetterBenchmarkHelperTrait,
     tp_traits::OnEraEnd,
 };
 
@@ -63,6 +64,10 @@ mod benchmarks {
                 .insert(account_id, T::BackingPoints::get());
         }
 
+        T::BenchmarkHelper::set_up_token(
+            T::TokenLocationReanchored::get(),
+            H256::repeat_byte(0x01),
+        );
         <RewardPointsForEra<T>>::insert(1u32, era_reward_points);
 
         #[block]

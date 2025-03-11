@@ -40,7 +40,6 @@ import type {
     FrameMetadataHashExtensionCheckMetadataHash,
     FrameMetadataHashExtensionMode,
     FrameSupportDispatchDispatchClass,
-    FrameSupportDispatchDispatchInfo,
     FrameSupportDispatchPays,
     FrameSupportDispatchPerDispatchClassU32,
     FrameSupportDispatchPerDispatchClassWeight,
@@ -56,6 +55,7 @@ import type {
     FrameSystemAccountInfo,
     FrameSystemCall,
     FrameSystemCodeUpgradeAuthorization,
+    FrameSystemDispatchEventInfo,
     FrameSystemError,
     FrameSystemEvent,
     FrameSystemEventRecord,
@@ -114,10 +114,14 @@ import type {
     PalletDataPreserversProfile,
     PalletDataPreserversProfileMode,
     PalletDataPreserversRegisteredProfile,
+    PalletEthereumTokenTransfersCall,
+    PalletEthereumTokenTransfersError,
+    PalletEthereumTokenTransfersEvent,
     PalletExternalValidatorSlashesCall,
     PalletExternalValidatorSlashesError,
     PalletExternalValidatorSlashesEvent,
     PalletExternalValidatorSlashesSlash,
+    PalletExternalValidatorSlashesSlashingModeOption,
     PalletExternalValidatorsCall,
     PalletExternalValidatorsError,
     PalletExternalValidatorsEvent,
@@ -135,8 +139,10 @@ import type {
     PalletIdentityEvent,
     PalletIdentityJudgement,
     PalletIdentityLegacyIdentityInfo,
+    PalletIdentityProvider,
     PalletIdentityRegistrarInfo,
     PalletIdentityRegistration,
+    PalletIdentityUsernameInformation,
     PalletInflationRewardsChainsToRewardValue,
     PalletInflationRewardsEvent,
     PalletInvulnerablesCall,
@@ -253,13 +259,7 @@ import type {
     PolkadotPrimitivesV8ApprovalVotingParams,
     PolkadotPrimitivesV8AssignmentAppPublic,
     PolkadotPrimitivesV8AsyncBackingAsyncBackingParams,
-    PolkadotPrimitivesV8BackedCandidate,
     PolkadotPrimitivesV8CandidateCommitments,
-    PolkadotPrimitivesV8CandidateDescriptor,
-    PolkadotPrimitivesV8CandidateReceipt,
-    PolkadotPrimitivesV8CollatorAppPublic,
-    PolkadotPrimitivesV8CollatorAppSignature,
-    PolkadotPrimitivesV8CommittedCandidateReceipt,
     PolkadotPrimitivesV8DisputeState,
     PolkadotPrimitivesV8DisputeStatement,
     PolkadotPrimitivesV8DisputeStatementSet,
@@ -267,13 +267,11 @@ import type {
     PolkadotPrimitivesV8ExecutorParamsExecutorParam,
     PolkadotPrimitivesV8IndexedVecGroupIndex,
     PolkadotPrimitivesV8IndexedVecValidatorIndex,
-    PolkadotPrimitivesV8InherentData,
     PolkadotPrimitivesV8InvalidDisputeStatementKind,
     PolkadotPrimitivesV8PvfCheckStatement,
     PolkadotPrimitivesV8PvfExecKind,
     PolkadotPrimitivesV8PvfPrepKind,
     PolkadotPrimitivesV8SchedulerParams,
-    PolkadotPrimitivesV8ScrapedOnChainVotes,
     PolkadotPrimitivesV8SessionInfo,
     PolkadotPrimitivesV8SignedUncheckedSigned,
     PolkadotPrimitivesV8SlashingDisputeProof,
@@ -286,6 +284,12 @@ import type {
     PolkadotPrimitivesV8ValidatorAppPublic,
     PolkadotPrimitivesV8ValidatorAppSignature,
     PolkadotPrimitivesV8ValidityAttestation,
+    PolkadotPrimitivesVstagingBackedCandidate,
+    PolkadotPrimitivesVstagingCandidateDescriptorV2,
+    PolkadotPrimitivesVstagingCandidateReceiptV2,
+    PolkadotPrimitivesVstagingCommittedCandidateReceiptV2,
+    PolkadotPrimitivesVstagingInherentData,
+    PolkadotPrimitivesVstagingScrapedOnChainVotes,
     PolkadotRuntimeCommonParasRegistrarPalletCall,
     PolkadotRuntimeCommonParasRegistrarPalletError,
     PolkadotRuntimeCommonParasRegistrarPalletEvent,
@@ -334,10 +338,9 @@ import type {
     PolkadotRuntimeParachainsParasReplacementTimes,
     PolkadotRuntimeParachainsParasUpgradeStrategy,
     PolkadotRuntimeParachainsSchedulerCommonAssignment,
-    PolkadotRuntimeParachainsSchedulerPalletCoreOccupied,
-    PolkadotRuntimeParachainsSchedulerPalletParasEntry,
     PolkadotRuntimeParachainsSharedAllowedRelayParentsTracker,
     PolkadotRuntimeParachainsSharedPalletCall,
+    PolkadotRuntimeParachainsSharedRelayParentInfo,
     SnowbridgeAmclBls381Big,
     SnowbridgeAmclBls381Ecp,
     SnowbridgeAmclBls381Fp,
@@ -424,6 +427,7 @@ import type {
     SpRuntimeHeader,
     SpRuntimeModuleError,
     SpRuntimeMultiSignature,
+    SpRuntimeProvingTrieTrieError,
     SpRuntimeTokenError,
     SpRuntimeTransactionalError,
     SpSessionMembershipProof,
@@ -450,8 +454,28 @@ import type {
     StagingXcmV4PalletInfo,
     StagingXcmV4QueryResponseInfo,
     StagingXcmV4Response,
-    StagingXcmV4TraitsOutcome,
     StagingXcmV4Xcm,
+    StagingXcmV5Asset,
+    StagingXcmV5AssetAssetFilter,
+    StagingXcmV5AssetAssetId,
+    StagingXcmV5AssetAssetInstance,
+    StagingXcmV5AssetAssetTransferFilter,
+    StagingXcmV5AssetAssets,
+    StagingXcmV5AssetFungibility,
+    StagingXcmV5AssetWildAsset,
+    StagingXcmV5AssetWildFungibility,
+    StagingXcmV5Hint,
+    StagingXcmV5Instruction,
+    StagingXcmV5Junction,
+    StagingXcmV5JunctionNetworkId,
+    StagingXcmV5Junctions,
+    StagingXcmV5Location,
+    StagingXcmV5PalletInfo,
+    StagingXcmV5QueryResponseInfo,
+    StagingXcmV5Response,
+    StagingXcmV5TraitsOutcome,
+    StagingXcmV5Xcm,
+    TpBridgeChannelInfo,
     TpBridgeCommand,
     TpBridgeSlashData,
     TpTraitsActiveEraInfo,
@@ -461,26 +485,6 @@ import type {
     TpTraitsParathreadParams,
     TpTraitsSlotFrequency,
     XcmDoubleEncoded,
-    XcmV2BodyId,
-    XcmV2BodyPart,
-    XcmV2Instruction,
-    XcmV2Junction,
-    XcmV2MultiAsset,
-    XcmV2MultiLocation,
-    XcmV2MultiassetAssetId,
-    XcmV2MultiassetAssetInstance,
-    XcmV2MultiassetFungibility,
-    XcmV2MultiassetMultiAssetFilter,
-    XcmV2MultiassetMultiAssets,
-    XcmV2MultiassetWildFungibility,
-    XcmV2MultiassetWildMultiAsset,
-    XcmV2MultilocationJunctions,
-    XcmV2NetworkId,
-    XcmV2OriginKind,
-    XcmV2Response,
-    XcmV2TraitsError,
-    XcmV2WeightLimit,
-    XcmV2Xcm,
     XcmV3Instruction,
     XcmV3Junction,
     XcmV3JunctionBodyId,
@@ -503,6 +507,7 @@ import type {
     XcmV3TraitsError,
     XcmV3WeightLimit,
     XcmV3Xcm,
+    XcmV5TraitsError,
     XcmVersionedAssetId,
     XcmVersionedAssets,
     XcmVersionedLocation,
@@ -546,7 +551,6 @@ declare module "@polkadot/types/types/registry" {
         FrameMetadataHashExtensionCheckMetadataHash: FrameMetadataHashExtensionCheckMetadataHash;
         FrameMetadataHashExtensionMode: FrameMetadataHashExtensionMode;
         FrameSupportDispatchDispatchClass: FrameSupportDispatchDispatchClass;
-        FrameSupportDispatchDispatchInfo: FrameSupportDispatchDispatchInfo;
         FrameSupportDispatchPays: FrameSupportDispatchPays;
         FrameSupportDispatchPerDispatchClassU32: FrameSupportDispatchPerDispatchClassU32;
         FrameSupportDispatchPerDispatchClassWeight: FrameSupportDispatchPerDispatchClassWeight;
@@ -562,6 +566,7 @@ declare module "@polkadot/types/types/registry" {
         FrameSystemAccountInfo: FrameSystemAccountInfo;
         FrameSystemCall: FrameSystemCall;
         FrameSystemCodeUpgradeAuthorization: FrameSystemCodeUpgradeAuthorization;
+        FrameSystemDispatchEventInfo: FrameSystemDispatchEventInfo;
         FrameSystemError: FrameSystemError;
         FrameSystemEvent: FrameSystemEvent;
         FrameSystemEventRecord: FrameSystemEventRecord;
@@ -620,10 +625,14 @@ declare module "@polkadot/types/types/registry" {
         PalletDataPreserversProfile: PalletDataPreserversProfile;
         PalletDataPreserversProfileMode: PalletDataPreserversProfileMode;
         PalletDataPreserversRegisteredProfile: PalletDataPreserversRegisteredProfile;
+        PalletEthereumTokenTransfersCall: PalletEthereumTokenTransfersCall;
+        PalletEthereumTokenTransfersError: PalletEthereumTokenTransfersError;
+        PalletEthereumTokenTransfersEvent: PalletEthereumTokenTransfersEvent;
         PalletExternalValidatorSlashesCall: PalletExternalValidatorSlashesCall;
         PalletExternalValidatorSlashesError: PalletExternalValidatorSlashesError;
         PalletExternalValidatorSlashesEvent: PalletExternalValidatorSlashesEvent;
         PalletExternalValidatorSlashesSlash: PalletExternalValidatorSlashesSlash;
+        PalletExternalValidatorSlashesSlashingModeOption: PalletExternalValidatorSlashesSlashingModeOption;
         PalletExternalValidatorsCall: PalletExternalValidatorsCall;
         PalletExternalValidatorsError: PalletExternalValidatorsError;
         PalletExternalValidatorsEvent: PalletExternalValidatorsEvent;
@@ -641,8 +650,10 @@ declare module "@polkadot/types/types/registry" {
         PalletIdentityEvent: PalletIdentityEvent;
         PalletIdentityJudgement: PalletIdentityJudgement;
         PalletIdentityLegacyIdentityInfo: PalletIdentityLegacyIdentityInfo;
+        PalletIdentityProvider: PalletIdentityProvider;
         PalletIdentityRegistrarInfo: PalletIdentityRegistrarInfo;
         PalletIdentityRegistration: PalletIdentityRegistration;
+        PalletIdentityUsernameInformation: PalletIdentityUsernameInformation;
         PalletInflationRewardsChainsToRewardValue: PalletInflationRewardsChainsToRewardValue;
         PalletInflationRewardsEvent: PalletInflationRewardsEvent;
         PalletInvulnerablesCall: PalletInvulnerablesCall;
@@ -759,13 +770,7 @@ declare module "@polkadot/types/types/registry" {
         PolkadotPrimitivesV8ApprovalVotingParams: PolkadotPrimitivesV8ApprovalVotingParams;
         PolkadotPrimitivesV8AssignmentAppPublic: PolkadotPrimitivesV8AssignmentAppPublic;
         PolkadotPrimitivesV8AsyncBackingAsyncBackingParams: PolkadotPrimitivesV8AsyncBackingAsyncBackingParams;
-        PolkadotPrimitivesV8BackedCandidate: PolkadotPrimitivesV8BackedCandidate;
         PolkadotPrimitivesV8CandidateCommitments: PolkadotPrimitivesV8CandidateCommitments;
-        PolkadotPrimitivesV8CandidateDescriptor: PolkadotPrimitivesV8CandidateDescriptor;
-        PolkadotPrimitivesV8CandidateReceipt: PolkadotPrimitivesV8CandidateReceipt;
-        PolkadotPrimitivesV8CollatorAppPublic: PolkadotPrimitivesV8CollatorAppPublic;
-        PolkadotPrimitivesV8CollatorAppSignature: PolkadotPrimitivesV8CollatorAppSignature;
-        PolkadotPrimitivesV8CommittedCandidateReceipt: PolkadotPrimitivesV8CommittedCandidateReceipt;
         PolkadotPrimitivesV8DisputeState: PolkadotPrimitivesV8DisputeState;
         PolkadotPrimitivesV8DisputeStatement: PolkadotPrimitivesV8DisputeStatement;
         PolkadotPrimitivesV8DisputeStatementSet: PolkadotPrimitivesV8DisputeStatementSet;
@@ -773,13 +778,11 @@ declare module "@polkadot/types/types/registry" {
         PolkadotPrimitivesV8ExecutorParamsExecutorParam: PolkadotPrimitivesV8ExecutorParamsExecutorParam;
         PolkadotPrimitivesV8IndexedVecGroupIndex: PolkadotPrimitivesV8IndexedVecGroupIndex;
         PolkadotPrimitivesV8IndexedVecValidatorIndex: PolkadotPrimitivesV8IndexedVecValidatorIndex;
-        PolkadotPrimitivesV8InherentData: PolkadotPrimitivesV8InherentData;
         PolkadotPrimitivesV8InvalidDisputeStatementKind: PolkadotPrimitivesV8InvalidDisputeStatementKind;
         PolkadotPrimitivesV8PvfCheckStatement: PolkadotPrimitivesV8PvfCheckStatement;
         PolkadotPrimitivesV8PvfExecKind: PolkadotPrimitivesV8PvfExecKind;
         PolkadotPrimitivesV8PvfPrepKind: PolkadotPrimitivesV8PvfPrepKind;
         PolkadotPrimitivesV8SchedulerParams: PolkadotPrimitivesV8SchedulerParams;
-        PolkadotPrimitivesV8ScrapedOnChainVotes: PolkadotPrimitivesV8ScrapedOnChainVotes;
         PolkadotPrimitivesV8SessionInfo: PolkadotPrimitivesV8SessionInfo;
         PolkadotPrimitivesV8SignedUncheckedSigned: PolkadotPrimitivesV8SignedUncheckedSigned;
         PolkadotPrimitivesV8SlashingDisputeProof: PolkadotPrimitivesV8SlashingDisputeProof;
@@ -792,6 +795,12 @@ declare module "@polkadot/types/types/registry" {
         PolkadotPrimitivesV8ValidatorAppPublic: PolkadotPrimitivesV8ValidatorAppPublic;
         PolkadotPrimitivesV8ValidatorAppSignature: PolkadotPrimitivesV8ValidatorAppSignature;
         PolkadotPrimitivesV8ValidityAttestation: PolkadotPrimitivesV8ValidityAttestation;
+        PolkadotPrimitivesVstagingBackedCandidate: PolkadotPrimitivesVstagingBackedCandidate;
+        PolkadotPrimitivesVstagingCandidateDescriptorV2: PolkadotPrimitivesVstagingCandidateDescriptorV2;
+        PolkadotPrimitivesVstagingCandidateReceiptV2: PolkadotPrimitivesVstagingCandidateReceiptV2;
+        PolkadotPrimitivesVstagingCommittedCandidateReceiptV2: PolkadotPrimitivesVstagingCommittedCandidateReceiptV2;
+        PolkadotPrimitivesVstagingInherentData: PolkadotPrimitivesVstagingInherentData;
+        PolkadotPrimitivesVstagingScrapedOnChainVotes: PolkadotPrimitivesVstagingScrapedOnChainVotes;
         PolkadotRuntimeCommonParasRegistrarPalletCall: PolkadotRuntimeCommonParasRegistrarPalletCall;
         PolkadotRuntimeCommonParasRegistrarPalletError: PolkadotRuntimeCommonParasRegistrarPalletError;
         PolkadotRuntimeCommonParasRegistrarPalletEvent: PolkadotRuntimeCommonParasRegistrarPalletEvent;
@@ -840,10 +849,9 @@ declare module "@polkadot/types/types/registry" {
         PolkadotRuntimeParachainsParasReplacementTimes: PolkadotRuntimeParachainsParasReplacementTimes;
         PolkadotRuntimeParachainsParasUpgradeStrategy: PolkadotRuntimeParachainsParasUpgradeStrategy;
         PolkadotRuntimeParachainsSchedulerCommonAssignment: PolkadotRuntimeParachainsSchedulerCommonAssignment;
-        PolkadotRuntimeParachainsSchedulerPalletCoreOccupied: PolkadotRuntimeParachainsSchedulerPalletCoreOccupied;
-        PolkadotRuntimeParachainsSchedulerPalletParasEntry: PolkadotRuntimeParachainsSchedulerPalletParasEntry;
         PolkadotRuntimeParachainsSharedAllowedRelayParentsTracker: PolkadotRuntimeParachainsSharedAllowedRelayParentsTracker;
         PolkadotRuntimeParachainsSharedPalletCall: PolkadotRuntimeParachainsSharedPalletCall;
+        PolkadotRuntimeParachainsSharedRelayParentInfo: PolkadotRuntimeParachainsSharedRelayParentInfo;
         SnowbridgeAmclBls381Big: SnowbridgeAmclBls381Big;
         SnowbridgeAmclBls381Ecp: SnowbridgeAmclBls381Ecp;
         SnowbridgeAmclBls381Fp: SnowbridgeAmclBls381Fp;
@@ -930,6 +938,7 @@ declare module "@polkadot/types/types/registry" {
         SpRuntimeHeader: SpRuntimeHeader;
         SpRuntimeModuleError: SpRuntimeModuleError;
         SpRuntimeMultiSignature: SpRuntimeMultiSignature;
+        SpRuntimeProvingTrieTrieError: SpRuntimeProvingTrieTrieError;
         SpRuntimeTokenError: SpRuntimeTokenError;
         SpRuntimeTransactionalError: SpRuntimeTransactionalError;
         SpSessionMembershipProof: SpSessionMembershipProof;
@@ -956,8 +965,28 @@ declare module "@polkadot/types/types/registry" {
         StagingXcmV4PalletInfo: StagingXcmV4PalletInfo;
         StagingXcmV4QueryResponseInfo: StagingXcmV4QueryResponseInfo;
         StagingXcmV4Response: StagingXcmV4Response;
-        StagingXcmV4TraitsOutcome: StagingXcmV4TraitsOutcome;
         StagingXcmV4Xcm: StagingXcmV4Xcm;
+        StagingXcmV5Asset: StagingXcmV5Asset;
+        StagingXcmV5AssetAssetFilter: StagingXcmV5AssetAssetFilter;
+        StagingXcmV5AssetAssetId: StagingXcmV5AssetAssetId;
+        StagingXcmV5AssetAssetInstance: StagingXcmV5AssetAssetInstance;
+        StagingXcmV5AssetAssetTransferFilter: StagingXcmV5AssetAssetTransferFilter;
+        StagingXcmV5AssetAssets: StagingXcmV5AssetAssets;
+        StagingXcmV5AssetFungibility: StagingXcmV5AssetFungibility;
+        StagingXcmV5AssetWildAsset: StagingXcmV5AssetWildAsset;
+        StagingXcmV5AssetWildFungibility: StagingXcmV5AssetWildFungibility;
+        StagingXcmV5Hint: StagingXcmV5Hint;
+        StagingXcmV5Instruction: StagingXcmV5Instruction;
+        StagingXcmV5Junction: StagingXcmV5Junction;
+        StagingXcmV5JunctionNetworkId: StagingXcmV5JunctionNetworkId;
+        StagingXcmV5Junctions: StagingXcmV5Junctions;
+        StagingXcmV5Location: StagingXcmV5Location;
+        StagingXcmV5PalletInfo: StagingXcmV5PalletInfo;
+        StagingXcmV5QueryResponseInfo: StagingXcmV5QueryResponseInfo;
+        StagingXcmV5Response: StagingXcmV5Response;
+        StagingXcmV5TraitsOutcome: StagingXcmV5TraitsOutcome;
+        StagingXcmV5Xcm: StagingXcmV5Xcm;
+        TpBridgeChannelInfo: TpBridgeChannelInfo;
         TpBridgeCommand: TpBridgeCommand;
         TpBridgeSlashData: TpBridgeSlashData;
         TpTraitsActiveEraInfo: TpTraitsActiveEraInfo;
@@ -967,26 +996,6 @@ declare module "@polkadot/types/types/registry" {
         TpTraitsParathreadParams: TpTraitsParathreadParams;
         TpTraitsSlotFrequency: TpTraitsSlotFrequency;
         XcmDoubleEncoded: XcmDoubleEncoded;
-        XcmV2BodyId: XcmV2BodyId;
-        XcmV2BodyPart: XcmV2BodyPart;
-        XcmV2Instruction: XcmV2Instruction;
-        XcmV2Junction: XcmV2Junction;
-        XcmV2MultiAsset: XcmV2MultiAsset;
-        XcmV2MultiLocation: XcmV2MultiLocation;
-        XcmV2MultiassetAssetId: XcmV2MultiassetAssetId;
-        XcmV2MultiassetAssetInstance: XcmV2MultiassetAssetInstance;
-        XcmV2MultiassetFungibility: XcmV2MultiassetFungibility;
-        XcmV2MultiassetMultiAssetFilter: XcmV2MultiassetMultiAssetFilter;
-        XcmV2MultiassetMultiAssets: XcmV2MultiassetMultiAssets;
-        XcmV2MultiassetWildFungibility: XcmV2MultiassetWildFungibility;
-        XcmV2MultiassetWildMultiAsset: XcmV2MultiassetWildMultiAsset;
-        XcmV2MultilocationJunctions: XcmV2MultilocationJunctions;
-        XcmV2NetworkId: XcmV2NetworkId;
-        XcmV2OriginKind: XcmV2OriginKind;
-        XcmV2Response: XcmV2Response;
-        XcmV2TraitsError: XcmV2TraitsError;
-        XcmV2WeightLimit: XcmV2WeightLimit;
-        XcmV2Xcm: XcmV2Xcm;
         XcmV3Instruction: XcmV3Instruction;
         XcmV3Junction: XcmV3Junction;
         XcmV3JunctionBodyId: XcmV3JunctionBodyId;
@@ -1009,6 +1018,7 @@ declare module "@polkadot/types/types/registry" {
         XcmV3TraitsError: XcmV3TraitsError;
         XcmV3WeightLimit: XcmV3WeightLimit;
         XcmV3Xcm: XcmV3Xcm;
+        XcmV5TraitsError: XcmV5TraitsError;
         XcmVersionedAssetId: XcmVersionedAssetId;
         XcmVersionedAssets: XcmVersionedAssets;
         XcmVersionedLocation: XcmVersionedLocation;

@@ -1,0 +1,83 @@
+name: Publish Docker Solochain
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: tag (ex. v0.8.3) to publish on docker
+        required: true
+
+env:
+  BASE_URL: https://github.com/moondance-labs/tanssi/releases/download
+jobs:
+  tag-docker:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        image: [
+          { name: "starlight", file_name: "tanssi-relay" },
+        ]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4 
+        with:
+          fetch-depth: 0
+      - name: Login to DockerHub
+        uses: docker/login-action@v3.3.0  
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Download files
+        run: |
+          mkdir -p build
+          VERSION="${{ github.event.inputs.tag }}"
+          wget "${{ env.BASE_URL }}/$VERSION/${{ matrix.image.file_name }}" -O build/${{ matrix.image.file_name }}
+          wget "${{ env.BASE_URL }}/$VERSION/${{ matrix.image.file_name }}-execute-worker" -O build/${{ matrix.image.file_name }}-execute-worker
+          wget "${{ env.BASE_URL }}/$VERSION/${{ matrix.image.file_name }}-prepare-worker" -O build/${{ matrix.image.file_name }}-prepare-worker
+
+          wget "${{ env.BASE_URL }}/$VERSION/${{ matrix.image.file_name }}-skylake" -O build/${{ matrix.image.file_name }}-skylake
+          wget "${{ env.BASE_URL }}/$VERSION/${{ matrix.image.file_name }}-execute-worker-skylake" -O build/${{ matrix.image.file_name }}-execute-worker-skylake
+          wget "${{ env.BASE_URL }}/$VERSION/${{ matrix.image.file_name }}-prepare-worker-skylake" -O build/${{ matrix.image.file_name }}-prepare-worker-skylake
+
+          wget "${{ env.BASE_URL }}/$VERSION/${{ matrix.image.file_name }}-znver3" -O build/${{ matrix.image.file_name }}-znver3
+          wget "${{ env.BASE_URL }}/$VERSION/${{ matrix.image.file_name }}-execute-worker-znver3" -O build/${{ matrix.image.file_name }}-execute-worker-znver3
+          wget "${{ env.BASE_URL }}/$VERSION/${{ matrix.image.file_name }}-prepare-worker-znver3" -O build/${{ matrix.image.file_name }}-prepare-worker-znver3
+
+      - name: push to docker
+        run: |
+          DOCKER_IMAGE=moondancelabs/${{matrix.image.name}}
+          VERSION="${{ github.event.inputs.tag }}"
+          COMMIT=`git rev-list -n 1 '${{ github.event.inputs.tag }}'`
+          SHA=sha-${COMMIT::8}
+          echo using "${DOCKER_IMAGE}:${SHA} as base image"
+
+          echo building "${DOCKER_IMAGE}:${VERSION}"
+          docker build \
+            --build-arg DOCKER_IMAGE="$DOCKER_IMAGE" \
+            --build-arg SHA="$SHA" \
+            -f docker/${{matrix.image.name}}.Dockerfile \
+            -t "${DOCKER_IMAGE}:${VERSION}" \
+            . 
+          echo tagging "${DOCKER_IMAGE}:${VERSION}"
+          docker push "${DOCKER_IMAGE}:${VERSION}"
+
+            if [[ $VERSION =~ ^v[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+              MINOR=${VERSION%.*}
+              echo tagging "${DOCKER_IMAGE}:${MINOR}"
+              docker tag "${DOCKER_IMAGE}:${VERSION}" "${DOCKER_IMAGE}:${MINOR}"
+              docker push "${DOCKER_IMAGE}:${MINOR}"
+
+              MAJOR=${MINOR%.*}
+              echo tagging "${DOCKER_IMAGE}:${MAJOR}"
+              docker tag "${DOCKER_IMAGE}:${VERSION}" "${DOCKER_IMAGE}:${MAJOR}"
+              docker push "${DOCKER_IMAGE}:${MAJOR}"
+
+              echo tagging "${DOCKER_IMAGE}:${SHA}"
+              docker tag "${DOCKER_IMAGE}:${VERSION}" "${DOCKER_IMAGE}:${SHA}"
+              docker push "${DOCKER_IMAGE}:${SHA}"
+
+              echo tagging "${DOCKER_IMAGE}:latest"
+              docker tag "${DOCKER_IMAGE}:${VERSION}" "${DOCKER_IMAGE}:latest"
+              docker push "${DOCKER_IMAGE}:latest"
+            fi

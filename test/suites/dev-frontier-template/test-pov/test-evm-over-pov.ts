@@ -1,11 +1,12 @@
 import "@tanssi/api-augment";
+
 import { beforeAll, deployCreateCompiledContract, describeSuite, expect } from "@moonwall/cli";
 import { ALITH_ADDRESS, createEthersTransaction } from "@moonwall/util";
-import { Abi, encodeFunctionData } from "viem";
-import { expectEVMResult, HeavyContract, deployHeavyContracts } from "../../../helpers";
+import { type Abi, encodeFunctionData } from "viem";
+import { type HeavyContract, deployHeavyContracts, expectEVMResult } from "../../../helpers";
 
 describeSuite({
-    id: "DF1301",
+    id: "DE1201",
     title: "PoV controlled by gasLimit",
     foundationMethods: "dev",
     testCases: ({ context, it, log }) => {
@@ -34,7 +35,7 @@ describeSuite({
         it({
             id: "T01",
             title: "should allow to include transaction with estimate gas to cover PoV",
-            test: async function () {
+            test: async () => {
                 const gasEstimate = await context.viem().estimateGas({
                     account: ALITH_ADDRESS,
                     to: proxyAddress,
@@ -61,7 +62,7 @@ describeSuite({
         it({
             id: "T02",
             title: "should allow to include transaction with enough gas limit to cover PoV",
-            test: async function () {
+            test: async () => {
                 const rawSigned = await createEthersTransaction(context, {
                     to: proxyAddress,
                     data: callData,
@@ -81,7 +82,7 @@ describeSuite({
         it({
             id: "T03",
             title: "should fail to include transaction without enough gas limit to cover PoV",
-            test: async function () {
+            test: async () => {
                 // This execution uses only < 100k Gas in cpu execute but require 2M Gas for PoV.
                 // We are providing only 1M Gas, so it should fail.
                 const rawSigned = await createEthersTransaction(context, {
@@ -100,7 +101,7 @@ describeSuite({
                 expect(block.proofSize).to.be.at.least(30_000);
                 expect(block.proofSize).to.be.at.most(50_000);
                 expect(result?.successful).to.equal(true);
-                expectEVMResult(result!.events, "Error", "OutOfGas");
+                expectEVMResult(result?.events, "Error", "OutOfGas");
             },
         });
     },

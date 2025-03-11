@@ -1,16 +1,19 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { ApiPromise, Keyring } from "@polkadot/api";
-import { getAuthorFromDigest } from "../../util/author";
-import { signAndSendAndInclude, waitSessions } from "../../util/block";
-import { getKeyringNimbusIdHex } from "../../util/keys";
-import { getHeaderFromRelay } from "../../util/relayInterface";
-import net from "net";
+import { type ApiPromise, Keyring } from "@polkadot/api";
+import net from "node:net";
+import {
+    getAuthorFromDigest,
+    getHeaderFromRelay,
+    getKeyringNimbusIdHex,
+    signAndSendAndInclude,
+    waitSessions,
+} from "utils";
 
 describeSuite({
-    id: "ZM01",
+    id: "ZOMBIETA01",
     title: "Zombie Tanssi Metrics Test",
     foundationMethods: "zombie",
-    testCases: function ({ it, context }) {
+    testCases: ({ it, context }) => {
         let paraApi: ApiPromise;
         let relayApi: ApiPromise;
         let container2000Api: ApiPromise;
@@ -42,7 +45,7 @@ describeSuite({
         it({
             id: "T01",
             title: "Blocks are being produced on parachain",
-            test: async function () {
+            test: async () => {
                 const blockNum = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
                 expect(blockNum).to.be.greaterThan(0);
             },
@@ -51,7 +54,7 @@ describeSuite({
         it({
             id: "T03",
             title: "Test assignation did not change",
-            test: async function () {
+            test: async () => {
                 const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
                 // TODO: fix once we have types
                 const allCollators = (
@@ -75,7 +78,7 @@ describeSuite({
         it({
             id: "T04",
             title: "Blocks are being produced on container 2000",
-            test: async function () {
+            test: async () => {
                 const blockNum = (await container2000Api.rpc.chain.getBlock()).block.header.number.toNumber();
                 expect(blockNum).to.be.greaterThan(0);
             },
@@ -84,7 +87,7 @@ describeSuite({
         it({
             id: "T06",
             title: "Test container chain 2000 assignation is correct",
-            test: async function () {
+            test: async () => {
                 const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
                 const paraId = (await container2000Api.query.parachainInfo.parachainId()).toString();
                 const containerChainCollators = (
@@ -102,7 +105,7 @@ describeSuite({
             id: "T08",
             title: "Test author noting is correct for both containers",
             timeout: 60000,
-            test: async function () {
+            test: async () => {
                 const assignment = await paraApi.query.collatorAssignment.collatorContainerChain();
                 const paraId2000 = await container2000Api.query.parachainInfo.parachainId();
 
@@ -119,7 +122,7 @@ describeSuite({
         it({
             id: "T09",
             title: "Test author is correct in Orchestrator",
-            test: async function () {
+            test: async () => {
                 const sessionIndex = (await paraApi.query.session.currentIndex()).toNumber();
                 const authorities = await paraApi.query.authorityAssignment.collatorContainerChain(sessionIndex);
                 const author = await getAuthorFromDigest(paraApi);
@@ -131,7 +134,7 @@ describeSuite({
         it({
             id: "T10",
             title: "Test frontier template isEthereum",
-            test: async function () {
+            test: async () => {
                 // TODO: fix once we have types
                 const genesisData2000 = await paraApi.query.registrar.paraGenesisData(2000);
                 expect(genesisData2000.toJSON().properties.isEthereum).to.be.false;
@@ -142,7 +145,7 @@ describeSuite({
             id: "T12",
             title: "Test metrics: deregister container chain and metrics should stop",
             timeout: 300000,
-            test: async function () {
+            test: async () => {
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 

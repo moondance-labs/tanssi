@@ -20,30 +20,13 @@ use {
         AccountId, AssignmentId, AuthorityDiscoveryId, ValidatorId,
     },
     emulated_integration_tests_common::build_genesis_storage,
+    keyring::Sr25519Keyring,
     sc_consensus_grandpa::AuthorityId as GrandpaId,
-    sp_core::{sr25519, storage::Storage, Pair, Public},
-    sp_runtime::{
-        traits::{IdentifyAccount, Verify},
-        MultiSignature,
-    },
+    sp_core::{crypto::get_public_from_string_or_panic, sr25519, storage::Storage},
+    sp_runtime::{traits::Verify, MultiSignature},
 };
 
 type AccountPublic = <MultiSignature as Verify>::Signer;
-
-/// Helper function to generate a crypto pair from seed
-fn get_from_seed<TPublic: Public>(seed: &str) -> <TPublic::Pair as Pair>::Public {
-    TPublic::Pair::from_string(&format!("//{}", seed), None)
-        .expect("static values are valid; qed")
-        .public()
-}
-
-/// Helper function to generate an account ID from seed.
-fn get_account_id_from_seed<TPublic: Public>(seed: &str) -> AccountId
-where
-    AccountPublic: From<<TPublic::Pair as Pair>::Public>,
-{
-    AccountPublic::from(get_from_seed::<TPublic>(seed)).into_account()
-}
 
 /// Helper function to generate stash, controller and session key from seed
 pub fn get_authority_keys_from_seed_no_beefy(
@@ -58,13 +41,13 @@ pub fn get_authority_keys_from_seed_no_beefy(
     AuthorityDiscoveryId,
 ) {
     (
-        get_account_id_from_seed::<sr25519::Public>(&format!("{}//stash", seed)),
-        get_account_id_from_seed::<sr25519::Public>(seed),
-        get_from_seed::<BabeId>(seed),
-        get_from_seed::<GrandpaId>(seed),
-        get_from_seed::<ValidatorId>(seed),
-        get_from_seed::<AssignmentId>(seed),
-        get_from_seed::<AuthorityDiscoveryId>(seed),
+        get_public_from_string_or_panic::<sr25519::Public>(&format!("{}//stash", seed)).into(),
+        get_public_from_string_or_panic::<sr25519::Public>(seed).into(),
+        get_public_from_string_or_panic::<BabeId>(seed),
+        get_public_from_string_or_panic::<GrandpaId>(seed),
+        get_public_from_string_or_panic::<ValidatorId>(seed),
+        get_public_from_string_or_panic::<AssignmentId>(seed),
+        get_public_from_string_or_panic::<AuthorityDiscoveryId>(seed),
     )
 }
 
@@ -76,29 +59,12 @@ pub mod accounts {
     pub const DAVE: &str = "Dave";
     pub const EVE: &str = "Eve";
     pub const FERDIE: &str = "Ferdei";
-    pub const ALICE_STASH: &str = "Alice//stash";
-    pub const BOB_STASH: &str = "Bob//stash";
-    pub const CHARLIE_STASH: &str = "Charlie//stash";
-    pub const DAVE_STASH: &str = "Dave//stash";
-    pub const EVE_STASH: &str = "Eve//stash";
-    pub const FERDIE_STASH: &str = "Ferdie//stash";
     pub const RANDOM: &str = "Random//stash";
 
     pub fn init_balances() -> Vec<AccountId> {
-        vec![
-            get_account_id_from_seed::<sr25519::Public>(ALICE),
-            get_account_id_from_seed::<sr25519::Public>(BOB),
-            get_account_id_from_seed::<sr25519::Public>(CHARLIE),
-            get_account_id_from_seed::<sr25519::Public>(DAVE),
-            get_account_id_from_seed::<sr25519::Public>(EVE),
-            get_account_id_from_seed::<sr25519::Public>(FERDIE),
-            get_account_id_from_seed::<sr25519::Public>(ALICE_STASH),
-            get_account_id_from_seed::<sr25519::Public>(BOB_STASH),
-            get_account_id_from_seed::<sr25519::Public>(CHARLIE_STASH),
-            get_account_id_from_seed::<sr25519::Public>(DAVE_STASH),
-            get_account_id_from_seed::<sr25519::Public>(EVE_STASH),
-            get_account_id_from_seed::<sr25519::Public>(FERDIE_STASH),
-        ]
+        Sr25519Keyring::well_known()
+            .map(|k| k.to_account_id())
+            .collect()
     }
 }
 
@@ -121,7 +87,8 @@ pub mod validators {
 // Westend
 pub mod westend {
     use {
-        super::*, cumulus_primitives_core::relay_chain::BlockNumber,
+        super::*, beefy_primitives::test_utils::Keyring,
+        cumulus_primitives_core::relay_chain::BlockNumber,
         runtime_parachains::configuration::HostConfiguration, sp_runtime::Perbill,
         westend_runtime_constants::currency::UNITS as WND,
     };
@@ -179,7 +146,7 @@ pub mod westend {
                                 x.4.clone(),
                                 x.5.clone(),
                                 x.6.clone(),
-                                get_from_seed::<BeefyId>("Alice"),
+                                BeefyId::from(Keyring::<BeefyId>::Alice.public()),
                             ),
                         )
                     })
@@ -226,6 +193,7 @@ pub mod westend {
 pub mod rococo {
     use {
         super::*,
+        beefy_primitives::test_utils::Keyring,
         cumulus_primitives_core::relay_chain::BlockNumber,
         polkadot_parachain_primitives::primitives::ValidationCode,
         rococo_runtime_constants::currency::UNITS as ROC,
@@ -287,7 +255,7 @@ pub mod rococo {
                                 x.4.clone(),
                                 x.5.clone(),
                                 x.6.clone(),
-                                get_from_seed::<BeefyId>("Alice"),
+                                BeefyId::from(Keyring::<BeefyId>::Alice.public()),
                             ),
                         )
                     })

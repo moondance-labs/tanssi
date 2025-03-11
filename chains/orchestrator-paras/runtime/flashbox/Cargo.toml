@@ -59,6 +59,7 @@ frame-system = { workspace = true }
 frame-system-rpc-runtime-api = { workspace = true }
 pallet-balances = { workspace = true }
 pallet-identity = { workspace = true }
+pallet-multiblock-migrations = { workspace = true }
 pallet-multisig = { workspace = true }
 pallet-root-testing = { workspace = true }
 pallet-session = { workspace = true }
@@ -166,6 +167,7 @@ std = [
 	"pallet-invulnerables/std",
 	"pallet-maintenance-mode/std",
 	"pallet-migrations/std",
+	"pallet-multiblock-migrations/std",
 	"pallet-multisig/std",
 	"pallet-proxy/std",
 	"pallet-registrar-runtime-api/std",
@@ -242,6 +244,7 @@ runtime-benchmarks = [
 	"pallet-inflation-rewards/runtime-benchmarks",
 	"pallet-invulnerables/runtime-benchmarks",
 	"pallet-migrations/runtime-benchmarks",
+	"pallet-multiblock-migrations/runtime-benchmarks",
 	"pallet-multisig/runtime-benchmarks",
 	"pallet-proxy/runtime-benchmarks",
 	"pallet-registrar/runtime-benchmarks",
@@ -250,6 +253,7 @@ runtime-benchmarks = [
 	"pallet-stream-payment/runtime-benchmarks",
 	"pallet-sudo/runtime-benchmarks",
 	"pallet-timestamp/runtime-benchmarks",
+	"pallet-transaction-payment/runtime-benchmarks",
 	"pallet-treasury/runtime-benchmarks",
 	"pallet-tx-pause/runtime-benchmarks",
 	"pallet-utility/runtime-benchmarks",
@@ -283,6 +287,7 @@ try-runtime = [
 	"pallet-invulnerables/try-runtime",
 	"pallet-maintenance-mode/try-runtime",
 	"pallet-migrations/try-runtime",
+	"pallet-multiblock-migrations/try-runtime",
 	"pallet-multisig/try-runtime",
 	"pallet-proxy/try-runtime",
 	"pallet-registrar/try-runtime",

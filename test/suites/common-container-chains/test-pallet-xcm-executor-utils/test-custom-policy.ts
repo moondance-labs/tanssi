@@ -1,26 +1,32 @@
-import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { KeyringPair, alith } from "@moonwall/util";
-import { ApiPromise, Keyring } from "@polkadot/api";
-import { u8aToHex } from "@polkadot/util";
+import "@tanssi/api-augment";
 
-import { RawXcmMessage, XcmFragment, injectDmpMessageAndSeal } from "../../../util/xcm.ts";
-import { RELAY_SOURCE_LOCATION, RELAY_SOURCE_LOCATION_2 } from "../../../util/constants.ts";
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import { type KeyringPair, alith } from "@moonwall/util";
+import { type ApiPromise, Keyring } from "@polkadot/api";
+import { u8aToHex } from "@polkadot/util";
+import {
+    RELAY_SOURCE_LOCATION,
+    RELAY_SOURCE_LOCATION_2,
+    type RawXcmMessage,
+    XcmFragment,
+    injectDmpMessageAndSeal,
+} from "utils";
 
 describeSuite({
-    id: "CC0101",
+    id: "COM0101",
     title: "XcmExecutorUtils - Custom policies",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
         let chain: string;
-        let transferredBalance;
+        let transferredBalance: bigint;
 
-        beforeAll(async function () {
+        beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             chain = polkadotJs.consts.system.version.specName.toString();
             alice =
-                chain == "frontier-template"
+                chain === "frontier-template"
                     ? alith
                     : new Keyring({ type: "sr25519" }).addFromUri("//Alice", {
                           name: "Alice default",
@@ -45,8 +51,8 @@ describeSuite({
                         true,
                         1
                     ),
-                    polkadotJs.tx.assetRate.create(1, 2_000_000_000_000_000_000n),
-                    polkadotJs.tx.assetRate.create(2, 2_000_000_000_000_000_000n),
+                    polkadotJs.tx.assetRate.create("1", 2_000_000_000_000_000_000n),
+                    polkadotJs.tx.assetRate.create("2", 2_000_000_000_000_000_000n),
                     // Set custom policy for parent origin to only allowing grandparent asset
                     polkadotJs.tx.xcmExecutorUtils.setReservePolicy(
                         // Origin
@@ -75,7 +81,7 @@ describeSuite({
         it({
             id: "T01",
             title: "Should accept grandparent asset from parent",
-            test: async function () {
+            test: async () => {
                 // Send grandparent native asset
                 const xcmMessage = new XcmFragment({
                     assets: [
@@ -115,7 +121,7 @@ describeSuite({
         it({
             id: "T02",
             title: "Should reject parent native asset from parent",
-            test: async function () {
+            test: async () => {
                 // Send grandparent native asset
                 const xcmMessage = new XcmFragment({
                     assets: [

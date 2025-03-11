@@ -19,6 +19,7 @@
 pub mod cumulus_pallet_parachain_system;
 pub mod cumulus_pallet_xcmp_queue;
 pub mod frame_system;
+pub mod frame_system_extensions;
 pub mod pallet_asset_rate;
 pub mod pallet_assets;
 pub mod pallet_author_inherent;
@@ -26,6 +27,7 @@ pub mod pallet_balances;
 pub mod pallet_cc_authorities_noting;
 pub mod pallet_foreign_asset_creator;
 pub mod pallet_message_queue;
+pub mod pallet_multiblock_migrations;
 pub mod pallet_multisig;
 pub mod pallet_parameters;
 pub mod pallet_proxy;

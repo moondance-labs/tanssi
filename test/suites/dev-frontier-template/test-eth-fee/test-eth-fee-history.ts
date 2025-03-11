@@ -1,14 +1,14 @@
 import { describeSuite, expect } from "@moonwall/cli";
 import { ALITH_ADDRESS, alith } from "@moonwall/util";
-import { hexToNumber, numberToHex } from "@polkadot/util";
-import { parseGwei } from "viem";
 import { customWeb3Request } from "@moonwall/util";
-import { getCompiled } from "../../../util/ethereum-contracts";
+import { hexToNumber, numberToHex } from "@polkadot/util";
+import { getCompiled } from "utils";
+import { parseGwei } from "viem";
 
 // We use ethers library in this test as apparently web3js's types are not fully EIP-1559
 // compliant yet.
 describeSuite({
-    id: "DF0401",
+    id: "DE0501",
     title: "Fee History",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
@@ -47,22 +47,19 @@ describeSuite({
         }
 
         function get_percentile(percentile: number, array: number[]) {
-            array.sort(function (a, b) {
-                return a - b;
-            });
+            array.sort((a, b) => a - b);
             const index = (percentile / 100) * array.length - 1;
-            if (Math.floor(index) == index) {
+            if (Math.floor(index) === index) {
                 return array[index];
-            } else {
-                return Math.ceil((array[Math.floor(index)] + array[Math.ceil(index)]) / 2);
             }
+            return Math.ceil((array[Math.floor(index)] + array[Math.ceil(index)]) / 2);
         }
 
         it({
             id: "T01",
             title: "result length should match spec",
             timeout: 30000,
-            test: async function () {
+            test: async () => {
                 const block_count = 2;
                 const reward_percentiles = [20, 50, 70];
                 const priority_fees = [1, 2, 3];
@@ -71,12 +68,16 @@ describeSuite({
                 const feeHistory = new Promise<FeeHistory>((resolve) => {
                     const unwatch = context.viem("public").watchBlocks({
                         onBlock: async (block) => {
-                            if (Number(block.number! - startingBlock) == block_count) {
-                                const result = (await customWeb3Request(context.web3(), "eth_feeHistory", [
+                            if (Number(block.number - startingBlock) === block_count) {
+                                const { result } = (await customWeb3Request(context.web3(), "eth_feeHistory", [
                                     "0x2",
                                     "latest",
                                     reward_percentiles,
-                                ])) as FeeHistory;
+                                ])) as {
+                                    jsonrpc: string;
+                                    id: number;
+                                    result: FeeHistory;
+                                };
                                 unwatch();
                                 resolve(result);
                             }
@@ -85,8 +86,7 @@ describeSuite({
                 });
 
                 await createBlocks(block_count, reward_percentiles, priority_fees, parseGwei("10").toString());
-
-                const feeResults = (await feeHistory).result;
+                const feeResults = await feeHistory;
                 expect(
                     feeResults.baseFeePerGas.length,
                     "baseFeePerGas should always the requested block range + 1 (the next derived base fee)"
@@ -110,7 +110,7 @@ describeSuite({
             id: "T02",
             title: "should calculate percentiles",
             timeout: 60000,
-            test: async function () {
+            test: async () => {
                 const max_fee_per_gas = parseGwei("10").toString();
                 const block_count = 11;
                 const reward_percentiles = [20, 50, 70, 85, 100];
@@ -120,12 +120,16 @@ describeSuite({
                 const feeHistory = new Promise<FeeHistory>((resolve) => {
                     const unwatch = context.viem("public").watchBlocks({
                         onBlock: async (block) => {
-                            if (Number(block.number! - startingBlock) == block_count) {
-                                const result = (await customWeb3Request(context.web3(), "eth_feeHistory", [
+                            if (Number(block.number - startingBlock) === block_count) {
+                                const { result } = (await customWeb3Request(context.web3(), "eth_feeHistory", [
                                     "0xA",
                                     "latest",
                                     reward_percentiles,
-                                ])) as FeeHistory;
+                                ])) as {
+                                    jsonrpc: string;
+                                    id: number;
+                                    result: FeeHistory;
+                                };
 
                                 unwatch();
                                 resolve(result);
@@ -136,7 +140,7 @@ describeSuite({
 
                 await createBlocks(block_count, reward_percentiles, priority_fees, max_fee_per_gas);
 
-                const feeResults = (await feeHistory).result;
+                const feeResults = await feeHistory;
                 const localRewards = reward_percentiles
                     .map((percentile) => get_percentile(percentile, priority_fees))
                     .map((reward) => numberToHex(reward));

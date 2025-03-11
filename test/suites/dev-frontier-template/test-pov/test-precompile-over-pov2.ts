@@ -1,13 +1,14 @@
 import "@tanssi/api-augment";
+
 import { beforeAll, deployCreateCompiledContract, describeSuite, expect, fetchCompiledContract } from "@moonwall/cli";
 import { MAX_ETH_POV_PER_TX, createEthersTransaction } from "@moonwall/util";
-import { Abi, encodeFunctionData } from "viem";
-import { HeavyContract, deployHeavyContracts } from "../../../helpers";
+import { type Abi, encodeFunctionData } from "viem";
+import { type HeavyContract, deployHeavyContracts } from "../../../helpers";
 
 const PRECOMPILE_BATCH_ADDRESS = "0x0000000000000000000000000000000000000801";
 
 describeSuite({
-    id: "DF1304",
+    id: "DE1204",
     title: "PoV precompile test - PoV Limit (3.5Mb in Dev)",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
@@ -17,7 +18,7 @@ describeSuite({
         let proxyAddress: `0x${string}`;
         let emptyBlockProofSize: bigint;
 
-        beforeAll(async function () {
+        beforeAll(async () => {
             // Create an empty block to estimate empty block proof size
             const { block } = await context.createBlock();
             // Empty blocks usually do not exceed 50kb
@@ -35,7 +36,7 @@ describeSuite({
         it({
             id: "T01",
             title: "should allow to produce block under the PoV Limit with precompile tx",
-            test: async function () {
+            test: async () => {
                 const maxContracts = MAX_ETH_POV_PER_TX / 24_000n - 1n;
 
                 const callData = encodeFunctionData({
@@ -71,7 +72,7 @@ describeSuite({
         it({
             id: "T0",
             title: "should prevent a tx reaching just over the PoV with a precompile tx",
-            test: async function () {
+            test: async () => {
                 const maxContracts = MAX_ETH_POV_PER_TX / 24_000n;
 
                 const callData = encodeFunctionData({

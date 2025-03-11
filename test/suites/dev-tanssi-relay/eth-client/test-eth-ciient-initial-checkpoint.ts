@@ -1,11 +1,12 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
-import { readFileSync } from "fs";
-import { KeyringPair } from "@moonwall/util";
+
+import { readFileSync } from "node:fs";
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import type { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
 
 describeSuite({
-    id: "DTR1201",
+    id: "DEVT0401",
     title: "Ethereum Beacon Client tests",
     foundationMethods: "dev",
 
@@ -21,7 +22,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Ethreum client should accept an intiial checkpoint",
-            test: async function () {
+            test: async () => {
                 const initialCheckpoint = JSON.parse(
                     readFileSync("tmp/ethereum_client_test/initial-checkpoint.json").toString()
                 );
@@ -29,14 +30,13 @@ describeSuite({
                 const signedTx = await polkadotJs.tx.sudo.sudo(tx).signAsync(alice);
                 await context.createBlock([signedTx]);
                 const checkpointRoot = await polkadotJs.query.ethereumBeaconClient.validatorsRoot();
-                expect(checkpointRoot.toHuman()).to.equal(initialCheckpoint["validators_root"]);
+                expect(checkpointRoot.toHuman()).to.equal(initialCheckpoint.validators_root);
 
                 const latestFinalizedBlockRoot = await polkadotJs.query.ethereumBeaconClient.latestFinalizedBlockRoot();
-                const latestFinalizedSlot = await polkadotJs.query.ethereumBeaconClient.finalizedBeaconState(
-                    latestFinalizedBlockRoot
-                );
+                const latestFinalizedSlot =
+                    await polkadotJs.query.ethereumBeaconClient.finalizedBeaconState(latestFinalizedBlockRoot);
 
-                expect(latestFinalizedSlot.toHuman().slot).to.equal(initialCheckpoint["header"]["slot"].toString());
+                expect(latestFinalizedSlot.toHuman().slot).to.equal(initialCheckpoint.header.slot.toString());
             },
         });
     },

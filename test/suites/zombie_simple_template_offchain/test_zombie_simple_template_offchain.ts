@@ -1,12 +1,14 @@
+import "@tanssi/api-augment";
+
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { getHeaderFromRelay } from "../../util/relayInterface.ts";
-import { ApiPromise, Keyring } from "@polkadot/api";
-import { signAndSendAndInclude, isEventEmittedInTheNextBlocks } from "../../util/block.ts";
+import { type ApiPromise, Keyring } from "@polkadot/api";
+import { getHeaderFromRelay, isEventEmittedInTheNextBlocks, signAndSendAndInclude } from "utils";
+
 describeSuite({
-    id: "ZOF01",
+    id: "ZOMB01",
     title: "Zombie Offchain Tests",
     foundationMethods: "zombie",
-    testCases: function ({ it, context }) {
+    testCases: ({ it, context }) => {
         let relayApi: ApiPromise;
         let container2000Api: ApiPromise;
         const baseBlockWaitingInterval: number = 10;
@@ -32,7 +34,7 @@ describeSuite({
         it({
             id: "T01",
             title: "Offchain events are not emitted for simple container chain when offchain pallet testing is not enabled",
-            test: async function () {
+            test: async () => {
                 const blockNum = (await container2000Api.rpc.chain.getBlock()).block.header.number.toNumber();
                 expect(blockNum).to.be.greaterThan(0);
                 const isOffchainEventEmitted = await isEventEmittedInTheNextBlocks(
@@ -49,7 +51,7 @@ describeSuite({
         it({
             id: "T02",
             title: "Offchain events are not emitted for simple container chain when offchain pallet testing is enabled",
-            test: async function () {
+            test: async () => {
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 

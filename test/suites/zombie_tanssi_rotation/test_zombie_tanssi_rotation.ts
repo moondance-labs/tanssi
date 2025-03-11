@@ -1,26 +1,33 @@
+import "@tanssi/api-augment";
+
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { MIN_GAS_PRICE, customWeb3Request, generateKeyringPair } from "@moonwall/util";
-import { ApiPromise, Keyring } from "@polkadot/api";
-import { Signer } from "ethers";
-import fs from "fs/promises";
-import { getAuthorFromDigest } from "../../util/author";
-import { signAndSendAndInclude, waitToSession } from "../../util/block";
-import { createTransfer, waitUntilEthTxIncluded } from "../../util/ethereum";
-import { getKeyringNimbusIdHex } from "../../util/keys";
-import { getHeaderFromRelay } from "../../util/relayInterface";
+import { type ApiPromise, Keyring } from "@polkadot/api";
+import type { Signer } from "ethers";
+import {
+    createTransfer,
+    directoryExists,
+    getAuthorFromDigest,
+    getHeaderFromRelay,
+    getKeyringNimbusIdHex,
+    getTmpZombiePath,
+    signAndSendAndInclude,
+    waitToSession,
+    waitUntilEthTxIncluded,
+} from "utils";
 
 describeSuite({
-    id: "R01",
+    id: "ZOMBIETANSSIRO01",
     title: "Zombie Tanssi Rotation Test",
     foundationMethods: "zombie",
-    testCases: function ({ it, context }) {
+    testCases: ({ it, context }) => {
         let paraApi: ApiPromise;
         let relayApi: ApiPromise;
         let container2000Api: ApiPromise;
         let container2001Api: ApiPromise;
         let ethersSigner: Signer;
-        let assignment3;
-        let assignment5;
+        let assignment3: any;
+        let assignment5: any;
         let allCollators: string[];
         let collatorName: Record<string, string>;
         let containerDbPaths: string[];
@@ -81,7 +88,7 @@ describeSuite({
         it({
             id: "T01",
             title: "Blocks are being produced on parachain",
-            test: async function () {
+            test: async () => {
                 const blockNum = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
                 expect(blockNum).to.be.greaterThan(0);
             },
@@ -91,7 +98,7 @@ describeSuite({
             id: "T02",
             title: "Set 1 collator per parachain, and full_rotation every 5 sessions",
             timeout: 120000,
-            test: async function () {
+            test: async () => {
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 
@@ -107,7 +114,7 @@ describeSuite({
         it({
             id: "T03",
             title: "Test assignation did not change",
-            test: async function () {
+            test: async () => {
                 const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
                 // TODO: fix once we have types
                 const allCollators = (
@@ -133,7 +140,7 @@ describeSuite({
         it({
             id: "T04",
             title: "Blocks are being produced on container 2000",
-            test: async function () {
+            test: async () => {
                 const blockNum = (await container2000Api.rpc.chain.getBlock()).block.header.number.toNumber();
                 expect(blockNum).to.be.greaterThan(0);
             },
@@ -142,7 +149,7 @@ describeSuite({
         it({
             id: "T05",
             title: "Blocks are being produced on container 2001",
-            test: async function () {
+            test: async () => {
                 const blockNum = (await container2001Api.rpc.chain.getBlock()).block.header.number.toNumber();
 
                 expect(blockNum).to.be.greaterThan(0);
@@ -153,7 +160,7 @@ describeSuite({
         it({
             id: "T06",
             title: "Test container chain 2000 assignation is correct",
-            test: async function () {
+            test: async () => {
                 const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
                 const paraId = (await container2000Api.query.parachainInfo.parachainId()).toString();
                 const containerChainCollators = (
@@ -170,7 +177,7 @@ describeSuite({
         it({
             id: "T07",
             title: "Test container chain 2001 assignation is correct",
-            test: async function () {
+            test: async () => {
                 const currentSession = (await paraApi.query.session.currentIndex()).toNumber();
                 const paraId = (await container2001Api.query.parachainInfo.parachainId()).toString();
                 const containerChainCollators = (
@@ -187,7 +194,7 @@ describeSuite({
             id: "T08",
             title: "Test author noting is correct for both containers",
             timeout: 120000,
-            test: async function () {
+            test: async () => {
                 const assignment = await paraApi.query.collatorAssignment.collatorContainerChain();
                 const paraId2000 = await container2000Api.query.parachainInfo.parachainId();
                 const paraId2001 = await container2001Api.query.parachainInfo.parachainId();
@@ -208,7 +215,7 @@ describeSuite({
         it({
             id: "T09",
             title: "Test author is correct in Orchestrator",
-            test: async function () {
+            test: async () => {
                 const sessionIndex = (await paraApi.query.session.currentIndex()).toNumber();
                 const authorities = await paraApi.query.authorityAssignment.collatorContainerChain(sessionIndex);
                 const author = await getAuthorFromDigest(paraApi);
@@ -220,19 +227,19 @@ describeSuite({
         it({
             id: "T10",
             title: "Test frontier template isEthereum",
-            test: async function () {
+            test: async () => {
                 // TODO: fix once we have types
-                const genesisData2000 = await paraApi.query.registrar.paraGenesisData(2000);
-                expect(genesisData2000.toJSON().properties.isEthereum).to.be.false;
-                const genesisData2001 = await paraApi.query.registrar.paraGenesisData(2001);
-                expect(genesisData2001.toJSON().properties.isEthereum).to.be.true;
+                const genesisData2000 = (await paraApi.query.registrar.paraGenesisData(2000)).unwrap();
+                expect(genesisData2000.properties.isEthereum.isTrue).toBe(false);
+                const genesisData2001 = (await paraApi.query.registrar.paraGenesisData(2001)).unwrap();
+                expect(genesisData2001.properties.isEthereum.isTrue).toBe(true);
             },
         });
         it({
             id: "T11",
             title: "Transactions can be made with ethers",
             timeout: 120000,
-            test: async function () {
+            test: async () => {
                 const randomAccount = generateKeyringPair();
                 const tx = await createTransfer(context, randomAccount.address, 1_000_000_000_000, {
                     gasPrice: MIN_GAS_PRICE,
@@ -250,7 +257,7 @@ describeSuite({
             id: "T12",
             title: "On session 3 we have 1 collator per chain",
             timeout: 240000,
-            test: async function () {
+            test: async () => {
                 await waitToSession(context, paraApi, 3);
 
                 // The node detects assignment when the block is finalized, but "waitSessions" ignores finality.
@@ -270,7 +277,7 @@ describeSuite({
             id: "T13",
             title: "On session 4 collators start syncing the new chains",
             timeout: 240000,
-            test: async function () {
+            test: async () => {
                 await waitToSession(context, paraApi, 4);
 
                 // The node detects assignment when the block is finalized, but "waitSessions" ignores finality.
@@ -290,12 +297,8 @@ describeSuite({
                 // First, check that nodes are still running in their previously assigned chain
                 const oldC2000 = collatorName[assignment3.containerChains[2000][0]];
                 const oldC2001 = collatorName[assignment3.containerChains[2001][0]];
-                const oldContainer2000DbPath =
-                    getTmpZombiePath() +
-                    `/${oldC2000}/data/containers/chains/simple_container_2000/paritydb/full-container-2000`;
-                const oldContainer2001DbPath =
-                    getTmpZombiePath() +
-                    `/${oldC2001}/data/containers/chains/frontier_container_2001/paritydb/full-container-2001`;
+                const oldContainer2000DbPath = `${getTmpZombiePath()}/${oldC2000}/data/containers/chains/simple_container_2000/paritydb/full-container-2000`;
+                const oldContainer2001DbPath = `${getTmpZombiePath()}/${oldC2001}/data/containers/chains/frontier_container_2001/paritydb/full-container-2001`;
                 expect(await directoryExists(oldContainer2000DbPath)).to.be.true;
                 expect(await directoryExists(oldContainer2001DbPath)).to.be.true;
 
@@ -309,12 +312,8 @@ describeSuite({
 
                 // Verify that collators have container chain running by looking at db path,
                 // and unassignedCollators should not have any db path
-                const container2000DbPath =
-                    getTmpZombiePath() +
-                    `/${c2000}/data/containers/chains/simple_container_2000/paritydb/full-container-2000`;
-                const container2001DbPath =
-                    getTmpZombiePath() +
-                    `/${c2001}/data/containers/chains/frontier_container_2001/paritydb/full-container-2001`;
+                const container2000DbPath = `${getTmpZombiePath()}/${c2000}/data/containers/chains/simple_container_2000/paritydb/full-container-2000`;
+                const container2001DbPath = `${getTmpZombiePath()}/${c2001}/data/containers/chains/frontier_container_2001/paritydb/full-container-2001`;
                 expect(await directoryExists(container2000DbPath)).to.be.true;
                 expect(await directoryExists(container2001DbPath)).to.be.true;
 
@@ -325,7 +324,7 @@ describeSuite({
             id: "T14",
             title: "On session 5 collators stop the previously assigned chains",
             timeout: 240000,
-            test: async function () {
+            test: async () => {
                 await waitToSession(context, paraApi, 5);
                 const assignment = await paraApi.query.collatorAssignment.collatorContainerChain();
                 expect(assignment.toJSON()).to.deep.equal(assignment5);
@@ -340,17 +339,13 @@ describeSuite({
                 const oldC2001 = collatorName[assignment3.containerChains[2001][0]];
                 const c2000 = collatorName[assignment5.containerChains[2000][0]];
                 const c2001 = collatorName[assignment5.containerChains[2001][0]];
-                const oldContainer2000DbPath =
-                    getTmpZombiePath() +
-                    `/${oldC2000}/data/containers/chains/simple_container_2000/paritydb/full-container-2000`;
-                const oldContainer2001DbPath =
-                    getTmpZombiePath() +
-                    `/${oldC2001}/data/containers/chains/frontier_container_2001/paritydb/full-container-2001`;
+                const oldContainer2000DbPath = `${getTmpZombiePath()}/${oldC2000}/data/containers/chains/simple_container_2000/paritydb/full-container-2000`;
+                const oldContainer2001DbPath = `${getTmpZombiePath()}/${oldC2001}/data/containers/chains/frontier_container_2001/paritydb/full-container-2001`;
                 // Edge case: collators may be assigned to the same chain, in that case the directory will still exist
-                if (oldC2000 != c2000) {
+                if (oldC2000 !== c2000) {
                     expect(await directoryExists(oldContainer2000DbPath)).to.be.false;
                 }
-                if (oldC2001 != c2001) {
+                if (oldC2001 !== c2001) {
                     expect(await directoryExists(oldContainer2001DbPath)).to.be.false;
                 }
 
@@ -359,12 +354,8 @@ describeSuite({
 
                 // Verify that collators have container chain running by looking at db path,
                 // and unassignedCollators should not have any db path
-                const container2000DbPath =
-                    getTmpZombiePath() +
-                    `/${c2000}/data/containers/chains/simple_container_2000/paritydb/full-container-2000`;
-                const container2001DbPath =
-                    getTmpZombiePath() +
-                    `/${c2001}/data/containers/chains/frontier_container_2001/paritydb/full-container-2001`;
+                const container2000DbPath = `${getTmpZombiePath()}/${c2000}/data/containers/chains/simple_container_2000/paritydb/full-container-2000`;
+                const container2001DbPath = `${getTmpZombiePath()}/${c2001}/data/containers/chains/frontier_container_2001/paritydb/full-container-2001`;
                 expect(await directoryExists(container2000DbPath)).to.be.true;
                 expect(await directoryExists(container2001DbPath)).to.be.true;
                 await ensureContainerDbPathsDontExist(unassignedCollators, containerDbPaths);
@@ -374,7 +365,7 @@ describeSuite({
         it({
             id: "T15",
             title: "Blocks are being produced on container 2000",
-            test: async function () {
+            test: async () => {
                 await context.waitBlock(1, "Container2000");
             },
         });
@@ -382,33 +373,19 @@ describeSuite({
         it({
             id: "T16",
             title: "Blocks are being produced on container 2001",
-            test: async function () {
+            test: async () => {
                 await context.waitBlock(1, "Container2001");
             },
         });
     },
 });
 
-async function directoryExists(directoryPath) {
-    try {
-        await fs.access(directoryPath, fs.constants.F_OK);
-        return true;
-    } catch (err) {
-        return false;
-    }
-}
-
-/// Returns the /tmp/zombie-52234... path
-function getTmpZombiePath() {
-    return process.env.MOON_ZOMBIE_DIR;
-}
-
 /// Given a list of collators and a list of dbPaths, checks that the path does not exist for all the collators.
 /// This can be used to ensure that all the unassigned collators do not have any container chains running.
 async function ensureContainerDbPathsDontExist(collators: string[], pathsToVerify: string[]) {
     for (const collator of collators) {
         for (const path of pathsToVerify) {
-            const fullPath = getTmpZombiePath() + `/${collator}${path}`;
+            const fullPath = `${getTmpZombiePath()}/${collator}${path}`;
             expect(await directoryExists(fullPath), `Container DB path exists for ${collator}: ${fullPath}`).to.be
                 .false;
         }

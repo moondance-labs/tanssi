@@ -8,7 +8,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Checking that launched node can create blocks",
-            test: async function () {
+            test: async () => {
                 const block = (await context.pjsApi.rpc.chain.getBlock()).block.header.number.toNumber();
                 await context.createBlock();
 

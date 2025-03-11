@@ -1,9 +1,9 @@
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
-import { KeyringPair } from "@moonwall/util";
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import type { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
 
 describeSuite({
-    id: "DTR0101",
+    id: "DEVT1301",
     title: "Genesis supply and balances",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -18,7 +18,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Checking total issuance is correct on genesis",
-            test: async function () {
+            test: async () => {
                 const totalIssuance = (await polkadotJs.query.balances.totalIssuance()).toBigInt();
                 expect(totalIssuance).toBe(12_000_000_000_166_666_665n);
             },
@@ -27,7 +27,7 @@ describeSuite({
         it({
             id: "E02",
             title: "Checking alice's balance is correct on genesis",
-            test: async function () {
+            test: async () => {
                 const balance = (await polkadotJs.query.system.account(alice.address)).data.free.toBigInt();
                 expect(balance).toBe(1_000_000_000_000_000_000n);
             },

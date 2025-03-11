@@ -1,17 +1,17 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { KeyringPair, alith } from "@moonwall/util";
+import { type KeyringPair, alith } from "@moonwall/util";
 import { generateKeyringPair } from "@moonwall/util";
-import { ApiPromise, Keyring } from "@polkadot/api";
+import { type ApiPromise, Keyring } from "@polkadot/api";
 import {
-    RawXcmMessage,
+    type RawXcmMessage,
     XcmFragment,
     descendParentOriginForAddress20,
     descendParentOriginFromAddress32,
     injectDmpMessageAndSeal,
-} from "../../../util/xcm.ts";
+} from "utils";
 
 describeSuite({
-    id: "CPX0101",
+    id: "COMMON0101",
     title: "Maintenance mode - DMP queue",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
@@ -23,20 +23,20 @@ describeSuite({
         let random: KeyringPair;
         let xcmMessage: XcmFragment;
 
-        beforeAll(async function () {
+        beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             chain = polkadotJs.consts.system.version.specName.toString();
 
             // Generate the proper Keyring for the current type of chain
             alice =
-                chain == "frontier-template"
+                chain === "frontier-template"
                     ? alith
                     : new Keyring({ type: "sr25519" }).addFromUri("//Alice", {
                           name: "Alice default",
                       });
 
             const descendFunction =
-                chain == "frontier-template" ? descendParentOriginForAddress20 : descendParentOriginFromAddress32;
+                chain === "frontier-template" ? descendParentOriginForAddress20 : descendParentOriginFromAddress32;
             let aliceNonce = (await polkadotJs.query.system.account(alice.address)).nonce.toNumber();
 
             // Generate the parent address constructed by DescendOrigin
@@ -54,12 +54,12 @@ describeSuite({
 
             // Now let's start building the message
             // Generate random receiver address
-            random = chain == "frontier-template" ? generateKeyringPair() : generateKeyringPair("sr25519");
+            random = chain === "frontier-template" ? generateKeyringPair() : generateKeyringPair("sr25519");
 
             // Get Pallet balances index
             const metadata = await polkadotJs.rpc.state.getMetadata();
             const balancesPalletIndex = metadata.asLatest.pallets
-                .find(({ name }) => name.toString() == "Balances")!
+                .find(({ name }) => name.toString() === "Balances")
                 .index.toNumber();
 
             // The call will be a simple balance transfer to random address
@@ -102,7 +102,7 @@ describeSuite({
         it({
             id: "T01",
             title: "Should queue DMP execution during maintenance mode",
-            test: async function () {
+            test: async () => {
                 // Enter maintenance mode with sudo
                 const maintenanceTx = polkadotJs.tx.maintenanceMode.enterMaintenanceMode();
                 await context.createBlock([await polkadotJs.tx.sudo.sudo(maintenanceTx).signAsync(alice)]);

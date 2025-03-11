@@ -1,16 +1,18 @@
 import "@tanssi/api-augment";
-import { describeSuite, customDevRpcRequest, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise, Keyring } from "@polkadot/api";
-import { jumpToSession } from "util/block";
+
+import { beforeAll, customDevRpcRequest, describeSuite, expect } from "@moonwall/cli";
+import type { KeyringPair } from "@moonwall/util";
+import { type ApiPromise, Keyring } from "@polkadot/api";
+import { jumpToSession } from "utils";
 
 describeSuite({
-    id: "DTR1601",
+    id: "DEVT0601",
     title: "Paras inherent tests",
     foundationMethods: "dev",
 
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
-        let alice;
+        let alice: KeyringPair;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
@@ -20,7 +22,7 @@ describeSuite({
         it({
             id: "E01",
             title: "para candidates should trigger reward info",
-            test: async function () {
+            test: async () => {
                 const keyring = new Keyring({ type: "sr25519" });
                 const aliceStash = keyring.addFromUri("//Alice//stash");
 
@@ -33,7 +35,7 @@ describeSuite({
                         .sudo(polkadotJs.tx.externalValidators.removeWhitelisted(aliceStash.address))
                         .signAsync(context.keyring.alice, { nonce: aliceNonce++ }),
                     await polkadotJs.tx.sudo
-                        .sudo(polkadotJs.tx.externalValidators.setExternalValidators([aliceStash.address]))
+                        .sudo(polkadotJs.tx.externalValidators.setExternalValidators([aliceStash.address], 1))
                         .signAsync(context.keyring.alice, { nonce: aliceNonce++ }),
                 ]);
 

@@ -37,7 +37,13 @@ use sp_std::marker::PhantomData;
 
 /// Weights for {{pallet}} using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
+{{#if (eq pallet "runtime_parachains::assigner_on_demand")}}
+impl<T: frame_system::Config> runtime_parachains::on_demand::WeightInfo for SubstrateWeight<T> {
+{{else if (eq pallet "frame_system_extensions")}}
+impl<T: frame_system::Config> frame_system::ExtensionsWeightInfo for SubstrateWeight<T> {
+{{else}}
 impl<T: frame_system::Config> {{pallet}}::WeightInfo for SubstrateWeight<T> {
+{{/if}}
 	{{#each benchmarks as |benchmark|}}
 	{{#each benchmark.comments as |comment|}}
 	/// {{comment}}

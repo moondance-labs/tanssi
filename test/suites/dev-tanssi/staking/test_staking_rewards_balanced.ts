@@ -1,19 +1,20 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
-import { KeyringPair } from "@moonwall/util";
+
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import type { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
 import {
     fetchIssuance,
     fetchRewardAuthorOrchestrator,
     filterRewardStakingCollator,
     filterRewardStakingDelegators,
     jumpSessions,
-} from "util/block";
-import { DANCE } from "util/constants";
-import { createBlockAndRemoveInvulnerables } from "util/invulnerables";
+} from "utils";
+import { DANCE } from "utils";
+import { createBlockAndRemoveInvulnerables } from "utils";
 
 describeSuite({
-    id: "DT0302",
+    id: "DEV0802",
     title: "Staking candidate reward test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -60,7 +61,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Alice should receive rewards through staking now",
-            test: async function () {
+            test: async () => {
                 // 70% is distributed across all rewards
                 // But we have 2 container chains, so it should get 1/3 of this
                 // Since it is an invulnerable, it receives all payment
@@ -90,7 +91,7 @@ describeSuite({
         it({
             id: "E02",
             title: "Alice should receive shared rewards with delegators through staking now",
-            test: async function () {
+            test: async () => {
                 // All pending operations where in session 0
                 await context.createBlock([
                     await polkadotJs.tx.pooledStaking

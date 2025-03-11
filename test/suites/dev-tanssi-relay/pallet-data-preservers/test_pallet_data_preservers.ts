@@ -1,11 +1,13 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
-import { KeyringPair } from "@moonwall/util";
-import { initializeCustomCreateBlock } from "../../../util/block.ts";
+
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import type { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
+import { generateEmptyGenesisData, initializeCustomCreateBlock } from "utils";
+import type { DpContainerChainGenesisDataContainerChainGenesisData } from "@polkadot/types/lookup";
 
 describeSuite({
-    id: "DTR0601",
+    id: "DEVT0901",
     title: "Data preservers pallet relay test suite",
     foundationMethods: "dev",
 
@@ -14,18 +16,20 @@ describeSuite({
         let sudo_alice: KeyringPair;
         let general_user_bob: KeyringPair;
         let profileId = 0;
+        let containerChainGenesisData: DpContainerChainGenesisDataContainerChainGenesisData;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             sudo_alice = context.keyring.alice;
             general_user_bob = context.keyring.charlie;
             initializeCustomCreateBlock(context);
+            containerChainGenesisData = generateEmptyGenesisData(context.pjsApi, true);
         });
 
         it({
             id: "E01",
             title: "User can create profile",
-            test: async function () {
+            test: async () => {
                 const profile = {
                     url: "exemple",
                     paraIds: { whitelist: [42, 43] },
@@ -55,7 +59,7 @@ describeSuite({
         it({
             id: "E02",
             title: "User can update profile",
-            test: async function () {
+            test: async () => {
                 const profile = {
                     url: "exemple",
                     paraIds: { whitelist: [42, 43] },
@@ -107,7 +111,7 @@ describeSuite({
         it({
             id: "E03",
             title: "User can delete profile",
-            test: async function () {
+            test: async () => {
                 const profile = {
                     url: "exemple",
                     paraIds: { whitelist: [42, 43] },
@@ -143,7 +147,7 @@ describeSuite({
         it({
             id: "E04",
             title: "Root can force create profile",
-            test: async function () {
+            test: async () => {
                 const profile = {
                     url: "exemple",
                     paraIds: { whitelist: [42, 43] },
@@ -172,7 +176,7 @@ describeSuite({
         it({
             id: "E05",
             title: "Root can force update profile",
-            test: async function () {
+            test: async () => {
                 const profile = {
                     url: "exemple",
                     paraIds: { whitelist: [42, 43] },
@@ -224,7 +228,7 @@ describeSuite({
         it({
             id: "E06",
             title: "Root can force delete profile",
-            test: async function () {
+            test: async () => {
                 const profile = {
                     url: "exemple",
                     paraIds: { whitelist: [42, 43] },
@@ -260,41 +264,14 @@ describeSuite({
         it({
             id: "E07",
             title: "Profile can be assigned",
-            test: async function () {
+            test: async () => {
                 const paraId = 2002;
-                const emptyGenesisData = () => {
-                    const g = polkadotJs.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
-                        storage: [
-                            {
-                                // ":code" key
-                                key: "0x3a636f6465",
-                                // code value (must be at least 9 bytes length)
-                                value: "0x0102030405060708091011",
-                            },
-                        ],
-                        name: "0x436f6e7461696e657220436861696e2032303030",
-                        id: "0x636f6e7461696e65722d636861696e2d32303030",
-                        forkId: null,
-                        extensions: "0x",
-                        properties: {
-                            tokenMetadata: {
-                                tokenSymbol: "0x61626364",
-                                ss58Format: 42,
-                                tokenDecimals: 12,
-                            },
-                            isEthereum: false,
-                        },
-                    });
-                    return g;
-                };
-                const containerChainGenesisData = emptyGenesisData();
-
                 await context.createBlock([]);
                 await context.createBlock([await polkadotJs.tx.registrar.reserve().signAsync(sudo_alice)]);
                 const registerTx = polkadotJs.tx.containerRegistrar.register(
                     paraId,
                     containerChainGenesisData,
-                    "0x010203"
+                    containerChainGenesisData.storage[0].value
                 );
                 await context.createBlock([await registerTx.signAsync(sudo_alice)]);
 
@@ -332,39 +309,13 @@ describeSuite({
         it({
             id: "E08",
             title: "Profile can be force assigned",
-            test: async function () {
+            test: async () => {
                 const paraId = 2003;
-                const emptyGenesisData = () => {
-                    const g = polkadotJs.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
-                        storage: [
-                            {
-                                // ":code" key
-                                key: "0x3a636f6465",
-                                // code value (must be at least 9 bytes length)
-                                value: "0x0102030405060708091011",
-                            },
-                        ],
-                        name: "0x436f6e7461696e657220436861696e2032303030",
-                        id: "0x636f6e7461696e65722d636861696e2d32303030",
-                        forkId: null,
-                        extensions: "0x",
-                        properties: {
-                            tokenMetadata: {
-                                tokenSymbol: "0x61626364",
-                                ss58Format: 42,
-                                tokenDecimals: 12,
-                            },
-                            isEthereum: false,
-                        },
-                    });
-                    return g;
-                };
-                const containerChainGenesisData = emptyGenesisData();
                 await context.createBlock([await polkadotJs.tx.registrar.reserve().signAsync(sudo_alice)]);
                 const registerTx = polkadotJs.tx.containerRegistrar.register(
                     paraId,
                     containerChainGenesisData,
-                    "0x010203"
+                    containerChainGenesisData.storage[0].value
                 );
                 await context.createBlock([await registerTx.signAsync(sudo_alice)]);
 
@@ -402,39 +353,14 @@ describeSuite({
         it({
             id: "E09",
             title: "Profile can be unassigned",
-            test: async function () {
+            test: async () => {
                 const paraId = 2004;
-                const emptyGenesisData = () => {
-                    const g = polkadotJs.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
-                        storage: [
-                            {
-                                // ":code" key
-                                key: "0x3a636f6465",
-                                // code value (must be at least 9 bytes length)
-                                value: "0x0102030405060708091011",
-                            },
-                        ],
-                        name: "0x436f6e7461696e657220436861696e2032303030",
-                        id: "0x636f6e7461696e65722d636861696e2d32303030",
-                        forkId: null,
-                        extensions: "0x",
-                        properties: {
-                            tokenMetadata: {
-                                tokenSymbol: "0x61626364",
-                                ss58Format: 42,
-                                tokenDecimals: 12,
-                            },
-                            isEthereum: false,
-                        },
-                    });
-                    return g;
-                };
-                const containerChainGenesisData = emptyGenesisData();
+
                 await context.createBlock([await polkadotJs.tx.registrar.reserve().signAsync(sudo_alice)]);
                 const registerTx = polkadotJs.tx.containerRegistrar.register(
                     paraId,
                     containerChainGenesisData,
-                    "0x010203"
+                    containerChainGenesisData.storage[0].value
                 );
                 await context.createBlock([]);
                 await context.createBlock([await registerTx.signAsync(sudo_alice)]);
@@ -475,39 +401,13 @@ describeSuite({
         it({
             id: "E10",
             title: "Profile can be force unassigned",
-            test: async function () {
+            test: async () => {
                 const paraId = 2005;
-                const emptyGenesisData = () => {
-                    const g = polkadotJs.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
-                        storage: [
-                            {
-                                // ":code" key
-                                key: "0x3a636f6465",
-                                // code value (must be at least 9 bytes length)
-                                value: "0x0102030405060708091011",
-                            },
-                        ],
-                        name: "0x436f6e7461696e657220436861696e2032303030",
-                        id: "0x636f6e7461696e65722d636861696e2d32303030",
-                        forkId: null,
-                        extensions: "0x",
-                        properties: {
-                            tokenMetadata: {
-                                tokenSymbol: "0x61626364",
-                                ss58Format: 42,
-                                tokenDecimals: 12,
-                            },
-                            isEthereum: false,
-                        },
-                    });
-                    return g;
-                };
-                const containerChainGenesisData = emptyGenesisData();
                 await context.createBlock([await polkadotJs.tx.registrar.reserve().signAsync(sudo_alice)]);
                 const registerTx = polkadotJs.tx.containerRegistrar.register(
                     paraId,
                     containerChainGenesisData,
-                    "0x010203"
+                    containerChainGenesisData.storage[0].value
                 );
                 await context.createBlock([await registerTx.signAsync(sudo_alice)]);
 
@@ -547,40 +447,14 @@ describeSuite({
         it({
             id: "E11",
             title: "Profile will be unassigned on container deregister",
-            test: async function () {
+            test: async () => {
                 const paraId = 2006;
-                const emptyGenesisData = () => {
-                    const g = polkadotJs.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
-                        storage: [
-                            {
-                                // ":code" key
-                                key: "0x3a636f6465",
-                                // code value (must be at least 9 bytes length)
-                                value: "0x0102030405060708091011",
-                            },
-                        ],
-                        name: "0x436f6e7461696e657220436861696e2032303030",
-                        id: "0x636f6e7461696e65722d636861696e2d32303030",
-                        forkId: null,
-                        extensions: "0x",
-                        properties: {
-                            tokenMetadata: {
-                                tokenSymbol: "0x61626364",
-                                ss58Format: 42,
-                                tokenDecimals: 12,
-                            },
-                            isEthereum: false,
-                        },
-                    });
-                    return g;
-                };
-                const containerChainGenesisData = emptyGenesisData();
                 await context.createBlock([]);
                 await context.createBlock([await polkadotJs.tx.registrar.reserve().signAsync(sudo_alice)]);
                 const registerTx = polkadotJs.tx.containerRegistrar.register(
                     paraId,
                     containerChainGenesisData,
-                    "0x010203"
+                    containerChainGenesisData.storage[0].value
                 );
                 await context.createBlock([await registerTx.signAsync(sudo_alice)]);
 

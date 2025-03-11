@@ -1,12 +1,13 @@
-import "@polkadot/api-augment";
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { KeyringPair } from "@moonwall/util";
-import { ApiPromise } from "@polkadot/api";
-import { jumpSessions } from "../../../util/block";
+import "@tanssi/api-augment";
+
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import type { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
 import { u8aToHex } from "@polkadot/util";
+import { jumpSessions } from "utils";
 
 describeSuite({
-    id: "DT0203",
+    id: "DEV0403",
     title: "Session keys assignment test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -26,7 +27,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Checking that authority assignment is correct on genesis",
-            test: async function () {
+            test: async () => {
                 // for session 0
                 // TODO: fix once we have types
                 const assignment0 = (await polkadotJs.query.authorityAssignment.collatorContainerChain(0))
@@ -57,7 +58,7 @@ describeSuite({
         it({
             id: "E02",
             title: "Checking that session keys can be changed and are reflected",
-            test: async function () {
+            test: async () => {
                 const newKey = await polkadotJs.rpc.author.rotateKeys();
                 await polkadotJs.tx.session.setKeys(newKey, []).signAndSend(alice);
 
@@ -65,7 +66,7 @@ describeSuite({
                 // Check key is reflected in next key
                 // But its not yet in queued
                 const queuedKeys = await polkadotJs.query.session.queuedKeys();
-                const result = queuedKeys.filter((keyItem) => keyItem[1].nimbus == newKey);
+                const result = queuedKeys.filter((keyItem) => keyItem[1].nimbus === newKey);
                 expect(result).is.empty;
                 const nextKey = await polkadotJs.query.session.nextKeys(alice.address);
                 expect(u8aToHex(nextKey.unwrap().nimbus)).to.be.eq(u8aToHex(newKey));
@@ -81,7 +82,9 @@ describeSuite({
                 // The key should be queued at this point, to be applied on the next session
                 const queuedKeysSession1 = await polkadotJs.query.session.queuedKeys();
 
-                const result1 = queuedKeysSession1.filter((keyItem) => u8aToHex(keyItem[1].nimbus) == u8aToHex(newKey));
+                const result1 = queuedKeysSession1.filter(
+                    (keyItem) => u8aToHex(keyItem[1].nimbus) === u8aToHex(newKey)
+                );
                 expect(result1.length).to.be.eq(1);
 
                 expect((await polkadotJs.query.authorityAssignment.collatorContainerChain(0)).isNone).to.be.true;

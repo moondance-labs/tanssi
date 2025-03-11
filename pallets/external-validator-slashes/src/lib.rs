@@ -33,24 +33,27 @@ use {
     frame_system::pallet_prelude::*,
     log::log,
     pallet_staking::SessionInterface,
-    parity_scale_codec::FullCodec,
-    parity_scale_codec::{Decode, Encode},
+    parity_scale_codec::{Decode, Encode, FullCodec},
     sp_core::H256,
-    sp_runtime::traits::{Convert, Debug, One, Saturating, Zero},
-    sp_runtime::DispatchResult,
-    sp_runtime::Perbill,
+    sp_runtime::{
+        traits::{Convert, Debug, One, Saturating, Zero},
+        DispatchResult, Perbill,
+    },
     sp_staking::{
         offence::{OffenceDetails, OnOffenceHandler},
         EraIndex, SessionIndex,
     },
-    sp_std::collections::vec_deque::VecDeque,
-    sp_std::vec,
-    sp_std::vec::Vec,
-    tp_traits::{EraIndexProvider, InvulnerablesProvider, OnEraStart},
+    sp_std::{collections::vec_deque::VecDeque, vec, vec::Vec},
+    tp_traits::{
+        apply, derive_storage_traits, EraIndexProvider, ExternalIndexProvider,
+        InvulnerablesProvider, OnEraStart,
+    },
 };
 
-use snowbridge_core::ChannelId;
-use tp_bridge::{Command, DeliverMessage, Message, SlashData, ValidateMessage};
+use {
+    snowbridge_core::ChannelId,
+    tp_bridge::{Command, DeliverMessage, Message, SlashData, TicketInfo, ValidateMessage},
+};
 
 pub use pallet::*;
 
@@ -79,7 +82,10 @@ pub mod pallet {
             slash_era: EraIndex,
         },
         /// The slashes message was sent correctly.
-        SlashesMessageSent { slashes_command: Command },
+        SlashesMessageSent {
+            message_id: H256,
+            slashes_command: Command,
+        },
     }
 
     #[pallet::config]
@@ -138,8 +144,8 @@ pub mod pallet {
             Ticket = <<Self as pallet::Config>::ValidateMessage as ValidateMessage>::Ticket,
         >;
 
-        /// Provider to retrieve the current block timestamp.
-        type TimestampProvider: Get<u64>;
+        /// Provider to retrieve the current external index of validators
+        type ExternalIndexProvider: ExternalIndexProvider;
 
         /// How many queued slashes are being processed per block.
         #[pallet::constant]
@@ -171,6 +177,15 @@ pub mod pallet {
         EthereumDeliverFail,
     }
 
+    #[apply(derive_storage_traits)]
+    #[derive(MaxEncodedLen, Default)]
+    pub enum SlashingModeOption {
+        #[default]
+        Enabled,
+        LogOnly,
+        Disabled,
+    }
+
     #[pallet::pallet]
     pub struct Pallet<T>(PhantomData<T>);
 
@@ -186,7 +201,8 @@ pub mod pallet {
     /// `[active_era - bounding_duration; active_era]`
     #[pallet::storage]
     #[pallet::unbounded]
-    pub type BondedEras<T: Config> = StorageValue<_, Vec<(EraIndex, SessionIndex)>, ValueQuery>;
+    pub type BondedEras<T: Config> =
+        StorageValue<_, Vec<(EraIndex, SessionIndex, u64)>, ValueQuery>;
 
     /// A counter on the number of slashes we have performed
     #[pallet::storage]
@@ -206,6 +222,10 @@ pub mod pallet {
     #[pallet::getter(fn unreported_slashes)]
     pub type UnreportedSlashesQueue<T: Config> =
         StorageValue<_, VecDeque<Slash<T::AccountId, T::SlashId>>, ValueQuery>;
+
+    // Turns slashing on or off
+    #[pallet::storage]
+    pub type SlashingMode<T: Config> = StorageValue<_, SlashingModeOption, ValueQuery>;
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
@@ -259,6 +279,7 @@ pub mod pallet {
             era: EraIndex,
             validator: T::AccountId,
             percentage: Perbill,
+            external_idx: u64,
         ) -> DispatchResult {
             ensure_root(origin)?;
             let active_era = T::EraIndexProvider::active_era().index;
@@ -278,6 +299,7 @@ pub mod pallet {
                 era,
                 validator,
                 slash_defer_duration,
+                external_idx,
             )
             .ok_or(Error::<T>::ErrorComputingSlash)?;
 
@@ -345,6 +367,16 @@ pub mod pallet {
 
             Ok(())
         }
+
+        #[pallet::call_index(3)]
+        #[pallet::weight(T::WeightInfo::set_slashing_mode())]
+        pub fn set_slashing_mode(origin: OriginFor<T>, mode: SlashingModeOption) -> DispatchResult {
+            ensure_root(origin)?;
+
+            SlashingMode::<T>::put(mode);
+
+            Ok(())
+        }
     }
 
     #[pallet::hooks]
@@ -379,6 +411,11 @@ where
         slash_fraction: &[Perbill],
         slash_session: SessionIndex,
     ) -> Weight {
+        let slashing_mode = SlashingMode::<T>::get();
+        if slashing_mode == SlashingModeOption::Disabled {
+            return Weight::default();
+        }
+
         let active_era = {
             let active_era = T::EraIndexProvider::active_era().index;
             active_era
@@ -391,14 +428,18 @@ where
 
         // Fast path for active-era report - most likely.
         // `slash_session` cannot be in a future active era. It must be in `active_era` or before.
-        let slash_era = if slash_session >= active_era_start_session_index {
-            active_era
+        let (slash_era, external_idx) = if slash_session >= active_era_start_session_index {
+            (active_era, T::ExternalIndexProvider::get_external_index())
         } else {
             let eras = BondedEras::<T>::get();
 
             // Reverse because it's more likely to find reports from recent eras.
-            match eras.iter().rev().find(|&(_, sesh)| sesh <= &slash_session) {
-                Some((slash_era, _)) => *slash_era,
+            match eras
+                .iter()
+                .rev()
+                .find(|&(_, sesh, _)| sesh <= &slash_session)
+            {
+                Some((slash_era, _, external_idx)) => (*slash_era, *external_idx),
                 // Before bonding period. defensive - should be filtered out.
                 None => return Weight::default(),
             }
@@ -418,19 +459,24 @@ where
                 continue;
             }
 
+            Self::deposit_event(Event::<T>::SlashReported {
+                validator: stash.clone(),
+                fraction: *slash_fraction,
+                slash_era,
+            });
+
+            if slashing_mode == SlashingModeOption::LogOnly {
+                continue;
+            }
+
             let slash = compute_slash::<T>(
                 *slash_fraction,
                 next_slash_id,
                 slash_era,
                 stash.clone(),
                 slash_defer_duration,
+                external_idx,
             );
-
-            Self::deposit_event(Event::<T>::SlashReported {
-                validator: stash.clone(),
-                fraction: *slash_fraction,
-                slash_era,
-            });
 
             if let Some(mut slash) = slash {
                 slash.reporters = details.reporters.clone();
@@ -471,7 +517,7 @@ where
 }
 
 impl<T: Config> OnEraStart for Pallet<T> {
-    fn on_era_start(era_index: EraIndex, session_start: SessionIndex) {
+    fn on_era_start(era_index: EraIndex, session_start: SessionIndex, external_idx: u64) {
         // This should be small, as slashes are limited by the num of validators
         // let's put 1000 as a conservative measure
         const REMOVE_LIMIT: u32 = 1000;
@@ -479,7 +525,7 @@ impl<T: Config> OnEraStart for Pallet<T> {
         let bonding_duration = T::BondingDuration::get();
 
         BondedEras::<T>::mutate(|bonded| {
-            bonded.push((era_index, session_start));
+            bonded.push((era_index, session_start, external_idx));
 
             if era_index > bonding_duration {
                 let first_kept = era_index.defensive_saturating_sub(bonding_duration);
@@ -487,11 +533,11 @@ impl<T: Config> OnEraStart for Pallet<T> {
                 // Prune out everything that's from before the first-kept index.
                 let n_to_prune = bonded
                     .iter()
-                    .take_while(|&&(era_idx, _)| era_idx < first_kept)
+                    .take_while(|&&(era_idx, _, _)| era_idx < first_kept)
                     .count();
 
                 // Kill slashing metadata.
-                for (pruned_era, _) in bonded.drain(..n_to_prune) {
+                for (pruned_era, _, _) in bonded.drain(..n_to_prune) {
                     let removal_result =
                         ValidatorSlashInEra::<T>::clear_prefix(&pruned_era, REMOVE_LIMIT, None);
                     if removal_result.maybe_cursor.is_some() {
@@ -503,7 +549,7 @@ impl<T: Config> OnEraStart for Pallet<T> {
                     Slashes::<T>::remove(&pruned_era);
                 }
 
-                if let Some(&(_, first_session)) = bonded.first() {
+                if let Some(&(_, first_session, _)) = bonded.first() {
                     T::SessionInterface::prune_historical_up_to(first_session);
                 }
             }
@@ -535,7 +581,7 @@ impl<T: Config> Pallet<T> {
                 slashes_to_send.push(SlashData {
                     encoded_validator_id: slash.validator.clone().encode(),
                     slash_fraction: slash.percentage.deconstruct(),
-                    timestamp: slash.timestamp,
+                    external_idx: slash.external_idx,
                 });
             }
         });
@@ -563,10 +609,12 @@ impl<T: Config> Pallet<T> {
         // Validate and deliver the message
         match T::ValidateMessage::validate(&outbound_message) {
             Ok((ticket, _fee)) => {
+                let message_id = ticket.message_id();
                 if let Err(err) = T::OutboundQueue::deliver(ticket) {
                     log::error!(target: "ext_validators_slashes", "OutboundQueue delivery of message failed. {err:?}");
                 } else {
                     Self::deposit_event(Event::SlashesMessageSent {
+                        message_id,
                         slashes_command: command,
                     });
                 }
@@ -584,8 +632,8 @@ impl<T: Config> Pallet<T> {
 /// rather deferred for several eras.
 #[derive(Encode, Decode, RuntimeDebug, TypeInfo, Clone, PartialEq)]
 pub struct Slash<AccountId, SlashId> {
-    /// Timestamp when slash occurred
-    pub timestamp: u64,
+    /// external index identifying a given set of validators
+    pub external_idx: u64,
     /// The stash ID of the offending validator.
     pub validator: AccountId,
     /// Reporters of the offence; bounty payout recipients.
@@ -601,7 +649,7 @@ impl<AccountId, SlashId: One> Slash<AccountId, SlashId> {
     /// Initializes the default object using the given `validator`.
     pub fn default_from(validator: AccountId) -> Self {
         Self {
-            timestamp: 0,
+            external_idx: 0,
             validator,
             reporters: vec![],
             slash_id: One::one(),
@@ -623,6 +671,7 @@ pub(crate) fn compute_slash<T: Config>(
     slash_era: EraIndex,
     stash: T::AccountId,
     slash_defer_duration: EraIndex,
+    external_idx: u64,
 ) -> Option<Slash<T::AccountId, T::SlashId>> {
     let prior_slash_p = ValidatorSlashInEra::<T>::get(&slash_era, &stash).unwrap_or(Zero::zero());
 
@@ -643,8 +692,7 @@ pub(crate) fn compute_slash<T: Config>(
 
     let confirmed = slash_defer_duration.is_zero();
     Some(Slash {
-        // TODO: change this to timestamp from Ethereum
-        timestamp: T::TimestampProvider::get(),
+        external_idx,
         validator: stash.clone(),
         percentage: slash_fraction,
         slash_id,

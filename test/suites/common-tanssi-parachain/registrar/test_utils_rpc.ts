@@ -1,10 +1,11 @@
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
-import { chainSpecToContainerChainGenesisData, containerChainGenesisDataToChainSpec } from "../../../util/genesis_data";
-import "@polkadot/api-augment";
+import "@tanssi/api-augment";
+
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import type { ApiPromise } from "@polkadot/api";
+import { chainSpecToContainerChainGenesisData, containerChainGenesisDataToChainSpec } from "utils";
 
 describeSuite({
-    id: "CPT0507",
+    id: "COMMO1106",
     title: "Test ContainerChainGenesisData utils",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -17,7 +18,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Read a ChainSpec, convert it to ContainerChainGenesisData, and back to the same ChainSpec",
-            test: async function () {
+            test: async () => {
                 // Mock raw chain spec file
                 const chainSpec2000 = {
                     name: "Local Testnet",

@@ -1,10 +1,11 @@
 import "@tanssi/api-augment";
-import { describeSuite, beforeAll, expect } from "@moonwall/cli";
-import { KeyringPair } from "@moonwall/util";
-import { ApiPromise } from "@polkadot/api";
+
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import type { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
 
 describeSuite({
-    id: "CPT0701",
+    id: "COMMO0902",
     title: "Stream payment works",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -21,7 +22,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Stream payment works",
-            test: async function () {
+            test: async () => {
                 // 1st block
                 let aliceNonce = 0;
                 const txOpenStream = await polkadotJs.tx.streamPayment
@@ -38,7 +39,7 @@ describeSuite({
                 await context.createBlock([txOpenStream]);
 
                 const openStreamEvents = (await polkadotJs.query.system.events()).filter((a) => {
-                    return a.event.method == "StreamOpened";
+                    return a.event.method === "StreamOpened";
                 });
                 expect(openStreamEvents.length).to.be.equal(1);
 
@@ -76,12 +77,12 @@ describeSuite({
                 await context.createBlock([txPerformPayment, txRequestChange]);
 
                 const performPaymentEvents = (await polkadotJs.query.system.events()).filter((a) => {
-                    return a.event.method == "StreamPayment";
+                    return a.event.method === "StreamPayment";
                 });
                 expect(performPaymentEvents.length).to.be.equal(1);
 
                 const requestChangeEvents = (await polkadotJs.query.system.events()).filter((a) => {
-                    return a.event.method == "StreamConfigChangeRequested";
+                    return a.event.method === "StreamConfigChangeRequested";
                 });
                 expect(requestChangeEvents.length).to.be.equal(1);
 
@@ -92,7 +93,7 @@ describeSuite({
                 await context.createBlock([txAcceptChange]);
 
                 const acceptChangeEvents = (await polkadotJs.query.system.events()).filter((a) => {
-                    return a.event.method == "StreamConfigChanged";
+                    return a.event.method === "StreamConfigChanged";
                 });
                 expect(acceptChangeEvents.length).to.be.equal(1);
 
@@ -104,7 +105,7 @@ describeSuite({
                 await context.createBlock([txCloseStream]);
 
                 const closeStreamEvents = (await polkadotJs.query.system.events()).filter((a) => {
-                    return a.event.method == "StreamClosed";
+                    return a.event.method === "StreamClosed";
                 });
                 expect(closeStreamEvents.length).to.be.equal(1);
 

@@ -45,7 +45,10 @@ use {
         traits::{CheckedAdd, CheckedMul},
         ArithmeticError, DispatchResult, Perbill, RuntimeDebug,
     },
-    sp_std::{collections::btree_map::BTreeMap, collections::btree_set::BTreeSet, vec::Vec},
+    sp_std::{
+        collections::{btree_map::BTreeMap, btree_set::BTreeSet},
+        vec::Vec,
+    },
 };
 
 // Separate import as rustfmt wrongly change it to `sp_std::vec::self`, which is the module instead
@@ -139,6 +142,24 @@ pub trait GetCurrentContainerChains {
 
     #[cfg(feature = "runtime-benchmarks")]
     fn set_current_container_chains(container_chains: &[ParaId]);
+}
+
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub enum ForSession {
+    Current,
+    Next,
+}
+
+/// Get the current list of container chains parachain ids with its assigned collators.
+/// It can return a para id with an empty list of collators.
+pub trait GetContainerChainsWithCollators<AccountId> {
+    fn container_chains_with_collators(for_session: ForSession) -> Vec<(ParaId, Vec<AccountId>)>;
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn set_container_chains_with_collators(
+        for_session: ForSession,
+        container_chains: &[(ParaId, Vec<AccountId>)],
+    );
 }
 
 /// How often should a parathread collator propose blocks. The units are "1 out of n slots", where the slot time is the
@@ -501,13 +522,13 @@ pub trait InvulnerablesProvider<ValidatorId> {
 }
 
 pub trait OnEraStart {
-    fn on_era_start(_era_index: EraIndex, _session_start: u32) {}
+    fn on_era_start(_era_index: EraIndex, _session_start: u32, _external_idx: u64) {}
 }
 
 #[impl_trait_for_tuples::impl_for_tuples(5)]
 impl OnEraStart for Tuple {
-    fn on_era_start(era_index: EraIndex, session_start: u32) {
-        for_tuples!( #( Tuple::on_era_start(era_index, session_start); )* );
+    fn on_era_start(era_index: EraIndex, session_start: u32, external_idx: u64) {
+        for_tuples!( #( Tuple::on_era_start(era_index, session_start, external_idx); )* );
     }
 }
 
@@ -580,4 +601,10 @@ impl FullRotationModes {
             parathread: FullRotationMode::KeepAll,
         }
     }
+}
+
+// A trait to retrieve the external index provider identifying some set of data
+// In starlight, used to retrieve the external index associated to validators
+pub trait ExternalIndexProvider {
+    fn get_external_index() -> u64;
 }

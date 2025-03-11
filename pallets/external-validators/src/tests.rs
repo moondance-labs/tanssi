@@ -16,14 +16,14 @@
 use {
     crate::{
         mock::{
-            new_test_ext, run_to_block, run_to_session, ExternalValidators, HookCall, Mock,
-            RootAccount, RuntimeEvent, RuntimeOrigin, Session, System, Test,
+            last_event, new_test_ext, run_to_block, run_to_session, ExternalValidators, HookCall,
+            Mock, RootAccount, RuntimeEvent, RuntimeOrigin, Session, System, Test,
         },
         Error,
     },
     frame_support::{assert_noop, assert_ok},
     sp_runtime::traits::BadOrigin,
-    tp_traits::ValidatorProvider,
+    tp_traits::{ExternalIndexProvider, ValidatorProvider},
 };
 
 #[test]
@@ -159,13 +159,16 @@ fn whitelisted_and_external_order() {
     new_test_ext().execute_with(|| {
         run_to_block(1);
         assert_eq!(ExternalValidators::whitelisted_validators(), vec![1, 2]);
-        assert_ok!(ExternalValidators::set_external_validators_inner(vec![
-            50, 51
-        ]));
+        assert_ok!(ExternalValidators::set_external_validators_inner(
+            vec![50, 51],
+            1
+        ));
 
         run_to_session(6);
         let validators = Session::validators();
+        let external_index = ExternalValidators::get_external_index();
         assert_eq!(validators, vec![1, 2, 50, 51]);
+        assert_eq!(external_index, 1);
     });
 }
 
@@ -174,9 +177,10 @@ fn validator_provider_returns_all_validators() {
     new_test_ext().execute_with(|| {
         run_to_block(1);
         assert_eq!(ExternalValidators::whitelisted_validators(), vec![1, 2]);
-        assert_ok!(ExternalValidators::set_external_validators_inner(vec![
-            50, 51
-        ]));
+        assert_ok!(ExternalValidators::set_external_validators_inner(
+            vec![50, 51],
+            1
+        ));
 
         run_to_session(6);
         let validators_new_session = Session::validators();
@@ -190,9 +194,10 @@ fn can_skip_external_validators() {
     new_test_ext().execute_with(|| {
         run_to_block(1);
         assert_eq!(ExternalValidators::whitelisted_validators(), vec![1, 2]);
-        assert_ok!(ExternalValidators::set_external_validators_inner(vec![
-            50, 51
-        ]));
+        assert_ok!(ExternalValidators::set_external_validators_inner(
+            vec![50, 51],
+            1
+        ));
         assert_ok!(ExternalValidators::skip_external_validators(
             RuntimeOrigin::signed(RootAccount::get()),
             true
@@ -209,7 +214,10 @@ fn duplicate_validators_are_deduplicated() {
     new_test_ext().execute_with(|| {
         run_to_block(1);
         assert_eq!(ExternalValidators::whitelisted_validators(), vec![1, 2]);
-        assert_ok!(ExternalValidators::set_external_validators_inner(vec![2]));
+        assert_ok!(ExternalValidators::set_external_validators_inner(
+            vec![2],
+            1
+        ));
 
         run_to_session(6);
         let validators = Session::validators();
@@ -244,13 +252,66 @@ fn duplicate_validator_order_is_preserved() {
             2
         ));
         assert_eq!(ExternalValidators::whitelisted_validators(), vec![3, 1, 2]);
-        assert_ok!(ExternalValidators::set_external_validators_inner(vec![
-            3, 2, 1, 4
-        ]));
+        assert_ok!(ExternalValidators::set_external_validators_inner(
+            vec![3, 2, 1, 4],
+            1
+        ));
 
         run_to_session(6);
         let validators = Session::validators();
         assert_eq!(validators, vec![3, 1, 2, 4]);
+    });
+}
+
+#[test]
+fn external_index_gets_set_correctly() {
+    new_test_ext().execute_with(|| {
+        run_to_block(1);
+        assert_ok!(ExternalValidators::set_external_validators_inner(
+            vec![2],
+            1
+        ));
+        let external_index = ExternalValidators::get_external_index();
+        assert_eq!(external_index, 0);
+        run_to_session(6);
+
+        let external_index = ExternalValidators::get_external_index();
+        assert_eq!(external_index, 1);
+    });
+}
+
+#[test]
+fn setting_external_validators_emits_event() {
+    new_test_ext().execute_with(|| {
+        run_to_block(1);
+        assert_ok!(ExternalValidators::set_external_validators_inner(
+            vec![2, 3],
+            1
+        ));
+        let event = RuntimeEvent::ExternalValidators(crate::Event::ExternalValidatorsSet {
+            validators: vec![2, 3],
+            external_index: 1,
+        });
+        assert_eq!(last_event(), event);
+    });
+}
+
+#[test]
+fn setting_external_validators_with_more_than_max_external_validators_emits_correct_event() {
+    new_test_ext().execute_with(|| {
+        run_to_block(1);
+        let max_external_validators = 20u64;
+        // Current max external validators is 20 so if we try to set 25 validators
+        // We expect only the first 20 to be set as external validators
+        assert_ok!(ExternalValidators::set_external_validators_inner(
+            (1..(max_external_validators + 5)).collect(),
+            1
+        ));
+        let event = RuntimeEvent::ExternalValidators(crate::Event::ExternalValidatorsSet {
+            validators: (1..(max_external_validators + 1)).collect(),
+            external_index: 1,
+        });
+        assert_eq!(last_event(), event);
     });
 }
 
@@ -260,13 +321,66 @@ fn era_hooks() {
         run_to_session(14);
 
         let expected_calls = vec![
-            HookCall::OnEraStart { era: 0, session: 0 },
+            HookCall::OnEraStart {
+                era: 0,
+                session: 0,
+                external_index: 0,
+            },
             HookCall::OnEraEnd { era: 0 },
-            HookCall::OnEraStart { era: 1, session: 6 },
+            HookCall::OnEraStart {
+                era: 1,
+                session: 6,
+                external_index: 0,
+            },
             HookCall::OnEraEnd { era: 1 },
             HookCall::OnEraStart {
                 era: 2,
                 session: 12,
+                external_index: 0,
+            },
+        ];
+
+        assert_eq!(Mock::mock().called_hooks, expected_calls);
+    });
+}
+
+#[test]
+fn era_hooks_with_external_index() {
+    new_test_ext().execute_with(|| {
+        let first_external_index = 1000;
+        assert_ok!(ExternalValidators::set_external_validators_inner(
+            vec![50, 51],
+            first_external_index
+        ));
+
+        run_to_session(8);
+
+        let second_external_index = 2000;
+
+        assert_ok!(ExternalValidators::set_external_validators_inner(
+            vec![50, 51],
+            second_external_index
+        ));
+
+        run_to_session(14);
+
+        let expected_calls = vec![
+            HookCall::OnEraStart {
+                era: 0,
+                session: 0,
+                external_index: 0,
+            },
+            HookCall::OnEraEnd { era: 0 },
+            HookCall::OnEraStart {
+                era: 1,
+                session: 6,
+                external_index: first_external_index,
+            },
+            HookCall::OnEraEnd { era: 1 },
+            HookCall::OnEraStart {
+                era: 2,
+                session: 12,
+                external_index: second_external_index,
             },
         ];
 

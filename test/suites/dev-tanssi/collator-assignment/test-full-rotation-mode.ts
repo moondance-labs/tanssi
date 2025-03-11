@@ -1,19 +1,20 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll, customDevRpcRequest } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
-import { jumpBlocks, jumpSessions, jumpToSession } from "util/block";
-import { filterAndApply, generateKeyringPair } from "@moonwall/util";
-import { EventRecord } from "@polkadot/types/interfaces";
-import { bool, u32, u8, Vec } from "@polkadot/types-codec";
+
+import { beforeAll, customDevRpcRequest, describeSuite, expect } from "@moonwall/cli";
+import { type KeyringPair, filterAndApply, generateKeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
+import type { Vec, bool, u8, u32 } from "@polkadot/types-codec";
+import type { EventRecord } from "@polkadot/types/interfaces";
+import { jumpBlocks, jumpSessions, jumpToSession } from "utils";
 
 describeSuite({
-    id: "DTR0303",
+    id: "DEV0204",
     title: "Collator assignment tests",
     foundationMethods: "dev",
 
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
-        let alice;
+        let alice: KeyringPair;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
@@ -26,7 +27,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Collator should rotate",
-            test: async function () {
+            test: async () => {
                 const orchestrator = "KeepAll";
                 const parachain = { KeepCollators: { keep: 1 } };
                 const parathread = "RotateAll";
@@ -70,9 +71,9 @@ describeSuite({
                 // Collators are registered, wait 2 sessions for them to be assigned
                 await jumpSessions(context, 2);
 
-                const fullRotationPeriod = (await polkadotJs.query.configuration.activeConfig())[
-                    "fullRotationPeriod"
-                ].toString();
+                const fullRotationPeriod = (
+                    await polkadotJs.query.configuration.activeConfig()
+                ).fullRotationPeriod.toString();
                 const sessionIndex = (await polkadotJs.query.session.currentIndex()).toNumber();
                 // Calculate the remaining sessions for next full rotation
                 // This is a workaround for running moonwall in run mode

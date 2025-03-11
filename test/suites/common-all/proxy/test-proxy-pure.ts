@@ -1,18 +1,19 @@
-import "@polkadot/api-augment";
+import "@tanssi/api-augment";
+
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { KeyringPair } from "@moonwall/util";
-import { ApiPromise } from "@polkadot/api";
-import { initializeCustomCreateBlock } from "../../../util/block";
+import type { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
+import { initializeCustomCreateBlock } from "utils";
 
 describeSuite({
-    id: "CA0302",
+    id: "C0302",
     title: "Proxy test suite - create_pure",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
         let charlie: KeyringPair;
-        let proxyAddress;
+        let proxyAddress: string;
 
         beforeAll(() => {
             initializeCustomCreateBlock(context);
@@ -25,7 +26,7 @@ describeSuite({
         it({
             id: "E01",
             title: "No proxies at genesis",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
                 const proxies = await polkadotJs.query.proxy.proxies(alice.address);
                 expect(proxies.toJSON()[0]).to.deep.equal([]);
@@ -35,7 +36,7 @@ describeSuite({
         it({
             id: "E02",
             title: "Add pure proxy",
-            test: async function () {
+            test: async () => {
                 const delay = 0;
                 const index = 0;
                 const tx = polkadotJs.tx.proxy.createPure("Any", delay, index);
@@ -43,7 +44,7 @@ describeSuite({
 
                 const events = await polkadotJs.query.system.events();
                 const ev1 = events.filter((a) => {
-                    return a.event.method == "PureCreated";
+                    return a.event.method === "PureCreated";
                 });
                 expect(ev1.length).to.be.equal(1);
                 proxyAddress = ev1[0].event.toJSON().data[0];
@@ -53,7 +54,7 @@ describeSuite({
         it({
             id: "E03",
             title: "Pure proxy account can call balance.transfer",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
 
                 // Send some initial balance to pure proxy account
@@ -70,7 +71,7 @@ describeSuite({
                 await context.createBlock([await tx.signAsync(alice)]);
                 const events = await polkadotJs.query.system.events();
                 const ev1 = events.filter((a) => {
-                    return a.event.method == "ProxyExecuted";
+                    return a.event.method === "ProxyExecuted";
                 });
                 expect(ev1.length).to.be.equal(1);
                 expect(ev1[0].event.data[0].toString()).to.be.eq("Ok");
@@ -80,7 +81,7 @@ describeSuite({
         it({
             id: "E04",
             title: "Pure proxy account can call system.remark",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
 
                 const tx = polkadotJs.tx.proxy.proxy(
@@ -91,13 +92,13 @@ describeSuite({
                 await context.createBlock([await tx.signAsync(alice)]);
                 const events = await polkadotJs.query.system.events();
                 const ev1 = events.filter((a) => {
-                    return a.event.method == "ProxyExecuted";
+                    return a.event.method === "ProxyExecuted";
                 });
                 expect(ev1.length).to.be.equal(1);
                 expect(ev1[0].event.data[0].toString()).to.be.eq("Ok");
 
                 const ev2 = events.filter((a) => {
-                    return a.event.method == "Remarked";
+                    return a.event.method === "Remarked";
                 });
                 expect(ev2.length).to.be.equal(1);
             },

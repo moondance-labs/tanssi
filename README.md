@@ -42,6 +42,9 @@ cargo test --features=fast-runtime --release
 Typescript tests are run with [Moonwall](https://github.com/Moonsong-Labs/moonwall). To run these you will need to have pnpm installed:
 
 ```bash
+# Use the correct Node version
+nvm use
+
 # Install moonwall
 sudo npm i -g pnpm
 
@@ -57,6 +60,9 @@ cd test
 # Run manual seal orchestrator tests
 pnpm moonwall test dev_tanssi
 
+# Note: in case of local platform other than x64, you need: 
+# 1. Build polkadot binaries manually and copy it to <root>/test/tmp folder
+# 2. Update the <root>/test/polkadotReleaseMapping.json with new check sums
 # Run zombienet tests (with container-chains)
 pnpm moonwall test zombie_tanssi
 ```

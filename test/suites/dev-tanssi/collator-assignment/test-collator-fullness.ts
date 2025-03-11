@@ -1,10 +1,11 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
-import { jumpToSession } from "util/block";
+
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import type { ApiPromise } from "@polkadot/api";
+import { jumpToSession } from "utils";
 
 describeSuite({
-    id: "DT0802",
+    id: "DEV0202",
     title: "Collator assignment tests",
     foundationMethods: "dev",
 
@@ -18,13 +19,13 @@ describeSuite({
         it({
             id: "E01",
             title: "Collator should rotate",
-            test: async function () {
-                const fullRotationPeriod = (await context.polkadotJs().query.configuration.activeConfig())[
-                    "fullRotationPeriod"
-                ].toString();
-                const maxCollators = (await context.polkadotJs().query.configuration.activeConfig())[
-                    "maxCollators"
-                ].toNumber();
+            test: async () => {
+                const fullRotationPeriod = (
+                    await context.polkadotJs().query.configuration.activeConfig()
+                ).fullRotationPeriod.toString();
+                const maxCollators = (
+                    await context.polkadotJs().query.configuration.activeConfig()
+                ).maxCollators.toNumber();
                 const sessionIndex = (await polkadotJs.query.session.currentIndex()).toNumber();
                 // Calculate the remaining sessions for next full rotation
                 // This is a workaround for running moonwall in run mode

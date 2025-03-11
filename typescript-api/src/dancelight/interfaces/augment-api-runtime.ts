@@ -85,27 +85,43 @@ declare module "@polkadot/api-base/types/calls" {
     interface AugmentedCalls<ApiType extends ApiTypes> {
         /** 0xbc9d89904f5b923f/1 */
         accountNonceApi: {
-            /** The API to query account nonce (aka transaction index) */
+            /**
+             * The API to query account nonce (aka transaction index)
+             **/
             accountNonce: AugmentedCall<ApiType, (accountId: AccountId | string | Uint8Array) => Observable<Index>>;
-            /** Generic call */
+            /**
+             * Generic call
+             **/
             [key: string]: DecoratedCallBase<ApiType>;
         };
         /** 0x687ad44ad37f03c2/1 */
         authorityDiscoveryApi: {
-            /** Retrieve authority identifiers of the current and next authority set. */
+            /**
+             * Retrieve authority identifiers of the current and next authority set.
+             **/
             authorities: AugmentedCall<ApiType, () => Observable<Vec<AuthorityId>>>;
-            /** Generic call */
+            /**
+             * Generic call
+             **/
             [key: string]: DecoratedCallBase<ApiType>;
         };
         /** 0xcbca25e39f142387/2 */
         babeApi: {
-            /** Return the genesis configuration for BABE. The configuration is only read on genesis. */
+            /**
+             * Return the genesis configuration for BABE. The configuration is only read on genesis.
+             **/
             configuration: AugmentedCall<ApiType, () => Observable<BabeGenesisConfiguration>>;
-            /** Returns information regarding the current epoch. */
+            /**
+             * Returns information regarding the current epoch.
+             **/
             currentEpoch: AugmentedCall<ApiType, () => Observable<Epoch>>;
-            /** Returns the slot that started the current epoch. */
+            /**
+             * Returns the slot that started the current epoch.
+             **/
             currentEpochStart: AugmentedCall<ApiType, () => Observable<Slot>>;
-            /** Generates a proof of key ownership for the given authority in the current epoch. */
+            /**
+             * Generates a proof of key ownership for the given authority in the current epoch.
+             **/
             generateKeyOwnershipProof: AugmentedCall<
                 ApiType,
                 (
@@ -113,9 +129,13 @@ declare module "@polkadot/api-base/types/calls" {
                     authorityId: AuthorityId | string | Uint8Array
                 ) => Observable<Option<OpaqueKeyOwnershipProof>>
             >;
-            /** Returns information regarding the next epoch (which was already previously announced). */
+            /**
+             * Returns information regarding the next epoch (which was already previously announced).
+             **/
             nextEpoch: AugmentedCall<ApiType, () => Observable<Epoch>>;
-            /** Submits an unsigned extrinsic to report an equivocation. */
+            /**
+             * Submits an unsigned extrinsic to report an equivocation.
+             **/
             submitReportEquivocationUnsignedExtrinsic: AugmentedCall<
                 ApiType,
                 (
@@ -127,26 +147,38 @@ declare module "@polkadot/api-base/types/calls" {
                     keyOwnerProof: OpaqueKeyOwnershipProof | string | Uint8Array
                 ) => Observable<Option<Null>>
             >;
-            /** Generic call */
+            /**
+             * Generic call
+             **/
             [key: string]: DecoratedCallBase<ApiType>;
         };
         /** 0x2a5e924655399e60/1 */
         beefyMmrApi: {
-            /** Return the currently active BEEFY authority set proof. */
+            /**
+             * Return the currently active BEEFY authority set proof.
+             **/
             authoritySetProof: AugmentedCall<ApiType, () => Observable<BeefyAuthoritySet>>;
-            /** Return the next/queued BEEFY authority set proof. */
+            /**
+             * Return the next/queued BEEFY authority set proof.
+             **/
             nextAuthoritySetProof: AugmentedCall<ApiType, () => Observable<BeefyNextAuthoritySet>>;
-            /** Generic call */
+            /**
+             * Generic call
+             **/
             [key: string]: DecoratedCallBase<ApiType>;
         };
         /** 0x40fe3ad401f8959a/6 */
         blockBuilder: {
-            /** Apply the given extrinsic. */
+            /**
+             * Apply the given extrinsic.
+             **/
             applyExtrinsic: AugmentedCall<
                 ApiType,
                 (extrinsic: Extrinsic | IExtrinsic | string | Uint8Array) => Observable<ApplyExtrinsicResult>
             >;
-            /** Check that the inherents are valid. */
+            /**
+             * Check that the inherents are valid.
+             **/
             checkInherents: AugmentedCall<
                 ApiType,
                 (
@@ -154,24 +186,34 @@ declare module "@polkadot/api-base/types/calls" {
                     data: InherentData | { data?: any } | string | Uint8Array
                 ) => Observable<CheckInherentsResult>
             >;
-            /** Finish the current block. */
+            /**
+             * Finish the current block.
+             **/
             finalizeBlock: AugmentedCall<ApiType, () => Observable<Header>>;
-            /** Generate inherent extrinsics. */
+            /**
+             * Generate inherent extrinsics.
+             **/
             inherentExtrinsics: AugmentedCall<
                 ApiType,
                 (inherent: InherentData | { data?: any } | string | Uint8Array) => Observable<Vec<Extrinsic>>
             >;
-            /** Generic call */
+            /**
+             * Generic call
+             **/
             [key: string]: DecoratedCallBase<ApiType>;
         };
         /** 0xdf6acb689907609b/5 */
         core: {
-            /** Execute the given block. */
+            /**
+             * Execute the given block.
+             **/
             executeBlock: AugmentedCall<
                 ApiType,
                 (block: Block | { header?: any; extrinsics?: any } | string | Uint8Array) => Observable<Null>
             >;
-            /** Initialize a block with the given header. */
+            /**
+             * Initialize a block with the given header.
+             **/
             initializeBlock: AugmentedCall<
                 ApiType,
                 (
@@ -182,28 +224,42 @@ declare module "@polkadot/api-base/types/calls" {
                         | Uint8Array
                 ) => Observable<ExtrinsicInclusionMode>
             >;
-            /** Returns the version of the runtime. */
+            /**
+             * Returns the version of the runtime.
+             **/
             version: AugmentedCall<ApiType, () => Observable<RuntimeVersion>>;
-            /** Generic call */
+            /**
+             * Generic call
+             **/
             [key: string]: DecoratedCallBase<ApiType>;
         };
         /** 0xfbc577b9d747efd6/1 */
         genesisBuilder: {
-            /** Build `RuntimeGenesisConfig` from a JSON blob not using any defaults and store it in the storage. */
+            /**
+             * Build `RuntimeGenesisConfig` from a JSON blob not using any defaults and store it in the storage.
+             **/
             buildConfig: AugmentedCall<
                 ApiType,
                 (json: Bytes | string | Uint8Array) => Observable<Result<ITuple<[]>, GenesisBuildErr>>
             >;
-            /** Creates the default `RuntimeGenesisConfig` and returns it as a JSON blob. */
+            /**
+             * Creates the default `RuntimeGenesisConfig` and returns it as a JSON blob.
+             **/
             createDefaultConfig: AugmentedCall<ApiType, () => Observable<Bytes>>;
-            /** Generic call */
+            /**
+             * Generic call
+             **/
             [key: string]: DecoratedCallBase<ApiType>;
         };
         /** 0xed99c5acb25eedf5/3 */
         grandpaApi: {
-            /** Get current GRANDPA authority set id. */
+            /**
+             * Get current GRANDPA authority set id.
+             **/
             currentSetId: AugmentedCall<ApiType, () => Observable<SetId>>;
-            /** Generates a proof of key ownership for the given authority in the given set. */
+            /**
+             * Generates a proof of key ownership for the given authority in the given set.
+             **/
             generateKeyOwnershipProof: AugmentedCall<
                 ApiType,
                 (
@@ -212,11 +268,12 @@ declare module "@polkadot/api-base/types/calls" {
                 ) => Observable<Option<OpaqueKeyOwnershipProof>>
             >;
             /**
-             * Get the current GRANDPA authorities and weights. This should not change except for when changes are scheduled
-             * and the corresponding delay has passed.
-             */
+             * Get the current GRANDPA authorities and weights. This should not change except for when changes are scheduled and the corresponding delay has passed.
+             **/
             grandpaAuthorities: AugmentedCall<ApiType, () => Observable<AuthorityList>>;
-            /** Submits an unsigned extrinsic to report an equivocation. */
+            /**
+             * Submits an unsigned extrinsic to report an equivocation.
+             **/
             submitReportEquivocationUnsignedExtrinsic: AugmentedCall<
                 ApiType,
                 (
@@ -228,38 +285,54 @@ declare module "@polkadot/api-base/types/calls" {
                     keyOwnerProof: OpaqueKeyOwnershipProof | string | Uint8Array
                 ) => Observable<Option<Null>>
             >;
-            /** Generic call */
+            /**
+             * Generic call
+             **/
             [key: string]: DecoratedCallBase<ApiType>;
         };
         /** 0x9ffb505aa738d69c/1 */
         locationToAccountApi: {
-            /** Converts `Location` to `AccountId` */
+            /**
+             * Converts `Location` to `AccountId`
+             **/
             convertLocation: AugmentedCall<
                 ApiType,
                 (
-                    location: XcmVersionedLocation | { V2: any } | { V3: any } | { V4: any } | string | Uint8Array
+                    location: XcmVersionedLocation | { V3: any } | { V4: any } | { V5: any } | string | Uint8Array
                 ) => Observable<Result<AccountId, Error>>
             >;
-            /** Generic call */
+            /**
+             * Generic call
+             **/
             [key: string]: DecoratedCallBase<ApiType>;
         };
         /** 0x37e397fc7c91f5e4/2 */
         metadata: {
-            /** Returns the metadata of a runtime */
+            /**
+             * Returns the metadata of a runtime
+             **/
             metadata: AugmentedCall<ApiType, () => Observable<OpaqueMetadata>>;
-            /** Returns the metadata at a given version. */
+            /**
+             * Returns the metadata at a given version.
+             **/
             metadataAtVersion: AugmentedCall<
                 ApiType,
                 (version: u32 | AnyNumber | Uint8Array) => Observable<Option<OpaqueMetadata>>
             >;
-            /** Returns the supported metadata versions. */
+            /**
+             * Returns the supported metadata versions.
+             **/
             metadataVersions: AugmentedCall<ApiType, () => Observable<Vec<u32>>>;
-            /** Generic call */
+            /**
+             * Generic call
+             **/
             [key: string]: DecoratedCallBase<ApiType>;
         };
         /** 0x91d5df18b0d2cf58/2 */
         mmrApi: {
-            /** Generate MMR proof for the given block numbers. */
+            /**
+             * Generate MMR proof for the given block numbers.
+             **/
             generateProof: AugmentedCall<
                 ApiType,
                 (
@@ -267,11 +340,17 @@ declare module "@polkadot/api-base/types/calls" {
                     bestKnownBlockNumber: Option<BlockNumber> | null | Uint8Array | BlockNumber | AnyNumber
                 ) => Observable<Result<ITuple<[Vec<MmrEncodableOpaqueLeaf>, MmrBatchProof]>, MmrError>>
             >;
-            /** Return the number of MMR blocks in the chain. */
+            /**
+             * Return the number of MMR blocks in the chain.
+             **/
             mmrLeafCount: AugmentedCall<ApiType, () => Observable<Result<U64, MmrError>>>;
-            /** Return the on-chain MMR root hash. */
+            /**
+             * Return the on-chain MMR root hash.
+             **/
             mmrRoot: AugmentedCall<ApiType, () => Observable<Result<Hash, MmrError>>>;
-            /** Verify MMR proof against on-chain MMR. */
+            /**
+             * Verify MMR proof against on-chain MMR.
+             **/
             verifyProof: AugmentedCall<
                 ApiType,
                 (
@@ -279,7 +358,9 @@ declare module "@polkadot/api-base/types/calls" {
                     proof: MmrBatchProof | { leafIndices?: any; leafCount?: any; items?: any } | string | Uint8Array
                 ) => Observable<Result<ITuple<[]>, MmrError>>
             >;
-            /** Verify MMR proof against given root hash. */
+            /**
+             * Verify MMR proof against given root hash.
+             **/
             verifyProofStateless: AugmentedCall<
                 ApiType,
                 (
@@ -288,12 +369,16 @@ declare module "@polkadot/api-base/types/calls" {
                     proof: MmrBatchProof | { leafIndices?: any; leafCount?: any; items?: any } | string | Uint8Array
                 ) => Observable<Result<ITuple<[]>, MmrError>>
             >;
-            /** Generic call */
+            /**
+             * Generic call
+             **/
             [key: string]: DecoratedCallBase<ApiType>;
         };
         /** 0xf78b278be53f454c/2 */
         offchainWorkerApi: {
-            /** Starts the off-chain task for given block header. */
+            /**
+             * Starts the off-chain task for given block header.
+             **/
             offchainWorker: AugmentedCall<
                 ApiType,
                 (
@@ -304,14 +389,20 @@ declare module "@polkadot/api-base/types/calls" {
                         | Uint8Array
                 ) => Observable<Null>
             >;
-            /** Generic call */
+            /**
+             * Generic call
+             **/
             [key: string]: DecoratedCallBase<ApiType>;
         };
         /** 0xaf2c0297a23e6d3d/11 */
         parachainHost: {
-            /** Approval voting configuration parameters */
+            /**
+             * Approval voting configuration parameters
+             **/
             approvalVotingParams: AugmentedCall<ApiType, () => Observable<ApprovalVotingParams>>;
-            /** Returns the persisted validation data for the given `ParaId` along with the corresponding validation code hash. */
+            /**
+             * Returns the persisted validation data for the given `ParaId` along with the corresponding validation code hash.
+             **/
             assumedValidationData: AugmentedCall<
                 ApiType,
                 (
@@ -319,18 +410,28 @@ declare module "@polkadot/api-base/types/calls" {
                     hash: Hash | string | Uint8Array
                 ) => Observable<Option<ITuple<[PersistedValidationData, ValidationCodeHash]>>>
             >;
-            /** Returns candidate's acceptance limitations for asynchronous backing for a relay parent */
+            /**
+             * Returns candidate's acceptance limitations for asynchronous backing for a relay parent
+             **/
             asyncBackingParams: AugmentedCall<ApiType, () => Observable<AsyncBackingParams>>;
-            /** Yields information on all availability cores as relevant to the child block. */
+            /**
+             * Yields information on all availability cores as relevant to the child block.
+             **/
             availabilityCores: AugmentedCall<ApiType, () => Observable<Vec<CoreState>>>;
-            /** Get a vector of events concerning candidates that occurred within a block. */
+            /**
+             * Get a vector of events concerning candidates that occurred within a block.
+             **/
             candidateEvents: AugmentedCall<ApiType, () => Observable<Vec<CandidateEvent>>>;
-            /** Get the receipt of a candidate pending availability. */
+            /**
+             * Get the receipt of a candidate pending availability.
+             **/
             candidatePendingAvailability: AugmentedCall<
                 ApiType,
                 (paraId: ParaId | AnyNumber | Uint8Array) => Observable<Option<CommittedCandidateReceipt>>
             >;
-            /** Checks if the given validation outputs pass the acceptance criteria. */
+            /**
+             * Checks if the given validation outputs pass the acceptance criteria.
+             **/
             checkValidationOutputs: AugmentedCall<
                 ApiType,
                 (
@@ -349,48 +450,64 @@ declare module "@polkadot/api-base/types/calls" {
                         | Uint8Array
                 ) => Observable<bool>
             >;
-            /** Claim queue */
+            /**
+             * Claim queue
+             **/
             claimQueue: AugmentedCall<ApiType, () => Observable<BTreeMap<CoreIndex, Vec<u32>>>>;
-            /** Returns a list of all disabled validators at the given block */
+            /**
+             * Returns a list of all disabled validators at the given block
+             **/
             disabledValidators: AugmentedCall<ApiType, () => Observable<ValidatorIndex>>;
-            /** Returns all onchain disputes. */
+            /**
+             * Returns all onchain disputes.
+             **/
             disputes: AugmentedCall<
                 ApiType,
                 () => Observable<Vec<ITuple<[SessionIndex, CandidateHash, DisputeState]>>>
             >;
-            /** Get all the pending inbound messages in the downward message queue for a para. */
+            /**
+             * Get all the pending inbound messages in the downward message queue for a para.
+             **/
             dmqContents: AugmentedCall<
                 ApiType,
                 (paraId: ParaId | AnyNumber | Uint8Array) => Observable<Vec<InboundDownwardMessage>>
             >;
-            /** Get the contents of all channels addressed to the given recipient. */
+            /**
+             * Get the contents of all channels addressed to the given recipient.
+             **/
             inboundHrmpChannelsContents: AugmentedCall<
                 ApiType,
                 (paraId: ParaId | AnyNumber | Uint8Array) => Observable<Vec<InboundHrmpMessage>>
             >;
-            /** Returns a merkle proof of a validator session key */
+            /**
+             * Returns a merkle proof of a validator session key
+             **/
             keyOwnershipProof: AugmentedCall<
                 ApiType,
                 (validatorId: ValidatorId | string | Uint8Array) => Observable<Option<OpaqueKeyOwnershipProof>>
             >;
             /**
-             * Get the minimum number of backing votes for a parachain candidate. This is a staging method! Do not use on
-             * production runtimes!
-             */
+             * Get the minimum number of backing votes for a parachain candidate. This is a staging method! Do not use on production runtimes!
+             **/
             minimumBackingVotes: AugmentedCall<ApiType, () => Observable<u32>>;
-            /** Get node features. This is a staging method! Do not use on production runtimes! */
+            /**
+             * Get node features. This is a staging method! Do not use on production runtimes!
+             **/
             nodeFeatures: AugmentedCall<ApiType, () => Observable<NodeFeatures>>;
-            /** Scrape dispute relevant from on-chain, backing votes and resolved disputes. */
+            /**
+             * Scrape dispute relevant from on-chain, backing votes and resolved disputes.
+             **/
             onChainVotes: AugmentedCall<ApiType, () => Observable<Option<ScrapedOnChainVotes>>>;
-            /** Returns the state of parachain backing for a given para */
+            /**
+             * Returns the state of parachain backing for a given para
+             **/
             paraBackingState: AugmentedCall<
                 ApiType,
                 (paraId: ParaId | AnyNumber | Uint8Array) => Observable<Option<BackingState>>
             >;
             /**
-             * Yields the persisted validation data for the given `ParaId` along with an assumption that should be used if the
-             * para currently occupies a core.
-             */
+             * Yields the persisted validation data for the given `ParaId` along with an assumption that should be used if the para currently occupies a core.
+             **/
             persistedValidationData: AugmentedCall<
                 ApiType,
                 (
@@ -398,21 +515,31 @@ declare module "@polkadot/api-base/types/calls" {
                     assumption: OccupiedCoreAssumption | "Included," | "TimedOut" | "Free" | number | Uint8Array
                 ) => Observable<Option<PersistedValidationData>>
             >;
-            /** Returns code hashes of PVFs that require pre-checking by validators in the active set. */
+            /**
+             * Returns code hashes of PVFs that require pre-checking by validators in the active set.
+             **/
             pvfsRequirePrecheck: AugmentedCall<ApiType, () => Observable<Vec<ValidationCodeHash>>>;
-            /** Returns execution parameters for the session. */
+            /**
+             * Returns execution parameters for the session.
+             **/
             sessionExecutorParams: AugmentedCall<
                 ApiType,
                 (sessionIndex: SessionIndex | AnyNumber | Uint8Array) => Observable<Option<ExecutorParams>>
             >;
-            /** Returns the session index expected at a child of the block. */
+            /**
+             * Returns the session index expected at a child of the block.
+             **/
             sessionIndexForChild: AugmentedCall<ApiType, () => Observable<SessionIndex>>;
-            /** Get the session info for the given session, if stored. */
+            /**
+             * Get the session info for the given session, if stored.
+             **/
             sessionInfo: AugmentedCall<
                 ApiType,
                 (index: SessionIndex | AnyNumber | Uint8Array) => Observable<Option<SessionInfo>>
             >;
-            /** Submits a PVF pre-checking statement into the transaction pool. */
+            /**
+             * Submits a PVF pre-checking statement into the transaction pool.
+             **/
             submitPvfCheckStatement: AugmentedCall<
                 ApiType,
                 (
@@ -424,7 +551,9 @@ declare module "@polkadot/api-base/types/calls" {
                     signature: ValidatorSignature | string | Uint8Array
                 ) => Observable<Null>
             >;
-            /** Submit an unsigned extrinsic to slash validators who lost a dispute about a candidate of a past session */
+            /**
+             * Submit an unsigned extrinsic to slash validators who lost a dispute about a candidate of a past session
+             **/
             submitReportDisputeLost: AugmentedCall<
                 ApiType,
                 (
@@ -436,12 +565,16 @@ declare module "@polkadot/api-base/types/calls" {
                     keyOwnershipProof: OpaqueKeyOwnershipProof | string | Uint8Array
                 ) => Observable<Option<Null>>
             >;
-            /** Returns a list of validators that lost a past session dispute and need to be slashed */
+            /**
+             * Returns a list of validators that lost a past session dispute and need to be slashed
+             **/
             unappliedSlashes: AugmentedCall<
                 ApiType,
                 () => Observable<Vec<ITuple<[SessionIndex, CandidateHash, PendingSlashes]>>>
             >;
-            /** Fetch the validation code used by a para, making the given `OccupiedCoreAssumption`. */
+            /**
+             * Fetch the validation code used by a para, making the given `OccupiedCoreAssumption`.
+             **/
             validationCode: AugmentedCall<
                 ApiType,
                 (
@@ -449,12 +582,16 @@ declare module "@polkadot/api-base/types/calls" {
                     assumption: OccupiedCoreAssumption | "Included," | "TimedOut" | "Free" | number | Uint8Array
                 ) => Observable<Option<ValidationCode>>
             >;
-            /** Get the validation code from its hash. */
+            /**
+             * Get the validation code from its hash.
+             **/
             validationCodeByHash: AugmentedCall<
                 ApiType,
                 (hash: ValidationCodeHash | string | Uint8Array) => Observable<Option<ValidationCode>>
             >;
-            /** Fetch the hash of the validation code used by a para, making the given `OccupiedCoreAssumption`. */
+            /**
+             * Fetch the hash of the validation code used by a para, making the given `OccupiedCoreAssumption`.
+             **/
             validationCodeHash: AugmentedCall<
                 ApiType,
                 (
@@ -463,36 +600,47 @@ declare module "@polkadot/api-base/types/calls" {
                 ) => Observable<Option<ValidationCodeHash>>
             >;
             /**
-             * Returns the validator groups and rotation info localized based on the hypothetical child of a block whose state
-             * this is invoked on
-             */
+             * Returns the validator groups and rotation info localized based on the hypothetical child of a block whose state  this is invoked on
+             **/
             validatorGroups: AugmentedCall<
                 ApiType,
                 () => Observable<ITuple<[Vec<Vec<ParaValidatorIndex>>, GroupRotationInfo]>>
             >;
-            /** Get the current validators. */
+            /**
+             * Get the current validators.
+             **/
             validators: AugmentedCall<ApiType, () => Observable<Vec<ValidatorId>>>;
-            /** Generic call */
+            /**
+             * Generic call
+             **/
             [key: string]: DecoratedCallBase<ApiType>;
         };
         /** 0xab3c0572291feb8b/1 */
         sessionKeys: {
-            /** Decode the given public session keys. */
+            /**
+             * Decode the given public session keys.
+             **/
             decodeSessionKeys: AugmentedCall<
                 ApiType,
                 (encoded: Bytes | string | Uint8Array) => Observable<Option<Vec<ITuple<[Bytes, KeyTypeId]>>>>
             >;
-            /** Generate a set of session keys with optionally using the given seed. */
+            /**
+             * Generate a set of session keys with optionally using the given seed.
+             **/
             generateSessionKeys: AugmentedCall<
                 ApiType,
                 (seed: Option<Bytes> | null | Uint8Array | Bytes | string) => Observable<Bytes>
             >;
-            /** Generic call */
+            /**
+             * Generic call
+             **/
             [key: string]: DecoratedCallBase<ApiType>;
         };
         /** 0xd2bc9897eed08f15/3 */
         taggedTransactionQueue: {
-            /** Validate the transaction. */
+            /**
+             * Validate the transaction.
+             **/
             validateTransaction: AugmentedCall<
                 ApiType,
                 (
@@ -501,12 +649,16 @@ declare module "@polkadot/api-base/types/calls" {
                     blockHash: BlockHash | string | Uint8Array
                 ) => Observable<TransactionValidity>
             >;
-            /** Generic call */
+            /**
+             * Generic call
+             **/
             [key: string]: DecoratedCallBase<ApiType>;
         };
         /** 0x37c8bb1350a9a2a8/4 */
         transactionPaymentApi: {
-            /** The transaction fee details */
+            /**
+             * The transaction fee details
+             **/
             queryFeeDetails: AugmentedCall<
                 ApiType,
                 (
@@ -514,7 +666,9 @@ declare module "@polkadot/api-base/types/calls" {
                     len: u32 | AnyNumber | Uint8Array
                 ) => Observable<FeeDetails>
             >;
-            /** The transaction info */
+            /**
+             * The transaction info
+             **/
             queryInfo: AugmentedCall<
                 ApiType,
                 (
@@ -522,39 +676,55 @@ declare module "@polkadot/api-base/types/calls" {
                     len: u32 | AnyNumber | Uint8Array
                 ) => Observable<RuntimeDispatchInfo>
             >;
-            /** Query the output of the current LengthToFee given some input */
+            /**
+             * Query the output of the current LengthToFee given some input
+             **/
             queryLengthToFee: AugmentedCall<ApiType, (length: u32 | AnyNumber | Uint8Array) => Observable<Balance>>;
-            /** Query the output of the current WeightToFee given some input */
+            /**
+             * Query the output of the current WeightToFee given some input
+             **/
             queryWeightToFee: AugmentedCall<
                 ApiType,
                 (weight: Weight | { refTime?: any; proofSize?: any } | string | Uint8Array) => Observable<Balance>
             >;
-            /** Generic call */
+            /**
+             * Generic call
+             **/
             [key: string]: DecoratedCallBase<ApiType>;
         };
         /** 0x6ff52ee858e6c5bd/1 */
         xcmPaymentApi: {
-            /** The API to query acceptable payment assets */
+            /**
+             * The API to query acceptable payment assets
+             **/
             queryAcceptablePaymentAssets: AugmentedCall<
                 ApiType,
                 (
                     version: u32 | AnyNumber | Uint8Array
                 ) => Observable<Result<Vec<XcmVersionedAssetId>, XcmPaymentApiError>>
             >;
+            /**
+             *
+             **/
             queryWeightToAssetFee: AugmentedCall<
                 ApiType,
                 (
                     weight: WeightV2 | { refTime?: any; proofSize?: any } | string | Uint8Array,
-                    asset: XcmVersionedAssetId | { V3: any } | { V4: any } | string | Uint8Array
+                    asset: XcmVersionedAssetId | { V3: any } | { V4: any } | { V5: any } | string | Uint8Array
                 ) => Observable<Result<u128, XcmPaymentApiError>>
             >;
+            /**
+             *
+             **/
             queryXcmWeight: AugmentedCall<
                 ApiType,
                 (
-                    message: XcmVersionedXcm | { V2: any } | { V3: any } | { V4: any } | string | Uint8Array
+                    message: XcmVersionedXcm | { V3: any } | { V4: any } | { V5: any } | string | Uint8Array
                 ) => Observable<Result<WeightV2, XcmPaymentApiError>>
             >;
-            /** Generic call */
+            /**
+             * Generic call
+             **/
             [key: string]: DecoratedCallBase<ApiType>;
         };
     } // AugmentedCalls

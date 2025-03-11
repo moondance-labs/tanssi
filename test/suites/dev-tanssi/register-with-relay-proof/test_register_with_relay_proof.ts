@@ -1,11 +1,13 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { KeyringPair } from "@moonwall/util";
-import { ApiPromise, Keyring } from "@polkadot/api";
-import { jumpSessions, fetchStorageProofFromValidationData } from "../../../util/block";
+
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import type { KeyringPair } from "@moonwall/util";
+import { type ApiPromise, Keyring } from "@polkadot/api";
+import { fetchStorageProofFromValidationData, generateEmptyGenesisData, jumpSessions } from "utils";
+import type { DpContainerChainGenesisDataContainerChainGenesisData } from "@polkadot/types/lookup";
 
 describeSuite({
-    id: "DT0502",
+    id: "DEV0302",
     title: "Registrar test suite: register with relay proof",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -13,6 +15,7 @@ describeSuite({
         let alice: KeyringPair;
         let charlie: KeyringPair;
         let relayManager: KeyringPair;
+        let containerChainGenesisData: DpContainerChainGenesisDataContainerChainGenesisData;
 
         beforeAll(() => {
             alice = context.keyring.alice;
@@ -27,12 +30,13 @@ describeSuite({
                 type: "ed25519",
             });
             relayManager = relayKeyring.addFromUri(relayManagerPrivateKey);
+            containerChainGenesisData = generateEmptyGenesisData(context.pjsApi);
         });
 
         it({
             id: "E01",
             title: "Checking that fetching registered paraIds is possible",
-            test: async function () {
+            test: async () => {
                 const parasRegistered = await polkadotJs.query.registrar.registeredParaIds();
 
                 // These are registered in genesis
@@ -44,48 +48,21 @@ describeSuite({
         it({
             id: "E02",
             title: "Checking that registering paraIds is possible",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
 
                 const currentSesssion = await polkadotJs.query.session.currentIndex();
                 const sessionDelay = await polkadotJs.consts.registrar.sessionDelay;
                 const expectedScheduledOnboarding =
                     BigInt(currentSesssion.toString()) + BigInt(sessionDelay.toString());
-
-                const emptyGenesisData = () => {
-                    const g = polkadotJs.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
-                        storage: [
-                            {
-                                key: "0x636f6465",
-                                value: "0x010203040506",
-                            },
-                        ],
-                        name: "0x436f6e7461696e657220436861696e2032303030",
-                        id: "0x636f6e7461696e65722d636861696e2d32303030",
-                        forkId: null,
-                        extensions: "0x",
-                        properties: {
-                            tokenMetadata: {
-                                tokenSymbol: "0x61626364",
-                                ss58Format: 42,
-                                tokenDecimals: 12,
-                            },
-                            isEthereum: false,
-                        },
-                    });
-                    return g;
-                };
-                const containerChainGenesisData = emptyGenesisData();
-                const { relayProofBlockNumber, relayStorageProof } = await fetchStorageProofFromValidationData(
-                    polkadotJs
-                );
+                const { relayProofBlockNumber, relayStorageProof } =
+                    await fetchStorageProofFromValidationData(polkadotJs);
 
                 const parathreadParams = null;
                 const relayStorageRoots = await polkadotJs.query.relayStorageRoots.relayStorageRootKeys();
                 const lastStoredRelayBlockNumber = relayStorageRoots.toJSON()[relayStorageRoots.toJSON().length - 1];
-                const lastRelayStorageRoot = await polkadotJs.query.relayStorageRoots.relayStorageRoot(
-                    lastStoredRelayBlockNumber
-                );
+                const lastRelayStorageRoot =
+                    await polkadotJs.query.relayStorageRoots.relayStorageRoot(lastStoredRelayBlockNumber);
 
                 // message: paraId || account (alice) || lastRelayStorageRoot
                 const message = new Uint8Array([
@@ -138,7 +115,7 @@ describeSuite({
                 // Check that the on chain genesis data is set correctly
                 const onChainGenesisData = await polkadotJs.query.registrar.paraGenesisData(2002);
                 // TODO: fix once we have types
-                expect(emptyGenesisData().toJSON()).to.deep.equal(onChainGenesisData.toJSON());
+                expect(containerChainGenesisData.toJSON()).to.deep.equal(onChainGenesisData.toJSON());
 
                 // Check the para id has been given some free credits
                 const credits = (await polkadotJs.query.servicesPayment.blockProductionCredits(2002)).toJSON();
@@ -157,7 +134,7 @@ describeSuite({
         it({
             id: "E03",
             title: "Registered paraId has been given free credits, and flag can be cleared",
-            test: async function () {
+            test: async () => {
                 const paraId = 2002;
                 const givenFreeCredits = await polkadotJs.query.servicesPayment.givenFreeCredits(paraId);
                 expect(givenFreeCredits.isNone).to.be.false;

@@ -1,20 +1,21 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { KeyringPair } from "@moonwall/util";
-import { ApiPromise } from "@polkadot/api";
-import { jumpToSession } from "../../../util/block";
-import { u8aToHex, hexToU8a, stringToHex, numberToHex } from "@polkadot/util";
-import {
+
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import type { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
+import { Keyring } from "@polkadot/keyring";
+import type {
+    SpConsensusBeefyCommitment,
     SpConsensusBeefyDoubleVotingProof,
     SpConsensusBeefyPayload,
-    SpConsensusBeefyCommitment,
     SpConsensusBeefyVoteMessage,
 } from "@polkadot/types/lookup";
-import { Keyring } from "@polkadot/keyring";
+import { hexToU8a, numberToHex, stringToHex, u8aToHex } from "@polkadot/util";
 import { secp256k1Sign } from "@polkadot/util-crypto";
+import { jumpToSession } from "utils";
 
 describeSuite({
-    id: "DTR1203",
+    id: "DEVT1402",
     title: "BEEFY - Double voting proofs",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -37,7 +38,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Should be able to report a valid double voting proof",
-            test: async function () {
+            test: async () => {
                 await jumpToSession(context, 1);
                 await context.createBlock();
 
@@ -105,14 +106,14 @@ describeSuite({
                 const signedTx = await tx.signAsync(bob);
                 const { result } = await context.createBlock(signedTx, { allowFailures: false });
 
-                expect(result!.successful, result!.error?.name).to.be.true;
+                expect(result?.successful, result?.error?.name).to.be.true;
             },
         });
 
         it({
             id: "E02",
             title: "Should fail to report proof if KeyOwnershipProof is invalid",
-            test: async function () {
+            test: async () => {
                 await jumpToSession(context, 1);
                 await context.createBlock();
 
@@ -181,16 +182,16 @@ describeSuite({
                 const signedTx = await tx.signAsync(bob);
                 const { result } = await context.createBlock(signedTx);
 
-                expect(result!.successful).to.be.false;
-                expect(result!.error?.section).to.eq("beefy");
-                expect(result!.error?.name).to.eq("InvalidKeyOwnershipProof");
+                expect(result?.successful).to.be.false;
+                expect(result?.error?.section).to.eq("beefy");
+                expect(result?.error?.name).to.eq("InvalidKeyOwnershipProof");
             },
         });
 
         it({
             id: "E03",
             title: "Should fail to report an invalid DoubleVotingProof",
-            test: async function () {
+            test: async () => {
                 await jumpToSession(context, 1);
                 await context.createBlock();
 
@@ -258,9 +259,9 @@ describeSuite({
                 const signedTx = await tx.signAsync(bob);
                 const { result } = await context.createBlock(signedTx);
 
-                expect(result!.successful).to.be.false;
-                expect(result!.error?.section).to.eq("beefy");
-                expect(result!.error?.name).to.eq("InvalidDoubleVotingProof");
+                expect(result?.successful).to.be.false;
+                expect(result?.error?.section).to.eq("beefy");
+                expect(result?.error?.name).to.eq("InvalidDoubleVotingProof");
             },
         });
     },

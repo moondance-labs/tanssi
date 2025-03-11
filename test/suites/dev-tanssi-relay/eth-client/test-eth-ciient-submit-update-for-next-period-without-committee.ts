@@ -1,19 +1,19 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
-import { readFileSync } from "fs";
-import { KeyringPair } from "@moonwall/util";
+
+import { readFileSync } from "node:fs";
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import type { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
 
 describeSuite({
-    id: "DTR1202",
+    id: "DEVT0402",
     title: "Ethereum Beacon Client tests",
     foundationMethods: "dev",
 
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
-        let initialSlot;
-        String;
+        let initialSlot: string;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
@@ -22,7 +22,7 @@ describeSuite({
             const initialCheckpoint = JSON.parse(
                 readFileSync("tmp/ethereum_client_test/initial-checkpoint.json").toString()
             );
-            initialSlot = initialCheckpoint["header"]["slot"].toString();
+            initialSlot = initialCheckpoint.header.slot.toString();
             const tx = polkadotJs.tx.ethereumBeaconClient.forceCheckpoint(initialCheckpoint);
             const signedTx = await polkadotJs.tx.sudo.sudo(tx).signAsync(alice);
             await context.createBlock([signedTx]);
@@ -31,7 +31,7 @@ describeSuite({
         it({
             id: "E02",
             title: "Ethreum client should not be able to receive an update for the next period without the next sync committee",
-            test: async function () {
+            test: async () => {
                 const nextPeriodUpdate = JSON.parse(
                     readFileSync("tmp/ethereum_client_test/next-finalized-header-update.json").toString()
                 );
@@ -44,9 +44,8 @@ describeSuite({
                 expect(result[0].error.name).to.eq("SkippedSyncCommitteePeriod");
 
                 const latestFinalizedBlockRoot = await polkadotJs.query.ethereumBeaconClient.latestFinalizedBlockRoot();
-                const latestFinalizedSlot = await polkadotJs.query.ethereumBeaconClient.finalizedBeaconState(
-                    latestFinalizedBlockRoot
-                );
+                const latestFinalizedSlot =
+                    await polkadotJs.query.ethereumBeaconClient.finalizedBeaconState(latestFinalizedBlockRoot);
 
                 // The update did not go through, so the slot is the same as the initial one
                 expect(latestFinalizedSlot.toHuman().slot).to.equal(initialSlot);

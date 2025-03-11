@@ -1,15 +1,15 @@
-import { expect, describeSuite } from "@moonwall/cli";
+import { describeSuite, expect } from "@moonwall/cli";
 import { customWeb3Request } from "@moonwall/util";
 
 describeSuite({
-    id: "DF0802",
+    id: "DE0902",
     title: "Pallet EVM - RPC block author",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
         it({
             id: "T01",
             title: "should return correct author",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
 
                 const author = await context.polkadotJs().query.authorInherent.author();

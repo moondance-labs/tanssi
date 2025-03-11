@@ -1,19 +1,23 @@
-import { beforeAll, describeSuite, expect, afterAll } from "@moonwall/cli";
-import { ApiPromise, Keyring } from "@polkadot/api";
-import { spawn, exec } from "node:child_process";
-import { signAndSendAndInclude, waitSessions } from "../../util/block.ts";
-import { ethers } from "ethers";
-import { decodeAddress } from "@polkadot/util-crypto";
+import "@tanssi/api-augment/dancelight";
+
+import { afterAll, beforeAll, describeSuite, expect } from "@moonwall/cli";
+import type { KeyringPair } from "@moonwall/util";
+import { type ApiPromise, Keyring } from "@polkadot/api";
+import type { MultiLocation } from "@polkadot/types/interfaces/xcm/types";
 import { u8aToHex } from "@polkadot/util";
+import { decodeAddress } from "@polkadot/util-crypto";
+import { ethers } from "ethers";
+import { type ChildProcessWithoutNullStreams, exec, spawn } from "node:child_process";
+import { signAndSendAndInclude, sleep, waitSessions } from "utils";
 
 // Change this if we change the storage parameter in runtime
 const GATEWAY_STORAGE_KEY = "0xaed97c7854d601808b98ae43079dafb3";
 
 function execCommand(command: string, options?) {
     return new Promise((resolve, reject) => {
-        exec(command, options, (error: child.ExecException, stdout: string, stderr: string) => {
+        exec(command, options, (error: unknown, stdout: string, stderr: string) => {
             if (error) {
-                reject(error);
+                reject({ error, stdout, stderr });
             } else {
                 resolve({ stdout, stderr });
             }
@@ -21,27 +25,43 @@ function execCommand(command: string, options?) {
     });
 }
 
+async function calculateNumberOfBlocksTillNextEra(api, blocksPerSession) {
+    // Wait till the second block of next era
+    const sessionsPerEra = await api.consts.externalValidators.sessionsPerEra;
+
+    // Check when next era will be enacted
+    // 1. Get current era info
+    const activeEraInfo = (await api.query.externalValidators.activeEra()).toJSON();
+    // 2. Get next era start block
+    const nextEraStartBlock = (activeEraInfo.index + 1) * sessionsPerEra * blocksPerSession + 1;
+    // 3. Get current block
+    const currentBlock = (await api.rpc.chain.getBlock()).block.header.number.toNumber();
+    // 4. calculate how much to wait
+    return nextEraStartBlock - currentBlock;
+}
+
 describeSuite({
-    id: "ZR-01",
+    id: "ZOMBIETANSSI01",
     title: "Zombie Tanssi Relay Test",
     foundationMethods: "zombie",
-    testCases: function ({ it, context }) {
+    testCases: ({ it, context }) => {
         let relayApi: ApiPromise;
         let relayCharlieApi: ApiPromise;
-        let ethereumNodeChildProcess;
-        let relayerChildProcess;
-        let alice;
-        let beefyClientDetails;
+        let ethereumNodeChildProcess: ChildProcessWithoutNullStreams;
+        let relayerChildProcess: ChildProcessWithoutNullStreams;
+        let alice: KeyringPair;
+        let beefyClientDetails: any;
 
         const ethUrl = "ws://127.0.0.1:8546";
-        let customHttpProvider;
-        let ethereumWallet;
-        let middlewareContract;
-        let gatewayProxyAddress;
-        let middlewareDetails;
+        let customHttpProvider: ethers.WebSocketProvider;
+        let ethereumWallet: ethers.Wallet;
+        let middlewareContract: ethers.Contract;
+        let gatewayContract: ethers.Contract;
+        let gatewayProxyAddress: string;
+        let middlewareDetails: any;
 
-        let operatorAccount;
-        let operatorNimbusKey;
+        let operatorAccount: KeyringPair;
+        let operatorNimbusKey: string;
 
         beforeAll(async () => {
             relayApi = context.polkadotJs("Tanssi-relay");
@@ -59,16 +79,17 @@ describeSuite({
             // Operator keys
             operatorAccount = keyring.addFromUri("//Charlie", { name: "Charlie default" });
             // We rotate the keys for charlie so that we have access to them from this test as well as the node
-            operatorNimbusKey = await relayCharlieApi.rpc.author.rotateKeys();
+            operatorNimbusKey = (await relayCharlieApi.rpc.author.rotateKeys()).toHex();
             await relayApi.tx.session.setKeys(operatorNimbusKey, []).signAndSend(operatorAccount);
 
-            const fundingTxHash = await relayApi.tx.utility
-                .batch([
+            const fundingTxHash = await signAndSendAndInclude(
+                relayApi.tx.utility.batch([
                     relayApi.tx.balances.transferAllowDeath(beaconRelay.address, 1_000_000_000_000),
                     relayApi.tx.balances.transferAllowDeath(executionRelay.address, 1_000_000_000_000),
-                ])
-                .signAndSend(alice);
-            console.log("Transferred money to relayers", fundingTxHash.toHex());
+                ]),
+                alice
+            );
+            console.log("Transferred money to relayers", fundingTxHash.txHash.toHex());
 
             ethereumNodeChildProcess = spawn("./scripts/bridge/start-ethereum-node.sh", {
                 shell: true,
@@ -109,10 +130,11 @@ describeSuite({
             middlewareDetails = ethInfo.symbiotic_info.contracts.Middleware;
 
             console.log("Setting gateway address to proxy contract:", gatewayProxyAddress);
-            const setGatewayAddressTxHash = await relayApi.tx.sudo
-                .sudo(relayApi.tx.system.setStorage([[GATEWAY_STORAGE_KEY, gatewayProxyAddress]]))
-                .signAndSend(alice);
-            console.log("Set gateway address transaction hash:", setGatewayAddressTxHash.toHex());
+            const setGatewayAddressTxHash = await signAndSendAndInclude(
+                relayApi.tx.sudo.sudo(relayApi.tx.system.setStorage([[GATEWAY_STORAGE_KEY, gatewayProxyAddress]])),
+                alice
+            );
+            console.log("Set gateway address transaction hash:", setGatewayAddressTxHash.txHash.toHex());
 
             customHttpProvider = new ethers.WebSocketProvider(ethUrl);
             ethereumWallet = new ethers.Wallet(ethInfo.ethereum_key, customHttpProvider);
@@ -122,21 +144,47 @@ describeSuite({
             const tx = await middlewareContract.setGateway(gatewayProxyAddress);
             await tx.wait();
 
-            const initialBeaconUpdate = JSON.parse(
-                <string>(
+            gatewayContract = new ethers.Contract(
+                gatewayProxyAddress,
+                ethInfo.snowbridge_info.contracts.Gateway.abi,
+                ethereumWallet
+            );
+            const setMiddlewareTx = await gatewayContract.setMiddleware(middlewareDetails.address);
+            await setMiddlewareTx.wait();
+
+            const initialBeaconUpdate = JSON.parse(<string>(
                     await execCommand("./scripts/bridge/setup-relayer.sh", {
                         env: {
                             RELAYCHAIN_ENDPOINT: "ws://127.0.0.1:9947",
                             ...process.env,
                         },
                     })
-                ).stdout
-            );
+                ).stdout);
+
+            const tokenLocation = relayApi.createType<MultiLocation>("MultiLocation", {
+                parents: 0,
+                interior: "Here",
+            });
+            const versionedLocation = {
+                V3: tokenLocation,
+            };
+
+            const metadata = {
+                name: "dance",
+                symbol: "dance",
+                decimals: 18,
+            };
 
             // We need to read initial checkpoint data and address of gateway contract to setup the ethereum client
+            // We also need to register token
             // Once that is done, we can start the relayer
             await signAndSendAndInclude(
-                relayApi.tx.sudo.sudo(relayApi.tx.ethereumBeaconClient.forceCheckpoint(initialBeaconUpdate)),
+                relayApi.tx.sudo.sudo(
+                    relayApi.tx.utility.batch([
+                        relayApi.tx.ethereumBeaconClient.forceCheckpoint(initialBeaconUpdate),
+                        relayApi.tx.ethereumSystem.registerToken(versionedLocation, metadata),
+                    ])
+                ),
                 alice
             );
 
@@ -155,7 +203,7 @@ describeSuite({
         it({
             id: "T01",
             title: "Ethereum Blocks are being recognized on tanssi-relay",
-            test: async function () {
+            test: async () => {
                 await waitSessions(context, relayApi, 1, null, "Tanssi-relay");
                 const firstFinalizedBlockRoot = (
                     await relayApi.query.ethereumBeaconClient.latestFinalizedBlockRoot()
@@ -174,7 +222,7 @@ describeSuite({
         it({
             id: "T02",
             title: "Dancelight Blocks are being recognized on ethereum",
-            test: async function () {
+            test: async () => {
                 const beefyContract = new ethers.Contract(
                     beefyClientDetails.address,
                     beefyClientDetails.abi,
@@ -191,7 +239,7 @@ describeSuite({
         it({
             id: "T03",
             title: "Message can be passed from ethereum to Starlight",
-            test: async function () {
+            test: async () => {
                 const externalValidatorsBefore = await relayApi.query.externalValidators.externalValidators();
 
                 const epoch = await middlewareContract.getCurrentEpoch();
@@ -248,42 +296,117 @@ describeSuite({
         it({
             id: "T04",
             title: "Operator produces blocks",
-            test: async function () {
-                // 3 sessions per era, 10 blocks per session
-                // we wait for new era being enacted and then
-                // wait one session more to check if we produce a block
-
-                const sessionsPerEra = await relayApi.consts.externalValidators.sessionsPerEra;
-                const blocksPerSession = 10;
-
-                // Check when next era will be enacted
-                // 1. Get current era info
-                const activeEraInfo = (await relayApi.query.externalValidators.activeEra()).toJSON();
-                // 2. Get next era start block
-                const nextEraStartBlock = (activeEraInfo.index + 1) * sessionsPerEra * blocksPerSession + 1;
-                // 3. Get current block
-                const currentBlock = (await relayApi.rpc.chain.getBlock()).block.header.number.toNumber();
-                // 4. calculate how much to wait
-                const blocksTillNextEra = nextEraStartBlock - currentBlock + 1;
-
-                console.log(
-                    "We will wait for:",
-                    blocksTillNextEra + blocksPerSession,
-                    "blocks to detect block production"
+            test: async () => {
+                // wait some time for the operator to be part of session validator
+                await waitSessions(
+                    context,
+                    relayApi,
+                    6,
+                    async () => {
+                        try {
+                            const sessionValidators = await relayApi.query.session.validators();
+                            expect(sessionValidators).to.contain(operatorAccount.address);
+                        } catch (error) {
+                            return false;
+                        }
+                        return true;
+                    },
+                    "Tanssi-relay"
                 );
 
-                await context.waitBlock(blocksTillNextEra, "Tanssi-relay");
-
                 // In new era's first session at least one block need to be produced by the operator
-                for (let i = 0; i < blocksPerSession; ++i) {
+                const blocksPerSession = 10;
+                for (let i = 0; i < 3 * blocksPerSession; ++i) {
                     const latestBlockHash = await relayApi.rpc.chain.getBlockHash();
                     const author = (await relayApi.derive.chain.getHeader(latestBlockHash)).author;
-                    if (author == operatorAccount.address) {
+                    if (author?.toString() === operatorAccount.address) {
                         return;
                     }
                     await context.waitBlock(1, "Tanssi-relay");
                 }
                 expect.fail("operator didn't produce a block");
+            },
+        });
+
+        it({
+            id: "T05",
+            title: "Rewards and slashes are being sent to symbiotic successfully",
+            test: async () => {
+                // Send slash event forcefully
+                const activeEraInfo = (await relayApi.query.externalValidators.activeEra()).toJSON();
+                const currentExternalIndex = await relayApi.query.externalValidators.currentExternalIndex();
+                const forceInjectSlashCall = relayApi.tx.externalValidatorSlashes.forceInjectSlash(
+                    activeEraInfo.index,
+                    operatorAccount.address,
+                    1000,
+                    currentExternalIndex
+                );
+                const forceInjectTx = await relayApi.tx.sudo.sudo(forceInjectSlashCall).signAndSend(alice);
+
+                console.log("Force inject tx was submitted:", forceInjectTx.toHex());
+
+                const blocksToWaitForRewards = await calculateNumberOfBlocksTillNextEra(relayApi, 10);
+                // The slash message event is fired in the second block of Era
+                const blocksToWaitForSlashes = blocksToWaitForRewards + 1;
+                const blocksToWaitFor = Math.max(blocksToWaitForRewards, blocksToWaitForSlashes) + 1;
+
+                const currentBlock = (await relayApi.rpc.chain.getBlock()).block.header.number.toNumber();
+                const blockToFetchRewardEventFrom = currentBlock + blocksToWaitForRewards;
+                const blockToFetchSlashEventFrom = currentBlock + blocksToWaitForSlashes;
+
+                console.log("We will wait till", currentBlock + blocksToWaitFor, "blocks");
+
+                await context.waitBlock(blocksToWaitFor, "Tanssi-relay");
+                const relayApiAtRewardEventBlock = await relayApi.at(
+                    await relayApi.query.system.blockHash(blockToFetchRewardEventFrom)
+                );
+                const relayApiAtSlashEventBlock = await relayApi.at(
+                    await relayApi.query.system.blockHash(blockToFetchSlashEventFrom)
+                );
+
+                // Get the reward event
+                const rewardBlockEvents = await relayApiAtRewardEventBlock.query.system.events();
+                const filteredEventsForReward = rewardBlockEvents.filter((a) => {
+                    return a.event.method === "RewardsMessageSent";
+                });
+                expect(filteredEventsForReward.length).to.be.equal(1);
+                const rewardEvent = filteredEventsForReward[0];
+                // Extract message id
+                const rewardMessageId = rewardEvent.event.toJSON().data[0];
+                console.log("Reward message id:", rewardMessageId);
+
+                // Get the slash event
+                const slashBlockEvents = await relayApiAtSlashEventBlock.query.system.events();
+                const filteredEventsForSlash = slashBlockEvents.filter((a) => {
+                    return a.event.method === "SlashesMessageSent";
+                });
+                expect(filteredEventsForSlash.length).to.be.equal(1);
+                const slashEvent = filteredEventsForSlash[0];
+                // Extract message id
+                const slashMessageId = slashEvent.event.toJSON().data[0];
+                console.log("Slash message id:", slashMessageId);
+
+                let rewardMessageReceived = false;
+                let slashMessageReceived = false;
+                let rewardMessageSuccess = false;
+                let slashMessageSuccess = false;
+
+                gatewayContract.on("InboundMessageDispatched", (_channelID, _nonce, messageID, success) => {
+                    if (rewardMessageId === messageID) {
+                        rewardMessageReceived = true;
+                        rewardMessageSuccess = success;
+                    } else if (slashMessageId === messageID) {
+                        slashMessageReceived = true;
+                        slashMessageSuccess = success;
+                    }
+                });
+
+                while (!rewardMessageReceived || !slashMessageReceived) {
+                    await sleep(1000);
+                }
+
+                expect(rewardMessageSuccess).to.be.true;
+                expect(slashMessageSuccess).to.be.true;
             },
         });
 
@@ -299,7 +422,3 @@ describeSuite({
         });
     },
 });
-
-const sleep = (ms: number): Promise<void> => {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-};

@@ -17,7 +17,7 @@ runtime-common = { workspace = true }
 sp-core = { workspace = true }
 sp-runtime = { workspace = true }
 sp-weights = { workspace = true }
-staging-xcm = { workspace = true }
+xcm = { workspace = true }
 xcm-builder = { workspace = true }
 
 [features]
@@ -29,9 +29,17 @@ std = [
 	"sp-core/std",
 	"sp-runtime/std",
 	"sp-weights/std",
-	"staging-xcm/std",
 	"xcm-builder/std",
+	"xcm/std",
 ]
 
 # Set timing constants (e.g. session period) to faster versions to speed up testing.
 fast-runtime = []
+
+runtime-benchmarks = [
+	"frame-support/runtime-benchmarks",
+	"primitives/runtime-benchmarks",
+	"runtime-common/runtime-benchmarks",
+	"sp-runtime/runtime-benchmarks",
+	"xcm-builder/runtime-benchmarks",
+]

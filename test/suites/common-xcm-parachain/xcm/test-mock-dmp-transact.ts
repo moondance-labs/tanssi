@@ -1,37 +1,37 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { KeyringPair, alith } from "@moonwall/util";
+import { type KeyringPair, alith } from "@moonwall/util";
 import { generateKeyringPair } from "@moonwall/util";
-import { ApiPromise, Keyring } from "@polkadot/api";
+import { type ApiPromise, Keyring } from "@polkadot/api";
 import {
-    RawXcmMessage,
+    type RawXcmMessage,
     XcmFragment,
     descendParentOriginForAddress20,
     descendParentOriginFromAddress32,
     injectDmpMessageAndSeal,
-} from "../../../util/xcm.ts";
+} from "utils";
 
 describeSuite({
-    id: "CPX0201",
+    id: "COMMON0301",
     title: "Mock XCM - Succeeds using sovereign accounts",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
         let polkadotJs: ApiPromise;
-        let transferredBalance;
-        let sendingAddress;
+        let transferredBalance: bigint;
+        let sendingAddress: string;
         let alice: KeyringPair;
-        let chain;
+        let chain: any;
 
-        beforeAll(async function () {
+        beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             chain = polkadotJs.consts.system.version.specName.toString();
             alice =
-                chain == "frontier-template"
+                chain === "frontier-template"
                     ? alith
                     : new Keyring({ type: "sr25519" }).addFromUri("//Alice", {
                           name: "Alice default",
                       });
             const descendFunction =
-                chain == "frontier-template" ? descendParentOriginForAddress20 : descendParentOriginFromAddress32;
+                chain === "frontier-template" ? descendParentOriginForAddress20 : descendParentOriginFromAddress32;
             let aliceNonce = (await polkadotJs.query.system.account(alice.address)).nonce.toNumber();
             const { originAddress, descendOriginAddress } = descendFunction(context);
 
@@ -51,13 +51,13 @@ describeSuite({
         it({
             id: "T01",
             title: "Should succeed using sovereign account from signed origin",
-            test: async function () {
+            test: async () => {
                 // Generate random receiver address
-                const random = chain == "frontier-template" ? generateKeyringPair() : generateKeyringPair("sr25519");
+                const random = chain === "frontier-template" ? generateKeyringPair() : generateKeyringPair("sr25519");
                 // Get Pallet balances index
                 const metadata = await polkadotJs.rpc.state.getMetadata();
                 const balancesPalletIndex = metadata.asLatest.pallets
-                    .find(({ name }) => name.toString() == "Balances")!
+                    .find(({ name }) => name.toString() === "Balances")
                     .index.toNumber();
 
                 const transferCall = polkadotJs.tx.balances.transferAllowDeath(

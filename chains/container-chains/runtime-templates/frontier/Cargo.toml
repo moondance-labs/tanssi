@@ -59,6 +59,7 @@ pallet-asset-rate = { workspace = true }
 pallet-assets = { workspace = true }
 pallet-balances = { workspace = true, features = [ "insecure_zero_ed" ] }
 pallet-message-queue = { workspace = true }
+pallet-multiblock-migrations = { workspace = true }
 pallet-multisig = { workspace = true }
 pallet-parameters = { workspace = true }
 pallet-proxy = { workspace = true }
@@ -91,9 +92,9 @@ pallet-xcm = { workspace = true }
 pallet-xcm-benchmarks = { workspace = true, optional = true }
 polkadot-parachain-primitives = { workspace = true }
 polkadot-runtime-common = { workspace = true }
-staging-xcm = { workspace = true }
-staging-xcm-builder = { workspace = true }
-staging-xcm-executor = { workspace = true }
+xcm = { workspace = true }
+xcm-builder = { workspace = true }
+xcm-executor = { workspace = true }
 xcm-runtime-apis = { workspace = true }
 
 # Cumulus
@@ -184,6 +185,7 @@ std = [
 	"pallet-maintenance-mode/std",
 	"pallet-message-queue/std",
 	"pallet-migrations/std",
+	"pallet-multiblock-migrations/std",
 	"pallet-multisig/std",
 	"pallet-parameters/std",
 	"pallet-proxy/std",
@@ -220,12 +222,12 @@ std = [
 	"sp-transaction-pool/std",
 	"sp-trie/std",
 	"sp-version/std",
-	"staging-xcm-builder/std",
-	"staging-xcm-executor/std",
-	"staging-xcm/std",
 	"tanssi-runtime-common/std",
+	"xcm-builder/std",
+	"xcm-executor/std",
 	"xcm-primitives/std",
 	"xcm-runtime-apis/std",
+	"xcm/std",
 ]
 
 # Allow to print logs details (no wasm:stripped)
@@ -256,11 +258,13 @@ runtime-benchmarks = [
 	"pallet-foreign-asset-creator/runtime-benchmarks",
 	"pallet-message-queue/runtime-benchmarks",
 	"pallet-migrations/runtime-benchmarks",
+	"pallet-multiblock-migrations/runtime-benchmarks",
 	"pallet-multisig/runtime-benchmarks",
 	"pallet-parameters/runtime-benchmarks",
 	"pallet-proxy/runtime-benchmarks",
 	"pallet-sudo/runtime-benchmarks",
 	"pallet-timestamp/runtime-benchmarks",
+	"pallet-transaction-payment/runtime-benchmarks",
 	"pallet-tx-pause/runtime-benchmarks",
 	"pallet-utility/runtime-benchmarks",
 	"pallet-xcm-benchmarks/runtime-benchmarks",
@@ -270,9 +274,9 @@ runtime-benchmarks = [
 	"polkadot-parachain-primitives/runtime-benchmarks",
 	"polkadot-runtime-common/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
-	"staging-xcm-builder/runtime-benchmarks",
-	"staging-xcm-executor/runtime-benchmarks",
 	"tanssi-runtime-common/runtime-benchmarks",
+	"xcm-builder/runtime-benchmarks",
+	"xcm-executor/runtime-benchmarks",
 	"xcm-primitives/runtime-benchmarks",
 	"xcm-runtime-apis/runtime-benchmarks",
 ]
@@ -301,6 +305,7 @@ try-runtime = [
 	"pallet-maintenance-mode/try-runtime",
 	"pallet-message-queue/try-runtime",
 	"pallet-migrations/try-runtime",
+	"pallet-multiblock-migrations/try-runtime",
 	"pallet-multisig/try-runtime",
 	"pallet-parameters/try-runtime",
 	"pallet-proxy/try-runtime",

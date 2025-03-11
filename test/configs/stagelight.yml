@@ -1,5 +1,5 @@
 endpoint: wss://stagelight.tanssi-dev.network
-block: ${env.FLASHBOX_BLOCK_NUMBER}
+block: ${env.STAGELIGHT_BLOCK_NUMBER}
 mock-signature-host: true
 db: ./tmp/db_mba.sqlite
 

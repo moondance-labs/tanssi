@@ -1,4 +1,5 @@
 import "@tanssi/api-augment";
+
 import { deployCreateCompiledContract, describeSuite, expect } from "@moonwall/cli";
 import {
     ALITH_ADDRESS,
@@ -12,14 +13,14 @@ import {
 import { encodeFunctionData } from "viem";
 
 describeSuite({
-    id: "DF1701",
+    id: "DE0201",
     title: "Test Contract - Deployment Filter",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
         it({
             id: "T01",
             title: "Any account can deploy (CREATE) in default mode",
-            test: async function () {
+            test: async () => {
                 const {
                     abi: fooAlithAbi,
                     contractAddress: contractAddressAlith,
@@ -50,7 +51,7 @@ describeSuite({
         it({
             id: "T02",
             title: "Only allowed address can deploy (CREATE) after changing parameters",
-            test: async function () {
+            test: async () => {
                 const deployFilter = context
                     .polkadotJs()
                     .createType("ContainerChainTemplateFrontierRuntimeDeployFilter", { Whitelisted: [ALITH_ADDRESS] });
@@ -105,7 +106,7 @@ describeSuite({
         it({
             id: "T03",
             title: "Any account can deploy CALL(CREATE) in default mode",
-            test: async function () {
+            test: async () => {
                 // First Alith deploys "Foo", which then will be used to deploy
                 // the inner contract "Bar".
                 const {
@@ -170,7 +171,7 @@ describeSuite({
         it({
             id: "T04",
             title: "Only allowed address can deploy CALL(CREATE) after changing parameters",
-            test: async function () {
+            test: async () => {
                 const deployFilter = context
                     .polkadotJs()
                     .createType("ContainerChainTemplateFrontierRuntimeDeployFilter", { Whitelisted: [ALITH_ADDRESS] });

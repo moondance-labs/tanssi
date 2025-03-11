@@ -1,12 +1,13 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { KeyringPair } from "@moonwall/util";
-import { ApiPromise } from "@polkadot/api";
+
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import type { KeyringPair } from "@moonwall/util";
 import { extractWeight } from "@moonwall/util";
-import { extractFeeAuthor, fetchIssuance, filterRewardFromOrchestrator } from "util/block";
+import type { ApiPromise } from "@polkadot/api";
+import { extractFeeAuthor, fetchIssuance, filterRewardFromOrchestrator } from "utils";
 
 describeSuite({
-    id: "CPT0201",
+    id: "COMMO1001",
     title: "Fee  burning test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -16,7 +17,7 @@ describeSuite({
 
         // Difference between the refTime estimated using paymentInfo and the actual refTime reported inside a block
         // https://github.com/paritytech/substrate/blob/5e49f6e44820affccaf517fd22af564f4b495d40/frame/support/src/weights/extrinsic_weights.rs#L56
-        let baseWeight;
+        let baseWeight: bigint;
 
         beforeAll(async () => {
             alice = context.keyring.alice;
@@ -28,7 +29,7 @@ describeSuite({
         it({
             id: "E01",
             title: "80% of Fees are burned",
-            test: async function () {
+            test: async () => {
                 const totalSupplyBefore = (await polkadotJs.query.balances.totalIssuance()).toBigInt();
                 const balanceBefore = (await polkadotJs.query.system.account(alice.address)).data.free.toBigInt();
                 const tx = polkadotJs.tx.balances.transferAllowDeath(bob.address, 200_000);

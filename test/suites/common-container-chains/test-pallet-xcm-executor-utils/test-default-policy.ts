@@ -1,27 +1,27 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { KeyringPair, alith } from "@moonwall/util";
-import { ApiPromise, Keyring } from "@polkadot/api";
+import { type KeyringPair, alith } from "@moonwall/util";
+import { type ApiPromise, Keyring } from "@polkadot/api";
 import { u8aToHex } from "@polkadot/util";
 
-import { RawXcmMessage, XcmFragment, injectDmpMessageAndSeal } from "../../../util/xcm.ts";
-import { RELAY_SOURCE_LOCATION, RELAY_SOURCE_LOCATION_2 } from "../../../util/constants.ts";
+import { type RawXcmMessage, XcmFragment, injectDmpMessageAndSeal } from "utils";
+import { RELAY_SOURCE_LOCATION, RELAY_SOURCE_LOCATION_2 } from "utils";
 
 // This assumes that the XcmExecutorUtils ReserveDefaultTrustPolicy set in the runtime is AllNative
 describeSuite({
-    id: "DC0102",
+    id: "COM0102",
     title: "XcmExecutorUtils - Default policies",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
         let chain: string;
-        let transferredBalance;
+        let transferredBalance: bigint;
 
-        beforeAll(async function () {
+        beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             chain = polkadotJs.consts.system.version.specName.toString();
             alice =
-                chain == "frontier-template"
+                chain === "frontier-template"
                     ? alith
                     : new Keyring({ type: "sr25519" }).addFromUri("//Alice", {
                           name: "Alice default",
@@ -32,7 +32,7 @@ describeSuite({
         it({
             id: "T01",
             title: "Should allow native asset from parent",
-            test: async function () {
+            test: async () => {
                 // Register parent asset
                 await context.createBlock(
                     await polkadotJs.tx.sudo
@@ -93,7 +93,7 @@ describeSuite({
         it({
             id: "T02",
             title: "Should reject grandparent asset from parent",
-            test: async function () {
+            test: async () => {
                 // Register grandparent asset
                 await context.createBlock(
                     await polkadotJs.tx.sudo

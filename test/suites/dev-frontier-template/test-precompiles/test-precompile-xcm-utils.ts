@@ -1,22 +1,23 @@
 import "@tanssi/api-augment";
+
 import { describeSuite, expect } from "@moonwall/cli";
 import { GLMR, extractWeight, generateKeyringPair } from "@moonwall/util";
-import { XcmVersionedXcm } from "@polkadot/types/lookup";
+import type { XcmVersionedXcm } from "@polkadot/types/lookup";
 import { u8aToHex } from "@polkadot/util";
-import { expectEVMResult, descendOriginFromAddress20 } from "../../../helpers";
+import { descendOriginFromAddress20, expectEVMResult } from "../../../helpers";
 
-export const CLEAR_ORIGIN_WEIGHT = 983000n;
+export const CLEAR_ORIGIN_WEIGHT = 2966000n;
 const XCM_UTILS_ADDRESS = "0x0000000000000000000000000000000000000803";
 
 describeSuite({
-    id: "DF1115",
+    id: "DE1315",
     title: "Precompiles - xcm utils",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
         it({
             id: "T01",
             title: "allows to retrieve parent-based ML account",
-            test: async function () {
+            test: async () => {
                 const multilocation: [number, any[]] = [1, []];
                 const expectedAddress = u8aToHex(new Uint8Array([...new TextEncoder().encode("Parent")]))
                     .padEnd(42, "0")
@@ -24,7 +25,7 @@ describeSuite({
 
                 expect(
                     (
-                        (await context.readContract!({
+                        (await context.readContract?.({
                             contractAddress: XCM_UTILS_ADDRESS,
                             contractName: "XcmUtils",
                             functionName: "multilocationToAddress",
@@ -38,7 +39,7 @@ describeSuite({
         it({
             id: "T02",
             title: "allows to retrieve parachain-based ML account",
-            test: async function () {
+            test: async () => {
                 const x2_parachain_asset_enum_selector = "0x00";
                 const x2_parachain_id = "000007D0";
                 const paraId = context.polkadotJs().createType("ParaId", 2000);
@@ -55,7 +56,7 @@ describeSuite({
 
                 expect(
                     (
-                        (await context.readContract!({
+                        (await context.readContract?.({
                             contractAddress: XCM_UTILS_ADDRESS,
                             contractName: "XcmUtils",
                             functionName: "multilocationToAddress",
@@ -69,7 +70,7 @@ describeSuite({
         it({
             id: "T03",
             title: "allows to retrieve generic ML-based derivated account",
-            test: async function () {
+            test: async () => {
                 const x2_parachain_asset_enum_selector = "0x00";
                 const x2_parachain_id = "00000001";
 
@@ -95,7 +96,7 @@ describeSuite({
                 const { descendOriginAddress } = descendOriginFromAddress20(context);
                 expect(
                     (
-                        (await context.readContract!({
+                        (await context.readContract?.({
                             contractAddress: XCM_UTILS_ADDRESS,
                             contractName: "XcmUtils",
                             functionName: "multilocationToAddress",
@@ -109,41 +110,36 @@ describeSuite({
         it({
             id: "T04",
             title: "allows to retrieve weight of message",
-            test: async function () {
+            test: async () => {
                 const message = {
-                    V2: [
+                    V4: [
                         {
                             ClearOrigin: null,
                         },
                     ],
                 };
                 const xcm = context.polkadotJs().createType("VersionedXcm", message);
-                expect(
-                    (await context.readContract!({
-                        contractAddress: XCM_UTILS_ADDRESS,
-                        contractName: "XcmUtils",
-                        functionName: "weightMessage",
-                        args: [xcm.toHex()],
-                    })) >=
-                        (CLEAR_ORIGIN_WEIGHT * 90n) / 100n
-                ).to.be.true;
+                const weight = await context.readContract?.({
+                    contractAddress: XCM_UTILS_ADDRESS,
+                    contractName: "XcmUtils",
+                    functionName: "weightMessage",
+                    args: [xcm.toHex()],
+                });
+
+                const min = (CLEAR_ORIGIN_WEIGHT * 90n) / 100n;
+                const max = (CLEAR_ORIGIN_WEIGHT * 110n) / 100n;
 
                 expect(
-                    (await context.readContract!({
-                        contractAddress: XCM_UTILS_ADDRESS,
-                        contractName: "XcmUtils",
-                        functionName: "weightMessage",
-                        args: [xcm.toHex()],
-                    })) <=
-                        (CLEAR_ORIGIN_WEIGHT * 110n) / 100n
-                ).to.be.true;
+                    weight,
+                    `weightMessage returned ${weight} but expected a value between ${min} and ${max}`
+                ).to.satisfy((val) => val >= min && val <= max);
             },
         });
 
         it({
             id: "T05",
             title: "allows to retrieve units per second for an asset",
-            test: async function () {
+            test: async () => {
                 // Junction::PalletInstance(3)
                 const x2_pallet_instance_enum_selector = "0x04";
                 const x2_instance = "0A";
@@ -166,7 +162,7 @@ describeSuite({
                 const expectedUnitsPerSecond = ((1_000_000_000_000n * 1_000_000_000n) / baseWeight) * 1_000n;
 
                 expect(
-                    await context.readContract!({
+                    await context.readContract?.({
                         contractAddress: XCM_UTILS_ADDRESS,
                         contractName: "XcmUtils",
                         functionName: "getUnitsPerSecond",
@@ -179,18 +175,21 @@ describeSuite({
         it({
             id: "T06",
             title: "allows to execute a custom xcm message",
-            test: async function () {
+            test: async () => {
                 const random = generateKeyringPair();
 
                 const transferCall = context.polkadotJs().tx.balances.transferAllowDeath(random.address, 1n * GLMR);
                 const transferCallEncoded = transferCall?.method.toHex();
 
                 const xcmMessage = {
-                    V2: [
+                    V4: [
                         {
                             Transact: {
                                 originType: "SovereignAccount",
-                                requireWeightAtMost: 525_000_000n + 100_000_000n, // 21_000 gas limit
+                                requireWeightAtMost: {
+                                    refTime: 525_000_000n + 100_000_000n, // 21_000 gas limit
+                                    proofSize: 0n,
+                                },
                                 call: {
                                     encoded: transferCallEncoded,
                                 },
@@ -203,7 +202,7 @@ describeSuite({
                     .polkadotJs()
                     .createType("XcmVersionedXcm", xcmMessage) as any;
 
-                const rawTxn = await context.writeContract!({
+                const rawTxn = await context.writeContract?.({
                     contractAddress: XCM_UTILS_ADDRESS,
                     contractName: "XcmUtils",
                     functionName: "xcmExecute",
@@ -212,7 +211,7 @@ describeSuite({
                 });
 
                 const { result } = await context.createBlock(rawTxn);
-                expectEVMResult(result!.events, "Succeed");
+                expectEVMResult(result?.events, "Succeed");
 
                 const testAccountBalance = (
                     await context.polkadotJs().query.system.account(random.address)
@@ -275,7 +274,7 @@ describeSuite({
         //     });
 
         //     const { result } = await context.createBlock(rawTxn);
-        //     expectEVMResult(result!.events, "Succeed");
+        //     expectEVMResult(result?.events, "Succeed");
 
         //     // Tokens transferred
         //     const testAccountBalance = (
@@ -289,7 +288,7 @@ describeSuite({
         it({
             id: "T08",
             title: "does not allow to self-send a custom xcm message",
-            test: async function () {
+            test: async () => {
                 const ownParaId = (await context.polkadotJs().query.parachainInfo.parachainId()) as any;
                 const x1_parachain_asset_enum_selector = "0x00";
                 const x1_parachain_id = ownParaId.toHex().slice(2);
@@ -322,7 +321,7 @@ describeSuite({
                 ];
 
                 const xcmMessage = {
-                    V2: [
+                    V4: [
                         {
                             ClearOrigin: null,
                         },
@@ -334,7 +333,7 @@ describeSuite({
                     .createType("XcmVersionedXcm", xcmMessage) as any;
 
                 // Try sending it with local view
-                const localRawTxn = await context.writeContract!({
+                const localRawTxn = await context.writeContract?.({
                     contractAddress: XCM_UTILS_ADDRESS,
                     contractName: "XcmUtils",
                     functionName: "xcmSend",
@@ -344,10 +343,10 @@ describeSuite({
                 });
 
                 const { result: localResult } = await context.createBlock(localRawTxn);
-                expectEVMResult(localResult!.events, "Revert");
+                expectEVMResult(localResult?.events, "Revert");
                 expect(
                     async () =>
-                        await context.writeContract!({
+                        await context.writeContract?.({
                             contractAddress: XCM_UTILS_ADDRESS,
                             contractName: "XcmUtils",
                             functionName: "xcmSend",
@@ -358,7 +357,7 @@ describeSuite({
                         '{ index: 73, error: [0, 0, 0, 0], message: Some("Unreachable") })'
                 );
 
-                const paraRawTxn = await context.writeContract!({
+                const paraRawTxn = await context.writeContract?.({
                     contractAddress: XCM_UTILS_ADDRESS,
                     contractName: "XcmUtils",
                     functionName: "xcmSend",
@@ -369,10 +368,10 @@ describeSuite({
 
                 const { result: paraResult } = await context.createBlock(paraRawTxn);
 
-                expectEVMResult(paraResult!.events, "Revert");
+                expectEVMResult(paraResult?.events, "Revert");
                 expect(
                     async () =>
-                        await context.writeContract!({
+                        await context.writeContract?.({
                             contractAddress: XCM_UTILS_ADDRESS,
                             contractName: "XcmUtils",
                             functionName: "xcmSend",
@@ -383,7 +382,7 @@ describeSuite({
                         '{ index: 73, error: [0, 0, 0, 0], message: Some("Unreachable") })'
                 );
 
-                const paraRawTxn2 = await context.writeContract!({
+                const paraRawTxn2 = await context.writeContract?.({
                     contractAddress: XCM_UTILS_ADDRESS,
                     contractName: "XcmUtils",
                     functionName: "xcmSend",
@@ -394,10 +393,10 @@ describeSuite({
 
                 const { result: paraResult2 } = await context.createBlock(paraRawTxn2);
 
-                expectEVMResult(paraResult2!.events, "Revert");
+                expectEVMResult(paraResult2?.events, "Revert");
                 expect(
                     async () =>
-                        await context.writeContract!({
+                        await context.writeContract?.({
                             contractAddress: XCM_UTILS_ADDRESS,
                             contractName: "XcmUtils",
                             functionName: "xcmSend",
@@ -413,7 +412,7 @@ describeSuite({
         it({
             id: "T09",
             title: "allows to send a custom xcm message",
-            test: async function () {
+            test: async () => {
                 // Sending it to the relay
                 // { parents:1, Here}
                 const dest = [
@@ -424,7 +423,7 @@ describeSuite({
                 ];
 
                 const xcmMessage = {
-                    V2: [
+                    V4: [
                         {
                             ClearOrigin: null,
                         },
@@ -433,7 +432,7 @@ describeSuite({
 
                 const sentMessage: XcmVersionedXcm = context.polkadotJs().createType("XcmVersionedXcm", xcmMessage);
 
-                const rawTxn = await context.writeContract!({
+                const rawTxn = await context.writeContract?.({
                     contractAddress: XCM_UTILS_ADDRESS,
                     contractName: "XcmUtils",
                     functionName: "xcmSend",
@@ -443,7 +442,7 @@ describeSuite({
                 });
 
                 const { result } = await context.createBlock(rawTxn);
-                expectEVMResult(result!.events, "Succeed");
+                expectEVMResult(result?.events, "Succeed");
             },
         });
     },

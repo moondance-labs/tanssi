@@ -1,14 +1,14 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
-import { KeyringPair } from "@moonwall/util";
+
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import type { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
 import { Keyring } from "@polkadot/keyring";
 import { u8aToHex } from "@polkadot/util";
-import { jumpToSession } from "../../../util/block";
-import { generateGrandpaEquivocationProof } from "../../../util/slashes";
+import { generateGrandpaEquivocationProof, jumpToSession } from "utils";
 
 describeSuite({
-    id: "DTR1306",
+    id: "DEVT1709",
     title: "Grandpa offences should trigger a slash",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -27,7 +27,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Grandpa offences trigger a slashing event",
-            test: async function () {
+            test: async () => {
                 // we crate one block so that we at least have one seal.
                 await jumpToSession(context, 1);
 

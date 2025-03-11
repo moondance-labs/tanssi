@@ -1,11 +1,11 @@
 import { beforeAll, deployCreateCompiledContract, describeSuite, expect } from "@moonwall/cli";
 import { ALITH_ADDRESS, BALTATHAR_ADDRESS, alith, createViemTransaction } from "@moonwall/util";
-import { u16 } from "@polkadot/types-codec";
-import { Abi, encodeFunctionData } from "viem";
-import { mockAssetCreation, RELAY_SOURCE_LOCATION, relayAssetMetadata } from "../../../helpers/assets";
+import type { u16 } from "@polkadot/types-codec";
+import { type Abi, encodeFunctionData } from "viem";
+import { RELAY_SOURCE_LOCATION, mockAssetCreation, relayAssetMetadata } from "../../../helpers/assets";
 
 describeSuite({
-    id: "DF1104",
+    id: "DE1304",
     title: "Precompiles - Assets-ERC20",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
@@ -38,7 +38,7 @@ describeSuite({
         it({
             id: "T01",
             title: "allows to transfer",
-            test: async function () {
+            test: async () => {
                 const { result } = await context.createBlock(
                     createViemTransaction(context, {
                         to: ADDRESS_ERC20,

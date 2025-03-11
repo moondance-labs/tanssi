@@ -18,8 +18,8 @@
 
 use {
     crate::{
-        BlockProductionCost, CollatorAssignmentCost, ExternalValidatorSlashes, MessageQueue,
-        RuntimeCall,
+        Authorship, BlockProductionCost, CollatorAssignmentCost, ExternalValidatorSlashes,
+        MessageQueue, RuntimeCall,
     },
     babe_primitives::{
         digests::{PreDigest, SecondaryPlainPreDigest},
@@ -29,11 +29,12 @@ use {
     bitvec::prelude::BitVec,
     cumulus_primitives_core::{
         relay_chain::{
-            node_features::FeatureIndex, AvailabilityBitfield, BackedCandidate,
-            CandidateCommitments, CandidateDescriptor, CollatorPair, CommittedCandidateReceipt,
-            CompactStatement, CoreIndex, GroupIndex, HeadData,
-            InherentData as ParachainsInherentData, PersistedValidationData, SigningContext,
-            UncheckedSigned, ValidationCode, ValidatorIndex, ValidityAttestation,
+            node_features::FeatureIndex, vstaging::BackedCandidate,
+            vstaging::CandidateDescriptorV2, vstaging::CommittedCandidateReceiptV2,
+            vstaging::InherentData as ParachainsInherentData, AvailabilityBitfield,
+            CandidateCommitments, CompactStatement, CoreIndex, GroupIndex, HeadData,
+            PersistedValidationData, SigningContext, UncheckedSigned, ValidationCode,
+            ValidatorIndex, ValidityAttestation,
         },
         ParaId,
     },
@@ -50,26 +51,37 @@ use {
         paras::{ParaGenesisArgs, ParaKind},
         paras_inherent as parachains_paras_inherent,
     },
+    snowbridge_beacon_primitives::{types::deneb, ExecutionProof, VersionedExecutionPayloadHeader},
+    snowbridge_core::inbound::Proof,
     sp_core::Pair,
+    sp_core::Public,
     sp_keystore::{KeystoreExt, KeystorePtr},
     sp_runtime::{
         traits::{Dispatchable, Header, One, SaturatedConversion, Zero},
         BuildStorage, Digest, DigestItem,
     },
     sp_std::collections::btree_map::BTreeMap,
+    sp_storage::well_known_keys,
+    std::collections::BTreeSet,
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
 };
 
 mod xcm;
 
 pub use crate::{
-    genesis_config_presets::get_authority_keys_from_seed, AccountId, AuthorNoting, Babe, Balance,
-    Balances, Beefy, BeefyMmrLeaf, ContainerRegistrar, DataPreservers, Grandpa, InflationRewards,
-    Initializer, Mmr, Runtime, RuntimeOrigin, Session, System, TanssiAuthorityAssignment,
-    TanssiCollatorAssignment, TransactionPayment,
+    genesis_config_presets::{get_authority_keys_from_seed, insert_authority_keys_into_keystore},
+    AccountId, AuthorNoting, Babe, Balance, Balances, Beefy, BeefyMmrLeaf, ContainerRegistrar,
+    DataPreservers, Grandpa, InflationRewards, Initializer, Mmr, Runtime, RuntimeOrigin, Session,
+    System, TanssiAuthorityAssignment, TanssiCollatorAssignment, TransactionPayment,
 };
 
 pub const UNIT: Balance = 1_000_000_000_000_000_000;
+
+pub fn read_last_entropy() -> [u8; 32] {
+    let mut last = [0u8; 32];
+    sp_io::storage::read(well_known_keys::INTRABLOCK_ENTROPY, &mut last[..], 0);
+    last
+}
 
 pub fn session_to_block(n: u32) -> u32 {
     // let block_number = flashbox_runtime::Period::get() * n;
@@ -234,6 +246,21 @@ fn advance_block_state_machine(new_state: RunBlockState) {
 }
 
 pub fn start_block() -> RunSummary {
+    // we inject empty data
+    // We need to create it here, because otherwise the block number increases
+    // on-initialize.
+    // This requires signatures so we should not run it unless we have a keystore
+    let mock_inherent_data: Option<cumulus_primitives_core::relay_chain::vstaging::InherentData> =
+        if is_para_inherent_enabled() {
+            // We check the inherent data in storage else we construct an empty one
+            Some(
+                take_new_inherent_data()
+                    .unwrap_or(ParasInherentTestBuilder::<Runtime>::new().build()),
+            )
+        } else {
+            None
+        };
+
     let block_number = System::block_number();
     advance_block_state_machine(RunBlockState::Start(block_number + 1));
 
@@ -241,6 +268,7 @@ pub fn start_block() -> RunSummary {
 
     // Initialize the new block
     Babe::on_initialize(System::block_number());
+    Authorship::on_initialize(System::block_number());
     ContainerRegistrar::on_initialize(System::block_number());
     ExternalValidatorSlashes::on_initialize(System::block_number());
     Session::on_initialize(System::block_number());
@@ -253,8 +281,7 @@ pub fn start_block() -> RunSummary {
     InflationRewards::on_initialize(System::block_number());
     let new_issuance = Balances::total_issuance();
 
-    let maybe_mock_inherent = take_new_inherent_data();
-    if let Some(mock_inherent_data) = maybe_mock_inherent {
+    if let Some(mock_inherent_data) = mock_inherent_data {
         set_paras_inherent(mock_inherent_data);
     }
 
@@ -271,6 +298,7 @@ pub fn end_block() {
     advance_block_state_machine(RunBlockState::End(block_number));
     // Finalize the block
     Babe::on_finalize(System::block_number());
+    Authorship::on_finalize(System::block_number());
     Session::on_finalize(System::block_number());
     Grandpa::on_finalize(System::block_number());
     TransactionPayment::on_finalize(System::block_number());
@@ -326,6 +354,8 @@ pub struct ExtBuilder {
     balances: Vec<(AccountId, Balance)>,
     // [validator, amount]
     validators: Vec<(AccountId, Balance)>,
+    // [validator, amount]
+    external_validators: Vec<(AccountId, Balance)>,
     // [collator, amount]
     collators: Vec<(AccountId, Balance)>,
     // sudo key
@@ -339,6 +369,7 @@ pub struct ExtBuilder {
     next_free_para_id: ParaId,
     keystore: Option<KeystorePtr>,
     safe_xcm_version: Option<u32>,
+    inherent_data_enabled: bool,
 }
 
 impl Default for ExtBuilder {
@@ -353,6 +384,7 @@ impl Default for ExtBuilder {
                 (AccountId::from(ALICE), 210 * UNIT),
                 (AccountId::from(BOB), 100 * UNIT),
             ],
+            external_validators: vec![],
             collators: Default::default(),
             sudo: Default::default(),
             para_ids: Default::default(),
@@ -369,6 +401,7 @@ impl Default for ExtBuilder {
             next_free_para_id: Default::default(),
             keystore: None,
             safe_xcm_version: Default::default(),
+            inherent_data_enabled: false,
         }
     }
 }
@@ -386,6 +419,11 @@ impl ExtBuilder {
 
     pub fn with_validators(mut self, validators: Vec<(AccountId, Balance)>) -> Self {
         self.validators = validators;
+        self
+    }
+
+    pub fn with_external_validators(mut self, validators: Vec<(AccountId, Balance)>) -> Self {
+        self.external_validators = validators;
         self
     }
 
@@ -462,6 +500,11 @@ impl ExtBuilder {
     // Maybe change to with_collators_config?
     pub fn with_keystore(mut self, keystore: KeystorePtr) -> Self {
         self.keystore = Some(keystore);
+        self
+    }
+
+    pub fn with_inherent_data_enabled(mut self) -> Self {
+        self.inherent_data_enabled = true;
         self
     }
 
@@ -585,8 +628,38 @@ impl ExtBuilder {
                 .clone()
                 .into_iter()
                 .map(|(account, _balance)| {
-                    let authority_keys =
-                        get_authority_keys_from_seed(&account.to_string(), self.keystore.as_ref());
+                    let authority_keys = get_authority_keys_from_seed(&account.to_string());
+                    if let Some(keystore) = self.keystore.as_ref() {
+                        insert_authority_keys_into_keystore(&account.to_string(), keystore)
+                    }
+                    (
+                        account.clone(),
+                        account,
+                        crate::SessionKeys {
+                            babe: authority_keys.babe.clone(),
+                            grandpa: authority_keys.grandpa.clone(),
+                            para_validator: authority_keys.para_validator.clone(),
+                            para_assignment: authority_keys.para_assignment.clone(),
+                            authority_discovery: authority_keys.authority_discovery.clone(),
+                            beefy: authority_keys.beefy.clone(),
+                            nimbus: authority_keys.nimbus.clone(),
+                        },
+                    )
+                })
+                .collect();
+            keys.extend(validator_keys)
+        }
+
+        if !self.external_validators.is_empty() {
+            let validator_keys: Vec<_> = self
+                .external_validators
+                .clone()
+                .into_iter()
+                .map(|(account, _balance)| {
+                    let authority_keys = get_authority_keys_from_seed(&account.to_string());
+                    if let Some(keystore) = self.keystore.as_ref() {
+                        insert_authority_keys_into_keystore(&account.to_string(), keystore)
+                    }
                     (
                         account.clone(),
                         account,
@@ -637,8 +710,10 @@ impl ExtBuilder {
                     if validator_unique_accounts.contains(&account) {
                         None
                     } else {
-                        let authority_keys =
-                            get_authority_keys_from_seed(&account.to_string(), None);
+                        let authority_keys = get_authority_keys_from_seed(&account.to_string());
+                        if let Some(keystore) = self.keystore.as_ref() {
+                            insert_authority_keys_into_keystore(&account.to_string(), keystore)
+                        }
                         Some((
                             account.clone(),
                             account,
@@ -662,6 +737,11 @@ impl ExtBuilder {
             skip_external_validators: false,
             whitelisted_validators: self
                 .validators
+                .iter()
+                .map(|(account, _)| account.clone())
+                .collect(),
+            external_validators: self
+                .external_validators
                 .iter()
                 .map(|(account, _)| account.clone())
                 .collect(),
@@ -695,6 +775,13 @@ impl ExtBuilder {
             // on_finalize automatically
             t.top.insert(b"__mock_is_xcm_test".to_vec(), b"1".to_vec());
         }
+
+        // Indicate that we should always (for every block) inject the paras_inherent.
+        // Wether we inject an empty one or not its decided by b'ParasInherentData
+        t.top.insert(
+            b"ParasInherentEnabled".to_vec(),
+            self.inherent_data_enabled.encode(),
+        );
 
         t
     }
@@ -774,15 +861,24 @@ pub const DAVE: [u8; 32] = [7u8; 32];
 pub const EVE: [u8; 32] = [8u8; 32];
 pub const FERDIE: [u8; 32] = [9u8; 32];
 
-fn take_new_inherent_data() -> Option<cumulus_primitives_core::relay_chain::InherentData> {
-    let data: Option<cumulus_primitives_core::relay_chain::InherentData> =
-        frame_support::storage::unhashed::take(b"ParasInherent");
+// Whether we have custom data to inject in paras inherent
+fn take_new_inherent_data() -> Option<cumulus_primitives_core::relay_chain::vstaging::InherentData>
+{
+    let data: Option<cumulus_primitives_core::relay_chain::vstaging::InherentData> =
+        frame_support::storage::unhashed::take(b"ParasInherentData");
 
     data
 }
 
-pub fn set_new_inherent_data(data: cumulus_primitives_core::relay_chain::InherentData) {
-    frame_support::storage::unhashed::put(b"ParasInherent", &data);
+// Whether we should inject the paras inherent.
+fn is_para_inherent_enabled() -> bool {
+    let enabled: Option<bool> = frame_support::storage::unhashed::get(b"ParasInherentEnabled");
+    enabled.unwrap_or(false)
+}
+
+// Set new data to inject in paras inherent
+pub fn set_new_inherent_data(data: cumulus_primitives_core::relay_chain::vstaging::InherentData) {
+    frame_support::storage::unhashed::put(b"ParasInherentData", &data);
 }
 
 pub fn set_new_randomness_data(data: Option<[u8; 32]>) {
@@ -792,7 +888,7 @@ pub fn set_new_randomness_data(data: Option<[u8; 32]>) {
 /// Mock the inherent that sets validation data in ParachainSystem, which
 /// contains the `relay_chain_block_number`, which is used in `collator-assignment` as a
 /// source of randomness.
-pub fn set_paras_inherent(data: cumulus_primitives_core::relay_chain::InherentData) {
+pub fn set_paras_inherent(data: cumulus_primitives_core::relay_chain::vstaging::InherentData) {
     // In order for this inherent to work, we need to match the parent header
     // the parent header does not play a significant role in the rest of the framework so
     // we are simply going to mock it
@@ -801,6 +897,7 @@ pub fn set_paras_inherent(data: cumulus_primitives_core::relay_chain::InherentDa
         RuntimeCall::ParaInherent(parachains_paras_inherent::Call::<Runtime>::enter { data })
             .dispatch(inherent_origin())
     );
+    // Error: InherentDataFilteredDuringExecution
     frame_support::storage::unhashed::kill(&frame_support::storage::storage_prefix(
         b"ParaInherent",
         b"Included",
@@ -826,6 +923,17 @@ pub(crate) struct ParasInherentTestBuilder<T: runtime_parachains::paras_inherent
 
 pub fn mock_validation_code() -> ValidationCode {
     ValidationCode(vec![1; 10])
+}
+
+/// Create a dummy collator id suitable to be used in a V1 candidate descriptor.
+pub fn junk_collator() -> CollatorId {
+    CollatorId::from_slice(&mut (0..32).collect::<Vec<_>>().as_slice()).expect("32 bytes; qed")
+}
+
+/// Creates a dummy collator signature suitable to be used in a V1 candidate descriptor.
+pub fn junk_collator_signature() -> CollatorSignature {
+    CollatorSignature::from_slice(&mut (0..64).collect::<Vec<_>>().as_slice())
+        .expect("64 bytes; qed")
 }
 
 #[allow(dead_code)]
@@ -901,10 +1009,10 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
 
     /// Create an `AvailabilityBitfield` where `concluding` is a map where each key is a core index
     /// that is concluding and `cores` is the total number of cores in the system.
-    fn availability_bitvec(used_cores: usize, cores: usize) -> AvailabilityBitfield {
+    fn availability_bitvec(concluding_cores: &BTreeSet<u32>, cores: usize) -> AvailabilityBitfield {
         let mut bitfields = bitvec::bitvec![u8, bitvec::order::Lsb0; 0; 0];
         for i in 0..cores {
-            if i < used_cores {
+            if concluding_cores.contains(&(i as u32)) {
                 bitfields.push(true);
             } else {
                 bitfields.push(false)
@@ -925,6 +1033,108 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
             runtime_parachains::configuration::ActiveConfig::<T>::get().max_head_data_size;
         HeadData(vec![0xFF; max_head_size as usize])
     }
+
+    fn candidate_descriptor_mock(
+        para_id: ParaId,
+        candidate_descriptor_v2: bool,
+    ) -> CandidateDescriptorV2<T::Hash> {
+        if candidate_descriptor_v2 {
+            CandidateDescriptorV2::new(
+                para_id,
+                Default::default(),
+                CoreIndex(200),
+                2,
+                Default::default(),
+                Default::default(),
+                Default::default(),
+                Default::default(),
+                mock_validation_code().hash(),
+            )
+        } else {
+            // Convert v1 to v2.
+            CandidateDescriptor::<T::Hash> {
+                para_id,
+                relay_parent: Default::default(),
+                collator: junk_collator(),
+                persisted_validation_data_hash: Default::default(),
+                pov_hash: Default::default(),
+                erasure_root: Default::default(),
+                signature: junk_collator_signature(),
+                para_head: Default::default(),
+                validation_code_hash: mock_validation_code().hash(),
+            }
+            .into()
+        }
+    }
+
+    /*
+    /// Create a mock of `CandidatePendingAvailability`.
+    fn candidate_availability_mock(
+        para_id: ParaId,
+        group_idx: GroupIndex,
+        core_idx: CoreIndex,
+        candidate_hash: CandidateHash,
+        availability_votes: BitVec<u8, bitvec::order::Lsb0>,
+        commitments: CandidateCommitments,
+        candidate_descriptor_v2: bool,
+    ) -> CandidatePendingAvailability<T::Hash, BlockNumberFor<T>> {
+        CandidatePendingAvailability::<T::Hash, BlockNumberFor<T>>::new(
+            core_idx,                                                          // core
+            candidate_hash,                                                    // hash
+            Self::candidate_descriptor_mock(para_id, candidate_descriptor_v2), /* candidate descriptor */
+            commitments,                                                       // commitments
+            availability_votes,                                                /* availability
+                                                                                            * votes */
+            Default::default(), // backers
+            Zero::zero(),       // relay parent
+            One::one(),         /* relay chain block this
+                                             * was backed in */
+            group_idx, // backing group
+        )
+    }
+     */
+
+    /*
+    /// Add `CandidatePendingAvailability` and `CandidateCommitments` to the relevant storage items.
+    ///
+    /// NOTE: the default `CandidateCommitments` used does not include any data that would lead to
+    /// heavy code paths in `enact_candidate`. But enact_candidates does return a weight which will
+    /// get taken into account.
+    fn add_availability(
+        para_id: ParaId,
+        core_idx: CoreIndex,
+        group_idx: GroupIndex,
+        availability_votes: BitVec<u8, bitvec::order::Lsb0>,
+        candidate_hash: CandidateHash,
+        candidate_descriptor_v2: bool,
+    ) {
+        let commitments = CandidateCommitments::<u32> {
+            upward_messages: Default::default(),
+            horizontal_messages: Default::default(),
+            new_validation_code: None,
+            head_data: Self::mock_head_data(),
+            processed_downward_messages: 0,
+            hrmp_watermark: 0u32.into(),
+        };
+        let candidate_availability = Self::candidate_availability_mock(
+            para_id,
+            group_idx,
+            core_idx,
+            candidate_hash,
+            availability_votes,
+            commitments,
+            candidate_descriptor_v2,
+        );
+        inclusion::PendingAvailability::<T>::mutate(para_id, |maybe_candidates| {
+            if let Some(candidates) = maybe_candidates {
+                candidates.push_back(candidate_availability);
+            } else {
+                *maybe_candidates =
+                    Some([candidate_availability].into_iter().collect::<VecDeque<_>>());
+            }
+        });
+    }
+     */
 
     /// Number of the relay parent block.
     fn relay_parent_number(&self) -> u32 {
@@ -1004,33 +1214,35 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
 
                         let pov_hash = Default::default();
                         let validation_code_hash = mock_validation_code().hash();
-                        let payload =
-                            cumulus_primitives_core::relay_chain::collator_signature_payload(
-                                &relay_parent,
-                                &para_id,
-                                &persisted_validation_data_hash,
-                                &pov_hash,
-                                &validation_code_hash,
-                            );
 
-                        let collator_pair = CollatorPair::generate().0;
-
-                        let signature = collator_pair.sign(&payload);
+                        /*
+                        let mut past_code_meta =
+                            paras::ParaPastCodeMeta::<BlockNumberFor<T>>::default();
+                        past_code_meta.note_replacement(0u32.into(), 0u32.into());
+                         */
 
                         let group_validators = Self::group_validators(group_idx).unwrap();
 
-                        let candidate = CommittedCandidateReceipt::<T::Hash> {
-                            descriptor: CandidateDescriptor::<T::Hash> {
+                        let descriptor = if true
+                        /* self.candidate_descriptor_v2 */
+                        {
+                            CandidateDescriptorV2::new(
                                 para_id,
                                 relay_parent,
-                                collator: collator_pair.public(),
+                                core_idx,
+                                current_session,
                                 persisted_validation_data_hash,
                                 pov_hash,
-                                erasure_root: Default::default(),
-                                signature,
-                                para_head: prev_head.hash(),
+                                Default::default(),
+                                prev_head.hash(),
                                 validation_code_hash,
-                            },
+                            )
+                        } else {
+                            todo!()
+                        };
+
+                        let mut candidate = CommittedCandidateReceiptV2::<T::Hash> {
+                            descriptor,
                             commitments: CandidateCommitments::<u32> {
                                 upward_messages: Default::default(),
                                 horizontal_messages: Default::default(),
@@ -1040,6 +1252,24 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
                                 hrmp_watermark: self.relay_parent_number() + 1,
                             },
                         };
+
+                        if true
+                        /* self.candidate_descriptor_v2 */
+                        {
+                            // `UMPSignal` separator.
+                            candidate
+                                .commitments
+                                .upward_messages
+                                .force_push(UMP_SEPARATOR);
+
+                            // `SelectCore` commitment.
+                            // Claim queue offset must be `0` so this candidate is for the very
+                            // next block.
+                            candidate.commitments.upward_messages.force_push(
+                                UMPSignal::SelectCore(CoreSelector(chain_idx), ClaimQueueOffset(0))
+                                    .encode(),
+                            );
+                        }
 
                         let candidate_hash = candidate.hash();
 
@@ -1070,7 +1300,9 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
                         let core_idx = runtime_parachains::configuration::ActiveConfig::<T>::get()
                             .node_features
                             .get(FeatureIndex::ElasticScalingMVP as usize)
-                            .map(|_the_bit| core_idx);
+                            .and_then(|the_bit| if *the_bit { Some(core_idx) } else { None });
+
+                        assert_eq!(group_validators.len(), 1);
 
                         BackedCandidate::<T::Hash>::new(
                             candidate,
@@ -1083,6 +1315,7 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
             })
             .collect()
     }
+
     /// Get the group assigned to a specific core by index at the current block number. Result
     /// undefined if the core index is unknown or the block number is less than the session start
     /// index.
@@ -1142,7 +1375,8 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
             .validators
             .clone();
 
-        let max_cores = self.max_cores() as usize;
+        //let max_cores = self.max_cores() as usize;
+        let max_cores = 2;
 
         let used_cores =
             self.backed_and_concluding_paras.len() + self.backed_in_inherent_paras.len();
@@ -1151,8 +1385,9 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
         backed_in_inherent.append(&mut self.backed_and_concluding_paras.clone());
         backed_in_inherent.append(&mut self.backed_in_inherent_paras.clone());
         let backed_candidates = self.create_backed_candidates(&backed_in_inherent);
+        let used_cores_set = (0..used_cores).map(|x| x as u32).collect();
 
-        let availability_bitvec = Self::availability_bitvec(used_cores, max_cores);
+        let availability_bitvec = Self::availability_bitvec(&used_cores_set, max_cores);
 
         let bitfields: Vec<UncheckedSigned<AvailabilityBitfield>> = validators
             .iter()
@@ -1170,12 +1405,14 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
             })
             .collect();
 
-        ParachainsInherentData {
+        let data = ParachainsInherentData {
             bitfields,
             backed_candidates,
             disputes: vec![],
             parent_header: Self::header(Self::block_number()),
-        }
+        };
+
+        data
     }
 
     pub(crate) fn block_number() -> BlockNumberFor<T> {
@@ -1254,11 +1491,17 @@ pub fn generate_ethereum_pub_keys(n: u32) -> Vec<Keypair> {
     keys
 }
 
-use babe_primitives::AuthorityPair as BabeAuthorityPair;
-use grandpa_primitives::{
-    AuthorityPair as GrandpaAuthorityPair, Equivocation, EquivocationProof, RoundNumber, SetId,
+use primitives::vstaging::{ClaimQueueOffset, CoreSelector, UMPSignal, UMP_SEPARATOR};
+use primitives::{CandidateDescriptor, CollatorId, CollatorSignature};
+use sp_core::ByteArray;
+use {
+    babe_primitives::AuthorityPair as BabeAuthorityPair,
+    grandpa_primitives::{
+        AuthorityPair as GrandpaAuthorityPair, Equivocation, EquivocationProof, RoundNumber, SetId,
+    },
+    sp_core::H256,
 };
-use sp_core::H256;
+
 pub fn generate_grandpa_equivocation_proof(
     set_id: SetId,
     vote1: (RoundNumber, H256, u32, &GrandpaAuthorityPair),
@@ -1347,11 +1590,42 @@ pub fn generate_babe_equivocation_proof(
     }
 }
 
-use sp_core::Public;
 /// Helper function to generate a crypto pair from seed
 pub fn get_pair_from_seed<TPublic: Public>(seed: &str) -> TPublic::Pair {
     let secret_uri = format!("//{}", seed);
     let pair = TPublic::Pair::from_string(&secret_uri, None).expect("static values are valid; qed");
 
     pair
+}
+
+pub fn mock_snowbridge_message_proof() -> Proof {
+    Proof {
+        receipt_proof: (vec![], vec![]),
+        execution_proof: ExecutionProof {
+            header: Default::default(),
+            ancestry_proof: None,
+            execution_header: VersionedExecutionPayloadHeader::Deneb(
+                deneb::ExecutionPayloadHeader {
+                    parent_hash: Default::default(),
+                    fee_recipient: Default::default(),
+                    state_root: Default::default(),
+                    receipts_root: Default::default(),
+                    logs_bloom: vec![],
+                    prev_randao: Default::default(),
+                    block_number: 0,
+                    gas_limit: 0,
+                    gas_used: 0,
+                    timestamp: 0,
+                    extra_data: vec![],
+                    base_fee_per_gas: Default::default(),
+                    block_hash: Default::default(),
+                    transactions_root: Default::default(),
+                    withdrawals_root: Default::default(),
+                    blob_gas_used: 0,
+                    excess_blob_gas: 0,
+                },
+            ),
+            execution_branch: vec![],
+        },
+    }
 }

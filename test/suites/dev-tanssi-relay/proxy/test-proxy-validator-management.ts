@@ -1,11 +1,12 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { KeyringPair } from "@moonwall/util";
-import { ApiPromise } from "@polkadot/api";
-import { initializeCustomCreateBlock } from "../../../util/block";
+
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import type { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
+import { initializeCustomCreateBlock } from "utils";
 
 describeSuite({
-    id: "DTR1201",
+    id: "DEVT1502",
     title: "Proxy test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -26,7 +27,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Can add proxy",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
 
                 const tx = polkadotJs.tx.proxy.addProxy(delegateBob.address, VALIDATOR_PROXY_INDEX, 0);
@@ -46,7 +47,7 @@ describeSuite({
         it({
             id: "E02",
             title: "Delegated account can sudo txs in external validators",
-            test: async function () {
+            test: async () => {
                 const txAddWhitelisted = polkadotJs.tx.proxy.proxy(
                     sudoAlice.address,
                     null,
@@ -62,12 +63,12 @@ describeSuite({
         it({
             id: "E02",
             title: "Delegated account can sudo txs in external validator slashes",
-            test: async function () {
+            test: async () => {
                 const txAddWhitelisted = polkadotJs.tx.proxy.proxy(
                     sudoAlice.address,
                     null,
                     polkadotJs.tx.sudo.sudo(
-                        polkadotJs.tx.externalValidatorSlashes.forceInjectSlash(0, sudoAlice.address, 1000)
+                        polkadotJs.tx.externalValidatorSlashes.forceInjectSlash(0, sudoAlice.address, 1000, 1)
                     )
                 );
                 await context.createBlock([await txAddWhitelisted.signAsync(delegateBob)]);

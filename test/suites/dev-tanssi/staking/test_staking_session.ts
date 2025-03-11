@@ -1,12 +1,13 @@
 import "@tanssi/api-augment";
-import { describeSuite, beforeAll, expect, isExtrinsicSuccessful } from "@moonwall/cli";
-import { KeyringPair, generateKeyringPair } from "@moonwall/util";
-import { ApiPromise } from "@polkadot/api";
+
+import { beforeAll, describeSuite, expect, isExtrinsicSuccessful } from "@moonwall/cli";
+import { type KeyringPair, generateKeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
 import { numberToHex } from "@polkadot/util";
-import { jumpToBlock } from "../../../util/block";
+import { jumpToBlock } from "utils";
 
 describeSuite({
-    id: "DT0304",
+    id: "DEV0804",
     title: "Fee test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -23,7 +24,7 @@ describeSuite({
         it({
             id: "E01",
             title: "It takes 2 sessions to update pallet_session collators",
-            test: async function () {
+            test: async () => {
                 const initialValidators = await polkadotJs.query.session.validators();
 
                 const randomAccount = generateKeyringPair("sr25519");
@@ -47,15 +48,15 @@ describeSuite({
                 await context.createBlock([await tx3.signAsync(randomAccount)]);
                 const events = await polkadotJs.query.system.events();
                 const ev1 = events.filter((a) => {
-                    return a.event.method == "IncreasedStake";
+                    return a.event.method === "IncreasedStake";
                 });
                 expect(ev1.length).to.be.equal(1);
                 const ev2 = events.filter((a) => {
-                    return a.event.method == "UpdatedCandidatePosition";
+                    return a.event.method === "UpdatedCandidatePosition";
                 });
                 expect(ev2.length).to.be.equal(1);
                 const ev3 = events.filter((a) => {
-                    return a.event.method == "RequestedDelegate";
+                    return a.event.method === "RequestedDelegate";
                 });
                 expect(ev3.length).to.be.equal(1);
 

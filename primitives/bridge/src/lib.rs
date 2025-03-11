@@ -19,6 +19,8 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarks;
 #[cfg(test)]
 mod tests;
 
@@ -28,9 +30,9 @@ use {
     core::marker::PhantomData,
     cumulus_primitives_core::{
         relay_chain::{AccountId, Balance},
-        Assets, Location, SendResult, SendXcm, Xcm, XcmHash,
+        AccountKey20, Assets, Ethereum, GlobalConsensus, Location, SendResult, SendXcm, Xcm,
+        XcmHash,
     },
-    cumulus_primitives_core::{AccountKey20, Ethereum, GlobalConsensus},
     ethabi::{Token, U256},
     frame_support::{
         ensure,
@@ -38,18 +40,17 @@ use {
         traits::Contains,
     },
     frame_system::unique,
+    parity_scale_codec::MaxEncodedLen,
     scale_info::TypeInfo,
     snowbridge_core::{
         outbound::{Fee, SendError},
-        ChannelId,
+        AgentId, Channel, ChannelId, ParaId,
     },
     snowbridge_pallet_outbound_queue::send_message_impl::Ticket,
     snowbridge_router_primitives::inbound::{
         ConvertMessage, ConvertMessageError, VersionedXcmMessage,
     },
-    sp_core::blake2_256,
-    sp_core::hashing,
-    sp_core::H256,
+    sp_core::{blake2_256, hashing, H256},
     sp_runtime::{app_crypto::sp_core, traits::Convert, RuntimeDebug},
     sp_std::vec::Vec,
 };
@@ -64,6 +65,9 @@ pub use {
     xcm_executor::traits::ConvertLocation,
 };
 
+#[cfg(feature = "runtime-benchmarks")]
+pub use benchmarks::*;
+
 mod custom_do_process_message;
 mod custom_send_message;
 
@@ -71,7 +75,7 @@ mod custom_send_message;
 pub struct SlashData {
     pub encoded_validator_id: Vec<u8>,
     pub slash_fraction: u32,
-    pub timestamp: u64,
+    pub external_idx: u64,
 }
 
 /// A command which is executable by the Gateway contract on Ethereum
@@ -80,8 +84,8 @@ pub enum Command {
     // TODO: add real commands here
     Test(Vec<u8>),
     ReportRewards {
-        // block timestamp
-        timestamp: u64,
+        // external identifier for validators
+        external_idx: u64,
         // index of the era we are sending info of
         era_index: u32,
         // total_points for the era
@@ -90,6 +94,8 @@ pub enum Command {
         tokens_inflated: u128,
         // merkle root of vec![(validatorId, rewardPoints)]
         rewards_merkle_root: H256,
+        // the token id in which we need to mint
+        token_id: H256,
     },
     ReportSlashes {
         // index of the era we are sending info of
@@ -117,23 +123,27 @@ impl Command {
                 ethabi::encode(&[Token::Tuple(vec![Token::Bytes(payload.clone())])])
             }
             Command::ReportRewards {
-                timestamp,
+                external_idx,
                 era_index,
                 total_points,
                 tokens_inflated,
                 rewards_merkle_root,
+                token_id,
             } => {
-                let timestamp_token = Token::Uint(U256::from(*timestamp));
+                let external_idx_token = Token::Uint(U256::from(*external_idx));
                 let era_index_token = Token::Uint(U256::from(*era_index));
                 let total_points_token = Token::Uint(U256::from(*total_points));
                 let tokens_inflated_token = Token::Uint(U256::from(*tokens_inflated));
                 let rewards_mr_token = Token::FixedBytes(rewards_merkle_root.0.to_vec());
+                let token_id_token = Token::FixedBytes(token_id.0.to_vec());
+
                 ethabi::encode(&[Token::Tuple(vec![
-                    timestamp_token,
+                    external_idx_token,
                     era_index_token,
                     total_points_token,
                     tokens_inflated_token,
                     rewards_mr_token,
+                    token_id_token,
                 ])])
             }
             Command::ReportSlashes { era_index, slashes } => {
@@ -143,9 +153,9 @@ impl Command {
                 for slash in slashes.into_iter() {
                     let account_token = Token::FixedBytes(slash.encoded_validator_id.clone());
                     let slash_fraction_token = Token::Uint(U256::from(slash.slash_fraction));
-                    let timestamp = Token::Uint(U256::from(slash.timestamp));
+                    let external_idx = Token::Uint(U256::from(slash.external_idx));
                     let tuple_token =
-                        Token::Tuple(vec![account_token, slash_fraction_token, timestamp]);
+                        Token::Tuple(vec![account_token, slash_fraction_token, external_idx]);
 
                     slashes_tokens_vec.push(tuple_token);
                 }
@@ -174,10 +184,35 @@ pub struct Message {
     pub command: Command,
 }
 
+pub trait TicketInfo {
+    fn message_id(&self) -> H256;
+}
+
+impl TicketInfo for () {
+    fn message_id(&self) -> H256 {
+        H256::zero()
+    }
+}
+
+#[cfg(not(feature = "runtime-benchmarks"))]
+impl<T: snowbridge_pallet_outbound_queue::Config> TicketInfo for Ticket<T> {
+    fn message_id(&self) -> H256 {
+        self.message_id
+    }
+}
+
+// Benchmarks check message_id so it must be deterministic.
+#[cfg(feature = "runtime-benchmarks")]
+impl<T: snowbridge_pallet_outbound_queue::Config> TicketInfo for Ticket<T> {
+    fn message_id(&self) -> H256 {
+        H256::default()
+    }
+}
+
 pub struct MessageValidator<T: snowbridge_pallet_outbound_queue::Config>(PhantomData<T>);
 
 pub trait ValidateMessage {
-    type Ticket;
+    type Ticket: TicketInfo;
 
     fn validate(message: &Message) -> Result<(Self::Ticket, Fee<u64>), SendError>;
 }
@@ -351,5 +386,71 @@ impl<AccountId> EthereumLocationsConverterFor<AccountId> {
     }
     pub fn from_chain_id_with_key(chain_id: &u64, key: [u8; 20]) -> [u8; 32] {
         (b"ethereum-chain", chain_id, key).using_encoded(blake2_256)
+    }
+}
+
+/// Information of a recently created channel.
+#[derive(Encode, Decode, RuntimeDebug, TypeInfo, Clone, PartialEq, MaxEncodedLen)]
+pub struct ChannelInfo {
+    pub channel_id: ChannelId,
+    pub para_id: ParaId,
+    pub agent_id: AgentId,
+}
+
+/// Trait to manage channel creation inside EthereumSystem pallet.
+pub trait EthereumSystemChannelManager {
+    fn create_channel(channel_id: ChannelId, agent_id: AgentId, para_id: ParaId) -> ChannelInfo;
+}
+
+/// Implementation struct for EthereumSystemChannelManager trait.
+pub struct EthereumSystemHandler<Runtime>(PhantomData<Runtime>);
+impl<Runtime> EthereumSystemChannelManager for EthereumSystemHandler<Runtime>
+where
+    Runtime: snowbridge_pallet_system::Config,
+{
+    fn create_channel(channel_id: ChannelId, agent_id: AgentId, para_id: ParaId) -> ChannelInfo {
+        if let Some(channel) = snowbridge_pallet_system::Channels::<Runtime>::get(channel_id) {
+            return ChannelInfo {
+                channel_id,
+                para_id: channel.para_id,
+                agent_id: channel.agent_id,
+            };
+        } else {
+            if !snowbridge_pallet_system::Agents::<Runtime>::contains_key(agent_id) {
+                snowbridge_pallet_system::Agents::<Runtime>::insert(agent_id, ());
+            }
+
+            let channel = Channel { agent_id, para_id };
+            snowbridge_pallet_system::Channels::<Runtime>::insert(channel_id, channel);
+
+            return ChannelInfo {
+                channel_id,
+                para_id,
+                agent_id,
+            };
+        }
+    }
+}
+
+/// Helper struct to set up token and channel characteristics needed for EthereumTokenTransfers
+/// pallet benchmarks.
+#[cfg(feature = "runtime-benchmarks")]
+pub struct EthereumTokenTransfersBenchHelper<Runtime>(PhantomData<Runtime>);
+
+#[cfg(feature = "runtime-benchmarks")]
+impl<Runtime> crate::TokenChannelSetterBenchmarkHelperTrait
+    for EthereumTokenTransfersBenchHelper<Runtime>
+where
+    Runtime: snowbridge_pallet_system::Config,
+{
+    fn set_up_token(location: Location, token_id: snowbridge_core::TokenId) {
+        snowbridge_pallet_system::ForeignToNativeId::<Runtime>::insert(&token_id, &location);
+        snowbridge_pallet_system::NativeToForeignId::<Runtime>::insert(&location, &token_id);
+    }
+
+    fn set_up_channel(channel_id: ChannelId, para_id: ParaId, agent_id: AgentId) {
+        let channel = Channel { agent_id, para_id };
+        snowbridge_pallet_system::Agents::<Runtime>::insert(agent_id, ());
+        snowbridge_pallet_system::Channels::<Runtime>::insert(channel_id, channel);
     }
 }

@@ -38,14 +38,12 @@ use {
     log::log,
     parity_scale_codec::{Decode, Encode, MaxEncodedLen},
     scale_info::TypeInfo,
-    sp_runtime::traits::Get,
-    sp_runtime::RuntimeDebug,
+    sp_runtime::{traits::Get, RuntimeDebug},
     sp_staking::SessionIndex,
-    sp_std::collections::btree_set::BTreeSet,
-    sp_std::vec::Vec,
+    sp_std::{collections::btree_set::BTreeSet, vec::Vec},
     tp_traits::{
-        ActiveEraInfo, EraIndex, EraIndexProvider, InvulnerablesProvider, OnEraEnd, OnEraStart,
-        ValidatorProvider,
+        ActiveEraInfo, EraIndex, EraIndexProvider, ExternalIndexProvider, InvulnerablesProvider,
+        OnEraEnd, OnEraStart, ValidatorProvider,
     },
 };
 
@@ -195,11 +193,26 @@ pub mod pallet {
     #[pallet::storage]
     pub type ForceEra<T> = StorageValue<_, Forcing, ValueQuery>;
 
+    /// Latest received external index. This index can be a timestamp
+    /// a set-id, an epoch or in general anything that identifies
+    /// a particular set of validators selected at a given point in time
+    #[pallet::storage]
+    pub type ExternalIndex<T> = StorageValue<_, u64, ValueQuery>;
+
+    /// Pending external index to be applied in the upcoming era
+    #[pallet::storage]
+    pub type PendingExternalIndex<T> = StorageValue<_, u64, ValueQuery>;
+
+    /// Current external index attached to the latest validators
+    #[pallet::storage]
+    pub type CurrentExternalIndex<T> = StorageValue<_, u64, ValueQuery>;
+
     #[pallet::genesis_config]
     #[derive(DefaultNoBound)]
     pub struct GenesisConfig<T: Config> {
         pub skip_external_validators: bool,
         pub whitelisted_validators: Vec<T::ValidatorId>,
+        pub external_validators: Vec<T::ValidatorId>,
     }
 
     #[pallet::genesis_build]
@@ -222,10 +235,16 @@ pub mod pallet {
             )
             .expect("genesis validators are more than T::MaxWhitelistedValidators");
 
+            let bounded_external_validators = BoundedVec::<_, T::MaxExternalValidators>::try_from(
+                self.external_validators.clone(),
+            )
+            .expect("genesis external validators are more than T::MaxExternalValidators");
+
             <SkipExternalValidators<T>>::put(self.skip_external_validators);
             <WhitelistedValidators<T>>::put(&bounded_validators);
             <WhitelistedValidatorsActiveEra<T>>::put(&bounded_validators);
             <WhitelistedValidatorsActiveEraPending<T>>::put(&bounded_validators);
+            <ExternalValidators<T>>::put(&bounded_external_validators);
         }
     }
 
@@ -240,6 +259,11 @@ pub mod pallet {
         NewEra { era: EraIndex },
         /// A new force era mode was set.
         ForceEra { mode: Forcing },
+        /// External validators were set.
+        ExternalValidatorsSet {
+            validators: Vec<T::ValidatorId>,
+            external_index: u64,
+        },
     }
 
     #[pallet::error]
@@ -283,7 +307,7 @@ pub mod pallet {
             who: T::AccountId,
         ) -> DispatchResultWithPostInfo {
             T::UpdateOrigin::ensure_origin(origin)?;
-            // don't let one unprepared collator ruin things for everyone.
+            // don't let one unprepared validator ruin things for everyone.
             let maybe_validator_id = T::ValidatorIdOf::convert(who.clone())
                 .filter(T::ValidatorRegistration::is_registered);
 
@@ -351,19 +375,28 @@ pub mod pallet {
         pub fn set_external_validators(
             origin: OriginFor<T>,
             validators: Vec<T::ValidatorId>,
+            external_index: u64,
         ) -> DispatchResult {
             T::UpdateOrigin::ensure_origin(origin)?;
 
-            Self::set_external_validators_inner(validators)
+            Self::set_external_validators_inner(validators, external_index)
         }
     }
 
     impl<T: Config> Pallet<T> {
-        pub fn set_external_validators_inner(validators: Vec<T::ValidatorId>) -> DispatchResult {
+        pub fn set_external_validators_inner(
+            validators: Vec<T::ValidatorId>,
+            external_index: u64,
+        ) -> DispatchResult {
             // If more validators than max, take the first n
             let validators = BoundedVec::truncate_from(validators);
-            <ExternalValidators<T>>::put(validators);
+            <ExternalValidators<T>>::put(&validators);
+            <ExternalIndex<T>>::put(external_index);
 
+            Self::deposit_event(Event::<T>::ExternalValidatorsSet {
+                validators: validators.into_inner(),
+                external_index,
+            });
             Ok(())
         }
 
@@ -497,8 +530,10 @@ pub mod pallet {
             WhitelistedValidatorsActiveEra::<T>::put(
                 WhitelistedValidatorsActiveEraPending::<T>::take(),
             );
+            let external_idx = PendingExternalIndex::<T>::take();
+            CurrentExternalIndex::<T>::put(external_idx);
             Self::deposit_event(Event::NewEra { era: active_era });
-            T::OnEraStart::on_era_start(active_era, start_session);
+            T::OnEraStart::on_era_start(active_era, start_session, external_idx);
         }
 
         /// End era. It does:
@@ -530,6 +565,8 @@ pub mod pallet {
 
             // Save whitelisted validators for when the era truly changes (start_era)
             WhitelistedValidatorsActiveEraPending::<T>::put(WhitelistedValidators::<T>::get());
+            // Save the external index for when the era truly changes (start_era)
+            PendingExternalIndex::<T>::put(ExternalIndex::<T>::get());
 
             // Returns new validators
             Self::validators()
@@ -569,6 +606,12 @@ pub mod pallet {
                 }
             }
             // `on_finalize` weight is tracked in `on_initialize`
+        }
+    }
+
+    impl<T: Config> ExternalIndexProvider for Pallet<T> {
+        fn get_external_index() -> u64 {
+            CurrentExternalIndex::<T>::get()
         }
     }
 }

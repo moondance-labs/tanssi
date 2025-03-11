@@ -1,13 +1,13 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
-import { KeyringPair } from "@moonwall/util";
-import { blake2AsHex, createKeyMulti } from "@polkadot/util-crypto";
+
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import { type KeyringPair, alith, baltathar, charleth, dorothy } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
 import { u8aToHex } from "@polkadot/util";
-import { alith, charleth, baltathar, dorothy } from "@moonwall/util";
+import { blake2AsHex, createKeyMulti } from "@polkadot/util-crypto";
 
 describeSuite({
-    id: "CA0201",
+    id: "C0201",
     title: "Multisig pallet test suite",
     foundationMethods: "dev",
 
@@ -50,7 +50,7 @@ describeSuite({
                 // The multisig is created
                 let records = await polkadotJs.query.system.events();
                 let eventCount = records.filter((a) => {
-                    return a.event.method == "NewMultisig";
+                    return a.event.method === "NewMultisig";
                 });
                 expect(eventCount.length).to.be.equal(1);
 
@@ -70,7 +70,7 @@ describeSuite({
                 // Multisig is cancelled
                 records = await polkadotJs.query.system.events();
                 eventCount = records.filter((a) => {
-                    return a.event.method == "MultisigCancelled";
+                    return a.event.method === "MultisigCancelled";
                 });
                 expect(eventCount.length).to.be.equal(1);
             },
@@ -79,7 +79,7 @@ describeSuite({
         it({
             id: "E02",
             title: "Approves a multisig operation",
-            test: async function () {
+            test: async () => {
                 //Multisig creation
                 const otherSignatories = [dave_or_baltathar.address, bob_or_dorothy.address];
                 await context.createBlock(
@@ -114,7 +114,7 @@ describeSuite({
                 // Multisig call is approved
                 const records = await polkadotJs.query.system.events();
                 const eventCount = records.filter((a) => {
-                    return a.event.method == "MultisigApproval";
+                    return a.event.method === "MultisigApproval";
                 });
                 expect(eventCount.length).to.be.equal(1);
             },

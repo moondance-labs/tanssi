@@ -1,15 +1,17 @@
 import "@tanssi/api-augment";
-import { describeSuite, beforeAll, expect } from "@moonwall/cli";
-import { KeyringPair } from "@moonwall/util";
-import { ApiPromise, Keyring } from "@polkadot/api";
-import { jumpSessions } from "../../../util/block.ts";
-import { u64 } from "@polkadot/types-codec";
-import { ParaId } from "@polkadot/types/interfaces";
-import { ITuple } from "@polkadot/types-codec/types";
+
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import type { KeyringPair } from "@moonwall/util";
+import { type ApiPromise, Keyring } from "@polkadot/api";
+import type { u64 } from "@polkadot/types-codec";
+import type { ITuple } from "@polkadot/types-codec/types";
+import type { ParaId } from "@polkadot/types/interfaces";
 import { u8aToHex } from "@polkadot/util";
+import { generateEmptyGenesisData, jumpSessions } from "utils";
+import type { TpTraitsSlotFrequency } from "@polkadot/types/lookup";
 
 describeSuite({
-    id: "DT0601",
+    id: "DEV0501",
     title: "Pallet XCM core buyer",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -33,7 +35,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Sudo can set XCM weights storage",
-            test: async function () {
+            test: async () => {
                 // 1st block
                 const tx = polkadotJs.tx.sudo.sudo(
                     polkadotJs.tx.xcmCoreBuyer.setRelayXcmWeightConfig({
@@ -54,40 +56,17 @@ describeSuite({
         it({
             id: "E02",
             title: "Register para id 2002 as a parathread and assign collators to it",
-            test: async function () {
+            test: async () => {
                 const currentSesssion = await polkadotJs.query.session.currentIndex();
                 const sessionDelay = await polkadotJs.consts.registrar.sessionDelay;
                 const expectedScheduledOnboarding =
                     BigInt(currentSesssion.toString()) + BigInt(sessionDelay.toString());
 
-                const slotFrequency = polkadotJs.createType("TpTraitsSlotFrequency", {
+                const slotFrequency = polkadotJs.createType<TpTraitsSlotFrequency>("TpTraitsSlotFrequency", {
                     min: 1,
                     max: 1,
                 });
-                const emptyGenesisData = () => {
-                    const g = polkadotJs.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
-                        storage: [
-                            {
-                                key: "0x636f6465",
-                                value: "0x010203040506",
-                            },
-                        ],
-                        name: "0x436f6e7461696e657220436861696e2032303030",
-                        id: "0x636f6e7461696e65722d636861696e2d32303030",
-                        forkId: null,
-                        extensions: "0x",
-                        properties: {
-                            tokenMetadata: {
-                                tokenSymbol: "0x61626364",
-                                ss58Format: 42,
-                                tokenDecimals: 12,
-                            },
-                            isEthereum: false,
-                        },
-                    });
-                    return g;
-                };
-                const containerChainGenesisData = emptyGenesisData();
+                const containerChainGenesisData = generateEmptyGenesisData(context.pjsApi);
 
                 // Let's disable all other parachains and set parathread collator to 4
                 // this will make every collator including the one we are registering being assigned to our parathread
@@ -136,7 +115,7 @@ describeSuite({
                 // Check that the on chain genesis data is set correctly
                 const onChainGenesisData = await polkadotJs.query.registrar.paraGenesisData(2002);
                 // TODO: fix once we have types
-                expect(emptyGenesisData().toJSON()).to.deep.equal(onChainGenesisData.toJSON());
+                expect(containerChainGenesisData.toJSON()).to.deep.equal(onChainGenesisData.toJSON());
 
                 // Check the para id has been given some free credits
                 const credits = (await polkadotJs.query.servicesPayment.blockProductionCredits(2002)).toJSON();
@@ -159,7 +138,7 @@ describeSuite({
         it({
             id: "E03",
             title: "Sudo can forceBuyCore",
-            test: async function () {
+            test: async () => {
                 const paraId = 2002;
 
                 const encodedMsgBefore = await polkadotJs.query.parachainSystem.upwardMessages();
@@ -169,7 +148,7 @@ describeSuite({
                 await context.createBlock([await tx.signAsync(alice)]);
 
                 const events = (await polkadotJs.query.system.events()).filter((a) => {
-                    return a.event.method == "BuyCoreXcmSent";
+                    return a.event.method === "BuyCoreXcmSent";
                 });
                 expect(events.length).to.be.equal(1);
 
@@ -182,7 +161,7 @@ describeSuite({
         it({
             id: "E04",
             title: "Collator can call buyCore",
-            test: async function () {
+            test: async () => {
                 const paraId = 2002;
 
                 const nimbusPublicKey = collatorNimbusKey.publicKey;
@@ -197,7 +176,7 @@ describeSuite({
                 // Check key is reflected in next key
                 // But its not yet in queued
                 const queuedKeys = await polkadotJs.query.session.queuedKeys();
-                const result = queuedKeys.filter((keyItem) => keyItem[1].nimbus == nimbusPublicKey);
+                const result = queuedKeys.filter((keyItem) => keyItem[1].nimbus === nimbusPublicKey);
                 expect(result).is.empty;
                 const nextKey = await polkadotJs.query.session.nextKeys(collatorAccountKey.address);
                 expect(u8aToHex(nextKey.unwrap().nimbus)).to.be.eq(u8aToHex(nimbusPublicKey));
@@ -230,7 +209,7 @@ describeSuite({
                 await context.createBlock();
 
                 const events = (await polkadotJs.query.system.events()).filter((a) => {
-                    return a.event.method == "BuyCoreXcmSent";
+                    return a.event.method === "BuyCoreXcmSent";
                 });
                 expect(events.length).to.be.equal(1);
             },
@@ -239,7 +218,7 @@ describeSuite({
         it({
             id: "E05",
             title: "buyCore nonce works properly",
-            test: async function () {
+            test: async () => {
                 const paraId = 2002;
 
                 const nimbusPublicKey = collatorNimbusKey.publicKey;

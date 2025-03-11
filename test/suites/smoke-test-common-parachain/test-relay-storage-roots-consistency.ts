@@ -1,14 +1,13 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-
-import { ApiPromise } from "@polkadot/api";
+import type { ApiPromise } from "@polkadot/api";
 
 describeSuite({
-    id: "S10",
+    id: "SM05",
     title: "Test relay storage roots max number",
     foundationMethods: "read_only",
     testCases: ({ it, context }) => {
         let api: ApiPromise;
-        let runtimeVersion;
+        let runtimeVersion: number;
 
         beforeAll(() => {
             api = context.polkadotJs();
@@ -18,7 +17,7 @@ describeSuite({
         it({
             id: "C01",
             title: "Only MaxRelayStorageRoots should be stored",
-            test: async function () {
+            test: async () => {
                 if (runtimeVersion < 500) {
                     return;
                 }
@@ -39,7 +38,7 @@ describeSuite({
         it({
             id: "C02",
             title: "All numbers should have its corresponding root",
-            test: async function () {
+            test: async () => {
                 if (runtimeVersion < 500) {
                     return;
                 }

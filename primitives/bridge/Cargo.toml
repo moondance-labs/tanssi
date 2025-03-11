@@ -24,10 +24,12 @@ serde = { workspace = true }
 snowbridge-beacon-primitives = { workspace = true }
 snowbridge-core = { workspace = true }
 snowbridge-pallet-outbound-queue = { workspace = true }
+snowbridge-pallet-system = { workspace = true }
 snowbridge-router-primitives = { workspace = true }
 sp-core = { workspace = true }
 sp-runtime = { workspace = true }
 sp-std = { workspace = true }
+xcm = { workspace = true }
 xcm-executor = { workspace = true }
 
 # Cumulus
@@ -52,11 +54,13 @@ std = [
 	"snowbridge-beacon-primitives/std",
 	"snowbridge-core/std",
 	"snowbridge-pallet-outbound-queue/std",
+	"snowbridge-pallet-system/std",
 	"snowbridge-router-primitives/std",
 	"sp-core/std",
 	"sp-runtime/std",
 	"sp-std/std",
 	"xcm-executor/std",
+	"xcm/std",
 ]
 runtime-benchmarks = [
 	"cumulus-primitives-core/runtime-benchmarks",
@@ -65,6 +69,7 @@ runtime-benchmarks = [
 	"pallet-external-validators/runtime-benchmarks",
 	"snowbridge-core/runtime-benchmarks",
 	"snowbridge-pallet-outbound-queue/runtime-benchmarks",
+	"snowbridge-pallet-system/runtime-benchmarks",
 	"snowbridge-router-primitives/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"xcm-executor/runtime-benchmarks",

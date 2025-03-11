@@ -1,17 +1,23 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { getHeaderFromRelay } from "../../util/relayInterface.ts";
-import { customWeb3Request, generateKeyringPair, MIN_GAS_PRICE } from "@moonwall/util";
-import { createTransfer, waitUntilEthTxIncluded } from "../../util/ethereum.ts";
-import { ApiPromise, Keyring } from "@polkadot/api";
-import fs from "fs/promises";
-import { signAndSendAndInclude, waitSessions } from "../../util/block.ts";
-import { Signer } from "ethers";
+import { MIN_GAS_PRICE, customWeb3Request, generateKeyringPair } from "@moonwall/util";
+import { type ApiPromise, Keyring } from "@polkadot/api";
+import type { Signer } from "ethers";
+import fs from "node:fs/promises";
+import {
+    checkLogsNotExist,
+    createTransfer,
+    getHeaderFromRelay,
+    getTmpZombiePath,
+    signAndSendAndInclude,
+    waitSessions,
+    waitUntilEthTxIncluded,
+} from "utils";
 
 describeSuite({
-    id: "ZRUP-01",
+    id: "ZOMBIETANSSIR01",
     title: "Zombie Tanssi Relay Unneeded Para Test",
     foundationMethods: "zombie",
-    testCases: function ({ it, context }) {
+    testCases: ({ it, context }) => {
         let relayApi: ApiPromise;
         let container2000Api: ApiPromise;
         let container2001Api: ApiPromise;
@@ -56,7 +62,7 @@ describeSuite({
         it({
             id: "T01",
             title: "Blocks are being produced on tanssi-relay",
-            test: async function () {
+            test: async () => {
                 const relayNetwork = relayApi.consts.system.version.specName.toString();
                 expect(relayNetwork, "Relay API incorrect").to.contain("dancelight");
                 const blockNum = (await relayApi.rpc.chain.getBlock()).block.header.number.toNumber();
@@ -67,7 +73,7 @@ describeSuite({
         it({
             id: "T02",
             title: "Set config params",
-            test: async function () {
+            test: async () => {
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 
@@ -83,7 +89,7 @@ describeSuite({
             id: "T03",
             timeout: 600000,
             title: "Test assignation did not change",
-            test: async function () {
+            test: async () => {
                 const currentSession = (await relayApi.query.session.currentIndex()).toNumber();
                 // TODO: fix once we have types
                 const allCollators = (
@@ -101,7 +107,7 @@ describeSuite({
         it({
             id: "T04",
             title: "Blocks are being produced on container 2000",
-            test: async function () {
+            test: async () => {
                 const blockNum = (await container2000Api.rpc.chain.getBlock()).block.header.number.toNumber();
                 expect(blockNum).to.be.greaterThan(0);
             },
@@ -110,7 +116,7 @@ describeSuite({
         it({
             id: "T05",
             title: "Blocks are being produced on container 2001",
-            test: async function () {
+            test: async () => {
                 const blockNum = (await container2001Api.rpc.chain.getBlock()).block.header.number.toNumber();
 
                 expect(blockNum).to.be.greaterThan(0);
@@ -121,7 +127,7 @@ describeSuite({
         it({
             id: "T06",
             title: "Test container chain 2000 assignation is correct",
-            test: async function () {
+            test: async () => {
                 const currentSession = (await relayApi.query.session.currentIndex()).toNumber();
                 const paraId = (await container2000Api.query.parachainInfo.parachainId()).toString();
                 const containerChainCollators = (
@@ -138,7 +144,7 @@ describeSuite({
         it({
             id: "T07",
             title: "Test container chain 2001 assignation is correct",
-            test: async function () {
+            test: async () => {
                 const currentSession = (await relayApi.query.session.currentIndex()).toNumber();
                 const paraId = (await container2001Api.query.parachainInfo.parachainId()).toString();
                 const containerChainCollators = (
@@ -155,7 +161,7 @@ describeSuite({
             id: "T08",
             title: "Test author noting is correct for both containers",
             timeout: 60000,
-            test: async function () {
+            test: async () => {
                 const assignment = await relayApi.query.tanssiCollatorAssignment.collatorContainerChain();
                 const paraId2000 = await container2000Api.query.parachainInfo.parachainId();
                 const paraId2001 = await container2001Api.query.parachainInfo.parachainId();
@@ -175,7 +181,7 @@ describeSuite({
         it({
             id: "T10",
             title: "Test frontier template isEthereum",
-            test: async function () {
+            test: async () => {
                 // TODO: fix once we have types
                 const genesisData2000 = await relayApi.query.containerRegistrar.paraGenesisData(2000);
                 expect(genesisData2000.toJSON().properties.isEthereum).to.be.false;
@@ -187,7 +193,7 @@ describeSuite({
             id: "T11",
             title: "Transactions can be made with ethers",
             timeout: 30000,
-            test: async function () {
+            test: async () => {
                 const randomAccount = generateKeyringPair();
                 const tx = await createTransfer(context, randomAccount.address, 1_000_000_000_000, {
                     gasPrice: MIN_GAS_PRICE,
@@ -206,7 +212,7 @@ describeSuite({
             id: "T12a",
             title: "Set 0 credits for all chains",
             timeout: 60000,
-            test: async function () {
+            test: async () => {
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 
@@ -221,7 +227,7 @@ describeSuite({
                 const apiAt = await relayApi.at(blockHash);
                 const events = await apiAt.query.system.events();
                 const ev1 = events.filter((a) => {
-                    return a.event.method == "BatchCompleted";
+                    return a.event.method === "BatchCompleted";
                 });
                 expect(ev1.length).to.be.equal(1);
             },
@@ -231,7 +237,7 @@ describeSuite({
             id: "T12b",
             title: "Wait 2 sessions",
             timeout: 300000,
-            test: async function () {
+            test: async () => {
                 await waitSessions(context, relayApi, 2, null, "Tanssi-relay");
             },
         });
@@ -240,7 +246,7 @@ describeSuite({
             id: "T12c",
             title: "Wait 2 sessions more",
             timeout: 300000,
-            test: async function () {
+            test: async () => {
                 await waitSessions(context, relayApi, 2, null, "Tanssi-relay");
             },
         });
@@ -249,7 +255,7 @@ describeSuite({
             id: "T13",
             title: "Collators have been unassigned",
             timeout: 180000,
-            test: async function () {
+            test: async () => {
                 const currentSession = (await relayApi.query.session.currentIndex()).toNumber();
                 const containerChainCollators = (
                     await relayApi.query.tanssiAuthorityAssignment.collatorContainerChain(currentSession)
@@ -264,7 +270,7 @@ describeSuite({
         it({
             id: "T14",
             title: "Manually check validator logs",
-            test: async function () {
+            test: async () => {
                 // Need to do this manually: check relay chain logs.
                 // Some validators should have this message:
                 // 2024-11-27 15:04:30.423 DEBUG tokio-runtime-worker parachain::collator-protocol: Declared as collator for unneeded para. Current assignments: {} peer_id=PeerId("12D3KooWPJT4QoqgwDWJzHZHDL8iCgkjKzswTwWGcYHHfEjBEerv") collator_id=Public(8e6e0feedba7494a19662e3178bc66b6801716ee4c12e304c78fde02cc96941c (14DkVhzA...)) para_id=Id(2001)
@@ -276,7 +282,7 @@ describeSuite({
         it({
             id: "T18",
             title: "Check validator logs",
-            test: async function () {
+            test: async () => {
                 // This test will always fail as per comment above, even if the issue is fixed it can still happen right when collators get de-assigned
 
                 const logs = ["/alice.log", "/bob.log", "/charlie.log", "/dave.log"];
@@ -288,32 +294,3 @@ describeSuite({
         });
     },
 });
-
-// Read log file path and check that none of the specified logs are found.
-// Only supports single-line logs.
-async function checkLogsNotExist(logFilePath: string, logs: string[]): Promise<void> {
-    const fileContent = await fs.readFile(logFilePath, "utf8");
-    const lines = fileContent.split("\n");
-
-    for (let i = 0; i < lines.length; i++) {
-        for (const log of logs) {
-            if (lines[i].includes(log)) {
-                // In case any log is found, show some context around the found log
-                const contextSize = 3;
-                const contextStart = Math.max(0, i - contextSize);
-                const contextEnd = Math.min(lines.length - 1, i + contextSize);
-                const contextLines = lines.slice(contextStart, contextEnd + 1);
-                const contextStr = contextLines.join("\n");
-
-                expect.fail(
-                    `Log entry '${log}' was found in the log file.\nContext around the found log:\n${contextStr}`
-                );
-            }
-        }
-    }
-}
-
-/// Returns the /tmp/zombie-52234... path
-function getTmpZombiePath() {
-    return process.env.MOON_ZOMBIE_DIR;
-}

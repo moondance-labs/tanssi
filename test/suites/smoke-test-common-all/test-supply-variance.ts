@@ -1,10 +1,9 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-
-import { ApiPromise } from "@polkadot/api";
-import { fetchWithdrawnAmount, fetchDepositedAmount } from "util/block";
+import type { ApiPromise } from "@polkadot/api";
+import { fetchDepositedAmount, fetchWithdrawnAmount } from "utils";
 
 describeSuite({
-    id: "S05",
+    id: "S06",
     title: "Sample suite that runs on Dancebox and Dancelight chains",
     foundationMethods: "read_only",
     testCases: ({ it, context }) => {
@@ -17,7 +16,7 @@ describeSuite({
         it({
             id: "C03",
             title: "Supply variance is correct",
-            test: async function () {
+            test: async () => {
                 const latestBlock = await api.rpc.chain.getBlock();
 
                 const latestBlockHash = latestBlock.block.hash;

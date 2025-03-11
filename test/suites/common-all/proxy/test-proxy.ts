@@ -1,11 +1,12 @@
-import "@polkadot/api-augment";
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { KeyringPair } from "@moonwall/util";
-import { ApiPromise } from "@polkadot/api";
-import { initializeCustomCreateBlock, extractFeeAuthor, filterRewardFromContainer } from "../../../util/block";
+import "@tanssi/api-augment";
+
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import type { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
+import { extractFeeAuthor, filterRewardFromContainer, initializeCustomCreateBlock } from "utils";
 
 describeSuite({
-    id: "CA0303",
+    id: "C0303",
     title: "Proxy test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -31,7 +32,7 @@ describeSuite({
         it({
             id: "E01",
             title: "No proxies at genesis",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
                 const proxies = await polkadotJs.query.proxy.proxies(alice.address);
                 expect(proxies.toJSON()[0]).to.deep.equal([]);
@@ -41,7 +42,7 @@ describeSuite({
         it({
             id: "E02",
             title: "Add proxy",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
 
                 const delegate = bob.address;
@@ -50,7 +51,7 @@ describeSuite({
 
                 const events = await polkadotJs.query.system.events();
                 const ev1 = events.filter((a) => {
-                    return a.event.method == "ProxyAdded";
+                    return a.event.method === "ProxyAdded";
                 });
                 expect(ev1.length).to.be.equal(1);
 
@@ -68,7 +69,7 @@ describeSuite({
         it({
             id: "E03",
             title: "Delegate account can call proxy.proxy",
-            test: async function () {
+            test: async () => {
                 const balanceBefore = (await polkadotJs.query.system.account(bob.address)).data.free.toBigInt();
                 const tx = polkadotJs.tx.proxy.proxy(
                     alice.address,
@@ -79,7 +80,7 @@ describeSuite({
 
                 const events = await polkadotJs.query.system.events();
                 const ev1 = events.filter((a) => {
-                    return a.event.method == "ProxyExecuted";
+                    return a.event.method === "ProxyExecuted";
                 });
                 expect(ev1.length).to.be.equal(1);
                 expect(ev1[0].event.data[0].toString()).to.be.eq("Ok");
@@ -96,7 +97,7 @@ describeSuite({
         it({
             id: "E04",
             title: "Unauthorized account cannot call proxy.proxy",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
 
                 const balanceBefore = (await polkadotJs.query.system.account(charlie.address)).data.free.toBigInt();
@@ -108,7 +109,7 @@ describeSuite({
                 await context.createBlock([await tx.signAsync(charlie)]);
                 const events = await polkadotJs.query.system.events();
                 const ev1 = events.filter((a) => {
-                    return a.event.method == "ExtrinsicFailed";
+                    return a.event.method === "ExtrinsicFailed";
                 });
                 expect(ev1.length).to.be.equal(1);
 
@@ -126,7 +127,7 @@ describeSuite({
         it({
             id: "E05",
             title: "Can add multiple proxy types to the same delegator",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
 
                 const delegate = dave.address;
@@ -135,9 +136,9 @@ describeSuite({
                 // All proxy types that do not allow balance transfer
                 // Frontier chains -> NonTransfer = 1, Governance = 2, CancelProxy = 3
                 // Other chains -> NonTransfer = 1, Governance = 2, Staking = 3, CancelProxy = 4
-                const proxyTypes = chain == "frontier-template" ? [1, 2, 3] : [1, 2, 3, 4];
+                const proxyTypes = chain === "frontier-template" ? [1, 2, 3] : [1, 2, 3, 4];
                 const nonce =
-                    chain == "frontier-template"
+                    chain === "frontier-template"
                         ? (await polkadotJs.query.system.account(alice.address)).nonce
                         : await polkadotJs.rpc.system.accountNextIndex(alice.publicKey);
 
@@ -149,7 +150,7 @@ describeSuite({
 
                 const events = await polkadotJs.query.system.events();
                 const ev1 = events.filter((a) => {
-                    return a.event.method == "ProxyAdded";
+                    return a.event.method === "ProxyAdded";
                 });
                 expect(ev1.length).to.be.equal(proxyTypes.length);
 
@@ -161,7 +162,7 @@ describeSuite({
         it({
             id: "E06",
             title: "Account with no balance proxy cannot call balances.transfer",
-            test: async function () {
+            test: async () => {
                 // Dave has multiple proxy types, but none of them allows to call balances.transfer
                 const balanceBefore = (await polkadotJs.query.system.account(dave.address)).data.free.toBigInt();
                 const tx = polkadotJs.tx.proxy.proxy(
@@ -173,7 +174,7 @@ describeSuite({
 
                 const events = await polkadotJs.query.system.events();
                 const ev1 = events.filter((a) => {
-                    return a.event.method == "ProxyExecuted";
+                    return a.event.method === "ProxyExecuted";
                 });
                 expect(ev1.length).to.be.equal(1);
                 expect(ev1[0].event.data[0].toString()).to.not.be.eq("Ok");
@@ -189,7 +190,7 @@ describeSuite({
         it({
             id: "E07",
             title: "Account with non transfer proxy can call system.remark",
-            test: async function () {
+            test: async () => {
                 // relay session change blocks happen at 1, 11, 21..
                 // parachain at 0, 10, 20..
                 if (!chain.includes("light")) {
@@ -205,13 +206,13 @@ describeSuite({
 
                 const events = await polkadotJs.query.system.events();
                 const ev1 = events.filter((a) => {
-                    return a.event.method == "ProxyExecuted";
+                    return a.event.method === "ProxyExecuted";
                 });
                 expect(ev1.length).to.be.equal(1);
                 expect(ev1[0].event.data[0].toString()).to.be.eq("Ok");
 
                 const ev2 = events.filter((a) => {
-                    return a.event.method == "Remarked";
+                    return a.event.method === "Remarked";
                 });
                 expect(ev2.length).to.be.equal(1);
             },

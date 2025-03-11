@@ -48,15 +48,15 @@ use {
     sp_consensus_slots::Slot,
     sp_runtime::traits::{AccountIdConversion, Convert, Get},
     sp_std::{vec, vec::Vec},
-    staging_xcm::{
-        latest::{Asset, Assets, InteriorLocation, Response, Xcm},
-        prelude::*,
-    },
     tp_traits::{
         AuthorNotingHook, AuthorNotingInfo, LatestAuthorInfoFetcher, ParathreadParams,
         SlotFrequency,
     },
     tp_xcm_core_buyer::BuyCoreCollatorProof,
+    xcm::{
+        latest::{Asset, Assets, InteriorLocation, Response, Xcm},
+        prelude::*,
+    },
 };
 
 pub trait XCMNotifier<T: Config> {
@@ -662,7 +662,7 @@ pub mod pallet {
                 query_id: 0,
                 response: Default::default(),
             });
-            let notify_call_weight = notify_call.get_dispatch_info().weight;
+            let notify_call_weight = notify_call.get_dispatch_info().call_weight;
 
             let notify_query_ttl =
                 <frame_system::Pallet<T>>::block_number() + T::CoreBuyingXCMQueryTtl::get();

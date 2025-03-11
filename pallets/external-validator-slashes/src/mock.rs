@@ -84,6 +84,7 @@ impl system::Config for Test {
     type PreInherents = ();
     type PostInherents = ();
     type PostTransactions = ();
+    type ExtensionsWeightInfo = ();
 }
 
 parameter_types! {
@@ -231,9 +232,9 @@ impl SendMessageFeeProvider for MockOkOutboundQueue {
     }
 }
 
-pub struct TimestampProvider;
-impl Get<u64> for TimestampProvider {
-    fn get() -> u64 {
+pub struct ExternalIndexProvider;
+impl tp_traits::ExternalIndexProvider for ExternalIndexProvider {
+    fn get_external_index() -> u64 {
         Timestamp::get()
     }
 }
@@ -254,7 +255,7 @@ impl external_validator_slashes::Config for Test {
     type InvulnerablesProvider = MockInvulnerableProvider;
     type ValidateMessage = ();
     type OutboundQueue = MockOkOutboundQueue;
-    type TimestampProvider = TimestampProvider;
+    type ExternalIndexProvider = ExternalIndexProvider;
     type QueuedSlashesProcessedPerBlock = ConstU32<20>;
     type WeightInfo = ();
 }

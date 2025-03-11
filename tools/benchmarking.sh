@@ -74,7 +74,6 @@ function choose_and_bench {
 function bench {
     OUTPUT="${OUTPUT_PATH}/${1}.rs"
     echo "benchmarking '${1}::${2}' --check=${3}, writing results to '${OUTPUT}'"
-    touch "$OUTPUT"
     # Check enabled
     if [[ "${3}" -eq 1 ]]; then
         STEPS=16
@@ -99,7 +98,11 @@ function bench {
                 TEMPLATE_TO_USE="./benchmarking/frame-weight-runtime-template-xcm.hbs"
                 MODIFIED_PALLET_FILE=${PALLET/::/_}
                 OUTPUT="${OUTPUT_PATH}/$MODIFIED_PALLET_FILE.rs"
+            elif [[ "$PALLET" == *"runtime_common"* || "$PALLET" == *"runtime_parachains"* ]]; then
+                MODIFIED_PALLET_FILE=${PALLET/::/_}
+                OUTPUT="${OUTPUT_PATH}/$MODIFIED_PALLET_FILE.rs"
             fi
+            touch "$OUTPUT"
             WASMTIME_BACKTRACE_DETAILS=1 ${BINARY} benchmark pallet \
             --execution=wasm \
             --wasm-execution=compiled \
@@ -119,7 +122,11 @@ function bench {
             TEMPLATE_TO_USE="./benchmarking/frame-weight-runtime-template-xcm.hbs"
             MODIFIED_PALLET_FILE=${1/::/_}
             OUTPUT="${OUTPUT_PATH}/$MODIFIED_PALLET_FILE.rs"
+        elif [[ "${1}" == *"runtime_common"* || "$1" == *"runtime_parachains"* ]]; then
+            MODIFIED_PALLET_FILE=${1/::/_}
+            OUTPUT="${OUTPUT_PATH}/$MODIFIED_PALLET_FILE.rs"
         fi
+        touch "$OUTPUT"
         WASMTIME_BACKTRACE_DETAILS=1 ${BINARY} benchmark pallet \
             --execution=wasm \
             --wasm-execution=compiled \

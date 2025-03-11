@@ -16,15 +16,14 @@
 
 //! XCM configuration for Dancelight.
 
-use super::{
-    parachains_origin, weights, AccountId, AllPalletsWithSystem, Balances, Dmp, Fellows, ParaId,
-    Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin, TransactionByteFee, Treasury, WeightToFee,
-    XcmPallet,
-};
-use crate::governance::StakingAdmin;
-use tp_bridge::EthereumLocationsConverterFor;
-
 use {
+    super::{
+        parachains_origin,
+        weights::{self, xcm::XcmWeight},
+        AccountId, AllPalletsWithSystem, Balances, Dmp, Fellows, ParaId, Runtime, RuntimeCall,
+        RuntimeEvent, RuntimeOrigin, TransactionByteFee, Treasury, WeightToFee, XcmPallet,
+    },
+    crate::governance::StakingAdmin,
     dancelight_runtime_constants::{currency::CENTS, system_parachain::*},
     frame_support::{
         parameter_types,
@@ -37,8 +36,12 @@ use {
         ToAuthor,
     },
     sp_core::ConstU32,
+    tp_bridge::EthereumLocationsConverterFor,
     tp_xcm_commons::NativeAssetReserve,
-    xcm::latest::prelude::*,
+    xcm::{
+        latest::prelude::*,
+        opaque::latest::{ROCOCO_GENESIS_HASH, WESTEND_GENESIS_HASH},
+    },
     xcm_builder::{
         AccountId32Aliases, AllowExplicitUnpaidExecutionFrom, AllowKnownQueryResponses,
         AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom, ChildParachainAsNative,
@@ -46,8 +49,8 @@ use {
         FrameTransactionalProcessor, FungibleAdapter, HashedDescription, IsChildSystemParachain,
         IsConcrete, MintLocation, OriginToPluralityVoice, SendXcmFeeToAccount,
         SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation,
-        TakeWeightCredit, TrailingSetTopicAsId, UsingComponents, WithComputedOrigin,
-        WithUniqueTopic, XcmFeeManagerFromComponents,
+        TakeWeightCredit, TrailingSetTopicAsId, UsingComponents, WeightInfoBounds,
+        WithComputedOrigin, WithUniqueTopic, XcmFeeManagerFromComponents,
     },
     xcm_executor::XcmExecutor,
 };
@@ -55,11 +58,17 @@ use {
 parameter_types! {
     pub TokenLocation: Location = Here.into_location();
     pub RootLocation: Location = Location::here();
-    pub const ThisNetwork: NetworkId = NetworkId::Rococo; // FIXME: Change to Dancelight
+    pub const ThisNetwork: NetworkId = NetworkId::ByGenesis(ROCOCO_GENESIS_HASH); // FIXME: Change to Dancelight
     pub UniversalLocation: InteriorLocation = ThisNetwork::get().into();
     pub CheckAccount: AccountId = XcmPallet::check_account();
     pub LocalCheckAccount: (AccountId, MintLocation) = (CheckAccount::get(), MintLocation::Local);
     pub TreasuryAccount: AccountId = Treasury::account_id();
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+parameter_types! {
+    // Universal location for benchmarks that need to run through a para-id scenario
+    pub UniversalLocationForParaIdBenchmarks: InteriorLocation = [GlobalConsensus(RelayNetwork::get()), Parachain(2000u32)].into();
 }
 
 pub type LocationConverter = (
@@ -140,7 +149,7 @@ parameter_types! {
     pub StarForBridgeHub: (AssetFilter, Location) = (Star::get(), BridgeHub::get());
     pub StarForPeople: (AssetFilter, Location) = (Star::get(), People::get());
     pub StarForBroker: (AssetFilter, Location) = (Star::get(), Broker::get());
-    pub const RelayNetwork: NetworkId = NetworkId::Westend;
+    pub const RelayNetwork: NetworkId = NetworkId::ByGenesis(WESTEND_GENESIS_HASH);
     pub const MaxInstructions: u32 = 100;
     pub const MaxAssetsIntoHolding: u32 = 64;
 }
@@ -182,7 +191,7 @@ pub type Barrier = TrailingSetTopicAsId<(
 /// Locations that will not be charged fees in the executor, neither for execution nor delivery.
 /// We only waive fees for system functions, which these locations represent.
 pub type WaivedLocations = Equals<RootLocation>;
-pub type XcmWeigher = FixedWeightBounds<(), RuntimeCall, MaxInstructions>;
+pub type XcmWeigher = WeightInfoBounds<XcmWeight<RuntimeCall>, RuntimeCall, MaxInstructions>;
 
 pub struct XcmConfig;
 impl xcm_executor::Config for XcmConfig {
@@ -262,7 +271,7 @@ impl pallet_xcm::Config for Runtime {
     type ExecuteXcmOrigin = xcm_builder::EnsureXcmOrigin<RuntimeOrigin, LocalOriginToLocation>;
     type XcmExecuteFilter = Everything;
     type XcmExecutor = XcmExecutor<XcmConfig>;
-    type XcmTeleportFilter = Everything;
+    type XcmTeleportFilter = Nothing;
     // Anyone is able to use reserve transfers regardless of who they are and what they want to
     // transfer.
     type XcmReserveTransferFilter = Everything;

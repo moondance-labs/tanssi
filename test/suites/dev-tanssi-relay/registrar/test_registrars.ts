@@ -1,60 +1,62 @@
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
-import { KeyringPair } from "@moonwall/util";
-import { jumpSessions } from "../../../util/block";
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import type { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
+import type { DpContainerChainGenesisDataContainerChainGenesisData } from "@polkadot/types/lookup";
+import { generateEmptyGenesisData, jumpSessions } from "utils";
 
 describeSuite({
-    id: "DTR0801",
+    id: "DEVT1601",
     title: "ContainerRegistrar <> relay Registrar",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
         let charlie: KeyringPair;
-        let emptyGenesisData: any;
+        let containerChainGenesisData: DpContainerChainGenesisDataContainerChainGenesisData;
+
+        // let emptyGenesisData: any;
 
         beforeAll(() => {
             alice = context.keyring.alice;
             charlie = context.keyring.alice;
             polkadotJs = context.pjsApi;
-            emptyGenesisData = () => {
-                const g = polkadotJs.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
-                    // Code key: 0x3a636f6465 or [58, 99, 111, 100, 101]
-                    storage: [
-                        {
-                            // ":code" key
-                            key: "0x3a636f6465",
-                            // code value (must be at least 9 bytes length)
-                            value: "0x0102030405060708091011",
-                        },
-                    ],
-                    name: "0x436f6e7461696e657220436861696e2032303030",
-                    id: "0x636f6e7461696e65722d636861696e2d32303030",
-                    forkId: null,
-                    extensions: "0x",
-                    properties: {
-                        tokenMetadata: {
-                            tokenSymbol: "0x61626364",
-                            ss58Format: 42,
-                            tokenDecimals: 12,
-                        },
-                        isEthereum: false,
-                    },
-                });
-                return g;
-            };
+            containerChainGenesisData = generateEmptyGenesisData(polkadotJs, true);
+            // emptyGenesisData = () => {
+            //     const g = polkadotJs.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
+            //         // Code key: 0x3a636f6465 or [58, 99, 111, 100, 101]
+            //         storage: [
+            //             {
+            //                 // ":code" key
+            //                 key: "0x3a636f6465",
+            //                 // code value (must be at least 9 bytes length)
+            //                 value: "0x0102030405060708091011",
+            //             },
+            //         ],
+            //         name: "0x436f6e7461696e657220436861696e2032303030",
+            //         id: "0x636f6e7461696e65722d636861696e2d32303030",
+            //         forkId: null,
+            //         extensions: "0x",
+            //         properties: {
+            //             tokenMetadata: {
+            //                 tokenSymbol: "0x61626364",
+            //                 ss58Format: 42,
+            //                 tokenDecimals: 12,
+            //             },
+            //             isEthereum: false,
+            //         },
+            //     });
+            //     return g;
+            // };
         });
 
         it({
             id: "E01",
             title: "should be able to register paraId",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
-                const containerChainGenesisData = emptyGenesisData();
-
                 await context.createBlock([await polkadotJs.tx.registrar.reserve().signAsync(alice)]);
                 const tx = await polkadotJs.tx.containerRegistrar
-                    .register(2002, containerChainGenesisData, "0x111")
+                    .register(2002, containerChainGenesisData, "0x1111")
                     .signAsync(alice);
 
                 await context.createBlock([tx], { allowFailures: false });
@@ -66,7 +68,7 @@ describeSuite({
                 expect(isOnboarding.toString()).to.eq("Onboarding");
 
                 // Accept validation code so that para is onboarded after 2 sessions
-                const tx2 = polkadotJs.tx.paras.addTrustedValidationCode("0x0102030405060708091011");
+                const tx2 = polkadotJs.tx.paras.addTrustedValidationCode(containerChainGenesisData.storage[0].value);
                 await context.createBlock([await polkadotJs.tx.sudo.sudo(tx2).signAsync(alice)], {
                     allowFailures: false,
                 });
@@ -79,7 +81,7 @@ describeSuite({
 
                 // Check that the on chain genesis data is set correctly
                 const onChainGenesisData = await polkadotJs.query.containerRegistrar.paraGenesisData(2002);
-                expect(emptyGenesisData().toJSON()).to.deep.equal(onChainGenesisData.toJSON());
+                expect(containerChainGenesisData.toJSON()).to.deep.equal(onChainGenesisData.toJSON());
 
                 const profileId = await polkadotJs.query.dataPreservers.nextProfileId();
                 const profileTx = polkadotJs.tx.dataPreservers.createProfile({
@@ -120,10 +122,10 @@ describeSuite({
         it({
             id: "E02",
             title: "should not be able to register paraId twice",
-            test: async function () {
+            test: async () => {
                 // Check we can't register via relay Registrar
                 const tx2 = polkadotJs.tx.containerRegistrar
-                    .register(2002, emptyGenesisData(), "0x0102030405060708091011")
+                    .register(2002, containerChainGenesisData, containerChainGenesisData.storage[0].value)
                     .signAsync(alice);
                 const { result: result2 } = await context.createBlock([tx2]);
                 expect(result2[0].successful).to.be.false;
@@ -135,7 +137,7 @@ describeSuite({
         it({
             id: "E03",
             title: "ContainerRegistrar::deregister should offboard the paraId",
-            test: async function () {
+            test: async () => {
                 // Para should still be a parachain
                 const isParachain = await polkadotJs.query.paras.paraLifecycles(2002);
                 expect(isParachain.toString()).to.eq("Parachain");
@@ -161,11 +163,9 @@ describeSuite({
         it({
             id: "E04",
             title: "should not be able to register through relay",
-            test: async function () {
-                const containerChainGenesisData = emptyGenesisData();
-
+            test: async () => {
                 const tx = polkadotJs.tx.registrar
-                    .register(4000, containerChainGenesisData, "0x0102030405060708091011")
+                    .register(4000, containerChainGenesisData, containerChainGenesisData.storage[0].value)
                     .signAsync(alice);
 
                 const { result } = await context.createBlock([tx]);
@@ -178,7 +178,7 @@ describeSuite({
         it({
             id: "E05",
             title: "should not be able to deregister through relay",
-            test: async function () {
+            test: async () => {
                 const tx = polkadotJs.tx.registrar.deregister(4000).signAsync(alice);
 
                 const { result } = await context.createBlock([tx]);

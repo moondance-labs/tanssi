@@ -1,13 +1,20 @@
-import { expect, beforeAll, describeSuite, fetchCompiledContract, deployCreateCompiledContract } from "@moonwall/cli";
-import { ALITH_ADDRESS, BALTATHAR_ADDRESS, BALTATHAR_PRIVATE_KEY, createViemTransaction } from "@moonwall/util";
-import { Abi, encodeFunctionData, fromHex } from "viem";
+import { beforeAll, describeSuite, expect, fetchCompiledContract } from "@moonwall/cli";
+import {
+    ALITH_ADDRESS,
+    ALITH_PRIVATE_KEY,
+    BALTATHAR_ADDRESS,
+    BALTATHAR_PRIVATE_KEY,
+    createViemTransaction,
+} from "@moonwall/util";
+import { getSignatureParameters } from "utils";
+import { type Abi, encodeFunctionData, fromHex } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
 import { expectEVMResult } from "../../../helpers";
-import { getSignatureParameters } from "util/ethereum";
 
 const PRECOMPILE_CALL_PERMIT_ADDRESS = "0x0000000000000000000000000000000000000802";
 
 describeSuite({
-    id: "DF1110",
+    id: "DE1310",
     title: "Precompile - Call Permit - foo",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
@@ -15,10 +22,8 @@ describeSuite({
         let callPermitDemoAddr: `0x${string}`;
         let callPermitAbi: Abi;
 
-        beforeAll(async function () {
-            const { abi: demoAbi, contractAddress } = await deployCreateCompiledContract(context, "CallPermitDemo", {
-                gas: 5_000_000n,
-            });
+        beforeAll(async () => {
+            const { abi: demoAbi, contractAddress } = await context.deployContract("CallPermitDemo");
 
             callPermitDemoAbi = demoAbi;
             callPermitDemoAddr = contractAddress;
@@ -41,10 +46,10 @@ describeSuite({
                     privateKey: BALTATHAR_PRIVATE_KEY,
                     to: callPermitDemoAddr,
                     data: encodeFunctionData({ abi: callPermitDemoAbi, functionName: "bond" }),
-                    value: fromHex(bondAmount!, "bigint"),
+                    value: fromHex(bondAmount, "bigint"),
                 })
             );
-            expectEVMResult(baltatharResult!.events, "Succeed");
+            expectEVMResult(baltatharResult?.events, "Succeed");
 
             // bond alice via baltathar using call permit
             const alithNonceResult = (
@@ -59,6 +64,7 @@ describeSuite({
             ).data;
 
             const signature = await context.viem().signTypedData({
+                account: privateKeyToAccount(ALITH_PRIVATE_KEY),
                 types: {
                     EIP712Domain: [
                         {
@@ -119,10 +125,10 @@ describeSuite({
                 message: {
                     from: ALITH_ADDRESS,
                     to: callPermitDemoAddr,
-                    value: fromHex(bondAmount!, "bigint"),
+                    value: fromHex(bondAmount, "bigint"),
                     data: "0x",
                     gaslimit: 100_000n,
-                    nonce: fromHex(alithNonceResult!, "bigint"),
+                    nonce: fromHex(alithNonceResult, "bigint"),
                     deadline: 9999999999n,
                 },
             });
@@ -139,13 +145,13 @@ describeSuite({
                     }),
                 })
             );
-            expectEVMResult(baltatharForAlithResult!.events, "Succeed");
+            expectEVMResult(baltatharForAlithResult?.events, "Succeed");
         });
 
         it({
             id: "T01",
             title: "should have bonds for baltathar and alith in contract balance",
-            test: async function () {
+            test: async () => {
                 const freeBalance = (
                     await context.polkadotJs().query.system.account(callPermitDemoAddr)
                 ).data.free.toNumber();
@@ -156,7 +162,7 @@ describeSuite({
         it({
             id: "T02",
             title: "should have bond for baltathar in contract storage",
-            test: async function () {
+            test: async () => {
                 const baltatharBond = (
                     await context.viem().call({
                         to: callPermitDemoAddr,
@@ -167,14 +173,14 @@ describeSuite({
                         }),
                     })
                 ).data;
-                expect(fromHex(baltatharBond!, "bigint")).to.equal(100n);
+                expect(fromHex(baltatharBond, "bigint")).to.equal(100n);
             },
         });
 
         it({
             id: "T03",
             title: "should have bond for alith in contract storage",
-            test: async function () {
+            test: async () => {
                 const alithBond = (
                     await context.viem().call({
                         to: callPermitDemoAddr,
@@ -185,7 +191,7 @@ describeSuite({
                         }),
                     })
                 ).data;
-                expect(fromHex(alithBond!, "bigint")).to.equal(100n);
+                expect(fromHex(alithBond, "bigint")).to.equal(100n);
             },
         });
     },

@@ -39,8 +39,8 @@ use {
     polkadot_runtime_common::xcm_sender::ExponentialPrice,
     sp_core::ConstU32,
     sp_runtime::Perbill,
-    staging_xcm::latest::prelude::*,
-    staging_xcm_builder::{
+    xcm::latest::{prelude::*, WESTEND_GENESIS_HASH},
+    xcm_builder::{
         AccountId32Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
         AllowTopLevelPaidExecutionFrom, ConvertedConcreteId, EnsureXcmOrigin, FungibleAdapter,
         IsConcrete, ParentIsPreset, RelayChainAsNative, SiblingParachainAsNative,
@@ -48,7 +48,7 @@ use {
         SovereignSignedViaLocation, TakeWeightCredit, UsingComponents, WeightInfoBounds,
         WithComputedOrigin,
     },
-    staging_xcm_executor::XcmExecutor,
+    xcm_executor::XcmExecutor,
 };
 
 parameter_types! {
@@ -67,7 +67,7 @@ parameter_types! {
     pub UnitWeightCost: Weight = Weight::from_parts(1_000_000_000, 64 * 1024);
 
     // TODO: revisit
-    pub const RelayNetwork: NetworkId = NetworkId::Westend;
+    pub const RelayNetwork: NetworkId = NetworkId::ByGenesis(WESTEND_GENESIS_HASH);
 
     // The relay chain Origin type
     pub RelayChainOrigin: RuntimeOrigin = cumulus_pallet_xcm::Origin::Relay.into();
@@ -117,9 +117,9 @@ pub type LocationToAccountId = (
     // If we receive a Location of type AccountKey20, just generate a native account
     AccountId32Aliases<RelayNetwork, AccountId>,
     // Generate remote accounts according to polkadot standards
-    staging_xcm_builder::HashedDescription<
+    xcm_builder::HashedDescription<
         AccountId,
-        staging_xcm_builder::DescribeFamily<staging_xcm_builder::DescribeAllTerminal>,
+        xcm_builder::DescribeFamily<xcm_builder::DescribeAllTerminal>,
     >,
 );
 
@@ -175,7 +175,7 @@ pub type XcmRouter = (
 );
 
 pub struct XcmConfig;
-impl staging_xcm_executor::Config for XcmConfig {
+impl xcm_executor::Config for XcmConfig {
     type RuntimeCall = RuntimeCall;
     type XcmSender = XcmRouter;
     type AssetTransactor = AssetTransactors;
@@ -210,7 +210,7 @@ impl staging_xcm_executor::Config for XcmConfig {
     type CallDispatcher = RuntimeCall;
     type SafeCallFilter = Everything;
     type Aliasers = Nothing;
-    type TransactionalProcessor = staging_xcm_builder::FrameTransactionalProcessor;
+    type TransactionalProcessor = xcm_builder::FrameTransactionalProcessor;
     type HrmpNewChannelOpenRequestHandler = ();
     type HrmpChannelAcceptedHandler = ();
     type HrmpChannelClosingHandler = ();
@@ -282,11 +282,8 @@ impl pallet_message_queue::Config for Runtime {
         cumulus_primitives_core::AggregateMessageOrigin,
     >;
     #[cfg(not(feature = "runtime-benchmarks"))]
-    type MessageProcessor = staging_xcm_builder::ProcessXcmMessage<
-        AggregateMessageOrigin,
-        XcmExecutor<XcmConfig>,
-        RuntimeCall,
-    >;
+    type MessageProcessor =
+        xcm_builder::ProcessXcmMessage<AggregateMessageOrigin, XcmExecutor<XcmConfig>, RuntimeCall>;
     type Size = u32;
     // The XCMP queue pallet is only ever able to handle the `Sibling(ParaId)` origin:
     type QueueChangeHandler = NarrowOriginToSibling<XcmpQueue>;
@@ -379,8 +376,8 @@ impl pallet_asset_rate::Config for Runtime {
 
 use {
     crate::ForeignAssets,
-    staging_xcm_builder::{FungiblesAdapter, NoChecking},
-    staging_xcm_executor::traits::JustTry,
+    xcm_builder::{FungiblesAdapter, NoChecking},
+    xcm_executor::traits::JustTry,
 };
 
 /// Means for transacting foreign assets from different global consensus.

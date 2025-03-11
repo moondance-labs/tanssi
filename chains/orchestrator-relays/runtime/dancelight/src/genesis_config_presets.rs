@@ -31,7 +31,7 @@ use {
     grandpa_primitives::AuthorityId as GrandpaId,
     nimbus_primitives::NimbusId,
     pallet_configuration::HostConfiguration,
-    primitives::{AccountId, AccountPublic, AssignmentId, ValidatorId},
+    primitives::{AccountId, AssignmentId, ValidatorId},
     scale_info::prelude::string::String,
     sp_arithmetic::{traits::Saturating, Perbill},
     sp_core::{
@@ -39,39 +39,33 @@ use {
         sr25519, ByteArray, Pair, Public,
     },
     sp_keystore::{Keystore, KeystorePtr},
-    sp_runtime::traits::IdentifyAccount,
     sp_std::{cmp::max, vec::Vec},
     tp_traits::ParaId,
 };
+
+use keyring::Sr25519Keyring;
 
 // import macro, separate due to rustfmt thinking it's the module with the
 // same name ^^'
 use sp_std::vec;
 
-/// Helper function to generate a crypto pair from seed
-fn get_from_seed<TPublic: Public>(
-    seed: &str,
-    add_to_keystore: Option<(&KeystorePtr, KeyTypeId)>,
-) -> <TPublic::Pair as Pair>::Public {
-    let secret_uri = format!("//{}", seed);
-    let pair = TPublic::Pair::from_string(&secret_uri, None).expect("static values are valid; qed");
+use sp_core::crypto::{get_public_from_string_or_panic, AccountId32};
 
-    let public = pair.public();
-
-    if let Some((keystore, key_type)) = add_to_keystore {
-        keystore
-            .insert(key_type, &secret_uri, &public.to_raw_vec())
-            .unwrap();
-    }
-    public
+pub fn insert_authority_keys_into_keystore(seed: &str, keystore: &KeystorePtr) {
+    insert_into_keystore::<BabeId>(seed, keystore, key_types::BABE);
+    insert_into_keystore::<GrandpaId>(seed, keystore, key_types::GRANDPA);
+    insert_into_keystore::<ValidatorId>(seed, keystore, PARACHAIN_KEY_TYPE_ID);
+    insert_into_keystore::<AssignmentId>(seed, keystore, ASSIGNMENT_KEY_TYPE_ID);
+    insert_into_keystore::<AuthorityDiscoveryId>(seed, keystore, key_types::AUTHORITY_DISCOVERY);
 }
 
-/// Helper function to generate an account ID from seed
-fn get_account_id_from_seed<TPublic: Public>(seed: &str) -> AccountId
-where
-    AccountPublic: From<<TPublic::Pair as Pair>::Public>,
-{
-    AccountPublic::from(get_from_seed::<TPublic>(seed, None)).into_account()
+fn insert_into_keystore<TPublic: Public>(seed: &str, keystore: &KeystorePtr, key_type: KeyTypeId) {
+    let public = get_public_from_string_or_panic::<TPublic>(seed);
+
+    let secret_uri = format!("//{}", seed);
+    keystore
+        .insert(key_type, &secret_uri, &public.to_raw_vec())
+        .unwrap();
 }
 
 #[derive(Clone, Debug)]
@@ -88,8 +82,8 @@ pub struct AuthorityKeys {
 }
 
 /// Helper function to generate stash, controller and session key from seed
-pub fn get_authority_keys_from_seed(seed: &str, keystore: Option<&KeystorePtr>) -> AuthorityKeys {
-    let keys = get_authority_keys_from_seed_no_beefy(seed, keystore);
+pub fn get_authority_keys_from_seed(seed: &str) -> AuthorityKeys {
+    let keys = get_authority_keys_from_seed_no_beefy(seed);
 
     AuthorityKeys {
         stash: keys.0,
@@ -99,7 +93,7 @@ pub fn get_authority_keys_from_seed(seed: &str, keystore: Option<&KeystorePtr>) 
         para_validator: keys.4,
         para_assignment: keys.5,
         authority_discovery: keys.6,
-        beefy: get_from_seed::<BeefyId>(seed, None),
+        beefy: get_public_from_string_or_panic::<BeefyId>(seed),
         nimbus: get_aura_id_from_seed(seed),
     }
 }
@@ -115,7 +109,6 @@ pub fn get_aura_id_from_seed(seed: &str) -> NimbusId {
 /// Helper function to generate stash, controller and session key from seed
 fn get_authority_keys_from_seed_no_beefy(
     seed: &str,
-    keystore: Option<&KeystorePtr>,
 ) -> (
     AccountId,
     AccountId,
@@ -126,34 +119,20 @@ fn get_authority_keys_from_seed_no_beefy(
     AuthorityDiscoveryId,
 ) {
     (
-        get_account_id_from_seed::<sr25519::Public>(&format!("{}//stash", seed)),
-        get_account_id_from_seed::<sr25519::Public>(seed),
-        get_from_seed::<BabeId>(seed, keystore.map(|k| (k, key_types::BABE))),
-        get_from_seed::<GrandpaId>(seed, keystore.map(|k| (k, key_types::GRANDPA))),
-        get_from_seed::<ValidatorId>(seed, keystore.map(|k| (k, PARACHAIN_KEY_TYPE_ID))),
-        get_from_seed::<AssignmentId>(seed, keystore.map(|k| (k, ASSIGNMENT_KEY_TYPE_ID))),
-        get_from_seed::<AuthorityDiscoveryId>(
-            seed,
-            keystore.map(|k| (k, key_types::AUTHORITY_DISCOVERY)),
-        ),
+        get_public_from_string_or_panic::<sr25519::Public>(&format!("{}//stash", seed)).into(),
+        get_public_from_string_or_panic::<sr25519::Public>(seed).into(),
+        get_public_from_string_or_panic::<BabeId>(seed),
+        get_public_from_string_or_panic::<GrandpaId>(seed),
+        get_public_from_string_or_panic::<ValidatorId>(seed),
+        get_public_from_string_or_panic::<AssignmentId>(seed),
+        get_public_from_string_or_panic::<AuthorityDiscoveryId>(seed),
     )
 }
 
 fn testnet_accounts() -> Vec<AccountId> {
-    Vec::from([
-        get_account_id_from_seed::<sr25519::Public>("Alice"),
-        get_account_id_from_seed::<sr25519::Public>("Bob"),
-        get_account_id_from_seed::<sr25519::Public>("Charlie"),
-        get_account_id_from_seed::<sr25519::Public>("Dave"),
-        get_account_id_from_seed::<sr25519::Public>("Eve"),
-        get_account_id_from_seed::<sr25519::Public>("Ferdie"),
-        get_account_id_from_seed::<sr25519::Public>("Alice//stash"),
-        get_account_id_from_seed::<sr25519::Public>("Bob//stash"),
-        get_account_id_from_seed::<sr25519::Public>("Charlie//stash"),
-        get_account_id_from_seed::<sr25519::Public>("Dave//stash"),
-        get_account_id_from_seed::<sr25519::Public>("Eve//stash"),
-        get_account_id_from_seed::<sr25519::Public>("Ferdie//stash"),
-    ])
+    Sr25519Keyring::well_known()
+        .map(|k| k.to_account_id())
+        .collect()
 }
 
 fn dancelight_session_keys(
@@ -214,7 +193,9 @@ fn default_parachains_host_configuration(
             allowed_ancestry_len: 2,
         },
         node_features: bitvec::vec::BitVec::from_element(
-            1u8 << (FeatureIndex::ElasticScalingMVP as usize),
+            (1u8 << (FeatureIndex::ElasticScalingMVP as usize)) |
+            // TODO: this may not be needed, we could still support v1 only
+                           (1u8 << (FeatureIndex::CandidateReceiptV2 as usize)),
         ),
         scheduler_params: SchedulerParams {
             lookahead: 2,
@@ -243,12 +224,12 @@ fn dancelight_testnet_genesis(
 
     let invulnerable_keys: Vec<_> = invulnerables
         .iter()
-        .map(|seed| get_authority_keys_from_seed(seed, None))
+        .map(|seed| get_authority_keys_from_seed(seed))
         .collect();
 
-    let invulnerable_accounts: Vec<_> = invulnerables
+    let invulnerable_accounts: Vec<AccountId32> = invulnerables
         .iter()
-        .map(|seed| get_account_id_from_seed::<sr25519::Public>(seed))
+        .map(|seed| get_public_from_string_or_panic::<sr25519::Public>(seed).into())
         .collect();
 
     let data_preservers_bootnodes: Vec<_> = container_chains
@@ -437,6 +418,7 @@ fn dancelight_testnet_genesis(
                     x.stash.clone()
                 })
                 .collect::<Vec<_>>(),
+            ..Default::default()
         },
     })
 }
@@ -694,8 +676,8 @@ pub fn dancelight_development_config_genesis(
     invulnerables: Vec<String>,
 ) -> serde_json::Value {
     dancelight_testnet_genesis(
-        Vec::from([get_authority_keys_from_seed("Alice", None)]),
-        get_account_id_from_seed::<sr25519::Public>("Alice"),
+        Vec::from([get_authority_keys_from_seed("Alice")]),
+        Sr25519Keyring::Alice.to_account_id(),
         None,
         container_chains,
         invulnerables,
@@ -718,10 +700,10 @@ pub fn dancelight_local_testnet_genesis(
 ) -> serde_json::Value {
     dancelight_testnet_genesis(
         Vec::from([
-            get_authority_keys_from_seed("Alice", None),
-            get_authority_keys_from_seed("Bob", None),
+            get_authority_keys_from_seed("Alice"),
+            get_authority_keys_from_seed("Bob"),
         ]),
-        get_account_id_from_seed::<sr25519::Public>("Alice"),
+        Sr25519Keyring::Alice.to_account_id(),
         None,
         container_chains,
         invulnerables,
@@ -739,10 +721,10 @@ pub fn dancelight_local_testnet_genesis(
 
 /// Provides the JSON representation of predefined genesis config for given `id`.
 pub fn get_preset(id: &sp_genesis_builder::PresetId) -> Option<sp_std::vec::Vec<u8>> {
-    let patch = match id.try_into() {
-        Ok("local_testnet") => dancelight_local_testnet_genesis(vec![], vec![]),
-        Ok("development") => dancelight_development_config_genesis(vec![], vec![]),
-        Ok("staging_testnet") => dancelight_staging_testnet_config_genesis(),
+    let patch = match id.as_ref() {
+        "local_testnet" => dancelight_local_testnet_genesis(vec![], vec![]),
+        "development" => dancelight_development_config_genesis(vec![], vec![]),
+        "staging_testnet" => dancelight_staging_testnet_config_genesis(),
         _ => return None,
     };
     Some(

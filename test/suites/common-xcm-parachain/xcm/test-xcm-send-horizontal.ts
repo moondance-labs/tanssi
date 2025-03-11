@@ -1,42 +1,42 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { KeyringPair, alith } from "@moonwall/util";
+import { type KeyringPair, alith } from "@moonwall/util";
+import { type ApiPromise, Keyring } from "@polkadot/api";
 import {
-    MultiLocation,
+    type MultiLocation,
+    XcmFragment,
     extractPaidDeliveryFees,
     getLastSentHrmpMessageFee,
-    XcmFragment,
     mockHrmpChannelExistanceTx,
-} from "../../../util/xcm";
-import { ApiPromise, Keyring } from "@polkadot/api";
+} from "utils";
 
 describeSuite({
-    id: "CPX0208",
+    id: "COMMON0308",
     title: "XCM - Succeeds sending XCM",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
         let baseDelivery: bigint;
-        let chain;
+        let chain: any;
         const destinationPara = 3000;
         const txByteFee = 1n;
 
-        beforeAll(async function () {
+        beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             chain = polkadotJs.consts.system.version.specName.toString();
             alice =
-                chain == "frontier-template"
+                chain === "frontier-template"
                     ? alith
                     : new Keyring({ type: "sr25519" }).addFromUri("//Alice", {
                           name: "Alice default",
                       });
-            baseDelivery = chain == "frontier-template" ? 100_000_000_000_000n : 100_000_000n;
+            baseDelivery = chain === "frontier-template" ? 100_000_000_000_000n : 100_000_000n;
         });
 
         it({
             id: "T01",
             title: "Should succeed sending a XCM horizontal",
-            test: async function () {
+            test: async () => {
                 // We need to first mock the existence of the channel
                 const mockHrmp3000Tx = polkadotJs.tx.sudo.sudo(
                     mockHrmpChannelExistanceTx(context, destinationPara, 1000, 102400, 102400)

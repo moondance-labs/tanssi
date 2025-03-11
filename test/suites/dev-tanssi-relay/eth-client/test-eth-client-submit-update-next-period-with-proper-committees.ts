@@ -1,11 +1,12 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
-import { readFileSync } from "fs";
-import { KeyringPair } from "@moonwall/util";
+
+import { readFileSync } from "node:fs";
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import type { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
 
 describeSuite({
-    id: "DTR1205",
+    id: "DEVT0405",
     title: "Ethereum Beacon Client tests",
     foundationMethods: "dev",
 
@@ -28,7 +29,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Ethreum client should be able to receive an update for the next period when pushing all committee info",
-            test: async function () {
+            test: async () => {
                 // Next sync committee shold give us the default values
                 const nextSyncCommitteeBeforeUpdate = await polkadotJs.query.ethereumBeaconClient.nextSyncCommittee();
                 expect(nextSyncCommitteeBeforeUpdate.root.toHuman()).to.be.eq(
@@ -69,12 +70,11 @@ describeSuite({
                 ]);
 
                 const latestFinalizedBlockRoot = await polkadotJs.query.ethereumBeaconClient.latestFinalizedBlockRoot();
-                const latestFinalizedSlot = await polkadotJs.query.ethereumBeaconClient.finalizedBeaconState(
-                    latestFinalizedBlockRoot
-                );
+                const latestFinalizedSlot =
+                    await polkadotJs.query.ethereumBeaconClient.finalizedBeaconState(latestFinalizedBlockRoot);
 
                 // The update did go through, we should have the latest state
-                const expectedSlot = nextPeriodUpdate["finalized_header"]["slot"];
+                const expectedSlot = nextPeriodUpdate.finalized_header.slot;
                 expect(latestFinalizedSlot.toHuman().slot.replace(/,/g, "")).to.equal(expectedSlot.toString());
             },
         });

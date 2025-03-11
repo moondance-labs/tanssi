@@ -28,16 +28,16 @@ config_relayer() {
         $assets_dir/beefy-relay.json > $output_dir/beefy-relay.json
 
     # Configure beacon relay
-    local deneb_forked_epoch=132608
-    deneb_forked_epoch=0
+    local electra_forked_epoch=132608
+    electra_forked_epoch=0
     jq \
         --arg beacon_endpoint_http $beacon_endpoint_http \
-        --argjson deneb_forked_epoch $deneb_forked_epoch \
+        --argjson electra_forked_epoch $electra_forked_epoch \
         --arg relay_chain_endpoint $RELAYCHAIN_ENDPOINT \
         --arg data_store_dir $data_store_dir \
         '
       .source.beacon.endpoint = $beacon_endpoint_http
-    | .source.beacon.spec.denebForkedEpoch = $deneb_forked_epoch
+    | .source.beacon.spec.forkVersions.electra = $electra_forked_epoch
     | .sink.parachain.endpoint = $relay_chain_endpoint
     | .source.beacon.datastore.location = $data_store_dir
     ' \
@@ -62,7 +62,7 @@ config_relayer() {
         $assets_dir/execution-relay.json >$output_dir/execution-relay.json
 
 
-    # Configure substrate relay for ethereum
+    # Configure substrate relay for ethereum for primary channel
     jq \
         --arg k1 "$(snowbridge_address_for GatewayProxy)" \
         --arg k2 "$(snowbridge_address_for BeefyClient)" \
@@ -79,7 +79,27 @@ config_relayer() {
     | .sink.contracts.Gateway = $k1
     | .sink.ethereum.endpoint = $eth_writer_endpoint
     ' \
-        $assets_dir/substrate-relay.json >$output_dir/substrate-relay.json
+        $assets_dir/substrate-relay.json >$output_dir/substrate-relay-primary.json
+
+    # Configure substrate relay for ethereum for secondary channel
+    jq \
+        --arg k1 "$(snowbridge_address_for GatewayProxy)" \
+        --arg k2 "$(snowbridge_address_for BeefyClient)" \
+        --arg eth_endpoint_ws $eth_endpoint_ws \
+        --arg eth_writer_endpoint $eth_writer_endpoint \
+        --arg channelID $SECONDARY_GOVERNANCE_CHANNEL_ID \
+        --arg relay_chain_endpoint $RELAYCHAIN_ENDPOINT \
+        '
+      .source.ethereum.endpoint = $eth_endpoint_ws
+    | .source.polkadot.endpoint = $relay_chain_endpoint
+    | .source.contracts.BeefyClient = $k2
+    | .source.contracts.Gateway = $k1
+    | .source."channel-id" = $channelID
+    | .sink.contracts.Gateway = $k1
+    | .sink.ethereum.endpoint = $eth_writer_endpoint
+    ' \
+        $assets_dir/substrate-relay.json >$output_dir/substrate-relay-secondary.json
+
 }
 
 write_beacon_checkpoint() {

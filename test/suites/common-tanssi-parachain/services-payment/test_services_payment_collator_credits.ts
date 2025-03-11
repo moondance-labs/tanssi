@@ -1,12 +1,13 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
-import { generateKeyringPair, KeyringPair } from "@moonwall/util";
-import { jumpSessions } from "util/block";
-import { paraIdTank } from "util/payment";
+
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import { type KeyringPair, generateKeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
+import { jumpSessions } from "utils";
+import { paraIdTank } from "utils";
 
 describeSuite({
-    id: "CPT0602",
+    id: "COMMO0802",
     title: "Services payment test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -21,7 +22,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Genesis container chains have credits and collators and should have one less credit",
-            test: async function () {
+            test: async () => {
                 await context.createBlock();
                 const parasRegistered = await polkadotJs.query.registrar.registeredParaIds();
 
@@ -61,11 +62,11 @@ describeSuite({
         it({
             id: "E02",
             title: "Getting assignation should consume credits",
-            test: async function () {
+            test: async () => {
                 // Moving to the next session should have reduced the credit by one to both parachains
                 // even if one does not produce blocks
 
-                const paraId = 2000n;
+                const paraId = 2000;
                 await jumpSessions(context, 1);
                 const credits = await polkadotJs.query.servicesPayment.collatorAssignmentCredits(paraId);
                 expect(
@@ -78,22 +79,24 @@ describeSuite({
         it({
             id: "E03",
             title: "Collators are unassigned when a container chain does not have enough credits",
-            test: async function () {
+            test: async () => {
                 // Create blocks until authorNoting.blockNum does not increase anymore.
                 // Check that collatorAssignment does not have collators and num credits is less than 2 sessions.
 
-                const paraId = 2000n;
+                const paraId = 2000;
 
                 // Create blocks until the block number stops increasing
                 let containerBlockNum3 = -1;
-                let containerBlockNum4 = await (await polkadotJs.query.authorNoting.latestAuthor(paraId)).toJSON()
-                    .blockNumber;
+                let containerBlockNum4 = (await polkadotJs.query.authorNoting.latestAuthor(paraId))
+                    .unwrap()
+                    .blockNumber.toNumber();
 
-                while (containerBlockNum3 != containerBlockNum4) {
+                while (containerBlockNum3 !== containerBlockNum4) {
                     await context.createBlock();
                     containerBlockNum3 = containerBlockNum4;
-                    containerBlockNum4 = await (await polkadotJs.query.authorNoting.latestAuthor(paraId)).toJSON()
-                        .blockNumber;
+                    containerBlockNum4 = (await polkadotJs.query.authorNoting.latestAuthor(paraId))
+                        .unwrap()
+                        .blockNumber.toNumber();
                 }
 
                 // Now the container chain should have less than 2 sessions worth of credits
@@ -114,10 +117,10 @@ describeSuite({
         it({
             id: "E04",
             title: "Root can remove credits",
-            test: async function () {
+            test: async () => {
                 // Remove all the credits of container chain 2001, which should have assigned collators now
                 // This checks that the node does not panic when we try to subtract credits from 0 (saturating_sub)
-                const paraId = 2001n;
+                const paraId = 2001;
                 const credits = (await polkadotJs.query.servicesPayment.collatorAssignmentCredits(paraId)).toJSON();
                 expect(credits, "Container chain 2001 does not have enough credits").toBeGreaterThanOrEqual(2n);
 
@@ -145,15 +148,15 @@ describeSuite({
         it({
             id: "E05",
             title: "Can buy additional credits",
-            test: async function () {
+            test: async () => {
                 // As alice, buy credits for para 2000. Check that it is assigned collators again
-                const paraId = 2000n;
+                const paraId = 2000;
 
                 // Create blocks until no collators are assigned to any container chain
                 for (;;) {
                     await context.createBlock();
                     const collators = await polkadotJs.query.collatorAssignment.collatorContainerChain();
-                    if (Object.keys(collators.toJSON().containerChains).length == 0) {
+                    if (Object.keys(collators.toJSON().containerChains).length === 0) {
                         break;
                     }
                 }

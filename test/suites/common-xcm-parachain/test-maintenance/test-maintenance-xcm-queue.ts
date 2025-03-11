@@ -1,18 +1,18 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { KeyringPair, alith, generateKeyringPair } from "@moonwall/util";
-import { ApiPromise, Keyring } from "@polkadot/api";
+import { type KeyringPair, alith, generateKeyringPair } from "@moonwall/util";
+import { type ApiPromise, Keyring } from "@polkadot/api";
 import {
-    RawXcmMessage,
+    type RawXcmMessage,
     XcmFragment,
     descendSiblingOriginFromAddress20,
     descendSiblingOriginFromAddress32,
     injectHrmpMessageAndSeal,
     sovereignAccountOfSiblingForAddress20,
     sovereignAccountOfSiblingForAddress32,
-} from "../../../util/xcm.ts";
+} from "utils";
 
 describeSuite({
-    id: "CPX0104",
+    id: "COMMON0103",
     title: "Maintenance mode - XCM queue",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
@@ -24,13 +24,13 @@ describeSuite({
         let random: KeyringPair;
         let xcmMessage: XcmFragment;
 
-        beforeAll(async function () {
+        beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             chain = polkadotJs.consts.system.version.specName.toString();
 
             // Generate the proper Keyring for the current type of chain
             alice =
-                chain == "frontier-template"
+                chain === "frontier-template"
                     ? alith
                     : new Keyring({ type: "sr25519" }).addFromUri("//Alice", {
                           name: "Alice default",
@@ -38,9 +38,9 @@ describeSuite({
             let aliceNonce = (await polkadotJs.query.system.account(alice.address)).nonce.toNumber();
 
             const descendFunction =
-                chain == "frontier-template" ? descendSiblingOriginFromAddress20 : descendSiblingOriginFromAddress32;
+                chain === "frontier-template" ? descendSiblingOriginFromAddress20 : descendSiblingOriginFromAddress32;
             const sovereignFunction =
-                chain == "frontier-template"
+                chain === "frontier-template"
                     ? sovereignAccountOfSiblingForAddress20
                     : sovereignAccountOfSiblingForAddress32;
 
@@ -67,12 +67,12 @@ describeSuite({
 
             // Now let's start building the message
             // Generate random receiver address
-            random = chain == "frontier-template" ? generateKeyringPair() : generateKeyringPair("sr25519");
+            random = chain === "frontier-template" ? generateKeyringPair() : generateKeyringPair("sr25519");
 
             // Get Pallet balances index
             const metadata = await polkadotJs.rpc.state.getMetadata();
             const balancesPalletIndex = metadata.asLatest.pallets
-                .find(({ name }) => name.toString() == "Balances")!
+                .find(({ name }) => name.toString() === "Balances")
                 .index.toNumber();
 
             const transferCall = polkadotJs.tx.balances.transferAllowDeath(random.address, transferredBalance / 10n);
@@ -114,7 +114,7 @@ describeSuite({
         it({
             id: "T01",
             title: "Should queue XCM execution during maintenance mode (HRMP)",
-            test: async function () {
+            test: async () => {
                 // Enter maintenance mode with sudo
                 const maintenanceTx = polkadotJs.tx.maintenanceMode.enterMaintenanceMode();
                 await context.createBlock([await polkadotJs.tx.sudo.sudo(maintenanceTx).signAsync(alice)]);

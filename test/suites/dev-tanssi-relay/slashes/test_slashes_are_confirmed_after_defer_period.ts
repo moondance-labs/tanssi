@@ -1,15 +1,14 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
-import { KeyringPair } from "@moonwall/util";
+
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import type { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
 import { Keyring } from "@polkadot/keyring";
 import { u8aToHex } from "@polkadot/util";
-import { jumpToSession } from "../../../util/block";
-import { generateBabeEquivocationProof } from "../../../util/slashes";
-import { PRIMARY_GOVERNANCE_CHANNEL_ID } from "../../../util/constants";
+import { generateBabeEquivocationProof, jumpToSession, PRIMARY_GOVERNANCE_CHANNEL_ID } from "utils";
 
 describeSuite({
-    id: "DTR1304",
+    id: "DEVT1703",
     title: "Babe slashes defer period confirmation",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -27,7 +26,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Babe offences should be confirmed after defer period",
-            test: async function () {
+            test: async () => {
                 // we crate one block so that we at least have one seal.
                 await jumpToSession(context, 1);
 
@@ -101,16 +100,14 @@ describeSuite({
                 // In the next block we should send the slashes. For this we will confirm:
                 // A: that the unprocessed slashes decrease
                 // B: that the nonce of the primary channel increases
-                const primaryChannelNonceBefore = await polkadotJs.query.ethereumOutboundQueue.nonce(
-                    PRIMARY_GOVERNANCE_CHANNEL_ID
-                );
+                const primaryChannelNonceBefore =
+                    await polkadotJs.query.ethereumOutboundQueue.nonce(PRIMARY_GOVERNANCE_CHANNEL_ID);
 
                 await context.createBlock();
                 const expectedUnprocessedMessagesAfterOneBlock =
                     await polkadotJs.query.externalValidatorSlashes.unreportedSlashesQueue();
-                const primaryChannelNonceAfter = await polkadotJs.query.ethereumOutboundQueue.nonce(
-                    PRIMARY_GOVERNANCE_CHANNEL_ID
-                );
+                const primaryChannelNonceAfter =
+                    await polkadotJs.query.ethereumOutboundQueue.nonce(PRIMARY_GOVERNANCE_CHANNEL_ID);
                 expect(primaryChannelNonceAfter.toBigInt()).toBe(primaryChannelNonceBefore.toBigInt() + 1n);
                 expect(expectedUnprocessedMessagesAfterOneBlock.length).to.be.eq(0);
             },

@@ -1,9 +1,82 @@
-import { execSync, spawn, ChildProcessWithoutNullStreams } from "child_process";
-import { existsSync, writeFileSync } from "fs";
-import path from "path";
+import { execSync, spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import path from "node:path";
 import chalk from "chalk";
 
 let nodeProcess: ChildProcessWithoutNullStreams | undefined = undefined;
+
+// Hack: polkadot-js does not support XCM v5 yet, we need to manually change some types
+//
+// Lookup89 => StagingXcmV5Junction
+// Lookup77 => StagingXcmV5Junction
+// The index of LookupXX depends on this comment in the same file:
+//     /** @name StagingXcmV5Junction (77) */
+//     /** @name StagingXcmV5Junction (89) */
+/*
+src/dancebox/interfaces/types-lookup.ts
+1616:        readonly asX1: Vec<Lookup89>;
+1618:        readonly asX2: Vec<Lookup89>;
+1620:        readonly asX3: Vec<Lookup89>;
+1622:        readonly asX4: Vec<Lookup89>;
+1624:        readonly asX5: Vec<Lookup89>;
+1626:        readonly asX6: Vec<Lookup89>;
+1628:        readonly asX7: Vec<Lookup89>;
+1630:        readonly asX8: Vec<Lookup89>;
+
+src/dancelight/interfaces/types-lookup.ts
+902:        readonly asX1: Vec<Lookup77>;
+904:        readonly asX2: Vec<Lookup77>;
+906:        readonly asX3: Vec<Lookup77>;
+908:        readonly asX4: Vec<Lookup77>;
+910:        readonly asX5: Vec<Lookup77>;
+912:        readonly asX6: Vec<Lookup77>;
+914:        readonly asX7: Vec<Lookup77>;
+916:        readonly asX8: Vec<Lookup77>;
+ */
+function hackXcmV5Support() {
+    // For dancebox, replace "Lookup89" with "StagingXcmV5Junction"
+    const danceboxFilePath = "src/dancebox/interfaces/types-lookup.ts";
+    hackTypeReplacement(danceboxFilePath, "Lookup89", "StagingXcmV5Junction", 8);
+
+    // For dancelight, replace "Lookup77" with "StagingXcmV5Junction"
+    const dancelightFilePath = "src/dancelight/interfaces/types-lookup.ts";
+    hackTypeReplacement(dancelightFilePath, "Lookup77", "StagingXcmV5Junction", 8);
+}
+
+function hackTypeReplacement(filePath: string, oldType: string, newType: string, expectedCount: number) {
+    if (!existsSync(filePath)) {
+        console.error(chalk.red(`Error: File ${filePath} does not exist.`));
+        process.exit(1);
+    }
+    const content = readFileSync(filePath, "utf-8");
+
+    console.log("XCM v5 hack: updating ", filePath);
+    logMatchingLines(filePath, "@name StagingXcmV5Junction ");
+    console.log("Line above should say", oldType);
+
+    const regex = new RegExp(oldType, "g");
+    const matches = content.match(regex);
+    const count = matches ? matches.length : 0;
+    if (count !== expectedCount) {
+        // This check is to ensure we don't accidentally replace more than needed, if there is a Lookup777 for example,
+        // we only want to replace Lookup77
+        console.error(chalk.red(`Error: Expected ${expectedCount} occurrences of "${oldType}" in ${filePath} but found ${count}. Aborting hack.`));
+        process.exit(1);
+    }
+    const newContent = content.replace(regex, newType);
+    writeFileSync(filePath, newContent);
+    console.log(chalk.green(`Successfully replaced ${count} occurrences of "${oldType}" with "${newType}" in ${filePath}`));
+}
+
+function logMatchingLines(filePath: string, substring: string) {
+    const content = readFileSync(filePath, "utf-8");
+    const lines = content.split(/\r?\n/);
+    for (const line of lines) {
+        if (line.includes(substring)) {
+            console.log(`Found matching line in ${filePath}: ${line}`);
+        }
+    }
+}
 
 async function main() {
     const CHAINS = ["dancebox", "flashbox", "dancelight"];
@@ -42,7 +115,7 @@ async function main() {
         ]);
 
         const onProcessExit = () => {
-            nodeProcess && nodeProcess.kill();
+            nodeProcess?.kill();
         };
 
         process.once("exit", onProcessExit);
@@ -69,21 +142,21 @@ async function main() {
                         .then((data) => {
                             writeFileSync(path.join(process.cwd(), `metadata-${CHAIN}.json`), JSON.stringify(data));
 
-                            nodeProcess!.kill();
+                            nodeProcess?.kill();
                             setTimeout(() => {}, 5000); // Sleep for 5 seconds
                             resolve("success");
                         });
                 }
             };
 
-            nodeProcess!.stderr!.on("data", onData);
-            nodeProcess!.stdout!.on("data", onData);
+            nodeProcess?.stderr?.on("data", onData);
+            nodeProcess?.stdout?.on("data", onData);
 
-            nodeProcess!.stderr.on("error", (error) => {
+            nodeProcess?.stderr?.on("error", (error) => {
                 console.error(error);
                 reject(error);
             });
-            nodeProcess!.stderr.on("error", (error) => {
+            nodeProcess?.stderr?.on("error", (error) => {
                 console.error(error);
                 reject(error);
             });
@@ -95,9 +168,13 @@ async function main() {
     execSync("pnpm run generate:defs", { stdio: "inherit" });
     execSync("pnpm run generate:meta", { stdio: "inherit" });
 
+    // Hack: polkadot-js does not support XCM v5 yet, we need to manually change some types
+    hackXcmV5Support();
+
     // Build the package
     console.log("Building package...");
     execSync("pnpm run build", { stdio: "inherit" });
+
     console.log("Post build...");
     execSync("pnpm run postgenerate", { stdio: "inherit" });
 

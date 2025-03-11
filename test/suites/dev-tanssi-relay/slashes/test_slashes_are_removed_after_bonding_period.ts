@@ -1,14 +1,14 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
-import { KeyringPair } from "@moonwall/util";
+
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import type { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
 import { Keyring } from "@polkadot/keyring";
 import { u8aToHex } from "@polkadot/util";
-import { jumpToSession } from "../../../util/block";
-import { generateBabeEquivocationProof } from "../../../util/slashes";
+import { generateBabeEquivocationProof, jumpToSession } from "utils";
 
 describeSuite({
-    id: "DTR1305",
+    id: "DEVT1705",
     title: "Babe offences bonding period",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -26,7 +26,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Babe offences should be removed after bonding period",
-            test: async function () {
+            test: async () => {
                 // we crate one block so that we at least have one seal.
                 await jumpToSession(context, 1);
 

@@ -1,31 +1,19 @@
 import "@tanssi/api-augment";
-import { describeSuite, expect, beforeAll, DevModeContext } from "@moonwall/cli";
-import { ApiPromise } from "@polkadot/api";
-import { KeyringPair } from "@moonwall/util";
-import { Header, ParaId, HeadData, Digest, DigestItem, Slot } from "@polkadot/types/interfaces";
+
+import { type DevModeContext, beforeAll, describeSuite, expect } from "@moonwall/cli";
+import type { KeyringPair } from "@moonwall/util";
+import type { ApiPromise } from "@polkadot/api";
+import type { Digest, DigestItem, HeadData, Header, ParaId, Slot } from "@polkadot/types/interfaces";
+import { stringToHex } from "@polkadot/util";
 import {
+    createBlockAndRemoveInvulnerables,
+    DANCE,
     fetchIssuance,
     fetchRewardAuthorContainers,
     filterRewardStakingCollator,
     filterRewardStakingDelegators,
     jumpSessions,
-} from "util/block";
-import { DANCE } from "util/constants";
-import { stringToHex } from "@polkadot/util";
-
-export async function createBlockAndRemoveInvulnerables(context: DevModeContext, sudoKey: KeyringPair) {
-    let nonce = (await context.polkadotJs().rpc.system.accountNextIndex(sudoKey.address)).toNumber();
-    const invulnerables = await context.polkadotJs().query.tanssiInvulnerables.invulnerables();
-
-    const txs = invulnerables.map((invulnerable) =>
-        context
-            .polkadotJs()
-            .tx.sudo.sudo(context.polkadotJs().tx.tanssiInvulnerables.removeInvulnerable(invulnerable))
-            .signAsync(sudoKey, { nonce: nonce++ })
-    );
-
-    await context.createBlock(txs);
-}
+} from "utils";
 
 // Helper function to make rewards work for a specific block and slot.
 // We need to mock a proper HeadData object for AuthorNoting inherent to work, and thus
@@ -71,7 +59,7 @@ async function mockAndInsertHeadData(
 }
 
 describeSuite({
-    id: "DT0302",
+    id: "DEVT1802",
     title: "Staking candidate reward test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -88,7 +76,7 @@ describeSuite({
             charlie = context.keyring.charlie;
             dave = context.keyring.dave;
 
-            await createBlockAndRemoveInvulnerables(context, alice);
+            await createBlockAndRemoveInvulnerables(context, alice, true);
 
             // Add keys to pallet session. In dancebox they are already there in genesis.
             // We need 4 collators because we have 2 chains with 2 collators per chain.
@@ -147,7 +135,7 @@ describeSuite({
         it({
             id: "E01",
             title: "Alice should receive rewards through staking now",
-            test: async function () {
+            test: async () => {
                 const assignment = (await polkadotJs.query.tanssiCollatorAssignment.collatorContainerChain()).toJSON();
 
                 // Find alice in list of collators
@@ -208,7 +196,7 @@ describeSuite({
         it({
             id: "E02",
             title: "Alice should receive shared rewards with delegators through staking now",
-            test: async function () {
+            test: async () => {
                 await jumpSessions(context, 1);
                 // All pending operations where in session 0
                 await context.createBlock([

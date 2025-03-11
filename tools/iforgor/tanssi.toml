@@ -58,9 +58,17 @@ cargo test --release --all --features fast-runtime
 name = "[Tanssi] Cargo Test Crate"
 only_in_dir = "**/tanssi"
 script = """
-cargo test --release -p $1 --features runtime-benchmarks
+cargo test --release -p $1 $2
 """
-args = ["Which crate to test"]
+args = ["Which crate to test", "Tests filter"]
+
+[[entries]]
+name = "[Tanssi] Cargo Test Crate (with fast-runtime & benchmarks)"
+only_in_dir = "**/tanssi"
+script = """
+cargo test --release -p $1 --features=fast-runtime,runtime-benchmarks $2
+"""
+args = ["Which crate to test", "Tests filter"]
 
 ## Build
 
