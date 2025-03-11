@@ -12,17 +12,13 @@
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
+// along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 use {
     sc_chain_spec::{ChainSpecExtension, ChainSpecGroup},
     serde::{Deserialize, Serialize},
 };
 
-/// Specialized `ChainSpec` for container chains that only allows raw genesis format.
-pub type RawChainSpec = sc_service::GenericChainSpec<Extensions>;
-
-// TODO: Consider using client/node-common/chain-spec instead
 /// The extensions for the [`ChainSpec`].
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, ChainSpecGroup, ChainSpecExtension)]
 #[serde(deny_unknown_fields)]

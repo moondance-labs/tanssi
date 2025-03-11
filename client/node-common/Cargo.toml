@@ -20,6 +20,8 @@ jsonrpsee = { workspace = true, features = [ "server" ] }
 log = { workspace = true }
 parity-scale-codec = { workspace = true }
 serde = { workspace = true, features = [ "derive" ] }
+fp-evm = { workspace = true }
+hex-literal = { workspace = true }
 
 # Local
 tc-consensus = { workspace = true }

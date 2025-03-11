@@ -14,7 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-use sc_cli::{CliConfiguration, NodeKeyParams, SharedParams};
+use {
+    sc_cli::{CliConfiguration, NodeKeyParams, SharedParams},
+    std::path::PathBuf,
+};
 
 /// The `build-spec` command used to build a specification.
 #[derive(Debug, Clone, clap::Parser)]
@@ -42,5 +45,34 @@ where
 
     fn node_key_params(&self) -> Option<&NodeKeyParams> {
         Some(&self.base.node_key_params)
+    }
+}
+
+#[derive(Debug)]
+pub struct RelayChainCli {
+    /// The actual relay chain cli object.
+    pub base: polkadot_cli::RunCmd,
+
+    /// Optional chain id that should be passed to the relay chain.
+    pub chain_id: Option<String>,
+
+    /// The base path that should be used by the relay chain.
+    pub base_path: PathBuf,
+}
+
+impl RelayChainCli {
+    /// Parse the relay chain CLI parameters using the para chain `Configuration`.
+    pub fn new<'a>(
+        para_config: &sc_service::Configuration,
+        relay_chain_args: impl Iterator<Item = &'a String>,
+    ) -> Self {
+        let extension = crate::chain_spec::Extensions::try_get(&*para_config.chain_spec);
+        let chain_id = extension.map(|e| e.relay_chain.clone());
+        let base_path = para_config.base_path.path().join("polkadot");
+        Self {
+            base_path,
+            chain_id,
+            base: clap::Parser::parse_from(relay_chain_args),
+        }
     }
 }

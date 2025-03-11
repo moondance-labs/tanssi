@@ -19,3 +19,5 @@ pub mod service;
 pub mod command;
 
 pub mod cli;
+
+pub mod chain_spec;
