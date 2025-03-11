@@ -19,13 +19,14 @@ use {
     sp_runtime::{traits::Get, BoundedVec},
     sp_staking::SessionIndex,
     tp_traits::{
-        AuthorNotingHook, AuthorNotingInfo, GetCurrentContainerChains, GetSessionIndex,
-        MaybeSelfChainBlockAuthor, NodeActivityTrackingHelper,
+        AuthorNotingHook, AuthorNotingInfo, GetContainerChainsWithCollators,
+        GetCurrentContainerChains, GetSessionIndex, MaybeSelfChainBlockAuthor,
+        NodeActivityTrackingHelper, ParaId,
     },
 };
 
 #[cfg(feature = "runtime-benchmarks")]
-use tp_traits::{BlockNumber, ParaId};
+use tp_traits::BlockNumber;
 
 pub use pallet::*;
 
@@ -58,9 +59,13 @@ pub mod pallet {
         #[pallet::constant]
         type MaxInactiveSessions: Get<u32>;
 
-        /// The maximum amount of collators that can stored for a session
+        /// The maximum amount of collators that can be stored for a session
         #[pallet::constant]
         type MaxCollatorsPerSession: Get<u32>;
+
+        /// The maximum amount of container chains that can be stored
+        #[pallet::constant]
+        type MaxContainerChains: Get<u32>;
 
         /// Helper that returns the current session index.
         type CurrentSessionIndex: GetSessionIndex<SessionIndex>;
@@ -86,6 +91,11 @@ pub mod pallet {
     #[pallet::storage]
     pub type ActiveCollatorsForCurrentSession<T: Config> =
         StorageValue<_, BoundedVec<T::CollatorId, T::MaxCollatorsPerSession>, ValueQuery>;
+
+    /// A list of inactive container chains for a session. Repopulated at the start of every session
+    #[pallet::storage]
+    pub type InactiveContainerChainsForCurrentSession<T: Config> =
+        StorageValue<_, BoundedVec<ParaId, T::MaxInactiveSessions>, ValueQuery>;
 
     /// The last session index for which the inactive collators have not been processed
     #[pallet::storage]
@@ -129,7 +139,7 @@ pub mod pallet {
             unprocessed_session_id: SessionIndex,
             current_session_id: SessionIndex,
         ) -> Weight {
-            let mut total_weight = T::DbWeight::get().reads_writes(0, 3);
+            let mut total_weight = T::DbWeight::get().reads_writes(0, 4);
             ActiveCollators::<T>::insert(
                 unprocessed_session_id,
                 <ActiveCollatorsForCurrentSession<T>>::get(),
@@ -137,6 +147,9 @@ pub mod pallet {
 
             // TO DO: Add to the list collators assigned to container chains that have not advanced
             <ActiveCollatorsForCurrentSession<T>>::put(BoundedVec::new());
+            <InactiveContainerChainsForCurrentSession<T>>::put(BoundedVec::truncate_from(
+                T::RegisteredContainerChainsFetcher::current_container_chains().into_inner(),
+            ));
 
             // Cleanup active collator info for sessions that are older than the maximum allowed
             let minimum_sessions_required = T::MaxInactiveSessions::get() + 1;
@@ -158,6 +171,20 @@ pub mod pallet {
                         active_collators
                             .try_push(author)
                             .map_err(|_| Error::<T>::MaxCollatorsPerSessionReached)?;
+                    }
+                    Ok(())
+                },
+            );
+            total_weight
+        }
+
+        pub fn on_chain_noted(chain_id: ParaId) -> Weight {
+            let mut total_weight = T::DbWeight::get().reads_writes(1, 0);
+            let _ = <InactiveContainerChainsForCurrentSession<T>>::try_mutate(
+                |inactive_chains| -> DispatchResult {
+                    if inactive_chains.contains(&chain_id) {
+                        total_weight += T::DbWeight::get().writes(1);
+                        inactive_chains.retain(|x| x != &chain_id);
                     }
                     Ok(())
                 },
@@ -191,8 +218,8 @@ impl<T: Config> AuthorNotingHook<T::CollatorId> for Pallet<T> {
     fn on_container_authors_noted(info: &[AuthorNotingInfo<T::CollatorId>]) -> Weight {
         let mut total_weight = T::DbWeight::get().reads_writes(0, 0);
         for author_info in info {
-            let author = author_info.author.clone();
-            total_weight += Self::on_author_noted(author);
+            total_weight += Self::on_author_noted(author_info.author.clone());
+            total_weight += Self::on_chain_noted(author_info.para_id.clone());
         }
         total_weight
     }
