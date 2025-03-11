@@ -26,5 +26,5 @@ popd
 
 echo "Deploying symbiotic contracts"
 pushd "$symbiotic_contracts_dir"
-deploy_command script/test/DeployTanssiEcosystemDemo.s.sol:DeployTanssiEcosystem
+deploy_command demos/DeployTanssiEcosystemDemo.s.sol:DeployTanssiEcosystem
 popd
