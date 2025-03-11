@@ -43,12 +43,13 @@ use {
     parity_scale_codec::{Decode, Encode},
     sp_consensus_aura::{inherents::InherentType, Slot, AURA_ENGINE_ID},
     sp_inherents::{InherentIdentifier, IsFatalError},
-    sp_runtime::{traits::Header, DigestItem, DispatchResult, RuntimeString},
+    sp_runtime::{traits::Header, DigestItem, DispatchResult},
+    sp_std::borrow::Cow,
     sp_std::vec::Vec,
     tp_author_noting_inherent::INHERENT_IDENTIFIER,
     tp_traits::{
-        AuthorNotingHook, AuthorNotingInfo, ContainerChainBlockInfo, GenericStateProof,
-        GenericStorageReader, GetContainerChainAuthor, GetCurrentContainerChains,
+        AuthorNotingHook, AuthorNotingInfo, ContainerChainBlockInfo, ForSession, GenericStateProof,
+        GenericStorageReader, GetContainerChainAuthor, GetContainerChainsWithCollators,
         LatestAuthorInfoFetcher, NativeStorageReader, ReadEntryErr,
     },
 };
@@ -77,7 +78,7 @@ pub mod pallet {
         /// The overarching event type.
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
-        type ContainerChains: GetCurrentContainerChains;
+        type ContainerChains: GetContainerChainsWithCollators<Self::AccountId>;
 
         type SlotBeacon: SlotBeacon;
 
@@ -89,6 +90,10 @@ pub mod pallet {
         type AuthorNotingHook: AuthorNotingHook<Self::AccountId>;
 
         type RelayOrPara: RelayOrPara;
+
+        /// Max length of para id list, should be the same value as in other pallets.
+        #[pallet::constant]
+        type MaxContainerChains: Get<u32>;
 
         /// Weight information for extrinsics in this pallet.
         type WeightInfo: WeightInfo;
@@ -136,7 +141,7 @@ pub mod pallet {
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         #[pallet::call_index(0)]
-        #[pallet::weight((T::WeightInfo::set_latest_author_data(<T::ContainerChains as GetCurrentContainerChains>::MaxContainerChains::get()), DispatchClass::Mandatory))]
+        #[pallet::weight((T::WeightInfo::set_latest_author_data(T::MaxContainerChains::get()), DispatchClass::Mandatory))]
         pub fn set_latest_author_data(
             origin: OriginFor<T>,
             data: InherentDataOf<T>,
@@ -148,20 +153,24 @@ pub mod pallet {
                 "DidSetContainerAuthorData must be updated only once in a block",
             );
 
-            let registered_para_ids = T::ContainerChains::current_container_chains();
+            let container_chains_to_check: Vec<_> =
+                T::ContainerChains::container_chains_with_collators(ForSession::Current)
+                    .into_iter()
+                    .filter_map(|(para_id, collators)| (!collators.is_empty()).then_some(para_id))
+                    .collect();
             let mut total_weight =
-                T::WeightInfo::set_latest_author_data(registered_para_ids.len() as u32);
+                T::WeightInfo::set_latest_author_data(container_chains_to_check.len() as u32);
 
             // We do this first to make sure we don't do 2 reads (parachains and relay state)
             // when we have no containers registered
             // Essentially one can pass an empty proof if no container-chains are registered
-            if !registered_para_ids.is_empty() {
+            if !container_chains_to_check.is_empty() {
                 let storage_reader = T::RelayOrPara::create_storage_reader(data);
 
                 let parent_tanssi_slot = u64::from(T::SlotBeacon::slot()).into();
-                let mut infos = Vec::with_capacity(registered_para_ids.len());
+                let mut infos = Vec::with_capacity(container_chains_to_check.len());
 
-                for para_id in registered_para_ids {
+                for para_id in container_chains_to_check {
                     match Self::fetch_block_info_from_proof(
                         &storage_reader,
                         para_id,
@@ -284,9 +293,9 @@ pub mod pallet {
 
         fn is_inherent_required(_: &InherentData) -> Result<Option<Self::Error>, Self::Error> {
             // Return Ok(Some(_)) unconditionally because this inherent is required in every block
-            Ok(Some(InherentError::Other(
-                sp_runtime::RuntimeString::Borrowed("Pallet Author Noting Inherent required"),
-            )))
+            Ok(Some(InherentError::Other(Cow::from(
+                "Pallet Author Noting Inherent required",
+            ))))
         }
 
         fn create_inherent(data: &InherentData) -> Option<Self::Call> {
@@ -391,7 +400,7 @@ impl<T: Config> Pallet<T> {
 #[derive(Encode)]
 #[cfg_attr(feature = "std", derive(Debug, Decode))]
 pub enum InherentError {
-    Other(RuntimeString),
+    Other(Cow<'static, str>),
 }
 
 impl IsFatalError for InherentError {

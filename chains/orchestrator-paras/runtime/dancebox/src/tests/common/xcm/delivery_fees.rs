@@ -26,7 +26,7 @@ use {
     },
     frame_support::{assert_ok, traits::EnsureOrigin},
     paste::paste,
-    staging_xcm::{
+    xcm::{
         latest::prelude::{Junctions::X1, *},
         VersionedLocation, VersionedXcm,
     },
@@ -100,7 +100,7 @@ macro_rules! assert_delivery_fees_test {
                 RefundSurplus,
             ]);
 
-            let versioned_xcm: VersionedXcm<()> = VersionedXcm::V4(xcm.clone());
+            let versioned_xcm: VersionedXcm<()> = VersionedXcm::V5(xcm.clone());
             let sender_account =  [<$chain Sender>]::get();
 
             let balance_sender_before = <$chain as [<$chain ParaPallet>]>::Balances::free_balance(sender_account.clone());

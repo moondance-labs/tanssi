@@ -39,6 +39,16 @@ declare module "@polkadot/api-base/types/consts" {
              **/
             [key: string]: Codec;
         };
+        authorNoting: {
+            /**
+             * Max length of para id list, should be the same value as in other pallets.
+             **/
+            maxContainerChains: u32 & AugmentedConst<ApiType>;
+            /**
+             * Generic const
+             **/
+            [key: string]: Codec;
+        };
         balances: {
             /**
              * The minimum amount required to keep an account open. MUST BE GREATER THAN ZERO!
@@ -125,6 +135,16 @@ declare module "@polkadot/api-base/types/consts" {
              * be another trie item whose value is the size of an account ID plus 32 bytes.
              **/
             subAccountDeposit: u128 & AugmentedConst<ApiType>;
+            /**
+             * The amount held on deposit per registered username. This value should change only in
+             * runtime upgrades with proper migration of existing deposits.
+             **/
+            usernameDeposit: u128 & AugmentedConst<ApiType>;
+            /**
+             * The number of blocks that must pass to enable the permanent deletion of a username by
+             * its respective authority.
+             **/
+            usernameGracePeriod: u32 & AugmentedConst<ApiType>;
             /**
              * Generic const
              **/
@@ -391,6 +411,9 @@ declare module "@polkadot/api-base/types/consts" {
              **/
             burn: Permill & AugmentedConst<ApiType>;
             /**
+             * DEPRECATED: associated with `spend_local` call and will be removed in May 2025.
+             * Refer to <https://github.com/paritytech/polkadot-sdk/pull/5961> for migration to `spend`.
+             *
              * The maximum number of approvals that can wait in the spending queue.
              *
              * NOTE: This parameter is also used within the Bounties Pallet extension if enabled.

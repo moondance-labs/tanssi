@@ -18,22 +18,18 @@
 
 use {
     crate::{
-        tests::common::*, xcm_config::ForeignAssetsInstance, RewardsCollatorCommission,
-        StreamPayment, StreamPaymentAssetId, TimeUnit, TransactionPayment,
+        tests::common::*, RewardsCollatorCommission, StreamPayment, StreamPaymentAssetId, TimeUnit,
+        TransactionPayment,
     },
     cumulus_primitives_core::ParaId,
     dp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApiV1,
     dp_core::well_known_keys,
-    frame_support::{
-        assert_noop, assert_ok, migration::put_storage_value, storage::generator::StorageMap,
-        BoundedVec, Hashable,
-    },
+    frame_support::{assert_noop, assert_ok, BoundedVec},
     frame_system::ConsumedWeight,
     nimbus_primitives::NIMBUS_KEY_ID,
     pallet_author_noting_runtime_api::runtime_decl_for_author_noting_api::AuthorNotingApi,
     pallet_balances::Instance1,
     pallet_collator_assignment_runtime_api::runtime_decl_for_collator_assignment_api::CollatorAssignmentApi,
-    pallet_foreign_asset_creator::{AssetIdToForeignAsset, ForeignAssetToAssetId},
     pallet_migrations::Migration,
     pallet_pooled_staking::{
         traits::IsCandidateEligible, AllTargetPool, EligibleCandidate, PendingOperationKey,
@@ -51,20 +47,13 @@ use {
         DigestItem, FixedU128,
     },
     sp_std::vec,
-    staging_xcm::{
-        latest::prelude::*,
-        v3::{
-            Junction as V3Junction, Junctions as V3Junctions, MultiLocation as V3MultiLocation,
-            NetworkId as V3NetworkId,
-        },
-    },
-    std::marker::PhantomData,
     tanssi_runtime_common::migrations::{
-        ForeignAssetCreatorMigration, HostConfigurationV3, MigrateConfigurationAddFullRotationMode,
+        HostConfigurationV3, MigrateConfigurationAddFullRotationMode,
         MigrateServicesPaymentAddCollatorAssignmentCredits, RegistrarPendingVerificationValueToMap,
     },
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
     tp_traits::{ContainerChainBlockInfo, SlotFrequency},
+    xcm::latest::prelude::*,
 };
 
 #[test]
@@ -5074,6 +5063,8 @@ fn stream_payment_works() {
                     rate: 2 * UNIT,
                     asset_id: StreamPaymentAssetId::Native,
                     time_unit: TimeUnit::BlockNumber,
+                    minimum_request_deadline_delay: 0,
+                    soft_minimum_deposit: 0,
                 },
                 1_000 * UNIT,
             ));
@@ -5094,6 +5085,8 @@ fn stream_payment_works() {
                     rate: 1 * UNIT,
                     asset_id: StreamPaymentAssetId::Native,
                     time_unit: TimeUnit::BlockNumber,
+                    minimum_request_deadline_delay: 0,
+                    soft_minimum_deposit: 0,
                 },
                 None,
             ));
@@ -5507,94 +5500,6 @@ fn test_migration_services_collator_assignment_payment() {
             pallet_services_payment::CollatorAssignmentCredits::<Runtime>::get(ParaId::from(1002))
                 .unwrap_or_default();
         assert_eq!(credits_1002, crate::FreeCollatorAssignmentCredits::get());
-    });
-}
-
-#[test]
-fn test_migration_foreign_asset_creator() {
-    ExtBuilder::default().build().execute_with(|| {
-        // Sample pairs of asset id with v3 location
-        let (asset_id1, location_1) = (
-            <Runtime as pallet_assets::Config<ForeignAssetsInstance>>::AssetId::from(13u16),
-            V3MultiLocation::new(
-                1,
-                V3Junctions::X2(
-                    V3Junction::PalletInstance(1),
-                    V3Junction::AccountIndex64 {
-                        network: Some(V3NetworkId::BitcoinCore),
-                        index: 5,
-                    },
-                ),
-            ),
-        );
-
-        let (asset_id2, location_2) = (
-            <Runtime as pallet_assets::Config<ForeignAssetsInstance>>::AssetId::from(14u16),
-            V3MultiLocation::new(
-                1,
-                V3Junctions::X2(
-                    V3Junction::PalletInstance(2),
-                    V3Junction::AccountIndex64 {
-                        network: Some(V3NetworkId::Kusama),
-                        index: 10,
-                    },
-                ),
-            ),
-        );
-
-        put_storage_value(
-            AssetIdToForeignAsset::<Runtime>::pallet_prefix(),
-            AssetIdToForeignAsset::<Runtime>::storage_prefix(),
-            &asset_id1.blake2_128_concat(),
-            location_1,
-        );
-        put_storage_value(
-            AssetIdToForeignAsset::<Runtime>::pallet_prefix(),
-            AssetIdToForeignAsset::<Runtime>::storage_prefix(),
-            &asset_id2.blake2_128_concat(),
-            location_2,
-        );
-
-        put_storage_value(
-            ForeignAssetToAssetId::<Runtime>::pallet_prefix(),
-            ForeignAssetToAssetId::<Runtime>::storage_prefix(),
-            &location_1.blake2_128_concat(),
-            asset_id1,
-        );
-        put_storage_value(
-            ForeignAssetToAssetId::<Runtime>::pallet_prefix(),
-            ForeignAssetToAssetId::<Runtime>::storage_prefix(),
-            &location_2.blake2_128_concat(),
-            asset_id2,
-        );
-
-        // Let's run the migration now
-        let foreign_asset_creator_migration: ForeignAssetCreatorMigration<Runtime> =
-            ForeignAssetCreatorMigration(PhantomData);
-        let weight_consumed = foreign_asset_creator_migration.migrate(Default::default());
-        assert_eq!(
-            weight_consumed,
-            <Runtime as frame_system::Config>::DbWeight::get().reads_writes(1 * 4, 2 * 4)
-        );
-
-        // Let's check if everything is migrated properly
-        assert_eq!(
-            AssetIdToForeignAsset::<Runtime>::get(asset_id1),
-            Some(Location::try_from(location_1).unwrap())
-        );
-        assert_eq!(
-            AssetIdToForeignAsset::<Runtime>::get(asset_id2),
-            Some(Location::try_from(location_2).unwrap())
-        );
-
-        assert_eq!(
-            ForeignAssetToAssetId::<Runtime>::get(Location::try_from(location_1).unwrap()),
-            Some(asset_id1)
-        );
-        assert_eq!(
-            ForeignAssetToAssetId::<Runtime>::get(Location::try_from(location_2).unwrap()),
-            Some(asset_id2)
-        );
     });
 }
 
@@ -6207,6 +6112,116 @@ fn test_migration_registrar_reserves_to_hold() {
 }
 
 #[test]
+fn test_migration_stream_payment_config_new_fields() {
+    ExtBuilder::default().build().execute_with(|| {
+        use pallet_stream_payment::{
+            migrations::{OldChangeRequest, OldStream, OldStreamConfig},
+            ChangeKind, ChangeRequest, DepositChange, Party, Stream, StreamConfig,
+        };
+        use tanssi_runtime_common::migrations::MigrateStreamPaymentNewConfigFields;
+
+        frame_support::storage::unhashed::put(
+            &pallet_stream_payment::Streams::<Runtime>::hashed_key_for(0),
+            &OldStream::<AccountId, TimeUnit, StreamPaymentAssetId, Balance> {
+                source: ALICE.into(),
+                target: BOB.into(),
+                config: OldStreamConfig {
+                    time_unit: TimeUnit::Timestamp,
+                    asset_id: StreamPaymentAssetId::Native,
+                    rate: 41,
+                },
+                deposit: 42,
+                last_time_updated: 43,
+                request_nonce: 44,
+                pending_request: Some(OldChangeRequest {
+                    requester: Party::Source,
+                    kind: ChangeKind::Mandatory { deadline: 45 },
+                    new_config: OldStreamConfig {
+                        time_unit: TimeUnit::BlockNumber,
+                        asset_id: StreamPaymentAssetId::Native,
+                        rate: 46,
+                    },
+                    deposit_change: Some(DepositChange::Absolute(47)),
+                }),
+                opening_deposit: 48,
+            },
+        );
+
+        frame_support::storage::unhashed::put(
+            &pallet_stream_payment::Streams::<Runtime>::hashed_key_for(1),
+            &OldStream::<AccountId, TimeUnit, StreamPaymentAssetId, Balance> {
+                source: CHARLIE.into(),
+                target: ALICE.into(),
+                config: OldStreamConfig {
+                    time_unit: TimeUnit::Timestamp,
+                    asset_id: StreamPaymentAssetId::Native,
+                    rate: 100,
+                },
+                deposit: 101,
+                last_time_updated: 102,
+                request_nonce: 103,
+                pending_request: None,
+                opening_deposit: 104,
+            },
+        );
+
+        let migration = MigrateStreamPaymentNewConfigFields::<Runtime>(Default::default());
+        migration.migrate(Default::default());
+
+        assert_eq!(
+            pallet_stream_payment::Streams::<Runtime>::get(0).unwrap(),
+            Stream {
+                source: ALICE.into(),
+                target: BOB.into(),
+                config: StreamConfig {
+                    time_unit: TimeUnit::Timestamp,
+                    asset_id: StreamPaymentAssetId::Native,
+                    rate: 41,
+                    minimum_request_deadline_delay: 0,
+                    soft_minimum_deposit: 0,
+                },
+                deposit: 42,
+                last_time_updated: 43,
+                request_nonce: 44,
+                pending_request: Some(ChangeRequest {
+                    requester: Party::Source,
+                    kind: ChangeKind::Mandatory { deadline: 45 },
+                    new_config: StreamConfig {
+                        time_unit: TimeUnit::BlockNumber,
+                        asset_id: StreamPaymentAssetId::Native,
+                        rate: 46,
+                        minimum_request_deadline_delay: 0,
+                        soft_minimum_deposit: 0,
+                    },
+                    deposit_change: Some(DepositChange::Absolute(47)),
+                }),
+                opening_deposit: 48,
+            }
+        );
+
+        assert_eq!(
+            pallet_stream_payment::Streams::<Runtime>::get(1).unwrap(),
+            Stream {
+                source: CHARLIE.into(),
+                target: ALICE.into(),
+                config: StreamConfig {
+                    time_unit: TimeUnit::Timestamp,
+                    asset_id: StreamPaymentAssetId::Native,
+                    rate: 100,
+                    minimum_request_deadline_delay: 0,
+                    soft_minimum_deposit: 0,
+                },
+                deposit: 101,
+                last_time_updated: 102,
+                request_nonce: 103,
+                pending_request: None,
+                opening_deposit: 104,
+            }
+        );
+    })
+}
+
+#[test]
 fn test_container_deregister_unassign_data_preserver() {
     ExtBuilder::default()
         .with_balances(vec![
@@ -6255,5 +6270,44 @@ fn test_container_deregister_unassign_data_preserver() {
 
             // Check DataPreserver assignment has been cleared
             assert!(pallet_data_preservers::Assignments::<Runtime>::get(para_id).is_empty());
+        });
+}
+
+#[test]
+fn test_registrar_extrinsic_permissions() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (
+                cumulus_primitives_core::relay_chain::AccountId::from(ALICE),
+                210_000 * UNIT,
+            ),
+            (
+                cumulus_primitives_core::relay_chain::AccountId::from(BOB),
+                100_000 * UNIT,
+            ),
+        ])
+        .with_empty_parachains(vec![1001])
+        .build()
+        .execute_with(|| {
+            let para_id = ParaId::from(1001);
+
+            // Pause container chain should fail if not para manager
+            assert_noop!(
+                Registrar::pause_container_chain(origin_of(BOB.into()), para_id),
+                BadOrigin
+            );
+
+            // Set Bob as para manager
+            assert_ok!(Registrar::set_para_manager(
+                root_origin(),
+                para_id,
+                AccountId::from(BOB)
+            ));
+
+            // Pause container chain should succeed if para manager
+            assert_ok!(
+                Registrar::pause_container_chain(origin_of(BOB.into()), para_id),
+                ()
+            );
         });
 }

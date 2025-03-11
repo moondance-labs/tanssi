@@ -5,6 +5,7 @@ import type { ApiPromise } from "@polkadot/api";
 import {
     HOLESKY_SOVEREIGN_ACCOUNT_ADDRESS,
     PRIMARY_GOVERNANCE_CHANNEL_ID,
+    SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS,
     getAccountBalance,
     getCurrentEraStartBlock,
 } from "utils";
@@ -15,9 +16,11 @@ describeSuite({
     foundationMethods: "read_only",
     testCases: ({ it, context, log }) => {
         let api: ApiPromise;
+        let runtimeVersion: number;
 
         beforeAll(async () => {
             api = context.polkadotJs();
+            runtimeVersion = api.runtimeVersion.specVersion.toNumber();
         });
 
         it({
@@ -58,14 +61,11 @@ describeSuite({
                 const apiAtCheckpointA = await api.at(await api.rpc.chain.getBlockHash(blockNumberCheckpointA));
                 const apiAtCheckpointB = await api.at(await api.rpc.chain.getBlockHash(blockNumberCheckpointB));
 
-                const sovereignBalanceCheckpointB = await getAccountBalance(
-                    apiAtCheckpointB,
-                    HOLESKY_SOVEREIGN_ACCOUNT_ADDRESS
-                );
-                const sovereignBalanceCheckpointA = await getAccountBalance(
-                    apiAtCheckpointA,
-                    HOLESKY_SOVEREIGN_ACCOUNT_ADDRESS
-                );
+                const sovereignAccount =
+                    runtimeVersion > 1101 ? SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS : HOLESKY_SOVEREIGN_ACCOUNT_ADDRESS;
+
+                const sovereignBalanceCheckpointB = await getAccountBalance(apiAtCheckpointB, sovereignAccount);
+                const sovereignBalanceCheckpointA = await getAccountBalance(apiAtCheckpointA, sovereignAccount);
 
                 const event = (await apiAtCheckpointB.query.system.events()).find(
                     (event) => event.event.method === "RewardsMessageSent"
@@ -96,15 +96,19 @@ describeSuite({
         it({
             id: "C03",
             title: "Check if RewardPointsForEra expires after HistoryDepth",
-            test: async () => {
-                const historyDepth = api.consts.externalValidatorsRewards.historyDepth;
+            test: async ({ skip }) => {
+                const historyDepth = api.consts.externalValidatorsRewards.historyDepth.toNumber();
+                const currentEra = (await api.query.externalValidators.activeEra()).unwrap().index.toNumber();
 
                 // Checkpoint A: current era index - historyDepth
-                const eraIndexCheckpointA =
-                    (await api.query.externalValidators.activeEra()).unwrap().index.toNumber() -
-                    historyDepth.toNumber();
+                const eraIndexCheckpointA = currentEra - historyDepth;
                 // Checkpoint B: eraIndexCheckpointA + 1
                 const eraIndexCheckpointB = eraIndexCheckpointA + 1;
+
+                if (eraIndexCheckpointA < 0) {
+                    log("Current era is less than historyDepth, skipping the test");
+                    skip();
+                }
 
                 // The mapping only contains the keys that are in `externalValidatorsRewards`
                 const rewardMappingKeys = (await api.query.externalValidatorsRewards.rewardPointsForEra.keys()).map(
