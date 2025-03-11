@@ -85,7 +85,6 @@ start_relayer() {
     ) &
     echo "substrate_relay_secondary=$!" >> $artifacts_dir/daemons.pid
 
-    #todo add commands for AH channel
     # Launch execution relay for AssetHub (eth to starlight)
     (
         : >$output_dir/execution-relay-asset-hub.log

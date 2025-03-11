@@ -117,7 +117,7 @@ config_relayer() {
     ' \
         $assets_dir/execution-relay.json >$output_dir/execution-relay-asset-hub.json
     
-    # Configure substrate relay (starlight to eth) for AssetHub channel
+    # Configure substrate relay for AssetHub channel (starlight to eth)
     jq \
         --arg k1 "$(snowbridge_address_for GatewayProxy)" \
         --arg k2 "$(snowbridge_address_for BeefyClient)" \
