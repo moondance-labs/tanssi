@@ -15,8 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 use {
-    node_common::service::Sealing,
-    sc_cli::{CliConfiguration, NodeKeyParams, SharedParams},
+    node_common::{cli::BuildSpecCmd, service::Sealing},
     std::path::PathBuf,
     tc_service_container_chain::cli::ContainerChainRunCmd,
 };
@@ -26,7 +25,7 @@ use {
 #[allow(clippy::large_enum_variant)]
 pub enum Subcommand {
     /// Build a chain specification.
-    BuildSpec(BuildSpecCmd),
+    BuildSpec(BuildSpecCmdCollator),
 
     /// Validate blocks.
     CheckBlock(sc_cli::CheckBlockCmd),
@@ -91,17 +90,8 @@ pub struct SoloChainCmd {
     pub relay_chain_args: Vec<String>,
 }
 
-/// The `build-spec` command used to build a specification.
-#[derive(Debug, Clone, clap::Parser)]
-#[group(skip)]
-pub struct BuildSpecCmd {
-    #[clap(flatten)]
-    pub base: sc_cli::BuildSpecCmd,
-
-    /// Id of the parachain this spec is for. Note that this overrides the `--chain` param.
-    #[arg(long)]
-    pub parachain_id: Option<u32>,
-
+#[derive(Debug, Clone, clap::Args)]
+pub struct BuildSpecCmdExtraFields {
     /// List of container chain chain spec paths to add to genesis.
     #[arg(long)]
     pub add_container_chain: Option<Vec<String>>,
@@ -115,15 +105,7 @@ pub struct BuildSpecCmd {
     pub invulnerable: Option<Vec<String>>,
 }
 
-impl CliConfiguration for BuildSpecCmd {
-    fn shared_params(&self) -> &SharedParams {
-        &self.base.shared_params
-    }
-
-    fn node_key_params(&self) -> Option<&NodeKeyParams> {
-        Some(&self.base.node_key_params)
-    }
-}
+pub type BuildSpecCmdCollator = BuildSpecCmd<BuildSpecCmdExtraFields>;
 
 /// Command for exporting the genesis wasm file.
 #[derive(Debug, clap::Parser)]

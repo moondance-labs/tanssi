@@ -26,7 +26,7 @@ use {
 #[allow(clippy::large_enum_variant)]
 pub enum Subcommand {
     /// Build a chain specification.
-    BuildSpec(BuildSpecCmd),
+    BuildSpec(BuildSpecCmdFrontier),
 
     /// Validate blocks.
     CheckBlock(sc_cli::CheckBlockCmd),
@@ -198,6 +198,15 @@ impl RelayChainCli {
         }
     }
 }
+
+#[derive(Debug, Clone, clap::Args)]
+pub struct BuildSpecCmdExtraFields {
+    /// List of bootnodes to add to chain spec
+    #[arg(long)]
+    pub add_bootnode: Vec<String>,
+}
+
+pub type BuildSpecCmdFrontier = BuildSpecCmd<BuildSpecCmdExtraFields>;
 
 #[derive(Clone)]
 pub struct RpcConfig {

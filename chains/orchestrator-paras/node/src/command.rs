@@ -203,9 +203,9 @@ pub fn run() -> Result<()> {
                 let chain_spec = load_spec(
                     &cmd.base.chain_id(cmd.base.is_dev()?)?,
                     cmd.parachain_id,
-                    cmd.add_container_chain.clone().unwrap_or_default(),
-                    cmd.mock_container_chain.clone().unwrap_or_default(),
-                    cmd.invulnerable.clone(),
+                    cmd.extra.add_container_chain.clone().unwrap_or_default(),
+                    cmd.extra.mock_container_chain.clone().unwrap_or_default(),
+                    cmd.extra.invulnerable.clone(),
                 )?;
                 cmd.base.run(chain_spec, config.network)
             })
@@ -418,84 +418,84 @@ pub fn run() -> Result<()> {
             let collator_options = cli.run.collator_options();
 
             runner.run_node_until_exit(|config| async move {
-				let hwbench = (!cli.no_hardware_benchmarks).then(||
-					config.database.path().map(|database_path| {
-						let _ = std::fs::create_dir_all(database_path);
-						sc_sysinfo::gather_hwbench(Some(database_path), &SUBSTRATE_REFERENCE_HARDWARE)
-					})).flatten();
+                let hwbench = (!cli.no_hardware_benchmarks).then(||
+                    config.database.path().map(|database_path| {
+                        let _ = std::fs::create_dir_all(database_path);
+                        sc_sysinfo::gather_hwbench(Some(database_path), &SUBSTRATE_REFERENCE_HARDWARE)
+                    })).flatten();
 
-				let para_id = chain_spec::Extensions::try_get(&*config.chain_spec)
-					.map(|e| e.para_id)
-					.ok_or("Could not find parachain ID in chain-spec.")?;
+                let para_id = chain_spec::Extensions::try_get(&*config.chain_spec)
+                    .map(|e| e.para_id)
+                    .ok_or("Could not find parachain ID in chain-spec.")?;
 
                 let id = ParaId::from(para_id);
 
-				let polkadot_cli = RelayChainCli::new(
-					&config,
-					[RelayChainCli::executable_name()].iter().chain(cli.relaychain_args().iter()),
-				);
+                let polkadot_cli = RelayChainCli::new(
+                    &config,
+                    [RelayChainCli::executable_name()].iter().chain(cli.relaychain_args().iter()),
+                );
 
-				let extension = chain_spec::Extensions::try_get(&*config.chain_spec);
+                let extension = chain_spec::Extensions::try_get(&*config.chain_spec);
 
-				let relay_chain_id = extension.map(|e| e.relay_chain.clone());
+                let relay_chain_id = extension.map(|e| e.relay_chain.clone());
 
-				let dev_service =
-					config.chain_spec.is_dev() || relay_chain_id == Some("dev-service".to_string()) || cli.run.dev_service;
+                let dev_service =
+                    config.chain_spec.is_dev() || relay_chain_id == Some("dev-service".to_string()) || cli.run.dev_service;
 
-				if dev_service {
-					return crate::service::start_dev_node(config, cli.run.sealing, hwbench, id).map_err(Into::into)
-				}
+                if dev_service {
+                    return crate::service::start_dev_node(config, cli.run.sealing, hwbench, id).map_err(Into::into);
+                }
 
                 let tokio_handle = config.tokio_handle.clone();
                 let polkadot_config =
                     SubstrateCli::create_configuration(&polkadot_cli, &polkadot_cli, tokio_handle)
                         .map_err(|err| format!("Relay chain argument error: {}", err))?;
 
-				let parachain_account =
-					AccountIdConversion::<polkadot_primitives::AccountId>::into_account_truncating(&id);
+                let parachain_account =
+                    AccountIdConversion::<polkadot_primitives::AccountId>::into_account_truncating(&id);
 
-				let block: Block = generate_genesis_block(&*config.chain_spec, sp_runtime::StateVersion::V1)
-					.map_err(|e| format!("{:?}", e))?;
-				let genesis_state = format!("0x{:?}", HexDisplay::from(&block.header().encode()));
+                let block: Block = generate_genesis_block(&*config.chain_spec, sp_runtime::StateVersion::V1)
+                    .map_err(|e| format!("{:?}", e))?;
+                let genesis_state = format!("0x{:?}", HexDisplay::from(&block.header().encode()));
 
-				info!("Parachain id: {:?}", id);
-				info!("Parachain Account: {}", parachain_account);
-				info!("Parachain genesis state: {}", genesis_state);
-				info!("Is collating: {}", if config.role.is_authority() { "yes" } else { "no" });
+                info!("Parachain id: {:?}", id);
+                info!("Parachain Account: {}", parachain_account);
+                info!("Parachain genesis state: {}", genesis_state);
+                info!("Is collating: {}", if config.role.is_authority() { "yes" } else { "no" });
 
-				if let cumulus_client_cli::RelayChainMode::ExternalRpc(rpc_target_urls) =
-		            collator_options.clone().relay_chain_mode {
-				    if !rpc_target_urls.is_empty() && !cli.relaychain_args().is_empty() {
-					    warn!("Detected relay chain node arguments together with --relay-chain-rpc-url. This command starts a minimal Polkadot node that only uses a network-related subset of all relay chain CLI options.");
-				    }
+                if let cumulus_client_cli::RelayChainMode::ExternalRpc(rpc_target_urls) =
+                    collator_options.clone().relay_chain_mode {
+                    if !rpc_target_urls.is_empty() && !cli.relaychain_args().is_empty() {
+                        warn!("Detected relay chain node arguments together with --relay-chain-rpc-url. This command starts a minimal Polkadot node that only uses a network-related subset of all relay chain CLI options.");
+                    }
                 }
 
-				let mut container_chain_config = None;
+                let mut container_chain_config = None;
                 // Even if container-chain-args are empty, we need to spawn the container-detection
                 // collation taks if the role is authority.
 
                 // We need to bake in some container-chain args
-				if !cli.container_chain_args().is_empty() || config.role.is_authority() {
-					let container_chain_cli = ContainerChainCli::new(
-						&config,
-						[ContainerChainCli::executable_name()].iter().chain(cli.container_chain_args().iter()),
-					);
-					let tokio_handle = config.tokio_handle.clone();
-					container_chain_config = Some((container_chain_cli, tokio_handle));
-				}
+                if !cli.container_chain_args().is_empty() || config.role.is_authority() {
+                    let container_chain_cli = ContainerChainCli::new(
+                        &config,
+                        [ContainerChainCli::executable_name()].iter().chain(cli.container_chain_args().iter()),
+                    );
+                    let tokio_handle = config.tokio_handle.clone();
+                    container_chain_config = Some((container_chain_cli, tokio_handle));
+                }
 
-				crate::service::start_parachain_node(
-					config,
-					polkadot_config,
+                crate::service::start_parachain_node(
+                    config,
+                    polkadot_config,
                     container_chain_config,
-					collator_options,
-					id,
-					hwbench,
-				)
-				.await
-				.map(|r| r.0)
-				.map_err(Into::into)
-			})
+                    collator_options,
+                    id,
+                    hwbench,
+                )
+                    .await
+                    .map(|r| r.0)
+                    .map_err(Into::into)
+            })
         }
     }
 }

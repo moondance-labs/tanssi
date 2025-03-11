@@ -158,12 +158,12 @@ pub fn run() -> Result<()> {
                     if cmd.base.shared_params.dev {
                         Box::new(chain_spec::development_config(
                             para_id.into(),
-                            cmd.add_bootnode.clone(),
+                            cmd.extra.add_bootnode.clone(),
                         ))
                     } else {
                         Box::new(chain_spec::local_testnet_config(
                             para_id.into(),
-                            cmd.add_bootnode.clone(),
+                            cmd.extra.add_bootnode.clone(),
                         ))
                     }
                 } else {
@@ -313,69 +313,69 @@ pub fn run() -> Result<()> {
 
             runner.run_node_until_exit(|config| async move {
                 let relaychain_args = cli.relaychain_args();
-				let hwbench = (!cli.no_hardware_benchmarks).then(||
-					config.database.path().map(|database_path| {
-						let _ = std::fs::create_dir_all(database_path);
-						sc_sysinfo::gather_hwbench(Some(database_path), &SUBSTRATE_REFERENCE_HARDWARE)
-					})).flatten();
+                let hwbench = (!cli.no_hardware_benchmarks).then(||
+                    config.database.path().map(|database_path| {
+                        let _ = std::fs::create_dir_all(database_path);
+                        sc_sysinfo::gather_hwbench(Some(database_path), &SUBSTRATE_REFERENCE_HARDWARE)
+                    })).flatten();
 
-				let para_id = chain_spec::Extensions::try_get(&*config.chain_spec)
-					.map(|e| e.para_id)
-					.ok_or("Could not find parachain ID in chain-spec.")?;
+                let para_id = chain_spec::Extensions::try_get(&*config.chain_spec)
+                    .map(|e| e.para_id)
+                    .ok_or("Could not find parachain ID in chain-spec.")?;
 
-				let polkadot_cli = RelayChainCli::new(
-					&config,
-					[RelayChainCli::executable_name()].iter().chain(relaychain_args.iter()),
-				);
+                let polkadot_cli = RelayChainCli::new(
+                    &config,
+                    [RelayChainCli::executable_name()].iter().chain(relaychain_args.iter()),
+                );
 
                 let rpc_config = crate::cli::RpcConfig {
-					eth_log_block_cache: cli.run.eth_log_block_cache,
-					eth_statuses_cache: cli.run.eth_statuses_cache,
-					fee_history_limit: cli.run.fee_history_limit,
-					max_past_logs: cli.run.max_past_logs,
-				};
+                    eth_log_block_cache: cli.run.eth_log_block_cache,
+                    eth_statuses_cache: cli.run.eth_statuses_cache,
+                    fee_history_limit: cli.run.fee_history_limit,
+                    max_past_logs: cli.run.max_past_logs,
+                };
 
                 let extension = chain_spec::Extensions::try_get(&*config.chain_spec);
 
-				let relay_chain_id = extension.map(|e| e.relay_chain.clone());
+                let relay_chain_id = extension.map(|e| e.relay_chain.clone());
 
                 let dev_service =
-					config.chain_spec.is_dev() || relay_chain_id == Some("dev-service".to_string());
+                    config.chain_spec.is_dev() || relay_chain_id == Some("dev-service".to_string());
 
                 let id = ParaId::from(para_id);
 
-				if dev_service {
-					return crate::service::start_dev_node(config, cli.run.sealing, rpc_config, id, hwbench).await
-                    .map_err(Into::into)
-				}
+                if dev_service {
+                    return crate::service::start_dev_node(config, cli.run.sealing, rpc_config, id, hwbench).await
+                        .map_err(Into::into);
+                }
 
 
-				let parachain_account =
-					AccountIdConversion::<polkadot_primitives::AccountId>::into_account_truncating(&id);
+                let parachain_account =
+                    AccountIdConversion::<polkadot_primitives::AccountId>::into_account_truncating(&id);
 
                 // We log both genesis states for reference, as fetching it from runtime would take significant time
-				let block_state_v0: Block = generate_genesis_block(&*config.chain_spec, sp_runtime::StateVersion::V0)
-					.map_err(|e| format!("{:?}", e))?;
+                let block_state_v0: Block = generate_genesis_block(&*config.chain_spec, sp_runtime::StateVersion::V0)
+                    .map_err(|e| format!("{:?}", e))?;
                 let block_state_v1: Block = generate_genesis_block(&*config.chain_spec, sp_runtime::StateVersion::V1)
-					.map_err(|e| format!("{:?}", e))?;
+                    .map_err(|e| format!("{:?}", e))?;
 
-				let genesis_state_v0 = format!("0x{:?}", HexDisplay::from(&block_state_v0.header().encode()));
-				let genesis_state_v1 = format!("0x{:?}", HexDisplay::from(&block_state_v1.header().encode()));
+                let genesis_state_v0 = format!("0x{:?}", HexDisplay::from(&block_state_v0.header().encode()));
+                let genesis_state_v1 = format!("0x{:?}", HexDisplay::from(&block_state_v1.header().encode()));
 
-				let tokio_handle = config.tokio_handle.clone();
-				let polkadot_config =
-					SubstrateCli::create_configuration(&polkadot_cli, &polkadot_cli, tokio_handle)
-						.map_err(|err| format!("Relay chain argument error: {}", err))?;
+                let tokio_handle = config.tokio_handle.clone();
+                let polkadot_config =
+                    SubstrateCli::create_configuration(&polkadot_cli, &polkadot_cli, tokio_handle)
+                        .map_err(|err| format!("Relay chain argument error: {}", err))?;
 
-				info!("Parachain id: {:?}", id);
-				info!("Parachain Account: {}", parachain_account);
-				info!("Parachain genesis state V0: {}", genesis_state_v0);
+                info!("Parachain id: {:?}", id);
+                info!("Parachain Account: {}", parachain_account);
+                info!("Parachain genesis state V0: {}", genesis_state_v0);
                 info!("Parachain genesis state V1: {}", genesis_state_v1);
 
-				info!("Is collating: {}", if config.role.is_authority() { "yes" } else { "no" });
+                info!("Is collating: {}", if config.role.is_authority() { "yes" } else { "no" });
 
                 if let cumulus_client_cli::RelayChainMode::ExternalRpc(rpc_target_urls) =
-                collator_options.clone().relay_chain_mode {
+                    collator_options.clone().relay_chain_mode {
                     if !rpc_target_urls.is_empty() && !relaychain_args.is_empty() {
                         warn!("Detected relay chain node arguments together with --relay-chain-rpc-url. This command starts a minimal Polkadot node that only uses a network-related subset of all relay chain CLI options.");
                     }
@@ -392,7 +392,7 @@ pub fn run() -> Result<()> {
                     .await
                     .map(|r| r.0)
                     .map_err(Into::into)
-			})
+            })
         }
     }
 }

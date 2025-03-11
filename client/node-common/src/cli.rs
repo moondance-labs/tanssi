@@ -18,7 +18,10 @@ use sc_cli::{CliConfiguration, NodeKeyParams, SharedParams};
 
 /// The `build-spec` command used to build a specification.
 #[derive(Debug, Clone, clap::Parser)]
-pub struct BuildSpecCmd {
+pub struct BuildSpecCmd<ExtraFields = EmptyExtra>
+where
+    ExtraFields: clap::Args,
+{
     #[clap(flatten)]
     pub base: sc_cli::BuildSpecCmd,
 
@@ -27,12 +30,17 @@ pub struct BuildSpecCmd {
     #[arg(long)]
     pub parachain_id: Option<u32>,
 
-    /// List of bootnodes to add to chain spec
-    #[arg(long)]
-    pub add_bootnode: Vec<String>,
+    #[clap(flatten)]
+    pub extra: ExtraFields,
 }
 
-impl CliConfiguration for BuildSpecCmd {
+#[derive(Debug, Clone, clap::Args, Default)]
+pub struct EmptyExtra {}
+
+impl<T> CliConfiguration for BuildSpecCmd<T>
+where
+    T: clap::Args,
+{
     fn shared_params(&self) -> &SharedParams {
         &self.base.shared_params
     }

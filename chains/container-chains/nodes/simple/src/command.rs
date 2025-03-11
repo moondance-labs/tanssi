@@ -157,12 +157,12 @@ pub fn run() -> Result<()> {
                     if cmd.base.shared_params.dev {
                         Box::new(chain_spec::development_config(
                             para_id.into(),
-                            cmd.add_bootnode.clone(),
+                            cmd.extra.add_bootnode.clone(),
                         ))
                     } else {
                         Box::new(chain_spec::local_testnet_config(
                             para_id.into(),
-                            cmd.add_bootnode.clone(),
+                            cmd.extra.add_bootnode.clone(),
                         ))
                     }
                 } else {
@@ -321,7 +321,7 @@ pub fn run() -> Result<()> {
 
                 if dev_service {
                     return crate::service::start_dev_node(config, cli.run.sealing, id, hwbench).await
-                    .map_err(Into::into)
+                        .map_err(Into::into);
                 }
 
 
@@ -362,9 +362,9 @@ pub fn run() -> Result<()> {
                     id,
                     hwbench,
                 )
-                .await
-                .map(|r| r.0)
-                .map_err(Into::into)
+                    .await
+                    .map(|r| r.0)
+                    .map_err(Into::into)
             })
         }
     }
