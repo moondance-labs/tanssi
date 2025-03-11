@@ -27,7 +27,7 @@ use {
         traits::{Block as BlockT, Hash as HashT, Header as HeaderT},
         StateVersion,
     },
-    std::result::Result as StdResult,
+    std::{cell::RefCell, result::Result as StdResult},
 };
 
 /// Generate the genesis block from a given ChainSpec.
@@ -175,4 +175,55 @@ impl CliConfiguration<Self> for RelayChainCli {
     fn node_name(&self) -> Result<String> {
         self.base.base.node_name()
     }
+}
+
+impl SubstrateCli for RelayChainCli {
+    fn impl_version() -> String {
+        option_env!("SUBSTRATE_CLI_IMPL_VERSION")
+            .unwrap_or("Unknown version")
+            .into()
+    }
+
+    fn author() -> String {
+        option_env!("CARGO_PKG_AUTHORS")
+            .unwrap_or("Unknown authors")
+            .into()
+    }
+
+    fn support_url() -> String {
+        "https://github.com/paritytech/cumulus/issues/new".into()
+    }
+
+    fn copyright_start_year() -> i32 {
+        2020
+    }
+
+    fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
+        polkadot_cli::Cli::from_iter([Self::executable_name()].iter()).load_spec(id)
+    }
+
+    fn impl_name() -> String {
+        NODE_NAME.with(|n| format!("Container Chain {} Node", n.borrow()))
+    }
+
+    fn description() -> String {
+        NODE_NAME.with(|n| {
+            format!(
+                "Container Chain {} Node\n\nThe command-line arguments provided first will be \
+        passed to the parachain node, while the arguments provided after -- will be passed \
+        to the relay chain node.\n\n\
+        {} <parachain-args> -- <relay-chain-args>",
+                n.borrow(),
+                RelayChainCli::executable_name()
+            )
+        })
+    }
+}
+
+thread_local! {
+    static NODE_NAME: RefCell<String> = RefCell::new("Default".to_string());
+}
+
+pub fn set_node_name(name: &str) {
+    NODE_NAME.with(|n| *n.borrow_mut() = name.into());
 }

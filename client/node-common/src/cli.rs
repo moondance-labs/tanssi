@@ -15,6 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 use {
+    crate::command::set_node_name,
     sc_cli::{CliConfiguration, NodeKeyParams, SharedParams},
     std::path::PathBuf,
 };
@@ -65,7 +66,9 @@ impl RelayChainCli {
     pub fn new<'a>(
         para_config: &sc_service::Configuration,
         relay_chain_args: impl Iterator<Item = &'a String>,
+        node_name: &str,
     ) -> Self {
+        set_node_name(node_name);
         let extension = crate::chain_spec::Extensions::try_get(&*para_config.chain_spec);
         let chain_id = extension.map(|e| e.relay_chain.clone());
         let base_path = para_config.base_path.path().join("polkadot");

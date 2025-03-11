@@ -17,7 +17,6 @@
 use {
     clap::Parser,
     node_common::{cli::BuildSpecCmd, service::Sealing},
-    std::path::PathBuf,
     url::Url,
 };
 

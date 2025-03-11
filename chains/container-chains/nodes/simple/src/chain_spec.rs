@@ -20,10 +20,8 @@ use {
     },
     cumulus_primitives_core::ParaId,
     node_common::chain_spec::Extensions,
-    sc_chain_spec::{ChainSpecExtension, ChainSpecGroup},
     sc_network::config::MultiaddrWithPeerId,
     sc_service::ChainType,
-    serde::{Deserialize, Serialize},
     sp_keyring::Sr25519Keyring,
 };
 

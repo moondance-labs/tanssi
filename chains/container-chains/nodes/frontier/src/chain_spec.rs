@@ -23,10 +23,8 @@ use {
     fp_evm::GenesisAccount,
     hex_literal::hex,
     node_common::chain_spec::Extensions,
-    sc_chain_spec::{ChainSpecExtension, ChainSpecGroup},
     sc_network::config::MultiaddrWithPeerId,
     sc_service::ChainType,
-    serde::{Deserialize, Serialize},
 };
 
 /// Specialized `ChainSpec` for the normal parachain runtime.

@@ -29,16 +29,14 @@ use {
     dc_orchestrator_chain_interface::OrchestratorChainInterface,
     frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE},
     log::{info, warn},
-    node_common::{command::generate_genesis_block, service::NodeBuilderConfig as _, cli::RelayChainCli, chain_spec as node_common_chain_spec},
+    node_common::{
+        chain_spec as node_common_chain_spec, cli::RelayChainCli, command::generate_genesis_block,
+        service::NodeBuilderConfig as _,
+    },
     parity_scale_codec::Encode,
     polkadot_cli::IdentifyVariant,
-    sc_cli::{
-        ChainSpec,
-        Result, SubstrateCli,
-    },
-    sc_service::{
-        DatabaseSource, KeystoreContainer, TaskManager,
-    },
+    sc_cli::{ChainSpec, Result, SubstrateCli},
+    sc_service::{DatabaseSource, KeystoreContainer, TaskManager},
     sc_telemetry::TelemetryWorker,
     sp_core::hexdisplay::HexDisplay,
     sp_runtime::traits::{AccountIdConversion, Block as BlockT},
@@ -93,42 +91,6 @@ impl SubstrateCli for Cli {
 
     fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
         load_spec(id, self.para_id.unwrap_or(2000).into())
-    }
-}
-
-impl SubstrateCli for RelayChainCli {
-    fn impl_name() -> String {
-        "Container Chain Frontier Node".into()
-    }
-
-    fn impl_version() -> String {
-        env!("SUBSTRATE_CLI_IMPL_VERSION").into()
-    }
-
-    fn description() -> String {
-        format!(
-            "Container Chain Frontier Node\n\nThe command-line arguments provided first will be \
-		passed to the parachain node, while the arguments provided after -- will be passed \
-		to the relay chain node.\n\n\
-		{} <parachain-args> -- <relay-chain-args>",
-            Self::executable_name()
-        )
-    }
-
-    fn author() -> String {
-        env!("CARGO_PKG_AUTHORS").into()
-    }
-
-    fn support_url() -> String {
-        "https://github.com/paritytech/cumulus/issues/new".into()
-    }
-
-    fn copyright_start_year() -> i32 {
-        2020
-    }
-
-    fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
-        polkadot_cli::Cli::from_iter([RelayChainCli::executable_name()].iter()).load_spec(id)
     }
 }
 
@@ -223,6 +185,7 @@ pub fn run() -> Result<()> {
                     [RelayChainCli::executable_name()]
                         .iter()
                         .chain(cli.relaychain_args().iter()),
+                    "Frontier",
                 );
 
                 let polkadot_config = SubstrateCli::create_configuration(
@@ -230,7 +193,7 @@ pub fn run() -> Result<()> {
                     &polkadot_cli,
                     config.tokio_handle.clone(),
                 )
-                    .map_err(|err| format!("Relay chain argument error: {}", err))?;
+                .map_err(|err| format!("Relay chain argument error: {}", err))?;
 
                 cmd.run(config, polkadot_config)
             })
@@ -325,6 +288,7 @@ pub fn run() -> Result<()> {
                 let polkadot_cli = RelayChainCli::new(
                     &config,
                     [RelayChainCli::executable_name()].iter().chain(relaychain_args.iter()),
+                    "Frontier",
                 );
 
                 let rpc_config = crate::cli::RpcConfig {
@@ -417,9 +381,9 @@ fn rpc_provider_mode(cli: Cli, profile_id: u64) -> Result<()> {
                     &mut task_manager,
                     None,
                 )
-                    .await
-                    .map(Arc::new)
-                    .map_err(|e| sc_cli::Error::Application(Box::new(e)))?;
+                .await
+                .map(Arc::new)
+                .map_err(|e| sc_cli::Error::Application(Box::new(e)))?;
         };
 
         // Spawn assignment watcher
@@ -465,6 +429,7 @@ fn rpc_provider_mode(cli: Cli, profile_id: u64) -> Result<()> {
                 [RelayChainCli::executable_name()]
                     .iter()
                     .chain(cli.relaychain_args().iter()),
+                "Frontier",
             );
 
             let tokio_handle = config.tokio_handle.clone();
@@ -494,8 +459,8 @@ fn rpc_provider_mode(cli: Cli, profile_id: u64) -> Result<()> {
                 collator_options,
                 None,
             )
-                .await
-                .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
+            .await
+            .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
 
             let relay_chain = node_common_chain_spec::Extensions::try_get(&*config.chain_spec)
                 .map(|e| e.relay_chain.clone())
