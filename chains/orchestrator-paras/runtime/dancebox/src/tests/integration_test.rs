@@ -6390,6 +6390,8 @@ fn test_data_preserver_kind_needs_to_match() {
             );
         });
 }
+
+#[test]
 fn test_registrar_extrinsic_permissions() {
     ExtBuilder::default()
         .with_balances(vec![
