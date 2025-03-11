@@ -127,31 +127,31 @@ kill_all() {
 
 cleanup() {
     echo "Cleaning resource"
-    rm -rf "$output_dir"
-    mkdir "$output_dir"
-    mkdir "$output_bin_dir"
-    mkdir "$ethereum_data_dir"
+    # rm -rf "$output_dir"
+    mkdir -p "$output_dir"
+    mkdir -p "$output_bin_dir"
+    mkdir -p "$ethereum_data_dir"
 }
 
 check_node_version() {
-  local expected_version=$1
-
-  if ! [ -x "$(command -v node)" ]; then
-      echo 'Error: NodeJS is not installed.'
-      exit 1
-  fi
-
-  node_version=$(node -v) # This does not seem to work in Git Bash on Windows.
-  # "node -v" outputs version in the format "v18.12.1"
-  node_version=${node_version:1} # Remove 'v' at the beginning
-  node_version=${node_version%\.*} # Remove trailing ".*".
-  node_version=${node_version%\.*} # Remove trailing ".*".
-  node_version=$(($node_version)) # Convert the NodeJS version number from a string to an integer.
-  if [ $node_version -lt "$expected_version" ]
-  then
-    echo "NodeJS version is lower than $expected_version (it is $node_version), Please update your node installation!"
-    exit 1
-  fi
+    local expected_version=$1
+    
+    if ! [ -x "$(command -v node)" ]; then
+        echo 'Error: NodeJS is not installed.'
+        exit 1
+    fi
+    
+    node_version=$(node -v) # This does not seem to work in Git Bash on Windows.
+    # "node -v" outputs version in the format "v18.12.1"
+    node_version=${node_version:1} # Remove 'v' at the beginning
+    node_version=${node_version%\.*} # Remove trailing ".*".
+    node_version=${node_version%\.*} # Remove trailing ".*".
+    node_version=$(($node_version)) # Convert the NodeJS version number from a string to an integer.
+    if [ $node_version -lt "$expected_version" ]
+    then
+        echo "NodeJS version is lower than $expected_version (it is $node_version), Please update your node installation!"
+        exit 1
+    fi
 }
 
 vercomp() {
@@ -184,21 +184,21 @@ vercomp() {
 
 
 check_go_version() {
-  local expected_version=$1
-
-  if ! [ -x "$(command -v go)" ]; then
+    local expected_version=$1
+    
+    if ! [ -x "$(command -v go)" ]; then
         echo 'Error: Go is not installed.'
         exit 1
-  fi
-
-  go_version=$(go version | { read _ _ v _; echo ${v#go}; })
-  op=$(vercomp "$go_version" "$1")
-
-  if [[ $op = "Less" ]]
-  then
-      echo "Go version is lower than $expected_version (it is $go_version), Please update your go installation!"
-      exit 1
-  fi
+    fi
+    
+    go_version=$(go version | { read _ _ v _; echo ${v#go}; })
+    op=$(vercomp "$go_version" "$1")
+    
+    if [[ $op = "Less" ]]
+    then
+        echo "Go version is lower than $expected_version (it is $go_version), Please update your go installation!"
+        exit 1
+    fi
 }
 
 check_tool() {
@@ -245,7 +245,7 @@ check_tool() {
             exit 1
         fi
     fi
-
+    
     check_node_version 22
     check_go_version 1.21.2
 }
