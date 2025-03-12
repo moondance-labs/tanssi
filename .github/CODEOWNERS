@@ -1,0 +1,4 @@
+/.github/ @moondance-labs/coredev @moondance-labs/operation
+/tools/github/ @moondance-labs/coredev @moondance-labs/operation
+/docker/ @moondance-labs/coredev @moondance-labs/operation
+/scripts/ @moondance-labs/coredev @moondance-labs/operation
