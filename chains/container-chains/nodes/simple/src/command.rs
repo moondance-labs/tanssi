@@ -17,7 +17,7 @@
 use {
     crate::{
         chain_spec,
-        cli::{Cli, Subcommand},
+        cli::{Cli, SimpleSubcommand as Subcommand},
         service::{self, NodeConfig},
     },
     container_chain_template_simple_runtime::Block,

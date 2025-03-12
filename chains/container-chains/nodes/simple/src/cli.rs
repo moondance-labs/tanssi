@@ -16,50 +16,11 @@
 
 use {
     clap::Parser,
-    node_common::{cli::BuildSpecCmd, service::Sealing},
+    node_common::{cli::BuildSpecCmd, cli::Subcommand, service::Sealing},
     url::Url,
 };
 
-/// Sub-commands supported by the collator.
-#[derive(Debug, clap::Subcommand)]
-#[allow(clippy::large_enum_variant)]
-pub enum Subcommand {
-    /// Build a chain specification.
-    BuildSpec(BuildSpecCmdSimple),
-
-    /// Validate blocks.
-    CheckBlock(sc_cli::CheckBlockCmd),
-
-    /// Export blocks.
-    ExportBlocks(sc_cli::ExportBlocksCmd),
-
-    /// Export the state of a given block into a chain spec.
-    ExportState(sc_cli::ExportStateCmd),
-
-    /// Import blocks.
-    ImportBlocks(sc_cli::ImportBlocksCmd),
-
-    /// Revert the chain to a previous state.
-    Revert(sc_cli::RevertCmd),
-
-    /// Remove the whole chain.
-    PurgeChain(cumulus_client_cli::PurgeChainCmd),
-
-    /// Export the genesis state of the parachain.
-    #[command(alias = "export-genesis-state")]
-    ExportGenesisHead(cumulus_client_cli::ExportGenesisHeadCommand),
-
-    /// Export the genesis wasm of the parachain.
-    ExportGenesisWasm(cumulus_client_cli::ExportGenesisWasmCommand),
-
-    /// Sub-commands concerned with benchmarking.
-    /// The pallet benchmarking moved to the `pallet` sub-command.
-    #[command(subcommand)]
-    Benchmark(frame_benchmarking_cli::BenchmarkCmd),
-
-    /// Precompile the WASM runtime into native code
-    PrecompileWasm(sc_cli::PrecompileWasmCmd),
-}
+pub type SimpleSubcommand = Subcommand<BuildSpecCmdSimple>;
 
 #[derive(Debug, Parser)]
 #[group(skip)]
@@ -94,7 +55,7 @@ impl std::ops::Deref for RunCmd {
 )]
 pub struct Cli {
     #[command(subcommand)]
-    pub subcommand: Option<Subcommand>,
+    pub subcommand: Option<SimpleSubcommand>,
 
     #[command(flatten)]
     pub run: RunCmd,
