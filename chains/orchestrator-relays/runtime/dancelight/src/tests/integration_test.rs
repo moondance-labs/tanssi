@@ -584,10 +584,10 @@ fn test_registrar_extrinsic_permissions() {
 
 #[test]
 fn stream_payment_stored_profile_correct_size() {
-    use pallet_stream_payment::{StreamOf,
-        ChangeKind, ChangeRequest, DepositChange, Party, Stream, StreamConfig,
-    };
     use crate::OPEN_STREAM_HOLD_AMOUNT;
+    use pallet_stream_payment::{
+        ChangeKind, ChangeRequest, DepositChange, Party, Stream, StreamConfig, StreamOf,
+    };
     use parity_scale_codec::Encode;
 
     let stream: StreamOf<Runtime> = Stream {
@@ -618,5 +618,8 @@ fn stream_payment_stored_profile_correct_size() {
         opening_deposit: 48,
     };
     let size = stream.encoded_size();
-    assert_eq!(size, OPEN_STREAM_HOLD_AMOUNT as usize, "encoded len doesn't match size configured for hold");
+    assert_eq!(
+        size, OPEN_STREAM_HOLD_AMOUNT as usize,
+        "encoded len doesn't match size configured for hold"
+    );
 }
