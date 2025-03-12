@@ -43,7 +43,7 @@ use {
     },
     frame_system::{pallet_prelude::BlockNumberFor, EnsureNever},
     nimbus_primitives::NimbusId,
-    pallet_collator_assignment::{GetRandomnessForNextBlock, RotateCollatorsEveryNSessions},
+    pallet_collator_assignment::RotateCollatorsEveryNSessions,
     pallet_initializer as tanssi_initializer,
     pallet_invulnerables::InvulnerableRewardDistribution,
     pallet_registrar::Error as ContainerRegistrarError,
@@ -97,8 +97,8 @@ use {
     },
     tp_bridge::ConvertLocation,
     tp_traits::{
-        apply, derive_storage_traits, EraIndex, GetHostConfiguration, GetSessionContainerChains,
-        ParaIdAssignmentHooks, RegistrarHandler, Slot, SlotFrequency,
+        apply, derive_storage_traits, EraIndex, GetHostConfiguration, GetRandomnessForNextBlock,
+        GetSessionContainerChains, ParaIdAssignmentHooks, RegistrarHandler, Slot, SlotFrequency,
     },
 };
 
@@ -1895,7 +1895,8 @@ impl pallet_inactivity_tracking::Config for Runtime {
     type MaxContainerChains = MaxLengthParaIds;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type GetSelfChainBlockAuthor = ();
-    type RegisteredContainerChainsFetcher = ContainerRegistrar;
+    type ContainerChainsFetcher = TanssiCollatorAssignment;
+    type SessionEndChecker = BabeGetRandomnessForNextBlock;
 }
 
 construct_runtime! {

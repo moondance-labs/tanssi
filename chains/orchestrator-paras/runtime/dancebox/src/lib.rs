@@ -85,7 +85,7 @@ use {
     },
     nimbus_primitives::{NimbusId, SlotBeacon},
     pallet_balances::NegativeImbalance,
-    pallet_collator_assignment::{GetRandomnessForNextBlock, RotateCollatorsEveryNSessions},
+    pallet_collator_assignment::RotateCollatorsEveryNSessions,
     pallet_invulnerables::InvulnerableRewardDistribution,
     pallet_pooled_staking::traits::{IsCandidateEligible, Timer},
     pallet_registrar::RegistrarHooks,
@@ -122,8 +122,8 @@ use {
     sp_version::RuntimeVersion,
     tp_traits::{
         apply, derive_storage_traits, GetContainerChainAuthor, GetHostConfiguration,
-        GetSessionContainerChains, MaybeSelfChainBlockAuthor, ParaIdAssignmentHooks,
-        RelayStorageRootProvider, RemoveInvulnerables, SlotFrequency,
+        GetRandomnessForNextBlock, GetSessionContainerChains, MaybeSelfChainBlockAuthor,
+        ParaIdAssignmentHooks, RelayStorageRootProvider, RemoveInvulnerables, SlotFrequency,
     },
     tp_xcm_core_buyer::BuyCoreCollatorProof,
     xcm::{IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation, VersionedXcm},
@@ -1981,7 +1981,8 @@ impl pallet_inactivity_tracking::Config for Runtime {
     type MaxContainerChains = MaxLengthParaIds;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type GetSelfChainBlockAuthor = GetSelfChainBlockAuthor;
-    type RegisteredContainerChainsFetcher = Registrar;
+    type ContainerChainsFetcher = CollatorAssignment;
+    type SessionEndChecker = BabeGetRandomnessForNextBlock;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.

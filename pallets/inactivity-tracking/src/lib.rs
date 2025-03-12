@@ -19,8 +19,8 @@ use {
     sp_runtime::{traits::Get, BoundedVec},
     sp_staking::SessionIndex,
     tp_traits::{
-        AuthorNotingHook, AuthorNotingInfo, GetContainerChainsWithCollators,
-        GetCurrentContainerChains, GetSessionIndex, MaybeSelfChainBlockAuthor,
+        AuthorNotingHook, AuthorNotingInfo, ForSession, GetContainerChainsWithCollators,
+        GetRandomnessForNextBlock, GetSessionIndex, MaybeSelfChainBlockAuthor,
         NodeActivityTrackingHelper, ParaId,
     },
 };
@@ -73,8 +73,11 @@ pub mod pallet {
         /// Helper that returns the block author for the orchestrator chain (if it exists)
         type GetSelfChainBlockAuthor: MaybeSelfChainBlockAuthor<Self::CollatorId>;
 
-        /// Helper that fetches the latest set of container chains valid for collation
-        type RegisteredContainerChainsFetcher: GetCurrentContainerChains;
+        /// Helper that fetches the latest set of container chains and their collators
+        type ContainerChainsFetcher: GetContainerChainsWithCollators<Self::CollatorId>;
+
+        /// Helper that allows to check if a new session will start in the next block
+        type SessionEndChecker: GetRandomnessForNextBlock<BlockNumberFor<Self>>;
     }
 
     /// A list of double map of inactive collators for a session
@@ -94,7 +97,7 @@ pub mod pallet {
 
     /// A list of inactive container chains for a session. Repopulated at the start of every session
     #[pallet::storage]
-    pub type InactiveContainerChainsForCurrentSession<T: Config> =
+    pub type ActiveContainerChainsForCurrentSession<T: Config> =
         StorageValue<_, BoundedVec<ParaId, T::MaxInactiveSessions>, ValueQuery>;
 
     /// The last session index for which the inactive collators have not been processed
@@ -107,6 +110,7 @@ pub mod pallet {
     #[pallet::error]
     pub enum Error<T> {
         MaxCollatorsPerSessionReached,
+        MaxContainerChainsReached,
     }
 
     #[pallet::call]
@@ -132,6 +136,12 @@ pub mod pallet {
             }
             total_weight
         }
+
+        fn on_finalize(n: BlockNumberFor<T>) {
+            if T::SessionEndChecker::should_end_session(n) {
+                Self::process_inactive_chains_for_session();
+            }
+        }
     }
 
     impl<T: Config> Pallet<T> {
@@ -145,11 +155,8 @@ pub mod pallet {
                 <ActiveCollatorsForCurrentSession<T>>::get(),
             );
 
-            // TO DO: Add to the list collators assigned to container chains that have not advanced
             <ActiveCollatorsForCurrentSession<T>>::put(BoundedVec::new());
-            <InactiveContainerChainsForCurrentSession<T>>::put(BoundedVec::truncate_from(
-                T::RegisteredContainerChainsFetcher::current_container_chains().into_inner(),
-            ));
+            <ActiveContainerChainsForCurrentSession<T>>::put(BoundedVec::new());
 
             // Cleanup active collator info for sessions that are older than the maximum allowed
             let minimum_sessions_required = T::MaxInactiveSessions::get() + 1;
@@ -161,6 +168,27 @@ pub mod pallet {
             }
             <LastUnprocessedSession<T>>::put(current_session_id);
             total_weight
+        }
+        fn process_inactive_chains_for_session() {
+            let active_chains = <ActiveContainerChainsForCurrentSession<T>>::get();
+            let _ = <ActiveCollatorsForCurrentSession<T>>::try_mutate(
+                |active_collators| -> DispatchResult {
+                    T::ContainerChainsFetcher::container_chains_with_collators(ForSession::Current)
+                        .iter()
+                        .for_each(|(para_id, collator_ids)| {
+                            if !active_chains.contains(para_id) {
+                                collator_ids.iter().for_each(|collator_id| -> () {
+                                    if !active_collators.contains(collator_id) {
+                                        let _ = active_collators
+                                            .try_push(collator_id.clone())
+                                            .map_err(|_| Error::<T>::MaxCollatorsPerSessionReached);
+                                    }
+                                });
+                            }
+                        });
+                    Ok(())
+                },
+            );
         }
         pub fn on_author_noted(author: T::CollatorId) -> Weight {
             let mut total_weight = T::DbWeight::get().reads_writes(1, 0);
@@ -180,11 +208,13 @@ pub mod pallet {
 
         pub fn on_chain_noted(chain_id: ParaId) -> Weight {
             let mut total_weight = T::DbWeight::get().reads_writes(1, 0);
-            let _ = <InactiveContainerChainsForCurrentSession<T>>::try_mutate(
-                |inactive_chains| -> DispatchResult {
-                    if inactive_chains.contains(&chain_id) {
+            let _ = <ActiveContainerChainsForCurrentSession<T>>::try_mutate(
+                |active_chains| -> DispatchResult {
+                    if active_chains.contains(&chain_id) {
                         total_weight += T::DbWeight::get().writes(1);
-                        inactive_chains.retain(|x| x != &chain_id);
+                        active_chains
+                            .try_push(chain_id)
+                            .map_err(|_| Error::<T>::MaxContainerChainsReached)?;
                     }
                     Ok(())
                 },
