@@ -1771,9 +1771,10 @@ impl pallet_stream_payment::TimeProvider<TimeUnit, Balance> for TimeProvider {
 
 type StreamId = u64;
 
+pub const OPEN_STREAM_HOLD_AMOUNT: u32 = 253;
 parameter_types! {
     // 1 entry, storing 253 bytes on-chain in the worst case
-    pub const OpenStreamHoldAmount: Balance = deposit(1, 253);
+    pub const OpenStreamHoldAmount: Balance = deposit(1, OPEN_STREAM_HOLD_AMOUNT);
 }
 
 impl pallet_stream_payment::Config for Runtime {
