@@ -8783,6 +8783,7 @@ dependencies = [
  "log",
  "nimbus-consensus",
  "nimbus-primitives",
+ "once_cell",
  "parity-scale-codec",
  "polkadot-cli",
  "polkadot-primitives",

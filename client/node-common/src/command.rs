@@ -16,6 +16,7 @@
 
 use {
     crate::cli::RelayChainCli,
+    once_cell::sync::Lazy,
     parity_scale_codec::Encode,
     sc_chain_spec::construct_genesis_block,
     sc_cli::{
@@ -27,7 +28,7 @@ use {
         traits::{Block as BlockT, Hash as HashT, Header as HeaderT},
         StateVersion,
     },
-    std::{cell::RefCell, result::Result as StdResult},
+    std::{result::Result as StdResult, sync::Mutex},
 };
 
 /// Generate the genesis block from a given ChainSpec.
@@ -203,27 +204,31 @@ impl SubstrateCli for RelayChainCli {
     }
 
     fn impl_name() -> String {
-        NODE_NAME.with(|n| format!("Container Chain {} Node", n.borrow()))
+        let node_name = NODE_NAME.lock().unwrap();
+
+        format!(
+            "Container Chain {} Node",
+            node_name.as_ref().unwrap_or(&"Default".to_string())
+        )
     }
 
     fn description() -> String {
-        NODE_NAME.with(|n| {
-            format!(
-                "Container Chain {} Node\n\nThe command-line arguments provided first will be \
+        let node_name = NODE_NAME.lock().unwrap();
+
+        format!(
+            "Container Chain {} Node\n\nThe command-line arguments provided first will be \
         passed to the parachain node, while the arguments provided after -- will be passed \
         to the relay chain node.\n\n\
         {} <parachain-args> -- <relay-chain-args>",
-                n.borrow(),
-                RelayChainCli::executable_name()
-            )
-        })
+            node_name.as_ref().unwrap_or(&"Default".to_string()),
+            RelayChainCli::executable_name()
+        )
     }
 }
 
-thread_local! {
-    static NODE_NAME: RefCell<String> = RefCell::new("Default".to_string());
-}
+static NODE_NAME: Lazy<Mutex<Option<String>>> = Lazy::new(|| Mutex::new(None));
 
 pub fn set_node_name(name: &str) {
-    NODE_NAME.with(|n| *n.borrow_mut() = name.into());
+    let mut node_name = NODE_NAME.lock().unwrap();
+    *node_name = Some(name.to_string());
 }
