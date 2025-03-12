@@ -15,7 +15,7 @@ import { keccak256 } from "viem";
 // Change this if we change the storage parameter in runtime
 const GATEWAY_STORAGE_KEY = "0xaed97c7854d601808b98ae43079dafb3";
 
-function execCommand(command: string, options?) {
+function execCommand(command: string, options?): Promise<{ stdout: string; stderr: string }> {
     return new Promise((resolve, reject) => {
         exec(command, options, (error: unknown, stdout: string, stderr: string) => {
             if (error) {
@@ -130,7 +130,7 @@ describeSuite({
 
             console.log("Contracts deployed");
 
-            ethInfo = JSON.parse(<string>(await execCommand("./scripts/bridge/generate-eth-info.sh")).stdout);
+            ethInfo = JSON.parse((await execCommand("./scripts/bridge/generate-eth-info.sh")).stdout);
 
             console.log("BeefyClient contract address is:", ethInfo.snowbridge_info.contracts.BeefyClient.address);
             beefyClientDetails = ethInfo.snowbridge_info.contracts.BeefyClient;
@@ -165,14 +165,16 @@ describeSuite({
             const setMiddlewareTx = await gatewayContract.setMiddleware(middlewareAddress);
             await setMiddlewareTx.wait();
 
-            const initialBeaconUpdate = JSON.parse(<string>(
+            const initialBeaconUpdate = JSON.parse(
+                (
                     await execCommand("./scripts/bridge/setup-relayer.sh", {
                         env: {
                             RELAYCHAIN_ENDPOINT: "ws://127.0.0.1:9947",
                             ...process.env,
                         },
                     })
-                ).stdout);
+                ).stdout
+            );
 
             const tokenLocation = relayApi.createType<MultiLocation>("MultiLocation", {
                 parents: 0,
@@ -509,7 +511,7 @@ describeSuite({
 
                 console.log("Waiting for InboundMessageDispatched event...");
 
-                gatewayContract.on("InboundMessageDispatched", (_channelID, _nonce, messageID, success) => {
+                await gatewayContract.on("InboundMessageDispatched", (_channelID, _nonce, messageID, success) => {
                     if (tokenTransferMessageId === messageID) {
                         tokenTransferReceived = true;
                         tokenTransferSuccess = success;
