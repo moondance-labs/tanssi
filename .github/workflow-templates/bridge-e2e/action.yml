@@ -1,6 +1,12 @@
 name: Bridge e2e tests
 description: |
   Setup and run bridge e2e tests between tanssi and ethereum
+  
+inputs:
+  node-version:
+    description: which version of node to use
+    required: false
+    default: "22.x"
 
 runs:
   using: "composite"
@@ -26,6 +32,7 @@ runs:
       uses: actions/setup-go@v5
       with:
         go-version: '^1.22.0'
+        cache: false
     - name: Check go
       shell: bash
       id: check_go
@@ -40,6 +47,15 @@ runs:
       id: check_mage
       run: |
         mage --version
+
+    - name: Cache Foundry
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.foundry
+          ~/.cache/foundry
+        key: foundry-${{ runner.os }}-${{ hashFiles('**/foundry.toml', '**/remappings.txt') }}
+
     - name: Install Foundry
       uses: foundry-rs/foundry-toolchain@v1
     - name: Check forge
@@ -47,14 +63,44 @@ runs:
       id: check_forge
       run: |
         forge --version
+
+    - name: Cache Symbiotic Contracts
+      uses: actions/cache@v3
+      id: cache-symbiotic
+      with:
+        path: |
+          test/tmp/bridge/tanssi-symbiotic
+          test/tmp/bridge/tanssi-symbiotic/out
+          test/tmp/bridge/tanssi-symbiotic/cache
+        key: symbiotic-${{ runner.os }}-${{ hashFiles('**/scripts/bridge/set-env.sh') }}
+
+    - name: Cache Snowbridge Relayer
+      uses: actions/cache@v3
+      id: cache-relayer
+      with:
+        path: |
+          test/tmp/bridge/relayer
+          test/tmp/bridge/relayer/snowbridge/contracts/out
+          test/tmp/bridge/relayer/snowbridge/contracts/cache
+        key: relayer-${{ runner.os }}-${{ hashFiles('**/scripts/bridge/set-env.sh') }}
+
+    - name: Prepare Bin Folders
+      shell: bash
+      run: |
+        mkdir -p test/tmp/bridge/output/bin
+    - name: Cache Ethereum Node Binaries
+      uses: actions/cache@v3
+      id: cache-ethereum-binaries
+      with:
+        path: |
+          test/tmp/bridge/output/bin
+        key: ethereum-bins-${{ runner.os }}-${{ hashFiles('**/scripts/bridge/set-env.sh') }}
+
     - name: Pnpm
       uses: pnpm/action-setup@v4.0.0
       with:
         version: 9
-    - name: Use Node.js 22.x
-      uses: actions/setup-node@v4
-      with:
-        node-version: 22.x
+        run_install: false
     - name: Install yarn
       shell: bash
       run: |-
@@ -67,6 +113,10 @@ runs:
       id: check_yarn
       run: |
         yarn --version
+    - uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: pnpm
     - name: Check date
       shell: bash
       id: check_date

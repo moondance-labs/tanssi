@@ -2336,7 +2336,7 @@ declare module "@polkadot/types/lookup" {
         readonly asStartAssignment: {
             readonly profileId: u64;
             readonly paraId: u32;
-            readonly assignerParam: FlashboxRuntimePreserversAssignementPaymentExtra;
+            readonly assignerParam: FlashboxRuntimePreserversAssignmentPaymentExtra;
         } & Struct;
         readonly isStopAssignment: boolean;
         readonly asStopAssignment: {
@@ -2347,7 +2347,7 @@ declare module "@polkadot/types/lookup" {
         readonly asForceStartAssignment: {
             readonly profileId: u64;
             readonly paraId: u32;
-            readonly assignmentWitness: FlashboxRuntimePreserversAssignementPaymentWitness;
+            readonly assignmentWitness: FlashboxRuntimePreserversAssignmentPaymentWitness;
         } & Struct;
         readonly type:
             | "CreateProfile"
@@ -2366,7 +2366,7 @@ declare module "@polkadot/types/lookup" {
         readonly url: Bytes;
         readonly paraIds: PalletDataPreserversParaIdsFilter;
         readonly mode: PalletDataPreserversProfileMode;
-        readonly assignmentRequest: FlashboxRuntimePreserversAssignementPaymentRequest;
+        readonly assignmentRequest: FlashboxRuntimePreserversAssignmentPaymentRequest;
     }
 
     /** @name PalletDataPreserversParaIdsFilter (244) */
@@ -2389,8 +2389,8 @@ declare module "@polkadot/types/lookup" {
         readonly type: "Bootnode" | "Rpc";
     }
 
-    /** @name FlashboxRuntimePreserversAssignementPaymentRequest (249) */
-    interface FlashboxRuntimePreserversAssignementPaymentRequest extends Enum {
+    /** @name FlashboxRuntimePreserversAssignmentPaymentRequest (249) */
+    interface FlashboxRuntimePreserversAssignmentPaymentRequest extends Enum {
         readonly isFree: boolean;
         readonly isStreamPayment: boolean;
         readonly asStreamPayment: {
@@ -2399,8 +2399,8 @@ declare module "@polkadot/types/lookup" {
         readonly type: "Free" | "StreamPayment";
     }
 
-    /** @name FlashboxRuntimePreserversAssignementPaymentExtra (250) */
-    interface FlashboxRuntimePreserversAssignementPaymentExtra extends Enum {
+    /** @name FlashboxRuntimePreserversAssignmentPaymentExtra (250) */
+    interface FlashboxRuntimePreserversAssignmentPaymentExtra extends Enum {
         readonly isFree: boolean;
         readonly isStreamPayment: boolean;
         readonly asStreamPayment: {
@@ -2409,8 +2409,8 @@ declare module "@polkadot/types/lookup" {
         readonly type: "Free" | "StreamPayment";
     }
 
-    /** @name FlashboxRuntimePreserversAssignementPaymentWitness (251) */
-    interface FlashboxRuntimePreserversAssignementPaymentWitness extends Enum {
+    /** @name FlashboxRuntimePreserversAssignmentPaymentWitness (251) */
+    interface FlashboxRuntimePreserversAssignmentPaymentWitness extends Enum {
         readonly isFree: boolean;
         readonly isStreamPayment: boolean;
         readonly asStreamPayment: {
@@ -3008,7 +3008,7 @@ declare module "@polkadot/types/lookup" {
         readonly account: AccountId32;
         readonly deposit: u128;
         readonly profile: PalletDataPreserversProfile;
-        readonly assignment: Option<ITuple<[u32, FlashboxRuntimePreserversAssignementPaymentWitness]>>;
+        readonly assignment: Option<ITuple<[u32, FlashboxRuntimePreserversAssignmentPaymentWitness]>>;
     }
 
     /** @name PalletDataPreserversError (353) */

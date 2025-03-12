@@ -19,8 +19,8 @@ import type {
     CumulusPrimitivesCoreAggregateMessageOrigin,
     CumulusPrimitivesParachainInherentParachainInherentData,
     DanceboxRuntimeOriginCaller,
-    DanceboxRuntimePreserversAssignementPaymentExtra,
-    DanceboxRuntimePreserversAssignementPaymentWitness,
+    DanceboxRuntimePreserversAssignmentPaymentExtra,
+    DanceboxRuntimePreserversAssignmentPaymentWitness,
     DanceboxRuntimeProxyType,
     DanceboxRuntimeSessionKeys,
     DanceboxRuntimeStreamPaymentAssetId,
@@ -476,13 +476,13 @@ declare module "@polkadot/api-base/types/submittable" {
                     profileId: u64 | AnyNumber | Uint8Array,
                     paraId: u32 | AnyNumber | Uint8Array,
                     assignmentWitness:
-                        | DanceboxRuntimePreserversAssignementPaymentWitness
+                        | DanceboxRuntimePreserversAssignmentPaymentWitness
                         | { Free: any }
                         | { StreamPayment: any }
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [u64, u32, DanceboxRuntimePreserversAssignementPaymentWitness]
+                [u64, u32, DanceboxRuntimePreserversAssignmentPaymentWitness]
             >;
             forceUpdateProfile: AugmentedSubmittable<
                 (
@@ -500,13 +500,13 @@ declare module "@polkadot/api-base/types/submittable" {
                     profileId: u64 | AnyNumber | Uint8Array,
                     paraId: u32 | AnyNumber | Uint8Array,
                     assignerParam:
-                        | DanceboxRuntimePreserversAssignementPaymentExtra
+                        | DanceboxRuntimePreserversAssignmentPaymentExtra
                         | { Free: any }
                         | { StreamPayment: any }
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [u64, u32, DanceboxRuntimePreserversAssignementPaymentExtra]
+                [u64, u32, DanceboxRuntimePreserversAssignmentPaymentExtra]
             >;
             stopAssignment: AugmentedSubmittable<
                 (

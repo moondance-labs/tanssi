@@ -3479,6 +3479,8 @@ dependencies = [
  "pallet-services-payment-runtime-api",
  "pallet-session",
  "pallet-staking",
+ "pallet-stream-payment",
+ "pallet-stream-payment-runtime-api",
  "pallet-sudo",
  "pallet-timestamp",
  "pallet-tips",
