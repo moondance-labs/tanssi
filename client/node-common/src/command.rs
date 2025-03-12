@@ -16,7 +16,6 @@
 
 use {
     crate::cli::RelayChainCli,
-    once_cell::sync::Lazy,
     parity_scale_codec::Encode,
     sc_chain_spec::construct_genesis_block,
     sc_cli::{
@@ -25,10 +24,10 @@ use {
     },
     sc_service::config::{BasePath, PrometheusConfig},
     sp_runtime::{
-        traits::{Block as BlockT, Hash as HashT, Header as HeaderT},
+        traits::{Block as BlockT, Get, Hash as HashT, Header as HeaderT},
         StateVersion,
     },
-    std::{result::Result as StdResult, sync::Mutex},
+    std::result::Result as StdResult,
 };
 
 /// Generate the genesis block from a given ChainSpec.
@@ -53,7 +52,7 @@ pub fn generate_genesis_block<Block: BlockT>(
     Ok(construct_genesis_block(state_root, genesis_state_version))
 }
 
-impl DefaultConfigurationValues for RelayChainCli {
+impl<N: Get<&'static str>> DefaultConfigurationValues for RelayChainCli<N> {
     fn p2p_listen_port() -> u16 {
         30334
     }
@@ -67,7 +66,7 @@ impl DefaultConfigurationValues for RelayChainCli {
     }
 }
 
-impl CliConfiguration<Self> for RelayChainCli {
+impl<N: Get<&'static str>> CliConfiguration<Self> for RelayChainCli<N> {
     fn shared_params(&self) -> &SharedParams {
         self.base.base.shared_params()
     }
@@ -178,7 +177,7 @@ impl CliConfiguration<Self> for RelayChainCli {
     }
 }
 
-impl SubstrateCli for RelayChainCli {
+impl<N: Get<&'static str>> SubstrateCli for RelayChainCli<N> {
     fn impl_version() -> String {
         option_env!("SUBSTRATE_CLI_IMPL_VERSION")
             .unwrap_or("Unknown version")
@@ -204,31 +203,17 @@ impl SubstrateCli for RelayChainCli {
     }
 
     fn impl_name() -> String {
-        let node_name = NODE_NAME.lock().unwrap();
-
-        format!(
-            "Container Chain {} Node",
-            node_name.as_ref().unwrap_or(&"Default".to_string())
-        )
+        format!("Container Chain {} Node", N::get())
     }
 
     fn description() -> String {
-        let node_name = NODE_NAME.lock().unwrap();
-
         format!(
             "Container Chain {} Node\n\nThe command-line arguments provided first will be \
         passed to the parachain node, while the arguments provided after -- will be passed \
         to the relay chain node.\n\n\
         {} <parachain-args> -- <relay-chain-args>",
-            node_name.as_ref().unwrap_or(&"Default".to_string()),
-            RelayChainCli::executable_name()
+            N::get(),
+            RelayChainCli::<N>::executable_name()
         )
     }
-}
-
-static NODE_NAME: Lazy<Mutex<Option<String>>> = Lazy::new(|| Mutex::new(None));
-
-pub fn set_node_name(name: &str) {
-    let mut node_name = NODE_NAME.lock().unwrap();
-    *node_name = Some(name.to_string());
 }

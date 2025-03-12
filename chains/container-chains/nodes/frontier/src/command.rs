@@ -39,13 +39,21 @@ use {
     sc_service::{DatabaseSource, KeystoreContainer, TaskManager},
     sc_telemetry::TelemetryWorker,
     sp_core::hexdisplay::HexDisplay,
-    sp_runtime::traits::{AccountIdConversion, Block as BlockT},
+    sp_runtime::traits::{AccountIdConversion, Block as BlockT, Get},
     std::sync::Arc,
     tc_service_container_chain::{
         cli::ContainerChainCli,
         spawner::{ContainerChainSpawnParams, ContainerChainSpawner},
     },
 };
+
+pub struct NodeName;
+
+impl Get<&'static str> for NodeName {
+    fn get() -> &'static str {
+        "Frontier"
+    }
+}
 
 fn load_spec(id: &str, para_id: ParaId) -> std::result::Result<Box<dyn ChainSpec>, String> {
     Ok(match id {
@@ -180,12 +188,11 @@ pub fn run() -> Result<()> {
 
                 cmd.base.run(frontier_database_config)?;
 
-                let polkadot_cli = RelayChainCli::new(
+                let polkadot_cli = RelayChainCli::<NodeName>::new(
                     &config,
-                    [RelayChainCli::executable_name()]
+                    [RelayChainCli::<NodeName>::executable_name()]
                         .iter()
                         .chain(cli.relaychain_args().iter()),
-                    "Frontier",
                 );
 
                 let polkadot_config = SubstrateCli::create_configuration(
@@ -285,10 +292,9 @@ pub fn run() -> Result<()> {
                     .map(|e| e.para_id)
                     .ok_or("Could not find parachain ID in chain-spec.")?;
 
-                let polkadot_cli = RelayChainCli::new(
+                let polkadot_cli = RelayChainCli::<NodeName>::new(
                     &config,
-                    [RelayChainCli::executable_name()].iter().chain(relaychain_args.iter()),
-                    "Frontier",
+                    [RelayChainCli::<NodeName>::executable_name()].iter().chain(relaychain_args.iter()),
                 );
 
                 let rpc_config = crate::cli::RpcConfig {
@@ -424,12 +430,11 @@ fn rpc_provider_mode(cli: Cli, profile_id: u64) -> Result<()> {
 
             let collator_options = cli.run.collator_options();
 
-            let polkadot_cli = RelayChainCli::new(
+            let polkadot_cli = RelayChainCli::<NodeName>::new(
                 &config,
-                [RelayChainCli::executable_name()]
+                [RelayChainCli::<NodeName>::executable_name()]
                     .iter()
                     .chain(cli.relaychain_args().iter()),
-                "Frontier",
             );
 
             let tokio_handle = config.tokio_handle.clone();

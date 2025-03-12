@@ -15,8 +15,8 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 use {
-    crate::command::set_node_name,
     sc_cli::{CliConfiguration, NodeKeyParams, SharedParams},
+    sp_runtime::traits::Get,
     std::path::PathBuf,
 };
 
@@ -50,7 +50,7 @@ where
 }
 
 #[derive(Debug)]
-pub struct RelayChainCli {
+pub struct RelayChainCli<N: Get<&'static str>> {
     /// The actual relay chain cli object.
     pub base: polkadot_cli::RunCmd,
 
@@ -59,16 +59,17 @@ pub struct RelayChainCli {
 
     /// The base path that should be used by the relay chain.
     pub base_path: PathBuf,
+
+    /// Phantom type for storing node name
+    _marker: std::marker::PhantomData<N>,
 }
 
-impl RelayChainCli {
+impl<N: Get<&'static str>> RelayChainCli<N> {
     /// Parse the relay chain CLI parameters using the para chain `Configuration`.
     pub fn new<'a>(
         para_config: &sc_service::Configuration,
         relay_chain_args: impl Iterator<Item = &'a String>,
-        node_name: &str,
     ) -> Self {
-        set_node_name(node_name);
         let extension = crate::chain_spec::Extensions::try_get(&*para_config.chain_spec);
         let chain_id = extension.map(|e| e.relay_chain.clone());
         let base_path = para_config.base_path.path().join("polkadot");
@@ -76,6 +77,7 @@ impl RelayChainCli {
             base_path,
             chain_id,
             base: clap::Parser::parse_from(relay_chain_args),
+            _marker: std::marker::PhantomData,
         }
     }
 }
