@@ -15,13 +15,13 @@ async-trait = { workspace = true }
 clap = { workspace = true, features = [ "derive" ] }
 core_extensions = { workspace = true, features = [ "type_identity" ] }
 flume = { workspace = true }
+fp-evm = { workspace = true }
 futures = { workspace = true }
+hex-literal = { workspace = true }
 jsonrpsee = { workspace = true, features = [ "server" ] }
 log = { workspace = true }
 parity-scale-codec = { workspace = true }
 serde = { workspace = true, features = [ "derive" ] }
-fp-evm = { workspace = true }
-hex-literal = { workspace = true }
 
 # Local
 tc-consensus = { workspace = true }
