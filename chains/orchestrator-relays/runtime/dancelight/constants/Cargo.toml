@@ -17,6 +17,7 @@ runtime-common = { workspace = true }
 sp-core = { workspace = true }
 sp-runtime = { workspace = true }
 sp-weights = { workspace = true }
+tp-traits = { workspace = true }
 xcm = { workspace = true }
 xcm-builder = { workspace = true }
 

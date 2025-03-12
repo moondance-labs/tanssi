@@ -1,18 +1,18 @@
-// Copyright (C) Parity Technologies (UK) Ltd.
-// This file is part of Polkadot.
+// Copyright (C) Moondance Labs Ltd.
+// This file is part of Tanssi.
 
-// Polkadot is free software: you can redistribute it and/or modify
+// Tanssi is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-// Polkadot is distributed in the hope that it will be useful,
+// Tanssi is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Polkadot. If not, see <http://www.gnu.org/licenses/>.
+// along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use crate::{
     CollatorsInflationRatePerBlock, EpochDurationInBlocks, Perbill, SessionsPerEra,
@@ -93,10 +93,9 @@ fn formula_is_sound() {
     assert!((actual_annual_inflation - annual_inflation).abs() < 0.00001);
 }
 
-#[test]
-fn runtime_inflations_values_are_correct() {
-    let sessions_per_era = SessionsPerEra::get();
-    let blocks_per_session = EpochDurationInBlocks::get();
+fn runtime_inflations_values_are_correct_prod_or_fast(prod: bool) {
+    let sessions_per_era = SessionsPerEra::prod_if(prod);
+    let blocks_per_session = EpochDurationInBlocks::prod_if(prod);
     let blocks_per_era = blocks_per_session * sessions_per_era;
     let eras_per_year = (365 * DAYS) / blocks_per_era;
 
@@ -115,13 +114,23 @@ fn runtime_inflations_values_are_correct() {
     let val_inf = Perbill::from_float(rates.validators_era_inflation);
 
     assert_eq!(
-        CollatorsInflationRatePerBlock::get(),
+        CollatorsInflationRatePerBlock::prod_if(prod),
         col_inf,
         "Collators inflation didn't match"
     );
     assert_eq!(
-        ValidatorsInflationRatePerEra::get(),
+        ValidatorsInflationRatePerEra::prod_if(prod),
         val_inf,
         "Validators inflation didn't match"
     );
+}
+
+#[test]
+fn runtime_inflations_values_are_correct_in_prod() {
+    runtime_inflations_values_are_correct_prod_or_fast(true)
+}
+
+#[test]
+fn runtime_inflations_values_are_correct_in_fast() {
+    runtime_inflations_values_are_correct_prod_or_fast(false)
 }

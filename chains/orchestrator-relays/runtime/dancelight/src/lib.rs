@@ -97,8 +97,8 @@ use {
     },
     tp_bridge::ConvertLocation,
     tp_traits::{
-        apply, derive_storage_traits, EraIndex, GetHostConfiguration, GetSessionContainerChains,
-        ParaIdAssignmentHooks, RegistrarHandler, Slot, SlotFrequency,
+        apply, derive_storage_traits, prod_or_fast_parameter_types, EraIndex, GetHostConfiguration,
+        GetSessionContainerChains, ParaIdAssignmentHooks, RegistrarHandler, Slot, SlotFrequency,
     },
 };
 
@@ -1406,9 +1406,9 @@ impl SessionInterface<AccountId> for DancelightSessionInterface {
     }
 }
 
-parameter_types! {
-    pub const SessionsPerEra: SessionIndex = runtime_common::prod_or_fast!(6, 3);
-    pub const SlashDeferDuration: EraIndex = runtime_common::prod_or_fast!(0, 0);
+prod_or_fast_parameter_types! {
+    pub const SessionsPerEra: SessionIndex = { prod: 6, fast: 3 };
+    pub const SlashDeferDuration: EraIndex = { prod: 0, fast: 0 };
 }
 
 impl pallet_external_validators::Config for Runtime {
@@ -1756,21 +1756,22 @@ parameter_types! {
     pub DancelightBondAccount: AccountId32 = PalletId(*b"StarBond").into_account_truncating();
     pub PendingRewardsAccount: AccountId32 = PalletId(*b"PENDREWD").into_account_truncating();
 
-    // We want a global annual inflation rate of 10%.
-    // It is compounded throught era inflations, which itself is split between:
-    // - Inflation for collators per block
-    // - Inflation for validators per era
-    // Computation is implemented in tests/inflation_rates.rs, with a test ensuring values from the
-    // runtime match the formulas. We write the results as constants here to ensure we don't perform
-    // computations at runtime.
-    // Run test without fast runtime to ensure prod values are correct too
-    // cargo test --release -p dancelight-runtime runtime_inflations_values_are_correct
-    pub const CollatorsInflationRatePerBlock: Perbill = runtime_common::prod_or_fast!(Perbill::from_parts(228), Perbill::from_parts(228));
-    pub const ValidatorsInflationRatePerEra: Perbill = runtime_common::prod_or_fast!(Perbill::from_parts(821534), Perbill::from_parts(6843));
-
     // 30% for dancelight bond, so 70% for staking
     pub const RewardsPortion: Perbill = Perbill::from_percent(70);
 }
+
+// We want a global annual inflation rate of 10%.
+// It is compounded throught era inflations, which itself is split between:
+// - Inflation for collators per block
+// - Inflation for validators per era
+// Computation is implemented in tests/inflation_rates.rs, with a test ensuring values from the
+// runtime match the formulas. We write the results as constants here to ensure we don't perform
+// computations at runtime.
+prod_or_fast_parameter_types! {
+    pub const CollatorsInflationRatePerBlock: Perbill = { prod: Perbill::from_parts(228), fast: Perbill::from_parts(228) };
+    pub const ValidatorsInflationRatePerEra: Perbill = { prod: Perbill::from_parts(821534), fast: Perbill::from_parts(6843) };
+}
+
 pub struct OnUnbalancedInflation;
 impl frame_support::traits::OnUnbalanced<Credit<AccountId, Balances>> for OnUnbalancedInflation {
     fn on_nonzero_unbalanced(credit: Credit<AccountId, Balances>) {
