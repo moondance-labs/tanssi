@@ -1,19 +1,21 @@
 import "@tanssi/api-augment/dancelight";
 
 import { afterAll, beforeAll, describeSuite, expect } from "@moonwall/cli";
-import type { KeyringPair } from "@moonwall/util";
+import { type KeyringPair, generateKeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import type { MultiLocation } from "@polkadot/types/interfaces/xcm/types";
 import { u8aToHex } from "@polkadot/util";
 import { decodeAddress } from "@polkadot/util-crypto";
 import { ethers } from "ethers";
 import { type ChildProcessWithoutNullStreams, exec, spawn } from "node:child_process";
-import { signAndSendAndInclude, sleep, waitSessions } from "utils";
+import { ASSET_HUB_PARA_ID, signAndSendAndInclude, sleep, waitSessions, ASSET_HUB_CHANNEL_ID } from "utils";
+
+import { keccak256 } from "viem";
 
 // Change this if we change the storage parameter in runtime
 const GATEWAY_STORAGE_KEY = "0xaed97c7854d601808b98ae43079dafb3";
 
-function execCommand(command: string, options?) {
+function execCommand(command: string, options?): Promise<{ stdout: string; stderr: string }> {
     return new Promise((resolve, reject) => {
         exec(command, options, (error: unknown, stdout: string, stderr: string) => {
             if (error) {
@@ -57,9 +59,12 @@ describeSuite({
         let ethereumWallet: ethers.Wallet;
         let middlewareContract: ethers.Contract;
         let gatewayContract: ethers.Contract;
+        let tokenContract: ethers.Contract;
         let gatewayProxyAddress: string;
         let middlewareAddress: string;
         let middlewareDetails: any;
+
+        let ethInfo: any;
 
         let operatorAccount: KeyringPair;
         let operatorNimbusKey: string;
@@ -74,11 +79,17 @@ describeSuite({
             // //BeaconRelay
             const keyring = new Keyring({ type: "sr25519" });
             alice = keyring.addFromUri("//Alice", { name: "Alice default" });
-            const beaconRelay = keyring.addFromUri("//BeaconRelay", { name: "Beacon relay default" });
-            const executionRelay = keyring.addFromUri("//ExecutionRelay", { name: "Execution relay default" });
+            const beaconRelay = keyring.addFromUri("//BeaconRelay", {
+                name: "Beacon relay default",
+            });
+            const executionRelay = keyring.addFromUri("//ExecutionRelay", {
+                name: "Execution relay default",
+            });
 
             // Operator keys
-            operatorAccount = keyring.addFromUri("//Charlie", { name: "Charlie default" });
+            operatorAccount = keyring.addFromUri("//Charlie", {
+                name: "Charlie default",
+            });
             // We rotate the keys for charlie so that we have access to them from this test as well as the node
             operatorNimbusKey = (await relayCharlieApi.rpc.author.rotateKeys()).toHex();
             await relayApi.tx.session.setKeys(operatorNimbusKey, []).signAndSend(operatorAccount);
@@ -119,7 +130,7 @@ describeSuite({
 
             console.log("Contracts deployed");
 
-            const ethInfo = JSON.parse(<string>(await execCommand("./scripts/bridge/generate-eth-info.sh")).stdout);
+            ethInfo = JSON.parse((await execCommand("./scripts/bridge/generate-eth-info.sh")).stdout);
 
             console.log("BeefyClient contract address is:", ethInfo.snowbridge_info.contracts.BeefyClient.address);
             beefyClientDetails = ethInfo.snowbridge_info.contracts.BeefyClient;
@@ -154,14 +165,16 @@ describeSuite({
             const setMiddlewareTx = await gatewayContract.setMiddleware(middlewareAddress);
             await setMiddlewareTx.wait();
 
-            const initialBeaconUpdate = JSON.parse(<string>(
+            const initialBeaconUpdate = JSON.parse(
+                (
                     await execCommand("./scripts/bridge/setup-relayer.sh", {
                         env: {
                             RELAYCHAIN_ENDPOINT: "ws://127.0.0.1:9947",
                             ...process.env,
                         },
                     })
-                ).stdout);
+                ).stdout
+            );
 
             const tokenLocation = relayApi.createType<MultiLocation>("MultiLocation", {
                 parents: 0,
@@ -174,7 +187,7 @@ describeSuite({
             const metadata = {
                 name: "dance",
                 symbol: "dance",
-                decimals: 18,
+                decimals: 12,
             };
 
             // We need to read initial checkpoint data and address of gateway contract to setup the ethereum client
@@ -405,6 +418,166 @@ describeSuite({
 
                 expect(rewardMessageSuccess).to.be.true;
                 expect(slashMessageSuccess).to.be.true;
+            },
+        });
+
+        it({
+            id: "T06",
+            title: "Native token is transferred to (and from) Ethereum successfully",
+            test: async () => {
+                // Wait a few sessions to ensure the token was properly registered on Ethereum
+                await waitSessions(context, relayApi, 4, null, "Tanssi-relay");
+
+                // How to encode the channel id for it to be compliant with Solidity
+                const assetHubParaId = relayApi.createType("ParaId", ASSET_HUB_PARA_ID);
+                const assetHubChannelId = keccak256(
+                    new Uint8Array([...new TextEncoder().encode("para"), ...assetHubParaId.toU8a().reverse()])
+                );
+                expect(assetHubChannelId).to.be.eq(ASSET_HUB_CHANNEL_ID);
+
+                // Get the channel info
+                const channelInfo = (await relayApi.query.ethereumSystem.channels(assetHubChannelId)).unwrap().toJSON();
+
+                const channelOperatingModeOf = await gatewayContract.channelOperatingModeOf(assetHubChannelId);
+
+                // Ensure channel is in Normal operations mode
+                expect(channelOperatingModeOf).to.be.eq(0n);
+
+                // Create channel in EthereumTokenTransfers
+                const setTokenTransferChannelTx = await relayApi.tx.sudo
+                    .sudo(
+                        relayApi.tx.ethereumTokenTransfers.setTokenTransferChannel(
+                            assetHubChannelId,
+                            channelInfo.agentId.toString(),
+                            Number(channelInfo.paraId)
+                        )
+                    )
+                    .signAndSend(alice);
+
+                console.log("Set token transfer channel tx was submitted:", setTokenTransferChannelTx.toHex());
+
+                await context.waitBlock(2, "Tanssi-relay");
+
+                // Ensure the channel is created on EthereumTokenTransfers
+                const channelInfoFromEthTokenTransfers = (
+                    await relayApi.query.ethereumTokenTransfers.currentChannelInfo()
+                ).toJSON();
+                expect(channelInfoFromEthTokenTransfers).to.not.be.undefined;
+
+                const recipient = "0x90a987b944cb1dcce5564e5fdecd7a54d3de27fe";
+                const amountFromStarlight = 1000000000000000n;
+
+                // Send the token
+                const transferNativeTokenTx = await relayApi.tx.ethereumTokenTransfers
+                    .transferNativeToken(amountFromStarlight, recipient)
+                    .signAndSend(alice);
+
+                console.log("Transfer native token tx was submitted:", transferNativeTokenTx.toHex());
+
+                await context.waitBlock(1, "Tanssi-relay");
+
+                const events = await relayApi.query.system.events();
+                const filteredEventForTokenTransfers = events.filter((a) => {
+                    return a.event.method === "NativeTokenTransferred";
+                });
+
+                const tokenTransfersEventData = filteredEventForTokenTransfers[0].event.toJSON().data;
+
+                const tokenTransferMessageId = tokenTransfersEventData[0];
+                const tokenTransferChannelId = tokenTransfersEventData[1];
+                const tokenTransferSource = tokenTransfersEventData[2];
+                const tokenTransferRecipient = tokenTransfersEventData[3];
+                const tokenTransferTokenId = tokenTransfersEventData[4];
+                const tokenTransferAmount = tokenTransfersEventData[5];
+
+                expect(tokenTransferChannelId).to.be.eq(assetHubChannelId);
+                expect(tokenTransferSource).to.be.eq(alice.address);
+                expect(tokenTransferRecipient).to.be.eq(recipient);
+                expect(tokenTransferAmount).to.be.eq(Number(amountFromStarlight));
+
+                // Esnsure the expected tokenId is properly set on Starlight
+                const expectedNativeToken = (
+                    await relayApi.query.ethereumSystem.foreignToNativeId(tokenTransferTokenId)
+                ).toJSON();
+                expect(expectedNativeToken).to.not.be.undefined;
+
+                // Ensure the token is properly registered on Ethereum
+                const tokenAddress = await gatewayContract.tokenAddressOf(tokenTransferTokenId);
+                const tokenIsRegistered = await gatewayContract.isTokenRegistered(tokenAddress);
+                expect(tokenIsRegistered).to.be.true;
+
+                let tokenTransferReceived = false;
+                let tokenTransferSuccess = false;
+
+                console.log("Waiting for InboundMessageDispatched event...");
+
+                await gatewayContract.on("InboundMessageDispatched", (_channelID, _nonce, messageID, success) => {
+                    if (tokenTransferMessageId === messageID) {
+                        tokenTransferReceived = true;
+                        tokenTransferSuccess = success;
+                    }
+                });
+
+                while (!tokenTransferReceived) {
+                    await sleep(1000);
+                }
+
+                expect(tokenTransferSuccess).to.be.true;
+
+                // Send the token back
+                const amountBackFromETH = 300000000000000n;
+                const fee = 0n;
+
+                console.log(`Sending ${amountBackFromETH} tokens back from ETH`);
+
+                tokenContract = new ethers.Contract(
+                    tokenAddress,
+                    ethInfo.symbiotic_info.contracts.Token.abi,
+                    ethereumWallet
+                );
+
+                const approvalTx = await tokenContract.approve(gatewayProxyAddress, amountBackFromETH);
+
+                await approvalTx.wait();
+
+                const ownerBalanceBefore = await tokenContract.balanceOf(recipient);
+                expect(ownerBalanceBefore).to.eq(amountFromStarlight);
+
+                const neededFeeWei = await gatewayContract.quoteSendTokenFee(tokenAddress, ASSET_HUB_PARA_ID, fee);
+
+                const randomAccount = generateKeyringPair("sr25519");
+                const randomBalanceBefore = (await relayApi.query.system.account(randomAccount.address)).data.free;
+                expect(randomBalanceBefore.toBigInt()).to.be.eq(0n);
+
+                // Send the token from Ethereum
+                const tx = await gatewayContract.sendToken(
+                    tokenAddress,
+                    ASSET_HUB_PARA_ID,
+                    {
+                        kind: 1,
+                        data: u8aToHex(randomAccount.addressRaw),
+                    },
+                    fee,
+                    amountBackFromETH,
+                    {
+                        value: neededFeeWei * 10n,
+                    }
+                );
+
+                await tx.wait();
+
+                const ownerBalanceAfter = await tokenContract.balanceOf(recipient);
+
+                // Ensure the token has been sent
+                expect(ownerBalanceAfter).to.be.eq(ownerBalanceBefore - amountBackFromETH);
+
+                // Wait a few sessions for the message to be relayed
+                await waitSessions(context, relayApi, 4, null, "Tanssi-relay");
+
+                const randomBalanceAfter = (await relayApi.query.system.account(randomAccount.address)).data.free;
+
+                // Ensure the token has been received on the Starlight side
+                expect(randomBalanceAfter.toBigInt()).to.be.eq(randomBalanceBefore.toBigInt() + amountBackFromETH);
             },
         });
 
