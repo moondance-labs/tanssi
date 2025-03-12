@@ -30,6 +30,7 @@ std = [
 	"sp-core/std",
 	"sp-runtime/std",
 	"sp-weights/std",
+	"tp-traits/std",
 	"xcm-builder/std",
 	"xcm/std",
 ]
@@ -42,5 +43,6 @@ runtime-benchmarks = [
 	"primitives/runtime-benchmarks",
 	"runtime-common/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
+	"tp-traits/runtime-benchmarks",
 	"xcm-builder/runtime-benchmarks",
 ]
