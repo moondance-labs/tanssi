@@ -58,6 +58,7 @@ describeSuite({
         let middlewareContract: ethers.Contract;
         let gatewayContract: ethers.Contract;
         let gatewayProxyAddress: string;
+        let middlewareAddress: string;
         let middlewareDetails: any;
 
         let operatorAccount: KeyringPair;
@@ -126,8 +127,9 @@ describeSuite({
             console.log("Gateway contract proxy address is:", ethInfo.snowbridge_info.contracts.GatewayProxy.address);
             gatewayProxyAddress = ethInfo.snowbridge_info.contracts.GatewayProxy.address;
 
-            console.log("Symbiotic middleware address is: ", ethInfo.symbiotic_info.contracts.Middleware.address);
+            console.log("Symbiotic middleware address is: ", ethInfo.symbiotic_info.contracts.ERC1967Proxy.address);
             middlewareDetails = ethInfo.symbiotic_info.contracts.Middleware;
+            middlewareAddress = ethInfo.symbiotic_info.contracts.ERC1967Proxy.address;
 
             console.log("Setting gateway address to proxy contract:", gatewayProxyAddress);
             const setGatewayAddressTxHash = await signAndSendAndInclude(
@@ -140,7 +142,7 @@ describeSuite({
             ethereumWallet = new ethers.Wallet(ethInfo.ethereum_key, customHttpProvider);
 
             // Setting up Middleware
-            middlewareContract = new ethers.Contract(middlewareDetails.address, middlewareDetails.abi, ethereumWallet);
+            middlewareContract = new ethers.Contract(middlewareAddress, middlewareDetails.abi, ethereumWallet);
             const tx = await middlewareContract.setGateway(gatewayProxyAddress);
             await tx.wait();
 
@@ -149,7 +151,7 @@ describeSuite({
                 ethInfo.snowbridge_info.contracts.Gateway.abi,
                 ethereumWallet
             );
-            const setMiddlewareTx = await gatewayContract.setMiddleware(middlewareDetails.address);
+            const setMiddlewareTx = await gatewayContract.setMiddleware(middlewareAddress);
             await setMiddlewareTx.wait();
 
             const initialBeaconUpdate = JSON.parse(<string>(
@@ -243,11 +245,7 @@ describeSuite({
                 const externalValidatorsBefore = await relayApi.query.externalValidators.externalValidators();
 
                 const epoch = await middlewareContract.getCurrentEpoch();
-                const currentOperators = await middlewareContract.getOperatorsByEpoch(epoch);
-                const currentOperatorsKeys = [];
-                for (let i = 0; i < currentOperators.length; i++) {
-                    currentOperatorsKeys.push(await middlewareContract.getCurrentOperatorKey(currentOperators[i]));
-                }
+                const currentOperatorsKeys = await middlewareContract.sortOperatorsByVaults(epoch);
 
                 console.log("Middleware: Epoch is:", epoch);
                 console.log("Middleware: Operator keys are:", currentOperatorsKeys);
