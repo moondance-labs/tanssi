@@ -20,9 +20,9 @@ futures = { workspace = true }
 hex-literal = { workspace = true }
 jsonrpsee = { workspace = true, features = [ "server" ] }
 log = { workspace = true }
+once_cell = { workspace = true }
 parity-scale-codec = { workspace = true }
 serde = { workspace = true, features = [ "derive" ] }
-once_cell = { workspace = true }
 
 # Local
 tc-consensus = { workspace = true }
