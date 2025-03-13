@@ -1370,6 +1370,7 @@ impl pallet_registrar::Config for Runtime {
     type RuntimeHoldReason = RuntimeHoldReason;
     type InnerRegistrar = ();
     type WeightInfo = weights::pallet_registrar::SubstrateWeight<Runtime>;
+    type DataDepositPerByte = ();
 }
 
 impl pallet_authority_mapping::Config for Runtime {

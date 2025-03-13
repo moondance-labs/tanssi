@@ -2365,6 +2365,7 @@ impl pallet_registrar::Config for Runtime {
         weights::runtime_common_paras_registrar::SubstrateWeight<Runtime>,
     >;
     type WeightInfo = weights::pallet_registrar::SubstrateWeight<Runtime>;
+    type DataDepositPerByte = DataDepositPerByte;
 }
 
 pub struct DancelightRegistrarHooks;

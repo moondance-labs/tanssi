@@ -185,6 +185,9 @@ pub mod pallet {
         type InnerRegistrar: RegistrarHandler<Self::AccountId>;
 
         type WeightInfo: WeightInfo;
+
+        #[pallet::constant]
+        type DataDepositPerByte: Get<<Self::Currency as Inspect<Self::AccountId>>::Balance>;
     }
 
     #[pallet::storage]
@@ -260,7 +263,7 @@ pub mod pallet {
     /// Therefore, if we tried to perform this relay deregistration process at the beginning
     /// of the session/block inside ('on_initialize') initializer_on_new_session() as we do
     /// for this pallet, it would fail due to the downgrade process could have not taken
-    /// place yet.  
+    /// place yet.
     #[pallet::storage]
     pub type BufferedParasToDeregister<T: Config> =
         StorageValue<_, BoundedVec<ParaId, T::MaxLengthParaIds>, ValueQuery>;
@@ -836,7 +839,18 @@ pub mod pallet {
             genesis_data: ContainerChainGenesisData,
             head_data: Option<HeadData>,
         ) -> DispatchResult {
-            let deposit = T::DepositAmount::get();
+            // The actual registration takes place 2 sessions after the call to
+            // `mark_valid_for_collating`, but the genesis data is inserted now.
+            // This is because collators should be able to start syncing the new container chain
+            // before the first block is mined. However, we could store the genesis data in a
+            // different key, like PendingParaGenesisData.
+            // TODO: for benchmarks, this call to .encoded_size is O(n) with respect to the number
+            // of key-values in `genesis_data.storage`, even if those key-values are empty. And we
+            // won't detect that the size is too big until after iterating over all of them, so the
+            // limit in that case would be the transaction size.
+            let genesis_data_size = genesis_data.encoded_size();
+
+            let deposit = T::DataDepositPerByte::get() * (genesis_data_size as u32).into();
             // Verify we can hold
             if !T::Currency::can_hold(&HoldReason::RegistrarDeposit.into(), &account, deposit) {
                 return Err(Error::<T>::NotSufficientDeposit.into());
@@ -856,22 +870,16 @@ pub mod pallet {
             // Insert para id into PendingVerification
             PendingVerification::<T>::insert(para_id, ());
 
-            // The actual registration takes place 2 sessions after the call to
-            // `mark_valid_for_collating`, but the genesis data is inserted now.
-            // This is because collators should be able to start syncing the new container chain
-            // before the first block is mined. However, we could store the genesis data in a
-            // different key, like PendingParaGenesisData.
-            // TODO: for benchmarks, this call to .encoded_size is O(n) with respect to the number
-            // of key-values in `genesis_data.storage`, even if those key-values are empty. And we
-            // won't detect that the size is too big until after iterating over all of them, so the
-            // limit in that case would be the transaction size.
-            let genesis_data_size = genesis_data.encoded_size();
             if genesis_data_size > T::MaxGenesisDataSize::get() as usize {
                 return Err(Error::<T>::GenesisDataTooBig.into());
             }
 
             // Hold the deposit, we verified we can do this
-            T::Currency::hold(&HoldReason::RegistrarDeposit.into(), &account, deposit)?;
+            T::Currency::hold(
+                &HoldReason::RegistrarDeposit.into(),
+                &account,
+                deposit.clone(),
+            )?;
 
             // Register the paraId also in the relay context (if any).
             T::InnerRegistrar::register(
