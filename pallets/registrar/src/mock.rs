@@ -134,7 +134,7 @@ impl RelayStorageRootProvider for MockRelayStorageRootProvider {
 
 parameter_types! {
     pub const DepositAmount: Balance = 100;
-    pub const DataDepositPerByte: Balance = 1 * CENTS;
+    pub const DataDepositPerByte: Balance = 1;
 }
 impl pallet_registrar::Config for Test {
     type RuntimeEvent = RuntimeEvent;
@@ -397,8 +397,6 @@ pub fn empty_genesis_data() -> ContainerChainGenesisData {
 }
 
 pub const SESSION_LEN: u64 = 5;
-pub const UNITS: cumulus_primitives_core::relay_chain::Balance = 1_000_000_000_000;
-pub const CENTS: cumulus_primitives_core::relay_chain::Balance = UNITS / 30_000;
 
 pub fn run_to_session(n: u32) {
     let block_number = SESSION_LEN * u64::from(n);
