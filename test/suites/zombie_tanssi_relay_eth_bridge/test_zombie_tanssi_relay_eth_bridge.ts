@@ -138,9 +138,9 @@ describeSuite({
             console.log("Gateway contract proxy address is:", ethInfo.snowbridge_info.contracts.GatewayProxy.address);
             gatewayProxyAddress = ethInfo.snowbridge_info.contracts.GatewayProxy.address;
 
-            console.log("Symbiotic middleware address is: ", ethInfo.symbiotic_info.contracts.ERC1967Proxy.address);
+            console.log("Symbiotic middleware address is: ", ethInfo.symbiotic_info.contracts.MiddlewareProxy.address);
             middlewareDetails = ethInfo.symbiotic_info.contracts.Middleware;
-            middlewareAddress = ethInfo.symbiotic_info.contracts.ERC1967Proxy.address;
+            middlewareAddress = ethInfo.symbiotic_info.contracts.MiddlewareProxy.address;
 
             console.log("Setting gateway address to proxy contract:", gatewayProxyAddress);
             const setGatewayAddressTxHash = await signAndSendAndInclude(
