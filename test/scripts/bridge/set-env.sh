@@ -23,7 +23,7 @@ test_helpers_dir="$web_dir/packages/test-helpers"
 relay_bin="$relayer_root_dir/build/tanssi-bridge-relayer"
 
 RELAYER_COMMIT="05b5e6cf8fe836690cca4e88d2dff3307bf17fa4" # TODO: Change to tag when we do releases
-TANSSI_SYMBIOTIC_COMMIT="224bf2dfc682b25bf8f757e222de0aa7003ffb9f" # TODO: Change to tag when we do release
+TANSSI_SYMBIOTIC_COMMIT="e0602ce5c1861ba38b42ce94cd846abd3f6b7ff4" # TODO: Change to tag when we do release
 GETH_TAG="v1.15.3" # We will need to investigate if this is right
 LODESTAR_TAG="v1.27.0"
 
@@ -57,8 +57,8 @@ export BRIDGE_HUB_AGENT_ID="${BRIDGE_HUB_AGENT_ID:-0x03170a2e7597b7b7e3d84c05391
 relaychain_ws_url="${RELAYCHAIN_WS_URL:-ws://127.0.0.1:9944}"
 relaychain_sudo_seed="${RELAYCHAIN_SUDO_SEED:-//Alice}"
 
-export ASSET_HUB_PARAID="${ASSET_HUB_PARAID:-1000}"
-export ASSET_HUB_AGENT_ID="${ASSET_HUB_AGENT_ID:-0x81c5ab2571199e3188135178f3c2c8e2d268be1313d029b30f534fa579b69b79}"
+export ASSET_HUB_PARAID="${ASSET_HUB_PARAID:-0}"
+export ASSET_HUB_AGENT_ID="${ASSET_HUB_AGENT_ID:-0x180bffca5d695ff9c422143d57db8ac7d32f92e6658684e489f947308cc143f5}"
 
 # Token decimal of the relaychain(KSM|ROC:12,DOT:10)
 export FOREIGN_TOKEN_DECIMALS=12
@@ -97,6 +97,7 @@ export BRIDGE_HUB_INITIAL_DEPOSIT="${ETH_BRIDGE_HUB_INITIAL_DEPOSIT:-10000000000
 ## Message passing
 export PRIMARY_GOVERNANCE_CHANNEL_ID="0x0000000000000000000000000000000000000000000000000000000000000001"
 export SECONDARY_GOVERNANCE_CHANNEL_ID="0x0000000000000000000000000000000000000000000000000000000000000002"
+export ASSET_HUB_CHANNEL_ID="0xcdd46650b730ab688f476efce47941584cfb1d9abcef4b8bbb51734b4467a918"
 # Execution relay account (//ExecutionRelay 5CFNWKMFPsw5Cs2Teo6Pvg7rWyjKiFfqPZs8U4MZXzMYFwXL in testnet)
 execution_relayer_assethub_pub_key="${EXECUTION_RELAYER_PUB_KEY:-0x08228efd065c58a043da95c8bf177659fc587643e71e7ed1534666177730196f}"
 # Funded ethereum key
