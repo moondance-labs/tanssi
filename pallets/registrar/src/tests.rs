@@ -90,7 +90,7 @@ fn register_para_id_42_twice() {
 
 #[test]
 fn register_para_id_42_genesis_data_size_too_big() {
-    new_test_ext().execute_with(|| {
+    new_test_ext_with_balance(1_000_000_000).execute_with(|| {
         run_to_block(1);
         let genesis_data = ContainerChainGenesisData {
             storage: vec![(vec![], vec![0; 5_000_000]).into()],
