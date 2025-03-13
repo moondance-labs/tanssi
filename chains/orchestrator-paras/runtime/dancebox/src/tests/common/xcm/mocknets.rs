@@ -106,6 +106,7 @@ decl_test_parachains! {
             LocationToAccountId: crate::xcm_config::LocationToAccountId,
             ParachainInfo: crate::ParachainInfo,
             MessageOrigin: cumulus_primitives_core::AggregateMessageOrigin,
+            DigestProvider: crate::DanceboxDigestProvider,
         },
         pallets = {
             System: crate::System,
@@ -126,6 +127,7 @@ decl_test_parachains! {
             LocationToAccountId: container_chain_template_frontier_runtime::xcm_config::LocationToAccountId,
             ParachainInfo: container_chain_template_frontier_runtime::ParachainInfo,
             MessageOrigin: cumulus_primitives_core::AggregateMessageOrigin,
+            DigestProvider: (),
         },
         pallets = {
             System: container_chain_template_frontier_runtime::System,
@@ -146,6 +148,7 @@ decl_test_parachains! {
             LocationToAccountId: container_chain_template_simple_runtime::xcm_config::LocationToAccountId,
             ParachainInfo: container_chain_template_simple_runtime::ParachainInfo,
             MessageOrigin: cumulus_primitives_core::AggregateMessageOrigin,
+            DigestProvider: (),
         },
         pallets = {
             System: container_chain_template_simple_runtime::System,
@@ -206,6 +209,7 @@ decl_test_parachains! {
             LocationToAccountId: crate::xcm_config::LocationToAccountId,
             ParachainInfo: crate::ParachainInfo,
             MessageOrigin: cumulus_primitives_core::AggregateMessageOrigin,
+            DigestProvider: (),
         },
         pallets = {
             System: crate::System,
@@ -226,6 +230,7 @@ decl_test_parachains! {
             LocationToAccountId: container_chain_template_frontier_runtime::xcm_config::LocationToAccountId,
             ParachainInfo: container_chain_template_frontier_runtime::ParachainInfo,
             MessageOrigin: cumulus_primitives_core::AggregateMessageOrigin,
+            DigestProvider: (),
         },
         pallets = {
             System: container_chain_template_frontier_runtime::System,
@@ -246,6 +251,7 @@ decl_test_parachains! {
             LocationToAccountId: container_chain_template_simple_runtime::xcm_config::LocationToAccountId,
             ParachainInfo: container_chain_template_simple_runtime::ParachainInfo,
             MessageOrigin: cumulus_primitives_core::AggregateMessageOrigin,
+            DigestProvider: (),
         },
         pallets = {
             System: container_chain_template_simple_runtime::System,
