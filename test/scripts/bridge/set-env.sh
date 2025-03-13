@@ -23,7 +23,7 @@ test_helpers_dir="$web_dir/packages/test-helpers"
 relay_bin="$relayer_root_dir/build/tanssi-bridge-relayer"
 
 RELAYER_COMMIT="05b5e6cf8fe836690cca4e88d2dff3307bf17fa4" # TODO: Change to tag when we do releases
-TANSSI_SYMBIOTIC_COMMIT="8680b7f41e23430ccfe9c9d02e490e1a1d1ceb5c" # TODO: Change to tag when we do release
+TANSSI_SYMBIOTIC_COMMIT="6406f8d4f6b1d134bb906dae3b819029adfcc911" # TODO: Change to tag when we do release
 GETH_TAG="v1.15.3" # We will need to investigate if this is right
 LODESTAR_TAG="v1.27.0"
 
