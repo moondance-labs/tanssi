@@ -454,6 +454,8 @@ where
         block_import_params.state_action =
             StateAction::ApplyChanges(sc_consensus::StorageChanges::Changes(storage_changes));
         block_import_params.fork_choice = Some(ForkChoiceStrategy::LongestChain);
+        // Disable block history download after warp sync
+        block_import_params.create_gap = false;
         block_import_params
     };
     let post_hash = block_import_params.post_hash();

@@ -52,27 +52,27 @@
                 {
                     "name": "Collator1000-01",
                     "command": "../target/release/tanssi-node",
-                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm", "-ldebug"]
                 },
                 {
                     "name": "Collator1000-02",
                     "command": "../target/release/tanssi-node",
-                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm", "-ldebug"]
                 },
                 {
                     "name": "Collator2000-01",
                     "command": "../target/release/tanssi-node",
-                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm", "-ldebug"]
                 },
                 {
                     "name": "Collator2000-02",
                     "command": "../target/release/tanssi-node",
-                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm", "-ldebug"]
                 },
                 {
                     "name": "Collator1000-03",
                     "command": "../target/release/tanssi-node",
-                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm", "-ldebug,sync=trace"]
                 }
             ]
         },
