@@ -319,6 +319,8 @@ pub fn container_chain_import_queue<RuntimeApi: MinimalContainerRuntimeApi>(
         &node_builder.task_manager.spawn_essential_handle(),
         parachain_config.prometheus_registry(),
         false,
+        // Disable gap creation to check if that avoids block history download in warp sync. dont_create_gap =
+        true,
     )
     .expect("function never fails");
 
