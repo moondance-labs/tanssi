@@ -757,14 +757,14 @@ fn mark_valid_for_collating_calls_registered_hook() {
 fn deregister_returns_bond_immediately_if_not_marked_as_valid() {
     new_test_ext().execute_with(|| {
         run_to_block(1);
-        let empty_genesis_data = empty_genesis_data();
-        let genesis_size_bytes = empty_genesis_data.encoded_size();
+        let genesis_data = empty_genesis_data();
+        let genesis_size_bytes = genesis_data.encoded_size();
         let bond = DataDepositPerByte::get() * genesis_size_bytes as u128;
         let balance_before = Balances::free_balance(ALICE);
         assert_ok!(ParaRegistrar::register(
             RuntimeOrigin::signed(ALICE),
             42.into(),
-            empty_genesis_data,
+            genesis_data,
             None
         ));
         assert_eq!(Balances::free_balance(ALICE), balance_before - bond);
@@ -780,14 +780,14 @@ fn deregister_returns_bond_immediately_if_not_marked_as_valid() {
 fn deregister_returns_bond_after_2_sessions_if_marked_as_valid() {
     new_test_ext().execute_with(|| {
         run_to_block(1);
-        let empty_genesis_data = empty_genesis_data();
-        let genesis_size_bytes = empty_genesis_data.encoded_size();
+        let genesis_data = empty_genesis_data();
+        let genesis_size_bytes = genesis_data.encoded_size();
         let bond = DataDepositPerByte::get() * genesis_size_bytes as u128;
         let balance_before = Balances::free_balance(ALICE);
         assert_ok!(ParaRegistrar::register(
             RuntimeOrigin::signed(ALICE),
             42.into(),
-            empty_genesis_data,
+            genesis_data,
             None
         ));
         assert_ok!(ParaRegistrar::mark_valid_for_collating(
@@ -1786,13 +1786,13 @@ mod deregister_with_relay_proof {
         // Create a relay state proof for an empty state. Check that any parachain can be deregistered.
         new_test_ext().execute_with(|| {
             run_to_block(1);
-            let empty_genesis_data = empty_genesis_data();
-            let genesis_size_bytes = empty_genesis_data.encoded_size();
+            let genesis_data = empty_genesis_data();
+            let genesis_size_bytes = genesis_data.encoded_size();
             let hold = DataDepositPerByte::get() * genesis_size_bytes as u128;
             assert_ok!(ParaRegistrar::register(
                 RuntimeOrigin::signed(ALICE),
                 42.into(),
-                empty_genesis_data,
+                genesis_data,
                 None
             ));
             assert!(ParaRegistrar::registrar_deposit(ParaId::from(42)).is_some());
@@ -1849,13 +1849,13 @@ mod deregister_with_relay_proof {
         // Create a relay state proof for an empty state. Check that any parachain can be deregistered.
         new_test_ext().execute_with(|| {
             run_to_block(1);
-            let empty_genesis_data = empty_genesis_data();
-            let genesis_size_bytes = empty_genesis_data.encoded_size();
+            let genesis_data = empty_genesis_data();
+            let genesis_size_bytes = genesis_data.encoded_size();
             let hold = DataDepositPerByte::get() * genesis_size_bytes as u128;
             assert_ok!(ParaRegistrar::register(
                 RuntimeOrigin::signed(ALICE),
                 42.into(),
-                empty_genesis_data,
+                genesis_data,
                 None
             ));
             assert!(ParaRegistrar::registrar_deposit(ParaId::from(42)).is_some());
