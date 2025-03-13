@@ -162,7 +162,7 @@ pub mod pallet {
             let minimum_sessions_required = T::MaxInactiveSessions::get() + 1;
             if current_session_id >= minimum_sessions_required {
                 total_weight += T::DbWeight::get().writes(1);
-                let _ = <crate::pallet::ActiveCollators<T>>::remove(
+                <crate::pallet::ActiveCollators<T>>::remove(
                     current_session_id - minimum_sessions_required,
                 );
             }
@@ -177,7 +177,7 @@ pub mod pallet {
                         .iter()
                         .for_each(|(para_id, collator_ids)| {
                             if !active_chains.contains(para_id) {
-                                collator_ids.iter().for_each(|collator_id| -> () {
+                                collator_ids.iter().for_each(|collator_id| {
                                     if !active_collators.contains(collator_id) {
                                         let _ = active_collators
                                             .try_push(collator_id.clone())
@@ -233,8 +233,8 @@ impl<T: Config> NodeActivityTrackingHelper<T::CollatorId> for Pallet<T> {
             return false;
         }
 
-        for session_index in current_session.saturating_sub(T::MaxInactiveSessions::get().into())
-            ..current_session.saturating_sub(1u32.into())
+        for session_index in current_session.saturating_sub(T::MaxInactiveSessions::get())
+            ..current_session.saturating_sub(1u32)
         {
             if <ActiveCollators<T>>::get(session_index).contains(node) {
                 return false;
@@ -249,7 +249,7 @@ impl<T: Config> AuthorNotingHook<T::CollatorId> for Pallet<T> {
         let mut total_weight = T::DbWeight::get().reads_writes(0, 0);
         for author_info in info {
             total_weight += Self::on_author_noted(author_info.author.clone());
-            total_weight += Self::on_chain_noted(author_info.para_id.clone());
+            total_weight += Self::on_chain_noted(author_info.para_id);
         }
         total_weight
     }
