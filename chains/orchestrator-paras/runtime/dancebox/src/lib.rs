@@ -80,12 +80,11 @@ use {
         PalletId,
     },
     frame_system::{
-        pallet_prelude::BlockNumberFor,
         limits::{BlockLength, BlockWeights},
+        pallet_prelude::BlockNumberFor,
         EnsureRoot, EnsureSigned,
     },
     nimbus_primitives::{NimbusId, SlotBeacon},
-    parity_scale_codec::{Decode, Encode},
     pallet_balances::NegativeImbalance,
     pallet_collator_assignment::{GetRandomnessForNextBlock, RotateCollatorsEveryNSessions},
     pallet_invulnerables::InvulnerableRewardDistribution,
@@ -99,24 +98,23 @@ use {
     pallet_stream_payment_runtime_api::{StreamPaymentApiError, StreamPaymentApiStatus},
     pallet_transaction_payment::FungibleAdapter,
     pallet_xcm_core_buyer::BuyingError,
+    parity_scale_codec::{Decode, Encode},
     polkadot_runtime_common::BlockHashCount,
     scale_info::prelude::format,
     serde::{Deserialize, Serialize},
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
-    sp_consensus_aura::{AURA_ENGINE_ID, SlotDuration},
+    sp_consensus_aura::{SlotDuration, AURA_ENGINE_ID},
     sp_consensus_slots::Slot,
     sp_core::{crypto::KeyTypeId, Get, MaxEncodedLen, OpaqueMetadata, H256},
     sp_runtime::{
-        Digest, DigestItem,
         generic, impl_opaque_keys,
         traits::{
-            Convert,
-            AccountIdConversion, AccountIdLookup, BlakeTwo256, Block as BlockT, ConvertInto,
-            Hash as HashT, IdentityLookup, Verify,
+            AccountIdConversion, AccountIdLookup, BlakeTwo256, Block as BlockT, Convert,
+            ConvertInto, Hash as HashT, IdentityLookup, Verify,
         },
         transaction_validity::{TransactionSource, TransactionValidity},
-        AccountId32, ApplyExtrinsicResult, Cow,
+        AccountId32, ApplyExtrinsicResult, Cow, Digest, DigestItem,
     },
     sp_std::{
         collections::{btree_map::BTreeMap, btree_set::BTreeSet},
@@ -560,18 +558,6 @@ impl Get<(Slot, SlotDuration)> for ParaSlotProvider {
     fn get() -> (Slot, SlotDuration) {
         let slot = u64::from(<Runtime as pallet_author_inherent::Config>::SlotBeacon::slot());
         (Slot::from(slot), SlotDuration::from_millis(SLOT_DURATION))
-    }
-}
-
-pub struct DanceboxDigestProvider;
-
-impl Convert<BlockNumberFor<Runtime>, Digest> for DanceboxDigestProvider {
-    fn convert(block_number: BlockNumberFor<Runtime>) -> Digest {
-        Digest {
-            logs: vec![
-                DigestItem::PreRuntime(AURA_ENGINE_ID, (block_number).encode()),
-            ],
-        }
     }
 }
 

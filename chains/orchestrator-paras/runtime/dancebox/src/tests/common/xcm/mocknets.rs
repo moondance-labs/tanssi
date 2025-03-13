@@ -25,14 +25,36 @@ use {
         impl_assert_events_helpers_for_parachain, xcm_emulator::decl_test_parachains,
     },
     frame_support::parameter_types,
+    frame_system::pallet_prelude::BlockNumberFor,
     parity_scale_codec::Encode,
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_runtime::generic::DigestItem,
+    sp_runtime::traits::Convert,
+    sp_runtime::Digest,
+    sp_std::marker::PhantomData,
     xcm::prelude::*,
     xcm_builder::{ParentIsPreset, SiblingParachainConvertsVia},
-    xcm_emulator::{decl_test_networks, decl_test_relay_chains, Chain},
+    xcm_emulator::{decl_test_networks, decl_test_relay_chains, Chain, HeaderT, Network},
     xcm_executor::traits::ConvertLocation,
 };
+
+pub struct TestDigestProvider<R: frame_system::Config, N: Network>(PhantomData<(R, N)>);
+
+impl<R: frame_system::Config, N: Network> Convert<BlockNumberFor<R>, Digest> for TestDigestProvider<R, N>
+where u64: From<<<<R as frame_system::Config>::Block as cumulus_primitives_core::BlockT>::Header as HeaderT>::Number> {
+    fn convert(_block_number: BlockNumberFor<R>) -> Digest {
+        let relay_block = N::relay_block_number();
+        
+        let slot = u64::from(relay_block.into());
+
+        let new_slot_digest: Digest = Digest {
+            logs: vec![
+                DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode()),
+            ],
+        };
+        new_slot_digest
+    }
+}
 
 decl_test_relay_chains! {
     #[api_version(11)]
@@ -106,7 +128,7 @@ decl_test_parachains! {
             LocationToAccountId: crate::xcm_config::LocationToAccountId,
             ParachainInfo: crate::ParachainInfo,
             MessageOrigin: cumulus_primitives_core::AggregateMessageOrigin,
-            DigestProvider: crate::DanceboxDigestProvider,
+            DigestProvider: TestDigestProvider<crate::Runtime, Self::Network>,
         },
         pallets = {
             System: crate::System,
@@ -127,7 +149,7 @@ decl_test_parachains! {
             LocationToAccountId: container_chain_template_frontier_runtime::xcm_config::LocationToAccountId,
             ParachainInfo: container_chain_template_frontier_runtime::ParachainInfo,
             MessageOrigin: cumulus_primitives_core::AggregateMessageOrigin,
-            DigestProvider: (),
+            DigestProvider: TestDigestProvider<container_chain_template_frontier_runtime::Runtime, Self::Network>,
         },
         pallets = {
             System: container_chain_template_frontier_runtime::System,
@@ -148,7 +170,7 @@ decl_test_parachains! {
             LocationToAccountId: container_chain_template_simple_runtime::xcm_config::LocationToAccountId,
             ParachainInfo: container_chain_template_simple_runtime::ParachainInfo,
             MessageOrigin: cumulus_primitives_core::AggregateMessageOrigin,
-            DigestProvider: (),
+            DigestProvider: TestDigestProvider<container_chain_template_simple_runtime::Runtime, Self::Network>,
         },
         pallets = {
             System: container_chain_template_simple_runtime::System,
@@ -209,7 +231,7 @@ decl_test_parachains! {
             LocationToAccountId: crate::xcm_config::LocationToAccountId,
             ParachainInfo: crate::ParachainInfo,
             MessageOrigin: cumulus_primitives_core::AggregateMessageOrigin,
-            DigestProvider: (),
+            DigestProvider: TestDigestProvider<crate::Runtime, Self::Network>,
         },
         pallets = {
             System: crate::System,
@@ -230,7 +252,7 @@ decl_test_parachains! {
             LocationToAccountId: container_chain_template_frontier_runtime::xcm_config::LocationToAccountId,
             ParachainInfo: container_chain_template_frontier_runtime::ParachainInfo,
             MessageOrigin: cumulus_primitives_core::AggregateMessageOrigin,
-            DigestProvider: (),
+            DigestProvider: TestDigestProvider<container_chain_template_frontier_runtime::Runtime, Self::Network>,
         },
         pallets = {
             System: container_chain_template_frontier_runtime::System,
@@ -251,7 +273,7 @@ decl_test_parachains! {
             LocationToAccountId: container_chain_template_simple_runtime::xcm_config::LocationToAccountId,
             ParachainInfo: container_chain_template_simple_runtime::ParachainInfo,
             MessageOrigin: cumulus_primitives_core::AggregateMessageOrigin,
-            DigestProvider: (),
+            DigestProvider: TestDigestProvider<container_chain_template_simple_runtime::Runtime, Self::Network>,
         },
         pallets = {
             System: container_chain_template_simple_runtime::System,

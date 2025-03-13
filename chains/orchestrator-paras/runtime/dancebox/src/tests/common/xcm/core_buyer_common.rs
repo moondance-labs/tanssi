@@ -20,8 +20,8 @@ use {
             empty_genesis_data, run_to_session, set_dummy_boot_node, start_block,
             xcm::{
                 mocknets::{
-                    DanceboxRococoPara as Dancebox, DanceboxSender, RococoRelay as Rococo,
-                    RococoRelayPallet, RococoSender,
+                    DanceboxRococoPara as Dancebox, DanceboxRococoParaPallet, DanceboxSender,
+                    RococoRelay as Rococo, RococoRelayPallet, RococoSender,
                 },
                 *,
             },
@@ -32,6 +32,7 @@ use {
     core::marker::PhantomData,
     cumulus_primitives_core::Weight,
     frame_support::assert_ok,
+    mocknets::DanceboxParaPallet,
     nimbus_primitives::NimbusId,
     pallet_xcm_core_buyer::RelayXcmWeightConfigInner,
     parity_scale_codec::Encode,
@@ -43,6 +44,8 @@ use {
     xcm_emulator::{assert_expected_events, Chain, RelayChain},
     xcm_executor::traits::ConvertLocation,
 };
+
+use xcm_emulator::Network;
 
 pub const PARATHREAD_ID: u32 = 3333;
 pub const ROCOCO_ED: u128 = rococo_runtime_constants::currency::EXISTENTIAL_DEPOSIT;
@@ -237,6 +240,13 @@ pub fn do_test(
                 Some(max_core_price)
             ));
         }
+
+        let number = <Dancebox as DanceboxRococoParaPallet>::System::block_number();
+
+        // Set current slot in the relay
+        <Dancebox as xcm_emulator::Chain>::Network::set_relay_block_number(
+            (number.saturating_add(1u32.into())).into(),
+        )
     });
 
     let parathread_tank_in_relay = get_parathread_tank_relay_address();

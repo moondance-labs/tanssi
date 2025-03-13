@@ -39,6 +39,7 @@ use {
 
 #[test]
 fn using_sovereign_works_from_tanssi() {
+    xcm_emulator::sp_tracing::try_init_simple();
     // XcmPallet send arguments
     let sudo_origin = <Dancebox as Chain>::RuntimeOrigin::root();
     let relay_destination: VersionedLocation = Location::parent().into();
