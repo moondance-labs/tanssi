@@ -27,9 +27,9 @@ import type {
     CumulusPrimitivesParachainInherentParachainInherentData,
     CumulusPrimitivesStorageWeightReclaimStorageWeightReclaim,
     DanceboxRuntimeOriginCaller,
-    DanceboxRuntimePreserversAssignementPaymentExtra,
-    DanceboxRuntimePreserversAssignementPaymentRequest,
-    DanceboxRuntimePreserversAssignementPaymentWitness,
+    DanceboxRuntimePreserversAssignmentPaymentExtra,
+    DanceboxRuntimePreserversAssignmentPaymentRequest,
+    DanceboxRuntimePreserversAssignmentPaymentWitness,
     DanceboxRuntimeProxyType,
     DanceboxRuntimeRuntime,
     DanceboxRuntimeRuntimeFreezeReason,
@@ -349,9 +349,9 @@ declare module "@polkadot/types/types/registry" {
         CumulusPrimitivesParachainInherentParachainInherentData: CumulusPrimitivesParachainInherentParachainInherentData;
         CumulusPrimitivesStorageWeightReclaimStorageWeightReclaim: CumulusPrimitivesStorageWeightReclaimStorageWeightReclaim;
         DanceboxRuntimeOriginCaller: DanceboxRuntimeOriginCaller;
-        DanceboxRuntimePreserversAssignementPaymentExtra: DanceboxRuntimePreserversAssignementPaymentExtra;
-        DanceboxRuntimePreserversAssignementPaymentRequest: DanceboxRuntimePreserversAssignementPaymentRequest;
-        DanceboxRuntimePreserversAssignementPaymentWitness: DanceboxRuntimePreserversAssignementPaymentWitness;
+        DanceboxRuntimePreserversAssignmentPaymentExtra: DanceboxRuntimePreserversAssignmentPaymentExtra;
+        DanceboxRuntimePreserversAssignmentPaymentRequest: DanceboxRuntimePreserversAssignmentPaymentRequest;
+        DanceboxRuntimePreserversAssignmentPaymentWitness: DanceboxRuntimePreserversAssignmentPaymentWitness;
         DanceboxRuntimeProxyType: DanceboxRuntimeProxyType;
         DanceboxRuntimeRuntime: DanceboxRuntimeRuntime;
         DanceboxRuntimeRuntimeFreezeReason: DanceboxRuntimeRuntimeFreezeReason;

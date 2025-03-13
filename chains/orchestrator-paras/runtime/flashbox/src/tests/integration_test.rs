@@ -17,11 +17,14 @@
 #![cfg(test)]
 
 use {
-    crate::{tests::common::*, RuntimeOrigin, StreamPaymentAssetId, TimeUnit},
+    crate::{
+        tests::common::*, PreserversAssignmentPaymentWitness, RuntimeOrigin, StreamPaymentAssetId,
+        TimeUnit,
+    },
     cumulus_primitives_core::{ParaId, Weight},
     dp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApiV1,
     dp_core::well_known_keys,
-    frame_support::{assert_noop, assert_ok, BoundedVec},
+    frame_support::{assert_err, assert_noop, assert_ok, BoundedVec},
     frame_system::ConsumedWeight,
     nimbus_primitives::NIMBUS_KEY_ID,
     pallet_author_noting_runtime_api::runtime_decl_for_author_noting_api::AuthorNotingApi,
@@ -30,6 +33,7 @@ use {
     pallet_registrar_runtime_api::{
         runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
     },
+    pallet_stream_payment::StreamConfig,
     parity_scale_codec::Encode,
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_core::Get,
@@ -45,7 +49,7 @@ use {
 
 fn set_dummy_boot_node(para_manager: RuntimeOrigin, para_id: ParaId) {
     use {
-        crate::{PreserversAssignementPaymentExtra, PreserversAssignementPaymentRequest},
+        crate::{PreserversAssignmentPaymentExtra, PreserversAssignmentPaymentRequest},
         pallet_data_preservers::{ParaIdsFilter, Profile, ProfileMode},
     };
 
@@ -57,7 +61,7 @@ fn set_dummy_boot_node(para_manager: RuntimeOrigin, para_id: ParaId) {
                 .expect("to fit in BoundedVec"),
         para_ids: ParaIdsFilter::AnyParaId,
         mode: ProfileMode::Bootnode,
-        assignment_request: PreserversAssignementPaymentRequest::Free,
+        assignment_request: PreserversAssignmentPaymentRequest::Free,
     };
 
     let profile_id = pallet_data_preservers::NextProfileId::<Runtime>::get();
@@ -69,7 +73,7 @@ fn set_dummy_boot_node(para_manager: RuntimeOrigin, para_id: ParaId) {
         para_manager,
         profile_id,
         para_id,
-        PreserversAssignementPaymentExtra::Free,
+        PreserversAssignmentPaymentExtra::Free,
     )
     .expect("assignement to work");
 
@@ -3946,8 +3950,8 @@ fn test_migration_data_preservers_assignments() {
         }
 
         let account = AccountId::from([0u8; 32]);
-        let free_request = crate::PreserversAssignementPaymentRequest::Free;
-        let free_witness = crate::PreserversAssignementPaymentWitness::Free;
+        let free_request = crate::PreserversAssignmentPaymentRequest::Free;
+        let free_witness = crate::PreserversAssignmentPaymentWitness::Free;
 
         let pallet_prefix: &[u8] = b"DataPreservers";
         let storage_item_prefix: &[u8] = b"BootNodes";
@@ -4280,5 +4284,160 @@ fn test_container_deregister_unassign_data_preserver() {
 
             // Check DataPreserver assignment has been cleared
             assert!(pallet_data_preservers::Assignments::<Runtime>::get(para_id).is_empty());
+        });
+}
+
+#[test]
+fn test_data_preserver_with_stream_payment() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            use pallet_data_preservers::{
+                AssignerParameterOf, ParaIdsFilter, Profile, ProfileMode, ProviderRequestOf,
+            };
+
+            let profile = Profile {
+                url: b"test".to_vec().try_into().unwrap(),
+                para_ids: ParaIdsFilter::AnyParaId,
+                mode: ProfileMode::Bootnode,
+                assignment_request: ProviderRequestOf::<Runtime>::StreamPayment {
+                    config: StreamConfig {
+                        time_unit: TimeUnit::BlockNumber,
+                        asset_id: StreamPaymentAssetId::Native,
+                        rate: 42,
+                        minimum_request_deadline_delay: 0,
+                        soft_minimum_deposit: 0,
+                    },
+                },
+            };
+
+            let para_id = ParaId::from(1002);
+            let profile_id = 0u64;
+
+            assert_ok!(Registrar::register(
+                origin_of(ALICE.into()),
+                para_id,
+                empty_genesis_data(),
+                None
+            ));
+
+            assert_ok!(DataPreservers::create_profile(
+                origin_of(BOB.into()),
+                profile.clone(),
+            ));
+
+            // Start assignment
+            assert_ok!(DataPreservers::start_assignment(
+                origin_of(ALICE.into()),
+                profile_id,
+                para_id,
+                AssignerParameterOf::<Runtime>::StreamPayment {
+                    initial_deposit: 1_000
+                }
+            ));
+            assert!(
+                pallet_data_preservers::Assignments::<Runtime>::get(para_id).contains(&profile_id)
+            );
+            let profile = pallet_data_preservers::Profiles::<Runtime>::get(&profile_id)
+                .expect("profile to exists");
+            let (assigned_para_id, witness) = profile.assignment.expect("profile to be assigned");
+            assert_eq!(assigned_para_id, para_id);
+            assert_eq!(
+                witness,
+                PreserversAssignmentPaymentWitness::StreamPayment { stream_id: 0 }
+            );
+        });
+}
+
+#[test]
+fn test_data_preserver_kind_needs_to_match() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            use pallet_data_preservers::{
+                AssignerParameterOf, ParaIdsFilter, Profile, ProfileMode, ProviderRequestOf,
+            };
+
+            let profile = Profile {
+                url: b"test".to_vec().try_into().unwrap(),
+                para_ids: ParaIdsFilter::AnyParaId,
+                mode: ProfileMode::Bootnode,
+                assignment_request: ProviderRequestOf::<Runtime>::Free,
+            };
+
+            let para_id = ParaId::from(1002);
+            let profile_id = 0u64;
+
+            assert_ok!(Registrar::register(
+                origin_of(ALICE.into()),
+                para_id,
+                empty_genesis_data(),
+                None
+            ));
+
+            assert_ok!(DataPreservers::create_profile(
+                origin_of(BOB.into()),
+                profile.clone(),
+            ));
+
+            // Start assignment
+            assert_err!(
+                DataPreservers::start_assignment(
+                    origin_of(ALICE.into()),
+                    profile_id,
+                    para_id,
+                    AssignerParameterOf::<Runtime>::StreamPayment {
+                        initial_deposit: 1_000
+                    }
+                ),
+                pallet_data_preservers::Error::<Runtime>::AssignmentPaymentRequestParameterMismatch
+            );
+        });
+}
+
+#[test]
+fn test_registrar_extrinsic_permissions() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (
+                cumulus_primitives_core::relay_chain::AccountId::from(ALICE),
+                210_000 * UNIT,
+            ),
+            (
+                cumulus_primitives_core::relay_chain::AccountId::from(BOB),
+                100_000 * UNIT,
+            ),
+        ])
+        .with_empty_parachains(vec![1001])
+        .build()
+        .execute_with(|| {
+            let para_id = ParaId::from(1001);
+
+            // Pause container chain should fail if not para manager
+            assert_noop!(
+                Registrar::pause_container_chain(origin_of(BOB.into()), para_id),
+                BadOrigin
+            );
+
+            // Set Bob as para manager
+            assert_ok!(Registrar::set_para_manager(
+                root_origin(),
+                para_id,
+                AccountId::from(BOB)
+            ));
+
+            // Pause container chain should succeed if para manager
+            assert_ok!(
+                Registrar::pause_container_chain(origin_of(BOB.into()), para_id),
+                ()
+            );
         });
 }

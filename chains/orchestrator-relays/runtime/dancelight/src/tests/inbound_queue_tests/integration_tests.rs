@@ -21,7 +21,7 @@ use {
     },
     alloy_sol_types::SolEvent,
     frame_system::pallet_prelude::OriginFor,
-    keyring::AccountKeyring,
+    keyring::Sr25519Keyring,
     parity_scale_codec::Encode,
     snowbridge_core::{
         inbound::{Log, Message},
@@ -73,9 +73,9 @@ fn test_inbound_queue_message_passing() {
         }), Err(DispatchError::Other("No handler for message found")));
 
         let payload_validators = vec![
-            AccountKeyring::Charlie.to_account_id(),
-            AccountKeyring::Ferdie.to_account_id(),
-            AccountKeyring::BobStash.to_account_id()
+            Sr25519Keyring::Charlie.to_account_id(),
+            Sr25519Keyring::Ferdie.to_account_id(),
+            Sr25519Keyring::BobStash.to_account_id()
         ];
 
         let payload = Payload {

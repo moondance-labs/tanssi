@@ -76,10 +76,10 @@ pub mod snowbridge {
 
     parameter_types! {
             /// Network and location for the Ethereum chain. On Stagelight, the Ethereum chain bridged
-            /// to is the Holesky Ethereum testnet, with chain ID 17000.
-            /// <https://chainlist.org/chain/17000>
+            /// to is the Sepolia Ethereum testnet, with chain ID 11155111.
+            /// <https://chainlist.org/chain/11155111>
             /// <https://ethereum.org/en/developers/docs/apis/json-rpc/#net_version>
-            pub EthereumNetwork: NetworkId = NetworkId::Ethereum { chain_id: 17000 };
+            pub EthereumNetwork: NetworkId = NetworkId::Ethereum { chain_id: 11155111 };
             pub EthereumLocation: Location = Location::new(1, EthereumNetwork::get());
 
     }

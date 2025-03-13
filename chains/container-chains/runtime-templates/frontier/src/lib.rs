@@ -291,7 +291,12 @@ impl WeightToFeePolynomial for WeightToFee {
     fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
         // in Rococo, extrinsic base weight (smallest non-zero weight) is mapped to 1 MILLIUNIT:
         // in our template, we map to 1/10 of that, or 1/10 MILLIUNIT
+        // for benchmarks, we simply put a value to get a coefficeint of 1
+        #[cfg(not(feature = "runtime-benchmarks"))]
         let p = currency::MILLIUNIT / 10;
+        #[cfg(feature = "runtime-benchmarks")]
+        let p = 100 * Balance::from(ExtrinsicBaseWeight::get().ref_time());
+
         let q = 100 * Balance::from(ExtrinsicBaseWeight::get().ref_time());
         smallvec![WeightToFeeCoefficient {
             degree: 1,
@@ -467,7 +472,7 @@ impl frame_system::Config for Runtime {
     type PreInherents = ();
     type PostInherents = ();
     type PostTransactions = ();
-    type ExtensionsWeightInfo = ();
+    type ExtensionsWeightInfo = weights::frame_system_extensions::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -482,7 +487,7 @@ impl pallet_transaction_payment::Config for Runtime {
     type WeightToFee = WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
     type FeeMultiplierUpdate = SlowAdjustingFeeUpdate<Self>;
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_transaction_payment::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -1032,11 +1037,13 @@ construct_runtime!(
 mod benches {
     frame_benchmarking::define_benchmarks!(
         [frame_system, frame_system_benchmarking::Pallet::<Runtime>]
+        [frame_system_extensions, frame_system_benchmarking::extensions::Pallet::<Runtime>]
         [cumulus_pallet_parachain_system, ParachainSystem]
         [pallet_timestamp, Timestamp]
         [pallet_sudo, Sudo]
         [pallet_utility, Utility]
         [pallet_proxy, Proxy]
+        [pallet_transaction_payment, TransactionPayment]
         [pallet_tx_pause, TxPause]
         [pallet_balances, Balances]
         [pallet_multiblock_migrations, MultiBlockMigrations]
