@@ -127,6 +127,7 @@ declare module "@polkadot/api-base/types/consts" {
             [key: string]: Codec;
         };
         containerRegistrar: {
+            dataDepositPerByte: u128 & AugmentedConst<ApiType>;
             depositAmount: u128 & AugmentedConst<ApiType>;
             /**
              * Max length of encoded genesis data
