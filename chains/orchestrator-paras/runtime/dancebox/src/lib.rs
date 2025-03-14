@@ -61,10 +61,10 @@ use {
         pallet_prelude::DispatchResult,
         parameter_types,
         traits::{
-            fungible::{Balanced, Credit, Inspect, InspectHold, Mutate, MutateHold},
+            fungible::{Balanced, Credit, Inspect},
             tokens::{
-                imbalance::ResolveTo, ConversionToAssetBalance, PayFromAccount, Precision,
-                Preservation, UnityAssetBalanceConversion,
+                imbalance::ResolveTo, ConversionToAssetBalance, PayFromAccount,
+                UnityAssetBalanceConversion,
             },
             ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Contains, EitherOfDiverse,
             Imbalance, InsideBoth, InstanceFilter, OnUnbalanced, ValidatorRegistration,
@@ -1731,128 +1731,6 @@ impl pallet_tx_pause::Config for Runtime {
     type WeightInfo = weights::pallet_tx_pause::SubstrateWeight<Runtime>;
 }
 
-#[apply(derive_storage_traits)]
-#[derive(Copy, Serialize, Deserialize, MaxEncodedLen)]
-pub enum StreamPaymentAssetId {
-    Native,
-}
-
-pub struct StreamPaymentAssets;
-impl pallet_stream_payment::Assets<AccountId, StreamPaymentAssetId, Balance>
-    for StreamPaymentAssets
-{
-    fn transfer_deposit(
-        asset_id: &StreamPaymentAssetId,
-        from: &AccountId,
-        to: &AccountId,
-        amount: Balance,
-    ) -> frame_support::pallet_prelude::DispatchResult {
-        match asset_id {
-            StreamPaymentAssetId::Native => {
-                // We remove the hold before transfering.
-                Self::decrease_deposit(asset_id, from, amount)?;
-                Balances::transfer(from, to, amount, Preservation::Preserve).map(|_| ())
-            }
-        }
-    }
-
-    fn increase_deposit(
-        asset_id: &StreamPaymentAssetId,
-        account: &AccountId,
-        amount: Balance,
-    ) -> frame_support::pallet_prelude::DispatchResult {
-        match asset_id {
-            StreamPaymentAssetId::Native => Balances::hold(
-                &pallet_stream_payment::HoldReason::StreamPayment.into(),
-                account,
-                amount,
-            ),
-        }
-    }
-
-    fn decrease_deposit(
-        asset_id: &StreamPaymentAssetId,
-        account: &AccountId,
-        amount: Balance,
-    ) -> frame_support::pallet_prelude::DispatchResult {
-        match asset_id {
-            StreamPaymentAssetId::Native => Balances::release(
-                &pallet_stream_payment::HoldReason::StreamPayment.into(),
-                account,
-                amount,
-                Precision::Exact,
-            )
-            .map(|_| ()),
-        }
-    }
-
-    fn get_deposit(asset_id: &StreamPaymentAssetId, account: &AccountId) -> Balance {
-        match asset_id {
-            StreamPaymentAssetId::Native => Balances::balance_on_hold(
-                &pallet_stream_payment::HoldReason::StreamPayment.into(),
-                account,
-            ),
-        }
-    }
-
-    /// Benchmarks: should return the asset id which has the worst performance when interacting
-    /// with it.
-    #[cfg(feature = "runtime-benchmarks")]
-    fn bench_worst_case_asset_id() -> StreamPaymentAssetId {
-        StreamPaymentAssetId::Native
-    }
-
-    /// Benchmarks: should return the another asset id which has the worst performance when interacting
-    /// with it afther `bench_worst_case_asset_id`. This is to benchmark the worst case when changing config
-    /// from one asset to another.
-    #[cfg(feature = "runtime-benchmarks")]
-    fn bench_worst_case_asset_id2() -> StreamPaymentAssetId {
-        StreamPaymentAssetId::Native
-    }
-
-    /// Benchmarks: should set the balance for the asset id returned by `bench_worst_case_asset_id`.
-    #[cfg(feature = "runtime-benchmarks")]
-    fn bench_set_balance(asset_id: &StreamPaymentAssetId, account: &AccountId, amount: Balance) {
-        // only one asset id
-        let StreamPaymentAssetId::Native = asset_id;
-
-        Balances::set_balance(account, amount);
-    }
-}
-
-#[apply(derive_storage_traits)]
-#[derive(Copy, Serialize, Deserialize, MaxEncodedLen)]
-pub enum TimeUnit {
-    BlockNumber,
-    Timestamp,
-    // TODO: Container chains/relay block number.
-}
-
-pub struct TimeProvider;
-impl pallet_stream_payment::TimeProvider<TimeUnit, Balance> for TimeProvider {
-    fn now(unit: &TimeUnit) -> Option<Balance> {
-        match *unit {
-            TimeUnit::BlockNumber => Some(System::block_number().into()),
-            TimeUnit::Timestamp => Some(Timestamp::get().into()),
-        }
-    }
-
-    /// Benchmarks: should return the time unit which has the worst performance calling
-    /// `TimeProvider::now(unit)` with.
-    #[cfg(feature = "runtime-benchmarks")]
-    fn bench_worst_case_time_unit() -> TimeUnit {
-        // Both BlockNumber and Timestamp cost the same (1 db read), but overriding timestamp
-        // doesn't work well in benches, while block number works fine.
-        TimeUnit::BlockNumber
-    }
-
-    /// Benchmarks: sets the "now" time for time unit returned by `worst_case_time_unit`.
-    #[cfg(feature = "runtime-benchmarks")]
-    fn bench_set_now(instant: Balance) {
-        System::set_block_number(instant as u32)
-    }
-}
-
 type StreamId = u64;
 
 parameter_types! {
@@ -1863,14 +1741,14 @@ parameter_types! {
 impl pallet_stream_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type StreamId = StreamId;
-    type TimeUnit = TimeUnit;
+    type TimeUnit = tp_stream_payment_common::TimeUnit;
     type Balance = Balance;
-    type AssetId = StreamPaymentAssetId;
-    type Assets = StreamPaymentAssets;
+    type AssetId = tp_stream_payment_common::AssetId;
+    type AssetsManager = tp_stream_payment_common::AssetsManager<Runtime>;
     type Currency = Balances;
     type OpenStreamHoldAmount = OpenStreamHoldAmount;
     type RuntimeHoldReason = RuntimeHoldReason;
-    type TimeProvider = TimeProvider;
+    type TimeProvider = tp_stream_payment_common::TimeProvider<Runtime>;
     type WeightInfo = weights::pallet_stream_payment::SubstrateWeight<Runtime>;
 }
 

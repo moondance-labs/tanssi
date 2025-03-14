@@ -19,7 +19,7 @@
 use {
     crate::{
         tests::common::*, PreserversAssignmentPaymentWitness, RewardsCollatorCommission,
-        StreamPayment, StreamPaymentAssetId, TimeUnit, TransactionPayment,
+        StreamPayment, TransactionPayment,
     },
     cumulus_primitives_core::ParaId,
     dp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApiV1,
@@ -53,6 +53,9 @@ use {
         MigrateServicesPaymentAddCollatorAssignmentCredits, RegistrarPendingVerificationValueToMap,
     },
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
+    tp_stream_payment_common::{
+        AssetId as StreamPaymentAssetId, TimeUnit as StreamPaymentTimeUnit,
+    },
     tp_traits::{ContainerChainBlockInfo, SlotFrequency},
     xcm::latest::prelude::*,
 };
@@ -5064,7 +5067,7 @@ fn stream_payment_works() {
                 StreamConfig {
                     rate: 2 * UNIT,
                     asset_id: StreamPaymentAssetId::Native,
-                    time_unit: TimeUnit::BlockNumber,
+                    time_unit: StreamPaymentTimeUnit::BlockNumber,
                     minimum_request_deadline_delay: 0,
                     soft_minimum_deposit: 0,
                 },
@@ -5086,7 +5089,7 @@ fn stream_payment_works() {
                 StreamConfig {
                     rate: 1 * UNIT,
                     asset_id: StreamPaymentAssetId::Native,
-                    time_unit: TimeUnit::BlockNumber,
+                    time_unit: StreamPaymentTimeUnit::BlockNumber,
                     minimum_request_deadline_delay: 0,
                     soft_minimum_deposit: 0,
                 },
@@ -6124,11 +6127,11 @@ fn test_migration_stream_payment_config_new_fields() {
 
         frame_support::storage::unhashed::put(
             &pallet_stream_payment::Streams::<Runtime>::hashed_key_for(0),
-            &OldStream::<AccountId, TimeUnit, StreamPaymentAssetId, Balance> {
+            &OldStream::<AccountId, StreamPaymentTimeUnit, StreamPaymentAssetId, Balance> {
                 source: ALICE.into(),
                 target: BOB.into(),
                 config: OldStreamConfig {
-                    time_unit: TimeUnit::Timestamp,
+                    time_unit: StreamPaymentTimeUnit::Timestamp,
                     asset_id: StreamPaymentAssetId::Native,
                     rate: 41,
                 },
@@ -6139,7 +6142,7 @@ fn test_migration_stream_payment_config_new_fields() {
                     requester: Party::Source,
                     kind: ChangeKind::Mandatory { deadline: 45 },
                     new_config: OldStreamConfig {
-                        time_unit: TimeUnit::BlockNumber,
+                        time_unit: StreamPaymentTimeUnit::BlockNumber,
                         asset_id: StreamPaymentAssetId::Native,
                         rate: 46,
                     },
@@ -6151,11 +6154,11 @@ fn test_migration_stream_payment_config_new_fields() {
 
         frame_support::storage::unhashed::put(
             &pallet_stream_payment::Streams::<Runtime>::hashed_key_for(1),
-            &OldStream::<AccountId, TimeUnit, StreamPaymentAssetId, Balance> {
+            &OldStream::<AccountId, StreamPaymentTimeUnit, StreamPaymentAssetId, Balance> {
                 source: CHARLIE.into(),
                 target: ALICE.into(),
                 config: OldStreamConfig {
-                    time_unit: TimeUnit::Timestamp,
+                    time_unit: StreamPaymentTimeUnit::Timestamp,
                     asset_id: StreamPaymentAssetId::Native,
                     rate: 100,
                 },
@@ -6176,7 +6179,7 @@ fn test_migration_stream_payment_config_new_fields() {
                 source: ALICE.into(),
                 target: BOB.into(),
                 config: StreamConfig {
-                    time_unit: TimeUnit::Timestamp,
+                    time_unit: StreamPaymentTimeUnit::Timestamp,
                     asset_id: StreamPaymentAssetId::Native,
                     rate: 41,
                     minimum_request_deadline_delay: 0,
@@ -6189,7 +6192,7 @@ fn test_migration_stream_payment_config_new_fields() {
                     requester: Party::Source,
                     kind: ChangeKind::Mandatory { deadline: 45 },
                     new_config: StreamConfig {
-                        time_unit: TimeUnit::BlockNumber,
+                        time_unit: StreamPaymentTimeUnit::BlockNumber,
                         asset_id: StreamPaymentAssetId::Native,
                         rate: 46,
                         minimum_request_deadline_delay: 0,
@@ -6207,7 +6210,7 @@ fn test_migration_stream_payment_config_new_fields() {
                 source: CHARLIE.into(),
                 target: ALICE.into(),
                 config: StreamConfig {
-                    time_unit: TimeUnit::Timestamp,
+                    time_unit: StreamPaymentTimeUnit::Timestamp,
                     asset_id: StreamPaymentAssetId::Native,
                     rate: 100,
                     minimum_request_deadline_delay: 0,
@@ -6294,7 +6297,7 @@ fn test_data_preserver_with_stream_payment() {
                 mode: ProfileMode::Bootnode,
                 assignment_request: ProviderRequestOf::<Runtime>::StreamPayment {
                     config: StreamConfig {
-                        time_unit: TimeUnit::BlockNumber,
+                        time_unit: StreamPaymentTimeUnit::BlockNumber,
                         asset_id: StreamPaymentAssetId::Native,
                         rate: 42,
                         minimum_request_deadline_delay: 0,

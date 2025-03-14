@@ -121,7 +121,7 @@ pub enum StreamPaymentAssetId {
 }
 
 pub struct StreamPaymentAssets;
-impl pallet_stream_payment::Assets<AccountId, StreamPaymentAssetId, Balance>
+impl pallet_stream_payment::AssetsManager<AccountId, StreamPaymentAssetId, Balance>
     for StreamPaymentAssets
 {
     fn transfer_deposit(
@@ -251,7 +251,7 @@ impl pallet_stream_payment::Config for Runtime {
     type TimeUnit = TimeUnit;
     type Balance = Balance;
     type AssetId = StreamPaymentAssetId;
-    type Assets = StreamPaymentAssets;
+    type AssetsManager = StreamPaymentAssets;
     type Currency = Balances;
     type OpenStreamHoldAmount = OpenStreamHoldAmount;
     type RuntimeHoldReason = RuntimeHoldReason;

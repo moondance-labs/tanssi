@@ -75,7 +75,7 @@ pub trait TimeProvider<Unit, Number> {
 }
 
 /// Interactions the pallet needs with assets.
-pub trait Assets<AccountId, AssetId, Balance> {
+pub trait AssetsManager<AccountId, AssetId, Balance> {
     /// Transfer assets deposited by an account to another account.
     /// Those assets should not be considered deposited in the target account.
     fn transfer_deposit(
@@ -146,7 +146,7 @@ pub mod pallet {
         type AssetId: Debug + Clone + FullCodec + TypeInfo + MaxEncodedLen + PartialEq + Eq;
 
         /// Provide interaction with assets.
-        type Assets: Assets<Self::AccountId, Self::AssetId, Self::Balance>;
+        type AssetsManager: AssetsManager<Self::AccountId, Self::AssetId, Self::Balance>;
 
         /// Currency for the opening balance hold for the storage used by the Stream.
         /// NOT to be confused with Assets.
@@ -530,7 +530,11 @@ pub mod pallet {
             );
 
             // Unfreeze funds left in the stream.
-            T::Assets::decrease_deposit(&stream.config.asset_id, &stream.source, stream.deposit)?;
+            T::AssetsManager::decrease_deposit(
+                &stream.config.asset_id,
+                &stream.source,
+                stream.deposit,
+            )?;
 
             // Release opening deposit
             if stream.opening_deposit > 0u32.into() {
@@ -751,14 +755,18 @@ pub mod pallet {
                     );
 
                     // Release deposit in old asset.
-                    T::Assets::decrease_deposit(
+                    T::AssetsManager::decrease_deposit(
                         &old_config.asset_id,
                         &stream.source,
                         stream.deposit,
                     )?;
 
                     // Make deposit in new asset.
-                    T::Assets::increase_deposit(&stream.config.asset_id, &stream.source, amount)?;
+                    T::AssetsManager::increase_deposit(
+                        &stream.config.asset_id,
+                        &stream.source,
+                        amount,
+                    )?;
                     stream.deposit = amount;
                 }
                 // It doesn't make sense to change asset while not providing an absolute new
@@ -891,7 +899,7 @@ pub mod pallet {
             }
 
             // Freeze initial deposit.
-            T::Assets::increase_deposit(&config.asset_id, &origin, initial_deposit)?;
+            T::AssetsManager::increase_deposit(&config.asset_id, &origin, initial_deposit)?;
 
             // Create stream data.
             let now =
@@ -1047,7 +1055,7 @@ pub mod pallet {
             }
 
             // Transfer from the source to target.
-            T::Assets::transfer_deposit(
+            T::AssetsManager::transfer_deposit(
                 &stream.config.asset_id,
                 &stream.source,
                 &stream.target,
@@ -1076,7 +1084,7 @@ pub mod pallet {
             match change {
                 DepositChange::Absolute(amount) => {
                     if let Some(increase) = amount.checked_sub(&stream.deposit) {
-                        T::Assets::increase_deposit(
+                        T::AssetsManager::increase_deposit(
                             &stream.config.asset_id,
                             &stream.source,
                             increase,
@@ -1088,7 +1096,7 @@ pub mod pallet {
                             );
                         }
 
-                        T::Assets::decrease_deposit(
+                        T::AssetsManager::decrease_deposit(
                             &stream.config.asset_id,
                             &stream.source,
                             decrease,
@@ -1101,7 +1109,11 @@ pub mod pallet {
                         .deposit
                         .checked_add(&increase)
                         .ok_or(ArithmeticError::Overflow)?;
-                    T::Assets::increase_deposit(&stream.config.asset_id, &stream.source, increase)?;
+                    T::AssetsManager::increase_deposit(
+                        &stream.config.asset_id,
+                        &stream.source,
+                        increase,
+                    )?;
                 }
                 DepositChange::Decrease(decrease) => {
                     let new_deposit = stream
@@ -1114,7 +1126,11 @@ pub mod pallet {
                     }
 
                     stream.deposit = new_deposit;
-                    T::Assets::decrease_deposit(&stream.config.asset_id, &stream.source, decrease)?;
+                    T::AssetsManager::decrease_deposit(
+                        &stream.config.asset_id,
+                        &stream.source,
+                        decrease,
+                    )?;
                 }
             }
 

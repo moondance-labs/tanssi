@@ -3391,6 +3391,7 @@ dependencies = [
  "tanssi-runtime-common",
  "test-relay-sproof-builder",
  "tp-author-noting-inherent",
+ "tp-stream-payment-common",
  "tp-traits",
  "tp-xcm-commons",
  "tp-xcm-core-buyer",
@@ -3554,6 +3555,7 @@ dependencies = [
  "tokio",
  "tp-author-noting-inherent",
  "tp-bridge",
+ "tp-stream-payment-common",
  "tp-traits",
  "tp-xcm-commons",
  "westend-runtime",
@@ -5025,6 +5027,7 @@ dependencies = [
  "tanssi-runtime-common",
  "test-relay-sproof-builder",
  "tp-author-noting-inherent",
+ "tp-stream-payment-common",
  "tp-traits",
 ]
 
@@ -19852,6 +19855,25 @@ version = "0.1.0"
 dependencies = [
  "sp-core",
  "sp-runtime",
+]
+
+[[package]]
+name = "tp-stream-payment-common"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "pallet-stream-payment",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "polkadot-primitives",
+ "scale-info",
+ "serde",
+ "sp-core",
+ "sp-runtime",
+ "sp-std",
+ "tp-traits",
 ]
 
 [[package]]

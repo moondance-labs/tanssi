@@ -20,8 +20,7 @@ use sp_runtime::traits::BadOrigin;
 use {
     crate::{
         tests::common::*, Balances, CollatorConfiguration, ContainerRegistrar, DataPreservers,
-        PreserversAssignmentPaymentWitness, Registrar, StreamPayment, StreamPaymentAssetId,
-        TimeUnit,
+        PreserversAssignmentPaymentWitness, Registrar, StreamPayment,
     },
     cumulus_primitives_core::{relay_chain::HeadData, ParaId},
     dancelight_runtime_constants::currency::EXISTENTIAL_DEPOSIT,
@@ -31,6 +30,9 @@ use {
     },
     pallet_stream_payment::StreamConfig,
     sp_std::vec,
+    tp_stream_payment_common::{
+        AssetId as StreamPaymentAssetId, TimeUnit as StreamPaymentTimeUnit,
+    },
 };
 
 #[test]
@@ -380,7 +382,7 @@ fn stream_payment_works() {
                 StreamConfig {
                     rate: 2 * UNIT,
                     asset_id: StreamPaymentAssetId::Native,
-                    time_unit: TimeUnit::BlockNumber,
+                    time_unit: StreamPaymentTimeUnit::BlockNumber,
                     minimum_request_deadline_delay: 0,
                     soft_minimum_deposit: 0,
                 },
@@ -402,7 +404,7 @@ fn stream_payment_works() {
                 StreamConfig {
                     rate: 1 * UNIT,
                     asset_id: StreamPaymentAssetId::Native,
-                    time_unit: TimeUnit::BlockNumber,
+                    time_unit: StreamPaymentTimeUnit::BlockNumber,
                     minimum_request_deadline_delay: 0,
                     soft_minimum_deposit: 0,
                 },
@@ -450,7 +452,7 @@ fn test_data_preserver_with_stream_payment() {
                 mode: ProfileMode::Bootnode,
                 assignment_request: ProviderRequestOf::<Runtime>::StreamPayment {
                     config: StreamConfig {
-                        time_unit: TimeUnit::BlockNumber,
+                        time_unit: StreamPaymentTimeUnit::BlockNumber,
                         asset_id: StreamPaymentAssetId::Native,
                         rate: 42,
                         minimum_request_deadline_delay: 0,
