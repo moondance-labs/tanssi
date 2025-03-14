@@ -322,6 +322,7 @@ fn dancelight_testnet_genesis(
         crate::DancelightBondAccount::get(),
         crate::PendingRewardsAccount::get(),
         crate::EthereumSovereignAccount::get(),
+        crate::SnowbridgeFeesAccount::get(),
     ];
 
     serde_json::json!({

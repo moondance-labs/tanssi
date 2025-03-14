@@ -21,7 +21,7 @@ use {
         bridge_to_ethereum_config::{EthereumGatewayAddress, NativeTokenTransferMessageProcessor},
         tests::common::*,
         Balances, EthereumInboundQueue, EthereumSovereignAccount, EthereumSystem,
-        EthereumTokenTransfers, RuntimeEvent, TokenLocationReanchored, TreasuryAccount,
+        EthereumTokenTransfers, RuntimeEvent, SnowbridgeFeesAccount, TokenLocationReanchored,
     },
     alloy_sol_types::SolEvent,
     frame_support::{assert_noop, assert_ok},
@@ -182,12 +182,12 @@ fn test_transfer_native_token() {
 
             let alice_balance_before = Balances::free_balance(AccountId::from(ALICE));
 
-            // No balance in Ethereum sovereign and treasury accounts yet.
+            // No balance in Ethereum sovereign and fees accounts yet.
             assert_eq!(
                 Balances::free_balance(EthereumSovereignAccount::get()),
                 0u128
             );
-            assert_eq!(Balances::free_balance(TreasuryAccount::get()), 0u128);
+            assert_eq!(Balances::free_balance(SnowbridgeFeesAccount::get()), 0u128);
 
             let amount_to_transfer = 100 * UNIT;
             let recipient = H160::random();
@@ -272,7 +272,10 @@ fn test_transfer_native_token() {
                 Balances::free_balance(EthereumSovereignAccount::get()),
                 amount_to_transfer
             );
-            assert_eq!(Balances::free_balance(TreasuryAccount::get()), fee_found);
+            assert_eq!(
+                Balances::free_balance(SnowbridgeFeesAccount::get()),
+                fee_found
+            );
         });
 }
 
@@ -413,7 +416,7 @@ fn receive_native_tokens_from_eth_happy_path() {
     ExtBuilder::default()
         .with_balances(vec![
             (EthereumSovereignAccount::get(), 100_000 * UNIT),
-            (TreasuryAccount::get(), 100_000 * UNIT),
+            (SnowbridgeFeesAccount::get(), 100_000 * UNIT),
             (AccountId::from(ALICE), 100_000 * UNIT),
             (AccountId::from(BOB), 100_000 * UNIT),
         ])
@@ -484,7 +487,7 @@ fn receive_native_tokens_from_eth_happy_path() {
             };
 
             let sovereign_balance_before = Balances::free_balance(EthereumSovereignAccount::get());
-            let treasury_balance_before = Balances::free_balance(TreasuryAccount::get());
+            let fees_account_balance_before = Balances::free_balance(SnowbridgeFeesAccount::get());
             let relayer_balance_before = Balances::free_balance(AccountId::from(ALICE));
             let bob_balance_before = Balances::free_balance(AccountId::from(BOB));
 
@@ -504,8 +507,8 @@ fn receive_native_tokens_from_eth_happy_path() {
 
             // Fees are payed
             assert_eq!(
-                Balances::free_balance(TreasuryAccount::get()),
-                treasury_balance_before - fee
+                Balances::free_balance(SnowbridgeFeesAccount::get()),
+                fees_account_balance_before - fee
             );
 
             assert_eq!(
