@@ -80,7 +80,7 @@ fn whitelisted_validators_priority() {
             // Try to insert 105 mock validators (max is 100, so last 5 will not be in the pallet)
             for i in 0..(max_validators + 5) {
                 let mock_validator = AccountId::from([0x10 + i as u8; 32]);
-                let mock_keys = get_authority_keys_from_seed(&mock_validator.to_string(), None);
+                let mock_keys = get_authority_keys_from_seed(&mock_validator.to_string());
 
                 assert_ok!(Balances::mint_into(&mock_validator, 10_000 * UNIT));
                 assert_ok!(Session::set_keys(
@@ -142,7 +142,7 @@ fn validators_only_change_once_per_era() {
                 // and stored as QueuedKeys in pallet session.
                 // So validators for session N will be [Alice, Bob, MockValidator(N-1)]
                 let mock_validator = AccountId::from([0x10 + session as u8; 32]);
-                let mock_keys = get_authority_keys_from_seed(&mock_validator.to_string(), None);
+                let mock_keys = get_authority_keys_from_seed(&mock_validator.to_string());
 
                 assert_ok!(Balances::mint_into(&mock_validator, 10_000 * UNIT));
                 assert_ok!(Session::set_keys(
@@ -222,7 +222,7 @@ fn external_validators_can_be_disabled() {
             let sessions_per_era = SessionsPerEra::get();
 
             let mock_validator = AccountId::from([0x10; 32]);
-            let mock_keys = get_authority_keys_from_seed(&mock_validator.to_string(), None);
+            let mock_keys = get_authority_keys_from_seed(&mock_validator.to_string());
 
             assert_ok!(Balances::mint_into(&mock_validator, 10_000 * UNIT));
             assert_ok!(Session::set_keys(
@@ -338,7 +338,7 @@ fn default_era_changes() {
                 // and stored as QueuedKeys in pallet session.
                 // So validators for session N will be [Alice, Bob, MockValidator(N-1)]
                 let mock_validator = AccountId::from([0x10 + session as u8; 32]);
-                let mock_keys = get_authority_keys_from_seed(&mock_validator.to_string(), None);
+                let mock_keys = get_authority_keys_from_seed(&mock_validator.to_string());
 
                 assert_ok!(Balances::mint_into(&mock_validator, 10_000 * UNIT));
                 assert_ok!(Session::set_keys(
@@ -434,7 +434,7 @@ mod force_eras {
                 let sessions_per_era = SessionsPerEra::get();
 
                 let mock_validator = AccountId::from([0x10; 32]);
-                let mock_keys = get_authority_keys_from_seed(&mock_validator.to_string(), None);
+                let mock_keys = get_authority_keys_from_seed(&mock_validator.to_string());
 
                 assert_ok!(Balances::mint_into(&mock_validator, 10_000 * UNIT));
                 assert_ok!(Session::set_keys(
@@ -542,7 +542,7 @@ mod force_eras {
                 let sessions_per_era = SessionsPerEra::get();
 
                 let mock_validator = AccountId::from([0x10; 32]);
-                let mock_keys = get_authority_keys_from_seed(&mock_validator.to_string(), None);
+                let mock_keys = get_authority_keys_from_seed(&mock_validator.to_string());
 
                 assert_ok!(Balances::mint_into(&mock_validator, 10_000 * UNIT));
                 assert_ok!(Session::set_keys(
@@ -593,7 +593,7 @@ mod force_eras {
                 run_to_block(2);
 
                 let mock_validator = AccountId::from([0x10; 32]);
-                let mock_keys = get_authority_keys_from_seed(&mock_validator.to_string(), None);
+                let mock_keys = get_authority_keys_from_seed(&mock_validator.to_string());
 
                 assert_ok!(Balances::mint_into(&mock_validator, 10_000 * UNIT));
                 assert_ok!(Session::set_keys(
@@ -658,7 +658,7 @@ fn external_validators_manual_reward_points() {
             let sessions_per_era = SessionsPerEra::get();
 
             let mock_validator = AccountId::from([0x10; 32]);
-            let mock_keys = get_authority_keys_from_seed(&mock_validator.to_string(), None);
+            let mock_keys = get_authority_keys_from_seed(&mock_validator.to_string());
 
             assert_ok!(Balances::mint_into(&mock_validator, 10_000 * UNIT));
             assert_ok!(Session::set_keys(
@@ -793,9 +793,8 @@ fn external_validators_rewards_merkle_proofs() {
             ));
 
             // Register CHARLIE and DAVE session keys
-            let charlie_keys =
-                get_authority_keys_from_seed(&AccountId::from(CHARLIE).to_string(), None);
-            let dave_keys = get_authority_keys_from_seed(&AccountId::from(DAVE).to_string(), None);
+            let charlie_keys = get_authority_keys_from_seed(&AccountId::from(CHARLIE).to_string());
+            let dave_keys = get_authority_keys_from_seed(&AccountId::from(DAVE).to_string());
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
                 crate::SessionKeys {
@@ -941,9 +940,8 @@ fn external_validators_whitelisted_never_rewarded() {
             ));
 
             // Register CHARLIE and DAVE session keys
-            let charlie_keys =
-                get_authority_keys_from_seed(&AccountId::from(CHARLIE).to_string(), None);
-            let dave_keys = get_authority_keys_from_seed(&AccountId::from(DAVE).to_string(), None);
+            let charlie_keys = get_authority_keys_from_seed(&AccountId::from(CHARLIE).to_string());
+            let dave_keys = get_authority_keys_from_seed(&AccountId::from(DAVE).to_string());
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
                 crate::SessionKeys {
@@ -1096,9 +1094,8 @@ fn external_validators_rewards_test_command_integrity() {
             ));
 
             // Register CHARLIE and DAVE session keys
-            let charlie_keys =
-                get_authority_keys_from_seed(&AccountId::from(CHARLIE).to_string(), None);
-            let dave_keys = get_authority_keys_from_seed(&AccountId::from(DAVE).to_string(), None);
+            let charlie_keys = get_authority_keys_from_seed(&AccountId::from(CHARLIE).to_string());
+            let dave_keys = get_authority_keys_from_seed(&AccountId::from(DAVE).to_string());
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
                 crate::SessionKeys {

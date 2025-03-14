@@ -144,12 +144,15 @@ pallet-registrar = { workspace = true }
 pallet-registrar-runtime-api = { workspace = true }
 pallet-services-payment = { workspace = true }
 pallet-services-payment-runtime-api = { workspace = true }
+pallet-stream-payment = { workspace = true }
+pallet-stream-payment-runtime-api = { workspace = true }
 tanssi-runtime-common = { workspace = true }
 
 # Moonkit
 pallet-migrations = { workspace = true }
 
 # Bridges
+keyring = { workspace = true }
 snowbridge-beacon-primitives = { workspace = true }
 snowbridge-core = { workspace = true }
 snowbridge-outbound-queue-runtime-api = { workspace = true }
@@ -167,7 +170,6 @@ container-chain-template-frontier-runtime  = { workspace = true, features = [ "s
 container-chain-template-simple-runtime  = { workspace = true, features = [ "std" ] }
 emulated-integration-tests-common = { workspace = true }
 finality-grandpa = { workspace = true, default-features = true, features = [ "derive-codec" ] }
-keyring = { workspace = true }
 milagro-bls = { workspace = true, features = [ "std" ] }
 rand = { workspace = true, features = [ "std", "std_rng" ] }
 remote-externalities = { workspace = true }
@@ -214,6 +216,7 @@ std = [
 	"frame-try-runtime/std",
 	"grandpa_primitives/std",
 	"inherents/std",
+	"keyring/std",
 	"keyring/std",
 	"log/std",
 	"milagro-bls/std",
@@ -270,6 +273,8 @@ std = [
 	"pallet-services-payment/std",
 	"pallet-session/std",
 	"pallet-staking/std",
+	"pallet-stream-payment-runtime-api/std",
+	"pallet-stream-payment/std",
 	"pallet-sudo/std",
 	"pallet-timestamp/std",
 	"pallet-tips/std",
@@ -389,6 +394,7 @@ runtime-benchmarks = [
 	"pallet-scheduler/runtime-benchmarks",
 	"pallet-services-payment/runtime-benchmarks",
 	"pallet-staking/runtime-benchmarks",
+	"pallet-stream-payment/runtime-benchmarks",
 	"pallet-sudo/runtime-benchmarks",
 	"pallet-timestamp/runtime-benchmarks",
 	"pallet-tips/runtime-benchmarks",
@@ -478,6 +484,7 @@ try-runtime = [
 	"pallet-services-payment/try-runtime",
 	"pallet-session/try-runtime",
 	"pallet-staking/try-runtime",
+	"pallet-stream-payment/try-runtime",
 	"pallet-sudo/try-runtime",
 	"pallet-timestamp/try-runtime",
 	"pallet-tips/try-runtime",

@@ -92,7 +92,7 @@ jobs:
                   chmod uog+x target/release/container-chain-simple-node
                   chmod uog+x target/release/container-chain-frontier-node
 
-            - name: Run Zombienet Test ${{ matrix.test_name }}
+            - name: Run Zombienet Test
               id: e2e-test
               uses: ./.github/workflow-templates/bridge-e2e
     build-benchmark:

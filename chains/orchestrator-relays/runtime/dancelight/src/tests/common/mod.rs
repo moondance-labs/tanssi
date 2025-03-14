@@ -69,10 +69,10 @@ use {
 mod xcm;
 
 pub use crate::{
-    genesis_config_presets::get_authority_keys_from_seed, AccountId, AuthorNoting, Babe, Balance,
-    Balances, Beefy, BeefyMmrLeaf, ContainerRegistrar, DataPreservers, Grandpa, InflationRewards,
-    Initializer, Mmr, Runtime, RuntimeOrigin, Session, System, TanssiAuthorityAssignment,
-    TanssiCollatorAssignment, TransactionPayment,
+    genesis_config_presets::{get_authority_keys_from_seed, insert_authority_keys_into_keystore},
+    AccountId, AuthorNoting, Babe, Balance, Balances, Beefy, BeefyMmrLeaf, ContainerRegistrar,
+    DataPreservers, Grandpa, InflationRewards, Initializer, Mmr, Runtime, RuntimeOrigin, Session,
+    System, TanssiAuthorityAssignment, TanssiCollatorAssignment, TransactionPayment,
 };
 
 pub const UNIT: Balance = 1_000_000_000_000_000_000;
@@ -628,8 +628,10 @@ impl ExtBuilder {
                 .clone()
                 .into_iter()
                 .map(|(account, _balance)| {
-                    let authority_keys =
-                        get_authority_keys_from_seed(&account.to_string(), self.keystore.as_ref());
+                    let authority_keys = get_authority_keys_from_seed(&account.to_string());
+                    if let Some(keystore) = self.keystore.as_ref() {
+                        insert_authority_keys_into_keystore(&account.to_string(), keystore)
+                    }
                     (
                         account.clone(),
                         account,
@@ -654,8 +656,10 @@ impl ExtBuilder {
                 .clone()
                 .into_iter()
                 .map(|(account, _balance)| {
-                    let authority_keys =
-                        get_authority_keys_from_seed(&account.to_string(), self.keystore.as_ref());
+                    let authority_keys = get_authority_keys_from_seed(&account.to_string());
+                    if let Some(keystore) = self.keystore.as_ref() {
+                        insert_authority_keys_into_keystore(&account.to_string(), keystore)
+                    }
                     (
                         account.clone(),
                         account,
@@ -706,8 +710,10 @@ impl ExtBuilder {
                     if validator_unique_accounts.contains(&account) {
                         None
                     } else {
-                        let authority_keys =
-                            get_authority_keys_from_seed(&account.to_string(), None);
+                        let authority_keys = get_authority_keys_from_seed(&account.to_string());
+                        if let Some(keystore) = self.keystore.as_ref() {
+                            insert_authority_keys_into_keystore(&account.to_string(), keystore)
+                        }
                         Some((
                             account.clone(),
                             account,

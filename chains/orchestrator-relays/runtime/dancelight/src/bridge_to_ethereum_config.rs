@@ -29,8 +29,8 @@ use {
         parameter_types, weights, xcm_config, AggregateMessageOrigin, Balance, Balances,
         EthereumInboundQueue, EthereumOutboundQueue, EthereumSovereignAccount, EthereumSystem,
         FixedU128, GetAggregateMessageOrigin, Keccak256, MessageQueue,
-        OutboundMessageCommitmentRecorder, Runtime, RuntimeEvent, TokenLocationReanchored,
-        TransactionByteFee, TreasuryAccount, WeightToFee, UNITS,
+        OutboundMessageCommitmentRecorder, Runtime, RuntimeEvent, SnowbridgeFeesAccount,
+        TokenLocationReanchored, TransactionByteFee, TreasuryAccount, WeightToFee, UNITS,
     },
     frame_support::{
         traits::{
@@ -145,8 +145,8 @@ parameter_types! {
     };
 }
 
-// Holesky: https://github.com/eth-clients/holesky
-// Fork versions: https://github.com/eth-clients/holesky/blob/main/metadata/config.yaml
+// Sepolia: https://github.com/eth-clients/sepolia
+// Fork versions: https://github.com/eth-clients/sepolia/blob/main/metadata/config.yaml
 #[cfg(not(any(
     feature = "std",
     feature = "fast-runtime",
@@ -156,28 +156,28 @@ parameter_types! {
 parameter_types! {
     pub const ChainForkVersions: ForkVersions = ForkVersions {
         genesis: Fork {
-            version: hex_literal::hex!("01017000"), // 0x01017000
+            version: hex_literal::hex!("90000069"), // 0x90000069
             epoch: 0,
         },
         altair: Fork {
-            version: hex_literal::hex!("02017000"), // 0x02017000
-            epoch: 0,
+            version: hex_literal::hex!("90000070"), // 0x90000070
+            epoch: 50,
         },
         bellatrix: Fork {
-            version: hex_literal::hex!("03017000"), // 0x03017000
-            epoch: 0,
+            version: hex_literal::hex!("90000071"), // 0x90000071
+            epoch: 100,
         },
         capella: Fork {
-            version: hex_literal::hex!("04017000"), // 0x04017000
-            epoch: 256,
+            version: hex_literal::hex!("90000072"), // 0x90000072
+            epoch: 56832,
         },
         deneb: Fork {
-            version: hex_literal::hex!("05017000"), // 0x05017000
-            epoch: 29696,
+            version: hex_literal::hex!("90000073"), // 0x90000073
+            epoch: 132608,
         },
         electra: Fork {
-            version: hex_literal::hex!("06017000"), // 0x06017000
-            epoch: 115968,
+            version: hex_literal::hex!("90000074"), // 0x90000074
+            epoch: 222464,
         },
     };
 }
@@ -222,7 +222,7 @@ impl pallet_ethereum_token_transfers::Config for Runtime {
     type OutboundQueue = EthereumOutboundQueue;
     type EthereumSystemHandler = EthereumSystemHandler<Runtime>;
     type EthereumSovereignAccount = EthereumSovereignAccount;
-    type FeesAccount = TreasuryAccount;
+    type FeesAccount = SnowbridgeFeesAccount;
     type TokenLocationReanchored = TokenLocationReanchored;
     type TokenIdFromLocation = EthereumSystem;
     #[cfg(feature = "runtime-benchmarks")]
@@ -381,9 +381,9 @@ mod test_helpers {
 
 /// Rewards the relayer that processed a native token transfer message
 /// using the FeesAccount configured in pallet_ethereum_token_transfers
-pub struct RewardThroughTreasury<T>(sp_std::marker::PhantomData<T>);
+pub struct RewardThroughFeesAccount<T>(sp_std::marker::PhantomData<T>);
 
-impl<T> RewardProcessor<T> for RewardThroughTreasury<T>
+impl<T> RewardProcessor<T> for RewardThroughFeesAccount<T>
 where
     T: snowbridge_pallet_inbound_queue::Config + pallet_ethereum_token_transfers::Config,
     T::AccountId: From<sp_runtime::AccountId32>,
@@ -443,7 +443,7 @@ impl snowbridge_pallet_inbound_queue::Config for Runtime {
         SymbioticMessageProcessor<Self>,
         NativeTokenTransferMessageProcessor<Self>,
     );
-    type RewardProcessor = RewardThroughTreasury<Self>;
+    type RewardProcessor = RewardThroughFeesAccount<Self>;
     #[cfg(feature = "runtime-benchmarks")]
     type MessageProcessor = (benchmark_helper::DoNothingMessageProcessor,);
 }

@@ -124,7 +124,7 @@ pub mod pallet {
         /// How to convert from a given Location to a specific TokenId.
         type TokenIdFromLocation: MaybeEquivalence<TokenId, Location>;
 
-        // The weight information of this pallet.
+        /// The weight information of this pallet.
         type WeightInfo: WeightInfo;
 
         #[cfg(feature = "runtime-benchmarks")]
