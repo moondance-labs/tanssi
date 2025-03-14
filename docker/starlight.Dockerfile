@@ -7,7 +7,7 @@ FROM docker.io/library/ubuntu:20.04 AS builder
 RUN apt-get update && apt-get install -y ca-certificates lsof && update-ca-certificates
 
 FROM debian:bookworm-slim
-LABEL maintainer "gorka@moondancelabs.com"
+LABEL maintainer="gorka@moondancelabs.com"
 LABEL description="Binary for Dancelight"
 
 RUN useradd -m -u 1000 -U -s /bin/sh -d /tanssi-relay tanssi-relay && \

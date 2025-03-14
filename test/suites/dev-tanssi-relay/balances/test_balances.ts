@@ -20,7 +20,7 @@ describeSuite({
             title: "Checking total issuance is correct on genesis",
             test: async () => {
                 const totalIssuance = (await polkadotJs.query.balances.totalIssuance()).toBigInt();
-                expect(totalIssuance).toBe(12_000_000_000_166_666_665n);
+                expect(totalIssuance).toBe(12_000_000_000_199_999_998n);
             },
         });
 

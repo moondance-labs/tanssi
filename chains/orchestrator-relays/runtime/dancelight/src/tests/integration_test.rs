@@ -16,17 +16,20 @@
 
 #![cfg(test)]
 
+use sp_runtime::traits::BadOrigin;
 use {
     crate::{
         tests::common::*, Balances, CollatorConfiguration, ContainerRegistrar, DataPreservers,
-        Registrar,
+        PreserversAssignmentPaymentWitness, Registrar, StreamPayment, StreamPaymentAssetId,
+        TimeUnit,
     },
     cumulus_primitives_core::{relay_chain::HeadData, ParaId},
     dancelight_runtime_constants::currency::EXISTENTIAL_DEPOSIT,
-    frame_support::{assert_noop, assert_ok, BoundedVec},
+    frame_support::{assert_err, assert_noop, assert_ok, BoundedVec},
     pallet_registrar_runtime_api::{
         runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
     },
+    pallet_stream_payment::StreamConfig,
     sp_std::vec,
 };
 
@@ -352,5 +355,229 @@ fn test_container_deregister_unassign_data_preserver() {
 
             // Check DataPreserver assignment has been cleared
             assert!(pallet_data_preservers::Assignments::<Runtime>::get(para_id).is_empty());
+        });
+}
+
+#[test]
+fn stream_payment_works() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 100_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            use pallet_stream_payment::{ChangeKind, StreamConfig};
+
+            assert_ok!(StreamPayment::open_stream(
+                origin_of(ALICE.into()),
+                BOB.into(),
+                StreamConfig {
+                    rate: 2 * UNIT,
+                    asset_id: StreamPaymentAssetId::Native,
+                    time_unit: TimeUnit::BlockNumber,
+                    minimum_request_deadline_delay: 0,
+                    soft_minimum_deposit: 0,
+                },
+                1_000 * UNIT,
+            ));
+
+            run_block();
+
+            assert_ok!(StreamPayment::perform_payment(origin_of(CHARLIE.into()), 0));
+            assert_eq!(
+                Balances::free_balance(AccountId::from(BOB)),
+                100_000 * UNIT + 2 * UNIT
+            );
+
+            assert_ok!(StreamPayment::request_change(
+                origin_of(ALICE.into()),
+                0,
+                ChangeKind::Suggestion,
+                StreamConfig {
+                    rate: 1 * UNIT,
+                    asset_id: StreamPaymentAssetId::Native,
+                    time_unit: TimeUnit::BlockNumber,
+                    minimum_request_deadline_delay: 0,
+                    soft_minimum_deposit: 0,
+                },
+                None,
+            ));
+
+            assert_ok!(StreamPayment::accept_requested_change(
+                origin_of(BOB.into()),
+                0,
+                1, // nonce
+                None,
+            ));
+
+            run_block();
+
+            assert_ok!(StreamPayment::close_stream(origin_of(BOB.into()), 0));
+
+            assert_eq!(
+                Balances::free_balance(AccountId::from(BOB)),
+                100_000 * UNIT + 3 * UNIT
+            );
+            assert_eq!(
+                Balances::free_balance(AccountId::from(ALICE)),
+                100_000 * UNIT - 3 * UNIT
+            );
+        });
+}
+
+#[test]
+fn test_data_preserver_with_stream_payment() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            use pallet_data_preservers::{
+                AssignerParameterOf, ParaIdsFilter, Profile, ProfileMode, ProviderRequestOf,
+            };
+
+            let profile = Profile {
+                url: b"test".to_vec().try_into().unwrap(),
+                para_ids: ParaIdsFilter::AnyParaId,
+                mode: ProfileMode::Bootnode,
+                assignment_request: ProviderRequestOf::<Runtime>::StreamPayment {
+                    config: StreamConfig {
+                        time_unit: TimeUnit::BlockNumber,
+                        asset_id: StreamPaymentAssetId::Native,
+                        rate: 42,
+                        minimum_request_deadline_delay: 0,
+                        soft_minimum_deposit: 0,
+                    },
+                },
+            };
+
+            let para_id = ParaId::from(2000);
+            let profile_id = 0u64;
+
+            assert_ok!(Registrar::reserve(origin_of(ALICE.into())));
+            assert_ok!(ContainerRegistrar::register(
+                origin_of(ALICE.into()),
+                para_id,
+                get_genesis_data_with_validation_code().0,
+                Some(HeadData(vec![1u8, 1u8, 1u8]))
+            ));
+
+            assert_ok!(DataPreservers::create_profile(
+                origin_of(BOB.into()),
+                profile.clone(),
+            ));
+
+            // Start assignment
+            assert_ok!(DataPreservers::start_assignment(
+                origin_of(ALICE.into()),
+                profile_id,
+                para_id,
+                AssignerParameterOf::<Runtime>::StreamPayment {
+                    initial_deposit: 1_000
+                }
+            ));
+            assert!(
+                pallet_data_preservers::Assignments::<Runtime>::get(para_id).contains(&profile_id)
+            );
+            let profile = pallet_data_preservers::Profiles::<Runtime>::get(&profile_id)
+                .expect("profile to exists");
+            let (assigned_para_id, witness) = profile.assignment.expect("profile to be assigned");
+            assert_eq!(assigned_para_id, para_id);
+            assert_eq!(
+                witness,
+                PreserversAssignmentPaymentWitness::StreamPayment { stream_id: 0 }
+            );
+        });
+}
+
+#[test]
+fn test_data_preserver_kind_needs_to_match() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            use pallet_data_preservers::{
+                AssignerParameterOf, ParaIdsFilter, Profile, ProfileMode, ProviderRequestOf,
+            };
+
+            let profile = Profile {
+                url: b"test".to_vec().try_into().unwrap(),
+                para_ids: ParaIdsFilter::AnyParaId,
+                mode: ProfileMode::Bootnode,
+                assignment_request: ProviderRequestOf::<Runtime>::Free,
+            };
+
+            let para_id = ParaId::from(2000);
+            let profile_id = 0u64;
+
+            assert_ok!(Registrar::reserve(origin_of(ALICE.into())));
+            assert_ok!(ContainerRegistrar::register(
+                origin_of(ALICE.into()),
+                para_id,
+                get_genesis_data_with_validation_code().0,
+                Some(HeadData(vec![1u8, 1u8, 1u8]))
+            ));
+
+            assert_ok!(DataPreservers::create_profile(
+                origin_of(BOB.into()),
+                profile.clone(),
+            ));
+
+            // Start assignment
+            assert_err!(
+                DataPreservers::start_assignment(
+                    origin_of(ALICE.into()),
+                    profile_id,
+                    para_id,
+                    AssignerParameterOf::<Runtime>::StreamPayment {
+                        initial_deposit: 1_000
+                    }
+                ),
+                pallet_data_preservers::Error::<Runtime>::AssignmentPaymentRequestParameterMismatch
+            );
+        });
+}
+
+#[test]
+fn test_registrar_extrinsic_permissions() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .with_empty_parachains(vec![1001])
+        .build()
+        .execute_with(|| {
+            let para_id = ParaId::from(1001);
+
+            // Pause container chain should fail if not para manager
+            assert_noop!(
+                ContainerRegistrar::pause_container_chain(origin_of(BOB.into()), para_id),
+                BadOrigin
+            );
+
+            // Set Bob as para manager
+            assert_ok!(ContainerRegistrar::set_para_manager(
+                root_origin(),
+                para_id,
+                AccountId::from(BOB)
+            ));
+
+            // Pause container chain should succeed if para manager
+            assert_ok!(
+                ContainerRegistrar::pause_container_chain(origin_of(BOB.into()), para_id),
+                ()
+            );
         });
 }

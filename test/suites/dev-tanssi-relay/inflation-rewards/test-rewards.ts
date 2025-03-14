@@ -100,9 +100,7 @@ describeSuite({
                 expectedAmountParachainBond += (issuance * 3n) / 10n + dust;
                 await context.createBlock();
 
-                expect(dancelightBondBalanceAfter - dancelightBondBalanceBefore).to.equal(
-                    expectedAmountParachainBond + 1n
-                );
+                expect(dancelightBondBalanceAfter - dancelightBondBalanceBefore).to.equal(expectedAmountParachainBond);
             },
         });
 

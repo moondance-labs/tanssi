@@ -373,7 +373,7 @@ impl frame_system::Config for Runtime {
     type PreInherents = ();
     type PostInherents = ();
     type PostTransactions = ();
-    type ExtensionsWeightInfo = ();
+    type ExtensionsWeightInfo = weights::frame_system_extensions::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -411,7 +411,7 @@ impl pallet_transaction_payment::Config for Runtime {
     type WeightToFee = WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
     type FeeMultiplierUpdate = SlowAdjustingFeeUpdate<Self>;
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_transaction_payment::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -817,12 +817,14 @@ construct_runtime!(
 mod benches {
     frame_benchmarking::define_benchmarks!(
         [frame_system, frame_system_benchmarking::Pallet::<Runtime>]
+        [frame_system_extensions, frame_system_benchmarking::extensions::Pallet::<Runtime>]
         [cumulus_pallet_parachain_system, ParachainSystem]
         [pallet_timestamp, Timestamp]
         [pallet_sudo, Sudo]
         [pallet_utility, Utility]
         [pallet_proxy, Proxy]
         [pallet_tx_pause, TxPause]
+        [pallet_transaction_payment, TransactionPayment]
         [pallet_balances, Balances]
         [pallet_multiblock_migrations, MultiBlockMigrations]
         [pallet_multisig, Multisig]
