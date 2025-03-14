@@ -3,12 +3,17 @@ import "@tanssi/api-augment/dancelight";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
 import {
+    getAccountBalance,
+    getCurrentEraStartBlock,
     HOLESKY_SOVEREIGN_ACCOUNT_ADDRESS,
     PRIMARY_GOVERNANCE_CHANNEL_ID,
     SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS,
-    getAccountBalance,
-    getCurrentEraStartBlock,
 } from "utils";
+
+async function calculateBlockHashAtStartOfAnEra(api, blocksPerSession, eraIndex) {
+    const sessionsPerEra = await api.consts.externalValidators.sessionsPerEra;
+    return await api.rpc.chain.getBlockHash(eraIndex * sessionsPerEra * blocksPerSession + 1);
+}
 
 describeSuite({
     id: "SMOK05",
@@ -110,11 +115,21 @@ describeSuite({
                     skip();
                 }
 
+                const blocksPerSession = api.consts.babe.epochDuration.toNumber();
+                const apiAtEraIndexCheckpointB = await api.at(
+                    await calculateBlockHashAtStartOfAnEra(api, blocksPerSession, eraIndexCheckpointB)
+                );
+                const externalValidatorsAtCheckpointB =
+                    await apiAtEraIndexCheckpointB.query.externalValidators.externalValidators();
+
                 // The mapping only contains the keys that are in `externalValidatorsRewards`
                 const rewardMappingKeys = (await api.query.externalValidatorsRewards.rewardPointsForEra.keys()).map(
                     (key) => key.args[0].toNumber()
                 );
-                expect(rewardMappingKeys.includes(eraIndexCheckpointB)).toBe(true);
+
+                if (externalValidatorsAtCheckpointB.length > 0) {
+                    expect(rewardMappingKeys.includes(eraIndexCheckpointB)).toBe(true);
+                }
                 expect(rewardMappingKeys.includes(eraIndexCheckpointA)).toBe(false);
             },
         });
