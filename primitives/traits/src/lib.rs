@@ -627,5 +627,4 @@ impl<BlockNumber> GetRandomnessForNextBlock<BlockNumber> for () {
     fn get_randomness() -> [u8; 32] {
         [0; 32]
     }
-
 }

@@ -25,6 +25,7 @@ use {
     },
 };
 
+#[cfg(feature = "runtime-benchmarks")]
 use tp_traits::BlockNumber;
 
 pub use pallet::*;
@@ -57,7 +58,7 @@ pub mod pallet {
         /// before being moved to the offline queue
         #[pallet::constant]
         type MaxInactiveSessions: Get<u32>;
-      
+
         /// The maximum amount of collators that can be stored for a session
         #[pallet::constant]
         type MaxCollatorsPerSession: Get<u32>;
@@ -65,7 +66,7 @@ pub mod pallet {
         /// The maximum amount of container chains that can be stored
         #[pallet::constant]
         type MaxContainerChains: Get<u32>;
-      
+
         /// Helper that returns the current session index.
         type CurrentSessionIndex: GetSessionIndex<SessionIndex>;
 
@@ -190,7 +191,7 @@ pub mod pallet {
                 },
             );
         }
-          
+
         pub fn on_author_noted(author: T::CollatorId) -> Weight {
             let mut total_weight = T::DbWeight::get().reads_writes(1, 0);
             let _ = <ActiveCollatorsForCurrentSession<T>>::try_mutate(
@@ -233,7 +234,7 @@ impl<T: Config> NodeActivityTrackingHelper<T::CollatorId> for Pallet<T> {
         if current_session < minimum_sessions_required {
             return false;
         }
-      
+
         for session_index in current_session.saturating_sub(T::MaxInactiveSessions::get())
             ..current_session.saturating_sub(1u32)
         {
