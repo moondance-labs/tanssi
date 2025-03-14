@@ -786,6 +786,8 @@ pub mod pallet {
                 frame_support::{assert_ok, dispatch::RawOrigin},
             };
 
+            let mut storage = vec![];
+            storage.push((b":code".to_vec(), vec![1; 10]).into());
             let genesis_data = ContainerChainGenesisData {
                 storage,
                 name: Default::default(),
@@ -817,13 +819,11 @@ pub mod pallet {
                 let account = create_funded_user::<T>("caller", 1000, new_balance).0;
                 T::InnerRegistrar::prepare_chain_registration(*para_id, account.clone());
                 let origin = RawOrigin::Signed(account);
-                let mut storage = vec![];
-                storage.push((b":code".to_vec(), vec![1; 10]).into());
 
                 assert_ok!(Self::register(
                     origin.into(),
                     *para_id,
-                    genesis_data,
+                    genesis_data.clone(),
                     T::InnerRegistrar::bench_head_data(),
                 ));
             }
