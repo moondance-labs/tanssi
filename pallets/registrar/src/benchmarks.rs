@@ -147,6 +147,7 @@ mod benchmarks {
     fn register(x: Linear<100, 3_000_000>, z: Linear<1, 10>) {
         let storage = max_size_genesis_data(z, x);
 
+        // TODO: replace deposit amount with the dynamic
         let (caller, _deposit_amount) =
             create_funded_user::<T>("caller", 0, T::DepositAmount::get());
 

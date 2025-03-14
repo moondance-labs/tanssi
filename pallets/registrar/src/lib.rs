@@ -171,6 +171,7 @@ pub mod pallet {
 
         type RuntimeHoldReason: From<HoldReason>;
 
+        // TODO: Remove
         #[pallet::constant]
         type DepositAmount: Get<<Self::Currency as Inspect<Self::AccountId>>::Balance>;
 
@@ -784,6 +785,16 @@ pub mod pallet {
                 frame_benchmarking::account,
                 frame_support::{assert_ok, dispatch::RawOrigin},
             };
+
+            let genesis_data = ContainerChainGenesisData {
+                storage,
+                name: Default::default(),
+                id: Default::default(),
+                fork_id: Default::default(),
+                extensions: Default::default(),
+                properties: Default::default(),
+            };
+
             // Return container chain manager, or register container chain as ALICE if it does not exist
             if !ParaGenesisData::<T>::contains_key(para_id) {
                 // Register as a new user
@@ -800,21 +811,15 @@ pub mod pallet {
                     assert_ok!(T::Currency::mint_into(&user, total));
                     (user, total)
                 }
-                let new_balance =
-                    T::Currency::minimum_balance() * 10_000_000u32.into() + T::DepositAmount::get();
+
+                let deposit = Self::get_genesis_cost(genesis_data.encoded_size() as u32);
+                let new_balance = T::Currency::minimum_balance() * 10_000_000u32.into() + deposit;
                 let account = create_funded_user::<T>("caller", 1000, new_balance).0;
                 T::InnerRegistrar::prepare_chain_registration(*para_id, account.clone());
                 let origin = RawOrigin::Signed(account);
                 let mut storage = vec![];
                 storage.push((b":code".to_vec(), vec![1; 10]).into());
-                let genesis_data = ContainerChainGenesisData {
-                    storage,
-                    name: Default::default(),
-                    id: Default::default(),
-                    fork_id: Default::default(),
-                    extensions: Default::default(),
-                    properties: Default::default(),
-                };
+
                 assert_ok!(Self::register(
                     origin.into(),
                     *para_id,
@@ -825,12 +830,16 @@ pub mod pallet {
 
             let deposit_info = RegistrarDeposit::<T>::get(para_id).expect("Cannot return signed origin for a container chain that was registered by root. Try using a different para id");
 
+            let deposit = Self::get_genesis_cost(genesis_data.encoded_size() as u32);
             // Fund deposit creator, just in case it is not a new account
-            let new_balance =
-                (T::Currency::minimum_balance() + T::DepositAmount::get()) * 2u32.into();
+            let new_balance = (T::Currency::minimum_balance() + deposit) * 2u32.into();
             assert_ok!(T::Currency::mint_into(&deposit_info.creator, new_balance));
 
             deposit_info.creator
+        }
+
+        fn get_genesis_cost(size: u32) -> <T::Currency as Inspect<T::AccountId>>::Balance {
+            T::DataDepositPerByte::get() * size.into()
         }
 
         fn do_register(
@@ -850,7 +859,7 @@ pub mod pallet {
             // limit in that case would be the transaction size.
             let genesis_data_size = genesis_data.encoded_size();
 
-            let deposit = T::DataDepositPerByte::get() * (genesis_data_size as u32).into();
+            let deposit = Self::get_genesis_cost(genesis_data_size as u32);
             // Verify we can hold
             if !T::Currency::can_hold(&HoldReason::RegistrarDeposit.into(), &account, deposit) {
                 return Err(Error::<T>::NotSufficientDeposit.into());

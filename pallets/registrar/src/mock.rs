@@ -133,6 +133,7 @@ impl RelayStorageRootProvider for MockRelayStorageRootProvider {
 }
 
 parameter_types! {
+    // TODO: Remove
     pub const DepositAmount: Balance = 100;
     pub const DataDepositPerByte: Balance = 1;
 }
@@ -148,6 +149,7 @@ impl pallet_registrar::Config for Test {
     type SessionIndex = u32;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type Currency = Balances;
+    // TODO: Remove
     type DepositAmount = DepositAmount;
     type RuntimeHoldReason = RuntimeHoldReason;
     type RegistrarHooks = Mock;
