@@ -55,8 +55,9 @@ use {
     sp_std::{collections::btree_set::BTreeSet, fmt::Debug, prelude::*, vec},
     tp_traits::{
         CollatorAssignmentTip, ForSession, FullRotationModes, GetContainerChainAuthor,
-        GetContainerChainsWithCollators, GetHostConfiguration, GetSessionContainerChains, ParaId,
-        ParaIdAssignmentHooks, RemoveInvulnerables, ShouldRotateAllCollators, Slot,
+        GetContainerChainsWithCollators, GetHostConfiguration, GetRandomnessForNextBlock,
+        GetSessionContainerChains, ParaId, ParaIdAssignmentHooks, RemoveInvulnerables,
+        ShouldRotateAllCollators, Slot,
     },
 };
 pub use {dp_collator_assignment::AssignedCollators, pallet::*};
@@ -681,20 +682,5 @@ where
         } else {
             session_index % Period::get() == 0
         }
-    }
-}
-
-pub trait GetRandomnessForNextBlock<BlockNumber> {
-    fn should_end_session(block_number: BlockNumber) -> bool;
-    fn get_randomness() -> [u8; 32];
-}
-
-impl<BlockNumber> GetRandomnessForNextBlock<BlockNumber> for () {
-    fn should_end_session(_block_number: BlockNumber) -> bool {
-        false
-    }
-
-    fn get_randomness() -> [u8; 32] {
-        [0; 32]
     }
 }
