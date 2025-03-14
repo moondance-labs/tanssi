@@ -18,6 +18,7 @@ use {
     cumulus_client_cli::{CollatorOptions, RelayChainMode},
     dc_orchestrator_chain_interface::ContainerChainGenesisData,
     dp_container_chain_genesis_data::json::properties_to_map,
+    node_common::chain_spec::Extensions,
     sc_chain_spec::ChainSpec,
     sc_cli::{CliConfiguration, SubstrateCli},
     sc_network::config::MultiaddrWithPeerId,
@@ -176,7 +177,7 @@ impl ContainerChainCli {
         let protocol_id = format!("container-chain-{}", para_id);
         let properties = properties_to_map(&genesis_data.properties)
             .map_err(|e| format!("Invalid properties: {}", e))?;
-        let extensions = crate::chain_spec::Extensions {
+        let extensions = Extensions {
             relay_chain,
             para_id,
         };
@@ -273,8 +274,7 @@ impl sc_cli::SubstrateCli for ContainerChainCli {
 
         match &self.preloaded_chain_spec {
             Some(spec) => {
-                let spec_para_id = crate::chain_spec::Extensions::try_get(&**spec)
-                    .map(|extension| extension.para_id);
+                let spec_para_id = Extensions::try_get(&**spec).map(|extension| extension.para_id);
 
                 if spec_para_id == Some(para_id) {
                     Ok(spec.cloned_box())

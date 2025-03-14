@@ -5,7 +5,7 @@ import { type ApiPromise, Keyring } from "@polkadot/api";
 import { hexToU8a, u8aToHex } from "@polkadot/util";
 import { encodeAddress, keccakAsHex, xxhashAsU8a } from "@polkadot/util-crypto";
 import { readFileSync } from "node:fs";
-import { HOLESKY_SOVEREIGN_ACCOUNT_ADDRESS, type MultiLocation } from "utils";
+import { SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS, type MultiLocation } from "utils";
 import { expectEventCount } from "../../../helpers/events";
 
 describeSuite({
@@ -132,7 +132,7 @@ describeSuite({
 
                 // Ethereum sovereign account: send some balance to it
                 signedTx = await polkadotJs.tx.balances
-                    .transferKeepAlive(HOLESKY_SOVEREIGN_ACCOUNT_ADDRESS, 100_000_000_000_000_000n)
+                    .transferKeepAlive(SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS, 100_000_000_000_000_000n)
                     .signAsync(alice);
 
                 await context.createBlock([signedTx], { allowFailures: false });
@@ -249,7 +249,7 @@ describeSuite({
                 // Sovereign balance before
                 const {
                     data: { free: sovereignBalanceBefore },
-                } = await context.polkadotJs().query.system.account(HOLESKY_SOVEREIGN_ACCOUNT_ADDRESS);
+                } = await context.polkadotJs().query.system.account(SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS);
 
                 // Bob balance before
                 const {
@@ -267,7 +267,7 @@ describeSuite({
                 // Check balances were updated correctly.
                 const {
                     data: { free: sovereignBalanceAfter },
-                } = await context.polkadotJs().query.system.account(HOLESKY_SOVEREIGN_ACCOUNT_ADDRESS);
+                } = await context.polkadotJs().query.system.account(SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS);
 
                 const {
                     data: { free: bobBalanceAfter },
