@@ -543,12 +543,11 @@ export const findEraBlockUsingBinarySearch = async (api, eraIndex) => {
 
     let currentEraIndex = await getEraIndexForBlock(api, approximateBlockForEra);
 
-    // Approximated block for era can be in reality different era in case of downtime, where some time
-    // has passed without block production in which case the correct block for that era might not exist or earlier block
-    // but it cannot be later block.
-    // In other words, if there is a downtime in between we will get later era index for that block compared to what we expected.
-    // So in worst case, it could be block 1
+    // Approximated block for era can be different than in reality in case of downtime, in that case there are no block produced in that era or the era
+    // only consist of earlier blocks than approximated block.
+    // In other words, if there is a downtime in between we will get later era index for the approximated block compared to what we expected.
     let currentMax = approximateBlockForEra;
+    // In worst case, it could be possible that chain has skipped all eras till this one
     let currentMin = 1;
     let currentBlock = currentMax;
 
