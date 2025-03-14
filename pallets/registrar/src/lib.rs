@@ -875,11 +875,7 @@ pub mod pallet {
             }
 
             // Hold the deposit, we verified we can do this
-            T::Currency::hold(
-                &HoldReason::RegistrarDeposit.into(),
-                &account,
-                deposit.clone(),
-            )?;
+            T::Currency::hold(&HoldReason::RegistrarDeposit.into(), &account, deposit)?;
 
             // Register the paraId also in the relay context (if any).
             T::InnerRegistrar::register(
