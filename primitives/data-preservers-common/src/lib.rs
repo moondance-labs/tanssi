@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+#![cfg_attr(not(feature = "std"), no_std)]
+
 use core::marker::PhantomData;
 use frame_support::dispatch::DispatchErrorWithPostInfo;
 use frame_support::traits::OriginTrait;
