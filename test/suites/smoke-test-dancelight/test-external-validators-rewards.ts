@@ -5,15 +5,11 @@ import type { ApiPromise } from "@polkadot/api";
 import {
     getAccountBalance,
     getCurrentEraStartBlock,
+    findEraBlockUsingBinarySearch,
     HOLESKY_SOVEREIGN_ACCOUNT_ADDRESS,
     PRIMARY_GOVERNANCE_CHANNEL_ID,
     SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS,
 } from "utils";
-
-async function calculateBlockHashAtStartOfAnEra(api, blocksPerSession, eraIndex) {
-    const sessionsPerEra = await api.consts.externalValidators.sessionsPerEra;
-    return await api.rpc.chain.getBlockHash(eraIndex * sessionsPerEra * blocksPerSession + 1);
-}
 
 describeSuite({
     id: "SMOK05",
@@ -114,11 +110,17 @@ describeSuite({
                     log("Current era is less than historyDepth, skipping the test");
                     skip();
                 }
+                const eraStartBlockInfo = await findEraBlockUsingBinarySearch(api, eraIndexCheckpointB);
+                if (!eraStartBlockInfo.found) {
+                    log(
+                        "There are no blocks produced in the era",
+                        eraIndexCheckpointB,
+                        "so no point in continuing test"
+                    );
+                    skip();
+                }
 
-                const blocksPerSession = api.consts.babe.epochDuration.toNumber();
-                const apiAtEraIndexCheckpointB = await api.at(
-                    await calculateBlockHashAtStartOfAnEra(api, blocksPerSession, eraIndexCheckpointB)
-                );
+                const apiAtEraIndexCheckpointB = await api.at(eraStartBlockInfo.blockHash);
                 const externalValidatorsAtCheckpointB =
                     await apiAtEraIndexCheckpointB.query.externalValidators.externalValidators();
 
