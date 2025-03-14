@@ -17,6 +17,7 @@ runtime-common = { workspace = true }
 sp-core = { workspace = true }
 sp-runtime = { workspace = true }
 sp-weights = { workspace = true }
+tp-traits = { workspace = true }
 xcm = { workspace = true }
 xcm-builder = { workspace = true }
 
@@ -29,6 +30,7 @@ std = [
 	"sp-core/std",
 	"sp-runtime/std",
 	"sp-weights/std",
+	"tp-traits/std",
 	"xcm-builder/std",
 	"xcm/std",
 ]
@@ -41,5 +43,6 @@ runtime-benchmarks = [
 	"primitives/runtime-benchmarks",
 	"runtime-common/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
+	"tp-traits/runtime-benchmarks",
 	"xcm-builder/runtime-benchmarks",
 ]

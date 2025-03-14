@@ -20,6 +20,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 pub mod alias;
+pub mod prod_or_fast;
 
 pub use {
     alias::*,
