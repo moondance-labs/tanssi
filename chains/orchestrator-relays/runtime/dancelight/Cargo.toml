@@ -129,6 +129,7 @@ cumulus-primitives-core = { workspace = true }
 dp-consensus = { workspace = true }
 dp-container-chain-genesis-data = { workspace = true }
 tp-author-noting-inherent = { workspace = true }
+tp-data-preservers-common = { workspace = true }
 tp-stream-payment-common = { workspace = true }
 tp-traits = { workspace = true }
 tp-xcm-commons = { workspace = true }

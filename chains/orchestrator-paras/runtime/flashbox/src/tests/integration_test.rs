@@ -17,7 +17,7 @@
 #![cfg(test)]
 
 use {
-    crate::{tests::common::*, PreserversAssignmentPaymentWitness, RuntimeOrigin},
+    crate::{tests::common::*, RuntimeOrigin},
     cumulus_primitives_core::{ParaId, Weight},
     dp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApiV1,
     dp_core::well_known_keys,
@@ -48,10 +48,7 @@ use {
 };
 
 fn set_dummy_boot_node(para_manager: RuntimeOrigin, para_id: ParaId) {
-    use {
-        crate::{PreserversAssignmentPaymentExtra, PreserversAssignmentPaymentRequest},
-        pallet_data_preservers::{ParaIdsFilter, Profile, ProfileMode},
-    };
+    use pallet_data_preservers::{ParaIdsFilter, Profile, ProfileMode};
 
     let profile = Profile {
         url:
@@ -61,7 +58,7 @@ fn set_dummy_boot_node(para_manager: RuntimeOrigin, para_id: ParaId) {
                 .expect("to fit in BoundedVec"),
         para_ids: ParaIdsFilter::AnyParaId,
         mode: ProfileMode::Bootnode,
-        assignment_request: PreserversAssignmentPaymentRequest::Free,
+        assignment_request: tp_data_preservers_common::ProviderRequest::Free,
     };
 
     let profile_id = pallet_data_preservers::NextProfileId::<Runtime>::get();
@@ -73,7 +70,7 @@ fn set_dummy_boot_node(para_manager: RuntimeOrigin, para_id: ParaId) {
         para_manager,
         profile_id,
         para_id,
-        PreserversAssignmentPaymentExtra::Free,
+        tp_data_preservers_common::AssignerExtra::Free,
     )
     .expect("assignement to work");
 
@@ -3950,8 +3947,8 @@ fn test_migration_data_preservers_assignments() {
         }
 
         let account = AccountId::from([0u8; 32]);
-        let free_request = crate::PreserversAssignmentPaymentRequest::Free;
-        let free_witness = crate::PreserversAssignmentPaymentWitness::Free;
+        let free_request = tp_data_preservers_common::ProviderRequest::Free;
+        let free_witness = tp_data_preservers_common::AssignmentWitness::Free;
 
         let pallet_prefix: &[u8] = b"DataPreservers";
         let storage_item_prefix: &[u8] = b"BootNodes";
@@ -4348,7 +4345,7 @@ fn test_data_preserver_with_stream_payment() {
             assert_eq!(assigned_para_id, para_id);
             assert_eq!(
                 witness,
-                PreserversAssignmentPaymentWitness::StreamPayment { stream_id: 0 }
+                tp_data_preservers_common::AssignmentWitness::StreamPayment { stream_id: 0 }
             );
         });
 }

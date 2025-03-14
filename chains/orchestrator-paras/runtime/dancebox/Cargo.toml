@@ -102,6 +102,7 @@ sp-trie = { workspace = true }
 dp-consensus = { workspace = true }
 sp-version = { workspace = true }
 tp-author-noting-inherent = { workspace = true }
+tp-data-preservers-common = { workspace = true }
 tp-stream-payment-common = { workspace = true }
 tp-traits = { workspace = true }
 

@@ -104,6 +104,7 @@ tc-service-container-chain = { path = "client/service-container-chain" }
 
 tp-author-noting-inherent = { path = "primitives/author-noting-inherent", default-features = false }
 tp-bridge = { path = "primitives/bridge", default-features = false }
+tp-data-preservers-common = { path = "primitives/data-preservers-common", default-features = false }
 tp-maths = { path = "primitives/maths", default-features = false }
 tp-stream-payment-common = { path = "primitives/stream-payment-common", default-features = false }
 tp-traits = { path = "primitives/traits", default-features = false }

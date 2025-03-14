@@ -67,15 +67,15 @@ pub mod pallet {
     pub type BalanceOf<T> =
         <<T as Config>::Currency as Inspect<<T as frame_system::Config>::AccountId>>::Balance;
 
-    pub type ProviderRequestOf<T> = <<T as Config>::AssignmentPayment as AssignmentPayment<
+    pub type ProviderRequestOf<T> = <<T as Config>::AssignmentProcessor as AssignmentProcessor<
         <T as frame_system::Config>::AccountId,
     >>::ProviderRequest;
 
-    pub type AssignerParameterOf<T> = <<T as Config>::AssignmentPayment as AssignmentPayment<
+    pub type AssignerParameterOf<T> = <<T as Config>::AssignmentProcessor as AssignmentProcessor<
         <T as frame_system::Config>::AccountId,
     >>::AssignerParameter;
 
-    pub type AssignmentWitnessOf<T> = <<T as Config>::AssignmentPayment as AssignmentPayment<
+    pub type AssignmentWitnessOf<T> = <<T as Config>::AssignmentProcessor as AssignmentProcessor<
         <T as frame_system::Config>::AccountId,
     >>::AssignmentWitness;
 
@@ -169,7 +169,7 @@ pub mod pallet {
         /// How much must be deposited to register a profile.
         type ProfileDeposit: StorageDeposit<Profile<Self>, BalanceOf<Self>>;
 
-        type AssignmentPayment: AssignmentPayment<Self::AccountId>;
+        type AssignmentProcessor: AssignmentProcessor<Self::AccountId>;
 
         type WeightInfo: WeightInfo;
     }
@@ -211,7 +211,7 @@ pub mod pallet {
         UnknownProfileId,
         NextProfileIdShouldBeAvailable,
 
-        /// Made for `AssignmentPayment` implementors to report a mismatch between
+        /// Made for `AssignmentProcessor` implementors to report a mismatch between
         /// `ProviderRequest` and `AssignerParameter`.
         AssignmentPaymentRequestParameterMismatch,
 
@@ -383,7 +383,7 @@ pub mod pallet {
             let assigner = T::AssignmentOrigin::ensure_origin(origin, &para_id)?;
 
             Self::do_start_assignment(profile_id, para_id, |profile| {
-                T::AssignmentPayment::try_start_assignment(
+                T::AssignmentProcessor::try_start_assignment(
                     assigner,
                     profile.account.clone(),
                     &profile.profile.assignment_request,
@@ -427,7 +427,10 @@ pub mod pallet {
                 Err(Error::<T>::WrongParaId)?
             }
 
-            T::AssignmentPayment::try_stop_assignment(profile.account.clone(), assignment_witness)?;
+            T::AssignmentProcessor::try_stop_assignment(
+                profile.account.clone(),
+                assignment_witness,
+            )?;
 
             Profiles::<T>::insert(profile_id, profile);
 

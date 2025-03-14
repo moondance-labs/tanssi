@@ -33,6 +33,8 @@ tp_traits::alias!(
         pallet_timestamp::Config<Moment = u64>
 );
 
+pub type StreamId = u64;
+
 #[apply(derive_storage_traits)]
 #[derive(Copy, Serialize, Deserialize, MaxEncodedLen)]
 pub enum AssetId {
@@ -41,10 +43,8 @@ pub enum AssetId {
 }
 
 pub struct AssetsManager<Runtime>(PhantomData<Runtime>);
-impl<Runtime> pallet_stream_payment::AssetsManager<AccountId, AssetId, Balance>
+impl<Runtime: RuntimeConfigs> pallet_stream_payment::AssetsManager<AccountId, AssetId, Balance>
     for AssetsManager<Runtime>
-where
-    Runtime: RuntimeConfigs,
 {
     fn transfer_deposit(
         asset_id: &AssetId,
@@ -142,9 +142,8 @@ pub enum TimeUnit {
 }
 
 pub struct TimeProvider<Runtime>(PhantomData<Runtime>);
-impl<Runtime> pallet_stream_payment::TimeProvider<TimeUnit, Balance> for TimeProvider<Runtime>
-where
-    Runtime: RuntimeConfigs,
+impl<Runtime: RuntimeConfigs> pallet_stream_payment::TimeProvider<TimeUnit, Balance>
+    for TimeProvider<Runtime>
 {
     fn now(unit: &TimeUnit) -> Option<Balance> {
         match *unit {

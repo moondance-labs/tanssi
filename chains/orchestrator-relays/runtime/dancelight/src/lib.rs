@@ -33,7 +33,7 @@ use {
     cumulus_primitives_core::relay_chain::{HeadData, ValidationCode},
     dp_container_chain_genesis_data::ContainerChainGenesisDataItem,
     frame_support::{
-        dispatch::{DispatchErrorWithPostInfo, DispatchResult},
+        dispatch::DispatchResult,
         dynamic_params::{dynamic_pallet_params, dynamic_params},
         traits::{
             fungible::Inspect,
@@ -77,7 +77,6 @@ use {
         shared as parachains_shared,
     },
     scale_info::TypeInfo,
-    serde::{Deserialize, Serialize},
     snowbridge_core::{
         outbound::{Command, Fee},
         ChannelId, PricingParameters,
@@ -97,8 +96,8 @@ use {
     },
     tp_bridge::ConvertLocation,
     tp_traits::{
-        apply, derive_storage_traits, EraIndex, GetHostConfiguration, GetSessionContainerChains,
-        ParaIdAssignmentHooks, RegistrarHandler, Slot, SlotFrequency,
+        EraIndex, GetHostConfiguration, GetSessionContainerChains, ParaIdAssignmentHooks,
+        RegistrarHandler, Slot, SlotFrequency,
     },
 };
 
@@ -1640,8 +1639,6 @@ impl pallet_services_payment::Config for Runtime {
     type WeightInfo = weights::pallet_services_payment::SubstrateWeight<Runtime>;
 }
 
-type StreamId = u64;
-
 parameter_types! {
     // 1 entry, storing 173 bytes on-chain
     pub const OpenStreamHoldAmount: Balance = deposit(1, 173);
@@ -1649,7 +1646,7 @@ parameter_types! {
 
 impl pallet_stream_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type StreamId = StreamId;
+    type StreamId = tp_stream_payment_common::StreamId;
     type TimeUnit = tp_stream_payment_common::TimeUnit;
     type Balance = Balance;
     type AssetId = tp_stream_payment_common::AssetId;
@@ -1670,117 +1667,6 @@ parameter_types! {
     pub const MaxNodeUrlLen: u32 = 200;
 }
 
-#[apply(derive_storage_traits)]
-#[derive(Copy, Serialize, Deserialize, MaxEncodedLen)]
-pub enum PreserversAssignmentPaymentRequest {
-    Free,
-    StreamPayment {
-        config: pallet_stream_payment::StreamConfigOf<Runtime>,
-    },
-}
-
-#[apply(derive_storage_traits)]
-#[derive(Copy, Serialize, Deserialize)]
-pub enum PreserversAssignmentPaymentExtra {
-    Free,
-    StreamPayment { initial_deposit: Balance },
-}
-
-#[apply(derive_storage_traits)]
-#[derive(Copy, Serialize, Deserialize, MaxEncodedLen)]
-pub enum PreserversAssignmentPaymentWitness {
-    Free,
-    StreamPayment {
-        stream_id: <Runtime as pallet_stream_payment::Config>::StreamId,
-    },
-}
-
-pub struct PreserversAssignmentPayment;
-
-impl pallet_data_preservers::AssignmentPayment<AccountId> for PreserversAssignmentPayment {
-    /// Providers requests which kind of payment it accepts.
-    type ProviderRequest = PreserversAssignmentPaymentRequest;
-    /// Extra parameter the assigner provides.
-    type AssignerParameter = PreserversAssignmentPaymentExtra;
-    /// Represents the successful outcome of the assignment.
-    type AssignmentWitness = PreserversAssignmentPaymentWitness;
-
-    fn try_start_assignment(
-        assigner: AccountId,
-        provider: AccountId,
-        request: &Self::ProviderRequest,
-        extra: Self::AssignerParameter,
-    ) -> Result<Self::AssignmentWitness, DispatchErrorWithPostInfo> {
-        let witness = match (request, extra) {
-            (Self::ProviderRequest::Free, Self::AssignerParameter::Free) => {
-                Self::AssignmentWitness::Free
-            }
-            (
-                Self::ProviderRequest::StreamPayment { config },
-                Self::AssignerParameter::StreamPayment { initial_deposit },
-            ) => {
-                let stream_id = StreamPayment::open_stream_returns_id(
-                    assigner,
-                    provider,
-                    *config,
-                    initial_deposit,
-                )?;
-
-                Self::AssignmentWitness::StreamPayment { stream_id }
-            }
-            _ => Err(
-                pallet_data_preservers::Error::<Runtime>::AssignmentPaymentRequestParameterMismatch,
-            )?,
-        };
-
-        Ok(witness)
-    }
-
-    fn try_stop_assignment(
-        provider: AccountId,
-        witness: Self::AssignmentWitness,
-    ) -> Result<(), DispatchErrorWithPostInfo> {
-        match witness {
-            Self::AssignmentWitness::Free => (),
-            Self::AssignmentWitness::StreamPayment { stream_id } => {
-                StreamPayment::close_stream(RuntimeOrigin::signed(provider), stream_id)?;
-            }
-        }
-
-        Ok(())
-    }
-
-    /// Return the values for a free assignment if it is supported.
-    /// This is required to perform automatic migration from old Bootnodes storage.
-    fn free_variant_values() -> Option<(
-        Self::ProviderRequest,
-        Self::AssignerParameter,
-        Self::AssignmentWitness,
-    )> {
-        Some((
-            Self::ProviderRequest::Free,
-            Self::AssignerParameter::Free,
-            Self::AssignmentWitness::Free,
-        ))
-    }
-
-    // The values returned by the following functions should match with each other.
-    #[cfg(feature = "runtime-benchmarks")]
-    fn benchmark_provider_request() -> Self::ProviderRequest {
-        PreserversAssignmentPaymentRequest::Free
-    }
-
-    #[cfg(feature = "runtime-benchmarks")]
-    fn benchmark_assigner_parameter() -> Self::AssignerParameter {
-        PreserversAssignmentPaymentExtra::Free
-    }
-
-    #[cfg(feature = "runtime-benchmarks")]
-    fn benchmark_assignment_witness() -> Self::AssignmentWitness {
-        PreserversAssignmentPaymentWitness::Free
-    }
-}
-
 impl pallet_data_preservers::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type RuntimeHoldReason = RuntimeHoldReason;
@@ -1789,7 +1675,7 @@ impl pallet_data_preservers::Config for Runtime {
 
     type ProfileId = u64;
     type ProfileDeposit = tp_traits::BytesDeposit<ProfileDepositBaseFee, ProfileDepositByteFee>;
-    type AssignmentPayment = PreserversAssignmentPayment;
+    type AssignmentProcessor = tp_data_preservers_common::AssignmentProcessor<Runtime>;
 
     type AssignmentOrigin = pallet_registrar::EnsureSignedByManager<Runtime>;
     type ForceSetProfileOrigin = EnsureRoot<AccountId>;
@@ -2286,7 +2172,7 @@ impl pallet_registrar::RegistrarHooks for DancelightRegistrarHooks {
                 .expect("to fit in BoundedVec"),
             para_ids: ParaIdsFilter::AnyParaId,
             mode: ProfileMode::Bootnode,
-            assignment_request: PreserversAssignmentPaymentRequest::Free,
+            assignment_request: tp_data_preservers_common::ProviderRequest::Free,
         };
 
         let profile_id = pallet_data_preservers::NextProfileId::<Runtime>::get();
@@ -2304,7 +2190,7 @@ impl pallet_registrar::RegistrarHooks for DancelightRegistrarHooks {
             para_manager,
             profile_id,
             para_id,
-            PreserversAssignmentPaymentExtra::Free,
+            tp_data_preservers_common::AssignerExtra::Free,
         )
         .expect("assignment to work");
 

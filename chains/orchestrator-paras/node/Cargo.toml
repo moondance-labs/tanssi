@@ -48,6 +48,7 @@ services-payment-rpc = { workspace = true }
 stream-payment-rpc = { workspace = true }
 tc-service-container-chain = { workspace = true }
 tp-author-noting-inherent = { workspace = true, features = [ "std" ] }
+tp-data-preservers-common = { workspace = true, features = [ "std" ] }
 
 dc-orchestrator-chain-interface = { workspace = true }
 tc-consensus = { workspace = true }

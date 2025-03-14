@@ -20,7 +20,7 @@ use sp_runtime::traits::BadOrigin;
 use {
     crate::{
         tests::common::*, Balances, CollatorConfiguration, ContainerRegistrar, DataPreservers,
-        PreserversAssignmentPaymentWitness, Registrar, StreamPayment,
+        Registrar, StreamPayment,
     },
     cumulus_primitives_core::{relay_chain::HeadData, ParaId},
     dancelight_runtime_constants::currency::EXISTENTIAL_DEPOSIT,
@@ -495,7 +495,7 @@ fn test_data_preserver_with_stream_payment() {
             assert_eq!(assigned_para_id, para_id);
             assert_eq!(
                 witness,
-                PreserversAssignmentPaymentWitness::StreamPayment { stream_id: 0 }
+                tp_data_preservers_common::AssignmentWitness::StreamPayment { stream_id: 0 }
             );
         });
 }

@@ -17,10 +17,7 @@
 #![cfg(test)]
 
 use {
-    crate::{
-        tests::common::*, PreserversAssignmentPaymentWitness, RewardsCollatorCommission,
-        StreamPayment, TransactionPayment,
-    },
+    crate::{tests::common::*, RewardsCollatorCommission, StreamPayment, TransactionPayment},
     cumulus_primitives_core::ParaId,
     dp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApiV1,
     dp_core::well_known_keys,
@@ -5941,8 +5938,8 @@ fn test_migration_data_preservers_assignments() {
         }
 
         let account = AccountId::from([0u8; 32]);
-        let free_request = crate::PreserversAssignmentPaymentRequest::Free;
-        let free_witness = crate::PreserversAssignmentPaymentWitness::Free;
+        let free_request = tp_data_preservers_common::ProviderRequest::Free;
+        let free_witness = tp_data_preservers_common::AssignmentWitness::Free;
 
         let pallet_prefix: &[u8] = b"DataPreservers";
         let storage_item_prefix: &[u8] = b"BootNodes";
@@ -6339,7 +6336,7 @@ fn test_data_preserver_with_stream_payment() {
             assert_eq!(assigned_para_id, para_id);
             assert_eq!(
                 witness,
-                PreserversAssignmentPaymentWitness::StreamPayment { stream_id: 0 }
+                tp_data_preservers_common::AssignmentWitness::StreamPayment { stream_id: 0 }
             );
         });
 }
