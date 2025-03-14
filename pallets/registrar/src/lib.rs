@@ -814,7 +814,7 @@ pub mod pallet {
                     (user, total)
                 }
 
-                let deposit = Self::get_genesis_cost(genesis_data.encoded_size() as u32);
+                let deposit = Self::get_genesis_cost(genesis_data.encoded_size());
                 let new_balance = T::Currency::minimum_balance() * 10_000_000u32.into() + deposit;
                 let account = create_funded_user::<T>("caller", 1000, new_balance).0;
                 T::InnerRegistrar::prepare_chain_registration(*para_id, account.clone());
@@ -830,7 +830,7 @@ pub mod pallet {
 
             let deposit_info = RegistrarDeposit::<T>::get(para_id).expect("Cannot return signed origin for a container chain that was registered by root. Try using a different para id");
 
-            let deposit = Self::get_genesis_cost(genesis_data.encoded_size() as u32);
+            let deposit = Self::get_genesis_cost(genesis_data.encoded_size());
             // Fund deposit creator, just in case it is not a new account
             let new_balance = (T::Currency::minimum_balance() + deposit) * 2u32.into();
             assert_ok!(T::Currency::mint_into(&deposit_info.creator, new_balance));
@@ -838,8 +838,8 @@ pub mod pallet {
             deposit_info.creator
         }
 
-        fn get_genesis_cost(size: u32) -> <T::Currency as Inspect<T::AccountId>>::Balance {
-            T::DataDepositPerByte::get() * size.into()
+        pub fn get_genesis_cost(size: usize) -> <T::Currency as Inspect<T::AccountId>>::Balance {
+            T::DataDepositPerByte::get() * (size as u32).into()
         }
 
         fn do_register(
@@ -859,7 +859,7 @@ pub mod pallet {
             // limit in that case would be the transaction size.
             let genesis_data_size = genesis_data.encoded_size();
 
-            let deposit = Self::get_genesis_cost(genesis_data_size as u32);
+            let deposit = Self::get_genesis_cost(genesis_data_size);
             // Verify we can hold
             if !T::Currency::can_hold(&HoldReason::RegistrarDeposit.into(), &account, deposit) {
                 return Err(Error::<T>::NotSufficientDeposit.into());
