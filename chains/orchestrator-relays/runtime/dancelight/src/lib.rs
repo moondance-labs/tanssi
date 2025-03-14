@@ -614,6 +614,7 @@ parameter_types! {
     pub const MaxPeerInHeartbeats: u32 = 10_000;
     pub const MaxBalance: Balance = Balance::max_value();
     pub TreasuryAccount: AccountId = Treasury::account_id();
+    pub SnowbridgeFeesAccount: AccountId = PalletId(*b"sb/feeac").into_account_truncating();
 }
 
 #[cfg(feature = "runtime-benchmarks")]
