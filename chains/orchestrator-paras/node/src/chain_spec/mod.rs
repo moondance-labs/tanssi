@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
+pub use node_common::chain_spec::Extensions;
 pub use sp_core::crypto::get_public_from_string_or_panic;
-pub use tc_service_container_chain::chain_spec::Extensions;
 use {dancebox_runtime::AccountId, nimbus_primitives::NimbusId, sp_core::sr25519};
 
 pub mod dancebox;
