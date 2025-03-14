@@ -17,7 +17,7 @@
 use {
     crate::{
         chain_spec,
-        cli::{Cli, RelayChainCli, Subcommand},
+        cli::{Cli, SimpleSubcommand as Subcommand},
         service::{self, NodeConfig},
     },
     container_chain_template_simple_runtime::Block,
@@ -28,26 +28,31 @@ use {
     dc_orchestrator_chain_interface::OrchestratorChainInterface,
     frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE},
     log::{info, warn},
-    node_common::{command::generate_genesis_block, service::NodeBuilderConfig as _},
+    node_common::{
+        chain_spec as node_common_chain_spec, cli::RelayChainCli, command::generate_genesis_block,
+        service::NodeBuilderConfig as _,
+    },
     parity_scale_codec::Encode,
     polkadot_service::{IdentifyVariant as _, TaskManager},
-    sc_cli::{
-        ChainSpec, CliConfiguration, DefaultConfigurationValues, ImportParams, KeystoreParams,
-        NetworkParams, Result, SharedParams, SubstrateCli,
-    },
-    sc_service::{
-        config::{BasePath, PrometheusConfig},
-        KeystoreContainer,
-    },
+    sc_cli::{ChainSpec, Result, SubstrateCli},
+    sc_service::KeystoreContainer,
     sc_telemetry::TelemetryWorker,
     sp_core::hexdisplay::HexDisplay,
-    sp_runtime::traits::{AccountIdConversion, Block as BlockT},
+    sp_runtime::traits::{AccountIdConversion, Block as BlockT, Get},
     std::{marker::PhantomData, sync::Arc},
     tc_service_container_chain::{
         cli::ContainerChainCli,
         spawner::{ContainerChainSpawnParams, ContainerChainSpawner},
     },
 };
+
+pub struct NodeName;
+
+impl Get<&'static str> for NodeName {
+    fn get() -> &'static str {
+        "Frontier"
+    }
+}
 
 fn load_spec(id: &str, para_id: ParaId) -> std::result::Result<Box<dyn ChainSpec>, String> {
     Ok(match id {
@@ -96,42 +101,6 @@ impl SubstrateCli for Cli {
     }
 }
 
-impl SubstrateCli for RelayChainCli {
-    fn impl_name() -> String {
-        "Container Chain Simple Node".into()
-    }
-
-    fn impl_version() -> String {
-        env!("SUBSTRATE_CLI_IMPL_VERSION").into()
-    }
-
-    fn description() -> String {
-        format!(
-            "Container Chain Simple Node\n\nThe command-line arguments provided first will be \
-        passed to the parachain node, while the arguments provided after -- will be passed \
-        to the relay chain node.\n\n\
-        {} <parachain-args> -- <relay-chain-args>",
-            Self::executable_name()
-        )
-    }
-
-    fn author() -> String {
-        env!("CARGO_PKG_AUTHORS").into()
-    }
-
-    fn support_url() -> String {
-        "https://github.com/paritytech/cumulus/issues/new".into()
-    }
-
-    fn copyright_start_year() -> i32 {
-        2020
-    }
-
-    fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
-        polkadot_cli::Cli::from_iter([RelayChainCli::executable_name()].iter()).load_spec(id)
-    }
-}
-
 macro_rules! construct_async_run {
     (|$components:ident, $cli:ident, $cmd:ident, $config:ident| $( $code:tt )* ) => {{
         let runner = $cli.create_runner($cmd)?;
@@ -153,16 +122,16 @@ pub fn run() -> Result<()> {
         Some(Subcommand::BuildSpec(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             runner.sync_run(|config| {
-                let chain_spec = if let Some(para_id) = cmd.parachain_id {
+                let chain_spec = if let Some(para_id) = cmd.extra.parachain_id {
                     if cmd.base.shared_params.dev {
                         Box::new(chain_spec::development_config(
                             para_id.into(),
-                            cmd.add_bootnode.clone(),
+                            cmd.extra.add_bootnode.clone(),
                         ))
                     } else {
                         Box::new(chain_spec::local_testnet_config(
                             para_id.into(),
-                            cmd.add_bootnode.clone(),
+                            cmd.extra.add_bootnode.clone(),
                         ))
                     }
                 } else {
@@ -202,9 +171,9 @@ pub fn run() -> Result<()> {
             let runner = cli.create_runner(cmd)?;
 
             runner.sync_run(|config| {
-                let polkadot_cli = RelayChainCli::new(
+                let polkadot_cli = RelayChainCli::<NodeName>::new(
                     &config,
-                    [RelayChainCli::executable_name()]
+                    [RelayChainCli::<NodeName>::executable_name()]
                         .iter()
                         .chain(cli.relaychain_args().iter()),
                 );
@@ -302,16 +271,16 @@ pub fn run() -> Result<()> {
                         sc_sysinfo::gather_hwbench(Some(database_path), &SUBSTRATE_REFERENCE_HARDWARE)
                     })).flatten();
 
-                let para_id = chain_spec::Extensions::try_get(&*config.chain_spec)
+                let para_id = node_common_chain_spec::Extensions::try_get(&*config.chain_spec)
                     .map(|e| e.para_id)
                     .ok_or("Could not find parachain ID in chain-spec.")?;
 
-                let polkadot_cli = RelayChainCli::new(
+                let polkadot_cli = RelayChainCli::<NodeName>::new(
                     &config,
-                    [RelayChainCli::executable_name()].iter().chain(cli.relaychain_args().iter()),
+                    [RelayChainCli::<NodeName>::executable_name()].iter().chain(cli.relaychain_args().iter()),
                 );
 
-                let extension = chain_spec::Extensions::try_get(&*config.chain_spec);
+                let extension = node_common_chain_spec::Extensions::try_get(&*config.chain_spec);
                 let relay_chain_id = extension.map(|e| e.relay_chain.clone());
 
                 let dev_service =
@@ -321,7 +290,7 @@ pub fn run() -> Result<()> {
 
                 if dev_service {
                     return crate::service::start_dev_node(config, cli.run.sealing, id, hwbench).await
-                    .map_err(Into::into)
+                        .map_err(Into::into);
                 }
 
 
@@ -362,135 +331,11 @@ pub fn run() -> Result<()> {
                     id,
                     hwbench,
                 )
-                .await
-                .map(|r| r.0)
-                .map_err(Into::into)
+                    .await
+                    .map(|r| r.0)
+                    .map_err(Into::into)
             })
         }
-    }
-}
-
-impl DefaultConfigurationValues for RelayChainCli {
-    fn p2p_listen_port() -> u16 {
-        30334
-    }
-
-    fn rpc_listen_port() -> u16 {
-        9945
-    }
-
-    fn prometheus_listen_port() -> u16 {
-        9616
-    }
-}
-
-impl CliConfiguration<Self> for RelayChainCli {
-    fn shared_params(&self) -> &SharedParams {
-        self.base.base.shared_params()
-    }
-
-    fn import_params(&self) -> Option<&ImportParams> {
-        self.base.base.import_params()
-    }
-
-    fn network_params(&self) -> Option<&NetworkParams> {
-        self.base.base.network_params()
-    }
-
-    fn keystore_params(&self) -> Option<&KeystoreParams> {
-        self.base.base.keystore_params()
-    }
-
-    fn base_path(&self) -> Result<Option<BasePath>> {
-        Ok(self
-            .shared_params()
-            .base_path()?
-            .or_else(|| Some(self.base_path.clone().into())))
-    }
-
-    fn rpc_addr(&self, default_listen_port: u16) -> Result<Option<Vec<sc_cli::RpcEndpoint>>> {
-        self.base.base.rpc_addr(default_listen_port)
-    }
-    fn prometheus_config(
-        &self,
-        default_listen_port: u16,
-        chain_spec: &Box<dyn ChainSpec>,
-    ) -> Result<Option<PrometheusConfig>> {
-        self.base
-            .base
-            .prometheus_config(default_listen_port, chain_spec)
-    }
-
-    fn init<F>(&self, _support_url: &String, _impl_version: &String, _logger_hook: F) -> Result<()>
-    where
-        F: FnOnce(&mut sc_cli::LoggerBuilder),
-    {
-        unreachable!("PolkadotCli is never initialized; qed");
-    }
-
-    fn chain_id(&self, is_dev: bool) -> Result<String> {
-        let chain_id = self.base.base.chain_id(is_dev)?;
-
-        Ok(if chain_id.is_empty() {
-            self.chain_id.clone().unwrap_or_default()
-        } else {
-            chain_id
-        })
-    }
-
-    fn role(&self, is_dev: bool) -> Result<sc_service::Role> {
-        self.base.base.role(is_dev)
-    }
-
-    fn transaction_pool(&self, is_dev: bool) -> Result<sc_service::config::TransactionPoolOptions> {
-        self.base.base.transaction_pool(is_dev)
-    }
-
-    fn trie_cache_maximum_size(&self) -> Result<Option<usize>> {
-        self.base.base.trie_cache_maximum_size()
-    }
-
-    fn rpc_methods(&self) -> Result<sc_service::config::RpcMethods> {
-        self.base.base.rpc_methods()
-    }
-
-    fn rpc_max_connections(&self) -> Result<u32> {
-        self.base.base.rpc_max_connections()
-    }
-
-    fn rpc_cors(&self, is_dev: bool) -> Result<Option<Vec<String>>> {
-        self.base.base.rpc_cors(is_dev)
-    }
-
-    fn default_heap_pages(&self) -> Result<Option<u64>> {
-        self.base.base.default_heap_pages()
-    }
-
-    fn force_authoring(&self) -> Result<bool> {
-        self.base.base.force_authoring()
-    }
-
-    fn disable_grandpa(&self) -> Result<bool> {
-        self.base.base.disable_grandpa()
-    }
-
-    fn max_runtime_instances(&self) -> Result<Option<usize>> {
-        self.base.base.max_runtime_instances()
-    }
-
-    fn announce_block(&self) -> Result<bool> {
-        self.base.base.announce_block()
-    }
-
-    fn telemetry_endpoints(
-        &self,
-        chain_spec: &Box<dyn ChainSpec>,
-    ) -> Result<Option<sc_telemetry::TelemetryEndpoints>> {
-        self.base.base.telemetry_endpoints(chain_spec)
-    }
-
-    fn node_name(&self) -> Result<String> {
-        self.base.base.node_name()
     }
 }
 
@@ -531,7 +376,7 @@ fn rpc_provider_mode(cli: Cli, profile_id: u64) -> Result<()> {
 
             log::info!("Container chain CLI: {container_chain_cli:?}");
 
-            let para_id = chain_spec::Extensions::try_get(&*config.chain_spec)
+            let para_id = node_common_chain_spec::Extensions::try_get(&*config.chain_spec)
                 .map(|e| e.para_id)
                 .ok_or("Could not find parachain ID in chain-spec.")?;
 
@@ -542,9 +387,9 @@ fn rpc_provider_mode(cli: Cli, profile_id: u64) -> Result<()> {
 
             let collator_options = cli.run.collator_options();
 
-            let polkadot_cli = RelayChainCli::new(
+            let polkadot_cli = RelayChainCli::<NodeName>::new(
                 &config,
-                [RelayChainCli::executable_name()]
+                [RelayChainCli::<NodeName>::executable_name()]
                     .iter()
                     .chain(cli.relaychain_args().iter()),
             );
@@ -579,7 +424,7 @@ fn rpc_provider_mode(cli: Cli, profile_id: u64) -> Result<()> {
             .await
             .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
 
-            let relay_chain = crate::chain_spec::Extensions::try_get(&*config.chain_spec)
+            let relay_chain = node_common_chain_spec::Extensions::try_get(&*config.chain_spec)
                 .map(|e| e.relay_chain.clone())
                 .ok_or("Could not find relay_chain extension in chain-spec.")?;
 

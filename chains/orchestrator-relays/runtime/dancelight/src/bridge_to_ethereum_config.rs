@@ -29,8 +29,8 @@ use {
         parameter_types, weights, xcm_config, AggregateMessageOrigin, Balance, Balances,
         EthereumInboundQueue, EthereumOutboundQueue, EthereumSovereignAccount, EthereumSystem,
         FixedU128, GetAggregateMessageOrigin, Keccak256, MessageQueue,
-        OutboundMessageCommitmentRecorder, Runtime, RuntimeEvent, TokenLocationReanchored,
-        TransactionByteFee, TreasuryAccount, WeightToFee, UNITS,
+        OutboundMessageCommitmentRecorder, Runtime, RuntimeEvent, SnowbridgeFeesAccount,
+        TokenLocationReanchored, TransactionByteFee, TreasuryAccount, WeightToFee, UNITS,
     },
     frame_support::{
         traits::{
@@ -222,7 +222,7 @@ impl pallet_ethereum_token_transfers::Config for Runtime {
     type OutboundQueue = EthereumOutboundQueue;
     type EthereumSystemHandler = EthereumSystemHandler<Runtime>;
     type EthereumSovereignAccount = EthereumSovereignAccount;
-    type FeesAccount = TreasuryAccount;
+    type FeesAccount = SnowbridgeFeesAccount;
     type TokenLocationReanchored = TokenLocationReanchored;
     type TokenIdFromLocation = EthereumSystem;
     #[cfg(feature = "runtime-benchmarks")]
@@ -381,9 +381,9 @@ mod test_helpers {
 
 /// Rewards the relayer that processed a native token transfer message
 /// using the FeesAccount configured in pallet_ethereum_token_transfers
-pub struct RewardThroughTreasury<T>(sp_std::marker::PhantomData<T>);
+pub struct RewardThroughFeesAccount<T>(sp_std::marker::PhantomData<T>);
 
-impl<T> RewardProcessor<T> for RewardThroughTreasury<T>
+impl<T> RewardProcessor<T> for RewardThroughFeesAccount<T>
 where
     T: snowbridge_pallet_inbound_queue::Config + pallet_ethereum_token_transfers::Config,
     T::AccountId: From<sp_runtime::AccountId32>,
@@ -443,7 +443,7 @@ impl snowbridge_pallet_inbound_queue::Config for Runtime {
         SymbioticMessageProcessor<Self>,
         NativeTokenTransferMessageProcessor<Self>,
     );
-    type RewardProcessor = RewardThroughTreasury<Self>;
+    type RewardProcessor = RewardThroughFeesAccount<Self>;
     #[cfg(feature = "runtime-benchmarks")]
     type MessageProcessor = (benchmark_helper::DoNothingMessageProcessor,);
 }
