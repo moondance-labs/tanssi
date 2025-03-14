@@ -47,7 +47,7 @@ describeSuite({
                 const openingHold = (await polkadotJs.query.balances.holds(alice.address)).find((h) =>
                     h.id.value.eq("StreamOpened")
                 );
-                expect(openingHold.amount.toBigInt()).eq(11_730_000_000_000n);
+                expect(openingHold.amount.toBigInt()).eq(12_530_000_000_000n);
 
                 // 2nd block
                 const txPerformPayment = await polkadotJs.tx.streamPayment
