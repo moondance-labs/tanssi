@@ -529,3 +529,59 @@ export const getPastEraStartBlock = async (currentApi: ApiPromise, block: number
 
     return epochStartBlock;
 };
+
+export const getEraIndexForBlock = async (api, blockNumber) => {
+    const apiAtBlock = await api.at(await api.rpc.chain.getBlockHash(blockNumber));
+    const eraAtBlock = await apiAtBlock.query.externalValidators.activeEra();
+    return eraAtBlock.toJSON().index;
+};
+
+export const findEraBlockUsingBinarySearch = async (api, eraIndex) => {
+    const sessionsPerEra = await api.consts.externalValidators.sessionsPerEra;
+    const blocksPerSession = api.consts.babe.epochDuration.toNumber();
+    const approximateBlockForEra = eraIndex * sessionsPerEra * blocksPerSession + 1;
+
+    let currentEraIndex = await getEraIndexForBlock(api, approximateBlockForEra);
+
+    // Approximated block for era can be different than in reality in case of downtime, in that case there are no block produced in that era or the era
+    // only consist of earlier blocks than approximated block.
+    // In other words, if there is a downtime in between we will get later era index for the approximated block compared to what we expected.
+    let currentMax = approximateBlockForEra;
+    // In worst case, it could be possible that chain has skipped all eras till this one
+    let currentMin = 1;
+    let currentBlock = currentMax;
+
+    // Most of the time the static calculation of era block matches the reality, so check that first and if that is true bypass it.
+    if ((await getEraIndexForBlock(api, currentMax)) !== eraIndex) {
+        while (currentMax >= currentMin) {
+            currentBlock = Math.floor((currentMax + currentMin) / 2);
+            console.log("calculated min max in first loop", currentMax, currentMin, currentBlock);
+            currentEraIndex = await getEraIndexForBlock(api, currentBlock);
+            if (currentEraIndex > eraIndex) {
+                currentMax = currentBlock - 1;
+            } else if (currentEraIndex < eraIndex) {
+                console.log("Modifying min", currentMin);
+                currentMin = currentBlock + 1;
+                console.log("Modified min", currentMin);
+            } else {
+                break;
+            }
+        }
+    }
+
+    // We did not find any block for this era
+    if (currentMax < currentMin) {
+        return {
+            found: false,
+            blockHash: undefined,
+        };
+    }
+
+    const eraStartBlock = await getPastEraStartBlock(api, currentBlock);
+    const eraStartBlockHash = await api.rpc.chain.getBlockHash(eraStartBlock);
+
+    return {
+        found: true,
+        blockHash: eraStartBlockHash,
+    };
+};

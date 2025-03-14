@@ -3,11 +3,12 @@ import "@tanssi/api-augment/dancelight";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
 import {
+    getAccountBalance,
+    getCurrentEraStartBlock,
+    findEraBlockUsingBinarySearch,
     HOLESKY_SOVEREIGN_ACCOUNT_ADDRESS,
     PRIMARY_GOVERNANCE_CHANNEL_ID,
     SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS,
-    getAccountBalance,
-    getCurrentEraStartBlock,
 } from "utils";
 
 describeSuite({
@@ -109,12 +110,28 @@ describeSuite({
                     log("Current era is less than historyDepth, skipping the test");
                     skip();
                 }
+                const eraStartBlockInfo = await findEraBlockUsingBinarySearch(api, eraIndexCheckpointB);
+                if (!eraStartBlockInfo.found) {
+                    log(
+                        "There are no blocks produced in the era",
+                        eraIndexCheckpointB,
+                        "so no point in continuing test"
+                    );
+                    skip();
+                }
+
+                const apiAtEraIndexCheckpointB = await api.at(eraStartBlockInfo.blockHash);
+                const externalValidatorsAtCheckpointB =
+                    await apiAtEraIndexCheckpointB.query.externalValidators.externalValidators();
 
                 // The mapping only contains the keys that are in `externalValidatorsRewards`
                 const rewardMappingKeys = (await api.query.externalValidatorsRewards.rewardPointsForEra.keys()).map(
                     (key) => key.args[0].toNumber()
                 );
-                expect(rewardMappingKeys.includes(eraIndexCheckpointB)).toBe(true);
+
+                if (externalValidatorsAtCheckpointB.length > 0) {
+                    expect(rewardMappingKeys.includes(eraIndexCheckpointB)).toBe(true);
+                }
                 expect(rewardMappingKeys.includes(eraIndexCheckpointA)).toBe(false);
             },
         });
