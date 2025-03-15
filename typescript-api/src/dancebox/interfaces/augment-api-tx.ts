@@ -2042,6 +2042,12 @@ declare module "@polkadot/api-base/types/submittable" {
              **/
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
+        inactivityTracking: {
+            /**
+             * Generic tx
+             **/
+            [key: string]: SubmittableExtrinsicFunction<ApiType>;
+        };
         invulnerables: {
             /**
              * Add a new account `who` to the list of `Invulnerables` collators.

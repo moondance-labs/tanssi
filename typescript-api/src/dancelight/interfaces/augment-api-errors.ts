@@ -906,6 +906,13 @@ declare module "@polkadot/api-base/types/errors" {
              **/
             [key: string]: AugmentedError<ApiType>;
         };
+        inactivityTracking: {
+            MaxCollatorsPerSessionReached: AugmentedError<ApiType>;
+            /**
+             * Generic error
+             **/
+            [key: string]: AugmentedError<ApiType>;
+        };
         messageQueue: {
             /**
              * The message was already processed and cannot be processed again.
