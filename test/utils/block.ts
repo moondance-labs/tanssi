@@ -5,7 +5,7 @@ import type { ApiPromise } from "@polkadot/api";
 import type { SubmittableExtrinsic } from "@polkadot/api/types";
 import { TypeRegistry } from "@polkadot/types";
 import type { Vec, bool, u8, u32, u128 } from "@polkadot/types-codec";
-import type { AccountId32, EventRecord, ParaId } from "@polkadot/types/interfaces";
+import type { AccountId32, BlockHash, EventRecord, ParaId } from "@polkadot/types/interfaces";
 
 export async function jumpSessions(context: DevModeContext, count: number): Promise<string | null> {
     const session = (await context.polkadotJs().query.session.currentIndex()).addn(count.valueOf()).toNumber();
@@ -530,14 +530,17 @@ export const getPastEraStartBlock = async (currentApi: ApiPromise, block: number
     return epochStartBlock;
 };
 
-export const getEraIndexForBlock = async (api, blockNumber) => {
+export const getEraIndexForBlock = async (api: ApiPromise, blockNumber: number): Promise<number> => {
     const apiAtBlock = await api.at(await api.rpc.chain.getBlockHash(blockNumber));
     const eraAtBlock = await apiAtBlock.query.externalValidators.activeEra();
-    return eraAtBlock.toJSON().index;
+    return eraAtBlock.unwrap().index.toNumber();
 };
 
-export const findEraBlockUsingBinarySearch = async (api, eraIndex) => {
-    const sessionsPerEra = await api.consts.externalValidators.sessionsPerEra;
+export const findEraBlockUsingBinarySearch = async (
+    api: ApiPromise,
+    eraIndex: number
+): Promise<{ found: boolean; blockHash: BlockHash }> => {
+    const sessionsPerEra = api.consts.externalValidators.sessionsPerEra.toNumber();
     const blocksPerSession = api.consts.babe.epochDuration.toNumber();
     const approximateBlockForEra = eraIndex * sessionsPerEra * blocksPerSession + 1;
 
@@ -555,7 +558,6 @@ export const findEraBlockUsingBinarySearch = async (api, eraIndex) => {
     if ((await getEraIndexForBlock(api, currentMax)) !== eraIndex) {
         while (currentMax >= currentMin) {
             currentBlock = Math.floor((currentMax + currentMin) / 2);
-            console.log("calculated min max in first loop", currentMax, currentMin, currentBlock);
             currentEraIndex = await getEraIndexForBlock(api, currentBlock);
             if (currentEraIndex > eraIndex) {
                 currentMax = currentBlock - 1;
