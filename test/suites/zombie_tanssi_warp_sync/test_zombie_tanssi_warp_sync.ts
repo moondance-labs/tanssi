@@ -284,6 +284,35 @@ describeSuite({
                 ]);
             },
         });
+
+        it({
+            id: "T16",
+            title: "Check Collator1000-03.log to ensure it did not download the block history",
+            timeout: 300000,
+            test: async () => {
+                // Not ideal because logs can change, but better than nothing.
+                const logFilePath = `${getTmpZombiePath()}/Collator1000-03.log`;
+                /*
+TRACE tokio-runtime-worker sync: [Container-2000] State sync: imported 1 of 1.
+ INFO tokio-runtime-worker sync: [Container-2000] State sync is complete, continuing with block sync.
+DEBUG tokio-runtime-worker sync: [Container-2000] Starting gap sync #1 - #7
+TRACE tokio-runtime-worker sync: [Container-2000] Restarted sync at #8 (0x19a3cf7d3224bd4f56328df3102487b0fb3ce0abefede96cee7c0afae3c07bb3)
+
+TRACE tokio-runtime-worker sync: [Container-2000] BlockResponse 0 from 12D3KooWR3cXp1h9Qguvt5yjX3Y48Z3bcmYNy6dxQRHmWNoKiTVk with 7 blocks  (7..1)
+TRACE tokio-runtime-worker sync: [Container-2000] Reversing incoming block list
+TRACE tokio-runtime-worker sync: [Container-2000] 7 blocks ready for import
+DEBUG tokio-runtime-worker sync: [Container-2000] Drained 7 gap blocks from 0
+TRACE tokio-runtime-worker sync: [Container-2000] Accepted 7 blocks (0xf634a6692aef17af72ccc9ae716d991a3bd8c8fa2c52218eae441d3097c8a503) with origin NetworkInitialSync
+TRACE tokio-runtime-worker sync::import-queue: [Container-2000] Scheduling 7 blocks for import
+                 */
+                // Can't check the other logs because we also see them during normal sync:
+                // When the collator warp syncs to block 8, in the meantime the latest block is 11,
+                // so it syncs blocks 9-11 printing almost the same logs as the gap sync.
+                await checkLogsNotExist(logFilePath, [
+                    "Starting gap sync",
+                ]);
+            },
+        });
     },
 });
 
