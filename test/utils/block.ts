@@ -538,8 +538,9 @@ export const getEraIndexForBlock = async (api: ApiPromise, blockNumber: number):
 
 export const getBlockNumberAtWhichEraStarted = async (api: ApiPromise): Promise<number> => {
     const chain = (await api.rpc.system.chain()).toString();
+    const FIRST_BLOCK_WITH_ERA_PRESENT_FOR_STAGELIGHT: number = 734672;
     if (chain === "Stagelight") {
-        return 734672;
+        return FIRST_BLOCK_WITH_ERA_PRESENT_FOR_STAGELIGHT;
     }
     // For Dancelight ExternalValidators was present from the beginning
     return 1;
