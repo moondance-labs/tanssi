@@ -171,10 +171,6 @@ pub mod pallet {
 
         type RuntimeHoldReason: From<HoldReason>;
 
-        // TODO: Remove
-        #[pallet::constant]
-        type DepositAmount: Get<<Self::Currency as Inspect<Self::AccountId>>::Balance>;
-
         type RegistrarHooks: RegistrarHooks;
 
         /// External manager that takes care of executing specific operations

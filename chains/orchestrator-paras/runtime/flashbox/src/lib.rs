@@ -1193,10 +1193,6 @@ impl RelayStorageRootProvider for PalletRelayStorageRootProvider {
     }
 }
 
-parameter_types! {
-    // TODO: Remove
-    pub const DepositAmount: Balance = 100 * UNIT;
-}
 impl pallet_registrar::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type RegistrarOrigin =
@@ -1210,8 +1206,6 @@ impl pallet_registrar::Config for Runtime {
     type SessionIndex = u32;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type Currency = Balances;
-    // TODO: Remove
-    type DepositAmount = DepositAmount;
     type RegistrarHooks = FlashboxRegistrarHooks;
     type RuntimeHoldReason = RuntimeHoldReason;
     type InnerRegistrar = ();
