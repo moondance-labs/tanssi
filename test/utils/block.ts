@@ -536,22 +536,33 @@ export const getEraIndexForBlock = async (api: ApiPromise, blockNumber: number):
     return eraAtBlock.unwrap().index.toNumber();
 };
 
+export const getBlockNumberAtWhichEraStarted = async (api: ApiPromise): Promise<number> => {
+    const chain = (await api.rpc.system.chain()).toString();
+    if (chain === "Stagelight") {
+        return 734672;
+    }
+    // For Dancelight ExternalValidators was present from the beginning
+    return 1;
+};
+
 export const findEraBlockUsingBinarySearch = async (
     api: ApiPromise,
     eraIndex: number
 ): Promise<{ found: boolean; blockHash: BlockHash }> => {
     const sessionsPerEra = api.consts.externalValidators.sessionsPerEra.toNumber();
     const blocksPerSession = api.consts.babe.epochDuration.toNumber();
-    const approximateBlockForEra = eraIndex * sessionsPerEra * blocksPerSession + 1;
+    const approximateBlockForEra = (eraIndex + 1) * sessionsPerEra * blocksPerSession;
+    let currentEraIndex = 0;
 
-    let currentEraIndex = await getEraIndexForBlock(api, approximateBlockForEra);
+    const runtimeUpgradedToSupportEraAt = await getBlockNumberAtWhichEraStarted(api);
+    console.log("Runtime upgrade to support era at:", runtimeUpgradedToSupportEraAt);
 
     // Approximated block for era can be different than in reality in case of downtime, in that case there are no block produced in that era or the era
     // only consist of earlier blocks than approximated block.
     // In other words, if there is a downtime in between we will get later era index for the approximated block compared to what we expected.
-    let currentMax = approximateBlockForEra;
+    let currentMax = runtimeUpgradedToSupportEraAt + approximateBlockForEra;
     // In worst case, it could be possible that chain has skipped all eras till this one
-    let currentMin = 1;
+    let currentMin = runtimeUpgradedToSupportEraAt;
     let currentBlock = currentMax;
 
     // Most of the time the static calculation of era block matches the reality, so check that first and if that is true bypass it.
@@ -562,9 +573,7 @@ export const findEraBlockUsingBinarySearch = async (
             if (currentEraIndex > eraIndex) {
                 currentMax = currentBlock - 1;
             } else if (currentEraIndex < eraIndex) {
-                console.log("Modifying min", currentMin);
                 currentMin = currentBlock + 1;
-                console.log("Modified min", currentMin);
             } else {
                 break;
             }
