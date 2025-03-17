@@ -681,13 +681,4 @@ pub mod pallet {
             pools::distribute_rewards::<T>(&candidate, rewards)
         }
     }
-
-    impl<T: Config> tp_traits::CurrentEligibleCollatorsHelper<Candidate<T>> for Pallet<T> {
-        fn get_eligible_collators() -> Vec<Candidate<T>> {
-            SortedEligibleCandidates::<T>::get()
-                .iter()
-                .map(|x| x.candidate.clone())
-                .collect()
-        }
-    }
 }

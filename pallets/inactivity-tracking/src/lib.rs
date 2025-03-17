@@ -19,8 +19,8 @@ use {
     sp_runtime::{traits::Get, BoundedVec},
     sp_staking::SessionIndex,
     tp_traits::{
-        AuthorNotingHook, AuthorNotingInfo, GetCurrentContainerChains, GetSessionIndex,
-        MaybeSelfChainBlockAuthor, NodeActivityTrackingHelper,
+        AuthorNotingHook, AuthorNotingInfo, GetSessionIndex, MaybeSelfChainBlockAuthor,
+        NodeActivityTrackingHelper,
     },
 };
 
@@ -67,9 +67,6 @@ pub mod pallet {
 
         /// Helper that returns the block author for the orchestrator chain (if it exists)
         type GetSelfChainBlockAuthor: MaybeSelfChainBlockAuthor<Self::CollatorId>;
-
-        /// Helper that fetches the latest set of container chains valid for collation
-        type RegisteredContainerChainsFetcher: GetCurrentContainerChains;
     }
 
     /// A list of double map of inactive collators for a session
