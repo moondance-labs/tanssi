@@ -24,7 +24,6 @@ use {
         EthereumTokenTransfers, RuntimeEvent, SnowbridgeFeesAccount, TokenLocationReanchored,
     },
     alloy_sol_types::SolEvent,
-    frame_support::pallet_prelude::CheckedDiv,
     frame_support::{assert_noop, assert_ok},
     hex_literal::hex,
     parity_scale_codec::Encode,
@@ -37,7 +36,6 @@ use {
         Command, Destination, MessageProcessor, MessageV1, VersionedXcmMessage,
     },
     sp_core::{H160, H256},
-    sp_runtime::Saturating,
     sp_runtime::{traits::MaybeEquivalence, FixedU128, TokenError},
     sp_std::vec,
     xcm::{latest::Location, VersionedLocation},
@@ -760,6 +758,7 @@ fn test_pricing_parameters() {
 
             let amount_to_transfer = 100 * UNIT;
             let recipient = H160::random();
+
             assert_ok!(EthereumTokenTransfers::transfer_native_token(
                 origin_of(AccountId::from(ALICE)),
                 amount_to_transfer,
