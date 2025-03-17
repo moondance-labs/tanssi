@@ -1639,9 +1639,10 @@ impl pallet_services_payment::Config for Runtime {
     type WeightInfo = weights::pallet_services_payment::SubstrateWeight<Runtime>;
 }
 
+pub const OPEN_STREAM_HOLD_AMOUNT: u32 = 253;
 parameter_types! {
-    // 1 entry, storing 173 bytes on-chain
-    pub const OpenStreamHoldAmount: Balance = deposit(1, 173);
+    // 1 entry, storing 253 bytes on-chain in the worst case
+    pub const OpenStreamHoldAmount: Balance = deposit(1, OPEN_STREAM_HOLD_AMOUNT);
 }
 
 impl pallet_stream_payment::Config for Runtime {

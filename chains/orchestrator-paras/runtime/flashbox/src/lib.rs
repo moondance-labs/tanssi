@@ -1368,8 +1368,8 @@ impl pallet_tx_pause::Config for Runtime {
 }
 
 parameter_types! {
-    // 1 entry, storing 173 bytes on-chain
-    pub const OpenStreamHoldAmount: Balance = currency::deposit(1, 173);
+    // 1 entry, storing 253 bytes on-chain in the worst case
+    pub const OpenStreamHoldAmount: Balance = currency::deposit(1, 253);
 }
 
 impl pallet_stream_payment::Config for Runtime {
