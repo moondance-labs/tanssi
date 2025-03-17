@@ -28,7 +28,6 @@ use {
 use tp_traits::{BlockNumber, ParaId};
 
 pub use pallet::*;
-
 #[frame_support::pallet]
 pub mod pallet {
     use {
@@ -69,6 +68,10 @@ pub mod pallet {
         type GetSelfChainBlockAuthor: MaybeSelfChainBlockAuthor<Self::CollatorId>;
     }
 
+    /// Switch to enable/disable inactivity tracking
+    #[pallet::storage]
+    pub type EnableInactivityTracking<T: Config> = StorageValue<_, bool, ValueQuery>;
+
     /// A list of double map of inactive collators for a session
     #[pallet::storage]
     pub type ActiveCollators<T: Config> = StorageMap<
@@ -89,7 +92,10 @@ pub mod pallet {
     pub type LastUnprocessedSession<T: Config> = StorageValue<_, SessionIndex, ValueQuery>;
 
     #[pallet::event]
-    pub enum Event<T: Config> {}
+    #[pallet::generate_deposit(pub(super) fn deposit_event)]
+    pub enum Event<T: Config> {
+        InactivityTrackingEnabled { is_enabled: bool },
+    }
 
     #[pallet::error]
     pub enum Error<T> {
@@ -97,7 +103,19 @@ pub mod pallet {
     }
 
     #[pallet::call]
-    impl<T: Config> Pallet<T> {}
+    impl<T: Config> Pallet<T> {
+        #[pallet::call_index(0)]
+        #[pallet::weight(T::DbWeight::get().reads_writes(0, 1))]
+        pub fn set_inactivity_tracking_status(
+            origin: OriginFor<T>,
+            is_enabled: bool,
+        ) -> DispatchResult {
+            ensure_root(origin)?;
+            <EnableInactivityTracking<T>>::put(is_enabled);
+            Self::deposit_event(Event::<T>::InactivityTrackingEnabled { is_enabled });
+            Ok(())
+        }
+    }
 
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
@@ -124,26 +142,25 @@ pub mod pallet {
     impl<T: Config> Pallet<T> {
         fn process_ended_session(
             unprocessed_session_id: SessionIndex,
-            current_session_id: SessionIndex,
+            active_session_id: SessionIndex,
         ) -> Weight {
-            let mut total_weight = T::DbWeight::get().reads_writes(0, 3);
+            let mut total_weight = T::DbWeight::get().reads_writes(1, 3);
             ActiveCollators::<T>::insert(
                 unprocessed_session_id,
                 <ActiveCollatorsForCurrentSession<T>>::get(),
             );
 
-            // TO DO: Add to the list collators assigned to container chains that have not advanced
             <ActiveCollatorsForCurrentSession<T>>::put(BoundedVec::new());
 
             // Cleanup active collator info for sessions that are older than the maximum allowed
             let minimum_sessions_required = T::MaxInactiveSessions::get() + 1;
-            if current_session_id >= minimum_sessions_required {
+            if active_session_id >= minimum_sessions_required {
                 total_weight += T::DbWeight::get().writes(1);
                 let _ = <crate::pallet::ActiveCollators<T>>::remove(
-                    current_session_id - minimum_sessions_required,
+                    active_session_id - minimum_sessions_required,
                 );
             }
-            <LastUnprocessedSession<T>>::put(current_session_id);
+            <LastUnprocessedSession<T>>::put(active_session_id);
             total_weight
         }
         pub fn on_author_noted(author: T::CollatorId) -> Weight {
@@ -166,6 +183,10 @@ pub mod pallet {
 
 impl<T: Config> NodeActivityTrackingHelper<T::CollatorId> for Pallet<T> {
     fn is_node_inactive(node: &T::CollatorId) -> bool {
+        if !<EnableInactivityTracking<T>>::get() {
+            return false;
+        }
+
         let current_session = T::CurrentSessionIndex::session_index();
 
         let minimum_sessions_required = T::MaxInactiveSessions::get() + 1;
@@ -186,10 +207,9 @@ impl<T: Config> NodeActivityTrackingHelper<T::CollatorId> for Pallet<T> {
 
 impl<T: Config> AuthorNotingHook<T::CollatorId> for Pallet<T> {
     fn on_container_authors_noted(info: &[AuthorNotingInfo<T::CollatorId>]) -> Weight {
-        let mut total_weight = T::DbWeight::get().reads_writes(0, 0);
+        let mut total_weight = T::DbWeight::get().reads_writes(1, 0);
         for author_info in info {
-            let author = author_info.author.clone();
-            total_weight += Self::on_author_noted(author);
+            total_weight += Self::on_author_noted(author_info.author.clone());
         }
         total_weight
     }
