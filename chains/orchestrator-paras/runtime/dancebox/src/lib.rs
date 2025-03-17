@@ -2073,6 +2073,7 @@ mod benches {
         [pallet_session, SessionBench::<Runtime>]
         [pallet_author_inherent, AuthorInherent]
         [pallet_pooled_staking, PooledStaking]
+        [pallet_inactivity_tracking, InactivityTracking]
         [pallet_treasury, Treasury]
         [cumulus_pallet_xcmp_queue, XcmpQueue]
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
