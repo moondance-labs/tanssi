@@ -220,8 +220,10 @@ pub fn import_queue(
     // The nimbus import queue ONLY checks the signature correctness
     // Any other checks corresponding to the author-correctness should be done
     // in the runtime
-    let block_import =
-        ParachainBlockImport::new(node_builder.client.clone(), node_builder.backend.clone());
+    let block_import = ParachainBlockImport::new_with_delayed_best_block(
+        node_builder.client.clone(),
+        node_builder.backend.clone(),
+    );
 
     let import_queue = nimbus_consensus::import_queue(
         node_builder.client.clone(),
