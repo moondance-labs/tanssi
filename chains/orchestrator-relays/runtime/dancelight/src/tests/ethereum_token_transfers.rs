@@ -794,7 +794,7 @@ fn test_pricing_parameters() {
 
             let mut pricing_parameters =
                 snowbridge_pallet_system::PricingParameters::<Runtime>::get();
-            pricing_parameters.multiplier = FixedU128::from_rational(1, 2);
+            pricing_parameters.multiplier = FixedU128::from_rational(2, 1);
 
             snowbridge_pallet_system::PricingParameters::<Runtime>::set(pricing_parameters.clone());
 
@@ -815,10 +815,11 @@ fn test_pricing_parameters() {
                 }
             });
 
-            println!("first_fee_found: {}", first_fee_found);
-            println!("second_fee_found: {}", second_fee_found);
-
-            assert!(second_fee_found < first_fee_found);
+            // Check the relation between two fees is the pricing parameters multiplier
+            assert!(
+                second_fee_found.div_ceil(first_fee_found) as f64
+                    == pricing_parameters.multiplier.to_float()
+            );
 
             assert_eq!(
                 Balances::free_balance(SnowbridgeFeesAccount::get()),
