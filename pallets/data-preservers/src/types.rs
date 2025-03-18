@@ -82,7 +82,7 @@ pub struct RegisteredProfile<T: Config> {
 }
 
 /// Allows to process various kinds of payment options for assignments.
-pub trait AssignmentPayment<AccountId> {
+pub trait AssignmentProcessor<AccountId> {
     /// Providers requests which kind of payment it accepts.
     type ProviderRequest: tp_traits::StorageTraits + Serialize + DeserializeOwned + MaxEncodedLen;
     /// Extra parameter the assigner provides.

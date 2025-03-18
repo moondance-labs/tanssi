@@ -342,7 +342,7 @@ pub enum AssignerParameter {
 pub enum AssignmentWitness {
     Free,
     SomeKindOfPayment {
-        // in this mock we store requested + extra to ensure `AssignmentPayment` is called
+        // in this mock we store requested + extra to ensure `AssignmentProcessor` is called
         // properly. We also store the payer to perform a second payment while stopping the
         // assignement.
         payed: Balance,
@@ -350,9 +350,9 @@ pub enum AssignmentWitness {
     },
 }
 
-pub struct AssignmentPayment;
+pub struct AssignmentProcessor;
 
-impl pallet_data_preservers::AssignmentPayment<AccountId> for AssignmentPayment {
+impl pallet_data_preservers::AssignmentProcessor<AccountId> for AssignmentProcessor {
     /// Providers requests which kind of payment it accepts.
     type ProviderRequest = ProviderRequest;
     /// Extra parameter the assigner provides.
@@ -440,7 +440,7 @@ impl pallet_data_preservers::Config for Test {
     type RuntimeHoldReason = RuntimeHoldReason;
     type Currency = Balances;
     type ProfileId = u64;
-    type AssignmentPayment = AssignmentPayment;
+    type AssignmentProcessor = AssignmentProcessor;
     type AssignmentOrigin = MockContainerChainManager<Test>;
     type ForceSetProfileOrigin = EnsureRoot<AccountId>;
     type MaxAssignmentsPerParaId = ConstU32<10>;
