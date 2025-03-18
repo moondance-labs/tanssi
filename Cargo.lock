@@ -3316,6 +3316,7 @@ dependencies = [
  "pallet-data-preservers-runtime-api",
  "pallet-foreign-asset-creator",
  "pallet-identity",
+ "pallet-inactivity-tracking",
  "pallet-inflation-rewards",
  "pallet-initializer",
  "pallet-invulnerables",
@@ -3454,6 +3455,7 @@ dependencies = [
  "pallet-external-validators-rewards-runtime-api",
  "pallet-grandpa",
  "pallet-identity",
+ "pallet-inactivity-tracking",
  "pallet-inflation-rewards",
  "pallet-initializer",
  "pallet-invulnerables",
@@ -10316,6 +10318,23 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-staking",
+]
+
+[[package]]
+name = "pallet-inactivity-tracking"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-staking",
+ "sp-std",
+ "tp-traits",
 ]
 
 [[package]]

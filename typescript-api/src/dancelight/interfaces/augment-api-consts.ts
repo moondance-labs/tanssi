@@ -395,6 +395,21 @@ declare module "@polkadot/api-base/types/consts" {
              **/
             [key: string]: Codec;
         };
+        inactivityTracking: {
+            /**
+             * The maximum amount of collators that can stored for a session
+             **/
+            maxCollatorsPerSession: u32 & AugmentedConst<ApiType>;
+            /**
+             * The maximum number of sessions for which a collator can be inactive
+             * before being moved to the offline queue
+             **/
+            maxInactiveSessions: u32 & AugmentedConst<ApiType>;
+            /**
+             * Generic const
+             **/
+            [key: string]: Codec;
+        };
         inflationRewards: {
             /**
              * Inflation rate per orchestrator block (proportion of the total issuance)
