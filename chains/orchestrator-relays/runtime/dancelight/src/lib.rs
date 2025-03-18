@@ -96,8 +96,8 @@ use {
     },
     tp_bridge::ConvertLocation,
     tp_traits::{
-        EraIndex, GetHostConfiguration, GetSessionContainerChains, ParaIdAssignmentHooks,
-        RegistrarHandler, Slot, SlotFrequency,
+        prod_or_fast_parameter_types, EraIndex, GetHostConfiguration, GetSessionContainerChains,
+        ParaIdAssignmentHooks, RegistrarHandler, Slot, SlotFrequency,
     },
 };
 
@@ -1406,9 +1406,9 @@ impl SessionInterface<AccountId> for DancelightSessionInterface {
     }
 }
 
-parameter_types! {
-    pub const SessionsPerEra: SessionIndex = runtime_common::prod_or_fast!(6, 3);
-    pub const SlashDeferDuration: EraIndex = runtime_common::prod_or_fast!(0, 0);
+prod_or_fast_parameter_types! {
+    pub const SessionsPerEra: SessionIndex = { prod: 6, fast: 3 };
+    pub const SlashDeferDuration: EraIndex = { prod: 0, fast: 0 };
 }
 
 impl pallet_external_validators::Config for Runtime {
@@ -1444,9 +1444,7 @@ parameter_types! {
             &EthereumLocation::get()
         ).expect("to convert EthereumSovereignAccount");
 
-    // TODO: Use a potentially different formula/inflation rate. We need the output to be non-zero
-    // to properly write integration tests.
-    pub ExternalRewardsEraInflationProvider: u128 = InflationRate::get() * Balances::total_issuance();
+    pub ExternalRewardsEraInflationProvider: u128 = CollatorsInflationRatePerBlock::get() * Balances::total_issuance();
 
     pub TokenLocationReanchored: Location = xcm_config::TokenLocation::get().reanchored(
         &EthereumLocation::get(),
@@ -1689,18 +1687,23 @@ impl pallet_data_preservers::Config for Runtime {
 parameter_types! {
     pub DancelightBondAccount: AccountId32 = PalletId(*b"StarBond").into_account_truncating();
     pub PendingRewardsAccount: AccountId32 = PalletId(*b"PENDREWD").into_account_truncating();
-    // The equation to solve is:
-    // initial_supply * (1.05) = initial_supply * (1+x)^5_259_600
-    // we should solve for x = (1.05)^(1/5_259_600) -1 -> 0.000000009 per block or 9/1_000_000_000
-    // 1% in the case of dev mode
-    // TODO: check if we can put the prod inflation for tests too
-    // TODO: better calculus for going from annual to block inflation (if it can be done)
-    // TODO: check if we need to change inflation in the future
-    pub const InflationRate: Perbill = runtime_common::prod_or_fast!(Perbill::from_parts(9), Perbill::from_percent(1));
 
     // 30% for dancelight bond, so 70% for staking
     pub const RewardsPortion: Perbill = Perbill::from_percent(70);
 }
+
+// We want a global annual inflation rate of 10%.
+// It is compounded throught era inflations, which itself is split between:
+// - Inflation for collators per block
+// - Inflation for validators per era
+// Computation is implemented in tests/inflation_rates.rs, with a test ensuring values from the
+// runtime match the formulas. We write the results as constants here to ensure we don't perform
+// computations at runtime.
+prod_or_fast_parameter_types! {
+    pub const CollatorsInflationRatePerBlock: Perbill = { prod: Perbill::from_parts(228), fast: Perbill::from_parts(228) };
+    pub const ValidatorsInflationRatePerEra: Perbill = { prod: Perbill::from_parts(821534), fast: Perbill::from_parts(6843) };
+}
+
 pub struct OnUnbalancedInflation;
 impl frame_support::traits::OnUnbalanced<Credit<AccountId, Balances>> for OnUnbalancedInflation {
     fn on_nonzero_unbalanced(credit: Credit<AccountId, Balances>) {
@@ -1713,7 +1716,7 @@ impl pallet_inflation_rewards::Config for Runtime {
     type Currency = Balances;
     type ContainerChains = ContainerRegistrar;
     type GetSelfChainBlockAuthor = ();
-    type InflationRate = InflationRate;
+    type InflationRate = ValidatorsInflationRatePerEra;
     type OnUnbalanced = OnUnbalancedInflation;
     type PendingRewardsAccount = PendingRewardsAccount;
     type StakingRewardsDistributor = InvulnerableRewardDistribution<Self, Balances, PooledStaking>;

@@ -3579,6 +3579,7 @@ dependencies = [
  "sp-weights",
  "staging-xcm",
  "staging-xcm-builder",
+ "tp-traits",
 ]
 
 [[package]]
