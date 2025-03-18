@@ -406,6 +406,8 @@ where
 }
 
 /// Seal a block with a signature in the header.
+/// This is a copy of [`cumulus_client_consensus_aura::collator::seal`] but using Nimbus instead of
+/// Aura for the signature.
 pub fn seal_tanssi<B: BlockT, P>(
     pre_sealed: B,
     storage_changes: StorageChanges<HashingFor<B>>,
@@ -438,7 +440,7 @@ where
         ))
     })?;
     let signature = signature
-        .clone()
+        .as_slice()
         .try_into()
         .map_err(|_| sp_consensus::Error::InvalidSignature(signature, author_pub.to_raw_vec()))?;
 
@@ -448,7 +450,7 @@ where
     let block_import_params = {
         let mut block_import_params = BlockImportParams::new(BlockOrigin::Own, pre_header);
         block_import_params.post_digests.push(signature_digest_item);
-        block_import_params.body = Some(body.clone());
+        block_import_params.body = Some(body);
         block_import_params.state_action =
             StateAction::ApplyChanges(sc_consensus::StorageChanges::Changes(storage_changes));
         block_import_params.fork_choice = Some(ForkChoiceStrategy::LongestChain);
