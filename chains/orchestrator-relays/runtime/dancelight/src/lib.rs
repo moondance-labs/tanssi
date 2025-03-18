@@ -33,11 +33,11 @@ use {
     cumulus_primitives_core::relay_chain::{HeadData, ValidationCode},
     dp_container_chain_genesis_data::ContainerChainGenesisDataItem,
     frame_support::{
-        dispatch::{DispatchErrorWithPostInfo, DispatchResult},
+        dispatch::DispatchResult,
         dynamic_params::{dynamic_pallet_params, dynamic_params},
         traits::{
-            fungible::{self, Inspect, InspectHold, MutateHold},
-            tokens::{PayFromAccount, Precision, Preservation, UnityAssetBalanceConversion},
+            fungible::Inspect,
+            tokens::{PayFromAccount, UnityAssetBalanceConversion},
             ConstBool, Contains, EverythingBut,
         },
     },
@@ -77,7 +77,6 @@ use {
         shared as parachains_shared,
     },
     scale_info::TypeInfo,
-    serde::{Deserialize, Serialize},
     snowbridge_core::{
         outbound::{Command, Fee},
         ChannelId, PricingParameters,
@@ -97,7 +96,7 @@ use {
     },
     tp_bridge::ConvertLocation,
     tp_traits::{
-        apply, derive_storage_traits, EraIndex, GetHostConfiguration, GetSessionContainerChains,
+        prod_or_fast_parameter_types, EraIndex, GetHostConfiguration, GetSessionContainerChains,
         ParaIdAssignmentHooks, RegistrarHandler, Slot, SlotFrequency,
     },
 };
@@ -1407,9 +1406,9 @@ impl SessionInterface<AccountId> for DancelightSessionInterface {
     }
 }
 
-parameter_types! {
-    pub const SessionsPerEra: SessionIndex = runtime_common::prod_or_fast!(6, 3);
-    pub const SlashDeferDuration: EraIndex = runtime_common::prod_or_fast!(0, 0);
+prod_or_fast_parameter_types! {
+    pub const SessionsPerEra: SessionIndex = { prod: 6, fast: 3 };
+    pub const SlashDeferDuration: EraIndex = { prod: 0, fast: 0 };
 }
 
 impl pallet_external_validators::Config for Runtime {
@@ -1445,9 +1444,7 @@ parameter_types! {
             &EthereumLocation::get()
         ).expect("to convert EthereumSovereignAccount");
 
-    // TODO: Use a potentially different formula/inflation rate. We need the output to be non-zero
-    // to properly write integration tests.
-    pub ExternalRewardsEraInflationProvider: u128 = InflationRate::get() * Balances::total_issuance();
+    pub ExternalRewardsEraInflationProvider: u128 = CollatorsInflationRatePerBlock::get() * Balances::total_issuance();
 
     pub TokenLocationReanchored: Location = xcm_config::TokenLocation::get().reanchored(
         &EthereumLocation::get(),
@@ -1640,138 +1637,6 @@ impl pallet_services_payment::Config for Runtime {
     type WeightInfo = weights::pallet_services_payment::SubstrateWeight<Runtime>;
 }
 
-#[apply(derive_storage_traits)]
-#[derive(Copy, Serialize, Deserialize, MaxEncodedLen)]
-pub enum StreamPaymentAssetId {
-    Native,
-}
-
-pub struct StreamPaymentAssets;
-impl pallet_stream_payment::Assets<AccountId, StreamPaymentAssetId, Balance>
-    for StreamPaymentAssets
-{
-    fn transfer_deposit(
-        asset_id: &StreamPaymentAssetId,
-        from: &AccountId,
-        to: &AccountId,
-        amount: Balance,
-    ) -> frame_support::pallet_prelude::DispatchResult {
-        match asset_id {
-            StreamPaymentAssetId::Native => {
-                // We remove the hold before transfering.
-                Self::decrease_deposit(asset_id, from, amount)?;
-                <Balances as fungible::Mutate<_>>::transfer(
-                    from,
-                    to,
-                    amount,
-                    Preservation::Preserve,
-                )
-                .map(|_| ())
-            }
-        }
-    }
-
-    fn increase_deposit(
-        asset_id: &StreamPaymentAssetId,
-        account: &AccountId,
-        amount: Balance,
-    ) -> frame_support::pallet_prelude::DispatchResult {
-        match asset_id {
-            StreamPaymentAssetId::Native => Balances::hold(
-                &pallet_stream_payment::HoldReason::StreamPayment.into(),
-                account,
-                amount,
-            ),
-        }
-    }
-
-    fn decrease_deposit(
-        asset_id: &StreamPaymentAssetId,
-        account: &AccountId,
-        amount: Balance,
-    ) -> frame_support::pallet_prelude::DispatchResult {
-        match asset_id {
-            StreamPaymentAssetId::Native => Balances::release(
-                &pallet_stream_payment::HoldReason::StreamPayment.into(),
-                account,
-                amount,
-                Precision::Exact,
-            )
-            .map(|_| ()),
-        }
-    }
-
-    fn get_deposit(asset_id: &StreamPaymentAssetId, account: &AccountId) -> Balance {
-        match asset_id {
-            StreamPaymentAssetId::Native => Balances::balance_on_hold(
-                &pallet_stream_payment::HoldReason::StreamPayment.into(),
-                account,
-            ),
-        }
-    }
-
-    /// Benchmarks: should return the asset id which has the worst performance when interacting
-    /// with it.
-    #[cfg(feature = "runtime-benchmarks")]
-    fn bench_worst_case_asset_id() -> StreamPaymentAssetId {
-        StreamPaymentAssetId::Native
-    }
-
-    /// Benchmarks: should return the another asset id which has the worst performance when interacting
-    /// with it afther `bench_worst_case_asset_id`. This is to benchmark the worst case when changing config
-    /// from one asset to another.
-    #[cfg(feature = "runtime-benchmarks")]
-    fn bench_worst_case_asset_id2() -> StreamPaymentAssetId {
-        StreamPaymentAssetId::Native
-    }
-
-    /// Benchmarks: should set the balance for the asset id returned by `bench_worst_case_asset_id`.
-    #[cfg(feature = "runtime-benchmarks")]
-    fn bench_set_balance(asset_id: &StreamPaymentAssetId, account: &AccountId, amount: Balance) {
-        use frame_support::traits::fungible::Mutate;
-
-        // only one asset id
-        let StreamPaymentAssetId::Native = asset_id;
-
-        Balances::set_balance(account, amount);
-    }
-}
-
-#[apply(derive_storage_traits)]
-#[derive(Copy, Serialize, Deserialize, MaxEncodedLen)]
-pub enum TimeUnit {
-    BlockNumber,
-    Timestamp,
-    // TODO: Container chains/relay block number.
-}
-
-pub struct TimeProvider;
-impl pallet_stream_payment::TimeProvider<TimeUnit, Balance> for TimeProvider {
-    fn now(unit: &TimeUnit) -> Option<Balance> {
-        match *unit {
-            TimeUnit::BlockNumber => Some(System::block_number().into()),
-            TimeUnit::Timestamp => Some(Timestamp::get().into()),
-        }
-    }
-
-    /// Benchmarks: should return the time unit which has the worst performance calling
-    /// `TimeProvider::now(unit)` with.
-    #[cfg(feature = "runtime-benchmarks")]
-    fn bench_worst_case_time_unit() -> TimeUnit {
-        // Both BlockNumber and Timestamp cost the same (1 db read), but overriding timestamp
-        // doesn't work well in benches, while block number works fine.
-        TimeUnit::BlockNumber
-    }
-
-    /// Benchmarks: sets the "now" time for time unit returned by `worst_case_time_unit`.
-    #[cfg(feature = "runtime-benchmarks")]
-    fn bench_set_now(instant: Balance) {
-        System::set_block_number(instant as u32)
-    }
-}
-
-type StreamId = u64;
-
 pub const OPEN_STREAM_HOLD_AMOUNT: u32 = 253;
 parameter_types! {
     // 1 entry, storing 253 bytes on-chain in the worst case
@@ -1780,15 +1645,15 @@ parameter_types! {
 
 impl pallet_stream_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type StreamId = StreamId;
-    type TimeUnit = TimeUnit;
+    type StreamId = tp_stream_payment_common::StreamId;
+    type TimeUnit = tp_stream_payment_common::TimeUnit;
     type Balance = Balance;
-    type AssetId = StreamPaymentAssetId;
-    type Assets = StreamPaymentAssets;
+    type AssetId = tp_stream_payment_common::AssetId;
+    type AssetsManager = tp_stream_payment_common::AssetsManager<Runtime>;
     type Currency = Balances;
     type OpenStreamHoldAmount = OpenStreamHoldAmount;
     type RuntimeHoldReason = RuntimeHoldReason;
-    type TimeProvider = TimeProvider;
+    type TimeProvider = tp_stream_payment_common::TimeProvider<Runtime>;
     type WeightInfo = weights::pallet_stream_payment::SubstrateWeight<Runtime>;
 }
 
@@ -1801,117 +1666,6 @@ parameter_types! {
     pub const MaxNodeUrlLen: u32 = 200;
 }
 
-#[apply(derive_storage_traits)]
-#[derive(Copy, Serialize, Deserialize, MaxEncodedLen)]
-pub enum PreserversAssignmentPaymentRequest {
-    Free,
-    StreamPayment {
-        config: pallet_stream_payment::StreamConfigOf<Runtime>,
-    },
-}
-
-#[apply(derive_storage_traits)]
-#[derive(Copy, Serialize, Deserialize)]
-pub enum PreserversAssignmentPaymentExtra {
-    Free,
-    StreamPayment { initial_deposit: Balance },
-}
-
-#[apply(derive_storage_traits)]
-#[derive(Copy, Serialize, Deserialize, MaxEncodedLen)]
-pub enum PreserversAssignmentPaymentWitness {
-    Free,
-    StreamPayment {
-        stream_id: <Runtime as pallet_stream_payment::Config>::StreamId,
-    },
-}
-
-pub struct PreserversAssignmentPayment;
-
-impl pallet_data_preservers::AssignmentPayment<AccountId> for PreserversAssignmentPayment {
-    /// Providers requests which kind of payment it accepts.
-    type ProviderRequest = PreserversAssignmentPaymentRequest;
-    /// Extra parameter the assigner provides.
-    type AssignerParameter = PreserversAssignmentPaymentExtra;
-    /// Represents the successful outcome of the assignment.
-    type AssignmentWitness = PreserversAssignmentPaymentWitness;
-
-    fn try_start_assignment(
-        assigner: AccountId,
-        provider: AccountId,
-        request: &Self::ProviderRequest,
-        extra: Self::AssignerParameter,
-    ) -> Result<Self::AssignmentWitness, DispatchErrorWithPostInfo> {
-        let witness = match (request, extra) {
-            (Self::ProviderRequest::Free, Self::AssignerParameter::Free) => {
-                Self::AssignmentWitness::Free
-            }
-            (
-                Self::ProviderRequest::StreamPayment { config },
-                Self::AssignerParameter::StreamPayment { initial_deposit },
-            ) => {
-                let stream_id = StreamPayment::open_stream_returns_id(
-                    assigner,
-                    provider,
-                    *config,
-                    initial_deposit,
-                )?;
-
-                Self::AssignmentWitness::StreamPayment { stream_id }
-            }
-            _ => Err(
-                pallet_data_preservers::Error::<Runtime>::AssignmentPaymentRequestParameterMismatch,
-            )?,
-        };
-
-        Ok(witness)
-    }
-
-    fn try_stop_assignment(
-        provider: AccountId,
-        witness: Self::AssignmentWitness,
-    ) -> Result<(), DispatchErrorWithPostInfo> {
-        match witness {
-            Self::AssignmentWitness::Free => (),
-            Self::AssignmentWitness::StreamPayment { stream_id } => {
-                StreamPayment::close_stream(RuntimeOrigin::signed(provider), stream_id)?;
-            }
-        }
-
-        Ok(())
-    }
-
-    /// Return the values for a free assignment if it is supported.
-    /// This is required to perform automatic migration from old Bootnodes storage.
-    fn free_variant_values() -> Option<(
-        Self::ProviderRequest,
-        Self::AssignerParameter,
-        Self::AssignmentWitness,
-    )> {
-        Some((
-            Self::ProviderRequest::Free,
-            Self::AssignerParameter::Free,
-            Self::AssignmentWitness::Free,
-        ))
-    }
-
-    // The values returned by the following functions should match with each other.
-    #[cfg(feature = "runtime-benchmarks")]
-    fn benchmark_provider_request() -> Self::ProviderRequest {
-        PreserversAssignmentPaymentRequest::Free
-    }
-
-    #[cfg(feature = "runtime-benchmarks")]
-    fn benchmark_assigner_parameter() -> Self::AssignerParameter {
-        PreserversAssignmentPaymentExtra::Free
-    }
-
-    #[cfg(feature = "runtime-benchmarks")]
-    fn benchmark_assignment_witness() -> Self::AssignmentWitness {
-        PreserversAssignmentPaymentWitness::Free
-    }
-}
-
 impl pallet_data_preservers::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type RuntimeHoldReason = RuntimeHoldReason;
@@ -1920,7 +1674,7 @@ impl pallet_data_preservers::Config for Runtime {
 
     type ProfileId = u64;
     type ProfileDeposit = tp_traits::BytesDeposit<ProfileDepositBaseFee, ProfileDepositByteFee>;
-    type AssignmentPayment = PreserversAssignmentPayment;
+    type AssignmentProcessor = tp_data_preservers_common::AssignmentProcessor<Runtime>;
 
     type AssignmentOrigin = pallet_registrar::EnsureSignedByManager<Runtime>;
     type ForceSetProfileOrigin = EnsureRoot<AccountId>;
@@ -1933,18 +1687,23 @@ impl pallet_data_preservers::Config for Runtime {
 parameter_types! {
     pub DancelightBondAccount: AccountId32 = PalletId(*b"StarBond").into_account_truncating();
     pub PendingRewardsAccount: AccountId32 = PalletId(*b"PENDREWD").into_account_truncating();
-    // The equation to solve is:
-    // initial_supply * (1.05) = initial_supply * (1+x)^5_259_600
-    // we should solve for x = (1.05)^(1/5_259_600) -1 -> 0.000000009 per block or 9/1_000_000_000
-    // 1% in the case of dev mode
-    // TODO: check if we can put the prod inflation for tests too
-    // TODO: better calculus for going from annual to block inflation (if it can be done)
-    // TODO: check if we need to change inflation in the future
-    pub const InflationRate: Perbill = runtime_common::prod_or_fast!(Perbill::from_parts(9), Perbill::from_percent(1));
 
     // 30% for dancelight bond, so 70% for staking
     pub const RewardsPortion: Perbill = Perbill::from_percent(70);
 }
+
+// We want a global annual inflation rate of 10%.
+// It is compounded throught era inflations, which itself is split between:
+// - Inflation for collators per block
+// - Inflation for validators per era
+// Computation is implemented in tests/inflation_rates.rs, with a test ensuring values from the
+// runtime match the formulas. We write the results as constants here to ensure we don't perform
+// computations at runtime.
+prod_or_fast_parameter_types! {
+    pub const CollatorsInflationRatePerBlock: Perbill = { prod: Perbill::from_parts(228), fast: Perbill::from_parts(228) };
+    pub const ValidatorsInflationRatePerEra: Perbill = { prod: Perbill::from_parts(821534), fast: Perbill::from_parts(6843) };
+}
+
 pub struct OnUnbalancedInflation;
 impl frame_support::traits::OnUnbalanced<Credit<AccountId, Balances>> for OnUnbalancedInflation {
     fn on_nonzero_unbalanced(credit: Credit<AccountId, Balances>) {
@@ -1957,7 +1716,7 @@ impl pallet_inflation_rewards::Config for Runtime {
     type Currency = Balances;
     type ContainerChains = ContainerRegistrar;
     type GetSelfChainBlockAuthor = ();
-    type InflationRate = InflationRate;
+    type InflationRate = ValidatorsInflationRatePerEra;
     type OnUnbalanced = OnUnbalancedInflation;
     type PendingRewardsAccount = PendingRewardsAccount;
     type StakingRewardsDistributor = InvulnerableRewardDistribution<Self, Balances, PooledStaking>;
@@ -2417,7 +2176,7 @@ impl pallet_registrar::RegistrarHooks for DancelightRegistrarHooks {
                 .expect("to fit in BoundedVec"),
             para_ids: ParaIdsFilter::AnyParaId,
             mode: ProfileMode::Bootnode,
-            assignment_request: PreserversAssignmentPaymentRequest::Free,
+            assignment_request: tp_data_preservers_common::ProviderRequest::Free,
         };
 
         let profile_id = pallet_data_preservers::NextProfileId::<Runtime>::get();
@@ -2435,7 +2194,7 @@ impl pallet_registrar::RegistrarHooks for DancelightRegistrarHooks {
             para_manager,
             profile_id,
             para_id,
-            PreserversAssignmentPaymentExtra::Free,
+            tp_data_preservers_common::AssignerExtra::Free,
         )
         .expect("assignment to work");
 

@@ -674,22 +674,22 @@ declare module "@polkadot/types/lookup" {
 
     /** @name PalletStreamPaymentStreamConfig (54) */
     interface PalletStreamPaymentStreamConfig extends Struct {
-        readonly timeUnit: DanceboxRuntimeTimeUnit;
-        readonly assetId: DanceboxRuntimeStreamPaymentAssetId;
+        readonly timeUnit: TpStreamPaymentCommonTimeUnit;
+        readonly assetId: TpStreamPaymentCommonAssetId;
         readonly rate: u128;
         readonly minimumRequestDeadlineDelay: u128;
         readonly softMinimumDeposit: u128;
     }
 
-    /** @name DanceboxRuntimeTimeUnit (55) */
-    interface DanceboxRuntimeTimeUnit extends Enum {
+    /** @name TpStreamPaymentCommonTimeUnit (55) */
+    interface TpStreamPaymentCommonTimeUnit extends Enum {
         readonly isBlockNumber: boolean;
         readonly isTimestamp: boolean;
         readonly type: "BlockNumber" | "Timestamp";
     }
 
-    /** @name DanceboxRuntimeStreamPaymentAssetId (56) */
-    interface DanceboxRuntimeStreamPaymentAssetId extends Enum {
+    /** @name TpStreamPaymentCommonAssetId (56) */
+    interface TpStreamPaymentCommonAssetId extends Enum {
         readonly isNative: boolean;
         readonly type: "Native";
     }
@@ -3490,7 +3490,7 @@ declare module "@polkadot/types/lookup" {
         readonly isImmediatelyChangeDeposit: boolean;
         readonly asImmediatelyChangeDeposit: {
             readonly streamId: u64;
-            readonly assetId: DanceboxRuntimeStreamPaymentAssetId;
+            readonly assetId: TpStreamPaymentCommonAssetId;
             readonly change: PalletStreamPaymentDepositChange;
         } & Struct;
         readonly type:
@@ -4000,7 +4000,7 @@ declare module "@polkadot/types/lookup" {
         readonly asStartAssignment: {
             readonly profileId: u64;
             readonly paraId: u32;
-            readonly assignerParam: DanceboxRuntimePreserversAssignmentPaymentExtra;
+            readonly assignerParam: TpDataPreserversCommonAssignerExtra;
         } & Struct;
         readonly isStopAssignment: boolean;
         readonly asStopAssignment: {
@@ -4011,7 +4011,7 @@ declare module "@polkadot/types/lookup" {
         readonly asForceStartAssignment: {
             readonly profileId: u64;
             readonly paraId: u32;
-            readonly assignmentWitness: DanceboxRuntimePreserversAssignmentPaymentWitness;
+            readonly assignmentWitness: TpDataPreserversCommonAssignmentWitness;
         } & Struct;
         readonly type:
             | "CreateProfile"
@@ -4030,7 +4030,7 @@ declare module "@polkadot/types/lookup" {
         readonly url: Bytes;
         readonly paraIds: PalletDataPreserversParaIdsFilter;
         readonly mode: PalletDataPreserversProfileMode;
-        readonly assignmentRequest: DanceboxRuntimePreserversAssignmentPaymentRequest;
+        readonly assignmentRequest: TpDataPreserversCommonProviderRequest;
     }
 
     /** @name PalletDataPreserversParaIdsFilter (341) */
@@ -4053,8 +4053,8 @@ declare module "@polkadot/types/lookup" {
         readonly type: "Bootnode" | "Rpc";
     }
 
-    /** @name DanceboxRuntimePreserversAssignmentPaymentRequest (345) */
-    interface DanceboxRuntimePreserversAssignmentPaymentRequest extends Enum {
+    /** @name TpDataPreserversCommonProviderRequest (345) */
+    interface TpDataPreserversCommonProviderRequest extends Enum {
         readonly isFree: boolean;
         readonly isStreamPayment: boolean;
         readonly asStreamPayment: {
@@ -4063,8 +4063,8 @@ declare module "@polkadot/types/lookup" {
         readonly type: "Free" | "StreamPayment";
     }
 
-    /** @name DanceboxRuntimePreserversAssignmentPaymentExtra (346) */
-    interface DanceboxRuntimePreserversAssignmentPaymentExtra extends Enum {
+    /** @name TpDataPreserversCommonAssignerExtra (346) */
+    interface TpDataPreserversCommonAssignerExtra extends Enum {
         readonly isFree: boolean;
         readonly isStreamPayment: boolean;
         readonly asStreamPayment: {
@@ -4073,8 +4073,8 @@ declare module "@polkadot/types/lookup" {
         readonly type: "Free" | "StreamPayment";
     }
 
-    /** @name DanceboxRuntimePreserversAssignmentPaymentWitness (347) */
-    interface DanceboxRuntimePreserversAssignmentPaymentWitness extends Enum {
+    /** @name TpDataPreserversCommonAssignmentWitness (347) */
+    interface TpDataPreserversCommonAssignmentWitness extends Enum {
         readonly isFree: boolean;
         readonly isStreamPayment: boolean;
         readonly asStreamPayment: {
@@ -5972,7 +5972,7 @@ declare module "@polkadot/types/lookup" {
         readonly account: AccountId32;
         readonly deposit: u128;
         readonly profile: PalletDataPreserversProfile;
-        readonly assignment: Option<ITuple<[u32, DanceboxRuntimePreserversAssignmentPaymentWitness]>>;
+        readonly assignment: Option<ITuple<[u32, TpDataPreserversCommonAssignmentWitness]>>;
     }
 
     /** @name PalletDataPreserversError (514) */

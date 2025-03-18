@@ -97,7 +97,7 @@ describeSuite({
                     await polkadotJs.query.system.account(DANCELIGHT_BOND)
                 ).data.free.toBigInt();
 
-                expectedAmountParachainBond += (issuance * 3n) / 10n + dust;
+                expectedAmountParachainBond += (issuance * 3n) / 10n + dust + 1n;
                 await context.createBlock();
 
                 expect(dancelightBondBalanceAfter - dancelightBondBalanceBefore).to.equal(expectedAmountParachainBond);

@@ -209,8 +209,8 @@ fn testnet_genesis(
                     *para_id,
                     AccountId::from([0u8; 32]),
                     bootnode,
-                    flashbox_runtime::PreserversAssignmentPaymentRequest::Free,
-                    flashbox_runtime::PreserversAssignmentPaymentWitness::Free,
+                    tp_data_preservers_common::ProviderRequest::Free,
+                    tp_data_preservers_common::AssignmentWitness::Free,
                 )
             })
         })

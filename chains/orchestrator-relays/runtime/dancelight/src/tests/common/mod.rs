@@ -1447,8 +1447,8 @@ pub fn storage_map_final_key<H: frame_support::StorageHasher>(
 
 pub fn set_dummy_boot_node(para_manager: RuntimeOrigin, para_id: ParaId) {
     use {
-        crate::{PreserversAssignmentPaymentExtra, PreserversAssignmentPaymentRequest},
         pallet_data_preservers::{ParaIdsFilter, Profile, ProfileMode},
+        tp_data_preservers_common::{AssignerExtra, ProviderRequest},
     };
 
     let profile = Profile {
@@ -1459,7 +1459,7 @@ pub fn set_dummy_boot_node(para_manager: RuntimeOrigin, para_id: ParaId) {
                 .expect("to fit in BoundedVec"),
         para_ids: ParaIdsFilter::AnyParaId,
         mode: ProfileMode::Bootnode,
-        assignment_request: PreserversAssignmentPaymentRequest::Free,
+        assignment_request: ProviderRequest::Free,
     };
 
     let profile_id = pallet_data_preservers::NextProfileId::<Runtime>::get();
@@ -1467,13 +1467,8 @@ pub fn set_dummy_boot_node(para_manager: RuntimeOrigin, para_id: ParaId) {
     DataPreservers::force_create_profile(RuntimeOrigin::root(), profile, profile_owner)
         .expect("profile create to succeed");
 
-    DataPreservers::start_assignment(
-        para_manager,
-        profile_id,
-        para_id,
-        PreserversAssignmentPaymentExtra::Free,
-    )
-    .expect("assignment to work");
+    DataPreservers::start_assignment(para_manager, profile_id, para_id, AssignerExtra::Free)
+        .expect("assignment to work");
 
     assert!(
         pallet_data_preservers::Assignments::<Runtime>::get(para_id).contains(&profile_id),

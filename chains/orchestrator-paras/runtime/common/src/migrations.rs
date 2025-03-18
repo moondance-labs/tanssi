@@ -591,12 +591,12 @@ where
         use {
             frame_support::BoundedBTreeSet,
             frame_system::RawOrigin,
-            pallet_data_preservers::{AssignmentPayment, ParaIdsFilter, Profile, ProfileMode},
+            pallet_data_preservers::{AssignmentProcessor, ParaIdsFilter, Profile, ProfileMode},
         };
 
         let mut total_weight = Weight::default();
 
-        let (request, _extra, witness) = T::AssignmentPayment::free_variant_values()
+        let (request, _extra, witness) = T::AssignmentProcessor::free_variant_values()
             .expect("free variant values are necessary to perform migration");
 
         let dummy_profile_owner = T::AccountId::from([0u8; 32]);
