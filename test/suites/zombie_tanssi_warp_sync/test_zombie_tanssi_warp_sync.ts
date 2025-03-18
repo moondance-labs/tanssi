@@ -308,9 +308,7 @@ TRACE tokio-runtime-worker sync::import-queue: [Container-2000] Scheduling 7 blo
                 // Can't check the other logs because we also see them during normal sync:
                 // When the collator warp syncs to block 8, in the meantime the latest block is 11,
                 // so it syncs blocks 9-11 printing almost the same logs as the gap sync.
-                await checkLogsNotExist(logFilePath, [
-                    "Starting gap sync",
-                ]);
+                await checkLogsNotExist(logFilePath, ["Starting gap sync"]);
             },
         });
     },
