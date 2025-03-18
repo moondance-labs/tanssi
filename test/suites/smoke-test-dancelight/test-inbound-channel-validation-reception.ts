@@ -47,7 +47,7 @@ describeSuite({
             title: "Inbound primary channel should have increased the nonce",
             test: async () => {
                 const blockDurationSec = 6;
-                const minutesToCheck = 60; // Probably 60 minutes - too much, each block check takes around 500ms
+                const minutesToCheck = 15; // Probably 60 minutes - too much, each block check takes around 500ms
                 const oneHourDurationBlocksAmount = (minutesToCheck * 60) / blockDurationSec;
                 const currentBlockNumber = (await api.rpc.chain.getHeader()).number.toNumber();
 
