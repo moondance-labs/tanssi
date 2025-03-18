@@ -44,7 +44,7 @@ describeSuite({
             // Test block numbers in relay are 0 yet
             const header2000 = await getHeaderFromRelay(relayApi, 2000);
 
-            //expect(header2000.number.toNumber()).to.be.equal(0);
+            expect(header2000.number.toNumber()).to.be.equal(0);
         }, 120000);
 
         it({
