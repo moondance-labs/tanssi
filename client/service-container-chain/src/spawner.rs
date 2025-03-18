@@ -363,6 +363,7 @@ async fn try_spawn<
                     container_chain_para_id,
                     collation_params.clone(),
                     generate_rpc_builder.clone(),
+                    &container_chain_cli,
                 )
                 .await?;
 

@@ -50,6 +50,10 @@ pub struct ContainerChainRunCmd {
     #[arg(long)]
     pub keep_db: bool,
 
+    /// Download the full block history for container chains after the warp sync is done
+    #[arg(long)]
+    pub download_block_history: bool,
+
     /// Creates a less resource-hungry node that retrieves relay chain data from an RPC endpoint.
     ///
     /// The provided URLs should point to RPC endpoints of the relay chain.
