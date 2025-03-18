@@ -145,6 +145,7 @@ runtime-benchmarks = [
 	"sc-service/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"tc-service-container-chain/runtime-benchmarks",
+	"tp-data-preservers-common/runtime-benchmarks",
 ]
 try-runtime = [
 	"dancebox-runtime/try-runtime",
