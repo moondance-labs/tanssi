@@ -570,9 +570,29 @@ describeSuite({
 
                 // Ensure the token has been sent
                 expect(ownerBalanceAfter).to.be.eq(ownerBalanceBefore - amountBackFromETH);
+                
+                const MAX_SESSIONS_TO_WAIT = 6;
+                let sessionsWaited = 0;
+                // We retrieve the current nonce and wait at most 6 sessions to see the message being relayed
+                const nonceInChannelBefore = await relayApi.query.ethereumInboundQueue.nonce(assetHubChannelId);
 
-                // Wait a few sessions for the message to be relayed
-                await waitSessions(context, relayApi, 4, null, "Tanssi-relay");
+                // wait some time for the data to be relayed
+                // As soon as the nonce increases, then we get out
+                await waitSessions(
+                    context,
+                    relayApi,
+                    6,
+                    async () => {
+                        try {
+                            const nonceAfter = await relayApi.query.ethereumInboundQueue.nonce(assetHubChannelId);
+                            expect(nonceAfter.toNumber()).to.not.deep.eq(nonceInChannelBefore.toNumber());
+                        } catch (error) {
+                            return false;
+                        }
+                        return true;
+                    },
+                    "Tanssi-relay"
+                );
 
                 const randomBalanceAfter = (await relayApi.query.system.account(randomAccount.address)).data.free;
 
@@ -587,7 +607,7 @@ describeSuite({
                 ethereumNodeChildProcess.kill("SIGINT");
             }
             if (relayerChildProcess) {
-                relayerChildProcess.kill("SIGINT");
+                relayerChildProcess.kill("SIGINT"); 
             }
             await execCommand("./scripts/bridge/cleanup.sh olep");
         });
