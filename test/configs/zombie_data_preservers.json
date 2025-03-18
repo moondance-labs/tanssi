@@ -130,7 +130,8 @@
                         "--rpc-provider-profile-id=2",
                         "--orchestrator-endpoints=ws://127.0.0.1:9948/",
                         "--database=paritydb",
-                        "--wasmtime-precompiled=wasm"
+                        "--wasmtime-precompiled=wasm",
+                        "-- --rpc-port 9950"
                     ],
                     "prometheus_port": 33102
                 },
