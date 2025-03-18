@@ -549,7 +549,7 @@ export const getBlockNumberAtWhichEraStarted = async (api: ApiPromise): Promise<
 export const findEraBlockUsingBinarySearch = async (
     api: ApiPromise,
     eraIndex: number
-): Promise<{ found: boolean; blockHash: BlockHash }> => {
+): Promise<{ found: boolean; blockHash: BlockHash; blockNumber: number }> => {
     const sessionsPerEra = api.consts.externalValidators.sessionsPerEra.toNumber();
     const blocksPerSession = api.consts.babe.epochDuration.toNumber();
     const approximateBlockForEra = (eraIndex + 1) * sessionsPerEra * blocksPerSession;
@@ -562,6 +562,11 @@ export const findEraBlockUsingBinarySearch = async (
     // only consist of earlier blocks than approximated block.
     // In other words, if there is a downtime in between we will get later era index for the approximated block compared to what we expected.
     let currentMax = runtimeUpgradedToSupportEraAt + approximateBlockForEra;
+    // In case if current era === eraIndex, the max block is the current block
+    const currentEra = (await api.query.externalValidators.activeEra()).unwrap().index.toNumber();
+    if (currentEra === eraIndex) {
+        currentMax = (await api.rpc.chain.getHeader()).number.toNumber();
+    }
     // In worst case, it could be possible that chain has skipped all eras till this one
     let currentMin = runtimeUpgradedToSupportEraAt;
     let currentBlock = currentMax;
@@ -586,6 +591,7 @@ export const findEraBlockUsingBinarySearch = async (
         return {
             found: false,
             blockHash: undefined,
+            blockNumber: undefined,
         };
     }
 
@@ -595,5 +601,6 @@ export const findEraBlockUsingBinarySearch = async (
     return {
         found: true,
         blockHash: eraStartBlockHash,
+        blockNumber: eraStartBlock,
     };
 };
