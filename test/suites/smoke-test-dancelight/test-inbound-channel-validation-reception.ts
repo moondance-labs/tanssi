@@ -20,12 +20,14 @@ describeSuite({
         beforeAll(async () => {
             api = context.polkadotJs();
 
-            const blockNumArray = await getBlockArray(api, timePeriod);
+            const blockNumbersArray = await getBlockArray(api, timePeriod);
 
             const limiter = new Bottleneck({ maxConcurrent: 5, minTime: 100 });
 
             const start = performance.now();
-            blocksData = await Promise.all(blockNumArray.map((num) => limiter.schedule(() => getBlockData(api, num))));
+            blocksData = await Promise.all(
+                blockNumbersArray.map((num) => limiter.schedule(() => getBlockData(api, num)))
+            );
             const end = performance.now();
 
             log(`Blocks data fetching took: ${(end - start).toFixed(2)} ms. Fetched: ${blocksData.length} blocks.`);
