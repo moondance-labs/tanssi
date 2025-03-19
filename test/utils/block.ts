@@ -562,11 +562,8 @@ export const findEraBlockUsingBinarySearch = async (
     // only consist of earlier blocks than approximated block.
     // In other words, if there is a downtime in between we will get later era index for the approximated block compared to what we expected.
     let currentMax = runtimeUpgradedToSupportEraAt + approximateBlockForEra;
-    // In case if current era === eraIndex, the max block is the current block
-    const currentEra = (await api.query.externalValidators.activeEra()).unwrap().index.toNumber();
-    if (currentEra === eraIndex) {
-        currentMax = (await api.rpc.chain.getHeader()).number.toNumber();
-    }
+    // In case if currentMax exceeded the real max block number
+    currentMax = Math.min((await api.rpc.chain.getHeader()).number.toNumber(), currentMax);
     // In worst case, it could be possible that chain has skipped all eras till this one
     let currentMin = runtimeUpgradedToSupportEraAt;
     let currentBlock = currentMax;
