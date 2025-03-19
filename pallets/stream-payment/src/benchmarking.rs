@@ -16,7 +16,7 @@
 
 use {
     crate::{
-        Assets, Call, ChangeKind, Config, DepositChange, Event, Pallet, Party, StreamConfig,
+        AssetsManager, Call, ChangeKind, Config, DepositChange, Event, Pallet, Party, StreamConfig,
         Streams, TimeProvider,
     },
     frame_benchmarking::{account, v2::*, BenchmarkError},
@@ -37,7 +37,7 @@ fn create_funded_user<T: Config>(
     // create a large amount that should be greater than ED
     let amount: T::Balance = 1_000_000_000u32.into();
     let amount: T::Balance = amount * T::Balance::from(1_000_000_000u32);
-    T::Assets::bench_set_balance(asset_id, &user, amount);
+    T::AssetsManager::bench_set_balance(asset_id, &user, amount);
     user
 }
 
@@ -55,7 +55,7 @@ mod benchmarks {
 
     #[benchmark]
     fn open_stream() -> Result<(), BenchmarkError> {
-        let asset_id = T::Assets::bench_worst_case_asset_id();
+        let asset_id = T::AssetsManager::bench_worst_case_asset_id();
         let time_unit = T::TimeProvider::bench_worst_case_time_unit();
 
         let source = create_funded_user::<T>("source", 1, &asset_id);
@@ -90,7 +90,7 @@ mod benchmarks {
         use frame_support::traits::Get;
         // Worst case is closing a stream with a pending payment.
         let time_unit = T::TimeProvider::bench_worst_case_time_unit();
-        let asset_id = T::Assets::bench_worst_case_asset_id();
+        let asset_id = T::AssetsManager::bench_worst_case_asset_id();
 
         let source = create_funded_user::<T>("source", 1, &asset_id);
         let target = create_funded_user::<T>("target", 2, &asset_id);
@@ -133,7 +133,7 @@ mod benchmarks {
     #[benchmark]
     fn perform_payment() -> Result<(), BenchmarkError> {
         let time_unit = T::TimeProvider::bench_worst_case_time_unit();
-        let asset_id = T::Assets::bench_worst_case_asset_id();
+        let asset_id = T::AssetsManager::bench_worst_case_asset_id();
 
         let source = create_funded_user::<T>("source", 1, &asset_id);
         let target = create_funded_user::<T>("target", 2, &asset_id);
@@ -179,7 +179,7 @@ mod benchmarks {
     #[benchmark]
     fn request_change_immediate() -> Result<(), BenchmarkError> {
         let time_unit = T::TimeProvider::bench_worst_case_time_unit();
-        let asset_id = T::Assets::bench_worst_case_asset_id();
+        let asset_id = T::AssetsManager::bench_worst_case_asset_id();
 
         let source = create_funded_user::<T>("source", 1, &asset_id);
         let target = create_funded_user::<T>("target", 2, &asset_id);
@@ -231,8 +231,8 @@ mod benchmarks {
     #[benchmark]
     fn request_change_delayed() -> Result<(), BenchmarkError> {
         let time_unit = T::TimeProvider::bench_worst_case_time_unit();
-        let asset_id = T::Assets::bench_worst_case_asset_id();
-        let asset_id2 = T::Assets::bench_worst_case_asset_id2();
+        let asset_id = T::AssetsManager::bench_worst_case_asset_id();
+        let asset_id2 = T::AssetsManager::bench_worst_case_asset_id2();
 
         let source = create_funded_user::<T>("source", 1, &asset_id);
         let target = create_funded_user::<T>("target", 2, &asset_id);
@@ -290,8 +290,8 @@ mod benchmarks {
     #[benchmark]
     fn accept_requested_change() -> Result<(), BenchmarkError> {
         let time_unit = T::TimeProvider::bench_worst_case_time_unit();
-        let asset_id = T::Assets::bench_worst_case_asset_id();
-        let asset_id2 = T::Assets::bench_worst_case_asset_id2();
+        let asset_id = T::AssetsManager::bench_worst_case_asset_id();
+        let asset_id2 = T::AssetsManager::bench_worst_case_asset_id2();
 
         let source = create_funded_user::<T>("source", 1, &asset_id);
         let target = create_funded_user::<T>("target", 2, &asset_id);
@@ -348,8 +348,8 @@ mod benchmarks {
     #[benchmark]
     fn cancel_change_request() -> Result<(), BenchmarkError> {
         let time_unit = T::TimeProvider::bench_worst_case_time_unit();
-        let asset_id = T::Assets::bench_worst_case_asset_id();
-        let asset_id2 = T::Assets::bench_worst_case_asset_id2();
+        let asset_id = T::AssetsManager::bench_worst_case_asset_id();
+        let asset_id2 = T::AssetsManager::bench_worst_case_asset_id2();
 
         let source = create_funded_user::<T>("source", 1, &asset_id);
         let target = create_funded_user::<T>("target", 2, &asset_id);
@@ -402,7 +402,7 @@ mod benchmarks {
     #[benchmark]
     fn immediately_change_deposit() -> Result<(), BenchmarkError> {
         let time_unit = T::TimeProvider::bench_worst_case_time_unit();
-        let asset_id = T::Assets::bench_worst_case_asset_id();
+        let asset_id = T::AssetsManager::bench_worst_case_asset_id();
 
         let source = create_funded_user::<T>("source", 1, &asset_id);
         let target = create_funded_user::<T>("target", 2, &asset_id);

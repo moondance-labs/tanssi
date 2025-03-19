@@ -1930,7 +1930,7 @@ export default {
             start_assignment: {
                 profileId: "u64",
                 paraId: "u32",
-                assignerParam: "DancelightRuntimePreserversAssignmentPaymentExtra",
+                assignerParam: "TpDataPreserversCommonAssignerExtra",
             },
             stop_assignment: {
                 profileId: "u64",
@@ -1939,7 +1939,7 @@ export default {
             force_start_assignment: {
                 profileId: "u64",
                 paraId: "u32",
-                assignmentWitness: "DancelightRuntimePreserversAssignmentPaymentWitness",
+                assignmentWitness: "TpDataPreserversCommonAssignmentWitness",
             },
         },
     },
@@ -1950,7 +1950,7 @@ export default {
         url: "Bytes",
         paraIds: "PalletDataPreserversParaIdsFilter",
         mode: "PalletDataPreserversProfileMode",
-        assignmentRequest: "DancelightRuntimePreserversAssignmentPaymentRequest",
+        assignmentRequest: "TpDataPreserversCommonProviderRequest",
     },
     /**
      * Lookup186: pallet_data_preservers::types::ParaIdsFilter<T>
@@ -1974,9 +1974,9 @@ export default {
         },
     },
     /**
-     * Lookup191: dancelight_runtime::PreserversAssignmentPaymentRequest
+     * Lookup191: tp_data_preservers_common::ProviderRequest
      **/
-    DancelightRuntimePreserversAssignmentPaymentRequest: {
+    TpDataPreserversCommonProviderRequest: {
         _enum: {
             Free: "Null",
             StreamPayment: {
@@ -1985,31 +1985,31 @@ export default {
         },
     },
     /**
-     * Lookup192: pallet_stream_payment::pallet::StreamConfig<dancelight_runtime::TimeUnit, dancelight_runtime::StreamPaymentAssetId, BalanceOrDuration>
+     * Lookup192: pallet_stream_payment::pallet::StreamConfig<tp_stream_payment_common::TimeUnit, tp_stream_payment_common::AssetId, BalanceOrDuration>
      **/
     PalletStreamPaymentStreamConfig: {
-        timeUnit: "DancelightRuntimeTimeUnit",
-        assetId: "DancelightRuntimeStreamPaymentAssetId",
+        timeUnit: "TpStreamPaymentCommonTimeUnit",
+        assetId: "TpStreamPaymentCommonAssetId",
         rate: "u128",
         minimumRequestDeadlineDelay: "u128",
         softMinimumDeposit: "u128",
     },
     /**
-     * Lookup193: dancelight_runtime::TimeUnit
+     * Lookup193: tp_stream_payment_common::TimeUnit
      **/
-    DancelightRuntimeTimeUnit: {
+    TpStreamPaymentCommonTimeUnit: {
         _enum: ["BlockNumber", "Timestamp"],
     },
     /**
-     * Lookup194: dancelight_runtime::StreamPaymentAssetId
+     * Lookup194: tp_stream_payment_common::AssetId
      **/
-    DancelightRuntimeStreamPaymentAssetId: {
+    TpStreamPaymentCommonAssetId: {
         _enum: ["Native"],
     },
     /**
-     * Lookup195: dancelight_runtime::PreserversAssignmentPaymentExtra
+     * Lookup195: tp_data_preservers_common::AssignerExtra
      **/
-    DancelightRuntimePreserversAssignmentPaymentExtra: {
+    TpDataPreserversCommonAssignerExtra: {
         _enum: {
             Free: "Null",
             StreamPayment: {
@@ -2018,9 +2018,9 @@ export default {
         },
     },
     /**
-     * Lookup196: dancelight_runtime::PreserversAssignmentPaymentWitness
+     * Lookup196: tp_data_preservers_common::AssignmentWitness
      **/
-    DancelightRuntimePreserversAssignmentPaymentWitness: {
+    TpDataPreserversCommonAssignmentWitness: {
         _enum: {
             Free: "Null",
             StreamPayment: {
@@ -4980,7 +4980,7 @@ export default {
             },
             immediately_change_deposit: {
                 streamId: "u64",
-                assetId: "DancelightRuntimeStreamPaymentAssetId",
+                assetId: "TpStreamPaymentCommonAssetId",
                 change: "PalletStreamPaymentDepositChange",
             },
         },
@@ -6539,7 +6539,7 @@ export default {
         account: "AccountId32",
         deposit: "u128",
         profile: "PalletDataPreserversProfile",
-        assignment: "Option<(u32,DancelightRuntimePreserversAssignmentPaymentWitness)>",
+        assignment: "Option<(u32,TpDataPreserversCommonAssignmentWitness)>",
     },
     /**
      * Lookup646: pallet_data_preservers::pallet::Error<T>
@@ -7914,7 +7914,7 @@ export default {
         ],
     },
     /**
-     * Lookup899: pallet_stream_payment::pallet::Stream<sp_core::crypto::AccountId32, dancelight_runtime::TimeUnit, dancelight_runtime::StreamPaymentAssetId, Balance>
+     * Lookup899: pallet_stream_payment::pallet::Stream<sp_core::crypto::AccountId32, tp_stream_payment_common::TimeUnit, tp_stream_payment_common::AssetId, Balance>
      **/
     PalletStreamPaymentStream: {
         source: "AccountId32",
@@ -7927,7 +7927,7 @@ export default {
         openingDeposit: "u128",
     },
     /**
-     * Lookup901: pallet_stream_payment::pallet::ChangeRequest<dancelight_runtime::TimeUnit, dancelight_runtime::StreamPaymentAssetId, Balance>
+     * Lookup901: pallet_stream_payment::pallet::ChangeRequest<tp_stream_payment_common::TimeUnit, tp_stream_payment_common::AssetId, Balance>
      **/
     PalletStreamPaymentChangeRequest: {
         requester: "PalletStreamPaymentParty",

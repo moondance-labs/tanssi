@@ -3391,6 +3391,8 @@ dependencies = [
  "tanssi-runtime-common",
  "test-relay-sproof-builder",
  "tp-author-noting-inherent",
+ "tp-data-preservers-common",
+ "tp-stream-payment-common",
  "tp-traits",
  "tp-xcm-commons",
  "tp-xcm-core-buyer",
@@ -3554,6 +3556,8 @@ dependencies = [
  "tokio",
  "tp-author-noting-inherent",
  "tp-bridge",
+ "tp-data-preservers-common",
+ "tp-stream-payment-common",
  "tp-traits",
  "tp-xcm-commons",
  "westend-runtime",
@@ -5026,6 +5030,8 @@ dependencies = [
  "tanssi-runtime-common",
  "test-relay-sproof-builder",
  "tp-author-noting-inherent",
+ "tp-data-preservers-common",
+ "tp-stream-payment-common",
  "tp-traits",
 ]
 
@@ -18908,6 +18914,7 @@ dependencies = [
  "tokio",
  "tokio-util",
  "tp-author-noting-inherent",
+ "tp-data-preservers-common",
 ]
 
 [[package]]
@@ -19848,11 +19855,51 @@ dependencies = [
 ]
 
 [[package]]
+name = "tp-data-preservers-common"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "pallet-data-preservers",
+ "pallet-stream-payment",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "polkadot-primitives",
+ "scale-info",
+ "serde",
+ "sp-core",
+ "sp-runtime",
+ "sp-std",
+ "tp-stream-payment-common",
+ "tp-traits",
+]
+
+[[package]]
 name = "tp-maths"
 version = "0.1.0"
 dependencies = [
  "sp-core",
  "sp-runtime",
+]
+
+[[package]]
+name = "tp-stream-payment-common"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "pallet-balances",
+ "pallet-stream-payment",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "polkadot-primitives",
+ "scale-info",
+ "serde",
+ "sp-core",
+ "sp-runtime",
+ "sp-std",
+ "tp-traits",
 ]
 
 [[package]]
