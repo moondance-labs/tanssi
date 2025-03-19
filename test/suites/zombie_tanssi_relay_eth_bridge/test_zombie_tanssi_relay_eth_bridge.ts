@@ -582,8 +582,10 @@ describeSuite({
                 const recipient = "0x90a987b944cb1dcce5564e5fdecd7a54d3de27fe";
                 const amountFromStarlight = 1000000000000000n;
 
+                const existentialDeposit = relayApi.consts.balances.existentialDeposit.toBigInt();
                 const feesAccountBalanceBeforeSending = (await relayApi.query.system.account(SNOWBRIDGE_FEES_ACCOUNT))
                     .data.free;
+                expect(feesAccountBalanceBeforeSending.toBigInt()).to.be.eq(existentialDeposit);
 
                 // Send the token
                 const transferNativeTokenTx = await relayApi.tx.ethereumTokenTransfers
