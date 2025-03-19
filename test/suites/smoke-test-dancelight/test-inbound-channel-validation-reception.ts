@@ -37,9 +37,9 @@ describeSuite({
             id: "C01",
             title: "External index is correctly updated",
             test: async () => {
-                const bondedEras = (await api.query.externalValidatorSlashes.bondedEras()).toJSON() as [
-                    [number, number, number],
-                ];
+                const bondedEras = (
+                    await api.query.externalValidatorSlashes.bondedEras()
+                ).toJSON() as BondedEraParams[];
                 // Let's check 2 recent eras
                 for (const bondedEra of bondedEras.slice(-2)) {
                     const result = await findEraBlockUsingBinarySearch(api, bondedEra[0]);
@@ -95,3 +95,6 @@ const getBlockData = async (api: ApiPromise, blockNum: number) => {
         events: await apiAt.query.system.events(),
     };
 };
+
+// BondedEraParams - Tuple<EraIndex, SessionIndex, ExternalIndex>
+type BondedEraParams = [number, number, number];
