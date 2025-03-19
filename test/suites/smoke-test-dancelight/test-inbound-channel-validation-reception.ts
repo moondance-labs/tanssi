@@ -8,6 +8,7 @@ import Bottleneck from "bottleneck";
 import type { FrameSystemEventRecord } from "@polkadot/types/lookup";
 
 const timePeriod = process.env.TIME_PERIOD ? Number(process.env.TIME_PERIOD) : 1 * 60 * 60 * 1000;
+const timeout = Math.max(Math.floor(timePeriod / 12), 5000);
 
 describeSuite({
     id: "SMOK10",
@@ -31,7 +32,7 @@ describeSuite({
             const end = performance.now();
 
             log(`Blocks data fetching took: ${(end - start).toFixed(2)} ms. Fetched: ${blocksData.length} blocks.`);
-        });
+        }, timeout);
 
         it({
             id: "C01",
