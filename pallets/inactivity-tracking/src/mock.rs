@@ -11,20 +11,23 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 
-use sp_runtime::BuildStorage;
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 use {
     crate as pallet_inactivity_tracking,
-    frame_support::traits::{ConstU32, ConstU64, Everything},
+    frame_support::traits::{ConstU32, ConstU64, Everything, OnFinalize, OnInitialize},
     sp_core::H256,
-    sp_runtime::traits::{BlakeTwo256, IdentityLookup},
+    sp_runtime::{
+        traits::{BlakeTwo256, IdentityLookup},
+        BuildStorage,
+    },
 };
 
 type Block = frame_system::mocking::MockBlock<Test>;
 pub type AccountId = u64;
 
-pub const ACCOUNT_1: u64 = 1;
+pub const COLLATOR_1: u64 = 1;
+pub const COLLATOR_2: u64 = 2;
 pub const SESSION_BLOCK_LENGTH: u64 = 5;
 
 // Configure a mock runtime to test the pallet.
@@ -106,4 +109,32 @@ impl ExtBuilder {
         ext.execute_with(|| System::set_block_number(1));
         ext
     }
+}
+
+/// Rolls forward one block. Returns the new block number.
+#[allow(dead_code)]
+pub(crate) fn roll_one_block() -> u64 {
+    InactivityTracking::on_finalize(System::block_number());
+    System::on_finalize(System::block_number());
+    System::set_block_number(System::block_number() + 1);
+    System::on_initialize(System::block_number());
+    InactivityTracking::on_initialize(System::block_number());
+    System::block_number()
+}
+
+/// Rolls to the desired block. Returns the number of blocks played.
+#[allow(dead_code)]
+pub(crate) fn roll_to(n: u64) -> u64 {
+    let mut num_blocks = 0;
+    let mut block = System::block_number();
+    while block < n {
+        block = roll_one_block();
+        num_blocks += 1;
+    }
+    num_blocks
+}
+
+#[allow(dead_code)]
+pub(crate) fn last_event() -> RuntimeEvent {
+    System::events().pop().expect("Event expected").event
 }

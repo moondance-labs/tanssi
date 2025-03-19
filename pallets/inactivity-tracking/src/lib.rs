@@ -200,7 +200,7 @@ impl<T: Config> NodeActivityTrackingHelper<T::CollatorId> for Pallet<T> {
 
         let current_session = T::CurrentSessionIndex::session_index();
 
-        let minimum_sessions_required = T::MaxInactiveSessions::get() + 1;
+        let minimum_sessions_required = T::MaxInactiveSessions::get();
         if current_session < minimum_sessions_required {
             return false;
         }
