@@ -817,8 +817,8 @@ fn test_pricing_parameters() {
 
             // Check the relation between two fees is the pricing parameters multiplier
             assert!(
-                second_fee_found.div_ceil(first_fee_found) as f64
-                    == pricing_parameters.multiplier.to_float()
+                FixedU128::from_rational(second_fee_found.div_ceil(first_fee_found), 1)
+                    == pricing_parameters.multiplier
             );
 
             assert_eq!(
