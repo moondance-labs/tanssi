@@ -15,6 +15,12 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 #![cfg_attr(not(feature = "std"), no_std)]
 
+#[cfg(test)]
+mod mock;
+
+#[cfg(test)]
+mod test;
+
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
@@ -200,8 +206,8 @@ impl<T: Config> NodeActivityTrackingHelper<T::CollatorId> for Pallet<T> {
             return false;
         }
 
-        for session_index in current_session.saturating_sub(T::MaxInactiveSessions::get().into())
-            ..current_session.saturating_sub(1u32.into())
+        for session_index in current_session.saturating_sub(T::MaxInactiveSessions::get())
+            ..current_session.saturating_sub(1u32)
         {
             if <ActiveCollators<T>>::get(session_index).contains(node) {
                 return false;
