@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use {super::*, crate::assert_eq_last_events};
+use {super::*, crate::{assert_eq_last_events, DelegatorCandidateSummaries, DelegatorCandidateSummary}};
 
 pool_test!(
     fn empty_delegation<P>() {
@@ -57,6 +57,12 @@ pool_test!(
                 expected_joining: amount,
             }
             .test();
+
+            assert_eq!(DelegatorCandidateSummaries::<Runtime>::iter_key_prefix(&ACCOUNT_DELEGATOR_1).count(), 1);
+            assert_eq!(
+                DelegatorCandidateSummaries::<Runtime>::get(&ACCOUNT_DELEGATOR_1, &ACCOUNT_CANDIDATE_1),
+                DelegatorCandidateSummary::new().with_joining(true)
+            );
 
             assert_eq_events!(vec![
                 Event::IncreasedStake {
@@ -126,6 +132,12 @@ pool_test!(
                 ..default()
             }
             .test::<P>();
+
+            assert_eq!(DelegatorCandidateSummaries::<Runtime>::iter_key_prefix(&ACCOUNT_DELEGATOR_1).count(), 1);
+            assert_eq!(
+                DelegatorCandidateSummaries::<Runtime>::get(&ACCOUNT_DELEGATOR_1, &ACCOUNT_CANDIDATE_1),
+                DelegatorCandidateSummary::new().with_bit(P::summary_pool_mask(), true)
+            );
 
             assert_eq_events!(vec![
                 Event::IncreasedStake {
@@ -262,6 +274,12 @@ pool_test!(
             }
             .test::<P>();
 
+            assert_eq!(DelegatorCandidateSummaries::<Runtime>::iter_key_prefix(&ACCOUNT_DELEGATOR_1).count(), 1);
+            assert_eq!(
+                DelegatorCandidateSummaries::<Runtime>::get(&ACCOUNT_DELEGATOR_1, &ACCOUNT_CANDIDATE_1),
+                DelegatorCandidateSummary::new().with_bit(P::summary_pool_mask(), true)
+            );
+
             FullUndelegation {
                 candidate: ACCOUNT_CANDIDATE_1,
                 delegator: ACCOUNT_DELEGATOR_1,
@@ -271,6 +289,8 @@ pool_test!(
                 ..default()
             }
             .test::<P>();
+
+            assert_eq!(DelegatorCandidateSummaries::<Runtime>::iter_key_prefix(&ACCOUNT_DELEGATOR_1).count(), 0);
 
             assert_eq_events!(vec![
                 // delegate request
@@ -452,6 +472,12 @@ pool_test!(
             }
             .test::<P>();
 
+            assert_eq!(DelegatorCandidateSummaries::<Runtime>::iter_key_prefix(&ACCOUNT_DELEGATOR_1).count(), 1);
+            assert_eq!(
+                DelegatorCandidateSummaries::<Runtime>::get(&ACCOUNT_DELEGATOR_1, &ACCOUNT_CANDIDATE_1),
+                DelegatorCandidateSummary::new().with_bit(P::summary_pool_mask(), true)
+            );
+
             Swap {
                 candidate: ACCOUNT_CANDIDATE_1,
                 delegator: ACCOUNT_DELEGATOR_1,
@@ -461,6 +487,12 @@ pool_test!(
                 ..default()
             }
             .test::<P>();
+
+            assert_eq!(DelegatorCandidateSummaries::<Runtime>::iter_key_prefix(&ACCOUNT_DELEGATOR_1).count(), 1);
+            assert_eq!(
+                DelegatorCandidateSummaries::<Runtime>::get(&ACCOUNT_DELEGATOR_1, &ACCOUNT_CANDIDATE_1),
+                DelegatorCandidateSummary::new().with_bit(P::OppositePool::summary_pool_mask(), true)
+            );
 
             assert_eq_last_events!(vec![Event::<Runtime>::SwappedPool {
                 candidate: ACCOUNT_CANDIDATE_1,
@@ -523,6 +555,12 @@ pool_test!(
             }
             .test::<P::OppositePool>();
 
+            assert_eq!(DelegatorCandidateSummaries::<Runtime>::iter_key_prefix(&ACCOUNT_DELEGATOR_1).count(), 1);
+            assert_eq!(
+                DelegatorCandidateSummaries::<Runtime>::get(&ACCOUNT_DELEGATOR_1, &ACCOUNT_CANDIDATE_1),
+                DelegatorCandidateSummary::new().with_bit(P::summary_pool_mask(), true).with_bit(P::OppositePool::summary_pool_mask(), true)
+            );
+
             // We then artificialy distribute rewards to the target by increasing the value of the pool
             // and minting currency to the staking account (this is not how manual rewards would
             // be distributed but whatever).
@@ -554,6 +592,13 @@ pool_test!(
                 ..default()
             }
             .test::<P>();
+
+            assert_eq!(
+                DelegatorCandidateSummaries::<Runtime>::get(&ACCOUNT_DELEGATOR_1, &ACCOUNT_CANDIDATE_1),
+                DelegatorCandidateSummary::new()
+                    .with_bit(P::OppositePool::summary_pool_mask(), true)
+                    .with_leaving(true) // leaving dust
+            );
 
             assert_eq_last_events!(vec![Event::<Runtime>::SwappedPool {
                 candidate: ACCOUNT_CANDIDATE_1,

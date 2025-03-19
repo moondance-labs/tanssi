@@ -16,8 +16,8 @@
 
 use {
     crate::{
-        candidate::Candidates, weights::WeightInfo, Candidate, Config, CreditOf, Delegator, Error,
-        Event, Pallet, Pools, PoolsKey, Shares, Stake,
+        candidate::Candidates, weights::WeightInfo, Candidate, Config, CreditOf, Delegator,
+        DelegatorCandidateSummaries, Error, Event, Pallet, Pools, PoolsKey, Shares, Stake,
     },
     core::marker::PhantomData,
     frame_support::{
@@ -25,6 +25,7 @@ use {
         pallet_prelude::*,
         traits::{fungible::Balanced, Imbalance},
     },
+    serde::{Deserialize, Serialize},
     sp_core::Get,
     sp_runtime::traits::{CheckedAdd, CheckedDiv, Zero},
     tp_maths::{ErrAdd, ErrMul, ErrSub, MulDiv},
@@ -52,6 +53,8 @@ pub trait Pool<T: Config> {
 
     /// Get the initial value of a share in case none exist yet.
     fn initial_share_value() -> Stake<T::Balance>;
+    /// Mask to update delegator summary
+    fn summary_pool_mask() -> u8;
 
     /// Convert an amount of shares to an amount of staked currency for given candidate.
     /// Returns an error if there are no shares for that candidate.
@@ -162,6 +165,10 @@ pub trait Pool<T: Config> {
         let new_shares = Self::shares(candidate, delegator).0.err_add(&shares.0)?;
         let new_total_stake = Self::total_staked(candidate).0.err_add(&stake.0)?;
 
+        DelegatorCandidateSummaries::<T>::mutate(&delegator, &candidate, |summary| {
+            summary.set_bit(Self::summary_pool_mask(), true);
+        });
+
         Self::set_shares_supply(candidate, Shares(new_shares_supply));
         Self::set_shares(candidate, delegator, Shares(new_shares));
         Self::set_total_staked(candidate, Stake(new_total_stake));
@@ -184,6 +191,15 @@ pub trait Pool<T: Config> {
         let new_shares_supply = Self::shares_supply(candidate).0.err_sub(&shares.0)?;
         let new_shares = Self::shares(candidate, delegator).0.err_sub(&shares.0)?;
         let new_total_stake = Self::total_staked(candidate).0.err_sub(&stake.0)?;
+
+        DelegatorCandidateSummaries::<T>::mutate_exists(&delegator, &candidate, |summary| {
+            let mut s = summary.unwrap_or_default();
+
+            s.set_bit(Self::summary_pool_mask(), false);
+
+            // storage entry will be deleted if empty
+            *summary = (!s.is_empty()).then_some(s);
+        });
 
         Self::set_shares_supply(candidate, Shares(new_shares_supply));
         Self::set_shares(candidate, delegator, Shares(new_shares));
@@ -234,7 +250,7 @@ pub fn check_candidate_consistency<T: Config>(candidate: &Candidate<T>) -> Resul
 }
 
 macro_rules! impl_pool {
-    ($name:ident, $shares:ident, $supply:ident, $total:ident, $hold: ident, $init:expr $(,)?) => {
+    ($name:ident, $shares:ident, $supply:ident, $total:ident, $hold: ident, $init:expr, $summary_pool_mask:expr $(,)?) => {
         pub struct $name<T>(PhantomData<T>);
         impl<T: Config> Pool<T> for $name<T> {
             fn shares(candidate: &Candidate<T>, delegator: &Delegator<T>) -> Shares<T::Balance> {
@@ -302,6 +318,10 @@ macro_rules! impl_pool {
             fn initial_share_value() -> Stake<T::Balance> {
                 Stake($init)
             }
+
+            fn summary_pool_mask() -> u8 {
+                $summary_pool_mask
+            }
         }
     };
 }
@@ -313,6 +333,7 @@ impl_pool!(
     JoiningSharesTotalStaked,
     JoiningSharesHeldStake,
     if cfg!(test) { 2u32 } else { 1 }.into(),
+    MASK_JOINING,
 );
 
 impl_pool!(
@@ -322,6 +343,7 @@ impl_pool!(
     AutoCompoundingSharesTotalStaked,
     AutoCompoundingSharesHeldStake,
     T::InitialAutoCompoundingShareValue::get(),
+    MASK_AUTO,
 );
 
 impl_pool!(
@@ -331,6 +353,7 @@ impl_pool!(
     ManualRewardsSharesTotalStaked,
     ManualRewardsSharesHeldStake,
     T::InitialManualClaimShareValue::get(),
+    MASK_MANUAL,
 );
 
 impl_pool!(
@@ -340,6 +363,7 @@ impl_pool!(
     LeavingSharesTotalStaked,
     LeavingSharesHeldStake,
     if cfg!(test) { 3u32 } else { 1u32 }.into(),
+    MASK_LEAVING,
 );
 
 impl<T: Config> ManualRewards<T> {
@@ -561,4 +585,88 @@ fn distribute_rewards_inner<T: Config>(
     });
 
     Ok(candidate_manual_rewards)
+}
+
+/// Keeps track of which pools of some candidate a delegator is into.
+/// This is used in storage to have a quick way to fetch all the delegations of
+/// a delegator, and then know exactly which storage entries to look at to get
+/// more detailed info.
+#[derive(
+    RuntimeDebug,
+    Default,
+    PartialEq,
+    Eq,
+    Encode,
+    Decode,
+    Copy,
+    Clone,
+    TypeInfo,
+    Serialize,
+    Deserialize,
+    MaxEncodedLen,
+)]
+pub struct DelegatorCandidateSummary(pub(crate) u8);
+
+const MASK_JOINING: u8 = 1u8;
+const MASK_AUTO: u8 = 1u8 << 1;
+const MASK_MANUAL: u8 = 1u8 << 2;
+const MASK_LEAVING: u8 = 1u8 << 3;
+
+impl DelegatorCandidateSummary {
+    pub fn new() -> Self {
+        Self(0)
+    }
+
+    fn bit(&self, mask: u8) -> bool {
+        self.0 & mask != 0
+    }
+
+    fn set_bit(&mut self, mask: u8, value: bool) {
+        if value {
+            self.0 = self.0 | mask
+        } else {
+            self.0 = self.0 & !mask
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.0 == 0
+    }
+
+    pub fn joining(&self) -> bool {
+        self.bit(MASK_JOINING)
+    }
+
+    pub fn auto(&self) -> bool {
+        self.bit(MASK_AUTO)
+    }
+
+    pub fn manual(&self) -> bool {
+        self.bit(MASK_MANUAL)
+    }
+
+    pub fn leaving(&self) -> bool {
+        self.bit(MASK_LEAVING)
+    }
+
+    pub fn with_bit(mut self, mask: u8, value: bool) -> Self {
+        self.set_bit(mask, value);
+        self
+    }
+
+    pub fn with_joining(self, value: bool) -> Self {
+        self.with_bit(MASK_JOINING, value)
+    }
+
+    pub fn with_auto(self, value: bool) -> Self {
+        self.with_bit(MASK_AUTO, value)
+    }
+
+    pub fn with_manual(self, value: bool) -> Self {
+        self.with_bit(MASK_MANUAL, value)
+    }
+
+    pub fn with_leaving(self, value: bool) -> Self {
+        self.with_bit(MASK_LEAVING, value)
+    }
 }

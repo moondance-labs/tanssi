@@ -51,7 +51,7 @@ pub mod weights;
 use frame_support::pallet;
 pub use weights::WeightInfo;
 
-pub use {candidate::EligibleCandidate, pallet::*};
+pub use {candidate::EligibleCandidate, pallet::*, pools::DelegatorCandidateSummary};
 
 #[pallet]
 pub mod pallet {
@@ -371,6 +371,19 @@ pub mod pallet {
         Blake2_128Concat,
         PendingOperationKeyOf<T>,
         T::Balance,
+        ValueQuery,
+    >;
+
+    /// Summary of a delegator's delegation.
+    /// Used to quickly fetch all delegations of a delegator.
+    #[pallet::storage]
+    pub type DelegatorCandidateSummaries<T: Config> = StorageDoubleMap<
+        _,
+        Blake2_128Concat,
+        Delegator<T>,
+        Blake2_128Concat,
+        Candidate<T>,
+        DelegatorCandidateSummary,
         ValueQuery,
     >;
 
