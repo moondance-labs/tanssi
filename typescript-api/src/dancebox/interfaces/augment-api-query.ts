@@ -20,6 +20,7 @@ import type {
     u16,
     u32,
     u64,
+    u8,
 } from "@polkadot/types-codec";
 import type { AnyNumber, ITuple } from "@polkadot/types-codec/types";
 import type { AccountId32, H256, Perbill } from "@polkadot/types/interfaces/runtime";
@@ -1079,6 +1080,16 @@ declare module "@polkadot/api-base/types/storage" {
             [key: string]: QueryableStorageEntry<ApiType>;
         };
         pooledStaking: {
+            /**
+             * Summary of a delegator's delegation.
+             * Used to quickly fetch all delegations of a delegator.
+             **/
+            delegatorCandidateSummaries: AugmentedQuery<
+                ApiType,
+                (arg1: AccountId32 | string | Uint8Array, arg2: AccountId32 | string | Uint8Array) => Observable<u8>,
+                [AccountId32, AccountId32]
+            > &
+                QueryableStorageEntry<ApiType, [AccountId32, AccountId32]>;
             /**
              * Pending operations balances.
              * Balances are expressed in joining/leaving shares amounts.
