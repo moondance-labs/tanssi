@@ -32,12 +32,9 @@ import type { AccountId32, Call, H160, H256, MultiAddress, Perbill } from "@polk
 import type {
     DancelightRuntimeAggregateMessageOrigin,
     DancelightRuntimeOriginCaller,
-    DancelightRuntimePreserversAssignmentPaymentExtra,
-    DancelightRuntimePreserversAssignmentPaymentWitness,
     DancelightRuntimeProxyType,
     DancelightRuntimeRuntimeParameters,
     DancelightRuntimeSessionKeys,
-    DancelightRuntimeStreamPaymentAssetId,
     DpContainerChainGenesisDataContainerChainGenesisData,
     FrameSupportPreimagesBounded,
     FrameSupportScheduleDispatchTime,
@@ -90,6 +87,9 @@ import type {
     SpWeightsWeightV2Weight,
     StagingXcmExecutorAssetTransferTransferType,
     StagingXcmV5Location,
+    TpDataPreserversCommonAssignerExtra,
+    TpDataPreserversCommonAssignmentWitness,
+    TpStreamPaymentCommonAssetId,
     TpTraitsFullRotationMode,
     TpTraitsParathreadParams,
     TpTraitsSlotFrequency,
@@ -1394,13 +1394,13 @@ declare module "@polkadot/api-base/types/submittable" {
                     profileId: u64 | AnyNumber | Uint8Array,
                     paraId: u32 | AnyNumber | Uint8Array,
                     assignmentWitness:
-                        | DancelightRuntimePreserversAssignmentPaymentWitness
+                        | TpDataPreserversCommonAssignmentWitness
                         | { Free: any }
                         | { StreamPayment: any }
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [u64, u32, DancelightRuntimePreserversAssignmentPaymentWitness]
+                [u64, u32, TpDataPreserversCommonAssignmentWitness]
             >;
             forceUpdateProfile: AugmentedSubmittable<
                 (
@@ -1418,13 +1418,13 @@ declare module "@polkadot/api-base/types/submittable" {
                     profileId: u64 | AnyNumber | Uint8Array,
                     paraId: u32 | AnyNumber | Uint8Array,
                     assignerParam:
-                        | DancelightRuntimePreserversAssignmentPaymentExtra
+                        | TpDataPreserversCommonAssignerExtra
                         | { Free: any }
                         | { StreamPayment: any }
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [u64, u32, DancelightRuntimePreserversAssignmentPaymentExtra]
+                [u64, u32, TpDataPreserversCommonAssignerExtra]
             >;
             stopAssignment: AugmentedSubmittable<
                 (
@@ -4722,7 +4722,7 @@ declare module "@polkadot/api-base/types/submittable" {
             immediatelyChangeDeposit: AugmentedSubmittable<
                 (
                     streamId: u64 | AnyNumber | Uint8Array,
-                    assetId: DancelightRuntimeStreamPaymentAssetId | "Native" | number | Uint8Array,
+                    assetId: TpStreamPaymentCommonAssetId | "Native" | number | Uint8Array,
                     change:
                         | PalletStreamPaymentDepositChange
                         | { Increase: any }
@@ -4731,7 +4731,7 @@ declare module "@polkadot/api-base/types/submittable" {
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [u64, DancelightRuntimeStreamPaymentAssetId, PalletStreamPaymentDepositChange]
+                [u64, TpStreamPaymentCommonAssetId, PalletStreamPaymentDepositChange]
             >;
             /**
              * Create a payment stream from the origin to the target with provided config
