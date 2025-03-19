@@ -14,18 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 #![cfg_attr(not(feature = "std"), no_std)]
-
-#[cfg(test)]
-mod mock;
-
-#[cfg(test)]
-mod test;
-
-#[cfg(feature = "runtime-benchmarks")]
-mod benchmarking;
-
-pub mod weights;
-
 use {
     frame_support::{dispatch::DispatchResult, pallet_prelude::Weight},
     sp_runtime::{traits::Get, BoundedVec},
@@ -35,6 +23,17 @@ use {
         NodeActivityTrackingHelper,
     },
 };
+
+#[cfg(test)]
+mod mock;
+
+#[cfg(test)]
+mod tests;
+
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
+
+pub mod weights;
 
 #[cfg(feature = "runtime-benchmarks")]
 use tp_traits::{BlockNumber, ParaId};

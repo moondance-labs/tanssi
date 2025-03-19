@@ -84,9 +84,7 @@ impl pallet_inactivity_tracking::Config for Test {
     type CollatorId = AccountId;
     type MaxInactiveSessions = ConstU32<2>;
     type MaxCollatorsPerSession = ConstU32<5>;
-
     type CurrentSessionIndex = CurrentSessionIndexGetter;
-
     type GetSelfChainBlockAuthor = ();
 }
 
