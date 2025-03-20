@@ -96,6 +96,25 @@ describeSuite({
                 expect((await polkadotJs.query.pooledStaking.delegatorCandidateSummaries(alice.address, alice.address)).toJSON()).to.eq(2); // auto bitmask
                 expect((await polkadotJs.query.pooledStaking.delegatorCandidateSummaries(alice.address, bob.address)).toJSON()).to.eq(1); // joining bitmask
                 expect((await polkadotJs.query.pooledStaking.delegatorCandidateSummaries(bob.address, bob.address)).toJSON()).to.eq(4); // manual bitmask
+
+                // Query candidate summaries
+                const aliceSummary = await polkadotJs.query.pooledStaking.candidateSummaries(alice.addressRaw);
+                expect(aliceSummary.toJSON()).to.deep.eq({
+                    delegators: 1,
+                    joiningDelegators: 0,
+                    autoCompoundingDelegators: 1,
+                    manualRewardsDelegators: 0,
+                    leavingDelegators: 0
+                });
+
+                const bobSummary = await polkadotJs.query.pooledStaking.candidateSummaries(bob.addressRaw);
+                expect(bobSummary.toJSON()).to.deep.eq({
+                    delegators: 2,
+                    joiningDelegators: 1,
+                    autoCompoundingDelegators: 0,
+                    manualRewardsDelegators: 1,
+                    leavingDelegators: 0
+                });
             },
         });
     },
