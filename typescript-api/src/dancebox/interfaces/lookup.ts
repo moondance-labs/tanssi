@@ -980,7 +980,13 @@ export default {
     /**
      * Lookup80: pallet_inactivity_tracking::pallet::Event<T>
      **/
-    PalletInactivityTrackingEvent: "Null",
+    PalletInactivityTrackingEvent: {
+        _enum: {
+            InactivityTrackingEnabled: {
+                isEnabled: "bool",
+            },
+        },
+    },
     /**
      * Lookup81: pallet_treasury::pallet::Event<T, I>
      **/
@@ -3542,7 +3548,13 @@ export default {
     /**
      * Lookup362: pallet_inactivity_tracking::pallet::Call<T>
      **/
-    PalletInactivityTrackingCall: "Null",
+    PalletInactivityTrackingCall: {
+        _enum: {
+            set_inactivity_tracking_status: {
+                isEnabled: "bool",
+            },
+        },
+    },
     /**
      * Lookup363: pallet_treasury::pallet::Call<T, I>
      **/

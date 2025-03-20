@@ -1237,7 +1237,13 @@ declare module "@polkadot/types/lookup" {
     }
 
     /** @name PalletInactivityTrackingEvent (80) */
-    type PalletInactivityTrackingEvent = Null;
+    interface PalletInactivityTrackingEvent extends Enum {
+        readonly isInactivityTrackingEnabled: boolean;
+        readonly asInactivityTrackingEnabled: {
+            readonly isEnabled: bool;
+        } & Struct;
+        readonly type: "InactivityTrackingEnabled";
+    }
 
     /** @name PalletTreasuryEvent (81) */
     interface PalletTreasuryEvent extends Enum {
@@ -4217,7 +4223,13 @@ declare module "@polkadot/types/lookup" {
     }
 
     /** @name PalletInactivityTrackingCall (362) */
-    type PalletInactivityTrackingCall = Null;
+    interface PalletInactivityTrackingCall extends Enum {
+        readonly isSetInactivityTrackingStatus: boolean;
+        readonly asSetInactivityTrackingStatus: {
+            readonly isEnabled: bool;
+        } & Struct;
+        readonly type: "SetInactivityTrackingStatus";
+    }
 
     /** @name PalletTreasuryCall (363) */
     interface PalletTreasuryCall extends Enum {
