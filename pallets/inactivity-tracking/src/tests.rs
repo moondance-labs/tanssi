@@ -1,12 +1,22 @@
+use crate::ActiveCollatorsForCurrentSession;
+use sp_core::ConstU32;
 use {
     crate::{
-        mock::*, ActiveCollators, Config, EnableInactivityTracking, NodeActivityTrackingHelper,
-        Pallet,
+        mock::*, ActiveCollators, AuthorNotingHook, Config, EnableInactivityTracking,
+        NodeActivityTrackingHelper, Pallet,
     },
     frame_support::{assert_noop, assert_ok, pallet_prelude::Get},
     sp_runtime::{BoundedVec, DispatchError::BadOrigin},
-    tp_traits::GetSessionIndex,
+    tp_traits::{AuthorNotingInfo, GetSessionIndex},
 };
+
+fn get_active_collators(block: u32) -> AuthorNotingInfo<AccountId> {
+    AuthorNotingInfo {
+        block_number: block,
+        author: COLLATOR_1,
+        para_id: CONTAINER_CHAIN_ID,
+    }
+}
 
 #[test]
 fn enabling_and_disabling_inactivty_tracking_works() {
@@ -100,6 +110,35 @@ fn inactivity_tracking_handler_works() {
                 &COLLATOR_1
             ),
             false
+        );
+    });
+}
+
+#[test]
+fn active_collators_noting_for_current_session_works() {
+    ExtBuilder::default().build().execute_with(|| {
+        let current_session_active_collator_record: BoundedVec<AccountId, ConstU32<5>> =
+            BoundedVec::truncate_from(vec![COLLATOR_1]);
+        assert_ok!(Pallet::<Test>::set_inactivity_tracking_status(
+            RuntimeOrigin::root(),
+            true
+        ));
+        assert_eq!(ActiveCollatorsForCurrentSession::<Test>::get().len(), 0);
+        roll_to(2);
+        <Pallet<Test> as AuthorNotingHook<AccountId>>::on_container_authors_noted(&[
+            get_active_collators(2),
+        ]);
+        assert_eq!(
+            ActiveCollatorsForCurrentSession::<Test>::get(),
+            current_session_active_collator_record
+        );
+        roll_to(3);
+        <Pallet<Test> as AuthorNotingHook<AccountId>>::on_container_authors_noted(&[
+            get_active_collators(3),
+        ]);
+        assert_eq!(
+            ActiveCollatorsForCurrentSession::<Test>::get(),
+            current_session_active_collator_record
         );
     });
 }

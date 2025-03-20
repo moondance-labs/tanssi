@@ -11,6 +11,7 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 
+use std::convert::Into;
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 use {
@@ -21,13 +22,15 @@ use {
         traits::{BlakeTwo256, IdentityLookup},
         BuildStorage,
     },
+    tp_traits::ParaId,
 };
 
 type Block = frame_system::mocking::MockBlock<Test>;
 pub type AccountId = u64;
 
-pub const COLLATOR_1: u64 = 1;
-pub const COLLATOR_2: u64 = 2;
+pub const COLLATOR_1: AccountId = 1;
+pub const COLLATOR_2: AccountId = 2;
+pub const CONTAINER_CHAIN_ID: ParaId = ParaId::new(3000);
 pub const SESSION_BLOCK_LENGTH: u64 = 5;
 
 // Configure a mock runtime to test the pallet.
