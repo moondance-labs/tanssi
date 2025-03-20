@@ -1977,6 +1977,7 @@ impl pallet_inactivity_tracking::Config for Runtime {
     type MaxCollatorsPerSession = ConstU32<100>;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type GetSelfChainBlockAuthor = GetSelfChainBlockAuthor;
+    type AuthorityId = nimbus_primitives::NimbusId;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.

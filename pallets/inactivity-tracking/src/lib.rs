@@ -15,7 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 #![cfg_attr(not(feature = "std"), no_std)]
 use {
-    frame_support::{dispatch::DispatchResult, pallet_prelude::Weight},
+    frame_support::{dispatch::DispatchResult, pallet_prelude::Weight, traits::OneSessionHandler},
     sp_runtime::{traits::Get, BoundedVec},
     sp_staking::SessionIndex,
     tp_traits::{
@@ -41,6 +41,7 @@ use tp_traits::{BlockNumber, ParaId};
 pub use pallet::*;
 #[frame_support::pallet]
 pub mod pallet {
+    use sp_runtime::RuntimeAppPublic;
     use {
         super::*,
         core::marker::PhantomData,
@@ -55,13 +56,20 @@ pub mod pallet {
         /// Overarching event type.
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
-        /// A stable ID for a collator.
+        /// A stable identifier for a collator.
         type CollatorId: Member
             + Parameter
             + Ord
             + MaybeSerializeDeserialize
             + MaxEncodedLen
             + TryFrom<Self::AccountId>;
+
+        /// The identifier type for an authority.
+        type AuthorityId: Member
+            + Parameter
+            + RuntimeAppPublic
+            + MaybeSerializeDeserialize
+            + MaxEncodedLen;
 
         /// The maximum number of sessions for which a collator can be inactive
         /// before being moved to the offline queue
@@ -226,4 +234,24 @@ impl<T: Config> AuthorNotingHook<T::CollatorId> for Pallet<T> {
     }
     #[cfg(feature = "runtime-benchmarks")]
     fn prepare_worst_case_for_bench(_a: &T::CollatorId, _b: BlockNumber, _para_id: ParaId) {}
+}
+impl<T: Config> sp_runtime::BoundToRuntimeAppPublic for Pallet<T> {
+    type Public = T::AuthorityId;
+}
+impl<T: pallet_session::Config + Config> OneSessionHandler<T::AccountId> for Pallet<T> {
+    type Key = T::AuthorityId;
+    fn on_genesis_session<'a, I>(_validators: I)
+    where
+        I: Iterator<Item = (&'a T::AccountId, Self::Key)> + 'a,
+    {
+    }
+    fn on_new_session<'a, I>(_changed: bool, _validators: I, _queued: I)
+    where
+        I: Iterator<Item = (&'a T::AccountId, Self::Key)> + 'a,
+    {
+    }
+    fn on_before_session_ending() {
+        // TODO: Move relevant logic from `on_initialize` and `on_finalize` to here
+    }
+    fn on_disabled(_validator_index: u32) {}
 }

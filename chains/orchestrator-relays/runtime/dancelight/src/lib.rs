@@ -2066,6 +2066,7 @@ impl pallet_inactivity_tracking::Config for Runtime {
     type MaxCollatorsPerSession = ConstU32<100>;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type GetSelfChainBlockAuthor = ();
+    type AuthorityId = nimbus_primitives::NimbusId;
 }
 
 construct_runtime! {

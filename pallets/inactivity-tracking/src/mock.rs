@@ -89,6 +89,7 @@ impl pallet_inactivity_tracking::Config for Test {
     type MaxCollatorsPerSession = ConstU32<5>;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type GetSelfChainBlockAuthor = ();
+    type AuthorityId = sp_runtime::testing::UintAuthorityId;
 }
 
 pub(crate) struct ExtBuilder;
