@@ -782,8 +782,8 @@ pub mod pallet {
                 frame_support::{assert_ok, dispatch::RawOrigin},
             };
 
-            let mut storage = vec![];
-            storage.push((b":code".to_vec(), vec![1; 10]).into());
+            let mut storage = BoundedVec::try_from(vec![]).unwrap();
+            storage.try_push((b":code".to_vec(), vec![1; 10]).into()).unwrap();
             let genesis_data = ContainerChainGenesisData {
                 storage,
                 name: Default::default(),

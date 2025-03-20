@@ -30,6 +30,7 @@ use {
             fungible::{Inspect, Mutate},
             EnsureOrigin, EnsureOriginWithArg,
         },
+        BoundedVec,
     },
     frame_system::RawOrigin,
     sp_core::Get,
@@ -62,9 +63,10 @@ fn create_funded_user<T: Config>(
 mod benchmarks {
     use {
         super::*, cumulus_primitives_core::relay_chain::MIN_CODE_SIZE, parity_scale_codec::Encode,
+        frame_support::pallet_prelude::ConstU32
     };
 
-    fn new_genesis_data(storage: Vec<ContainerChainGenesisDataItem>) -> ContainerChainGenesisData {
+    fn new_genesis_data(storage: BoundedVec<ContainerChainGenesisDataItem, ConstU32<655360>>) -> ContainerChainGenesisData {
         ContainerChainGenesisData {
             storage,
             name: Default::default(),
@@ -78,19 +80,19 @@ mod benchmarks {
     /// Creates a `ContainerChainGenesisData` with encoded size very near to `max_encoded_size`, and
     /// with the provided number of keys.
     fn max_size_genesis_data(num_keys: u32, max_encoded_size: u32) -> ContainerChainGenesisData {
-        let mut storage = vec![];
+        let mut storage = BoundedVec::try_from(vec![]).unwrap();
         // Create one big storage item
-        storage.push(
+        storage.try_push(
             (
                 b"dummy".to_vec(),
                 vec![1; max_encoded_size.saturating_sub(MIN_CODE_SIZE) as usize],
             )
                 .into(),
-        );
-        storage.push((b":code".to_vec(), vec![1; MIN_CODE_SIZE as usize]).into());
+        ).unwrap();
+        storage.try_push((b":code".to_vec(), vec![1; MIN_CODE_SIZE as usize]).into()).unwrap();
         // Fill rest of keys with empty values
         for _i in 1..num_keys {
-            storage.push((b"".to_vec(), b"".to_vec()).into());
+            storage.try_push((b"".to_vec(), b"".to_vec()).into()).unwrap();
         }
         // Calculate resulting encoded size
         let size = new_genesis_data(storage.clone()).encoded_size();
