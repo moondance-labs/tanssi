@@ -216,11 +216,11 @@ describeSuite({
                 const signer = new ethers.Wallet(BALTATHAR_PRIVATE_KEY, customHttpProvider);
 
                 for (let i = 0; i <= 5; i++) {
-                    if (i == 5) {
+                    if (i === 5) {
                         expect.fail("failed to send tx");
                     }
                     try {
-                        let nonce = await customHttpProvider.getTransactionCount(BALTATHAR_ADDRESS);
+                        const nonce = await customHttpProvider.getTransactionCount(BALTATHAR_ADDRESS);
                         const tx = await signer.sendTransaction({
                             to: CHARLETH_ADDRESS,
                             value: parseUnits("0.001", "ether"),
