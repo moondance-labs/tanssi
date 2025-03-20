@@ -286,6 +286,7 @@ pub const DAYS: BlockNumber = HOURS * 24;
 
 // Unit = the base number of indivisible units for balances
 pub const UNIT: Balance = 1_000_000_000_000;
+pub const CENTS: Balance = UNIT / 30_000;
 pub const MILLIUNIT: Balance = 1_000_000_000;
 pub const MICROUNIT: Balance = 1_000_000;
 /// The existential deposit. Set to 1/10 of the Connected Relay Chain.
@@ -1238,9 +1239,6 @@ impl RelayStorageRootProvider for PalletRelayStorageRootProvider {
     }
 }
 
-parameter_types! {
-    pub const DepositAmount: Balance = 100 * UNIT;
-}
 impl pallet_registrar::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type RegistrarOrigin =
@@ -1254,11 +1252,11 @@ impl pallet_registrar::Config for Runtime {
     type SessionIndex = u32;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type Currency = Balances;
-    type DepositAmount = DepositAmount;
     type RegistrarHooks = DanceboxRegistrarHooks;
     type RuntimeHoldReason = RuntimeHoldReason;
     type InnerRegistrar = ();
     type WeightInfo = weights::pallet_registrar::SubstrateWeight<Runtime>;
+    type DataDepositPerByte = DataDepositPerByte;
 }
 
 impl pallet_authority_mapping::Config for Runtime {
@@ -1683,6 +1681,7 @@ parameter_types! {
     pub const MaxBalance: Balance = Balance::max_value();
     // We allow it to be 1 minute in fast mode to be able to test it
     pub const SpendPeriod: BlockNumber = prod_or_fast!(6 * DAYS, 1 * MINUTES);
+    pub const DataDepositPerByte: Balance = 1 * CENTS;
 }
 
 impl pallet_treasury::Config for Runtime {
