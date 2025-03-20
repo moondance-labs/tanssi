@@ -25,6 +25,7 @@ use {
     dp_container_chain_genesis_data::{
         json::container_chain_genesis_data_from_path, ContainerChainGenesisData,
     },
+    frame_support::BoundedVec,
     grandpa::AuthorityId as GrandpaId,
     polkadot_primitives::{AccountId, AssignmentId, ValidatorId},
     sp_authority_discovery::AuthorityId as AuthorityDiscoveryId,
@@ -239,16 +240,19 @@ pub fn dancelight_local_testnet_config(
 
 fn mock_container_chain_genesis_data(para_id: ParaId) -> ContainerChainGenesisData {
     ContainerChainGenesisData {
-        storage: vec![
+        storage: BoundedVec::try_from(vec![
             dp_container_chain_genesis_data::ContainerChainGenesisDataItem {
                 key: StorageWellKnownKeys::CODE.to_vec(),
                 value: dummy_validation_code().0,
             },
-        ],
-        name: format!("Container Chain {}", para_id).into(),
-        id: format!("container-chain-{}", para_id).into(),
+        ])
+        .unwrap(),
+        name: BoundedVec::try_from(format!("Container Chain {}", para_id).as_bytes().to_vec())
+            .unwrap(),
+        id: BoundedVec::try_from(format!("container-chain-{}", para_id).as_bytes().to_vec())
+            .unwrap(),
         fork_id: None,
-        extensions: vec![],
+        extensions: BoundedVec::try_from(vec![]).unwrap(),
         properties: Default::default(),
     }
 }
