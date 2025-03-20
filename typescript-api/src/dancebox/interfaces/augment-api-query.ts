@@ -66,6 +66,7 @@ import type {
     PalletMultisigMultisig,
     PalletPooledStakingCandidateEligibleCandidate,
     PalletPooledStakingPendingOperationKey,
+    PalletPooledStakingPoolsCandidateSummary,
     PalletPooledStakingPoolsKey,
     PalletProxyAnnouncement,
     PalletProxyProxyDefinition,
@@ -1080,6 +1081,15 @@ declare module "@polkadot/api-base/types/storage" {
             [key: string]: QueryableStorageEntry<ApiType>;
         };
         pooledStaking: {
+            /**
+             * Summary of a candidate state.
+             **/
+            candidateSummaries: AugmentedQuery<
+                ApiType,
+                (arg: AccountId32 | string | Uint8Array) => Observable<PalletPooledStakingPoolsCandidateSummary>,
+                [AccountId32]
+            > &
+                QueryableStorageEntry<ApiType, [AccountId32]>;
             /**
              * Summary of a delegator's delegation.
              * Used to quickly fetch all delegations of a delegator.
