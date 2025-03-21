@@ -171,9 +171,6 @@ pub mod pallet {
 
         type RuntimeHoldReason: From<HoldReason>;
 
-        #[pallet::constant]
-        type DepositAmount: Get<<Self::Currency as Inspect<Self::AccountId>>::Balance>;
-
         type RegistrarHooks: RegistrarHooks;
 
         /// External manager that takes care of executing specific operations
@@ -185,6 +182,9 @@ pub mod pallet {
         type InnerRegistrar: RegistrarHandler<Self::AccountId>;
 
         type WeightInfo: WeightInfo;
+
+        #[pallet::constant]
+        type DataDepositPerByte: Get<<Self::Currency as Inspect<Self::AccountId>>::Balance>;
     }
 
     #[pallet::storage]
@@ -260,7 +260,7 @@ pub mod pallet {
     /// Therefore, if we tried to perform this relay deregistration process at the beginning
     /// of the session/block inside ('on_initialize') initializer_on_new_session() as we do
     /// for this pallet, it would fail due to the downgrade process could have not taken
-    /// place yet.  
+    /// place yet.
     #[pallet::storage]
     pub type BufferedParasToDeregister<T: Config> =
         StorageValue<_, BoundedVec<ParaId, T::MaxLengthParaIds>, ValueQuery>;
@@ -781,6 +781,18 @@ pub mod pallet {
                 frame_benchmarking::account,
                 frame_support::{assert_ok, dispatch::RawOrigin},
             };
+
+            let mut storage = vec![];
+            storage.push((b":code".to_vec(), vec![1; 10]).into());
+            let genesis_data = ContainerChainGenesisData {
+                storage,
+                name: Default::default(),
+                id: Default::default(),
+                fork_id: Default::default(),
+                extensions: Default::default(),
+                properties: Default::default(),
+            };
+
             // Return container chain manager, or register container chain as ALICE if it does not exist
             if !ParaGenesisData::<T>::contains_key(para_id) {
                 // Register as a new user
@@ -797,37 +809,33 @@ pub mod pallet {
                     assert_ok!(T::Currency::mint_into(&user, total));
                     (user, total)
                 }
-                let new_balance =
-                    T::Currency::minimum_balance() * 10_000_000u32.into() + T::DepositAmount::get();
+
+                let deposit = Self::get_genesis_cost(genesis_data.encoded_size());
+                let new_balance = T::Currency::minimum_balance() * 10_000_000u32.into() + deposit;
                 let account = create_funded_user::<T>("caller", 1000, new_balance).0;
                 T::InnerRegistrar::prepare_chain_registration(*para_id, account.clone());
                 let origin = RawOrigin::Signed(account);
-                let mut storage = vec![];
-                storage.push((b":code".to_vec(), vec![1; 10]).into());
-                let genesis_data = ContainerChainGenesisData {
-                    storage,
-                    name: Default::default(),
-                    id: Default::default(),
-                    fork_id: Default::default(),
-                    extensions: Default::default(),
-                    properties: Default::default(),
-                };
+
                 assert_ok!(Self::register(
                     origin.into(),
                     *para_id,
-                    genesis_data,
+                    genesis_data.clone(),
                     T::InnerRegistrar::bench_head_data(),
                 ));
             }
 
             let deposit_info = RegistrarDeposit::<T>::get(para_id).expect("Cannot return signed origin for a container chain that was registered by root. Try using a different para id");
 
+            let deposit = Self::get_genesis_cost(genesis_data.encoded_size());
             // Fund deposit creator, just in case it is not a new account
-            let new_balance =
-                (T::Currency::minimum_balance() + T::DepositAmount::get()) * 2u32.into();
+            let new_balance = (T::Currency::minimum_balance() + deposit) * 2u32.into();
             assert_ok!(T::Currency::mint_into(&deposit_info.creator, new_balance));
 
             deposit_info.creator
+        }
+
+        pub fn get_genesis_cost(size: usize) -> <T::Currency as Inspect<T::AccountId>>::Balance {
+            T::DataDepositPerByte::get() * (size as u32).into()
         }
 
         fn do_register(
@@ -836,7 +844,18 @@ pub mod pallet {
             genesis_data: ContainerChainGenesisData,
             head_data: Option<HeadData>,
         ) -> DispatchResult {
-            let deposit = T::DepositAmount::get();
+            // The actual registration takes place 2 sessions after the call to
+            // `mark_valid_for_collating`, but the genesis data is inserted now.
+            // This is because collators should be able to start syncing the new container chain
+            // before the first block is mined. However, we could store the genesis data in a
+            // different key, like PendingParaGenesisData.
+            // TODO: for benchmarks, this call to .encoded_size is O(n) with respect to the number
+            // of key-values in `genesis_data.storage`, even if those key-values are empty. And we
+            // won't detect that the size is too big until after iterating over all of them, so the
+            // limit in that case would be the transaction size.
+            let genesis_data_size = genesis_data.encoded_size();
+
+            let deposit = Self::get_genesis_cost(genesis_data_size);
             // Verify we can hold
             if !T::Currency::can_hold(&HoldReason::RegistrarDeposit.into(), &account, deposit) {
                 return Err(Error::<T>::NotSufficientDeposit.into());
@@ -856,16 +875,6 @@ pub mod pallet {
             // Insert para id into PendingVerification
             PendingVerification::<T>::insert(para_id, ());
 
-            // The actual registration takes place 2 sessions after the call to
-            // `mark_valid_for_collating`, but the genesis data is inserted now.
-            // This is because collators should be able to start syncing the new container chain
-            // before the first block is mined. However, we could store the genesis data in a
-            // different key, like PendingParaGenesisData.
-            // TODO: for benchmarks, this call to .encoded_size is O(n) with respect to the number
-            // of key-values in `genesis_data.storage`, even if those key-values are empty. And we
-            // won't detect that the size is too big until after iterating over all of them, so the
-            // limit in that case would be the transaction size.
-            let genesis_data_size = genesis_data.encoded_size();
             if genesis_data_size > T::MaxGenesisDataSize::get() as usize {
                 return Err(Error::<T>::GenesisDataTooBig.into());
             }
