@@ -51,7 +51,11 @@ pub mod weights;
 use frame_support::pallet;
 pub use weights::WeightInfo;
 
-pub use {candidate::EligibleCandidate, pallet::*};
+pub use {
+    candidate::EligibleCandidate,
+    pallet::*,
+    pools::{ActivePoolKind, CandidateSummary, DelegatorCandidateSummary, PoolKind},
+};
 
 #[pallet]
 pub mod pallet {
@@ -201,33 +205,6 @@ pub mod pallet {
         <<T as Config>::LeavingRequestTimer as Timer>::Instant,
     >;
 
-    #[derive(
-        RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo, Serialize, Deserialize,
-    )]
-    pub enum TargetPool {
-        AutoCompounding,
-        ManualRewards,
-    }
-
-    #[derive(
-        RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo, Serialize, Deserialize,
-    )]
-    pub enum AllTargetPool {
-        Joining,
-        AutoCompounding,
-        ManualRewards,
-        Leaving,
-    }
-
-    impl From<TargetPool> for AllTargetPool {
-        fn from(value: TargetPool) -> Self {
-            match value {
-                TargetPool::AutoCompounding => AllTargetPool::AutoCompounding,
-                TargetPool::ManualRewards => AllTargetPool::ManualRewards,
-            }
-        }
-    }
-
     /// Allow calls to be performed using either share amounts or stake.
     /// When providing stake, calls will convert them into share amounts that are
     /// worth up to the provided stake. The amount of stake thus will be at most the provided
@@ -374,6 +351,24 @@ pub mod pallet {
         ValueQuery,
     >;
 
+    /// Summary of a delegator's delegation.
+    /// Used to quickly fetch all delegations of a delegator.
+    #[pallet::storage]
+    pub type DelegatorCandidateSummaries<T: Config> = StorageDoubleMap<
+        _,
+        Blake2_128Concat,
+        Delegator<T>,
+        Blake2_128Concat,
+        Candidate<T>,
+        DelegatorCandidateSummary,
+        ValueQuery,
+    >;
+
+    /// Summary of a candidate state.
+    #[pallet::storage]
+    pub type CandidateSummaries<T: Config> =
+        StorageMap<_, Blake2_128Concat, Candidate<T>, CandidateSummary, ValueQuery>;
+
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
@@ -391,7 +386,7 @@ pub mod pallet {
         RequestedDelegate {
             candidate: Candidate<T>,
             delegator: Delegator<T>,
-            pool: TargetPool,
+            pool: ActivePoolKind,
             pending: T::Balance,
         },
         /// Delegation request was executed. `staked` has been properly staked
@@ -400,7 +395,7 @@ pub mod pallet {
         ExecutedDelegate {
             candidate: Candidate<T>,
             delegator: Delegator<T>,
-            pool: TargetPool,
+            pool: ActivePoolKind,
             staked: T::Balance,
             released: T::Balance,
         },
@@ -411,7 +406,7 @@ pub mod pallet {
         RequestedUndelegate {
             candidate: Candidate<T>,
             delegator: Delegator<T>,
-            from: TargetPool,
+            from: ActivePoolKind,
             pending: T::Balance,
             released: T::Balance,
         },
@@ -482,7 +477,7 @@ pub mod pallet {
         SwappedPool {
             candidate: Candidate<T>,
             delegator: Delegator<T>,
-            source_pool: TargetPool,
+            source_pool: ActivePoolKind,
             source_shares: T::Balance,
             source_stake: T::Balance,
             target_shares: T::Balance,
@@ -561,7 +556,7 @@ pub mod pallet {
             origin: OriginFor<T>,
             candidate: Candidate<T>,
             delegator: Delegator<T>,
-            pool: AllTargetPool,
+            pool: PoolKind,
         ) -> DispatchResultWithPostInfo {
             // We don't care about the sender.
             let _ = ensure_signed(origin)?;
@@ -574,7 +569,7 @@ pub mod pallet {
         pub fn request_delegate(
             origin: OriginFor<T>,
             candidate: Candidate<T>,
-            pool: TargetPool,
+            pool: ActivePoolKind,
             stake: T::Balance,
         ) -> DispatchResultWithPostInfo {
             let delegator = ensure_signed(origin)?;
@@ -601,7 +596,7 @@ pub mod pallet {
         pub fn request_undelegate(
             origin: OriginFor<T>,
             candidate: Candidate<T>,
-            pool: TargetPool,
+            pool: ActivePoolKind,
             amount: SharesOrStake<T::Balance>,
         ) -> DispatchResultWithPostInfo {
             let delegator = ensure_signed(origin)?;
@@ -638,7 +633,7 @@ pub mod pallet {
         pub fn swap_pool(
             origin: OriginFor<T>,
             candidate: Candidate<T>,
-            source_pool: TargetPool,
+            source_pool: ActivePoolKind,
             amount: SharesOrStake<T::Balance>,
         ) -> DispatchResultWithPostInfo {
             let delegator = ensure_signed(origin)?;
@@ -651,22 +646,18 @@ pub mod pallet {
         pub fn computed_stake(
             candidate: Candidate<T>,
             delegator: Delegator<T>,
-            pool: AllTargetPool,
+            pool: PoolKind,
         ) -> Option<T::Balance> {
             use pools::Pool;
             match pool {
-                AllTargetPool::Joining => {
-                    pools::Joining::<T>::computed_stake(&candidate, &delegator)
-                }
-                AllTargetPool::AutoCompounding => {
+                PoolKind::Joining => pools::Joining::<T>::computed_stake(&candidate, &delegator),
+                PoolKind::AutoCompounding => {
                     pools::AutoCompounding::<T>::computed_stake(&candidate, &delegator)
                 }
-                AllTargetPool::ManualRewards => {
+                PoolKind::ManualRewards => {
                     pools::ManualRewards::<T>::computed_stake(&candidate, &delegator)
                 }
-                AllTargetPool::Leaving => {
-                    pools::Leaving::<T>::computed_stake(&candidate, &delegator)
-                }
+                PoolKind::Leaving => pools::Leaving::<T>::computed_stake(&candidate, &delegator),
             }
             .ok()
             .map(|x| x.0)

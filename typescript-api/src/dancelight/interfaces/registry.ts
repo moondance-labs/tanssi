@@ -166,7 +166,6 @@ import type {
     PalletOutboundMessageCommitmentRecorderEvent,
     PalletParametersCall,
     PalletParametersEvent,
-    PalletPooledStakingAllTargetPool,
     PalletPooledStakingCall,
     PalletPooledStakingCandidateEligibleCandidate,
     PalletPooledStakingError,
@@ -174,9 +173,11 @@ import type {
     PalletPooledStakingHoldReason,
     PalletPooledStakingPendingOperationKey,
     PalletPooledStakingPendingOperationQuery,
+    PalletPooledStakingPoolsActivePoolKind,
+    PalletPooledStakingPoolsCandidateSummary,
     PalletPooledStakingPoolsKey,
+    PalletPooledStakingPoolsPoolKind,
     PalletPooledStakingSharesOrStake,
-    PalletPooledStakingTargetPool,
     PalletPreimageCall,
     PalletPreimageError,
     PalletPreimageEvent,
@@ -689,7 +690,6 @@ declare module "@polkadot/types/types/registry" {
         PalletOutboundMessageCommitmentRecorderEvent: PalletOutboundMessageCommitmentRecorderEvent;
         PalletParametersCall: PalletParametersCall;
         PalletParametersEvent: PalletParametersEvent;
-        PalletPooledStakingAllTargetPool: PalletPooledStakingAllTargetPool;
         PalletPooledStakingCall: PalletPooledStakingCall;
         PalletPooledStakingCandidateEligibleCandidate: PalletPooledStakingCandidateEligibleCandidate;
         PalletPooledStakingError: PalletPooledStakingError;
@@ -697,9 +697,11 @@ declare module "@polkadot/types/types/registry" {
         PalletPooledStakingHoldReason: PalletPooledStakingHoldReason;
         PalletPooledStakingPendingOperationKey: PalletPooledStakingPendingOperationKey;
         PalletPooledStakingPendingOperationQuery: PalletPooledStakingPendingOperationQuery;
+        PalletPooledStakingPoolsActivePoolKind: PalletPooledStakingPoolsActivePoolKind;
+        PalletPooledStakingPoolsCandidateSummary: PalletPooledStakingPoolsCandidateSummary;
         PalletPooledStakingPoolsKey: PalletPooledStakingPoolsKey;
+        PalletPooledStakingPoolsPoolKind: PalletPooledStakingPoolsPoolKind;
         PalletPooledStakingSharesOrStake: PalletPooledStakingSharesOrStake;
-        PalletPooledStakingTargetPool: PalletPooledStakingTargetPool;
         PalletPreimageCall: PalletPreimageCall;
         PalletPreimageError: PalletPreimageError;
         PalletPreimageEvent: PalletPreimageEvent;
