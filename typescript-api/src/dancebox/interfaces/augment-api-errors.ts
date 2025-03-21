@@ -380,6 +380,7 @@ declare module "@polkadot/api-base/types/errors" {
         };
         inactivityTracking: {
             MaxCollatorsPerSessionReached: AugmentedError<ApiType>;
+            MaxContainerChainsReached: AugmentedError<ApiType>;
             /**
              * Generic error
              **/

@@ -11,9 +11,9 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 
-use std::convert::Into;
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
+use tp_traits::ForSession;
 use {
     crate as pallet_inactivity_tracking,
     frame_support::traits::{ConstU32, ConstU64, Everything, OnFinalize, OnInitialize},
@@ -22,6 +22,7 @@ use {
         traits::{BlakeTwo256, IdentityLookup},
         BuildStorage,
     },
+    sp_std::convert::Into,
     tp_traits::ParaId,
 };
 
@@ -30,7 +31,8 @@ pub type AccountId = u64;
 
 pub const COLLATOR_1: AccountId = 1;
 pub const COLLATOR_2: AccountId = 2;
-pub const CONTAINER_CHAIN_ID: ParaId = ParaId::new(3000);
+pub const CONTAINER_CHAIN_ID_1: ParaId = ParaId::new(3000);
+pub const CONTAINER_CHAIN_ID_2: ParaId = ParaId::new(3001);
 pub const SESSION_BLOCK_LENGTH: u64 = 5;
 
 // Configure a mock runtime to test the pallet.
@@ -85,23 +87,36 @@ impl tp_traits::GetSessionIndex<u32> for CurrentSessionIndexGetter {
     }
 }
 
+pub struct MockContainerChainsInfoFetcher;
+impl tp_traits::GetContainerChainsWithCollators<AccountId> for MockContainerChainsInfoFetcher {
+    fn container_chains_with_collators(_for_session: ForSession) -> Vec<(ParaId, Vec<AccountId>)> {
+        vec![
+            (CONTAINER_CHAIN_ID_1, vec![COLLATOR_1, COLLATOR_2]),
+            (CONTAINER_CHAIN_ID_2, vec![]),
+        ]
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn set_container_chains_with_collators(
+        for_session: ForSession,
+        container_chains: &[(ParaId, Vec<AccountId>)],
+    ) {
+    }
+}
+
 impl pallet_inactivity_tracking::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type CollatorId = AccountId;
     type MaxInactiveSessions = ConstU32<2>;
     type MaxCollatorsPerSession = ConstU32<5>;
+    type MaxContainerChains = ConstU32<3>;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type GetSelfChainBlockAuthor = ();
     type AuthorityId = sp_runtime::testing::UintAuthorityId;
+    type ContainerChainsFetcher = MockContainerChainsInfoFetcher;
 }
 
 pub(crate) struct ExtBuilder;
-
-impl Default for ExtBuilder {
-    fn default() -> ExtBuilder {
-        ExtBuilder {}
-    }
-}
 
 impl ExtBuilder {
     pub(crate) fn build(self) -> sp_io::TestExternalities {

@@ -192,9 +192,13 @@ declare module "@polkadot/api-base/types/consts" {
         };
         inactivityTracking: {
             /**
-             * The maximum amount of collators that can stored for a session
+             * The maximum amount of collators that can be stored for a session
              **/
             maxCollatorsPerSession: u32 & AugmentedConst<ApiType>;
+            /**
+             * The maximum amount of container chains that can be stored
+             **/
+            maxContainerChains: u32 & AugmentedConst<ApiType>;
             /**
              * The maximum number of sessions for which a collator can be inactive
              * before being moved to the offline queue

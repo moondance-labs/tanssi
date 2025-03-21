@@ -19,8 +19,8 @@ use {
     sp_runtime::{traits::Get, BoundedVec},
     sp_staking::SessionIndex,
     tp_traits::{
-        AuthorNotingHook, AuthorNotingInfo, GetSessionIndex, MaybeSelfChainBlockAuthor,
-        NodeActivityTrackingHelper,
+        AuthorNotingHook, AuthorNotingInfo, ForSession, GetContainerChainsWithCollators,
+        GetSessionIndex, MaybeSelfChainBlockAuthor, NodeActivityTrackingHelper, ParaId,
     },
 };
 
@@ -36,7 +36,7 @@ mod benchmarking;
 pub mod weights;
 
 #[cfg(feature = "runtime-benchmarks")]
-use tp_traits::{BlockNumber, ParaId};
+use tp_traits::BlockNumber;
 
 pub use pallet::*;
 #[frame_support::pallet]
@@ -76,15 +76,22 @@ pub mod pallet {
         #[pallet::constant]
         type MaxInactiveSessions: Get<u32>;
 
-        /// The maximum amount of collators that can stored for a session
+        /// The maximum amount of collators that can be stored for a session
         #[pallet::constant]
         type MaxCollatorsPerSession: Get<u32>;
+
+        /// The maximum amount of container chains that can be stored
+        #[pallet::constant]
+        type MaxContainerChains: Get<u32>;
 
         /// Helper that returns the current session index.
         type CurrentSessionIndex: GetSessionIndex<SessionIndex>;
 
         /// Helper that returns the block author for the orchestrator chain (if it exists)
         type GetSelfChainBlockAuthor: MaybeSelfChainBlockAuthor<Self::CollatorId>;
+
+        /// Helper that fetches the latest set of container chains and their collators
+        type ContainerChainsFetcher: GetContainerChainsWithCollators<Self::CollatorId>;
     }
 
     /// Switch to enable/disable inactivity tracking
@@ -106,6 +113,11 @@ pub mod pallet {
     pub type ActiveCollatorsForCurrentSession<T: Config> =
         StorageValue<_, BoundedVec<T::CollatorId, T::MaxCollatorsPerSession>, ValueQuery>;
 
+    /// A list of inactive container chains for a session. Repopulated at the start of every session
+    #[pallet::storage]
+    pub type ActiveContainerChainsForCurrentSession<T: Config> =
+        StorageValue<_, BoundedVec<ParaId, T::MaxInactiveSessions>, ValueQuery>;
+
     /// The last session index for which the inactive collators have not been processed
     #[pallet::storage]
     pub type LastUnprocessedSession<T: Config> = StorageValue<_, SessionIndex, ValueQuery>;
@@ -119,6 +131,7 @@ pub mod pallet {
     #[pallet::error]
     pub enum Error<T> {
         MaxCollatorsPerSessionReached,
+        MaxContainerChainsReached,
     }
 
     #[pallet::call]
@@ -163,25 +176,49 @@ pub mod pallet {
             unprocessed_session_id: SessionIndex,
             active_session_id: SessionIndex,
         ) -> Weight {
-            let mut total_weight = T::DbWeight::get().reads_writes(1, 3);
+            let mut total_weight = T::DbWeight::get().reads_writes(1, 4);
             ActiveCollators::<T>::insert(
                 unprocessed_session_id,
                 <ActiveCollatorsForCurrentSession<T>>::get(),
             );
 
             <ActiveCollatorsForCurrentSession<T>>::put(BoundedVec::new());
+            <ActiveContainerChainsForCurrentSession<T>>::put(BoundedVec::new());
 
             // Cleanup active collator info for sessions that are older than the maximum allowed
             let minimum_sessions_required = T::MaxInactiveSessions::get() + 1;
             if active_session_id >= minimum_sessions_required {
                 total_weight += T::DbWeight::get().writes(1);
-                let _ = <crate::pallet::ActiveCollators<T>>::remove(
+                <crate::pallet::ActiveCollators<T>>::remove(
                     active_session_id - minimum_sessions_required,
                 );
             }
             <LastUnprocessedSession<T>>::put(active_session_id);
             total_weight
         }
+
+        pub fn process_inactive_chains_for_session() {
+            let active_chains = <ActiveContainerChainsForCurrentSession<T>>::get();
+            let _ = <ActiveCollatorsForCurrentSession<T>>::try_mutate(
+                |active_collators| -> DispatchResult {
+                    T::ContainerChainsFetcher::container_chains_with_collators(ForSession::Current)
+                        .iter()
+                        .for_each(|(para_id, collator_ids)| {
+                            if !active_chains.contains(para_id) {
+                                collator_ids.iter().for_each(|collator_id| {
+                                    if !active_collators.contains(collator_id) {
+                                        let _ = active_collators
+                                            .try_push(collator_id.clone())
+                                            .map_err(|_| Error::<T>::MaxCollatorsPerSessionReached);
+                                    }
+                                });
+                            }
+                        });
+                    Ok(())
+                },
+            );
+        }
+
         pub fn on_author_noted(author: T::CollatorId) -> Weight {
             let mut total_weight = T::DbWeight::get().reads_writes(1, 0);
             let _ = <ActiveCollatorsForCurrentSession<T>>::try_mutate(
@@ -191,6 +228,22 @@ pub mod pallet {
                         active_collators
                             .try_push(author)
                             .map_err(|_| Error::<T>::MaxCollatorsPerSessionReached)?;
+                    }
+                    Ok(())
+                },
+            );
+            total_weight
+        }
+
+        pub fn on_chain_noted(chain_id: ParaId) -> Weight {
+            let mut total_weight = T::DbWeight::get().reads_writes(1, 0);
+            let _ = <ActiveContainerChainsForCurrentSession<T>>::try_mutate(
+                |active_chains| -> DispatchResult {
+                    if !active_chains.contains(&chain_id) {
+                        total_weight += T::DbWeight::get().writes(1);
+                        active_chains
+                            .try_push(chain_id)
+                            .map_err(|_| Error::<T>::MaxContainerChainsReached)?;
                     }
                     Ok(())
                 },
@@ -229,6 +282,7 @@ impl<T: Config> AuthorNotingHook<T::CollatorId> for Pallet<T> {
         let mut total_weight = T::DbWeight::get().reads_writes(1, 0);
         for author_info in info {
             total_weight += Self::on_author_noted(author_info.author.clone());
+            total_weight += Self::on_chain_noted(author_info.para_id);
         }
         total_weight
     }
@@ -251,7 +305,8 @@ impl<T: pallet_session::Config + Config> OneSessionHandler<T::AccountId> for Pal
     {
     }
     fn on_before_session_ending() {
-        // TODO: Move relevant logic from `on_initialize` and `on_finalize` to here
+        Self::process_inactive_chains_for_session()
+        // TODO: Move relevant logic from `on_initialize` to here
     }
     fn on_disabled(_validator_index: u32) {}
 }

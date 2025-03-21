@@ -589,6 +589,11 @@ declare module "@polkadot/api-base/types/storage" {
             activeCollatorsForCurrentSession: AugmentedQuery<ApiType, () => Observable<Vec<AccountId32>>, []> &
                 QueryableStorageEntry<ApiType, []>;
             /**
+             * A list of inactive container chains for a session. Repopulated at the start of every session
+             **/
+            activeContainerChainsForCurrentSession: AugmentedQuery<ApiType, () => Observable<Vec<u32>>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
              * Switch to enable/disable inactivity tracking
              **/
             enableInactivityTracking: AugmentedQuery<ApiType, () => Observable<bool>, []> &

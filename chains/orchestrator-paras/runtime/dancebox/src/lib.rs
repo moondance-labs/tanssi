@@ -85,7 +85,8 @@ use {
     },
     nimbus_primitives::{NimbusId, SlotBeacon},
     pallet_balances::NegativeImbalance,
-    pallet_collator_assignment::{GetRandomnessForNextBlock, RotateCollatorsEveryNSessions},
+    pallet_collator_assignment::GetRandomnessForNextBlock,
+    pallet_collator_assignment::RotateCollatorsEveryNSessions,
     pallet_invulnerables::InvulnerableRewardDistribution,
     pallet_pooled_staking::traits::{IsCandidateEligible, Timer},
     pallet_registrar::RegistrarHooks,
@@ -1663,6 +1664,10 @@ impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
     }
 }
 
+parameter_types! {
+    pub const MaxCandidatesBufferSize: u32 = 100;
+}
+
 impl pallet_pooled_staking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
@@ -1675,7 +1680,7 @@ impl pallet_pooled_staking::Config for Runtime {
     type RewardsCollatorCommission = RewardsCollatorCommission;
     type JoiningRequestTimer = SessionTimer<StakingSessionDelay>;
     type LeavingRequestTimer = SessionTimer<StakingSessionDelay>;
-    type EligibleCandidatesBufferSize = ConstU32<100>;
+    type EligibleCandidatesBufferSize = MaxCandidatesBufferSize;
     type EligibleCandidatesFilter = CandidateHasRegisteredKeys;
     type WeightInfo = weights::pallet_pooled_staking::SubstrateWeight<Runtime>;
 }
@@ -1974,10 +1979,12 @@ impl pallet_inactivity_tracking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type CollatorId = CollatorId;
     type MaxInactiveSessions = ConstU32<5>;
-    type MaxCollatorsPerSession = ConstU32<100>;
+    type MaxCollatorsPerSession = MaxCandidatesBufferSize;
+    type MaxContainerChains = MaxLengthParaIds;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type GetSelfChainBlockAuthor = GetSelfChainBlockAuthor;
-    type AuthorityId = nimbus_primitives::NimbusId;
+    type ContainerChainsFetcher = CollatorAssignment;
+    type AuthorityId = NimbusId;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
