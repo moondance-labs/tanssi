@@ -67,7 +67,6 @@ describeSuite({
         let operatorRewardContract: ethers.Contract;
         let operatorRewardContractImpl: ethers.Contract;
         let operatorRewardDetails: any;
-        let versionedNativeTokenLocation: any;
         let tokenId: any;
 
         let ethInfo: any;
@@ -205,7 +204,7 @@ describeSuite({
                 parents: 0,
                 interior: "Here",
             });
-            versionedNativeTokenLocation = {
+            const versionedNativeTokenLocation = {
                 V3: tokenLocation,
             };
 
@@ -718,7 +717,7 @@ describeSuite({
             if (relayerChildProcess) {
                 relayerChildProcess.kill("SIGINT");
             }
-            //await execCommand("./scripts/bridge/cleanup.sh olep");
+            await execCommand("./scripts/bridge/cleanup.sh olep");
         });
     },
 });
