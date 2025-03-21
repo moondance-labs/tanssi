@@ -97,5 +97,4 @@ const getBlockData = async (api: ApiPromise, blockNum: number) => {
     };
 };
 
-// BondedEraParams - Tuple<EraIndex, SessionIndex, ExternalIndex>
 type BondedEraParams = [number, number, number];
