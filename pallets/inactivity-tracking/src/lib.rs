@@ -249,7 +249,7 @@ pub mod pallet {
             let mut total_weight = T::DbWeight::get().reads_writes(1, 0);
             let _ = <ActiveContainerChainsForCurrentSession<T>>::try_mutate(
                 |active_chains| -> DispatchResult {
-                    if active_chains.contains(&chain_id) {
+                    if !active_chains.contains(&chain_id) {
                         total_weight += T::DbWeight::get().writes(1);
                         active_chains
                             .try_push(chain_id)

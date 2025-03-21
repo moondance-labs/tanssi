@@ -13,7 +13,7 @@
 
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
-use crate::ActiveCollatorsForCurrentSession;
+use crate::{ActiveCollatorsForCurrentSession, ActiveContainerChainsForCurrentSession};
 use sp_core::ConstU32;
 use {
     crate::{
@@ -154,6 +154,38 @@ fn active_collators_noting_for_current_session_works() {
         assert_eq!(
             ActiveCollatorsForCurrentSession::<Test>::get(),
             current_session_active_collator_record
+        );
+    });
+}
+
+#[test]
+fn active_chains_noting_for_current_session_works() {
+    ExtBuilder::default().build().execute_with(|| {
+        let current_session_active_chain_record: BoundedVec<tp_traits::ParaId, ConstU32<2>> =
+            BoundedVec::truncate_from(vec![CONTAINER_CHAIN_ID_1]);
+        assert_ok!(Pallet::<Test>::set_inactivity_tracking_status(
+            RuntimeOrigin::root(),
+            true
+        ));
+        assert_eq!(
+            ActiveContainerChainsForCurrentSession::<Test>::get().len(),
+            0
+        );
+        roll_to(2);
+        <Pallet<Test> as AuthorNotingHook<AccountId>>::on_container_authors_noted(&[
+            get_active_collators(2),
+        ]);
+        assert_eq!(
+            ActiveContainerChainsForCurrentSession::<Test>::get(),
+            current_session_active_chain_record
+        );
+        roll_to(3);
+        <Pallet<Test> as AuthorNotingHook<AccountId>>::on_container_authors_noted(&[
+            get_active_collators(3),
+        ]);
+        assert_eq!(
+            ActiveContainerChainsForCurrentSession::<Test>::get(),
+            current_session_active_chain_record
         );
     });
 }
