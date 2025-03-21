@@ -456,7 +456,7 @@ describeSuite({
             title: "Rewards are claimable",
             test: async () => {
                 // Find the first era index claimable
-                let currentEra = (await relayApi.query.externalValidators.activeEra()).unwrap().index;
+                const currentEra = (await relayApi.query.externalValidators.activeEra()).unwrap().index;
 
                 let eraToAnalyze = currentEra.toNumber();
                 console.log(await operatorRewardContract.eraRoot(eraToAnalyze));
@@ -465,7 +465,7 @@ describeSuite({
                 // eraRoot returns a struct of 4 items, the 3rd of which is the era root
                 // we try to retrieve the first non-default one
                 while (
-                    (await operatorRewardContract.eraRoot(eraToAnalyze))[3] ==
+                    (await operatorRewardContract.eraRoot(eraToAnalyze))[3] ===
                         "0x0000000000000000000000000000000000000000000000000000000000000000" &&
                     eraToAnalyze >= 0
                 ) {
@@ -477,7 +477,7 @@ describeSuite({
                     console.log((await operatorRewardContract.eraRoot(eraToAnalyze))[3]);
                 }
                 if (eraToAnalyze < 0) {
-                    throw new Error(`No era was found in operator rewards to be claimed`);
+                    throw new Error("No era was found in operator rewards to be claimed");
                 }
 
                 const operatorMerkleProof = await relayApi.call.externalValidatorsRewardsApi.generateRewardsMerkleProof(
@@ -489,13 +489,13 @@ describeSuite({
                 //(uint256, bytes, bytes)
                 // no hints and I am passing a max admin fee
                 const additionalData =
-                    `0x0000000000000000000000000000000000000000000000000000000000001` +
-                    `000000000000000000000000000000000000000000000000000000000000000006000000000000000000` +
-                    `000000000000000000000000000000000000000000000800000000000000000000000000000000000000` +
-                    `000000000000000000000000000000000000000000000000000000000000000000000000000000000000` +
-                    `0000000`;
+                    "0x0000000000000000000000000000000000000000000000000000000000001" +
+                    "000000000000000000000000000000000000000000000000000000000000000006000000000000000000" +
+                    "000000000000000000000000000000000000000000000800000000000000000000000000000000000000" +
+                    "000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
+                    "0000000";
 
-                let claimRewardsInput = {
+                const claimRewardsInput = {
                     operatorKey: operatorAccount.addressRaw,
                     eraIndex: eraToAnalyze,
                     totalPointsClaimable: eraRewardsInfo.individual.toJSON()[operatorAccount.address.toString()],
@@ -513,12 +513,11 @@ describeSuite({
 
                         const decodedError = operatorRewardContractImpl.interface.parseError(e.data);
                         throw new Error(`Failed to claim rewards with error: ${decodedError}`);
-                    } else {
-                        throw new Error(`Failed to claim rewards with error: ${e.toHuman()}`);
                     }
+                    throw new Error(`Failed to claim rewards with error: ${e.toHuman()}`);
                 }
 
-                let tokenAddress = await gatewayContract.tokenAddressOf(tokenId);
+                const tokenAddress = await gatewayContract.tokenAddressOf(tokenId);
 
                 tokenContract = new ethers.Contract(
                     tokenAddress,
