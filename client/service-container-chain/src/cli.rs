@@ -50,7 +50,8 @@ pub struct ContainerChainRunCmd {
     #[arg(long)]
     pub keep_db: bool,
 
-    /// Download the full block history for container chains after the warp sync is done
+    /// Download the full block history for container chains after the warp sync is done.
+    /// Default value: false for container collators, true for data preservers.
     #[arg(long)]
     pub download_block_history: Option<bool>,
 
