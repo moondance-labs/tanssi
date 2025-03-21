@@ -85,6 +85,7 @@ use {
     },
     nimbus_primitives::{NimbusId, SlotBeacon},
     pallet_balances::NegativeImbalance,
+    pallet_collator_assignment::GetRandomnessForNextBlock,
     pallet_collator_assignment::RotateCollatorsEveryNSessions,
     pallet_invulnerables::InvulnerableRewardDistribution,
     pallet_pooled_staking::traits::{IsCandidateEligible, Timer},
@@ -122,8 +123,8 @@ use {
     sp_version::RuntimeVersion,
     tp_traits::{
         apply, derive_storage_traits, GetContainerChainAuthor, GetHostConfiguration,
-        GetRandomnessForNextBlock, GetSessionContainerChains, MaybeSelfChainBlockAuthor,
-        ParaIdAssignmentHooks, RelayStorageRootProvider, RemoveInvulnerables, SlotFrequency,
+        GetSessionContainerChains, MaybeSelfChainBlockAuthor, ParaIdAssignmentHooks,
+        RelayStorageRootProvider, RemoveInvulnerables, SlotFrequency,
     },
     tp_xcm_core_buyer::BuyCoreCollatorProof,
     xcm::{IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation, VersionedXcm},

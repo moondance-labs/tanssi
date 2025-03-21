@@ -43,6 +43,7 @@ use {
     },
     frame_system::{pallet_prelude::BlockNumberFor, EnsureNever},
     nimbus_primitives::NimbusId,
+    pallet_collator_assignment::GetRandomnessForNextBlock,
     pallet_collator_assignment::RotateCollatorsEveryNSessions,
     pallet_initializer as tanssi_initializer,
     pallet_invulnerables::InvulnerableRewardDistribution,
@@ -97,8 +98,8 @@ use {
     },
     tp_bridge::ConvertLocation,
     tp_traits::{
-        apply, derive_storage_traits, EraIndex, GetHostConfiguration, GetRandomnessForNextBlock,
-        GetSessionContainerChains, ParaIdAssignmentHooks, RegistrarHandler, Slot, SlotFrequency,
+        apply, derive_storage_traits, EraIndex, GetHostConfiguration, GetSessionContainerChains,
+        ParaIdAssignmentHooks, RegistrarHandler, Slot, SlotFrequency,
     },
 };
 

@@ -613,18 +613,3 @@ pub trait ExternalIndexProvider {
 pub trait NodeActivityTrackingHelper<AccountId> {
     fn is_node_inactive(node: &AccountId) -> bool;
 }
-
-pub trait GetRandomnessForNextBlock<BlockNumber> {
-    fn should_end_session(block_number: BlockNumber) -> bool;
-    fn get_randomness() -> [u8; 32];
-}
-
-impl<BlockNumber> GetRandomnessForNextBlock<BlockNumber> for () {
-    fn should_end_session(_block_number: BlockNumber) -> bool {
-        false
-    }
-
-    fn get_randomness() -> [u8; 32] {
-        [0; 32]
-    }
-}
