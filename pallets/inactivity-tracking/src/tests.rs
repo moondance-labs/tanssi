@@ -189,3 +189,63 @@ fn active_chains_noting_for_current_session_works() {
         );
     });
 }
+
+#[test]
+fn inactive_chain_collators_are_correctly_processed() {
+    ExtBuilder::default().build().execute_with(|| {
+        let current_session_active_collators_record: BoundedVec<AccountId, ConstU32<5>> =
+            BoundedVec::truncate_from(vec![COLLATOR_1, COLLATOR_2]);
+        assert_ok!(Pallet::<Test>::set_inactivity_tracking_status(
+            RuntimeOrigin::root(),
+            true
+        ));
+        assert_eq!(
+            ActiveContainerChainsForCurrentSession::<Test>::get().len(),
+            0
+        );
+        assert_eq!(ActiveCollatorsForCurrentSession::<Test>::get().len(), 0);
+        Pallet::<Test>::process_inactive_chains_for_session();
+        assert_eq!(
+            ActiveContainerChainsForCurrentSession::<Test>::get().len(),
+            0
+        );
+        assert_eq!(
+            ActiveCollatorsForCurrentSession::<Test>::get(),
+            current_session_active_collators_record
+        );
+        Pallet::<Test>::process_inactive_chains_for_session();
+    });
+}
+
+#[test]
+fn inactive_collator_for_active_chain_is_correctly_processed() {
+    ExtBuilder::default().build().execute_with(|| {
+        let current_session_active_collator_record: BoundedVec<AccountId, ConstU32<5>> =
+            BoundedVec::truncate_from(vec![COLLATOR_1]);
+        let current_session_active_chain_record: BoundedVec<tp_traits::ParaId, ConstU32<2>> =
+            BoundedVec::truncate_from(vec![CONTAINER_CHAIN_ID_1]);
+        assert_ok!(Pallet::<Test>::set_inactivity_tracking_status(
+            RuntimeOrigin::root(),
+            true
+        ));
+        assert_eq!(
+            ActiveContainerChainsForCurrentSession::<Test>::get().len(),
+            0
+        );
+        assert_eq!(ActiveCollatorsForCurrentSession::<Test>::get().len(), 0);
+        roll_to(2);
+        <Pallet<Test> as AuthorNotingHook<AccountId>>::on_container_authors_noted(&[
+            get_active_collators(2),
+        ]);
+        Pallet::<Test>::process_inactive_chains_for_session();
+        assert_eq!(
+            ActiveContainerChainsForCurrentSession::<Test>::get(),
+            current_session_active_chain_record
+        );
+        assert_eq!(
+            ActiveCollatorsForCurrentSession::<Test>::get(),
+            current_session_active_collator_record
+        );
+        Pallet::<Test>::process_inactive_chains_for_session();
+    });
+}
