@@ -957,6 +957,13 @@ declare module "@polkadot/api-base/types/events" {
              **/
             [key: string]: AugmentedEvent<ApiType>;
         };
+        inactivityTracking: {
+            InactivityTrackingEnabled: AugmentedEvent<ApiType, [isEnabled: bool], { isEnabled: bool }>;
+            /**
+             * Generic event
+             **/
+            [key: string]: AugmentedEvent<ApiType>;
+        };
         inflationRewards: {
             /**
              * Rewarding container author

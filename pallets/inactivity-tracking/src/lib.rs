@@ -15,7 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 #![cfg_attr(not(feature = "std"), no_std)]
 use {
-    frame_support::{dispatch::DispatchResult, pallet_prelude::Weight},
+    frame_support::{dispatch::DispatchResult, pallet_prelude::Weight, traits::OneSessionHandler},
     sp_runtime::{traits::Get, BoundedVec},
     sp_staking::SessionIndex,
     tp_traits::{
@@ -25,13 +25,24 @@ use {
     },
 };
 
+#[cfg(test)]
+mod mock;
+
+#[cfg(test)]
+mod tests;
+
+#[cfg(feature = "runtime-benchmarks")]
+mod benchmarking;
+
+pub mod weights;
+
 #[cfg(feature = "runtime-benchmarks")]
 use tp_traits::BlockNumber;
 
 pub use pallet::*;
-
 #[frame_support::pallet]
 pub mod pallet {
+    use sp_runtime::RuntimeAppPublic;
     use {
         super::*,
         core::marker::PhantomData,
@@ -46,13 +57,20 @@ pub mod pallet {
         /// Overarching event type.
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
-        /// A stable ID for a collator.
+        /// A stable identifier for a collator.
         type CollatorId: Member
             + Parameter
             + Ord
             + MaybeSerializeDeserialize
             + MaxEncodedLen
             + TryFrom<Self::AccountId>;
+
+        /// The identifier type for an authority.
+        type AuthorityId: Member
+            + Parameter
+            + RuntimeAppPublic
+            + MaybeSerializeDeserialize
+            + MaxEncodedLen;
 
         /// The maximum number of sessions for which a collator can be inactive
         /// before being moved to the offline queue
@@ -78,7 +96,12 @@ pub mod pallet {
 
         /// Helper that allows to check if a new session will start in the next block
         type SessionEndChecker: GetRandomnessForNextBlock<BlockNumberFor<Self>>;
+
     }
+
+    /// Switch to enable/disable inactivity tracking
+    #[pallet::storage]
+    pub type EnableInactivityTracking<T: Config> = StorageValue<_, bool, ValueQuery>;
 
     /// A list of double map of inactive collators for a session
     #[pallet::storage]
@@ -105,7 +128,10 @@ pub mod pallet {
     pub type LastUnprocessedSession<T: Config> = StorageValue<_, SessionIndex, ValueQuery>;
 
     #[pallet::event]
-    pub enum Event<T: Config> {}
+    #[pallet::generate_deposit(pub(super) fn deposit_event)]
+    pub enum Event<T: Config> {
+        InactivityTrackingEnabled { is_enabled: bool },
+    }
 
     #[pallet::error]
     pub enum Error<T> {
@@ -114,7 +140,19 @@ pub mod pallet {
     }
 
     #[pallet::call]
-    impl<T: Config> Pallet<T> {}
+    impl<T: Config> Pallet<T> {
+        #[pallet::call_index(0)]
+        #[pallet::weight(T::DbWeight::get().reads_writes(0, 1))]
+        pub fn set_inactivity_tracking_status(
+            origin: OriginFor<T>,
+            is_enabled: bool,
+        ) -> DispatchResult {
+            ensure_root(origin)?;
+            <EnableInactivityTracking<T>>::put(is_enabled);
+            Self::deposit_event(Event::<T>::InactivityTrackingEnabled { is_enabled });
+            Ok(())
+        }
+    }
 
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
@@ -147,9 +185,9 @@ pub mod pallet {
     impl<T: Config> Pallet<T> {
         fn process_ended_session(
             unprocessed_session_id: SessionIndex,
-            current_session_id: SessionIndex,
+            active_session_id: SessionIndex,
         ) -> Weight {
-            let mut total_weight = T::DbWeight::get().reads_writes(0, 4);
+            let mut total_weight = T::DbWeight::get().reads_writes(1, 4);
             ActiveCollators::<T>::insert(
                 unprocessed_session_id,
                 <ActiveCollatorsForCurrentSession<T>>::get(),
@@ -160,13 +198,13 @@ pub mod pallet {
 
             // Cleanup active collator info for sessions that are older than the maximum allowed
             let minimum_sessions_required = T::MaxInactiveSessions::get() + 1;
-            if current_session_id >= minimum_sessions_required {
+            if active_session_id >= minimum_sessions_required {
                 total_weight += T::DbWeight::get().writes(1);
                 <crate::pallet::ActiveCollators<T>>::remove(
                     current_session_id - minimum_sessions_required,
                 );
             }
-            <LastUnprocessedSession<T>>::put(current_session_id);
+            <LastUnprocessedSession<T>>::put(active_session_id);
             total_weight
         }
 
@@ -228,9 +266,13 @@ pub mod pallet {
 
 impl<T: Config> NodeActivityTrackingHelper<T::CollatorId> for Pallet<T> {
     fn is_node_inactive(node: &T::CollatorId) -> bool {
+        if !<EnableInactivityTracking<T>>::get() {
+            return false;
+        }
+
         let current_session = T::CurrentSessionIndex::session_index();
 
-        let minimum_sessions_required = T::MaxInactiveSessions::get() + 1;
+        let minimum_sessions_required = T::MaxInactiveSessions::get();
         if current_session < minimum_sessions_required {
             return false;
         }
@@ -248,7 +290,7 @@ impl<T: Config> NodeActivityTrackingHelper<T::CollatorId> for Pallet<T> {
 
 impl<T: Config> AuthorNotingHook<T::CollatorId> for Pallet<T> {
     fn on_container_authors_noted(info: &[AuthorNotingInfo<T::CollatorId>]) -> Weight {
-        let mut total_weight = T::DbWeight::get().reads_writes(0, 0);
+        let mut total_weight = T::DbWeight::get().reads_writes(1, 0);
         for author_info in info {
             total_weight += Self::on_author_noted(author_info.author.clone());
             total_weight += Self::on_chain_noted(author_info.para_id);
@@ -256,5 +298,25 @@ impl<T: Config> AuthorNotingHook<T::CollatorId> for Pallet<T> {
         total_weight
     }
     #[cfg(feature = "runtime-benchmarks")]
-    fn prepare_worst_case_for_bench(_a: &T::CollatorId, _b: BlockNumber, para_id: ParaId) {}
+    fn prepare_worst_case_for_bench(_a: &T::CollatorId, _b: BlockNumber, _para_id: ParaId) {}
+}
+impl<T: Config> sp_runtime::BoundToRuntimeAppPublic for Pallet<T> {
+    type Public = T::AuthorityId;
+}
+impl<T: pallet_session::Config + Config> OneSessionHandler<T::AccountId> for Pallet<T> {
+    type Key = T::AuthorityId;
+    fn on_genesis_session<'a, I>(_validators: I)
+    where
+        I: Iterator<Item = (&'a T::AccountId, Self::Key)> + 'a,
+    {
+    }
+    fn on_new_session<'a, I>(_changed: bool, _validators: I, _queued: I)
+    where
+        I: Iterator<Item = (&'a T::AccountId, Self::Key)> + 'a,
+    {
+    }
+    fn on_before_session_ending() {
+        // TODO: Move relevant logic from `on_initialize` and `on_finalize` to here
+    }
+    fn on_disabled(_validator_index: u32) {}
 }

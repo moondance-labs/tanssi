@@ -24,6 +24,7 @@ sp-runtime = { workspace = true }
 sp-staking = { workspace = true }
 sp-std = { workspace = true }
 
+pallet-session = { workspace = true }
 tp-traits = { workspace = true }
 
 [dev-dependencies]
@@ -36,6 +37,7 @@ std = [
 	"frame-benchmarking/std",
 	"frame-support/std",
 	"frame-system/std",
+	"pallet-session/std",
 	"parity-scale-codec/std",
 	"scale-info/std",
 	"sp-core/std",
@@ -57,5 +59,6 @@ runtime-benchmarks = [
 try-runtime = [
 	"frame-support/try-runtime",
 	"frame-system/try-runtime",
+	"pallet-session/try-runtime",
 	"sp-runtime/try-runtime",
 ]

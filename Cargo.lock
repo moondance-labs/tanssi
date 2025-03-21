@@ -10326,6 +10326,7 @@ dependencies = [
  "frame-benchmarking",
  "frame-support",
  "frame-system",
+ "pallet-session",
  "parity-scale-codec",
  "scale-info",
  "sp-core",

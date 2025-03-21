@@ -145,6 +145,9 @@ import type {
     PalletIdentityRegistrarInfo,
     PalletIdentityRegistration,
     PalletIdentityUsernameInformation,
+    PalletInactivityTrackingCall,
+    PalletInactivityTrackingError,
+    PalletInactivityTrackingEvent,
     PalletInflationRewardsChainsToRewardValue,
     PalletInflationRewardsEvent,
     PalletInvulnerablesCall,
@@ -668,6 +671,9 @@ declare module "@polkadot/types/types/registry" {
         PalletIdentityRegistrarInfo: PalletIdentityRegistrarInfo;
         PalletIdentityRegistration: PalletIdentityRegistration;
         PalletIdentityUsernameInformation: PalletIdentityUsernameInformation;
+        PalletInactivityTrackingCall: PalletInactivityTrackingCall;
+        PalletInactivityTrackingError: PalletInactivityTrackingError;
+        PalletInactivityTrackingEvent: PalletInactivityTrackingEvent;
         PalletInflationRewardsChainsToRewardValue: PalletInflationRewardsChainsToRewardValue;
         PalletInflationRewardsEvent: PalletInflationRewardsEvent;
         PalletInvulnerablesCall: PalletInvulnerablesCall;

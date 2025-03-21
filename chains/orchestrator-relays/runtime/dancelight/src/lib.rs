@@ -2073,6 +2073,7 @@ impl pallet_inactivity_tracking::Config for Runtime {
     type GetSelfChainBlockAuthor = ();
     type ContainerChainsFetcher = TanssiCollatorAssignment;
     type SessionEndChecker = BabeGetRandomnessForNextBlock;
+    type AuthorityId = nimbus_primitives::NimbusId;
 }
 
 construct_runtime! {
@@ -2543,6 +2544,7 @@ mod benches {
         [pallet_invulnerables, TanssiInvulnerables]
         [pallet_data_preservers, DataPreservers]
         [pallet_pooled_staking, PooledStaking]
+        [pallet_inactivity_tracking, InactivityTracking]
         [pallet_configuration, CollatorConfiguration]
         [pallet_stream_payment, StreamPayment]
 
