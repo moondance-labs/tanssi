@@ -96,7 +96,6 @@ pub mod pallet {
 
         /// Helper that allows to check if a new session will start in the next block
         type SessionEndChecker: GetRandomnessForNextBlock<BlockNumberFor<Self>>;
-
     }
 
     /// Switch to enable/disable inactivity tracking
@@ -201,7 +200,7 @@ pub mod pallet {
             if active_session_id >= minimum_sessions_required {
                 total_weight += T::DbWeight::get().writes(1);
                 <crate::pallet::ActiveCollators<T>>::remove(
-                    current_session_id - minimum_sessions_required,
+                    active_session_id - minimum_sessions_required,
                 );
             }
             <LastUnprocessedSession<T>>::put(active_session_id);
