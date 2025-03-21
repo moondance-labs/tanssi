@@ -63,6 +63,11 @@ describeSuite({
         let gatewayProxyAddress: string;
         let middlewareAddress: string;
         let middlewareDetails: any;
+        let operatorRewardAddress: string;
+        let operatorRewardContract: ethers.Contract;
+        let operatorRewardContractImpl: ethers.Contract;
+        let operatorRewardDetails: any;
+        let tokenId: any;
 
         let ethInfo: any;
 
@@ -142,6 +147,13 @@ describeSuite({
             middlewareDetails = ethInfo.symbiotic_info.contracts.Middleware;
             middlewareAddress = ethInfo.symbiotic_info.contracts.MiddlewareProxy.address;
 
+            console.log(
+                "Symbiotic Rewards address is: ",
+                ethInfo.symbiotic_info.contracts.ODefaultOperatorRewards.address
+            );
+            operatorRewardAddress = ethInfo.symbiotic_info.contracts.ODefaultOperatorRewards.address;
+            operatorRewardDetails = ethInfo.symbiotic_info.contracts.ODefaultOperatorRewards;
+
             console.log("Setting gateway address to proxy contract:", gatewayProxyAddress);
             const setGatewayAddressTxHash = await signAndSendAndInclude(
                 relayApi.tx.sudo.sudo(relayApi.tx.system.setStorage([[GATEWAY_STORAGE_KEY, gatewayProxyAddress]])),
@@ -156,6 +168,18 @@ describeSuite({
             middlewareContract = new ethers.Contract(middlewareAddress, middlewareDetails.abi, ethereumWallet);
             const tx = await middlewareContract.setGateway(gatewayProxyAddress);
             await tx.wait();
+
+            // Setting up operatorRewards
+            operatorRewardContract = new ethers.Contract(
+                await middlewareContract.i_operatorRewards(),
+                operatorRewardDetails.abi,
+                ethereumWallet
+            );
+            operatorRewardContractImpl = new ethers.Contract(
+                operatorRewardAddress,
+                operatorRewardDetails.abi,
+                ethereumWallet
+            );
 
             gatewayContract = new ethers.Contract(
                 gatewayProxyAddress,
@@ -180,7 +204,7 @@ describeSuite({
                 parents: 0,
                 interior: "Here",
             });
-            const versionedLocation = {
+            const versionedNativeTokenLocation = {
                 V3: tokenLocation,
             };
 
@@ -197,11 +221,17 @@ describeSuite({
                 relayApi.tx.sudo.sudo(
                     relayApi.tx.utility.batch([
                         relayApi.tx.ethereumBeaconClient.forceCheckpoint(initialBeaconUpdate),
-                        relayApi.tx.ethereumSystem.registerToken(versionedLocation, metadata),
+                        relayApi.tx.ethereumSystem.registerToken(versionedNativeTokenLocation, metadata),
                     ])
                 ),
                 alice
             );
+
+            // let's fetch the token id
+            const allEntries = await relayApi.query.ethereumSystem.nativeToForeignId.entries();
+            const tokenIds = allEntries.map(([, id]) => id.toHuman());
+
+            tokenId = tokenIds[0];
 
             relayerChildProcess = spawn("./scripts/bridge/start-relayer.sh", {
                 shell: true,
@@ -423,6 +453,84 @@ describeSuite({
 
         it({
             id: "T06",
+            title: "Rewards are claimable",
+            test: async () => {
+                // Find the first era index claimable
+                const currentEra = (await relayApi.query.externalValidators.activeEra()).unwrap().index;
+
+                let eraToAnalyze = currentEra.toNumber();
+
+                const DEFAULT_ERA_ROOT = "0x0000000000000000000000000000000000000000000000000000000000000000";
+                // Try to find latest reported era
+                // eraRoot returns a struct of 5 items, the 4th of which is the era root
+                // we try to retrieve the first non-default one
+                while (
+                    (await operatorRewardContract.eraRoot(eraToAnalyze))[3] === DEFAULT_ERA_ROOT &&
+                    eraToAnalyze >= 0
+                ) {
+                    eraToAnalyze--;
+
+                    console.log("era to analyze ", eraToAnalyze);
+                    console.log(await operatorRewardContract.eraRoot(eraToAnalyze));
+                    console.log("thid");
+                    console.log((await operatorRewardContract.eraRoot(eraToAnalyze))[3]);
+                }
+                if (eraToAnalyze < 0) {
+                    throw new Error("No era was found in operator rewards to be claimed");
+                }
+
+                const operatorMerkleProof = await relayApi.call.externalValidatorsRewardsApi.generateRewardsMerkleProof(
+                    operatorAccount.address,
+                    eraToAnalyze
+                );
+
+                const eraRewardsInfo = await relayApi.query.externalValidatorsRewards.rewardPointsForEra(eraToAnalyze);
+                //(uint256, bytes, bytes)
+                // no hints and I am passing a max admin fee
+                const additionalData =
+                    "0x0000000000000000000000000000000000000000000000000000000000001" +
+                    "000000000000000000000000000000000000000000000000000000000000000006000000000000000000" +
+                    "000000000000000000000000000000000000000000000800000000000000000000000000000000000000" +
+                    "000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
+                    "0000000";
+
+                const claimRewardsInput = {
+                    operatorKey: operatorAccount.addressRaw,
+                    eraIndex: eraToAnalyze,
+                    totalPointsClaimable: eraRewardsInfo.individual.toJSON()[operatorAccount.address.toString()],
+                    proof: operatorMerkleProof.toHuman().proof,
+                    data: additionalData,
+                };
+                console.log(`Claiming rewards with inputs ${claimRewardsInput}`);
+                expect(operatorMerkleProof.isEmpty).to.be.false;
+                try {
+                    const claimTx = await operatorRewardContract.claimRewards(claimRewardsInput);
+                    await claimTx.wait();
+                } catch (e) {
+                    if (e.data) {
+                        console.log(e.data);
+
+                        const decodedError = operatorRewardContractImpl.interface.parseError(e.data);
+                        throw new Error(`Failed to claim rewards with error: ${decodedError}`);
+                    }
+                    throw new Error(`Failed to claim rewards with error: ${e.toHuman()}`);
+                }
+
+                const tokenAddress = await gatewayContract.tokenAddressOf(tokenId);
+
+                tokenContract = new ethers.Contract(
+                    tokenAddress,
+                    ethInfo.symbiotic_info.contracts.Token.abi,
+                    ethereumWallet
+                );
+
+                const operator = await middlewareContract.operatorByKey(operatorAccount.addressRaw);
+                const operatorBalance = await tokenContract.balanceOf(operator);
+                expect(operatorBalance).to.not.be.eq(0n);
+            },
+        });
+        it({
+            id: "T07",
             title: "Native token is transferred to (and from) Ethereum successfully",
             test: async () => {
                 // Wait a few sessions to ensure the token was properly registered on Ethereum
@@ -571,8 +679,26 @@ describeSuite({
                 // Ensure the token has been sent
                 expect(ownerBalanceAfter).to.be.eq(ownerBalanceBefore - amountBackFromETH);
 
-                // Wait a few sessions for the message to be relayed
-                await waitSessions(context, relayApi, 4, null, "Tanssi-relay");
+                // We retrieve the current nonce and wait at most 6 sessions to see the message being relayed
+                const nonceInChannelBefore = await relayApi.query.ethereumInboundQueue.nonce(assetHubChannelId);
+
+                // wait some time for the data to be relayed
+                // As soon as the nonce increases, then we get out
+                await waitSessions(
+                    context,
+                    relayApi,
+                    6,
+                    async () => {
+                        try {
+                            const nonceAfter = await relayApi.query.ethereumInboundQueue.nonce(assetHubChannelId);
+                            expect(nonceAfter.toNumber()).to.not.deep.eq(nonceInChannelBefore.toNumber());
+                        } catch (error) {
+                            return false;
+                        }
+                        return true;
+                    },
+                    "Tanssi-relay"
+                );
 
                 const randomBalanceAfter = (await relayApi.query.system.account(randomAccount.address)).data.free;
 
