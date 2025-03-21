@@ -164,6 +164,10 @@ pub mod pallet {
             active_session_id: SessionIndex,
         ) -> Weight {
             let mut total_weight = T::DbWeight::get().reads_writes(1, 3);
+            // Since this function will be executed in the beginning of a session
+            // we can populate the active collators from the session that just ended (unprocessed_session_id)
+            // before resetting the collators storage for the current session (active_session_id)
+            // without affecting the current session's active collators records
             ActiveCollators::<T>::insert(
                 unprocessed_session_id,
                 <ActiveCollatorsForCurrentSession<T>>::get(),
@@ -202,6 +206,8 @@ pub mod pallet {
 
 impl<T: Config> NodeActivityTrackingHelper<T::CollatorId> for Pallet<T> {
     fn is_node_inactive(node: &T::CollatorId) -> bool {
+        // If EnableInactivityTracking is false all nodes are considered active
+        // and we don't need to check the inactivity records
         if !<EnableInactivityTracking<T>>::get() {
             return false;
         }
