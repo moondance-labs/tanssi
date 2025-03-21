@@ -51,8 +51,8 @@ async function main() {
             process.removeListener("SIGINT", onProcessExit);
         });
 
-        await new Promise(async (resolve, reject) => {
-            const onData = async (data: any) => {
+        await new Promise((resolve, reject) => {
+            const onData = (data: any) => {
                 if (data.includes("Running JSON-RPC server")) {
                     console.log(`Getting ${CHAIN} metadata`);
 

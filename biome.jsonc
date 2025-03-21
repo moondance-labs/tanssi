@@ -35,12 +35,8 @@
     "rules": {
       "recommended": true,
       "suspicious": {
-        "noAsyncPromiseExecutor": "off",
         "noExplicitAny": "off",
         "noShadowRestrictedNames": "off",
-      },
-      "complexity": {
-        "noForEach": "off",
       },
     },
     "ignore": [],
