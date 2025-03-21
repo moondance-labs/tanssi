@@ -2,7 +2,11 @@
   "name": "Dancelight",
   "id": "dancelight",
   "chainType": "Live",
-  "bootNodes": [],
+  "bootNodes": [
+    "/dns4/qco-dancelight-boot-1.rv.dancelight.tanssi.network/tcp/30334/p2p/12D3KooWCekAqk5hv2fZprhqVz8povpUKdJEiHSd3MALVDWNPFzY",
+    "/dns4/qco-dancelight-rpc-1.rv.dancelight.tanssi.network/tcp/30334/p2p/12D3KooWEwhUb3tVR5VhRBEqyH7S5hMpFoGJ9Anf31hGw7gpqoQY",
+    "/dns4/ukl-dancelight-rpc-1.rv.dancelight.tanssi.network/tcp/30334/p2p/12D3KooWPbVtdaGhcuDTTQ8giTUtGTEcUVWRg8SDWGdJEeYeyZcT"
+  ],
   "telemetryEndpoints": null,
   "protocolId": null,
   "properties": {
