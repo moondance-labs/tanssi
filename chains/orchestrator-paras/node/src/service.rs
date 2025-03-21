@@ -234,6 +234,7 @@ pub fn import_queue(
         &node_builder.task_manager.spawn_essential_handle(),
         parachain_config.prometheus_registry(),
         false,
+        false,
     )
     .expect("function never fails");
 
