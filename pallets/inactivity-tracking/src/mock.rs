@@ -100,7 +100,8 @@ impl tp_traits::GetContainerChainsWithCollators<AccountId> for MockContainerChai
     fn set_container_chains_with_collators(
         for_session: ForSession,
         container_chains: &[(ParaId, Vec<AccountId>)],
-    ) { }
+    ) {
+    }
 }
 
 impl pallet_inactivity_tracking::Config for Test {
@@ -113,7 +114,6 @@ impl pallet_inactivity_tracking::Config for Test {
     type GetSelfChainBlockAuthor = ();
     type AuthorityId = sp_runtime::testing::UintAuthorityId;
     type ContainerChainsFetcher = MockContainerChainsInfoFetcher;
-    type SessionEndChecker = ();
 }
 
 pub(crate) struct ExtBuilder;

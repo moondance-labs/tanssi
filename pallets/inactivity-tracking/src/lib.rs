@@ -20,8 +20,7 @@ use {
     sp_staking::SessionIndex,
     tp_traits::{
         AuthorNotingHook, AuthorNotingInfo, ForSession, GetContainerChainsWithCollators,
-        GetRandomnessForNextBlock, GetSessionIndex, MaybeSelfChainBlockAuthor,
-        NodeActivityTrackingHelper, ParaId,
+        GetSessionIndex, MaybeSelfChainBlockAuthor, NodeActivityTrackingHelper, ParaId,
     },
 };
 
@@ -93,9 +92,6 @@ pub mod pallet {
 
         /// Helper that fetches the latest set of container chains and their collators
         type ContainerChainsFetcher: GetContainerChainsWithCollators<Self::CollatorId>;
-
-        /// Helper that allows to check if a new session will start in the next block
-        type SessionEndChecker: GetRandomnessForNextBlock<BlockNumberFor<Self>>;
     }
 
     /// Switch to enable/disable inactivity tracking
@@ -173,12 +169,6 @@ pub mod pallet {
             }
             total_weight
         }
-
-        fn on_finalize(n: BlockNumberFor<T>) {
-            if T::SessionEndChecker::should_end_session(n) {
-                Self::process_inactive_chains_for_session();
-            }
-        }
     }
 
     impl<T: Config> Pallet<T> {
@@ -207,7 +197,7 @@ pub mod pallet {
             total_weight
         }
 
-        fn process_inactive_chains_for_session() {
+        pub fn process_inactive_chains_for_session() {
             let active_chains = <ActiveContainerChainsForCurrentSession<T>>::get();
             let _ = <ActiveCollatorsForCurrentSession<T>>::try_mutate(
                 |active_collators| -> DispatchResult {
@@ -315,7 +305,8 @@ impl<T: pallet_session::Config + Config> OneSessionHandler<T::AccountId> for Pal
     {
     }
     fn on_before_session_ending() {
-        // TODO: Move relevant logic from `on_initialize` and `on_finalize` to here
+        Self::process_inactive_chains_for_session()
+        // TODO: Move relevant logic from `on_initialize` to here
     }
     fn on_disabled(_validator_index: u32) {}
 }

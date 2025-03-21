@@ -1983,8 +1983,7 @@ impl pallet_inactivity_tracking::Config for Runtime {
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type GetSelfChainBlockAuthor = GetSelfChainBlockAuthor;
     type ContainerChainsFetcher = CollatorAssignment;
-    type SessionEndChecker = BabeGetRandomnessForNextBlock;
-    type AuthorityId = nimbus_primitives::NimbusId;
+    type AuthorityId = NimbusId;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
