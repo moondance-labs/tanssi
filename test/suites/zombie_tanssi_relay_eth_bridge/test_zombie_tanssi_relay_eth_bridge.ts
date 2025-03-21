@@ -459,14 +459,13 @@ describeSuite({
                 const currentEra = (await relayApi.query.externalValidators.activeEra()).unwrap().index;
 
                 let eraToAnalyze = currentEra.toNumber();
-                console.log(await operatorRewardContract.eraRoot(eraToAnalyze));
 
+                const DEFAULT_ERA_ROOT = "0x0000000000000000000000000000000000000000000000000000000000000000";
                 // Try to find latest reported era
-                // eraRoot returns a struct of 4 items, the 3rd of which is the era root
+                // eraRoot returns a struct of 5 items, the 4th of which is the era root
                 // we try to retrieve the first non-default one
                 while (
-                    (await operatorRewardContract.eraRoot(eraToAnalyze))[3] ===
-                        "0x0000000000000000000000000000000000000000000000000000000000000000" &&
+                    (await operatorRewardContract.eraRoot(eraToAnalyze))[3] === DEFAULT_ERA_ROOT &&
                     eraToAnalyze >= 0
                 ) {
                     eraToAnalyze--;
