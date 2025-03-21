@@ -35,7 +35,7 @@ fn get_active_collators(block: u32) -> AuthorNotingInfo<AccountId> {
 
 #[test]
 fn enabling_and_disabling_inactivty_tracking_works() {
-    ExtBuilder::default().build().execute_with(|| {
+    ExtBuilder.build().execute_with(|| {
         assert_eq!(EnableInactivityTracking::<Test>::get(), false);
 
         assert_ok!(Pallet::<Test>::set_inactivity_tracking_status(
@@ -54,7 +54,7 @@ fn enabling_and_disabling_inactivty_tracking_works() {
 
 #[test]
 fn enabling_and_disabling_inactivty_tracking_fails_for_non_root() {
-    ExtBuilder::default().build().execute_with(|| {
+    ExtBuilder.build().execute_with(|| {
         assert_noop!(
             Pallet::<Test>::set_inactivity_tracking_status(RuntimeOrigin::signed(COLLATOR_1), true),
             BadOrigin
@@ -64,7 +64,7 @@ fn enabling_and_disabling_inactivty_tracking_fails_for_non_root() {
 
 #[test]
 fn inactivity_tracking_handler_works() {
-    ExtBuilder::default().build().execute_with(|| {
+    ExtBuilder.build().execute_with(|| {
         assert_ok!(Pallet::<Test>::set_inactivity_tracking_status(
             RuntimeOrigin::root(),
             true
@@ -131,7 +131,7 @@ fn inactivity_tracking_handler_works() {
 
 #[test]
 fn active_collators_noting_for_current_session_works() {
-    ExtBuilder::default().build().execute_with(|| {
+    ExtBuilder.build().execute_with(|| {
         let current_session_active_collator_record: BoundedVec<AccountId, ConstU32<5>> =
             BoundedVec::truncate_from(vec![COLLATOR_1]);
         assert_ok!(Pallet::<Test>::set_inactivity_tracking_status(
@@ -160,7 +160,7 @@ fn active_collators_noting_for_current_session_works() {
 
 #[test]
 fn active_chains_noting_for_current_session_works() {
-    ExtBuilder::default().build().execute_with(|| {
+    ExtBuilder.build().execute_with(|| {
         let current_session_active_chain_record: BoundedVec<tp_traits::ParaId, ConstU32<2>> =
             BoundedVec::truncate_from(vec![CONTAINER_CHAIN_ID_1]);
         assert_ok!(Pallet::<Test>::set_inactivity_tracking_status(
@@ -192,7 +192,7 @@ fn active_chains_noting_for_current_session_works() {
 
 #[test]
 fn inactive_chain_collators_are_correctly_processed() {
-    ExtBuilder::default().build().execute_with(|| {
+    ExtBuilder.build().execute_with(|| {
         let current_session_active_collators_record: BoundedVec<AccountId, ConstU32<5>> =
             BoundedVec::truncate_from(vec![COLLATOR_1, COLLATOR_2]);
         assert_ok!(Pallet::<Test>::set_inactivity_tracking_status(
@@ -219,7 +219,7 @@ fn inactive_chain_collators_are_correctly_processed() {
 
 #[test]
 fn inactive_collator_for_active_chain_is_correctly_processed() {
-    ExtBuilder::default().build().execute_with(|| {
+    ExtBuilder.build().execute_with(|| {
         let current_session_active_collator_record: BoundedVec<AccountId, ConstU32<5>> =
             BoundedVec::truncate_from(vec![COLLATOR_1]);
         let current_session_active_chain_record: BoundedVec<tp_traits::ParaId, ConstU32<2>> =
