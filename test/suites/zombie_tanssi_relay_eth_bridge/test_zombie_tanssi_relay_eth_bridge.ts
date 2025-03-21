@@ -21,6 +21,7 @@ import { keccak256 } from "viem";
 
 // Change this if we change the storage parameter in runtime
 const GATEWAY_STORAGE_KEY = "0xaed97c7854d601808b98ae43079dafb3";
+const RESERVE_TRANSFER_FEE = 100000000000;
 
 function execCommand(command: string, options?): Promise<{ stdout: string; stderr: string }> {
     return new Promise((resolve, reject) => {
@@ -80,6 +81,7 @@ describeSuite({
 
         let operatorAccount: KeyringPair;
         let operatorNimbusKey: string;
+        let executionRelay: KeyringPair;
 
         beforeAll(async () => {
             relayApi = context.polkadotJs("Tanssi-relay");
@@ -94,7 +96,7 @@ describeSuite({
             const beaconRelay = keyring.addFromUri("//BeaconRelay", {
                 name: "Beacon relay default",
             });
-            const executionRelay = keyring.addFromUri("//ExecutionRelay", {
+            executionRelay = keyring.addFromUri("//ExecutionRelay", {
                 name: "Execution relay default",
             });
 
@@ -674,7 +676,7 @@ describeSuite({
 
                 const randomAccount = generateKeyringPair("sr25519");
                 const randomBalanceBefore = (await relayApi.query.system.account(randomAccount.address)).data.free;
-                
+                const executionRelayBefore = (await relayApi.query.system.account(executionRelay.address)).data.free;
                 expect(randomBalanceBefore.toBigInt()).to.be.eq(0n);
 
                 // Send the token from Ethereum
@@ -719,17 +721,18 @@ describeSuite({
                     },
                     "Tanssi-relay"
                 );
-                
-                // Ensure relayer was paid
-                const feesAccountBalanceAfterReceiving = (await relayApi.query.system.account(SNOWBRIDGE_FEES_ACCOUNT))
-                    .data.free;
-                expect(feesAccountBalanceAfterReceiving.toNumber()).to.be.lessThanOrEqual(
-                    feesAccountBalanceAfterSending.toNumber()
-                );
 
-                const randomBalanceAfter = (await relayApi.query.system.account(randomAccount.address)).data.free;
+                // Reward is reduced from fees account
+                const feesAccountBalanceAfterReceiving = (await relayApi.query.system.account(SNOWBRIDGE_FEES_ACCOUNT))
+                .data.free;
+                expect(feesAccountBalanceAfterSending.toNumber() - feesAccountBalanceAfterReceiving.toNumber()).to.be.eq(RESERVE_TRANSFER_FEE);
+
+                // Reward is added to execution relay account
+                const executionRelayAfter = (await relayApi.query.system.account(executionRelay.address)).data.free;
+                expect(executionRelayAfter.toNumber()).to.be.greaterThan(executionRelayBefore.toNumber());
 
                 // Ensure the token has been received on the Starlight side
+                const randomBalanceAfter = (await relayApi.query.system.account(randomAccount.address)).data.free;
                 expect(randomBalanceAfter.toBigInt()).to.be.eq(randomBalanceBefore.toBigInt() + amountBackFromETH);
             },
         });
