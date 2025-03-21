@@ -25,6 +25,7 @@ use {
         AccountId, DataPreserversConfig, MaintenanceModeConfig, MigrationsConfig, RegistrarConfig,
         ServicesPaymentConfig, SudoConfig,
     },
+    frame_support::BoundedVec,
     nimbus_primitives::NimbusId,
     pallet_configuration::HostConfiguration,
     sc_service::ChainType,
@@ -292,11 +293,13 @@ fn testnet_genesis(
 
 fn mock_container_chain_genesis_data(para_id: ParaId) -> ContainerChainGenesisData {
     ContainerChainGenesisData {
-        storage: vec![],
-        name: format!("Container Chain {}", para_id).into(),
-        id: format!("container-chain-{}", para_id).into(),
+        storage: BoundedVec::try_from(vec![]).unwrap(),
+        name: BoundedVec::try_from(format!("Container Chain {}", para_id).as_bytes().to_vec())
+            .unwrap(),
+        id: BoundedVec::try_from(format!("container-chain-{}", para_id).as_bytes().to_vec())
+            .unwrap(),
         fork_id: None,
-        extensions: vec![],
+        extensions: BoundedVec::try_from(vec![]).unwrap(),
         properties: Default::default(),
     }
 }

@@ -21,7 +21,7 @@ use {
         tests::common::*, ContainerRegistrar, Paras, Registrar, RuntimeCall, SlotFrequency, System,
     },
     cumulus_primitives_core::relay_chain::HeadData,
-    frame_support::{assert_noop, assert_ok},
+    frame_support::{assert_noop, assert_ok, BoundedVec},
     pallet_registrar::Event as ContainerRegistrarEvent,
     pallet_registrar_runtime_api::{
         runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
@@ -49,19 +49,22 @@ fn registrar_needs_a_reserved_para_id() {
             let validation_code =
                 vec![1u8; cumulus_primitives_core::relay_chain::MIN_CODE_SIZE as usize];
             let genesis_data_2000 = ContainerChainGenesisData {
-                storage: vec![(b":code".to_vec(), validation_code.clone()).into()],
+                storage: BoundedVec::try_from(vec![
+                    (b":code".to_vec(), validation_code.clone()).into()
+                ])
+                .unwrap(),
                 name: Default::default(),
                 id: Default::default(),
                 fork_id: Default::default(),
-                extensions: vec![],
+                extensions: BoundedVec::try_from(vec![]).unwrap(),
                 properties: Default::default(),
             };
             let genesis_data_no_code = ContainerChainGenesisData {
-                storage: vec![(b":code".to_vec(), vec![1u8]).into()],
+                storage: BoundedVec::try_from(vec![(b":code".to_vec(), vec![1u8]).into()]).unwrap(),
                 name: Default::default(),
                 id: Default::default(),
                 fork_id: Default::default(),
-                extensions: vec![],
+                extensions: BoundedVec::try_from(vec![]).unwrap(),
                 properties: Default::default(),
             };
 
@@ -144,11 +147,14 @@ fn register_para_via_container_registrar() {
             let validation_code =
                 vec![1u8; cumulus_primitives_core::relay_chain::MIN_CODE_SIZE as usize];
             let genesis_data_2000 = ContainerChainGenesisData {
-                storage: vec![(b":code".to_vec(), validation_code.clone()).into()],
+                storage: BoundedVec::try_from(vec![
+                    (b":code".to_vec(), validation_code.clone()).into()
+                ])
+                .unwrap(),
                 name: Default::default(),
                 id: Default::default(),
                 fork_id: Default::default(),
-                extensions: vec![],
+                extensions: BoundedVec::try_from(vec![]).unwrap(),
                 properties: Default::default(),
             };
 
@@ -206,11 +212,14 @@ fn cannot_register_para_twice_in_relay() {
             let validation_code =
                 vec![1u8; cumulus_primitives_core::relay_chain::MIN_CODE_SIZE as usize];
             let genesis_data_2000 = ContainerChainGenesisData {
-                storage: vec![(b":code".to_vec(), validation_code.clone()).into()],
+                storage: BoundedVec::try_from(vec![
+                    (b":code".to_vec(), validation_code.clone()).into()
+                ])
+                .unwrap(),
                 name: Default::default(),
                 id: Default::default(),
                 fork_id: Default::default(),
-                extensions: vec![],
+                extensions: BoundedVec::try_from(vec![]).unwrap(),
                 properties: Default::default(),
             };
 
@@ -280,11 +289,14 @@ fn mark_valid_for_collating_converts_to_parachain() {
             let validation_code =
                 vec![1u8; cumulus_primitives_core::relay_chain::MIN_CODE_SIZE as usize];
             let genesis_data_2000 = ContainerChainGenesisData {
-                storage: vec![(b":code".to_vec(), validation_code.clone()).into()],
+                storage: BoundedVec::try_from(vec![
+                    (b":code".to_vec(), validation_code.clone()).into()
+                ])
+                .unwrap(),
                 name: Default::default(),
                 id: Default::default(),
                 fork_id: Default::default(),
-                extensions: vec![],
+                extensions: BoundedVec::try_from(vec![]).unwrap(),
                 properties: Default::default(),
             };
 
@@ -356,11 +368,14 @@ fn deregister_calls_schedule_para_cleanup() {
             let validation_code =
                 vec![1u8; cumulus_primitives_core::relay_chain::MIN_CODE_SIZE as usize];
             let genesis_data_2000 = ContainerChainGenesisData {
-                storage: vec![(b":code".to_vec(), validation_code.clone()).into()],
+                storage: BoundedVec::try_from(vec![
+                    (b":code".to_vec(), validation_code.clone()).into()
+                ])
+                .unwrap(),
                 name: Default::default(),
                 id: Default::default(),
                 fork_id: Default::default(),
-                extensions: vec![],
+                extensions: BoundedVec::try_from(vec![]).unwrap(),
                 properties: Default::default(),
             };
 
@@ -462,11 +477,14 @@ fn deregister_two_paras_in_the_same_block() {
             let validation_code =
                 vec![1u8; cumulus_primitives_core::relay_chain::MIN_CODE_SIZE as usize];
             let genesis_data_2000_and_2001 = ContainerChainGenesisData {
-                storage: vec![(b":code".to_vec(), validation_code.clone()).into()],
+                storage: BoundedVec::try_from(vec![
+                    (b":code".to_vec(), validation_code.clone()).into()
+                ])
+                .unwrap(),
                 name: Default::default(),
                 id: Default::default(),
                 fork_id: Default::default(),
-                extensions: vec![],
+                extensions: BoundedVec::try_from(vec![]).unwrap(),
                 properties: Default::default(),
             };
 
