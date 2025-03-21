@@ -212,16 +212,15 @@ impl<T: Config> NodeActivityTrackingHelper<T::CollatorId> for Pallet<T> {
             return false;
         }
 
-        let current_session = T::CurrentSessionIndex::session_index();
+        let current_session_index = T::CurrentSessionIndex::session_index();
 
         let minimum_sessions_required = T::MaxInactiveSessions::get();
-        if current_session < minimum_sessions_required {
+        if current_session_index < minimum_sessions_required {
             return false;
         }
 
-        for session_index in current_session.saturating_sub(T::MaxInactiveSessions::get())
-            ..current_session.saturating_sub(1u32)
-        {
+        let start_session_index = current_session_index.saturating_sub(minimum_sessions_required);
+        for session_index in start_session_index..current_session_index {
             if <ActiveCollators<T>>::get(session_index).contains(node) {
                 return false;
             }

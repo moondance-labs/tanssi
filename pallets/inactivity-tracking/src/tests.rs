@@ -69,16 +69,16 @@ fn inactivity_tracking_handler_works() {
 
         let max_inactive_sessions: u32 = <Test as Config>::MaxInactiveSessions::get();
 
-        roll_to(max_inactive_sessions as u64 * SESSION_BLOCK_LENGTH);
+        roll_to(max_inactive_sessions as u64 * SESSION_BLOCK_LENGTH + 1);
         assert_eq!(
             <Test as Config>::CurrentSessionIndex::session_index(),
             max_inactive_sessions
         );
 
+        let active_collator = BoundedVec::truncate_from(vec![COLLATOR_1]);
         for session_id in 0..max_inactive_sessions {
-            let active_collators = BoundedVec::truncate_from(vec![COLLATOR_1]);
-            ActiveCollators::<Test>::insert(session_id, active_collators.clone());
-            assert_eq!(ActiveCollators::<Test>::get(session_id), active_collators);
+            ActiveCollators::<Test>::insert(session_id, active_collator.clone());
+            assert_eq!(ActiveCollators::<Test>::get(session_id), active_collator);
         }
 
         assert_eq!(
