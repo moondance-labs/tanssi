@@ -79,7 +79,6 @@ pub type DancelightChainSpec = service::GenericChainSpec<Extensions>;
 pub type DancelightChainSpec = GenericChainSpec;
 
 pub fn dancelight_config() -> Result<DancelightChainSpec, String> {
-    // TODO: insert boot nodes in the config below
     DancelightChainSpec::from_json_bytes(
         &include_bytes!("../chain-specs/dancelight-raw-specs.json")[..],
     )
