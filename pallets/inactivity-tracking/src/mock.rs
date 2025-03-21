@@ -95,6 +95,12 @@ impl tp_traits::GetContainerChainsWithCollators<AccountId> for MockContainerChai
             (CONTAINER_CHAIN_ID_2, vec![]),
         ]
     }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn set_container_chains_with_collators(
+        for_session: ForSession,
+        container_chains: &[(ParaId, Vec<AccountId>)],
+    ) { }
 }
 
 impl pallet_inactivity_tracking::Config for Test {
