@@ -41,12 +41,12 @@ use tp_traits::{BlockNumber, ParaId};
 pub use pallet::*;
 #[frame_support::pallet]
 pub mod pallet {
-    use sp_runtime::RuntimeAppPublic;
     use {
         super::*,
         core::marker::PhantomData,
         frame_support::{pallet_prelude::*, storage::types::StorageMap},
         frame_system::pallet_prelude::*,
+        sp_runtime::RuntimeAppPublic,
     };
 
     #[pallet::pallet]
@@ -106,10 +106,6 @@ pub mod pallet {
     pub type ActiveCollatorsForCurrentSession<T: Config> =
         StorageValue<_, BoundedVec<T::CollatorId, T::MaxCollatorsPerSession>, ValueQuery>;
 
-    /// The last session index for which the inactive collators have not been processed
-    #[pallet::storage]
-    pub type LastUnprocessedSession<T: Config> = StorageValue<_, SessionIndex, ValueQuery>;
-
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
@@ -139,7 +135,7 @@ pub mod pallet {
     #[pallet::hooks]
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         fn on_initialize(_n: BlockNumberFor<T>) -> Weight {
-            let mut total_weight = T::DbWeight::get().reads_writes(1, 0);
+            let mut total_weight = T::DbWeight::get().reads_writes(0, 0);
 
             // Process the orchestrator chain block author (if it exists)
             if let Some(orchestrator_chain_author) = T::GetSelfChainBlockAuthor::get_block_author()
@@ -147,44 +143,31 @@ pub mod pallet {
                 total_weight += Self::on_author_noted(orchestrator_chain_author);
             }
 
-            // Update inactive collator records only after a session has ended
-            let current_session = T::CurrentSessionIndex::session_index();
-            let current_unprocessed_session = <LastUnprocessedSession<T>>::get();
-            if current_unprocessed_session < current_session {
-                total_weight +=
-                    Self::process_ended_session(current_unprocessed_session, current_session);
-            }
             total_weight
         }
     }
 
     impl<T: Config> Pallet<T> {
-        fn process_ended_session(
-            unprocessed_session_id: SessionIndex,
-            active_session_id: SessionIndex,
-        ) -> Weight {
-            let mut total_weight = T::DbWeight::get().reads_writes(1, 3);
+        pub fn process_ended_session() {
+            let current_session_index = T::CurrentSessionIndex::session_index();
             // Since this function will be executed in the beginning of a session
-            // we can populate the active collators from the session that just ended (unprocessed_session_id)
-            // before resetting the collators storage for the current session (active_session_id)
+            // we can populate the active collators from the session that just ended
+            // before resetting the collators storage for the current session
             // without affecting the current session's active collators records
             ActiveCollators::<T>::insert(
-                unprocessed_session_id,
+                current_session_index.saturating_sub(1),
                 <ActiveCollatorsForCurrentSession<T>>::get(),
             );
 
             <ActiveCollatorsForCurrentSession<T>>::put(BoundedVec::new());
 
             // Cleanup active collator info for sessions that are older than the maximum allowed
-            let minimum_sessions_required = T::MaxInactiveSessions::get() + 1;
-            if active_session_id >= minimum_sessions_required {
-                total_weight += T::DbWeight::get().writes(1);
-                let _ = <crate::pallet::ActiveCollators<T>>::remove(
-                    active_session_id - minimum_sessions_required,
+            let minimum_sessions_required_for_cleanup = T::MaxInactiveSessions::get() + 1;
+            if current_session_index >= minimum_sessions_required_for_cleanup {
+                <crate::pallet::ActiveCollators<T>>::remove(
+                    current_session_index - minimum_sessions_required_for_cleanup,
                 );
             }
-            <LastUnprocessedSession<T>>::put(active_session_id);
-            total_weight
         }
         pub fn on_author_noted(author: T::CollatorId) -> Weight {
             let mut total_weight = T::DbWeight::get().reads_writes(1, 0);
@@ -206,8 +189,8 @@ pub mod pallet {
 
 impl<T: Config> NodeActivityTrackingHelper<T::CollatorId> for Pallet<T> {
     fn is_node_inactive(node: &T::CollatorId) -> bool {
-        // If EnableInactivityTracking is false all nodes are considered active
-        // and we don't need to check the inactivity records
+        // If inactivity tracking is not enabled all nodes are considered active.
+        // We don't need to check the inactivity records and can return false
         if !<EnableInactivityTracking<T>>::get() {
             return false;
         }
@@ -254,6 +237,7 @@ impl<T: pallet_session::Config + Config> OneSessionHandler<T::AccountId> for Pal
     where
         I: Iterator<Item = (&'a T::AccountId, Self::Key)> + 'a,
     {
+        Self::process_ended_session();
     }
     fn on_before_session_ending() {
         // TODO: Move relevant logic from `on_initialize` and `on_finalize` to here
