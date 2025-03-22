@@ -87,5 +87,87 @@ describeSuite({
                 }
             },
         });
+
+        it({
+            id: "C03",
+            title: "Slashes should expire after bonding period",
+            test: async () => {
+                const activeEra = (await api.query.externalValidators.activeEra()).unwrap();
+                const bondedDuration = api.consts.externalValidatorSlashes.bondingDuration;
+
+                const firstKeptIndex = activeEra.index.toNumber() - bondedDuration.toNumber();
+
+                const allSlashes = await api.query.externalValidatorSlashes.slashes.entries();
+                const eraIndexes = allSlashes.map((entry) => {
+                    return entry[0].args[0].toNumber();
+                });
+
+                // All slashes era indexes should be newest than the first kept index
+                expect(
+                    eraIndexes.every((eraIndex) => {
+                        return eraIndex >= firstKeptIndex;
+                    })
+                ).toBe(true);
+            },
+        });
+
+        it({
+            id: "C04",
+            title: "Bonded eras should be cleaned after bonding period",
+            test: async () => {
+                const activeEra = (await api.query.externalValidators.activeEra()).unwrap();
+                const bondedDuration = api.consts.externalValidatorSlashes.bondingDuration;
+
+                const firstKeptIndex = activeEra.index.toNumber() - bondedDuration.toNumber();
+                const allBondedEras = await api.query.externalValidatorSlashes.bondedEras();
+
+                // We shouldn't have more bonded eras than the bondedDuration
+                expect(allBondedEras.length).to.be.lessThanOrEqual(bondedDuration.toNumber() + 1);
+
+                // All bondedEras era indexes should be greater or equal than firstKeptIndex
+                expect(
+                    allBondedEras.every((bondedEra) => {
+                        return bondedEra[0].toNumber() >= firstKeptIndex;
+                    })
+                ).toBe(true);
+            },
+        });
+
+        it({
+            id: "C05",
+            title: "Slash message should never contain more than QueuedSlashesProcessedPerBlock",
+            timeout: 600000,
+            test: async () => {
+                let currentEra = (await api.query.externalValidators.activeEra()).unwrap();
+                const bondedDuration = api.consts.externalValidatorSlashes.bondingDuration;
+
+                const lastBondedEra = currentEra.index.toNumber() - bondedDuration.toNumber();
+                const firstBlockNumber = await getCurrentEraStartBlock(api);
+
+                let blockNumber = firstBlockNumber;
+
+                // Go backwards checking for blocks with slashes events
+                log(`Analizing backwards ${bondedDuration} eras blocks`);
+
+                while (currentEra.index.toNumber() > lastBondedEra && blockNumber > 0) {
+                    const getApiCheckpointAtBlock = await api.at(await api.rpc.chain.getBlockHash(blockNumber));
+
+                    // Check for slashes message events
+                    const events = await getApiCheckpointAtBlock.query.system.events();
+                    const slashEvent = events.find((event) => event.event.method === "SlashesMessageSent");
+
+                    if (slashEvent) {
+                        // Check event command slashes is lower than queuedSlashesProcessedPerBlock
+                        const command = slashEvent.event.data.toJSON()[1].reportSlashes.slashes;
+                        const queuedSlashesPerBlock =
+                            await api.consts.externalValidatorSlashes.queuedSlashesProcessedPerBlock;
+                        expect(command.length).to.be.lessThanOrEqual(queuedSlashesPerBlock.toNumber());
+                    }
+
+                    currentEra = (await api.query.externalValidators.activeEra()).unwrap();
+                    blockNumber--;
+                }
+            },
+        });
     },
 });
