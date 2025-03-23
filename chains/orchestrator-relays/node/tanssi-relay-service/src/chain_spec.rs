@@ -80,8 +80,9 @@ pub type DancelightChainSpec = service::GenericChainSpec<Extensions>;
 pub type DancelightChainSpec = GenericChainSpec;
 
 pub fn dancelight_config() -> Result<DancelightChainSpec, String> {
-    DancelightChainSpec::from_json_bytes(&include_bytes!("../chain-specs/rococo.json")[..])
-    // FIXME: Update this to Dancelight.json once it is available
+    DancelightChainSpec::from_json_bytes(
+        &include_bytes!("../chain-specs/dancelight-raw-specs.json")[..],
+    )
 }
 
 /// Dancelight staging testnet config.
