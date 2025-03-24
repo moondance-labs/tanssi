@@ -31,7 +31,7 @@ mod benchmarks {
 
     impl_benchmark_test_suite!(
         InactivityTracking,
-        crate::mock::ExtBuilder::default().build(),
-        crate::mock::Runtime,
+        crate::mock::ExtBuilder.build(),
+        crate::mock::Test,
     );
 }
