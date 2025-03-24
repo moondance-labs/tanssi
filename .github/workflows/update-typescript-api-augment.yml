@@ -1,0 +1,53 @@
+name: Update Typescript API Augment
+
+on:
+  issue_comment:
+    types: [ created ]
+
+jobs:
+  generate-types:
+    if: ${{ github.event.comment.body == '/update-api-augment' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.set-tags.outputs.git_ref }}
+
+      - name: Pnpm
+        uses: pnpm/action-setup@v4.1.0
+        with:
+          version: 9
+
+      - name: "Download binaries"
+        uses: actions/download-artifact@v4
+        with:
+          name: binaries
+          path: target/release
+
+      - name: "Setup Node"
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: "pnpm"
+
+      - name: "Generate Local interfaces"
+        run: |
+          chmod uog+x target/release/tanssi-node
+          chmod uog+x target/release/tanssi-relay
+          cd typescript-api
+          pnpm ci
+          pnpm create-local-interfaces
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Commit and push changes
+        run: |
+          if [[ -n "$(git status --porcelain)" ]]; then
+            git add .
+            git commit -m "Auto-generated TypeScript interfaces"
+            git push origin HEAD:${{ github.head_ref }}
+          fi
