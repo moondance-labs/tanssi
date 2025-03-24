@@ -1999,7 +1999,6 @@ pub type Executive = frame_executive::Executive<
 pub type SignedPayload = generic::SignedPayload<RuntimeCall, TxExtension>;
 
 parameter_types! {
-    pub const DepositAmount: Balance = 100 * UNITS;
     #[derive(Clone)]
     pub const MaxLengthParaIds: u32 = 100u32;
     pub const MaxEncodedGenesisDataSize: u32 = 5_000_000u32; // 5MB
@@ -2115,7 +2114,6 @@ impl pallet_registrar::Config for Runtime {
     type SessionIndex = u32;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type Currency = Balances;
-    type DepositAmount = DepositAmount;
     type RegistrarHooks = DancelightRegistrarHooks;
     type RuntimeHoldReason = RuntimeHoldReason;
 
@@ -2126,6 +2124,7 @@ impl pallet_registrar::Config for Runtime {
         weights::runtime_common_paras_registrar::SubstrateWeight<Runtime>,
     >;
     type WeightInfo = weights::pallet_registrar::SubstrateWeight<Runtime>;
+    type DataDepositPerByte = DataDepositPerByte;
 }
 
 pub struct DancelightRegistrarHooks;

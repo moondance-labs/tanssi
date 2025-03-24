@@ -147,8 +147,11 @@ mod benchmarks {
     fn register(x: Linear<100, 3_000_000>, z: Linear<1, 10>) {
         let storage = max_size_genesis_data(z, x);
 
-        let (caller, _deposit_amount) =
-            create_funded_user::<T>("caller", 0, T::DepositAmount::get());
+        let (caller, _deposit_amount) = create_funded_user::<T>(
+            "caller",
+            0,
+            Pallet::<T>::get_genesis_cost(storage.encoded_size()),
+        );
 
         let para_id = ParaId::from(BASE_PARA_ID);
 
@@ -177,8 +180,11 @@ mod benchmarks {
             .map_err(|_| BenchmarkError::Weightless)?;
         let storage = max_size_genesis_data(z, x);
 
-        let (caller, _deposit_amount) =
-            create_funded_user::<T>("caller", 0, T::DepositAmount::get());
+        let (caller, _deposit_amount) = create_funded_user::<T>(
+            "caller",
+            0,
+            Pallet::<T>::get_genesis_cost(storage.encoded_size()),
+        );
 
         // Uncomment to update blob
         //panic!("caller: {:?}, is_u64? {}", caller.encode(), core::any::TypeId::of::<T::AccountId>() == core::any::TypeId::of::<u64>());
@@ -224,8 +230,11 @@ mod benchmarks {
 
         for i in 0..y {
             // Twice the deposit just in case
-            let (caller, _deposit_amount) =
-                create_funded_user::<T>("caller", i, T::DepositAmount::get());
+            let (caller, _deposit_amount) = create_funded_user::<T>(
+                "caller",
+                i,
+                Pallet::<T>::get_genesis_cost(storage.encoded_size()),
+            );
             let current_para_id = ParaId::from(2010 + i);
             T::InnerRegistrar::prepare_chain_registration(current_para_id, caller.clone());
             Pallet::<T>::register(
@@ -264,8 +273,11 @@ mod benchmarks {
 
         for i in BASE_PARA_ID..(BASE_PARA_ID + y) {
             // Twice the deposit just in case
-            let (caller, _deposit_amount) =
-                create_funded_user::<T>("caller", i, T::DepositAmount::get());
+            let (caller, _deposit_amount) = create_funded_user::<T>(
+                "caller",
+                i,
+                Pallet::<T>::get_genesis_cost(storage.encoded_size()),
+            );
             T::InnerRegistrar::prepare_chain_registration(i.into(), caller.clone());
             Pallet::<T>::register(
                 RawOrigin::Signed(caller.clone()).into(),
@@ -326,8 +338,11 @@ mod benchmarks {
 
         for i in 0..y {
             // Twice the deposit just in case
-            let (caller, _deposit_amount) =
-                create_funded_user::<T>("caller", i, T::DepositAmount::get());
+            let (caller, _deposit_amount) = create_funded_user::<T>(
+                "caller",
+                i,
+                Pallet::<T>::get_genesis_cost(storage.encoded_size()),
+            );
 
             Pallet::<T>::register(
                 RawOrigin::Signed(caller.clone()).into(),
@@ -343,8 +358,11 @@ mod benchmarks {
         assert_eq!(pending_verification_len::<T>(), y as usize);
         assert!(Pallet::<T>::registrar_deposit(ParaId::from(y - 1)).is_some());
 
-        let (caller, _deposit_amount) =
-            create_funded_user::<T>("caller", 0, T::DepositAmount::get());
+        let (caller, _deposit_amount) = create_funded_user::<T>(
+            "caller",
+            0,
+            Pallet::<T>::get_genesis_cost(storage.encoded_size()),
+        );
 
         let blob = benchmark_blob();
         let (relay_parent_storage_root, proof) = blob.sproof_empty;
@@ -382,8 +400,11 @@ mod benchmarks {
 
         for i in 0..y {
             // Twice the deposit just in case
-            let (caller, _deposit_amount) =
-                create_funded_user::<T>("caller", i, T::DepositAmount::get());
+            let (caller, _deposit_amount) = create_funded_user::<T>(
+                "caller",
+                i,
+                Pallet::<T>::get_genesis_cost(storage.encoded_size()),
+            );
             Pallet::<T>::register(
                 RawOrigin::Signed(caller.clone()).into(),
                 i.into(),
@@ -411,8 +432,11 @@ mod benchmarks {
         assert_eq!(Pallet::<T>::registered_para_ids().len(), y as usize);
         assert!(Pallet::<T>::registrar_deposit(ParaId::from(y - 1)).is_some());
 
-        let (caller, _deposit_amount) =
-            create_funded_user::<T>("caller", 0, T::DepositAmount::get());
+        let (caller, _deposit_amount) = create_funded_user::<T>(
+            "caller",
+            0,
+            Pallet::<T>::get_genesis_cost(storage.encoded_size()),
+        );
 
         let blob = benchmark_blob();
         let (relay_parent_storage_root, proof) = blob.sproof_empty;
@@ -461,8 +485,11 @@ mod benchmarks {
         // First loop to fill PendingVerification to its maximum
         for i in BASE_PARA_ID..y {
             // Twice the deposit just in case
-            let (caller, _deposit_amount) =
-                create_funded_user::<T>("caller", i, T::DepositAmount::get());
+            let (caller, _deposit_amount) = create_funded_user::<T>(
+                "caller",
+                i,
+                Pallet::<T>::get_genesis_cost(storage.encoded_size()),
+            );
 
             T::InnerRegistrar::prepare_chain_registration(i.into(), caller.clone());
 
@@ -478,8 +505,11 @@ mod benchmarks {
         // Second loop to fill RegisteredParaIds to its maximum, minus 1 space for the benchmark call
         for k in (BASE_PARA_ID + 1000)..(1000 + y - 1) {
             // Twice the deposit just in case
-            let (caller, _deposit_amount) =
-                create_funded_user::<T>("caller", k, T::DepositAmount::get());
+            let (caller, _deposit_amount) = create_funded_user::<T>(
+                "caller",
+                k,
+                Pallet::<T>::get_genesis_cost(storage.encoded_size()),
+            );
             T::InnerRegistrar::prepare_chain_registration(k.into(), caller.clone());
             Pallet::<T>::register(
                 RawOrigin::Signed(caller.clone()).into(),
@@ -533,8 +563,11 @@ mod benchmarks {
         // Worst case: when RegisteredParaIds and Paused are both full
         // Second loop to fill Paused to its maximum, minus 1 space for the benchmark call
         for k in (BASE_PARA_ID + 1000)..(1000 + y - 1) {
-            let (caller, _deposit_amount) =
-                create_funded_user::<T>("caller", k, T::DepositAmount::get());
+            let (caller, _deposit_amount) = create_funded_user::<T>(
+                "caller",
+                k,
+                Pallet::<T>::get_genesis_cost(storage.encoded_size()),
+            );
             T::InnerRegistrar::prepare_chain_registration(k.into(), caller.clone());
             Pallet::<T>::register(
                 RawOrigin::Signed(caller.clone()).into(),
@@ -550,8 +583,11 @@ mod benchmarks {
         // First loop to fill RegisteredParaIds to its maximum
         for i in BASE_PARA_ID..y {
             // Twice the deposit just in case
-            let (caller, _deposit_amount) =
-                create_funded_user::<T>("caller", i, T::DepositAmount::get());
+            let (caller, _deposit_amount) = create_funded_user::<T>(
+                "caller",
+                i,
+                Pallet::<T>::get_genesis_cost(storage.encoded_size()),
+            );
             T::InnerRegistrar::prepare_chain_registration(i.into(), caller.clone());
             Pallet::<T>::register(
                 RawOrigin::Signed(caller.clone()).into(),
@@ -616,8 +652,11 @@ mod benchmarks {
         // Worst case: when RegisteredParaIds and Paused are both full
         // Second loop to fill Paused to its maximum
         for k in (BASE_PARA_ID + 1000)..(1000 + y) {
-            let (caller, _deposit_amount) =
-                create_funded_user::<T>("caller", k, T::DepositAmount::get());
+            let (caller, _deposit_amount) = create_funded_user::<T>(
+                "caller",
+                k,
+                Pallet::<T>::get_genesis_cost(storage.encoded_size()),
+            );
             T::InnerRegistrar::prepare_chain_registration(k.into(), caller.clone());
             Pallet::<T>::register(
                 RawOrigin::Signed(caller.clone()).into(),
@@ -633,8 +672,11 @@ mod benchmarks {
         // First loop to fill RegisteredParaIds to its maximum, minus 1 space for the benchmark call
         for i in BASE_PARA_ID..(y - 1) {
             // Twice the deposit just in case
-            let (caller, _deposit_amount) =
-                create_funded_user::<T>("caller", i, T::DepositAmount::get());
+            let (caller, _deposit_amount) = create_funded_user::<T>(
+                "caller",
+                i,
+                Pallet::<T>::get_genesis_cost(storage.encoded_size()),
+            );
             T::InnerRegistrar::prepare_chain_registration(i.into(), caller.clone());
             Pallet::<T>::register(
                 RawOrigin::Signed(caller.clone()).into(),
@@ -690,8 +732,11 @@ mod benchmarks {
         let storage = max_size_genesis_data(z, x);
         let slot_frequency = SlotFrequency::default();
 
-        let (caller, _deposit_amount) =
-            create_funded_user::<T>("caller", 0, T::DepositAmount::get());
+        let (caller, _deposit_amount) = create_funded_user::<T>(
+            "caller",
+            0,
+            Pallet::<T>::get_genesis_cost(storage.encoded_size()),
+        );
 
         T::InnerRegistrar::prepare_chain_registration(BASE_PARA_ID.into(), caller.clone());
 
@@ -723,8 +768,11 @@ mod benchmarks {
 
         for i in BASE_PARA_ID..y {
             // Twice the deposit just in case
-            let (caller, _deposit_amount) =
-                create_funded_user::<T>("caller", i, T::DepositAmount::get());
+            let (caller, _deposit_amount) = create_funded_user::<T>(
+                "caller",
+                i,
+                Pallet::<T>::get_genesis_cost(storage.encoded_size()),
+            );
             T::InnerRegistrar::prepare_chain_registration(i.into(), caller.clone());
             Pallet::<T>::register_parathread(
                 RawOrigin::Signed(caller.clone()).into(),

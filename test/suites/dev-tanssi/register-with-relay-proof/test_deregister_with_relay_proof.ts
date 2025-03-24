@@ -129,7 +129,10 @@ describeSuite({
 
                 const balanceAfterAlice = (await polkadotJs.query.system.account(alice.address)).data;
                 const balanceAfterBob = (await polkadotJs.query.system.account(bob.address)).data;
-                const expectedDepositValue = 100000000000000n;
+
+                const onChainGenesisData = await polkadotJs.query.registrar.paraGenesisData(2003);
+                const pricePerByte = 1000000000000n / 30000n;
+                const expectedDepositValue = BigInt(onChainGenesisData.unwrap().toU8a().length) * pricePerByte;
 
                 expect(balanceBeforeAlice.reserved.toBigInt()).to.be.eq(expectedDepositValue);
                 expect(balanceAfterAlice.reserved.toBigInt()).to.be.eq(0n);
