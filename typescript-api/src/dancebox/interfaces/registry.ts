@@ -27,16 +27,11 @@ import type {
     CumulusPrimitivesParachainInherentParachainInherentData,
     CumulusPrimitivesStorageWeightReclaimStorageWeightReclaim,
     DanceboxRuntimeOriginCaller,
-    DanceboxRuntimePreserversAssignmentPaymentExtra,
-    DanceboxRuntimePreserversAssignmentPaymentRequest,
-    DanceboxRuntimePreserversAssignmentPaymentWitness,
     DanceboxRuntimeProxyType,
     DanceboxRuntimeRuntime,
     DanceboxRuntimeRuntimeFreezeReason,
     DanceboxRuntimeRuntimeHoldReason,
     DanceboxRuntimeSessionKeys,
-    DanceboxRuntimeStreamPaymentAssetId,
-    DanceboxRuntimeTimeUnit,
     DanceboxRuntimeXcmConfigRelayChain,
     DpCollatorAssignmentAssignedCollatorsAccountId32,
     DpCollatorAssignmentAssignedCollatorsPublic,
@@ -292,6 +287,11 @@ import type {
     StagingXcmV5TraitsOutcome,
     StagingXcmV5Xcm,
     TpAuthorNotingInherentOwnParachainInherentData,
+    TpDataPreserversCommonAssignerExtra,
+    TpDataPreserversCommonAssignmentWitness,
+    TpDataPreserversCommonProviderRequest,
+    TpStreamPaymentCommonAssetId,
+    TpStreamPaymentCommonTimeUnit,
     TpTraitsContainerChainBlockInfo,
     TpTraitsFullRotationMode,
     TpTraitsFullRotationModes,
@@ -352,16 +352,11 @@ declare module "@polkadot/types/types/registry" {
         CumulusPrimitivesParachainInherentParachainInherentData: CumulusPrimitivesParachainInherentParachainInherentData;
         CumulusPrimitivesStorageWeightReclaimStorageWeightReclaim: CumulusPrimitivesStorageWeightReclaimStorageWeightReclaim;
         DanceboxRuntimeOriginCaller: DanceboxRuntimeOriginCaller;
-        DanceboxRuntimePreserversAssignmentPaymentExtra: DanceboxRuntimePreserversAssignmentPaymentExtra;
-        DanceboxRuntimePreserversAssignmentPaymentRequest: DanceboxRuntimePreserversAssignmentPaymentRequest;
-        DanceboxRuntimePreserversAssignmentPaymentWitness: DanceboxRuntimePreserversAssignmentPaymentWitness;
         DanceboxRuntimeProxyType: DanceboxRuntimeProxyType;
         DanceboxRuntimeRuntime: DanceboxRuntimeRuntime;
         DanceboxRuntimeRuntimeFreezeReason: DanceboxRuntimeRuntimeFreezeReason;
         DanceboxRuntimeRuntimeHoldReason: DanceboxRuntimeRuntimeHoldReason;
         DanceboxRuntimeSessionKeys: DanceboxRuntimeSessionKeys;
-        DanceboxRuntimeStreamPaymentAssetId: DanceboxRuntimeStreamPaymentAssetId;
-        DanceboxRuntimeTimeUnit: DanceboxRuntimeTimeUnit;
         DanceboxRuntimeXcmConfigRelayChain: DanceboxRuntimeXcmConfigRelayChain;
         DpCollatorAssignmentAssignedCollatorsAccountId32: DpCollatorAssignmentAssignedCollatorsAccountId32;
         DpCollatorAssignmentAssignedCollatorsPublic: DpCollatorAssignmentAssignedCollatorsPublic;
@@ -617,6 +612,11 @@ declare module "@polkadot/types/types/registry" {
         StagingXcmV5TraitsOutcome: StagingXcmV5TraitsOutcome;
         StagingXcmV5Xcm: StagingXcmV5Xcm;
         TpAuthorNotingInherentOwnParachainInherentData: TpAuthorNotingInherentOwnParachainInherentData;
+        TpDataPreserversCommonAssignerExtra: TpDataPreserversCommonAssignerExtra;
+        TpDataPreserversCommonAssignmentWitness: TpDataPreserversCommonAssignmentWitness;
+        TpDataPreserversCommonProviderRequest: TpDataPreserversCommonProviderRequest;
+        TpStreamPaymentCommonAssetId: TpStreamPaymentCommonAssetId;
+        TpStreamPaymentCommonTimeUnit: TpStreamPaymentCommonTimeUnit;
         TpTraitsContainerChainBlockInfo: TpTraitsContainerChainBlockInfo;
         TpTraitsFullRotationMode: TpTraitsFullRotationMode;
         TpTraitsFullRotationModes: TpTraitsFullRotationModes;

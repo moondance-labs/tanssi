@@ -129,7 +129,7 @@ declare module "@polkadot/api-base/types/errors" {
         };
         dataPreservers: {
             /**
-             * Made for `AssignmentPayment` implementors to report a mismatch between
+             * Made for `AssignmentProcessor` implementors to report a mismatch between
              * `ProviderRequest` and `AssignerParameter`.
              **/
             AssignmentPaymentRequestParameterMismatch: AugmentedError<ApiType>;

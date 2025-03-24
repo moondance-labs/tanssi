@@ -133,7 +133,7 @@ impl RelayStorageRootProvider for MockRelayStorageRootProvider {
 }
 
 parameter_types! {
-    pub const DepositAmount: Balance = 100;
+    pub const DataDepositPerByte: Balance = 1;
 }
 impl pallet_registrar::Config for Test {
     type RuntimeEvent = RuntimeEvent;
@@ -147,11 +147,11 @@ impl pallet_registrar::Config for Test {
     type SessionIndex = u32;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type Currency = Balances;
-    type DepositAmount = DepositAmount;
     type RuntimeHoldReason = RuntimeHoldReason;
     type RegistrarHooks = Mock;
     type InnerRegistrar = Mock;
     type WeightInfo = ();
+    type DataDepositPerByte = DataDepositPerByte;
 }
 
 // Pallet to provide some mock data, used to test
@@ -349,12 +349,16 @@ pub const BOB: u64 = 2;
 
 // Build genesis storage according to the mock runtime.
 pub fn new_test_ext() -> sp_io::TestExternalities {
+    new_test_ext_with_balance(1_000)
+}
+
+pub fn new_test_ext_with_balance(balance: Balance) -> sp_io::TestExternalities {
     let mut t = frame_system::GenesisConfig::<Test>::default()
         .build_storage()
         .unwrap();
 
     pallet_balances::GenesisConfig::<Test> {
-        balances: vec![(ALICE, 1_000), (BOB, 1_000)],
+        balances: vec![(ALICE, balance), (BOB, balance)],
     }
     .assimilate_storage(&mut t)
     .unwrap();

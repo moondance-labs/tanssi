@@ -36,7 +36,7 @@ use {
         Command, Destination, MessageProcessor, MessageV1, VersionedXcmMessage,
     },
     sp_core::{H160, H256},
-    sp_runtime::{traits::MaybeEquivalence, TokenError},
+    sp_runtime::{traits::MaybeEquivalence, FixedU128, TokenError},
     sp_std::vec,
     xcm::{latest::Location, VersionedLocation},
 };
@@ -717,6 +717,115 @@ fn can_process_message_returns_false_for_wrong_message_type() {
             )
         );
     });
+}
+
+#[test]
+fn test_pricing_parameters() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+            let token_location: VersionedLocation = Location::here().into();
+
+            assert_ok!(EthereumSystem::register_token(
+                root_origin(),
+                Box::new(token_location),
+                snowbridge_core::AssetMetadata {
+                    name: "dance".as_bytes().to_vec().try_into().unwrap(),
+                    symbol: "dance".as_bytes().to_vec().try_into().unwrap(),
+                    decimals: 12,
+                }
+            ));
+
+            run_to_block(4);
+            let channel_id = ChannelId::new([5u8; 32]);
+            let agent_id = AgentId::from_low_u64_be(10);
+            let para_id: ParaId = 2000u32.into();
+
+            assert_ok!(EthereumTokenTransfers::set_token_transfer_channel(
+                root_origin(),
+                channel_id,
+                agent_id,
+                para_id
+            ));
+
+            let amount_to_transfer = 100 * UNIT;
+            let recipient = H160::random();
+
+            assert_ok!(EthereumTokenTransfers::transfer_native_token(
+                origin_of(AccountId::from(ALICE)),
+                amount_to_transfer,
+                recipient
+            ));
+
+            let mut first_fee_found = 0u128;
+
+            let token_transfer_event = System::events()
+                .iter()
+                .filter(|r| match &r.event {
+                    RuntimeEvent::EthereumTokenTransfers(
+                        pallet_ethereum_token_transfers::Event::NativeTokenTransferred {
+                            fee, ..
+                        },
+                    ) => {
+                        first_fee_found = *fee;
+                        true
+                    }
+                    _ => false,
+                })
+                .count();
+
+            assert_eq!(
+                token_transfer_event, 1,
+                "NativeTokenTransferred event should be emitted!"
+            );
+
+            assert_eq!(
+                Balances::free_balance(SnowbridgeFeesAccount::get()),
+                first_fee_found
+            );
+
+            let mut pricing_parameters =
+                snowbridge_pallet_system::PricingParameters::<Runtime>::get();
+            pricing_parameters.multiplier = FixedU128::from_rational(2, 1);
+
+            snowbridge_pallet_system::PricingParameters::<Runtime>::set(pricing_parameters.clone());
+
+            assert_ok!(EthereumTokenTransfers::transfer_native_token(
+                origin_of(AccountId::from(ALICE)),
+                amount_to_transfer,
+                recipient
+            ));
+
+            let mut second_fee_found = 0u128;
+
+            System::events().iter().for_each(|r| {
+                if let RuntimeEvent::EthereumTokenTransfers(
+                    pallet_ethereum_token_transfers::Event::NativeTokenTransferred { fee, .. },
+                ) = &r.event
+                {
+                    second_fee_found = *fee;
+                }
+            });
+
+            // Check the relation between two fees is the pricing parameters multiplier
+            assert!(
+                FixedU128::from_rational(second_fee_found.div_ceil(first_fee_found), 1)
+                    == pricing_parameters.multiplier
+            );
+
+            assert_eq!(
+                Balances::free_balance(SnowbridgeFeesAccount::get()),
+                first_fee_found + second_fee_found
+            );
+        });
 }
 
 fn create_valid_payload() -> Vec<u8> {
