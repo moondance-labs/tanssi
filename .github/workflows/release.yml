@@ -409,7 +409,7 @@ jobs:
           git diff --exit-code || (echo "There are uncommitted changes after running typegen script.\n Please make sure to run the command before pushing." && exit 1)
         continue-on-error: true
       - name: Leave comment on failure
-        if: ${{ failure() }}
+        if: failure()
         uses: peter-evans/create-or-update-comment@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
