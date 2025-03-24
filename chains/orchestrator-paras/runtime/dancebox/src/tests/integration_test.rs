@@ -47,7 +47,8 @@ use {
     sp_std::vec,
     tanssi_runtime_common::migrations::{
         HostConfigurationV3, MigrateConfigurationAddFullRotationMode,
-        MigrateServicesPaymentAddCollatorAssignmentCredits, RegistrarPendingVerificationValueToMap,
+        MigratePooledStakingGenerateSummaries, MigrateServicesPaymentAddCollatorAssignmentCredits,
+        RegistrarPendingVerificationValueToMap,
     },
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
     tp_stream_payment_common::{
@@ -6215,6 +6216,99 @@ fn test_migration_stream_payment_config_new_fields() {
             }
         );
     })
+}
+
+#[test]
+fn test_migration_pooled_staking_summaries() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            use pallet_pooled_staking::{
+                CandidateSummaries, CandidateSummary,
+                DelegatorCandidateSummaries, DelegatorCandidateSummary, Pools, PoolsKey,
+            };
+
+            // We'll write directly shares to storage, then run the migrations and
+            // checks the summaries matches.
+
+            let alice = AccountId::from(ALICE);
+            let bob = AccountId::from(BOB);
+            let charlie = AccountId::from(CHARLIE);
+
+            Pools::<Runtime>::insert(
+                alice.clone(),
+                PoolsKey::JoiningShares {
+                    delegator: alice.clone(),
+                },
+                42,
+            );
+            Pools::<Runtime>::insert(
+                alice.clone(),
+                PoolsKey::AutoCompoundingShares {
+                    delegator: bob.clone(),
+                },
+                42,
+            );
+
+            Pools::<Runtime>::insert(
+                bob.clone(),
+                PoolsKey::ManualRewardsShares {
+                    delegator: alice.clone(),
+                },
+                42,
+            );
+
+            // let's test 0 value is ignored
+            Pools::<Runtime>::insert(
+                bob.clone(),
+                PoolsKey::ManualRewardsShares {
+                    delegator: charlie.clone(),
+                },
+                0,
+            );
+
+            // Run migration
+            let migration = MigratePooledStakingGenerateSummaries::<Runtime>(Default::default());
+            migration.migrate(Default::default());
+
+            // Check output
+            assert_eq!(CandidateSummaries::<Runtime>::iter().count(), 2);
+            assert_eq!(
+                CandidateSummaries::<Runtime>::get(&alice),
+                CandidateSummary {
+                    delegators: 2,
+                    joining_delegators: 1,
+                    auto_compounding_delegators: 1,
+                    ..Default::default()
+                }
+            );
+            assert_eq!(
+                CandidateSummaries::<Runtime>::get(&bob),
+                CandidateSummary {
+                    delegators: 1,
+                    manual_rewards_delegators: 1,
+                    ..Default::default()
+                }
+            );
+
+            assert_eq!(DelegatorCandidateSummaries::<Runtime>::iter().count(), 3);
+            assert_eq!(
+                DelegatorCandidateSummaries::<Runtime>::get(&alice, &alice),
+                DelegatorCandidateSummary::default().with_joining(true)
+            );
+            assert_eq!(
+                DelegatorCandidateSummaries::<Runtime>::get(&alice, &bob),
+                DelegatorCandidateSummary::default().with_manual(true)
+            );
+            assert_eq!(
+                DelegatorCandidateSummaries::<Runtime>::get(&bob, &alice),
+                DelegatorCandidateSummary::default().with_auto(true)
+            );
+        });
 }
 
 #[test]

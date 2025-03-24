@@ -47,6 +47,9 @@ mod tests;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
+#[cfg(feature = "migrations")]
+pub mod migrations;
+
 pub mod weights;
 use frame_support::pallet;
 pub use weights::WeightInfo;
