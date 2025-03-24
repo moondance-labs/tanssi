@@ -346,7 +346,7 @@ where
         .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))
     }
 
-    /// Given an import queue, calls `cumulus_client_service::build_network` and
+    /// Given an import queue, calls [`cumulus_client_service::build_network`] and
     /// stores the returned objects in `self.network` and `self.tx_handler_controller`.
     ///
     /// Can only be called once on a `NodeBuilder` that doesn't have yet network
