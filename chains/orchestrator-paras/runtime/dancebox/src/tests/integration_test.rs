@@ -6228,8 +6228,8 @@ fn test_migration_pooled_staking_summaries() {
         .build()
         .execute_with(|| {
             use pallet_pooled_staking::{
-                CandidateSummaries, CandidateSummary,
-                DelegatorCandidateSummaries, DelegatorCandidateSummary, Pools, PoolsKey,
+                CandidateSummaries, CandidateSummary, DelegatorCandidateSummaries,
+                DelegatorCandidateSummary, Pools, PoolsKey,
             };
 
             // We'll write directly shares to storage, then run the migrations and
