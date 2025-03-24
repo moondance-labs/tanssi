@@ -8,7 +8,7 @@ import { jumpToBlock } from "utils";
 import { encodeAddress } from "@polkadot/util-crypto";
 
 describeSuite({
-    id: "DEV0806",
+    id: "DEVT1806",
     title: "Pooled staking summaries",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -54,7 +54,7 @@ describeSuite({
                 await context.createBlock([await tx3.signAsync(bob)]);
 
                 // Jump to execute 1 delegation from alice
-                await jumpToBlock(context, 2 * sessionPeriod + 1);
+                await jumpToBlock(context, 2 * sessionPeriod + 2);
 
                 const tx4 = polkadotJs.tx.pooledStaking.executePendingOperations([
                     {
