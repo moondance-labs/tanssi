@@ -5,7 +5,7 @@ on:
     types: [ created ]
 
 jobs:
-  generate-types:
+  update_typescript_api_augment:
     if: ${{ github.event.comment.body == '/update-api-augment' }}
     runs-on: ubuntu-latest
     steps:
