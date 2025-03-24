@@ -11,15 +11,16 @@ set -e
 # However we can use any binary by running the benchmark tool with
 # BINARY=./target/release/container-chain-simple-node ./tools/benchmarking.sh
 if [[ -z "${BINARY}" ]]; then
-    BINARY="./target/release/tanssi-node"
+    BINARY="frame-omni-bencher v1"
 else
     BINARY="${BINARY}"
 fi
 
-if [[ -z "${CHAIN}" ]]; then
-    CHAIN="dev"
+if [[ -z "${RUNTIME}" ]]; then
+    echo "Missing RUNTIME arg"
+    exit 1
 else
-    CHAIN="${CHAIN}"
+    RUNTIME="${RUNTIME}"
 fi
 
 if [[ -z "${OUTPUT_PATH}" ]]; then
@@ -38,11 +39,11 @@ fi
 STEPS=50
 REPEAT=20
 
-if [[ ! -f "${BINARY}" ]]; then
-    echo "binary '${BINARY}' does not exist."
-    echo "ensure that the tanssi binary is compiled with '--features=runtime-benchmarks' and in production mode."
-    exit 1
-fi
+#if [[ ! -f "${BINARY}" ]]; then
+#    echo "binary '${BINARY}' does not exist."
+#    echo "ensure that the tanssi binary is compiled with '--features=runtime-benchmarks' and in production mode."
+#    exit 1
+#fi
 
 function help {
     echo "USAGE:"
@@ -108,7 +109,7 @@ function bench {
             --wasm-execution=compiled \
             --pallet "$PALLET" \
             --extrinsic "*" \
-            --chain="${CHAIN}" \
+            --runtime="${RUNTIME}" \
             --steps "${STEPS}" \
             --repeat "${REPEAT}" \
             --template="${TEMPLATE_TO_USE}" \
@@ -132,7 +133,7 @@ function bench {
             --wasm-execution=compiled \
             --pallet "${1}" \
             --extrinsic "${2}" \
-            --chain="${CHAIN}" \
+            --runtime="${RUNTIME}" \
             --steps "${STEPS}" \
             --repeat "${REPEAT}" \
             --template="${TEMPLATE_TO_USE}" \
