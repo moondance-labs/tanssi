@@ -1564,11 +1564,6 @@ declare module "@polkadot/api-base/types/storage" {
             enableInactivityTracking: AugmentedQuery<ApiType, () => Observable<bool>, []> &
                 QueryableStorageEntry<ApiType, []>;
             /**
-             * The last session index for which the inactive collators have not been processed
-             **/
-            lastUnprocessedSession: AugmentedQuery<ApiType, () => Observable<u32>, []> &
-                QueryableStorageEntry<ApiType, []>;
-            /**
              * Generic query
              **/
             [key: string]: QueryableStorageEntry<ApiType>;
