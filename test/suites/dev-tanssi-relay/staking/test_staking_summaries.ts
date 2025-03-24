@@ -86,16 +86,28 @@ describeSuite({
                 });
                 expect(ev.length).to.be.equal(1);
 
-                // Query list 
+                // Query list
                 const keys = await polkadotJs.query.pooledStaking.delegatorCandidateSummaries.keys(alice.addressRaw);
                 expect(keys.length).to.be.equal(2);
 
-                const delegationCandidates = keys.map( ({ args: [_delegator, candidate] }) => candidate);
+                const delegationCandidates = keys.map(({ args: [_delegator, candidate] }) => candidate);
                 expect(delegationCandidates).to.deep.eq([bob.addressRaw, alice.addressRaw]);
 
-                expect((await polkadotJs.query.pooledStaking.delegatorCandidateSummaries(alice.address, alice.address)).toJSON()).to.eq(2); // auto bitmask
-                expect((await polkadotJs.query.pooledStaking.delegatorCandidateSummaries(alice.address, bob.address)).toJSON()).to.eq(1); // joining bitmask
-                expect((await polkadotJs.query.pooledStaking.delegatorCandidateSummaries(bob.address, bob.address)).toJSON()).to.eq(4); // manual bitmask
+                expect(
+                    (
+                        await polkadotJs.query.pooledStaking.delegatorCandidateSummaries(alice.address, alice.address)
+                    ).toJSON()
+                ).to.eq(2); // auto bitmask
+                expect(
+                    (
+                        await polkadotJs.query.pooledStaking.delegatorCandidateSummaries(alice.address, bob.address)
+                    ).toJSON()
+                ).to.eq(1); // joining bitmask
+                expect(
+                    (
+                        await polkadotJs.query.pooledStaking.delegatorCandidateSummaries(bob.address, bob.address)
+                    ).toJSON()
+                ).to.eq(4); // manual bitmask
 
                 // Query candidate summaries
                 const aliceSummary = await polkadotJs.query.pooledStaking.candidateSummaries(alice.addressRaw);
@@ -104,7 +116,7 @@ describeSuite({
                     joiningDelegators: 0,
                     autoCompoundingDelegators: 1,
                     manualRewardsDelegators: 0,
-                    leavingDelegators: 0
+                    leavingDelegators: 0,
                 });
 
                 const bobSummary = await polkadotJs.query.pooledStaking.candidateSummaries(bob.addressRaw);
@@ -113,7 +125,7 @@ describeSuite({
                     joiningDelegators: 1,
                     autoCompoundingDelegators: 0,
                     manualRewardsDelegators: 1,
-                    leavingDelegators: 0
+                    leavingDelegators: 0,
                 });
             },
         });
