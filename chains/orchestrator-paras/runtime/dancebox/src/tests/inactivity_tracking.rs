@@ -20,7 +20,10 @@ use {
     crate::tests::common::*,
     frame_support::{assert_ok, traits::Get},
     pallet_inactivity_tracking::pallet::{ActiveCollators, ActiveCollatorsForCurrentSession},
-    tp_traits::{AuthorNotingHook, AuthorNotingInfo, NodeActivityTrackingHelper, ParaId},
+    tp_traits::{
+        AuthorNotingHook, AuthorNotingInfo, MaybeSelfChainBlockAuthor, NodeActivityTrackingHelper,
+        ParaId,
+    },
 };
 
 fn get_author_noting_info(
@@ -60,7 +63,10 @@ fn inactivity_tracking_correctly_updates_storages() {
             ));
 
             run_block();
-            note_block_authors(vec![(ALICE.into(), 3000.into()), (BOB.into(), 3001.into())]);
+            note_block_authors(vec![(ALICE.into(), 3000.into()), (CHARLIE.into(), 3001.into())]);
+            
+            assert_eq!(<Runtime as pallet_inactivity_tracking::Config>::GetSelfChainBlockAuthor::get_block_author(), Some(BOB.into()));
+            
             assert_eq!(
                 <ActiveCollatorsForCurrentSession<Runtime>>::get().contains(&ALICE.into()),
                 true
@@ -69,10 +75,18 @@ fn inactivity_tracking_correctly_updates_storages() {
                 <ActiveCollatorsForCurrentSession<Runtime>>::get().contains(&BOB.into()),
                 true
             );
-            assert_eq!(<ActiveCollatorsForCurrentSession<Runtime>>::get().len(), 2);
+            assert_eq!(
+                <ActiveCollatorsForCurrentSession<Runtime>>::get().contains(&CHARLIE.into()),
+                true
+            );
+            assert_eq!(
+                <ActiveCollatorsForCurrentSession<Runtime>>::get().contains(&DAVE.into()),
+                false
+            );
+            assert_eq!(<ActiveCollatorsForCurrentSession<Runtime>>::get().len(), 3);
 
             run_block();
-            note_block_authors(vec![(ALICE.into(), 3000.into()), (BOB.into(), 3001.into())]);
+            note_block_authors(vec![(ALICE.into(), 3000.into())]);
             assert_eq!(
                 <ActiveCollatorsForCurrentSession<Runtime>>::get().contains(&ALICE.into()),
                 true
@@ -81,7 +95,15 @@ fn inactivity_tracking_correctly_updates_storages() {
                 <ActiveCollatorsForCurrentSession<Runtime>>::get().contains(&BOB.into()),
                 true
             );
-            assert_eq!(<ActiveCollatorsForCurrentSession<Runtime>>::get().len(), 2);
+            assert_eq!(
+                <ActiveCollatorsForCurrentSession<Runtime>>::get().contains(&CHARLIE.into()),
+                true
+            );
+            assert_eq!(
+                <ActiveCollatorsForCurrentSession<Runtime>>::get().contains(&DAVE.into()),
+                false
+            );
+            assert_eq!(<ActiveCollatorsForCurrentSession<Runtime>>::get().len(), 3);
 
             run_to_session(1);
             run_block();
@@ -96,7 +118,7 @@ fn inactivity_tracking_correctly_updates_storages() {
             );
             assert_eq!(
                 <ActiveCollators<Runtime>>::get(0).contains(&CHARLIE.into()),
-                false
+                true
             );
             assert_eq!(
                 <ActiveCollators<Runtime>>::get(0).contains(&DAVE.into()),
@@ -104,25 +126,18 @@ fn inactivity_tracking_correctly_updates_storages() {
             );
             assert_eq!(<ActiveCollatorsForCurrentSession<Runtime>>::get().len(), 0);
 
-            note_block_authors(vec![(ALICE.into(), 3000.into()), (BOB.into(), 3001.into())]);
+            note_block_authors(vec![(CHARLIE.into(), 3000.into())]);
             assert_eq!(
-                <ActiveCollatorsForCurrentSession<Runtime>>::get().contains(&ALICE.into()),
-                true
-            );
-            assert_eq!(
-                <ActiveCollatorsForCurrentSession<Runtime>>::get().contains(&BOB.into()),
+                <ActiveCollatorsForCurrentSession<Runtime>>::get().contains(&CHARLIE.into()),
                 true
             );
             assert_eq!(<ActiveCollatorsForCurrentSession<Runtime>>::get().len(), 2);
-
-            run_block();
-            // TO DO: Emulate orchestrator chain block author noting for CHARLIE
 
             run_to_session(2);
             run_block();
 
             assert_eq!(
-                <ActiveCollators<Runtime>>::get(1).contains(&ALICE.into()),
+                <ActiveCollators<Runtime>>::get(1).contains(&CHARLIE.into()),
                 true
             );
             assert_eq!(
@@ -131,6 +146,10 @@ fn inactivity_tracking_correctly_updates_storages() {
             );
             assert_eq!(
                 <ActiveCollators<Runtime>>::get(1).contains(&DAVE.into()),
+                false
+            );
+            assert_eq!(
+                <ActiveCollators<Runtime>>::get(1).contains(&ALICE.into()),
                 false
             );
             assert_eq!(<ActiveCollatorsForCurrentSession<Runtime>>::get().len(), 0);
