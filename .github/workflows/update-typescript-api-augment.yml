@@ -1,4 +1,4 @@
-name: Update Typescript API Augment
+name: Update Typescript API Augment by Comment Command
 
 on:
   issue_comment:
@@ -13,9 +13,16 @@ permissions:
 
 jobs:
   update_typescript_api_augment:
+    env:
+      TMP_TARGET: "/tmp/target"
+      CARGO_TARGET_DIR: "target"
+      RUSTC_WRAPPER: "sccache"
+      CARGO_INCREMENTAL: "0"
+      SCCACHE_CACHE_SIZE: "100GB"
+      SCCACHE_GHA_ENABLED: "true"
     # TODO: Test once it merged to main
     #    if: ${{ github.event.comment.body && contains(github.event.comment.body, '/update-api-augment') }}
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - name: Check Permission via GraphQL
         env:
