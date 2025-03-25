@@ -43,6 +43,7 @@ pub use pallet::*;
 pub mod pallet {
     use {
         super::*,
+        crate::weights::WeightInfo,
         core::marker::PhantomData,
         frame_support::{pallet_prelude::*, storage::types::StorageMap},
         frame_system::pallet_prelude::*,
@@ -85,6 +86,9 @@ pub mod pallet {
 
         /// Helper that returns the block author for the orchestrator chain (if it exists)
         type GetSelfChainBlockAuthor: MaybeSelfChainBlockAuthor<Self::CollatorId>;
+
+        /// The weight information of this pallet.
+        type WeightInfo: WeightInfo;
     }
 
     /// Switch to enable/disable inactivity tracking
@@ -120,7 +124,7 @@ pub mod pallet {
     #[pallet::call]
     impl<T: Config> Pallet<T> {
         #[pallet::call_index(0)]
-        #[pallet::weight(T::DbWeight::get().reads_writes(0, 1))]
+        #[pallet::weight(T::WeightInfo::set_inactivity_tracking_status())]
         pub fn set_inactivity_tracking_status(
             origin: OriginFor<T>,
             is_enabled: bool,

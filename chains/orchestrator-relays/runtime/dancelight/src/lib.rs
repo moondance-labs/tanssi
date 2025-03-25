@@ -1827,6 +1827,7 @@ impl pallet_inactivity_tracking::Config for Runtime {
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type GetSelfChainBlockAuthor = ();
     type AuthorityId = nimbus_primitives::NimbusId;
+    type WeightInfo = ();
 }
 
 construct_runtime! {

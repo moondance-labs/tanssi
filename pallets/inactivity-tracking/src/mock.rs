@@ -93,6 +93,7 @@ impl pallet_inactivity_tracking::Config for Test {
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type GetSelfChainBlockAuthor = ();
     type AuthorityId = sp_runtime::testing::UintAuthorityId;
+    type WeightInfo = ();
 }
 
 pub(crate) struct ExtBuilder;
