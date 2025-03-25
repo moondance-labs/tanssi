@@ -23,6 +23,8 @@ jobs:
         run: |
           query='{  "query": "query CollaboratorPermission($owner: String!, $repo: String!, $collaborator: String) { repository(owner: $owner, name: $repo) {       collaborators(login: $collaborator) {         edges {           permission         }       }     }   }",  "variables": {    "owner": "'"$OWNER"'",    "repo": "'"$REPO"'",    "collaborator": "'"$COLLABORATOR"'" } }'
 
+          echo "query: $query"
+
           response=$(curl -s -X POST \
             -H "Authorization: bearer $GITHUB_TOKEN" \
             -d "$query" \
