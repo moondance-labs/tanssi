@@ -21,18 +21,18 @@ jobs:
           REPO: tanssi
           COLLABORATOR: ${{ github.actor }}
         run: |
-          query='
-          query {
-            repository(owner: "'"$OWNER"'", name: "'"$REPO"'") {
-              collaborators(login: "'"$COLLABORATOR"'") {
+          query="{
+            repository(owner: \"$OWNER\", name: \"$REPO\") {
+              collaborators(login: \"$COLLABORATOR\") {
                 edges {
                   permission
                 }
               }
             }
-          }'
+          }"
 
-          response=$(curl -s -X POST -H "Authorization: bearer $GITHUB_TOKEN" \
+          response=$(curl -s -X POST \
+            -H "Authorization: bearer $GITHUB_TOKEN" \
             -H "Content-Type: application/json" \
             -d "{\"query\": \"$query\"}" \
             https://api.github.com/graphql)
