@@ -80,7 +80,8 @@ jobs:
       - name: Commit and push changes
         run: |
           if [[ -n "$(git status --porcelain)" ]]; then
+            cd typescript-api
             git add .
             git commit -m "Auto-generated TypeScript interfaces"
-            git push origin HEAD:${{ github.head_ref }}
+            git push -u origin $(git branch --show-current)
           fi
