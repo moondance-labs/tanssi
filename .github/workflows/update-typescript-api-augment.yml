@@ -17,13 +17,38 @@ jobs:
     #    if: ${{ github.event.comment.body && contains(github.event.comment.body, '/update-api-augment') }}
     runs-on: ubuntu-latest
     steps:
-      - name: Check if organization member
-        id: is_organization_member
-        uses: JamesSingleton/is-organization-member@1.0.0
-        with:
-          organization: moondance-labs
-          username: ${{ github.actor }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Check Permission via GraphQL
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OWNER: moondance-labs
+          REPO: tanssi
+          COLLABORATOR: ${{ github.actor }}
+        run: |
+          query='query {
+            repository(owner:"$OWNER", name:"$REPO") {
+              collaborators(login:"$COLLABORATOR") {
+                edges {
+                  permission
+                }
+              }
+            }
+          }'
+
+          response=$(curl -s -X POST -H "Authorization: bearer $GITHUB_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"query\": \"$query\"}" \
+            https://api.github.com/graphql)
+
+          echo "Response: $response"
+
+          permission=$(echo "$response" | jq -r '.data.repository.collaborators.edges[0].permission')
+
+          if [[ "$permission" != "ADMIN" && "$permission" != "MAINTAIN" && "$permission" != "WRITE" ]]; then
+            echo "❌ Collaborator $COLLABORATOR does not have sufficient permissions. Permission level: $permission"
+            exit 1
+          else
+            echo "✅ Collaborator $COLLABORATOR has sufficient permissions: $permission"
+          fi
 
       - name: Fail if not a CoreDev member
         if: ${{ steps.is_organization_member.outputs.result == 'false' }}
