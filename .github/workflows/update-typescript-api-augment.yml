@@ -3,6 +3,8 @@ name: Update Typescript API Augment
 on:
   issue_comment:
     types: [ created ]
+  # TODO: REMOVE AFTER TEST
+  workflow_dispatch:
 
 jobs:
   update_typescript_api_augment:
