@@ -31,9 +31,9 @@ jobs:
           permission_level=$(echo "$permissions" | jq -r '.permission')
           
           if [[ "$permission_level" == "write" || "$permission_level" == "admin" ]]; then
-            echo "✅ User $COLLABORATOR has permission $permission_level. Proceeding..."
+            echo "✅ User $COLLABORATOR has permission: "$permission_level". Proceeding..."
           else
-            echo "❌ User $COLLABORATOR doesn't have permission. Failing..." && exit 1
+            echo "❌ User $COLLABORATOR doesn't have permission: "$permission_level". Failing..." && exit 1
           fi
 
       - name: Checkout
