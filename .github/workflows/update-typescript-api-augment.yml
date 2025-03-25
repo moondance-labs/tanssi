@@ -8,6 +8,9 @@ on:
     branches:
       - MD-884-*
 
+permissions:
+  members: read
+
 jobs:
   update_typescript_api_augment:
     # TODO: Test once it merged to main
