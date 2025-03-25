@@ -8,6 +8,9 @@ on:
     branches:
       - MD-884-*
 
+permissions:
+  contents: read
+
 jobs:
   update_typescript_api_augment:
     # TODO: Test once it merged to main
@@ -21,14 +24,12 @@ jobs:
           REPO: tanssi
           COLLABORATOR: ${{ github.actor }}
         run: |
-          CONTRIBUTORS=$(curl -s -L \
+          permissions=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
             -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer $GITHUB_TOKEN" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            https://api.github.com/repos/$ORG/$REPO/contributors)
+            "https://api.github.com/repos/owner/repo/collaborators/username/permission")
           
-          USER_EXISTS=$(echo "$CONTRIBUTORS" | jq -e ".[] | select(.login == \"$COLLABORATOR\")")
-
+          echo "Permissions: $permissions"
+          
           if [[ -n "$USER_EXISTS" ]]; then
             echo "❌ Collaborator $COLLABORATOR is not a contributor, failing..."
             exit 1
