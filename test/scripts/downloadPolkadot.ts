@@ -7,6 +7,7 @@ import { parse } from "toml";
 import path from "node:path";
 import { execSync } from "node:child_process";
 import { createHash } from "node:crypto";
+import os from "node:os";
 
 const CONFIG = {
     FOLDER_NAME: "tmp",
@@ -20,6 +21,7 @@ async function main() {
     const cargoToml = parse(fileContents) as CargoToml;
     const stableVersion = findPolkadotStableVersion(cargoToml.workspace.dependencies);
     console.log(`🔎 Found polkadot-sdk version: ${stableVersion}`);
+    checkSupportedArch(stableVersion);
 
     for (const binName of CONFIG.BINARIES) {
         const pathName = path.join(CONFIG.FOLDER_NAME, binName);
@@ -145,3 +147,18 @@ const getSha256 = (filePath: string) => {
 };
 
 const mini = (hash: string) => `<${hash.slice(0, 4)}...${hash.slice(-4)}>`;
+
+function checkSupportedArch(stableVersion: string): void {
+    const supportedOS = "linux";
+    const supportedArch = "x64"; // x86_64
+
+    const currentOS = os.platform();
+    const currentArch = os.arch();
+
+    if (currentOS !== supportedOS || currentArch !== supportedArch) {
+        const errorMsg = `Unsupported environment: expected (${supportedOS}, ${supportedArch}), found (${currentOS}, ${currentArch}).`;
+        console.error(errorMsg);
+        console.info(`You will need to manually compile the required binaries. Make sure they are for version ${stableVersion}`);
+        throw new Error(errorMsg);
+    }
+}
