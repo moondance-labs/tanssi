@@ -21,20 +21,11 @@ jobs:
           REPO: tanssi
           COLLABORATOR: ${{ github.actor }}
         run: |
-          query="{
-            repository(owner: \"$OWNER\", name: \"$REPO\") {
-              collaborators(login: \"$COLLABORATOR\") {
-                edges {
-                  permission
-                }
-              }
-            }
-          }"
+          query='{  "query": "query CollaboratorPermission($owner: String!, $repo: String!, $collaborator: String) { repository(owner: $owner, name: $repo) {       collaborators(login: $collaborator) {         edges {           permission         }       }     }   }",  "variables": {    "owner": "'"$OWNER"'",    "repo": "'"$REPO"'",    "collaborator": "'"$COLLABORATOR"'" } }'
 
           response=$(curl -s -X POST \
             -H "Authorization: bearer $GITHUB_TOKEN" \
-            -H "Content-Type: application/json" \
-            -d "{\"query\": \"$query\"}" \
+            -d "$query" \
             https://api.github.com/graphql)
 
           echo "Response: $response"
@@ -48,11 +39,6 @@ jobs:
             echo "✅ Collaborator $COLLABORATOR has sufficient permissions: $permission"
           fi
 
-      - name: Fail if not a CoreDev member
-        if: ${{ steps.is_organization_member.outputs.result == 'false' }}
-        run: |
-          echo "🚫 User ${{ github.actor }} is NOT a member of the CorDev!"
-          exit 1
       - name: Checkout
         uses: actions/checkout@v4
         with:
