@@ -21,9 +21,10 @@ jobs:
           REPO: tanssi
           COLLABORATOR: ${{ github.actor }}
         run: |
-          query='query {
-            repository(owner:"$OWNER", name:"$REPO") {
-              collaborators(login:"$COLLABORATOR") {
+          query='
+          query {
+            repository(owner: "'"$OWNER"'", name: "'"$REPO"'") {
+              collaborators(login: "'"$COLLABORATOR"'") {
                 edges {
                   permission
                 }
