@@ -4,7 +4,9 @@ on:
   issue_comment:
     types: [ created ]
   # TODO: REMOVE AFTER TEST
-  workflow_dispatch:
+  push:
+    branches:
+      - MD-884-*
 
 jobs:
   update_typescript_api_augment:
