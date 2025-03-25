@@ -135,37 +135,66 @@ describeSuite({
 
         it({
             id: "C05",
-            title: "Slash message should never contain more than QueuedSlashesProcessedPerBlock",
+            title: "A slash message must never exceed the queuedSlashesProcessedPerBlock limit",
             timeout: 600000,
             test: async () => {
-                let currentEra = (await api.query.externalValidators.activeEra()).unwrap();
-                const bondedDuration = api.consts.externalValidatorSlashes.bondingDuration;
+                const bondingDuration = api.consts.externalValidatorSlashes.bondingDuration;
+                const maxQueuedSlashesPerBlock = api.consts.externalValidatorSlashes.queuedSlashesProcessedPerBlock;
 
-                const lastBondedEra = currentEra.index.toNumber() - bondedDuration.toNumber();
-                const firstBlockNumber = await getCurrentEraStartBlock(api);
+                const currentEra = (await api.query.externalValidators.activeEra()).unwrap();
+                const currentEraIndex = currentEra.index.toNumber();
 
-                let blockNumber = firstBlockNumber;
+                let eraIndexToAnalyze = currentEraIndex;
+                let startBlockNumberOfEra = await getCurrentEraStartBlock(api);
 
-                // Go backwards checking for blocks with slashes events
-                log(`Analizing backwards ${bondedDuration} eras blocks`);
+                log(`Analyzing up to ${bondingDuration} eras in the past`);
 
-                while (currentEra.index.toNumber() > lastBondedEra && blockNumber > 0) {
-                    const getApiCheckpointAtBlock = await api.at(await api.rpc.chain.getBlockHash(blockNumber));
+                /*
+                We move backwards through the eras, up to 'bondingDuration' eras.
+                For each era, we check if there were any unreported slashes at the start of that era.
+                If there were, we then iterate through the blocks within that era looking for
+                a 'SlashesMessageSent' event. If found, we verify that the slash message
+                does not contain more slashes than 'maxQueuedSlashesPerBlock'.
+                */
+                while (eraIndexToAnalyze > currentEraIndex - bondingDuration.toNumber() && eraIndexToAnalyze > 0) {
+                    // Identify the start/end blocks for the previous era
+                    const lastBlockNumberPreviousEra = startBlockNumberOfEra - 1;
+                    const firstBlockNumberPreviousEra = await getPastEraStartBlock(api, lastBlockNumberPreviousEra);
 
-                    // Check for slashes message events
-                    const events = await getApiCheckpointAtBlock.query.system.events();
-                    const slashEvent = events.find((event) => event.event.method === "SlashesMessageSent");
+                    // Get the count of unreported slashes at the very start of the previous era
+                    const apiAtStartPreviousEra = await api.at(
+                        await api.rpc.chain.getBlockHash(firstBlockNumberPreviousEra)
+                    );
+                    let unreportedSlashCount = (
+                        await apiAtStartPreviousEra.query.externalValidatorSlashes.unreportedSlashesQueue()
+                    ).length;
 
-                    if (slashEvent) {
-                        // Check event command slashes is lower than queuedSlashesProcessedPerBlock
-                        const command = slashEvent.event.data.toJSON()[1].reportSlashes.slashes;
-                        const queuedSlashesPerBlock =
-                            await api.consts.externalValidatorSlashes.queuedSlashesProcessedPerBlock;
-                        expect(command.length).to.be.lessThanOrEqual(queuedSlashesPerBlock.toNumber());
+                    // If there were unreported slashes at the start of the era, look for slash messages
+                    let blockNumber = firstBlockNumberPreviousEra;
+                    while (unreportedSlashCount > 0 && blockNumber <= firstBlockNumberPreviousEra) {
+                        const blockHash = await api.rpc.chain.getBlockHash(blockNumber);
+                        const apiAtBlock = await api.at(blockHash);
+                        const events = await apiAtBlock.query.system.events();
+
+                        // Search for a SlashesMessageSent event in this block
+                        const slashMessageEvent = events.find((event) => event.event.method === "SlashesMessageSent");
+
+                        if (slashMessageEvent) {
+                            // The slashCommand array cannot exceed the queuedSlashesProcessedPerBlock limit
+                            const slashCommand = slashMessageEvent.event.data.toJSON()[1].reportSlashes.slashes;
+                            expect(slashCommand.length).to.be.lessThanOrEqual(maxQueuedSlashesPerBlock.toNumber());
+
+                            // Reduce our count of unreported slashes accordingly
+                            unreportedSlashCount -= slashCommand.length;
+                        }
+
+                        blockNumber++;
                     }
 
-                    currentEra = (await api.query.externalValidators.activeEra()).unwrap();
-                    blockNumber--;
+                    // Move to the previous era for the next iteration
+                    const previousEraInfo = (await apiAtStartPreviousEra.query.externalValidators.activeEra()).unwrap();
+                    eraIndexToAnalyze = previousEraInfo.index.toNumber();
+                    startBlockNumberOfEra = firstBlockNumberPreviousEra;
                 }
             },
         });
