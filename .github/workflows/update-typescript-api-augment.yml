@@ -14,6 +14,23 @@ jobs:
     #    if: ${{ github.event.comment.body && contains(github.event.comment.body, '/update-api-augment') }}
     runs-on: ubuntu-latest
     steps:
+      - name: Check CoreDev membership
+        id: check-coredev
+        run: |
+          response=$(curl -s -H "Accept: application/vnd.github+json" \
+          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          https://api.github.com/orgs/moondance-labs/teams/coredev/memberships/${{ github.actor }})
+          
+          echo "response: $response"
+          
+          if [[ "$(echo $response | jq -r '.state')" != "active" ]]; then
+          echo "Not a CoreDev member!"
+          exit 1
+          fi
+
+      - name: Proceed if CoreDev member
+        if: ${{ steps.check-coredev.outcome == 'success' }}
+        run: echo "User is a CoreDev member and can trigger the job."
       - name: Checkout
         uses: actions/checkout@v4
         with:
