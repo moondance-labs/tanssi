@@ -9,7 +9,7 @@ on:
       - MD-884-*
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   update_typescript_api_augment:
