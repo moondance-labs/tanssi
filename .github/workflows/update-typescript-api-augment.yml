@@ -82,6 +82,12 @@ jobs:
           if [[ -n "$(git status --porcelain)" ]]; then
             cd typescript-api
             git add .
+            echo "About to commit changes"
             git commit -m "Auto-generated TypeScript interfaces"
+            echo "About to push changes"
+            response=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Accept: application/vnd.github.v3+json" \
+              https://api.github.com/repos/${{ github.repository }}/actions/permissions)
+            echo "Actions permissions: $response"
             git push -u origin $(git branch --show-current)
           fi
