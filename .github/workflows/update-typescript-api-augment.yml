@@ -10,7 +10,7 @@ on:
 
 jobs:
   update_typescript_api_augment:
-    if: ${{ github.event.comment.body == '/update-api-augment' }}
+    if: ${{ github.event.comment.body && contains(github.event.comment.body, '/update-api-augment') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
