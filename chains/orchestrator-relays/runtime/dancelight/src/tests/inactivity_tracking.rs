@@ -20,7 +20,6 @@ use {
     crate::tests::common::*,
     frame_support::{assert_ok, traits::Get},
     pallet_inactivity_tracking::pallet::{ActiveCollators, ActiveCollatorsForCurrentSession},
-    sp_runtime::BoundedVec,
     tp_traits::{AuthorNotingHook, AuthorNotingInfo, NodeActivityTrackingHelper, ParaId},
 };
 

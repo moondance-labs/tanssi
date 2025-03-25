@@ -16,7 +16,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 use {
     frame_support::{dispatch::DispatchResult, pallet_prelude::Weight, traits::OneSessionHandler},
-    sp_runtime::{traits::Get, BoundedVec},
+    sp_runtime::{traits::Get, BoundedBTreeSet},
     sp_staking::SessionIndex,
     tp_traits::{
         AuthorNotingHook, AuthorNotingInfo, GetSessionIndex, MaybeSelfChainBlockAuthor,
@@ -101,14 +101,14 @@ pub mod pallet {
         _,
         Twox64Concat,
         SessionIndex,
-        BoundedVec<T::CollatorId, T::MaxCollatorsPerSession>,
+        BoundedBTreeSet<T::CollatorId, T::MaxCollatorsPerSession>,
         ValueQuery,
     >;
 
     /// A list of inactive collators for a session. Repopulated at the start of every session
     #[pallet::storage]
     pub type ActiveCollatorsForCurrentSession<T: Config> =
-        StorageValue<_, BoundedVec<T::CollatorId, T::MaxCollatorsPerSession>, ValueQuery>;
+        StorageValue<_, BoundedBTreeSet<T::CollatorId, T::MaxCollatorsPerSession>, ValueQuery>;
 
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -163,7 +163,7 @@ pub mod pallet {
                 <ActiveCollatorsForCurrentSession<T>>::get(),
             );
 
-            <ActiveCollatorsForCurrentSession<T>>::put(BoundedVec::new());
+            <ActiveCollatorsForCurrentSession<T>>::put(BoundedBTreeSet::new());
 
             // Cleanup active collator info for sessions that are older than the maximum allowed
             let minimum_sessions_required_for_cleanup = T::MaxInactiveSessions::get() + 1;
@@ -177,11 +177,11 @@ pub mod pallet {
             let mut total_weight = T::DbWeight::get().reads_writes(1, 0);
             let _ = <ActiveCollatorsForCurrentSession<T>>::try_mutate(
                 |active_collators| -> DispatchResult {
-                    if !active_collators.contains(&author) {
+                    let is_inserted = active_collators
+                        .try_insert(author)
+                        .map_err(|_| Error::<T>::MaxCollatorsPerSessionReached)?;
+                    if is_inserted {
                         total_weight += T::DbWeight::get().writes(1);
-                        active_collators
-                            .try_push(author)
-                            .map_err(|_| Error::<T>::MaxCollatorsPerSessionReached)?;
                     }
                     Ok(())
                 },

@@ -20,7 +20,7 @@ use {
     },
     frame_support::{assert_noop, assert_ok, pallet_prelude::Get},
     sp_core::ConstU32,
-    sp_runtime::{BoundedVec, DispatchError::BadOrigin},
+    sp_runtime::{BoundedBTreeSet, DispatchError::BadOrigin},
     tp_traits::{AuthorNotingInfo, GetSessionIndex},
 };
 
@@ -30,6 +30,16 @@ fn get_active_collators(block: u32) -> AuthorNotingInfo<AccountId> {
         author: COLLATOR_1,
         para_id: CONTAINER_CHAIN_ID,
     }
+}
+
+fn get_collator_set(
+    collators: Vec<AccountId>,
+) -> BoundedBTreeSet<AccountId, <Test as Config>::MaxCollatorsPerSession> {
+    let mut collator_set = BoundedBTreeSet::new();
+    for collator in collators {
+        let _ = collator_set.try_insert(collator);
+    }
+    collator_set
 }
 
 #[test]
@@ -89,7 +99,7 @@ fn inactivity_tracking_handler_with_enabled_or_disabled_tracking_works() {
             max_inactive_sessions
         );
 
-        let active_collator = BoundedVec::truncate_from(vec![COLLATOR_1]);
+        let active_collator = get_collator_set(vec![COLLATOR_1]);
         for session_id in 0..max_inactive_sessions {
             ActiveCollators::<Test>::insert(session_id, active_collator.clone());
             assert_eq!(ActiveCollators::<Test>::get(session_id), active_collator);
@@ -139,8 +149,8 @@ fn inactivity_tracking_handler_with_one_active_session_works() {
 
         roll_to(max_inactive_sessions as u64 * SESSION_BLOCK_LENGTH + 1);
 
-        let active_collator_1 = BoundedVec::truncate_from(vec![COLLATOR_1]);
-        let active_collator_2 = BoundedVec::truncate_from(vec![COLLATOR_2]);
+        let active_collator_1 = get_collator_set(vec![COLLATOR_1]);
+        let active_collator_2 = get_collator_set(vec![COLLATOR_2]);
         ActiveCollators::<Test>::insert(0, active_collator_1.clone());
         ActiveCollators::<Test>::insert(1, active_collator_2.clone());
         assert_eq!(
@@ -193,9 +203,9 @@ fn processing_ended_session_correctly_updates_current_session_collators_and_acti
 
         roll_to(SESSION_BLOCK_LENGTH + 1);
 
-        let current_session_active_collator_record: BoundedVec<AccountId, ConstU32<5>> =
-            BoundedVec::truncate_from(vec![COLLATOR_1]);
-        let empty_vec: BoundedVec<AccountId, ConstU32<5>> = BoundedVec::new();
+        let current_session_active_collator_record: BoundedBTreeSet<AccountId, ConstU32<5>> =
+            get_collator_set(vec![COLLATOR_1]);
+        let empty_vec: BoundedBTreeSet<AccountId, ConstU32<5>> = BoundedBTreeSet::new();
 
         ActiveCollatorsForCurrentSession::<Test>::put(
             current_session_active_collator_record.clone(),
@@ -228,9 +238,9 @@ fn processing_ended_session_correctly_cleans_outdated_collator_records() {
         roll_to(SESSION_BLOCK_LENGTH + 1);
         assert_eq!(<Test as Config>::CurrentSessionIndex::session_index(), 1);
 
-        let current_session_active_collator_record: BoundedVec<AccountId, ConstU32<5>> =
-            BoundedVec::truncate_from(vec![COLLATOR_1]);
-        let empty_vec: BoundedVec<AccountId, ConstU32<5>> = BoundedVec::new();
+        let current_session_active_collator_record: BoundedBTreeSet<AccountId, ConstU32<5>> =
+            get_collator_set(vec![COLLATOR_1]);
+        let empty_vec: BoundedBTreeSet<AccountId, ConstU32<5>> = BoundedBTreeSet::new();
 
         ActiveCollatorsForCurrentSession::<Test>::put(
             current_session_active_collator_record.clone(),
@@ -282,8 +292,8 @@ fn processing_ended_session_correctly_cleans_outdated_collator_records() {
 #[test]
 fn active_collators_noting_for_current_session_works() {
     ExtBuilder.build().execute_with(|| {
-        let current_session_active_collator_record: BoundedVec<AccountId, ConstU32<5>> =
-            BoundedVec::truncate_from(vec![COLLATOR_1]);
+        let current_session_active_collator_record: BoundedBTreeSet<AccountId, ConstU32<5>> =
+            get_collator_set(vec![COLLATOR_1]);
         assert_ok!(Pallet::<Test>::set_inactivity_tracking_status(
             RuntimeOrigin::root(),
             true
