@@ -69,7 +69,7 @@ jobs:
           chmod uog+x target/release/tanssi-node
           chmod uog+x target/release/tanssi-relay
           cd typescript-api
-          pnpm install
+          pnpm install --frozen-lockfile
           pnpm create-local-interfaces
 
       - name: Configure Git
