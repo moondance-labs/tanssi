@@ -23,10 +23,13 @@ jobs:
         run: |
           query='{  "query": "query CollaboratorPermission($owner: String!, $repo: String!, $collaborator: String) { repository(owner: $owner, name: $repo) {       collaborators(login: $collaborator) {         edges {           permission         }       }     }   }",  "variables": {    "owner": "'"$OWNER"'",    "repo": "'"$REPO"'",    "collaborator": "'"$COLLABORATOR"'" } }'
           
-          members_response=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
+          members_response=$(curl -i -H "Authorization: Bearer $GITHUB_TOKEN" \
             "https://api.github.com/orgs/$OWNER/members/$COLLABORATOR")
+          echo "member response:"
           echo $members_response
-
+          
+          
+          
           response=$(curl -s -X POST \
             -H "Authorization: bearer $GITHUB_TOKEN" \
             -d "$query" \
