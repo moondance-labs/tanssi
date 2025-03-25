@@ -19,10 +19,10 @@ jobs:
         with:
           ref: ${{ needs.set-tags.outputs.git_ref }}
 
-      - name: Pnpm
-        uses: pnpm/action-setup@v4.1.0
+      - name: Cargo build
+        uses: ./.github/workflow-templates/cargo-build
         with:
-          version: 9
+          features: "fast-runtime"
 
       - name: "Download binaries"
         uses: actions/download-artifact@v4
