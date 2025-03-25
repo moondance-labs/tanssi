@@ -21,7 +21,13 @@ async function main() {
     const cargoToml = parse(fileContents) as CargoToml;
     const stableVersion = findPolkadotStableVersion(cargoToml.workspace.dependencies);
     console.log(`🔎 Found polkadot-sdk version: ${stableVersion}`);
-    checkSupportedArch(stableVersion);
+    if (!checkSupportedArch()) {
+        // Skip binary download if running on unsupported architecture
+        console.info(
+            `You will need to manually compile the required binaries. Make sure they are for version ${stableVersion}`
+        );
+        return;
+    }
 
     for (const binName of CONFIG.BINARIES) {
         const pathName = path.join(CONFIG.FOLDER_NAME, binName);
@@ -63,14 +69,14 @@ async function main() {
             console.log("✅ Saved to version mapping ");
         }
     }
+
+    console.log(`🎉 Finished verifying binaries: [${CONFIG.BINARIES.join(", ")}]`);
 }
 
-main()
-    .then(() => console.log(`🎉 Finished verifying binaries: [${CONFIG.BINARIES.join(", ")}]`))
-    .catch((err: unknown) => {
-        console.error("❌ Error:", err);
-        process.exit(1);
-    });
+main().catch((err: unknown) => {
+    console.error("❌ Error:", err);
+    process.exit(1);
+});
 /**
  * Interfaces
  **/
@@ -148,7 +154,7 @@ const getSha256 = (filePath: string) => {
 
 const mini = (hash: string) => `<${hash.slice(0, 4)}...${hash.slice(-4)}>`;
 
-function checkSupportedArch(stableVersion: string): void {
+function checkSupportedArch(): boolean {
     const supportedOS = "linux";
     const supportedArch = "x64"; // x86_64
 
@@ -157,8 +163,9 @@ function checkSupportedArch(stableVersion: string): void {
 
     if (currentOS !== supportedOS || currentArch !== supportedArch) {
         const errorMsg = `Unsupported environment: expected (${supportedOS}, ${supportedArch}), found (${currentOS}, ${currentArch}).`;
-        console.error(errorMsg);
-        console.info(`You will need to manually compile the required binaries. Make sure they are for version ${stableVersion}`);
-        throw new Error(errorMsg);
+        console.warn(errorMsg);
+        return false;
     }
+
+    return true;
 }
