@@ -17,33 +17,23 @@ jobs:
       - name: Check Permission via GraphQL
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          OWNER: moondance-labs
+          ORG: moondance-labs
           REPO: tanssi
           COLLABORATOR: ${{ github.actor }}
         run: |
-          query='{  "query": "query CollaboratorPermission($owner: String!, $repo: String!, $collaborator: String) { repository(owner: $owner, name: $repo) {       collaborators(login: $collaborator) {         edges {           permission         }       }     }   }",  "variables": {    "owner": "'"$OWNER"'",    "repo": "'"$REPO"'",    "collaborator": "'"$COLLABORATOR"'" } }'
+          CONTRIBUTORS=$(curl -s -L \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/$ORG/$REPO/contributors)
           
-          members_response=$(curl -i -H "Authorization: Bearer $GITHUB_TOKEN" \
-            "https://api.github.com/orgs/$OWNER/members/$COLLABORATOR")
-          echo "member response:"
-          echo $members_response
-          
-          
-          
-          response=$(curl -s -X POST \
-            -H "Authorization: bearer $GITHUB_TOKEN" \
-            -d "$query" \
-            https://api.github.com/graphql)
+          USER_EXISTS=$(echo "$CONTRIBUTORS" | jq -e ".[] | select(.login == \"$COLLABORATOR\")")
 
-          echo "Response: $response"
-
-          permission=$(echo "$response" | jq -r '.data.repository.collaborators.edges[0].permission')
-
-          if [[ "$permission" != "ADMIN" && "$permission" != "MAINTAIN" && "$permission" != "WRITE" ]]; then
-            echo "❌ Collaborator $COLLABORATOR does not have sufficient permissions. Permission level: $permission"
+          if [[ -n "$USER_EXISTS" ]]; then
+            echo "❌ Collaborator $COLLABORATOR is not a contributor, failing..."
             exit 1
           else
-            echo "✅ Collaborator $COLLABORATOR has sufficient permissions: $permission"
+            echo "✅ Collaborator $COLLABORATOR is a contributor. Granting the access to proceed..."
           fi
 
       - name: Checkout
