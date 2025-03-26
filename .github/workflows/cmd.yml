@@ -58,6 +58,7 @@ jobs:
 
   update_typescript_api_augment:
     needs: ["is-org-member"]
+    runs-on: self-hosted
     env:
       TMP_TARGET: "/tmp/target"
       CARGO_TARGET_DIR: "target"
