@@ -17,9 +17,8 @@
 use {
     super::*,
     crate::{
-        PausePoolsExtrinsics,
         assert_eq_last_events, CandidateSummaries, CandidateSummary, DelegatorCandidateSummaries,
-        DelegatorCandidateSummary,
+        DelegatorCandidateSummary, PausePoolsExtrinsics,
     },
 };
 
@@ -827,31 +826,40 @@ fn paused_extrinsics() {
     ExtBuilder::default().build().execute_with(|| {
         PausePoolsExtrinsics::<Runtime>::put(true);
 
-        assert_noop!(Staking::rebalance_hold(
-            RuntimeOrigin::signed(ACCOUNT_DELEGATOR_1),
-            ACCOUNT_DELEGATOR_1,
-            ACCOUNT_CANDIDATE_1,
-            PoolKind::AutoCompounding
-        ), Error::<Runtime>::NoOneIsStaking); // no pause check
+        assert_noop!(
+            Staking::rebalance_hold(
+                RuntimeOrigin::signed(ACCOUNT_DELEGATOR_1),
+                ACCOUNT_DELEGATOR_1,
+                ACCOUNT_CANDIDATE_1,
+                PoolKind::AutoCompounding
+            ),
+            Error::<Runtime>::NoOneIsStaking
+        ); // no pause check
 
-        assert_noop!(Staking::request_delegate(
-            RuntimeOrigin::signed(ACCOUNT_DELEGATOR_1),
-            ACCOUNT_CANDIDATE_1,
-            ActivePoolKind::AutoCompounding,
-            42
-        ), Error::<Runtime>::PoolsExtrinsicsArePaused);
+        assert_noop!(
+            Staking::request_delegate(
+                RuntimeOrigin::signed(ACCOUNT_DELEGATOR_1),
+                ACCOUNT_CANDIDATE_1,
+                ActivePoolKind::AutoCompounding,
+                42
+            ),
+            Error::<Runtime>::PoolsExtrinsicsArePaused
+        );
 
-        assert_noop!(Staking::execute_pending_operations(
-            RuntimeOrigin::signed(ACCOUNT_DELEGATOR_1),
-            vec![]
-        ), Error::<Runtime>::PoolsExtrinsicsArePaused);
+        assert_noop!(
+            Staking::execute_pending_operations(RuntimeOrigin::signed(ACCOUNT_DELEGATOR_1), vec![]),
+            Error::<Runtime>::PoolsExtrinsicsArePaused
+        );
 
-        assert_noop!(Staking::request_undelegate(
-            RuntimeOrigin::signed(ACCOUNT_DELEGATOR_1),
-            ACCOUNT_CANDIDATE_1,
-            ActivePoolKind::AutoCompounding,
-            SharesOrStake::Shares(42),
-        ), Error::<Runtime>::PoolsExtrinsicsArePaused);
+        assert_noop!(
+            Staking::request_undelegate(
+                RuntimeOrigin::signed(ACCOUNT_DELEGATOR_1),
+                ACCOUNT_CANDIDATE_1,
+                ActivePoolKind::AutoCompounding,
+                SharesOrStake::Shares(42),
+            ),
+            Error::<Runtime>::PoolsExtrinsicsArePaused
+        );
 
         assert_ok!(Staking::claim_manual_rewards(
             RuntimeOrigin::signed(ACCOUNT_DELEGATOR_1),
@@ -863,11 +871,14 @@ fn paused_extrinsics() {
             vec![]
         ));
 
-        assert_noop!(Staking::swap_pool(
-            RuntimeOrigin::signed(ACCOUNT_DELEGATOR_1),
-            ACCOUNT_CANDIDATE_1,
-            ActivePoolKind::AutoCompounding,
-            SharesOrStake::Shares(42),
-        ), Error::<Runtime>::PoolsExtrinsicsArePaused);
+        assert_noop!(
+            Staking::swap_pool(
+                RuntimeOrigin::signed(ACCOUNT_DELEGATOR_1),
+                ACCOUNT_CANDIDATE_1,
+                ActivePoolKind::AutoCompounding,
+                SharesOrStake::Shares(42),
+            ),
+            Error::<Runtime>::PoolsExtrinsicsArePaused
+        );
     })
 }

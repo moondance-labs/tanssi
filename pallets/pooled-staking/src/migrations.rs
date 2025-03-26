@@ -30,7 +30,10 @@ use frame_support::{
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_core::{ConstU32, Get, MaxEncodedLen, RuntimeDebug};
-use sp_runtime::{Saturating, Vec, Weight};
+use sp_runtime::Saturating;
+
+#[cfg(not(feature = "std"))]
+use sp_runtime::{Vec, Weight};
 
 const LOG_TARGET: &'static str = "pallet_pooled_staking::migrations::stepped_generate_summaries";
 pub const PALLET_MIGRATIONS_ID: &[u8; 21] = b"pallet-pooled-staking";
@@ -176,7 +179,6 @@ pub fn stepped_generate_summaries<
 
         meter.consume(T::DbWeight::get().reads_writes(1, 0));
 
-        
         let Some((candidate, key)) = iterator.next() else {
             break;
         };
@@ -200,9 +202,9 @@ pub fn stepped_generate_summaries<
         // We first modify the delegator summary. If the summary is empty it means we have not yet
         // encountered that delegator for this candidate, so we'll consider it a new delegator that
         // will increase the `delegators` count in the candidate summary.
-        let mut new_delegator = false;        
+        let mut new_delegator = false;
         meter.consume(T::DbWeight::get().reads_writes(2, 2));
-        
+
         D::mutate(delegator, candidate.clone(), |summary| {
             if summary.is_empty() {
                 new_delegator = true;
