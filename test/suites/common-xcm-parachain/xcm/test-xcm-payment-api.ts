@@ -1,6 +1,6 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type KeyringPair, alith } from "@moonwall/util";
-import { type ApiPromise, Keyring, } from "@polkadot/api";
+import { type ApiPromise, Keyring } from "@polkadot/api";
 import { STATEMINT_LOCATION_EXAMPLE } from "utils";
 
 describeSuite({

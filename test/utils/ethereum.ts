@@ -1,4 +1,4 @@
-import type { DevModeContext, EthTransactionType, } from "@moonwall/cli";
+import type { DevModeContext, EthTransactionType } from "@moonwall/cli";
 import { ALITH_PRIVATE_KEY, type TransactionOptions, alith, customWeb3Request } from "@moonwall/util";
 import { type AccessList, ethers } from "ethers";
 import { FMT_BYTES, FMT_NUMBER, type Transaction } from "web3";

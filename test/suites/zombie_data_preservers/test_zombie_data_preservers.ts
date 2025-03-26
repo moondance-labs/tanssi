@@ -1,12 +1,7 @@
 import "@tanssi/api-augment";
 
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import {
-    BALTATHAR_ADDRESS,
-    BALTATHAR_PRIVATE_KEY,
-    CHARLETH_ADDRESS,
-    type KeyringPair,
-} from "@moonwall/util";
+import { BALTATHAR_ADDRESS, BALTATHAR_PRIVATE_KEY, CHARLETH_ADDRESS, type KeyringPair } from "@moonwall/util";
 import { ApiPromise, Keyring, WsProvider } from "@polkadot/api";
 import { u8aToHex } from "@polkadot/util";
 import { decodeAddress } from "@polkadot/util-crypto";
