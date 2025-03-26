@@ -61,7 +61,6 @@ fn inactivity_tracking_correctly_updates_storages() {
                 root_origin(),
                 true
             ));
-            
             run_block();
             note_block_authors(vec![(CHARLIE.into(), 3001.into())]);
             assert_eq!(<Runtime as pallet_inactivity_tracking::Config>::GetSelfChainBlockAuthor::get_block_author(), Some(BOB.into()));
@@ -180,7 +179,6 @@ fn inactivity_tracking_correctly_updates_storages() {
                 ),
                 false
             );
-            
             run_to_session(max_inactive_sessions);
             assert_eq!(
                 InactivityTracking::is_node_inactive(
@@ -210,6 +208,6 @@ fn inactivity_tracking_correctly_updates_storages() {
 
             run_to_session(max_inactive_sessions + 1);
             run_block();
-            assert_eq!(<ActiveCollators<Runtime>>::get(0).is_empty(), true); 
+            assert_eq!(<ActiveCollators<Runtime>>::get(0).is_empty(), true);
         });
 }
