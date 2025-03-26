@@ -38,6 +38,9 @@
         "noExplicitAny": "off",
         "noShadowRestrictedNames": "off",
       },
+      "correctness": {
+        "noUnusedImports": "error",
+      },
     },
     "ignore": [],
   },

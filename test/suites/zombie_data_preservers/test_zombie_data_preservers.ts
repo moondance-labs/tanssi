@@ -2,7 +2,6 @@ import "@tanssi/api-augment";
 
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import {
-    ALITH_ADDRESS,
     BALTATHAR_ADDRESS,
     BALTATHAR_PRIVATE_KEY,
     CHARLETH_ADDRESS,
