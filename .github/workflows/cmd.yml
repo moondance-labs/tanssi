@@ -17,7 +17,7 @@ permissions:
 jobs:
   is-org-member:
     # TODO: Uncomment before merge
-    # if: env.IS_CMD == 'true'
+    # if: ${{ env.IS_CMD == 'true' }}
     runs-on: self-hosted
     steps:
       - name: Check Permissions
@@ -39,7 +39,7 @@ jobs:
             echo "❌ User $COLLABORATOR doesn't have enough permission: "$permission_level". Failing..." && exit 1
           fi
   acknowledge:
-    if: env.IS_CMD == 'true'
+    if: ${{ env.IS_CMD == 'true' }}
     needs: ["is-org-member"]
     runs-on: ubuntu-latest
     steps:
@@ -66,7 +66,7 @@ jobs:
       SCCACHE_CACHE_SIZE: "100GB"
       SCCACHE_GHA_ENABLED: "true"
     # TODO: Uncomment before merge
-    #    if: github.event.comment.body == '/cmd generate-ts-api' }}
+    #    if: ${{ github.event.comment.body == '/cmd generate-ts-api' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
