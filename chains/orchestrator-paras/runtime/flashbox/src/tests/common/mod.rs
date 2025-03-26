@@ -44,7 +44,7 @@ pub use crate::{
     RuntimeCall, ServicesPayment, Session, StreamPayment, System, TransactionPayment,
 };
 
-pub const UNIT: Balance = 1_000_000_000_000_000_000;
+pub const UNIT: Balance = 1_000_000_000_000;
 
 pub fn session_to_block(n: u32) -> u32 {
     let block_number = crate::Period::get() * n;
