@@ -182,7 +182,7 @@ fn inactivity_tracking_correctly_updates_storages() {
                 false
             );
             assert_eq!(<ActiveCollatorsForCurrentSession<Runtime>>::get().len(), 0);
-            
+
             let max_inactive_sessions =
                 <Runtime as pallet_inactivity_tracking::Config>::MaxInactiveSessions::get();
             run_to_session(max_inactive_sessions - 1);
@@ -203,7 +203,7 @@ fn inactivity_tracking_correctly_updates_storages() {
                 InactivityTracking::is_node_inactive(&AccountId::from(DAVE)),
                 false
             );
-            
+
             run_to_session(max_inactive_sessions);
             assert_eq!(
                 InactivityTracking::is_node_inactive(&AccountId::from(ALICE)),

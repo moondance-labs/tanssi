@@ -168,10 +168,10 @@ pub mod pallet {
             let mut total_weight = T::DbWeight::get().reads_writes(1, 0);
             let _ = <ActiveCollatorsForCurrentSession<T>>::try_mutate(
                 |active_collators| -> DispatchResult {
-                    let is_inserted = active_collators
+                    if active_collators
                         .try_insert(author)
-                        .map_err(|_| Error::<T>::MaxCollatorsPerSessionReached)?;
-                    if is_inserted {
+                        .map_err(|_| Error::<T>::MaxCollatorsPerSessionReached)?
+                    {
                         total_weight += T::DbWeight::get().writes(1);
                     }
                     Ok(())
