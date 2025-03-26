@@ -1549,14 +1549,14 @@ declare module "@polkadot/api-base/types/storage" {
              **/
             activeCollators: AugmentedQuery<
                 ApiType,
-                (arg: u32 | AnyNumber | Uint8Array) => Observable<Vec<AccountId32>>,
+                (arg: u32 | AnyNumber | Uint8Array) => Observable<BTreeSet<AccountId32>>,
                 [u32]
             > &
                 QueryableStorageEntry<ApiType, [u32]>;
             /**
              * A list of inactive collators for a session. Repopulated at the start of every session
              **/
-            activeCollatorsForCurrentSession: AugmentedQuery<ApiType, () => Observable<Vec<AccountId32>>, []> &
+            activeCollatorsForCurrentSession: AugmentedQuery<ApiType, () => Observable<BTreeSet<AccountId32>>, []> &
                 QueryableStorageEntry<ApiType, []>;
             /**
              * Switch to enable/disable inactivity tracking
