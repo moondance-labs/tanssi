@@ -416,7 +416,7 @@ jobs:
                 body: |
                   ❌ Seems like Typescript API interfaces are not up-to-date. Send the following command to update it automatically:
                   ```
-                  /generate-ts-api
+                  /cmd generate-ts-api
                   ```
 
     typescript-tests:
