@@ -56,9 +56,9 @@ export function chainSpecStorageToOnChainStorage(genesis: any): any {
 export function onChainStorageToChainSpecStorage(storage: any): any {
     const top = {};
 
-    storage.forEach((x) => {
+    for (const x of storage) {
         top[x.key.toHex()] = x.value.toHex();
-    });
+    }
 
     const s = {
         raw: {
