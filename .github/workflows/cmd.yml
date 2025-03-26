@@ -8,16 +8,13 @@ on:
     branches:
       - MD-884-*
 
-env:
-  IS_CMD: ${{ startsWith(github.event.comment.body, '/cmd') }}
-
 permissions:
   contents: write
 
 jobs:
   is-org-member:
     # TODO: Uncomment before merge
-    # if: ${{ env.IS_CMD == 'true' }}
+    # if: startsWith(github.event.comment.body, '/cmd')
     runs-on: self-hosted
     steps:
       - name: Check Permissions
@@ -39,7 +36,7 @@ jobs:
             echo "❌ User $COLLABORATOR doesn't have enough permission: "$permission_level". Failing..." && exit 1
           fi
   acknowledge:
-    if: ${{ env.IS_CMD == 'true' }}
+    if: startsWith(github.event.comment.body, '/cmd')
     needs: ["is-org-member"]
     runs-on: ubuntu-latest
     steps:
