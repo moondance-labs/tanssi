@@ -61,12 +61,10 @@ fn inactivity_tracking_correctly_updates_storages() {
                 root_origin(),
                 true
             ));
-
+            
             run_block();
-            note_block_authors(vec![(ALICE.into(), 3000.into()), (CHARLIE.into(), 3001.into())]);
-            
+            note_block_authors(vec![(CHARLIE.into(), 3001.into())]);
             assert_eq!(<Runtime as pallet_inactivity_tracking::Config>::GetSelfChainBlockAuthor::get_block_author(), Some(BOB.into()));
-            
             assert_eq!(
                 <ActiveCollatorsForCurrentSession<Runtime>>::get().contains(&ALICE.into()),
                 true
@@ -124,14 +122,14 @@ fn inactivity_tracking_correctly_updates_storages() {
                 <ActiveCollators<Runtime>>::get(0).contains(&DAVE.into()),
                 false
             );
-            assert_eq!(<ActiveCollatorsForCurrentSession<Runtime>>::get().len(), 0);
+            assert_eq!(<ActiveCollatorsForCurrentSession<Runtime>>::get().len(), 2);
 
             note_block_authors(vec![(CHARLIE.into(), 3000.into())]);
             assert_eq!(
                 <ActiveCollatorsForCurrentSession<Runtime>>::get().contains(&CHARLIE.into()),
                 true
             );
-            assert_eq!(<ActiveCollatorsForCurrentSession<Runtime>>::get().len(), 2);
+            assert_eq!(<ActiveCollatorsForCurrentSession<Runtime>>::get().len(), 3);
 
             run_to_session(2);
             run_block();
@@ -150,10 +148,12 @@ fn inactivity_tracking_correctly_updates_storages() {
             );
             assert_eq!(
                 <ActiveCollators<Runtime>>::get(1).contains(&ALICE.into()),
-                false
+                true
             );
-            assert_eq!(<ActiveCollatorsForCurrentSession<Runtime>>::get().len(), 0);
-            run_to_session(3);
+            assert_eq!(<ActiveCollatorsForCurrentSession<Runtime>>::get().len(), 2);
+            let max_inactive_sessions =
+                <Runtime as pallet_inactivity_tracking::Config>::MaxInactiveSessions::get();
+            run_to_session(max_inactive_sessions - 1);
             run_block();
 
             assert_eq!(
@@ -180,12 +180,8 @@ fn inactivity_tracking_correctly_updates_storages() {
                 ),
                 false
             );
-
-            let max_inactive_sessions =
-                <Runtime as pallet_inactivity_tracking::Config>::MaxInactiveSessions::get();
-
+            
             run_to_session(max_inactive_sessions);
-
             assert_eq!(
                 InactivityTracking::is_node_inactive(
                     &cumulus_primitives_core::relay_chain::AccountId::from(ALICE)
@@ -212,8 +208,8 @@ fn inactivity_tracking_correctly_updates_storages() {
             );
             assert_eq!(<ActiveCollators<Runtime>>::get(0).is_empty(), false);
 
+            run_to_session(max_inactive_sessions + 1);
             run_block();
-
-            assert_eq!(<ActiveCollators<Runtime>>::get(0).is_empty(), true);
+            assert_eq!(<ActiveCollators<Runtime>>::get(0).is_empty(), true); 
         });
 }

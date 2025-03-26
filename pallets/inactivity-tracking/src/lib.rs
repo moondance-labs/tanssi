@@ -158,10 +158,9 @@ pub mod pallet {
             <ActiveCollatorsForCurrentSession<T>>::put(BoundedBTreeSet::new());
 
             // Cleanup active collator info for sessions that are older than the maximum allowed
-            let minimum_sessions_required_for_cleanup = T::MaxInactiveSessions::get() + 1;
-            if current_session_index >= minimum_sessions_required_for_cleanup {
+            if current_session_index > T::MaxInactiveSessions::get() {
                 <crate::pallet::ActiveCollators<T>>::remove(
-                    current_session_index - minimum_sessions_required_for_cleanup,
+                    current_session_index - T::MaxInactiveSessions::get() - 1,
                 );
             }
         }

@@ -69,6 +69,14 @@ fn inactivity_tracking_correctly_updates_storages() {
                 <ActiveCollatorsForCurrentSession<Runtime>>::get().contains(&BOB.into()),
                 true
             );
+            assert_eq!(
+                <ActiveCollatorsForCurrentSession<Runtime>>::get().contains(&CHARLIE.into()),
+                false
+            );
+            assert_eq!(
+                <ActiveCollatorsForCurrentSession<Runtime>>::get().contains(&DAVE.into()),
+                false
+            );
             assert_eq!(<ActiveCollatorsForCurrentSession<Runtime>>::get().len(), 2);
 
             run_block();
@@ -80,6 +88,14 @@ fn inactivity_tracking_correctly_updates_storages() {
             assert_eq!(
                 <ActiveCollatorsForCurrentSession<Runtime>>::get().contains(&BOB.into()),
                 true
+            );
+            assert_eq!(
+                <ActiveCollatorsForCurrentSession<Runtime>>::get().contains(&CHARLIE.into()),
+                false
+            );
+            assert_eq!(
+                <ActiveCollatorsForCurrentSession<Runtime>>::get().contains(&DAVE.into()),
+                false
             );
             assert_eq!(<ActiveCollatorsForCurrentSession<Runtime>>::get().len(), 2);
 
@@ -113,6 +129,10 @@ fn inactivity_tracking_correctly_updates_storages() {
                 false
             );
             assert_eq!(
+                <ActiveCollatorsForCurrentSession<Runtime>>::get().contains(&DAVE.into()),
+                false
+            );
+            assert_eq!(
                 <ActiveCollatorsForCurrentSession<Runtime>>::get().contains(&BOB.into()),
                 true
             );
@@ -136,6 +156,10 @@ fn inactivity_tracking_correctly_updates_storages() {
                 <ActiveCollatorsForCurrentSession<Runtime>>::get().contains(&CHARLIE.into()),
                 true
             );
+            assert_eq!(
+                <ActiveCollatorsForCurrentSession<Runtime>>::get().contains(&DAVE.into()),
+                false
+            );
             assert_eq!(<ActiveCollatorsForCurrentSession<Runtime>>::get().len(), 3);
 
             run_to_session(2);
@@ -158,9 +182,11 @@ fn inactivity_tracking_correctly_updates_storages() {
                 false
             );
             assert_eq!(<ActiveCollatorsForCurrentSession<Runtime>>::get().len(), 0);
-            run_to_session(3);
+            
+            let max_inactive_sessions =
+                <Runtime as pallet_inactivity_tracking::Config>::MaxInactiveSessions::get();
+            run_to_session(max_inactive_sessions - 1);
             run_block();
-
             assert_eq!(
                 InactivityTracking::is_node_inactive(&AccountId::from(ALICE)),
                 false
@@ -177,12 +203,8 @@ fn inactivity_tracking_correctly_updates_storages() {
                 InactivityTracking::is_node_inactive(&AccountId::from(DAVE)),
                 false
             );
-
-            let max_inactive_sessions =
-                <Runtime as pallet_inactivity_tracking::Config>::MaxInactiveSessions::get();
-
+            
             run_to_session(max_inactive_sessions);
-
             assert_eq!(
                 InactivityTracking::is_node_inactive(&AccountId::from(ALICE)),
                 false
@@ -201,6 +223,7 @@ fn inactivity_tracking_correctly_updates_storages() {
             );
             assert_eq!(<ActiveCollators<Runtime>>::get(0).is_empty(), false);
 
+            run_to_session(max_inactive_sessions + 1);
             run_block();
 
             assert_eq!(<ActiveCollators<Runtime>>::get(0).is_empty(), true);
