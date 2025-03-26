@@ -1,10 +1,5 @@
-/**
- * This script recursively scans a directory for TypeScript files and looks for duplicate
- * function definitions (by function name). It uses a crude regex to capture named functions
- * (optionally exported) and then reports any function names that occur more than once.
- *
- * Usage: ts-node duplicateFunctionFinder.ts check <rootDir>
- */
+// Crude duplicate function finder because we copy paste tests a lot.
+// Any duplicates should be refactored into "utils" package.
 import fs from "node:fs";
 import path from "node:path";
 import yargs from "yargs";
@@ -84,9 +79,9 @@ yargs(hideBin(process.argv))
                 if (occurrences.length > 1) {
                     duplicatesFound = true;
                     console.log(`Duplicate function definition found for "${functionName}":`);
-                    occurrences.forEach((occurrence) => {
+                    for (const occurrence of occurrences) {
                         console.log(`  - ${occurrence.file} (line ${occurrence.line})`);
-                    });
+                    }
                     console.log("");
                 }
             });

@@ -8,7 +8,6 @@ import {
     directoryExists,
     findCollatorProcessPid,
     getAuthorFromDigest,
-    getAuthorFromDigestRange,
     getHeaderFromRelay,
     getKeyringNimbusIdHex,
     getTmpZombiePath,

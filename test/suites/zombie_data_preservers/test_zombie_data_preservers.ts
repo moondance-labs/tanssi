@@ -12,8 +12,16 @@ import { ApiPromise, Keyring, WsProvider } from "@polkadot/api";
 import { u8aToHex } from "@polkadot/util";
 import { decodeAddress } from "@polkadot/util-crypto";
 import { WebSocketProvider, ethers, parseUnits } from "ethers";
-import fs from "node:fs/promises";
-import { getHeaderFromRelay, getTmpZombiePath, signAndSendAndInclude, sleep } from "utils";
+import { getHeaderFromRelay, getTmpZombiePath, signAndSendAndInclude, waitForLogs } from "utils";
+
+// Checks every second the log file to find the watcher best block notification until it is found or
+// timeout is reached. If timeout is reached, throws an error.
+export async function waitForLogs2(logFilePath: string, timeout: number, logs: string[]): Promise<void> {
+    const logsFound = await waitForLogs(logFilePath, timeout, logs);
+    if (!logsFound) {
+        expect.fail(`RPC Assignment Watch log was not found after ${timeout} seconds.`);
+    }
+}
 
 describeSuite({
     id: "ZOM01",
@@ -86,7 +94,7 @@ describeSuite({
             title: "Data preservers 2000 watcher properly starts",
             test: async () => {
                 const logFilePath = `${getTmpZombiePath()}/DataPreserver-2000.log`;
-                await waitForLogs(logFilePath, 300, ["Starting data preserver assignment watcher"]);
+                await waitForLogs2(logFilePath, 300, ["Starting data preserver assignment watcher"]);
             },
         });
 
@@ -125,7 +133,7 @@ describeSuite({
                 expect(onChainProfileAccount).to.be.eq(bobAccount);
                 expect(onChainProfile.assignment.toHuman().toString()).to.be.eq(["2,000", "Free"].toString());
 
-                await waitForLogs(logFilePath, 300, ["NotAssigned => Active(Id(2000))"]);
+                await waitForLogs2(logFilePath, 300, ["NotAssigned => Active(Id(2000))"]);
             },
         });
 
@@ -148,7 +156,7 @@ describeSuite({
             title: "Data preservers 2001 watcher properly starts",
             test: async () => {
                 const logFilePath = `${getTmpZombiePath()}/DataPreserver-2001.log`;
-                await waitForLogs(logFilePath, 300, ["Starting data preserver assignment watcher"]);
+                await waitForLogs2(logFilePath, 300, ["Starting data preserver assignment watcher"]);
             },
         });
 
@@ -187,7 +195,7 @@ describeSuite({
                 expect(onChainProfileAccount).to.be.eq(bobAccount);
                 expect(onChainProfile.assignment.toHuman().toString()).to.be.eq(["2,001", "Free"].toString());
 
-                await waitForLogs(logFilePath, 300, ["NotAssigned => Active(Id(2001))"]);
+                await waitForLogs2(logFilePath, 300, ["NotAssigned => Active(Id(2001))"]);
             },
         });
 
@@ -261,7 +269,7 @@ describeSuite({
                 expect(onChainProfile.assignment.toHuman()).to.be.eq(null);
 
                 const logFilePath = `${getTmpZombiePath()}/DataPreserver-2001.log`;
-                await waitForLogs(logFilePath, 300, ["Active(Id(2001)) => NotAssigned"]);
+                await waitForLogs2(logFilePath, 300, ["Active(Id(2001)) => NotAssigned"]);
             },
         });
 
@@ -355,7 +363,7 @@ describeSuite({
                 );
 
                 const logFilePath = `${getTmpZombiePath()}/DataPreserver-2001.log`;
-                await waitForLogs(logFilePath, 300, ["NotAssigned => Active(Id(2000))"]);
+                await waitForLogs2(logFilePath, 300, ["NotAssigned => Active(Id(2000))"]);
 
                 const wsProvider = new WsProvider("ws://127.0.0.1:9952");
                 dataProvider2000BApi = await ApiPromise.create({ provider: wsProvider });
@@ -380,7 +388,7 @@ describeSuite({
             title: "Data preserver services halt after stream payment is stalled",
             test: async () => {
                 const logFilePath = `${getTmpZombiePath()}/DataPreserver-2001.log`;
-                await waitForLogs(logFilePath, 300, ["Active(Id(2000)) => Inactive(Id(2000))"]);
+                await waitForLogs2(logFilePath, 300, ["Active(Id(2000)) => Inactive(Id(2000))"]);
 
                 {
                     // pays for 10 blocks of service
@@ -398,38 +406,3 @@ describeSuite({
         });
     },
 });
-
-// Checks every second the log file to find the watcher best block notification until it is found or
-// timeout is reached.
-async function waitForLogs(logFilePath: string, timeout: number, logs: string[]): Promise<void> {
-    for (let i = 0; i < timeout; i++) {
-        if (checkLogsNoFail(logFilePath, logs)) {
-            return;
-        }
-
-        await sleep(1000);
-    }
-
-    expect.fail(`RPC Assignment Watch log was not found after ${timeout} seconds.`);
-}
-
-// Read log file path and check that all the logs are found in order.
-// Only supports single-line logs.
-async function checkLogsNoFail(logFilePath: string, logs: string[]): Promise<boolean> {
-    const fileContent = await fs.readFile(logFilePath, "utf8");
-    const lines = fileContent.split("\n");
-
-    let logIndex = 0;
-
-    for (let i = 0; i < lines.length; i++) {
-        if (logIndex < logs.length && lines[i].includes(logs[logIndex])) {
-            logIndex++;
-        }
-
-        if (logIndex === logs.length) {
-            break;
-        }
-    }
-
-    return logIndex === logs.length;
-}
