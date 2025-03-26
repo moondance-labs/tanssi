@@ -8,13 +8,16 @@ on:
     branches:
       - MD-884-*
 
+env:
+  IS_CMD: ${{ startsWith(github.event.comment.body, '/cmd') }}
+
 permissions:
   contents: write
 
 jobs:
   is-org-member:
     # TODO: Uncomment before merge
-    # if: startsWith(github.event.comment.body, '/cmd')
+    # if: env.IS_CMD == 'true'
     runs-on: self-hosted
     steps:
       - name: Check Permissions
@@ -37,7 +40,7 @@ jobs:
           fi
   acknowledge:
     # TODO: Uncomment before merge
-    # if: ${{ startsWith(github.event.comment.body, '/cmd') }}
+    # if: env.IS_CMD == 'true'
     needs: ["is-org-member"]
     runs-on: ubuntu-latest
     steps:
