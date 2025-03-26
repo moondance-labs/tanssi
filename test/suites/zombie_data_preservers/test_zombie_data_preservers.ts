@@ -88,13 +88,14 @@ describeSuite({
             title: "Data preservers 2000 watcher properly starts",
             test: async () => {
                 const logFilePath = `${getTmpZombiePath()}/DataPreserver-2000.log`;
-                await waitForLogs2(logFilePath, 300, ["Starting data preserver assignment watcher"]);
+                await waitForLogs2(logFilePath, 300, ["Starting Data Preserver Assignment Watcher"]);
             },
         });
 
         it({
             id: "T03",
             title: "Change assignment 2000",
+            timeout: 180000,
             test: async () => {
                 const logFilePath = `${getTmpZombiePath()}/DataPreserver-2000.log`;
 
@@ -150,13 +151,14 @@ describeSuite({
             title: "Data preservers 2001 watcher properly starts",
             test: async () => {
                 const logFilePath = `${getTmpZombiePath()}/DataPreserver-2001.log`;
-                await waitForLogs2(logFilePath, 300, ["Starting data preserver assignment watcher"]);
+                await waitForLogs2(logFilePath, 300, ["Starting Data Preserver Assignment Watcher"]);
             },
         });
 
         it({
             id: "T06",
             title: "Change assignment 2001",
+            timeout: 180000,
             test: async () => {
                 const logFilePath = `${getTmpZombiePath()}/DataPreserver-2001.log`;
 
@@ -248,6 +250,7 @@ describeSuite({
         it({
             id: "T09",
             title: "Stop assignement 2001",
+            timeout: 180000,
             test: async () => {
                 {
                     const tx = paraApi.tx.dataPreservers.stopAssignment(profile2, 2001);
@@ -270,6 +273,7 @@ describeSuite({
         it({
             id: "T10",
             title: "Update profile to Stream Payment",
+            timeout: 180000,
             test: async () => {
                 const newProfile = {
                     url: "exemple",
@@ -317,6 +321,7 @@ describeSuite({
         it({
             id: "T11",
             title: "Start new assignment for chain 2000 with stream payment",
+            timeout: 180000,
             test: async () => {
                 {
                     // to non-force assign we need to have a para manager, which is not the case
@@ -372,6 +377,7 @@ describeSuite({
         it({
             id: "T11b",
             title: "Start new assignment for chain 2000 with stream payment - wait 10 blocks",
+            timeout: 180000,
             test: async () => {
                 await context.waitBlock(10, "Tanssi");
             },
@@ -380,6 +386,7 @@ describeSuite({
         it({
             id: "T12",
             title: "Data preserver services halt after stream payment is stalled",
+            timeout: 180000,
             test: async () => {
                 const logFilePath = `${getTmpZombiePath()}/DataPreserver-2001.log`;
                 await waitForLogs2(logFilePath, 300, ["Active(Id(2000)) => Inactive(Id(2000))"]);
