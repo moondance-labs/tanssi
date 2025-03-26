@@ -77,12 +77,12 @@ describeSuite({
                     })
                     .filter(({ expectedAuthor, author }) => expectedAuthor.toString() !== author.toString());
 
-                failures.forEach(({ blockNum, author, expectedAuthor }) => {
+                for (const { blockNum, author, expectedAuthor } of failures) {
                     log(
                         `Author at block #${blockNum} was #${author.toString()}` +
                             `but should have been #${expectedAuthor.toString()}`
                     );
-                });
+                }
 
                 expect(
                     failures.length,
