@@ -39,8 +39,7 @@ jobs:
             echo "❌ User $COLLABORATOR doesn't have enough permission: "$permission_level". Failing..." && exit 1
           fi
   acknowledge:
-    # TODO: Uncomment before merge
-    # if: env.IS_CMD == 'true'
+    if: env.IS_CMD == 'true'
     needs: ["is-org-member"]
     runs-on: ubuntu-latest
     steps:
