@@ -15,7 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 #![cfg_attr(not(feature = "std"), no_std)]
 use {
-    frame_support::{dispatch::DispatchResult, pallet_prelude::Weight, traits::OneSessionHandler},
+    frame_support::{dispatch::DispatchResult, pallet_prelude::Weight},
     sp_runtime::{traits::Get, BoundedBTreeSet},
     sp_staking::SessionIndex,
     tp_traits::{
@@ -47,7 +47,6 @@ pub mod pallet {
         core::marker::PhantomData,
         frame_support::{pallet_prelude::*, storage::types::StorageMap},
         frame_system::pallet_prelude::*,
-        sp_runtime::RuntimeAppPublic,
     };
 
     #[pallet::pallet]
@@ -64,13 +63,6 @@ pub mod pallet {
             + MaybeSerializeDeserialize
             + MaxEncodedLen
             + TryFrom<Self::AccountId>;
-
-        /// The identifier type for an authority.
-        type AuthorityId: Member
-            + Parameter
-            + RuntimeAppPublic
-            + MaybeSerializeDeserialize
-            + MaxEncodedLen;
 
         /// The maximum number of sessions for which a collator can be inactive
         /// before being moved to the offline queue
@@ -226,25 +218,4 @@ impl<T: Config> AuthorNotingHook<T::CollatorId> for Pallet<T> {
     }
     #[cfg(feature = "runtime-benchmarks")]
     fn prepare_worst_case_for_bench(_a: &T::CollatorId, _b: BlockNumber, _para_id: ParaId) {}
-}
-impl<T: Config> sp_runtime::BoundToRuntimeAppPublic for Pallet<T> {
-    type Public = T::AuthorityId;
-}
-impl<T: pallet_session::Config + Config> OneSessionHandler<T::AccountId> for Pallet<T> {
-    type Key = T::AuthorityId;
-    fn on_genesis_session<'a, I>(_validators: I)
-    where
-        I: Iterator<Item = (&'a T::AccountId, Self::Key)> + 'a,
-    {
-    }
-    fn on_new_session<'a, I>(_changed: bool, _validators: I, _queued: I)
-    where
-        I: Iterator<Item = (&'a T::AccountId, Self::Key)> + 'a,
-    {
-        Self::process_ended_session();
-    }
-    fn on_before_session_ending() {
-        // TODO: Move relevant logic from `on_initialize` and `on_finalize` to here
-    }
-    fn on_disabled(_validator_index: u32) {}
 }

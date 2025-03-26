@@ -661,6 +661,9 @@ impl pallet_initializer::ApplyNewSession<Runtime> for OwnApplySession {
             &queued_id_to_nimbus_map,
             &assignments.next_assignment,
         );
+
+        // Next: InactivityTracking
+        InactivityTracking::process_ended_session();
     }
 }
 
@@ -1741,7 +1744,6 @@ impl pallet_inactivity_tracking::Config for Runtime {
     type MaxCollatorsPerSession = ConstU32<100>;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type GetSelfChainBlockAuthor = GetSelfChainBlockAuthor;
-    type AuthorityId = nimbus_primitives::NimbusId;
     type WeightInfo = ();
 }
 
