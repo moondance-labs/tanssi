@@ -19,9 +19,9 @@ use {
         candidate::Candidates,
         pools::{self, ActivePoolKind, Pool, PoolKind},
         traits::Timer,
-        Candidate, Config, Delegator, Error, Event, HoldReason, Pallet, PendingOperationKey,
-        PendingOperationQuery, PendingOperationQueryOf, PendingOperations, Shares, SharesOrStake,
-        Stake,
+        Candidate, Config, Delegator, Error, Event, HoldReason, Pallet, PausePoolsExtrinsics,
+        PendingOperationKey, PendingOperationQuery, PendingOperationQueryOf, PendingOperations,
+        Shares, SharesOrStake, Stake,
     },
     frame_support::{
         dispatch::DispatchErrorWithPostInfo,
@@ -116,6 +116,11 @@ impl<T: Config> Calls<T> {
         pool: ActivePoolKind,
         stake: T::Balance,
     ) -> DispatchResultWithPostInfo {
+        ensure!(
+            !PausePoolsExtrinsics::<T>::get(),
+            Error::<T>::PoolsExtrinsicsArePaused
+        );
+
         ensure!(!stake.is_zero(), Error::<T>::StakeMustBeNonZero);
 
         // Convert stake into joining shares quantity.
@@ -172,6 +177,11 @@ impl<T: Config> Calls<T> {
         pool: ActivePoolKind,
         amount: SharesOrStake<T::Balance>,
     ) -> DispatchResultWithPostInfo {
+        ensure!(
+            !PausePoolsExtrinsics::<T>::get(),
+            Error::<T>::PoolsExtrinsicsArePaused
+        );
+
         // Converts amount to shares of the correct pool
         let shares = match (amount, pool) {
             (SharesOrStake::Shares(s), _) => s,
@@ -214,6 +224,11 @@ impl<T: Config> Calls<T> {
     pub fn execute_pending_operations(
         operations: Vec<PendingOperationQueryOf<T>>,
     ) -> DispatchResultWithPostInfo {
+        ensure!(
+            !PausePoolsExtrinsics::<T>::get(),
+            Error::<T>::PoolsExtrinsicsArePaused
+        );
+
         for (index, query) in operations.into_iter().enumerate() {
             // We deconstruct the query and find the balance associated with it.
             // If it is zero it may not exist or have been executed before, thus
@@ -278,6 +293,11 @@ impl<T: Config> Calls<T> {
         pool: ActivePoolKind,
         joining_shares: Shares<T::Balance>,
     ) -> DispatchResultWithPostInfo {
+        ensure!(
+            !PausePoolsExtrinsics::<T>::get(),
+            Error::<T>::PoolsExtrinsicsArePaused
+        );
+
         // Convert joining shares into stake.
         let stake = pools::Joining::<T>::sub_shares(&candidate, &delegator, joining_shares)?;
 
@@ -378,6 +398,11 @@ impl<T: Config> Calls<T> {
         delegator: Delegator<T>,
         leavinig_shares: Shares<T::Balance>,
     ) -> DispatchResultWithPostInfo {
+        ensure!(
+            !PausePoolsExtrinsics::<T>::get(),
+            Error::<T>::PoolsExtrinsicsArePaused
+        );
+
         // Convert leaving shares into stake.
         let stake = pools::Leaving::<T>::sub_shares(&candidate, &delegator, leavinig_shares)?;
 
@@ -444,6 +469,11 @@ impl<T: Config> Calls<T> {
         source_pool: ActivePoolKind,
         amount: SharesOrStake<T::Balance>,
     ) -> DispatchResultWithPostInfo {
+        ensure!(
+            !PausePoolsExtrinsics::<T>::get(),
+            Error::<T>::PoolsExtrinsicsArePaused
+        );
+
         // Converts amount to shares of the correct pool
         let old_shares = match (amount, source_pool) {
             (SharesOrStake::Shares(s), _) => s,

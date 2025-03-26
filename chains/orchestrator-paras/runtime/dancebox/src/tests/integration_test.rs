@@ -21,7 +21,10 @@ use {
     cumulus_primitives_core::ParaId,
     dp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApiV1,
     dp_core::well_known_keys,
-    frame_support::{assert_err, assert_noop, assert_ok, BoundedVec},
+    frame_support::{
+        assert_err, assert_noop, assert_ok, migrations::SteppedMigration,
+        pallet_prelude::StorageVersion, weights::WeightMeter, BoundedVec,
+    },
     frame_system::ConsumedWeight,
     nimbus_primitives::NIMBUS_KEY_ID,
     pallet_author_noting_runtime_api::runtime_decl_for_author_noting_api::AuthorNotingApi,
@@ -47,8 +50,7 @@ use {
     sp_std::vec,
     tanssi_runtime_common::migrations::{
         HostConfigurationV3, MigrateConfigurationAddFullRotationMode,
-        MigratePooledStakingGenerateSummaries, MigrateServicesPaymentAddCollatorAssignmentCredits,
-        RegistrarPendingVerificationValueToMap,
+        MigrateServicesPaymentAddCollatorAssignmentCredits, RegistrarPendingVerificationValueToMap,
     },
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
     tp_stream_payment_common::{
@@ -6272,8 +6274,12 @@ fn test_migration_pooled_staking_summaries() {
             );
 
             // Run migration
-            let migration = MigratePooledStakingGenerateSummaries::<Runtime>(Default::default());
-            migration.migrate(Default::default());
+            StorageVersion::new(0u16).put::<PooledStaking>(); // set version required for migration to run
+            pallet_pooled_staking::migrations::MigrationGenerateSummaries::<Runtime>::step(
+                None,
+                &mut WeightMeter::new(),
+            )
+            .expect("to run without errors");
 
             // Check output
             assert_eq!(CandidateSummaries::<Runtime>::iter().count(), 2);

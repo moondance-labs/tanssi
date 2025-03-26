@@ -252,8 +252,11 @@ pub mod pallet {
     )]
     pub struct Stake<T>(pub T);
 
+    const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
+
     /// Pooled Staking pallet.
     #[pallet::pallet]
+    #[pallet::storage_version(STORAGE_VERSION)]
     pub struct Pallet<T>(PhantomData<T>);
 
     #[pallet::config]
@@ -371,6 +374,15 @@ pub mod pallet {
     #[pallet::storage]
     pub type CandidateSummaries<T: Config> =
         StorageMap<_, Blake2_128Concat, Candidate<T>, CandidateSummary, ValueQuery>;
+
+    /// Pauses the ability to modify pools through extrinsics.
+    ///
+    /// Currently added only to run the multi-block migration to compute
+    /// `DelegatorCandidateSummaries` and `CandidateSummaries`. It will NOT
+    /// prevent to distribute rewards, which is fine as the reward distribution
+    /// process doesn't alter the pools in a way that will mess with the migration.
+    #[pallet::storage]
+    pub type PausePoolsExtrinsics<T: Config> = StorageValue<_, bool, ValueQuery>;
 
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -506,6 +518,7 @@ pub mod pallet {
         CandidateTransferingOwnSharesForbidden,
         RequestCannotBeExecuted(u16),
         SwapResultsInZeroShares,
+        PoolsExtrinsicsArePaused,
     }
 
     impl<T: Config> From<tp_maths::OverflowError> for Error<T> {

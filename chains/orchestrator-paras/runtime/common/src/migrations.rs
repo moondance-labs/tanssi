@@ -1108,32 +1108,6 @@ where
     }
 }
 
-pub struct MigratePooledStakingGenerateSummaries<Runtime>(pub PhantomData<Runtime>);
-impl<Runtime> Migration for MigratePooledStakingGenerateSummaries<Runtime>
-where
-    Runtime: pallet_pooled_staking::Config,
-{
-    fn friendly_name(&self) -> &str {
-        "TM_MigratePooledStakingGenerateSummaries"
-    }
-
-    fn migrate(&self, available_weight: Weight) -> Weight {
-        pallet_pooled_staking::migrations::generate_summaries::<Runtime>(available_weight)
-    }
-
-    #[cfg(feature = "try-runtime")]
-    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
-        // Can we test the result without doing exactly the same process as the migration?
-        // (which doesn't prove anything then)
-        Ok(vec![])
-    }
-
-    #[cfg(feature = "try-runtime")]
-    fn post_upgrade(&self, _state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
-        Ok(())
-    }
-}
-
 pub struct FlashboxMigrations<Runtime>(PhantomData<Runtime>);
 
 impl<Runtime> GetMigrations for FlashboxMigrations<Runtime>
@@ -1207,7 +1181,6 @@ where
     Runtime: pallet_data_preservers::Config,
     Runtime: pallet_xcm::Config,
     Runtime: pallet_stream_payment::Config,
-    Runtime: pallet_pooled_staking::Config,
     <Runtime as pallet_balances::Config>::RuntimeHoldReason:
         From<pallet_pooled_staking::HoldReason>,
     Runtime: pallet_foreign_asset_creator::Config,
@@ -1247,7 +1220,6 @@ where
         //let migrate_registrar_reserves = RegistrarReserveToHoldMigration::<Runtime>(Default::default());
         let migrate_config_full_rotation_mode = MigrateConfigurationAddFullRotationMode::<Runtime>(Default::default());
         let migrate_stream_payment_new_config_items = MigrateStreamPaymentNewConfigFields::<Runtime>(Default::default());
-        let migrate_pooled_staking_generate_summaries = MigratePooledStakingGenerateSummaries::<Runtime>(Default::default());
 
         vec![
             // Applied in runtime 200
@@ -1288,7 +1260,6 @@ where
             //Box::new(migrate_config_max_parachain_percentage),
             Box::new(migrate_config_full_rotation_mode),
             Box::new(migrate_stream_payment_new_config_items),
-            Box::new(migrate_pooled_staking_generate_summaries),
         ]
     }
 }
@@ -1305,7 +1276,6 @@ where
     >,
     Runtime: pallet_external_validator_slashes::Config,
     Runtime: snowbridge_pallet_system::Config,
-    Runtime: pallet_pooled_staking::Config,
 {
     fn get_migrations() -> Vec<Box<dyn Migration>> {
         let migrate_config_full_rotation_mode =
@@ -1315,8 +1285,6 @@ where
             BondedErasTimestampMigration::<Runtime>(Default::default());
         let snowbridge_ethereum_system_xcm_v5 =
             SnowbridgeEthereumSystemXcmV5::<Runtime>(Default::default());
-        let migrate_pooled_staking_generate_summaries =
-            MigratePooledStakingGenerateSummaries::<Runtime>(Default::default());
 
         vec![
             // Applied in runtime 1000
@@ -1326,7 +1294,6 @@ where
             Box::new(migrate_config_full_rotation_mode),
             Box::new(external_validator_slashes_bonded_eras_timestamp),
             Box::new(snowbridge_ethereum_system_xcm_v5),
-            Box::new(migrate_pooled_staking_generate_summaries),
         ]
     }
 }
