@@ -76,7 +76,7 @@ pub use crate::{
     System, TanssiAuthorityAssignment, TanssiCollatorAssignment, TransactionPayment,
 };
 
-pub const UNIT: Balance = 1_000_000_000_000_000_000;
+pub const UNIT: Balance = 1_000_000_000_000;
 
 pub fn read_last_entropy() -> [u8; 32] {
     let mut last = [0u8; 32];
