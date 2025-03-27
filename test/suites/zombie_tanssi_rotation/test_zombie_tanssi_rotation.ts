@@ -396,11 +396,11 @@ async function ensureContainerDbPathsDontExist(collators: string[], pathsToVerif
 function createCollatorKeyToNameMap(paraApi, collatorNames: string[]): Record<string, string> {
     const collatorName: Record<string, string> = {};
 
-    collatorNames.forEach((name) => {
+    for (const name of collatorNames) {
         const hexAddress = getKeyringNimbusIdHex(name);
         const k = paraApi.createType("AccountId", hexAddress);
         collatorName[k] = name;
-    });
+    }
 
     return collatorName;
 }

@@ -513,11 +513,11 @@ export class XcmFragment {
     // Add a `SetErrorHandler` instruction, appending all the nested instructions
     set_error_handler_with(callbacks: (() => any)[]): this {
         const error_instructions: any[] = [];
-        callbacks.forEach((cb) => {
+        for (const cb of callbacks) {
             cb.call(this);
             // As each method in the class pushes to the instruction stack, we pop
             error_instructions.push(this.instructions.pop());
-        });
+        }
         this.instructions.push({
             SetErrorHandler: error_instructions,
         });
@@ -527,11 +527,11 @@ export class XcmFragment {
     // Add a `SetAppendix` instruction, appending all the nested instructions
     set_appendix_with(callbacks: (() => any)[]): this {
         const appendix_instructions: any[] = [];
-        callbacks.forEach((cb) => {
+        for (const cb of callbacks) {
             cb.call(this);
             // As each method in the class pushes to the instruction stack, we pop
             appendix_instructions.push(this.instructions.pop());
-        });
+        }
         this.instructions.push({
             SetAppendix: appendix_instructions,
         });
