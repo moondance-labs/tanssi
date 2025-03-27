@@ -151,6 +151,7 @@ pub mod pallet {
             origin: OriginFor<T>,
             status: ActivityTrackingStatus,
         ) -> DispatchResult {
+            ensure_root(origin)?;
             <CurrentActivityTrackingStatus<T>>::put(status.clone());
             Self::deposit_event(Event::<T>::ActivityTrackingStatusSet { status });
             Ok(())

@@ -36,7 +36,7 @@ src/dancelight/interfaces/types-lookup.ts
 function hackXcmV5Support() {
     // For dancebox, replace "Lookup89" with "StagingXcmV5Junction"
     const danceboxFilePath = "src/dancebox/interfaces/types-lookup.ts";
-    hackTypeReplacement(danceboxFilePath, "Lookup90", "StagingXcmV5Junction", 8);
+    hackTypeReplacement(danceboxFilePath, "Lookup91", "StagingXcmV5Junction", 8);
 
     // For dancelight, replace "Lookup77" with "StagingXcmV5Junction"
     const dancelightFilePath = "src/dancelight/interfaces/types-lookup.ts";

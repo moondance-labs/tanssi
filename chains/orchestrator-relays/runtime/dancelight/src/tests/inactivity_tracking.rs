@@ -54,10 +54,6 @@ fn inactivity_tracking_correctly_updates_storages() {
         ])
         .build()
         .execute_with(|| {
-            assert_ok!(InactivityTracking::set_inactivity_tracking_status(
-                root_origin(),
-                true
-            ));
             run_block();
             note_block_authors(vec![(ALICE.into(), 3000.into()), (BOB.into(), 3001.into())]);
 

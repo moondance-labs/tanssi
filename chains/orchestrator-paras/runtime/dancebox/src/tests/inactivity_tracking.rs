@@ -57,10 +57,6 @@ fn inactivity_tracking_correctly_updates_storages() {
         ])
         .build()
         .execute_with(|| {
-            assert_ok!(InactivityTracking::set_inactivity_tracking_status(
-                root_origin(),
-                true
-            ));
             run_block();
             note_block_authors(vec![(CHARLIE.into(), 3001.into())]);
             assert_eq!(<Runtime as pallet_inactivity_tracking::Config>::GetSelfChainBlockAuthor::get_block_author(), Some(BOB.into()));
