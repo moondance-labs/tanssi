@@ -18,8 +18,7 @@ describeSuite({
             test: async () => {
                 // Get all active parachains and parathreads
                 const activeParaSet = new Set(
-                    (await api.query.paras.paraLifecycles.entries())
-                        .map(([key]) => key.args[0].toString())
+                    (await api.query.paras.paraLifecycles.entries()).map(([key]) => key.args[0].toString())
                 );
 
                 // Get all HRMP channels
