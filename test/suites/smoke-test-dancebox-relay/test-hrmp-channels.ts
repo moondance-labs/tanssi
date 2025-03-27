@@ -17,30 +17,31 @@ describeSuite({
             title: "HRMP channels are only opened between active parachains or parathreads",
             test: async () => {
                 // Get all active parachains and parathreads
-                const activeParaIds = await api.query.paras.parachains();
-                const activeParathreads = await api.query.registrar.parathrads?.() || [];
-                
-                const activeParaSet = new Set([
-                    ...activeParaIds.map(id => id.toString()),
-                    ...activeParathreads.map(id => id.toString())
-                ]);
-                
+                const activeParaSet = new Set(
+                    (await api.query.paras.paraLifecycles.entries())
+                        .map(([key]) => key.args[0].toString())
+                );
+
                 // Get all HRMP channels
                 const hrmpChannels = await api.query.hrmp.hrmpChannels.entries();
-                
+
                 // Verify each channel is between active paras
                 for (const [key, _] of hrmpChannels) {
-                    const {sender, recipient} = key.args[0];
-                    
+                    const { sender, recipient } = key.args[0];
+
                     // Check if both sender and recipient are valid
                     const senderId = sender.toString();
                     const recipientId = recipient.toString();
-                    
-                    expect(activeParaSet.has(senderId), 
-                        `HRMP channel sender ${senderId} is not an active parachain or parathread`).to.be.true;
-                    
-                    expect(activeParaSet.has(recipientId),
-                        `HRMP channel recipient ${recipientId} is not an active parachain or parathread`).to.be.true;
+
+                    expect(
+                        activeParaSet.has(senderId),
+                        `HRMP channel sender ${senderId} is not an active parachain or parathread`
+                    ).to.be.true;
+
+                    expect(
+                        activeParaSet.has(recipientId),
+                        `HRMP channel recipient ${recipientId} is not an active parachain or parathread`
+                    ).to.be.true;
                 }
             },
         });
@@ -52,22 +53,22 @@ describeSuite({
                 const config = await api.query.configuration.activeConfig();
                 const hrmpSenderDeposit = config.hrmpSenderDeposit.toBigInt();
                 const hrmpRecipientDeposit = config.hrmpRecipientDeposit.toBigInt();
-                
+
                 const hrmpChannels = await api.query.hrmp.hrmpChannels.entries();
-                
+
                 for (const [key, channelInfo] of hrmpChannels) {
-                    const {sender, recipient} = key.args[0];
-                    
+                    const { sender, recipient } = key.args[0];
+
                     const senderId = sender.toString();
                     const recipientId = recipient.toString();
-                    
+
                     // Check sender deposit is correct
                     const senderDeposit = channelInfo.unwrap().senderDeposit.toBigInt();
                     expect(senderDeposit).to.equal(
                         hrmpSenderDeposit,
                         `Incorrect sender deposit for channel ${senderId}->${recipientId}`
                     );
-                    
+
                     // Check recipient deposit is correct
                     const recipientDeposit = channelInfo.unwrap().recipientDeposit.toBigInt();
                     expect(recipientDeposit).to.equal(
@@ -84,21 +85,21 @@ describeSuite({
             test: async () => {
                 const config = await api.query.configuration.activeConfig();
                 const maxHrmpChannelsPerParachain = config.hrmpMaxParachainOutboundChannels.toNumber();
-                
+
                 const hrmpChannels = await api.query.hrmp.hrmpChannels.entries();
-                
+
                 // Map to count the number of outbound channels per parachain
                 const outboundChannelCounts = new Map();
-                
+
                 // Traverse all HRMP channels and count the number of outbound channels per parachain
                 for (const [key, _] of hrmpChannels) {
-                    const {sender} = key.args[0];
+                    const { sender } = key.args[0];
                     const senderId = sender.toString();
-                    
+
                     const currentCount = outboundChannelCounts.get(senderId) || 0;
                     outboundChannelCounts.set(senderId, currentCount + 1);
                 }
-                
+
                 // Verify no parachain exceeds the limit
                 for (const [paraId, count] of outboundChannelCounts.entries()) {
                     expect(count).to.be.lessThanOrEqual(
