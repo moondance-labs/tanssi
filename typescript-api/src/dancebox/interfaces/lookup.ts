@@ -5058,6 +5058,7 @@ export default {
             CandidateTransferingOwnSharesForbidden: "Null",
             RequestCannotBeExecuted: "u16",
             SwapResultsInZeroShares: "Null",
+            PoolsExtrinsicsArePaused: "Null",
         },
     },
     /**

@@ -7866,6 +7866,7 @@ declare module "@polkadot/types/lookup" {
         readonly isRequestCannotBeExecuted: boolean;
         readonly asRequestCannotBeExecuted: u16;
         readonly isSwapResultsInZeroShares: boolean;
+        readonly isPoolsExtrinsicsArePaused: boolean;
         readonly type:
             | "InvalidPalletSetting"
             | "DisabledFeature"
@@ -7880,7 +7881,8 @@ declare module "@polkadot/types/lookup" {
             | "UnsufficientSharesForTransfer"
             | "CandidateTransferingOwnSharesForbidden"
             | "RequestCannotBeExecuted"
-            | "SwapResultsInZeroShares";
+            | "SwapResultsInZeroShares"
+            | "PoolsExtrinsicsArePaused";
     }
 
     /** @name PalletTreasuryProposal (694) */

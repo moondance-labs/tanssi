@@ -1101,6 +1101,16 @@ declare module "@polkadot/api-base/types/storage" {
             > &
                 QueryableStorageEntry<ApiType, [AccountId32, AccountId32]>;
             /**
+             * Pauses the ability to modify pools through extrinsics.
+             *
+             * Currently added only to run the multi-block migration to compute
+             * `DelegatorCandidateSummaries` and `CandidateSummaries`. It will NOT
+             * prevent to distribute rewards, which is fine as the reward distribution
+             * process doesn't alter the pools in a way that will mess with the migration.
+             **/
+            pausePoolsExtrinsics: AugmentedQuery<ApiType, () => Observable<bool>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
              * Pending operations balances.
              * Balances are expressed in joining/leaving shares amounts.
              **/
