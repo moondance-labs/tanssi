@@ -390,7 +390,7 @@ fn processing_ended_session_correctly_cleans_outdated_collator_records() {
 }
 
 #[test]
-fn active_collators_noting_for_current_session_works() {
+fn active_collators_noting_for_current_session_works_when_activity_tracking_is_enabled() {
     ExtBuilder.build().execute_with(|| {
         let current_session_active_collator_record: BoundedBTreeSet<AccountId, ConstU32<5>> =
             get_collator_set(vec![COLLATOR_1]);
@@ -407,6 +407,57 @@ fn active_collators_noting_for_current_session_works() {
         <Pallet<Test> as AuthorNotingHook<AccountId>>::on_container_authors_noted(&[
             get_active_collators(3),
         ]);
+        assert_eq!(
+            ActiveCollatorsForCurrentSession::<Test>::get(),
+            current_session_active_collator_record
+        );
+    });
+}
+
+#[test]
+fn active_collators_noting_for_current_session_works_when_activity_tracking_is_disabled_then_enabled(
+) {
+    ExtBuilder.build().execute_with(|| {
+        assert_eq!(ActiveCollatorsForCurrentSession::<Test>::get().len(), 0);
+
+        roll_to(SESSION_BLOCK_LENGTH);
+        assert_ok!(Pallet::<Test>::set_inactivity_tracking_status(
+            RuntimeOrigin::root(),
+            false
+        ));
+        // Since the activity tracking is disabled, the active collators noting
+        // should not update ActiveCollatorsForCurrentSession
+        <Pallet<Test> as AuthorNotingHook<AccountId>>::on_container_authors_noted(&[
+            get_active_collators(SESSION_BLOCK_LENGTH as u32),
+        ]);
+        assert_eq!(ActiveCollatorsForCurrentSession::<Test>::get().len(), 0);
+        let suspension_period: u32 = get_max_inactive_sessions() + 1u32;
+        roll_to(SESSION_BLOCK_LENGTH * (suspension_period as u64 + 1));
+        assert_ok!(Pallet::<Test>::set_inactivity_tracking_status(
+            RuntimeOrigin::root(),
+            true
+        ));
+        assert_eq!(
+            CurrentActivityTrackingStatus::<Test>::get(),
+            ActivityTrackingStatus::Enabled {
+                start: suspension_period + 2,
+                end: 2 * suspension_period
+            }
+        );
+        // Since the activity tracking is enabled,
+        // start = suspension_period + 2 and current session = suspension_period + 1 so
+        // the active collators noting should not update ActiveCollatorsForCurrentSession
+        <Pallet<Test> as AuthorNotingHook<AccountId>>::on_container_authors_noted(&[
+            get_active_collators(SESSION_BLOCK_LENGTH as u32),
+        ]);
+        assert_eq!(ActiveCollatorsForCurrentSession::<Test>::get().len(), 0);
+
+        roll_to(SESSION_BLOCK_LENGTH * (2 * suspension_period as u64 + 1));
+        <Pallet<Test> as AuthorNotingHook<AccountId>>::on_container_authors_noted(&[
+            get_active_collators(SESSION_BLOCK_LENGTH as u32),
+        ]);
+        let current_session_active_collator_record: BoundedBTreeSet<AccountId, ConstU32<5>> =
+            get_collator_set(vec![COLLATOR_1]);
         assert_eq!(
             ActiveCollatorsForCurrentSession::<Test>::get(),
             current_session_active_collator_record
