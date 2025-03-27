@@ -14,7 +14,7 @@ describeSuite({
             title: "Weight should be match expected",
             test: async () => {
                 // TODO: is it expected that this test breaks, just copy the new weights
-                const expectedRefTime = { avg: new BN(786288068) };
+                const expectedRefTime = { avg: new BN(759908569) };
                 expectedRefTime.min = expectedRefTime.avg.divn(1.1);
                 expectedRefTime.max = expectedRefTime.avg.muln(1.1);
                 const expectedProofSize = { avg: new BN(5507) };

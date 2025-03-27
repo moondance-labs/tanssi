@@ -38,10 +38,10 @@ yargs(hideBin(process.argv))
                 .filter((dir) => fs.statSync(path.join(rootDir, dir)).isDirectory());
             const usedPrefixes: Set<string> = new Set();
 
-            topLevelDirs.forEach((dir) => {
+            for (const dir of topLevelDirs) {
                 const prefix = generatePrefix(dir, usedPrefixes);
                 generateId(path.join(rootDir, dir), rootDir, prefix);
-            });
+            }
         }
     )
     .help()
