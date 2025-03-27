@@ -175,6 +175,7 @@ pub mod pallet {
                     end: new_status_end_session_index,
                 }
             } else {
+                <ActiveCollatorsForCurrentSession<T>>::put(BoundedBTreeSet::new());
                 ActivityTrackingStatus::Disabled {
                     end: new_status_end_session_index,
                 }

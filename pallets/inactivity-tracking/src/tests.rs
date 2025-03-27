@@ -464,3 +464,32 @@ fn active_collators_noting_for_current_session_works_when_activity_tracking_is_d
         );
     });
 }
+
+#[test]
+fn disabling_inactivity_tracking_clears_the_current_active_collators_storage() {
+    ExtBuilder.build().execute_with(|| {
+        assert_eq!(
+            CurrentActivityTrackingStatus::<Test>::get(),
+            ActivityTrackingStatus::Enabled { start: 0, end: 0 }
+        );
+
+        roll_to(SESSION_BLOCK_LENGTH);
+        <Pallet<Test> as AuthorNotingHook<AccountId>>::on_container_authors_noted(&[
+            get_active_collators(SESSION_BLOCK_LENGTH as u32),
+        ]);
+        assert_eq!(ActiveCollatorsForCurrentSession::<Test>::get().len(), 1);
+
+        roll_to(SESSION_BLOCK_LENGTH + 1);
+        assert_ok!(Pallet::<Test>::set_inactivity_tracking_status(
+            RuntimeOrigin::root(),
+            false
+        ));
+        assert_eq!(
+            CurrentActivityTrackingStatus::<Test>::get(),
+            ActivityTrackingStatus::Disabled {
+                end: get_max_inactive_sessions() + 1
+            }
+        );
+        assert_eq!(ActiveCollatorsForCurrentSession::<Test>::get().len(), 0);
+    });
+}
