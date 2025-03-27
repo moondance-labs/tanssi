@@ -14,8 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 #![cfg_attr(not(feature = "std"), no_std)]
+
 use {
     frame_support::{dispatch::DispatchResult, pallet_prelude::Weight},
+    parity_scale_codec::{Decode, Encode},
+    scale_info::TypeInfo,
+    serde::{Deserialize, Serialize},
+    sp_core::{MaxEncodedLen, RuntimeDebug},
     sp_runtime::{traits::Get, BoundedBTreeSet},
     sp_staking::SessionIndex,
     tp_traits::{
@@ -38,7 +43,31 @@ pub mod weights;
 #[cfg(feature = "runtime-benchmarks")]
 use tp_traits::{BlockNumber, ParaId};
 
+/// The status of the activity tracking
+#[derive(
+    Clone,
+    PartialEq,
+    Eq,
+    Encode,
+    Decode,
+    TypeInfo,
+    Serialize,
+    Deserialize,
+    RuntimeDebug,
+    MaxEncodedLen,
+)]
+pub enum ActivityTrackingStatus {
+    Enabled { end: SessionIndex },
+    Disabled { end: SessionIndex },
+}
+impl Default for ActivityTrackingStatus {
+    fn default() -> Self {
+        ActivityTrackingStatus::Enabled { end: 0 }
+    }
+}
+
 pub use pallet::*;
+
 #[frame_support::pallet]
 pub mod pallet {
     use {
@@ -85,7 +114,8 @@ pub mod pallet {
 
     /// Switch to enable/disable inactivity tracking
     #[pallet::storage]
-    pub type EnableInactivityTracking<T: Config> = StorageValue<_, bool, ValueQuery>;
+    pub type CurrentActivityTrackingStatus<T: Config> =
+        StorageValue<_, ActivityTrackingStatus, ValueQuery>;
 
     /// A list of double map of inactive collators for a session
     #[pallet::storage]
@@ -105,7 +135,7 @@ pub mod pallet {
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
-        InactivityTrackingEnabled { is_enabled: bool },
+        ActivityTrackingStatusSet { status: ActivityTrackingStatus },
     }
 
     #[pallet::error]
@@ -119,11 +149,10 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::set_inactivity_tracking_status())]
         pub fn set_inactivity_tracking_status(
             origin: OriginFor<T>,
-            is_enabled: bool,
+            status: ActivityTrackingStatus,
         ) -> DispatchResult {
-            ensure_root(origin)?;
-            <EnableInactivityTracking<T>>::put(is_enabled);
-            Self::deposit_event(Event::<T>::InactivityTrackingEnabled { is_enabled });
+            <CurrentActivityTrackingStatus<T>>::put(status.clone());
+            Self::deposit_event(Event::<T>::ActivityTrackingStatusSet { status });
             Ok(())
         }
     }
@@ -186,7 +215,7 @@ impl<T: Config> NodeActivityTrackingHelper<T::CollatorId> for Pallet<T> {
     fn is_node_inactive(node: &T::CollatorId) -> bool {
         // If inactivity tracking is not enabled all nodes are considered active.
         // We don't need to check the inactivity records and can return false
-        if !<EnableInactivityTracking<T>>::get() {
+        if let ActivityTrackingStatus::Disabled { .. } = <CurrentActivityTrackingStatus<T>>::get() {
             return false;
         }
 
