@@ -27,6 +27,7 @@ import type {
     PalletDataPreserversProfile,
     PalletIdentityJudgement,
     PalletIdentityLegacyIdentityInfo,
+    PalletInactivityTrackingActivityTrackingStatus,
     PalletMigrationsHistoricCleanupSelector,
     PalletMigrationsMigrationCursor,
     PalletMultisigTimepoint,
@@ -2044,8 +2045,15 @@ declare module "@polkadot/api-base/types/submittable" {
         };
         inactivityTracking: {
             setInactivityTrackingStatus: AugmentedSubmittable<
-                (isEnabled: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>,
-                [bool]
+                (
+                    status:
+                        | PalletInactivityTrackingActivityTrackingStatus
+                        | { Enabled: any }
+                        | { Disabled: any }
+                        | string
+                        | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [PalletInactivityTrackingActivityTrackingStatus]
             >;
             /**
              * Generic tx

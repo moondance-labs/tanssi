@@ -59,6 +59,7 @@ import type {
     PalletIdentityRegistrarInfo,
     PalletIdentityRegistration,
     PalletIdentityUsernameInformation,
+    PalletInactivityTrackingActivityTrackingStatus,
     PalletInflationRewardsChainsToRewardValue,
     PalletMessageQueueBookState,
     PalletMessageQueuePage,
@@ -1561,7 +1562,11 @@ declare module "@polkadot/api-base/types/storage" {
             /**
              * Switch to enable/disable inactivity tracking
              **/
-            enableInactivityTracking: AugmentedQuery<ApiType, () => Observable<bool>, []> &
+            currentActivityTrackingStatus: AugmentedQuery<
+                ApiType,
+                () => Observable<PalletInactivityTrackingActivityTrackingStatus>,
+                []
+            > &
                 QueryableStorageEntry<ApiType, []>;
             /**
              * Generic query
