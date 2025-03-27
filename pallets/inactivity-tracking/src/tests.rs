@@ -267,7 +267,7 @@ fn inactivity_tracking_handler_with_enabled_tracking_after_disabling_it_works() 
             suspension_period + 1
         );
         // Since we do not introduce any activity record, but the enabled tracking status
-        // start = suspension_period + 2 and current session = suspension_period + 1
+        // start = suspension_period + 2 < CurrentSessionIndex + MaxInactiveStatus = suspension_period + 1 + 2
         // so the collators should be considered active
         assert_eq!(
             <Pallet::<Test> as NodeActivityTrackingHelper<AccountId>>::is_node_inactive(
@@ -281,12 +281,33 @@ fn inactivity_tracking_handler_with_enabled_tracking_after_disabling_it_works() 
             ),
             false
         );
-        // However once start >= current session the collators will be considered inactive
-        // since there are no activity records
+        // Now start = CurrentSessionIndex so the collators should be considered active
         roll_to(SESSION_BLOCK_LENGTH * (suspension_period as u64 + 2));
         assert_eq!(
             <Test as Config>::CurrentSessionIndex::session_index(),
             suspension_period + 2
+        );
+        assert_eq!(
+            <Pallet::<Test> as NodeActivityTrackingHelper<AccountId>>::is_node_inactive(
+                &COLLATOR_1
+            ),
+            false
+        );
+        assert_eq!(
+            <Pallet::<Test> as NodeActivityTrackingHelper<AccountId>>::is_node_inactive(
+                &COLLATOR_2
+            ),
+            false
+        );
+        // Once CurrentSessionIndex >= start + MaxInactiveSessions  the collators will be considered inactive
+        // since there are no activity records
+        roll_to(
+            SESSION_BLOCK_LENGTH
+                * (suspension_period as u64 + 2 + get_max_inactive_sessions() as u64),
+        );
+        assert_eq!(
+            <Test as Config>::CurrentSessionIndex::session_index(),
+            suspension_period + 2 + get_max_inactive_sessions()
         );
         assert_eq!(
             <Pallet::<Test> as NodeActivityTrackingHelper<AccountId>>::is_node_inactive(
