@@ -43,29 +43,6 @@ pub mod weights;
 #[cfg(feature = "runtime-benchmarks")]
 use tp_traits::{BlockNumber, ParaId};
 
-/// The status of the activity tracking
-#[derive(
-    Clone,
-    PartialEq,
-    Eq,
-    Encode,
-    Decode,
-    TypeInfo,
-    Serialize,
-    Deserialize,
-    RuntimeDebug,
-    MaxEncodedLen,
-)]
-pub enum ActivityTrackingStatus {
-    Enabled { end: SessionIndex },
-    Disabled { end: SessionIndex },
-}
-impl Default for ActivityTrackingStatus {
-    fn default() -> Self {
-        ActivityTrackingStatus::Enabled { end: 0 }
-    }
-}
-
 pub use pallet::*;
 
 #[frame_support::pallet]
@@ -77,6 +54,34 @@ pub mod pallet {
         frame_support::{pallet_prelude::*, storage::types::StorageMap},
         frame_system::pallet_prelude::*,
     };
+
+    /// The status of the activity tracking
+    #[derive(
+        Clone,
+        PartialEq,
+        Eq,
+        Encode,
+        Decode,
+        TypeInfo,
+        Serialize,
+        Deserialize,
+        RuntimeDebug,
+        MaxEncodedLen,
+    )]
+    pub enum ActivityTrackingStatus {
+        Enabled {
+            start: SessionIndex,
+            end: SessionIndex,
+        },
+        Disabled {
+            end: SessionIndex,
+        },
+    }
+    impl Default for ActivityTrackingStatus {
+        fn default() -> Self {
+            ActivityTrackingStatus::Enabled { start: 0, end: 0 }
+        }
+    }
 
     #[pallet::pallet]
     pub struct Pallet<T>(PhantomData<T>);
@@ -154,7 +159,7 @@ pub mod pallet {
         ) -> DispatchResult {
             ensure_root(origin)?;
             let current_status_end_session_index = match <CurrentActivityTrackingStatus<T>>::get() {
-                ActivityTrackingStatus::Enabled { end } => end,
+                ActivityTrackingStatus::Enabled { start: _, end } => end,
                 ActivityTrackingStatus::Disabled { end } => end,
             };
             let current_session_index = T::CurrentSessionIndex::session_index();
@@ -166,6 +171,7 @@ pub mod pallet {
                 current_session_index + T::MaxInactiveSessions::get();
             let new_status = if is_enabled {
                 ActivityTrackingStatus::Enabled {
+                    start: current_session_index + 1,
                     end: new_status_end_session_index,
                 }
             } else {
@@ -237,11 +243,19 @@ impl<T: Config> NodeActivityTrackingHelper<T::CollatorId> for Pallet<T> {
     fn is_node_inactive(node: &T::CollatorId) -> bool {
         // If inactivity tracking is not enabled all nodes are considered active.
         // We don't need to check the inactivity records and can return false
-        if let ActivityTrackingStatus::Disabled { .. } = <CurrentActivityTrackingStatus<T>>::get() {
-            return false;
-        }
-
+        // Inactivity tracking is not enabled if
+        // - the status is disabled
+        // - the current session index is less than the start session index since there won't be
+        // sufficient activity records
         let current_session_index = T::CurrentSessionIndex::session_index();
+        match <CurrentActivityTrackingStatus<T>>::get() {
+            ActivityTrackingStatus::Disabled { .. } => return false,
+            ActivityTrackingStatus::Enabled { start, end: _ } => {
+                if start > current_session_index {
+                    return false;
+                }
+            }
+        }
 
         let minimum_sessions_required = T::MaxInactiveSessions::get();
         if current_session_index < minimum_sessions_required {

@@ -52,7 +52,7 @@ fn enabling_and_disabling_inactivity_tracking_works() {
     ExtBuilder.build().execute_with(|| {
         assert_eq!(
             CurrentActivityTrackingStatus::<Test>::get(),
-            ActivityTrackingStatus::Enabled { end: 0 }
+            ActivityTrackingStatus::Enabled { start: 0, end: 0 }
         );
 
         roll_to(SESSION_BLOCK_LENGTH);
@@ -79,6 +79,7 @@ fn enabling_and_disabling_inactivity_tracking_works() {
         assert_eq!(
             CurrentActivityTrackingStatus::<Test>::get(),
             ActivityTrackingStatus::Enabled {
+                start: suspension_period + 2,
                 end: 2 * suspension_period
             }
         );
@@ -92,6 +93,7 @@ fn enabling_and_disabling_inactivity_tracking_works() {
         assert_eq!(
             CurrentActivityTrackingStatus::<Test>::get(),
             ActivityTrackingStatus::Enabled {
+                start: 2 * suspension_period + 2,
                 end: 3 * suspension_period
             }
         );
@@ -116,7 +118,7 @@ fn enabling_and_disabling_inactivity_tracking_fails_if_called_before_end_of_susp
     ExtBuilder.build().execute_with(|| {
         assert_eq!(
             CurrentActivityTrackingStatus::<Test>::get(),
-            ActivityTrackingStatus::Enabled { end: 0 }
+            ActivityTrackingStatus::Enabled { start: 0, end: 0 }
         );
         assert_noop!(
             Pallet::<Test>::set_inactivity_tracking_status(RuntimeOrigin::root(), true),
@@ -126,7 +128,7 @@ fn enabling_and_disabling_inactivity_tracking_fails_if_called_before_end_of_susp
 }
 
 #[test]
-fn inactivity_tracking_handler_with_enabled_or_disabled_tracking_works() {
+fn inactivity_tracking_handler_with_enabled_and_disabled_tracking_works() {
     ExtBuilder.build().execute_with(|| {
         assert_eq!(
             <Pallet::<Test> as NodeActivityTrackingHelper<AccountId>>::is_node_inactive(
@@ -226,6 +228,77 @@ fn inactivity_tracking_handler_works_as_expected_with_no_activity_during_initial
                 &COLLATOR_2
             ),
             false
+        );
+    });
+}
+
+#[test]
+fn inactivity_tracking_handler_with_enabled_tracking_after_disabling_it_works() {
+    ExtBuilder.build().execute_with(|| {
+        roll_to(SESSION_BLOCK_LENGTH);
+        assert_ok!(Pallet::<Test>::set_inactivity_tracking_status(
+            RuntimeOrigin::root(),
+            false
+        ));
+
+        let suspension_period: u32 = get_max_inactive_sessions() + 1u32;
+        assert_eq!(
+            CurrentActivityTrackingStatus::<Test>::get(),
+            ActivityTrackingStatus::Disabled {
+                end: suspension_period
+            }
+        );
+
+        roll_to(SESSION_BLOCK_LENGTH * (suspension_period as u64 + 1));
+
+        assert_ok!(Pallet::<Test>::set_inactivity_tracking_status(
+            RuntimeOrigin::root(),
+            true
+        ));
+        assert_eq!(
+            CurrentActivityTrackingStatus::<Test>::get(),
+            ActivityTrackingStatus::Enabled {
+                start: suspension_period + 2,
+                end: 2 * suspension_period
+            }
+        );
+        assert_eq!(
+            <Test as Config>::CurrentSessionIndex::session_index(),
+            suspension_period + 1
+        );
+        // Since we do not introduce any activity record, but the enabled tracking status
+        // start = suspension_period + 2 and current session = suspension_period + 1
+        // so the collators should be considered active
+        assert_eq!(
+            <Pallet::<Test> as NodeActivityTrackingHelper<AccountId>>::is_node_inactive(
+                &COLLATOR_1
+            ),
+            false
+        );
+        assert_eq!(
+            <Pallet::<Test> as NodeActivityTrackingHelper<AccountId>>::is_node_inactive(
+                &COLLATOR_2
+            ),
+            false
+        );
+        // However once start >= current session the collators will be considered inactive
+        // since there are no activity records
+        roll_to(SESSION_BLOCK_LENGTH * (suspension_period as u64 + 2));
+        assert_eq!(
+            <Test as Config>::CurrentSessionIndex::session_index(),
+            suspension_period + 2
+        );
+        assert_eq!(
+            <Pallet::<Test> as NodeActivityTrackingHelper<AccountId>>::is_node_inactive(
+                &COLLATOR_1
+            ),
+            true
+        );
+        assert_eq!(
+            <Pallet::<Test> as NodeActivityTrackingHelper<AccountId>>::is_node_inactive(
+                &COLLATOR_2
+            ),
+            true
         );
     });
 }
