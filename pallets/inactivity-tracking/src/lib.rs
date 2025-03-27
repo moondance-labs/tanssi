@@ -141,6 +141,7 @@ pub mod pallet {
     #[pallet::error]
     pub enum Error<T> {
         MaxCollatorsPerSessionReached,
+        ActivityStatusUpdateSuspended,
     }
 
     #[pallet::call]
@@ -149,11 +150,31 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::set_inactivity_tracking_status())]
         pub fn set_inactivity_tracking_status(
             origin: OriginFor<T>,
-            status: ActivityTrackingStatus,
+            is_enabled: bool,
         ) -> DispatchResult {
             ensure_root(origin)?;
-            <CurrentActivityTrackingStatus<T>>::put(status.clone());
-            Self::deposit_event(Event::<T>::ActivityTrackingStatusSet { status });
+            let current_status_end_session_index = match <CurrentActivityTrackingStatus<T>>::get() {
+                ActivityTrackingStatus::Enabled { end } => end,
+                ActivityTrackingStatus::Disabled { end } => end,
+            };
+            let current_session_index = T::CurrentSessionIndex::session_index();
+            ensure!(
+                current_session_index > current_status_end_session_index,
+                Error::<T>::ActivityStatusUpdateSuspended
+            );
+            let new_status_end_session_index =
+                current_session_index + T::MaxInactiveSessions::get();
+            let new_status = if is_enabled {
+                ActivityTrackingStatus::Enabled {
+                    end: new_status_end_session_index,
+                }
+            } else {
+                ActivityTrackingStatus::Disabled {
+                    end: new_status_end_session_index,
+                }
+            };
+            <CurrentActivityTrackingStatus<T>>::put(new_status.clone());
+            Self::deposit_event(Event::<T>::ActivityTrackingStatusSet { status: new_status });
             Ok(())
         }
     }

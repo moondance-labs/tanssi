@@ -18,7 +18,7 @@
 
 use {
     crate::tests::common::*,
-    frame_support::{assert_ok, traits::Get},
+    frame_support::traits::Get,
     pallet_inactivity_tracking::pallet::{ActiveCollators, ActiveCollatorsForCurrentSession},
     tp_traits::{
         AuthorNotingHook, AuthorNotingInfo, MaybeSelfChainBlockAuthor, NodeActivityTrackingHelper,

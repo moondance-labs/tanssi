@@ -16,7 +16,7 @@
 use {
     crate::{
         mock::*, ActiveCollators, ActiveCollatorsForCurrentSession, ActivityTrackingStatus,
-        AuthorNotingHook, Config, CurrentActivityTrackingStatus, NodeActivityTrackingHelper,
+        AuthorNotingHook, Config, CurrentActivityTrackingStatus, Error, NodeActivityTrackingHelper,
         Pallet,
     },
     frame_support::{assert_noop, assert_ok, pallet_prelude::Get},
@@ -43,6 +43,10 @@ fn get_collator_set(
     collator_set
 }
 
+fn get_max_inactive_sessions() -> u32 {
+    <Test as Config>::MaxInactiveSessions::get()
+}
+
 #[test]
 fn enabling_and_disabling_inactivity_tracking_works() {
     ExtBuilder.build().execute_with(|| {
@@ -51,13 +55,45 @@ fn enabling_and_disabling_inactivity_tracking_works() {
             ActivityTrackingStatus::Enabled { end: 0 }
         );
 
+        roll_to(SESSION_BLOCK_LENGTH);
         assert_ok!(Pallet::<Test>::set_inactivity_tracking_status(
             RuntimeOrigin::root(),
-            ActivityTrackingStatus::Disabled { end: 0 }
+            false
         ));
+
+        let suspension_period: u32 = get_max_inactive_sessions() + 1u32;
         assert_eq!(
             CurrentActivityTrackingStatus::<Test>::get(),
-            ActivityTrackingStatus::Disabled { end: 0 }
+            ActivityTrackingStatus::Disabled {
+                end: suspension_period
+            }
+        );
+
+        roll_to(SESSION_BLOCK_LENGTH * (suspension_period as u64 + 1));
+
+        assert_ok!(Pallet::<Test>::set_inactivity_tracking_status(
+            RuntimeOrigin::root(),
+            true
+        ));
+
+        assert_eq!(
+            CurrentActivityTrackingStatus::<Test>::get(),
+            ActivityTrackingStatus::Enabled {
+                end: 2 * suspension_period
+            }
+        );
+        roll_to(SESSION_BLOCK_LENGTH * (2 * suspension_period as u64 + 1));
+
+        assert_ok!(Pallet::<Test>::set_inactivity_tracking_status(
+            RuntimeOrigin::root(),
+            true
+        ));
+
+        assert_eq!(
+            CurrentActivityTrackingStatus::<Test>::get(),
+            ActivityTrackingStatus::Enabled {
+                end: 3 * suspension_period
+            }
         );
     });
 }
@@ -68,9 +104,23 @@ fn enabling_and_disabling_inactivity_tracking_fails_for_non_root() {
         assert_noop!(
             Pallet::<Test>::set_inactivity_tracking_status(
                 RuntimeOrigin::signed(COLLATOR_1),
-                ActivityTrackingStatus::Disabled { end: 0 }
+                false
             ),
             BadOrigin
+        );
+    });
+}
+
+#[test]
+fn enabling_and_disabling_inactivity_tracking_fails_if_called_before_end_of_suspension_period() {
+    ExtBuilder.build().execute_with(|| {
+        assert_eq!(
+            CurrentActivityTrackingStatus::<Test>::get(),
+            ActivityTrackingStatus::Enabled { end: 0 }
+        );
+        assert_noop!(
+            Pallet::<Test>::set_inactivity_tracking_status(RuntimeOrigin::root(), true),
+            Error::<Test>::ActivityStatusUpdateSuspended
         );
     });
 }
@@ -91,16 +141,14 @@ fn inactivity_tracking_handler_with_enabled_or_disabled_tracking_works() {
             false
         );
 
-        let max_inactive_sessions: u32 = <Test as Config>::MaxInactiveSessions::get();
-
-        roll_to(max_inactive_sessions as u64 * SESSION_BLOCK_LENGTH + 1);
+        roll_to(get_max_inactive_sessions() as u64 * SESSION_BLOCK_LENGTH + 1);
         assert_eq!(
             <Test as Config>::CurrentSessionIndex::session_index(),
-            max_inactive_sessions
+            get_max_inactive_sessions()
         );
 
         let active_collator = get_collator_set(vec![COLLATOR_1]);
-        for session_id in 0..max_inactive_sessions {
+        for session_id in 0..get_max_inactive_sessions() {
             ActiveCollators::<Test>::insert(session_id, active_collator.clone());
             assert_eq!(ActiveCollators::<Test>::get(session_id), active_collator);
         }
@@ -120,7 +168,7 @@ fn inactivity_tracking_handler_with_enabled_or_disabled_tracking_works() {
 
         assert_ok!(Pallet::<Test>::set_inactivity_tracking_status(
             RuntimeOrigin::root(),
-            ActivityTrackingStatus::Disabled { end: 0 }
+            false
         ));
 
         assert_eq!(
@@ -141,9 +189,7 @@ fn inactivity_tracking_handler_with_enabled_or_disabled_tracking_works() {
 #[test]
 fn inactivity_tracking_handler_with_one_active_session_works() {
     ExtBuilder.build().execute_with(|| {
-        let max_inactive_sessions: u32 = <Test as Config>::MaxInactiveSessions::get();
-
-        roll_to(max_inactive_sessions as u64 * SESSION_BLOCK_LENGTH + 1);
+        roll_to(get_max_inactive_sessions() as u64 * SESSION_BLOCK_LENGTH + 1);
 
         let active_collator_1 = get_collator_set(vec![COLLATOR_1]);
         let active_collator_2 = get_collator_set(vec![COLLATOR_2]);
@@ -242,11 +288,10 @@ fn processing_ended_session_correctly_cleans_outdated_collator_records() {
             current_session_active_collator_record
         );
 
-        let max_inactive_sessions: u32 = <Test as Config>::MaxInactiveSessions::get();
-        roll_to(max_inactive_sessions as u64 * SESSION_BLOCK_LENGTH + 1);
+        roll_to(get_max_inactive_sessions() as u64 * SESSION_BLOCK_LENGTH + 1);
         assert_eq!(
             <Test as Config>::CurrentSessionIndex::session_index(),
-            max_inactive_sessions
+            get_max_inactive_sessions()
         );
 
         Pallet::<Test>::process_ended_session();
@@ -258,10 +303,10 @@ fn processing_ended_session_correctly_cleans_outdated_collator_records() {
         );
         assert_eq!(ActiveCollators::<Test>::get(1), empty_vec);
 
-        roll_to((max_inactive_sessions as u64 + 1) * SESSION_BLOCK_LENGTH + 1);
+        roll_to((get_max_inactive_sessions() as u64 + 1) * SESSION_BLOCK_LENGTH + 1);
         assert_eq!(
             <Test as Config>::CurrentSessionIndex::session_index(),
-            max_inactive_sessions + 1
+            get_max_inactive_sessions() + 1
         );
 
         Pallet::<Test>::process_ended_session();
