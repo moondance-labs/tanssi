@@ -379,6 +379,7 @@ declare module "@polkadot/api-base/types/errors" {
             [key: string]: AugmentedError<ApiType>;
         };
         inactivityTracking: {
+            ActivityStatusUpdateSuspended: AugmentedError<ApiType>;
             MaxCollatorsPerSessionReached: AugmentedError<ApiType>;
             /**
              * Generic error

@@ -1541,6 +1541,7 @@ declare module "@polkadot/types/lookup" {
     interface PalletInactivityTrackingActivityTrackingStatus extends Enum {
         readonly isEnabled: boolean;
         readonly asEnabled: {
+            readonly start: u32;
             readonly end: u32;
         } & Struct;
         readonly isDisabled: boolean;
@@ -2897,7 +2898,7 @@ declare module "@polkadot/types/lookup" {
     interface PalletInactivityTrackingCall extends Enum {
         readonly isSetInactivityTrackingStatus: boolean;
         readonly asSetInactivityTrackingStatus: {
-            readonly status: PalletInactivityTrackingActivityTrackingStatus;
+            readonly isEnabled: bool;
         } & Struct;
         readonly type: "SetInactivityTrackingStatus";
     }
@@ -7908,7 +7909,8 @@ declare module "@polkadot/types/lookup" {
     /** @name PalletInactivityTrackingError (697) */
     interface PalletInactivityTrackingError extends Enum {
         readonly isMaxCollatorsPerSessionReached: boolean;
-        readonly type: "MaxCollatorsPerSessionReached";
+        readonly isActivityStatusUpdateSuspended: boolean;
+        readonly type: "MaxCollatorsPerSessionReached" | "ActivityStatusUpdateSuspended";
     }
 
     /** @name PalletTreasuryProposal (698) */

@@ -988,11 +988,12 @@ export default {
         },
     },
     /**
-     * Lookup81: pallet_inactivity_tracking::ActivityTrackingStatus
+     * Lookup81: pallet_inactivity_tracking::pallet::ActivityTrackingStatus
      **/
     PalletInactivityTrackingActivityTrackingStatus: {
         _enum: {
             Enabled: {
+                start: "u32",
                 end: "u32",
             },
             Disabled: {
@@ -3564,7 +3565,7 @@ export default {
     PalletInactivityTrackingCall: {
         _enum: {
             set_inactivity_tracking_status: {
-                status: "PalletInactivityTrackingActivityTrackingStatus",
+                isEnabled: "bool",
             },
         },
     },
@@ -5094,7 +5095,7 @@ export default {
      * Lookup540: pallet_inactivity_tracking::pallet::Error<T>
      **/
     PalletInactivityTrackingError: {
-        _enum: ["MaxCollatorsPerSessionReached"],
+        _enum: ["MaxCollatorsPerSessionReached", "ActivityStatusUpdateSuspended"],
     },
     /**
      * Lookup541: pallet_treasury::Proposal<sp_core::crypto::AccountId32, Balance>
