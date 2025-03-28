@@ -23,8 +23,8 @@ use {
     sp_runtime::{traits::Get, BoundedBTreeSet},
     sp_staking::SessionIndex,
     tp_traits::{
-        AuthorNotingHook, AuthorNotingInfo, GetSessionIndex, MaybeSelfChainBlockAuthor,
-        NodeActivityTrackingHelper, ForSession, ParaId
+        AuthorNotingHook, AuthorNotingInfo, ForSession, GetContainerChainsWithCollators,
+        GetSessionIndex, MaybeSelfChainBlockAuthor, NodeActivityTrackingHelper, ParaId,
     },
 };
 
@@ -251,7 +251,7 @@ pub mod pallet {
                                 collator_ids.iter().for_each(|collator_id| {
                                     if !active_collators.contains(collator_id) {
                                         let _ = active_collators
-                                            .try_push(collator_id.clone())
+                                            .try_insert(collator_id.clone())
                                             .map_err(|_| Error::<T>::MaxCollatorsPerSessionReached);
                                     }
                                 });

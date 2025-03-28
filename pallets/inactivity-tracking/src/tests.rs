@@ -15,11 +15,11 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 use {
     crate::{
-        mock::*, ActiveCollators, ActiveCollatorsForCurrentSession, ActivityTrackingStatus,
-        AuthorNotingHook, Config, CurrentActivityTrackingStatus, Error, NodeActivityTrackingHelper,
-        Pallet,
+        mock::*, ActiveCollators, ActiveCollatorsForCurrentSession,
+        ActiveContainerChainsForCurrentSession, ActivityTrackingStatus, AuthorNotingHook, Config,
+        CurrentActivityTrackingStatus, Error, NodeActivityTrackingHelper, Pallet,
     },
-    frame_support::{assert_noop, assert_ok, pallet_prelude::Get},
+    frame_support::{assert_noop, assert_ok, pallet_prelude::Get, BoundedVec},
     sp_core::ConstU32,
     sp_runtime::{BoundedBTreeSet, DispatchError::BadOrigin},
     tp_traits::{AuthorNotingInfo, GetSessionIndex},
@@ -520,10 +520,6 @@ fn active_chains_noting_for_current_session_works() {
     ExtBuilder.build().execute_with(|| {
         let current_session_active_chain_record: BoundedVec<tp_traits::ParaId, ConstU32<2>> =
             BoundedVec::truncate_from(vec![CONTAINER_CHAIN_ID_1]);
-        assert_ok!(Pallet::<Test>::set_inactivity_tracking_status(
-            RuntimeOrigin::root(),
-            true
-        ));
         assert_eq!(
             ActiveContainerChainsForCurrentSession::<Test>::get().len(),
             0
@@ -550,12 +546,8 @@ fn active_chains_noting_for_current_session_works() {
 #[test]
 fn inactive_chain_collators_are_correctly_processed() {
     ExtBuilder.build().execute_with(|| {
-        let current_session_active_collators_record: BoundedVec<AccountId, ConstU32<5>> =
-            BoundedVec::truncate_from(vec![COLLATOR_1, COLLATOR_2]);
-        assert_ok!(Pallet::<Test>::set_inactivity_tracking_status(
-            RuntimeOrigin::root(),
-            true
-        ));
+        let current_session_active_collators_record =
+            get_collator_set(vec![COLLATOR_1, COLLATOR_2]);
         assert_eq!(
             ActiveContainerChainsForCurrentSession::<Test>::get().len(),
             0
@@ -577,14 +569,9 @@ fn inactive_chain_collators_are_correctly_processed() {
 #[test]
 fn inactive_collator_for_active_chain_is_correctly_processed() {
     ExtBuilder.build().execute_with(|| {
-        let current_session_active_collator_record: BoundedVec<AccountId, ConstU32<5>> =
-            BoundedVec::truncate_from(vec![COLLATOR_1]);
+        let current_session_active_collator_record = get_collator_set(vec![COLLATOR_1]);
         let current_session_active_chain_record: BoundedVec<tp_traits::ParaId, ConstU32<2>> =
             BoundedVec::truncate_from(vec![CONTAINER_CHAIN_ID_1]);
-        assert_ok!(Pallet::<Test>::set_inactivity_tracking_status(
-            RuntimeOrigin::root(),
-            true
-        ));
         assert_eq!(
             ActiveContainerChainsForCurrentSession::<Test>::get().len(),
             0

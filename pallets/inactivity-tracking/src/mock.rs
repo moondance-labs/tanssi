@@ -22,7 +22,7 @@ use {
         BuildStorage,
     },
     sp_std::convert::Into,
-    tp_traits::{ParaId, ForSession},
+    tp_traits::{ForSession, ParaId},
 };
 
 type Block = frame_system::mocking::MockBlock<Test>;
