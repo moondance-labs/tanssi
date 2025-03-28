@@ -42,7 +42,7 @@ describeSuite({
                     await api.query.externalValidatorSlashes.bondedEras()
                 ).toJSON() as BondedEraParams[];
                 // Let's check 2 recent eras
-                for (const bondedEra of bondedEras.slice(-2)) {
+                for (const bondedEra of bondedEras.slice(-5)) {
                     const result = await findEraBlockUsingBinarySearch(api, bondedEra[0]);
 
                     if (!result.found) {
@@ -56,7 +56,7 @@ describeSuite({
                         await api.rpc.chain.getBlockHash(lastBlockNumberPreviousEra)
                     );
                     expect(
-                        (await apiAtLastBlockPreviousEra.query.externalValidators.currentExternalIndex()).toNumber()
+                        (await apiAtLastBlockPreviousEra.query.externalValidators.externalIndex()).toNumber()
                     ).toEqual(bondedEra[2]);
                 }
             },
@@ -94,6 +94,7 @@ const getBlockData = async (api: ApiPromise, blockNum: number) => {
     return {
         blockNum: blockNum,
         events: await apiAt.query.system.events(),
+        eraIndex: (await apiAt.query.externalValidators.activeEra()).unwrap().index.toNumber(),
     };
 };
 

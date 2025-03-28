@@ -556,7 +556,7 @@ export const findEraBlockUsingBinarySearch = async (
     let currentEraIndex = 0;
 
     const runtimeUpgradedToSupportEraAt = await getBlockNumberAtWhichEraStarted(api);
-    console.log("Runtime upgrade to support era at:", runtimeUpgradedToSupportEraAt);
+    // console.log("Runtime upgrade to support era at:", runtimeUpgradedToSupportEraAt);
 
     // Approximated block for era can be different than in reality in case of downtime, in that case there are no block produced in that era or the era
     // only consist of earlier blocks than approximated block.
