@@ -39,6 +39,8 @@ mod tests;
 mod benchmarking;
 
 pub mod weights;
+pub use weights::WeightInfo;
+
 
 #[cfg(feature = "runtime-benchmarks")]
 use tp_traits::{BlockNumber, ParaId};
@@ -114,7 +116,7 @@ pub mod pallet {
         type GetSelfChainBlockAuthor: MaybeSelfChainBlockAuthor<Self::CollatorId>;
 
         /// The weight information of this pallet.
-        type WeightInfo: WeightInfo;
+        type WeightInfo: weights::WeightInfo;
     }
 
     /// Switch to enable/disable inactivity tracking
