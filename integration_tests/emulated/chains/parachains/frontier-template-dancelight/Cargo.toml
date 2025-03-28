@@ -1,0 +1,13 @@
+[package]
+name = "frontier-template-dancelight-emulated-chain"
+authors.workspace = true
+edition = "2021"
+license = "GPL-3.0-only"
+version = "0.0.0"
+description = "Frontier Template Dancelight emulated chain"
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
