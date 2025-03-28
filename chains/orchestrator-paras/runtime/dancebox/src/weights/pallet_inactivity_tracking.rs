@@ -38,11 +38,11 @@
 // 16
 // --repeat
 // 1
-// --template=benchmarking/frame-weight-pallet-template.hbs
+// --template=benchmarking/frame-weight-runtime-template.hbs
 // --json-file
 // raw.json
 // --output
-// tmp/pallet_inactivity_tracking.rs
+// tmp/dancebox_weights/pallet_inactivity_tracking.rs
 
 #![cfg_attr(rustfmt, rustfmt_skip)]
 #![allow(unused_parens)]
@@ -51,38 +51,18 @@
 use frame_support::{traits::Get, weights::{Weight, constants::RocksDbWeight}};
 use sp_std::marker::PhantomData;
 
-/// Weight functions needed for pallet_inactivity_tracking.
-pub trait WeightInfo {
-	fn set_inactivity_tracking_status() -> Weight;
-}
-
 /// Weights for pallet_inactivity_tracking using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
-impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
+impl<T: frame_system::Config> pallet_inactivity_tracking::WeightInfo for SubstrateWeight<T> {
 	/// Storage: `InactivityTracking::CurrentActivityTrackingStatus` (r:1 w:1)
 	/// Proof: `InactivityTracking::CurrentActivityTrackingStatus` (`max_values`: Some(1), `max_size`: Some(9), added: 504, mode: `MaxEncodedLen`)
 	fn set_inactivity_tracking_status() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `147`
 		//  Estimated: `1494`
-		// Minimum execution time: 11_000_000 picoseconds.
-		Weight::from_parts(11_000_000, 1494)
+		// Minimum execution time: 10_000_000 picoseconds.
+		Weight::from_parts(10_000_000, 1494)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
-	}
-}
-
-// For backwards compatibility and tests
-impl WeightInfo for () {
-	/// Storage: `InactivityTracking::CurrentActivityTrackingStatus` (r:1 w:1)
-	/// Proof: `InactivityTracking::CurrentActivityTrackingStatus` (`max_values`: Some(1), `max_size`: Some(9), added: 504, mode: `MaxEncodedLen`)
-	fn set_inactivity_tracking_status() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `147`
-		//  Estimated: `1494`
-		// Minimum execution time: 11_000_000 picoseconds.
-		Weight::from_parts(11_000_000, 1494)
-			.saturating_add(RocksDbWeight::get().reads(1_u64))
-			.saturating_add(RocksDbWeight::get().writes(1_u64))
 	}
 }

@@ -1755,7 +1755,7 @@ impl pallet_inactivity_tracking::Config for Runtime {
     #[cfg(feature = "runtime-benchmarks")]
     type CurrentSessionIndex = MockCurrentSessionGetter;
     type GetSelfChainBlockAuthor = GetSelfChainBlockAuthor;
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_inactivity_tracking::SubstrateWeight<Runtime>;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
