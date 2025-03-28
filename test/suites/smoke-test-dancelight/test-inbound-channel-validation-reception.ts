@@ -94,7 +94,6 @@ const getBlockData = async (api: ApiPromise, blockNum: number) => {
     return {
         blockNum: blockNum,
         events: await apiAt.query.system.events(),
-        eraIndex: (await apiAt.query.externalValidators.activeEra()).unwrap().index.toNumber(),
     };
 };
 
