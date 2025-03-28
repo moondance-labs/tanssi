@@ -1818,13 +1818,23 @@ impl pallet_pooled_staking::Config for Runtime {
     type EligibleCandidatesFilter = CandidateHasRegisteredKeys;
     type WeightInfo = weights::pallet_pooled_staking::SubstrateWeight<Runtime>;
 }
+pub struct MockCurrentSessionGetter;
+
+impl tp_traits::GetSessionIndex<u32> for MockCurrentSessionGetter {
+    fn session_index() -> u32 {
+        1
+    }
+}
 
 impl pallet_inactivity_tracking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type CollatorId = AccountId;
     type MaxInactiveSessions = ConstU32<5>;
     type MaxCollatorsPerSession = ConstU32<100>;
+    #[cfg(not(feature = "runtime-benchmarks"))]
     type CurrentSessionIndex = CurrentSessionIndexGetter;
+    #[cfg(feature = "runtime-benchmarks")]
+    type CurrentSessionIndex = MockCurrentSessionGetter;
     type GetSelfChainBlockAuthor = ();
     type WeightInfo = ();
 }
