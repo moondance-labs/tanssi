@@ -75,9 +75,6 @@ describeSuite({
         let operatorRewardContract: ethers.Contract;
         let operatorRewardContractImpl: ethers.Contract;
         let operatorRewardDetails: any;
-        let slasherAddress: string;
-        let slasherContract: ethers.Contract;
-        let slasherDetails: any;
 
         let tokenId: any;
 
@@ -138,16 +135,14 @@ describeSuite({
             // Waiting till ethreum node produces one block
             console.log("Waiting some time for ethereum node to produce block, before we deploy contract");
             await sleep(20000);
-            console.log("Wait is over");
 
             // We override the operator 3 key because it goes to a slashing vault
-            let output = await execCommand("./scripts/bridge/deploy-ethereum-contracts.sh", {
+            await execCommand("./scripts/bridge/deploy-ethereum-contracts.sh", {
                 env: {
                     OPERATOR3_KEY: u8aToHex(operatorAccount.addressRaw),
                     ...process.env,
                 },
             });
-            console.log(output);
 
             console.log("Contracts deployed");
 
@@ -169,10 +164,6 @@ describeSuite({
             );
             operatorRewardAddress = ethInfo.symbiotic_info.contracts.ODefaultOperatorRewards.address;
             operatorRewardDetails = ethInfo.symbiotic_info.contracts.ODefaultOperatorRewards;
-
-            console.log("Slasher address is: ", ethInfo.symbiotic_info.contracts.VetoSlasher.address);
-            slasherAddress = ethInfo.symbiotic_info.contracts.VetoSlasher.address;
-            slasherDetails = ethInfo.symbiotic_info.contracts.VetoSlasher;
 
             console.log("Setting gateway address to proxy contract:", gatewayProxyAddress);
             const setGatewayAddressTxHash = await signAndSendAndInclude(
@@ -200,9 +191,6 @@ describeSuite({
                 operatorRewardDetails.abi,
                 ethereumWallet
             );
-
-            // Setting up slasher
-            slasherContract = new ethers.Contract(slasherAddress, slasherDetails.abi, ethereumWallet);
 
             gatewayContract = new ethers.Contract(
                 gatewayProxyAddress,
@@ -583,17 +571,15 @@ describeSuite({
                     ethereumWallet
                 );
 
-                console.log("slasher ", await slasherContract.TYPE());
                 const network = await middlewareBaseReadersContract.NETWORK();
-                const subnetwork = network + "000000000000000000000000";
-                console.log("network is ", network);
+                const subnetwork = `${network}000000000000000000000000`;
+                // type 0 means instant slash
                 if ((await slasherContract.TYPE()) === 0n) {
-                    console.log();
                     const cummulativeSlash = await slasherContract.cumulativeSlash(subnetwork, operator);
                     expect(cummulativeSlash).to.be.greaterThan(0);
                 } else {
+                    // else we hav e a veto slash
                     const vetoSlasherContract = new ethers.Contract(slasher, vetoSlasherDetails.abi, ethereumWallet);
-
                     const lengthSlashes = await vetoSlasherContract.slashRequestsLength();
                     expect(lengthSlashes).to.be.greaterThan(0);
                 }
