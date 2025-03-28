@@ -5,7 +5,7 @@ import type { ApiPromise } from "@polkadot/api";
 import type { SubmittableExtrinsic } from "@polkadot/api/types";
 import { TypeRegistry } from "@polkadot/types";
 import type { Vec, bool, u8, u32, u128 } from "@polkadot/types-codec";
-import type { AccountId32, EventRecord, ParaId } from "@polkadot/types/interfaces";
+import type { AccountId32, BlockHash, EventRecord, ParaId } from "@polkadot/types/interfaces";
 
 export async function jumpSessions(context: DevModeContext, count: number): Promise<string | null> {
     const session = (await context.polkadotJs().query.session.currentIndex()).addn(count.valueOf()).toNumber();
@@ -528,4 +528,76 @@ export const getPastEraStartBlock = async (currentApi: ApiPromise, block: number
     }
 
     return epochStartBlock;
+};
+
+export const getEraIndexForBlock = async (api: ApiPromise, blockNumber: number): Promise<number> => {
+    const apiAtBlock = await api.at(await api.rpc.chain.getBlockHash(blockNumber));
+    const eraAtBlock = await apiAtBlock.query.externalValidators.activeEra();
+    return eraAtBlock.unwrap().index.toNumber();
+};
+
+export const getBlockNumberAtWhichEraStarted = async (api: ApiPromise): Promise<number> => {
+    const chain = (await api.rpc.system.chain()).toString();
+    const FIRST_BLOCK_WITH_ERA_PRESENT_FOR_STAGELIGHT: number = 734672;
+    if (chain === "Stagelight") {
+        return FIRST_BLOCK_WITH_ERA_PRESENT_FOR_STAGELIGHT;
+    }
+    // For Dancelight ExternalValidators was present from the beginning
+    return 1;
+};
+
+export const findEraBlockUsingBinarySearch = async (
+    api: ApiPromise,
+    eraIndex: number
+): Promise<{ found: boolean; blockHash: BlockHash; blockNumber: number }> => {
+    const sessionsPerEra = api.consts.externalValidators.sessionsPerEra.toNumber();
+    const blocksPerSession = api.consts.babe.epochDuration.toNumber();
+    const approximateBlockForEra = (eraIndex + 1) * sessionsPerEra * blocksPerSession;
+    let currentEraIndex = 0;
+
+    const runtimeUpgradedToSupportEraAt = await getBlockNumberAtWhichEraStarted(api);
+    console.log("Runtime upgrade to support era at:", runtimeUpgradedToSupportEraAt);
+
+    // Approximated block for era can be different than in reality in case of downtime, in that case there are no block produced in that era or the era
+    // only consist of earlier blocks than approximated block.
+    // In other words, if there is a downtime in between we will get later era index for the approximated block compared to what we expected.
+    let currentMax = runtimeUpgradedToSupportEraAt + approximateBlockForEra;
+    // In case if currentMax exceeded the real max block number
+    currentMax = Math.min((await api.rpc.chain.getHeader()).number.toNumber(), currentMax);
+    // In worst case, it could be possible that chain has skipped all eras till this one
+    let currentMin = runtimeUpgradedToSupportEraAt;
+    let currentBlock = currentMax;
+
+    // Most of the time the static calculation of era block matches the reality, so check that first and if that is true bypass it.
+    if ((await getEraIndexForBlock(api, currentMax)) !== eraIndex) {
+        while (currentMax >= currentMin) {
+            currentBlock = Math.floor((currentMax + currentMin) / 2);
+            currentEraIndex = await getEraIndexForBlock(api, currentBlock);
+            if (currentEraIndex > eraIndex) {
+                currentMax = currentBlock - 1;
+            } else if (currentEraIndex < eraIndex) {
+                currentMin = currentBlock + 1;
+            } else {
+                break;
+            }
+        }
+    }
+
+    // We did not find any block for this era
+    if (currentMax < currentMin) {
+        return {
+            found: false,
+            blockHash: undefined,
+            blockNumber: undefined,
+        };
+    }
+
+    const eraStartBlock = await getPastEraStartBlock(api, currentBlock);
+    const eraStartBlockHash = await api.rpc.chain.getBlockHash(eraStartBlock);
+
+    return {
+        found: true,
+        blockHash: eraStartBlockHash,
+        blockNumber: eraStartBlock,
+    };
 };

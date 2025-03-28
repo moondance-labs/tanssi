@@ -13,7 +13,6 @@
 
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
-use tp_traits::ForSession;
 use {
     crate as pallet_inactivity_tracking,
     frame_support::traits::{ConstU32, ConstU64, Everything, OnFinalize, OnInitialize},
@@ -23,7 +22,7 @@ use {
         BuildStorage,
     },
     sp_std::convert::Into,
-    tp_traits::ParaId,
+    tp_traits::{ParaId, ForSession},
 };
 
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -112,11 +111,17 @@ impl pallet_inactivity_tracking::Config for Test {
     type MaxContainerChains = ConstU32<3>;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type GetSelfChainBlockAuthor = ();
-    type AuthorityId = sp_runtime::testing::UintAuthorityId;
     type ContainerChainsFetcher = MockContainerChainsInfoFetcher;
+    type WeightInfo = ();
 }
 
 pub(crate) struct ExtBuilder;
+
+impl Default for ExtBuilder {
+    fn default() -> ExtBuilder {
+        ExtBuilder {}
+    }
+}
 
 impl ExtBuilder {
     pub(crate) fn build(self) -> sp_io::TestExternalities {

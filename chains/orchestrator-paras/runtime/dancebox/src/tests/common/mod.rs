@@ -40,14 +40,14 @@ use {
 pub use crate::{
     AccountId, AssetRate, AuthorNoting, AuthorityAssignment, AuthorityMapping, Balance, Balances,
     CollatorAssignment, Configuration, DataPreservers, ForeignAssets, ForeignAssetsCreator,
-    InflationRewards, Initializer, Invulnerables, MinimumSelfDelegation, ParachainInfo,
-    PooledStaking, Proxy, ProxyType, Registrar, RewardsPortion, Runtime, RuntimeCall,
-    ServicesPayment, Session, System, TransactionPayment,
+    InactivityTracking, InflationRewards, Initializer, Invulnerables, MinimumSelfDelegation,
+    ParachainInfo, PooledStaking, Proxy, ProxyType, Registrar, RewardsPortion, Runtime,
+    RuntimeCall, ServicesPayment, Session, System, TransactionPayment,
 };
 
 mod xcm;
 
-pub const UNIT: Balance = 1_000_000_000_000_000_000;
+pub const UNIT: Balance = 1_000_000_000_000;
 
 pub fn session_to_block(n: u32) -> u32 {
     let block_number = crate::Period::get() * n;
@@ -218,6 +218,8 @@ pub fn start_block() -> RunSummary {
     pallet_author_inherent::Pallet::<Runtime>::kick_off_authorship_validation(None.into())
         .expect("author inherent to dispatch correctly");
 
+    InactivityTracking::on_initialize(System::block_number());
+
     RunSummary {
         author_id,
         inflation: new_issuance - current_issuance,
@@ -233,6 +235,7 @@ pub fn end_block() {
     Initializer::on_finalize(System::block_number());
     AuthorInherent::on_finalize(System::block_number());
     TransactionPayment::on_finalize(System::block_number());
+    InactivityTracking::on_finalize(System::block_number());
 }
 
 pub fn run_block() -> RunSummary {
@@ -666,8 +669,8 @@ pub const FERDIE: [u8; 32] = [9u8; 32];
 
 pub fn set_dummy_boot_node(para_manager: RuntimeOrigin, para_id: ParaId) {
     use {
-        crate::{PreserversAssignmentPaymentExtra, PreserversAssignmentPaymentRequest},
         pallet_data_preservers::{ParaIdsFilter, Profile, ProfileMode},
+        tp_data_preservers_common::{AssignerExtra, ProviderRequest},
     };
 
     let profile = Profile {
@@ -678,7 +681,7 @@ pub fn set_dummy_boot_node(para_manager: RuntimeOrigin, para_id: ParaId) {
                 .expect("to fit in BoundedVec"),
         para_ids: ParaIdsFilter::AnyParaId,
         mode: ProfileMode::Bootnode,
-        assignment_request: PreserversAssignmentPaymentRequest::Free,
+        assignment_request: ProviderRequest::Free,
     };
 
     let profile_id = pallet_data_preservers::NextProfileId::<Runtime>::get();
@@ -686,13 +689,8 @@ pub fn set_dummy_boot_node(para_manager: RuntimeOrigin, para_id: ParaId) {
     DataPreservers::force_create_profile(RuntimeOrigin::root(), profile, profile_owner)
         .expect("profile create to succeed");
 
-    DataPreservers::start_assignment(
-        para_manager,
-        profile_id,
-        para_id,
-        PreserversAssignmentPaymentExtra::Free,
-    )
-    .expect("assignement to work");
+    DataPreservers::start_assignment(para_manager, profile_id, para_id, AssignerExtra::Free)
+        .expect("assignement to work");
 
     assert!(
         pallet_data_preservers::Assignments::<Runtime>::get(para_id).contains(&profile_id),

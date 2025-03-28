@@ -59,6 +59,7 @@ import type {
     PalletIdentityRegistrarInfo,
     PalletIdentityRegistration,
     PalletIdentityUsernameInformation,
+    PalletInactivityTrackingActivityTrackingStatus,
     PalletInflationRewardsChainsToRewardValue,
     PalletMessageQueueBookState,
     PalletMessageQueuePage,
@@ -1549,14 +1550,14 @@ declare module "@polkadot/api-base/types/storage" {
              **/
             activeCollators: AugmentedQuery<
                 ApiType,
-                (arg: u32 | AnyNumber | Uint8Array) => Observable<Vec<AccountId32>>,
+                (arg: u32 | AnyNumber | Uint8Array) => Observable<BTreeSet<AccountId32>>,
                 [u32]
             > &
                 QueryableStorageEntry<ApiType, [u32]>;
             /**
              * A list of inactive collators for a session. Repopulated at the start of every session
              **/
-            activeCollatorsForCurrentSession: AugmentedQuery<ApiType, () => Observable<Vec<AccountId32>>, []> &
+            activeCollatorsForCurrentSession: AugmentedQuery<ApiType, () => Observable<BTreeSet<AccountId32>>, []> &
                 QueryableStorageEntry<ApiType, []>;
             /**
              * A list of inactive container chains for a session. Repopulated at the start of every session
@@ -1566,12 +1567,11 @@ declare module "@polkadot/api-base/types/storage" {
             /**
              * Switch to enable/disable inactivity tracking
              **/
-            enableInactivityTracking: AugmentedQuery<ApiType, () => Observable<bool>, []> &
-                QueryableStorageEntry<ApiType, []>;
-            /**
-             * The last session index for which the inactive collators have not been processed
-             **/
-            lastUnprocessedSession: AugmentedQuery<ApiType, () => Observable<u32>, []> &
+            currentActivityTrackingStatus: AugmentedQuery<
+                ApiType,
+                () => Observable<PalletInactivityTrackingActivityTrackingStatus>,
+                []
+            > &
                 QueryableStorageEntry<ApiType, []>;
             /**
              * Generic query

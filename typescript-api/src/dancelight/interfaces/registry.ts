@@ -17,9 +17,6 @@ import type {
     DancelightRuntimeDynamicParamsPreimageParametersValue,
     DancelightRuntimeGovernanceOriginsPalletCustomOriginsOrigin,
     DancelightRuntimeOriginCaller,
-    DancelightRuntimePreserversAssignmentPaymentExtra,
-    DancelightRuntimePreserversAssignmentPaymentRequest,
-    DancelightRuntimePreserversAssignmentPaymentWitness,
     DancelightRuntimeProxyType,
     DancelightRuntimeRuntime,
     DancelightRuntimeRuntimeHoldReason,
@@ -27,8 +24,6 @@ import type {
     DancelightRuntimeRuntimeParametersKey,
     DancelightRuntimeRuntimeParametersValue,
     DancelightRuntimeSessionKeys,
-    DancelightRuntimeStreamPaymentAssetId,
-    DancelightRuntimeTimeUnit,
     DpCollatorAssignmentAssignedCollatorsAccountId32,
     DpCollatorAssignmentAssignedCollatorsPublic,
     DpContainerChainGenesisDataContainerChainGenesisData,
@@ -145,6 +140,7 @@ import type {
     PalletIdentityRegistrarInfo,
     PalletIdentityRegistration,
     PalletIdentityUsernameInformation,
+    PalletInactivityTrackingActivityTrackingStatus,
     PalletInactivityTrackingCall,
     PalletInactivityTrackingError,
     PalletInactivityTrackingEvent,
@@ -493,6 +489,11 @@ import type {
     TpBridgeChannelInfo,
     TpBridgeCommand,
     TpBridgeSlashData,
+    TpDataPreserversCommonAssignerExtra,
+    TpDataPreserversCommonAssignmentWitness,
+    TpDataPreserversCommonProviderRequest,
+    TpStreamPaymentCommonAssetId,
+    TpStreamPaymentCommonTimeUnit,
     TpTraitsActiveEraInfo,
     TpTraitsContainerChainBlockInfo,
     TpTraitsFullRotationMode,
@@ -543,9 +544,6 @@ declare module "@polkadot/types/types/registry" {
         DancelightRuntimeDynamicParamsPreimageParametersValue: DancelightRuntimeDynamicParamsPreimageParametersValue;
         DancelightRuntimeGovernanceOriginsPalletCustomOriginsOrigin: DancelightRuntimeGovernanceOriginsPalletCustomOriginsOrigin;
         DancelightRuntimeOriginCaller: DancelightRuntimeOriginCaller;
-        DancelightRuntimePreserversAssignmentPaymentExtra: DancelightRuntimePreserversAssignmentPaymentExtra;
-        DancelightRuntimePreserversAssignmentPaymentRequest: DancelightRuntimePreserversAssignmentPaymentRequest;
-        DancelightRuntimePreserversAssignmentPaymentWitness: DancelightRuntimePreserversAssignmentPaymentWitness;
         DancelightRuntimeProxyType: DancelightRuntimeProxyType;
         DancelightRuntimeRuntime: DancelightRuntimeRuntime;
         DancelightRuntimeRuntimeHoldReason: DancelightRuntimeRuntimeHoldReason;
@@ -553,8 +551,6 @@ declare module "@polkadot/types/types/registry" {
         DancelightRuntimeRuntimeParametersKey: DancelightRuntimeRuntimeParametersKey;
         DancelightRuntimeRuntimeParametersValue: DancelightRuntimeRuntimeParametersValue;
         DancelightRuntimeSessionKeys: DancelightRuntimeSessionKeys;
-        DancelightRuntimeStreamPaymentAssetId: DancelightRuntimeStreamPaymentAssetId;
-        DancelightRuntimeTimeUnit: DancelightRuntimeTimeUnit;
         DpCollatorAssignmentAssignedCollatorsAccountId32: DpCollatorAssignmentAssignedCollatorsAccountId32;
         DpCollatorAssignmentAssignedCollatorsPublic: DpCollatorAssignmentAssignedCollatorsPublic;
         DpContainerChainGenesisDataContainerChainGenesisData: DpContainerChainGenesisDataContainerChainGenesisData;
@@ -671,6 +667,7 @@ declare module "@polkadot/types/types/registry" {
         PalletIdentityRegistrarInfo: PalletIdentityRegistrarInfo;
         PalletIdentityRegistration: PalletIdentityRegistration;
         PalletIdentityUsernameInformation: PalletIdentityUsernameInformation;
+        PalletInactivityTrackingActivityTrackingStatus: PalletInactivityTrackingActivityTrackingStatus;
         PalletInactivityTrackingCall: PalletInactivityTrackingCall;
         PalletInactivityTrackingError: PalletInactivityTrackingError;
         PalletInactivityTrackingEvent: PalletInactivityTrackingEvent;
@@ -1019,6 +1016,11 @@ declare module "@polkadot/types/types/registry" {
         TpBridgeChannelInfo: TpBridgeChannelInfo;
         TpBridgeCommand: TpBridgeCommand;
         TpBridgeSlashData: TpBridgeSlashData;
+        TpDataPreserversCommonAssignerExtra: TpDataPreserversCommonAssignerExtra;
+        TpDataPreserversCommonAssignmentWitness: TpDataPreserversCommonAssignmentWitness;
+        TpDataPreserversCommonProviderRequest: TpDataPreserversCommonProviderRequest;
+        TpStreamPaymentCommonAssetId: TpStreamPaymentCommonAssetId;
+        TpStreamPaymentCommonTimeUnit: TpStreamPaymentCommonTimeUnit;
         TpTraitsActiveEraInfo: TpTraitsActiveEraInfo;
         TpTraitsContainerChainBlockInfo: TpTraitsContainerChainBlockInfo;
         TpTraitsFullRotationMode: TpTraitsFullRotationMode;

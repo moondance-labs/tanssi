@@ -15,16 +15,17 @@ workspace = true
 [dependencies]
 parity-scale-codec = { workspace = true }
 scale-info = { workspace = true, features = [ "derive" ] }
+serde = { workspace = true }
 
 frame-benchmarking = { workspace = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
 
+sp-core = { workspace = true }
 sp-runtime = { workspace = true }
 sp-staking = { workspace = true }
 sp-std = { workspace = true }
 
-pallet-session = { workspace = true }
 tp-traits = { workspace = true }
 
 [dev-dependencies]
@@ -37,9 +38,9 @@ std = [
 	"frame-benchmarking/std",
 	"frame-support/std",
 	"frame-system/std",
-	"pallet-session/std",
 	"parity-scale-codec/std",
 	"scale-info/std",
+	"serde/std",
 	"sp-core/std",
 	"sp-io/std",
 	"sp-runtime/std",
@@ -59,6 +60,5 @@ runtime-benchmarks = [
 try-runtime = [
 	"frame-support/try-runtime",
 	"frame-system/try-runtime",
-	"pallet-session/try-runtime",
 	"sp-runtime/try-runtime",
 ]

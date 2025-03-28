@@ -71,11 +71,12 @@ mod xcm;
 pub use crate::{
     genesis_config_presets::{get_authority_keys_from_seed, insert_authority_keys_into_keystore},
     AccountId, AuthorNoting, Babe, Balance, Balances, Beefy, BeefyMmrLeaf, ContainerRegistrar,
-    DataPreservers, Grandpa, InflationRewards, Initializer, Mmr, Runtime, RuntimeOrigin, Session,
-    System, TanssiAuthorityAssignment, TanssiCollatorAssignment, TransactionPayment,
+    DataPreservers, Grandpa, InactivityTracking, InflationRewards, Initializer, Mmr, Runtime,
+    RuntimeOrigin, Session, System, TanssiAuthorityAssignment, TanssiCollatorAssignment,
+    TransactionPayment,
 };
 
-pub const UNIT: Balance = 1_000_000_000_000_000_000;
+pub const UNIT: Balance = 1_000_000_000_000;
 
 pub fn read_last_entropy() -> [u8; 32] {
     let mut last = [0u8; 32];
@@ -288,6 +289,7 @@ pub fn start_block() -> RunSummary {
     Beefy::on_initialize(System::block_number());
     Mmr::on_initialize(System::block_number());
     BeefyMmrLeaf::on_initialize(System::block_number());
+    InactivityTracking::on_initialize(System::block_number());
     RunSummary {
         inflation: new_issuance - current_issuance,
     }
@@ -308,6 +310,7 @@ pub fn end_block() {
     Beefy::on_finalize(System::block_number());
     Mmr::on_finalize(System::block_number());
     BeefyMmrLeaf::on_finalize(System::block_number());
+    InactivityTracking::on_finalize(System::block_number());
 }
 
 pub fn run_block() -> RunSummary {
@@ -1447,8 +1450,8 @@ pub fn storage_map_final_key<H: frame_support::StorageHasher>(
 
 pub fn set_dummy_boot_node(para_manager: RuntimeOrigin, para_id: ParaId) {
     use {
-        crate::{PreserversAssignmentPaymentExtra, PreserversAssignmentPaymentRequest},
         pallet_data_preservers::{ParaIdsFilter, Profile, ProfileMode},
+        tp_data_preservers_common::{AssignerExtra, ProviderRequest},
     };
 
     let profile = Profile {
@@ -1459,7 +1462,7 @@ pub fn set_dummy_boot_node(para_manager: RuntimeOrigin, para_id: ParaId) {
                 .expect("to fit in BoundedVec"),
         para_ids: ParaIdsFilter::AnyParaId,
         mode: ProfileMode::Bootnode,
-        assignment_request: PreserversAssignmentPaymentRequest::Free,
+        assignment_request: ProviderRequest::Free,
     };
 
     let profile_id = pallet_data_preservers::NextProfileId::<Runtime>::get();
@@ -1467,13 +1470,8 @@ pub fn set_dummy_boot_node(para_manager: RuntimeOrigin, para_id: ParaId) {
     DataPreservers::force_create_profile(RuntimeOrigin::root(), profile, profile_owner)
         .expect("profile create to succeed");
 
-    DataPreservers::start_assignment(
-        para_manager,
-        profile_id,
-        para_id,
-        PreserversAssignmentPaymentExtra::Free,
-    )
-    .expect("assignment to work");
+    DataPreservers::start_assignment(para_manager, profile_id, para_id, AssignerExtra::Free)
+        .expect("assignment to work");
 
     assert!(
         pallet_data_preservers::Assignments::<Runtime>::get(para_id).contains(&profile_id),

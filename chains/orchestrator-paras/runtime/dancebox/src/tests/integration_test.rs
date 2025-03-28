@@ -17,10 +17,7 @@
 #![cfg(test)]
 
 use {
-    crate::{
-        tests::common::*, PreserversAssignmentPaymentWitness, RewardsCollatorCommission,
-        StreamPayment, StreamPaymentAssetId, TimeUnit, TransactionPayment,
-    },
+    crate::{tests::common::*, RewardsCollatorCommission, StreamPayment, TransactionPayment},
     cumulus_primitives_core::ParaId,
     dp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApiV1,
     dp_core::well_known_keys,
@@ -53,6 +50,9 @@ use {
         MigrateServicesPaymentAddCollatorAssignmentCredits, RegistrarPendingVerificationValueToMap,
     },
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
+    tp_stream_payment_common::{
+        AssetId as StreamPaymentAssetId, TimeUnit as StreamPaymentTimeUnit,
+    },
     tp_traits::{ContainerChainBlockInfo, SlotFrequency},
     xcm::latest::prelude::*,
 };
@@ -2569,16 +2569,16 @@ fn test_staking_join_no_self_delegation() {
     ExtBuilder::default()
         .with_balances(vec![
             // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-            (AccountId::from(CHARLIE), 100_000 * UNIT),
-            (AccountId::from(DAVE), 100_000 * UNIT),
+            (AccountId::from(ALICE), 210_000_000_000 * UNIT),
+            (AccountId::from(BOB), 100_000_000_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000_000_000 * UNIT),
+            (AccountId::from(DAVE), 100_000_000_000 * UNIT),
         ])
         .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-            (AccountId::from(CHARLIE), 100 * UNIT),
-            (AccountId::from(DAVE), 100 * UNIT),
+            (AccountId::from(ALICE), 210_000_000 * UNIT),
+            (AccountId::from(BOB), 100_000_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000_000 * UNIT),
+            (AccountId::from(DAVE), 100_000_000 * UNIT),
         ])
         .with_empty_parachains(vec![1001, 1002])
         .build()
@@ -2605,16 +2605,16 @@ fn test_staking_join_before_self_delegation() {
     ExtBuilder::default()
         .with_balances(vec![
             // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-            (AccountId::from(CHARLIE), 100_000 * UNIT),
-            (AccountId::from(DAVE), 100_000 * UNIT),
+            (AccountId::from(ALICE), 210_000_000_000 * UNIT),
+            (AccountId::from(BOB), 100_000_000_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000_000_000 * UNIT),
+            (AccountId::from(DAVE), 100_000_000_000 * UNIT),
         ])
         .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-            (AccountId::from(CHARLIE), 100 * UNIT),
-            (AccountId::from(DAVE), 100 * UNIT),
+            (AccountId::from(ALICE), 210_000_000 * UNIT),
+            (AccountId::from(BOB), 100_000_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000_000 * UNIT),
+            (AccountId::from(DAVE), 100_000_000 * UNIT),
         ])
         .with_empty_parachains(vec![1001, 1002])
         .build()
@@ -3365,15 +3365,15 @@ fn test_pallet_session_takes_validators_from_invulnerables_and_staking() {
     ExtBuilder::default()
         .with_balances(vec![
             // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-            (AccountId::from(CHARLIE), 100_000 * UNIT),
-            (AccountId::from(DAVE), 100_000 * UNIT),
+            (AccountId::from(ALICE), 210_000_000_000 * UNIT),
+            (AccountId::from(BOB), 100_000_000_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000_000_000 * UNIT),
+            (AccountId::from(DAVE), 100_000_000_000 * UNIT),
         ])
         .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(ALICE), 210_000_000 * UNIT),
+            (AccountId::from(BOB), 100_000_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000_000 * UNIT),
         ])
         .with_empty_parachains(vec![1001, 1002])
         .build()
@@ -3452,15 +3452,15 @@ fn test_pallet_session_limits_num_validators() {
     ExtBuilder::default()
         .with_balances(vec![
             // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-            (AccountId::from(CHARLIE), 100_000 * UNIT),
-            (AccountId::from(DAVE), 100_000 * UNIT),
+            (AccountId::from(ALICE), 210_000_000_000 * UNIT),
+            (AccountId::from(BOB), 100_000_000_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000_000_000 * UNIT),
+            (AccountId::from(DAVE), 100_000_000_000 * UNIT),
         ])
         .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(ALICE), 210_000_000 * UNIT),
+            (AccountId::from(BOB), 100_000_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000_000 * UNIT),
         ])
         .with_empty_parachains(vec![1001, 1002])
         .with_config(pallet_configuration::HostConfiguration {
@@ -3542,12 +3542,12 @@ fn test_pallet_session_limits_num_validators_from_staking() {
     ExtBuilder::default()
         .with_balances(vec![
             // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-            (AccountId::from(CHARLIE), 100_000 * UNIT),
-            (AccountId::from(DAVE), 100_000 * UNIT),
+            (AccountId::from(ALICE), 210_000_000_000 * UNIT),
+            (AccountId::from(BOB), 100_000_000_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000_000_000 * UNIT),
+            (AccountId::from(DAVE), 100_000_000_000 * UNIT),
         ])
-        .with_collators(vec![(AccountId::from(ALICE), 210 * UNIT)])
+        .with_collators(vec![(AccountId::from(ALICE), 210_000_000 * UNIT)])
         .with_empty_parachains(vec![1001, 1002])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 2,
@@ -3651,12 +3651,12 @@ fn test_reward_to_staking_candidate() {
     ExtBuilder::default()
         .with_balances(vec![
             // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-            (AccountId::from(CHARLIE), 100_000 * UNIT),
-            (AccountId::from(DAVE), 100_000 * UNIT),
+            (AccountId::from(ALICE), 210_000_000_000 * UNIT),
+            (AccountId::from(BOB), 100_000_000_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000_000_000 * UNIT),
+            (AccountId::from(DAVE), 100_000_000_000 * UNIT),
         ])
-        .with_collators(vec![(AccountId::from(ALICE), 210 * UNIT)])
+        .with_collators(vec![(AccountId::from(ALICE), 210_000_000 * UNIT)])
         .with_empty_parachains(vec![1001, 1002])
         .build()
         .execute_with(|| {
@@ -4034,14 +4034,14 @@ fn test_collator_assignment_gives_priority_to_invulnerables() {
     ExtBuilder::default()
         .with_balances(vec![
             // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-            (AccountId::from(CHARLIE), 100_000 * UNIT),
-            (AccountId::from(DAVE), 100_000 * UNIT),
+            (AccountId::from(ALICE), 210_000_000_000 * UNIT),
+            (AccountId::from(BOB), 100_000_000_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000_000_000 * UNIT),
+            (AccountId::from(DAVE), 100_000_000_000 * UNIT),
         ])
         .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(DAVE), 100 * UNIT),
+            (AccountId::from(ALICE), 210_000_000 * UNIT),
+            (AccountId::from(DAVE), 100_000_000 * UNIT),
         ])
         .with_empty_parachains(vec![1001, 1002])
         .build()
@@ -5064,7 +5064,7 @@ fn stream_payment_works() {
                 StreamConfig {
                     rate: 2 * UNIT,
                     asset_id: StreamPaymentAssetId::Native,
-                    time_unit: TimeUnit::BlockNumber,
+                    time_unit: StreamPaymentTimeUnit::BlockNumber,
                     minimum_request_deadline_delay: 0,
                     soft_minimum_deposit: 0,
                 },
@@ -5086,7 +5086,7 @@ fn stream_payment_works() {
                 StreamConfig {
                     rate: 1 * UNIT,
                     asset_id: StreamPaymentAssetId::Native,
-                    time_unit: TimeUnit::BlockNumber,
+                    time_unit: StreamPaymentTimeUnit::BlockNumber,
                     minimum_request_deadline_delay: 0,
                     soft_minimum_deposit: 0,
                 },
@@ -5938,8 +5938,8 @@ fn test_migration_data_preservers_assignments() {
         }
 
         let account = AccountId::from([0u8; 32]);
-        let free_request = crate::PreserversAssignmentPaymentRequest::Free;
-        let free_witness = crate::PreserversAssignmentPaymentWitness::Free;
+        let free_request = tp_data_preservers_common::ProviderRequest::Free;
+        let free_witness = tp_data_preservers_common::AssignmentWitness::Free;
 
         let pallet_prefix: &[u8] = b"DataPreservers";
         let storage_item_prefix: &[u8] = b"BootNodes";
@@ -6124,11 +6124,11 @@ fn test_migration_stream_payment_config_new_fields() {
 
         frame_support::storage::unhashed::put(
             &pallet_stream_payment::Streams::<Runtime>::hashed_key_for(0),
-            &OldStream::<AccountId, TimeUnit, StreamPaymentAssetId, Balance> {
+            &OldStream::<AccountId, StreamPaymentTimeUnit, StreamPaymentAssetId, Balance> {
                 source: ALICE.into(),
                 target: BOB.into(),
                 config: OldStreamConfig {
-                    time_unit: TimeUnit::Timestamp,
+                    time_unit: StreamPaymentTimeUnit::Timestamp,
                     asset_id: StreamPaymentAssetId::Native,
                     rate: 41,
                 },
@@ -6139,7 +6139,7 @@ fn test_migration_stream_payment_config_new_fields() {
                     requester: Party::Source,
                     kind: ChangeKind::Mandatory { deadline: 45 },
                     new_config: OldStreamConfig {
-                        time_unit: TimeUnit::BlockNumber,
+                        time_unit: StreamPaymentTimeUnit::BlockNumber,
                         asset_id: StreamPaymentAssetId::Native,
                         rate: 46,
                     },
@@ -6151,11 +6151,11 @@ fn test_migration_stream_payment_config_new_fields() {
 
         frame_support::storage::unhashed::put(
             &pallet_stream_payment::Streams::<Runtime>::hashed_key_for(1),
-            &OldStream::<AccountId, TimeUnit, StreamPaymentAssetId, Balance> {
+            &OldStream::<AccountId, StreamPaymentTimeUnit, StreamPaymentAssetId, Balance> {
                 source: CHARLIE.into(),
                 target: ALICE.into(),
                 config: OldStreamConfig {
-                    time_unit: TimeUnit::Timestamp,
+                    time_unit: StreamPaymentTimeUnit::Timestamp,
                     asset_id: StreamPaymentAssetId::Native,
                     rate: 100,
                 },
@@ -6176,7 +6176,7 @@ fn test_migration_stream_payment_config_new_fields() {
                 source: ALICE.into(),
                 target: BOB.into(),
                 config: StreamConfig {
-                    time_unit: TimeUnit::Timestamp,
+                    time_unit: StreamPaymentTimeUnit::Timestamp,
                     asset_id: StreamPaymentAssetId::Native,
                     rate: 41,
                     minimum_request_deadline_delay: 0,
@@ -6189,7 +6189,7 @@ fn test_migration_stream_payment_config_new_fields() {
                     requester: Party::Source,
                     kind: ChangeKind::Mandatory { deadline: 45 },
                     new_config: StreamConfig {
-                        time_unit: TimeUnit::BlockNumber,
+                        time_unit: StreamPaymentTimeUnit::BlockNumber,
                         asset_id: StreamPaymentAssetId::Native,
                         rate: 46,
                         minimum_request_deadline_delay: 0,
@@ -6207,7 +6207,7 @@ fn test_migration_stream_payment_config_new_fields() {
                 source: CHARLIE.into(),
                 target: ALICE.into(),
                 config: StreamConfig {
-                    time_unit: TimeUnit::Timestamp,
+                    time_unit: StreamPaymentTimeUnit::Timestamp,
                     asset_id: StreamPaymentAssetId::Native,
                     rate: 100,
                     minimum_request_deadline_delay: 0,
@@ -6294,7 +6294,7 @@ fn test_data_preserver_with_stream_payment() {
                 mode: ProfileMode::Bootnode,
                 assignment_request: ProviderRequestOf::<Runtime>::StreamPayment {
                     config: StreamConfig {
-                        time_unit: TimeUnit::BlockNumber,
+                        time_unit: StreamPaymentTimeUnit::BlockNumber,
                         asset_id: StreamPaymentAssetId::Native,
                         rate: 42,
                         minimum_request_deadline_delay: 0,
@@ -6336,7 +6336,7 @@ fn test_data_preserver_with_stream_payment() {
             assert_eq!(assigned_para_id, para_id);
             assert_eq!(
                 witness,
-                PreserversAssignmentPaymentWitness::StreamPayment { stream_id: 0 }
+                tp_data_preservers_common::AssignmentWitness::StreamPayment { stream_id: 0 }
             );
         });
 }

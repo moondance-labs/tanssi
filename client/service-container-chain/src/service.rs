@@ -59,6 +59,7 @@ use {
     tokio_util::sync::CancellationToken,
 };
 
+use crate::cli::ContainerChainCli;
 #[allow(deprecated)]
 use sc_executor::NativeElseWasmExecutor;
 
@@ -175,8 +176,9 @@ tp_traits::alias!(
 ///
 /// This is the actual implementation that is abstract over the executor and the runtime api.
 pub fn start_node_impl_container<
-    RuntimeApi: MinimalContainerRuntimeApi,
-    TGenerateRpcBuilder: GenerateRpcBuilder<RuntimeApi>,
+    'a,
+    RuntimeApi: MinimalContainerRuntimeApi + 'a,
+    TGenerateRpcBuilder: GenerateRpcBuilder<RuntimeApi> + 'a,
 >(
     parachain_config: Configuration,
     relay_chain_interface: Arc<dyn RelayChainInterface>,
@@ -185,21 +187,27 @@ pub fn start_node_impl_container<
     para_id: ParaId,
     collation_params: Option<crate::spawner::CollationParams>,
     generate_rpc_builder: TGenerateRpcBuilder,
+    container_chain_cli: &'a ContainerChainCli,
+    data_preserver: bool,
 ) -> impl std::future::Future<
     Output = sc_service::error::Result<(
         TaskManager,
         Arc<ContainerChainClient<RuntimeApi>>,
         Arc<ParachainBackend>,
     )>,
-> {
+> + 'a {
     async move {
         let parachain_config = prepare_node_config(parachain_config);
 
         // Create a `NodeBuilder` which helps setup parachain nodes common systems.
         let node_builder = ContainerChainNodeConfig::new_builder(&parachain_config, None)?;
 
-        let (block_import, import_queue) =
-            container_chain_import_queue(&parachain_config, &node_builder);
+        let (block_import, import_queue) = container_chain_import_queue(
+            &parachain_config,
+            &node_builder,
+            container_chain_cli,
+            data_preserver,
+        );
         let import_queue_service = import_queue.service();
 
         let node_builder = node_builder
@@ -301,12 +309,24 @@ pub fn start_node_impl_container<
 pub fn container_chain_import_queue<RuntimeApi: MinimalContainerRuntimeApi>(
     parachain_config: &Configuration,
     node_builder: &NodeBuilder<ContainerChainNodeConfig<RuntimeApi>>,
+    container_chain_cli: &ContainerChainCli,
+    data_preserver: bool,
 ) -> (ContainerChainBlockImport<RuntimeApi>, BasicQueue<Block>) {
     // The nimbus import queue ONLY checks the signature correctness
     // Any other checks corresponding to the author-correctness should be done
     // in the runtime
     let block_import =
         ContainerChainBlockImport::new(node_builder.client.clone(), node_builder.backend.clone());
+
+    // Disable gap creation to check if that avoids block history download in warp sync.
+    // Create gap means download block history. If the user passes `--download-block-history`, we
+    // set dont_create_gap=false, so create_gap=true, which is the default behavior in polkadot.
+    let dont_create_gap = !container_chain_cli.base.download_block_history.unwrap_or(
+        // Default value for download_block_history:
+        // false if running a collator
+        // true if running a data preserver node
+        data_preserver,
+    );
 
     let import_queue = nimbus_consensus::import_queue(
         node_builder.client.clone(),
@@ -319,6 +339,7 @@ pub fn container_chain_import_queue<RuntimeApi: MinimalContainerRuntimeApi>(
         &node_builder.task_manager.spawn_essential_handle(),
         parachain_config.prometheus_registry(),
         false,
+        dont_create_gap,
     )
     .expect("function never fails");
 
