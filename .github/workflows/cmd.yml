@@ -1,0 +1,112 @@
+name: PR comment bot (/cmd)
+
+on:
+  issue_comment:
+    types: [ created ]
+  # TODO: REMOVE AFTER TEST
+  push:
+    branches:
+      - MD-884-*
+
+permissions:
+  contents: write
+
+jobs:
+  is-org-member:
+    # TODO: Uncomment before merge
+    # if: startsWith(github.event.comment.body, '/cmd')
+    runs-on: self-hosted
+    steps:
+      - name: Check Permissions
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ORG: moondance-labs
+          REPO: tanssi
+          COLLABORATOR: ${{ github.actor }}
+        run: |
+          permissions=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$ORG/$REPO/collaborators/$COLLABORATOR/permission")
+          
+          permission_level=$(echo "$permissions" | jq -r '.permission')
+          
+          if [[ "$permission_level" == "write" || "$permission_level" == "admin" ]]; then
+            echo "✅ User $COLLABORATOR has permission: "$permission_level". Proceeding..."
+          else
+            echo "❌ User $COLLABORATOR doesn't have enough permission: "$permission_level". Failing..." && exit 1
+          fi
+  acknowledge:
+    if: startsWith(github.event.comment.body, '/cmd')
+    needs: ["is-org-member"]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add reaction to triggered comment
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.reactions.createForIssueComment({
+              comment_id: ${{ github.event.comment.id }},
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              content: 'eyes'
+            })
+
+  update_typescript_api_augment:
+    needs: ["is-org-member"]
+    runs-on: self-hosted
+    env:
+      TMP_TARGET: "/tmp/target"
+      CARGO_TARGET_DIR: "target"
+      RUSTC_WRAPPER: "sccache"
+      CARGO_INCREMENTAL: "0"
+      SCCACHE_CACHE_SIZE: "100GB"
+      SCCACHE_GHA_ENABLED: "true"
+    # TODO: Uncomment before merge
+    #    if: ${{ github.event.comment.body == '/cmd generate-ts-api' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.set-tags.outputs.git_ref }}
+
+      - name: Cargo build
+        uses: ./.github/workflow-templates/cargo-build
+        with:
+          features: "fast-runtime"
+
+      - name: Pnpm
+        uses: pnpm/action-setup@v4.1.0
+        with:
+          version: 9
+
+      - name: "Setup Node"
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: "pnpm"
+
+      # TODO: Extract to workflow template and re-use in other workflows (separate PR)
+      - name: "Generate Local interfaces"
+        run: |
+          chmod uog+x target/release/tanssi-node
+          chmod uog+x target/release/tanssi-relay
+          cd typescript-api
+          pnpm install --frozen-lockfile
+          pnpm create-local-interfaces
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Commit and push changes
+        run: |
+          if [[ -n "$(git status --porcelain)" ]]; then
+            cd typescript-api
+            git add .
+            echo "About to commit changes"
+            git commit -m "Auto-generated TypeScript interfaces"
+            echo "About to push changes"
+            git push -u origin $(git branch --show-current)
+          fi
