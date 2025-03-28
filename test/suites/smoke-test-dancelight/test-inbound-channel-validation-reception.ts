@@ -56,7 +56,7 @@ describeSuite({
                         await api.rpc.chain.getBlockHash(lastBlockNumberPreviousEra)
                     );
                     expect(
-                        (await apiAtLastBlockPreviousEra.query.externalValidators.currentExternalIndex()).toNumber()
+                        (await apiAtLastBlockPreviousEra.query.externalValidators.externalIndex()).toNumber()
                     ).toEqual(bondedEra[2]);
                 }
             },
