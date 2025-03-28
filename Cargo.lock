@@ -565,6 +565,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9b34d609dfbaf33d6889b2b7106d3ca345eacad44200913df5ba02bfd31d2ba9"
 
 [[package]]
+name = "asset-dancelight-integration-tests"
+version = "0.0.0"
+
+[[package]]
 name = "asset-test-utils"
 version = "7.0.0"
 source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2412#33a925ed7a1a70f3db904cb88bc301c7b6c0ce30"
@@ -1373,6 +1377,10 @@ dependencies = [
  "sp-runtime",
  "staging-xcm",
 ]
+
+[[package]]
+name = "bridge-dancelight-integration-tests"
+version = "0.0.0"
 
 [[package]]
 name = "bridge-hub-common"
@@ -3404,6 +3412,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "dancelight-emulated-chain"
+version = "0.0.0"
+
+[[package]]
 name = "dancelight-runtime"
 version = "0.1.0"
 dependencies = [
@@ -3581,6 +3593,10 @@ dependencies = [
  "staging-xcm-builder",
  "tp-traits",
 ]
+
+[[package]]
+name = "dancelight-system-emulated-network"
+version = "0.0.0"
 
 [[package]]
 name = "darling"
@@ -5566,6 +5582,10 @@ dependencies = [
  "sp-api",
  "sp-runtime",
 ]
+
+[[package]]
+name = "frontier-template-dancelight-emulated-chain"
+version = "0.0.0"
 
 [[package]]
 name = "fs-err"
@@ -14185,6 +14205,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "rococo-emulated-chain"
+version = "0.0.0"
+dependencies = [
+ "emulated-integration-tests-common",
+ "parachains-common",
+ "polkadot-primitives",
+ "rococo-runtime",
+ "rococo-runtime-constants",
+ "sc-consensus-grandpa",
+ "sp-authority-discovery",
+ "sp-consensus-babe",
+ "sp-consensus-beefy",
+ "sp-core",
+ "sp-keyring",
+]
+
+[[package]]
 name = "rococo-runtime"
 version = "7.0.0"
 source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2412#33a925ed7a1a70f3db904cb88bc301c7b6c0ce30"
@@ -16583,6 +16620,169 @@ name = "simple-mermaid"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "620a1d43d70e142b1d46a929af51d44f383db9c7a2ec122de2cd992ccfcf3c18"
+
+[[package]]
+name = "simple-template-dancelight-emulated-chain"
+version = "0.0.0"
+dependencies = [
+ "alloy-sol-types",
+ "binary-merkle-tree",
+ "bitvec",
+ "container-chain-template-frontier-runtime",
+ "container-chain-template-simple-runtime",
+ "cumulus-pallet-parachain-system",
+ "cumulus-primitives-core",
+ "dancelight-runtime-constants",
+ "dp-consensus",
+ "dp-container-chain-genesis-data",
+ "emulated-integration-tests-common",
+ "finality-grandpa",
+ "frame-benchmarking",
+ "frame-executive",
+ "frame-metadata-hash-extension",
+ "frame-remote-externalities",
+ "frame-support",
+ "frame-system",
+ "frame-system-benchmarking",
+ "frame-system-rpc-runtime-api",
+ "frame-try-runtime",
+ "hex-literal 0.3.4",
+ "log",
+ "nimbus-primitives",
+ "pallet-asset-rate",
+ "pallet-author-noting",
+ "pallet-author-noting-runtime-api",
+ "pallet-authority-assignment",
+ "pallet-authority-discovery",
+ "pallet-authority-mapping",
+ "pallet-authorship",
+ "pallet-babe",
+ "pallet-balances",
+ "pallet-beefy",
+ "pallet-beefy-mmr",
+ "pallet-collator-assignment",
+ "pallet-collective",
+ "pallet-configuration",
+ "pallet-conviction-voting",
+ "pallet-data-preservers",
+ "pallet-democracy",
+ "pallet-elections-phragmen",
+ "pallet-ethereum-token-transfers",
+ "pallet-external-validator-slashes",
+ "pallet-external-validators",
+ "pallet-external-validators-rewards",
+ "pallet-external-validators-rewards-runtime-api",
+ "pallet-grandpa",
+ "pallet-identity",
+ "pallet-inflation-rewards",
+ "pallet-initializer",
+ "pallet-invulnerables",
+ "pallet-membership",
+ "pallet-message-queue",
+ "pallet-migrations 0.1.0",
+ "pallet-migrations 1.0.0",
+ "pallet-mmr",
+ "pallet-multisig",
+ "pallet-offences",
+ "pallet-outbound-message-commitment-recorder",
+ "pallet-parameters",
+ "pallet-pooled-staking",
+ "pallet-preimage",
+ "pallet-proxy",
+ "pallet-ranked-collective",
+ "pallet-referenda",
+ "pallet-registrar",
+ "pallet-registrar-runtime-api",
+ "pallet-root-testing",
+ "pallet-scheduler",
+ "pallet-services-payment",
+ "pallet-services-payment-runtime-api",
+ "pallet-session",
+ "pallet-staking",
+ "pallet-stream-payment",
+ "pallet-stream-payment-runtime-api",
+ "pallet-sudo",
+ "pallet-timestamp",
+ "pallet-tips",
+ "pallet-transaction-payment",
+ "pallet-transaction-payment-rpc-runtime-api",
+ "pallet-treasury",
+ "pallet-utility",
+ "pallet-whitelist",
+ "pallet-xcm",
+ "pallet-xcm-benchmarks",
+ "parity-scale-codec",
+ "polkadot-parachain-primitives",
+ "polkadot-primitives",
+ "polkadot-runtime-common",
+ "polkadot-runtime-parachains",
+ "rand",
+ "rococo-runtime",
+ "rococo-runtime-constants",
+ "sc-consensus-grandpa",
+ "scale-info",
+ "separator",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "smallvec",
+ "snowbridge-beacon-primitives",
+ "snowbridge-core",
+ "snowbridge-milagro-bls",
+ "snowbridge-outbound-queue-runtime-api",
+ "snowbridge-pallet-ethereum-client",
+ "snowbridge-pallet-inbound-queue",
+ "snowbridge-pallet-inbound-queue-fixtures",
+ "snowbridge-pallet-outbound-queue",
+ "snowbridge-pallet-system",
+ "snowbridge-router-primitives",
+ "sp-api",
+ "sp-application-crypto",
+ "sp-arithmetic",
+ "sp-authority-discovery",
+ "sp-block-builder",
+ "sp-consensus-aura",
+ "sp-consensus-babe",
+ "sp-consensus-beefy",
+ "sp-consensus-grandpa",
+ "sp-core",
+ "sp-debug-derive",
+ "sp-genesis-builder",
+ "sp-inherents",
+ "sp-io",
+ "sp-keyring",
+ "sp-keystore",
+ "sp-mmr-primitives",
+ "sp-offchain",
+ "sp-runtime",
+ "sp-session",
+ "sp-staking",
+ "sp-std",
+ "sp-storage",
+ "sp-tracing",
+ "sp-transaction-pool",
+ "sp-trie",
+ "sp-version",
+ "staging-xcm",
+ "staging-xcm-builder",
+ "staging-xcm-executor",
+ "static_assertions",
+ "substrate-wasm-builder",
+ "tanssi-runtime-common",
+ "test-relay-sproof-builder",
+ "tiny-keccak",
+ "tokio",
+ "tp-author-noting-inherent",
+ "tp-bridge",
+ "tp-data-preservers-common",
+ "tp-stream-payment-common",
+ "tp-traits",
+ "tp-xcm-commons",
+ "westend-runtime",
+ "westend-runtime-constants",
+ "xcm-emulator",
+ "xcm-runtime-apis",
+]
 
 [[package]]
 name = "siphasher"
@@ -20886,6 +21086,25 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5d642ff16b7e79272ae451b7322067cdc17cadf68c23264be9d94a32319efe7e"
 dependencies = [
  "rustls-pki-types",
+]
+
+[[package]]
+name = "westend-emulated-chain"
+version = "0.0.0"
+dependencies = [
+ "emulated-integration-tests-common",
+ "parachains-common",
+ "polkadot-primitives",
+ "rococo-runtime",
+ "rococo-runtime-constants",
+ "sc-consensus-grandpa",
+ "sp-authority-discovery",
+ "sp-consensus-babe",
+ "sp-consensus-beefy",
+ "sp-core",
+ "sp-keyring",
+ "westend-runtime",
+ "westend-runtime-constants",
 ]
 
 [[package]]
