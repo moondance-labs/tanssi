@@ -11,12 +11,12 @@ import { Trie } from "@ethereumjs/trie";
 import { encodeReceipt, type PostByzantiumTxReceipt } from "@ethereumjs/vm";
 import type { Log } from "@ethereumjs/evm";
 import type { SyncCommitteeFast } from "@lodestar/light-client";
-import type {
+import {
     SnowbridgeBeaconPrimitivesBeaconHeader,
     SnowbridgeBeaconPrimitivesDenebExecutionPayloadHeader,
     SnowbridgeBeaconPrimitivesExecutionProof,
     SnowbridgeBeaconPrimitivesUpdatesCheckpointUpdate,
-    SnowbridgeBeaconPrimitivesVersionedExecutionPayloadHeader,
+    SnowbridgeBeaconPrimitivesVersionedExecutionPayloadHeader, SnowbridgeCoreInboundLog,
     SnowbridgeCoreInboundMessage,
     SnowbridgeCoreInboundProof,
 } from "@polkadot/types/lookup";
@@ -25,10 +25,12 @@ import { u8aToHex } from "@polkadot/util";
 import type { H256 } from "@polkadot/types/interfaces";
 import type { Bytes, Vec } from "@polkadot/types-codec";
 import { TransactionType } from "@ethereumjs/tx";
+import { AbiCoder } from "ethers/abi";
+import { getBytes } from "ethers/utils";
 
-export const BLOCKS_ROOTS_ROOT_GINDEX = 37;
+export const BLOCKS_ROOTS_ROOT_GINDEX_ELECTRA = 69;
 
-export const CURRENT_SYNC_COMMITTEE_GINDEX = 54;
+export const CURRENT_SYNC_COMMITTEE_GINDEX_ELECTRA = 86;
 
 function defaultBeaconBlockHeader(slot: Slot): deneb.LightClientHeader {
     const header = ssz.deneb.LightClientHeader.defaultValue();
@@ -65,23 +67,21 @@ function createSyncCommittee(seed: number) {
 }
 
 async function createReceiptTrie(
-    contractAddress: Uint8Array,
-    topics: Array<Uint8Array>,
-    messages: Array<Uint8Array>,
+    snowbridgeLogs: Array<SnowbridgeCoreInboundLog>,
     logsBloom: Uint8Array
 ) {
-    const logs = [];
-    for (const message of messages) {
-        const log: Log = [contractAddress, topics, message];
-        logs.push(log);
+    const rawLogs = [];
+    for (const log of snowbridgeLogs) {
+        const rawLog: Log = [log.address, log.topics, log.data];
+        rawLogs.push(rawLog);
     }
 
     const trie = await Trie.create();
     const receipt: PostByzantiumTxReceipt = {
-        status: 1,
+        status: 0,
         cumulativeBlockGasUsed: 1n,
         bitvector: logsBloom,
-        logs: logs,
+        logs: rawLogs,
     };
 
     const encodedReceipt = encodeReceipt(receipt, TransactionType.Legacy);
@@ -102,11 +102,25 @@ async function createReceiptTrie(
     return { root: root, proof: transformedProof };
 }
 
+export async function generateEventLog(api: ApiPromise, gatewayAddress: Uint8Array, channel_id: Uint8Array, message_id: Uint8Array, nonce: number, payload: Uint8Array) {
+    // Signature for event OutboundMessageAccepted(bytes32 indexed channel_id, uint64 nonce, bytes32 indexed message_id, bytes payload);
+    const signature = new Uint8Array([113, 83, 249, 53, 124, 142, 164, 150, 187, 166, 11, 248, 46, 103, 20, 62, 39, 182, 68, 98, 180, 144, 65, 248, 230, 137, 225, 176, 87, 40, 248, 79]);
+    const topics = [signature, channel_id, message_id];
+
+    let defaultAbiCoder = AbiCoder.defaultAbiCoder();
+    let encodedDataString = defaultAbiCoder.encode(["uint64", "bytes"], [nonce, payload]);
+    let encodedData = getBytes(encodedDataString);
+
+    return api.createType<SnowbridgeCoreInboundLog>("SnowbridgeCoreInboundLog", {
+        address: gatewayAddress,
+        topics,
+        data: [].slice.call(encodedData)
+    });
+}
+
 export async function generateUpdate(
     api: ApiPromise,
-    contractAddress: Uint8Array,
-    topics: Array<Uint8Array>,
-    messages: Array<Uint8Array>
+    logs: Array<SnowbridgeCoreInboundLog>
 ) {
     // Global variables
     const genValiRoot = Buffer.alloc(32, 9);
@@ -117,7 +131,7 @@ export async function generateUpdate(
 
     // Prepare beacon body
     const checkPointHeader = defaultBeaconBlockHeader(updateHeaderSlot - 4);
-    const checkPointBeaconBlockBody = ssz.deneb.BlindedBeaconBlockBody.defaultViewDU();
+    const checkPointBeaconBlockBody = ssz.electra.BlindedBeaconBlockBody.defaultViewDU();
 
     // Somehow the Bytes type does not like Uint8Array so we define number array instead
     const bareLogsBloom = [
@@ -133,9 +147,7 @@ export async function generateUpdate(
     checkPointBeaconBlockBody.executionPayloadHeader.logsBloom = new Uint8Array(bareLogsBloom);
 
     const { root, proof } = await createReceiptTrie(
-        contractAddress,
-        topics,
-        messages,
+        logs,
         checkPointBeaconBlockBody.executionPayloadHeader.logsBloom
     );
     checkPointBeaconBlockBody.executionPayloadHeader.receiptsRoot = root;
@@ -148,14 +160,14 @@ export async function generateUpdate(
     // Link beacon body to checkpoint ancestor header
     checkPointHeader.beacon.bodyRoot = blockBodyRoot;
 
-    const checkPointHeaderState = ssz.deneb.BeaconState.defaultViewDU();
+    const checkPointHeaderState = ssz.electra.BeaconState.defaultViewDU();
     checkPointHeaderState.currentSyncCommittee = ssz.altair.SyncCommittee.toViewDU(syncCommittee);
     checkPointHeaderState.commit();
     const checkPointStateCurrentSyncCommitteeBranch = new Tree(checkPointHeaderState.node).getSingleProof(
-        BigInt(CURRENT_SYNC_COMMITTEE_GINDEX)
+        BigInt(CURRENT_SYNC_COMMITTEE_GINDEX_ELECTRA)
     );
     const checkPointblockRootsBranch = new Tree(checkPointHeaderState.node).getSingleProof(
-        BigInt(BLOCKS_ROOTS_ROOT_GINDEX)
+        BigInt(BLOCKS_ROOTS_ROOT_GINDEX_ELECTRA)
     );
     const checkPointblocksRootRoot = checkPointHeaderState.blockRoots.hashTreeRoot();
     checkPointHeader.beacon.stateRoot = checkPointHeaderState.hashTreeRoot();
@@ -220,15 +232,10 @@ export async function generateUpdate(
     });
 
     const messageExtrinsics = [];
-    for (const message of messages) {
-        const convertedMessage = [].slice.call(message);
+    for (const log of logs) {
         messageExtrinsics.push(
             api.createType<SnowbridgeCoreInboundMessage>("SnowbridgeCoreInboundMessage", {
-                eventLog: {
-                    address: contractAddress,
-                    topics,
-                    data: convertedMessage,
-                },
+                eventLog: log,
                 proof: messageProof,
             })
         );
