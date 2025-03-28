@@ -42,7 +42,7 @@ describeSuite({
                     await api.query.externalValidatorSlashes.bondedEras()
                 ).toJSON() as BondedEraParams[];
                 // Let's check 2 recent eras
-                for (const bondedEra of bondedEras.slice(-5)) {
+                for (const bondedEra of bondedEras.slice(-2)) {
                     const result = await findEraBlockUsingBinarySearch(api, bondedEra[0]);
 
                     if (!result.found) {
