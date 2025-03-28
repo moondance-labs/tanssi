@@ -59,6 +59,7 @@ import type {
     PalletIdentityRegistrarInfo,
     PalletIdentityRegistration,
     PalletIdentityUsernameInformation,
+    PalletInactivityTrackingActivityTrackingStatus,
     PalletInflationRewardsChainsToRewardValue,
     PalletMessageQueueBookState,
     PalletMessageQueuePage,
@@ -1538,6 +1539,35 @@ declare module "@polkadot/api-base/types/storage" {
                 [AccountId32]
             > &
                 QueryableStorageEntry<ApiType, [AccountId32]>;
+            /**
+             * Generic query
+             **/
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
+        inactivityTracking: {
+            /**
+             * A list of double map of inactive collators for a session
+             **/
+            activeCollators: AugmentedQuery<
+                ApiType,
+                (arg: u32 | AnyNumber | Uint8Array) => Observable<BTreeSet<AccountId32>>,
+                [u32]
+            > &
+                QueryableStorageEntry<ApiType, [u32]>;
+            /**
+             * A list of inactive collators for a session. Repopulated at the start of every session
+             **/
+            activeCollatorsForCurrentSession: AugmentedQuery<ApiType, () => Observable<BTreeSet<AccountId32>>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * Switch to enable/disable inactivity tracking
+             **/
+            currentActivityTrackingStatus: AugmentedQuery<
+                ApiType,
+                () => Observable<PalletInactivityTrackingActivityTrackingStatus>,
+                []
+            > &
+                QueryableStorageEntry<ApiType, []>;
             /**
              * Generic query
              **/

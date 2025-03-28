@@ -40,9 +40,9 @@ use {
 pub use crate::{
     AccountId, AssetRate, AuthorNoting, AuthorityAssignment, AuthorityMapping, Balance, Balances,
     CollatorAssignment, Configuration, DataPreservers, ForeignAssets, ForeignAssetsCreator,
-    InflationRewards, Initializer, Invulnerables, MinimumSelfDelegation, ParachainInfo,
-    PooledStaking, Proxy, ProxyType, Registrar, RewardsPortion, Runtime, RuntimeCall,
-    ServicesPayment, Session, System, TransactionPayment,
+    InactivityTracking, InflationRewards, Initializer, Invulnerables, MinimumSelfDelegation,
+    ParachainInfo, PooledStaking, Proxy, ProxyType, Registrar, RewardsPortion, Runtime,
+    RuntimeCall, ServicesPayment, Session, System, TransactionPayment,
 };
 
 mod xcm;
@@ -218,6 +218,8 @@ pub fn start_block() -> RunSummary {
     pallet_author_inherent::Pallet::<Runtime>::kick_off_authorship_validation(None.into())
         .expect("author inherent to dispatch correctly");
 
+    InactivityTracking::on_initialize(System::block_number());
+
     RunSummary {
         author_id,
         inflation: new_issuance - current_issuance,
@@ -233,6 +235,7 @@ pub fn end_block() {
     Initializer::on_finalize(System::block_number());
     AuthorInherent::on_finalize(System::block_number());
     TransactionPayment::on_finalize(System::block_number());
+    InactivityTracking::on_finalize(System::block_number());
 }
 
 pub fn run_block() -> RunSummary {
