@@ -14,7 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use {super::*, crate::assert_eq_last_events};
+use {
+    super::*,
+    crate::{
+        assert_eq_last_events, CandidateSummaries, CandidateSummary, DelegatorCandidateSummaries,
+        DelegatorCandidateSummary, PausePoolsExtrinsics,
+    },
+};
 
 pool_test!(
     fn empty_delegation<P>() {
@@ -57,6 +63,27 @@ pool_test!(
                 expected_joining: amount,
             }
             .test();
+
+            assert_eq!(
+                DelegatorCandidateSummaries::<Runtime>::iter_key_prefix(&ACCOUNT_DELEGATOR_1)
+                    .count(),
+                1
+            );
+            assert_eq!(
+                DelegatorCandidateSummaries::<Runtime>::get(
+                    &ACCOUNT_DELEGATOR_1,
+                    &ACCOUNT_CANDIDATE_1
+                ),
+                DelegatorCandidateSummary::new().with_joining(true)
+            );
+            assert_eq!(
+                CandidateSummaries::<Runtime>::get(&ACCOUNT_CANDIDATE_1),
+                CandidateSummary {
+                    delegators: 1,
+                    joining_delegators: 1,
+                    ..default()
+                }
+            );
 
             assert_eq_events!(vec![
                 Event::IncreasedStake {
@@ -126,6 +153,27 @@ pool_test!(
                 ..default()
             }
             .test::<P>();
+
+            assert_eq!(
+                DelegatorCandidateSummaries::<Runtime>::iter_key_prefix(&ACCOUNT_DELEGATOR_1)
+                    .count(),
+                1
+            );
+            assert_eq!(
+                DelegatorCandidateSummaries::<Runtime>::get(
+                    &ACCOUNT_DELEGATOR_1,
+                    &ACCOUNT_CANDIDATE_1
+                ),
+                DelegatorCandidateSummary::new().with_pool(P::pool_kind(), true)
+            );
+            assert_eq!(
+                CandidateSummaries::<Runtime>::get(&ACCOUNT_CANDIDATE_1),
+                CandidateSummary {
+                    delegators: 1,
+                    ..default()
+                }
+                .with_pool(P::pool_kind(), 1)
+            );
 
             assert_eq_events!(vec![
                 Event::IncreasedStake {
@@ -262,6 +310,27 @@ pool_test!(
             }
             .test::<P>();
 
+            assert_eq!(
+                DelegatorCandidateSummaries::<Runtime>::iter_key_prefix(&ACCOUNT_DELEGATOR_1)
+                    .count(),
+                1
+            );
+            assert_eq!(
+                DelegatorCandidateSummaries::<Runtime>::get(
+                    &ACCOUNT_DELEGATOR_1,
+                    &ACCOUNT_CANDIDATE_1
+                ),
+                DelegatorCandidateSummary::new().with_pool(P::pool_kind(), true)
+            );
+            assert_eq!(
+                CandidateSummaries::<Runtime>::get(&ACCOUNT_CANDIDATE_1),
+                CandidateSummary {
+                    delegators: 1,
+                    ..default()
+                }
+                .with_pool(P::pool_kind(), 1)
+            );
+
             FullUndelegation {
                 candidate: ACCOUNT_CANDIDATE_1,
                 delegator: ACCOUNT_DELEGATOR_1,
@@ -271,6 +340,16 @@ pool_test!(
                 ..default()
             }
             .test::<P>();
+
+            assert_eq!(
+                DelegatorCandidateSummaries::<Runtime>::iter_key_prefix(&ACCOUNT_DELEGATOR_1)
+                    .count(),
+                0
+            );
+            assert_eq!(
+                CandidateSummaries::<Runtime>::get(&ACCOUNT_CANDIDATE_1),
+                CandidateSummary::default(),
+            );
 
             assert_eq_events!(vec![
                 // delegate request
@@ -441,7 +520,7 @@ pool_test!(
 );
 
 pool_test!(
-    fn swap_works<P>() {
+    fn partial_swap_works<P>() {
         ExtBuilder::default().build().execute_with(|| {
             FullDelegation {
                 candidate: ACCOUNT_CANDIDATE_1,
@@ -452,6 +531,28 @@ pool_test!(
             }
             .test::<P>();
 
+            assert_eq!(
+                DelegatorCandidateSummaries::<Runtime>::iter_key_prefix(&ACCOUNT_DELEGATOR_1)
+                    .count(),
+                1
+            );
+            assert_eq!(
+                DelegatorCandidateSummaries::<Runtime>::get(
+                    &ACCOUNT_DELEGATOR_1,
+                    &ACCOUNT_CANDIDATE_1
+                ),
+                DelegatorCandidateSummary::new().with_pool(P::pool_kind(), true)
+            );
+            assert_eq!(
+                CandidateSummaries::<Runtime>::get(&ACCOUNT_CANDIDATE_1),
+                CandidateSummary {
+                    delegators: 1,
+                    ..default()
+                }
+                .with_pool(P::pool_kind(), 1)
+            );
+
+            // We swap only part of the stake.
             Swap {
                 candidate: ACCOUNT_CANDIDATE_1,
                 delegator: ACCOUNT_DELEGATOR_1,
@@ -462,6 +563,30 @@ pool_test!(
             }
             .test::<P>();
 
+            assert_eq!(
+                DelegatorCandidateSummaries::<Runtime>::iter_key_prefix(&ACCOUNT_DELEGATOR_1)
+                    .count(),
+                1
+            );
+            assert_eq!(
+                DelegatorCandidateSummaries::<Runtime>::get(
+                    &ACCOUNT_DELEGATOR_1,
+                    &ACCOUNT_CANDIDATE_1
+                ),
+                DelegatorCandidateSummary::new()
+                    .with_pool(P::pool_kind(), true)
+                    .with_pool(P::OppositePool::pool_kind(), true)
+            );
+            assert_eq!(
+                CandidateSummaries::<Runtime>::get(&ACCOUNT_CANDIDATE_1),
+                CandidateSummary {
+                    delegators: 1,
+                    ..default()
+                }
+                .with_pool(P::pool_kind(), 1)
+                .with_pool(P::OppositePool::pool_kind(), 1)
+            );
+
             assert_eq_last_events!(vec![Event::<Runtime>::SwappedPool {
                 candidate: ACCOUNT_CANDIDATE_1,
                 delegator: ACCOUNT_DELEGATOR_1,
@@ -470,6 +595,86 @@ pool_test!(
                 source_stake: 5 * SHARE_INIT,
                 target_shares: 5,
                 target_stake: 5 * SHARE_INIT,
+                pending_leaving: 0,
+                released: 0,
+            }]);
+        })
+    }
+);
+
+pool_test!(
+    fn full_swap_works<P>() {
+        ExtBuilder::default().build().execute_with(|| {
+            FullDelegation {
+                candidate: ACCOUNT_CANDIDATE_1,
+                delegator: ACCOUNT_DELEGATOR_1,
+                request_amount: 10 * SHARE_INIT,
+                expected_increase: 10 * SHARE_INIT,
+                ..default()
+            }
+            .test::<P>();
+
+            assert_eq!(
+                DelegatorCandidateSummaries::<Runtime>::iter_key_prefix(&ACCOUNT_DELEGATOR_1)
+                    .count(),
+                1
+            );
+            assert_eq!(
+                DelegatorCandidateSummaries::<Runtime>::get(
+                    &ACCOUNT_DELEGATOR_1,
+                    &ACCOUNT_CANDIDATE_1
+                ),
+                DelegatorCandidateSummary::new().with_pool(P::pool_kind(), true)
+            );
+            assert_eq!(
+                CandidateSummaries::<Runtime>::get(&ACCOUNT_CANDIDATE_1),
+                CandidateSummary {
+                    delegators: 1,
+                    ..default()
+                }
+                .with_pool(P::pool_kind(), 1)
+            );
+
+            // All stake is swapped, so original pool should be empty
+            Swap {
+                candidate: ACCOUNT_CANDIDATE_1,
+                delegator: ACCOUNT_DELEGATOR_1,
+                requested_amount: SharesOrStake::Stake(10 * SHARE_INIT),
+                expected_removed: 10 * SHARE_INIT,
+                expected_restaked: 10 * SHARE_INIT,
+                ..default()
+            }
+            .test::<P>();
+
+            assert_eq!(
+                DelegatorCandidateSummaries::<Runtime>::iter_key_prefix(&ACCOUNT_DELEGATOR_1)
+                    .count(),
+                1
+            );
+            assert_eq!(
+                DelegatorCandidateSummaries::<Runtime>::get(
+                    &ACCOUNT_DELEGATOR_1,
+                    &ACCOUNT_CANDIDATE_1
+                ),
+                DelegatorCandidateSummary::new().with_pool(P::OppositePool::pool_kind(), true)
+            );
+            assert_eq!(
+                CandidateSummaries::<Runtime>::get(&ACCOUNT_CANDIDATE_1),
+                CandidateSummary {
+                    delegators: 1,
+                    ..default()
+                }
+                .with_pool(P::OppositePool::pool_kind(), 1)
+            );
+
+            assert_eq_last_events!(vec![Event::<Runtime>::SwappedPool {
+                candidate: ACCOUNT_CANDIDATE_1,
+                delegator: ACCOUNT_DELEGATOR_1,
+                source_pool: P::target_pool(),
+                source_shares: 10,
+                source_stake: 10 * SHARE_INIT,
+                target_shares: 10,
+                target_stake: 10 * SHARE_INIT,
                 pending_leaving: 0,
                 released: 0,
             }]);
@@ -523,6 +728,30 @@ pool_test!(
             }
             .test::<P::OppositePool>();
 
+            assert_eq!(
+                DelegatorCandidateSummaries::<Runtime>::iter_key_prefix(&ACCOUNT_DELEGATOR_1)
+                    .count(),
+                1
+            );
+            assert_eq!(
+                DelegatorCandidateSummaries::<Runtime>::get(
+                    &ACCOUNT_DELEGATOR_1,
+                    &ACCOUNT_CANDIDATE_1
+                ),
+                DelegatorCandidateSummary::new()
+                    .with_pool(P::pool_kind(), true)
+                    .with_pool(P::OppositePool::pool_kind(), true)
+            );
+            assert_eq!(
+                CandidateSummaries::<Runtime>::get(&ACCOUNT_CANDIDATE_1),
+                CandidateSummary {
+                    delegators: 1,
+                    ..default()
+                }
+                .with_pool(P::pool_kind(), 1)
+                .with_pool(P::OppositePool::pool_kind(), 1)
+            );
+
             // We then artificialy distribute rewards to the target by increasing the value of the pool
             // and minting currency to the staking account (this is not how manual rewards would
             // be distributed but whatever).
@@ -537,6 +766,7 @@ pool_test!(
                 &Stake(rewards)
             ));
 
+            // We swap only part of the stake.
             Swap {
                 candidate: ACCOUNT_CANDIDATE_1,
                 delegator: ACCOUNT_DELEGATOR_1,
@@ -555,6 +785,27 @@ pool_test!(
             }
             .test::<P>();
 
+            assert_eq!(
+                DelegatorCandidateSummaries::<Runtime>::get(
+                    &ACCOUNT_DELEGATOR_1,
+                    &ACCOUNT_CANDIDATE_1
+                ),
+                DelegatorCandidateSummary::new()
+                    .with_pool(P::pool_kind(), true)
+                    .with_pool(P::OppositePool::pool_kind(), true)
+                    .with_leaving(true) // leaving dust
+            );
+            assert_eq!(
+                CandidateSummaries::<Runtime>::get(&ACCOUNT_CANDIDATE_1),
+                CandidateSummary {
+                    delegators: 1,
+                    leaving_delegators: 1,
+                    auto_compounding_delegators: 1,
+                    manual_rewards_delegators: 1,
+                    ..default()
+                }
+            );
+
             assert_eq_last_events!(vec![Event::<Runtime>::SwappedPool {
                 candidate: ACCOUNT_CANDIDATE_1,
                 delegator: ACCOUNT_DELEGATOR_1,
@@ -569,3 +820,65 @@ pool_test!(
         })
     }
 );
+
+#[test]
+fn paused_extrinsics() {
+    ExtBuilder::default().build().execute_with(|| {
+        PausePoolsExtrinsics::<Runtime>::put(true);
+
+        assert_noop!(
+            Staking::rebalance_hold(
+                RuntimeOrigin::signed(ACCOUNT_DELEGATOR_1),
+                ACCOUNT_DELEGATOR_1,
+                ACCOUNT_CANDIDATE_1,
+                PoolKind::AutoCompounding
+            ),
+            Error::<Runtime>::NoOneIsStaking
+        ); // no pause check
+
+        assert_noop!(
+            Staking::request_delegate(
+                RuntimeOrigin::signed(ACCOUNT_DELEGATOR_1),
+                ACCOUNT_CANDIDATE_1,
+                ActivePoolKind::AutoCompounding,
+                42
+            ),
+            Error::<Runtime>::PoolsExtrinsicsArePaused
+        );
+
+        assert_noop!(
+            Staking::execute_pending_operations(RuntimeOrigin::signed(ACCOUNT_DELEGATOR_1), vec![]),
+            Error::<Runtime>::PoolsExtrinsicsArePaused
+        );
+
+        assert_noop!(
+            Staking::request_undelegate(
+                RuntimeOrigin::signed(ACCOUNT_DELEGATOR_1),
+                ACCOUNT_CANDIDATE_1,
+                ActivePoolKind::AutoCompounding,
+                SharesOrStake::Shares(42),
+            ),
+            Error::<Runtime>::PoolsExtrinsicsArePaused
+        );
+
+        assert_ok!(Staking::claim_manual_rewards(
+            RuntimeOrigin::signed(ACCOUNT_DELEGATOR_1),
+            vec![]
+        ));
+
+        assert_ok!(Staking::update_candidate_position(
+            RuntimeOrigin::signed(ACCOUNT_DELEGATOR_1),
+            vec![]
+        ));
+
+        assert_noop!(
+            Staking::swap_pool(
+                RuntimeOrigin::signed(ACCOUNT_DELEGATOR_1),
+                ACCOUNT_CANDIDATE_1,
+                ActivePoolKind::AutoCompounding,
+                SharesOrStake::Shares(42),
+            ),
+            Error::<Runtime>::PoolsExtrinsicsArePaused
+        );
+    })
+}

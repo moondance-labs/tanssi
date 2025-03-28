@@ -21,7 +21,10 @@ use {
     cumulus_primitives_core::ParaId,
     dp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApiV1,
     dp_core::well_known_keys,
-    frame_support::{assert_err, assert_noop, assert_ok, BoundedVec},
+    frame_support::{
+        assert_err, assert_noop, assert_ok, migrations::SteppedMigration,
+        pallet_prelude::StorageVersion, weights::WeightMeter, BoundedVec,
+    },
     frame_system::ConsumedWeight,
     nimbus_primitives::NIMBUS_KEY_ID,
     pallet_author_noting_runtime_api::runtime_decl_for_author_noting_api::AuthorNotingApi,
@@ -29,8 +32,8 @@ use {
     pallet_collator_assignment_runtime_api::runtime_decl_for_collator_assignment_api::CollatorAssignmentApi,
     pallet_migrations::Migration,
     pallet_pooled_staking::{
-        traits::IsCandidateEligible, AllTargetPool, EligibleCandidate, PendingOperationKey,
-        PendingOperationQuery, PoolsKey, SharesOrStake, TargetPool,
+        traits::IsCandidateEligible, ActivePoolKind, EligibleCandidate, PendingOperationKey,
+        PendingOperationQuery, PoolKind, PoolsKey, SharesOrStake,
     },
     pallet_registrar_runtime_api::{
         runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
@@ -2294,7 +2297,7 @@ fn test_staking_join() {
             assert_ok!(PooledStaking::request_delegate(
                 origin_of(ALICE.into()),
                 ALICE.into(),
-                TargetPool::AutoCompounding,
+                ActivePoolKind::AutoCompounding,
                 stake
             ));
 
@@ -2353,7 +2356,7 @@ fn test_staking_join_no_keys_registered() {
             assert_ok!(PooledStaking::request_delegate(
                 origin_of(new_account.clone()),
                 new_account.clone(),
-                TargetPool::AutoCompounding,
+                ActivePoolKind::AutoCompounding,
                 stake
             ));
 
@@ -2409,7 +2412,7 @@ fn test_staking_register_keys_after_joining() {
             assert_ok!(PooledStaking::request_delegate(
                 origin_of(new_account.clone()),
                 new_account.clone(),
-                TargetPool::AutoCompounding,
+                ActivePoolKind::AutoCompounding,
                 stake
             ));
 
@@ -2487,7 +2490,7 @@ fn test_staking_join_bad_origin() {
                 PooledStaking::request_delegate(
                     root_origin(),
                     ALICE.into(),
-                    TargetPool::AutoCompounding,
+                    ActivePoolKind::AutoCompounding,
                     stake
                 ),
                 BadOrigin,
@@ -2520,7 +2523,7 @@ fn test_staking_join_below_self_delegation_min() {
             assert_ok!(PooledStaking::request_delegate(
                 origin_of(ALICE.into()),
                 ALICE.into(),
-                TargetPool::AutoCompounding,
+                ActivePoolKind::AutoCompounding,
                 stake1
             ));
 
@@ -2534,7 +2537,7 @@ fn test_staking_join_below_self_delegation_min() {
             assert_ok!(PooledStaking::request_delegate(
                 origin_of(ALICE.into()),
                 ALICE.into(),
-                TargetPool::AutoCompounding,
+                ActivePoolKind::AutoCompounding,
                 stake2,
             ));
 
@@ -2547,7 +2550,7 @@ fn test_staking_join_below_self_delegation_min() {
             assert_ok!(PooledStaking::request_delegate(
                 origin_of(ALICE.into()),
                 ALICE.into(),
-                TargetPool::AutoCompounding,
+                ActivePoolKind::AutoCompounding,
                 stake3,
             ));
 
@@ -2590,7 +2593,7 @@ fn test_staking_join_no_self_delegation() {
             assert_ok!(PooledStaking::request_delegate(
                 origin_of(BOB.into()),
                 ALICE.into(),
-                TargetPool::AutoCompounding,
+                ActivePoolKind::AutoCompounding,
                 stake,
             ));
 
@@ -2626,7 +2629,7 @@ fn test_staking_join_before_self_delegation() {
             assert_ok!(PooledStaking::request_delegate(
                 origin_of(BOB.into()),
                 ALICE.into(),
-                TargetPool::AutoCompounding,
+                ActivePoolKind::AutoCompounding,
                 stake
             ));
 
@@ -2650,7 +2653,7 @@ fn test_staking_join_before_self_delegation() {
             assert_ok!(PooledStaking::request_delegate(
                 origin_of(ALICE.into()),
                 ALICE.into(),
-                TargetPool::AutoCompounding,
+                ActivePoolKind::AutoCompounding,
                 stake
             ));
 
@@ -2692,7 +2695,7 @@ fn test_staking_join_twice_in_same_block() {
             assert_ok!(PooledStaking::request_delegate(
                 origin_of(ALICE.into()),
                 ALICE.into(),
-                TargetPool::AutoCompounding,
+                ActivePoolKind::AutoCompounding,
                 stake1
             ));
 
@@ -2700,7 +2703,7 @@ fn test_staking_join_twice_in_same_block() {
             assert_ok!(PooledStaking::request_delegate(
                 origin_of(ALICE.into()),
                 ALICE.into(),
-                TargetPool::AutoCompounding,
+                ActivePoolKind::AutoCompounding,
                 stake2
             ));
 
@@ -2758,7 +2761,7 @@ fn test_staking_join_execute_before_time() {
             assert_ok!(PooledStaking::request_delegate(
                 origin_of(ALICE.into()),
                 ALICE.into(),
-                TargetPool::AutoCompounding,
+                ActivePoolKind::AutoCompounding,
                 stake
             ));
 
@@ -2830,7 +2833,7 @@ fn test_staking_join_execute_any_origin() {
             assert_ok!(PooledStaking::request_delegate(
                 origin_of(ALICE.into()),
                 ALICE.into(),
-                TargetPool::AutoCompounding,
+                ActivePoolKind::AutoCompounding,
                 stake
             ));
 
@@ -2886,7 +2889,7 @@ fn test_staking_join_execute_bad_origin() {
             assert_ok!(PooledStaking::request_delegate(
                 origin_of(ALICE.into()),
                 ALICE.into(),
-                TargetPool::AutoCompounding,
+                ActivePoolKind::AutoCompounding,
                 stake
             ));
 
@@ -2922,7 +2925,7 @@ fn test_staking_join_execute_bad_origin() {
 struct A {
     delegator: AccountId,
     candidate: AccountId,
-    target_pool: TargetPool,
+    target_pool: ActivePoolKind,
     stake: u128,
 }
 
@@ -2961,11 +2964,13 @@ fn setup_staking_join_and_execute<R>(ops: Vec<A>, f: impl FnOnce() -> R) {
 
             for op in ops.iter() {
                 let operation = match op.target_pool {
-                    TargetPool::AutoCompounding => PendingOperationKey::JoiningAutoCompounding {
-                        candidate: op.candidate.clone(),
-                        at: 0,
-                    },
-                    TargetPool::ManualRewards => PendingOperationKey::JoiningManualRewards {
+                    ActivePoolKind::AutoCompounding => {
+                        PendingOperationKey::JoiningAutoCompounding {
+                            candidate: op.candidate.clone(),
+                            at: 0,
+                        }
+                    }
+                    ActivePoolKind::ManualRewards => PendingOperationKey::JoiningManualRewards {
                         candidate: op.candidate.clone(),
                         at: 0,
                     },
@@ -2990,7 +2995,7 @@ fn test_staking_leave_exact_amount() {
         vec![A {
             delegator: ALICE.into(),
             candidate: ALICE.into(),
-            target_pool: TargetPool::AutoCompounding,
+            target_pool: ActivePoolKind::AutoCompounding,
             stake: 10 * MinimumSelfDelegation::get(),
         }],
         || {
@@ -2998,7 +3003,7 @@ fn test_staking_leave_exact_amount() {
             assert_ok!(PooledStaking::request_undelegate(
                 origin_of(ALICE.into()),
                 ALICE.into(),
-                TargetPool::AutoCompounding,
+                ActivePoolKind::AutoCompounding,
                 SharesOrStake::Stake(stake),
             ));
 
@@ -3016,7 +3021,7 @@ fn test_staking_leave_bad_origin() {
         vec![A {
             delegator: ALICE.into(),
             candidate: ALICE.into(),
-            target_pool: TargetPool::AutoCompounding,
+            target_pool: ActivePoolKind::AutoCompounding,
             stake: 10 * MinimumSelfDelegation::get(),
         }],
         || {
@@ -3025,7 +3030,7 @@ fn test_staking_leave_bad_origin() {
                 PooledStaking::request_undelegate(
                     root_origin(),
                     ALICE.into(),
-                    TargetPool::AutoCompounding,
+                    ActivePoolKind::AutoCompounding,
                     SharesOrStake::Stake(stake),
                 ),
                 BadOrigin
@@ -3040,7 +3045,7 @@ fn test_staking_leave_more_than_allowed() {
         vec![A {
             delegator: ALICE.into(),
             candidate: ALICE.into(),
-            target_pool: TargetPool::AutoCompounding,
+            target_pool: ActivePoolKind::AutoCompounding,
             stake: 10 * MinimumSelfDelegation::get(),
         }],
         || {
@@ -3049,7 +3054,7 @@ fn test_staking_leave_more_than_allowed() {
                 PooledStaking::request_undelegate(
                     origin_of(ALICE.into()),
                     ALICE.into(),
-                    TargetPool::AutoCompounding,
+                    ActivePoolKind::AutoCompounding,
                     SharesOrStake::Stake(stake + 1 * MinimumSelfDelegation::get()),
                 ),
                 pallet_pooled_staking::Error::<Runtime>::MathUnderflow,
@@ -3066,7 +3071,7 @@ fn test_staking_leave_in_separate_transactions() {
         vec![A {
             delegator: ALICE.into(),
             candidate: ALICE.into(),
-            target_pool: TargetPool::AutoCompounding,
+            target_pool: ActivePoolKind::AutoCompounding,
             stake,
         }],
         || {
@@ -3074,7 +3079,7 @@ fn test_staking_leave_in_separate_transactions() {
             assert_ok!(PooledStaking::request_undelegate(
                 origin_of(ALICE.into()),
                 ALICE.into(),
-                TargetPool::AutoCompounding,
+                ActivePoolKind::AutoCompounding,
                 SharesOrStake::Stake(half_stake),
             ));
 
@@ -3093,7 +3098,7 @@ fn test_staking_leave_in_separate_transactions() {
             assert_ok!(PooledStaking::request_undelegate(
                 origin_of(ALICE.into()),
                 ALICE.into(),
-                TargetPool::AutoCompounding,
+                ActivePoolKind::AutoCompounding,
                 SharesOrStake::Stake(remaining_stake),
             ));
 
@@ -3113,7 +3118,7 @@ fn test_staking_leave_all_except_some_dust() {
         vec![A {
             delegator: ALICE.into(),
             candidate: ALICE.into(),
-            target_pool: TargetPool::AutoCompounding,
+            target_pool: ActivePoolKind::AutoCompounding,
             stake,
         }],
         || {
@@ -3121,7 +3126,7 @@ fn test_staking_leave_all_except_some_dust() {
             assert_ok!(PooledStaking::request_undelegate(
                 origin_of(ALICE.into()),
                 ALICE.into(),
-                TargetPool::AutoCompounding,
+                ActivePoolKind::AutoCompounding,
                 SharesOrStake::Stake(stake - dust),
             ));
 
@@ -3142,7 +3147,7 @@ fn test_staking_leave_all_except_some_dust() {
             assert_ok!(PooledStaking::request_undelegate(
                 origin_of(ALICE.into()),
                 ALICE.into(),
-                TargetPool::AutoCompounding,
+                ActivePoolKind::AutoCompounding,
                 SharesOrStake::Stake(dust),
             ));
 
@@ -3166,7 +3171,7 @@ fn test_staking_leave_execute_before_time() {
         vec![A {
             delegator: ALICE.into(),
             candidate: ALICE.into(),
-            target_pool: TargetPool::AutoCompounding,
+            target_pool: ActivePoolKind::AutoCompounding,
             stake,
         }],
         || {
@@ -3175,7 +3180,7 @@ fn test_staking_leave_execute_before_time() {
             assert_ok!(PooledStaking::request_undelegate(
                 origin_of(ALICE.into()),
                 ALICE.into(),
-                TargetPool::AutoCompounding,
+                ActivePoolKind::AutoCompounding,
                 SharesOrStake::Stake(stake),
             ));
 
@@ -3215,7 +3220,7 @@ fn test_staking_leave_execute_any_origin() {
         vec![A {
             delegator: ALICE.into(),
             candidate: ALICE.into(),
-            target_pool: TargetPool::AutoCompounding,
+            target_pool: ActivePoolKind::AutoCompounding,
             stake,
         }],
         || {
@@ -3224,7 +3229,7 @@ fn test_staking_leave_execute_any_origin() {
             assert_ok!(PooledStaking::request_undelegate(
                 origin_of(ALICE.into()),
                 ALICE.into(),
-                TargetPool::AutoCompounding,
+                ActivePoolKind::AutoCompounding,
                 SharesOrStake::Stake(stake),
             ));
 
@@ -3264,7 +3269,7 @@ fn test_staking_leave_execute_bad_origin() {
         vec![A {
             delegator: ALICE.into(),
             candidate: ALICE.into(),
-            target_pool: TargetPool::AutoCompounding,
+            target_pool: ActivePoolKind::AutoCompounding,
             stake,
         }],
         || {
@@ -3272,7 +3277,7 @@ fn test_staking_leave_execute_bad_origin() {
             assert_ok!(PooledStaking::request_undelegate(
                 origin_of(ALICE.into()),
                 ALICE.into(),
-                TargetPool::AutoCompounding,
+                ActivePoolKind::AutoCompounding,
                 SharesOrStake::Stake(stake),
             ));
 
@@ -3301,7 +3306,7 @@ fn test_staking_swap() {
         vec![A {
             delegator: ALICE.into(),
             candidate: ALICE.into(),
-            target_pool: TargetPool::AutoCompounding,
+            target_pool: ActivePoolKind::AutoCompounding,
             stake: 10 * MinimumSelfDelegation::get(),
         }],
         || {
@@ -3309,7 +3314,7 @@ fn test_staking_swap() {
             assert_ok!(PooledStaking::swap_pool(
                 origin_of(ALICE.into()),
                 ALICE.into(),
-                TargetPool::AutoCompounding,
+                ActivePoolKind::AutoCompounding,
                 SharesOrStake::Stake(stake),
             ));
 
@@ -3317,23 +3322,19 @@ fn test_staking_swap() {
                 PooledStaking::computed_stake(
                     ALICE.into(),
                     ALICE.into(),
-                    AllTargetPool::AutoCompounding
+                    PoolKind::AutoCompounding
                 ),
                 Some(0u32.into())
             );
             assert_eq!(
-                PooledStaking::computed_stake(
-                    ALICE.into(),
-                    ALICE.into(),
-                    AllTargetPool::ManualRewards
-                ),
+                PooledStaking::computed_stake(ALICE.into(), ALICE.into(), PoolKind::ManualRewards),
                 Some(stake)
             );
 
             assert_ok!(PooledStaking::swap_pool(
                 origin_of(ALICE.into()),
                 ALICE.into(),
-                TargetPool::ManualRewards,
+                ActivePoolKind::ManualRewards,
                 SharesOrStake::Stake(stake),
             ));
 
@@ -3341,16 +3342,12 @@ fn test_staking_swap() {
                 PooledStaking::computed_stake(
                     ALICE.into(),
                     ALICE.into(),
-                    AllTargetPool::AutoCompounding
+                    PoolKind::AutoCompounding
                 ),
                 Some(stake)
             );
             assert_eq!(
-                PooledStaking::computed_stake(
-                    ALICE.into(),
-                    ALICE.into(),
-                    AllTargetPool::ManualRewards
-                ),
+                PooledStaking::computed_stake(ALICE.into(), ALICE.into(), PoolKind::ManualRewards),
                 Some(0u32.into())
             );
         },
@@ -3385,7 +3382,7 @@ fn test_pallet_session_takes_validators_from_invulnerables_and_staking() {
             assert_ok!(PooledStaking::request_delegate(
                 origin_of(ALICE.into()),
                 ALICE.into(),
-                TargetPool::AutoCompounding,
+                ActivePoolKind::AutoCompounding,
                 stake,
             ));
 
@@ -3402,7 +3399,7 @@ fn test_pallet_session_takes_validators_from_invulnerables_and_staking() {
             assert_ok!(PooledStaking::request_delegate(
                 origin_of(DAVE.into()),
                 DAVE.into(),
-                TargetPool::AutoCompounding,
+                ActivePoolKind::AutoCompounding,
                 stake,
             ));
 
@@ -3480,7 +3477,7 @@ fn test_pallet_session_limits_num_validators() {
             assert_ok!(PooledStaking::request_delegate(
                 origin_of(ALICE.into()),
                 ALICE.into(),
-                TargetPool::AutoCompounding,
+                ActivePoolKind::AutoCompounding,
                 stake,
             ));
 
@@ -3497,7 +3494,7 @@ fn test_pallet_session_limits_num_validators() {
             assert_ok!(PooledStaking::request_delegate(
                 origin_of(DAVE.into()),
                 DAVE.into(),
-                TargetPool::AutoCompounding,
+                ActivePoolKind::AutoCompounding,
                 stake,
             ));
 
@@ -3592,21 +3589,21 @@ fn test_pallet_session_limits_num_validators_from_staking() {
             assert_ok!(PooledStaking::request_delegate(
                 origin_of(BOB.into()),
                 BOB.into(),
-                TargetPool::AutoCompounding,
+                ActivePoolKind::AutoCompounding,
                 stake,
             ));
 
             assert_ok!(PooledStaking::request_delegate(
                 origin_of(CHARLIE.into()),
                 CHARLIE.into(),
-                TargetPool::AutoCompounding,
+                ActivePoolKind::AutoCompounding,
                 stake,
             ));
 
             assert_ok!(PooledStaking::request_delegate(
                 origin_of(DAVE.into()),
                 DAVE.into(),
-                TargetPool::AutoCompounding,
+                ActivePoolKind::AutoCompounding,
                 stake,
             ));
 
@@ -3678,13 +3675,13 @@ fn test_reward_to_staking_candidate() {
             assert_ok!(PooledStaking::request_delegate(
                 origin_of(DAVE.into()),
                 DAVE.into(),
-                TargetPool::ManualRewards,
+                ActivePoolKind::ManualRewards,
                 stake,
             ));
             assert_ok!(PooledStaking::request_delegate(
                 origin_of(BOB.into()),
                 DAVE.into(),
-                TargetPool::AutoCompounding,
+                ActivePoolKind::AutoCompounding,
                 stake,
             ));
 
@@ -3775,13 +3772,13 @@ fn test_reward_to_invulnerable() {
             assert_ok!(PooledStaking::request_delegate(
                 origin_of(ALICE.into()),
                 ALICE.into(),
-                TargetPool::ManualRewards,
+                ActivePoolKind::ManualRewards,
                 stake,
             ));
             assert_ok!(PooledStaking::request_delegate(
                 origin_of(BOB.into()),
                 ALICE.into(),
-                TargetPool::AutoCompounding,
+                ActivePoolKind::AutoCompounding,
                 stake,
             ));
 
@@ -4071,13 +4068,13 @@ fn test_collator_assignment_gives_priority_to_invulnerables() {
             assert_ok!(PooledStaking::request_delegate(
                 origin_of(BOB.into()),
                 BOB.into(),
-                TargetPool::AutoCompounding,
+                ActivePoolKind::AutoCompounding,
                 stake,
             ));
             assert_ok!(PooledStaking::request_delegate(
                 origin_of(CHARLIE.into()),
                 CHARLIE.into(),
-                TargetPool::AutoCompounding,
+                ActivePoolKind::AutoCompounding,
                 stake,
             ));
 
@@ -6221,6 +6218,103 @@ fn test_migration_stream_payment_config_new_fields() {
             }
         );
     })
+}
+
+#[test]
+fn test_migration_pooled_staking_summaries() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            use pallet_pooled_staking::{
+                CandidateSummaries, CandidateSummary, DelegatorCandidateSummaries,
+                DelegatorCandidateSummary, Pools, PoolsKey,
+            };
+
+            // We'll write directly shares to storage, then run the migrations and
+            // checks the summaries matches.
+
+            let alice = AccountId::from(ALICE);
+            let bob = AccountId::from(BOB);
+            let charlie = AccountId::from(CHARLIE);
+
+            Pools::<Runtime>::insert(
+                alice.clone(),
+                PoolsKey::JoiningShares {
+                    delegator: alice.clone(),
+                },
+                42,
+            );
+            Pools::<Runtime>::insert(
+                alice.clone(),
+                PoolsKey::AutoCompoundingShares {
+                    delegator: bob.clone(),
+                },
+                42,
+            );
+
+            Pools::<Runtime>::insert(
+                bob.clone(),
+                PoolsKey::ManualRewardsShares {
+                    delegator: alice.clone(),
+                },
+                42,
+            );
+
+            // let's test 0 value is ignored
+            Pools::<Runtime>::insert(
+                bob.clone(),
+                PoolsKey::ManualRewardsShares {
+                    delegator: charlie.clone(),
+                },
+                0,
+            );
+
+            // Run migration
+            StorageVersion::new(0u16).put::<PooledStaking>(); // set version required for migration to run
+            pallet_pooled_staking::migrations::MigrationGenerateSummaries::<Runtime>::step(
+                None,
+                &mut WeightMeter::new(),
+            )
+            .expect("to run without errors");
+
+            // Check output
+            assert_eq!(CandidateSummaries::<Runtime>::iter().count(), 2);
+            assert_eq!(
+                CandidateSummaries::<Runtime>::get(&alice),
+                CandidateSummary {
+                    delegators: 2,
+                    joining_delegators: 1,
+                    auto_compounding_delegators: 1,
+                    ..Default::default()
+                }
+            );
+            assert_eq!(
+                CandidateSummaries::<Runtime>::get(&bob),
+                CandidateSummary {
+                    delegators: 1,
+                    manual_rewards_delegators: 1,
+                    ..Default::default()
+                }
+            );
+
+            assert_eq!(DelegatorCandidateSummaries::<Runtime>::iter().count(), 3);
+            assert_eq!(
+                DelegatorCandidateSummaries::<Runtime>::get(&alice, &alice),
+                DelegatorCandidateSummary::default().with_joining(true)
+            );
+            assert_eq!(
+                DelegatorCandidateSummaries::<Runtime>::get(&alice, &bob),
+                DelegatorCandidateSummary::default().with_manual(true)
+            );
+            assert_eq!(
+                DelegatorCandidateSummaries::<Runtime>::get(&bob, &alice),
+                DelegatorCandidateSummary::default().with_auto(true)
+            );
+        });
 }
 
 #[test]
