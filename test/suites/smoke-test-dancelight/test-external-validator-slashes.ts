@@ -95,7 +95,7 @@ describeSuite({
                 const activeEra = (await api.query.externalValidators.activeEra()).unwrap();
                 const bondedDuration = api.consts.externalValidatorSlashes.bondingDuration;
 
-                const firstKeptIndex = activeEra.index.toNumber() - bondedDuration.toNumber();
+                const firstKeptIndex = Math.max(activeEra.index.toNumber() - bondedDuration.toNumber(), 0);
 
                 const allSlashes = await api.query.externalValidatorSlashes.slashes.entries();
                 const eraIndexes = allSlashes.map((entry) => {
@@ -118,7 +118,7 @@ describeSuite({
                 const activeEra = (await api.query.externalValidators.activeEra()).unwrap();
                 const bondedDuration = api.consts.externalValidatorSlashes.bondingDuration;
 
-                const firstKeptIndex = activeEra.index.toNumber() - bondedDuration.toNumber();
+                const firstKeptIndex = Math.max(activeEra.index.toNumber() - bondedDuration.toNumber(), 0);
                 const allBondedEras = await api.query.externalValidatorSlashes.bondedEras();
 
                 // We shouldn't have more bonded eras than the bondedDuration
