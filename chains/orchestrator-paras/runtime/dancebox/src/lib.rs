@@ -1741,16 +1741,27 @@ impl pallet_multisig::Config for Runtime {
     type WeightInfo = weights::pallet_multisig::SubstrateWeight<Runtime>;
 }
 
+pub struct MockCurrentSessionGetter;
+
+impl tp_traits::GetSessionIndex<u32> for MockCurrentSessionGetter {
+    fn session_index() -> u32 {
+        1
+    }
+}
+
 impl pallet_inactivity_tracking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type CollatorId = CollatorId;
     type MaxInactiveSessions = ConstU32<5>;
     type MaxCollatorsPerSession = MaxCandidatesBufferSize;
     type MaxContainerChains = MaxLengthParaIds;
+    #[cfg(not(feature = "runtime-benchmarks"))]
     type CurrentSessionIndex = CurrentSessionIndexGetter;
+    #[cfg(feature = "runtime-benchmarks")]
+    type CurrentSessionIndex = MockCurrentSessionGetter;
     type GetSelfChainBlockAuthor = GetSelfChainBlockAuthor;
     type ContainerChainsFetcher = CollatorAssignment;
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_inactivity_tracking::SubstrateWeight<Runtime>;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.

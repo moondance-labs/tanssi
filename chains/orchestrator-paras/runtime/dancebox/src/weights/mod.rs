@@ -30,6 +30,7 @@ pub mod pallet_configuration;
 pub mod pallet_data_preservers;
 pub mod pallet_foreign_asset_creator;
 pub mod pallet_identity;
+pub mod pallet_inactivity_tracking;
 pub mod pallet_invulnerables;
 pub mod pallet_message_queue;
 pub mod pallet_multiblock_migrations;
