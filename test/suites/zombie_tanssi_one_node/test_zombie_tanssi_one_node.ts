@@ -2,7 +2,7 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import type { TpTraitsSlotFrequency } from "@polkadot/types/lookup";
 import fs, { stat } from "node:fs/promises";
-import { generateEmptyGenesisData, getKeyringNimbusIdHex, signAndSendAndInclude, waitSessions } from "utils";
+import { generateEmptyGenesisData, createCollatorKeyToNameMap, signAndSendAndInclude, waitSessions } from "utils";
 
 describeSuite({
     id: "ZOMBIETAN01",
@@ -137,19 +137,6 @@ describeSuite({
         });
     },
 });
-
-/// Create a map of collator key "5C5p..." to collator name "Collator1000-01".
-function createCollatorKeyToNameMap(paraApi, collatorNames: string[]): Record<string, string> {
-    const collatorName: Record<string, string> = {};
-
-    for (const name of collatorNames) {
-        const hexAddress = getKeyringNimbusIdHex(name);
-        const k = paraApi.createType("AccountId", hexAddress);
-        collatorName[k] = name;
-    }
-
-    return collatorName;
-}
 
 async function registerEmptyParathread(api: ApiPromise, manager: any, paraIdString: string) {
     const parathread = true;

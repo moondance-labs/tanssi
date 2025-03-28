@@ -11,7 +11,7 @@ import {
     createTransfer,
     getAuthorFromDigest,
     getHeaderFromRelay,
-    getKeyringNimbusIdHex,
+    createCollatorKeyToNameMap,
     getParathreadRelayTankAddress,
     signAndSendAndInclude,
     signAndSendAndIncludeMany,
@@ -459,19 +459,6 @@ async function assertSlotFrequency(blockData, expectedSlotDiff) {
         Math.abs(avgSlotDiff - expectedSlotDiff),
         `Average slot time is different from expected: average ${avgSlotDiff}, expected ${expectedSlotDiff}`
     ).to.be.lessThan(5);
-}
-
-/// Create a map of collator key "5C5p..." to collator name "Collator1000-01".
-function createCollatorKeyToNameMap(paraApi, collatorNames: string[]): Record<string, string> {
-    const collatorName: Record<string, string> = {};
-
-    for (const name of collatorNames) {
-        const hexAddress = getKeyringNimbusIdHex(name);
-        const k = paraApi.createType("AccountId", hexAddress);
-        collatorName[k] = name;
-    }
-
-    return collatorName;
 }
 
 async function createTxBatchForCreatingParathread(api, manager, paraId, slotFreq, profileId, headData?: null) {

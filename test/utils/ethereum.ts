@@ -1,12 +1,9 @@
-import { type DevModeContext, type EthTransactionType, MoonwallContext } from "@moonwall/cli";
+import type { DevModeContext, EthTransactionType } from "@moonwall/cli";
 import { ALITH_PRIVATE_KEY, type TransactionOptions, alith, customWeb3Request } from "@moonwall/util";
 import { type AccessList, ethers } from "ethers";
 import { FMT_BYTES, FMT_NUMBER, type Transaction } from "web3";
-
-import { encodeAddress } from "@polkadot/util-crypto";
 import Debug from "debug";
 import { fromHex } from "viem";
-import { HOLESKY_SOVEREIGN_ACCOUNT_ADDRESS, SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS } from "./constants.ts";
 const debug = Debug("test:transaction");
 
 export const createTransaction = async (
