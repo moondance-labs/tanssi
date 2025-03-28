@@ -1240,7 +1240,7 @@
             ]
         },
         {
-            "name": "dancebox_smoke_moonbase",
+            "name": "dancebox_smoke_moonbase_test",
             "testFileDir": [
                 "suites/smoke-test-dancebox-relay"
             ],
