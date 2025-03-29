@@ -115,13 +115,8 @@ impl pallet_inactivity_tracking::Config for Test {
     type WeightInfo = ();
 }
 
+#[derive(Default)]
 pub(crate) struct ExtBuilder;
-
-impl Default for ExtBuilder {
-    fn default() -> ExtBuilder {
-        ExtBuilder {}
-    }
-}
 
 impl ExtBuilder {
     pub(crate) fn build(self) -> sp_io::TestExternalities {
