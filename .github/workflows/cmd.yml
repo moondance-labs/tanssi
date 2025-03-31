@@ -3,6 +3,10 @@ name: PR comment bot (/cmd)
 on:
   issue_comment:
     types: [ created ]
+  # TODO: REMOVE AFTER TEST
+  push:
+    branches:
+      - MD-884-*
 
 permissions:
   contents: write
@@ -11,7 +15,8 @@ permissions:
 
 jobs:
   is-org-member:
-    if: startsWith(github.event.comment.body, '/cmd')
+    # TODO: Uncomment before merge
+#    if: startsWith(github.event.comment.body, '/cmd')
     runs-on: self-hosted
     steps:
       - name: Check Permissions
@@ -59,7 +64,9 @@ jobs:
       CARGO_INCREMENTAL: "0"
       SCCACHE_CACHE_SIZE: "100GB"
       SCCACHE_GHA_ENABLED: "true"
-    if: ${{ github.event.comment.body == '/cmd generate-ts-api' }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # TODO: Uncomment before merge
+#    if: ${{ github.event.comment.body == '/cmd generate-ts-api' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -102,7 +109,16 @@ jobs:
             cd typescript-api
             git add .
             echo "About to commit changes"
+            
+            PR_NUMBER=$(jq --raw-output .issue.number "$GITHUB_EVENT_PATH")
+            TARGET_BRANCH=$(gh pr view "$PR_NUMBER" --json headRefName -q .headRefName)
+            
+            echo "PR Number: $PR_NUMBER"
+            echo "Target Branch: $TARGET_BRANCH"
+  
+            git fetch origin "$TARGET_BRANCH"
+            git checkout "$TARGET_BRANCH"
+  
             git commit -m "Auto-generated TypeScript interfaces"
-            echo "About to push changes to $(git branch --show-current)"
-#            git push -u origin $(git branch --show-current)
+            git push origin "$TARGET_BRANCH"
           fi
