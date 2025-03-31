@@ -69,7 +69,7 @@ fn formula_is_sound() {
     let blocks_per_era = 100;
     let annual_inflation = 0.1; // 10%
 
-    let rates = compute_inflation_rates(10.0, 0.6, eras_per_year, blocks_per_era);
+    let rates = compute_inflation_rates(annual_inflation, 0.6, eras_per_year, blocks_per_era);
 
     println!("Rates: {rates:?}");
 
