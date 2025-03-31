@@ -1300,7 +1300,6 @@ declare module "@polkadot/types/types/registry" {
         AbridgedHostConfiguration: AbridgedHostConfiguration;
         AbridgedHrmpChannel: AbridgedHrmpChannel;
         AccountData: AccountData;
-
         AccountId: AccountId;
         AccountId20: AccountId20;
         AccountId32: AccountId32;

@@ -101,6 +101,6 @@ jobs:
             git add .
             echo "About to commit changes"
             git commit -m "Auto-generated TypeScript interfaces"
-            echo "About to push changes"
-            git push -u origin $(git branch --show-current)
+            echo "About to push changes to $(git branch --show-current)"
+#            git push -u origin $(git branch --show-current)
           fi
