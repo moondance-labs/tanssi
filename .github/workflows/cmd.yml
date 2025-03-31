@@ -3,10 +3,6 @@ name: PR comment bot (/cmd)
 on:
   issue_comment:
     types: [ created ]
-  # TODO: REMOVE AFTER TEST
-  push:
-    branches:
-      - MD-884-*
 
 permissions:
   contents: write
@@ -15,7 +11,7 @@ permissions:
 
 jobs:
   is-org-member:
-#    if: startsWith(github.event.comment.body, '/cmd')
+    if: startsWith(github.event.comment.body, '/cmd')
     runs-on: self-hosted
     steps:
       - name: Check Permissions
@@ -64,7 +60,7 @@ jobs:
       SCCACHE_CACHE_SIZE: "100GB"
       SCCACHE_GHA_ENABLED: "true"
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#    if: ${{ github.event.comment.body == '/cmd generate-ts-api' }}
+    if: ${{ github.event.comment.body == '/cmd generate-ts-api' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -110,13 +106,11 @@ jobs:
 
       - name: Commit and push changes
         run: |
+          cd typescript-api
           if [[ -n "$(git status --porcelain)" ]]; then
-            cd typescript-api
             git add .
             echo "About to commit changes"
             
-            echo "Github event params:"
-            jq '.' $GITHUB_EVENT_PATH
             PR_NUMBER=$(jq --raw-output .issue.number "$GITHUB_EVENT_PATH")
             TARGET_BRANCH=$(~/bin/bin/gh pr view "$PR_NUMBER" --json headRefName -q .headRefName)
             
