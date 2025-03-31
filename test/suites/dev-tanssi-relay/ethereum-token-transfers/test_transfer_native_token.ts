@@ -7,7 +7,7 @@ import { encodeAddress, keccakAsHex, xxhashAsU8a } from "@polkadot/util-crypto";
 import { readFileSync } from "node:fs";
 import { generateEventLog, generateUpdate, SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS, type MultiLocation } from "utils";
 import { expectEventCount } from "../../../helpers/events";
-import { SnowbridgeCoreInboundLog } from "@polkadot/types/lookup";
+import type { SnowbridgeCoreInboundLog } from "@polkadot/types/lookup";
 
 describeSuite({
     id: "DTR1702",
@@ -136,9 +136,8 @@ describeSuite({
 
                 await context.createBlock([signedTx], { allowFailures: false });
 
-
                 // Constant log
-                let log = polkadotJs.createType<SnowbridgeCoreInboundLog>("SnowbridgeCoreInboundLog", {
+                const log = polkadotJs.createType<SnowbridgeCoreInboundLog>("SnowbridgeCoreInboundLog", {
                     address: "0xeda338e4dc46038493b885327842fd3e301cab39",
                     topics: [
                         "0x7153f9357c8ea496bba60bf82e67143e27b64462b49041f8e689e1b05728f84f",
@@ -147,7 +146,7 @@ describeSuite({
                     ],
                     data: "0x00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000006b00010000000000000002bcd4282ca0c30cbd9c578b5c790e88c803d80cd9cc91f28686f24ac25a61e06e00050505050505050505050505050505050505050505050505050505050505050510270000000000000000000000000000e8030000000000000000000000000000000000000000000000000000000000000000000000",
                 });
-                let { checkpointUpdate, messageExtrinsics } = await generateUpdate(polkadotJs, [log]);
+                const { checkpointUpdate, messageExtrinsics } = await generateUpdate(polkadotJs, [log]);
 
                 const tx = polkadotJs.tx.ethereumBeaconClient.forceCheckpoint(checkpointUpdate);
                 signedTx = await polkadotJs.tx.sudo.sudo(tx).signAsync(alice);
@@ -200,7 +199,6 @@ describeSuite({
                 const {
                     data: { free: bobBalanceBefore },
                 } = await context.polkadotJs().query.system.account(tokenReceiver);
-
 
                 const tx3 = await polkadotJs.tx.ethereumInboundQueue.submit(messageExtrinsics[0]).signAsync(alice);
                 await context.createBlock([tx3], { allowFailures: false });

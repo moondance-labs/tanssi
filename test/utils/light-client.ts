@@ -11,12 +11,13 @@ import { Trie } from "@ethereumjs/trie";
 import { encodeReceipt, type PostByzantiumTxReceipt } from "@ethereumjs/vm";
 import type { Log } from "@ethereumjs/evm";
 import type { SyncCommitteeFast } from "@lodestar/light-client";
-import {
+import type {
     SnowbridgeBeaconPrimitivesBeaconHeader,
     SnowbridgeBeaconPrimitivesDenebExecutionPayloadHeader,
     SnowbridgeBeaconPrimitivesExecutionProof,
     SnowbridgeBeaconPrimitivesUpdatesCheckpointUpdate,
-    SnowbridgeBeaconPrimitivesVersionedExecutionPayloadHeader, SnowbridgeCoreInboundLog,
+    SnowbridgeBeaconPrimitivesVersionedExecutionPayloadHeader,
+    SnowbridgeCoreInboundLog,
     SnowbridgeCoreInboundMessage,
     SnowbridgeCoreInboundProof,
 } from "@polkadot/types/lookup";
@@ -66,10 +67,7 @@ function createSyncCommittee(seed: number) {
     };
 }
 
-async function createReceiptTrie(
-    snowbridgeLogs: Array<SnowbridgeCoreInboundLog>,
-    logsBloom: Uint8Array
-) {
+async function createReceiptTrie(snowbridgeLogs: Array<SnowbridgeCoreInboundLog>, logsBloom: Uint8Array) {
     const rawLogs = [];
     for (const log of snowbridgeLogs) {
         const rawLog: Log = [log.address, log.topics, log.data];
@@ -102,26 +100,33 @@ async function createReceiptTrie(
     return { root: root, proof: transformedProof };
 }
 
-export async function generateEventLog(api: ApiPromise, gatewayAddress: Uint8Array, channel_id: Uint8Array, message_id: Uint8Array, nonce: number, payload: Uint8Array) {
+export async function generateEventLog(
+    api: ApiPromise,
+    gatewayAddress: Uint8Array,
+    channel_id: Uint8Array,
+    message_id: Uint8Array,
+    nonce: number,
+    payload: Uint8Array
+) {
     // Signature for event OutboundMessageAccepted(bytes32 indexed channel_id, uint64 nonce, bytes32 indexed message_id, bytes payload);
-    const signature = new Uint8Array([113, 83, 249, 53, 124, 142, 164, 150, 187, 166, 11, 248, 46, 103, 20, 62, 39, 182, 68, 98, 180, 144, 65, 248, 230, 137, 225, 176, 87, 40, 248, 79]);
+    const signature = new Uint8Array([
+        113, 83, 249, 53, 124, 142, 164, 150, 187, 166, 11, 248, 46, 103, 20, 62, 39, 182, 68, 98, 180, 144, 65, 248,
+        230, 137, 225, 176, 87, 40, 248, 79,
+    ]);
     const topics = [signature, channel_id, message_id];
 
-    let defaultAbiCoder = AbiCoder.defaultAbiCoder();
-    let encodedDataString = defaultAbiCoder.encode(["uint64", "bytes"], [nonce, payload]);
-    let encodedData = getBytes(encodedDataString);
+    const defaultAbiCoder = AbiCoder.defaultAbiCoder();
+    const encodedDataString = defaultAbiCoder.encode(["uint64", "bytes"], [nonce, payload]);
+    const encodedData = getBytes(encodedDataString);
 
     return api.createType<SnowbridgeCoreInboundLog>("SnowbridgeCoreInboundLog", {
         address: gatewayAddress,
         topics,
-        data: [].slice.call(encodedData)
+        data: [].slice.call(encodedData),
     });
 }
 
-export async function generateUpdate(
-    api: ApiPromise,
-    logs: Array<SnowbridgeCoreInboundLog>
-) {
+export async function generateUpdate(api: ApiPromise, logs: Array<SnowbridgeCoreInboundLog>) {
     // Global variables
     const genValiRoot = Buffer.alloc(32, 9);
 
@@ -146,10 +151,7 @@ export async function generateUpdate(
     ];
     checkPointBeaconBlockBody.executionPayloadHeader.logsBloom = new Uint8Array(bareLogsBloom);
 
-    const { root, proof } = await createReceiptTrie(
-        logs,
-        checkPointBeaconBlockBody.executionPayloadHeader.logsBloom
-    );
+    const { root, proof } = await createReceiptTrie(logs, checkPointBeaconBlockBody.executionPayloadHeader.logsBloom);
     checkPointBeaconBlockBody.executionPayloadHeader.receiptsRoot = root;
 
     checkPointBeaconBlockBody.commit();
@@ -215,7 +217,7 @@ export async function generateUpdate(
     const receiptProof = api.createType<Vec<Bytes>>("Vec<Bytes>", proof);
 
     const checkpointUpdate = api.createType<SnowbridgeBeaconPrimitivesUpdatesCheckpointUpdate>(
-        " SnowbridgeBeaconPrimitivesUpdatesCheckpointUpdate",
+        "SnowbridgeBeaconPrimitivesUpdatesCheckpointUpdate",
         {
             header,
             validatorsRoot: genValiRoot,
