@@ -111,6 +111,8 @@ jobs:
             git add .
             echo "About to commit changes"
             
+            echo "Github event params:"
+            jq '.' $GITHUB_EVENT_PATH
             PR_NUMBER=$(jq --raw-output .issue.number "$GITHUB_EVENT_PATH")
             TARGET_BRANCH=$(~/bin/bin/gh pr view "$PR_NUMBER" --json headRefName -q .headRefName)
             
