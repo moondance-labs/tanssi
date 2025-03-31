@@ -123,3 +123,29 @@ jobs:
             git commit -m "Auto-generated TypeScript interfaces"
             git push origin "$TARGET_BRANCH"
           fi
+
+      - name: Add confused reaction on failure
+        uses: actions/github-script@v7
+        if: ${{ failure() }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.reactions.createForIssueComment({
+              comment_id: ${{ github.event.comment.id }},
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              content: 'confused'
+            })
+
+      - name: Add 👍 reaction on success
+        uses: actions/github-script@v7
+        if: ${{ !failure() }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.reactions.createForIssueComment({
+              comment_id: ${{ github.event.comment.id }},
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              content: '+1'
+            })
