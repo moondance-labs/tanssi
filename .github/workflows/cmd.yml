@@ -74,7 +74,11 @@ jobs:
           ref: ${{ needs.set-tags.outputs.git_ref }}
 
       - name: Install GitHub CLI
-        run: apt update && apt install -y gh
+        run: |
+          mkdir -p "$HOME/bin"
+          curl -fsSL https://github.com/cli/cli/releases/latest/download/gh_$(uname -m).tar.gz | tar -xz -C "$HOME/bin"
+          export PATH="$HOME/bin:$PATH"
+          gh --version
 
       - name: Cargo build
         uses: ./.github/workflow-templates/cargo-build
