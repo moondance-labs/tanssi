@@ -73,6 +73,9 @@ jobs:
         with:
           ref: ${{ needs.set-tags.outputs.git_ref }}
 
+      - name: Install GitHub CLI
+        run: sudo apt update && sudo apt install -y gh
+
       - name: Cargo build
         uses: ./.github/workflow-templates/cargo-build
         with:
