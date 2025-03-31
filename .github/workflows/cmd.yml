@@ -118,7 +118,7 @@ jobs:
             echo "About to commit changes"
             
             PR_NUMBER=$(jq --raw-output .issue.number "$GITHUB_EVENT_PATH")
-            TARGET_BRANCH=$(gh pr view "$PR_NUMBER" --json headRefName -q .headRefName)
+            TARGET_BRANCH=$(~/bin/bin/gh pr view "$PR_NUMBER" --json headRefName -q .headRefName)
             
             echo "PR Number: $PR_NUMBER"
             echo "Target Branch: $TARGET_BRANCH"
