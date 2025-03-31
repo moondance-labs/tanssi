@@ -1301,6 +1301,7 @@ declare module "@polkadot/types/types/registry" {
         AbridgedHrmpChannel: AbridgedHrmpChannel;
         AccountData: AccountData;
         AccountId: AccountId;
+
         AccountId20: AccountId20;
         AccountId32: AccountId32;
         AccountId33: AccountId33;
