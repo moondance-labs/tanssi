@@ -136,16 +136,24 @@ describeSuite({
 
                 await context.createBlock([signedTx], { allowFailures: false });
 
-                // Constant log
-                const log = polkadotJs.createType<SnowbridgeCoreInboundLog>("SnowbridgeCoreInboundLog", {
-                    address: "0xeda338e4dc46038493b885327842fd3e301cab39",
-                    topics: [
-                        "0x7153f9357c8ea496bba60bf82e67143e27b64462b49041f8e689e1b05728f84f",
-                        "0x0000000000000000000000000000000000000000000000000000000000000004",
-                        "0x0000000000000000000000000000000000000000000000000000000000000000",
-                    ],
-                    data: "0x00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000006b00010000000000000002bcd4282ca0c30cbd9c578b5c790e88c803d80cd9cc91f28686f24ac25a61e06e00050505050505050505050505050505050505050505050505050505050505050510270000000000000000000000000000e8030000000000000000000000000000000000000000000000000000000000000000000000",
-                });
+                // Hard-coding payload as we do not have scale encoding-decoding
+                const log = await generateEventLog(
+                    polkadotJs,
+                    Uint8Array.from(Buffer.from("eda338e4dc46038493b885327842fd3e301cab39", "hex")),
+                    Uint8Array.from(
+                        Buffer.from("0000000000000000000000000000000000000000000000000000000000000004", "hex")
+                    ),
+                    Uint8Array.from(
+                        Buffer.from("0000000000000000000000000000000000000000000000000000000000000000", "hex")
+                    ),
+                    1,
+                    new Uint8Array([
+                        0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 188, 212, 40, 44, 160, 195, 12, 189, 156, 87, 139, 92, 121, 14,
+                        136, 200, 3, 216, 12, 217, 204, 145, 242, 134, 134, 242, 74, 194, 90, 97, 224, 110, 0, 5, 5, 5,
+                        5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 16, 39,
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 232, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    ])
+                );
                 const { checkpointUpdate, messageExtrinsics } = await generateUpdate(polkadotJs, [log]);
 
                 const tx = polkadotJs.tx.ethereumBeaconClient.forceCheckpoint(checkpointUpdate);
