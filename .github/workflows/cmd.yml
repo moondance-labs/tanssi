@@ -3,10 +3,6 @@ name: PR comment bot (/cmd)
 on:
   issue_comment:
     types: [ created ]
-  # TODO: REMOVE AFTER TEST
-  push:
-    branches:
-      - MD-884-*
 
 permissions:
   contents: write
@@ -15,8 +11,7 @@ permissions:
 
 jobs:
   is-org-member:
-    # TODO: Uncomment before merge
-#    if: startsWith(github.event.comment.body, '/cmd')
+    if: startsWith(github.event.comment.body, '/cmd')
     runs-on: self-hosted
     steps:
       - name: Check Permissions
@@ -65,8 +60,7 @@ jobs:
       SCCACHE_CACHE_SIZE: "100GB"
       SCCACHE_GHA_ENABLED: "true"
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      # TODO: Uncomment before merge
-#    if: ${{ github.event.comment.body == '/cmd generate-ts-api' }}
+    if: ${{ github.event.comment.body == '/cmd generate-ts-api' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
