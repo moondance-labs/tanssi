@@ -36,7 +36,14 @@ fn compute_inflation_rates(
     eras_per_year: u32,
     blocks_per_era: u32,
 ) -> InflationRates {
-    assert!(collators_fraction >= 0.0 && collators_fraction <= 1.0);
+    assert!(
+        collators_fraction >= 0.0 && collators_fraction <= 1.0,
+        "collators_fraction must be between 0 and 1"
+    );
+    assert!(
+        annual_inflation >= 0.0 && annual_inflation <= 1.0,
+        "annual_inflation is a % and should be between 0 (0%) and 1 (100%)"
+    );
 
     // Compute era inflation based on annual inflation
     let era_inflation = (1.0 + annual_inflation).powf(1.0 / (eras_per_year as f64)) - 1.0;
@@ -60,9 +67,9 @@ fn compute_inflation_rates(
 fn formula_is_sound() {
     let eras_per_year = 100;
     let blocks_per_era = 100;
-    let annual_inflation = 10.0;
+    let annual_inflation = 0.1; // 10%
 
-    let rates = compute_inflation_rates(10.0, 0.6, eras_per_year, blocks_per_era);
+    let rates = compute_inflation_rates(annual_inflation, 0.6, eras_per_year, blocks_per_era);
 
     println!("Rates: {rates:?}");
 
@@ -89,6 +96,8 @@ fn formula_is_sound() {
     }
 
     let actual_annual_inflation = supply as f64 / initial_supply as f64 - 1.0;
+    println!("Initial supply: {initial_supply}");
+    println!("Final supply:   {supply}");
     println!("Actual annual inflation: {actual_annual_inflation}");
     assert!((actual_annual_inflation - annual_inflation).abs() < 0.00001);
 }
@@ -99,7 +108,7 @@ fn runtime_inflations_values_are_correct_prod_or_fast(prod: bool) {
     let blocks_per_era = blocks_per_session * sessions_per_era;
     let eras_per_year = (365 * DAYS) / blocks_per_era;
 
-    let annual_inflation = 10.0;
+    let annual_inflation = 0.1; // 10%
     let collators_fraction = 0.5; // 50% of era inflation goes to collators.
 
     let rates = compute_inflation_rates(
