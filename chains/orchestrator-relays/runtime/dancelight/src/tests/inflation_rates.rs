@@ -36,8 +36,14 @@ fn compute_inflation_rates(
     eras_per_year: u32,
     blocks_per_era: u32,
 ) -> InflationRates {
-    assert!(collators_fraction >= 0.0 && collators_fraction <= 1.0, "collators_fraction must be between 0 and 1");
-    assert!(annual_inflation >= 0.0 && annual_inflation <= 1.0, "annual_inflation is a % and should be between 0 (0%) and 1 (100%)");
+    assert!(
+        collators_fraction >= 0.0 && collators_fraction <= 1.0,
+        "collators_fraction must be between 0 and 1"
+    );
+    assert!(
+        annual_inflation >= 0.0 && annual_inflation <= 1.0,
+        "annual_inflation is a % and should be between 0 (0%) and 1 (100%)"
+    );
 
     // Compute era inflation based on annual inflation
     let era_inflation = (1.0 + annual_inflation).powf(1.0 / (eras_per_year as f64)) - 1.0;
