@@ -242,6 +242,14 @@ pub mod pallet {
         }
 
         pub fn process_inactive_chains_for_session() {
+            match <CurrentActivityTrackingStatus<T>>::get() {
+                ActivityTrackingStatus::Disabled { .. } => return,
+                ActivityTrackingStatus::Enabled { start, end: _ } => {
+                    if start > T::CurrentSessionIndex::session_index() {
+                        return;
+                    }
+                }
+            }
             let active_chains = <ActiveContainerChainsForCurrentSession<T>>::get();
             let _ = <ActiveCollatorsForCurrentSession<T>>::try_mutate(
                 |active_collators| -> DispatchResult {
