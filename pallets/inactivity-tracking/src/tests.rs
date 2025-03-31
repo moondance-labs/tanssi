@@ -19,7 +19,7 @@ use {
         ActiveContainerChainsForCurrentSession, ActivityTrackingStatus, AuthorNotingHook, Config,
         CurrentActivityTrackingStatus, Error, NodeActivityTrackingHelper, Pallet,
     },
-    frame_support::{assert_noop, assert_ok, pallet_prelude::Get, BoundedVec},
+    frame_support::{assert_noop, assert_ok, pallet_prelude::Get},
     sp_core::ConstU32,
     sp_runtime::{BoundedBTreeSet, DispatchError::BadOrigin},
     tp_traits::{AuthorNotingInfo, GetSessionIndex},
@@ -41,6 +41,16 @@ fn get_collator_set(
         let _ = collator_set.try_insert(collator);
     }
     collator_set
+}
+
+fn get_active_chains_set(
+    chains: Vec<tp_traits::ParaId>,
+) -> BoundedBTreeSet<tp_traits::ParaId, <Test as Config>::MaxContainerChains> {
+    let mut chain_set = BoundedBTreeSet::new();
+    for chain in chains {
+        let _ = chain_set.try_insert(chain);
+    }
+    chain_set
 }
 
 fn get_max_inactive_sessions() -> u32 {
@@ -518,8 +528,7 @@ fn disabling_inactivity_tracking_clears_the_current_active_collators_storage() {
 #[test]
 fn active_chains_noting_for_current_session_works() {
     ExtBuilder.build().execute_with(|| {
-        let current_session_active_chain_record: BoundedVec<tp_traits::ParaId, ConstU32<2>> =
-            BoundedVec::truncate_from(vec![CONTAINER_CHAIN_ID_1]);
+        let current_session_active_chain_record = get_active_chains_set(vec![CONTAINER_CHAIN_ID_1]);
         assert_eq!(
             ActiveContainerChainsForCurrentSession::<Test>::get().len(),
             0
@@ -570,8 +579,7 @@ fn inactive_chain_collators_are_correctly_processed() {
 fn inactive_collator_for_active_chain_is_correctly_processed() {
     ExtBuilder.build().execute_with(|| {
         let current_session_active_collator_record = get_collator_set(vec![COLLATOR_1]);
-        let current_session_active_chain_record: BoundedVec<tp_traits::ParaId, ConstU32<2>> =
-            BoundedVec::truncate_from(vec![CONTAINER_CHAIN_ID_1]);
+        let current_session_active_chain_record = get_active_chains_set(vec![CONTAINER_CHAIN_ID_1]);
         assert_eq!(
             ActiveContainerChainsForCurrentSession::<Test>::get().len(),
             0

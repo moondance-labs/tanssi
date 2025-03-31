@@ -146,7 +146,7 @@ pub mod pallet {
     /// A list of inactive container chains for a session. Repopulated at the start of every session
     #[pallet::storage]
     pub type ActiveContainerChainsForCurrentSession<T: Config> =
-        StorageValue<_, BoundedVec<ParaId, T::MaxInactiveSessions>, ValueQuery>;
+        StorageValue<_, BoundedBTreeSet<ParaId, T::MaxContainerChains>, ValueQuery>;
 
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -230,8 +230,8 @@ pub mod pallet {
                 <ActiveCollatorsForCurrentSession<T>>::get(),
             );
 
-            <ActiveContainerChainsForCurrentSession<T>>::put(BoundedVec::new());
             <ActiveCollatorsForCurrentSession<T>>::put(BoundedBTreeSet::new());
+            <ActiveContainerChainsForCurrentSession<T>>::put(BoundedBTreeSet::new());
 
             // Cleanup active collator info for sessions that are older than the maximum allowed
             if current_session_index > T::MaxInactiveSessions::get() {
@@ -283,11 +283,11 @@ pub mod pallet {
             let mut total_weight = T::DbWeight::get().reads_writes(1, 0);
             let _ = <ActiveContainerChainsForCurrentSession<T>>::try_mutate(
                 |active_chains| -> DispatchResult {
-                    if !active_chains.contains(&chain_id) {
+                    if active_chains
+                        .try_insert(chain_id)
+                        .map_err(|_| Error::<T>::MaxContainerChainsReached)?
+                    {
                         total_weight += T::DbWeight::get().writes(1);
-                        active_chains
-                            .try_push(chain_id)
-                            .map_err(|_| Error::<T>::MaxContainerChainsReached)?;
                     }
                     Ok(())
                 },
