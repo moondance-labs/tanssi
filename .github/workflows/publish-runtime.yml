@@ -2,7 +2,7 @@ name: Publish Runtime Draft
 
 # The code (like generate-release-body) will be taken from the tag versions, not master
 on:
-  pull_request:
+  push:
     branches:
       - "perm-runtime-900-tmp-fixed-upload-artifact-version"
 
