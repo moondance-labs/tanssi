@@ -121,6 +121,7 @@ jobs:
             git checkout "$TARGET_BRANCH"
   
             git commit -m "Auto-generated TypeScript interfaces"
+            git rebase origin/"$TARGET_BRANCH"
             git push origin "$TARGET_BRANCH"
           fi
 
