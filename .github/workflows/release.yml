@@ -407,17 +407,12 @@ jobs:
             - name: Check for changes
               run: |
                   git diff --exit-code || (echo "There are uncommitted changes after running typegen script.\n Please make sure to run the command before pushing." && exit 1)
-            - name: Leave comment on failure
+            - name: Leave the message on failure
               if: failure()
-              uses: peter-evans/create-or-update-comment@v3
-              with:
-                token: ${{ secrets.GITHUB_TOKEN }}
-                issue-number: ${{ github.event.pull_request.number }}
-                body: |
-                  ❌ Seems like Typescript API interfaces are not up-to-date. Send the following command to update it automatically:
-                  ```
-                  /cmd generate-ts-api
-                  ```
+              run: |
+                  FAILURE_MESSAGE="Typescript interfaces are not updated, use the execute the updating script: '/cmd generate-ts-api'"
+                  echo $FAILURE_MESSAGE
+                  echo "$FAILURE_MESSAGE" >> $GITHUB_STEP_SUMMARY
 
     typescript-tests:
         runs-on: ubuntu-latest
