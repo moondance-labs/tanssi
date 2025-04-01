@@ -39,6 +39,10 @@ jobs:
 
   setup-scripts:
     runs-on: ubuntu-latest
+    env:
+      FROM: ${{ env.FROM }}
+      TO: ${{ env.TO }}
+      CHAINS: ${{ env.CHAINS }}
     steps:
       ## Use scripts and tools from current branch
       - uses: actions/checkout@v4
@@ -55,6 +59,10 @@ jobs:
   
   matrix_prep:
     runs-on: ubuntu-latest
+    env:
+      FROM: ${{ env.FROM }}
+      TO: ${{ env.TO }}
+      CHAINS: ${{ env.CHAINS }}
     outputs:
       matrix_tests: ${{ steps.prepare.outputs.matrix_tests }}
     steps:
@@ -90,6 +98,10 @@ jobs:
   build-srtool-runtimes:
     needs: ["setup-scripts", "matrix_prep"]
     runs-on: self-hosted
+    env:
+      FROM: ${{ env.FROM }}
+      TO: ${{ env.TO }}
+      CHAINS: ${{ env.CHAINS }}
     strategy:
       matrix:
         chain: ${{ fromJson(needs.matrix_prep.outputs.matrix_tests) }}
@@ -162,6 +174,10 @@ jobs:
   ####### Prepare the release draft #######
   prepare-draft-release:
     runs-on: ubuntu-latest
+    env:
+      FROM: ${{ env.FROM }}
+      TO: ${{ env.TO }}
+      CHAINS: ${{ env.CHAINS }}
     needs: ["setup-scripts", "build-srtool-runtimes", "matrix_prep"]
     outputs:
       release_url: ${{ steps.create-release.outputs.html_url }}
@@ -210,6 +226,10 @@ jobs:
   ####### Upload asserts to the release draft #######
   publish-draft-release:
     runs-on: ubuntu-latest
+    env:
+      FROM: ${{ env.FROM }}
+      TO: ${{ env.TO }}
+      CHAINS: ${{ env.CHAINS }}
     needs: ["setup-scripts", "build-srtool-runtimes", "prepare-draft-release", "matrix_prep"]
     strategy:
       matrix:
