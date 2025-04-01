@@ -30,19 +30,15 @@ on:
           - run-all
 
 env:
-  FROM: ${{ github.event.inputs.from || 'runtime-800' }}
-  TO: ${{ github.event.inputs.to || 'runtime-900' }}
-  CHAINS: ${{ github.event.inputs.chains || 'templates-only' }}
+  FROM: 'runtime-800'
+  TO: 'runtime-900'
+  CHAINS: 'templates-only'
 
 jobs:
   ####### Build runtimes with srtool #######
 
   setup-scripts:
     runs-on: ubuntu-latest
-    env:
-      FROM: ${{ env.FROM }}
-      TO: ${{ env.TO }}
-      CHAINS: ${{ env.CHAINS }}
     steps:
       ## Use scripts and tools from current branch
       - uses: actions/checkout@v4
@@ -59,10 +55,6 @@ jobs:
   
   matrix_prep:
     runs-on: ubuntu-latest
-    env:
-      FROM: ${{ env.FROM }}
-      TO: ${{ env.TO }}
-      CHAINS: ${{ env.CHAINS }}
     outputs:
       matrix_tests: ${{ steps.prepare.outputs.matrix_tests }}
     steps:
@@ -78,19 +70,19 @@ jobs:
           simple_template='{"runtime_name": "simple-template","runtime_path" : "./container-chains/runtime-templates/simple/src/lib.rs"}'
           dancelight='{"runtime_name": "dancelight","runtime_path" : "./solo-chains/runtime/dancelight/src/lib.rs"}'
 
-          if [[ $CHAINS = "tanssi-only" ]]; then
+          if [[ ${{ env.CHAINS }} = "tanssi-only" ]]; then
             echo "matrix_tests=[$dancebox, $flashbox]" >> $GITHUB_OUTPUT
-          elif [[ $CHAINS = "templates-only" ]]; then
+          elif [[ ${{ env.CHAINS }} = "templates-only" ]]; then
             echo "matrix_tests=[$simple_template, $frontier_template]" >> $GITHUB_OUTPUT
-          elif [[ $CHAINS = "flashbox-only" ]]; then
+          elif [[ ${{ env.CHAINS }} = "flashbox-only" ]]; then
             echo "matrix_tests=[$flashbox]" >> $GITHUB_OUTPUT
-          elif [[ $CHAINS = "dancebox-only" ]]; then
+          elif [[ ${{ env.CHAINS }} = "dancebox-only" ]]; then
             echo "matrix_tests=[$dancebox]" >> $GITHUB_OUTPUT
-          elif [[ $CHAINS = "simple-template-only" ]]; then
+          elif [[ ${{ env.CHAINS }} = "simple-template-only" ]]; then
             echo "matrix_tests=[$simple_template]" >> $GITHUB_OUTPUT
-          elif [[ $CHAINS = "frontier-template-only" ]]; then
+          elif [[ ${{ env.CHAINS }} = "frontier-template-only" ]]; then
             echo "matrix_tests=[$frontier_template]" >> $GITHUB_OUTPUT
-          elif [[ $CHAINS = "dancelight-only" ]]; then
+          elif [[ ${{ env.CHAINS }} = "dancelight-only" ]]; then
             echo "matrix_tests=[$dancelight]" >> $GITHUB_OUTPUT
           else
             echo "matrix_tests=[$dancebox, $flashbox, $simple_template, $frontier_template, $dancelight]" >> $GITHUB_OUTPUT
@@ -98,10 +90,6 @@ jobs:
   build-srtool-runtimes:
     needs: ["setup-scripts", "matrix_prep"]
     runs-on: self-hosted
-    env:
-      FROM: ${{ env.FROM }}
-      TO: ${{ env.TO }}
-      CHAINS: ${{ env.CHAINS }}
     strategy:
       matrix:
         chain: ${{ fromJson(needs.matrix_prep.outputs.matrix_tests) }}
@@ -118,7 +106,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: $TO
+          ref: ${{ env.TO }}
       - name: Login to DockerHub
         uses: docker/login-action@v2.2.0
         with:
@@ -174,10 +162,6 @@ jobs:
   ####### Prepare the release draft #######
   prepare-draft-release:
     runs-on: ubuntu-latest
-    env:
-      FROM: ${{ env.FROM }}
-      TO: ${{ env.TO }}
-      CHAINS: ${{ env.CHAINS }}
     needs: ["setup-scripts", "build-srtool-runtimes", "matrix_prep"]
     outputs:
       release_url: ${{ steps.create-release.outputs.html_url }}
@@ -186,7 +170,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: $TO
+          ref: ${{ env.TO }}
           fetch-depth: 0 
       - name: Use Node.js 18.x
         uses: actions/setup-node@v4
@@ -210,15 +194,15 @@ jobs:
         run: |
           RUNTIMES=$(echo '${{needs.matrix_prep.outputs.matrix_tests}}' | jq -r '.[] | .runtime_name + " "')
           yarn
-          yarn -s run ts-node github/generate-runtimes-body.ts --owner "${{ github.repository_owner }}" --repo "$(basename ${{ github.repository }})" --from "$FROM" --to "$TO" --srtool-report-folder '../build/' --runtimes $RUNTIMES > ../body.md      - name: Get runtime version
+          yarn -s run ts-node github/generate-runtimes-body.ts --owner "${{ github.repository_owner }}" --repo "$(basename ${{ github.repository }})" --from "${{ env.FROM }}" --to "${{ env.TO }}" --srtool-report-folder '../build/' --runtimes $RUNTIMES > ../body.md      - name: Get runtime version
       - name: Create draft release
         id: create-release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: $TO
-          release_name: Runtime $TO
+          tag_name: ${{ env.TO }}
+          release_name: Runtime ${{ env.TO }}
           body_path: body.md
           draft: true
 
@@ -226,10 +210,6 @@ jobs:
   ####### Upload asserts to the release draft #######
   publish-draft-release:
     runs-on: ubuntu-latest
-    env:
-      FROM: ${{ env.FROM }}
-      TO: ${{ env.TO }}
-      CHAINS: ${{ env.CHAINS }}
     needs: ["setup-scripts", "build-srtool-runtimes", "prepare-draft-release", "matrix_prep"]
     strategy:
       matrix:
@@ -238,7 +218,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: $TO
+          ref: ${{ env.TO }}
           fetch-depth: 0
       - name: Download ${{ matrix.chain }} runtime
         uses: actions/download-artifact@v3
