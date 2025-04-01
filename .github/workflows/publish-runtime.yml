@@ -2,6 +2,10 @@ name: Publish Runtime Draft
 
 # The code (like generate-release-body) will be taken from the tag versions, not master
 on:
+  pull_request:
+    branches:
+      - "perm-runtime-900-tmp-fixed-upload-artifact-version"
+
   workflow_dispatch:
     inputs:
       from:
@@ -24,6 +28,11 @@ on:
           - frontier-template-only
           - dancelight-only
           - run-all
+
+env:
+  FROM: ${{ github.event.inputs.from || 'runtime-800' }}
+  TO: ${{ github.event.inputs.to || 'runtime-900' }}
+  CHAINS: ${{ github.event.inputs.chains || 'templates-only' }}
 
 jobs:
   ####### Build runtimes with srtool #######
@@ -61,19 +70,19 @@ jobs:
           simple_template='{"runtime_name": "simple-template","runtime_path" : "./container-chains/runtime-templates/simple/src/lib.rs"}'
           dancelight='{"runtime_name": "dancelight","runtime_path" : "./solo-chains/runtime/dancelight/src/lib.rs"}'
 
-          if [[ ${{ github.event.inputs.chains }} = "tanssi-only" ]]; then
+          if [[ $CHAINS = "tanssi-only" ]]; then
             echo "matrix_tests=[$dancebox, $flashbox]" >> $GITHUB_OUTPUT
-          elif [[ ${{ github.event.inputs.chains }} = "templates-only" ]]; then
+          elif [[ $CHAINS = "templates-only" ]]; then
             echo "matrix_tests=[$simple_template, $frontier_template]" >> $GITHUB_OUTPUT
-          elif [[ ${{ github.event.inputs.chains }} = "flashbox-only" ]]; then
+          elif [[ $CHAINS = "flashbox-only" ]]; then
             echo "matrix_tests=[$flashbox]" >> $GITHUB_OUTPUT
-          elif [[ ${{ github.event.inputs.chains }} = "dancebox-only" ]]; then
+          elif [[ $CHAINS = "dancebox-only" ]]; then
             echo "matrix_tests=[$dancebox]" >> $GITHUB_OUTPUT
-          elif [[ ${{ github.event.inputs.chains }} = "simple-template-only" ]]; then
+          elif [[ $CHAINS = "simple-template-only" ]]; then
             echo "matrix_tests=[$simple_template]" >> $GITHUB_OUTPUT
-          elif [[ ${{ github.event.inputs.chains }} = "frontier-template-only" ]]; then
+          elif [[ $CHAINS = "frontier-template-only" ]]; then
             echo "matrix_tests=[$frontier_template]" >> $GITHUB_OUTPUT
-          elif [[ ${{ github.event.inputs.chains }} = "dancelight-only" ]]; then
+          elif [[ $CHAINS = "dancelight-only" ]]; then
             echo "matrix_tests=[$dancelight]" >> $GITHUB_OUTPUT
           else
             echo "matrix_tests=[$dancebox, $flashbox, $simple_template, $frontier_template, $dancelight]" >> $GITHUB_OUTPUT
@@ -97,7 +106,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.to }}
+          ref: $TO
       - name: Login to DockerHub
         uses: docker/login-action@v2.2.0
         with:
@@ -161,7 +170,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.to }}
+          ref: $TO
           fetch-depth: 0 
       - name: Use Node.js 18.x
         uses: actions/setup-node@v4
@@ -185,15 +194,15 @@ jobs:
         run: |
           RUNTIMES=$(echo '${{needs.matrix_prep.outputs.matrix_tests}}' | jq -r '.[] | .runtime_name + " "')
           yarn
-          yarn -s run ts-node github/generate-runtimes-body.ts --owner "${{ github.repository_owner }}" --repo "$(basename ${{ github.repository }})" --from "${{ github.event.inputs.from }}" --to "${{ github.event.inputs.to }}" --srtool-report-folder '../build/' --runtimes $RUNTIMES > ../body.md      - name: Get runtime version
+          yarn -s run ts-node github/generate-runtimes-body.ts --owner "${{ github.repository_owner }}" --repo "$(basename ${{ github.repository }})" --from "$FROM" --to "$TO" --srtool-report-folder '../build/' --runtimes $RUNTIMES > ../body.md      - name: Get runtime version
       - name: Create draft release
         id: create-release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.event.inputs.to }}
-          release_name: Runtime ${{ github.event.inputs.to }}
+          tag_name: $TO
+          release_name: Runtime $TO
           body_path: body.md
           draft: true
 
@@ -209,7 +218,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.to }}
+          ref: $TO
           fetch-depth: 0
       - name: Download ${{ matrix.chain }} runtime
         uses: actions/download-artifact@v3
