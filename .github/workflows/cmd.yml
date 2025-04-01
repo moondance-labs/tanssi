@@ -65,7 +65,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.issue.pull_request.head.ref }}
+          ref: refs/pull/${{ github.event.issue.number }}/head
 
       - name: Install GitHub CLI
         run: |
