@@ -330,6 +330,7 @@ declare module "@polkadot/types/types/registry" {
     interface InterfaceTypes {
         CumulusPalletParachainSystemCall: CumulusPalletParachainSystemCall;
         CumulusPalletParachainSystemError: CumulusPalletParachainSystemError;
+
         CumulusPalletParachainSystemEvent: CumulusPalletParachainSystemEvent;
         CumulusPalletParachainSystemRelayStateSnapshotMessagingStateSnapshot: CumulusPalletParachainSystemRelayStateSnapshotMessagingStateSnapshot;
         CumulusPalletParachainSystemRelayStateSnapshotRelayDispatchQueueRemainingCapacity: CumulusPalletParachainSystemRelayStateSnapshotRelayDispatchQueueRemainingCapacity;
