@@ -568,6 +568,7 @@ impl pallet_initializer::ApplyNewSession<Runtime> for OwnApplySession {
             &assignments.next_assignment,
         );
     }
+    fn on_before_session_ending() {}
 }
 
 impl pallet_initializer::Config for Runtime {

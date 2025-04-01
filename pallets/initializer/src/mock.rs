@@ -90,6 +90,8 @@ impl pallet_initializer::ApplyNewSession<Test> for OwnApplySession {
         let validators: Vec<_> = all_validators.iter().map(|(k, _)| *k).collect();
         SESSION_CHANGE_VALIDATORS.with(|r| *r.borrow_mut() = Some((session_index, validators)));
     }
+
+    fn on_before_session_ending() {}
 }
 
 impl pallet_initializer::Config for Test {
