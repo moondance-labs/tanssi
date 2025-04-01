@@ -3344,6 +3344,9 @@ impl tanssi_initializer::ApplyNewSession<Runtime> for OwnApplySession {
         // 6. InactivityTracking
         InactivityTracking::process_ended_session();
     }
+    fn on_before_session_ending() {
+        InactivityTracking::process_inactive_chains_for_session();
+    }
 }
 parameter_types! {
     pub MockParaId :ParaId = 0u32.into();
