@@ -12,7 +12,7 @@ permissions:
 jobs:
   is-org-member:
     if: startsWith(github.event.comment.body, '/cmd')
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - name: Check Permissions
         env:
