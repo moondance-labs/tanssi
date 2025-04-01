@@ -223,7 +223,8 @@ jobs:
       - name: Download ${{ matrix.chain }} runtime
         uses: actions/download-artifact@v3
         with:
-          name: runtime-info
+          pattern: runtime-info-*
+          merge-multiple: true
           path: build
       - name: Get runtime version
         id: get-runtime-ver
