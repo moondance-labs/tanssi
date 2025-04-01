@@ -192,7 +192,7 @@ pub fn stepped_generate_summaries<
             _ => continue, // we only care about share values
         };
 
-        let value = Pools::<T>::get(candidate.clone(), key);
+        let value = Pools::<T>::get(&candidate, key);
         // Are 0/Default values automatically removed from storage?
         // In case they aren't we check the amount of shares isn't 0.
         if value.is_zero() {
@@ -205,7 +205,7 @@ pub fn stepped_generate_summaries<
         let mut new_delegator = false;
         meter.consume(T::DbWeight::get().reads_writes(2, 2));
 
-        D::mutate(delegator, candidate.clone(), |summary| {
+        D::mutate(&delegator, &candidate, |summary| {
             if summary.is_empty() {
                 new_delegator = true;
             }
@@ -213,7 +213,7 @@ pub fn stepped_generate_summaries<
             summary.set_pool(pool, true);
         });
 
-        C::mutate(candidate, |summary| {
+        C::mutate(&candidate, |summary| {
             if new_delegator {
                 summary.delegators.saturating_inc();
             }

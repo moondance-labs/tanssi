@@ -47,7 +47,7 @@ mod tests;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
-#[cfg(feature = "migrations")]
+#[cfg(any(feature = "migrations", feature = "try-runtime"))]
 pub mod migrations;
 
 pub mod weights;
@@ -537,7 +537,9 @@ pub mod pallet {
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         #[cfg(feature = "try-runtime")]
         fn try_state(_n: BlockNumberFor<T>) -> Result<(), sp_runtime::TryRuntimeError> {
+            use frame_support::storage_alias;
             use sp_std::collections::btree_set::BTreeSet;
+
             let mut all_candidates = BTreeSet::new();
             for (candidate, _k2) in Pools::<T>::iter_keys() {
                 all_candidates.insert(candidate);
@@ -558,6 +560,68 @@ pub mod pallet {
             assert_is_sorted_and_unique(
                 &SortedEligibleCandidates::<T>::get(),
                 "SortedEligibleCandidates",
+            );
+
+            if Pallet::<T>::on_chain_storage_version() < 1 {
+                return Ok(());
+            }
+
+            // Summaries updated dynamically matches summaries generated entirely from shares.
+            #[storage_alias(pallet_name)]
+            pub type TryStateDelegatorSummaries<T: Config> = StorageDoubleMap<
+                Pallet<T>,
+                Blake2_128Concat,
+                Delegator<T>,
+                Blake2_128Concat,
+                Candidate<T>,
+                DelegatorCandidateSummary,
+                ValueQuery,
+            >;
+
+            #[storage_alias(pallet_name)]
+            pub type TryStateCandidateSummaries<T: Config> =
+                StorageMap<Pallet<T>, Blake2_128Concat, Candidate<T>, CandidateSummary, ValueQuery>;
+
+            assert!(
+                migrations::stepped_generate_summaries::<
+                    T,
+                    TryStateDelegatorSummaries<T>,
+                    TryStateCandidateSummaries<T>,
+                >(
+                    None,
+                    &mut frame_support::weights::WeightMeter::new(), // call with no limit on weight
+                ).expect("to generate summaries without errors").is_none(),
+                "failed to generate all summaries"
+            );
+
+            let mut candidate_summaries_count = 0;
+            for (candidate, summary) in TryStateCandidateSummaries::<T>::iter() {
+                candidate_summaries_count += 1;
+                assert_eq!(
+                    CandidateSummaries::<T>::get(&candidate),
+                    summary,
+                    "candidate summary for {candidate:?} didn't match"
+                );
+            }
+            assert_eq!(
+                candidate_summaries_count,
+                CandidateSummaries::<T>::iter().count(),
+                "count of candidate summaries didn't match"
+            );
+
+            let mut delegator_summaries_count = 0;
+            for (delegator, candidate, summary) in TryStateDelegatorSummaries::<T>::iter() {
+                delegator_summaries_count += 1;
+                assert_eq!(
+                    DelegatorCandidateSummaries::<T>::get(&delegator, &candidate),
+                    summary,
+                    "delegator summary for {delegator:?} to {candidate:?} didn't match"
+                );
+            }
+            assert_eq!(
+                delegator_summaries_count,
+                DelegatorCandidateSummaries::<T>::iter().count(),
+                "count of delegator summaries didn't match"
             );
 
             Ok(())
