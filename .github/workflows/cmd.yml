@@ -12,7 +12,7 @@ permissions:
 jobs:
   is-org-member:
     if: startsWith(github.event.comment.body, '/cmd')
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - name: Check Permissions
         env:
@@ -65,7 +65,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.set-tags.outputs.git_ref }}
+          ref: refs/pull/${{ github.event.issue.number }}/head
 
       - name: Install GitHub CLI
         run: |
@@ -106,10 +106,13 @@ jobs:
 
       - name: Commit and push changes
         run: |
+          echo "Git status:"
+          git status
           cd typescript-api
           if [[ -n "$(git status --porcelain)" ]]; then
             git add .
-            echo "About to commit changes"
+            echo "About to commit changes. Status:"
+            git status
             
             PR_NUMBER=$(jq --raw-output .issue.number "$GITHUB_EVENT_PATH")
             TARGET_BRANCH=$(~/bin/bin/gh pr view "$PR_NUMBER" --json headRefName -q .headRefName)
@@ -121,6 +124,7 @@ jobs:
             git checkout "$TARGET_BRANCH"
   
             git commit -m "Auto-generated TypeScript interfaces"
+            git rebase origin/"$TARGET_BRANCH"
             git push origin "$TARGET_BRANCH"
           fi
 
