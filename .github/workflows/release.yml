@@ -406,13 +406,8 @@ jobs:
                   pnpm create-local-interfaces
             - name: Check for changes
               run: |
-                  git diff --exit-code || (echo "There are uncommitted changes after running typegen script.\n Please make sure to run the command before pushing." && exit 1)
-            - name: Leave the message on failure
-              if: failure()
-              run: |
-                  FAILURE_MESSAGE="Typescript interfaces are not updated, use the execute the updating script: '/cmd generate-ts-api'"
-                  echo $FAILURE_MESSAGE
-                  echo "$FAILURE_MESSAGE" >> $GITHUB_STEP_SUMMARY
+                  FAILURE_MESSAGE="There are uncommitted changes after running typegen script.\n Please make sure to run the command before pushing or hit the PR comment: /cmd generate-ts-api"
+                  git diff --exit-code || (echo "$FAILURE_MESSAGE" && echo "$FAILURE_MESSAGE" >> $GITHUB_STEP_SUMMARY && exit 1)
 
     typescript-tests:
         runs-on: ubuntu-latest
