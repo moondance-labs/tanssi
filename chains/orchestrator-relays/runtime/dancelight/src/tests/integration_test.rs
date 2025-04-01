@@ -146,11 +146,11 @@ fn genesis_para_registrar_runtime_api() {
 fn genesis_para_registrar_container_chain_genesis_data_runtime_api() {
     let genesis_data_2001 = empty_genesis_data();
     let genesis_data_2002 = ContainerChainGenesisData {
-        storage: vec![(b"key".to_vec(), b"value".to_vec()).into()],
+        storage: BoundedVec::try_from(vec![(b"key".to_vec(), b"value".to_vec()).into()]).unwrap(),
         name: Default::default(),
         id: Default::default(),
         fork_id: Default::default(),
-        extensions: vec![],
+        extensions: BoundedVec::try_from(vec![]).unwrap(),
         properties: Default::default(),
     };
     ExtBuilder::default()
