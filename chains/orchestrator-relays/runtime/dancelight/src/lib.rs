@@ -1700,8 +1700,8 @@ parameter_types! {
 // runtime match the formulas. We write the results as constants here to ensure we don't perform
 // computations at runtime.
 prod_or_fast_parameter_types! {
-    pub const CollatorsInflationRatePerBlock: Perbill = { prod: Perbill::from_parts(228), fast: Perbill::from_parts(228) };
-    pub const ValidatorsInflationRatePerEra: Perbill = { prod: Perbill::from_parts(821534), fast: Perbill::from_parts(6843) };
+    pub const CollatorsInflationRatePerBlock: Perbill = { prod: Perbill::from_parts(9), fast: Perbill::from_parts(9) };
+    pub const ValidatorsInflationRatePerEra: Perbill = { prod: Perbill::from_parts(32641), fast: Perbill::from_parts(272) };
 }
 
 pub struct OnUnbalancedInflation;
