@@ -123,7 +123,7 @@ pub mod pallet {
         type WeightInfo: weights::WeightInfo;
     }
 
-    /// Switch to enable/disable inactivity tracking
+    /// Switch to enable/disable activity tracking
     #[pallet::storage]
     pub type CurrentActivityTrackingStatus<T: Config> =
         StorageValue<_, ActivityTrackingStatus, ValueQuery>;
@@ -143,7 +143,7 @@ pub mod pallet {
     pub type ActiveCollatorsForCurrentSession<T: Config> =
         StorageValue<_, BoundedBTreeSet<T::CollatorId, T::MaxCollatorsPerSession>, ValueQuery>;
 
-    /// A list of inactive container chains for a session. Repopulated at the start of every session
+    /// A list of active container chains for a session. Repopulated at the start of every session
     #[pallet::storage]
     pub type ActiveContainerChainsForCurrentSession<T: Config> =
         StorageValue<_, BoundedBTreeSet<ParaId, T::MaxContainerChains>, ValueQuery>;
@@ -159,6 +159,7 @@ pub mod pallet {
     pub enum Error<T> {
         /// The size of a collator set for a session has already reached MaxCollatorsPerSession value
         MaxCollatorsPerSessionReached,
+        /// The size of a chains set for a session has already reached MaxContainerChains value
         MaxContainerChainsReached,
         /// Error returned when the activity tracking status is attempted to be updated before the end session
         ActivityStatusUpdateSuspended,
