@@ -19,8 +19,8 @@
 //! Benchmarking
 use {
     crate::{
-        AssignmentPayment, Assignments, Call, Config, Pallet, ParaIdsFilter, Profile, ProfileMode,
-        Profiles, RegisteredProfile,
+        AssignmentProcessor, Assignments, Call, Config, Pallet, ParaIdsFilter, Profile,
+        ProfileMode, Profiles, RegisteredProfile,
     },
     frame_benchmarking::v2::*,
     frame_support::{
@@ -93,7 +93,7 @@ mod benchmarks {
             url,
             para_ids: ParaIdsFilter::Whitelist(para_ids),
             mode: ProfileMode::Bootnode,
-            assignment_request: T::AssignmentPayment::benchmark_provider_request(),
+            assignment_request: T::AssignmentProcessor::benchmark_provider_request(),
         };
 
         let deposit = T::ProfileDeposit::compute_deposit(&profile).expect("deposit to be computed");
@@ -127,7 +127,7 @@ mod benchmarks {
             url,
             para_ids: ParaIdsFilter::Whitelist(para_ids),
             mode: ProfileMode::Bootnode,
-            assignment_request: T::AssignmentPayment::benchmark_provider_request(),
+            assignment_request: T::AssignmentProcessor::benchmark_provider_request(),
         };
 
         let owner = create_funded_user::<T>("owner", 1, 1_000_000_000u32);
@@ -164,7 +164,7 @@ mod benchmarks {
             url,
             para_ids: ParaIdsFilter::Whitelist(para_ids),
             mode: ProfileMode::Bootnode,
-            assignment_request: T::AssignmentPayment::benchmark_provider_request(),
+            assignment_request: T::AssignmentProcessor::benchmark_provider_request(),
         };
 
         let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
@@ -183,7 +183,7 @@ mod benchmarks {
             url,
             para_ids: ParaIdsFilter::Whitelist(para_ids),
             mode: ProfileMode::Bootnode,
-            assignment_request: T::AssignmentPayment::benchmark_provider_request(),
+            assignment_request: T::AssignmentProcessor::benchmark_provider_request(),
         };
 
         let deposit = T::ProfileDeposit::compute_deposit(&profile).expect("deposit to be computed");
@@ -218,7 +218,7 @@ mod benchmarks {
             url,
             para_ids: ParaIdsFilter::Whitelist(para_ids),
             mode: ProfileMode::Bootnode,
-            assignment_request: T::AssignmentPayment::benchmark_provider_request(),
+            assignment_request: T::AssignmentProcessor::benchmark_provider_request(),
         };
 
         let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
@@ -237,7 +237,7 @@ mod benchmarks {
             url,
             para_ids: ParaIdsFilter::Whitelist(para_ids),
             mode: ProfileMode::Bootnode,
-            assignment_request: T::AssignmentPayment::benchmark_provider_request(),
+            assignment_request: T::AssignmentProcessor::benchmark_provider_request(),
         };
 
         let origin_force = T::ForceSetProfileOrigin::try_successful_origin()
@@ -273,7 +273,7 @@ mod benchmarks {
             url,
             para_ids: ParaIdsFilter::Whitelist(para_ids),
             mode: ProfileMode::Bootnode,
-            assignment_request: T::AssignmentPayment::benchmark_provider_request(),
+            assignment_request: T::AssignmentProcessor::benchmark_provider_request(),
         };
 
         let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
@@ -299,7 +299,7 @@ mod benchmarks {
             url,
             para_ids: ParaIdsFilter::Whitelist(para_ids),
             mode: ProfileMode::Bootnode,
-            assignment_request: T::AssignmentPayment::benchmark_provider_request(),
+            assignment_request: T::AssignmentProcessor::benchmark_provider_request(),
         };
 
         let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
@@ -329,7 +329,7 @@ mod benchmarks {
             url,
             para_ids: ParaIdsFilter::Whitelist(bset![para_id]),
             mode: ProfileMode::Bootnode,
-            assignment_request: T::AssignmentPayment::benchmark_provider_request(),
+            assignment_request: T::AssignmentProcessor::benchmark_provider_request(),
         };
 
         let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
@@ -344,7 +344,7 @@ mod benchmarks {
             origin as T::RuntimeOrigin,
             T::ProfileId::zero(),
             para_id,
-            T::AssignmentPayment::benchmark_assigner_parameter(),
+            T::AssignmentProcessor::benchmark_assigner_parameter(),
         );
 
         assert_eq!(
@@ -366,7 +366,7 @@ mod benchmarks {
             url,
             para_ids: ParaIdsFilter::Whitelist(bset![para_id]),
             mode: ProfileMode::Bootnode,
-            assignment_request: T::AssignmentPayment::benchmark_provider_request(),
+            assignment_request: T::AssignmentProcessor::benchmark_provider_request(),
         };
 
         let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
@@ -380,7 +380,7 @@ mod benchmarks {
             origin.clone() as T::RuntimeOrigin,
             T::ProfileId::zero(),
             para_id,
-            T::AssignmentPayment::benchmark_assigner_parameter(),
+            T::AssignmentProcessor::benchmark_assigner_parameter(),
         )
         .expect("to assign");
 
@@ -399,7 +399,7 @@ mod benchmarks {
             url,
             para_ids: ParaIdsFilter::Whitelist(bset![para_id]),
             mode: ProfileMode::Bootnode,
-            assignment_request: T::AssignmentPayment::benchmark_provider_request(),
+            assignment_request: T::AssignmentProcessor::benchmark_provider_request(),
         };
 
         let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
@@ -412,7 +412,7 @@ mod benchmarks {
             RawOrigin::Root,
             T::ProfileId::zero(),
             para_id,
-            T::AssignmentPayment::benchmark_assignment_witness(),
+            T::AssignmentProcessor::benchmark_assignment_witness(),
         );
 
         assert_eq!(

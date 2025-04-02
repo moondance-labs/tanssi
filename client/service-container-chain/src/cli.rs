@@ -50,6 +50,11 @@ pub struct ContainerChainRunCmd {
     #[arg(long)]
     pub keep_db: bool,
 
+    /// Download the full block history for container chains after the warp sync is done.
+    /// Default value: false for container collators, true for data preservers.
+    #[arg(long)]
+    pub download_block_history: Option<bool>,
+
     /// Creates a less resource-hungry node that retrieves relay chain data from an RPC endpoint.
     ///
     /// The provided URLs should point to RPC endpoints of the relay chain.
@@ -169,9 +174,10 @@ impl ContainerChainCli {
         relay_chain: String,
         boot_nodes: Vec<MultiaddrWithPeerId>,
     ) -> Result<crate::chain_spec::RawChainSpec, String> {
-        let name = String::from_utf8(genesis_data.name).map_err(|_e| "Invalid name".to_string())?;
+        let name = String::from_utf8(genesis_data.name.to_vec())
+            .map_err(|_e| "Invalid name".to_string())?;
         let id: String =
-            String::from_utf8(genesis_data.id).map_err(|_e| "Invalid id".to_string())?;
+            String::from_utf8(genesis_data.id.to_vec()).map_err(|_e| "Invalid id".to_string())?;
         let storage_raw: BTreeMap<_, _> =
             genesis_data.storage.into_iter().map(|x| x.into()).collect();
         let protocol_id = format!("container-chain-{}", para_id);
@@ -198,7 +204,7 @@ impl ContainerChainCli {
 
         let chain_spec = if let Some(fork_id) = genesis_data.fork_id {
             let fork_id_string =
-                String::from_utf8(fork_id).map_err(|_e| "Invalid fork_id".to_string())?;
+                String::from_utf8(fork_id.to_vec()).map_err(|_e| "Invalid fork_id".to_string())?;
             chain_spec.with_fork_id(&fork_id_string)
         } else {
             chain_spec

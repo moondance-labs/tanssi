@@ -17,10 +17,7 @@
 #![cfg(test)]
 
 use {
-    crate::{
-        tests::common::*, PreserversAssignmentPaymentWitness, RuntimeOrigin, StreamPaymentAssetId,
-        TimeUnit,
-    },
+    crate::{tests::common::*, RuntimeOrigin},
     cumulus_primitives_core::{ParaId, Weight},
     dp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApiV1,
     dp_core::well_known_keys,
@@ -44,14 +41,14 @@ use {
     sp_std::vec,
     tanssi_runtime_common::migrations::MigrateServicesPaymentAddCollatorAssignmentCredits,
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
+    tp_stream_payment_common::{
+        AssetId as StreamPaymentAssetId, TimeUnit as StreamPaymentTimeUnit,
+    },
     tp_traits::{ContainerChainBlockInfo, SlotFrequency},
 };
 
 fn set_dummy_boot_node(para_manager: RuntimeOrigin, para_id: ParaId) {
-    use {
-        crate::{PreserversAssignmentPaymentExtra, PreserversAssignmentPaymentRequest},
-        pallet_data_preservers::{ParaIdsFilter, Profile, ProfileMode},
-    };
+    use pallet_data_preservers::{ParaIdsFilter, Profile, ProfileMode};
 
     let profile = Profile {
         url:
@@ -61,7 +58,7 @@ fn set_dummy_boot_node(para_manager: RuntimeOrigin, para_id: ParaId) {
                 .expect("to fit in BoundedVec"),
         para_ids: ParaIdsFilter::AnyParaId,
         mode: ProfileMode::Bootnode,
-        assignment_request: PreserversAssignmentPaymentRequest::Free,
+        assignment_request: tp_data_preservers_common::ProviderRequest::Free,
     };
 
     let profile_id = pallet_data_preservers::NextProfileId::<Runtime>::get();
@@ -73,7 +70,7 @@ fn set_dummy_boot_node(para_manager: RuntimeOrigin, para_id: ParaId) {
         para_manager,
         profile_id,
         para_id,
-        PreserversAssignmentPaymentExtra::Free,
+        tp_data_preservers_common::AssignerExtra::Free,
     )
     .expect("assignement to work");
 
@@ -193,11 +190,11 @@ fn genesis_para_registrar_runtime_api() {
 fn genesis_para_registrar_container_chain_genesis_data_runtime_api() {
     let genesis_data_1001 = empty_genesis_data();
     let genesis_data_1002 = ContainerChainGenesisData {
-        storage: vec![(b"key".to_vec(), b"value".to_vec()).into()],
+        storage: BoundedVec::try_from(vec![(b"key".to_vec(), b"value".to_vec()).into()]).unwrap(),
         name: Default::default(),
         id: Default::default(),
         fork_id: Default::default(),
-        extensions: vec![],
+        extensions: BoundedVec::try_from(vec![]).unwrap(),
         properties: Default::default(),
     };
     ExtBuilder::default()
@@ -244,11 +241,11 @@ fn genesis_para_registrar_container_chain_genesis_data_runtime_api() {
             assert_eq!(Runtime::genesis_data(1002.into()).as_ref(), Some(&genesis_data_1002), "Deregistered container chain genesis data should not be removed until after 2 sessions");
 
             let genesis_data_1003 = ContainerChainGenesisData {
-                storage: vec![(b"key3".to_vec(), b"value3".to_vec()).into()],
+                storage: BoundedVec::try_from(vec![(b"key3".to_vec(), b"value3".to_vec()).into()]).unwrap(),
                 name: Default::default(),
                 id: Default::default(),
                 fork_id: Default::default(),
-                extensions: vec![],
+                extensions: BoundedVec::try_from(vec![]).unwrap(),
                 properties: Default::default(),
             };
             assert_ok!(
@@ -3076,7 +3073,7 @@ fn stream_payment_works() {
                 StreamConfig {
                     rate: 2 * UNIT,
                     asset_id: StreamPaymentAssetId::Native,
-                    time_unit: TimeUnit::BlockNumber,
+                    time_unit: StreamPaymentTimeUnit::BlockNumber,
                     minimum_request_deadline_delay: 0,
                     soft_minimum_deposit: 0,
                 },
@@ -3098,7 +3095,7 @@ fn stream_payment_works() {
                 StreamConfig {
                     rate: 1 * UNIT,
                     asset_id: StreamPaymentAssetId::Native,
-                    time_unit: TimeUnit::BlockNumber,
+                    time_unit: StreamPaymentTimeUnit::BlockNumber,
                     minimum_request_deadline_delay: 0,
                     soft_minimum_deposit: 0,
                 },
@@ -3950,8 +3947,8 @@ fn test_migration_data_preservers_assignments() {
         }
 
         let account = AccountId::from([0u8; 32]);
-        let free_request = crate::PreserversAssignmentPaymentRequest::Free;
-        let free_witness = crate::PreserversAssignmentPaymentWitness::Free;
+        let free_request = tp_data_preservers_common::ProviderRequest::Free;
+        let free_witness = tp_data_preservers_common::AssignmentWitness::Free;
 
         let pallet_prefix: &[u8] = b"DataPreservers";
         let storage_item_prefix: &[u8] = b"BootNodes";
@@ -4136,11 +4133,11 @@ fn test_migration_stream_payment_config_new_fields() {
 
         frame_support::storage::unhashed::put(
             &pallet_stream_payment::Streams::<Runtime>::hashed_key_for(0),
-            &OldStream::<AccountId, TimeUnit, StreamPaymentAssetId, Balance> {
+            &OldStream::<AccountId, StreamPaymentTimeUnit, StreamPaymentAssetId, Balance> {
                 source: ALICE.into(),
                 target: BOB.into(),
                 config: OldStreamConfig {
-                    time_unit: TimeUnit::Timestamp,
+                    time_unit: StreamPaymentTimeUnit::Timestamp,
                     asset_id: StreamPaymentAssetId::Native,
                     rate: 41,
                 },
@@ -4151,7 +4148,7 @@ fn test_migration_stream_payment_config_new_fields() {
                     requester: Party::Source,
                     kind: ChangeKind::Mandatory { deadline: 45 },
                     new_config: OldStreamConfig {
-                        time_unit: TimeUnit::BlockNumber,
+                        time_unit: StreamPaymentTimeUnit::BlockNumber,
                         asset_id: StreamPaymentAssetId::Native,
                         rate: 46,
                     },
@@ -4163,11 +4160,11 @@ fn test_migration_stream_payment_config_new_fields() {
 
         frame_support::storage::unhashed::put(
             &pallet_stream_payment::Streams::<Runtime>::hashed_key_for(1),
-            &OldStream::<AccountId, TimeUnit, StreamPaymentAssetId, Balance> {
+            &OldStream::<AccountId, StreamPaymentTimeUnit, StreamPaymentAssetId, Balance> {
                 source: CHARLIE.into(),
                 target: ALICE.into(),
                 config: OldStreamConfig {
-                    time_unit: TimeUnit::Timestamp,
+                    time_unit: StreamPaymentTimeUnit::Timestamp,
                     asset_id: StreamPaymentAssetId::Native,
                     rate: 100,
                 },
@@ -4188,7 +4185,7 @@ fn test_migration_stream_payment_config_new_fields() {
                 source: ALICE.into(),
                 target: BOB.into(),
                 config: StreamConfig {
-                    time_unit: TimeUnit::Timestamp,
+                    time_unit: StreamPaymentTimeUnit::Timestamp,
                     asset_id: StreamPaymentAssetId::Native,
                     rate: 41,
                     minimum_request_deadline_delay: 0,
@@ -4201,7 +4198,7 @@ fn test_migration_stream_payment_config_new_fields() {
                     requester: Party::Source,
                     kind: ChangeKind::Mandatory { deadline: 45 },
                     new_config: StreamConfig {
-                        time_unit: TimeUnit::BlockNumber,
+                        time_unit: StreamPaymentTimeUnit::BlockNumber,
                         asset_id: StreamPaymentAssetId::Native,
                         rate: 46,
                         minimum_request_deadline_delay: 0,
@@ -4219,7 +4216,7 @@ fn test_migration_stream_payment_config_new_fields() {
                 source: CHARLIE.into(),
                 target: ALICE.into(),
                 config: StreamConfig {
-                    time_unit: TimeUnit::Timestamp,
+                    time_unit: StreamPaymentTimeUnit::Timestamp,
                     asset_id: StreamPaymentAssetId::Native,
                     rate: 100,
                     minimum_request_deadline_delay: 0,
@@ -4306,7 +4303,7 @@ fn test_data_preserver_with_stream_payment() {
                 mode: ProfileMode::Bootnode,
                 assignment_request: ProviderRequestOf::<Runtime>::StreamPayment {
                     config: StreamConfig {
-                        time_unit: TimeUnit::BlockNumber,
+                        time_unit: StreamPaymentTimeUnit::BlockNumber,
                         asset_id: StreamPaymentAssetId::Native,
                         rate: 42,
                         minimum_request_deadline_delay: 0,
@@ -4348,7 +4345,7 @@ fn test_data_preserver_with_stream_payment() {
             assert_eq!(assigned_para_id, para_id);
             assert_eq!(
                 witness,
-                PreserversAssignmentPaymentWitness::StreamPayment { stream_id: 0 }
+                tp_data_preservers_common::AssignmentWitness::StreamPayment { stream_id: 0 }
             );
         });
 }

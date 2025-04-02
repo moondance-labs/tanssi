@@ -20,8 +20,7 @@ use sp_runtime::traits::BadOrigin;
 use {
     crate::{
         tests::common::*, Balances, CollatorConfiguration, ContainerRegistrar, DataPreservers,
-        PreserversAssignmentPaymentWitness, Registrar, StreamPayment, StreamPaymentAssetId,
-        TimeUnit,
+        Registrar, StreamPayment,
     },
     cumulus_primitives_core::{relay_chain::HeadData, ParaId},
     dancelight_runtime_constants::currency::EXISTENTIAL_DEPOSIT,
@@ -31,6 +30,9 @@ use {
     },
     pallet_stream_payment::StreamConfig,
     sp_std::vec,
+    tp_stream_payment_common::{
+        AssetId as StreamPaymentAssetId, TimeUnit as StreamPaymentTimeUnit,
+    },
 };
 
 #[test]
@@ -144,11 +146,11 @@ fn genesis_para_registrar_runtime_api() {
 fn genesis_para_registrar_container_chain_genesis_data_runtime_api() {
     let genesis_data_2001 = empty_genesis_data();
     let genesis_data_2002 = ContainerChainGenesisData {
-        storage: vec![(b"key".to_vec(), b"value".to_vec()).into()],
+        storage: BoundedVec::try_from(vec![(b"key".to_vec(), b"value".to_vec()).into()]).unwrap(),
         name: Default::default(),
         id: Default::default(),
         fork_id: Default::default(),
-        extensions: vec![],
+        extensions: BoundedVec::try_from(vec![]).unwrap(),
         properties: Default::default(),
     };
     ExtBuilder::default()
@@ -380,7 +382,7 @@ fn stream_payment_works() {
                 StreamConfig {
                     rate: 2 * UNIT,
                     asset_id: StreamPaymentAssetId::Native,
-                    time_unit: TimeUnit::BlockNumber,
+                    time_unit: StreamPaymentTimeUnit::BlockNumber,
                     minimum_request_deadline_delay: 0,
                     soft_minimum_deposit: 0,
                 },
@@ -402,7 +404,7 @@ fn stream_payment_works() {
                 StreamConfig {
                     rate: 1 * UNIT,
                     asset_id: StreamPaymentAssetId::Native,
-                    time_unit: TimeUnit::BlockNumber,
+                    time_unit: StreamPaymentTimeUnit::BlockNumber,
                     minimum_request_deadline_delay: 0,
                     soft_minimum_deposit: 0,
                 },
@@ -450,7 +452,7 @@ fn test_data_preserver_with_stream_payment() {
                 mode: ProfileMode::Bootnode,
                 assignment_request: ProviderRequestOf::<Runtime>::StreamPayment {
                     config: StreamConfig {
-                        time_unit: TimeUnit::BlockNumber,
+                        time_unit: StreamPaymentTimeUnit::BlockNumber,
                         asset_id: StreamPaymentAssetId::Native,
                         rate: 42,
                         minimum_request_deadline_delay: 0,
@@ -493,7 +495,7 @@ fn test_data_preserver_with_stream_payment() {
             assert_eq!(assigned_para_id, para_id);
             assert_eq!(
                 witness,
-                PreserversAssignmentPaymentWitness::StreamPayment { stream_id: 0 }
+                tp_data_preservers_common::AssignmentWitness::StreamPayment { stream_id: 0 }
             );
         });
 }
@@ -580,4 +582,46 @@ fn test_registrar_extrinsic_permissions() {
                 ()
             );
         });
+}
+
+#[test]
+fn stream_payment_stored_profile_correct_size() {
+    use crate::OPEN_STREAM_HOLD_AMOUNT;
+    use pallet_stream_payment::{
+        ChangeKind, ChangeRequest, DepositChange, Party, Stream, StreamConfig, StreamOf,
+    };
+    use parity_scale_codec::Encode;
+
+    let stream: StreamOf<Runtime> = Stream {
+        source: ALICE.into(),
+        target: BOB.into(),
+        config: StreamConfig {
+            time_unit: StreamPaymentTimeUnit::Timestamp,
+            asset_id: StreamPaymentAssetId::Native,
+            rate: 41,
+            minimum_request_deadline_delay: 0,
+            soft_minimum_deposit: 0,
+        },
+        deposit: 42,
+        last_time_updated: 43,
+        request_nonce: 44,
+        pending_request: Some(ChangeRequest {
+            requester: Party::Source,
+            kind: ChangeKind::Mandatory { deadline: 45 },
+            new_config: StreamConfig {
+                time_unit: StreamPaymentTimeUnit::BlockNumber,
+                asset_id: StreamPaymentAssetId::Native,
+                rate: 46,
+                minimum_request_deadline_delay: 0,
+                soft_minimum_deposit: 0,
+            },
+            deposit_change: Some(DepositChange::Absolute(47)),
+        }),
+        opening_deposit: 48,
+    };
+    let size = stream.encoded_size();
+    assert_eq!(
+        size, OPEN_STREAM_HOLD_AMOUNT as usize,
+        "encoded len doesn't match size configured for hold"
+    );
 }

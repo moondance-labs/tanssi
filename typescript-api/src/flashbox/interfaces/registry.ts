@@ -24,16 +24,11 @@ import type {
     DpContainerChainGenesisDataProperties,
     DpContainerChainGenesisDataTokenMetadata,
     FlashboxRuntimeOriginCaller,
-    FlashboxRuntimePreserversAssignmentPaymentExtra,
-    FlashboxRuntimePreserversAssignmentPaymentRequest,
-    FlashboxRuntimePreserversAssignmentPaymentWitness,
     FlashboxRuntimeProxyType,
     FlashboxRuntimeRuntime,
     FlashboxRuntimeRuntimeFreezeReason,
     FlashboxRuntimeRuntimeHoldReason,
     FlashboxRuntimeSessionKeys,
-    FlashboxRuntimeStreamPaymentAssetId,
-    FlashboxRuntimeTimeUnit,
     FrameSupportDispatchDispatchClass,
     FrameSupportDispatchPays,
     FrameSupportDispatchPerDispatchClassU32,
@@ -193,6 +188,11 @@ import type {
     SpWeightsWeightV2Weight,
     StagingParachainInfoCall,
     TpAuthorNotingInherentOwnParachainInherentData,
+    TpDataPreserversCommonAssignerExtra,
+    TpDataPreserversCommonAssignmentWitness,
+    TpDataPreserversCommonProviderRequest,
+    TpStreamPaymentCommonAssetId,
+    TpStreamPaymentCommonTimeUnit,
     TpTraitsContainerChainBlockInfo,
     TpTraitsFullRotationMode,
     TpTraitsFullRotationModes,
@@ -220,16 +220,11 @@ declare module "@polkadot/types/types/registry" {
         DpContainerChainGenesisDataProperties: DpContainerChainGenesisDataProperties;
         DpContainerChainGenesisDataTokenMetadata: DpContainerChainGenesisDataTokenMetadata;
         FlashboxRuntimeOriginCaller: FlashboxRuntimeOriginCaller;
-        FlashboxRuntimePreserversAssignmentPaymentExtra: FlashboxRuntimePreserversAssignmentPaymentExtra;
-        FlashboxRuntimePreserversAssignmentPaymentRequest: FlashboxRuntimePreserversAssignmentPaymentRequest;
-        FlashboxRuntimePreserversAssignmentPaymentWitness: FlashboxRuntimePreserversAssignmentPaymentWitness;
         FlashboxRuntimeProxyType: FlashboxRuntimeProxyType;
         FlashboxRuntimeRuntime: FlashboxRuntimeRuntime;
         FlashboxRuntimeRuntimeFreezeReason: FlashboxRuntimeRuntimeFreezeReason;
         FlashboxRuntimeRuntimeHoldReason: FlashboxRuntimeRuntimeHoldReason;
         FlashboxRuntimeSessionKeys: FlashboxRuntimeSessionKeys;
-        FlashboxRuntimeStreamPaymentAssetId: FlashboxRuntimeStreamPaymentAssetId;
-        FlashboxRuntimeTimeUnit: FlashboxRuntimeTimeUnit;
         FrameSupportDispatchDispatchClass: FrameSupportDispatchDispatchClass;
         FrameSupportDispatchPays: FrameSupportDispatchPays;
         FrameSupportDispatchPerDispatchClassU32: FrameSupportDispatchPerDispatchClassU32;
@@ -389,6 +384,11 @@ declare module "@polkadot/types/types/registry" {
         SpWeightsWeightV2Weight: SpWeightsWeightV2Weight;
         StagingParachainInfoCall: StagingParachainInfoCall;
         TpAuthorNotingInherentOwnParachainInherentData: TpAuthorNotingInherentOwnParachainInherentData;
+        TpDataPreserversCommonAssignerExtra: TpDataPreserversCommonAssignerExtra;
+        TpDataPreserversCommonAssignmentWitness: TpDataPreserversCommonAssignmentWitness;
+        TpDataPreserversCommonProviderRequest: TpDataPreserversCommonProviderRequest;
+        TpStreamPaymentCommonAssetId: TpStreamPaymentCommonAssetId;
+        TpStreamPaymentCommonTimeUnit: TpStreamPaymentCommonTimeUnit;
         TpTraitsContainerChainBlockInfo: TpTraitsContainerChainBlockInfo;
         TpTraitsFullRotationMode: TpTraitsFullRotationMode;
         TpTraitsFullRotationModes: TpTraitsFullRotationModes;

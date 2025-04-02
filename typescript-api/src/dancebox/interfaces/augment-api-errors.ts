@@ -129,7 +129,7 @@ declare module "@polkadot/api-base/types/errors" {
         };
         dataPreservers: {
             /**
-             * Made for `AssignmentPayment` implementors to report a mismatch between
+             * Made for `AssignmentProcessor` implementors to report a mismatch between
              * `ProviderRequest` and `AssignerParameter`.
              **/
             AssignmentPaymentRequestParameterMismatch: AugmentedError<ApiType>;
@@ -373,6 +373,21 @@ declare module "@polkadot/api-base/types/errors" {
              * The username is already taken.
              **/
             UsernameTaken: AugmentedError<ApiType>;
+            /**
+             * Generic error
+             **/
+            [key: string]: AugmentedError<ApiType>;
+        };
+        inactivityTracking: {
+            /**
+             * Error returned when the activity tracking status is attempted to be updated before the end session
+             **/
+            ActivityStatusUpdateSuspended: AugmentedError<ApiType>;
+            /**
+             * The size of a collator set for a session has already reached MaxCollatorsPerSession value
+             **/
+            MaxCollatorsPerSessionReached: AugmentedError<ApiType>;
+            MaxContainerChainsReached: AugmentedError<ApiType>;
             /**
              * Generic error
              **/

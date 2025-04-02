@@ -19,11 +19,8 @@ import type {
     CumulusPrimitivesParachainInherentParachainInherentData,
     DpContainerChainGenesisDataContainerChainGenesisData,
     FlashboxRuntimeOriginCaller,
-    FlashboxRuntimePreserversAssignmentPaymentExtra,
-    FlashboxRuntimePreserversAssignmentPaymentWitness,
     FlashboxRuntimeProxyType,
     FlashboxRuntimeSessionKeys,
-    FlashboxRuntimeStreamPaymentAssetId,
     PalletBalancesAdjustmentDirection,
     PalletDataPreserversProfile,
     PalletIdentityJudgement,
@@ -38,6 +35,9 @@ import type {
     SpTrieStorageProof,
     SpWeightsWeightV2Weight,
     TpAuthorNotingInherentOwnParachainInherentData,
+    TpDataPreserversCommonAssignerExtra,
+    TpDataPreserversCommonAssignmentWitness,
+    TpStreamPaymentCommonAssetId,
     TpTraitsFullRotationMode,
     TpTraitsParathreadParams,
     TpTraitsSlotFrequency,
@@ -418,13 +418,13 @@ declare module "@polkadot/api-base/types/submittable" {
                     profileId: u64 | AnyNumber | Uint8Array,
                     paraId: u32 | AnyNumber | Uint8Array,
                     assignmentWitness:
-                        | FlashboxRuntimePreserversAssignmentPaymentWitness
+                        | TpDataPreserversCommonAssignmentWitness
                         | { Free: any }
                         | { StreamPayment: any }
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [u64, u32, FlashboxRuntimePreserversAssignmentPaymentWitness]
+                [u64, u32, TpDataPreserversCommonAssignmentWitness]
             >;
             forceUpdateProfile: AugmentedSubmittable<
                 (
@@ -442,13 +442,13 @@ declare module "@polkadot/api-base/types/submittable" {
                     profileId: u64 | AnyNumber | Uint8Array,
                     paraId: u32 | AnyNumber | Uint8Array,
                     assignerParam:
-                        | FlashboxRuntimePreserversAssignmentPaymentExtra
+                        | TpDataPreserversCommonAssignerExtra
                         | { Free: any }
                         | { StreamPayment: any }
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [u64, u32, FlashboxRuntimePreserversAssignmentPaymentExtra]
+                [u64, u32, TpDataPreserversCommonAssignerExtra]
             >;
             stopAssignment: AugmentedSubmittable<
                 (
@@ -1958,7 +1958,7 @@ declare module "@polkadot/api-base/types/submittable" {
             immediatelyChangeDeposit: AugmentedSubmittable<
                 (
                     streamId: u64 | AnyNumber | Uint8Array,
-                    assetId: FlashboxRuntimeStreamPaymentAssetId | "Native" | number | Uint8Array,
+                    assetId: TpStreamPaymentCommonAssetId | "Native" | number | Uint8Array,
                     change:
                         | PalletStreamPaymentDepositChange
                         | { Increase: any }
@@ -1967,7 +1967,7 @@ declare module "@polkadot/api-base/types/submittable" {
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [u64, FlashboxRuntimeStreamPaymentAssetId, PalletStreamPaymentDepositChange]
+                [u64, TpStreamPaymentCommonAssetId, PalletStreamPaymentDepositChange]
             >;
             /**
              * Create a payment stream from the origin to the target with provided config

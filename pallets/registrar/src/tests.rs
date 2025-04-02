@@ -90,10 +90,10 @@ fn register_para_id_42_twice() {
 
 #[test]
 fn register_para_id_42_genesis_data_size_too_big() {
-    new_test_ext().execute_with(|| {
+    new_test_ext_with_balance(1_000_000_000).execute_with(|| {
         run_to_block(1);
         let genesis_data = ContainerChainGenesisData {
-            storage: vec![(vec![], vec![0; 5_000_000]).into()],
+            storage: BoundedVec::try_from(vec![(vec![], vec![0; 5_000_000]).into()]).unwrap(),
             name: Default::default(),
             id: Default::default(),
             fork_id: Default::default(),
@@ -308,7 +308,8 @@ fn deregister_para_id_removes_genesis_data() {
     new_test_ext().execute_with(|| {
         run_to_block(1);
         let genesis_data = ContainerChainGenesisData {
-            storage: vec![(b"key".to_vec(), b"value".to_vec()).into()],
+            storage: BoundedVec::try_from(vec![(b"key".to_vec(), b"value".to_vec()).into()])
+                .unwrap(),
             name: Default::default(),
             id: Default::default(),
             fork_id: Default::default(),
@@ -632,7 +633,7 @@ fn genesis_error_on_duplicate() {
 #[should_panic = "genesis data for para_id 2 is too large: 5000024 bytes"]
 fn genesis_error_genesis_data_size_too_big() {
     let genesis_data = ContainerChainGenesisData {
-        storage: vec![(vec![], vec![0; 5_000_000]).into()],
+        storage: BoundedVec::try_from(vec![(vec![], vec![0; 5_000_000]).into()]).unwrap(),
         name: Default::default(),
         id: Default::default(),
         fork_id: Default::default(),
@@ -757,12 +758,14 @@ fn mark_valid_for_collating_calls_registered_hook() {
 fn deregister_returns_bond_immediately_if_not_marked_as_valid() {
     new_test_ext().execute_with(|| {
         run_to_block(1);
-        let bond = DepositAmount::get();
+        let genesis_data = empty_genesis_data();
+        let genesis_size_bytes = genesis_data.encoded_size();
+        let bond = DataDepositPerByte::get() * genesis_size_bytes as u128;
         let balance_before = Balances::free_balance(ALICE);
         assert_ok!(ParaRegistrar::register(
             RuntimeOrigin::signed(ALICE),
             42.into(),
-            empty_genesis_data(),
+            genesis_data,
             None
         ));
         assert_eq!(Balances::free_balance(ALICE), balance_before - bond);
@@ -778,12 +781,14 @@ fn deregister_returns_bond_immediately_if_not_marked_as_valid() {
 fn deregister_returns_bond_after_2_sessions_if_marked_as_valid() {
     new_test_ext().execute_with(|| {
         run_to_block(1);
-        let bond = DepositAmount::get();
+        let genesis_data = empty_genesis_data();
+        let genesis_size_bytes = genesis_data.encoded_size();
+        let bond = DataDepositPerByte::get() * genesis_size_bytes as u128;
         let balance_before = Balances::free_balance(ALICE);
         assert_ok!(ParaRegistrar::register(
             RuntimeOrigin::signed(ALICE),
             42.into(),
-            empty_genesis_data(),
+            genesis_data,
             None
         ));
         assert_ok!(ParaRegistrar::mark_valid_for_collating(
@@ -1000,7 +1005,8 @@ fn register_deregister_register_in_same_block() {
             None
         );
         let new_genesis_data = ContainerChainGenesisData {
-            storage: vec![(b"key".to_vec(), b"value".to_vec()).into()],
+            storage: BoundedVec::try_from(vec![(b"key".to_vec(), b"value".to_vec()).into()])
+                .unwrap(),
             name: Default::default(),
             id: Default::default(),
             fork_id: Default::default(),
@@ -1782,10 +1788,13 @@ mod deregister_with_relay_proof {
         // Create a relay state proof for an empty state. Check that any parachain can be deregistered.
         new_test_ext().execute_with(|| {
             run_to_block(1);
+            let genesis_data = empty_genesis_data();
+            let genesis_size_bytes = genesis_data.encoded_size();
+            let hold = DataDepositPerByte::get() * genesis_size_bytes as u128;
             assert_ok!(ParaRegistrar::register(
                 RuntimeOrigin::signed(ALICE),
                 42.into(),
-                empty_genesis_data(),
+                genesis_data,
                 None
             ));
             assert!(ParaRegistrar::registrar_deposit(ParaId::from(42)).is_some());
@@ -1795,7 +1804,7 @@ mod deregister_with_relay_proof {
             ));
             assert_eq!(
                 Balances::balance_on_hold(&HoldReason::RegistrarDeposit.into(), &ALICE),
-                DepositAmount::get()
+                hold
             );
 
             let alice_balance_before = System::account(ALICE).data;
@@ -1842,16 +1851,19 @@ mod deregister_with_relay_proof {
         // Create a relay state proof for an empty state. Check that any parachain can be deregistered.
         new_test_ext().execute_with(|| {
             run_to_block(1);
+            let genesis_data = empty_genesis_data();
+            let genesis_size_bytes = genesis_data.encoded_size();
+            let hold = DataDepositPerByte::get() * genesis_size_bytes as u128;
             assert_ok!(ParaRegistrar::register(
                 RuntimeOrigin::signed(ALICE),
                 42.into(),
-                empty_genesis_data(),
+                genesis_data,
                 None
             ));
             assert!(ParaRegistrar::registrar_deposit(ParaId::from(42)).is_some());
             assert_eq!(
                 Balances::balance_on_hold(&HoldReason::RegistrarDeposit.into(), &ALICE),
-                DepositAmount::get()
+                hold
             );
             // Do not call mark_valid_for_collating
 

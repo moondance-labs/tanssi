@@ -56,15 +56,15 @@ use {
     },
     frame_support::{
         construct_runtime,
-        dispatch::{DispatchClass, DispatchErrorWithPostInfo},
+        dispatch::DispatchClass,
         genesis_builder_helper::{build_state, get_preset},
         pallet_prelude::DispatchResult,
         parameter_types,
         traits::{
-            fungible::{Balanced, Credit, Inspect, InspectHold, Mutate, MutateHold},
+            fungible::{Balanced, Credit, Inspect},
             tokens::{
-                imbalance::ResolveTo, ConversionToAssetBalance, PayFromAccount, Precision,
-                Preservation, UnityAssetBalanceConversion,
+                imbalance::ResolveTo, ConversionToAssetBalance, PayFromAccount,
+                UnityAssetBalanceConversion,
             },
             ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Contains, EitherOfDiverse,
             Imbalance, InsideBoth, InstanceFilter, OnUnbalanced, ValidatorRegistration,
@@ -99,7 +99,6 @@ use {
     pallet_xcm_core_buyer::BuyingError,
     polkadot_runtime_common::BlockHashCount,
     scale_info::prelude::format,
-    serde::{Deserialize, Serialize},
     smallvec::smallvec,
     sp_api::impl_runtime_apis,
     sp_consensus_aura::SlotDuration,
@@ -120,6 +119,7 @@ use {
         prelude::*,
     },
     sp_version::RuntimeVersion,
+    tp_stream_payment_common::StreamId,
     tp_traits::{
         apply, derive_storage_traits, GetContainerChainAuthor, GetHostConfiguration,
         GetSessionContainerChains, MaybeSelfChainBlockAuthor, ParaIdAssignmentHooks,
@@ -260,7 +260,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: Cow::Borrowed("dancebox"),
     impl_name: Cow::Borrowed("dancebox"),
     authoring_version: 1,
-    spec_version: 1200,
+    spec_version: 1300,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -286,6 +286,7 @@ pub const DAYS: BlockNumber = HOURS * 24;
 
 // Unit = the base number of indivisible units for balances
 pub const UNIT: Balance = 1_000_000_000_000;
+pub const CENTS: Balance = UNIT / 30_000;
 pub const MILLIUNIT: Balance = 1_000_000_000;
 pub const MICROUNIT: Balance = 1_000_000;
 /// The existential deposit. Set to 1/10 of the Connected Relay Chain.
@@ -660,6 +661,13 @@ impl pallet_initializer::ApplyNewSession<Runtime> for OwnApplySession {
             &queued_id_to_nimbus_map,
             &assignments.next_assignment,
         );
+
+        // Next: InactivityTracking
+        InactivityTracking::process_ended_session();
+    }
+
+    fn on_before_session_ending() {
+        InactivityTracking::process_inactive_chains_for_session();
     }
 }
 
@@ -1048,117 +1056,6 @@ parameter_types! {
     pub const MaxNodeUrlLen: u32 = 200;
 }
 
-#[apply(derive_storage_traits)]
-#[derive(Copy, Serialize, Deserialize, MaxEncodedLen)]
-pub enum PreserversAssignmentPaymentRequest {
-    Free,
-    StreamPayment {
-        config: pallet_stream_payment::StreamConfigOf<Runtime>,
-    },
-}
-
-#[apply(derive_storage_traits)]
-#[derive(Copy, Serialize, Deserialize)]
-pub enum PreserversAssignmentPaymentExtra {
-    Free,
-    StreamPayment { initial_deposit: Balance },
-}
-
-#[apply(derive_storage_traits)]
-#[derive(Copy, Serialize, Deserialize, MaxEncodedLen)]
-pub enum PreserversAssignmentPaymentWitness {
-    Free,
-    StreamPayment {
-        stream_id: <Runtime as pallet_stream_payment::Config>::StreamId,
-    },
-}
-
-pub struct PreserversAssignmentPayment;
-
-impl pallet_data_preservers::AssignmentPayment<AccountId> for PreserversAssignmentPayment {
-    /// Providers requests which kind of payment it accepts.
-    type ProviderRequest = PreserversAssignmentPaymentRequest;
-    /// Extra parameter the assigner provides.
-    type AssignerParameter = PreserversAssignmentPaymentExtra;
-    /// Represents the succesful outcome of the assignment.
-    type AssignmentWitness = PreserversAssignmentPaymentWitness;
-
-    fn try_start_assignment(
-        assigner: AccountId,
-        provider: AccountId,
-        request: &Self::ProviderRequest,
-        extra: Self::AssignerParameter,
-    ) -> Result<Self::AssignmentWitness, DispatchErrorWithPostInfo> {
-        let witness = match (request, extra) {
-            (Self::ProviderRequest::Free, Self::AssignerParameter::Free) => {
-                Self::AssignmentWitness::Free
-            }
-            (
-                Self::ProviderRequest::StreamPayment { config },
-                Self::AssignerParameter::StreamPayment { initial_deposit },
-            ) => {
-                let stream_id = StreamPayment::open_stream_returns_id(
-                    assigner,
-                    provider,
-                    *config,
-                    initial_deposit,
-                )?;
-
-                Self::AssignmentWitness::StreamPayment { stream_id }
-            }
-            _ => Err(
-                pallet_data_preservers::Error::<Runtime>::AssignmentPaymentRequestParameterMismatch,
-            )?,
-        };
-
-        Ok(witness)
-    }
-
-    fn try_stop_assignment(
-        provider: AccountId,
-        witness: Self::AssignmentWitness,
-    ) -> Result<(), DispatchErrorWithPostInfo> {
-        match witness {
-            Self::AssignmentWitness::Free => (),
-            Self::AssignmentWitness::StreamPayment { stream_id } => {
-                StreamPayment::close_stream(RuntimeOrigin::signed(provider), stream_id)?;
-            }
-        }
-
-        Ok(())
-    }
-
-    /// Return the values for a free assignment if it is supported.
-    /// This is required to perform automatic migration from old Bootnodes storage.
-    fn free_variant_values() -> Option<(
-        Self::ProviderRequest,
-        Self::AssignerParameter,
-        Self::AssignmentWitness,
-    )> {
-        Some((
-            Self::ProviderRequest::Free,
-            Self::AssignerParameter::Free,
-            Self::AssignmentWitness::Free,
-        ))
-    }
-
-    // The values returned by the following functions should match with each other.
-    #[cfg(feature = "runtime-benchmarks")]
-    fn benchmark_provider_request() -> Self::ProviderRequest {
-        PreserversAssignmentPaymentRequest::Free
-    }
-
-    #[cfg(feature = "runtime-benchmarks")]
-    fn benchmark_assigner_parameter() -> Self::AssignerParameter {
-        PreserversAssignmentPaymentExtra::Free
-    }
-
-    #[cfg(feature = "runtime-benchmarks")]
-    fn benchmark_assignment_witness() -> Self::AssignmentWitness {
-        PreserversAssignmentPaymentWitness::Free
-    }
-}
-
 pub type DataPreserversProfileId = u64;
 
 impl pallet_data_preservers::Config for Runtime {
@@ -1169,7 +1066,7 @@ impl pallet_data_preservers::Config for Runtime {
 
     type ProfileId = DataPreserversProfileId;
     type ProfileDeposit = tp_traits::BytesDeposit<ProfileDepositBaseFee, ProfileDepositByteFee>;
-    type AssignmentPayment = PreserversAssignmentPayment;
+    type AssignmentProcessor = tp_data_preservers_common::AssignmentProcessor<Runtime>;
 
     type AssignmentOrigin = pallet_registrar::EnsureSignedByManager<Runtime>;
     type ForceSetProfileOrigin = EnsureRoot<AccountId>;
@@ -1184,7 +1081,12 @@ impl pallet_author_noting::Config for Runtime {
     type ContainerChains = CollatorAssignment;
     type SlotBeacon = dp_consensus::AuraDigestSlotBeacon<Runtime>;
     type ContainerChainAuthor = CollatorAssignment;
-    type AuthorNotingHook = (XcmCoreBuyer, InflationRewards, ServicesPayment);
+    type AuthorNotingHook = (
+        XcmCoreBuyer,
+        InflationRewards,
+        ServicesPayment,
+        InactivityTracking,
+    );
     type RelayOrPara = pallet_author_noting::ParaMode<
         cumulus_pallet_parachain_system::RelaychainDataProvider<Self>,
     >;
@@ -1282,7 +1184,7 @@ impl RegistrarHooks for DanceboxRegistrarHooks {
                     .expect("to fit in BoundedVec"),
             para_ids: ParaIdsFilter::AnyParaId,
             mode: ProfileMode::Bootnode,
-            assignment_request: PreserversAssignmentPaymentRequest::Free,
+            assignment_request: tp_data_preservers_common::ProviderRequest::Free,
         };
 
         let profile_id = pallet_data_preservers::NextProfileId::<Runtime>::get();
@@ -1300,7 +1202,7 @@ impl RegistrarHooks for DanceboxRegistrarHooks {
             para_manager,
             profile_id,
             para_id,
-            PreserversAssignmentPaymentExtra::Free,
+            tp_data_preservers_common::AssignerExtra::Free,
         )
         .expect("assignement to work");
 
@@ -1349,9 +1251,6 @@ impl RelayStorageRootProvider for PalletRelayStorageRootProvider {
     }
 }
 
-parameter_types! {
-    pub const DepositAmount: Balance = 100 * UNIT;
-}
 impl pallet_registrar::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type RegistrarOrigin =
@@ -1365,11 +1264,11 @@ impl pallet_registrar::Config for Runtime {
     type SessionIndex = u32;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type Currency = Balances;
-    type DepositAmount = DepositAmount;
     type RegistrarHooks = DanceboxRegistrarHooks;
     type RuntimeHoldReason = RuntimeHoldReason;
     type InnerRegistrar = ();
     type WeightInfo = weights::pallet_registrar::SubstrateWeight<Runtime>;
+    type DataDepositPerByte = DataDepositPerByte;
 }
 
 impl pallet_authority_mapping::Config for Runtime {
@@ -1658,14 +1557,8 @@ impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
     }
 }
 
-pub struct InvulnerableCheckHandler<AccountId>(PhantomData<AccountId>);
-
-impl tp_traits::CheckInvulnerables<cumulus_primitives_core::relay_chain::AccountId>
-    for InvulnerableCheckHandler<cumulus_primitives_core::relay_chain::AccountId>
-{
-    fn is_invulnerable(account: &cumulus_primitives_core::relay_chain::AccountId) -> bool {
-        Invulnerables::invulnerables().contains(account)
-    }
+parameter_types! {
+    pub const MaxCandidatesBufferSize: u32 = 100;
 }
 
 impl pallet_pooled_staking::Config for Runtime {
@@ -1680,14 +1573,8 @@ impl pallet_pooled_staking::Config for Runtime {
     type RewardsCollatorCommission = RewardsCollatorCommission;
     type JoiningRequestTimer = SessionTimer<StakingSessionDelay>;
     type LeavingRequestTimer = SessionTimer<StakingSessionDelay>;
-    type EligibleCandidatesBufferSize = ConstU32<100>;
+    type EligibleCandidatesBufferSize = MaxCandidatesBufferSize;
     type EligibleCandidatesFilter = CandidateHasRegisteredKeys;
-    type MaxInactiveSessions = ConstU32<10>;
-
-    type CurrentSessionIndex = CurrentSessionIndexGetter;
-
-    type InvulnerablesHelper =
-        InvulnerableCheckHandler<cumulus_primitives_core::relay_chain::AccountId>;
     type WeightInfo = weights::pallet_pooled_staking::SubstrateWeight<Runtime>;
 }
 
@@ -1747,146 +1634,22 @@ impl pallet_tx_pause::Config for Runtime {
     type WeightInfo = weights::pallet_tx_pause::SubstrateWeight<Runtime>;
 }
 
-#[apply(derive_storage_traits)]
-#[derive(Copy, Serialize, Deserialize, MaxEncodedLen)]
-pub enum StreamPaymentAssetId {
-    Native,
-}
-
-pub struct StreamPaymentAssets;
-impl pallet_stream_payment::Assets<AccountId, StreamPaymentAssetId, Balance>
-    for StreamPaymentAssets
-{
-    fn transfer_deposit(
-        asset_id: &StreamPaymentAssetId,
-        from: &AccountId,
-        to: &AccountId,
-        amount: Balance,
-    ) -> frame_support::pallet_prelude::DispatchResult {
-        match asset_id {
-            StreamPaymentAssetId::Native => {
-                // We remove the hold before transfering.
-                Self::decrease_deposit(asset_id, from, amount)?;
-                Balances::transfer(from, to, amount, Preservation::Preserve).map(|_| ())
-            }
-        }
-    }
-
-    fn increase_deposit(
-        asset_id: &StreamPaymentAssetId,
-        account: &AccountId,
-        amount: Balance,
-    ) -> frame_support::pallet_prelude::DispatchResult {
-        match asset_id {
-            StreamPaymentAssetId::Native => Balances::hold(
-                &pallet_stream_payment::HoldReason::StreamPayment.into(),
-                account,
-                amount,
-            ),
-        }
-    }
-
-    fn decrease_deposit(
-        asset_id: &StreamPaymentAssetId,
-        account: &AccountId,
-        amount: Balance,
-    ) -> frame_support::pallet_prelude::DispatchResult {
-        match asset_id {
-            StreamPaymentAssetId::Native => Balances::release(
-                &pallet_stream_payment::HoldReason::StreamPayment.into(),
-                account,
-                amount,
-                Precision::Exact,
-            )
-            .map(|_| ()),
-        }
-    }
-
-    fn get_deposit(asset_id: &StreamPaymentAssetId, account: &AccountId) -> Balance {
-        match asset_id {
-            StreamPaymentAssetId::Native => Balances::balance_on_hold(
-                &pallet_stream_payment::HoldReason::StreamPayment.into(),
-                account,
-            ),
-        }
-    }
-
-    /// Benchmarks: should return the asset id which has the worst performance when interacting
-    /// with it.
-    #[cfg(feature = "runtime-benchmarks")]
-    fn bench_worst_case_asset_id() -> StreamPaymentAssetId {
-        StreamPaymentAssetId::Native
-    }
-
-    /// Benchmarks: should return the another asset id which has the worst performance when interacting
-    /// with it afther `bench_worst_case_asset_id`. This is to benchmark the worst case when changing config
-    /// from one asset to another.
-    #[cfg(feature = "runtime-benchmarks")]
-    fn bench_worst_case_asset_id2() -> StreamPaymentAssetId {
-        StreamPaymentAssetId::Native
-    }
-
-    /// Benchmarks: should set the balance for the asset id returned by `bench_worst_case_asset_id`.
-    #[cfg(feature = "runtime-benchmarks")]
-    fn bench_set_balance(asset_id: &StreamPaymentAssetId, account: &AccountId, amount: Balance) {
-        // only one asset id
-        let StreamPaymentAssetId::Native = asset_id;
-
-        Balances::set_balance(account, amount);
-    }
-}
-
-#[apply(derive_storage_traits)]
-#[derive(Copy, Serialize, Deserialize, MaxEncodedLen)]
-pub enum TimeUnit {
-    BlockNumber,
-    Timestamp,
-    // TODO: Container chains/relay block number.
-}
-
-pub struct TimeProvider;
-impl pallet_stream_payment::TimeProvider<TimeUnit, Balance> for TimeProvider {
-    fn now(unit: &TimeUnit) -> Option<Balance> {
-        match *unit {
-            TimeUnit::BlockNumber => Some(System::block_number().into()),
-            TimeUnit::Timestamp => Some(Timestamp::get().into()),
-        }
-    }
-
-    /// Benchmarks: should return the time unit which has the worst performance calling
-    /// `TimeProvider::now(unit)` with.
-    #[cfg(feature = "runtime-benchmarks")]
-    fn bench_worst_case_time_unit() -> TimeUnit {
-        // Both BlockNumber and Timestamp cost the same (1 db read), but overriding timestamp
-        // doesn't work well in benches, while block number works fine.
-        TimeUnit::BlockNumber
-    }
-
-    /// Benchmarks: sets the "now" time for time unit returned by `worst_case_time_unit`.
-    #[cfg(feature = "runtime-benchmarks")]
-    fn bench_set_now(instant: Balance) {
-        System::set_block_number(instant as u32)
-    }
-}
-
-type StreamId = u64;
-
 parameter_types! {
-    // 1 entry, storing 173 bytes on-chain
-    pub const OpenStreamHoldAmount: Balance = currency::deposit(1, 173);
+    // 1 entry, storing 253 bytes on-chain in the worst case
+    pub const OpenStreamHoldAmount: Balance = currency::deposit(1, 253);
 }
 
 impl pallet_stream_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type StreamId = StreamId;
-    type TimeUnit = TimeUnit;
+    type TimeUnit = tp_stream_payment_common::TimeUnit;
     type Balance = Balance;
-    type AssetId = StreamPaymentAssetId;
-    type Assets = StreamPaymentAssets;
+    type AssetId = tp_stream_payment_common::AssetId;
+    type AssetsManager = tp_stream_payment_common::AssetsManager<Runtime>;
     type Currency = Balances;
     type OpenStreamHoldAmount = OpenStreamHoldAmount;
     type RuntimeHoldReason = RuntimeHoldReason;
-    type TimeProvider = TimeProvider;
+    type TimeProvider = tp_stream_payment_common::TimeProvider<Runtime>;
     type WeightInfo = weights::pallet_stream_payment::SubstrateWeight<Runtime>;
 }
 
@@ -1934,6 +1697,7 @@ parameter_types! {
     pub const MaxBalance: Balance = Balance::max_value();
     // We allow it to be 1 minute in fast mode to be able to test it
     pub const SpendPeriod: BlockNumber = prod_or_fast!(6 * DAYS, 1 * MINUTES);
+    pub const DataDepositPerByte: Balance = 1 * CENTS;
 }
 
 impl pallet_treasury::Config for Runtime {
@@ -1981,6 +1745,29 @@ impl pallet_multisig::Config for Runtime {
     type WeightInfo = weights::pallet_multisig::SubstrateWeight<Runtime>;
 }
 
+pub struct MockCurrentSessionGetter;
+
+impl tp_traits::GetSessionIndex<u32> for MockCurrentSessionGetter {
+    fn session_index() -> u32 {
+        1
+    }
+}
+
+impl pallet_inactivity_tracking::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type CollatorId = CollatorId;
+    type MaxInactiveSessions = ConstU32<5>;
+    type MaxCollatorsPerSession = MaxCandidatesBufferSize;
+    type MaxContainerChains = MaxLengthParaIds;
+    #[cfg(not(feature = "runtime-benchmarks"))]
+    type CurrentSessionIndex = CurrentSessionIndexGetter;
+    #[cfg(feature = "runtime-benchmarks")]
+    type CurrentSessionIndex = MockCurrentSessionGetter;
+    type GetSelfChainBlockAuthor = GetSelfChainBlockAuthor;
+    type ContainerChainsFetcher = CollatorAssignment;
+    type WeightInfo = weights::pallet_inactivity_tracking::SubstrateWeight<Runtime>;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime
@@ -2025,6 +1812,7 @@ construct_runtime!(
         PooledStaking: pallet_pooled_staking = 34,
         // InflationRewards must be after Session and AuthorInherent
         InflationRewards: pallet_inflation_rewards = 35,
+        InactivityTracking: pallet_inactivity_tracking = 36,
 
         // Treasury stuff.
         Treasury: pallet_treasury::{Pallet, Storage, Config<T>, Event<T>, Call} = 40,
@@ -2074,6 +1862,7 @@ mod benches {
         [pallet_session, SessionBench::<Runtime>]
         [pallet_author_inherent, AuthorInherent]
         [pallet_pooled_staking, PooledStaking]
+        [pallet_inactivity_tracking, InactivityTracking]
         [pallet_treasury, Treasury]
         [cumulus_pallet_xcmp_queue, XcmpQueue]
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
@@ -2752,8 +2541,8 @@ impl_runtime_apis! {
             };
 
             match witness {
-                PreserversAssignmentPaymentWitness::Free => Assignment::Active(para_id),
-                PreserversAssignmentPaymentWitness::StreamPayment { stream_id } => {
+                tp_data_preservers_common::AssignmentWitness::Free => Assignment::Active(para_id),
+                tp_data_preservers_common::AssignmentWitness::StreamPayment { stream_id } => {
                     // Error means no Stream exists with that ID or some issue occured when computing
                     // the status. In that case we cannot consider the assignment as active.
                     let Ok(StreamPaymentStatus { stalled, .. }) = StreamPayment::stream_payment_status( stream_id, None) else {

@@ -1,7 +1,13 @@
 import "@tanssi/api-augment";
 
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { BALTATHAR_PRIVATE_KEY, CHARLETH_ADDRESS, type KeyringPair } from "@moonwall/util";
+import {
+    ALITH_ADDRESS,
+    BALTATHAR_ADDRESS,
+    BALTATHAR_PRIVATE_KEY,
+    CHARLETH_ADDRESS,
+    type KeyringPair,
+} from "@moonwall/util";
 import { ApiPromise, Keyring, WsProvider } from "@polkadot/api";
 import { u8aToHex } from "@polkadot/util";
 import { decodeAddress } from "@polkadot/util-crypto";
@@ -208,12 +214,31 @@ describeSuite({
                 console.log((await customHttpProvider.getNetwork()).chainId);
 
                 const signer = new ethers.Wallet(BALTATHAR_PRIVATE_KEY, customHttpProvider);
-                const tx = await signer.sendTransaction({
-                    to: CHARLETH_ADDRESS,
-                    value: parseUnits("0.001", "ether"),
-                });
 
-                await customHttpProvider.waitForTransaction(tx.hash);
+                // Try to send a test transaction.
+                // Ideally this could be done in one line, but there is a strange bug somewhere
+                // that causes transactions to never be included. As a workaround, we set a 60
+                // second timeout and retry sending the same transaction, and for some reason that
+                // fixes the bug.
+                for (let i = 0; i <= 5; i++) {
+                    if (i === 5) {
+                        expect.fail("failed to send tx");
+                    }
+                    try {
+                        const nonce = await customHttpProvider.getTransactionCount(BALTATHAR_ADDRESS);
+                        const tx = await signer.sendTransaction({
+                            to: CHARLETH_ADDRESS,
+                            value: parseUnits("0.001", "ether"),
+                            nonce,
+                        });
+
+                        await customHttpProvider.waitForTransaction(tx.hash, 1, 60_000);
+                        // Transaction included, don't need to try again
+                        break;
+                    } catch (e) {
+                        console.log("tx inclusion failed: ", e);
+                    }
+                }
                 expect(Number(await customHttpProvider.getBalance(CHARLETH_ADDRESS))).to.be.greaterThan(0);
             },
         });

@@ -173,11 +173,11 @@ describeSuite({
                     })
                     .filter(({ authorValid }) => authorValid === false);
 
-                failures.forEach(({ blockNum, expectedAuthor }) => {
+                for (const { blockNum, expectedAuthor } of failures) {
                     log(
                         `Author at block #${blockNum} should have been #${expectedAuthor.toString()}, but seal signature does not match`
                     );
-                });
+                }
 
                 expect(
                     failures.length,

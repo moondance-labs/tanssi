@@ -6,7 +6,7 @@ import type { XcmVersionedXcm } from "@polkadot/types/lookup";
 import { u8aToHex } from "@polkadot/util";
 import { descendOriginFromAddress20, expectEVMResult } from "../../../helpers";
 
-export const CLEAR_ORIGIN_WEIGHT = 2966000n;
+export const CLEAR_ORIGIN_WEIGHT = 903000n;
 const XCM_UTILS_ADDRESS = "0x0000000000000000000000000000000000000803";
 
 describeSuite({
