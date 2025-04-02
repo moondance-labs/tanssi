@@ -137,7 +137,7 @@ jobs:
             - name: Install Protoc
               uses: arduino/setup-protoc@v3
             - name: Run sccache-cache
-              uses: mozilla-actions/sccache-action@v0.0.7
+              uses: mozilla-actions/sccache-action@v0.0.9
             - name: Check for duplicate git dependencies
               run: ./.github/scripts/check_duplicate_git_dependencies.sh
             - name: Find toml files with lints key not set
@@ -356,7 +356,7 @@ jobs:
           with:
             ref: ${{ needs.set-tags.outputs.git_ref }}
         - name: Run sccache-cache
-          uses: mozilla-actions/sccache-action@v0.0.7
+          uses: mozilla-actions/sccache-action@v0.0.9
         - name: Setup Mold Linker
           shell: bash
           run: |
