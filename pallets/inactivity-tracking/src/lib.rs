@@ -118,7 +118,7 @@ pub mod pallet {
         type WeightInfo: weights::WeightInfo;
     }
 
-    /// Switch to enable/disable inactivity tracking
+    /// Switch to enable/disable activity tracking
     #[pallet::storage]
     pub type CurrentActivityTrackingStatus<T: Config> =
         StorageValue<_, ActivityTrackingStatus, ValueQuery>;
