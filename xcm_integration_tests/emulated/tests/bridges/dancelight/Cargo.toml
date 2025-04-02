@@ -1,0 +1,23 @@
+[package]
+name = "bridge-dancelight-integration-tests"
+authors.workspace = true
+edition = "2021"
+license = "GPL-3.0-only"
+version = "0.0.0"
+description = "Bridge Hub Rococo runtime integration tests with xcm-emulator"
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+xcm-emulator = { workspace = true }
+sp-runtime = { workspace = true }
+frame-support = { workspace = true, features = [ "tuples-96" ] }
+pallet-xcm = { workspace = true }
+xcm = { workspace = true }
+container-chain-template-simple-runtime = { workspace = true }
+frame-system = { workspace = true }
+snowbridge-pallet-inbound-queue = { workspace = true }
+snowbridge-core = { workspace = true }
+tanssi-emulated-integration-tests-common = { workspace = true }

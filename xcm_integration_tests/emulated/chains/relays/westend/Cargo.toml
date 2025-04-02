@@ -1,0 +1,39 @@
+[package]
+name = "westend-emulated-chain"
+authors.workspace = true
+edition = "2021"
+license = "GPL-3.0-only"
+version = "0.0.0"
+description = "Westend emulated chain"
+publish = false
+
+[lints]
+workspace = true
+
+[dependencies]
+westend-runtime = { workspace = true }
+westend-runtime-constants = { workspace = true }
+
+# Substrate
+sc-consensus-grandpa = { workspace = true }
+sp-authority-discovery = { workspace = true }
+sp-consensus-babe = { workspace = true }
+sp-consensus-beefy = { workspace = true, default-features = true }
+sp-core = { workspace = true }
+sp-runtime = { workspace = true }
+sp-keyring = { workspace = true }
+runtime-common = { workspace = true }
+pallet-staking = { workspace = true }
+runtime-parachains = { workspace = true }
+cumulus-primitives-core = { workspace = true }
+
+# Polkadot
+polkadot-primitives = { workspace = true }
+rococo-runtime = { workspace = true }
+rococo-runtime-constants = { workspace = true }
+
+# Cumulus
+emulated-integration-tests-common = { workspace = true }
+parachains-common = { workspace = true, default-features = true }
+
+tanssi-emulated-integration-tests-common = { workspace = true }
