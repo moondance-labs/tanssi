@@ -212,6 +212,39 @@ fn notify_inactive_collator_fails_if_collator_is_invulnerable() {
 }
 
 #[test]
+fn notify_inactive_collator_fails_if_collator_is_active() {
+    ExtBuilder::default().build().execute_with(|| {
+        let share = InitialAutoCompoundingShareValue::get();
+
+        let candidate = EligibleCandidate {
+            candidate: ACCOUNT_CANDIDATE_3,
+            stake: 1 * share,
+        };
+        SortedEligibleCandidates::<Runtime>::put(BoundedVec::truncate_from(
+            vec![candidate.clone()],
+        ));
+        assert_eq!(
+            SortedEligibleCandidates::<Runtime>::get()
+                .into_inner()
+                .contains(&candidate),
+            true
+        );
+
+        assert_ok!(Pallet::<Runtime>::enable_offline_marking(
+            RuntimeOrigin::root(),
+            true
+        ));
+        assert_noop!(
+            Pallet::<Runtime>::notify_inactive_collator(
+                RuntimeOrigin::signed(ACCOUNT_DELEGATOR_1),
+                ACCOUNT_CANDIDATE_3
+            ),
+            Error::<Runtime>::CollatorCannotBeNotifiedAsInactive
+        );
+    });
+}
+
+#[test]
 fn notify_inactive_collator_works() {
     ExtBuilder::default().build().execute_with(|| {
         let share = InitialAutoCompoundingShareValue::get();

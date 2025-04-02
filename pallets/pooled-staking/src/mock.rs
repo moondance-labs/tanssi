@@ -65,6 +65,7 @@ pub type Balance = u128;
 pub const ACCOUNT_STAKING: u64 = 0;
 pub const ACCOUNT_CANDIDATE_1: u64 = 1;
 pub const ACCOUNT_CANDIDATE_2: u64 = 2;
+pub const ACCOUNT_CANDIDATE_3: u64 = 5;
 pub const ACCOUNT_DELEGATOR_1: u64 = 3;
 pub const ACCOUNT_DELEGATOR_2: u64 = 4;
 
