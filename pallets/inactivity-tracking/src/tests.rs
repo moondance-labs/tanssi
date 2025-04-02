@@ -15,9 +15,9 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 use {
     crate::{
-        mock::*, ActiveCollators, ActiveCollatorsForCurrentSession, ActivityTrackingStatus,
-        AuthorNotingHook, Config, CurrentActivityTrackingStatus, Error, NodeActivityTrackingHelper,
-        Pallet,
+        mock::*, ActiveCollators, ActiveCollatorsForCurrentSession,
+        ActiveContainerChainsForCurrentSession, ActivityTrackingStatus, AuthorNotingHook, Config,
+        CurrentActivityTrackingStatus, Error, NodeActivityTrackingHelper, Pallet,
     },
     frame_support::{assert_noop, assert_ok, pallet_prelude::Get},
     sp_core::ConstU32,
@@ -29,7 +29,7 @@ fn get_active_collators(block: u32) -> AuthorNotingInfo<AccountId> {
     AuthorNotingInfo {
         block_number: block,
         author: COLLATOR_1,
-        para_id: CONTAINER_CHAIN_ID,
+        para_id: CONTAINER_CHAIN_ID_1,
     }
 }
 
@@ -41,6 +41,16 @@ fn get_collator_set(
         let _ = collator_set.try_insert(collator);
     }
     collator_set
+}
+
+fn get_active_chains_set(
+    chains: Vec<tp_traits::ParaId>,
+) -> BoundedBTreeSet<tp_traits::ParaId, <Test as Config>::MaxContainerChains> {
+    let mut chain_set = BoundedBTreeSet::new();
+    for chain in chains {
+        let _ = chain_set.try_insert(chain);
+    }
+    chain_set
 }
 
 fn get_max_inactive_sessions() -> u32 {
@@ -512,5 +522,179 @@ fn disabling_inactivity_tracking_clears_the_current_active_collators_storage() {
             }
         );
         assert_eq!(ActiveCollatorsForCurrentSession::<Test>::get().len(), 0);
+    });
+}
+
+#[test]
+fn active_chains_noting_for_current_session_works_when_activity_tracking_is_enabled() {
+    ExtBuilder.build().execute_with(|| {
+        let current_session_active_chain_record = get_active_chains_set(vec![CONTAINER_CHAIN_ID_1]);
+        assert_eq!(
+            ActiveContainerChainsForCurrentSession::<Test>::get().len(),
+            0
+        );
+        roll_to(2);
+        <Pallet<Test> as AuthorNotingHook<AccountId>>::on_container_authors_noted(&[
+            get_active_collators(2),
+        ]);
+        assert_eq!(
+            ActiveContainerChainsForCurrentSession::<Test>::get(),
+            current_session_active_chain_record
+        );
+        roll_to(3);
+        <Pallet<Test> as AuthorNotingHook<AccountId>>::on_container_authors_noted(&[
+            get_active_collators(3),
+        ]);
+        assert_eq!(
+            ActiveContainerChainsForCurrentSession::<Test>::get(),
+            current_session_active_chain_record
+        );
+    });
+}
+#[test]
+fn active_chains_noting_for_current_session_works_when_activity_tracking_is_disabled_than_enabled()
+{
+    ExtBuilder.build().execute_with(|| {
+        let current_session_active_chain_record = get_active_chains_set(vec![CONTAINER_CHAIN_ID_1]);
+        assert_eq!(
+            ActiveContainerChainsForCurrentSession::<Test>::get().len(),
+            0
+        );
+        roll_to(SESSION_BLOCK_LENGTH);
+        assert_ok!(Pallet::<Test>::set_inactivity_tracking_status(
+            RuntimeOrigin::root(),
+            false
+        ));
+        <Pallet<Test> as AuthorNotingHook<AccountId>>::on_container_authors_noted(&[
+            get_active_collators(SESSION_BLOCK_LENGTH as u32),
+        ]);
+        assert_eq!(
+            ActiveContainerChainsForCurrentSession::<Test>::get().len(),
+            0
+        );
+        let disabled_tracking_status_end_block: u32 =
+            (get_max_inactive_sessions() + 2u32) * SESSION_BLOCK_LENGTH as u32;
+        roll_to(disabled_tracking_status_end_block as u64);
+        assert_ok!(Pallet::<Test>::set_inactivity_tracking_status(
+            RuntimeOrigin::root(),
+            true
+        ));
+        // Since the activity tracking is enabled we will need to wait until the start of
+        // the next session before we are able to updating ActiveContainerChainsForCurrentSession
+        <Pallet<Test> as AuthorNotingHook<AccountId>>::on_container_authors_noted(&[
+            get_active_collators(disabled_tracking_status_end_block),
+        ]);
+        assert_eq!(
+            ActiveContainerChainsForCurrentSession::<Test>::get().len(),
+            0
+        );
+        roll_to(disabled_tracking_status_end_block as u64 + SESSION_BLOCK_LENGTH);
+        <Pallet<Test> as AuthorNotingHook<AccountId>>::on_container_authors_noted(&[
+            get_active_collators(disabled_tracking_status_end_block + SESSION_BLOCK_LENGTH as u32),
+        ]);
+        assert_eq!(
+            ActiveContainerChainsForCurrentSession::<Test>::get(),
+            current_session_active_chain_record
+        );
+    });
+}
+
+#[test]
+fn inactive_chain_collators_are_correctly_processed_when_activity_tracking_is_enabled() {
+    ExtBuilder.build().execute_with(|| {
+        let current_session_active_collators_record =
+            get_collator_set(vec![COLLATOR_1, COLLATOR_2]);
+        assert_eq!(
+            ActiveContainerChainsForCurrentSession::<Test>::get().len(),
+            0
+        );
+        assert_eq!(ActiveCollatorsForCurrentSession::<Test>::get().len(), 0);
+        Pallet::<Test>::process_inactive_chains_for_session();
+        assert_eq!(
+            ActiveContainerChainsForCurrentSession::<Test>::get().len(),
+            0
+        );
+        assert_eq!(
+            ActiveCollatorsForCurrentSession::<Test>::get(),
+            current_session_active_collators_record
+        );
+    });
+}
+
+#[test]
+fn inactive_collator_for_active_chain_is_correctly_processed_when_activity_tracking_is_enabled() {
+    ExtBuilder.build().execute_with(|| {
+        let current_session_active_collator_record = get_collator_set(vec![COLLATOR_1]);
+        let current_session_active_chain_record = get_active_chains_set(vec![CONTAINER_CHAIN_ID_1]);
+        assert_eq!(
+            ActiveContainerChainsForCurrentSession::<Test>::get().len(),
+            0
+        );
+        assert_eq!(ActiveCollatorsForCurrentSession::<Test>::get().len(), 0);
+        roll_to(2);
+        <Pallet<Test> as AuthorNotingHook<AccountId>>::on_container_authors_noted(&[
+            get_active_collators(2),
+        ]);
+        Pallet::<Test>::process_inactive_chains_for_session();
+        assert_eq!(
+            ActiveContainerChainsForCurrentSession::<Test>::get(),
+            current_session_active_chain_record
+        );
+        assert_eq!(
+            ActiveCollatorsForCurrentSession::<Test>::get(),
+            current_session_active_collator_record
+        );
+    });
+}
+
+#[test]
+fn inactive_chain_collators_are_processed_correctly_when_activity_tracking_is_disabled_than_enabled(
+) {
+    ExtBuilder.build().execute_with(|| {
+        let current_session_active_collators_record =
+            get_collator_set(vec![COLLATOR_1, COLLATOR_2]);
+        assert_eq!(
+            ActiveContainerChainsForCurrentSession::<Test>::get().len(),
+            0
+        );
+        roll_to(SESSION_BLOCK_LENGTH);
+        assert_ok!(Pallet::<Test>::set_inactivity_tracking_status(
+            RuntimeOrigin::root(),
+            false
+        ));
+        assert_eq!(ActiveCollatorsForCurrentSession::<Test>::get().len(), 0);
+        Pallet::<Test>::process_inactive_chains_for_session();
+        assert_eq!(
+            ActiveContainerChainsForCurrentSession::<Test>::get().len(),
+            0
+        );
+        assert_eq!(ActiveCollatorsForCurrentSession::<Test>::get().len(), 0);
+        let disabled_tracking_status_end_block: u32 =
+            (get_max_inactive_sessions() + 2u32) * SESSION_BLOCK_LENGTH as u32;
+        roll_to(disabled_tracking_status_end_block as u64);
+        assert_ok!(Pallet::<Test>::set_inactivity_tracking_status(
+            RuntimeOrigin::root(),
+            true
+        ));
+
+        // Since the activity tracking is enabled we will need to wait until the start of
+        // the next session before process_inactive_chains_for_session() is enabled
+        Pallet::<Test>::process_inactive_chains_for_session();
+        assert_eq!(
+            ActiveContainerChainsForCurrentSession::<Test>::get().len(),
+            0
+        );
+        assert_eq!(ActiveCollatorsForCurrentSession::<Test>::get().len(), 0);
+
+        roll_to(disabled_tracking_status_end_block as u64 + SESSION_BLOCK_LENGTH);
+        Pallet::<Test>::process_inactive_chains_for_session();
+        assert_eq!(
+            ActiveContainerChainsForCurrentSession::<Test>::get().len(),
+            0
+        );
+        assert_eq!(
+            ActiveCollatorsForCurrentSession::<Test>::get(),
+            current_session_active_collators_record
+        );
     });
 }

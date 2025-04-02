@@ -1802,6 +1802,10 @@ impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
     }
 }
 
+parameter_types! {
+    pub const MaxCandidatesBufferSize: u32 = 100;
+}
+
 impl pallet_pooled_staking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
@@ -1814,7 +1818,7 @@ impl pallet_pooled_staking::Config for Runtime {
     type RewardsCollatorCommission = RewardsCollatorCommission;
     type JoiningRequestTimer = SessionTimer<StakingSessionDelay>;
     type LeavingRequestTimer = SessionTimer<StakingSessionDelay>;
-    type EligibleCandidatesBufferSize = ConstU32<100>;
+    type EligibleCandidatesBufferSize = MaxCandidatesBufferSize;
     type EligibleCandidatesFilter = CandidateHasRegisteredKeys;
     type WeightInfo = weights::pallet_pooled_staking::SubstrateWeight<Runtime>;
 }
@@ -1830,12 +1834,14 @@ impl pallet_inactivity_tracking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type CollatorId = AccountId;
     type MaxInactiveSessions = ConstU32<5>;
-    type MaxCollatorsPerSession = ConstU32<100>;
+    type MaxCollatorsPerSession = MaxCandidatesBufferSize;
+    type MaxContainerChains = MaxLengthParaIds;
     #[cfg(not(feature = "runtime-benchmarks"))]
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     #[cfg(feature = "runtime-benchmarks")]
     type CurrentSessionIndex = MockCurrentSessionGetter;
     type GetSelfChainBlockAuthor = ();
+    type ContainerChainsFetcher = TanssiCollatorAssignment;
     type WeightInfo = weights::pallet_inactivity_tracking::SubstrateWeight<Runtime>;
 }
 
@@ -3344,6 +3350,9 @@ impl tanssi_initializer::ApplyNewSession<Runtime> for OwnApplySession {
         );
         // 6. InactivityTracking
         InactivityTracking::process_ended_session();
+    }
+    fn on_before_session_ending() {
+        InactivityTracking::process_inactive_chains_for_session();
     }
 }
 parameter_types! {
