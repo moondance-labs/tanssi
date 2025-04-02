@@ -959,6 +959,9 @@ declare module "@polkadot/api-base/types/events" {
             [key: string]: AugmentedEvent<ApiType>;
         };
         inactivityTracking: {
+            /**
+             * Event emitted when the activity tracking status is updated
+             **/
             ActivityTrackingStatusSet: AugmentedEvent<
                 ApiType,
                 [status: PalletInactivityTrackingActivityTrackingStatus],
