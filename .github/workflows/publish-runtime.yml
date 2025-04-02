@@ -186,6 +186,13 @@ jobs:
           RUNTIMES=$(echo '${{needs.matrix_prep.outputs.matrix_tests}}' | jq -r '.[] | .runtime_name + " "')
           yarn
           yarn -s run ts-node github/generate-runtimes-body.ts --owner "${{ github.repository_owner }}" --repo "$(basename ${{ github.repository }})" --from "${{ github.event.inputs.from }}" --to "${{ github.event.inputs.to }}" --srtool-report-folder '../build/' --runtimes $RUNTIMES > ../body.md      - name: Get runtime version
+      - name: Get Release Title
+        id: get-release-title
+        run: |
+          version="$(echo ${{ github.event.inputs.to }} | grep -o '[0-9]*')"
+          name="$(echo ${{ github.event.inputs.chains }} | sed -e 's/\(-only\)*$//g')"
+          title="$name $version"
+          echo "title=$title" >> $GITHUB_OUTPUT
       - name: Create draft release
         id: create-release
         uses: actions/create-release@v1
@@ -193,7 +200,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ github.event.inputs.to }}
-          release_name: Runtime ${{ github.event.inputs.to }}
+          release_name: ${{ steps.get-release-title.outputs.title }}
           body_path: body.md
           draft: true
 
