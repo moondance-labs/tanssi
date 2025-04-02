@@ -1585,8 +1585,7 @@ impl pallet_pooled_staking::Config for Runtime {
     type LeavingRequestTimer = SessionTimer<StakingSessionDelay>;
     type EligibleCandidatesBufferSize = MaxCandidatesBufferSize;
     type EligibleCandidatesFilter = CandidateHasRegisteredKeys;
-    type MaxInactiveSessions = ConstU32<10>;
-    type CurrentSessionIndex = CurrentSessionIndexGetter;
+    type ActivityTrackingHelper = InactivityTracking;
     type InvulnerablesHelper = InvulnerableCheckHandler<AccountId>;
     type WeightInfo = weights::pallet_pooled_staking::SubstrateWeight<Runtime>;
 }

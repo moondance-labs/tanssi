@@ -1,8 +1,8 @@
 use {
     super::*,
     crate::{
-        candidate::EligibleCandidate, EnableMarkingOffline, Error, InactiveCollators,
-        OfflineCollators, Pallet, SortedEligibleCandidates,
+        candidate::EligibleCandidate, EnableMarkingOffline, Error, OfflineCollators, Pallet,
+        SortedEligibleCandidates,
     },
     frame_support::{assert_noop, assert_ok},
     sp_runtime::{BoundedVec, DispatchError::BadOrigin},
@@ -212,128 +212,6 @@ fn notify_inactive_collator_fails_if_collator_is_invulnerable() {
 }
 
 #[test]
-fn notify_inactive_collator_fails_if_inactive_collators_storage_is_empty() {
-    ExtBuilder::default().build().execute_with(|| {
-        let share = InitialAutoCompoundingShareValue::get();
-        let candidate = EligibleCandidate {
-            candidate: ACCOUNT_CANDIDATE_2,
-            stake: 1 * share,
-        };
-        SortedEligibleCandidates::<Runtime>::put(BoundedVec::truncate_from(
-            vec![candidate.clone()],
-        ));
-        assert_eq!(
-            SortedEligibleCandidates::<Runtime>::get()
-                .into_inner()
-                .contains(&candidate),
-            true
-        );
-        roll_to(SESSION_BLOCK_LENGTH * MaxInactiveSessions::get() as u64 + 1);
-        assert_ok!(Pallet::<Runtime>::enable_offline_marking(
-            RuntimeOrigin::root(),
-            true
-        ));
-        assert_noop!(
-            Pallet::<Runtime>::notify_inactive_collator(
-                RuntimeOrigin::signed(ACCOUNT_DELEGATOR_1),
-                ACCOUNT_CANDIDATE_2
-            ),
-            Error::<Runtime>::CollatorCannotBeNotifiedAsInactive
-        );
-        roll_to(2 * SESSION_BLOCK_LENGTH * MaxInactiveSessions::get() as u64 + 1);
-        assert_noop!(
-            Pallet::<Runtime>::notify_inactive_collator(
-                RuntimeOrigin::signed(ACCOUNT_DELEGATOR_1),
-                ACCOUNT_CANDIDATE_2
-            ),
-            Error::<Runtime>::CollatorCannotBeNotifiedAsInactive
-        );
-    });
-}
-
-#[test]
-fn notify_inactive_collator_fails_if_initial_inactive_period_has_not_concluded() {
-    ExtBuilder::default().build().execute_with(|| {
-        let share = InitialAutoCompoundingShareValue::get();
-        let candidate = EligibleCandidate {
-            candidate: ACCOUNT_CANDIDATE_2,
-            stake: 1 * share,
-        };
-        SortedEligibleCandidates::<Runtime>::put(BoundedVec::truncate_from(
-            vec![candidate.clone()],
-        ));
-        assert_eq!(
-            SortedEligibleCandidates::<Runtime>::get()
-                .into_inner()
-                .contains(&candidate),
-            true
-        );
-
-        let session_id = 1;
-
-        InactiveCollators::<Runtime>::insert(session_id, ACCOUNT_CANDIDATE_2, ());
-        assert_eq!(
-            InactiveCollators::<Runtime>::get(session_id, ACCOUNT_CANDIDATE_2).is_some(),
-            true
-        );
-
-        roll_to(SESSION_BLOCK_LENGTH * MaxInactiveSessions::get() as u64 - 1);
-        assert_ok!(Pallet::<Runtime>::enable_offline_marking(
-            RuntimeOrigin::root(),
-            true
-        ));
-        assert_noop!(
-            Pallet::<Runtime>::notify_inactive_collator(
-                RuntimeOrigin::signed(ACCOUNT_DELEGATOR_1),
-                ACCOUNT_CANDIDATE_2
-            ),
-            Error::<Runtime>::CollatorCannotBeNotifiedAsInactive
-        );
-    });
-}
-
-#[test]
-fn notify_inactive_collator_fails_if_collator_produced_blocks_in_max_inactive_period() {
-    ExtBuilder::default().build().execute_with(|| {
-        let share = InitialAutoCompoundingShareValue::get();
-
-        let candidate = EligibleCandidate {
-            candidate: ACCOUNT_CANDIDATE_2,
-            stake: 1 * share,
-        };
-        SortedEligibleCandidates::<Runtime>::put(BoundedVec::truncate_from(
-            vec![candidate.clone()],
-        ));
-        assert_eq!(
-            SortedEligibleCandidates::<Runtime>::get()
-                .into_inner()
-                .contains(&candidate),
-            true
-        );
-
-        let session_id = 1;
-
-        InactiveCollators::<Runtime>::insert(session_id, ACCOUNT_CANDIDATE_2, ());
-        assert_eq!(
-            InactiveCollators::<Runtime>::get(session_id, ACCOUNT_CANDIDATE_2).is_some(),
-            true
-        );
-        roll_to(SESSION_BLOCK_LENGTH * MaxInactiveSessions::get() as u64 + 1);
-        assert_ok!(Pallet::<Runtime>::enable_offline_marking(
-            RuntimeOrigin::root(),
-            true
-        ));
-        assert_noop!(
-            Pallet::<Runtime>::notify_inactive_collator(
-                RuntimeOrigin::signed(ACCOUNT_DELEGATOR_1),
-                ACCOUNT_CANDIDATE_2
-            ),
-            Error::<Runtime>::CollatorCannotBeNotifiedAsInactive
-        );
-    });
-}
-
-#[test]
 fn notify_inactive_collator_works() {
     ExtBuilder::default().build().execute_with(|| {
         let share = InitialAutoCompoundingShareValue::get();
@@ -351,15 +229,7 @@ fn notify_inactive_collator_works() {
                 .contains(&candidate),
             true
         );
-        // Marking the collator as inactive so we can notify it as offline after
-        for session_id in 0..(MaxInactiveSessions::get() + 1) {
-            InactiveCollators::<Runtime>::insert(session_id, ACCOUNT_CANDIDATE_2, ());
-            assert_eq!(
-                InactiveCollators::<Runtime>::get(session_id, ACCOUNT_CANDIDATE_2).is_some(),
-                true
-            );
-        }
-        roll_to(SESSION_BLOCK_LENGTH * MaxInactiveSessions::get() as u64 + 1);
+
         assert_ok!(Pallet::<Runtime>::enable_offline_marking(
             RuntimeOrigin::root(),
             true

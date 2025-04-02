@@ -67,7 +67,7 @@ pub mod pallet {
             pallet_prelude::*,
             storage::types::{StorageDoubleMap, StorageValue, ValueQuery},
             traits::{fungible, tokens::Balance, IsType},
-            Blake2_128Concat, StorageDoubleMap as StorageDoubleMapTrait,
+            Blake2_128Concat,
         },
         frame_system::pallet_prelude::*,
         parity_scale_codec::{Decode, Encode, FullCodec},
@@ -77,7 +77,7 @@ pub mod pallet {
         sp_runtime::{BoundedVec, Perbill},
         sp_std::vec::Vec,
         tp_maths::MulDiv,
-        tp_traits::{CheckInvulnerables, GetSessionIndex},
+        tp_traits::{CheckInvulnerables, NodeActivityTrackingHelper},
     };
 
     /// A reason for this pallet placing a hold on funds.
@@ -336,13 +336,8 @@ pub mod pallet {
         /// Additional filter for candidates to be eligible.
         type EligibleCandidatesFilter: IsCandidateEligible<Self::AccountId>;
 
-        /// The maximum number of sessions for which a collator can be inactive
-        /// before being moved to the offline queue
-        #[pallet::constant]
-        type MaxInactiveSessions: Get<u32>;
-
-        /// Helper that returns the current session index.
-        type CurrentSessionIndex: GetSessionIndex<SessionIndex>;
+        /// Helper for collator activity tracking
+        type ActivityTrackingHelper: NodeActivityTrackingHelper<Self::AccountId>;
 
         /// Helper for dealing with invulnerables.
         type InvulnerablesHelper: CheckInvulnerables<Self::AccountId>;
@@ -401,18 +396,6 @@ pub mod pallet {
             T::EligibleCandidatesBufferSize,
         >,
         ValueQuery,
-    >;
-
-    /// A list of inactive collators for a session
-    #[pallet::storage]
-    pub type InactiveCollators<T: Config> = StorageDoubleMap<
-        _,
-        Twox64Concat,
-        SessionIndex,
-        Twox64Concat,
-        Candidate<T>,
-        (),
-        OptionQuery,
     >;
 
     #[pallet::event]
@@ -600,13 +583,6 @@ pub mod pallet {
 
             Ok(())
         }
-        fn on_initialize(_n: BlockNumberFor<T>) -> Weight {
-            Self::update_inactive_collator_info();
-            Weight::zero()
-        }
-        fn on_finalize(_n: BlockNumberFor<T>) {
-            Self::cleanup_inactive_collator_info();
-        }
     }
 
     #[pallet::call]
@@ -739,22 +715,10 @@ pub mod pallet {
                 !T::InvulnerablesHelper::is_invulnerable(&collator),
                 Error::<T>::MarkingInvulnerableOfflineInvalid
             );
-
-            let current_session = T::CurrentSessionIndex::session_index();
             ensure!(
-                current_session >= T::MaxInactiveSessions::get(),
+                T::ActivityTrackingHelper::is_node_inactive(&collator),
                 Error::<T>::CollatorCannotBeNotifiedAsInactive
             );
-            // Verify that the collator hasn't produced a block in the last MaxInactiveSessions
-            // sessions before notifying it as inactive.
-            for session_index in current_session
-                .saturating_sub(T::MaxInactiveSessions::get().into())
-                ..current_session.saturating_sub(1u32.into())
-            {
-                if !<InactiveCollators<T>>::contains_key(session_index, collator.clone()) {
-                    return Err(<Error<T>>::CollatorCannotBeNotifiedAsInactive.into());
-                }
-            }
             Self::set_offline_inner(collator)
         }
     }
@@ -830,29 +794,6 @@ pub mod pallet {
 
             Self::deposit_event(Event::<T>::CollatorOnline { collator });
             Ok(())
-        }
-
-        fn update_inactive_collator_info() {
-            let current_session = T::CurrentSessionIndex::session_index();
-
-            if <InactiveCollators<T>>::contains_prefix(current_session) {
-                return;
-            }
-        }
-        fn cleanup_inactive_collator_info() {
-            let current_session = T::CurrentSessionIndex::session_index();
-            let minimum_sessions_required = T::MaxInactiveSessions::get() + 1;
-
-            if current_session < minimum_sessions_required
-                || !<InactiveCollators<T>>::contains_prefix(current_session)
-            {
-                return;
-            }
-
-            let _ =
-                <InactiveCollators<T>>::iter_prefix(current_session - minimum_sessions_required)
-                    .drain()
-                    .next();
         }
     }
 

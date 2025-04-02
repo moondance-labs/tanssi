@@ -187,6 +187,18 @@ impl tp_traits::CheckInvulnerables<AccountId> for InvulnerableCheckHandler<Accou
     }
 }
 
+pub struct MockActivityTrackingHelper<AccountId>(PhantomData<AccountId>);
+
+impl tp_traits::NodeActivityTrackingHelper<AccountId> for MockActivityTrackingHelper<AccountId> {
+    fn is_node_inactive(node: &AccountId) -> bool {
+        if node == &ACCOUNT_CANDIDATE_2 {
+            true
+        } else {
+            false
+        }
+    }
+}
+
 impl pallet_pooled_staking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
@@ -203,9 +215,8 @@ impl pallet_pooled_staking::Config for Runtime {
     type EligibleCandidatesFilter = ();
     type WeightInfo = ();
     type RuntimeHoldReason = RuntimeHoldReason;
-    type MaxInactiveSessions = MaxInactiveSessions;
+    type ActivityTrackingHelper = MockActivityTrackingHelper<AccountId>;
     type InvulnerablesHelper = InvulnerableCheckHandler<AccountId>;
-    type CurrentSessionIndex = CurrentSessionIndexGetter;
 }
 
 pub trait PoolExt<T: crate::Config>: Pool<T> {
