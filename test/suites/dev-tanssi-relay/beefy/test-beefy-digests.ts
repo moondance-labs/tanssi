@@ -5,7 +5,7 @@ import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 import { Keyring } from "@polkadot/keyring";
 import { stringToHex, u8aToHex } from "@polkadot/util";
-import { jumpToSession } from "utils";
+import { generateUpdate, generateEventLog, jumpToSession } from "utils";
 
 describeSuite({
     id: "DEVT1401",

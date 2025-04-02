@@ -55,8 +55,28 @@ describeSuite({
                     const apiAtLastBlockPreviousEra = await api.at(
                         await api.rpc.chain.getBlockHash(lastBlockNumberPreviousEra)
                     );
+
+                    const apiAtStartBlock = await api.at(await api.rpc.chain.getBlockHash(startEraBlockNumber));
+
+                    const startBlockEra = (await apiAtStartBlock.query.externalValidators.activeEra())
+                        .unwrap()
+                        .index.toNumber();
+
+                    const prevBlockEra = (await apiAtLastBlockPreviousEra.query.externalValidators.activeEra())
+                        .unwrap()
+                        .index.toNumber();
+
+                    console.log(`
+StartEraBlockNumber: ${startEraBlockNumber}
+PrevBlockNumber: ${startEraBlockNumber - 1}
+Era at start block number: ${startBlockEra}
+Era at prev block number: ${prevBlockEra}
+Pending External index: ${(await apiAtLastBlockPreviousEra.query.externalValidators.pendingExternalIndex()).toNumber()}    
+Bonded era: ${JSON.stringify(bondedEra)}
+                    `);
+
                     expect(
-                        (await apiAtLastBlockPreviousEra.query.externalValidators.currentExternalIndex()).toNumber()
+                        (await apiAtLastBlockPreviousEra.query.externalValidators.pendingExternalIndex()).toNumber()
                     ).toEqual(bondedEra[2]);
                 }
             },

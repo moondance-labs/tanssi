@@ -128,7 +128,7 @@ pub mod pallet {
     pub type CurrentActivityTrackingStatus<T: Config> =
         StorageValue<_, ActivityTrackingStatus, ValueQuery>;
 
-    /// A list of double map of inactive collators for a session
+    /// A list of double map of active collators for a session
     #[pallet::storage]
     pub type ActiveCollators<T: Config> = StorageMap<
         _,
@@ -138,7 +138,7 @@ pub mod pallet {
         ValueQuery,
     >;
 
-    /// A list of inactive collators for a session. Repopulated at the start of every session
+    /// A list of active collators for a session. Repopulated at the start of every session
     #[pallet::storage]
     pub type ActiveCollatorsForCurrentSession<T: Config> =
         StorageValue<_, BoundedBTreeSet<T::CollatorId, T::MaxCollatorsPerSession>, ValueQuery>;
@@ -151,13 +151,16 @@ pub mod pallet {
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
+        /// Event emitted when the activity tracking status is updated
         ActivityTrackingStatusSet { status: ActivityTrackingStatus },
     }
 
     #[pallet::error]
     pub enum Error<T> {
+        /// The size of a collator set for a session has already reached MaxCollatorsPerSession value
         MaxCollatorsPerSessionReached,
         MaxContainerChainsReached,
+        /// Error returned when the activity tracking status is attempted to be updated before the end session
         ActivityStatusUpdateSuspended,
     }
 

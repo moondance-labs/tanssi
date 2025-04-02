@@ -1238,6 +1238,23 @@
                     "endpoints": ["ws://127.0.0.1:9950"]
                 }
             ]
+        },
+        {
+            "name": "dancebox_smoke_moonbase_test",
+            "testFileDir": [
+                "suites/smoke-test-dancebox-relay"
+            ],
+            "foundation": {
+                "type": "read_only"
+            },
+            "reporters": ["basic","html"],
+            "connections": [
+                {
+                    "name": "Relay",
+                    "type": "polkadotJs",
+                    "endpoints": ["wss://relay.api.moonbase.moonbeam.network"]
+                }
+            ]
         }
     ]
 }
