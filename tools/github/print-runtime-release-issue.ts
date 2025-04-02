@@ -41,7 +41,7 @@ and create perm-runtime-${newVersion}-para
 - [ ] Start the github action Publish Runtime Draft
 with runtime-${previousVersion}-para => runtime-${newVersion}-para orchestrator-para-only
 - [ ] Review the generated Draft and clean a bit the messages if needed (keep it draft)
-- [ ] Upgrade stagebox
+- [ ] Upgrade stagebox using the system.auhtorizeUpgrade with the hash in the blake-256 section of the release, the using system.applyAuthorizedUpgrade with the runtime wasm
 - [ ] When everything is ok, publish the draft release
 
 ### Tanssi-solo
@@ -52,9 +52,8 @@ and create perm-runtime-${newVersion}-starlight
 - [ ] Start the github action Publish Runtime Draft
 with runtime-${previousVersion}-starlight => runtime-${newVersion}-starlight orchestrator-solo-only
 - [ ] Review the generated Draft and clean a bit the messages if needed (keep it draft)
-- [ ] Upgrade stagelight
+- [ ] Upgrade stagelight using the system.auhtorizeUpgrade with the hash in the blake-256 section of the release, the using system.applyAuthorizedUpgrade with the runtime wasm
 - [ ] When everything is ok, publish the draft release
-
 
 ### Templates
 - [ ] Branch from master and create branch \`perm-runtime-${newVersion}-templates\`
@@ -64,7 +63,7 @@ and create perm-runtime-${newVersion}-templates
 - [ ] Start the github action Publish Runtime Draft
 with runtime-${previousVersion}-templates => runtime-${newVersion}-templates templates-only
 - [ ] Review the generated Draft and clean a bit the messages if needed (keep it draft)
-- [ ] Upgrade stagebox and stagelight containers
+- [ ] Upgrade stagebox and stagelight containers using the system.auhtorizeUpgrade with the hash in the blake-256 section of the release, the using system.applyAuthorizedUpgrade with the runtime wasm
 - [ ] When everything is ok, publish the draft release
   `;
 
