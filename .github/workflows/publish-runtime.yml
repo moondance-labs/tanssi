@@ -14,15 +14,15 @@ on:
         description: the chains for which we should do the release (ex. dancebox)
         required: false
         type: choice
-        default: tanssi-only
+        default: orchestrator-para-only
         options:
-          - tanssi-only
+          - orchestrator-para-only
           - flashbox-only
           - dancebox-only
           - templates-only
           - simple-template-only
           - frontier-template-only
-          - dancelight-only
+          - orchestrator-solo-only
           - run-all
 
 jobs:
@@ -60,7 +60,7 @@ jobs:
           simple_template='{"runtime_name": "simple-template","runtime_path" : "./chains/container-chains/runtime-templates/simple/src/lib.rs"}'
           dancelight='{"runtime_name": "dancelight","runtime_path" : "./chains/orchestrator-relays/runtime/dancelight/src/lib.rs"}'
 
-          if [[ ${{ github.event.inputs.chains }} = "tanssi-only" ]]; then
+          if [[ ${{ github.event.inputs.chains }} = "orchestrator-para-only" ]]; then
             echo "matrix_tests=[$dancebox, $flashbox]" >> $GITHUB_OUTPUT
           elif [[ ${{ github.event.inputs.chains }} = "templates-only" ]]; then
             echo "matrix_tests=[$simple_template, $frontier_template]" >> $GITHUB_OUTPUT
@@ -72,7 +72,7 @@ jobs:
             echo "matrix_tests=[$simple_template]" >> $GITHUB_OUTPUT
           elif [[ ${{ github.event.inputs.chains }} = "frontier-template-only" ]]; then
             echo "matrix_tests=[$frontier_template]" >> $GITHUB_OUTPUT
-          elif [[ ${{ github.event.inputs.chains }} = "dancelight-only" ]]; then
+          elif [[ ${{ github.event.inputs.chains }} = "orchestrator-solo-only" ]]; then
             echo "matrix_tests=[$dancelight]" >> $GITHUB_OUTPUT
           else
             echo "matrix_tests=[$dancebox, $flashbox, $simple_template, $frontier_template, $dancelight]" >> $GITHUB_OUTPUT

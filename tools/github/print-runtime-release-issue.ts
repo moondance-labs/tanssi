@@ -32,30 +32,39 @@ async function main() {
     `
 ## Release
 - [ ] Check all proxy types.
-- [ ] Re-run all extrinsics/hooks benchmarks.
-- [ ] Branch from master and create branch \`perm-runtime-${newVersion}\`.
-- [ ] Tag \`perm-${newVersion}\` with runtime-${newVersion} and push to github
-- [ ] Tag \`perm-runtime-${newVersion}\` with runtime-${newVersion}-templates and push to github
-- [ ] Tag \`perm-runtime-${newVersion}\` with runtime-${newVersion}-starlight and push to github
-- [ ] NOTE: if this is a hotfix to one of the runtimes, branch from runtime-${previousVersion} version
-and create perm-runtime-${newVersion}-templates, perm-runtime-${newVersion}-starlight or perm-runtime-${newVersion}-tanssi
-depending on whether the hotfix is for templates, starlight or tanssi-parachain. Then tag accordingly
+
+### Tanssi-para
+- [ ] Branch from master and create branch \`perm-runtime-${newVersion}-para\`
+- [ ] Tag \`perm-runtime-${newVersion}-para\` with runtime-${newVersion}-para and push to github
+- [ ] NOTE: if this is a hotfix to one of the runtimes, branch from runtime-${previousVersion}-para version
+and create perm-runtime-${newVersion}-para
 - [ ] Start the github action Publish Runtime Draft
-with runtime-${previousVersion} => runtime-${newVersion}
-  - \`gh workflow run "Publish Runtime Draft" -r 'master' ` +
-    `-f from=runtime-${previousVersion} -f to=runtime-${newVersion} -f chains=tanssi-only\`
-- [ ] Start the github action Publish Runtime Draft
-with runtime-${previousVersion} => runtime-${newVersion}
-  - \`gh workflow run "Publish Runtime Draft" -r 'master' ` +
-    `-f from=runtime-${previousVersion} -f to=runtime-${newVersion} -f chains=templates-only\`
-- [ ] Start the github action Publish Runtime Draft
-  with runtime-${previousVersion} => runtime-${newVersion}
-  - \`gh workflow run "Publish Runtime Draft" -r 'master' ` +
-    `-f from=runtime-${previousVersion} -f to=runtime-${newVersion} -f chains=dancelight-only\`
+with runtime-${previousVersion}-para => runtime-${newVersion}-para orchestrator-para-only
 - [ ] Review the generated Draft and clean a bit the messages if needed (keep it draft)
-- [ ] Upgrade typescript API: Start the github action "Upgrade typescript API"
-- [ ] Upgrade stagenet-dancebox
+- [ ] Upgrade stagebox
+- [ ] When everything is ok, publish the draft release
+
+### Tanssi-solo
+- [ ] Branch from master and create branch \`perm-runtime-${newVersion}-starlight\`
+- [ ] Tag \`perm-runtime-${newVersion}-starlight\` with runtime-${newVersion}-starlight and push to github
+- [ ] NOTE: if this is a hotfix to one of the runtimes, branch from runtime-${previousVersion}-starlight version
+and create perm-runtime-${newVersion}-starlight
+- [ ] Start the github action Publish Runtime Draft
+with runtime-${previousVersion}-starlight => runtime-${newVersion}-starlight orchestrator-solo-only
+- [ ] Review the generated Draft and clean a bit the messages if needed (keep it draft)
 - [ ] Upgrade stagelight
+- [ ] When everything is ok, publish the draft release
+
+
+### Templates
+- [ ] Branch from master and create branch \`perm-runtime-${newVersion}-templates\`
+- [ ] Tag \`perm-runtime-${newVersion}-templates\` with runtime-${newVersion}-templates and push to github
+- [ ] NOTE: if this is a hotfix to one of the runtimes, branch from runtime-${previousVersion}-templates version
+and create perm-runtime-${newVersion}-templates
+- [ ] Start the github action Publish Runtime Draft
+with runtime-${previousVersion}-templates => runtime-${newVersion}-templates templates-only
+- [ ] Review the generated Draft and clean a bit the messages if needed (keep it draft)
+- [ ] Upgrade stagebox and stagelight containers
 - [ ] When everything is ok, publish the draft release
   `;
 
@@ -76,10 +85,15 @@ ${commonTemplate}
 ## Post Release
 - [ ] Publish the docker runtime image (trigger the github action "Publish Docker runtime tanssi")
   - \`gh workflow run "Publish Runtime Draft" -r 'master' ` +
-      `-f from=runtime-${previousVersion} -f to=runtime-${newVersion}\`
+      `-f from=runtime-${previousVersion}-para -f to=runtime-${newVersion}-para\`
 - [ ] Publish the docker runtime image (trigger the github action "Publish Docker runtime containers")
   - \`gh workflow run "Publish Runtime Draft" -r 'master' ` +
       `-f from=runtime-${previousVersion}-templates -f to=runtime-${newVersion}-templates\`
+- [ ] Publish the docker runtime image tanssi-solochains (trigger the github action "Publish Docker runtime tanssi-solochain")
+  - \`gh workflow run "Publish Runtime Draft" -r 'master' ` +
+      `-f from=runtime-${previousVersion}-starlight -f to=runtime-${newVersion}-starlight\`
+- [ ] Run the action Upgrade typescript API with ${newVersion}, push and empty commit and merge
+- [ ] Once merged, run the Publish Typescript API with the commit of the previously merged branch
 - [ ] Create a PR that increment spec version (like #1051) in both containers, tanssi and starlight runtimes
     `;
     console.log(template);
