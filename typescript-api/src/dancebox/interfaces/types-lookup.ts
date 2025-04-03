@@ -1195,6 +1195,14 @@ declare module "@polkadot/types/lookup" {
             readonly pendingLeaving: u128;
             readonly released: u128;
         } & Struct;
+        readonly isCollatorOffline: boolean;
+        readonly asCollatorOffline: {
+            readonly collator: AccountId32;
+        } & Struct;
+        readonly isCollatorOnline: boolean;
+        readonly asCollatorOnline: {
+            readonly collator: AccountId32;
+        } & Struct;
         readonly type:
             | "UpdatedCandidatePosition"
             | "RequestedDelegate"
@@ -1210,7 +1218,9 @@ declare module "@polkadot/types/lookup" {
             | "RewardedCollator"
             | "RewardedDelegators"
             | "ClaimedManualRewards"
-            | "SwappedPool";
+            | "SwappedPool"
+            | "CollatorOffline"
+            | "CollatorOnline";
     }
 
     /** @name PalletPooledStakingTargetPool (78) */
@@ -4182,6 +4192,16 @@ declare module "@polkadot/types/lookup" {
             readonly sourcePool: PalletPooledStakingTargetPool;
             readonly amount: PalletPooledStakingSharesOrStake;
         } & Struct;
+        readonly isEnableOfflineMarking: boolean;
+        readonly asEnableOfflineMarking: {
+            readonly value: bool;
+        } & Struct;
+        readonly isSetOffline: boolean;
+        readonly isSetOnline: boolean;
+        readonly isNotifyInactiveCollator: boolean;
+        readonly asNotifyInactiveCollator: {
+            readonly collator: AccountId32;
+        } & Struct;
         readonly type:
             | "RebalanceHold"
             | "RequestDelegate"
@@ -4189,7 +4209,11 @@ declare module "@polkadot/types/lookup" {
             | "RequestUndelegate"
             | "ClaimManualRewards"
             | "UpdateCandidatePosition"
-            | "SwapPool";
+            | "SwapPool"
+            | "EnableOfflineMarking"
+            | "SetOffline"
+            | "SetOnline"
+            | "NotifyInactiveCollator";
     }
 
     /** @name PalletPooledStakingAllTargetPool (358) */
@@ -6161,6 +6185,10 @@ declare module "@polkadot/types/lookup" {
         readonly isRequestCannotBeExecuted: boolean;
         readonly asRequestCannotBeExecuted: u16;
         readonly isSwapResultsInZeroShares: boolean;
+        readonly isMarkingOfflineNotEnabled: boolean;
+        readonly isCollatorDoesNotExist: boolean;
+        readonly isCollatorCannotBeNotifiedAsInactive: boolean;
+        readonly isMarkingInvulnerableOfflineInvalid: boolean;
         readonly type:
             | "InvalidPalletSetting"
             | "DisabledFeature"
@@ -6175,7 +6203,11 @@ declare module "@polkadot/types/lookup" {
             | "UnsufficientSharesForTransfer"
             | "CandidateTransferingOwnSharesForbidden"
             | "RequestCannotBeExecuted"
-            | "SwapResultsInZeroShares";
+            | "SwapResultsInZeroShares"
+            | "MarkingOfflineNotEnabled"
+            | "CollatorDoesNotExist"
+            | "CollatorCannotBeNotifiedAsInactive"
+            | "MarkingInvulnerableOfflineInvalid";
     }
 
     /** @name PalletInflationRewardsChainsToRewardValue (539) */

@@ -953,6 +953,12 @@ export default {
                 pendingLeaving: "u128",
                 released: "u128",
             },
+            CollatorOffline: {
+                collator: "AccountId32",
+            },
+            CollatorOnline: {
+                collator: "AccountId32",
+            },
         },
     },
     /**
@@ -3516,6 +3522,14 @@ export default {
                 sourcePool: "PalletPooledStakingTargetPool",
                 amount: "PalletPooledStakingSharesOrStake",
             },
+            enable_offline_marking: {
+                value: "bool",
+            },
+            set_offline: "Null",
+            set_online: "Null",
+            notify_inactive_collator: {
+                collator: "AccountId32",
+            },
         },
     },
     /**
@@ -5082,6 +5096,10 @@ export default {
             CandidateTransferingOwnSharesForbidden: "Null",
             RequestCannotBeExecuted: "u16",
             SwapResultsInZeroShares: "Null",
+            MarkingOfflineNotEnabled: "Null",
+            CollatorDoesNotExist: "Null",
+            CollatorCannotBeNotifiedAsInactive: "Null",
+            MarkingInvulnerableOfflineInvalid: "Null",
         },
     },
     /**

@@ -590,12 +590,12 @@ declare module "@polkadot/api-base/types/storage" {
             activeCollatorsForCurrentSession: AugmentedQuery<ApiType, () => Observable<BTreeSet<AccountId32>>, []> &
                 QueryableStorageEntry<ApiType, []>;
             /**
-             * A list of inactive container chains for a session. Repopulated at the start of every session
+             * A list of active container chains for a session. Repopulated at the start of every session
              **/
             activeContainerChainsForCurrentSession: AugmentedQuery<ApiType, () => Observable<BTreeSet<u32>>, []> &
                 QueryableStorageEntry<ApiType, []>;
             /**
-             * Switch to enable/disable inactivity tracking
+             * Switch to enable/disable activity tracking
              **/
             currentActivityTrackingStatus: AugmentedQuery<
                 ApiType,
@@ -1114,6 +1114,20 @@ declare module "@polkadot/api-base/types/storage" {
             [key: string]: QueryableStorageEntry<ApiType>;
         };
         pooledStaking: {
+            /**
+             * Switch to enable/disable marking offline feature.
+             **/
+            enableMarkingOffline: AugmentedQuery<ApiType, () => Observable<bool>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * A list of offline collators
+             **/
+            offlineCollators: AugmentedQuery<
+                ApiType,
+                () => Observable<Vec<PalletPooledStakingCandidateEligibleCandidate>>,
+                []
+            > &
+                QueryableStorageEntry<ApiType, []>;
             /**
              * Pending operations balances.
              * Balances are expressed in joining/leaving shares amounts.

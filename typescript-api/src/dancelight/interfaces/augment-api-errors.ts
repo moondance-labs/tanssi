@@ -915,6 +915,9 @@ declare module "@polkadot/api-base/types/errors" {
              * The size of a collator set for a session has already reached MaxCollatorsPerSession value
              **/
             MaxCollatorsPerSessionReached: AugmentedError<ApiType>;
+            /**
+             * The size of a chains set for a session has already reached MaxContainerChains value
+             **/
             MaxContainerChainsReached: AugmentedError<ApiType>;
             /**
              * Generic error
@@ -1355,9 +1358,13 @@ declare module "@polkadot/api-base/types/errors" {
         };
         pooledStaking: {
             CandidateTransferingOwnSharesForbidden: AugmentedError<ApiType>;
+            CollatorCannotBeNotifiedAsInactive: AugmentedError<ApiType>;
+            CollatorDoesNotExist: AugmentedError<ApiType>;
             DisabledFeature: AugmentedError<ApiType>;
             InconsistentState: AugmentedError<ApiType>;
             InvalidPalletSetting: AugmentedError<ApiType>;
+            MarkingInvulnerableOfflineInvalid: AugmentedError<ApiType>;
+            MarkingOfflineNotEnabled: AugmentedError<ApiType>;
             MathOverflow: AugmentedError<ApiType>;
             MathUnderflow: AugmentedError<ApiType>;
             NoOneIsStaking: AugmentedError<ApiType>;
