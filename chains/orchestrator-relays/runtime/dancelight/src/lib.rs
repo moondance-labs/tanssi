@@ -1986,10 +1986,10 @@ pub mod migrations {
     use crate::Runtime;
     /// Unreleased migrations. Add new ones here:
     pub type Unreleased = (
-        parachains_shared::migration::MigrateToV1<Runtime>,
-        parachains_scheduler::migration::MigrateV2ToV3<Runtime>,
+        // parachains_shared::migration::MigrateToV1<Runtime>,
+        // parachains_scheduler::migration::MigrateV2ToV3<Runtime>,
         // permanent
-        pallet_xcm::migration::MigrateToLatestXcmVersion<Runtime>,
+        // pallet_xcm::migration::MigrateToLatestXcmVersion<Runtime>,
     );
 }
 

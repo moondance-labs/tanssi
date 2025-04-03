@@ -42,6 +42,7 @@ frame-system = { workspace = true }
 frame-try-runtime = { workspace = true, optional = true }
 pallet-balances = { workspace = true }
 pallet-beefy-mmr = { workspace = true }
+runtime-parachains = { workspace = true }
 
 # Cumulus
 cumulus-pallet-xcmp-queue = { workspace = true }
@@ -87,6 +88,7 @@ std = [
 	"pallet-treasury/std",
 	"pallet-xcm/std",
 	"parity-scale-codec/std",
+	"runtime-parachains/std",
 	"scale-info/std",
 	"snowbridge-core/std",
 	"snowbridge-pallet-system/std",

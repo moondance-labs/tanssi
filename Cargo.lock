@@ -19139,6 +19139,7 @@ dependencies = [
  "pallet-treasury",
  "pallet-xcm",
  "parity-scale-codec",
+ "polkadot-runtime-parachains",
  "scale-info",
  "snowbridge-core",
  "snowbridge-pallet-system",

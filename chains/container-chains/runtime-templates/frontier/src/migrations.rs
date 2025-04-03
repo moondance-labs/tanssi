@@ -139,7 +139,7 @@ where
         frame_support::traits::OnRuntimeUpgrade,
 {
     fn friendly_name(&self) -> &str {
-        "MM_MigrateToLatestXcmVersion"
+        "MM_MigrateToLatestXcmVersion5"
     }
 
     fn migrate(&self, _available_weight: Weight) -> Weight {
@@ -178,22 +178,25 @@ where
         let migrate_xcmp_queue_v4 = XcmpQueueMigrationV4::<Runtime>(Default::default());
         //let migrate_xcm_executor_utils_v4 =
         //    pallet_xcm_executor_utils::migrations::MigrateToV1::<Runtime>(Default::default());
-        let migrate_pallet_xcm_v4 = MigrateToLatestXcmVersion::<Runtime>(Default::default());
+        // let migrate_pallet_xcm_v4 = MigrateToLatestXcmVersion::<Runtime>(Default::default());
         let migrate_precompile_proxy_code =
             MigratePrecompileProxyDummyCode::<Runtime>(Default::default());
         let migrate_precompile_xcm_code =
             MigratePrecompileXcmDummyCode::<Runtime>(Default::default());
+
+        let migrate_pallet_xcm_v5 = MigrateToLatestXcmVersion::<Runtime>(Default::default());
         vec![
             // Applied in runtime 400
             // Box::new(migrate_precompiles),
-            Box::new(migrate_polkadot_xcm_v1),
-            Box::new(migrate_xcmp_queue_v2),
-            Box::new(migrate_xcmp_queue_v3),
-            Box::new(migrate_xcmp_queue_v4),
-            //Box::new(migrate_xcm_executor_utils_v4),
-            Box::new(migrate_pallet_xcm_v4),
-            Box::new(migrate_precompile_proxy_code),
-            Box::new(migrate_precompile_xcm_code),
+            // Box::new(migrate_polkadot_xcm_v1),
+            // Box::new(migrate_xcmp_queue_v2),
+            // Box::new(migrate_xcmp_queue_v3),
+            // Box::new(migrate_xcmp_queue_v4),
+            // Box::new(migrate_xcm_executor_utils_v4),
+            // Box::new(migrate_pallet_xcm_v4),
+            // Box::new(migrate_precompile_proxy_code),
+            // Box::new(migrate_precompile_xcm_code),
+            Box::new(migrate_pallet_xcm_v5),
         ]
     }
 }
