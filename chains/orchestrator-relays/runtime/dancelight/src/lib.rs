@@ -1981,16 +1981,8 @@ pub type UncheckedExtrinsic =
 
 /// The runtime migrations per release.
 pub mod migrations {
-    use super::parachains_scheduler;
-    use super::parachains_shared;
-    use crate::Runtime;
     /// Unreleased migrations. Add new ones here:
-    pub type Unreleased = (
-        // parachains_shared::migration::MigrateToV1<Runtime>,
-        // parachains_scheduler::migration::MigrateV2ToV3<Runtime>,
-        // permanent
-        // pallet_xcm::migration::MigrateToLatestXcmVersion<Runtime>,
-    );
+    pub type Unreleased = ();
 }
 
 /// Executive: handles dispatch to the various modules.
