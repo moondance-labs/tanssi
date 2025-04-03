@@ -13,7 +13,25 @@
 
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
+#[allow(unused)]
+use crate::Pallet as InactivityTracking;
 
-mod common;
-mod inactivity_tracking;
-mod integration_test;
+use {super::*, frame_benchmarking::v2::*, frame_support::dispatch::RawOrigin};
+#[benchmarks]
+mod benchmarks {
+    use super::*;
+
+    #[benchmark]
+    fn set_inactivity_tracking_status() -> Result<(), BenchmarkError> {
+        #[extrinsic_call]
+        _(RawOrigin::Root, true);
+
+        Ok(())
+    }
+
+    impl_benchmark_test_suite!(
+        InactivityTracking,
+        crate::mock::ExtBuilder.build(),
+        crate::mock::Test,
+    );
+}

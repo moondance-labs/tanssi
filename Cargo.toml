@@ -63,6 +63,7 @@ pallet-external-validator-slashes = { path = "pallets/external-validator-slashes
 pallet-external-validators = { path = "pallets/external-validators", default-features = false }
 pallet-external-validators-rewards = { path = "pallets/external-validators-rewards", default-features = false }
 pallet-external-validators-rewards-runtime-api = { path = "pallets/external-validators-rewards/runtime-api", default-features = false }
+pallet-inactivity-tracking = { path = "pallets/inactivity-tracking", default-features = false }
 pallet-inflation-rewards = { path = "pallets/inflation-rewards", default-features = false }
 pallet-initializer = { path = "pallets/initializer", default-features = false }
 pallet-invulnerables = { path = "pallets/invulnerables", default-features = false }

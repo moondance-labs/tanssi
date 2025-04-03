@@ -36,6 +36,7 @@ import type {
     PalletConvictionVotingTally,
     PalletConvictionVotingVoteAccountVote,
     PalletExternalValidatorsForcing,
+    PalletInactivityTrackingActivityTrackingStatus,
     PalletMultisigTimepoint,
     PalletPooledStakingTargetPool,
     PalletRankedCollectiveTally,
@@ -957,6 +958,20 @@ declare module "@polkadot/api-base/types/events" {
              **/
             [key: string]: AugmentedEvent<ApiType>;
         };
+        inactivityTracking: {
+            /**
+             * Event emitted when the activity tracking status is updated
+             **/
+            ActivityTrackingStatusSet: AugmentedEvent<
+                ApiType,
+                [status: PalletInactivityTrackingActivityTrackingStatus],
+                { status: PalletInactivityTrackingActivityTrackingStatus }
+            >;
+            /**
+             * Generic event
+             **/
+            [key: string]: AugmentedEvent<ApiType>;
+        };
         inflationRewards: {
             /**
              * Rewarding container author
@@ -1348,6 +1363,14 @@ declare module "@polkadot/api-base/types/events" {
                 [candidate: AccountId32, delegator: AccountId32, rewards: u128],
                 { candidate: AccountId32; delegator: AccountId32; rewards: u128 }
             >;
+            /**
+             * Candidate temporarily leave the set of collator candidates without unbonding.
+             **/
+            CollatorOffline: AugmentedEvent<ApiType, [collator: AccountId32], { collator: AccountId32 }>;
+            /**
+             * Candidate rejoins the set of collator candidates.
+             **/
+            CollatorOnline: AugmentedEvent<ApiType, [collator: AccountId32], { collator: AccountId32 }>;
             /**
              * Stake of that Candidate decreased.
              **/

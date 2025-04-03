@@ -2963,6 +2963,16 @@ declare module "@polkadot/api-base/types/submittable" {
              **/
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
+        inactivityTracking: {
+            setInactivityTrackingStatus: AugmentedSubmittable<
+                (isEnabled: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [bool]
+            >;
+            /**
+             * Generic tx
+             **/
+            [key: string]: SubmittableExtrinsicFunction<ApiType>;
+        };
         initializer: {
             /**
              * Issue a signal to the consensus engine to forcibly act as though all parachain
@@ -3586,6 +3596,10 @@ declare module "@polkadot/api-base/types/submittable" {
                 ) => SubmittableExtrinsic<ApiType>,
                 [Vec<ITuple<[AccountId32, AccountId32]>>]
             >;
+            enableOfflineMarking: AugmentedSubmittable<
+                (value: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [bool]
+            >;
             /**
              * Execute pending operations can incur in claim manual rewards per operation, we simply add the worst case
              **/
@@ -3601,6 +3615,10 @@ declare module "@polkadot/api-base/types/submittable" {
                           )[]
                 ) => SubmittableExtrinsic<ApiType>,
                 [Vec<PalletPooledStakingPendingOperationQuery>]
+            >;
+            notifyInactiveCollator: AugmentedSubmittable<
+                (collator: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [AccountId32]
             >;
             rebalanceHold: AugmentedSubmittable<
                 (
@@ -3636,6 +3654,8 @@ declare module "@polkadot/api-base/types/submittable" {
                 ) => SubmittableExtrinsic<ApiType>,
                 [AccountId32, PalletPooledStakingTargetPool, PalletPooledStakingSharesOrStake]
             >;
+            setOffline: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
+            setOnline: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
             swapPool: AugmentedSubmittable<
                 (
                     candidate: AccountId32 | string | Uint8Array,
