@@ -162,7 +162,6 @@ parameter_types! {
     pub const MinimumSelfDelegation: u128 = 10 * MEGA;
     pub const RewardsCollatorCommission: Perbill = Perbill::from_percent(20);
     pub const BlocksToWait: u64 = BLOCKS_TO_WAIT;
-    pub const MaxInactiveSessions: u32 = 2;
 }
 pub struct InvulnerableCheckHandler<AccountId>(PhantomData<AccountId>);
 
