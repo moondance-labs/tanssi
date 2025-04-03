@@ -28,10 +28,6 @@ use {
     pallet_migrations::{GetMigrations, Migration},
     sp_core::{Get, H160},
     sp_std::{marker::PhantomData, prelude::*},
-    tanssi_runtime_common::migrations::{
-        PolkadotXcmMigrationFixVersion, XcmpQueueMigrationFixVersion, XcmpQueueMigrationV3,
-        XcmpQueueMigrationV4,
-    },
 };
 
 pub struct MigratePrecompileXcmDummyCode<T>(pub PhantomData<T>);
@@ -170,19 +166,19 @@ where
 {
     fn get_migrations() -> Vec<Box<dyn Migration>> {
         // let migrate_precompiles = MigratePrecompileDummyCode::<Runtime>(Default::default());
-        let migrate_polkadot_xcm_v1 =
-            PolkadotXcmMigrationFixVersion::<Runtime, PolkadotXcm>(Default::default());
-        let migrate_xcmp_queue_v2 =
-            XcmpQueueMigrationFixVersion::<Runtime, XcmpQueue>(Default::default());
-        let migrate_xcmp_queue_v3 = XcmpQueueMigrationV3::<Runtime>(Default::default());
-        let migrate_xcmp_queue_v4 = XcmpQueueMigrationV4::<Runtime>(Default::default());
+        //let migrate_polkadot_xcm_v1 =
+        //    PolkadotXcmMigrationFixVersion::<Runtime, PolkadotXcm>(Default::default());
+        //let migrate_xcmp_queue_v2 =
+        //    XcmpQueueMigrationFixVersion::<Runtime, XcmpQueue>(Default::default());
+        //let migrate_xcmp_queue_v3 = XcmpQueueMigrationV3::<Runtime>(Default::default());
+        //let migrate_xcmp_queue_v4 = XcmpQueueMigrationV4::<Runtime>(Default::default());
         //let migrate_xcm_executor_utils_v4 =
         //    pallet_xcm_executor_utils::migrations::MigrateToV1::<Runtime>(Default::default());
         // let migrate_pallet_xcm_v4 = MigrateToLatestXcmVersion::<Runtime>(Default::default());
-        let migrate_precompile_proxy_code =
-            MigratePrecompileProxyDummyCode::<Runtime>(Default::default());
-        let migrate_precompile_xcm_code =
-            MigratePrecompileXcmDummyCode::<Runtime>(Default::default());
+        //let migrate_precompile_proxy_code =
+        //    MigratePrecompileProxyDummyCode::<Runtime>(Default::default());
+        //let migrate_precompile_xcm_code =
+        //    MigratePrecompileXcmDummyCode::<Runtime>(Default::default());
 
         let migrate_pallet_xcm_v5 = MigrateToLatestXcmVersion::<Runtime>(Default::default());
         vec![

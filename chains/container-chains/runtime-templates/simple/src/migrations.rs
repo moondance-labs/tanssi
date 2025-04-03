@@ -27,10 +27,6 @@ use {
     },
     pallet_migrations::{GetMigrations, Migration},
     sp_std::{marker::PhantomData, prelude::*},
-    tanssi_runtime_common::migrations::{
-        PolkadotXcmMigrationFixVersion, XcmpQueueMigrationFixVersion, XcmpQueueMigrationV3,
-        XcmpQueueMigrationV4,
-    },
 };
 
 pub struct TemplateMigrations<Runtime, XcmpQueue, PolkadotXcm>(
@@ -74,12 +70,12 @@ where
     Runtime: pallet_foreign_asset_creator::Config,
 {
     fn get_migrations() -> Vec<Box<dyn Migration>> {
-        let migrate_polkadot_xcm_v1 =
-            PolkadotXcmMigrationFixVersion::<Runtime, PolkadotXcm>(Default::default());
-        let migrate_xcmp_queue_v2 =
-            XcmpQueueMigrationFixVersion::<Runtime, XcmpQueue>(Default::default());
-        let migrate_xcmp_queue_v3 = XcmpQueueMigrationV3::<Runtime>(Default::default());
-        let migrate_xcmp_queue_v4 = XcmpQueueMigrationV4::<Runtime>(Default::default());
+        //let migrate_polkadot_xcm_v1 =
+        //    PolkadotXcmMigrationFixVersion::<Runtime, PolkadotXcm>(Default::default());
+        //let migrate_xcmp_queue_v2 =
+        //    XcmpQueueMigrationFixVersion::<Runtime, XcmpQueue>(Default::default());
+        //let migrate_xcmp_queue_v3 = XcmpQueueMigrationV3::<Runtime>(Default::default());
+        //let migrate_xcmp_queue_v4 = XcmpQueueMigrationV4::<Runtime>(Default::default());
         //let migrate_xcm_executor_utils_v4 =
         //    pallet_xcm_executor_utils::migrations::MigrateToV1::<Runtime>(Default::default());
         // let migrate_pallet_xcm_v4 = MigrateToLatestXcmVersion::<Runtime>(Default::default());
