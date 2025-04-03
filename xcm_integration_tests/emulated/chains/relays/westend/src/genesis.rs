@@ -1,20 +1,15 @@
 use {
     cumulus_primitives_core::relay_chain::BlockNumber,
-    cumulus_primitives_core::relay_chain::{
-        AccountId, AssignmentId, AuthorityDiscoveryId, ValidatorId,
-    },
+    cumulus_primitives_core::relay_chain::{AssignmentId, AuthorityDiscoveryId, ValidatorId},
     emulated_integration_tests_common::build_genesis_storage,
     runtime_parachains::configuration::HostConfiguration,
     sc_consensus_grandpa::AuthorityId as GrandpaId,
     sp_consensus_babe::AuthorityId as BabeId,
     sp_consensus_beefy::ecdsa_crypto::AuthorityId as BeefyId,
     sp_consensus_beefy::test_utils::Keyring,
-    sp_core::{crypto::get_public_from_string_or_panic, sr25519, storage::Storage},
-    sp_keyring::Sr25519Keyring,
+    sp_core::storage::Storage,
     sp_runtime::Perbill,
-    sp_runtime::{traits::Verify, MultiSignature},
     tanssi_emulated_integration_tests_common::accounts,
-    tanssi_emulated_integration_tests_common::validators,
     westend_runtime_constants::currency::UNITS as WND,
 };
 

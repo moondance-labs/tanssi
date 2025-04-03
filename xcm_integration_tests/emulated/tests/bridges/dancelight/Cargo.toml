@@ -11,6 +11,8 @@ publish = false
 workspace = true
 
 [dependencies]
+parity-scale-codec = { workspace = true, features = [ "derive", "max-encoded-len" ] }
+keyring = { workspace = true }
 xcm-emulator = { workspace = true }
 sp-runtime = { workspace = true }
 frame-support = { workspace = true, features = [ "tuples-96" ] }
@@ -21,3 +23,11 @@ frame-system = { workspace = true }
 snowbridge-pallet-inbound-queue = { workspace = true }
 snowbridge-core = { workspace = true }
 tanssi-emulated-integration-tests-common = { workspace = true }
+dancelight-emulated-chain = { workspace = true }
+dancelight-runtime-test-utils = { workspace = true }
+dancelight-runtime = { workspace = true }
+sp-core = { workspace = true }
+dancelight-system-emulated-network = { workspace = true }
+alloy-sol-types = { workspace = true, default-features = true }
+tp-bridge = { workspace = true }
+snowbridge-router-primitives = { workspace = true }

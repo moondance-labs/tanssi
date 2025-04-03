@@ -15,13 +15,15 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    super::{
-        super::{AccountId, ExtBuilder, ALICE},
-        mocknets::{DancelightRelay as Dancelight, DancelightRelayPallet},
-    },
+    // dancelight_emulated_chain::DancelightRelayPallet,
     dancelight_runtime::xcm_config,
+    dancelight_runtime_test_utils::ExtBuilder,
+    dancelight_runtime_test_utils::ALICE,
+    dancelight_system_emulated_network::DancelightRelay as Dancelight,
+    dancelight_system_emulated_network::DancelightRelayPallet,
     frame_support::{assert_err, weights::Weight},
     pallet_xcm::Error,
+    primitives::AccountId,
     sp_runtime::DispatchError,
     xcm::{latest::prelude::*, v5::Location, VersionedXcm},
     xcm_emulator::Chain,

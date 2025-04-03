@@ -20,3 +20,8 @@ container-chain-template-simple-runtime = { workspace = true }
 pallet-message-queue = { workspace = true }
 dancelight-runtime = { workspace = true }
 xcm-executor = { workspace = true }
+dancelight-emulated-chain = { workspace = true }
+dancelight-system-emulated-network  = { workspace = true }
+simple-template-dancelight-emulated-chain = { workspace = true }
+dancelight-runtime-test-utils = { workspace = true }
+primitives = { workspace = true }

@@ -569,10 +569,15 @@ name = "asset-dancelight-integration-tests"
 version = "0.0.0"
 dependencies = [
  "container-chain-template-simple-runtime",
+ "dancelight-emulated-chain",
  "dancelight-runtime",
+ "dancelight-runtime-test-utils",
+ "dancelight-system-emulated-network",
  "frame-support",
  "pallet-message-queue",
  "pallet-xcm",
+ "polkadot-primitives",
+ "simple-template-dancelight-emulated-chain",
  "sp-runtime",
  "staging-xcm",
  "staging-xcm-executor",
@@ -1393,15 +1398,25 @@ dependencies = [
 name = "bridge-dancelight-integration-tests"
 version = "0.0.0"
 dependencies = [
+ "alloy-sol-types",
  "container-chain-template-simple-runtime",
+ "dancelight-emulated-chain",
+ "dancelight-runtime",
+ "dancelight-runtime-test-utils",
+ "dancelight-system-emulated-network",
  "frame-support",
  "frame-system",
  "pallet-xcm",
+ "parity-scale-codec",
  "snowbridge-core",
  "snowbridge-pallet-inbound-queue",
+ "snowbridge-router-primitives",
+ "sp-core",
+ "sp-keyring",
  "sp-runtime",
  "staging-xcm",
  "tanssi-emulated-integration-tests-common",
+ "tp-bridge",
  "xcm-emulator",
 ]
 
@@ -3948,6 +3963,10 @@ dependencies = [
 name = "dancelight-system-emulated-network"
 version = "0.0.0"
 dependencies = [
+ "container-chain-template-frontier-runtime",
+ "container-chain-template-simple-runtime",
+ "cumulus-primitives-core",
+ "dancelight-emulated-chain",
  "dancelight-runtime",
  "dancelight-runtime-constants",
  "dancelight-runtime-test-utils",
@@ -3955,9 +3974,11 @@ dependencies = [
  "frame-support",
  "frame-system",
  "frontier-template-dancelight-emulated-chain",
+ "polkadot-runtime-parachains",
  "simple-template-dancelight-emulated-chain",
  "snowbridge-pallet-outbound-queue",
  "sp-std",
+ "tanssi-emulated-integration-tests-common",
  "xcm-emulator",
 ]
 

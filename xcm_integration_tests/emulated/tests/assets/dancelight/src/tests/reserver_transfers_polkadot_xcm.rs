@@ -15,25 +15,24 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    // crate::tests::common::xcm::{
-    //     mocknets::{
-    //         DancelightRelay as Dancelight, DancelightSender,
-    //         SimpleTemplateDancelightEmptyReceiver as SimpleTemplateEmptyReceiver,
-    //         SimpleTemplateDancelightPara as SimpleTemplateDancelight,
-    //     },
-    //     *,
-    // },
+    // dancelight_emulated_chain::DancelightRelayPallet,
+    dancelight_system_emulated_network::{
+        DancelightRelay as Dancelight, DancelightRelayPallet, DancelightSender,
+        SimpleTemplateDancelightEmptyReceiver as SimpleTemplateEmptyReceiver,
+        SimpleTemplateDancelightPara as SimpleTemplateDancelight,
+        SimpleTemplateDancelightParaPallet,
+    },
     frame_support::{
         assert_ok,
         weights::{Weight, WeightToFee},
     },
-    mocknets::{DancelightRelayPallet, SimpleTemplateDancelightParaPallet},
+    simple_template_dancelight_emulated_chain::genesis::PARA_ID,
     sp_runtime::FixedU128,
     xcm::{
         latest::prelude::{Junctions::*, *},
         VersionedLocation,
     },
-    xcm_emulator::{assert_expected_events, Chain},
+    xcm_emulator::{assert_expected_events, bx, Chain},
 };
 
 #[allow(unused_assignments)]
@@ -46,7 +45,7 @@ fn transfer_assets_from_dancelight_to_one_of_its_parachains() {
     // Destination location from the dancelight relay viewpoint
     let simple_template_dest: VersionedLocation = Location {
         parents: 0,
-        interior: X1([Parachain(constants::simple_template::PARA_ID)].into()),
+        interior: X1([Parachain(PARA_ID)].into()),
     }
     .into();
 

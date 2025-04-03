@@ -15,20 +15,14 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    crate::{
-        tests::common::{
-            mock_snowbridge_message_proof,
-            // xcm::{
-            //     mocknets::{
-            //         DancelightRelay as Dancelight, DancelightRelayPallet, DancelightSender,
-            //         SimpleTemplateDancelightPara as DancelightPara,
-            //     },
-            //     *,
-            // },
-        },
-        Runtime,
-    },
     alloy_sol_types::SolEvent,
+    // dancelight_emulated_chain::DancelightRelayPallet,
+    dancelight_runtime::Runtime,
+    dancelight_runtime_test_utils::mock_snowbridge_message_proof,
+    dancelight_system_emulated_network::DancelightRelay as Dancelight,
+    dancelight_system_emulated_network::DancelightRelayPallet,
+    dancelight_system_emulated_network::DancelightSender,
+    dancelight_system_emulated_network::SimpleTemplateDancelightPara as DancelightPara,
     frame_support::assert_ok,
     keyring::Sr25519Keyring,
     parity_scale_codec::Encode,
@@ -73,7 +67,7 @@ fn send_msg_to_eth_should_be_process_by_the_bridge() {
     let command = Command::Test(payload);
 
     // msg sent in bridge
-    let msgs = tanssi_emulated_integration_tests_common::eth_bridge_sent_msgs();
+    let msgs = tanssi_emulated_integration_tests_common::impls::eth_bridge_sent_msgs();
     let sent_message = msgs.first().unwrap();
 
     assert_eq!(
