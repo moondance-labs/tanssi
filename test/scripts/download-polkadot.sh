@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# This script is deprecated, use downloadPolkadot.ts instead
+
 # Exit on any error
 set -e
 

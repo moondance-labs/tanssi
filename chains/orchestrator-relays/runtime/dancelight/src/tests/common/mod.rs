@@ -41,6 +41,7 @@ use {
     frame_support::{
         assert_ok,
         traits::{OnFinalize, OnInitialize},
+        BoundedVec,
     },
     frame_system::pallet_prelude::{BlockNumberFor, HeaderFor},
     nimbus_primitives::NimbusId,
@@ -75,7 +76,7 @@ pub use crate::{
     System, TanssiAuthorityAssignment, TanssiCollatorAssignment, TransactionPayment,
 };
 
-pub const UNIT: Balance = 1_000_000_000_000_000_000;
+pub const UNIT: Balance = 1_000_000_000_000;
 
 pub fn read_last_entropy() -> [u8; 32] {
     let mut last = [0u8; 32];
@@ -163,11 +164,12 @@ pub fn run_to_block(n: u32) -> BTreeMap<u32, RunSummary> {
 pub fn get_genesis_data_with_validation_code() -> (ContainerChainGenesisData, Vec<u8>) {
     let validation_code = mock_validation_code().0;
     let genesis_data = ContainerChainGenesisData {
-        storage: vec![(b":code".to_vec(), validation_code.clone()).into()],
+        storage: BoundedVec::try_from(vec![(b":code".to_vec(), validation_code.clone()).into()])
+            .unwrap(),
         name: Default::default(),
         id: Default::default(),
         fork_id: Default::default(),
-        extensions: vec![],
+        extensions: BoundedVec::try_from(vec![]).unwrap(),
         properties: Default::default(),
     };
     (genesis_data, validation_code)

@@ -356,16 +356,16 @@ fn test_staking_join_no_self_delegation() {
     ExtBuilder::default()
         .with_balances(vec![
             // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-            (AccountId::from(CHARLIE), 100_000 * UNIT),
-            (AccountId::from(DAVE), 100_000 * UNIT),
+            (AccountId::from(ALICE), 210_000_000_000 * UNIT),
+            (AccountId::from(BOB), 100_000_000_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000_000_000 * UNIT),
+            (AccountId::from(DAVE), 100_000_000_000 * UNIT),
         ])
         .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-            (AccountId::from(CHARLIE), 100 * UNIT),
-            (AccountId::from(DAVE), 100 * UNIT),
+            (AccountId::from(ALICE), 210_000_000 * UNIT),
+            (AccountId::from(BOB), 100_000_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000_000 * UNIT),
+            (AccountId::from(DAVE), 100_000_000 * UNIT),
         ])
         .with_empty_parachains(vec![1001, 1002])
         .build()
@@ -392,16 +392,16 @@ fn test_staking_join_before_self_delegation() {
     ExtBuilder::default()
         .with_balances(vec![
             // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-            (AccountId::from(CHARLIE), 100_000 * UNIT),
-            (AccountId::from(DAVE), 100_000 * UNIT),
+            (AccountId::from(ALICE), 210_000_000_000 * UNIT),
+            (AccountId::from(BOB), 100_000_000_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000_000_000 * UNIT),
+            (AccountId::from(DAVE), 100_000_000_000 * UNIT),
         ])
         .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-            (AccountId::from(CHARLIE), 100 * UNIT),
-            (AccountId::from(DAVE), 100 * UNIT),
+            (AccountId::from(ALICE), 210_000_000 * UNIT),
+            (AccountId::from(BOB), 100_000_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000_000 * UNIT),
+            (AccountId::from(DAVE), 100_000_000 * UNIT),
         ])
         .with_empty_parachains(vec![1001, 1002])
         .build()

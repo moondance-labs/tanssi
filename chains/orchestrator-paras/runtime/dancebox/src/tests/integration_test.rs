@@ -170,11 +170,11 @@ fn genesis_para_registrar_runtime_api() {
 fn genesis_para_registrar_container_chain_genesis_data_runtime_api() {
     let genesis_data_1001 = empty_genesis_data();
     let genesis_data_1002 = ContainerChainGenesisData {
-        storage: vec![(b"key".to_vec(), b"value".to_vec()).into()],
+        storage: BoundedVec::try_from(vec![(b"key".to_vec(), b"value".to_vec()).into()]).unwrap(),
         name: Default::default(),
         id: Default::default(),
         fork_id: Default::default(),
-        extensions: vec![],
+        extensions: BoundedVec::try_from(vec![]).unwrap(),
         properties: Default::default(),
     };
     ExtBuilder::default()
@@ -222,11 +222,11 @@ fn genesis_para_registrar_container_chain_genesis_data_runtime_api() {
             assert_eq!(Runtime::genesis_data(1002.into()).as_ref(), Some(&genesis_data_1002), "Deregistered container chain genesis data should not be removed until after 2 sessions");
 
             let genesis_data_1003 = ContainerChainGenesisData {
-                storage: vec![(b"key3".to_vec(), b"value3".to_vec()).into()],
+                storage: BoundedVec::try_from(vec![(b"key3".to_vec(), b"value3".to_vec()).into()]).unwrap(),
                 name: Default::default(),
                 id: Default::default(),
                 fork_id: Default::default(),
-                extensions: vec![],
+                extensions: BoundedVec::try_from(vec![]).unwrap(),
                 properties: Default::default(),
             };
             assert_ok!(
@@ -2572,16 +2572,16 @@ fn test_staking_join_no_self_delegation() {
     ExtBuilder::default()
         .with_balances(vec![
             // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-            (AccountId::from(CHARLIE), 100_000 * UNIT),
-            (AccountId::from(DAVE), 100_000 * UNIT),
+            (AccountId::from(ALICE), 210_000_000_000 * UNIT),
+            (AccountId::from(BOB), 100_000_000_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000_000_000 * UNIT),
+            (AccountId::from(DAVE), 100_000_000_000 * UNIT),
         ])
         .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-            (AccountId::from(CHARLIE), 100 * UNIT),
-            (AccountId::from(DAVE), 100 * UNIT),
+            (AccountId::from(ALICE), 210_000_000 * UNIT),
+            (AccountId::from(BOB), 100_000_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000_000 * UNIT),
+            (AccountId::from(DAVE), 100_000_000 * UNIT),
         ])
         .with_empty_parachains(vec![1001, 1002])
         .build()
@@ -2608,16 +2608,16 @@ fn test_staking_join_before_self_delegation() {
     ExtBuilder::default()
         .with_balances(vec![
             // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-            (AccountId::from(CHARLIE), 100_000 * UNIT),
-            (AccountId::from(DAVE), 100_000 * UNIT),
+            (AccountId::from(ALICE), 210_000_000_000 * UNIT),
+            (AccountId::from(BOB), 100_000_000_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000_000_000 * UNIT),
+            (AccountId::from(DAVE), 100_000_000_000 * UNIT),
         ])
         .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-            (AccountId::from(CHARLIE), 100 * UNIT),
-            (AccountId::from(DAVE), 100 * UNIT),
+            (AccountId::from(ALICE), 210_000_000 * UNIT),
+            (AccountId::from(BOB), 100_000_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000_000 * UNIT),
+            (AccountId::from(DAVE), 100_000_000 * UNIT),
         ])
         .with_empty_parachains(vec![1001, 1002])
         .build()
@@ -3362,15 +3362,15 @@ fn test_pallet_session_takes_validators_from_invulnerables_and_staking() {
     ExtBuilder::default()
         .with_balances(vec![
             // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-            (AccountId::from(CHARLIE), 100_000 * UNIT),
-            (AccountId::from(DAVE), 100_000 * UNIT),
+            (AccountId::from(ALICE), 210_000_000_000 * UNIT),
+            (AccountId::from(BOB), 100_000_000_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000_000_000 * UNIT),
+            (AccountId::from(DAVE), 100_000_000_000 * UNIT),
         ])
         .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(ALICE), 210_000_000 * UNIT),
+            (AccountId::from(BOB), 100_000_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000_000 * UNIT),
         ])
         .with_empty_parachains(vec![1001, 1002])
         .build()
@@ -3449,15 +3449,15 @@ fn test_pallet_session_limits_num_validators() {
     ExtBuilder::default()
         .with_balances(vec![
             // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-            (AccountId::from(CHARLIE), 100_000 * UNIT),
-            (AccountId::from(DAVE), 100_000 * UNIT),
+            (AccountId::from(ALICE), 210_000_000_000 * UNIT),
+            (AccountId::from(BOB), 100_000_000_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000_000_000 * UNIT),
+            (AccountId::from(DAVE), 100_000_000_000 * UNIT),
         ])
         .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(ALICE), 210_000_000 * UNIT),
+            (AccountId::from(BOB), 100_000_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000_000 * UNIT),
         ])
         .with_empty_parachains(vec![1001, 1002])
         .with_config(pallet_configuration::HostConfiguration {
@@ -3539,12 +3539,12 @@ fn test_pallet_session_limits_num_validators_from_staking() {
     ExtBuilder::default()
         .with_balances(vec![
             // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-            (AccountId::from(CHARLIE), 100_000 * UNIT),
-            (AccountId::from(DAVE), 100_000 * UNIT),
+            (AccountId::from(ALICE), 210_000_000_000 * UNIT),
+            (AccountId::from(BOB), 100_000_000_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000_000_000 * UNIT),
+            (AccountId::from(DAVE), 100_000_000_000 * UNIT),
         ])
-        .with_collators(vec![(AccountId::from(ALICE), 210 * UNIT)])
+        .with_collators(vec![(AccountId::from(ALICE), 210_000_000 * UNIT)])
         .with_empty_parachains(vec![1001, 1002])
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 2,
@@ -3648,12 +3648,12 @@ fn test_reward_to_staking_candidate() {
     ExtBuilder::default()
         .with_balances(vec![
             // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-            (AccountId::from(CHARLIE), 100_000 * UNIT),
-            (AccountId::from(DAVE), 100_000 * UNIT),
+            (AccountId::from(ALICE), 210_000_000_000 * UNIT),
+            (AccountId::from(BOB), 100_000_000_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000_000_000 * UNIT),
+            (AccountId::from(DAVE), 100_000_000_000 * UNIT),
         ])
-        .with_collators(vec![(AccountId::from(ALICE), 210 * UNIT)])
+        .with_collators(vec![(AccountId::from(ALICE), 210_000_000 * UNIT)])
         .with_empty_parachains(vec![1001, 1002])
         .build()
         .execute_with(|| {
@@ -4031,14 +4031,14 @@ fn test_collator_assignment_gives_priority_to_invulnerables() {
     ExtBuilder::default()
         .with_balances(vec![
             // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-            (AccountId::from(CHARLIE), 100_000 * UNIT),
-            (AccountId::from(DAVE), 100_000 * UNIT),
+            (AccountId::from(ALICE), 210_000_000_000 * UNIT),
+            (AccountId::from(BOB), 100_000_000_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000_000_000 * UNIT),
+            (AccountId::from(DAVE), 100_000_000_000 * UNIT),
         ])
         .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(DAVE), 100 * UNIT),
+            (AccountId::from(ALICE), 210_000_000 * UNIT),
+            (AccountId::from(DAVE), 100_000_000 * UNIT),
         ])
         .with_empty_parachains(vec![1001, 1002])
         .build()
