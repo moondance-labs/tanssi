@@ -1,3 +1,4 @@
+pub use xcm_emulator::{bx, TestExt};
 use xcm_emulator::{decl_test_parachains, decl_test_relay_chains};
 use {
     dancelight_runtime_constants::currency::UNITS as UNIT,
@@ -7,7 +8,7 @@ use {
     tanssi_emulated_integration_tests_common,
     xcm_emulator::{
         decl_test_networks, Bridge, BridgeLaneId, BridgeMessage, BridgeMessageDispatchError,
-        BridgeMessageHandler, Chain, Network, TestExt,
+        BridgeMessageHandler, Chain, Network,
     },
 };
 

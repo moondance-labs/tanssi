@@ -38,7 +38,7 @@ use {
         },
         Command,
     },
-    xcm_emulator::Chain,
+    xcm_emulator::{Chain, TestExt},
 };
 
 #[test]

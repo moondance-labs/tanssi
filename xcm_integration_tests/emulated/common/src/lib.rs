@@ -15,6 +15,8 @@ pub mod accounts;
 pub mod impls;
 pub mod validators;
 
+pub use xcm_emulator::{bx, TestExt};
+
 pub fn force_process_bridge<R, P>()
 where
     R: RelayChain,

@@ -62,6 +62,7 @@ pub use dancelight_runtime::{
     DataPreservers, Grandpa, InflationRewards, Initializer, Mmr, Runtime, RuntimeOrigin, Session,
     System, TanssiAuthorityAssignment, TanssiCollatorAssignment, TransactionPayment,
 };
+pub use xcm_emulator::{bx, TestExt};
 
 pub const UNIT: Balance = 1_000_000_000_000;
 

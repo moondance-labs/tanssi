@@ -32,7 +32,7 @@ use {
         latest::prelude::{Junctions::*, *},
         VersionedLocation,
     },
-    xcm_emulator::{assert_expected_events, bx, Chain},
+    xcm_emulator::{assert_expected_events, bx, Chain, TestExt},
 };
 
 #[allow(unused_assignments)]
