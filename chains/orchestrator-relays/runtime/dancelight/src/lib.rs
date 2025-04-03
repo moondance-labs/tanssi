@@ -186,7 +186,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: Cow::Borrowed("dancelight"),
     impl_name: Cow::Borrowed("tanssi-dancelight-v2.0"),
     authoring_version: 0,
-    spec_version: 1300,
+    spec_version: 1201,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 26,
@@ -1980,10 +1980,17 @@ pub type UncheckedExtrinsic =
     generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, TxExtension>;
 
 /// The runtime migrations per release.
-#[allow(deprecated, missing_docs)]
 pub mod migrations {
+    use super::parachains_scheduler;
+    use super::parachains_shared;
+    use crate::Runtime;
     /// Unreleased migrations. Add new ones here:
-    pub type Unreleased = ();
+    pub type Unreleased = (
+        parachains_shared::migration::MigrateToV1<Runtime>,
+        parachains_scheduler::migration::MigrateV2ToV3<Runtime>,
+        // permanent
+        pallet_xcm::migration::MigrateToLatestXcmVersion<Runtime>,
+    );
 }
 
 /// Executive: handles dispatch to the various modules.
