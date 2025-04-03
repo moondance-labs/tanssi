@@ -180,11 +180,7 @@ pub struct InvulnerableCheckHandler<AccountId>(PhantomData<AccountId>);
 
 impl tp_traits::CheckInvulnerables<AccountId> for InvulnerableCheckHandler<AccountId> {
     fn is_invulnerable(account: &AccountId) -> bool {
-        if *account == ACCOUNT_CANDIDATE_1 {
-            true
-        } else {
-            false
-        }
+        *account == ACCOUNT_CANDIDATE_1
     }
 }
 
@@ -192,11 +188,7 @@ pub struct MockActivityTrackingHelper<AccountId>(PhantomData<AccountId>);
 
 impl tp_traits::NodeActivityTrackingHelper<AccountId> for MockActivityTrackingHelper<AccountId> {
     fn is_node_inactive(node: &AccountId) -> bool {
-        if node == &ACCOUNT_CANDIDATE_2 {
-            true
-        } else {
-            false
-        }
+        *node == ACCOUNT_CANDIDATE_2
     }
 }
 

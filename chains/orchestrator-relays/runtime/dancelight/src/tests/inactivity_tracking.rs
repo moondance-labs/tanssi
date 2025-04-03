@@ -69,7 +69,7 @@ fn get_chains_set(
         <Runtime as pallet_inactivity_tracking::Config>::MaxContainerChains,
     > = BoundedBTreeSet::new();
     chains.iter().for_each(|collator| {
-        chains_set.try_insert(collator.clone()).ok();
+        chains_set.try_insert(*collator).ok();
     });
     chains_set
 }
