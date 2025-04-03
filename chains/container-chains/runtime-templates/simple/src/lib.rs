@@ -226,7 +226,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: Cow::Borrowed("container-chain-template"),
     impl_name: Cow::Borrowed("container-chain-template"),
     authoring_version: 1,
-    spec_version: 1201
+    spec_version: 1201,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
