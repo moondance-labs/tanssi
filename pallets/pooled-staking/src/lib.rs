@@ -590,7 +590,9 @@ pub mod pallet {
                 >(
                     None,
                     &mut frame_support::weights::WeightMeter::new(), // call with no limit on weight
-                ).expect("to generate summaries without errors").is_none(),
+                )
+                .expect("to generate summaries without errors")
+                .is_none(),
                 "failed to generate all summaries"
             );
 
