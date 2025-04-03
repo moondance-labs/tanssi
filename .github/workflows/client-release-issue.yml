@@ -10,6 +10,7 @@ on:
         required: true
       binary-type:
         description: "Binary type"
+        type: choice
         options:
           - "parachain"
           - "solochain"
@@ -50,7 +51,7 @@ jobs:
       - name: Create version bump issue
         uses: peter-evans/create-issue-from-file@v5
         with:
-          title: client ${{ github.event.inputs.to }} release
+          title: ${{ github.event.inputs.binary-type }} client ${{ github.event.inputs.to }} release
           content-filepath: ./client-release-issue.md
           labels: |
             automated issue
