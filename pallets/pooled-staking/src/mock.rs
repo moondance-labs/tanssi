@@ -154,7 +154,6 @@ impl pallet_balances::Config for Runtime {
 
 pub const SHARE_INIT: u128 = MEGA;
 pub const BLOCKS_TO_WAIT: u64 = 2;
-pub const SESSION_BLOCK_LENGTH: u64 = 5;
 
 parameter_types! {
     pub const StakingAccount: u64 = ACCOUNT_STAKING;
