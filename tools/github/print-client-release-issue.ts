@@ -49,7 +49,7 @@ with ${newVersion}.
 (matching your ${newVersion} tag) and increase the config version + 1.
 - [ ] Test the new client on stagelight.
 - [ ] Publish the client release draft.
-- [ ] When everything is ok, publish the new docker image: start github action Publish Docker Dancelight
+- [ ] When everything is ok, publish the new docker image: start github action Publish Docker solochain
 with ${newVersion}.
   `;
 
