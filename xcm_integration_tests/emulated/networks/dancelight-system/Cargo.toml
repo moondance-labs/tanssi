@@ -28,3 +28,24 @@ container-chain-template-frontier-runtime  = { workspace = true, features = [ "s
 container-chain-template-simple-runtime  = { workspace = true, features = [ "std" ] }
 cumulus-primitives-core = { workspace = true }
 runtime-parachains = { workspace = true }
+
+[features]
+default = [ "std" ]
+std = [
+    "dancelight-runtime/std",
+    "dancelight-runtime-constants/std",
+    "frame-support/std",
+    "frame-system/std",
+    "snowbridge-pallet-outbound-queue/std",
+    "sp-std/std",
+    "simple-template-dancelight-emulated-chain/std",
+    "frontier-template-dancelight-emulated-chain/std",
+    "dancelight-runtime-test-utils/std",
+    "tanssi-emulated-integration-tests-common/std",
+    "dancelight-emulated-chain/std",
+    "container-chain-template-frontier-runtime/std",
+    "container-chain-template-simple-runtime/std",
+    "cumulus-primitives-core/std",
+    "runtime-parachains/std"
+]
+no_std = []

@@ -31,3 +31,28 @@ dancelight-system-emulated-network = { workspace = true }
 alloy-sol-types = { workspace = true, default-features = true }
 tp-bridge = { workspace = true }
 snowbridge-router-primitives = { workspace = true }
+
+[features]
+default = [ "std" ]
+std = [
+    "parity-scale-codec/std",
+    "keyring/std",
+    "sp-runtime/std",
+    "frame-support/std",
+    "pallet-xcm/std",
+    "xcm/std",
+    "container-chain-template-simple-runtime/std",
+    "frame-system/std",
+    "snowbridge-pallet-inbound-queue/std",
+    "snowbridge-core/std",
+    "tanssi-emulated-integration-tests-common/std",
+    "dancelight-emulated-chain/std",
+    "dancelight-runtime-test-utils/std",
+    "dancelight-runtime/std",
+    "sp-core/std",
+    "dancelight-system-emulated-network/std",
+    "alloy-sol-types/std",
+    "tp-bridge/std",
+    "snowbridge-router-primitives/std"
+]
+no_std = []

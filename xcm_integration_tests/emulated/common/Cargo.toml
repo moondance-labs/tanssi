@@ -49,3 +49,33 @@ snowbridge-pallet-outbound-queue = { workspace = true }
 keyring = { workspace = true }
 dancelight-runtime-constants = { workspace = true }
 dancelight-runtime = { workspace = true }
+
+[features]
+default = [ "std" ]
+std = [
+    "babe-primitives/std",
+    "beefy-primitives/std",
+    "frame-support/std",
+    "frame-system/std",
+    "pallet-assets/std",
+    "pallet-balances/std",
+    "pallet-message-queue/std",
+    "sp-authority-discovery/std",
+    "sp-core/std",
+    "sp-runtime/std",
+    "sp-std/std",
+    "polkadot-parachain-primitives/std",
+    "polkadot-primitives/std",
+    "polkadot-runtime-parachains/std",
+    "xcm/std",
+    "frame-system/std",
+    "cumulus-pallet-parachain-system/std",
+    "cumulus-pallet-xcmp-queue/std",
+    "cumulus-primitives-core/std",
+    "parachains-common/std",
+    "snowbridge-pallet-outbound-queue/std",
+    "keyring/std",
+    "dancelight-runtime-constants/std",
+    "dancelight-runtime/std"
+]
+no_std = []

@@ -33,3 +33,23 @@ emulated-integration-tests-common = { workspace = true }
 parachains-common = { workspace = true, default-features = true }
 tanssi-emulated-integration-tests-common = { workspace = true }
 runtime-parachains = { workspace = true }
+
+[features]
+default = [ "std" ]
+std = [
+    "sp-authority-discovery/std",
+    "sp-consensus-babe/std",
+    "sp-consensus-beefy/std",
+    "sp-core/std",
+    "sp-keyring/std",
+    "sp-runtime/std",
+    "polkadot-parachain-primitives/std",
+    "cumulus-primitives-core/std",
+    "polkadot-primitives/std",
+    "rococo-runtime/std",
+    "rococo-runtime-constants/std",
+    "parachains-common/std",
+    "tanssi-emulated-integration-tests-common/std",
+    "runtime-parachains/std"
+]
+no_std = []
