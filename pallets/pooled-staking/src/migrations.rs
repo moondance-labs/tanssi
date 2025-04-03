@@ -62,9 +62,9 @@ impl<T: Config> SteppedMigration for MigrationGenerateSummaries<T> {
             return Ok(None);
         }
 
-        // We make a weight meter with 80% of allowed weight to be extra sure the migration will not
+        // We make a weight meter with 70% of allowed weight to be extra sure the migration will not
         // cause issues
-        let mut meter2 = WeightMeter::with_limit(meter.remaining() * 100 / 80);
+        let mut meter2 = WeightMeter::with_limit(meter.remaining() * 70 / 100);
 
         let new_state = stepped_generate_summaries::<
             T,
