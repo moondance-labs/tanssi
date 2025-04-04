@@ -8,6 +8,12 @@ on:
       to:
         description: "Next client version"
         required: true
+      binary-type:
+        description: "Binary type"
+        type: choice
+        options:
+          - "parachain"
+          - "solochain"
 
 jobs:
   setup-scripts:
@@ -41,11 +47,11 @@ jobs:
         working-directory: original-tools
         run: |
           npm i
-          npm run --silent print-client-release-issue -- --from ${{ github.event.inputs.from }} --to ${{ github.event.inputs.to }} | tee ../client-release-issue.md
+          npm run --silent print-client-release-issue -- --chainType ${{ github.event.inputs.binary-type }} --from ${{ github.event.inputs.from }} --to ${{ github.event.inputs.to }} | tee ../client-release-issue.md
       - name: Create version bump issue
         uses: peter-evans/create-issue-from-file@v5
         with:
-          title: client ${{ github.event.inputs.to }} release
+          title: ${{ github.event.inputs.binary-type }} client ${{ github.event.inputs.to }} release
           content-filepath: ./client-release-issue.md
           labels: |
             automated issue
