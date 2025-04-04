@@ -1,55 +1,10 @@
 import "@tanssi/api-augment";
 
-import { type DevModeContext, beforeAll, describeSuite, expect } from "@moonwall/cli";
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
-import type { Digest, DigestItem, HeadData, Header, ParaId, Slot } from "@polkadot/types/interfaces";
-import { stringToHex } from "@polkadot/util";
-import { DANCELIGHT_BOND, fetchIssuance, filterRewardFromContainer, jumpToSession } from "utils";
+import { mockAndInsertHeadData, DANCELIGHT_BOND, fetchIssuance, filterRewardFromContainer, jumpToSession } from "utils";
 //5EYCAe5cHUC3LZehbwavqEb95LcNnpBzfQTsAxeUibSo1Gtb
-
-// Helper function to make rewards work for a specific block and slot.
-// We need to mock a proper HeadData object for AuthorNoting inherent to work, and thus
-// rewards take place.
-//
-// Basically, if we don't call this function before testing the rewards given
-// to collators in a block, the HeadData object mocked in genesis will not be decoded properly
-// and the AuthorNoting inherent will fail.
-async function mockAndInsertHeadData(
-    context: DevModeContext,
-    paraId: ParaId,
-    blockNumber: number,
-    slotNumber: number,
-    sudoAccount: KeyringPair
-) {
-    const relayApi = context.polkadotJs();
-    const aura_engine_id = stringToHex("aura");
-
-    const slotNumberT: Slot = relayApi.createType("Slot", slotNumber);
-    const digestItem: DigestItem = relayApi.createType("DigestItem", {
-        PreRuntime: [aura_engine_id, slotNumberT.toHex(true)],
-    });
-    const digest: Digest = relayApi.createType("Digest", {
-        logs: [digestItem],
-    });
-    const header: Header = relayApi.createType("Header", {
-        parentHash: "0x0000000000000000000000000000000000000000000000000000000000000000",
-        number: blockNumber,
-        stateRoot: "0x0000000000000000000000000000000000000000000000000000000000000000",
-        extrinsicsRoot: "0x0000000000000000000000000000000000000000000000000000000000000000",
-        digest,
-    });
-
-    const headData: HeadData = relayApi.createType("HeadData", header.toHex());
-    const paraHeadKey = relayApi.query.paras.heads.key(paraId);
-
-    await context.createBlock(
-        relayApi.tx.sudo
-            .sudo(relayApi.tx.system.setStorage([[paraHeadKey, `0xc101${headData.toHex().slice(2)}`]]))
-            .signAsync(sudoAccount),
-        { allowFailures: false }
-    );
-}
 
 describeSuite({
     id: "DEVT0701",
