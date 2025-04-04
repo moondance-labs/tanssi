@@ -20,13 +20,13 @@ use {
         DancelightRelay as Dancelight, DancelightSender,
         SimpleTemplateDancelightEmptyReceiver as SimpleTemplateEmptyReceiver,
         SimpleTemplateDancelightPara as SimpleTemplateDancelight,
-        SimpleTemplateDancelightParaPallet,
     },
     frame_support::{
         assert_ok,
         weights::{Weight, WeightToFee},
     },
     simple_template_dancelight_emulated_chain::genesis::PARA_ID,
+    simple_template_dancelight_emulated_chain::SimpleTemplateDancelightParaPallet,
     sp_runtime::FixedU128,
     xcm::{
         latest::prelude::{Junctions::*, *},

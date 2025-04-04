@@ -12,9 +12,11 @@ workspace = true
 workspace = true
 
 [dependencies]
-container-chain-template-frontier-runtime  = { workspace = true, features = [ "std" ] }
 emulated-integration-tests-common = { workspace = true }
-hex-literal = { workspace = true }
 sp-core = { workspace = true }
 xcm = { workspace = true }
 xcm-emulator = { workspace = true }
+container-chain-template-simple-runtime  = { workspace = true }
+cumulus-primitives-core = { workspace = true }
+frame-support = { workspace = true }
+tanssi-emulated-integration-tests-common = { workspace = true }

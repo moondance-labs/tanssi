@@ -5696,11 +5696,12 @@ dependencies = [
 name = "frontier-template-dancelight-emulated-chain"
 version = "0.0.0"
 dependencies = [
- "container-chain-template-simple-runtime",
+ "container-chain-template-frontier-runtime",
+ "cumulus-primitives-core",
  "emulated-integration-tests-common",
+ "hex-literal 0.3.4",
  "sp-core",
  "staging-xcm",
- "tanssi-emulated-integration-tests-common",
  "xcm-emulator",
 ]
 
@@ -16742,11 +16743,14 @@ checksum = "620a1d43d70e142b1d46a929af51d44f383db9c7a2ec122de2cd992ccfcf3c18"
 name = "simple-template-dancelight-emulated-chain"
 version = "0.0.0"
 dependencies = [
- "container-chain-template-frontier-runtime",
+ "container-chain-template-simple-runtime",
+ "cumulus-primitives-core",
  "emulated-integration-tests-common",
+ "frame-support",
  "hex-literal 0.3.4",
  "sp-core",
  "staging-xcm",
+ "tanssi-emulated-integration-tests-common",
  "xcm-emulator",
 ]
 

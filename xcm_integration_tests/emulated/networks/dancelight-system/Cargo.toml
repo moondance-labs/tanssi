@@ -12,15 +12,10 @@ workspace = true
 workspace = true
 
 [dependencies]
-container-chain-template-frontier-runtime  = { workspace = true, features = [ "std" ] }
 container-chain-template-simple-runtime  = { workspace = true, features = [ "std" ] }
-cumulus-primitives-core = { workspace = true }
 dancelight-runtime = { workspace = true }
-dancelight-runtime-constants = { workspace = true }
-dancelight-runtime-test-utils = { workspace = true }
 frame-support = { workspace = true, features = [ "tuples-96" ] }
 frontier-template-dancelight-emulated-chain = { workspace = true }
-runtime-parachains = { workspace = true }
 simple-template-dancelight-emulated-chain = { workspace = true }
 snowbridge-pallet-outbound-queue = { workspace = true }
 tanssi-emulated-integration-tests-common = { workspace = true }

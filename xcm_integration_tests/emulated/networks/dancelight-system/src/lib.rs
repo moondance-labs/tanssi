@@ -18,8 +18,9 @@ use xcm_emulator::decl_test_parachains;
 pub use xcm_emulator::{bx, TestExt};
 use {
     dancelight_emulated_chain::Dancelight,
-    // dancelight_emulated_chain::Dancelight,
     frame_support::parameter_types,
+    frontier_template_dancelight_emulated_chain::FrontierTemplateDancelight,
+    simple_template_dancelight_emulated_chain::SimpleTemplateDancelight,
     tanssi_emulated_integration_tests_common,
     xcm_emulator::{
         decl_test_networks, Bridge, BridgeLaneId, BridgeMessage, BridgeMessageDispatchError,
@@ -38,29 +39,6 @@ impl Bridge for DancelightEthMockBridge {
     }
 }
 
-decl_test_parachains! {
-    pub struct SimpleTemplateDancelight {
-        genesis = simple_template_dancelight_emulated_chain::genesis::genesis(),
-        on_init = (),
-        runtime = container_chain_template_simple_runtime,
-        core = {
-            XcmpMessageHandler: container_chain_template_simple_runtime::XcmpQueue,
-            LocationToAccountId: container_chain_template_simple_runtime::xcm_config::LocationToAccountId,
-            ParachainInfo: container_chain_template_simple_runtime::ParachainInfo,
-            MessageOrigin: cumulus_primitives_core::AggregateMessageOrigin,
-        },
-        pallets = {
-            System: container_chain_template_simple_runtime::System,
-            Balances: container_chain_template_simple_runtime::Balances,
-            ParachainSystem: container_chain_template_simple_runtime::ParachainSystem,
-            PolkadotXcm: container_chain_template_simple_runtime::PolkadotXcm,
-            ForeignAssets:  container_chain_template_simple_runtime::ForeignAssets,
-            AssetRate:  container_chain_template_simple_runtime::AssetRate,
-            ForeignAssetsCreator: container_chain_template_simple_runtime::ForeignAssetsCreator,
-        }
-    }
-}
-
 decl_test_networks! {
     pub struct DancelightMockNet {
         relay_chain = Dancelight,
@@ -70,30 +48,6 @@ decl_test_networks! {
         ],
         bridge = DancelightEthMockBridge
     }
-}
-
-decl_test_parachains! {
-    // Dancelight parachains
-    pub struct FrontierTemplateDancelight {
-        genesis = frontier_template_dancelight_emulated_chain::genesis::genesis(),
-        on_init = (),
-        runtime = container_chain_template_frontier_runtime,
-        core = {
-            XcmpMessageHandler: container_chain_template_frontier_runtime::XcmpQueue,
-            LocationToAccountId: container_chain_template_frontier_runtime::xcm_config::LocationToAccountId,
-            ParachainInfo: container_chain_template_frontier_runtime::ParachainInfo,
-            MessageOrigin: cumulus_primitives_core::AggregateMessageOrigin,
-        },
-        pallets = {
-            System: container_chain_template_frontier_runtime::System,
-            Balances: container_chain_template_frontier_runtime::Balances,
-            ParachainSystem: container_chain_template_frontier_runtime::ParachainSystem,
-            PolkadotXcm: container_chain_template_frontier_runtime::PolkadotXcm,
-            ForeignAssets:  container_chain_template_frontier_runtime::ForeignAssets,
-            AssetRate:  container_chain_template_frontier_runtime::AssetRate,
-            ForeignAssetsCreator: container_chain_template_frontier_runtime::ForeignAssetsCreator,
-        }
-    },
 }
 
 parameter_types! {
