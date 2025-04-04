@@ -14,10 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-use tanssi_emulated_integration_tests_common::accounts;
 use {
     container_chain_template_simple_runtime::UNIT as DEV,
     emulated_integration_tests_common::build_genesis_storage,
+    tanssi_emulated_integration_tests_common::accounts,
 };
 
 pub const PARA_ID: u32 = 2001;

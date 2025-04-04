@@ -14,8 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-use container_chain_template_frontier_runtime::AccountId;
-use {emulated_integration_tests_common::build_genesis_storage, hex_literal::hex};
+use {
+    container_chain_template_frontier_runtime::AccountId,
+    emulated_integration_tests_common::build_genesis_storage, hex_literal::hex,
+};
 
 pub const PARA_ID: u32 = 2002;
 pub const ORCHESTRATOR: u32 = 2000;

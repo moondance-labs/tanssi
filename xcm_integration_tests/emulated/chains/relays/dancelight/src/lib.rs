@@ -14,8 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-pub use dancelight_runtime;
-
 use {
     dancelight_runtime_constants::currency::UNITS as UNIT,
     dancelight_runtime_test_utils::ExtBuilder, tanssi_emulated_integration_tests_common,

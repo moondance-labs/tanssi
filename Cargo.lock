@@ -3691,16 +3691,11 @@ dependencies = [
 name = "dancelight-system-emulated-network"
 version = "0.0.0"
 dependencies = [
- "container-chain-template-frontier-runtime",
  "container-chain-template-simple-runtime",
- "cumulus-primitives-core",
  "dancelight-emulated-chain",
  "dancelight-runtime",
- "dancelight-runtime-constants",
- "dancelight-runtime-test-utils",
  "frame-support",
  "frontier-template-dancelight-emulated-chain",
- "polkadot-runtime-parachains",
  "simple-template-dancelight-emulated-chain",
  "snowbridge-pallet-outbound-queue",
  "tanssi-emulated-integration-tests-common",
@@ -16747,7 +16742,6 @@ dependencies = [
  "cumulus-primitives-core",
  "emulated-integration-tests-common",
  "frame-support",
- "hex-literal 0.3.4",
  "sp-core",
  "staging-xcm",
  "tanssi-emulated-integration-tests-common",

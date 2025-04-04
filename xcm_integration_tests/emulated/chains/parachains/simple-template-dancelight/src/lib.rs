@@ -15,8 +15,10 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 pub mod genesis;
-pub use xcm_emulator::{bx, TestExt};
-use {frame_support::parameter_types, xcm_emulator::decl_test_parachains};
+use {
+    frame_support::parameter_types,
+    xcm_emulator::{bx, decl_test_parachains, TestExt},
+};
 
 decl_test_parachains! {
     pub struct SimpleTemplateDancelight {

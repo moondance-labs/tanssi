@@ -23,14 +23,12 @@ use {
     frame_system::Pallet as SystemPallet,
     sc_consensus_grandpa::AuthorityId as GrandpaId,
     sp_core::{crypto::get_public_from_string_or_panic, sr25519},
-    xcm_emulator::{Parachain, RelayChain},
+    xcm_emulator::{Parachain, RelayChain, TestExt},
 };
 
 pub mod accounts;
 pub mod impls;
 pub mod validators;
-
-pub use xcm_emulator::{bx, TestExt};
 
 pub fn force_process_bridge<R, P>()
 where
