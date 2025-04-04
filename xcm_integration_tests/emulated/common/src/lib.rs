@@ -23,7 +23,7 @@ use {
     frame_system::Pallet as SystemPallet,
     sc_consensus_grandpa::AuthorityId as GrandpaId,
     sp_core::{crypto::get_public_from_string_or_panic, sr25519},
-    xcm_emulator::{Parachain, RelayChain, TestExt},
+    xcm_emulator::{Parachain, RelayChain},
 };
 
 pub mod accounts;

@@ -15,7 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 pub mod genesis;
-use xcm_emulator::{bx, decl_test_parachains, TestExt};
+use xcm_emulator::decl_test_parachains;
 
 decl_test_parachains! {
     // Dancelight parachains
