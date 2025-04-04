@@ -10,7 +10,7 @@ import { getHeaderFromRelay, getTmpZombiePath, signAndSendAndInclude, waitForLog
 
 // Checks every second the log file to find the watcher best block notification until it is found or
 // timeout is reached. If timeout is reached, throws an error.
-export async function waitForLogs2(logFilePath: string, timeout: number, logs: string[]): Promise<void> {
+export async function expectLogs(logFilePath: string, timeout: number, logs: string[]): Promise<void> {
     const logsFound = await waitForLogs(logFilePath, timeout, logs);
     if (!logsFound) {
         expect.fail(`RPC Assignment Watch log was not found after ${timeout} seconds.`);
@@ -88,7 +88,7 @@ describeSuite({
             title: "Data preservers 2000 watcher properly starts",
             test: async () => {
                 const logFilePath = `${getTmpZombiePath()}/DataPreserver-2000.log`;
-                await waitForLogs2(logFilePath, 300, ["Starting Data Preserver Assignment Watcher"]);
+                await expectLogs(logFilePath, 300, ["Starting Data Preserver Assignment Watcher"]);
             },
         });
 
@@ -128,7 +128,7 @@ describeSuite({
                 expect(onChainProfileAccount).to.be.eq(bobAccount);
                 expect(onChainProfile.assignment.toHuman().toString()).to.be.eq(["2,000", "Free"].toString());
 
-                await waitForLogs2(logFilePath, 300, ["NotAssigned => Active(Id(2000))"]);
+                await expectLogs(logFilePath, 300, ["NotAssigned => Active(Id(2000))"]);
             },
         });
 
@@ -151,7 +151,7 @@ describeSuite({
             title: "Data preservers 2001 watcher properly starts",
             test: async () => {
                 const logFilePath = `${getTmpZombiePath()}/DataPreserver-2001.log`;
-                await waitForLogs2(logFilePath, 300, ["Starting Data Preserver Assignment Watcher"]);
+                await expectLogs(logFilePath, 300, ["Starting Data Preserver Assignment Watcher"]);
             },
         });
 
@@ -191,7 +191,7 @@ describeSuite({
                 expect(onChainProfileAccount).to.be.eq(bobAccount);
                 expect(onChainProfile.assignment.toHuman().toString()).to.be.eq(["2,001", "Free"].toString());
 
-                await waitForLogs2(logFilePath, 300, ["NotAssigned => Active(Id(2001))"]);
+                await expectLogs(logFilePath, 300, ["NotAssigned => Active(Id(2001))"]);
             },
         });
 
@@ -266,7 +266,7 @@ describeSuite({
                 expect(onChainProfile.assignment.toHuman()).to.be.eq(null);
 
                 const logFilePath = `${getTmpZombiePath()}/DataPreserver-2001.log`;
-                await waitForLogs2(logFilePath, 300, ["Active(Id(2001)) => NotAssigned"]);
+                await expectLogs(logFilePath, 300, ["Active(Id(2001)) => NotAssigned"]);
             },
         });
 
@@ -362,7 +362,7 @@ describeSuite({
                 );
 
                 const logFilePath = `${getTmpZombiePath()}/DataPreserver-2001.log`;
-                await waitForLogs2(logFilePath, 300, ["NotAssigned => Active(Id(2000))"]);
+                await expectLogs(logFilePath, 300, ["NotAssigned => Active(Id(2000))"]);
 
                 const wsProvider = new WsProvider("ws://127.0.0.1:9952");
                 dataProvider2000BApi = await ApiPromise.create({ provider: wsProvider });
@@ -389,7 +389,7 @@ describeSuite({
             timeout: 180000,
             test: async () => {
                 const logFilePath = `${getTmpZombiePath()}/DataPreserver-2001.log`;
-                await waitForLogs2(logFilePath, 300, ["Active(Id(2000)) => Inactive(Id(2000))"]);
+                await expectLogs(logFilePath, 300, ["Active(Id(2000)) => Inactive(Id(2000))"]);
 
                 {
                     // pays for 10 blocks of service
