@@ -15,8 +15,8 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use crate::{
-    CollatorsInflationRatePerBlock, EpochDurationInBlocks, Perbill, SessionsPerEra,
-    ValidatorsInflationRatePerEra, DAYS,
+    tests::common::ExtBuilder, Balances, CollatorsInflationRatePerBlock, EpochDurationInBlocks,
+    Perbill, Runtime, SessionsPerEra, ValidatorsInflationRatePerEra, DAYS,
 };
 
 #[derive(Debug)]
@@ -103,35 +103,58 @@ fn formula_is_sound() {
 }
 
 fn runtime_inflations_values_are_correct_prod_or_fast(prod: bool) {
-    let sessions_per_era = SessionsPerEra::prod_if(prod);
-    let blocks_per_session = EpochDurationInBlocks::prod_if(prod);
-    let blocks_per_era = blocks_per_session * sessions_per_era;
-    let eras_per_year = (365 * DAYS) / blocks_per_era;
+    ExtBuilder::default().build().execute_with(|| {
+        let sessions_per_era = SessionsPerEra::prod_if(prod);
+        let blocks_per_session = EpochDurationInBlocks::prod_if(prod);
+        let blocks_per_era = blocks_per_session * sessions_per_era;
+        let eras_per_year = (365 * DAYS) / blocks_per_era;
 
-    let annual_inflation = 0.1; // 10%
-    let collators_fraction = 0.5; // 50% of era inflation goes to collators.
+        let annual_inflation = 0.1; // 10%
+        let collators_fraction = 0.5; // 50% of era inflation goes to collators.
 
-    let rates = compute_inflation_rates(
-        annual_inflation,
-        collators_fraction,
-        eras_per_year,
-        blocks_per_era,
-    );
-    println!("{rates:?}");
+        let rates = compute_inflation_rates(
+            annual_inflation,
+            collators_fraction,
+            eras_per_year,
+            blocks_per_era,
+        );
+        println!("{rates:?}");
 
-    let col_inf = Perbill::from_float(rates.collators_block_inflation);
-    let val_inf = Perbill::from_float(rates.validators_era_inflation);
+        let col_inf = Perbill::from_float(rates.collators_block_inflation);
+        let val_inf = Perbill::from_float(rates.validators_era_inflation);
 
-    assert_eq!(
-        CollatorsInflationRatePerBlock::prod_if(prod),
-        col_inf,
-        "Collators inflation didn't match"
-    );
-    assert_eq!(
-        ValidatorsInflationRatePerEra::prod_if(prod),
-        val_inf,
-        "Validators inflation didn't match"
-    );
+        assert_eq!(
+            CollatorsInflationRatePerBlock::prod_if(prod),
+            col_inf,
+            "Collators inflation didn't match"
+        );
+        assert_eq!(
+            ValidatorsInflationRatePerEra::prod_if(prod),
+            val_inf,
+            "Validators inflation didn't match"
+        );
+
+        assert!(
+            CollatorsInflationRatePerBlock::prod_if(prod)
+                < ValidatorsInflationRatePerEra::prod_if(prod),
+            "block inflation should be less than era inflation, are they swapped?"
+        );
+
+        // CollatorsInflationRatePerBlock must be used in the pallet that rewards
+        // container chains collators.
+        assert_eq!(
+            <Runtime as pallet_inflation_rewards::Config>::InflationRate::get(),
+            CollatorsInflationRatePerBlock::get(),
+        );
+
+        // ValidatorsInflationRatePerEra must be used in the pallet that rewards
+        // external validators. In this pallet the getter directly provides the inflated
+        // amount.
+        assert_eq!(
+            <Runtime as pallet_external_validators_rewards::Config>::EraInflationProvider::get(),
+            ValidatorsInflationRatePerEra::get() * Balances::total_issuance(),
+        );
+    })
 }
 
 #[test]
