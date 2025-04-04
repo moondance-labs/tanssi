@@ -107,5 +107,7 @@ std = [
 	"sp-storage/std",
 	"tp-data-preservers-common/std",
 	"tp-traits/std",
+	"test-relay-sproof-builder/std",
+	"dancelight-runtime/std"
 ]
 no_std = []
