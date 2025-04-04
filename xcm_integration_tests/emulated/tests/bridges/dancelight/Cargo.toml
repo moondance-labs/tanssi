@@ -25,7 +25,7 @@ snowbridge-core = { workspace = true }
 tanssi-emulated-integration-tests-common = { workspace = true }
 dancelight-emulated-chain = { workspace = true }
 dancelight-runtime-test-utils = { workspace = true }
-dancelight-runtime = { workspace = true }
+dancelight-runtime = { workspace = true, features = ["testing-helpers"] }
 sp-core = { workspace = true }
 dancelight-system-emulated-network = { workspace = true }
 alloy-sol-types = { workspace = true, default-features = true }
