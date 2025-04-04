@@ -2,7 +2,8 @@ import { expect } from "vitest";
 import fs from "node:fs/promises";
 import type { ApiPromise } from "@polkadot/api";
 import { exec } from "node:child_process";
-import { getAuthorFromDigestRange } from "utils";
+import { getAuthorFromDigestRange, sleep } from "utils";
+import type { PathLike } from "node:fs";
 
 // Read log file path and check that none of the specified logs are found.
 // Only supports single-line logs.
@@ -28,21 +29,87 @@ export async function checkLogsNotExist(logFilePath: string, logs: string[]): Pr
     }
 }
 
-/// Returns the /tmp/zombie-52234... path
+// Read log file path and check that all the logs are found in order.
+// Only supports single-line logs.
+export async function checkLogs(logFilePath: string, logs: string[]): Promise<void> {
+    const fileContent = await fs.readFile(logFilePath, "utf8");
+    const lines = fileContent.split("\n");
+
+    let logIndex = 0;
+    let lastFoundLogIndex = 0;
+
+    for (let i = 0; i < lines.length; i++) {
+        if (logIndex < logs.length && lines[i].includes(logs[logIndex])) {
+            logIndex++;
+            lastFoundLogIndex = i;
+        }
+
+        if (logIndex === logs.length) {
+            break;
+        }
+    }
+
+    if (logIndex !== logs.length) {
+        // In case of missing logs, show some context around the last found log
+        const contextSize = 3;
+        const contextStart = Math.max(0, lastFoundLogIndex - contextSize);
+        const contextEnd = Math.min(lines.length - 1, lastFoundLogIndex + contextSize);
+        const contextLines = lines.slice(contextStart, contextEnd + 1);
+        const contextStr = contextLines.join("\n");
+
+        expect.fail(
+            `Not all logs were found in the correct order. Missing log: '${logs[logIndex]}'\nContext around the last found log:\n${contextStr}`
+        );
+    }
+}
+
+// Same as `checkLogs` but return true if all logs are found in order, and false otherwise
+export async function checkLogsNoFail(logFilePath: string, logs: string[]): Promise<boolean> {
+    const fileContent = await fs.readFile(logFilePath, "utf8");
+    const lines = fileContent.split("\n");
+
+    let logIndex = 0;
+
+    for (let i = 0; i < lines.length; i++) {
+        if (logIndex < logs.length && lines[i].includes(logs[logIndex])) {
+            logIndex++;
+        }
+
+        if (logIndex === logs.length) {
+            break;
+        }
+    }
+
+    return logIndex === logs.length;
+}
+
+export async function waitForLogs(logFilePath: string, timeout: number, logs: string[]): Promise<boolean> {
+    for (let i = 0; i < timeout; i++) {
+        if (await checkLogsNoFail(logFilePath, logs)) {
+            return true;
+        }
+
+        await sleep(1000);
+    }
+
+    return false;
+}
+
+// Returns the /tmp/zombie-52234... path
 export function getTmpZombiePath() {
     return process.env.MOON_ZOMBIE_DIR;
 }
 
-/// Verify that the next `numBlocks` have no more than `numAuthors` different authors
-///
-/// Concepts: blocks and slots.
-/// A slot is a time-based period where one author can propose a block.
-/// Block numbers are always consecutive, but some slots may have no block.
-/// One session consists of a fixed number of blocks, but a variable number of slots.
-///
-/// We want to ensure that all the eligible block authors are trying to propose blocks.
-///
-/// If the authority set changes between `blockStart` and `blockEnd`, this test returns an error.
+// Verify that the next `numBlocks` have no more than `numAuthors` different authors
+//
+// Concepts: blocks and slots.
+// A slot is a time-based period where one author can propose a block.
+// Block numbers are always consecutive, but some slots may have no block.
+// One session consists of a fixed number of blocks, but a variable number of slots.
+//
+// We want to ensure that all the eligible block authors are trying to propose blocks.
+//
+// If the authority set changes between `blockStart` and `blockEnd`, this test returns an error.
 export async function countUniqueBlockAuthors(
     paraApi: ApiPromise,
     sessionPeriod: number,
@@ -89,6 +156,39 @@ export async function countUniqueBlockAuthors(
             ", block numbers: ",
             blockNumbers,
             `uniq.length=${uniq.length}, numAuthors=${numAuthors}`
+        );
+        expect(false).to.be.true;
+    }
+}
+
+// Verify that the next `numBlocks` have exactly `numAuthors` different authors
+export async function countUniqueBlockAuthorsExact(
+    paraApi: ApiPromise,
+    blockStart: number,
+    blockEnd: number,
+    numAuthors: number,
+    authorities: string[]
+) {
+    const actualAuthors = [];
+    const blockNumbers = [];
+
+    const authors = await getAuthorFromDigestRange(paraApi, blockStart, blockEnd);
+    for (let i = 0; i < authors.length; i++) {
+        const [blockNum, author] = authors[i];
+        blockNumbers.push(blockNum);
+        actualAuthors.push(author);
+    }
+
+    const uniq = [...new Set(actualAuthors)];
+
+    if (uniq.length !== numAuthors) {
+        console.error(
+            "Mismatch between authorities and actual block authors: authorities: ",
+            authorities,
+            ", actual authors: ",
+            actualAuthors,
+            ", block numbers: ",
+            blockNumbers
         );
         expect(false).to.be.true;
     }
@@ -186,40 +286,7 @@ const execPromisify = (command: string) => {
     });
 };
 
-/// Verify that the next `numBlocks` have exactly `numAuthors` different authors
-export async function countUniqueBlockAuthorsExact(
-    paraApi: ApiPromise,
-    blockStart: number,
-    blockEnd: number,
-    numAuthors: number,
-    authorities: string[]
-) {
-    const actualAuthors = [];
-    const blockNumbers = [];
-
-    const authors = await getAuthorFromDigestRange(paraApi, blockStart, blockEnd);
-    for (let i = 0; i < authors.length; i++) {
-        const [blockNum, author] = authors[i];
-        blockNumbers.push(blockNum);
-        actualAuthors.push(author);
-    }
-
-    const uniq = [...new Set(actualAuthors)];
-
-    if (uniq.length !== numAuthors) {
-        console.error(
-            "Mismatch between authorities and actual block authors: authorities: ",
-            authorities,
-            ", actual authors: ",
-            actualAuthors,
-            ", block numbers: ",
-            blockNumbers
-        );
-        expect(false).to.be.true;
-    }
-}
-
-export async function directoryExists(directoryPath) {
+export async function directoryExists(directoryPath: PathLike) {
     try {
         await fs.access(directoryPath, fs.constants.F_OK);
         return true;
