@@ -257,7 +257,7 @@ fn many_candidates_mixed_pools() {
                             Event::RequestedDelegate {
                                 candidate: action.candidate,
                                 delegator: action.delegator,
-                                pool: TargetPool::AutoCompounding,
+                                pool: ActivePoolKind::AutoCompounding,
                                 pending: action.amount,
                             },
                             Event::StakedAutoCompounding {
@@ -269,7 +269,7 @@ fn many_candidates_mixed_pools() {
                             Event::ExecutedDelegate {
                                 candidate: action.candidate,
                                 delegator: action.delegator,
-                                pool: TargetPool::AutoCompounding,
+                                pool: ActivePoolKind::AutoCompounding,
                                 staked: action.amount,
                                 released: 0,
                             },
@@ -304,7 +304,7 @@ fn many_candidates_mixed_pools() {
                             Event::RequestedDelegate {
                                 candidate: action.candidate,
                                 delegator: action.delegator,
-                                pool: TargetPool::ManualRewards,
+                                pool: ActivePoolKind::ManualRewards,
                                 pending: action.amount,
                             },
                             Event::StakedManualRewards {
@@ -316,7 +316,7 @@ fn many_candidates_mixed_pools() {
                             Event::ExecutedDelegate {
                                 candidate: action.candidate,
                                 delegator: action.delegator,
-                                pool: TargetPool::ManualRewards,
+                                pool: ActivePoolKind::ManualRewards,
                                 staked: action.amount,
                                 released: 0,
                             },
@@ -352,7 +352,7 @@ fn many_candidates_mixed_pools() {
                             Event::RequestedUndelegate {
                                 candidate: action.candidate,
                                 delegator: action.delegator,
-                                from: TargetPool::AutoCompounding,
+                                from: ActivePoolKind::AutoCompounding,
                                 pending: round_down(action.amount, 3),
                                 released: action.amount - round_down(action.amount, 3),
                             },

@@ -17,7 +17,7 @@
 use {
     super::*,
     crate::{
-        pools::Pool,
+        pools::{ActivePoolKind, Pool, PoolKind},
         traits::{IsCandidateEligible, Timer},
         HoldReason, Pallet as PooledStaking,
         PendingOperationKey::{JoiningAutoCompounding, JoiningManualRewards},
@@ -94,7 +94,7 @@ mod benchmarks {
         PooledStaking::<T>::request_delegate(
             RawOrigin::Signed(caller_candidate.clone()).into(),
             caller_candidate.clone(),
-            TargetPool::AutoCompounding,
+            ActivePoolKind::AutoCompounding,
             min_candidate_stk::<T>(),
         )?;
 
@@ -102,7 +102,7 @@ mod benchmarks {
         PooledStaking::<T>::request_delegate(
             RawOrigin::Signed(caller_candidate.clone()).into(),
             caller_candidate.clone(),
-            TargetPool::ManualRewards,
+            ActivePoolKind::ManualRewards,
             min_candidate_stk::<T>(),
         )?;
 
@@ -136,7 +136,7 @@ mod benchmarks {
         PooledStaking::<T>::request_delegate(
             RawOrigin::Signed(caller_candidate.clone()).into(),
             caller_candidate.clone(),
-            TargetPool::ManualRewards,
+            ActivePoolKind::ManualRewards,
             min_candidate_stk::<T>(),
         )?;
 
@@ -146,7 +146,7 @@ mod benchmarks {
         _(
             RawOrigin::Signed(caller_delegator.clone()),
             caller_candidate.clone(),
-            TargetPool::AutoCompounding,
+            ActivePoolKind::AutoCompounding,
             min_candidate_stk::<T>() * 2u32.into(),
         );
 
@@ -155,7 +155,7 @@ mod benchmarks {
             Event::RequestedDelegate {
                 candidate: caller_candidate.clone(),
                 delegator: caller_delegator,
-                pool: TargetPool::AutoCompounding,
+                pool: ActivePoolKind::AutoCompounding,
                 pending: min_candidate_stk::<T>() * 2u32.into(),
             }
             .into(),
@@ -191,7 +191,7 @@ mod benchmarks {
             PooledStaking::<T>::request_delegate(
                 RawOrigin::Signed(caller.clone()).into(),
                 candidate.clone(),
-                TargetPool::AutoCompounding,
+                ActivePoolKind::AutoCompounding,
                 min_candidate_stk::<T>(),
             )?;
 
@@ -215,7 +215,7 @@ mod benchmarks {
             Event::ExecutedDelegate {
                 candidate: last_candidate.clone(),
                 delegator: caller,
-                pool: TargetPool::AutoCompounding,
+                pool: ActivePoolKind::AutoCompounding,
                 staked: min_candidate_stk::<T>(),
                 released: 0u32.into(),
             }
@@ -235,7 +235,7 @@ mod benchmarks {
         PooledStaking::<T>::request_delegate(
             RawOrigin::Signed(caller.clone()).into(),
             caller.clone(),
-            TargetPool::AutoCompounding,
+            ActivePoolKind::AutoCompounding,
             min_candidate_stk::<T>(),
         )?;
 
@@ -263,7 +263,7 @@ mod benchmarks {
         _(
             RawOrigin::Signed(caller.clone()),
             caller.clone(),
-            TargetPool::AutoCompounding,
+            ActivePoolKind::AutoCompounding,
             SharesOrStake::Stake(stake_to_remove),
         );
 
@@ -278,7 +278,7 @@ mod benchmarks {
             Event::RequestedUndelegate {
                 candidate: caller.clone(),
                 delegator: caller,
-                from: TargetPool::AutoCompounding,
+                from: ActivePoolKind::AutoCompounding,
                 pending: stake_to_remove - dust,
                 released: dust,
             }
@@ -310,14 +310,14 @@ mod benchmarks {
             PooledStaking::<T>::request_delegate(
                 RawOrigin::Signed(candidate.clone()).into(),
                 candidate.clone(),
-                TargetPool::AutoCompounding,
+                ActivePoolKind::AutoCompounding,
                 min_candidate_stk::<T>(),
             )?;
 
             PooledStaking::<T>::request_delegate(
                 RawOrigin::Signed(caller.clone()).into(),
                 candidate.clone(),
-                TargetPool::ManualRewards,
+                ActivePoolKind::ManualRewards,
                 min_candidate_stk::<T>(),
             )?;
 
@@ -395,21 +395,21 @@ mod benchmarks {
         PooledStaking::<T>::request_delegate(
             RawOrigin::Signed(candidate.clone()).into(),
             candidate.clone(),
-            TargetPool::AutoCompounding,
+            ActivePoolKind::AutoCompounding,
             min_candidate_stk::<T>(),
         )?;
 
         PooledStaking::<T>::request_delegate(
             RawOrigin::Signed(caller.clone()).into(),
             candidate.clone(),
-            TargetPool::AutoCompounding,
+            ActivePoolKind::AutoCompounding,
             min_candidate_stk::<T>(),
         )?;
 
         PooledStaking::<T>::request_delegate(
             RawOrigin::Signed(caller_2.clone()).into(),
             candidate.clone(),
-            TargetPool::AutoCompounding,
+            ActivePoolKind::AutoCompounding,
             min_candidate_stk::<T>(),
         )?;
 
@@ -430,7 +430,7 @@ mod benchmarks {
             RawOrigin::Signed(caller.clone()),
             candidate.clone(),
             caller.clone(),
-            AllTargetPool::Joining,
+            PoolKind::Joining,
         );
 
         // After this hold should have been rebalanced
@@ -462,7 +462,7 @@ mod benchmarks {
             PooledStaking::<T>::request_delegate(
                 RawOrigin::Signed(candidate.clone()).into(),
                 candidate.clone(),
-                TargetPool::AutoCompounding,
+                ActivePoolKind::AutoCompounding,
                 min_candidate_stk::<T>(),
             )?;
 
@@ -491,7 +491,7 @@ mod benchmarks {
         PooledStaking::<T>::request_delegate(
             RawOrigin::Signed(caller.clone()).into(),
             caller.clone(),
-            TargetPool::AutoCompounding,
+            ActivePoolKind::AutoCompounding,
             source_stake,
         )?;
 
@@ -514,7 +514,7 @@ mod benchmarks {
         _(
             RawOrigin::Signed(caller.clone()),
             caller.clone(),
-            TargetPool::AutoCompounding,
+            ActivePoolKind::AutoCompounding,
             SharesOrStake::Stake(source_stake),
         );
 
@@ -535,7 +535,7 @@ mod benchmarks {
             Event::SwappedPool {
                 candidate: caller.clone(),
                 delegator: caller,
-                source_pool: TargetPool::AutoCompounding,
+                source_pool: ActivePoolKind::AutoCompounding,
                 source_shares,
                 source_stake,
                 target_shares,
@@ -563,13 +563,13 @@ mod benchmarks {
         PooledStaking::<T>::request_delegate(
             RawOrigin::Signed(caller.clone()).into(),
             caller.clone(),
-            TargetPool::AutoCompounding,
+            ActivePoolKind::AutoCompounding,
             source_stake,
         )?;
         PooledStaking::<T>::request_delegate(
             RawOrigin::Signed(caller.clone()).into(),
             caller.clone(),
-            TargetPool::ManualRewards,
+            ActivePoolKind::ManualRewards,
             source_stake,
         )?;
 
