@@ -1,19 +1,20 @@
 [package]
 name = "simple-template-dancelight-emulated-chain"
-authors.workspace = true
+description = "Dancelight emulated chain"
 edition = "2021"
 license = "GPL-3.0-only"
-version = "0.0.0"
-description = "Dancelight emulated chain"
 publish = false
+version = "0.0.0"
+[package.authors]
+workspace = true
 
 [lints]
 workspace = true
 
 [dependencies]
-sp-core = { workspace = true }
+container-chain-template-frontier-runtime  = { workspace = true, features = [ "std" ] }
+emulated-integration-tests-common = { workspace = true }
 hex-literal = { workspace = true }
+sp-core = { workspace = true }
 xcm = { workspace = true }
 xcm-emulator = { workspace = true }
-emulated-integration-tests-common = { workspace = true }
-container-chain-template-frontier-runtime  = { workspace = true, features = [ "std" ] }

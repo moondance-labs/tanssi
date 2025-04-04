@@ -1,49 +1,50 @@
 [package]
 name = "bridge-dancelight-integration-tests"
-authors.workspace = true
+description = "Bridge Hub Rococo runtime integration tests with xcm-emulator"
 edition = "2021"
 license = "GPL-3.0-only"
-version = "0.0.0"
-description = "Bridge Hub Rococo runtime integration tests with xcm-emulator"
 publish = false
+version = "0.0.0"
+[package.authors]
+workspace = true
 
 [lints]
 workspace = true
 
 [dependencies]
-parity-scale-codec = { workspace = true, features = [ "derive", "max-encoded-len" ] }
-keyring = { workspace = true }
-xcm-emulator = { workspace = true }
-frame-support = { workspace = true, features = [ "tuples-96" ] }
-xcm = { workspace = true }
-frame-system = { workspace = true }
-snowbridge-pallet-inbound-queue = { workspace = true }
-snowbridge-core = { workspace = true }
-tanssi-emulated-integration-tests-common = { workspace = true }
-dancelight-runtime-test-utils = { workspace = true }
-dancelight-runtime = { workspace = true, features = ["testing-helpers"] }
-sp-core = { workspace = true }
-dancelight-system-emulated-network = { workspace = true }
 alloy-sol-types = { workspace = true, default-features = true }
-tp-bridge = { workspace = true }
+dancelight-runtime = { workspace = true, features = [ "testing-helpers" ] }
+dancelight-runtime-test-utils = { workspace = true }
+dancelight-system-emulated-network = { workspace = true }
+frame-support = { workspace = true, features = [ "tuples-96" ] }
+frame-system = { workspace = true }
+keyring = { workspace = true }
+parity-scale-codec = { workspace = true, features = [ "derive", "max-encoded-len" ] }
+snowbridge-core = { workspace = true }
+snowbridge-pallet-inbound-queue = { workspace = true }
 snowbridge-router-primitives = { workspace = true }
+sp-core = { workspace = true }
+tanssi-emulated-integration-tests-common = { workspace = true }
+tp-bridge = { workspace = true }
+xcm = { workspace = true }
+xcm-emulator = { workspace = true }
 
 [features]
 default = [ "std" ]
 std = [
-    "parity-scale-codec/std",
-    "keyring/std",
-    "frame-support/std",
-    "xcm/std",
-    "frame-system/std",
-    "snowbridge-pallet-inbound-queue/std",
-    "snowbridge-core/std",
-    "dancelight-runtime-test-utils/std",
-    "dancelight-runtime/std",
-    "sp-core/std",
-    "alloy-sol-types/std",
-    "tp-bridge/std",
-    "snowbridge-router-primitives/std"
+	"alloy-sol-types/std",
+	"dancelight-runtime-test-utils/std",
+	"dancelight-runtime/std",
+	"frame-support/std",
+	"frame-system/std",
+	"keyring/std",
+	"parity-scale-codec/std",
+	"snowbridge-core/std",
+	"snowbridge-pallet-inbound-queue/std",
+	"snowbridge-router-primitives/std",
+	"sp-core/std",
+	"tp-bridge/std",
+	"xcm/std",
 ]
 no_std = []
 testing-helpers = []

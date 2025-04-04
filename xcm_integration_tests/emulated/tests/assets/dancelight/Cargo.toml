@@ -1,27 +1,28 @@
 [package]
 name = "asset-dancelight-integration-tests"
-authors.workspace = true
+description = "Bridge Hub Rococo runtime integration tests with xcm-emulator"
 edition = "2021"
 license = "GPL-3.0-only"
-version = "0.0.0"
-description = "Bridge Hub Rococo runtime integration tests with xcm-emulator"
 publish = false
+version = "0.0.0"
+[package.authors]
+workspace = true
 
 [lints]
 workspace = true
 
 [dependencies]
-xcm-emulator = { workspace = true }
-sp-runtime = { workspace = true }
-frame-support = { workspace = true, features = [ "tuples-96" ] }
-pallet-xcm = { workspace = true }
-xcm = { workspace = true }
 container-chain-template-simple-runtime = { workspace = true }
-pallet-message-queue = { workspace = true }
-dancelight-runtime = { workspace = true }
-xcm-executor = { workspace = true }
 dancelight-emulated-chain = { workspace = true }
-dancelight-system-emulated-network  = { workspace = true }
-simple-template-dancelight-emulated-chain = { workspace = true }
+dancelight-runtime = { workspace = true }
 dancelight-runtime-test-utils = { workspace = true }
+dancelight-system-emulated-network  = { workspace = true }
+frame-support = { workspace = true, features = [ "tuples-96" ] }
+pallet-message-queue = { workspace = true }
+pallet-xcm = { workspace = true }
 primitives = { workspace = true }
+simple-template-dancelight-emulated-chain = { workspace = true }
+sp-runtime = { workspace = true }
+xcm = { workspace = true }
+xcm-emulator = { workspace = true }
+xcm-executor = { workspace = true }

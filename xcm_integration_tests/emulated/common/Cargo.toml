@@ -1,50 +1,51 @@
 [package]
 name = "tanssi-emulated-integration-tests-common"
-authors.workspace = true
+description = "Common resources for integration testing with xcm-emulator"
 edition = "2021"
 license = "GPL-3.0-only"
-version = "0.0.0"
-description = "Common resources for integration testing with xcm-emulator"
 publish = false
+version = "0.0.0"
+[package.authors]
+workspace = true
 
 [lints]
 workspace = true
 
 [dependencies]
 # Substrate
+babe-primitives = { workspace = true }
 frame-support = { workspace = true, default-features = true }
 pallet-message-queue = { workspace = true, default-features = true }
 sc-consensus-grandpa = { workspace = true, default-features = true }
 sp-core = { workspace = true, default-features = true }
 sp-std = { workspace = true }
-babe-primitives = { workspace = true }
 
 # Polkadot
-xcm = { workspace = true, default-features = true }
 frame-system = { workspace = true }
+xcm = { workspace = true, default-features = true }
 
 # Cumulus
 cumulus-primitives-core = { workspace = true, default-features = true }
 xcm-emulator = { workspace = true, default-features = true }
 
 # Bridges
-snowbridge-pallet-outbound-queue = { workspace = true }
-keyring = { workspace = true }
 dancelight-runtime = { workspace = true }
+keyring = { workspace = true }
+snowbridge-pallet-outbound-queue = { workspace = true }
 
 [features]
 default = [ "std" ]
 std = [
-    "babe-primitives/std",
-    "frame-support/std",
-    "frame-system/std",
-    "pallet-message-queue/std",
-    "sp-core/std",
-    "sp-std/std",
-    "xcm/std",
-    "cumulus-primitives-core/std",
-    "snowbridge-pallet-outbound-queue/std",
-    "keyring/std",
-    "dancelight-runtime/std"
+	"babe-primitives/std",
+	"cumulus-primitives-core/std",
+	"dancelight-runtime/std",
+	"frame-support/std",
+	"frame-system/std",
+	"keyring/std",
+	"pallet-message-queue/std",
+	"snowbridge-pallet-outbound-queue/std",
+	"sp-core/std",
+	"sp-std/std",
+	"xcm/std",
 ]
 no_std = []

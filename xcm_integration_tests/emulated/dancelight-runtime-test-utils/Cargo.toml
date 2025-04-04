@@ -1,11 +1,12 @@
 [package]
 name = "dancelight-runtime-test-utils"
-authors.workspace = true
+description = "Dancelight runtime test utils"
 edition = "2021"
 license = "GPL-3.0-only"
-version = "0.0.0"
-description = "Dancelight runtime test utils"
 publish = false
+version = "0.0.0"
+[package.authors]
+workspace = true
 
 [lints]
 workspace = true
@@ -18,15 +19,9 @@ scale-info = { workspace = true, features = [ "derive" ] }
 babe-primitives = { workspace = true }
 beefy-primitives = { workspace = true }
 dancelight-runtime = { workspace = true }
-grandpa_primitives = { workspace = true }
-sp-core = { workspace = true }
-sp-io = { workspace = true }
-sp-keystore = { workspace = true }
-sp-runtime = { workspace = true }
-sp-std = { workspace = true }
-sp-storage = { workspace = true }
 frame-support = { workspace = true, features = [ "tuples-96" ] }
 frame-system = { workspace = true }
+grandpa_primitives = { workspace = true }
 nimbus-primitives = { workspace = true }
 pallet-babe = { workspace = true }
 pallet-balances = { workspace = true }
@@ -39,6 +34,12 @@ pallet-xcm = { workspace = true }
 primitives = { workspace = true }
 runtime-common = { workspace = true }
 runtime-parachains = { workspace = true }
+sp-core = { workspace = true }
+sp-io = { workspace = true }
+sp-keystore = { workspace = true }
+sp-runtime = { workspace = true }
+sp-std = { workspace = true }
+sp-storage = { workspace = true }
 
 # Cumulus
 cumulus-primitives-core = { workspace = true }
@@ -55,20 +56,20 @@ pallet-registrar-runtime-api = { workspace = true }
 pallet-services-payment = { workspace = true }
 
 # Bridges
+finality-grandpa = { workspace = true, default-features = true, features = [ "derive-codec" ] }
+milagro-bls = { workspace = true, features = [ "std" ] }
+rand = { workspace = true, features = [ "std", "std_rng" ] }
 snowbridge-beacon-primitives = { workspace = true }
 snowbridge-core = { workspace = true }
 snowbridge-pallet-system = { workspace = true }
-rand = { workspace = true, features = [ "std", "std_rng" ] }
-finality-grandpa = { workspace = true, default-features = true, features = [ "derive-codec" ] }
 test-relay-sproof-builder = { workspace = true }
-milagro-bls = { workspace = true, features = [ "std" ] }
 
 [features]
 default = [ "std" ]
 std = [
-	"bitvec/std",
 	"babe-primitives/std",
 	"beefy-primitives/std",
+	"bitvec/std",
 	"cumulus-primitives-core/std",
 	"frame-support/std",
 	"frame-system/std",
@@ -105,6 +106,6 @@ std = [
 	"sp-std/std",
 	"sp-storage/std",
 	"tp-data-preservers-common/std",
-	"tp-traits/std"
+	"tp-traits/std",
 ]
 no_std = []
