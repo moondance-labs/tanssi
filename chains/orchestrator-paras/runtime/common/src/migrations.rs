@@ -559,7 +559,7 @@ where
         frame_support::traits::OnRuntimeUpgrade,
 {
     fn friendly_name(&self) -> &str {
-        "MM_MigrateToLatestXcmVersion"
+        "MM_MigrateToLatestXcmVersion5"
     }
 
     fn migrate(&self, _available_weight: Weight) -> Weight {
@@ -1018,6 +1018,56 @@ where
     }
 }
 
+pub struct MigrateParaSchedulerToV3<Runtime>(pub PhantomData<Runtime>);
+
+impl<Runtime> Migration for MigrateParaSchedulerToV3<Runtime>
+where
+    Runtime: runtime_parachains::scheduler::Config,
+{
+    fn friendly_name(&self) -> &str {
+        "TM_MigrateParaSchedulerToV3"
+    }
+
+    fn migrate(&self, _available_weight: Weight) -> Weight {
+        runtime_parachains::scheduler::migration::MigrateV2ToV3::<Runtime>::on_runtime_upgrade()
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        Ok(vec![])
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(&self, _state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        Ok(())
+    }
+}
+
+pub struct MigrateParaSharedToV1<Runtime>(pub PhantomData<Runtime>);
+
+impl<Runtime> Migration for MigrateParaSharedToV1<Runtime>
+where
+    Runtime: runtime_parachains::shared::Config,
+{
+    fn friendly_name(&self) -> &str {
+        "TM_MigrateParaSharedToV1"
+    }
+
+    fn migrate(&self, _available_weight: Weight) -> Weight {
+        runtime_parachains::shared::migration::MigrateToV1::<Runtime>::on_runtime_upgrade()
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        Ok(vec![])
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(&self, _state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        Ok(())
+    }
+}
+
 pub struct MigrateStreamPaymentNewConfigFields<Runtime>(pub PhantomData<Runtime>);
 impl<Runtime> Migration for MigrateStreamPaymentNewConfigFields<Runtime>
 where
@@ -1220,6 +1270,7 @@ where
         //let migrate_registrar_reserves = RegistrarReserveToHoldMigration::<Runtime>(Default::default());
         let migrate_config_full_rotation_mode = MigrateConfigurationAddFullRotationMode::<Runtime>(Default::default());
         let migrate_stream_payment_new_config_items = MigrateStreamPaymentNewConfigFields::<Runtime>(Default::default());
+        let migrate_pallet_xcm_v5 = MigrateToLatestXcmVersion::<Runtime>(Default::default());
 
         vec![
             // Applied in runtime 200
@@ -1260,6 +1311,7 @@ where
             //Box::new(migrate_config_max_parachain_percentage),
             Box::new(migrate_config_full_rotation_mode),
             Box::new(migrate_stream_payment_new_config_items),
+            Box::new(migrate_pallet_xcm_v5),
         ]
     }
 }
@@ -1276,6 +1328,9 @@ where
     >,
     Runtime: pallet_external_validator_slashes::Config,
     Runtime: snowbridge_pallet_system::Config,
+    Runtime: runtime_parachains::scheduler::Config,
+    Runtime: runtime_parachains::shared::Config,
+    Runtime: pallet_xcm::Config,
 {
     fn get_migrations() -> Vec<Box<dyn Migration>> {
         let migrate_config_full_rotation_mode =
@@ -1285,7 +1340,9 @@ where
             BondedErasTimestampMigration::<Runtime>(Default::default());
         let snowbridge_ethereum_system_xcm_v5 =
             SnowbridgeEthereumSystemXcmV5::<Runtime>(Default::default());
-
+        let migrate_pallet_xcm_v5 = MigrateToLatestXcmVersion::<Runtime>(Default::default());
+        let para_shared_v1_migration = MigrateParaSharedToV1::<Runtime>(Default::default());
+        let para_scheduler_v3_migration = MigrateParaSchedulerToV3::<Runtime>(Default::default());
         vec![
             // Applied in runtime 1000
             //Box::new(migrate_mmr_leaf_pallet),
@@ -1294,6 +1351,9 @@ where
             Box::new(migrate_config_full_rotation_mode),
             Box::new(external_validator_slashes_bonded_eras_timestamp),
             Box::new(snowbridge_ethereum_system_xcm_v5),
+            Box::new(migrate_pallet_xcm_v5),
+            Box::new(para_shared_v1_migration),
+            Box::new(para_scheduler_v3_migration),
         ]
     }
 }
