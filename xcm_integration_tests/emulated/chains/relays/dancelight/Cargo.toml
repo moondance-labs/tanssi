@@ -18,3 +18,4 @@ dancelight-runtime-test-utils = { workspace = true }
 tanssi-emulated-integration-tests-common = { workspace = true }
 xcm = { workspace = true }
 xcm-emulator = { workspace = true }
+runtime-parachains = { workspace = true }

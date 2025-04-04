@@ -28,6 +28,7 @@ tanssi-emulated-integration-tests-common = { workspace = true }
 tp-bridge = { workspace = true }
 xcm = { workspace = true }
 xcm-emulator = { workspace = true }
+dancelight-emulated-chain = { workspace = true }
 
 [features]
 default = [ "std" ]

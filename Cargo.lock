@@ -1399,6 +1399,7 @@ name = "bridge-dancelight-integration-tests"
 version = "0.0.0"
 dependencies = [
  "alloy-sol-types",
+ "dancelight-emulated-chain",
  "dancelight-runtime",
  "dancelight-runtime-test-utils",
  "dancelight-system-emulated-network",
@@ -3452,6 +3453,7 @@ dependencies = [
  "dancelight-runtime",
  "dancelight-runtime-constants",
  "dancelight-runtime-test-utils",
+ "polkadot-runtime-parachains",
  "staging-xcm",
  "tanssi-emulated-integration-tests-common",
  "xcm-emulator",
@@ -3692,6 +3694,7 @@ dependencies = [
  "container-chain-template-frontier-runtime",
  "container-chain-template-simple-runtime",
  "cumulus-primitives-core",
+ "dancelight-emulated-chain",
  "dancelight-runtime",
  "dancelight-runtime-constants",
  "dancelight-runtime-test-utils",

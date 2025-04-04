@@ -15,9 +15,9 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    // dancelight_emulated_chain::DancelightRelayPallet,
+    dancelight_emulated_chain::DancelightRelayPallet,
     dancelight_system_emulated_network::{
-        DancelightRelay as Dancelight, DancelightRelayPallet, DancelightSender,
+        DancelightRelay as Dancelight, DancelightSender,
         SimpleTemplateDancelightEmptyReceiver as SimpleTemplateEmptyReceiver,
         SimpleTemplateDancelightPara as SimpleTemplateDancelight,
         SimpleTemplateDancelightParaPallet,

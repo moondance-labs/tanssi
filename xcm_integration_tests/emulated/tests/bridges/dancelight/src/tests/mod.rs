@@ -21,11 +21,10 @@ mod bridge_to_eth;
 mod imports {
     pub use {
         alloy_sol_types::SolEvent,
-        // dancelight_emulated_chain::DancelightRelayPallet,
+        dancelight_emulated_chain::DancelightRelayPallet,
         dancelight_runtime::Runtime,
         dancelight_runtime_test_utils::mock_snowbridge_message_proof,
         dancelight_system_emulated_network::DancelightRelay as Dancelight,
-        dancelight_system_emulated_network::DancelightRelayPallet,
         dancelight_system_emulated_network::DancelightSender,
         dancelight_system_emulated_network::SimpleTemplateDancelightPara as DancelightPara,
         frame_support::assert_ok,
