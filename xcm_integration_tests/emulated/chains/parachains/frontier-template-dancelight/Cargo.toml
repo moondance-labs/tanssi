@@ -12,10 +12,10 @@ workspace = true
 workspace = true
 
 [dependencies]
+container-chain-template-frontier-runtime = { workspace = true }
+cumulus-primitives-core = { workspace = true }
 emulated-integration-tests-common = { workspace = true }
+hex-literal = { workspace = true }
 sp-core = { workspace = true }
 xcm = { workspace = true }
 xcm-emulator = { workspace = true }
-container-chain-template-frontier-runtime = { workspace = true }
-cumulus-primitives-core = { workspace = true }
-hex-literal = { workspace = true }

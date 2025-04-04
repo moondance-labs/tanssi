@@ -71,6 +71,7 @@ std = [
 	"beefy-primitives/std",
 	"bitvec/std",
 	"cumulus-primitives-core/std",
+	"dancelight-runtime/std",
 	"frame-support/std",
 	"frame-system/std",
 	"grandpa_primitives/std",
@@ -105,9 +106,8 @@ std = [
 	"sp-runtime/std",
 	"sp-std/std",
 	"sp-storage/std",
+	"test-relay-sproof-builder/std",
 	"tp-data-preservers-common/std",
 	"tp-traits/std",
-	"test-relay-sproof-builder/std",
-	"dancelight-runtime/std"
 ]
 no_std = []

@@ -13,6 +13,7 @@ workspace = true
 
 [dependencies]
 alloy-sol-types = { workspace = true, default-features = true }
+dancelight-emulated-chain = { workspace = true }
 dancelight-runtime = { workspace = true, features = [ "testing-helpers" ] }
 dancelight-runtime-test-utils = { workspace = true }
 dancelight-system-emulated-network = { workspace = true }
@@ -28,7 +29,6 @@ tanssi-emulated-integration-tests-common = { workspace = true }
 tp-bridge = { workspace = true }
 xcm = { workspace = true }
 xcm-emulator = { workspace = true }
-dancelight-emulated-chain = { workspace = true }
 
 [features]
 default = [ "std" ]
