@@ -53,3 +53,4 @@ std = [
     "snowbridge-router-primitives/std"
 ]
 no_std = []
+testing-helpers = []
