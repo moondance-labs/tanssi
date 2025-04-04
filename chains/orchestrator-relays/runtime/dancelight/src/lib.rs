@@ -1980,7 +1980,6 @@ pub type UncheckedExtrinsic =
     generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, TxExtension>;
 
 /// The runtime migrations per release.
-#[allow(deprecated, missing_docs)]
 pub mod migrations {
     /// Unreleased migrations. Add new ones here:
     pub type Unreleased = ();
