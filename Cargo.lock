@@ -3940,6 +3940,7 @@ dependencies = [
  "staging-xcm-builder",
  "staging-xcm-executor",
  "static_assertions",
+ "substrate-wasm-builder",
  "tanssi-emulated-integration-tests-common",
  "tanssi-runtime-common",
  "test-relay-sproof-builder",
