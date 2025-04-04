@@ -7,7 +7,6 @@ use {
     frame_system::Pallet as SystemPallet,
     sc_consensus_grandpa::AuthorityId as GrandpaId,
     sp_core::{crypto::get_public_from_string_or_panic, sr25519},
-    sp_runtime::{traits::Verify, MultiSignature},
     xcm_emulator::{Parachain, RelayChain},
 };
 
@@ -34,8 +33,6 @@ where
     // Execute empty block in parachain to trigger bridge message
     P::execute_with(|| {});
 }
-
-type AccountPublic = <MultiSignature as Verify>::Signer;
 
 /// Helper function to generate stash, controller and session key from seed
 pub fn get_authority_keys_from_seed_no_beefy(
