@@ -715,7 +715,7 @@ where
         // take the biggest period possible.
         let period = BlockHashCount::get()
             .checked_next_power_of_two()
-            .map(|c| c / 2)
+            .map(|c| c.saturating_div(2))
             .unwrap_or(2) as u64;
 
         let current_block = System::block_number()
@@ -3294,7 +3294,7 @@ impl tanssi_initializer::ApplyNewSession<Runtime> for OwnApplySession {
         // the current collators and their keys.
         // In contrast, we have the keys for the validators only
         TanssiAuthorityMapping::initializer_on_new_session(
-            &(session_index + 1),
+            &(session_index.saturating_add(1)),
             &queued_amalgamated,
         );
 
@@ -3463,7 +3463,7 @@ impl ParaIdAssignmentHooksImpl {
         // If the para has been assigned collators for this session it must have enough block credits
         // for the current and the next session.
         let block_credits_needed = if currently_assigned.contains(&para_id) {
-            blocks_per_session * 2
+            blocks_per_session.saturating_mul(2)
         } else {
             blocks_per_session
         };
@@ -3531,7 +3531,7 @@ impl<AC> ParaIdAssignmentHooks<BalanceOf<Runtime>, AC> for ParaIdAssignmentHooks
                 )
             })
             .inspect(|weight| {
-                total_weight += *weight;
+                total_weight.saturating_add(*weight);
             })
             .is_ok()
         });
@@ -3545,7 +3545,7 @@ impl<AC> ParaIdAssignmentHooks<BalanceOf<Runtime>, AC> for ParaIdAssignmentHooks
 
         let blocks_per_session = EpochDurationInBlocks::get();
         // Enough credits to run any benchmark
-        let block_credits = 20 * blocks_per_session;
+        let block_credits = blocks_per_session.saturating_mul(20);
         let session_credits = 20;
 
         for para_id in para_ids {
@@ -3599,7 +3599,7 @@ impl Get<Option<CoreAllocationConfiguration>> for GetCoreAllocationConfiguration
         // We do not have to check for session ending as new session always starts at block initialization which means
         // whenever this is called, we are either in old session or in start of a one
         // as on block initialization epoch index have been incremented and by extension session has been changed.
-        let session_index_to_consider = Session::current_index() + 1;
+        let session_index_to_consider = Session::current_index().saturating_add(1);
 
         let max_parachain_percentage =
             CollatorConfiguration::max_parachain_cores_percentage(session_index_to_consider)
@@ -3679,7 +3679,7 @@ mod benchmark_helpers {
 
         System::reset_events();
         System::initialize(
-            &(System::block_number() + 1),
+            &(System::block_number().saturating_add(1)),
             &System::parent_hash(),
             &pre_digest,
         );
@@ -3690,7 +3690,7 @@ mod benchmark_helpers {
     }
 
     fn start_block() {
-        insert_authorities_and_slot_digests(current_slot() + 1);
+        insert_authorities_and_slot_digests(current_slot().saturating_add(1));
 
         // Initialize the new block
         Babe::on_initialize(System::block_number());
@@ -3703,11 +3703,14 @@ mod benchmark_helpers {
 
     pub fn session_to_block(n: u32) -> u32 {
         // let block_number = flashbox_runtime::Period::get() * n;
-        let block_number = Babe::current_epoch().duration.saturated_into::<u32>() * n;
+        let block_number = Babe::current_epoch()
+            .duration
+            .saturated_into::<u32>()
+            .saturating_mul(n);
 
         // Add 1 because the block that emits the NewSession event cannot contain any extrinsics,
         // so this is the first block of the new session that can actually be used
-        block_number + 1
+        block_number.saturating_add(1)
     }
 
     pub fn run_to_block(n: u32) {
