@@ -170,7 +170,7 @@ use {
 };
 
 #[cfg(test)]
-pub mod tests;
+mod tests;
 
 pub mod genesis_config_presets;
 
