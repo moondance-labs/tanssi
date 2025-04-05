@@ -565,6 +565,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9b34d609dfbaf33d6889b2b7106d3ca345eacad44200913df5ba02bfd31d2ba9"
 
 [[package]]
+name = "asset-dancelight-integration-tests"
+version = "0.0.0"
+dependencies = [
+ "container-chain-template-simple-runtime",
+ "dancelight-emulated-chain",
+ "dancelight-runtime",
+ "dancelight-runtime-test-utils",
+ "dancelight-system-emulated-network",
+ "frame-support",
+ "pallet-message-queue",
+ "pallet-xcm",
+ "polkadot-primitives",
+ "simple-template-dancelight-emulated-chain",
+ "sp-runtime",
+ "staging-xcm",
+ "staging-xcm-executor",
+ "xcm-emulator",
+]
+
+[[package]]
 name = "asset-test-utils"
 version = "7.0.0"
 source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2412#33a925ed7a1a70f3db904cb88bc301c7b6c0ce30"
@@ -1372,6 +1392,29 @@ dependencies = [
  "sp-core",
  "sp-runtime",
  "staging-xcm",
+]
+
+[[package]]
+name = "bridge-dancelight-integration-tests"
+version = "0.0.0"
+dependencies = [
+ "alloy-sol-types",
+ "dancelight-emulated-chain",
+ "dancelight-runtime",
+ "dancelight-runtime-test-utils",
+ "dancelight-system-emulated-network",
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "snowbridge-core",
+ "snowbridge-pallet-inbound-queue",
+ "snowbridge-router-primitives",
+ "sp-core",
+ "sp-keyring",
+ "staging-xcm",
+ "tanssi-emulated-integration-tests-common",
+ "tp-bridge",
+ "xcm-emulator",
 ]
 
 [[package]]
@@ -3404,6 +3447,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "dancelight-emulated-chain"
+version = "0.0.0"
+dependencies = [
+ "dancelight-runtime",
+ "dancelight-runtime-constants",
+ "dancelight-runtime-test-utils",
+ "polkadot-runtime-parachains",
+ "staging-xcm",
+ "tanssi-emulated-integration-tests-common",
+ "xcm-emulator",
+]
+
+[[package]]
 name = "dancelight-runtime"
 version = "0.1.0"
 dependencies = [
@@ -3580,6 +3636,70 @@ dependencies = [
  "staging-xcm",
  "staging-xcm-builder",
  "tp-traits",
+]
+
+[[package]]
+name = "dancelight-runtime-test-utils"
+version = "0.0.0"
+dependencies = [
+ "bitvec",
+ "cumulus-primitives-core",
+ "dancelight-runtime",
+ "finality-grandpa",
+ "frame-support",
+ "frame-system",
+ "nimbus-primitives",
+ "pallet-author-noting",
+ "pallet-babe",
+ "pallet-balances",
+ "pallet-configuration",
+ "pallet-data-preservers",
+ "pallet-external-validators",
+ "pallet-grandpa",
+ "pallet-invulnerables",
+ "pallet-registrar",
+ "pallet-registrar-runtime-api",
+ "pallet-services-payment",
+ "pallet-session",
+ "pallet-sudo",
+ "pallet-xcm",
+ "parity-scale-codec",
+ "polkadot-primitives",
+ "polkadot-runtime-common",
+ "polkadot-runtime-parachains",
+ "rand",
+ "scale-info",
+ "snowbridge-beacon-primitives",
+ "snowbridge-core",
+ "snowbridge-milagro-bls",
+ "snowbridge-pallet-system",
+ "sp-consensus-babe",
+ "sp-consensus-beefy",
+ "sp-consensus-grandpa",
+ "sp-core",
+ "sp-io",
+ "sp-keystore",
+ "sp-runtime",
+ "sp-std",
+ "sp-storage",
+ "test-relay-sproof-builder",
+ "tp-data-preservers-common",
+ "tp-traits",
+]
+
+[[package]]
+name = "dancelight-system-emulated-network"
+version = "0.0.0"
+dependencies = [
+ "container-chain-template-simple-runtime",
+ "dancelight-emulated-chain",
+ "dancelight-runtime",
+ "frame-support",
+ "frontier-template-dancelight-emulated-chain",
+ "simple-template-dancelight-emulated-chain",
+ "snowbridge-pallet-outbound-queue",
+ "tanssi-emulated-integration-tests-common",
+ "xcm-emulator",
 ]
 
 [[package]]
@@ -5565,6 +5685,19 @@ dependencies = [
  "parity-scale-codec",
  "sp-api",
  "sp-runtime",
+]
+
+[[package]]
+name = "frontier-template-dancelight-emulated-chain"
+version = "0.0.0"
+dependencies = [
+ "container-chain-template-frontier-runtime",
+ "cumulus-primitives-core",
+ "emulated-integration-tests-common",
+ "hex-literal 0.3.4",
+ "sp-core",
+ "staging-xcm",
+ "xcm-emulator",
 ]
 
 [[package]]
@@ -14185,6 +14318,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "rococo-emulated-chain"
+version = "0.0.0"
+dependencies = [
+ "cumulus-primitives-core",
+ "emulated-integration-tests-common",
+ "polkadot-parachain-primitives",
+ "polkadot-runtime-parachains",
+ "rococo-runtime",
+ "rococo-runtime-constants",
+ "sc-consensus-grandpa",
+ "sp-consensus-babe",
+ "sp-consensus-beefy",
+ "sp-core",
+ "tanssi-emulated-integration-tests-common",
+]
+
+[[package]]
 name = "rococo-runtime"
 version = "7.0.0"
 source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2412#33a925ed7a1a70f3db904cb88bc301c7b6c0ce30"
@@ -16585,6 +16735,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "620a1d43d70e142b1d46a929af51d44f383db9c7a2ec122de2cd992ccfcf3c18"
 
 [[package]]
+name = "simple-template-dancelight-emulated-chain"
+version = "0.0.0"
+dependencies = [
+ "container-chain-template-simple-runtime",
+ "cumulus-primitives-core",
+ "emulated-integration-tests-common",
+ "sp-core",
+ "staging-xcm",
+ "tanssi-emulated-integration-tests-common",
+ "xcm-emulator",
+]
+
+[[package]]
 name = "siphasher"
 version = "0.3.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -18814,6 +18977,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "tanssi-emulated-integration-tests-common"
+version = "0.0.0"
+dependencies = [
+ "cumulus-primitives-core",
+ "dancelight-runtime",
+ "frame-support",
+ "frame-system",
+ "pallet-message-queue",
+ "sc-consensus-grandpa",
+ "snowbridge-pallet-outbound-queue",
+ "sp-consensus-babe",
+ "sp-core",
+ "sp-keyring",
+ "sp-std",
+ "staging-xcm",
+ "xcm-emulator",
+]
+
+[[package]]
 name = "tanssi-node"
 version = "0.13.0"
 dependencies = [
@@ -20887,6 +21069,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5d642ff16b7e79272ae451b7322067cdc17cadf68c23264be9d94a32319efe7e"
 dependencies = [
  "rustls-pki-types",
+]
+
+[[package]]
+name = "westend-emulated-chain"
+version = "0.0.0"
+dependencies = [
+ "cumulus-primitives-core",
+ "emulated-integration-tests-common",
+ "pallet-staking",
+ "polkadot-runtime-common",
+ "polkadot-runtime-parachains",
+ "sc-consensus-grandpa",
+ "sp-consensus-babe",
+ "sp-consensus-beefy",
+ "sp-core",
+ "sp-runtime",
+ "substrate-wasm-builder",
+ "tanssi-emulated-integration-tests-common",
+ "westend-runtime",
+ "westend-runtime-constants",
 ]
 
 [[package]]

@@ -12,15 +12,14 @@
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
+// along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
+
+// TODO: This crate ideally should be moved outside XCM, since it is a copy/paste of chains/orchestrator-relays/runtime/dancelight/src/tests/common/mod.rs
+// And can be re-used for XCM and other integration tests.
 
 #![allow(dead_code)]
 
 use {
-    crate::{
-        Authorship, BlockProductionCost, CollatorAssignmentCost, ExternalValidatorSlashes,
-        MessageQueue, RuntimeCall,
-    },
     babe_primitives::{
         digests::{PreDigest, SecondaryPlainPreDigest},
         BABE_ENGINE_ID,
@@ -37,6 +36,10 @@ use {
             ValidatorIndex, ValidityAttestation,
         },
         ParaId,
+    },
+    dancelight_runtime::{
+        Authorship, BlockProductionCost, CollatorAssignmentCost, ExternalValidatorSlashes,
+        MessageQueue, RuntimeCall,
     },
     frame_support::{
         assert_ok,
@@ -67,7 +70,7 @@ use {
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
 };
 
-pub use crate::{
+pub use dancelight_runtime::{
     genesis_config_presets::{get_authority_keys_from_seed, insert_authority_keys_into_keystore},
     AccountId, AuthorNoting, Babe, Balance, Balances, Beefy, BeefyMmrLeaf, ContainerRegistrar,
     DataPreservers, Grandpa, InflationRewards, Initializer, Mmr, Runtime, RuntimeOrigin, Session,
@@ -635,7 +638,7 @@ impl ExtBuilder {
                     (
                         account.clone(),
                         account,
-                        crate::SessionKeys {
+                        dancelight_runtime::SessionKeys {
                             babe: authority_keys.babe.clone(),
                             grandpa: authority_keys.grandpa.clone(),
                             para_validator: authority_keys.para_validator.clone(),
@@ -663,7 +666,7 @@ impl ExtBuilder {
                     (
                         account.clone(),
                         account,
-                        crate::SessionKeys {
+                        dancelight_runtime::SessionKeys {
                             babe: authority_keys.babe.clone(),
                             grandpa: authority_keys.grandpa.clone(),
                             para_validator: authority_keys.para_validator.clone(),
@@ -717,7 +720,7 @@ impl ExtBuilder {
                         Some((
                             account.clone(),
                             account,
-                            crate::SessionKeys {
+                            dancelight_runtime::SessionKeys {
                                 babe: authority_keys.babe.clone(),
                                 grandpa: authority_keys.grandpa.clone(),
                                 para_validator: authority_keys.para_validator.clone(),
@@ -1531,7 +1534,7 @@ pub fn generate_grandpa_equivocation_proof(
 /// Creates an equivocation at the current block, by generating two headers.
 pub fn generate_babe_equivocation_proof(
     offender_authority_pair: &BabeAuthorityPair,
-) -> babe_primitives::EquivocationProof<crate::Header> {
+) -> babe_primitives::EquivocationProof<dancelight_runtime::Header> {
     use babe_primitives::digests::CompatibleDigestItem;
 
     let current_digest = System::digest();
@@ -1563,7 +1566,7 @@ pub fn generate_babe_equivocation_proof(
 
     // sign the header prehash and sign it, adding it to the block as the seal
     // digest item
-    let seal_header = |header: &mut crate::Header| {
+    let seal_header = |header: &mut dancelight_runtime::Header| {
         let prehash = header.hash();
         let seal = <DigestItem as CompatibleDigestItem>::babe_seal(
             offender_authority_pair.sign(prehash.as_ref()),

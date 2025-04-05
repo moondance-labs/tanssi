@@ -12,11 +12,15 @@
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
+// along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-mod bridge_to_eth;
-mod constants;
-mod mocknets;
-mod reserver_transfers_polkadot_xcm;
-mod xcm_message_exporter;
-pub use xcm_emulator::{bx, TestExt};
+use {snowbridge_pallet_outbound_queue::CommittedMessage, sp_std::cell::RefCell};
+
+pub fn eth_bridge_sent_msgs() -> Vec<CommittedMessage> {
+    ETH_BRIDGE_SENT_MSGS.with(|q| (*q.borrow()).clone())
+}
+
+// Store messages sent to ethereum throught the bridge
+thread_local! {
+    pub static ETH_BRIDGE_SENT_MSGS: RefCell<Vec<CommittedMessage>> = RefCell::new(Vec::new());
+}
