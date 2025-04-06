@@ -122,10 +122,10 @@ pub mod pallet {
             // We clear this storage item to make sure its always included
             DidSetContainerAuthorData::<T>::kill();
 
-            weight += T::DbWeight::get().writes(1);
+            weight = weight.saturating_add(T::DbWeight::get().writes(1));
 
             // The read onfinalizes
-            weight += T::DbWeight::get().reads(1);
+            weight = weight.saturating_add(T::DbWeight::get().reads(1));
 
             weight
         }

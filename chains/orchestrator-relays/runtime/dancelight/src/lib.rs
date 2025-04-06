@@ -3531,7 +3531,7 @@ impl<AC> ParaIdAssignmentHooks<BalanceOf<Runtime>, AC> for ParaIdAssignmentHooks
                 )
             })
             .inspect(|weight| {
-                total_weight.saturating_add(*weight);
+                total_weight = total_weight.saturating_add(*weight);
             })
             .is_ok()
         });

@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use sp_runtime::Saturating;
 use {
     dp_collator_assignment::AssignedCollators,
     frame_support::traits::Get,
@@ -224,7 +225,7 @@ where
         // Skipping orchestrator chain because it was handled above
         for cc in chains.iter().skip(1) {
             if available_collators >= cc.min_collators {
-                available_collators -= cc.min_collators;
+                available_collators = available_collators.saturating_sub(cc.min_collators);
                 container_chains_with_collators.push(*cc);
             } else if available_collators == 0 {
                 // Do not break if there are still some available collators. Even if they were not enough to reach the
@@ -236,7 +237,7 @@ where
 
         let mut required_collators_min = 0;
         for cc in &container_chains_with_collators {
-            required_collators_min += cc.min_collators;
+            required_collators_min = required_collators_min.saturating_add(cc.min_collators);
         }
 
         if num_collators < min_orchestrator_collators {
@@ -245,7 +246,8 @@ where
         } else {
             // After assigning the min to all the chains we have this remainder. The remainder will be assigned until
             // all the chains reach the max value.
-            let mut required_collators_remainder = num_collators - required_collators_min;
+            let mut required_collators_remainder =
+                num_collators.saturating_sub(required_collators_min);
             let mut container_chains_variable = vec![];
             for cc in &container_chains_with_collators {
                 // Each chain will have `min + extra` collators, where extra is capped so `min + extra <= max`.
@@ -253,8 +255,8 @@ where
                     required_collators_remainder,
                     cc.max_collators.saturating_sub(cc.min_collators),
                 );
-                let num = cc.min_collators + extra;
-                required_collators_remainder -= extra;
+                let num = cc.min_collators.saturating_add(extra);
+                required_collators_remainder = required_collators_remainder.saturating_sub(extra);
                 container_chains_variable.push((cc.para_id, num));
             }
 
@@ -291,7 +293,8 @@ where
         for (_id, cs) in old_assigned.iter() {
             new_collators.retain(|c| !cs.contains(c));
         }
-        let num_missing_invulnerables = min_orchestrator_collators - new_invulnerables.len();
+        let num_missing_invulnerables =
+            min_orchestrator_collators.saturating_sub(new_invulnerables.len());
         let invulnerables_not_assigned = T::RemoveInvulnerables::remove_invulnerables(
             &mut new_collators,
             num_missing_invulnerables,
@@ -304,7 +307,8 @@ where
         }
 
         // Still not enough invulnerables, try to get an invulnerable that is currently assigned somewhere else
-        let num_missing_invulnerables = min_orchestrator_collators - new_invulnerables.len();
+        let num_missing_invulnerables =
+            min_orchestrator_collators.saturating_sub(new_invulnerables.len());
         let mut collators = collators.to_vec();
         let new_invulnerables_set = BTreeSet::from_iter(new_invulnerables.iter().cloned());
         collators.retain(|c| {
@@ -435,7 +439,9 @@ where
         let mut needed_new_collators = 0;
         for (para_id, num_collators) in chains.iter() {
             let cs = old_assigned.entry(*para_id).or_default();
-            needed_new_collators += (*num_collators as usize).saturating_sub(cs.len());
+            needed_new_collators = needed_new_collators
+                .saturating_add(*num_collators as usize)
+                .saturating_sub(cs.len());
         }
 
         let assigned_collators: BTreeSet<T::AccountId> = old_assigned
