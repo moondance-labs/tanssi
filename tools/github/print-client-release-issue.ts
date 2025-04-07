@@ -15,6 +15,11 @@ async function main() {
         describe: "next client version",
         required: true,
       },
+      chainType: {
+          type: "string",
+          describe: "type of chain we are building binary for",
+          required: true,
+      }
     })
     .demandOption(["from", "to"])
     .help().argv;
@@ -22,26 +27,36 @@ async function main() {
   const previousVersion = argv.from;
   const newVersion = argv.to;
 
-  const commonTemplate = `
-  - [ ] Start the github action Publish Binary Draft with ${previousVersion} => ${newVersion}
-  (master branch).
-  - [ ] Start the github action Publish Dancelight Binary Draft with ${previousVersion} => ${newVersion}
-  (master branch).
-  - [ ] Review the generated Draft and clean a bit the messages if needed (keep it draft).
-  - [ ] Start the internal optimized binary build by starting the github action Prepare Optimized Binary Draft with the commit of ${previousVersion} (mster branch)
-  - [ ] Start the internal optimized binary build by starting the github action Prepare Optimized Dancelight Binary Draft with the commit of ${previousVersion} (mster branch)
-  - [ ] Update chain-networks stagenet-dancebox config.json to include sha-xxxxx built from the optimized binary and pushed to docker
-  (matching your ${newVersion} tag) and increase the config version + 1.
-  - [ ] Update chain-networks stagelight config.json to include sha-xxxxx built from the optimized binary and pushed to docker
-  (matching your ${newVersion} tag) and increase the config version + 1.
-  - [ ] Test the new client on stagenet-dancebox.
-  - [ ] Test the new client on stagelight.
-  - [ ] Publish the client release draft.
-  - [ ] When everything is ok, publish the new docker image: start github action Publish Docker
-  with ${newVersion}.
-  - [ ] When everything is ok, publish the new docker image: start github action Publish Docker Dancelight
-  with ${newVersion}.
+  const parachainTemplate = `
+- [ ] Start the github action Publish Binary Draft with ${previousVersion} => ${newVersion}
+(master branch).
+- [ ] Review the generated Draft and clean a bit the messages if needed (keep it draft).
+- [ ] Start the internal optimized binary build by starting the github action Prepare Optimized Binary Draft with the commit of ${previousVersion} (mster branch)
+- [ ] Update chain-networks stagenet-dancebox config.json to include sha-xxxxx built from the optimized binary and pushed to docker
+(matching your ${newVersion} tag) and increase the config version + 1.
+- [ ] Test the new client on stagenet-dancebox.
+- [ ] Publish the client release draft.
+- [ ] When everything is ok, publish the new docker image: start github action Publish Docker
+with ${newVersion}.
 `;
+
+  const solochainTemplate = `
+- [ ] Start the github action Publish Dancelight Binary Draft with ${previousVersion} => ${newVersion}
+(master branch).
+- [ ] Review the generated Draft and clean a bit the messages if needed (keep it draft).
+- [ ] Start the internal optimized binary build by starting the github action Prepare Optimized Dancelight Binary Draft with the commit of ${previousVersion} (mster branch)
+- [ ] Update chain-networks stagelight config.json to include sha-xxxxx built from the optimized binary and pushed to docker
+(matching your ${newVersion} tag) and increase the config version + 1.
+- [ ] Test the new client on stagelight.
+- [ ] Publish the client release draft.
+- [ ] When everything is ok, publish the new docker image: start github action Publish Docker solochain
+with ${newVersion}.
+  `;
+
+  let chosenTemplate = parachainTemplate;
+  if (argv.chainType == "solochain") {
+      chosenTemplate = solochainTemplate;
+  }
 
   // Detect if it's a major release or hotfix
   if (newVersion.endsWith(".0")) {
@@ -55,7 +70,7 @@ async function main() {
 
 ## Release
 - [ ] Tag master with ${newVersion} and push to github
-${commonTemplate}
+${chosenTemplate}
 
 ## Post Release
 - [ ] Bump client version to the next one on master
@@ -72,7 +87,7 @@ ${commonTemplate}
 
 ## Release
 - [ ] Tag \`perm-${newVersion}\` with ${newVersion} and push to github.
-${commonTemplate}
+${chosenTemplate}
     `;
     console.log(template);
   }
