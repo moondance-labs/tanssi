@@ -5,6 +5,17 @@ import { NETWORK_YARGS_OPTIONS, getApiFor } from "./utils/network";
 import { xxhashAsHex } from "@polkadot/util-crypto";
 import type { ApiPromise } from "@polkadot/api/promise/Api";
 
+const DEFAULT_ENDPOINTS = [
+    "wss://dancelight.tanssi-api.network",
+    "wss://stagelight.tanssi-dev.network",
+    "wss://dancebox.tanssi-api.network",
+    "wss://fraa-flashbox-rpc.a.stagenet.tanssi.network",
+    "wss://stagebox.tanssi-dev.network",
+    // Frontier template
+    "wss://dancebox-3001.tanssi-api.network",
+    // TODO: add simple template rpc endpoint
+];
+
 yargs(hideBin(process.argv))
     .usage("Usage: $0 [key]")
     .version("1.0.0")
@@ -24,9 +35,29 @@ yargs(hideBin(process.argv))
         async (argv) => {
             // No key provided: list pallets from a single network
             if (!argv.key) {
-                const api = await getApiFor(argv);
+                let chosenEndpoint = argv.url;
+                if (!chosenEndpoint) {
+                    // No URL provided via args, so display an interactive menu.
+                    const { select } = await import("@inquirer/prompts");
+                    chosenEndpoint = await select({
+                        message: "Select an endpoint to list pallet prefixes (scroll down for more):",
+                        choices: DEFAULT_ENDPOINTS,
+                    });
+                }
+                let api: ApiPromise;
                 try {
-                    console.log("All pallets sorted by storage prefix:");
+                    // Wrap connection attempt in a 10 second timeout.
+                    const connectPromise: Promise<ApiPromise> = getApiFor({ ...argv, url: chosenEndpoint });
+                    const timeoutPromise: Promise<ApiPromise> = new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error("Connection timed out after 10 seconds")), 10000)
+                    );
+                    api = await Promise.race([connectPromise, timeoutPromise]);
+                } catch (err) {
+                    console.error(`Failed to connect to ${chosenEndpoint}: ${err}`);
+                    throw err;
+                }
+                try {
+                    console.log("All pallets sorted by storage prefix for chain:", api.runtimeChain.toString());
                     const pallets = [];
                     const mt = api.runtimeMetadata;
                     for (const module of mt.asLatest.pallets) {
@@ -39,7 +70,7 @@ yargs(hideBin(process.argv))
                     // Sort pallets by hex prefix lexicographically.
                     pallets.sort((a, b) => (a.prefix > b.prefix ? 1 : a.prefix < b.prefix ? -1 : 0));
                     for (const p of pallets) {
-                        console.log(`${p.prefix}  ${p.pallet}`);
+                        console.log(`${p.prefix} ${p.pallet}`);
                     }
                 } finally {
                     await api.disconnect();
@@ -60,13 +91,7 @@ yargs(hideBin(process.argv))
                 endpoints = [argv.url];
             } else {
                 console.log("No rpc provided. Will try to check all the known endpoints. Use --url to specify one");
-                endpoints = [
-                    "wss://dancelight.tanssi-api.network",
-                    "wss://stagelight.tanssi-dev.network",
-                    "wss://dancebox.tanssi-api.network",
-                    "wss://fraa-flashbox-rpc.a.stagenet.tanssi.network",
-                    "wss://stagebox.tanssi-dev.network",
-                ];
+                endpoints = DEFAULT_ENDPOINTS;
             }
 
             let found = false;
