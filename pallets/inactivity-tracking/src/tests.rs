@@ -87,13 +87,12 @@ fn enabling_and_disabling_inactivity_tracking_works() {
 
         assert_ok!(Pallet::<Test>::set_inactivity_tracking_status(
             RuntimeOrigin::root(),
-            true
+            false
         ));
 
         assert_eq!(
             CurrentActivityTrackingStatus::<Test>::get(),
-            ActivityTrackingStatus::Enabled {
-                start: 2 * suspension_period + 2,
+            ActivityTrackingStatus::Disabled {
                 end: 3 * suspension_period
             }
         );
@@ -114,6 +113,25 @@ fn enabling_and_disabling_inactivity_tracking_fails_for_non_root() {
 }
 
 #[test]
+fn setting_the_same_inactivity_tracking_status_fails() {
+    ExtBuilder.build().execute_with(|| {
+        assert_noop!(
+            Pallet::<Test>::set_inactivity_tracking_status(RuntimeOrigin::root(), true),
+            Error::<Test>::ActivityTrackingStatusAlreadySet
+        );
+        roll_to(SESSION_BLOCK_LENGTH);
+        assert_ok!(Pallet::<Test>::set_inactivity_tracking_status(
+            RuntimeOrigin::root(),
+            false
+        ));
+        assert_noop!(
+            Pallet::<Test>::set_inactivity_tracking_status(RuntimeOrigin::root(), false),
+            Error::<Test>::ActivityTrackingStatusAlreadySet
+        );
+    });
+}
+
+#[test]
 fn enabling_and_disabling_inactivity_tracking_fails_if_called_before_end_of_suspension_period() {
     ExtBuilder.build().execute_with(|| {
         assert_eq!(
@@ -121,8 +139,8 @@ fn enabling_and_disabling_inactivity_tracking_fails_if_called_before_end_of_susp
             ActivityTrackingStatus::Enabled { start: 0, end: 0 }
         );
         assert_noop!(
-            Pallet::<Test>::set_inactivity_tracking_status(RuntimeOrigin::root(), true),
-            Error::<Test>::ActivityStatusUpdateSuspended
+            Pallet::<Test>::set_inactivity_tracking_status(RuntimeOrigin::root(), false),
+            Error::<Test>::ActivityTrackingStatusUpdateSuspended
         );
     });
 }

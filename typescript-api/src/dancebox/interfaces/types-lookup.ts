@@ -6187,8 +6187,12 @@ declare module "@polkadot/types/lookup" {
     /** @name PalletInactivityTrackingError (542) */
     interface PalletInactivityTrackingError extends Enum {
         readonly isMaxCollatorsPerSessionReached: boolean;
-        readonly isActivityStatusUpdateSuspended: boolean;
-        readonly type: "MaxCollatorsPerSessionReached" | "ActivityStatusUpdateSuspended";
+        readonly isActivityTrackingStatusUpdateSuspended: boolean;
+        readonly isActivityTrackingStatusAlreadySet: boolean;
+        readonly type:
+            | "MaxCollatorsPerSessionReached"
+            | "ActivityTrackingStatusUpdateSuspended"
+            | "ActivityTrackingStatusAlreadySet";
     }
 
     /** @name PalletTreasuryProposal (543) */

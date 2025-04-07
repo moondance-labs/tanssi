@@ -5095,7 +5095,11 @@ export default {
      * Lookup542: pallet_inactivity_tracking::pallet::Error<T>
      **/
     PalletInactivityTrackingError: {
-        _enum: ["MaxCollatorsPerSessionReached", "ActivityStatusUpdateSuspended"],
+        _enum: [
+            "MaxCollatorsPerSessionReached",
+            "ActivityTrackingStatusUpdateSuspended",
+            "ActivityTrackingStatusAlreadySet",
+        ],
     },
     /**
      * Lookup543: pallet_treasury::Proposal<sp_core::crypto::AccountId32, Balance>

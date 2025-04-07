@@ -159,7 +159,9 @@ pub mod pallet {
         /// The size of a collator set for a session has already reached MaxCollatorsPerSession value
         MaxCollatorsPerSessionReached,
         /// Error returned when the activity tracking status is attempted to be updated before the end session
-        ActivityStatusUpdateSuspended,
+        ActivityTrackingStatusUpdateSuspended,
+        /// Error returned when the activity tracking status is attempted to be updated with the same status
+        ActivityTrackingStatusAlreadySet,
     }
 
     #[pallet::call]
@@ -172,13 +174,19 @@ pub mod pallet {
         ) -> DispatchResult {
             ensure_root(origin)?;
             let current_status_end_session_index = match <CurrentActivityTrackingStatus<T>>::get() {
-                ActivityTrackingStatus::Enabled { start: _, end } => end,
-                ActivityTrackingStatus::Disabled { end } => end,
+                ActivityTrackingStatus::Enabled { start: _, end } => {
+                    ensure!(!is_enabled, Error::<T>::ActivityTrackingStatusAlreadySet);
+                    end
+                }
+                ActivityTrackingStatus::Disabled { end } => {
+                    ensure!(is_enabled, Error::<T>::ActivityTrackingStatusAlreadySet);
+                    end
+                }
             };
             let current_session_index = T::CurrentSessionIndex::session_index();
             ensure!(
                 current_session_index > current_status_end_session_index,
-                Error::<T>::ActivityStatusUpdateSuspended
+                Error::<T>::ActivityTrackingStatusUpdateSuspended
             );
             let new_status_end_session_index =
                 current_session_index.saturating_add(T::MaxInactiveSessions::get());
