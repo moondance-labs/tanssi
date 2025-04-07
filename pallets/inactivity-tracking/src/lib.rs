@@ -13,6 +13,14 @@
 
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
+//! # Inactivity Tracking Pallet
+//!
+//! This pallet tracks and stores the activity of container chain and orchestrator chain collators
+//! for configurable number of sessions. It is used to determine if a collator is inactive
+//! for that period of time.
+//!
+//! The tracking functionality can be enabled or disabled with root privileges.
+//! By default, the tracking is enabled.
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use {
