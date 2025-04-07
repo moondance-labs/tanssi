@@ -65,7 +65,7 @@ pub mod pallet {
     pub use crate::weights::WeightInfo;
     use {
         super::*, frame_support::pallet_prelude::*, sp_std::collections::btree_map::BTreeMap,
-        tp_traits::EraIndexProvider,
+        tp_traits::EraIndexProvider, sp_runtime::Saturating,
     };
 
     /// The current storage version.
@@ -177,11 +177,9 @@ pub mod pallet {
 
             RewardPointsForEra::<T>::mutate(active_era.index, |era_rewards| {
                 for (validator, points) in points.into_iter() {
-                    let era_rewards_individual_entry =
-                        era_rewards.individual.entry(validator.clone()).or_default();
-                    *era_rewards_individual_entry =
-                        (*era_rewards_individual_entry).saturating_add(points);
-                    era_rewards.total = era_rewards.total.saturating_add(points);
+                    (*era_rewards.individual.entry(validator.clone()).or_default())
+                        .saturating_accrue(points);
+                    era_rewards.total.saturating_accrue(points);
                 }
             })
         }

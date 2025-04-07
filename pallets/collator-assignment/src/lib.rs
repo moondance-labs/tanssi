@@ -524,7 +524,7 @@ pub mod pallet {
             let mut num_collators = 0;
             num_collators.saturating_add(new_assigned.orchestrator_chain.len());
             for (_para_id, collators) in &new_assigned.container_chains {
-                num_collators = num_collators.saturating_add(collators.len());
+                num_collators.saturating_accrue(collators.len());
             }
 
             let mut num_collators = num_collators as u32;
@@ -614,8 +614,8 @@ pub mod pallet {
             let mut weight = Weight::zero();
 
             // Account reads and writes for on_finalize
-            if T::GetRandomnessForNextBlock::should_end_session(n.saturating_add(One::one())) {
-                weight = weight.saturating_add(T::DbWeight::get().reads_writes(1, 1));
+            if T::GetRandomnessForNextBlock::should_end_session(n.saturating_plus_one()) {
+                weight.saturating_accrue(T::DbWeight::get().reads_writes(1, 1));
             }
 
             weight
@@ -623,7 +623,7 @@ pub mod pallet {
 
         fn on_finalize(n: BlockNumberFor<T>) {
             // If the next block is a session change, read randomness and store in pallet storage
-            if T::GetRandomnessForNextBlock::should_end_session(n.saturating_add(One::one())) {
+            if T::GetRandomnessForNextBlock::should_end_session(n.saturating_plus_one()) {
                 let random_seed = T::GetRandomnessForNextBlock::get_randomness();
                 Randomness::<T>::put(random_seed);
             }

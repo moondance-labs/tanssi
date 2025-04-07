@@ -623,6 +623,7 @@ pub struct TreasuryBenchmarkHelper<T>(PhantomData<T>);
 use frame_support::traits::Currency;
 #[cfg(feature = "runtime-benchmarks")]
 use pallet_treasury::ArgumentsFactory;
+use sp_arithmetic::traits::Saturating;
 use {
     frame_support::traits::{
         ExistenceRequirement, OnUnbalanced, ValidatorRegistration, WithdrawReasons,
@@ -722,7 +723,7 @@ where
             .saturated_into::<u64>()
             // The `System::block_number` is initialized with `n+1`,
             // so the actual block number is `n`.
-            .saturating_sub(1);
+            .saturating_less_one();
         let tip = 0;
         let tx_ext: TxExtension = (
             frame_system::CheckNonZeroSender::<Runtime>::new(),
@@ -3253,7 +3254,7 @@ impl tanssi_initializer::ApplyNewSession<Runtime> for OwnApplySession {
         let candidates_staking =
             pallet_pooled_staking::SortedEligibleCandidates::<Runtime>::get().to_vec();
         // Max number of collators is set in pallet_configuration
-        let target_session_index = session_index.saturating_add(1);
+        let target_session_index = session_index.saturating_plus_one();
         let max_collators = <CollatorConfiguration as GetHostConfiguration<u32>>::max_collators(
             target_session_index,
         );
@@ -3294,7 +3295,7 @@ impl tanssi_initializer::ApplyNewSession<Runtime> for OwnApplySession {
         // the current collators and their keys.
         // In contrast, we have the keys for the validators only
         TanssiAuthorityMapping::initializer_on_new_session(
-            &(session_index.saturating_add(1)),
+            &(session_index.saturating_plus_one()),
             &queued_amalgamated,
         );
 
@@ -3531,7 +3532,7 @@ impl<AC> ParaIdAssignmentHooks<BalanceOf<Runtime>, AC> for ParaIdAssignmentHooks
                 )
             })
             .inspect(|weight| {
-                total_weight = total_weight.saturating_add(*weight);
+               total_weight.saturating_accrue(*weight);
             })
             .is_ok()
         });
@@ -3599,7 +3600,7 @@ impl Get<Option<CoreAllocationConfiguration>> for GetCoreAllocationConfiguration
         // We do not have to check for session ending as new session always starts at block initialization which means
         // whenever this is called, we are either in old session or in start of a one
         // as on block initialization epoch index have been incremented and by extension session has been changed.
-        let session_index_to_consider = Session::current_index().saturating_add(1);
+        let session_index_to_consider = Session::current_index().saturating_plus_one();
 
         let max_parachain_percentage =
             CollatorConfiguration::max_parachain_cores_percentage(session_index_to_consider)
@@ -3679,7 +3680,7 @@ mod benchmark_helpers {
 
         System::reset_events();
         System::initialize(
-            &(System::block_number().saturating_add(1)),
+            &(System::block_number().saturating_plus_one()),
             &System::parent_hash(),
             &pre_digest,
         );
@@ -3690,7 +3691,7 @@ mod benchmark_helpers {
     }
 
     fn start_block() {
-        insert_authorities_and_slot_digests(current_slot().saturating_add(1));
+        insert_authorities_and_slot_digests(current_slot().saturating_plus_one());
 
         // Initialize the new block
         Babe::on_initialize(System::block_number());
@@ -3710,7 +3711,7 @@ mod benchmark_helpers {
 
         // Add 1 because the block that emits the NewSession event cannot contain any extrinsics,
         // so this is the first block of the new session that can actually be used
-        block_number.saturating_add(1)
+        block_number.saturating_plus_one()
     }
 
     pub fn run_to_block(n: u32) {
