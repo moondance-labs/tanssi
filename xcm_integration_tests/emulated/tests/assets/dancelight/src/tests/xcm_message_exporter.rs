@@ -17,22 +17,22 @@
 use {
     dancelight_emulated_chain::DancelightRelayPallet,
     dancelight_runtime::xcm_config,
-    dancelight_runtime_test_utils::ExtBuilder,
-    dancelight_runtime_test_utils::ALICE,
     dancelight_system_emulated_network::DancelightRelay as Dancelight,
     frame_support::{assert_err, weights::Weight},
     pallet_xcm::Error,
     primitives::AccountId,
     sp_runtime::DispatchError,
     xcm::{latest::prelude::*, v5::Location, VersionedXcm},
-    xcm_emulator::Chain,
+    xcm_emulator::{Chain, TestExt},
 };
 
 #[test]
 fn test_message_exporter_disabled_for_origin_account() {
-    ExtBuilder::default().build().execute_with(|| {
+    Dancelight::execute_with(|| {
         // The only test we can do is with signed runtime origins since we are ensuring local origin in xcm config
-        let origin = <Dancelight as Chain>::RuntimeOrigin::signed(AccountId::from(ALICE));
+        let origin = <Dancelight as Chain>::RuntimeOrigin::signed(AccountId::from(
+            tanssi_emulated_integration_tests_common::accounts::ALICE,
+        ));
 
         let message = Xcm(vec![Instruction::ExportMessage {
             network: NetworkId::Ethereum { chain_id: 1 },

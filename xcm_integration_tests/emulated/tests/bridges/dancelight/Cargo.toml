@@ -15,7 +15,6 @@ workspace = true
 alloy-sol-types = { workspace = true, features = ["std"]}
 dancelight-emulated-chain = { workspace = true }
 dancelight-runtime = { workspace = true, features = [ "testing-helpers", "std" ] }
-dancelight-runtime-test-utils = { workspace = true }
 dancelight-system-emulated-network = { workspace = true }
 frame-support = { workspace = true, features = [ "tuples-96" ] }
 frame-system = { workspace = true }

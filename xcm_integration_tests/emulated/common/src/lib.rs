@@ -28,6 +28,7 @@ use {
 
 pub mod accounts;
 pub mod impls;
+pub mod snowbridge;
 pub mod validators;
 
 pub fn force_process_bridge<R, P>()

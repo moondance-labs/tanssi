@@ -19,7 +19,6 @@ members = [
 	"xcm_integration_tests/emulated/chains/relays/rococo",
 	"xcm_integration_tests/emulated/chains/relays/westend",
 	"xcm_integration_tests/emulated/common",
-	"xcm_integration_tests/emulated/dancelight-runtime-test-utils",
 	"xcm_integration_tests/emulated/networks/dancelight-system",
 	"xcm_integration_tests/emulated/tests/assets/dancelight",
 	"xcm_integration_tests/emulated/tests/bridges/dancelight",
@@ -115,7 +114,6 @@ tc-service-container-chain = { path = "client/service-container-chain" }
 asset-dancelight-integration-tests = { path = "xcm_integration_tests/emulated/tests/assets/dancelight" }
 bridge-dancelight-integration-tests = { path = "xcm_integration_tests/emulated/tests/bridges/dancelight" }
 dancelight-emulated-chain = { path = "xcm_integration_tests/emulated/chains/relays/dancelight" }
-dancelight-runtime-test-utils = { path = "xcm_integration_tests/emulated/dancelight-runtime-test-utils" }
 dancelight-system-emulated-network = { path = "xcm_integration_tests/emulated/networks/dancelight-system" }
 frontier-template-dancelight-emulated-chain = { path = "xcm_integration_tests/emulated/chains/parachains/frontier-template-dancelight" }
 rococo-emulated-chain = { path = "xcm_integration_tests/emulated/chains/relays/rococo" }

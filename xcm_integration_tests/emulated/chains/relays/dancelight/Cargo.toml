@@ -14,7 +14,6 @@ workspace = true
 [dependencies]
 dancelight-runtime = { workspace = true }
 dancelight-runtime-constants = { workspace = true }
-dancelight-runtime-test-utils = { workspace = true }
 emulated-integration-tests-common = { workspace = true }
 runtime-parachains = { workspace = true }
 sp-core = { workspace = true }
