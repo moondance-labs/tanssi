@@ -3,6 +3,7 @@ import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import { NETWORK_YARGS_OPTIONS, getApiFor } from "./utils/network";
 import { xxhashAsHex } from "@polkadot/util-crypto";
+import type { ApiPromise } from "@polkadot/api/promise/Api";
 
 yargs(hideBin(process.argv))
     .usage("Usage: $0 [key]")
@@ -37,9 +38,9 @@ yargs(hideBin(process.argv))
                     }
                     // Sort pallets by hex prefix lexicographically.
                     pallets.sort((a, b) => (a.prefix > b.prefix ? 1 : a.prefix < b.prefix ? -1 : 0));
-                    pallets.forEach((p) => {
+                    for (const p of pallets) {
                         console.log(`${p.prefix}  ${p.pallet}`);
-                    });
+                    }
                 } finally {
                     await api.disconnect();
                 }
@@ -58,7 +59,7 @@ yargs(hideBin(process.argv))
             if (argv.url) {
                 endpoints = [argv.url];
             } else {
-                console.log("No rpc provided. Will try to check all the known endpoints. Use --url to specify one")
+                console.log("No rpc provided. Will try to check all the known endpoints. Use --url to specify one");
                 endpoints = [
                     "wss://dancelight.tanssi-api.network",
                     "wss://stagelight.tanssi-dev.network",
@@ -71,15 +72,12 @@ yargs(hideBin(process.argv))
             let found = false;
             for (const endpoint of endpoints) {
                 console.log(`\nTrying network endpoint: ${endpoint}`);
-                let api;
+                let api: ApiPromise;
                 try {
                     // Wrap connection attempt in a 10 second timeout.
-                    const connectPromise = getApiFor({ ...argv, url: endpoint });
-                    const timeoutPromise = new Promise((_, reject) =>
-                        setTimeout(
-                            () => reject(new Error("Connection timed out after 10 seconds")),
-                            10000
-                        )
+                    const connectPromise: Promise<ApiPromise> = getApiFor({ ...argv, url: endpoint });
+                    const timeoutPromise: Promise<ApiPromise> = new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error("Connection timed out after 10 seconds")), 10000)
                     );
                     api = await Promise.race([connectPromise, timeoutPromise]);
                 } catch (err) {
@@ -94,10 +92,7 @@ yargs(hideBin(process.argv))
                         continue;
                     }
                     // Compute pallet storage prefix.
-                    const prefix = xxhashAsHex(
-                        module.storage.unwrap().prefix.toString(),
-                        128
-                    );
+                    const prefix = xxhashAsHex(module.storage.unwrap().prefix.toString(), 128);
                     // Check if the provided key starts with the pallet prefix.
                     if (argv.key.startsWith(prefix)) {
                         // Found pallet, now find key
@@ -107,15 +102,12 @@ yargs(hideBin(process.argv))
                         for (const storage of storages) {
                             // Each storage key is computed by concatenating the pallet prefix with
                             // the 128-bit hash (without the '0x' prefix) of the storage item name.
-                            let keyValue =
-                                prefix + xxhashAsHex(storage.name.toString(), 128).slice(2);
+                            const keyValue = prefix + xxhashAsHex(storage.name.toString(), 128).slice(2);
                             // Check if the provided key and the storage key are prefix matches.
                             if (argv.key.startsWith(keyValue)) {
                                 console.log("✅ Found key:");
                                 console.log("");
-                                console.log(
-                                    `${keyValue}: ${module.name.toString()} ${storage.name.toString()}`
-                                );
+                                console.log(`${keyValue}: ${module.name.toString()} ${storage.name.toString()}`);
                                 console.log("");
                                 foundMatch = true;
                                 found = true;
