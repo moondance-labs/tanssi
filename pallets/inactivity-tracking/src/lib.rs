@@ -195,15 +195,17 @@ pub mod pallet {
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         fn on_initialize(_n: BlockNumberFor<T>) -> Weight {
             let mut total_weight = T::DbWeight::get().reads_writes(1, 0);
-
             // Process the orchestrator chain block author (if it exists) and activity tracking is enabled
             if let Some(orchestrator_chain_author) = T::GetSelfChainBlockAuthor::get_block_author()
             {
+                total_weight.saturating_accrue(T::DbWeight::get().reads(1));
                 if let ActivityTrackingStatus::Enabled { start, end: _ } =
                     <CurrentActivityTrackingStatus<T>>::get()
                 {
+                    total_weight.saturating_accrue(T::DbWeight::get().reads(1));
                     if start <= T::CurrentSessionIndex::session_index() {
-                        total_weight.saturating_accrue(Self::on_author_noted(orchestrator_chain_author));
+                        total_weight
+                            .saturating_accrue(Self::on_author_noted(orchestrator_chain_author));
                     }
                 }
             }
@@ -228,7 +230,9 @@ pub mod pallet {
             // Cleanup active collator info for sessions that are older than the maximum allowed
             if current_session_index > T::MaxInactiveSessions::get() {
                 <crate::pallet::ActiveCollators<T>>::remove(
-                    current_session_index.saturating_sub(T::MaxInactiveSessions::get()).saturating_less_one(),
+                    current_session_index
+                        .saturating_sub(T::MaxInactiveSessions::get())
+                        .saturating_less_one(),
                 );
             }
         }
@@ -287,7 +291,8 @@ impl<T: Config> AuthorNotingHook<T::CollatorId> for Pallet<T> {
         {
             if start <= T::CurrentSessionIndex::session_index() {
                 for author_info in info {
-                    total_weight.saturating_accrue(Self::on_author_noted(author_info.author.clone()));
+                    total_weight
+                        .saturating_accrue(Self::on_author_noted(author_info.author.clone()));
                 }
             }
         }
