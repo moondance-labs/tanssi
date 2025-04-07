@@ -177,8 +177,11 @@ pub mod pallet {
 
             RewardPointsForEra::<T>::mutate(active_era.index, |era_rewards| {
                 for (validator, points) in points.into_iter() {
-                    *era_rewards.individual.entry(validator).or_default() += points;
-                    era_rewards.total += points;
+                    let era_rewards_individual_entry =
+                        era_rewards.individual.entry(validator.clone()).or_default();
+                    *era_rewards_individual_entry =
+                        (*era_rewards_individual_entry).saturating_add(points);
+                    era_rewards.total = era_rewards.total.saturating_add(points);
                 }
             })
         }
