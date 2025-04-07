@@ -19,11 +19,15 @@ import { xxhashAsHex } from "@polkadot/util-crypto";
 import type { ApiPromise } from "@polkadot/api/promise/Api";
 
 const DEFAULT_ENDPOINTS = [
+    "wss://rpc.polkadot.io",
     "wss://dancelight.tanssi-api.network",
     "wss://stagelight.tanssi-dev.network",
     "wss://dancebox.tanssi-api.network",
     "wss://fraa-flashbox-rpc.a.stagenet.tanssi.network",
     "wss://stagebox.tanssi-dev.network",
+    // Relay chains, ideally we should use our relay endpoint
+    "wss://rococo-rpc.polkadot.io",
+    "wss://westend-rpc.polkadot.io",
     // Frontier template
     "wss://dancebox-3001.tanssi-api.network",
     // TODO: add simple template rpc endpoint
