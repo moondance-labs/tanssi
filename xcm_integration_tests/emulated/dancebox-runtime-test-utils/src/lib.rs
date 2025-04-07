@@ -15,9 +15,11 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    crate::{AuthorInherent, BlockProductionCost, CollatorAssignmentCost, RuntimeOrigin},
     cumulus_primitives_core::{ParaId, PersistedValidationData},
     cumulus_primitives_parachain_inherent::ParachainInherentData,
+    dancebox_runtime::{
+        AuthorInherent, BlockProductionCost, CollatorAssignmentCost, RuntimeOrigin,
+    },
     dp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApi,
     frame_support::{
         assert_ok,
@@ -37,7 +39,7 @@ use {
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
 };
 
-pub use crate::{
+pub use dancebox_runtime::{
     AccountId, AssetRate, AuthorNoting, AuthorityAssignment, AuthorityMapping, Balance, Balances,
     CollatorAssignment, Configuration, DataPreservers, ForeignAssets, ForeignAssetsCreator,
     InflationRewards, Initializer, Invulnerables, MinimumSelfDelegation, ParachainInfo,
@@ -45,12 +47,12 @@ pub use crate::{
     ServicesPayment, Session, System, TransactionPayment,
 };
 
-// mod xcm;
+// TODO: This module copy/pasted for now from dancebox/tests/common/mod.rs, should be extracted and re-used in both places
 
 pub const UNIT: Balance = 1_000_000_000_000;
 
 pub fn session_to_block(n: u32) -> u32 {
-    let block_number = crate::Period::get() * n;
+    let block_number = dancebox_runtime::Period::get() * n;
 
     // Add 1 because the block that emits the NewSession event cannot contain any extrinsics,
     // so this is the first block of the new session that can actually be used
@@ -505,7 +507,7 @@ impl ExtBuilder {
                     (
                         account.clone(),
                         account,
-                        crate::SessionKeys { nimbus: nimbus_id },
+                        dancebox_runtime::SessionKeys { nimbus: nimbus_id },
                     )
                 })
                 .collect();

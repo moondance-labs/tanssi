@@ -25,6 +25,7 @@ sp-runtime = { workspace = true }
 tanssi-emulated-integration-tests-common = { workspace = true }
 westend-runtime = { workspace = true }
 westend-runtime-constants = { workspace = true }
+xcm-emulator = { workspace = true }
 
 [build-dependencies]
 substrate-wasm-builder = { workspace = true, optional = true }

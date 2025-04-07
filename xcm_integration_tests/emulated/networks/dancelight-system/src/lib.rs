@@ -18,8 +18,8 @@ pub use xcm_emulator::{bx, TestExt};
 use {
     dancelight_emulated_chain::Dancelight,
     frame_support::parameter_types,
-    frontier_template_dancelight_emulated_chain::FrontierTemplateDancelight,
-    simple_template_dancelight_emulated_chain::SimpleTemplateDancelight,
+    frontier_template_emulated_chain::FrontierTemplate,
+    simple_template_emulated_chain::SimpleTemplate,
     sp_keyring::Sr25519Keyring,
     tanssi_emulated_integration_tests_common,
     xcm_emulator::{
@@ -43,8 +43,8 @@ decl_test_networks! {
     pub struct DancelightMockNet {
         relay_chain = Dancelight,
         parachains = vec![
-            FrontierTemplateDancelight,
-            SimpleTemplateDancelight,
+            FrontierTemplate,
+            SimpleTemplate,
         ],
         bridge = DancelightEthMockBridge
     }
@@ -57,9 +57,9 @@ parameter_types! {
     pub DancelightEmptyReceiver: dancelight_runtime::AccountId = DancelightRelay::account_id_of(tanssi_emulated_integration_tests_common::accounts::RANDOM);
 
     // SimpleTemplate
-    pub SimpleTemplateDancelightSender: container_chain_template_simple_runtime::AccountId = dancelight_runtime::AccountId::from(tanssi_emulated_integration_tests_common::accounts::ALICE);
-    pub SimpleTemplateDancelightReceiver: container_chain_template_simple_runtime::AccountId = dancelight_runtime::AccountId::from(tanssi_emulated_integration_tests_common::accounts::BOB);
-    pub SimpleTemplateDancelightEmptyReceiver: container_chain_template_simple_runtime::AccountId = SimpleTemplateDancelightPara::account_id_of(tanssi_emulated_integration_tests_common::accounts::RANDOM);
+    pub SimpleTemplateSender: container_chain_template_simple_runtime::AccountId = dancelight_runtime::AccountId::from(tanssi_emulated_integration_tests_common::accounts::ALICE);
+    pub SimpleTemplateReceiver: container_chain_template_simple_runtime::AccountId = dancelight_runtime::AccountId::from(tanssi_emulated_integration_tests_common::accounts::BOB);
+    pub SimpleTemplateEmptyReceiver: container_chain_template_simple_runtime::AccountId = SimpleTemplatePara::account_id_of(tanssi_emulated_integration_tests_common::accounts::RANDOM);
 }
 
 pub struct DancelightEthMockBridgeHandler;

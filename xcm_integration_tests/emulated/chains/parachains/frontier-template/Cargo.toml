@@ -1,5 +1,5 @@
 [package]
-name = "frontier-template-dancelight-emulated-chain"
+name = "frontier-template-emulated-chain"
 description = "Frontier Template Dancelight emulated chain"
 edition = "2021"
 license = "GPL-3.0-only"
@@ -19,3 +19,4 @@ hex-literal = { workspace = true }
 sp-core = { workspace = true }
 xcm = { workspace = true }
 xcm-emulator = { workspace = true }
+frame-support = { workspace = true }

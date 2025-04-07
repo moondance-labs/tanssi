@@ -1,6 +1,6 @@
 [package]
-name = "simple-template-dancelight-emulated-chain"
-description = "Dancelight emulated chain"
+name = "dancebox-emulated-chain"
+description = "Dancebox emulated chain"
 edition = "2021"
 license = "GPL-3.0-only"
 publish = false
@@ -19,3 +19,12 @@ sp-core = { workspace = true }
 tanssi-emulated-integration-tests-common = { workspace = true }
 xcm = { workspace = true }
 xcm-emulator = { workspace = true }
+dancebox-runtime = { workspace = true }
+frame-support = { workspace = true }
+parity-scale-codec = { workspace = true }
+sp-consensus-aura = { workspace = true }
+sp-runtime = { workspace = true }
+xcm-builder = { workspace = true }
+xcm-executor = { workspace = true }
+polkadot-parachain-primitives = { workspace = true }
+sp-keyring = { workspace = true }

@@ -15,3 +15,29 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 pub mod genesis;
+
+use xcm_emulator::decl_test_relay_chains;
+pub use xcm_emulator::TestExt;
+
+decl_test_relay_chains! {
+    #[api_version(11)]
+    pub struct Rococo {
+        genesis = genesis::genesis(),
+        on_init = (),
+        runtime = rococo_runtime,
+        core = {
+            SovereignAccountOf: rococo_runtime::xcm_config::LocationConverter,
+        },
+        pallets = {
+            System: rococo_runtime::System,
+            Session: rococo_runtime::Session,
+            Configuration: rococo_runtime::Configuration,
+            Balances: rococo_runtime::Balances,
+            Registrar: rococo_runtime::Registrar,
+            ParasSudoWrapper: rococo_runtime::ParasSudoWrapper,
+            OnDemandAssignmentProvider: rococo_runtime::OnDemandAssignmentProvider,
+            XcmPallet: rococo_runtime::XcmPallet,
+            Sudo: rococo_runtime::Sudo,
+        }
+    }
+}

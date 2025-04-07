@@ -28,6 +28,8 @@ rococo-runtime-constants = { workspace = true }
 emulated-integration-tests-common = { workspace = true }
 runtime-parachains = { workspace = true }
 tanssi-emulated-integration-tests-common = { workspace = true }
+xcm-emulator = { workspace = true }
+
 
 [features]
 default = [ "std" ]

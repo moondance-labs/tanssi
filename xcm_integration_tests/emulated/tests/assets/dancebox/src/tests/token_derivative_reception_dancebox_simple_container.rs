@@ -15,78 +15,76 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    dancelight_emulated_chain::DancelightRelayPallet,
-    dancelight_system_emulated_network::{
-        DancelightRelay as Dancelight, DancelightSender, SimpleTemplateEmptyReceiver,
-        SimpleTemplatePara as SimpleTemplate,
+    crate::tests::common::xcm::{
+        mocknets::{
+            DanceboxPara as Dancebox, DanceboxParaPallet, DanceboxSender,
+            SimpleTemplatePara as SimpleTemplate, SimpleTemplateParaPallet, SimpleTemplateReceiver,
+        },
+        *,
     },
     frame_support::{
         assert_ok,
+        traits::PalletInfoAccess,
         weights::{Weight, WeightToFee},
     },
-    simple_template_emulated_chain::genesis::PARA_ID,
-    simple_template_emulated_chain::SimpleTemplateParaPallet,
     sp_runtime::FixedU128,
     xcm::{
         latest::prelude::{Junctions::*, *},
         VersionedLocation,
     },
-    xcm_emulator::{assert_expected_events, bx, Chain, TestExt},
+    xcm_emulator::{assert_expected_events, Chain},
 };
 
 #[allow(unused_assignments)]
 #[test]
-fn transfer_assets_from_dancelight_to_one_of_its_parachains() {
-    // Dancelight origin (sender)
-    let dancelight_alice_origin =
-        <Dancelight as Chain>::RuntimeOrigin::signed(DancelightSender::get());
+fn receive_tokens_from_tanssi_to_simple_template() {
+    // XcmPallet reserve transfer arguments
+    let alice_origin = <Dancebox as Chain>::RuntimeOrigin::signed(DanceboxSender::get());
 
-    // Destination location from the dancelight relay viewpoint
+    // Parents 1 this time
     let simple_template_dest: VersionedLocation = Location {
-        parents: 0,
-        interior: X1([Parachain(PARA_ID)].into()),
+        parents: 1,
+        interior: X1([Parachain(2002u32)].into()),
     }
     .into();
 
-    // Beneficiary location from the simple template parachain viewpoint
     let simple_template_beneficiary: VersionedLocation = Location {
         parents: 0,
         interior: X1([AccountId32 {
             network: None,
-            id: SimpleTemplateEmptyReceiver::get().into(),
+            id: SimpleTemplateReceiver::get().into(),
         }]
         .into()),
     }
     .into();
 
-    let amount_to_send: dancelight_runtime::Balance =
-        dancelight_runtime::ExistentialDeposit::get() * 1000;
+    let amount_to_send: crate::Balance = crate::ExistentialDeposit::get() * 1000;
 
-    // Asset located in Dancelight relay
-    let assets: Assets = (Here, amount_to_send).into();
+    let dancebox_pallet_info_junction = PalletInstance(
+        <<Dancebox as DanceboxParaPallet>::Balances as PalletInfoAccess>::index() as u8,
+    );
+    let assets: Assets = (X1([dancebox_pallet_info_junction].into()), amount_to_send).into();
     let fee_asset_item = 0;
-    let dancelight_token_asset_id = 1u16;
+    let dancebox_token_asset_id = 1u16;
 
-    // Register the asset first in simple template chain
+    // Register the asset first
     SimpleTemplate::execute_with(|| {
         let root_origin = <SimpleTemplate as Chain>::RuntimeOrigin::root();
 
-        // Create foreign asset from relay chain
         assert_ok!(
             <SimpleTemplate as SimpleTemplateParaPallet>::ForeignAssetsCreator::create_foreign_asset(
                 root_origin.clone(),
                 Location {
                     parents: 1,
-                    interior: Here,
+                    interior: X2([Parachain(2000), dancebox_pallet_info_junction].into())
                 },
-                dancelight_token_asset_id,
-                SimpleTemplateEmptyReceiver::get(),
+                dancebox_token_asset_id,
+                SimpleTemplateReceiver::get(),
                 true,
                 1
             )
         );
 
-        // Create asset rate
         assert_ok!(
             <SimpleTemplate as SimpleTemplateParaPallet>::AssetRate::create(
                 root_origin,
@@ -96,11 +94,11 @@ fn transfer_assets_from_dancelight_to_one_of_its_parachains() {
         );
     });
 
-    // Send XCM transfer from Dancelight
-    Dancelight::execute_with(|| {
+    // Send XCM message from Dancebox
+    Dancebox::execute_with(|| {
         assert_ok!(
-            <Dancelight as DancelightRelayPallet>::XcmPallet::limited_reserve_transfer_assets(
-                dancelight_alice_origin,
+            <Dancebox as DanceboxParaPallet>::PolkadotXcm::limited_reserve_transfer_assets(
+                alice_origin,
                 bx!(simple_template_dest),
                 bx!(simple_template_beneficiary),
                 bx!(assets.into()),
@@ -109,13 +107,10 @@ fn transfer_assets_from_dancelight_to_one_of_its_parachains() {
             )
         );
     });
-
-    // Verify token reception in Simple Template chain
+    // We should have received the tokens
     SimpleTemplate::execute_with(|| {
         type RuntimeEvent = <SimpleTemplate as Chain>::RuntimeEvent;
         let mut outcome_weight = Weight::default();
-
-        // Check message processing
         assert_expected_events!(
             SimpleTemplate,
             vec![
@@ -132,18 +127,17 @@ fn transfer_assets_from_dancelight_to_one_of_its_parachains() {
                     },
             ]
         );
-
         type ForeignAssets = <SimpleTemplate as SimpleTemplateParaPallet>::ForeignAssets;
 
-        // Calculate native balance based on weight
+        // We should have charged an amount of tokens that is identical to the weight spent
         let native_balance =
             container_chain_template_simple_runtime::WeightToFee::weight_to_fee(&outcome_weight);
 
-        // Verify receiver's balance
+        // Assert empty receiver received funds
         assert_eq!(
             <ForeignAssets as frame_support::traits::fungibles::Inspect<_>>::balance(
-                dancelight_token_asset_id,
-                &SimpleTemplateEmptyReceiver::get(),
+                dancebox_token_asset_id,
+                &SimpleTemplateReceiver::get(),
             ),
             amount_to_send - native_balance
         );

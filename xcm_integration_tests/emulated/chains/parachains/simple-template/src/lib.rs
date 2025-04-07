@@ -15,10 +15,12 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 pub mod genesis;
-use xcm_emulator::decl_test_parachains;
+use emulated_integration_tests_common::{
+    impl_assert_events_helpers_for_parachain, xcm_emulator::decl_test_parachains,
+};
 
 decl_test_parachains! {
-    pub struct SimpleTemplateDancelight {
+    pub struct SimpleTemplate {
         genesis = genesis::genesis(),
         on_init = (),
         runtime = container_chain_template_simple_runtime,
@@ -39,3 +41,5 @@ decl_test_parachains! {
         }
     }
 }
+
+impl_assert_events_helpers_for_parachain!(SimpleTemplate);

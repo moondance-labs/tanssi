@@ -14,23 +14,5 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-pub mod genesis;
-use xcm_emulator::decl_test_relay_chains;
-
-decl_test_relay_chains! {
-    #[api_version(11)]
-    pub struct Westend {
-        genesis = genesis::genesis(),
-        on_init = (),
-        runtime = westend_runtime,
-        core = {
-            SovereignAccountOf: westend_runtime::xcm_config::LocationConverter,
-        },
-        pallets = {
-            System: westend_runtime::System,
-            Balances: westend_runtime::Balances,
-            XcmPallet: westend_runtime::XcmPallet,
-            Sudo: westend_runtime::Sudo,
-        }
-    },
-}
+#[cfg(test)]
+mod tests;

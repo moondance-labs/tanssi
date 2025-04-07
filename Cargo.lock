@@ -576,7 +576,7 @@ dependencies = [
  "pallet-message-queue",
  "pallet-xcm",
  "polkadot-primitives",
- "simple-template-dancelight-emulated-chain",
+ "simple-template-emulated-chain",
  "sp-runtime",
  "staging-xcm",
  "staging-xcm-executor",
@@ -3311,6 +3311,52 @@ dependencies = [
 ]
 
 [[package]]
+name = "dancebox-emulated-chain"
+version = "0.0.0"
+dependencies = [
+ "container-chain-template-simple-runtime",
+ "cumulus-primitives-core",
+ "dancebox-runtime",
+ "emulated-integration-tests-common",
+ "frame-support",
+ "parity-scale-codec",
+ "polkadot-parachain-primitives",
+ "sp-consensus-aura",
+ "sp-core",
+ "sp-keyring",
+ "sp-runtime",
+ "staging-xcm",
+ "staging-xcm-builder",
+ "staging-xcm-executor",
+ "tanssi-emulated-integration-tests-common",
+ "xcm-emulator",
+]
+
+[[package]]
+name = "dancebox-rococo-emulated-chain"
+version = "0.0.0"
+dependencies = [
+ "container-chain-template-simple-runtime",
+ "cumulus-primitives-core",
+ "dancebox-runtime",
+ "emulated-integration-tests-common",
+ "frame-support",
+ "nimbus-primitives",
+ "pallet-configuration",
+ "parity-scale-codec",
+ "polkadot-parachain-primitives",
+ "sp-consensus-aura",
+ "sp-core",
+ "sp-keyring",
+ "sp-runtime",
+ "staging-xcm",
+ "staging-xcm-builder",
+ "staging-xcm-executor",
+ "tanssi-emulated-integration-tests-common",
+ "xcm-emulator",
+]
+
+[[package]]
 name = "dancebox-runtime"
 version = "0.1.0"
 dependencies = [
@@ -3328,6 +3374,142 @@ dependencies = [
  "cumulus-primitives-timestamp",
  "cumulus-primitives-utility",
  "cumulus-test-relay-sproof-builder",
+ "dp-consensus",
+ "dp-core",
+ "dp-slot-duration-runtime-api",
+ "emulated-integration-tests-common",
+ "frame-benchmarking",
+ "frame-executive",
+ "frame-support",
+ "frame-system",
+ "frame-system-benchmarking",
+ "frame-system-rpc-runtime-api",
+ "frame-try-runtime",
+ "hex-literal 0.3.4",
+ "log",
+ "nimbus-primitives",
+ "pallet-asset-rate",
+ "pallet-assets",
+ "pallet-async-backing",
+ "pallet-author-inherent",
+ "pallet-author-noting",
+ "pallet-author-noting-runtime-api",
+ "pallet-authority-assignment",
+ "pallet-authority-mapping",
+ "pallet-balances",
+ "pallet-collator-assignment",
+ "pallet-collator-assignment-runtime-api",
+ "pallet-configuration",
+ "pallet-data-preservers",
+ "pallet-data-preservers-runtime-api",
+ "pallet-foreign-asset-creator",
+ "pallet-identity",
+ "pallet-inflation-rewards",
+ "pallet-initializer",
+ "pallet-invulnerables",
+ "pallet-maintenance-mode",
+ "pallet-message-queue",
+ "pallet-migrations 0.1.0",
+ "pallet-migrations 1.0.0",
+ "pallet-multisig",
+ "pallet-pooled-staking",
+ "pallet-proxy",
+ "pallet-registrar",
+ "pallet-registrar-runtime-api",
+ "pallet-relay-storage-roots",
+ "pallet-root-testing",
+ "pallet-services-payment",
+ "pallet-services-payment-runtime-api",
+ "pallet-session",
+ "pallet-staking",
+ "pallet-stream-payment",
+ "pallet-stream-payment-runtime-api",
+ "pallet-sudo",
+ "pallet-timestamp",
+ "pallet-transaction-payment",
+ "pallet-transaction-payment-rpc-runtime-api",
+ "pallet-treasury",
+ "pallet-tx-pause",
+ "pallet-utility",
+ "pallet-xcm",
+ "pallet-xcm-benchmarks",
+ "pallet-xcm-core-buyer",
+ "pallet-xcm-core-buyer-runtime-api",
+ "parachains-common",
+ "parity-scale-codec",
+ "paste",
+ "polkadot-parachain-primitives",
+ "polkadot-runtime-common",
+ "polkadot-runtime-parachains",
+ "polkadot-service",
+ "rococo-runtime",
+ "rococo-runtime-constants",
+ "sc-consensus-grandpa",
+ "sc-service",
+ "scale-info",
+ "serde",
+ "serde_json",
+ "smallvec",
+ "sp-api",
+ "sp-application-crypto",
+ "sp-block-builder",
+ "sp-consensus-aura",
+ "sp-consensus-babe",
+ "sp-consensus-beefy",
+ "sp-consensus-slots",
+ "sp-core",
+ "sp-debug-derive",
+ "sp-genesis-builder",
+ "sp-inherents",
+ "sp-io",
+ "sp-keyring",
+ "sp-offchain",
+ "sp-runtime",
+ "sp-session",
+ "sp-std",
+ "sp-transaction-pool",
+ "sp-trie",
+ "sp-version",
+ "staging-parachain-info",
+ "staging-xcm",
+ "staging-xcm-builder",
+ "staging-xcm-executor",
+ "substrate-wasm-builder",
+ "tanssi-relay-encoder",
+ "tanssi-runtime-common",
+ "test-relay-sproof-builder",
+ "tp-author-noting-inherent",
+ "tp-data-preservers-common",
+ "tp-stream-payment-common",
+ "tp-traits",
+ "tp-xcm-commons",
+ "tp-xcm-core-buyer",
+ "westend-runtime",
+ "westend-runtime-constants",
+ "xcm-emulator",
+ "xcm-primitives",
+ "xcm-runtime-apis",
+]
+
+[[package]]
+name = "dancebox-runtime-test-utils"
+version = "0.0.0"
+dependencies = [
+ "assets-common",
+ "async-backing-primitives",
+ "container-chain-template-frontier-runtime",
+ "container-chain-template-simple-runtime",
+ "cumulus-pallet-parachain-system",
+ "cumulus-pallet-session-benchmarking",
+ "cumulus-pallet-xcm",
+ "cumulus-pallet-xcmp-queue",
+ "cumulus-primitives-core",
+ "cumulus-primitives-parachain-inherent",
+ "cumulus-primitives-storage-weight-reclaim",
+ "cumulus-primitives-timestamp",
+ "cumulus-primitives-utility",
+ "cumulus-test-relay-sproof-builder",
+ "dancebox-runtime",
  "dp-consensus",
  "dp-core",
  "dp-slot-duration-runtime-api",
@@ -3646,8 +3828,8 @@ dependencies = [
  "dancelight-emulated-chain",
  "dancelight-runtime",
  "frame-support",
- "frontier-template-dancelight-emulated-chain",
- "simple-template-dancelight-emulated-chain",
+ "frontier-template-emulated-chain",
+ "simple-template-emulated-chain",
  "snowbridge-pallet-outbound-queue",
  "sp-keyring",
  "tanssi-emulated-integration-tests-common",
@@ -5640,12 +5822,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "frontier-template-dancelight-emulated-chain"
+name = "frontier-template-emulated-chain"
 version = "0.0.0"
 dependencies = [
  "container-chain-template-frontier-runtime",
  "cumulus-primitives-core",
  "emulated-integration-tests-common",
+ "frame-support",
  "hex-literal 0.3.4",
  "sp-core",
  "staging-xcm",
@@ -14284,6 +14467,7 @@ dependencies = [
  "sp-consensus-beefy",
  "sp-core",
  "tanssi-emulated-integration-tests-common",
+ "xcm-emulator",
 ]
 
 [[package]]
@@ -14402,6 +14586,24 @@ dependencies = [
  "sp-weights",
  "staging-xcm",
  "staging-xcm-builder",
+]
+
+[[package]]
+name = "rococo-system-emulated-network"
+version = "0.0.0"
+dependencies = [
+ "container-chain-template-simple-runtime",
+ "cumulus-primitives-core",
+ "dancebox-emulated-chain",
+ "dancebox-rococo-emulated-chain",
+ "frame-support",
+ "frontier-template-emulated-chain",
+ "rococo-emulated-chain",
+ "simple-template-emulated-chain",
+ "snowbridge-pallet-outbound-queue",
+ "sp-keyring",
+ "tanssi-emulated-integration-tests-common",
+ "xcm-emulator",
 ]
 
 [[package]]
@@ -16687,7 +16889,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "620a1d43d70e142b1d46a929af51d44f383db9c7a2ec122de2cd992ccfcf3c18"
 
 [[package]]
-name = "simple-template-dancelight-emulated-chain"
+name = "simple-template-emulated-chain"
 version = "0.0.0"
 dependencies = [
  "container-chain-template-simple-runtime",
@@ -21043,6 +21245,7 @@ dependencies = [
  "tanssi-emulated-integration-tests-common",
  "westend-runtime",
  "westend-runtime-constants",
+ "xcm-emulator",
 ]
 
 [[package]]
@@ -21169,6 +21372,24 @@ dependencies = [
  "sp-weights",
  "staging-xcm",
  "staging-xcm-builder",
+]
+
+[[package]]
+name = "westend-system-emulated-network"
+version = "0.0.0"
+dependencies = [
+ "container-chain-template-simple-runtime",
+ "cumulus-primitives-core",
+ "dancebox-emulated-chain",
+ "dancebox-runtime",
+ "frame-support",
+ "frontier-template-emulated-chain",
+ "simple-template-emulated-chain",
+ "snowbridge-pallet-outbound-queue",
+ "sp-keyring",
+ "tanssi-emulated-integration-tests-common",
+ "westend-emulated-chain",
+ "xcm-emulator",
 ]
 
 [[package]]

@@ -15,11 +15,17 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 pub mod genesis;
-use xcm_emulator::decl_test_parachains;
+
+use {
+    emulated_integration_tests_common::{
+        impl_assert_events_helpers_for_parachain, xcm_emulator::decl_test_parachains,
+    },
+    frame_support::parameter_types,
+};
 
 decl_test_parachains! {
     // Dancelight parachains
-    pub struct FrontierTemplateDancelight {
+    pub struct FrontierTemplate {
         genesis = genesis::genesis(),
         on_init = (),
         runtime = container_chain_template_frontier_runtime,
@@ -40,3 +46,11 @@ decl_test_parachains! {
         }
     },
 }
+
+parameter_types! {
+    pub EthereumSender: container_chain_template_frontier_runtime::AccountId = genesis::pre_funded_accounts()[0];
+    pub EthereumReceiver: container_chain_template_frontier_runtime::AccountId = genesis::pre_funded_accounts()[1];
+    pub EthereumEmptyReceiver: container_chain_template_frontier_runtime::AccountId = [1u8; 20].into();
+}
+
+impl_assert_events_helpers_for_parachain!(FrontierTemplate);

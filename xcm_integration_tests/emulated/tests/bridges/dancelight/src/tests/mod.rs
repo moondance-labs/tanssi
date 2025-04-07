@@ -25,7 +25,7 @@ mod imports {
         dancelight_runtime::Runtime,
         dancelight_system_emulated_network::DancelightRelay as Dancelight,
         dancelight_system_emulated_network::DancelightSender,
-        dancelight_system_emulated_network::SimpleTemplateDancelightPara as DancelightPara,
+        dancelight_system_emulated_network::SimpleTemplatePara as DancelightPara,
         frame_support::assert_ok,
         keyring::Sr25519Keyring,
         parity_scale_codec::Encode,
