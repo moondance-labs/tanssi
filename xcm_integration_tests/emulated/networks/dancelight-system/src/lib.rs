@@ -20,6 +20,7 @@ use {
     frame_support::parameter_types,
     frontier_template_dancelight_emulated_chain::FrontierTemplateDancelight,
     simple_template_dancelight_emulated_chain::SimpleTemplateDancelight,
+    sp_keyring::Sr25519Keyring,
     tanssi_emulated_integration_tests_common,
     xcm_emulator::{
         decl_test_networks, Bridge, BridgeLaneId, BridgeMessage, BridgeMessageDispatchError,
@@ -51,8 +52,8 @@ decl_test_networks! {
 
 parameter_types! {
     // Dancelight
-    pub DancelightSender: dancelight_runtime::AccountId = dancelight_runtime::AccountId::from(tanssi_emulated_integration_tests_common::accounts::ALICE);
-    pub DancelightReceiver: dancelight_runtime::AccountId = dancelight_runtime::AccountId::from(tanssi_emulated_integration_tests_common::accounts::BOB);
+    pub DancelightSender: dancelight_runtime::AccountId = Sr25519Keyring::Alice.to_account_id();
+    pub DancelightReceiver: dancelight_runtime::AccountId = Sr25519Keyring::Bob.to_account_id();
     pub DancelightEmptyReceiver: dancelight_runtime::AccountId = DancelightRelay::account_id_of(tanssi_emulated_integration_tests_common::accounts::RANDOM);
 
     // SimpleTemplate

@@ -14,5 +14,5 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-#[cfg(any(test, feature = "testing-helpers"))]
+#[cfg(test)]
 mod tests;

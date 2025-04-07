@@ -12,7 +12,7 @@ workspace = true
 workspace = true
 
 [dependencies]
-container-chain-template-frontier-runtime = { workspace = true }
+container-chain-template-frontier-runtime = { workspace = true, features = ["std"] }
 cumulus-primitives-core = { workspace = true }
 emulated-integration-tests-common = { workspace = true }
 hex-literal = { workspace = true }

@@ -14,27 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-use {
-    dancelight_runtime_constants::currency::UNITS as UNIT,
-    dancelight_runtime_test_utils::ExtBuilder, tanssi_emulated_integration_tests_common,
-    xcm_emulator::decl_test_relay_chains,
-};
+pub mod genesis;
+use xcm_emulator::decl_test_relay_chains;
 
 decl_test_relay_chains! {
     #[api_version(11)]
     pub struct Dancelight {
-        genesis = ExtBuilder::default()
-        .with_balances(vec![
-            // Alice gets 10k extra tokens for her mapping deposit
-            (dancelight_runtime::AccountId::from(tanssi_emulated_integration_tests_common::accounts::ALICE), 210_000 * UNIT),
-            (dancelight_runtime::AccountId::from(tanssi_emulated_integration_tests_common::accounts::BOB), 100_000 * UNIT),
-        ])
-        .with_relay_config(runtime_parachains::configuration::HostConfiguration {
-            max_downward_message_size: 1024 * 1024,
-            ..Default::default()
-        })
-        .with_safe_xcm_version(3)
-        .build_storage(),
+        genesis = genesis::genesis(),
         on_init = (),
         runtime = dancelight_runtime,
         core = {

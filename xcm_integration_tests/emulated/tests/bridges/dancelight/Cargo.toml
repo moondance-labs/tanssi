@@ -12,40 +12,20 @@ workspace = true
 workspace = true
 
 [dependencies]
-alloy-sol-types = { workspace = true, default-features = true }
+alloy-sol-types = { workspace = true, features = ["std"]}
 dancelight-emulated-chain = { workspace = true }
-dancelight-runtime = { workspace = true, features = [ "testing-helpers" ] }
+dancelight-runtime = { workspace = true, features = [ "testing-helpers", "std" ] }
 dancelight-runtime-test-utils = { workspace = true }
 dancelight-system-emulated-network = { workspace = true }
 frame-support = { workspace = true, features = [ "tuples-96" ] }
 frame-system = { workspace = true }
 keyring = { workspace = true }
-parity-scale-codec = { workspace = true, features = [ "derive", "max-encoded-len" ] }
+parity-scale-codec = { workspace = true, features = [ "derive", "max-encoded-len", "std" ] }
 snowbridge-core = { workspace = true }
-snowbridge-pallet-inbound-queue = { workspace = true }
-snowbridge-router-primitives = { workspace = true }
+snowbridge-pallet-inbound-queue = { workspace = true, features = ["std"] }
+snowbridge-router-primitives = { workspace = true, features = ["std"] }
 sp-core = { workspace = true }
 tanssi-emulated-integration-tests-common = { workspace = true }
-tp-bridge = { workspace = true }
+tp-bridge = { workspace = true, features = ["std"] }
 xcm = { workspace = true }
 xcm-emulator = { workspace = true }
-
-[features]
-default = [ "std" ]
-std = [
-	"alloy-sol-types/std",
-	"dancelight-runtime-test-utils/std",
-	"dancelight-runtime/std",
-	"frame-support/std",
-	"frame-system/std",
-	"keyring/std",
-	"parity-scale-codec/std",
-	"snowbridge-core/std",
-	"snowbridge-pallet-inbound-queue/std",
-	"snowbridge-router-primitives/std",
-	"sp-core/std",
-	"tp-bridge/std",
-	"xcm/std",
-]
-no_std = []
-testing-helpers = []
