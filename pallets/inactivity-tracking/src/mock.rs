@@ -10,7 +10,6 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-
 use std::convert::Into;
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
@@ -78,11 +77,13 @@ impl frame_system::Config for Test {
 pub struct CurrentSessionIndexGetter;
 
 impl tp_traits::GetSessionIndex<u32> for CurrentSessionIndexGetter {
-    /// Returns current session index.
     fn session_index() -> u32 {
         // For tests, let 1 session be 5 blocks
         (System::block_number() / SESSION_BLOCK_LENGTH) as u32
     }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn skip_to_session(_session_index: u32) {}
 }
 
 impl pallet_inactivity_tracking::Config for Test {

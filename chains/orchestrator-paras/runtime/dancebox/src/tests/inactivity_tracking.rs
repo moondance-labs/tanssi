@@ -94,15 +94,14 @@ fn inactivity_tracking_correctly_updates_storages_on_orchestrator_chains_author_
             run_block();
 
             assert_eq!(
-                <ActiveCollators<Runtime>>::get(0), 
+                <ActiveCollators<Runtime>>::get(0),
                 get_collators_set(vec![ALICE.into(), BOB.into()])
             );
-
             assert_eq!(
                 <ActiveCollatorsForCurrentSession<Runtime>>::get(),
                 get_collators_set(vec![ALICE.into(), BOB.into()])
             );
-            
+
             run_to_session(2);
             run_block();
 
@@ -115,7 +114,6 @@ fn inactivity_tracking_correctly_updates_storages_on_orchestrator_chains_author_
                 <ActiveCollatorsForCurrentSession<Runtime>>::get(),
                 get_collators_set(vec![ALICE.into(), BOB.into()])
             );
-            
             let max_inactive_sessions =
                 <Runtime as pallet_inactivity_tracking::Config>::MaxInactiveSessions::get();
             run_to_session(max_inactive_sessions - 1);
