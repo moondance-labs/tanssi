@@ -272,6 +272,9 @@ pub trait GetHostConfiguration<SessionIndex> {
 /// Returns current session index.
 pub trait GetSessionIndex<SessionIndex> {
     fn session_index() -> SessionIndex;
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn skip_to_session(session_index: SessionIndex);
 }
 
 /// Should pallet_collator_assignment trigger a full rotation on this session?

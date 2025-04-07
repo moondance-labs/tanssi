@@ -1124,6 +1124,13 @@ impl tp_traits::GetSessionIndex<u32> for CurrentSessionIndexGetter {
     fn session_index() -> u32 {
         Session::current_index()
     }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn skip_to_session(session_index: SessionIndex) {
+        while Session::current_index() < session_index {
+            Session::rotate_session();
+        }
+    }
 }
 
 impl pallet_configuration::Config for Runtime {
@@ -1737,23 +1744,12 @@ impl pallet_multisig::Config for Runtime {
     type WeightInfo = weights::pallet_multisig::SubstrateWeight<Runtime>;
 }
 
-pub struct MockCurrentSessionGetter;
-
-impl tp_traits::GetSessionIndex<u32> for MockCurrentSessionGetter {
-    fn session_index() -> u32 {
-        1
-    }
-}
-
 impl pallet_inactivity_tracking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type CollatorId = CollatorId;
     type MaxInactiveSessions = ConstU32<5>;
     type MaxCollatorsPerSession = ConstU32<100>;
-    #[cfg(not(feature = "runtime-benchmarks"))]
     type CurrentSessionIndex = CurrentSessionIndexGetter;
-    #[cfg(feature = "runtime-benchmarks")]
-    type CurrentSessionIndex = MockCurrentSessionGetter;
     type GetSelfChainBlockAuthor = GetSelfChainBlockAuthor;
     type WeightInfo = weights::pallet_inactivity_tracking::SubstrateWeight<Runtime>;
 }

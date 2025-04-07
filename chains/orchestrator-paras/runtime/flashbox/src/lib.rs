@@ -959,6 +959,9 @@ impl tp_traits::GetSessionIndex<u32> for CurrentSessionIndexGetter {
     fn session_index() -> u32 {
         Session::current_index()
     }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn skip_to_session(_session_index: SessionIndex) {}
 }
 
 impl pallet_configuration::Config for Runtime {
