@@ -1,4 +1,17 @@
-#!/usr/bin/env node
+/**
+unhash-key
+
+Given a raw storage key, try to find which pallet it belongs to, and which storage item
+
+Usage:
+# List all pallet prefixes for a selected chain
+pnpm unhash-key
+# Search for a key in all endpoints
+pnpm unhash-key 0x94eadf0156a8ad5156507773d0471e4a49f6c9aa90c04982c05388649310f22f
+# Search for a key in a specific endpoint
+pnpm unhash-key --url 'wss://dancelight.tanssi-api.network' 0x94eadf0156a8ad5156507773d0471e4a49f6c9aa90c04982c05388649310f22f
+ */
+
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import { NETWORK_YARGS_OPTIONS, getApiFor } from "./utils/network";
