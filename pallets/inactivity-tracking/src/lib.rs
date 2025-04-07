@@ -48,6 +48,7 @@ pub use pallet::*;
 
 #[frame_support::pallet]
 pub mod pallet {
+    use sp_runtime::Saturating;
     use {
         super::*,
         crate::weights::WeightInfo,
@@ -172,10 +173,10 @@ pub mod pallet {
                 Error::<T>::ActivityStatusUpdateSuspended
             );
             let new_status_end_session_index =
-                current_session_index + T::MaxInactiveSessions::get();
+                current_session_index.saturating_add(T::MaxInactiveSessions::get());
             let new_status = if is_enabled {
                 ActivityTrackingStatus::Enabled {
-                    start: current_session_index + 1,
+                    start: current_session_index.saturating_plus_one(),
                     end: new_status_end_session_index,
                 }
             } else {
@@ -202,7 +203,7 @@ pub mod pallet {
                     <CurrentActivityTrackingStatus<T>>::get()
                 {
                     if start <= T::CurrentSessionIndex::session_index() {
-                        total_weight += Self::on_author_noted(orchestrator_chain_author);
+                        total_weight.saturating_accrue(Self::on_author_noted(orchestrator_chain_author));
                     }
                 }
             }
@@ -227,7 +228,7 @@ pub mod pallet {
             // Cleanup active collator info for sessions that are older than the maximum allowed
             if current_session_index > T::MaxInactiveSessions::get() {
                 <crate::pallet::ActiveCollators<T>>::remove(
-                    current_session_index - T::MaxInactiveSessions::get() - 1,
+                    current_session_index.saturating_sub(T::MaxInactiveSessions::get()).saturating_less_one(),
                 );
             }
         }
@@ -239,7 +240,7 @@ pub mod pallet {
                         .try_insert(author)
                         .map_err(|_| Error::<T>::MaxCollatorsPerSessionReached)?
                     {
-                        total_weight += T::DbWeight::get().writes(1);
+                        total_weight.saturating_accrue(T::DbWeight::get().writes(1));
                     }
                     Ok(())
                 },
@@ -262,7 +263,7 @@ impl<T: Config> NodeActivityTrackingHelper<T::CollatorId> for Pallet<T> {
         match <CurrentActivityTrackingStatus<T>>::get() {
             ActivityTrackingStatus::Disabled { .. } => return false,
             ActivityTrackingStatus::Enabled { start, end: _ } => {
-                if start + minimum_sessions_required > current_session_index {
+                if start.saturating_add(minimum_sessions_required) > current_session_index {
                     return false;
                 }
             }
@@ -286,7 +287,7 @@ impl<T: Config> AuthorNotingHook<T::CollatorId> for Pallet<T> {
         {
             if start <= T::CurrentSessionIndex::session_index() {
                 for author_info in info {
-                    total_weight += Self::on_author_noted(author_info.author.clone());
+                    total_weight.saturating_accrue(Self::on_author_noted(author_info.author.clone()));
                 }
             }
         }
