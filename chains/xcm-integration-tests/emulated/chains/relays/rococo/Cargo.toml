@@ -43,3 +43,10 @@ std = [
 	"sp-core/std",
 ]
 no_std = []
+
+runtime-benchmarks = [
+	"cumulus-primitives-core/runtime-benchmarks",
+	"polkadot-parachain-primitives/runtime-benchmarks",
+	"rococo-runtime/runtime-benchmarks",
+	"runtime-parachains/runtime-benchmarks",
+]
