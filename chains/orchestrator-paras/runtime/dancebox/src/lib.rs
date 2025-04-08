@@ -1827,8 +1827,11 @@ mod benches {
         [pallet_pooled_staking, PooledStaking]
         [pallet_treasury, Treasury]
         [cumulus_pallet_xcmp_queue, XcmpQueue]
+        // XCM
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
+        [pallet_xcm_benchmarks::fungible, pallet_xcm_benchmarks::fungible::Pallet::<Runtime>]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
+
         [pallet_assets, ForeignAssets]
         [pallet_foreign_asset_creator, ForeignAssetsCreator]
         [pallet_asset_rate, AssetRate]
@@ -2046,6 +2049,24 @@ impl_runtime_apis! {
                     SelfReserve::get(),
                     ExistentialDeposit::get()
                 ).into());
+
+                pub LocalCheckAccount: Option<(AccountId, MintLocation)> = None;
+                pub TrustedTeleporter: Option<(Location, Asset)> = None;
+                pub TrustedReserve: Option<(Location, Asset)> = None;
+            }
+
+            impl pallet_xcm_benchmarks::fungible::Config for Runtime {
+                type TransactAsset = Balances;
+                type CheckedAccount = LocalCheckAccount;
+                type TrustedTeleporter = TrustedTeleporter;
+                type TrustedReserve = TrustedReserve;
+
+                fn get_asset() -> Asset {
+                    Asset {
+                        id: AssetId(SelfReserve::get()),
+                        fun: Fungible(1 * UNIT),
+                    }
+                }
             }
 
             impl pallet_xcm_benchmarks::Config for Runtime {
