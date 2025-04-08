@@ -8,10 +8,10 @@ members = [
 	"chains/orchestrator-relays/node/*",
 	"chains/orchestrator-relays/runtime/dancelight",
 	"chains/orchestrator-relays/runtime/dancelight/constants",
-	"chains/xcm-integration-tests/emulated/chains/parachains/dancebox",
-	"chains/xcm-integration-tests/emulated/chains/parachains/dancebox-rococo",
-	"chains/xcm-integration-tests/emulated/chains/parachains/frontier-template",
-	"chains/xcm-integration-tests/emulated/chains/parachains/simple-template",
+	"chains/xcm-integration-tests/emulated/chains/orchestrator-paras/dancebox",
+	"chains/xcm-integration-tests/emulated/chains/orchestrator-paras/dancebox-rococo",
+	"chains/xcm-integration-tests/emulated/chains/templates/frontier-template",
+	"chains/xcm-integration-tests/emulated/chains/templates/simple-template",
 	"chains/xcm-integration-tests/emulated/chains/relays/dancelight",
 	"chains/xcm-integration-tests/emulated/chains/relays/rococo",
 	"chains/xcm-integration-tests/emulated/chains/relays/westend",
@@ -117,15 +117,15 @@ tc-consensus = { path = "client/consensus" }
 tc-orchestrator-chain-rpc-interface = { path = "client/orchestrator-chain-rpc-interface" }
 tc-service-container-chain = { path = "client/service-container-chain" }
 
-dancebox-emulated-chain = { path = "chains/xcm-integration-tests/emulated/chains/parachains/dancebox" }
-dancebox-rococo-emulated-chain = { path = "chains/xcm-integration-tests/emulated/chains/parachains/dancebox-rococo" }
+dancebox-emulated-chain = { path = "chains/xcm-integration-tests/emulated/chains/orchestrator-paras/dancebox" }
+dancebox-rococo-emulated-chain = { path = "chains/xcm-integration-tests/emulated/chains/orchestrator-paras/dancebox-rococo" }
 dancebox-runtime-test-utils = { path = "chains/xcm-integration-tests/emulated/dancebox-runtime-test-utils" }
 dancelight-emulated-chain = { path = "chains/xcm-integration-tests/emulated/chains/relays/dancelight" }
 dancelight-system-emulated-network = { path = "chains/xcm-integration-tests/emulated/networks/dancelight-system" }
-frontier-template-emulated-chain = { path = "chains/xcm-integration-tests/emulated/chains/parachains/frontier-template" }
+frontier-template-emulated-chain = { path = "chains/xcm-integration-tests/emulated/chains/templates/frontier-template" }
 rococo-emulated-chain = { path = "chains/xcm-integration-tests/emulated/chains/relays/rococo" }
 rococo-system-emulated-network = { path = "chains/xcm-integration-tests/emulated/networks/rococo-system" }
-simple-template-emulated-chain = { path = "chains/xcm-integration-tests/emulated/chains/parachains/simple-template" }
+simple-template-emulated-chain = { path = "chains/xcm-integration-tests/emulated/chains/templates/simple-template" }
 tanssi-emulated-integration-tests-common = { path = "chains/xcm-integration-tests/emulated/common" }
 westend-emulated-chain = { path = "chains/xcm-integration-tests/emulated/chains/relays/westend" }
 westend-system-emulated-network = { path = "chains/xcm-integration-tests/emulated/networks/westend-system" }
