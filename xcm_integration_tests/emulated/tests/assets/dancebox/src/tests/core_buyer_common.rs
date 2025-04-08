@@ -17,25 +17,9 @@
 use {
     core::marker::PhantomData,
     cumulus_primitives_core::Weight,
-    dancebox_runtime::{
-        // tests::common::{
-        //     empty_genesis_data, run_to_session, set_dummy_boot_node, start_block,
-        //     xcm::{
-        //         mocknets::{
-        //             DanceboxRococoPara as Dancebox, DanceboxSender, RococoRelay as Rococo,
-        //             RococoRelayPallet, RococoSender,
-        //         },
-        //         *,
-        //     },
-        //     BOB,
-        // },
-        Registrar,
-        RuntimeOrigin,
-        ServicesPayment,
-        XcmCoreBuyer,
-    },
+    dancebox_runtime::{Registrar, RuntimeOrigin, ServicesPayment, XcmCoreBuyer},
     dancebox_runtime_test_utils::{
-        empty_genesis_data, run_to_session, set_dummy_boot_node, start_block, BOB,
+        empty_genesis_data, run_to_session, set_dummy_boot_node, start_block,
     },
     frame_support::assert_ok,
     nimbus_primitives::NimbusId,
@@ -43,15 +27,16 @@ use {
     parity_scale_codec::Encode,
     polkadot_runtime_parachains::{configuration, on_demand as parachains_assigner_on_demand},
     rococo_emulated_chain::RococoRelayPallet,
-    rococo_system_emulated_network::RococoSender,
-    rococo_system_emulated_network::{DanceboxRococoPara as Dancebox, RococoRelay as Rococo},
+    rococo_system_emulated_network::{
+        DanceboxRococoPara as Dancebox, RococoRelay as Rococo, RococoSender,
+    },
     sp_core::Pair,
     sp_runtime::{traits::ValidateUnsigned, AccountId32},
+    tanssi_emulated_integration_tests_common::accounts::BOB,
     tp_traits::{ParaId, SlotFrequency},
     westend_system_emulated_network::DanceboxSender,
     xcm::v3::QueryId,
-    xcm_emulator::TestExt,
-    xcm_emulator::{assert_expected_events, Chain, RelayChain},
+    xcm_emulator::{assert_expected_events, Chain, RelayChain, TestExt},
     xcm_executor::traits::ConvertLocation,
 };
 

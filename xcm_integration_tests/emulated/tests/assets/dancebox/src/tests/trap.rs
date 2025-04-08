@@ -17,15 +17,15 @@
 // use crate::tests::common::xcm::*;
 
 use {
-    // crate::tests::common::xcm::mocknets::{
-    //     DanceboxPara as Dancebox, WestendRelay as Westend, WestendRelayPallet,
-    // },
     frame_support::{
         assert_ok,
         weights::{Weight, WeightToFee},
     },
+    westend_emulated_chain::WestendRelayPallet,
+    westend_system_emulated_network::{DanceboxPara as Dancebox, WestendRelay as Westend},
     xcm::{latest::prelude::*, VersionedLocation, VersionedXcm},
-    xcm_emulator::{assert_expected_events, Chain},
+    xcm_emulator::{assert_expected_events, bx, Chain, TestExt},
+    xcm_emulator::{Parachain as Para, RelayChain as Relay},
 };
 
 #[test]
@@ -36,10 +36,10 @@ fn trapping_asserts_works_with_polkadot_xcm() {
         Westend::child_location_of(Dancebox::para_id()).into();
 
     let buy_execution_fee_amount =
-        crate::WeightToFee::weight_to_fee(&Weight::from_parts(10_000_000_000, 300_000));
+        dancebox_runtime::WeightToFee::weight_to_fee(&Weight::from_parts(10_000_000_000, 300_000));
 
     let buy_execution_fee = Asset {
-        id: crate::xcm_config::SelfReserve::get().into(),
+        id: dancebox_runtime::xcm_config::SelfReserve::get().into(),
         fun: Fungible(buy_execution_fee_amount),
     };
 

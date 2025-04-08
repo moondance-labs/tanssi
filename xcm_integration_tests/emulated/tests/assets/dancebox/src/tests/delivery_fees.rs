@@ -15,22 +15,22 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    // crate::tests::common::xcm::{
-    //     mocknets::{
-    //         DanceboxPara as Dancebox, DanceboxParaPallet, DanceboxSender,
-    //         EthereumSender as FrontierTemplateSender, FrontierTemplatePara as FrontierTemplate,
-    //         FrontierTemplateParaPallet, SimpleTemplatePara as SimpleTemplate,
-    //         SimpleTemplateParaPallet, SimpleTemplateSender,
-    //     },
-    //     *,
-    // },
+    dancebox_emulated_chain::DanceboxParaPallet,
     frame_support::{assert_ok, traits::EnsureOrigin},
+    frontier_template_emulated_chain::{
+        EthereumSender as FrontierTemplateSender, FrontierTemplateParaPallet,
+    },
     paste::paste,
+    simple_template_emulated_chain::SimpleTemplateParaPallet,
+    westend_system_emulated_network::{
+        DanceboxPara as Dancebox, DanceboxSender, FrontierTemplatePara as FrontierTemplate,
+        SimpleTemplatePara as SimpleTemplate, SimpleTemplateSender,
+    },
     xcm::{
         latest::prelude::{Junctions::X1, *},
         VersionedLocation, VersionedXcm,
     },
-    xcm_emulator::{assert_expected_events, Chain},
+    xcm_emulator::{assert_expected_events, bx, Chain, TestExt},
 };
 
 #[test]

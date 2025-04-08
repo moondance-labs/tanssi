@@ -41,3 +41,12 @@ frame-system = { workspace = true, features = ["std"] }
 rococo-runtime-constants = { workspace = true, features = ["std"] }
 cumulus-primitives-core = { workspace = true, features = ["std"] }
 paste = { workspace = true }
+frontier-template-emulated-chain = { workspace = true }
+xcm-builder = { workspace = true, features = ["std"] }
+container-chain-template-frontier-runtime = { workspace = true, features = ["std"] }
+cumulus-pallet-xcmp-queue = { workspace = true, features = ["std"] }
+westend-runtime-constants = { workspace = true, features = ["std"] }
+westend-emulated-chain = { workspace = true }
+westend-runtime = { workspace = true, features = ["std"] }
+pallet-configuration = { workspace = true, features = ["std"] }
+polkadot-parachain-primitives = { workspace = true, features = ["std"] }

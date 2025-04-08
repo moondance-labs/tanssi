@@ -15,25 +15,26 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    // crate::tests::common::xcm::{
-    //     mocknets::{
-    //         DanceboxPara as Dancebox, DanceboxParaPallet, EthereumEmptyReceiver, EthereumSender,
-    //         FrontierTemplatePara as FrontierTemplate, FrontierTemplateParaPallet,
-    //         WestendEmptyReceiver, WestendRelay as Westend, WestendRelayPallet, WestendSender,
-    //     },
-    //     *,
-    // },
     container_chain_template_frontier_runtime::currency::UNIT as FRONTIER_DEV,
+    dancebox_emulated_chain::DanceboxParaPallet,
     frame_support::{
         assert_ok,
         weights::{Weight, WeightToFee},
     },
+    frontier_template_emulated_chain::{
+        EthereumEmptyReceiver, EthereumSender, FrontierTemplateParaPallet,
+    },
+    westend_emulated_chain::WestendRelayPallet,
     westend_runtime_constants::currency::UNITS as WND,
+    westend_system_emulated_network::{
+        DanceboxPara as Dancebox, FrontierTemplatePara as FrontierTemplate, WestendEmptyReceiver,
+        WestendRelay as Westend, WestendSender,
+    },
     xcm::{
         latest::prelude::{Junctions::X1, *},
         VersionedLocation, VersionedXcm,
     },
-    xcm_emulator::{assert_expected_events, Chain},
+    xcm_emulator::{assert_expected_events, bx, Chain, TestExt},
     xcm_executor::traits::ConvertLocation,
 };
 

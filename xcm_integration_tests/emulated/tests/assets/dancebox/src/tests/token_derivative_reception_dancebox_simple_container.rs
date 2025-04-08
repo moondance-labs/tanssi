@@ -15,24 +15,23 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    // crate::tests::common::xcm::{
-    //     mocknets::{
-    //         DanceboxPara as Dancebox, DanceboxParaPallet, DanceboxSender,
-    //         SimpleTemplatePara as SimpleTemplate, SimpleTemplateParaPallet, SimpleTemplateReceiver,
-    //     },
-    //     *,
-    // },
+    dancebox_emulated_chain::DanceboxParaPallet,
     frame_support::{
         assert_ok,
         traits::PalletInfoAccess,
         weights::{Weight, WeightToFee},
     },
+    simple_template_emulated_chain::SimpleTemplateParaPallet,
     sp_runtime::FixedU128,
+    westend_system_emulated_network::{
+        DanceboxPara as Dancebox, DanceboxSender, SimpleTemplatePara as SimpleTemplate,
+        SimpleTemplateReceiver,
+    },
     xcm::{
         latest::prelude::{Junctions::*, *},
         VersionedLocation,
     },
-    xcm_emulator::{assert_expected_events, Chain},
+    xcm_emulator::{assert_expected_events, bx, Chain, TestExt},
 };
 
 #[allow(unused_assignments)]
@@ -58,7 +57,8 @@ fn receive_tokens_from_tanssi_to_simple_template() {
     }
     .into();
 
-    let amount_to_send: crate::Balance = crate::ExistentialDeposit::get() * 1000;
+    let amount_to_send: dancebox_runtime::Balance =
+        dancebox_runtime::ExistentialDeposit::get() * 1000;
 
     let dancebox_pallet_info_junction = PalletInstance(
         <<Dancebox as DanceboxParaPallet>::Balances as PalletInfoAccess>::index() as u8,

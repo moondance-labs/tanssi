@@ -16,28 +16,26 @@
 
 use {
     container_chain_template_frontier_runtime::currency::UNIT as FRONTIER_DEV,
-    dancebox_runtime::{
-        // tests::common::xcm::{
-        //     mocknets::{
-        //         DanceboxEmptyReceiver, DanceboxPara as Dancebox, DanceboxParaPallet,
-        //         DanceboxSender, EthereumEmptyReceiver, EthereumSender,
-        //         FrontierTemplatePara as FrontierTemplate, FrontierTemplateParaPallet,
-        //         WestendRelay as Westend, WestendRelayPallet, WestendSender,
-        //     },
-        //     *,
-        // },
-        UNIT as DANCE,
-    },
+    dancebox_emulated_chain::DanceboxParaPallet,
+    dancebox_runtime::UNIT as DANCE,
     frame_support::{
         assert_ok,
         weights::{Weight, WeightToFee},
+    },
+    frontier_template_emulated_chain::{
+        EthereumEmptyReceiver, EthereumSender, FrontierTemplateParaPallet,
+    },
+    westend_emulated_chain::WestendRelayPallet,
+    westend_system_emulated_network::{
+        DanceboxEmptyReceiver, DanceboxPara as Dancebox, DanceboxSender,
+        FrontierTemplatePara as FrontierTemplate, WestendRelay as Westend, WestendSender,
     },
     xcm::{
         latest::prelude::{Junctions::*, *},
         opaque::latest::WESTEND_GENESIS_HASH,
         VersionedLocation, VersionedXcm,
     },
-    xcm_emulator::{assert_expected_events, Chain},
+    xcm_emulator::{assert_expected_events, bx, Chain, TestExt},
     xcm_executor::traits::ConvertLocation,
 };
 
@@ -52,7 +50,7 @@ fn using_signed_based_sovereign_works_in_tanssi() {
     .into();
 
     let buy_execution_fee = Asset {
-        id: crate::xcm_config::SelfReserve::get().into(),
+        id: dancebox_runtime::xcm_config::SelfReserve::get().into(),
         fun: Fungible(50 * DANCE),
     };
 
@@ -78,7 +76,7 @@ fn using_signed_based_sovereign_works_in_tanssi() {
     ]));
 
     let alice_westend_account_dancebox = xcm_builder::HashedDescription::<
-        crate::AccountId,
+        dancebox_runtime::AccountId,
         xcm_builder::DescribeFamily<xcm_builder::DescribeAllTerminal>,
     >::convert_location(&Location {
         parents: 1,

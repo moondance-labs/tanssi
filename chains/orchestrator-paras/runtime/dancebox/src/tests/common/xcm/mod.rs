@@ -14,14 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-// mod constants;
+mod constants;
 mod core_buyer;
 mod core_buyer_common;
 mod delivery_fees;
 mod force_core_buyer;
 mod foreign_signed_based_sovereign;
 mod foreign_sovereigns;
-// mod mocknets;
+mod mocknets;
 mod reserver_transfers_polkadot_xcm;
 mod token_derivative_reception_container_dancebox;
 mod token_derivative_reception_dancebox_frontier_container;

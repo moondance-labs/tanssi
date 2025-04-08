@@ -14,25 +14,27 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-// use crate::tests::common::xcm::*;
-
 use {
-    // crate::tests::common::xcm::mocknets::{
-    //     DanceboxPara as Dancebox, FrontierTemplatePara as FrontierTemplate,
-    //     FrontierTemplateParaPallet, SimpleTemplatePara as SimpleTemplate, SimpleTemplateParaPallet,
-    //     WestendRelay as Westend, WestendRelayPallet,
-    // },
     frame_support::{
         assert_ok,
         weights::{Weight, WeightToFee},
     },
+    frontier_template_emulated_chain::FrontierTemplateParaPallet,
     parity_scale_codec::Encode,
+    simple_template_emulated_chain::SimpleTemplateParaPallet,
+    westend_emulated_chain::WestendRelayPallet,
+    westend_system_emulated_network::{
+        DanceboxPara as Dancebox, FrontierTemplatePara as FrontierTemplate,
+        SimpleTemplatePara as SimpleTemplate, WestendRelay as Westend,
+    },
     xcm::{
         latest::prelude::{Junctions::*, *},
         VersionedLocation, VersionedXcm,
     },
     xcm_builder::{ParentIsPreset, SiblingParachainConvertsVia},
-    xcm_emulator::{assert_expected_events, Chain},
+    xcm_emulator::{
+        assert_expected_events, bx, Chain, Parachain as Para, RelayChain as Relay, TestExt,
+    },
     xcm_executor::traits::ConvertLocation,
 };
 
@@ -111,10 +113,10 @@ fn transact_sudo_from_relay_does_not_have_sudo_power() {
     let origin_kind = OriginKind::Superuser;
 
     let buy_execution_fee_amount =
-        crate::WeightToFee::weight_to_fee(&Weight::from_parts(10_000_000_000, 300_000));
+        dancebox_runtime::WeightToFee::weight_to_fee(&Weight::from_parts(10_000_000_000, 300_000));
 
     let buy_execution_fee = Asset {
-        id: crate::xcm_config::SelfReserve::get().into(),
+        id: dancebox_runtime::xcm_config::SelfReserve::get().into(),
         fun: Fungible(buy_execution_fee_amount),
     };
 
@@ -173,11 +175,12 @@ fn transact_sudo_from_relay_has_signed_origin_powers() {
     let fallback_max_weight = Some(Weight::from_parts(1000000000, 200000));
     let origin_kind = OriginKind::SovereignAccount;
 
-    let buy_execution_fee_amount =
-        crate::WeightToFee::weight_to_fee(&Weight::from_parts(10_000_000_000_000, 300_000));
+    let buy_execution_fee_amount = dancebox_runtime::WeightToFee::weight_to_fee(
+        &Weight::from_parts(10_000_000_000_000, 300_000),
+    );
 
     let buy_execution_fee = Asset {
-        id: crate::xcm_config::SelfReserve::get().into(),
+        id: dancebox_runtime::xcm_config::SelfReserve::get().into(),
         fun: Fungible(buy_execution_fee_amount),
     };
 
@@ -223,7 +226,7 @@ fn transact_sudo_from_relay_has_signed_origin_powers() {
                         sender,
                         ..
                     }) => {
-                    sender: *sender == ParentIsPreset::<crate::AccountId>::convert_location(&Location::parent()).unwrap(),
+                    sender: *sender == ParentIsPreset::<dancebox_runtime::AccountId>::convert_location(&Location::parent()).unwrap(),
                 },
             ]
         );
@@ -251,11 +254,12 @@ fn transact_sudo_from_frontier_has_signed_origin_powers() {
     let fallback_max_weight = Some(Weight::from_parts(1000000000, 200000));
     let origin_kind = OriginKind::SovereignAccount;
 
-    let buy_execution_fee_amount =
-        crate::WeightToFee::weight_to_fee(&Weight::from_parts(10_000_000_000_000, 300_000));
+    let buy_execution_fee_amount = dancebox_runtime::WeightToFee::weight_to_fee(
+        &Weight::from_parts(10_000_000_000_000, 300_000),
+    );
 
     let buy_execution_fee = Asset {
-        id: crate::xcm_config::SelfReserve::get().into(),
+        id: dancebox_runtime::xcm_config::SelfReserve::get().into(),
         fun: Fungible(buy_execution_fee_amount),
     };
 
@@ -303,7 +307,7 @@ fn transact_sudo_from_frontier_has_signed_origin_powers() {
                         sender,
                         ..
                     }) => {
-                    sender: *sender ==  SiblingParachainConvertsVia::<polkadot_parachain_primitives::primitives::Sibling, crate::AccountId>::convert_location(
+                    sender: *sender ==  SiblingParachainConvertsVia::<polkadot_parachain_primitives::primitives::Sibling, dancebox_runtime::AccountId>::convert_location(
                         &Location{ parents: 1, interior: X1([Parachain(2001u32)].into())}
                     ).unwrap(),
                 },
@@ -333,11 +337,12 @@ fn transact_sudo_from_simple_has_signed_origin_powers() {
     let fallback_max_weight = Some(Weight::from_parts(1000000000, 200000));
     let origin_kind = OriginKind::SovereignAccount;
 
-    let buy_execution_fee_amount =
-        crate::WeightToFee::weight_to_fee(&Weight::from_parts(10_000_000_000_000, 300_000));
+    let buy_execution_fee_amount = dancebox_runtime::WeightToFee::weight_to_fee(
+        &Weight::from_parts(10_000_000_000_000, 300_000),
+    );
 
     let buy_execution_fee = Asset {
-        id: crate::xcm_config::SelfReserve::get().into(),
+        id: dancebox_runtime::xcm_config::SelfReserve::get().into(),
         fun: Fungible(buy_execution_fee_amount),
     };
 
@@ -385,7 +390,7 @@ fn transact_sudo_from_simple_has_signed_origin_powers() {
                         sender,
                         ..
                     }) => {
-                    sender: *sender ==  SiblingParachainConvertsVia::<polkadot_parachain_primitives::primitives::Sibling, crate::AccountId>::convert_location(
+                    sender: *sender ==  SiblingParachainConvertsVia::<polkadot_parachain_primitives::primitives::Sibling, dancebox_runtime::AccountId>::convert_location(
                         &Location{ parents: 1, interior: X1([Parachain(2002u32)].into())}
                     ).unwrap(),
                 },

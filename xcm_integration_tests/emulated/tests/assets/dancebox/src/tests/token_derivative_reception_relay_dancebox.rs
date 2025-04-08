@@ -15,23 +15,21 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    // crate::tests::common::xcm::{
-    //     mocknets::{
-    //         DanceboxPara as Dancebox, DanceboxParaPallet, DanceboxReceiver,
-    //         WestendRelay as Westend, WestendRelayPallet, WestendSender,
-    //     },
-    //     *,
-    // },
+    dancebox_emulated_chain::DanceboxParaPallet,
     frame_support::{
         assert_ok,
         weights::{Weight, WeightToFee},
     },
     sp_runtime::FixedU128,
+    westend_emulated_chain::WestendRelayPallet,
+    westend_system_emulated_network::{
+        DanceboxPara as Dancebox, DanceboxReceiver, WestendRelay as Westend, WestendSender,
+    },
     xcm::{
         latest::prelude::{Junctions::*, *},
         VersionedLocation,
     },
-    xcm_emulator::{assert_expected_events, Chain},
+    xcm_emulator::{assert_expected_events, bx, Chain, TestExt},
 };
 
 #[allow(unused_assignments)]
@@ -56,7 +54,8 @@ fn receive_tokens_from_the_relay_to_tanssi() {
     }
     .into();
 
-    let amount_to_send: crate::Balance = westend_runtime::ExistentialDeposit::get() * 1000;
+    let amount_to_send: dancebox_runtime::Balance =
+        westend_runtime::ExistentialDeposit::get() * 1000;
 
     let assets: Assets = (Here, amount_to_send).into();
     let fee_asset_item = 0;
@@ -120,7 +119,7 @@ fn receive_tokens_from_the_relay_to_tanssi() {
         type ForeignAssets = <Dancebox as DanceboxParaPallet>::ForeignAssets;
 
         // We should have charged an amount of tokens that is identical to the weight spent
-        let native_balance = crate::WeightToFee::weight_to_fee(&outcome_weight);
+        let native_balance = dancebox_runtime::WeightToFee::weight_to_fee(&outcome_weight);
 
         // Assert empty receiver received funds
         assert_eq!(
@@ -154,7 +153,8 @@ fn cannot_receive_tokens_from_the_relay_if_no_rate_is_assigned() {
     }
     .into();
 
-    let amount_to_send: crate::Balance = westend_runtime::ExistentialDeposit::get() * 1000;
+    let amount_to_send: dancebox_runtime::Balance =
+        westend_runtime::ExistentialDeposit::get() * 1000;
 
     let assets: Assets = (Here, amount_to_send).into();
     let fee_asset_item = 0;
@@ -227,7 +227,8 @@ fn cannot_receive_tokens_from_the_relay_if_no_token_is_registered() {
     }
     .into();
 
-    let amount_to_send: crate::Balance = westend_runtime::ExistentialDeposit::get() * 1000;
+    let amount_to_send: dancebox_runtime::Balance =
+        westend_runtime::ExistentialDeposit::get() * 1000;
 
     let assets: Assets = (Here, amount_to_send).into();
     let fee_asset_item = 0;

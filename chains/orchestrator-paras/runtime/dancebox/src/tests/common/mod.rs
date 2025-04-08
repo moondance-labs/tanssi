@@ -45,7 +45,7 @@ pub use crate::{
     ServicesPayment, Session, System, TransactionPayment,
 };
 
-// mod xcm;
+mod xcm;
 
 pub const UNIT: Balance = 1_000_000_000_000;
 
