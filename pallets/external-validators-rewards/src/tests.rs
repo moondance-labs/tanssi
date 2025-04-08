@@ -132,7 +132,7 @@ fn test_on_era_end() {
 }
 
 #[test]
-fn test_i_on_era_end_without_proper_token() {
+fn test_on_era_end_without_proper_token() {
     new_test_ext().execute_with(|| {
         run_to_block(1);
         Mock::mutate(|mock| {
