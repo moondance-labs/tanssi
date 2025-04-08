@@ -31,9 +31,9 @@ xcm-emulator = { workspace = true, default-features = true }
 # Bridges
 dancelight-runtime = { workspace = true }
 keyring = { workspace = true }
-snowbridge-pallet-outbound-queue = { workspace = true }
 snowbridge-beacon-primitives = { workspace = true }
 snowbridge-core = { workspace = true }
+snowbridge-pallet-outbound-queue = { workspace = true }
 
 [features]
 default = [ "std" ]
@@ -45,9 +45,9 @@ std = [
 	"frame-system/std",
 	"keyring/std",
 	"pallet-message-queue/std",
-	"snowbridge-pallet-outbound-queue/std",
 	"snowbridge-beacon-primitives/std",
 	"snowbridge-core/std",
+	"snowbridge-pallet-outbound-queue/std",
 	"sp-core/std",
 	"sp-std/std",
 	"xcm/std",

@@ -12,7 +12,6 @@ workspace = true
 workspace = true
 
 [dependencies]
-tanssi-emulated-integration-tests-common = { workspace = true }
 container-chain-template-simple-runtime = { workspace = true }
 dancelight-emulated-chain = { workspace = true }
 dancelight-runtime = { workspace = true }
@@ -23,6 +22,7 @@ pallet-xcm = { workspace = true }
 primitives = { workspace = true }
 simple-template-emulated-chain = { workspace = true }
 sp-runtime = { workspace = true }
+tanssi-emulated-integration-tests-common = { workspace = true }
 xcm = { workspace = true }
 xcm-emulator = { workspace = true }
 xcm-executor = { workspace = true }

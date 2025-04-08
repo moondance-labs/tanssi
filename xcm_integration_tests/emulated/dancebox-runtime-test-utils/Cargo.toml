@@ -138,6 +138,7 @@ container-chain-template-frontier-runtime  = { workspace = true, features = [ "s
 container-chain-template-simple-runtime  = { workspace = true, features = [ "std" ] }
 cumulus-primitives-parachain-inherent = { workspace = true }
 cumulus-test-relay-sproof-builder = { workspace = true }
+dancebox-runtime = { workspace = true }
 emulated-integration-tests-common = { workspace = true }
 pallet-staking = { workspace = true, features = [ "std" ] }
 paste = { workspace = true }
@@ -154,7 +155,6 @@ test-relay-sproof-builder = { workspace = true }
 westend-runtime = { workspace = true }
 westend-runtime-constants = { workspace = true }
 xcm-emulator = { workspace = true }
-dancebox-runtime = { workspace = true }
 
 [build-dependencies]
 substrate-wasm-builder = { workspace = true }
@@ -170,7 +170,6 @@ std = [
 	"cumulus-pallet-parachain-system/std",
 	"cumulus-pallet-session-benchmarking/std",
 	"cumulus-pallet-xcm/std",
-	"dancebox-runtime/std",
 	"cumulus-pallet-xcmp-queue/std",
 	"cumulus-primitives-core/std",
 	"cumulus-primitives-parachain-inherent/std",
@@ -178,6 +177,8 @@ std = [
 	"cumulus-primitives-timestamp/std",
 	"cumulus-primitives-utility/std",
 	"cumulus-test-relay-sproof-builder/std",
+	"dancebox-runtime/std",
+	"dancebox-runtime/std",
 	"dp-consensus/std",
 	"dp-core/std",
 	"dp-slot-duration-runtime-api/std",
@@ -299,6 +300,7 @@ runtime-benchmarks = [
 	"cumulus-pallet-xcmp-queue/runtime-benchmarks",
 	"cumulus-primitives-core/runtime-benchmarks",
 	"cumulus-primitives-utility/runtime-benchmarks",
+	"dancebox-runtime/runtime-benchmarks",
 	"dp-consensus/runtime-benchmarks",
 	"frame-benchmarking",
 	"frame-benchmarking/runtime-benchmarks",
@@ -364,6 +366,7 @@ try-runtime = [
 	"cumulus-pallet-parachain-system/try-runtime",
 	"cumulus-pallet-xcm/try-runtime",
 	"cumulus-pallet-xcmp-queue/try-runtime",
+	"dancebox-runtime/try-runtime",
 	"frame-executive/try-runtime",
 	"frame-support/try-runtime",
 	"frame-system/try-runtime",

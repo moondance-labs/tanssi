@@ -12,19 +12,19 @@ workspace = true
 workspace = true
 
 [dependencies]
-alloy-sol-types = { workspace = true, features = ["std"]}
+alloy-sol-types = { workspace = true, features = [ "std" ] }
 dancelight-emulated-chain = { workspace = true }
-dancelight-runtime = { workspace = true, features = [ "testing-helpers", "std" ] }
+dancelight-runtime = { workspace = true, features = [ "std", "testing-helpers" ] }
 dancelight-system-emulated-network = { workspace = true }
 frame-support = { workspace = true, features = [ "tuples-96" ] }
 frame-system = { workspace = true }
 keyring = { workspace = true }
 parity-scale-codec = { workspace = true, features = [ "derive", "max-encoded-len", "std" ] }
 snowbridge-core = { workspace = true }
-snowbridge-pallet-inbound-queue = { workspace = true, features = ["std"] }
-snowbridge-router-primitives = { workspace = true, features = ["std"] }
+snowbridge-pallet-inbound-queue = { workspace = true, features = [ "std" ] }
+snowbridge-router-primitives = { workspace = true, features = [ "std" ] }
 sp-core = { workspace = true }
 tanssi-emulated-integration-tests-common = { workspace = true }
-tp-bridge = { workspace = true, features = ["std"] }
+tp-bridge = { workspace = true, features = [ "std" ] }
 xcm = { workspace = true }
 xcm-emulator = { workspace = true }
