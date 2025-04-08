@@ -16,7 +16,7 @@
 #![cfg(test)]
 use {
     crate::tests::common::*,
-    frame_support::{assert_ok, traits::Get, BoundedBTreeSet},
+    frame_support::{traits::Get, BoundedBTreeSet},
     pallet_inactivity_tracking::pallet::{ActiveCollators, ActiveCollatorsForCurrentSession},
     parity_scale_codec::Encode,
     sp_consensus_aura::AURA_ENGINE_ID,
