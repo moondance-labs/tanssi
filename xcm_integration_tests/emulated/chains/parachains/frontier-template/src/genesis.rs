@@ -19,7 +19,7 @@ use {
     emulated_integration_tests_common::build_genesis_storage, hex_literal::hex,
 };
 
-pub const PARA_ID: u32 = 2002;
+pub const PARA_ID: u32 = 2001;
 pub const ORCHESTRATOR: u32 = 2000;
 
 pub fn genesis() -> sp_core::storage::Storage {

@@ -20,7 +20,7 @@ use {
     tanssi_emulated_integration_tests_common::accounts,
 };
 
-pub const PARA_ID: u32 = 2001;
+pub const PARA_ID: u32 = 2002;
 pub const ORCHESTRATOR: u32 = 2000;
 const ENDOWMENT: u128 = 1_000_000 * DEV;
 
