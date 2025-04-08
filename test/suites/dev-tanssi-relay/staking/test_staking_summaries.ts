@@ -3,9 +3,7 @@ import "@tanssi/api-augment";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
-import { numberToHex } from "@polkadot/util";
 import { jumpToBlock } from "utils";
-import { encodeAddress } from "@polkadot/util-crypto";
 
 describeSuite({
     id: "DEVT1806",
