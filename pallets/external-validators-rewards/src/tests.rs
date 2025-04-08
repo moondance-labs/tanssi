@@ -16,8 +16,6 @@
 
 use {
     crate::{self as pallet_external_validators_rewards, mock::*},
-    frame_support::traits::Get,
-    polkadot_primitives::Hash,
     sp_core::H256,
     sp_std::collections::btree_map::BTreeMap,
     tp_bridge::Command,
