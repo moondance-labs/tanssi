@@ -22,7 +22,6 @@ use {
     rococo_emulated_chain::Rococo,
     simple_template_emulated_chain::SimpleTemplate,
     sp_keyring::Sr25519Keyring,
-    tanssi_emulated_integration_tests_common,
     tanssi_emulated_integration_tests_common::accounts::RANDOM,
     xcm_emulator::{decl_test_networks, Chain},
 };

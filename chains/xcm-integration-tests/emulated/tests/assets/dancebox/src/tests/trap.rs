@@ -24,8 +24,9 @@ use {
     westend_emulated_chain::WestendRelayPallet,
     westend_system_emulated_network::{DanceboxPara as Dancebox, WestendRelay as Westend},
     xcm::{latest::prelude::*, VersionedLocation, VersionedXcm},
-    xcm_emulator::{assert_expected_events, bx, Chain, TestExt},
-    xcm_emulator::{Parachain as Para, RelayChain as Relay},
+    xcm_emulator::{
+        assert_expected_events, bx, Chain, Parachain as Para, RelayChain as Relay, TestExt,
+    },
 };
 
 #[test]

@@ -19,7 +19,6 @@ dancebox-runtime = { workspace = true }
 frame-support = { workspace = true, features = [ "tuples-96" ] }
 frontier-template-emulated-chain = { workspace = true }
 simple-template-emulated-chain = { workspace = true }
-snowbridge-pallet-outbound-queue = { workspace = true }
 sp-keyring = { workspace = true }
 tanssi-emulated-integration-tests-common = { workspace = true }
 westend-emulated-chain = { workspace = true }

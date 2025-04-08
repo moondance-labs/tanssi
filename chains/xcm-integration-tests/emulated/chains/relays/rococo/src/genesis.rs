@@ -15,8 +15,9 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 use {
-    cumulus_primitives_core::relay_chain::BlockNumber,
-    cumulus_primitives_core::relay_chain::{AssignmentId, AuthorityDiscoveryId, ValidatorId},
+    cumulus_primitives_core::relay_chain::{
+        AssignmentId, AuthorityDiscoveryId, BlockNumber, ValidatorId,
+    },
     emulated_integration_tests_common::build_genesis_storage,
     polkadot_parachain_primitives::primitives::ValidationCode,
     rococo_runtime_constants::currency::UNITS as ROC,
@@ -26,8 +27,7 @@ use {
     },
     sc_consensus_grandpa::AuthorityId as GrandpaId,
     sp_consensus_babe::AuthorityId as BabeId,
-    sp_consensus_beefy::ecdsa_crypto::AuthorityId as BeefyId,
-    sp_consensus_beefy::test_utils::Keyring,
+    sp_consensus_beefy::{ecdsa_crypto::AuthorityId as BeefyId, test_utils::Keyring},
     sp_core::storage::Storage,
 };
 const ENDOWMENT: u128 = 1_000_000 * ROC;

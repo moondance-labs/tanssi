@@ -16,8 +16,7 @@
 
 use emulated_integration_tests_common::build_genesis_storage;
 use pallet_configuration::HostConfiguration;
-use sp_core::storage::Storage;
-use sp_core::Pair;
+use sp_core::{storage::Storage, Pair};
 use {
     cumulus_primitives_core::Junctions::X1,
     nimbus_primitives::NimbusId,

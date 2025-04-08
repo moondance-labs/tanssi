@@ -20,8 +20,7 @@ use {
         traits::tokens::ConversionToAssetBalance,
         weights::{Weight, WeightToFee},
     },
-    frontier_template_emulated_chain::EthereumReceiver,
-    frontier_template_emulated_chain::FrontierTemplateParaPallet,
+    frontier_template_emulated_chain::{EthereumReceiver, FrontierTemplateParaPallet},
     sp_runtime::FixedU128,
     westend_emulated_chain::WestendRelayPallet,
     westend_system_emulated_network::{

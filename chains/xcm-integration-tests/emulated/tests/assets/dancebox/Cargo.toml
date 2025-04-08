@@ -32,7 +32,6 @@ parity-scale-codec = { workspace = true, features = [ "std" ] }
 paste = { workspace = true }
 polkadot-parachain-primitives = { workspace = true, features = [ "std" ] }
 polkadot-runtime-parachains = { workspace = true, features = [ "std" ] }
-primitives = { workspace = true, features = [ "std" ] }
 rococo-emulated-chain = { workspace = true }
 rococo-runtime-constants = { workspace = true, features = [ "std" ] }
 rococo-system-emulated-network = { workspace = true }

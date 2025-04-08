@@ -8,11 +8,6 @@ members = [
 	"chains/orchestrator-relays/node/*",
 	"chains/orchestrator-relays/runtime/dancelight",
 	"chains/orchestrator-relays/runtime/dancelight/constants",
-	"client/*",
-	"pallets/*",
-	"pallets/collator-assignment/runtime-api",
-	"pallets/registrar/runtime-api",
-	"primitives/*",
 	"chains/xcm-integration-tests/emulated/chains/parachains/dancebox",
 	"chains/xcm-integration-tests/emulated/chains/parachains/dancebox-rococo",
 	"chains/xcm-integration-tests/emulated/chains/parachains/frontier-template",
@@ -28,6 +23,11 @@ members = [
 	"chains/xcm-integration-tests/emulated/tests/assets/dancebox",
 	"chains/xcm-integration-tests/emulated/tests/assets/dancelight",
 	"chains/xcm-integration-tests/emulated/tests/bridges/dancelight",
+	"client/*",
+	"pallets/*",
+	"pallets/collator-assignment/runtime-api",
+	"pallets/registrar/runtime-api",
+	"primitives/*",
 ]
 resolver = "2"
 

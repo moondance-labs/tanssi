@@ -24,8 +24,7 @@ use {
         assert_ok,
         weights::{Weight, WeightToFee},
     },
-    simple_template_emulated_chain::genesis::PARA_ID,
-    simple_template_emulated_chain::SimpleTemplateParaPallet,
+    simple_template_emulated_chain::{genesis::PARA_ID, SimpleTemplateParaPallet},
     sp_runtime::FixedU128,
     xcm::{
         latest::prelude::{Junctions::*, *},
