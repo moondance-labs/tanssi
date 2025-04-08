@@ -17,26 +17,21 @@
 use {
     cumulus_primitives_core::{ParaId, PersistedValidationData},
     cumulus_primitives_parachain_inherent::ParachainInherentData,
-    dancebox_runtime::{
-        AuthorInherent, BlockProductionCost, CollatorAssignmentCost, RuntimeOrigin,
-    },
+    dancebox_runtime::{AuthorInherent, RuntimeOrigin},
     dp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApi,
     frame_support::{
         assert_ok,
         traits::{OnFinalize, OnInitialize},
     },
     nimbus_primitives::{NimbusId, NIMBUS_ENGINE_ID},
-    pallet_collator_assignment_runtime_api::runtime_decl_for_collator_assignment_api::CollatorAssignmentApi,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
-    pallet_services_payment::{ProvideBlockProductionCost, ProvideCollatorAssignmentCost},
     parity_scale_codec::{Decode, Encode, MaxEncodedLen},
     polkadot_parachain_primitives::primitives::HeadData,
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_consensus_slots::Slot,
-    sp_core::{Get, Pair},
-    sp_runtime::{traits::Dispatchable, BuildStorage, Digest, DigestItem},
+    sp_core::Get,
+    sp_runtime::{traits::Dispatchable, Digest, DigestItem},
     sp_std::collections::btree_map::BTreeMap,
-    test_relay_sproof_builder::ParaHeaderSproofBuilder,
 };
 
 pub use dancebox_runtime::{
@@ -127,10 +122,6 @@ fn take_new_inherent_data() -> Option<MockInherentData> {
         frame_support::storage::unhashed::take(b"__mock_new_inherent_data");
 
     data
-}
-
-fn set_new_inherent_data(data: MockInherentData) {
-    frame_support::storage::unhashed::put(b"__mock_new_inherent_data", &Some(data));
 }
 
 #[derive(Clone, Encode, Decode, PartialEq, Debug, scale_info::TypeInfo, MaxEncodedLen)]
@@ -296,312 +287,8 @@ pub fn set_parachain_inherent_data(mock_inherent_data: MockInherentData) {
     .dispatch(inherent_origin()));
 }
 
-pub fn set_parachain_inherent_data_random_seed(random_seed: [u8; 32]) {
-    set_new_inherent_data(MockInherentData {
-        random_seed: Some(random_seed),
-    });
-}
-
-#[derive(Default, Clone)]
-pub struct ParaRegistrationParams {
-    pub para_id: u32,
-    pub genesis_data: ContainerChainGenesisData,
-    pub block_production_credits: u32,
-    pub collator_assignment_credits: u32,
-    pub parathread_params: Option<tp_traits::ParathreadParams>,
-}
-
-pub fn default_config() -> pallet_configuration::HostConfiguration {
-    pallet_configuration::HostConfiguration {
-        max_collators: 100,
-        min_orchestrator_collators: 2,
-        max_orchestrator_collators: 2,
-        collators_per_container: 2,
-        full_rotation_period: 24,
-        ..Default::default()
-    }
-}
-
-pub struct ExtBuilder {
-    // endowed accounts with balances
-    balances: Vec<(AccountId, Balance)>,
-    // [collator, amount]
-    collators: Vec<(AccountId, Balance)>,
-    // sudo key
-    sudo: Option<AccountId>,
-    // list of registered para ids: para_id, genesis_data, boot_nodes, block_credits, session_credits
-    para_ids: Vec<ParaRegistrationParams>,
-    // configuration to apply
-    config: pallet_configuration::HostConfiguration,
-    safe_xcm_version: Option<u32>,
-    own_para_id: Option<ParaId>,
-}
-
-impl Default for ExtBuilder {
-    fn default() -> Self {
-        Self {
-            balances: vec![
-                // Alice gets 10k extra tokens for her mapping deposit
-                (AccountId::from(ALICE), 210_000 * UNIT),
-                (AccountId::from(BOB), 100_000 * UNIT),
-            ],
-            collators: vec![
-                (AccountId::from(ALICE), 210 * UNIT),
-                (AccountId::from(BOB), 100 * UNIT),
-            ],
-            sudo: Default::default(),
-            para_ids: Default::default(),
-            config: default_config(),
-            safe_xcm_version: Default::default(),
-            own_para_id: Default::default(),
-        }
-    }
-}
-
-impl ExtBuilder {
-    pub fn with_balances(mut self, balances: Vec<(AccountId, Balance)>) -> Self {
-        self.balances = balances;
-        self
-    }
-
-    pub fn with_collators(mut self, collators: Vec<(AccountId, Balance)>) -> Self {
-        self.collators = collators;
-        self
-    }
-
-    pub fn with_sudo(mut self, sudo: AccountId) -> Self {
-        self.sudo = Some(sudo);
-        self
-    }
-
-    pub fn with_para_ids(mut self, para_ids: Vec<ParaRegistrationParams>) -> Self {
-        self.para_ids = para_ids;
-        self
-    }
-
-    /// Helper function like `with_para_ids` but registering parachains with an empty genesis data,
-    /// and max amount of credits.
-    pub fn with_empty_parachains(mut self, para_ids: Vec<u32>) -> Self {
-        self.para_ids = para_ids
-            .into_iter()
-            .map(|para_id| ParaRegistrationParams {
-                para_id,
-                genesis_data: empty_genesis_data(),
-                block_production_credits: u32::MAX,
-                collator_assignment_credits: u32::MAX,
-                parathread_params: None,
-            })
-            .collect();
-        self
-    }
-
-    pub fn with_config(mut self, config: pallet_configuration::HostConfiguration) -> Self {
-        self.config = config;
-        self
-    }
-
-    pub fn with_safe_xcm_version(mut self, safe_xcm_version: u32) -> Self {
-        self.safe_xcm_version = Some(safe_xcm_version);
-        self
-    }
-
-    pub fn with_own_para_id(mut self, own_para_id: ParaId) -> Self {
-        self.own_para_id = Some(own_para_id);
-        self
-    }
-
-    pub fn build_storage(self) -> sp_core::storage::Storage {
-        let mut t = frame_system::GenesisConfig::<Runtime>::default()
-            .build_storage()
-            .unwrap();
-
-        pallet_balances::GenesisConfig::<Runtime> {
-            balances: self.balances,
-        }
-        .assimilate_storage(&mut t)
-        .unwrap();
-
-        // We need to initialize these pallets first. When initializing pallet-session,
-        // these values will be taken into account for collator-assignment.
-
-        pallet_registrar::GenesisConfig::<Runtime> {
-            para_ids: self
-                .para_ids
-                .iter()
-                .cloned()
-                .map(|registered_para| {
-                    (
-                        registered_para.para_id.into(),
-                        registered_para.genesis_data,
-                        registered_para.parathread_params,
-                    )
-                })
-                .collect(),
-            phantom: Default::default(),
-        }
-        .assimilate_storage(&mut t)
-        .unwrap();
-
-        pallet_services_payment::GenesisConfig::<Runtime> {
-            para_id_credits: self
-                .para_ids
-                .clone()
-                .into_iter()
-                .map(|registered_para| {
-                    (
-                        registered_para.para_id.into(),
-                        registered_para.block_production_credits,
-                        registered_para.collator_assignment_credits,
-                    )
-                        .into()
-                })
-                .collect(),
-        }
-        .assimilate_storage(&mut t)
-        .unwrap();
-
-        pallet_configuration::GenesisConfig::<Runtime> {
-            config: self.config,
-            ..Default::default()
-        }
-        .assimilate_storage(&mut t)
-        .unwrap();
-
-        pallet_xcm::GenesisConfig::<Runtime> {
-            safe_xcm_version: self.safe_xcm_version,
-            ..Default::default()
-        }
-        .assimilate_storage(&mut t)
-        .unwrap();
-
-        if let Some(own_para_id) = self.own_para_id {
-            parachain_info::GenesisConfig::<Runtime> {
-                parachain_id: own_para_id,
-                ..Default::default()
-            }
-            .assimilate_storage(&mut t)
-            .unwrap();
-        }
-
-        if !self.collators.is_empty() {
-            // We set invulnerables in pallet_invulnerables
-            let invulnerables: Vec<AccountId> = self
-                .collators
-                .clone()
-                .into_iter()
-                .map(|(account, _balance)| account)
-                .collect();
-
-            pallet_invulnerables::GenesisConfig::<Runtime> {
-                invulnerables: invulnerables.clone(),
-            }
-            .assimilate_storage(&mut t)
-            .unwrap();
-
-            // But we also initialize their keys in the session pallet
-            let keys: Vec<_> = self
-                .collators
-                .into_iter()
-                .map(|(account, _balance)| {
-                    let nimbus_id = get_aura_id_from_seed(&account.to_string());
-                    (
-                        account.clone(),
-                        account,
-                        dancebox_runtime::SessionKeys { nimbus: nimbus_id },
-                    )
-                })
-                .collect();
-            pallet_session::GenesisConfig::<Runtime> {
-                keys,
-                ..Default::default()
-            }
-            .assimilate_storage(&mut t)
-            .unwrap();
-        }
-        pallet_sudo::GenesisConfig::<Runtime> { key: self.sudo }
-            .assimilate_storage(&mut t)
-            .unwrap();
-
-        if self.safe_xcm_version.is_some() {
-            // Disable run_block checks in XCM tests, because the XCM emulator runs on_initialize and
-            // on_finalize automatically
-            t.top.insert(b"__mock_is_xcm_test".to_vec(), b"1".to_vec());
-        }
-
-        t
-    }
-
-    pub fn build(self) -> sp_io::TestExternalities {
-        let t = self.build_storage();
-        let mut ext = sp_io::TestExternalities::new(t);
-
-        ext.execute_with(|| {
-            // Start block 1
-            start_block();
-            set_parachain_inherent_data(Default::default());
-        });
-        ext
-    }
-}
-
-pub fn root_origin() -> <Runtime as frame_system::Config>::RuntimeOrigin {
-    <Runtime as frame_system::Config>::RuntimeOrigin::root()
-}
-
-pub fn origin_of(account_id: AccountId) -> <Runtime as frame_system::Config>::RuntimeOrigin {
-    <Runtime as frame_system::Config>::RuntimeOrigin::signed(account_id)
-}
-
 pub fn inherent_origin() -> <Runtime as frame_system::Config>::RuntimeOrigin {
     <Runtime as frame_system::Config>::RuntimeOrigin::none()
-}
-
-/// Helper function to generate a crypto pair from seed
-pub fn get_aura_id_from_seed(seed: &str) -> NimbusId {
-    sp_core::sr25519::Pair::from_string(&format!("//{}", seed), None)
-        .expect("static values are valid; qed")
-        .public()
-        .into()
-}
-
-pub fn get_orchestrator_current_author() -> Option<AccountId> {
-    let slot: u64 = current_slot();
-    let orchestrator_collators = Runtime::parachain_collators(ParachainInfo::get())?;
-    let author_index = slot % orchestrator_collators.len() as u64;
-    let account = orchestrator_collators.get(author_index as usize)?;
-    Some(account.clone())
-}
-/// Mocks the author noting inherent to insert the data we
-pub fn set_author_noting_inherent_data(builder: ParaHeaderSproofBuilder) {
-    let (relay_storage_root, relay_storage_proof) = builder.into_state_root_and_proof();
-
-    // For now we directly touch parachain_system storage to set the relay state root.
-    // TODO: Properly set the parachain_system inherent, which require a sproof builder combining
-    // what is required by parachain_system and author_noting.
-    frame_support::storage::unhashed::put(
-        &frame_support::storage::storage_prefix(b"ParachainSystem", b"ValidationData"),
-        &PersistedValidationData {
-            parent_head: HeadData(Default::default()),
-            relay_parent_number: 0u32,
-            relay_parent_storage_root: relay_storage_root,
-            max_pov_size: 0u32,
-        },
-    );
-
-    // But we also need to store the new proof submitted
-    frame_support::storage::unhashed::put(
-        &frame_support::storage::storage_prefix(b"ParachainSystem", b"RelayStateProof"),
-        &relay_storage_proof,
-    );
-
-    assert_ok!(RuntimeCall::AuthorNoting(
-        pallet_author_noting::Call::<Runtime>::set_latest_author_data {
-            data: tp_author_noting_inherent::OwnParachainInherentData {
-                relay_storage_proof,
-            }
-        }
-    )
-    .dispatch(inherent_origin()));
 }
 
 pub fn empty_genesis_data() -> ContainerChainGenesisData {
@@ -623,14 +310,6 @@ pub fn current_slot() -> u64 {
     )
 }
 
-pub fn authorities() -> Vec<NimbusId> {
-    let session_index = Session::current_index();
-
-    AuthorityAssignment::collator_container_chain(session_index)
-        .expect("authorities should be set")
-        .orchestrator_chain
-}
-
 pub fn current_author() -> AccountId {
     let current_session = Session::current_index();
     let mapping =
@@ -645,26 +324,6 @@ pub fn current_author() -> AccountId {
         .expect("there is a mapping for the current author")
         .clone()
 }
-
-pub fn block_credits_to_required_balance(number_of_blocks: u32, para_id: ParaId) -> Balance {
-    let block_cost = BlockProductionCost::block_cost(&para_id).0;
-    u128::from(number_of_blocks).saturating_mul(block_cost)
-}
-
-pub fn collator_assignment_credits_to_required_balance(
-    number_of_sessions: u32,
-    para_id: ParaId,
-) -> Balance {
-    let collator_assignment_cost = CollatorAssignmentCost::collator_assignment_cost(&para_id).0;
-    u128::from(number_of_sessions).saturating_mul(collator_assignment_cost)
-}
-
-pub const ALICE: [u8; 32] = [4u8; 32];
-pub const BOB: [u8; 32] = [5u8; 32];
-pub const CHARLIE: [u8; 32] = [6u8; 32];
-pub const DAVE: [u8; 32] = [7u8; 32];
-pub const EVE: [u8; 32] = [8u8; 32];
-pub const FERDIE: [u8; 32] = [9u8; 32];
 
 pub fn set_dummy_boot_node(para_manager: RuntimeOrigin, para_id: ParaId) {
     use {

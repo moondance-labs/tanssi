@@ -396,16 +396,6 @@ impl ExtBuilder {
         self
     }
 
-    pub fn with_safe_xcm_version(mut self, safe_xcm_version: u32) -> Self {
-        self.safe_xcm_version = Some(safe_xcm_version);
-        self
-    }
-
-    pub fn with_own_para_id(mut self, own_para_id: ParaId) -> Self {
-        self.own_para_id = Some(own_para_id);
-        self
-    }
-
     pub fn build_storage(self) -> sp_core::storage::Storage {
         let mut t = frame_system::GenesisConfig::<Runtime>::default()
             .build_storage()
