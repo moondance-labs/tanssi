@@ -22,7 +22,6 @@ describeSuite({
         let alice: KeyringPair;
         let runtimeName: String;
         let xcmQueryToAnalyze: Number;
-        let xcmPalletAlias: SubmittableModuleExtrinsics<ApiTypes>;
 
         beforeAll(async () => {
             api = context.pjsApi;
@@ -51,6 +50,7 @@ describeSuite({
                       };
 
                 // fetch on-chain later
+                // TODO:Once we update the next runtime, remove this and take it form onchain
                 const previousXcmVersion = 5;
                 const latestVersion = "V" + previousXcmVersion.toString();
 
