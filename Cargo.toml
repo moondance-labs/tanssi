@@ -1,6 +1,7 @@
 [workspace]
-exclude = ["bin/utils/tanssi-utils"]
+exclude = [ "bin/utils/tanssi-utils" ]
 members = [
+	"bin/utils/tanssi-utils",
 	"chains/container-chains/nodes/*",
 	"chains/container-chains/runtime-templates/*",
 	"chains/orchestrator-paras/node",
@@ -14,7 +15,6 @@ members = [
 	"pallets/collator-assignment/runtime-api",
 	"pallets/registrar/runtime-api",
 	"primitives/*",
-	"bin/utils/tanssi-utils",
 ]
 resolver = "2"
 
