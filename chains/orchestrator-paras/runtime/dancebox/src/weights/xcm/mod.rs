@@ -14,11 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+pub mod pallet_xcm_benchmarks_fungible;
 pub mod pallet_xcm_benchmarks_generic;
 
 use {
     crate::Runtime,
     frame_support::{weights::Weight, BoundedVec},
+    pallet_xcm_benchmarks_fungible::WeightInfo as XcmBalancesWeight,
     pallet_xcm_benchmarks_generic::WeightInfo as XcmGeneric,
     sp_std::prelude::*,
     xcm::{
@@ -27,8 +29,23 @@ use {
     },
 };
 
+const MAX_ASSETS: u64 = 1;
+
 trait WeighAssets {
     fn weigh_multi_assets(&self, weight: Weight) -> XCMWeight;
+}
+
+impl WeighAssets for AssetFilter {
+    fn weigh_multi_assets(&self, balances_weight: Weight) -> Weight {
+        match self {
+            Self::Definite(assets) => assets.weigh_multi_assets(balances_weight),
+            Self::Wild(AllOf { .. } | AllOfCounted { .. }) => balances_weight,
+            Self::Wild(AllCounted(count)) => {
+                balances_weight.saturating_mul(MAX_ASSETS.min(*count as u64))
+            }
+            Self::Wild(All) => balances_weight.saturating_mul(MAX_ASSETS),
+        }
+    }
 }
 
 impl WeighAssets for Assets {
@@ -36,11 +53,6 @@ impl WeighAssets for Assets {
         weight.saturating_mul(self.inner().iter().count() as u64)
     }
 }
-
-// Values copied from statemint benchmarks
-const ASSET_BURN_MAX_PROOF_SIZE: u64 = 7242;
-const ASSET_MINT_MAX_PROOF_SIZE: u64 = 7242;
-const ASSET_TRANSFER_MAX_PROOF_SIZE: u64 = 13412;
 
 // For now we are returning benchmarked weights only for generic XCM instructions.
 // Fungible XCM instructions will return a fixed weight value of
@@ -53,13 +65,10 @@ where
     Runtime: frame_system::Config,
 {
     fn withdraw_asset(assets: &Assets) -> XCMWeight {
-        assets.weigh_multi_assets(XCMWeight::from_parts(
-            200_000_000u64,
-            ASSET_BURN_MAX_PROOF_SIZE,
-        ))
+        assets.weigh_multi_assets(XcmBalancesWeight::<Runtime>::withdraw_asset())
     }
     fn reserve_asset_deposited(assets: &Assets) -> XCMWeight {
-        assets.weigh_multi_assets(XCMWeight::from_parts(200_000_000u64, 0))
+        assets.weigh_multi_assets(XcmBalancesWeight::<Runtime>::reserve_asset_deposited())
     }
     fn receive_teleported_asset(_assets: &Assets) -> XCMWeight {
         XCMWeight::MAX
@@ -73,16 +82,10 @@ where
         XcmGeneric::<Runtime>::query_response()
     }
     fn transfer_asset(assets: &Assets, _dest: &Location) -> XCMWeight {
-        assets.weigh_multi_assets(XCMWeight::from_parts(
-            200_000_000u64,
-            ASSET_TRANSFER_MAX_PROOF_SIZE,
-        ))
+        assets.weigh_multi_assets(XcmBalancesWeight::<Runtime>::transfer_asset())
     }
     fn transfer_reserve_asset(assets: &Assets, _dest: &Location, _xcm: &Xcm<()>) -> XCMWeight {
-        assets.weigh_multi_assets(XCMWeight::from_parts(
-            200_000_000u64,
-            ASSET_TRANSFER_MAX_PROOF_SIZE,
-        ))
+        assets.weigh_multi_assets(XcmBalancesWeight::<Runtime>::transfer_reserve_asset())
     }
     fn transact(
         _origin_type: &OriginKind,
@@ -116,24 +119,24 @@ where
     fn report_error(_query_response_info: &QueryResponseInfo) -> XCMWeight {
         XcmGeneric::<Runtime>::report_error()
     }
-    fn deposit_asset(_assets: &AssetFilter, _dest: &Location) -> XCMWeight {
-        Weight::from_parts(200_000_000u64, ASSET_MINT_MAX_PROOF_SIZE)
+    fn deposit_asset(assets: &AssetFilter, _dest: &Location) -> XCMWeight {
+        assets.weigh_multi_assets(XcmBalancesWeight::<Runtime>::deposit_asset())
     }
-    fn deposit_reserve_asset(_assets: &AssetFilter, _dest: &Location, _xcm: &Xcm<()>) -> XCMWeight {
-        Weight::from_parts(200_000_000u64, ASSET_MINT_MAX_PROOF_SIZE)
+    fn deposit_reserve_asset(assets: &AssetFilter, _dest: &Location, _xcm: &Xcm<()>) -> XCMWeight {
+        assets.weigh_multi_assets(XcmBalancesWeight::<Runtime>::deposit_reserve_asset())
     }
     fn exchange_asset(_give: &AssetFilter, _receive: &Assets, _maximal: &bool) -> XCMWeight {
         Weight::MAX
     }
     fn initiate_reserve_withdraw(
-        _assets: &AssetFilter,
+        assets: &AssetFilter,
         _reserve: &Location,
         _xcm: &Xcm<()>,
     ) -> XCMWeight {
-        XCMWeight::from_parts(200_000_000u64, ASSET_TRANSFER_MAX_PROOF_SIZE)
+        assets.weigh_multi_assets(XcmBalancesWeight::<Runtime>::initiate_reserve_withdraw())
     }
-    fn initiate_teleport(_assets: &AssetFilter, _dest: &Location, _xcm: &Xcm<()>) -> XCMWeight {
-        XCMWeight::MAX
+    fn initiate_teleport(assets: &AssetFilter, _dest: &Location, _xcm: &Xcm<()>) -> XCMWeight {
+        assets.weigh_multi_assets(XcmBalancesWeight::<Runtime>::initiate_teleport())
     }
     fn report_holding(_response_info: &QueryResponseInfo, _assets: &AssetFilter) -> Weight {
         XcmGeneric::<Runtime>::report_holding()
@@ -239,12 +242,24 @@ where
 
     fn initiate_transfer(
         _dest: &Location,
-        _remote_fees: &Option<AssetTransferFilter>,
+        remote_fees: &Option<AssetTransferFilter>,
         _preserve_origin: &bool,
-        _assets: &Vec<AssetTransferFilter>,
+        assets: &Vec<AssetTransferFilter>,
         _xcm: &Xcm<()>,
     ) -> Weight {
-        Weight::MAX
+        let mut weight = if let Some(remote_fees) = remote_fees {
+            let fees = remote_fees.inner();
+            fees.weigh_multi_assets(XcmBalancesWeight::<Runtime>::initiate_transfer())
+        } else {
+            Weight::zero()
+        };
+        for asset_filter in assets {
+            let assets = asset_filter.inner();
+            let extra =
+                assets.weigh_multi_assets(XcmBalancesWeight::<Runtime>::initiate_transfer());
+            weight = weight.saturating_add(extra);
+        }
+        weight
     }
 
     fn execute_with_origin(_: &Option<InteriorLocation>, _: &Xcm<RuntimeCall>) -> Weight {
