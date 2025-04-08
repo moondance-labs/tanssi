@@ -15,13 +15,14 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use clap::{Parser, Subcommand};
-use serde::Deserialize;
+use serde::{Deserialize, Deserializer};
 use sp_runtime::{traits::Keccak256, AccountId32};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct RewardData {
+    #[serde(deserialize_with = "hex_to_account_id32")]
     account: AccountId32,
     amount: u32,
 }
@@ -32,7 +33,6 @@ pub struct RewardClaimInput {
     pub(crate) era: u32,
 }
 
-/// A utility to easily create a chain spec definition.
 #[derive(Debug, Parser)]
 #[command(rename_all = "kebab-case", version, about)]
 pub struct TanssiUtils {
@@ -46,10 +46,9 @@ pub enum TanssiUtilsCmd {
     RewardClaimGenerator(RewardClaimGeneratorCmd),
 }
 
-/// Create a new chain spec by interacting with the provided runtime wasm blob.
 #[derive(Parser, Debug)]
 pub struct RewardClaimGeneratorCmd {
-    /// The path where the json with the values is
+    /// The path where the json containing the values is located.
     #[arg(long, short)]
     pub input_path: PathBuf,
 }
@@ -59,7 +58,7 @@ impl TanssiUtils {
     pub fn run(&self) {
         match &self.command {
             TanssiUtilsCmd::RewardClaimGenerator(cmd) => {
-                println!("input path is {:?}", cmd.input_path);
+                println!("Input path is: {:?}", cmd.input_path);
                 let rewards =
                     extract_rewards_data_from_file(&cmd.input_path).expect("command fail");
                 generate_reward_utils(rewards)
@@ -68,7 +67,21 @@ impl TanssiUtils {
     }
 }
 
-/// Extract a set of
+// Helper function to deserialize hex strings into AccountId32.
+// Example: 0x040404...
+fn hex_to_account_id32<'de, D>(deserializer: D) -> Result<AccountId32, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let hex_str: String = Deserialize::deserialize(deserializer)?;
+    let hex_trimmed = hex_str.strip_prefix("0x").unwrap_or(hex_str.as_str());
+    let bytes = hex::decode(hex_trimmed).map_err(serde::de::Error::custom)?;
+    let mut array = [0u8; 32];
+    array.copy_from_slice(&bytes);
+    Ok(AccountId32::from(array))
+}
+
+/// Extract a set of rewards information from a JSON file.
 fn extract_rewards_data_from_file(reward_path: &Path) -> Result<RewardClaimInput, String> {
     let reader = std::fs::File::open(reward_path).expect("Can open file");
     let reward_input = serde_json::from_reader(&reader).expect("Cant parse reward input from JSON");
@@ -89,8 +102,23 @@ fn generate_reward_utils(reward_input: RewardClaimInput) {
         total: total_points,
         individual: individual_rewards,
     };
-    let utils = era_rewards.generate_era_rewards_utils::<Keccak256>(reward_input.era, None);
-    println!("utils are {:?}", utils);
+
+    if let Some(utils) = era_rewards.generate_era_rewards_utils::<Keccak256>(reward_input.era, None)
+    {
+        println!("=== Era Rewards Utils ===");
+        println!("Merkle Root     : {:?}", utils.rewards_merkle_root);
+        println!("Total Points    : {}", utils.total_points);
+        println!("Leaves:");
+        for (i, leaf) in utils.leaves.iter().enumerate() {
+            println!("  [{}] {:?}", i, leaf);
+        }
+        match utils.leaf_index {
+            Some(index) => println!("Leaf Index      : {}", index),
+            None => println!("Leaf Index      : <None>"),
+        }
+    } else {
+        println!("No era rewards utils generated.");
+    }
 }
 
 fn main() {
