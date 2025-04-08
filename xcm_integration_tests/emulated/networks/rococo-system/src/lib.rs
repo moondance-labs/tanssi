@@ -7,6 +7,7 @@ use {
     simple_template_emulated_chain::SimpleTemplate,
     sp_keyring::Sr25519Keyring,
     tanssi_emulated_integration_tests_common,
+    tanssi_emulated_integration_tests_common::accounts::RANDOM,
     xcm_emulator::{decl_test_networks, Chain},
 };
 
@@ -26,5 +27,5 @@ parameter_types! {
     // Rococo
     pub RococoSender: cumulus_primitives_core::relay_chain::AccountId = Sr25519Keyring::Alice.to_account_id();
     pub RococoReceiver: cumulus_primitives_core::relay_chain::AccountId = Sr25519Keyring::Bob.to_account_id();
-    pub RococoEmptyReceiver: cumulus_primitives_core::relay_chain::AccountId = RococoRelay::account_id_of(tanssi_emulated_integration_tests_common::accounts::RANDOM);
+    pub RococoEmptyReceiver: cumulus_primitives_core::relay_chain::AccountId = RococoRelay::account_id_of(RANDOM);
 }

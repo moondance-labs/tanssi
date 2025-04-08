@@ -2,7 +2,7 @@ use emulated_integration_tests_common::build_genesis_storage;
 use sp_core::storage::Storage;
 use {
     cumulus_primitives_core::Junctions::X1,
-    sp_keyring::Sr25519Keyring,
+    tanssi_emulated_integration_tests_common::accounts::{ALICE, BOB},
     xcm::prelude::*,
     xcm_builder::{ParentIsPreset, SiblingParachainConvertsVia},
     xcm_executor::traits::ConvertLocation,
@@ -14,11 +14,11 @@ pub fn genesis() -> Storage {
             balances: vec![
                 // Alice gets 10k extra tokens for her mapping deposit
                 (
-                    Sr25519Keyring::Alice.to_account_id(),
+                    dancebox_runtime::AccountId::from(ALICE),
                     210_000 * dancebox_runtime::UNIT,
                 ),
                 (
-                    Sr25519Keyring::Bob.to_account_id(),
+                    dancebox_runtime::AccountId::from(BOB),
                     100_000 * dancebox_runtime::UNIT,
                 ),
                 // Give some balance to the relay chain account
