@@ -13,32 +13,56 @@
 
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
-
 #![cfg(test)]
 use {
     crate::tests::common::*,
-    frame_support::{traits::Get, BoundedBTreeSet},
+    frame_support::{assert_ok, traits::Get, BoundedBTreeSet},
     pallet_inactivity_tracking::pallet::{ActiveCollators, ActiveCollatorsForCurrentSession},
-    tp_traits::{AuthorNotingHook, AuthorNotingInfo, NodeActivityTrackingHelper, ParaId},
+    parity_scale_codec::Encode,
+    sp_consensus_aura::AURA_ENGINE_ID,
+    sp_runtime::{traits::BlakeTwo256, DigestItem},
+    test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
+    tp_traits::{NodeActivityTrackingHelper, ParaId},
 };
 
-fn get_author_noting_info(
-    author: &AccountId,
-    container_chain: &ParaId,
-) -> AuthorNotingInfo<AccountId> {
-    AuthorNotingInfo {
-        block_number: System::block_number(),
-        author: author.clone(),
-        para_id: *container_chain,
-    }
-}
+fn note_blocks_for_container_chain(
+    para_id_1: ParaId,
+    para_id_2: ParaId,
+    start_block: u32,
+    end_block: u32,
+) {
+    // Simulate the inclusion of a block for a container chain
+    let mut sproof = ParaHeaderSproofBuilder::default();
 
-fn note_block_authors(authors: Vec<(AccountId, ParaId)>) {
-    let mut authors_info: Vec<AuthorNotingInfo<AccountId>> = Vec::new();
-    authors.iter().for_each(|block_info| {
-        authors_info.push(get_author_noting_info(&block_info.0, &block_info.1))
-    });
-    let _ = InactivityTracking::on_container_authors_noted(&authors_info.as_slice());
+    for block_number in start_block..=end_block {
+        let s1 = ParaHeaderSproofBuilderItem {
+            para_id: para_id_1,
+            author_id: HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                parent_hash: Default::default(),
+                number: block_number,
+                state_root: Default::default(),
+                extrinsics_root: Default::default(),
+                digest: sp_runtime::generic::Digest {
+                    logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, 2u64.encode())],
+                },
+            }),
+        };
+        let s2 = ParaHeaderSproofBuilderItem {
+            para_id: para_id_2,
+            author_id: HeaderAs::NonEncoded(sp_runtime::generic::Header::<u32, BlakeTwo256> {
+                parent_hash: Default::default(),
+                number: block_number,
+                state_root: Default::default(),
+                extrinsics_root: Default::default(),
+                digest: sp_runtime::generic::Digest {
+                    logs: vec![DigestItem::PreRuntime(AURA_ENGINE_ID, 3u64.encode())],
+                },
+            }),
+        };
+        sproof.items.push(s1);
+        sproof.items.push(s2);
+    }
+    set_author_noting_inherent_data(sproof.clone())
 }
 
 fn get_collators_set(
@@ -69,50 +93,49 @@ fn inactivity_tracking_correctly_updates_storages() {
         ])
         .build()
         .execute_with(|| {
+            let assignment = TanssiCollatorAssignment::collator_container_chain();
+            assert_eq!(
+                assignment.container_chains[&3000.into()],
+                vec![ALICE.into(), BOB.into()]
+            );
+            assert_eq!(
+                assignment.container_chains[&3001.into()],
+                vec![CHARLIE.into(), DAVE.into()]
+            );
+            note_blocks_for_container_chain(3000.into(), 3001.into(), 1, session_to_block(1));
             run_block();
-            note_block_authors(vec![(ALICE.into(), 3000.into()), (BOB.into(), 3001.into())]);
             assert_eq!(
                 <ActiveCollatorsForCurrentSession<Runtime>>::get(),
-                get_collators_set(vec![ALICE.into(), BOB.into()])
+                get_collators_set(vec![ALICE.into(), DAVE.into()])
             );
 
             run_block();
-            note_block_authors(vec![(ALICE.into(), 3000.into()), (BOB.into(), 3001.into())]);
             assert_eq!(
                 <ActiveCollatorsForCurrentSession<Runtime>>::get(),
-                get_collators_set(vec![ALICE.into(), BOB.into()])
+                get_collators_set(vec![ALICE.into(), DAVE.into()])
             );
+
             run_to_session(1);
             run_block();
-
             assert_eq!(
                 <ActiveCollators<Runtime>>::get(0),
-                get_collators_set(vec![ALICE.into(), BOB.into()])
+                get_collators_set(vec![ALICE.into(), DAVE.into()])
             );
-            assert_eq!(<ActiveCollatorsForCurrentSession<Runtime>>::get().len(), 0);
-
-            note_block_authors(vec![
-                (CHARLIE.into(), 3000.into()),
-                (BOB.into(), 3001.into()),
-            ]);
             assert_eq!(
                 <ActiveCollatorsForCurrentSession<Runtime>>::get(),
-                get_collators_set(vec![BOB.into(), CHARLIE.into()])
+                get_collators_set(vec![])
             );
 
             run_block();
-            note_block_authors(vec![(ALICE.into(), 3000.into()), (BOB.into(), 3001.into())]);
             assert_eq!(
                 <ActiveCollatorsForCurrentSession<Runtime>>::get(),
-                get_collators_set(vec![ALICE.into(), BOB.into(), CHARLIE.into()])
+                get_collators_set(vec![])
             );
-
             run_to_session(2);
             run_block();
-
             assert_eq!(
                 <ActiveCollators<Runtime>>::get(1),
-                get_collators_set(vec![ALICE.into(), BOB.into(), CHARLIE.into()])
+                get_collators_set(vec![])
             );
             assert_eq!(<ActiveCollatorsForCurrentSession<Runtime>>::get().len(), 0);
 
@@ -144,15 +167,15 @@ fn inactivity_tracking_correctly_updates_storages() {
             );
             assert_eq!(
                 InactivityTracking::is_node_inactive(&AccountId::from(BOB)),
-                false
+                true
             );
             assert_eq!(
                 InactivityTracking::is_node_inactive(&AccountId::from(CHARLIE)),
-                false
+                true
             );
             assert_eq!(
                 InactivityTracking::is_node_inactive(&AccountId::from(DAVE)),
-                true
+                false
             );
             assert_eq!(<ActiveCollators<Runtime>>::get(0).is_empty(), false);
 
