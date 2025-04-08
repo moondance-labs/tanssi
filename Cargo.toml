@@ -13,21 +13,21 @@ members = [
 	"pallets/collator-assignment/runtime-api",
 	"pallets/registrar/runtime-api",
 	"primitives/*",
-	"xcm_integration_tests/emulated/chains/parachains/dancebox",
-	"xcm_integration_tests/emulated/chains/parachains/dancebox-rococo",
-	"xcm_integration_tests/emulated/chains/parachains/frontier-template",
-	"xcm_integration_tests/emulated/chains/parachains/simple-template",
-	"xcm_integration_tests/emulated/chains/relays/dancelight",
-	"xcm_integration_tests/emulated/chains/relays/rococo",
-	"xcm_integration_tests/emulated/chains/relays/westend",
-	"xcm_integration_tests/emulated/common",
-	"xcm_integration_tests/emulated/dancebox-runtime-test-utils",
-	"xcm_integration_tests/emulated/networks/dancelight-system",
-	"xcm_integration_tests/emulated/networks/rococo-system",
-	"xcm_integration_tests/emulated/networks/westend-system",
-	"xcm_integration_tests/emulated/tests/assets/dancebox",
-	"xcm_integration_tests/emulated/tests/assets/dancelight",
-	"xcm_integration_tests/emulated/tests/bridges/dancelight",
+	"chains/xcm-integration-tests/emulated/chains/parachains/dancebox",
+	"chains/xcm-integration-tests/emulated/chains/parachains/dancebox-rococo",
+	"chains/xcm-integration-tests/emulated/chains/parachains/frontier-template",
+	"chains/xcm-integration-tests/emulated/chains/parachains/simple-template",
+	"chains/xcm-integration-tests/emulated/chains/relays/dancelight",
+	"chains/xcm-integration-tests/emulated/chains/relays/rococo",
+	"chains/xcm-integration-tests/emulated/chains/relays/westend",
+	"chains/xcm-integration-tests/emulated/common",
+	"chains/xcm-integration-tests/emulated/dancebox-runtime-test-utils",
+	"chains/xcm-integration-tests/emulated/networks/dancelight-system",
+	"chains/xcm-integration-tests/emulated/networks/rococo-system",
+	"chains/xcm-integration-tests/emulated/networks/westend-system",
+	"chains/xcm-integration-tests/emulated/tests/assets/dancebox",
+	"chains/xcm-integration-tests/emulated/tests/assets/dancelight",
+	"chains/xcm-integration-tests/emulated/tests/bridges/dancelight",
 ]
 resolver = "2"
 
@@ -117,21 +117,18 @@ tc-consensus = { path = "client/consensus" }
 tc-orchestrator-chain-rpc-interface = { path = "client/orchestrator-chain-rpc-interface" }
 tc-service-container-chain = { path = "client/service-container-chain" }
 
-asset-dancebox-integration-tests = { path = "xcm_integration_tests/emulated/tests/assets/dancebox" }
-asset-dancelight-integration-tests = { path = "xcm_integration_tests/emulated/tests/assets/dancelight" }
-bridge-dancelight-integration-tests = { path = "xcm_integration_tests/emulated/tests/bridges/dancelight" }
-dancebox-emulated-chain = { path = "xcm_integration_tests/emulated/chains/parachains/dancebox" }
-dancebox-rococo-emulated-chain = { path = "xcm_integration_tests/emulated/chains/parachains/dancebox-rococo" }
-dancebox-runtime-test-utils = { path = "xcm_integration_tests/emulated/dancebox-runtime-test-utils" }
-dancelight-emulated-chain = { path = "xcm_integration_tests/emulated/chains/relays/dancelight" }
-dancelight-system-emulated-network = { path = "xcm_integration_tests/emulated/networks/dancelight-system" }
-frontier-template-emulated-chain = { path = "xcm_integration_tests/emulated/chains/parachains/frontier-template" }
-rococo-emulated-chain = { path = "xcm_integration_tests/emulated/chains/relays/rococo" }
-rococo-system-emulated-network = { path = "xcm_integration_tests/emulated/networks/rococo-system" }
-simple-template-emulated-chain = { path = "xcm_integration_tests/emulated/chains/parachains/simple-template" }
-tanssi-emulated-integration-tests-common = { path = "xcm_integration_tests/emulated/common" }
-westend-emulated-chain = { path = "xcm_integration_tests/emulated/chains/relays/westend" }
-westend-system-emulated-network = { path = "xcm_integration_tests/emulated/networks/westend-system" }
+dancebox-emulated-chain = { path = "chains/xcm-integration-tests/emulated/chains/parachains/dancebox" }
+dancebox-rococo-emulated-chain = { path = "chains/xcm-integration-tests/emulated/chains/parachains/dancebox-rococo" }
+dancebox-runtime-test-utils = { path = "chains/xcm-integration-tests/emulated/dancebox-runtime-test-utils" }
+dancelight-emulated-chain = { path = "chains/xcm-integration-tests/emulated/chains/relays/dancelight" }
+dancelight-system-emulated-network = { path = "chains/xcm-integration-tests/emulated/networks/dancelight-system" }
+frontier-template-emulated-chain = { path = "chains/xcm-integration-tests/emulated/chains/parachains/frontier-template" }
+rococo-emulated-chain = { path = "chains/xcm-integration-tests/emulated/chains/relays/rococo" }
+rococo-system-emulated-network = { path = "chains/xcm-integration-tests/emulated/networks/rococo-system" }
+simple-template-emulated-chain = { path = "chains/xcm-integration-tests/emulated/chains/parachains/simple-template" }
+tanssi-emulated-integration-tests-common = { path = "chains/xcm-integration-tests/emulated/common" }
+westend-emulated-chain = { path = "chains/xcm-integration-tests/emulated/chains/relays/westend" }
+westend-system-emulated-network = { path = "chains/xcm-integration-tests/emulated/networks/westend-system" }
 
 tp-author-noting-inherent = { path = "primitives/author-noting-inherent", default-features = false }
 tp-bridge = { path = "primitives/bridge", default-features = false }
