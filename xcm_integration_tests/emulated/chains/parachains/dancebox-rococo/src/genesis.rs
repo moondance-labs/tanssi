@@ -98,7 +98,6 @@ pub fn genesis() -> Storage {
             ..Default::default()
         },
         polkadot_xcm: dancebox_runtime::PolkadotXcmConfig {
-            // TODO: Insert top for the version
             safe_xcm_version: 3.into(),
             ..Default::default()
         },
