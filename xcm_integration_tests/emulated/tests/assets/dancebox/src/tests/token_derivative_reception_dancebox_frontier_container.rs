@@ -15,13 +15,13 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    crate::tests::common::xcm::{
-        mocknets::{
-            DanceboxPara as Dancebox, DanceboxParaPallet, DanceboxSender, EthereumReceiver,
-            FrontierTemplatePara as FrontierTemplate, FrontierTemplateParaPallet,
-        },
-        *,
-    },
+    // crate::tests::common::xcm::{
+    //     mocknets::{
+    //         DanceboxPara as Dancebox, DanceboxParaPallet, DanceboxSender, EthereumReceiver,
+    //         FrontierTemplatePara as FrontierTemplate, FrontierTemplateParaPallet,
+    //     },
+    //     *,
+    // },
     frame_support::{
         assert_ok,
         traits::{tokens::ConversionToAssetBalance, PalletInfoAccess},

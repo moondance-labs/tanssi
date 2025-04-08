@@ -15,20 +15,25 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    crate::tests::common::xcm::{
-        core_buyer_common::*,
-        mocknets::{DanceboxRococoPara as Dancebox, RococoRelay as Rococo, RococoRelayPallet},
-        *,
-    },
+    crate::tests::core_buyer_common::*,
+    // crate::tests::common::xcm::{
+    //     core_buyer_common::*,
+    //     mocknets::{DanceboxRococoPara as Dancebox, RococoRelay as Rococo, RococoRelayPallet},
+    //     *,
+    // },
+    dancebox_runtime_test_utils::*,
     polkadot_runtime_parachains::on_demand as parachains_assigner_on_demand,
+    rococo_emulated_chain::RococoRelayPallet,
+    rococo_system_emulated_network::{DanceboxRococoPara as Dancebox, RococoRelay as Rococo},
     tp_traits::ParaId,
     xcm::latest::{MaybeErrorCode, Response},
+    xcm_emulator::TestExt,
     xcm_emulator::{assert_expected_events, Chain},
 };
 
 const PARATHREAD_ID: u32 = 3333;
 const ROCOCO_ED: u128 = rococo_runtime_constants::currency::EXISTENTIAL_DEPOSIT;
-const BUY_EXECUTION_COST: u128 = crate::xcm_config::XCM_BUY_EXECUTION_COST_ROCOCO;
+const BUY_EXECUTION_COST: u128 = dancebox_runtime::xcm_config::XCM_BUY_EXECUTION_COST_ROCOCO;
 // Difference between BUY_EXECUTION_COST and the actual cost that depends on the weight of the XCM
 // message, gets refunded on successful execution of core buying extrinsic.
 const BUY_EXECUTION_REFUND: u128 = 24506230;

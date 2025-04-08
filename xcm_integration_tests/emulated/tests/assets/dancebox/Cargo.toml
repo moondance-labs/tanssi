@@ -12,17 +12,32 @@ workspace = true
 workspace = true
 
 [dependencies]
-tanssi-emulated-integration-tests-common = { workspace = true }
-container-chain-template-simple-runtime = { workspace = true }
+tanssi-emulated-integration-tests-common = { workspace = true, features = ["std"] }
+container-chain-template-simple-runtime = { workspace = true, features = ["std"] }
 dancebox-emulated-chain = { workspace = true }
-dancebox-runtime = { workspace = true }
-dancebox-system-emulated-network  = { workspace = true }
-frame-support = { workspace = true, features = [ "tuples-96" ] }
-pallet-message-queue = { workspace = true }
-pallet-xcm = { workspace = true }
-primitives = { workspace = true }
+dancebox-runtime = { workspace = true, features = ["std"] }
+frame-support = { workspace = true, features = [ "tuples-96", "std" ] }
+pallet-message-queue = { workspace = true, features = ["std"] }
+pallet-xcm = { workspace = true, features = ["std"] }
+primitives = { workspace = true, features = ["std"] }
 simple-template-emulated-chain = { workspace = true }
-sp-runtime = { workspace = true }
-xcm = { workspace = true }
+sp-runtime = { workspace = true, features = ["std"] }
+xcm = { workspace = true, features = ["std"] }
 xcm-emulator = { workspace = true }
-xcm-executor = { workspace = true }
+xcm-executor = { workspace = true, features = ["std"] }
+nimbus-primitives = { workspace = true, features = ["std"] }
+pallet-xcm-core-buyer = { workspace = true, features = ["std"] }
+parity-scale-codec = { workspace = true, features = ["std"] }
+polkadot-runtime-parachains = { workspace = true, features = ["std"] }
+sp-core = { workspace = true, features = ["std"] }
+tp-traits = { workspace = true, features = ["std"] }
+tp-xcm-core-buyer = { workspace = true, features = ["std"] }
+dancebox-runtime-test-utils = { workspace = true, features = ["std"] }
+rococo-system-emulated-network = { workspace = true }
+rococo-emulated-chain = { workspace = true }
+westend-system-emulated-network = { workspace = true }
+pallet-balances = { workspace = true, features = ["std"] }
+frame-system = { workspace = true, features = ["std"] }
+rococo-runtime-constants = { workspace = true, features = ["std"] }
+cumulus-primitives-core = { workspace = true, features = ["std"] }
+paste = { workspace = true }

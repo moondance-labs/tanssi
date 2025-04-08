@@ -66,5 +66,12 @@ pub fn genesis() -> Storage {
         ..Default::default()
     };
 
-    build_genesis_storage(&genesis_config, dancebox_runtime::WASM_BINARY.unwrap())
+    let mut storage =
+        build_genesis_storage(&genesis_config, dancebox_runtime::WASM_BINARY.unwrap());
+
+    storage
+        .top
+        .insert(b"__mock_is_xcm_test".to_vec(), b"1".to_vec());
+
+    storage
 }

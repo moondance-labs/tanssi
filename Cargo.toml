@@ -25,6 +25,7 @@ members = [
 	"xcm_integration_tests/emulated/networks/rococo-system",
 	"xcm_integration_tests/emulated/networks/westend-system",
 	"xcm_integration_tests/emulated/tests/assets/dancelight",
+	"xcm_integration_tests/emulated/tests/assets/dancebox",
 	"xcm_integration_tests/emulated/tests/bridges/dancelight",
 	"xcm_integration_tests/emulated/dancebox-runtime-test-utils",
 ]
@@ -129,6 +130,7 @@ dancelight-system-emulated-network = { path = "xcm_integration_tests/emulated/ne
 rococo-system-emulated-network = { path = "xcm_integration_tests/emulated/networks/rococo-system" }
 westend-system-emulated-network = { path = "xcm_integration_tests/emulated/networks/westend-system" }
 asset-dancelight-integration-tests = { path = "xcm_integration_tests/emulated/tests/assets/dancelight" }
+asset-dancebox-integration-tests = { path = "xcm_integration_tests/emulated/tests/assets/dancebox" }
 bridge-dancelight-integration-tests = { path = "xcm_integration_tests/emulated/tests/bridges/dancelight" }
 
 tp-author-noting-inherent = { path = "primitives/author-noting-inherent", default-features = false }

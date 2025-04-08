@@ -15,15 +15,15 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    crate::tests::common::xcm::{
-        mocknets::{
-            DanceboxPara as Dancebox, DanceboxParaPallet, DanceboxSender,
-            SimpleTemplateEmptyReceiver, SimpleTemplatePara as SimpleTemplate,
-            SimpleTemplateParaPallet, SimpleTemplateSender, WestendRelay as Westend,
-            WestendRelayPallet, WestendSender,
-        },
-        *,
-    },
+    // crate::tests::common::xcm::{
+    //     mocknets::{
+    //         DanceboxPara as Dancebox, DanceboxParaPallet, DanceboxSender,
+    //         SimpleTemplateEmptyReceiver, SimpleTemplatePara as SimpleTemplate,
+    //         SimpleTemplateParaPallet, SimpleTemplateSender, WestendRelay as Westend,
+    //         WestendRelayPallet, WestendSender,
+    //     },
+    //     *,
+    // },
     frame_support::{
         assert_noop, assert_ok,
         traits::PalletInfoAccess,

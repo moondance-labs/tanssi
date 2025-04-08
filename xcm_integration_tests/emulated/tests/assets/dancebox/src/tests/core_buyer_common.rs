@@ -15,38 +15,49 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    crate::{
-        tests::common::{
-            empty_genesis_data, run_to_session, set_dummy_boot_node, start_block,
-            xcm::{
-                mocknets::{
-                    DanceboxRococoPara as Dancebox, DanceboxSender, RococoRelay as Rococo,
-                    RococoRelayPallet, RococoSender,
-                },
-                *,
-            },
-            BOB,
-        },
-        Registrar, RuntimeOrigin, ServicesPayment, XcmCoreBuyer,
-    },
     core::marker::PhantomData,
     cumulus_primitives_core::Weight,
+    dancebox_runtime::{
+        // tests::common::{
+        //     empty_genesis_data, run_to_session, set_dummy_boot_node, start_block,
+        //     xcm::{
+        //         mocknets::{
+        //             DanceboxRococoPara as Dancebox, DanceboxSender, RococoRelay as Rococo,
+        //             RococoRelayPallet, RococoSender,
+        //         },
+        //         *,
+        //     },
+        //     BOB,
+        // },
+        Registrar,
+        RuntimeOrigin,
+        ServicesPayment,
+        XcmCoreBuyer,
+    },
+    dancebox_runtime_test_utils::{
+        empty_genesis_data, run_to_session, set_dummy_boot_node, start_block, BOB,
+    },
     frame_support::assert_ok,
     nimbus_primitives::NimbusId,
     pallet_xcm_core_buyer::RelayXcmWeightConfigInner,
     parity_scale_codec::Encode,
     polkadot_runtime_parachains::{configuration, on_demand as parachains_assigner_on_demand},
+    rococo_emulated_chain::RococoRelayPallet,
+    rococo_system_emulated_network::RococoSender,
+    rococo_system_emulated_network::{DanceboxRococoPara as Dancebox, RococoRelay as Rococo},
     sp_core::Pair,
     sp_runtime::{traits::ValidateUnsigned, AccountId32},
     tp_traits::{ParaId, SlotFrequency},
+    westend_system_emulated_network::DanceboxSender,
     xcm::v3::QueryId,
+    xcm_emulator::TestExt,
     xcm_emulator::{assert_expected_events, Chain, RelayChain},
     xcm_executor::traits::ConvertLocation,
 };
 
 pub const PARATHREAD_ID: u32 = 3333;
 pub const ROCOCO_ED: u128 = rococo_runtime_constants::currency::EXISTENTIAL_DEPOSIT;
-pub const BUY_EXECUTION_COST: u128 = crate::xcm_config::XCM_BUY_EXECUTION_COST_ROCOCO;
+pub const BUY_EXECUTION_COST: u128 = dancebox_runtime::xcm_config::XCM_BUY_EXECUTION_COST_ROCOCO;
 // Difference between BUY_EXECUTION_COST and the actual cost that depends on the weight of the XCM
 // message, gets refunded on successful execution of core buying extrinsic.
 pub const BUY_EXECUTION_REFUND: u128 = 24506230;
@@ -288,7 +299,7 @@ pub fn do_test(
         ));
         assert_ok!(XcmCoreBuyer::set_relay_chain(
             root_origin.clone(),
-            Some(crate::xcm_config::RelayChain::Rococo),
+            Some(dancebox_runtime::xcm_config::RelayChain::Rococo),
         ));
         if is_forced {
             assert_ok!(XcmCoreBuyer::force_buy_core(
@@ -298,7 +309,7 @@ pub fn do_test(
         } else {
             core_buyer_sign_collator_nonce(
                 PARATHREAD_ID.into(),
-                get_aura_pair_from_seed(&crate::AccountId::from(BOB).to_string()),
+                get_aura_pair_from_seed(&dancebox_runtime::AccountId::from(BOB).to_string()),
             );
         }
 
@@ -321,7 +332,8 @@ pub fn do_test(
 }
 
 fn core_buyer_sign_collator_nonce(para_id: ParaId, id: nimbus_primitives::NimbusPair) {
-    let nonce = pallet_xcm_core_buyer::CollatorSignatureNonce::<crate::Runtime>::get(para_id);
+    let nonce =
+        pallet_xcm_core_buyer::CollatorSignatureNonce::<dancebox_runtime::Runtime>::get(para_id);
 
     let payload = (nonce, para_id).encode();
     let signature = id.sign(&payload);

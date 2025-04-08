@@ -565,6 +565,41 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9b34d609dfbaf33d6889b2b7106d3ca345eacad44200913df5ba02bfd31d2ba9"
 
 [[package]]
+name = "asset-dancebox-integration-tests"
+version = "0.0.0"
+dependencies = [
+ "container-chain-template-simple-runtime",
+ "cumulus-primitives-core",
+ "dancebox-emulated-chain",
+ "dancebox-runtime",
+ "dancebox-runtime-test-utils",
+ "frame-support",
+ "frame-system",
+ "nimbus-primitives",
+ "pallet-balances",
+ "pallet-message-queue",
+ "pallet-xcm",
+ "pallet-xcm-core-buyer",
+ "parity-scale-codec",
+ "paste",
+ "polkadot-primitives",
+ "polkadot-runtime-parachains",
+ "rococo-emulated-chain",
+ "rococo-runtime-constants",
+ "rococo-system-emulated-network",
+ "simple-template-emulated-chain",
+ "sp-core",
+ "sp-runtime",
+ "staging-xcm",
+ "staging-xcm-executor",
+ "tanssi-emulated-integration-tests-common",
+ "tp-traits",
+ "tp-xcm-core-buyer",
+ "westend-system-emulated-network",
+ "xcm-emulator",
+]
+
+[[package]]
 name = "asset-dancelight-integration-tests"
 version = "0.0.0"
 dependencies = [

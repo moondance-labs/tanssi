@@ -14,12 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use crate::tests::common::xcm::*;
+// use crate::tests::common::xcm::*;
 
 use {
-    crate::tests::common::xcm::mocknets::{
-        DanceboxPara as Dancebox, WestendRelay as Westend, WestendRelayPallet,
-    },
+    // crate::tests::common::xcm::mocknets::{
+    //     DanceboxPara as Dancebox, WestendRelay as Westend, WestendRelayPallet,
+    // },
     frame_support::{
         assert_ok,
         weights::{Weight, WeightToFee},
