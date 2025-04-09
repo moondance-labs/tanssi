@@ -2,16 +2,10 @@ import "@tanssi/api-augment/dancelight";
 import { MoonwallContext, beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { generateKeyringPair } from "@moonwall/util";
 import { Keyring, type ApiPromise } from "@polkadot/api";
-import { SubmittableModuleExtrinsics } from "@polkadot/api-base/types";
-import { ApiTypes } from "@polkadot/api-base/types";
 
 import type { KeyringPair } from "@polkadot/keyring/types";
-import { type MultiLocation } from "utils";
-import { PalletXcmQueryStatus } from "@polkadot/types/lookup";
-import { VersionedMultiLocation } from "@polkadot/types/interfaces";
-import { xcm } from "@polkadot/types/interfaces/definitions";
+import { chopsticksWaitTillIncluded } from "utils";
 
-const MAX_BALANCE_TRANSFER_TRIES = 5;
 describeSuite({
     id: "RT01",
     title: "Chopsticks Dancebox Upgrade Test",
@@ -71,19 +65,8 @@ describeSuite({
                     batchTx.push(api.tx.polkadotXcm.forceSubscribeVersionNotify(versionedLocation));
                 }
 
-                let tries = 0;
-
-                while (tries < MAX_BALANCE_TRANSFER_TRIES) {
-                    const txHash = await api.tx.sudo.sudo(api.tx.utility.batchAll(batchTx)).signAndSend(alice);
-                    const result = await context.createBlock({ count: 1 });
-
-                    const block = await api.rpc.chain.getBlock(result.result);
-                    const includedTxHashes = block.block.extrinsics.map((x) => x.hash.toString());
-                    if (includedTxHashes.includes(txHash.toString())) {
-                        break;
-                    }
-                    tries++;
-                }
+                const finalTx = api.tx.sudo.sudo(api.tx.utility.batchAll(batchTx));
+                await chopsticksWaitTillIncluded(context, api, alice, finalTx);
             }
         });
 
@@ -141,20 +124,9 @@ describeSuite({
                 /// It might happen that by accident we hit a session change
                 /// A block in which a session change occurs cannot hold any tx
                 /// Chopsticks does not have the notion of tx pool either, so we need to retry
-                /// Therefore we just retry at most MAX_BALANCE_TRANSFER_TRIES
-                while (tries < MAX_BALANCE_TRANSFER_TRIES) {
-                    const txHash = await api.tx.balances
-                        .transferAllowDeath(randomAccount.address, 1_000_000_000)
-                        .signAndSend(alice);
-                    const result = await context.createBlock({ count: 1 });
-
-                    const block = await api.rpc.chain.getBlock(result.result);
-                    const includedTxHashes = block.block.extrinsics.map((x) => x.hash.toString());
-                    if (includedTxHashes.includes(txHash.toString())) {
-                        break;
-                    }
-                    tries++;
-                }
+                /// Therefore we just retry at most 5 times
+                const balancesTx = api.tx.balances.transferAllowDeath(randomAccount.address, 1_000_000_000);
+                await chopsticksWaitTillIncluded(context, api, alice, balancesTx);
 
                 const balanceAfter = (await api.query.system.account(randomAccount.address)).data.free.toBigInt();
                 expect(balanceBefore < balanceAfter).to.be.true;
