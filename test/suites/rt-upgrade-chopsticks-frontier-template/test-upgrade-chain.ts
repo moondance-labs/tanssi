@@ -40,7 +40,7 @@ describeSuite({
             // fetch on-chain later
             // TODO:Once we update the next runtime, remove this and take it form onchain
             const previousXcmVersion = 5;
-            const latestVersion = "V" + previousXcmVersion.toString();
+            const latestVersion = `V${previousXcmVersion.toString()}`;
 
             const versionedLocation = {
                 [latestVersion]: queryLocation,
@@ -87,8 +87,8 @@ describeSuite({
             test: async () => {
                 const currentXcmVersion = await api.consts.polkadotXcm.advertisedXcmVersion.toNumber();
                 const query = await api.query.polkadotXcm.queries(xcmQueryToAnalyze);
-                const version = Object.keys(query.toJSON()["versionNotifier"]["origin"])[0];
-                expect(version).to.be.equal("v" + currentXcmVersion.toString());
+                const version = Object.keys(query.toJSON().versionNotifier.origin)[0];
+                expect(version).to.be.equal(`v${currentXcmVersion.toString()}`);
             },
         });
     },

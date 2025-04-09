@@ -28,7 +28,7 @@ describeSuite({
             context.keyring.alice;
             alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 
-            if (runtimeName != "flashbox") {
+            if (runtimeName !== "flashbox") {
                 // Inject a query so that there are migrations to execute in queries in case of new xcm version
                 // Right now we need to hardcode the xcm version
                 // this should not be necessary after we bring https://github.com/paritytech/polkadot-sdk/pull/8173
@@ -46,7 +46,7 @@ describeSuite({
                 // fetch on-chain later
                 // TODO:Once we update the next runtime, remove this and take it form onchain
                 const previousXcmVersion = 5;
-                const latestVersion = "V" + previousXcmVersion.toString();
+                const latestVersion = `V${previousXcmVersion.toString()}`;
 
                 const versionedLocation = {
                     [latestVersion]: queryLocation,
@@ -62,7 +62,7 @@ describeSuite({
                     // we send queries
                     batchTx.push(api.tx.registrar.setCurrentHead(1, "0x11"));
                     batchTx.push(api.tx.xcmPallet.forceSubscribeVersionNotify(versionedLocation));
-                } else if (runtimeName != "flasbox") {
+                } else if (runtimeName !== "flasbox") {
                     batchTx.push(api.tx.polkadotXcm.forceSubscribeVersionNotify(versionedLocation));
                 }
 
@@ -150,8 +150,8 @@ describeSuite({
                 const query = runtimeName.includes("light")
                     ? await api.query.xcmPallet.queries(xcmQueryToAnalyze)
                     : await api.query.polkadotXcm.queries(xcmQueryToAnalyze);
-                const version = Object.keys(query.toJSON()["versionNotifier"]["origin"])[0];
-                expect(version).to.be.equal("v" + currentXcmVersion.toString());
+                const version = Object.keys(query.toJSON().versionNotifier.origin)[0];
+                expect(version).to.be.equal(`v${currentXcmVersion.toString()}`);
             },
         });
 
