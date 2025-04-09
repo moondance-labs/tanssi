@@ -21,7 +21,7 @@ sp-consensus-beefy = { workspace = true, default-features = true }
 sp-core = { workspace = true }
 
 # Polkadot
-rococo-runtime = { workspace = true }
+rococo-runtime = { workspace = true, features = [ "std" ] }
 rococo-runtime-constants = { workspace = true }
 
 # Cumulus
@@ -29,24 +29,3 @@ emulated-integration-tests-common = { workspace = true }
 runtime-parachains = { workspace = true }
 tanssi-emulated-integration-tests-common = { workspace = true }
 xcm-emulator = { workspace = true }
-
-
-[features]
-default = [ "std" ]
-std = [
-	"cumulus-primitives-core/std",
-	"polkadot-parachain-primitives/std",
-	"rococo-runtime-constants/std",
-	"rococo-runtime/std",
-	"runtime-parachains/std",
-	"sp-consensus-babe/std",
-	"sp-core/std",
-]
-no_std = []
-
-runtime-benchmarks = [
-	"cumulus-primitives-core/runtime-benchmarks",
-	"polkadot-parachain-primitives/runtime-benchmarks",
-	"rococo-runtime/runtime-benchmarks",
-	"runtime-parachains/runtime-benchmarks",
-]

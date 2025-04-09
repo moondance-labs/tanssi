@@ -26,28 +26,3 @@ tanssi-emulated-integration-tests-common = { workspace = true }
 westend-runtime = { workspace = true }
 westend-runtime-constants = { workspace = true }
 xcm-emulator = { workspace = true }
-
-[features]
-default = [ "std" ]
-std = [
-	"cumulus-primitives-core/std",
-	"pallet-staking/std",
-	"runtime-common/std",
-	"runtime-parachains/std",
-	"sp-consensus-babe/std",
-	"sp-consensus-beefy/std",
-	"sp-core/std",
-	"sp-runtime/std",
-	"westend-runtime-constants/std",
-	"westend-runtime/std",
-]
-no_std = []
-
-runtime-benchmarks = [
-	"cumulus-primitives-core/runtime-benchmarks",
-	"pallet-staking/runtime-benchmarks",
-	"runtime-common/runtime-benchmarks",
-	"runtime-parachains/runtime-benchmarks",
-	"sp-runtime/runtime-benchmarks",
-	"westend-runtime/runtime-benchmarks",
-]
