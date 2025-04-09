@@ -64,8 +64,8 @@ pub struct EraRewardsUtils {
 pub mod pallet {
     pub use crate::weights::WeightInfo;
     use {
-        super::*, frame_support::pallet_prelude::*, sp_std::collections::btree_map::BTreeMap,
-        tp_traits::EraIndexProvider, sp_runtime::Saturating,
+        super::*, frame_support::pallet_prelude::*, sp_runtime::Saturating,
+        sp_std::collections::btree_map::BTreeMap, tp_traits::EraIndexProvider,
     };
 
     /// The current storage version.

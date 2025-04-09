@@ -38,7 +38,7 @@ use {
     log::log,
     parity_scale_codec::{Decode, Encode, MaxEncodedLen},
     scale_info::TypeInfo,
-    sp_runtime::{traits::Get, RuntimeDebug, Saturating},
+    sp_runtime::{traits::Get, RuntimeDebug},
     sp_staking::SessionIndex,
     sp_std::{collections::btree_set::BTreeSet, vec::Vec},
     tp_traits::{
@@ -299,7 +299,7 @@ pub mod pallet {
         /// The origin for this call must be the `UpdateOrigin`.
         #[pallet::call_index(1)]
         #[pallet::weight(T::WeightInfo::add_whitelisted(
-			T::MaxWhitelistedValidators::get().saturating_less_one(),
+			T::MaxWhitelistedValidators::get().saturating_sub(1),
 		))]
         pub fn add_whitelisted(
             origin: OriginFor<T>,
@@ -328,7 +328,7 @@ pub mod pallet {
                 WhitelistedValidators::<T>::decode_len()
                     .unwrap_or_default()
                     .try_into()
-                    .unwrap_or(T::MaxWhitelistedValidators::get().saturating_less_one()),
+                    .unwrap_or(T::MaxWhitelistedValidators::get().saturating_sub(1)),
             );
 
             Ok(Some(weight_used).into())
@@ -482,7 +482,7 @@ pub mod pallet {
         /// Start a session potentially starting an era.
         pub(crate) fn start_session(start_session: SessionIndex) {
             let next_active_era = Self::active_era()
-                .map(|e| e.index.saturating_plus_one())
+                .map(|e| e.index.saturating_add(1))
                 .unwrap_or(0);
             // This is only `Some` when current era has already progressed to the next era, while the
             // active era is one behind (i.e. in the *last session of the active era*, or *first session
@@ -504,9 +504,9 @@ pub mod pallet {
         pub(crate) fn end_session(session_index: SessionIndex) {
             if let Some(active_era) = Self::active_era() {
                 if let Some(next_active_era_start_session_index) =
-                    Self::eras_start_session_index(active_era.index.saturating_plus_one())
+                    Self::eras_start_session_index(active_era.index.saturating_add(1))
                 {
-                    if next_active_era_start_session_index == session_index.saturating_plus_one() {
+                    if next_active_era_start_session_index == session_index.saturating_add(1) {
                         Self::end_era(active_era, session_index);
                     }
                 }
@@ -522,7 +522,7 @@ pub mod pallet {
             let active_era = ActiveEra::<T>::mutate(|active_era| {
                 let new_index = active_era
                     .as_ref()
-                    .map(|info| info.index.saturating_plus_one())
+                    .map(|info| info.index.saturating_add(1))
                     .unwrap_or(0);
                 *active_era = Some(ActiveEraInfo {
                     index: new_index,
@@ -557,14 +557,14 @@ pub mod pallet {
         pub fn trigger_new_era(start_session_index: SessionIndex) -> Vec<T::ValidatorId> {
             // Increment or set current era.
             let new_planned_era = CurrentEra::<T>::mutate(|s| {
-                *s = Some(s.map(|s| s.saturating_plus_one()).unwrap_or(0));
+                *s = Some(s.map(|s| s.saturating_add(1)).unwrap_or(0));
                 s.unwrap()
             });
             ErasStartSessionIndex::<T>::insert(&new_planned_era, &start_session_index);
 
             // Clean old era information.
             if let Some(old_era) =
-                new_planned_era.checked_sub(T::HistoryDepth::get().saturating_plus_one())
+                new_planned_era.checked_sub(T::HistoryDepth::get().saturating_add(1))
             {
                 Self::clear_era_information(old_era);
             }

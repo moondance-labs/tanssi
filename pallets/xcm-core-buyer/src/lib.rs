@@ -375,7 +375,7 @@ pub mod pallet {
             ensure_none(origin)?;
 
             let current_nonce = CollatorSignatureNonce::<T>::get(para_id);
-            CollatorSignatureNonce::<T>::set(para_id, current_nonce.saturating_plus_one());
+            CollatorSignatureNonce::<T>::set(para_id, current_nonce.saturating_add(1));
 
             Self::on_collator_instantaneous_core_requested(para_id, Some(proof.public_key))
         }

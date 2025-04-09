@@ -211,7 +211,8 @@ pub mod pallet {
                     }
                 }
 
-                total_weight.saturating_accrue(T::AuthorNotingHook::on_container_authors_noted(&infos));
+                total_weight
+                    .saturating_accrue(T::AuthorNotingHook::on_container_authors_noted(&infos));
             }
 
             // We correctly set the data
