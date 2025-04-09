@@ -29,29 +29,9 @@ cumulus-primitives-core = { workspace = true, default-features = true }
 xcm-emulator = { workspace = true, default-features = true }
 
 # Bridges
-dancelight-runtime = { workspace = true }
+dancelight-runtime = { workspace = true, features = [ "std" ] }
 keyring = { workspace = true }
 nimbus-primitives = { workspace = true }
 snowbridge-beacon-primitives = { workspace = true }
 snowbridge-core = { workspace = true }
 snowbridge-pallet-outbound-queue = { workspace = true }
-
-[features]
-default = [ "std" ]
-std = [
-	"babe-primitives/std",
-	"cumulus-primitives-core/std",
-	"dancelight-runtime/std",
-	"frame-support/std",
-	"frame-system/std",
-	"keyring/std",
-	"nimbus-primitives/std",
-	"pallet-message-queue/std",
-	"snowbridge-beacon-primitives/std",
-	"snowbridge-core/std",
-	"snowbridge-pallet-outbound-queue/std",
-	"sp-core/std",
-	"sp-std/std",
-	"xcm/std",
-]
-no_std = []
