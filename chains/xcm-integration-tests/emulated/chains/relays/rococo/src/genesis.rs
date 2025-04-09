@@ -29,6 +29,7 @@ use {
     sp_consensus_babe::AuthorityId as BabeId,
     sp_consensus_beefy::{ecdsa_crypto::AuthorityId as BeefyId, test_utils::Keyring},
     sp_core::storage::Storage,
+    tanssi_emulated_integration_tests_common::{accounts, validators},
 };
 const ENDOWMENT: u128 = 1_000_000 * ROC;
 
@@ -64,14 +65,14 @@ fn session_keys(
 pub fn genesis() -> Storage {
     let genesis_config = rococo_runtime::RuntimeGenesisConfig {
         balances: rococo_runtime::BalancesConfig {
-            balances: tanssi_emulated_integration_tests_common::accounts::init_balances()
+            balances: accounts::init_balances()
                 .iter()
                 .cloned()
                 .map(|k| (k, ENDOWMENT))
                 .collect(),
         },
         session: rococo_runtime::SessionConfig {
-            keys: tanssi_emulated_integration_tests_common::validators::initial_authorities()
+            keys: validators::initial_authorities()
                 .iter()
                 .map(|x| {
                     (

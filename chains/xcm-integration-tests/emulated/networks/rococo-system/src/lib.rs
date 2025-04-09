@@ -16,6 +16,7 @@
 
 pub use xcm_emulator::{bx, TestExt};
 use {
+    cumulus_primitives_core::relay_chain::AccountId,
     dancebox_emulated_chain::Dancebox,
     frame_support::parameter_types,
     frontier_template_emulated_chain::FrontierTemplate,
@@ -40,7 +41,7 @@ decl_test_networks! {
 
 parameter_types! {
     // Rococo
-    pub RococoSender: cumulus_primitives_core::relay_chain::AccountId = Sr25519Keyring::Alice.to_account_id();
-    pub RococoReceiver: cumulus_primitives_core::relay_chain::AccountId = Sr25519Keyring::Bob.to_account_id();
-    pub RococoEmptyReceiver: cumulus_primitives_core::relay_chain::AccountId = RococoRelay::account_id_of(RANDOM);
+    pub RococoSender: AccountId = Sr25519Keyring::Alice.to_account_id();
+    pub RococoReceiver: AccountId = Sr25519Keyring::Bob.to_account_id();
+    pub RococoEmptyReceiver: AccountId = RococoRelay::account_id_of(RANDOM);
 }

@@ -15,8 +15,14 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 pub mod genesis;
-use emulated_integration_tests_common::{
-    impl_assert_events_helpers_for_parachain, xcm_emulator::decl_test_parachains,
+use {
+    container_chain_template_simple_runtime::{
+        xcm_config, AssetRate, Balances, ForeignAssets, ForeignAssetsCreator, ParachainInfo,
+        ParachainSystem, PolkadotXcm, System, XcmpQueue,
+    },
+    emulated_integration_tests_common::{
+        impl_assert_events_helpers_for_parachain, xcm_emulator::decl_test_parachains,
+    },
 };
 
 decl_test_parachains! {
@@ -25,19 +31,19 @@ decl_test_parachains! {
         on_init = (),
         runtime = container_chain_template_simple_runtime,
         core = {
-            XcmpMessageHandler: container_chain_template_simple_runtime::XcmpQueue,
-            LocationToAccountId: container_chain_template_simple_runtime::xcm_config::LocationToAccountId,
-            ParachainInfo: container_chain_template_simple_runtime::ParachainInfo,
+            XcmpMessageHandler: XcmpQueue,
+            LocationToAccountId: xcm_config::LocationToAccountId,
+            ParachainInfo: ParachainInfo,
             MessageOrigin: cumulus_primitives_core::AggregateMessageOrigin,
         },
         pallets = {
-            System: container_chain_template_simple_runtime::System,
-            Balances: container_chain_template_simple_runtime::Balances,
-            ParachainSystem: container_chain_template_simple_runtime::ParachainSystem,
-            PolkadotXcm: container_chain_template_simple_runtime::PolkadotXcm,
-            ForeignAssets:  container_chain_template_simple_runtime::ForeignAssets,
-            AssetRate:  container_chain_template_simple_runtime::AssetRate,
-            ForeignAssetsCreator: container_chain_template_simple_runtime::ForeignAssetsCreator,
+            System: System,
+            Balances: Balances,
+            ParachainSystem: ParachainSystem,
+            PolkadotXcm: PolkadotXcm,
+            ForeignAssets:  ForeignAssets,
+            AssetRate:  AssetRate,
+            ForeignAssetsCreator: ForeignAssetsCreator,
         }
     }
 }

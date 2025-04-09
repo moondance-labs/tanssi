@@ -26,6 +26,7 @@ use {
     sp_core::storage::Storage,
     sp_runtime::Perbill,
     tanssi_emulated_integration_tests_common::accounts,
+    tanssi_emulated_integration_tests_common::validators,
     westend_runtime_constants::currency::UNITS as WND,
 };
 
@@ -71,7 +72,7 @@ pub fn genesis() -> Storage {
                 .collect(),
         },
         session: westend_runtime::SessionConfig {
-            keys: tanssi_emulated_integration_tests_common::validators::initial_authorities()
+            keys: validators::initial_authorities()
                 .iter()
                 .map(|x| {
                     (
@@ -91,11 +92,9 @@ pub fn genesis() -> Storage {
             ..Default::default()
         },
         staking: westend_runtime::StakingConfig {
-            validator_count:
-                tanssi_emulated_integration_tests_common::validators::initial_authorities().len()
-                    as u32,
+            validator_count: validators::initial_authorities().len() as u32,
             minimum_validator_count: 1,
-            stakers: tanssi_emulated_integration_tests_common::validators::initial_authorities()
+            stakers: validators::initial_authorities()
                 .iter()
                 .map(|x| {
                     (
@@ -106,11 +105,10 @@ pub fn genesis() -> Storage {
                     )
                 })
                 .collect(),
-            invulnerables:
-                tanssi_emulated_integration_tests_common::validators::initial_authorities()
-                    .iter()
-                    .map(|x| x.0.clone())
-                    .collect(),
+            invulnerables: validators::initial_authorities()
+                .iter()
+                .map(|x| x.0.clone())
+                .collect(),
             force_era: pallet_staking::Forcing::ForceNone,
             slash_reward_fraction: Perbill::from_percent(10),
             ..Default::default()
