@@ -48,8 +48,9 @@ describeSuite({
                 const previousXcmVersion = 5;
                 const latestVersion = "V" + previousXcmVersion.toString();
 
-                const versionedLocation = new Object();
-                versionedLocation[latestVersion] = queryLocation;
+                const versionedLocation = {
+                    [latestVersion]: queryLocation,
+                };
 
                 xcmQueryToAnalyze = runtimeName.includes("light")
                     ? await api.query.xcmPallet.queryCounter()
