@@ -106,24 +106,25 @@ fn generate_reward_utils(reward_input: RewardClaimInput) {
         individual: individual_rewards,
     };
 
-    if let Some(utils) = era_rewards.generate_era_rewards_utils::<Keccak256>(era_index, None)
-    {
-        println!("=== Era Rewards Utils: Overall info ===\n");
-        println!("Era index       : {:?}", era_index);
-        println!("Merkle Root     : {:?}", utils.rewards_merkle_root);
-        println!("Total Points    : {}", utils.total_points);
-        println!("Leaves:");
-        for (i, leaf) in utils.leaves.iter().enumerate() {
-            println!("  [{}] {:?}", i, leaf);
-        }
-    } else {
-        println!("No era rewards utils generated.");
-    }
-
-    println!("\n=== Merkle Proofs ===");
-
+    let mut show_general_info = true;
     reward_input.operator_rewards.iter().for_each(|reward| {
         if let Some(account_utils) = era_rewards.generate_era_rewards_utils::<Keccak256>(era_index, Some(reward.account.clone())){
+
+            // Only show the general info once
+            if show_general_info {
+                println!("\n=== Era Rewards Utils: Overall info ===\n");
+                println!("Era index       : {:?}", era_index);
+                println!("Merkle Root     : {:?}", account_utils.rewards_merkle_root);
+                println!("Total Points    : {}", account_utils.total_points);
+                println!("Leaves:");
+                for (i, leaf) in account_utils.leaves.iter().enumerate() {
+                    println!("  [{}] {:?}", i, leaf);
+                }
+                show_general_info = false;
+
+                println!("\n=== Merkle Proofs ===");
+            }
+
             let merkle_proof = account_utils.leaf_index.map(|index| {
                 merkle_proof::<Keccak256, _>(account_utils.leaves.into_iter(), index)
             });
