@@ -42,7 +42,7 @@ tanssi-emulated-integration-tests-common = { workspace = true }
 tp-traits = { workspace = true }
 tp-xcm-core-buyer = { workspace = true }
 westend-emulated-chain = { workspace = true }
-westend-runtime = { workspace = true, features = [ "std", "runtime-benchmarks" ] }
+westend-runtime = { workspace = true, features = [ "runtime-benchmarks", "std" ] }
 westend-runtime-constants = { workspace = true }
 westend-system-emulated-network = { workspace = true }
 xcm = { workspace = true }
