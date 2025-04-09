@@ -30,7 +30,7 @@ pub fn init_balances() -> Vec<AccountId> {
 }
 
 pub fn get_aura_id_from_seed(seed: &str) -> NimbusId {
-    sp_core::sr25519::Pair::from_string(&format!("//{}", seed), None)
+    Pair::from_string(&format!("//{}", seed), None)
         .expect("static values are valid; qed")
         .public()
         .into()
