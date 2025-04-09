@@ -19159,6 +19159,7 @@ dependencies = [
  "pallet-external-validators-rewards",
  "serde",
  "serde_json",
+ "snowbridge-outbound-queue-merkle-tree",
  "sp-runtime",
 ]
 

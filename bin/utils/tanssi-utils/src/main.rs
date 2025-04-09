@@ -19,6 +19,7 @@ use serde::{Deserialize, Deserializer};
 use sp_runtime::{traits::Keccak256, AccountId32};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
+use snowbridge_outbound_queue_merkle_tree::merkle_proof;
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct RewardData {
@@ -58,7 +59,7 @@ impl TanssiUtils {
     pub fn run(&self) {
         match &self.command {
             TanssiUtilsCmd::RewardClaimGenerator(cmd) => {
-                println!("Input path is: {:?}", cmd.input_path);
+                println!("\nInput path is: {:?}\n", cmd.input_path);
                 let rewards =
                     extract_rewards_data_from_file(&cmd.input_path).expect("command fail");
                 generate_reward_utils(rewards)
@@ -89,9 +90,11 @@ fn extract_rewards_data_from_file(reward_path: &Path) -> Result<RewardClaimInput
 }
 
 fn generate_reward_utils(reward_input: RewardClaimInput) {
+    let era_index = reward_input.era;
     let mut total_points = 0;
     let individual_rewards: BTreeMap<_, _> = reward_input
         .operator_rewards
+        .clone()
         .into_iter()
         .map(|data| {
             total_points += data.amount;
@@ -103,22 +106,42 @@ fn generate_reward_utils(reward_input: RewardClaimInput) {
         individual: individual_rewards,
     };
 
-    if let Some(utils) = era_rewards.generate_era_rewards_utils::<Keccak256>(reward_input.era, None)
+    if let Some(utils) = era_rewards.generate_era_rewards_utils::<Keccak256>(era_index, None)
     {
-        println!("=== Era Rewards Utils ===");
+        println!("=== Era Rewards Utils: Overall info ===\n");
+        println!("Era index       : {:?}", era_index);
         println!("Merkle Root     : {:?}", utils.rewards_merkle_root);
         println!("Total Points    : {}", utils.total_points);
         println!("Leaves:");
         for (i, leaf) in utils.leaves.iter().enumerate() {
             println!("  [{}] {:?}", i, leaf);
         }
-        match utils.leaf_index {
-            Some(index) => println!("Leaf Index      : {}", index),
-            None => println!("Leaf Index      : <None>"),
-        }
     } else {
         println!("No era rewards utils generated.");
     }
+
+    println!("\n=== Merkle Proofs ===");
+
+    reward_input.operator_rewards.iter().for_each(|reward| {
+        if let Some(account_utils) = era_rewards.generate_era_rewards_utils::<Keccak256>(era_index, Some(reward.account.clone())){
+            let merkle_proof = account_utils.leaf_index.map(|index| {
+                merkle_proof::<Keccak256, _>(account_utils.leaves.into_iter(), index)
+            });
+
+            if let Some(proof) = merkle_proof {
+                println!("\nMerkle proof for account {:?} in era {:?}: \n", reward.account, era_index);
+                println!("   - Root: {:?}", proof.root);
+                println!("   - Proof: {:?}", proof.proof);
+                println!("   - Number of leaves: {:?}", proof.number_of_leaves);
+                println!("   - Leaf index: {:?}", proof.leaf_index);
+                println!("   - Leaf: {:?}", proof.leaf);
+            } else {
+                println!("No proof generated for account {:?}", reward.account);
+            }
+        } else {
+            println!("No utils generated for account {:?}", reward.account);
+        };
+    });
 }
 
 fn main() {
