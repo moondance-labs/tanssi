@@ -19,7 +19,7 @@ use frame_support::pallet_prelude::Weight;
 use frame_support::traits::Get;
 use parity_scale_codec::{Decode, Encode};
 
-#[cfg(feature = "try-runtime")]
+#[cfg(not(feature = "std"))]
 use sp_std::{vec, vec::Vec};
 
 #[derive(Encode, Decode, Clone)]
