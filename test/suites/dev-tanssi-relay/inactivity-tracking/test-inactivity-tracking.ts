@@ -2,10 +2,9 @@ import "@tanssi/api-augment";
 import { type DevModeContext, beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
-import type { AccountId32, Digest, DigestItem, HeadData, Header, ParaId, Slot } from "@polkadot/types/interfaces";
+import type { Digest, DigestItem, HeadData, Header, ParaId, Slot } from "@polkadot/types/interfaces";
 import { jumpToSession } from "utils";
 import { stringToHex } from "@polkadot/util";
-import { GenericAccountId32 } from "@polkadot/types";
 
 async function mockAndInsertHeadData(
     context: DevModeContext,
