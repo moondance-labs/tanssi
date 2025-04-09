@@ -16,10 +16,10 @@
 
 use clap::{Parser, Subcommand};
 use serde::{Deserialize, Deserializer};
+use snowbridge_outbound_queue_merkle_tree::merkle_proof;
 use sp_runtime::{traits::Keccak256, AccountId32};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
-use snowbridge_outbound_queue_merkle_tree::merkle_proof;
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct RewardData {
@@ -108,11 +108,12 @@ fn generate_reward_utils(reward_input: RewardClaimInput) {
 
     let mut show_general_info = true;
     reward_input.operator_rewards.iter().for_each(|reward| {
-        if let Some(account_utils) = era_rewards.generate_era_rewards_utils::<Keccak256>(era_index, Some(reward.account.clone())){
-
+        if let Some(account_utils) = era_rewards
+            .generate_era_rewards_utils::<Keccak256>(era_index, Some(reward.account.clone()))
+        {
             // Only show the general info once
             if show_general_info {
-                println!("\n=== Era Rewards Utils: Overall info ===\n");
+                println!("=== Era Rewards Utils: Overall info ===\n");
                 println!("Era index       : {:?}", era_index);
                 println!("Merkle Root     : {:?}", account_utils.rewards_merkle_root);
                 println!("Total Points    : {}", account_utils.total_points);
@@ -125,12 +126,15 @@ fn generate_reward_utils(reward_input: RewardClaimInput) {
                 println!("\n=== Merkle Proofs ===");
             }
 
-            let merkle_proof = account_utils.leaf_index.map(|index| {
-                merkle_proof::<Keccak256, _>(account_utils.leaves.into_iter(), index)
-            });
+            let merkle_proof = account_utils
+                .leaf_index
+                .map(|index| merkle_proof::<Keccak256, _>(account_utils.leaves.into_iter(), index));
 
             if let Some(proof) = merkle_proof {
-                println!("\nMerkle proof for account {:?} in era {:?}: \n", reward.account, era_index);
+                println!(
+                    "\nMerkle proof for account {:?} in era {:?}: \n",
+                    reward.account, era_index
+                );
                 println!("   - Root: {:?}", proof.root);
                 println!("   - Proof: {:?}", proof.proof);
                 println!("   - Number of leaves: {:?}", proof.number_of_leaves);
