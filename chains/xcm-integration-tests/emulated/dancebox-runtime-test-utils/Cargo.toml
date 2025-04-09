@@ -16,7 +16,7 @@ cumulus-pallet-parachain-system = { workspace = true }
 cumulus-primitives-core = { workspace = true }
 cumulus-primitives-parachain-inherent = { workspace = true }
 cumulus-test-relay-sproof-builder = { workspace = true }
-dancebox-runtime = { workspace = true }
+dancebox-runtime = { workspace = true, features = ["std"] }
 dp-consensus = { workspace = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
@@ -36,34 +36,3 @@ sp-core = { workspace = true }
 sp-runtime = { workspace = true }
 sp-std = { workspace = true }
 tp-data-preservers-common = { workspace = true }
-
-[features]
-default = [
-	"std",
-]
-std = [
-	"cumulus-pallet-parachain-system/std",
-	"cumulus-primitives-core/std",
-	"cumulus-primitives-parachain-inherent/std",
-	"cumulus-test-relay-sproof-builder/std",
-	"dancebox-runtime/std",
-	"dp-consensus/std",
-	"frame-support/std",
-	"frame-system/std",
-	"nimbus-primitives/std",
-	"pallet-async-backing/std",
-	"pallet-author-inherent/std",
-	"pallet-authority-mapping/std",
-	"pallet-data-preservers/std",
-	"pallet-registrar-runtime-api/std",
-	"pallet-registrar/std",
-	"parity-scale-codec/std",
-	"polkadot-parachain-primitives/std",
-	"scale-info/std",
-	"sp-consensus-aura/std",
-	"sp-consensus-slots/std",
-	"sp-core/std",
-	"sp-runtime/std",
-	"sp-std/std",
-	"tp-data-preservers-common/std",
-]

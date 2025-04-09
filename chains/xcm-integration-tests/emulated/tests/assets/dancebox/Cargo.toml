@@ -18,7 +18,7 @@ cumulus-pallet-xcmp-queue = { workspace = true }
 cumulus-primitives-core = { workspace = true }
 dancebox-emulated-chain = { workspace = true }
 dancebox-runtime = { workspace = true, features = [ "std" ] }
-dancebox-runtime-test-utils = { workspace = true, features = [ "std" ] }
+dancebox-runtime-test-utils = { workspace = true }
 frame-support = { workspace = true, features = [ "tuples-96" ] }
 frame-system = { workspace = true }
 frontier-template-emulated-chain = { workspace = true }
