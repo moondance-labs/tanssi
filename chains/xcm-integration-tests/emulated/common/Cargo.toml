@@ -45,6 +45,7 @@ std = [
 	"frame-support/std",
 	"frame-system/std",
 	"keyring/std",
+	"nimbus-primitives/std",
 	"pallet-message-queue/std",
 	"snowbridge-beacon-primitives/std",
 	"snowbridge-core/std",
