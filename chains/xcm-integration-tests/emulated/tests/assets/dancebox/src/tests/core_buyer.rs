@@ -18,7 +18,7 @@ use {
     crate::tests::core_buyer_common::*,
     polkadot_runtime_parachains::on_demand as parachains_assigner_on_demand,
     rococo_emulated_chain::RococoRelayPallet,
-    rococo_system_emulated_network::{DanceboxRococoPara as Dancebox, RococoRelay as Rococo},
+    rococo_system_emulated_network::{DanceboxPara as Dancebox, RococoRelay as Rococo},
     tp_traits::ParaId,
     xcm::latest::{MaybeErrorCode, Response},
     xcm_emulator::{assert_expected_events, Chain, TestExt},

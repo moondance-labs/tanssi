@@ -108,7 +108,6 @@ tc-orchestrator-chain-rpc-interface = { path = "client/orchestrator-chain-rpc-in
 tc-service-container-chain = { path = "client/service-container-chain" }
 
 dancebox-emulated-chain = { path = "chains/xcm-integration-tests/emulated/chains/orchestrator-paras/dancebox" }
-dancebox-rococo-emulated-chain = { path = "chains/xcm-integration-tests/emulated/chains/orchestrator-paras/dancebox-rococo" }
 dancebox-runtime-test-utils = { path = "chains/xcm-integration-tests/emulated/dancebox-runtime-test-utils" }
 dancelight-emulated-chain = { path = "chains/xcm-integration-tests/emulated/chains/relays/dancelight" }
 dancelight-system-emulated-network = { path = "chains/xcm-integration-tests/emulated/networks/dancelight-system" }

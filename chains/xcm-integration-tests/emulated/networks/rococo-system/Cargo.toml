@@ -13,7 +13,7 @@ workspace = true
 
 [dependencies]
 cumulus-primitives-core = { workspace = true }
-dancebox-rococo-emulated-chain = { workspace = true }
+dancebox-emulated-chain = { workspace = true }
 frame-support = { workspace = true, features = [ "tuples-96" ] }
 frontier-template-emulated-chain = { workspace = true }
 rococo-emulated-chain = { workspace = true }

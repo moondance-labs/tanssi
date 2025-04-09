@@ -28,7 +28,7 @@ use {
     polkadot_runtime_parachains::{configuration, on_demand as parachains_assigner_on_demand},
     rococo_emulated_chain::RococoRelayPallet,
     rococo_system_emulated_network::{
-        DanceboxRococoPara as Dancebox, RococoRelay as Rococo, RococoSender,
+        DanceboxPara as Dancebox, RococoRelay as Rococo, RococoSender,
     },
     sp_core::Pair,
     sp_runtime::{traits::ValidateUnsigned, AccountId32},

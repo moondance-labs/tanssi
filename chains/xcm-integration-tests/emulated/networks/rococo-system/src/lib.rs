@@ -16,7 +16,7 @@
 
 pub use xcm_emulator::{bx, TestExt};
 use {
-    dancebox_rococo_emulated_chain::DanceboxRococo,
+    dancebox_emulated_chain::Dancebox,
     frame_support::parameter_types,
     frontier_template_emulated_chain::FrontierTemplate,
     rococo_emulated_chain::Rococo,
@@ -30,7 +30,7 @@ decl_test_networks! {
     pub struct RococoMockNet {
         relay_chain = Rococo,
         parachains = vec![
-            DanceboxRococo,
+            Dancebox,
             FrontierTemplate,
             SimpleTemplate,
         ],
