@@ -65,7 +65,6 @@ parameter_types! {
 }
 
 pub struct DancelightEthMockBridgeHandler;
-// TODO: consider moving to emulated/common
 impl BridgeMessageHandler for DancelightEthMockBridgeHandler {
     fn get_source_outbound_messages() -> Vec<BridgeMessage> {
         // Get messages from the outbound queue
