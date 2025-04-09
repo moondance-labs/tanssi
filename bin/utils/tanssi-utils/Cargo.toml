@@ -23,4 +23,5 @@ hex = { workspace = true }
 pallet-external-validators-rewards = { workspace = true, features = [ "std" ] }
 serde = { workspace = true, default-features = true }
 serde_json = { workspace = true, default-features = true }
+snowbridge-outbound-queue-merkle-tree = { workspace = true }
 sp-runtime = { workspace = true, features = [ "std" ] }
