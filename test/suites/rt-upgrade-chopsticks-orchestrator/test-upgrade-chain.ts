@@ -14,8 +14,8 @@ describeSuite({
         let api: ApiPromise;
         let specName: string;
         let alice: KeyringPair;
-        let runtimeName: String;
-        let xcmQueryToAnalyze: Number;
+        let runtimeName: string;
+        let xcmQueryToAnalyze: number;
 
         beforeAll(async () => {
             api = context.pjsApi;
@@ -56,7 +56,7 @@ describeSuite({
                     ? await api.query.xcmPallet.queryCounter()
                     : await api.query.polkadotXcm.queryCounter();
 
-                let batchTx = [];
+                const batchTx = [];
                 if (runtimeName.includes("light")) {
                     // We first inject a random paras head in parachain 1. this is necessary as we need a chain to which
                     // we send queries
@@ -119,7 +119,7 @@ describeSuite({
             test: async () => {
                 const randomAccount = generateKeyringPair("sr25519");
 
-                let tries = 0;
+                const tries = 0;
                 const balanceBefore = (await api.query.system.account(randomAccount.address)).data.free.toBigInt();
 
                 /// It might happen that by accident we hit a session change

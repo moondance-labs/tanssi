@@ -10,7 +10,7 @@ describeSuite({
     foundationMethods: "chopsticks",
     testCases: ({ it, context, log }) => {
         let api: ApiPromise;
-        let xcmQueryToAnalyze: Number;
+        let xcmQueryToAnalyze: number;
 
         beforeAll(async () => {
             api = context.polkadotJs();
