@@ -27,7 +27,7 @@ use {
 mod genesis;
 
 decl_test_parachains! {
-// Parachains
+    // Parachains
     pub struct Dancebox {
         genesis = genesis::genesis(),
         on_init = {
