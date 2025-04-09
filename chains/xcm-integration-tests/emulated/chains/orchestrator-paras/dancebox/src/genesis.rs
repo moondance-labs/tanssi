@@ -14,11 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use emulated_integration_tests_common::build_genesis_storage;
-use sp_core::storage::Storage;
 use {
     cumulus_primitives_core::Junctions::X1,
-    tanssi_emulated_integration_tests_common::accounts::{ALICE, BOB},
+    emulated_integration_tests_common::build_genesis_storage,
+    pallet_configuration::HostConfiguration,
+    sp_core::storage::Storage,
+    tanssi_emulated_integration_tests_common::accounts::{get_aura_id_from_seed, ALICE, BOB},
     xcm::prelude::*,
     xcm_builder::{ParentIsPreset, SiblingParachainConvertsVia},
     xcm_executor::traits::ConvertLocation,
@@ -70,12 +71,63 @@ pub fn genesis() -> Storage {
                 ),
             ],
         },
+        configuration: dancebox_runtime::ConfigurationConfig {
+            config: HostConfiguration {
+                max_collators: 100,
+                min_orchestrator_collators: 1,
+                max_orchestrator_collators: 1,
+                collators_per_container: 1,
+                collators_per_parathread: 1,
+                full_rotation_period: 0,
+                ..Default::default()
+            },
+            ..Default::default()
+        },
+        invulnerables: dancebox_runtime::InvulnerablesConfig {
+            invulnerables: vec![
+                (
+                    dancebox_runtime::AccountId::from(ALICE),
+                    210 * dancebox_runtime::UNIT,
+                ),
+                (
+                    dancebox_runtime::AccountId::from(BOB),
+                    100 * dancebox_runtime::UNIT,
+                ),
+            ]
+            .clone()
+            .into_iter()
+            .map(|(account, _balance)| account)
+            .collect(),
+        },
         parachain_info: dancebox_runtime::ParachainInfoConfig {
             parachain_id: 2000u32.into(),
             ..Default::default()
         },
         polkadot_xcm: dancebox_runtime::PolkadotXcmConfig {
             safe_xcm_version: 3.into(),
+            ..Default::default()
+        },
+        session: dancebox_runtime::SessionConfig {
+            keys: vec![
+                (
+                    dancebox_runtime::AccountId::from(ALICE),
+                    210 * dancebox_runtime::UNIT,
+                ),
+                (
+                    dancebox_runtime::AccountId::from(BOB),
+                    100 * dancebox_runtime::UNIT,
+                ),
+            ]
+            .into_iter()
+            .map(|(account, _balance)| {
+                let nimbus_id = get_aura_id_from_seed(&account.to_string());
+                (
+                    account.clone(),
+                    account,
+                    dancebox_runtime::SessionKeys { nimbus: nimbus_id },
+                )
+            })
+            .collect(),
             ..Default::default()
         },
         ..Default::default()

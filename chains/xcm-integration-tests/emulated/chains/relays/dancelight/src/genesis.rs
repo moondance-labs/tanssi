@@ -14,9 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-use dancelight_runtime_constants::currency::UNITS as DANCE;
-use emulated_integration_tests_common::build_genesis_storage;
-use sp_core::storage::Storage;
+use {
+    dancelight_runtime_constants::currency::UNITS as DANCE,
+    emulated_integration_tests_common::build_genesis_storage, sp_core::storage::Storage,
+};
 const INITIAL_BALANCE: u128 = 1_000_000 * DANCE;
 
 pub fn genesis() -> Storage {
