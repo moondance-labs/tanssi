@@ -128,13 +128,51 @@ yargs(hideBin(process.argv))
                 }
 
                 const mt = api.runtimeMetadata;
+                // TODO: for testing, undo all changes to this file before merging
+
+                console.log(mt.asLatest.apis.toJSON());
+
+                console.log(Object.keys(api.call.genesisBuilder));
+
+                const genesisPreset = await api.call.genesisBuilder.getPreset(null);
+                const genesisPresetStr = api.createType("Option<Vec<u8>>", genesisPreset);
+                console.log(genesisPresetStr.toJSON());
+                const genesisPresetObj = JSON.parse(genesisPresetStr.toString());
+                console.log(genesisPresetObj);
+
                 // Iterate over all pallets.
                 for (const module of mt.asLatest.pallets) {
                     if (module.storage.isNone) {
                         continue;
                     }
+
+                    /*
+                    for (const item of module.storage.unwrap().items) {
+                        if (item.name.toString() == "PalletVersion") {
+                            console.log(module.name.toString(), item.toJSON());
+                        }
+                    }
+                     */
+                    //console.log(Object.keys(api.query.substrate));
+
+                    for (const module in api.query) {
+                        if (module == "substrate") {
+                            continue;
+                        }
+                        const palletVer = await api.query[module].palletVersion();
+                        console.log(module, palletVer.toJSON());
+                    }
+
                     // Compute pallet storage prefix.
                     const prefix = xxhashAsHex(module.storage.unwrap().prefix.toString(), 128);
+                    const keyValue = prefix + xxhashAsHex(":__STORAGE_VERSION__:", 128).slice(2);
+
+                    const rawStorageVersion = await api.rpc.state.getStorage(keyValue);
+                    const palletStorageVersion = api.createType("Option<u16>", rawStorageVersion);
+                    console.log(module.name.toString(), palletStorageVersion.toJSON());
+
+                    continue;
+
                     // Check if the provided key starts with the pallet prefix.
                     if (argv.key.startsWith(prefix)) {
                         // Found pallet, now find key
@@ -177,3 +215,22 @@ yargs(hideBin(process.argv))
         }
     )
     .parse();
+
+async function getPalletVersions(api: ApiPromise): Promise<Record<string, number>> {
+    const versions: Record<string, number> = {};
+
+    // Loop over all modules in api.query.
+    for (const moduleName in api.query) {
+        // Ensure that the module has a 'palletVersion' query method.
+        const moduleQuery = api.query[moduleName];
+        if (typeof moduleQuery.palletVersion !== "function") {
+            continue;
+        }
+
+        // Call the query and convert the result to a number.
+        const palletVer = await moduleQuery.palletVersion();
+        versions[moduleName] = palletVer.toNumber();
+    }
+
+    return versions;
+}
