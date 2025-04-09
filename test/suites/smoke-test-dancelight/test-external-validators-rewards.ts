@@ -83,9 +83,9 @@ describeSuite({
                 // The event is triggered, nonce should be incremented
                 if (event) {
                     expect(nonceDiff).toEqual(1);
-                    expect(sovereignBalanceCheckpointA.toNumber()).to.be.lessThan(
-                        sovereignBalanceCheckpointB.toNumber()
-                    );
+                    expect(
+                        sovereignBalanceCheckpointA.toBigInt() - sovereignBalanceCheckpointB.toBigInt()
+                    ).to.be.lessThan(0);
 
                     // The event is not triggered, nonce should be the same
                 } else {

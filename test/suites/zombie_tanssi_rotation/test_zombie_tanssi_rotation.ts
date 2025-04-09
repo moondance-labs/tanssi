@@ -14,6 +14,7 @@ import {
     signAndSendAndInclude,
     waitToSession,
     waitUntilEthTxIncluded,
+    createCollatorKeyToNameMap,
 } from "utils";
 
 describeSuite({
@@ -380,8 +381,8 @@ describeSuite({
     },
 });
 
-/// Given a list of collators and a list of dbPaths, checks that the path does not exist for all the collators.
-/// This can be used to ensure that all the unassigned collators do not have any container chains running.
+// Given a list of collators and a list of dbPaths, checks that the path does not exist for all the collators.
+// This can be used to ensure that all the unassigned collators do not have any container chains running.
 async function ensureContainerDbPathsDontExist(collators: string[], pathsToVerify: string[]) {
     for (const collator of collators) {
         for (const path of pathsToVerify) {
@@ -392,21 +393,8 @@ async function ensureContainerDbPathsDontExist(collators: string[], pathsToVerif
     }
 }
 
-/// Create a map of collator key "5C5p..." to collator name "Collator1000-01".
-function createCollatorKeyToNameMap(paraApi, collatorNames: string[]): Record<string, string> {
-    const collatorName: Record<string, string> = {};
-
-    for (const name of collatorNames) {
-        const hexAddress = getKeyringNimbusIdHex(name);
-        const k = paraApi.createType("AccountId", hexAddress);
-        collatorName[k] = name;
-    }
-
-    return collatorName;
-}
-
-/// Given a list of all collators and collators assigned to containers, returns the collators that are not assigned to
-/// containers.
+// Given a list of all collators and collators assigned to containers, returns the collators that are not assigned to
+// containers.
 function getUnassignedCollators(allCollators: string[], assignedToContainers: string[]): string[] {
     return allCollators.filter((collator) => !assignedToContainers.includes(collator));
 }

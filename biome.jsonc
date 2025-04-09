@@ -18,7 +18,7 @@
       "tmp",
       "**/contracts/out",
       "**/tmp/",
-      "**/html/"
+      "**/html/",
     ]
   },
   "formatter": {
@@ -38,8 +38,13 @@
         "noExplicitAny": "off",
         "noShadowRestrictedNames": "off",
       },
+      "correctness": {
+        "noUnusedImports": "error",
+      },
     },
-    "ignore": [],
+    "ignore": [
+      "src/**/interfaces/**",
+    ],
   },
   "javascript": {
     "formatter": {
