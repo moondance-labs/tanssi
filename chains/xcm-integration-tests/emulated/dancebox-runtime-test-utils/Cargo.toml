@@ -16,7 +16,7 @@ cumulus-pallet-parachain-system = { workspace = true }
 cumulus-primitives-core = { workspace = true }
 cumulus-primitives-parachain-inherent = { workspace = true }
 cumulus-test-relay-sproof-builder = { workspace = true }
-dancebox-runtime = { workspace = true, features = ["std"] }
+dancebox-runtime = { workspace = true, features = [ "std" ] }
 dp-consensus = { workspace = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
