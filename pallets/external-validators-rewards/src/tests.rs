@@ -16,6 +16,11 @@
 
 use {
     crate::{self as pallet_external_validators_rewards, mock::*},
+<<<<<<< Updated upstream
+=======
+    frame_support::traits::Get,
+    polkadot_primitives::Hash,
+>>>>>>> Stashed changes
     sp_core::H256,
     sp_std::collections::btree_map::BTreeMap,
     tp_bridge::Command,
@@ -107,7 +112,9 @@ fn test_on_era_end() {
         ExternalValidatorsRewards::reward_by_ids(accounts_points);
         ExternalValidatorsRewards::on_era_end(1);
 
-        let rewards_utils = ExternalValidatorsRewards::generate_era_rewards_utils(1, None);
+        let era_rewards = pallet_external_validators_rewards::RewardPointsForEra::<Test>::get(1);
+        let rewards_utils = era_rewards.generate_era_rewards_utils::<<Test as pallet_external_validators_rewards::Config>::Hashing>(1, None);
+
         let expected_command = Command::ReportRewards {
             external_idx: 31000u64,
             era_index: 1u32,
@@ -128,7 +135,7 @@ fn test_on_era_end() {
 }
 
 #[test]
-fn test_on_era_end_without_proper_token() {
+fn test_i_on_era_end_without_proper_token() {
     new_test_ext().execute_with(|| {
         run_to_block(1);
         Mock::mutate(|mock| {
@@ -149,7 +156,9 @@ fn test_on_era_end_without_proper_token() {
         ExternalValidatorsRewards::reward_by_ids(accounts_points);
         ExternalValidatorsRewards::on_era_end(1);
 
-        let rewards_utils = ExternalValidatorsRewards::generate_era_rewards_utils(1, None);
+        let era_rewards = pallet_external_validators_rewards::RewardPointsForEra::<Test>::get(1);
+        let rewards_utils = era_rewards.generate_era_rewards_utils::<<Test as pallet_external_validators_rewards::Config>::Hashing>(1, None);
+
         let expected_command = Command::ReportRewards {
             external_idx: 31000u64,
             era_index: 1u32,
