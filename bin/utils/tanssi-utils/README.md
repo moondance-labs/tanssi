@@ -18,7 +18,7 @@ After that, run the tool with:
 
 You can change the values present in `test-values.json` file to generate different utils as needed.
 
-If the execution is successfull, you should see an output like this one:
+If the execution is successful, you should see an output like this one:
 
 ```bash
 Input path is: "./bin/utils/tanssi-utils/src/test-values.json"
