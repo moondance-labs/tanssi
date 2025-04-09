@@ -65,21 +65,21 @@ describeSuite({
                 expect(activeCollators.isEmpty).to.be.true;
                 activeCollators = await polkadotJs.query.inactivityTracking.activeCollators(1);
                 expect(activeCollators.isEmpty).to.be.true;
-                const activeCollatorsForSesison2BeforeNoting =
+                const activeCollatorsForSession2BeforeNoting =
                     await polkadotJs.query.inactivityTracking.activeCollatorsForCurrentSession();
-                expect(activeCollatorsForSesison2BeforeNoting.isEmpty).to.be.true;
+                expect(activeCollatorsForSession2BeforeNoting.isEmpty).to.be.true;
 
                 await mockAndInsertHeadData(context, 2000, 2, 2, alice);
                 await context.createBlock();
-                const activeCollatorsForSesison2AfterNoting =
+                const activeCollatorsForSession2AfterNoting =
                     await polkadotJs.query.inactivityTracking.activeCollatorsForCurrentSession();
-                expect(activeCollatorsForSesison2AfterNoting.size).to.be.equal(1);
+                expect(activeCollatorsForSession2AfterNoting.size).to.be.equal(1);
 
                 await mockAndInsertHeadData(context, 2000, 3, 2, alice);
                 await context.createBlock();
-                const activeCollatorsForSesison2AfterSecondNoting =
+                const activeCollatorsForSession2AfterSecondNoting =
                     await polkadotJs.query.inactivityTracking.activeCollatorsForCurrentSession();
-                expect(activeCollatorsForSesison2AfterSecondNoting.size).to.be.equal(1);
+                expect(activeCollatorsForSession2AfterSecondNoting.size).to.be.equal(1);
 
                 const activeCollatorsRecordBeforeActivityWindow =
                     await polkadotJs.query.inactivityTracking.activeCollators(2);
