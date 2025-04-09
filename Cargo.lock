@@ -3352,6 +3352,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "dancebox-rococo-emulated-chain"
+version = "0.0.0"
+dependencies = [
+ "cumulus-primitives-core",
+ "dancebox-runtime",
+ "emulated-integration-tests-common",
+ "nimbus-primitives",
+ "pallet-configuration",
+ "parity-scale-codec",
+ "polkadot-parachain-primitives",
+ "sp-consensus-aura",
+ "sp-core",
+ "sp-runtime",
+ "staging-xcm",
+ "staging-xcm-builder",
+ "staging-xcm-executor",
+ "tanssi-emulated-integration-tests-common",
+ "xcm-emulator",
+]
+
+[[package]]
 name = "dancebox-runtime"
 version = "0.1.0"
 dependencies = [
@@ -3714,8 +3735,8 @@ version = "0.0.0"
 dependencies = [
  "container-chain-template-simple-runtime",
  "dancelight-emulated-chain",
- "dancelight-runtime",
  "frame-support",
+ "frame-system",
  "frontier-template-emulated-chain",
  "simple-template-emulated-chain",
  "snowbridge-pallet-outbound-queue",
@@ -21266,7 +21287,6 @@ dependencies = [
  "container-chain-template-simple-runtime",
  "cumulus-primitives-core",
  "dancebox-emulated-chain",
- "dancebox-runtime",
  "frame-support",
  "frontier-template-emulated-chain",
  "simple-template-emulated-chain",

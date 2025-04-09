@@ -16,6 +16,7 @@
 
 pub use xcm_emulator::{bx, TestExt};
 use {
+    container_chain_template_simple_runtime::AccountId,
     dancebox_emulated_chain::Dancebox,
     frame_support::parameter_types,
     frontier_template_emulated_chain::FrontierTemplate,
@@ -40,17 +41,17 @@ decl_test_networks! {
 
 parameter_types! {
     // Westend
-    pub WestendSender: cumulus_primitives_core::relay_chain::AccountId = Sr25519Keyring::Alice.to_account_id();
-    pub WestendReceiver: cumulus_primitives_core::relay_chain::AccountId = Sr25519Keyring::Bob.to_account_id();
-    pub WestendEmptyReceiver: cumulus_primitives_core::relay_chain::AccountId = WestendRelay::account_id_of(RANDOM);
+    pub WestendSender: AccountId = Sr25519Keyring::Alice.to_account_id();
+    pub WestendReceiver: AccountId = Sr25519Keyring::Bob.to_account_id();
+    pub WestendEmptyReceiver: AccountId = WestendRelay::account_id_of(RANDOM);
 
     // Dancebox
-    pub DanceboxSender: dancebox_runtime::AccountId = dancebox_runtime::AccountId::from(ALICE);
-    pub DanceboxReceiver: dancebox_runtime::AccountId = dancebox_runtime::AccountId::from(BOB);
-    pub DanceboxEmptyReceiver: dancebox_runtime::AccountId = DanceboxPara::account_id_of(RANDOM);
+    pub DanceboxSender: AccountId = AccountId::from(ALICE);
+    pub DanceboxReceiver: AccountId = AccountId::from(BOB);
+    pub DanceboxEmptyReceiver: AccountId = DanceboxPara::account_id_of(RANDOM);
 
     // SimpleTemplate
-    pub SimpleTemplateSender: container_chain_template_simple_runtime::AccountId = Sr25519Keyring::Alice.to_account_id();
-    pub SimpleTemplateReceiver: container_chain_template_simple_runtime::AccountId = Sr25519Keyring::Bob.to_account_id();
-    pub SimpleTemplateEmptyReceiver: container_chain_template_simple_runtime::AccountId = SimpleTemplatePara::account_id_of(RANDOM);
+    pub SimpleTemplateSender: AccountId = Sr25519Keyring::Alice.to_account_id();
+    pub SimpleTemplateReceiver: AccountId = Sr25519Keyring::Bob.to_account_id();
+    pub SimpleTemplateEmptyReceiver: AccountId = SimpleTemplatePara::account_id_of(RANDOM);
 }

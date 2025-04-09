@@ -16,12 +16,14 @@
 
 pub use xcm_emulator::{bx, TestExt};
 use {
+    container_chain_template_simple_runtime::AccountId,
     dancelight_emulated_chain::Dancelight,
     frame_support::parameter_types,
     frontier_template_emulated_chain::FrontierTemplate,
     simple_template_emulated_chain::SimpleTemplate,
     sp_keyring::Sr25519Keyring,
     tanssi_emulated_integration_tests_common,
+    tanssi_emulated_integration_tests_common::accounts::{ALICE, BOB, RANDOM},
     xcm_emulator::{
         decl_test_networks, Bridge, BridgeLaneId, BridgeMessage, BridgeMessageDispatchError,
         BridgeMessageHandler, Chain, Network,
@@ -52,14 +54,14 @@ decl_test_networks! {
 
 parameter_types! {
     // Dancelight
-    pub DancelightSender: dancelight_runtime::AccountId = Sr25519Keyring::Alice.to_account_id();
-    pub DancelightReceiver: dancelight_runtime::AccountId = Sr25519Keyring::Bob.to_account_id();
-    pub DancelightEmptyReceiver: dancelight_runtime::AccountId = DancelightRelay::account_id_of(tanssi_emulated_integration_tests_common::accounts::RANDOM);
+    pub DancelightSender: AccountId = Sr25519Keyring::Alice.to_account_id();
+    pub DancelightReceiver: AccountId = Sr25519Keyring::Bob.to_account_id();
+    pub DancelightEmptyReceiver: AccountId = DancelightRelay::account_id_of(RANDOM);
 
     // SimpleTemplate
-    pub SimpleTemplateSender: container_chain_template_simple_runtime::AccountId = dancelight_runtime::AccountId::from(tanssi_emulated_integration_tests_common::accounts::ALICE);
-    pub SimpleTemplateReceiver: container_chain_template_simple_runtime::AccountId = dancelight_runtime::AccountId::from(tanssi_emulated_integration_tests_common::accounts::BOB);
-    pub SimpleTemplateEmptyReceiver: container_chain_template_simple_runtime::AccountId = SimpleTemplatePara::account_id_of(tanssi_emulated_integration_tests_common::accounts::RANDOM);
+    pub SimpleTemplateSender: AccountId = AccountId::from(ALICE);
+    pub SimpleTemplateReceiver: AccountId = AccountId::from(BOB);
+    pub SimpleTemplateEmptyReceiver: AccountId = SimpleTemplatePara::account_id_of(RANDOM);
 }
 
 pub struct DancelightEthMockBridgeHandler;

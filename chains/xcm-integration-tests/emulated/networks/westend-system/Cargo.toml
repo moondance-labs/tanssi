@@ -15,7 +15,6 @@ workspace = true
 container-chain-template-simple-runtime  = { workspace = true, features = [ "std" ] }
 cumulus-primitives-core = { workspace = true }
 dancebox-emulated-chain = { workspace = true }
-dancebox-runtime = { workspace = true }
 frame-support = { workspace = true, features = [ "tuples-96" ] }
 frontier-template-emulated-chain = { workspace = true }
 simple-template-emulated-chain = { workspace = true }

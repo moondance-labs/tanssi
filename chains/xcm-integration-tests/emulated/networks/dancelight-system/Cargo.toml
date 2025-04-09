@@ -14,7 +14,6 @@ workspace = true
 [dependencies]
 container-chain-template-simple-runtime  = { workspace = true, features = [ "std" ] }
 dancelight-emulated-chain = { workspace = true }
-dancelight-runtime = { workspace = true }
 frame-support = { workspace = true, features = [ "tuples-96" ] }
 frontier-template-emulated-chain = { workspace = true }
 simple-template-emulated-chain = { workspace = true }
@@ -22,3 +21,4 @@ snowbridge-pallet-outbound-queue = { workspace = true }
 sp-keyring = { workspace = true }
 tanssi-emulated-integration-tests-common = { workspace = true }
 xcm-emulator = { workspace = true }
+frame-system = { workspace = true }
