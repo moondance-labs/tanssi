@@ -4,10 +4,7 @@ import { MoonwallContext, beforeAll, describeSuite, expect } from "@moonwall/cli
 import { type KeyringPair, generateKeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import fs from "node:fs";
-import {
-    getOnchainPalletVersions,
-    testPalletVersions,
-} from "utils";
+import { testPalletVersions } from "utils";
 
 describeSuite({
     id: "ZO01",
@@ -16,7 +13,6 @@ describeSuite({
     testCases: ({ it, context, log }) => {
         let relayApi: ApiPromise;
         let alice: KeyringPair;
-        let prevRuntimePalletVersions: Record<string, number>;
 
         beforeAll(async () => {
             const keyring = new Keyring({ type: "sr25519" });
@@ -36,16 +32,6 @@ describeSuite({
             test: async () => {
                 const blockNum = (await relayApi.rpc.chain.getBlock()).block.header.number.toNumber();
                 expect(blockNum).to.be.greaterThan(0);
-            },
-        });
-
-        it({
-            id: "T01b",
-            title: "Gather pallet storage version before",
-            test: async () => {
-                const palletStorageVersions = await getOnchainPalletVersions(relayApi);
-                console.log(palletStorageVersions);
-                prevRuntimePalletVersions = palletStorageVersions;
             },
         });
 
@@ -119,8 +105,8 @@ describeSuite({
         });
 
         it({
-            id: "T03b",
-            title: "Gather pallet storage version after",
+            id: "T04",
+            title: "Test pallet versions for missed migrations",
             test: async () => {
                 const command = "../target/release/tanssi-relay";
                 const args = ["build-spec", "--chain=dancelight-local", "--raw"];

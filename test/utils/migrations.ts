@@ -1,7 +1,7 @@
-import type {ApiPromise} from "@polkadot/api";
-import {hexToU8a} from "@polkadot/util";
-import {spawn} from "node:child_process";
-import {createWriteStream} from "node:fs";
+import type { ApiPromise } from "@polkadot/api";
+import { hexToU8a } from "@polkadot/util";
+import { spawn } from "node:child_process";
+import { createWriteStream } from "node:fs";
 
 // Returns palletVersion stored on chain for each pallet
 // Pallets with no explicit storage_version attribute return 0
@@ -144,7 +144,7 @@ export async function buildRawSpecGenesisStorage(
     });
 
     // Parse the captured stdout into JSON.
-    let rawChainSpec: { genesis: { raw: { top: Record<string, string>; }; }; };
+    let rawChainSpec: { genesis: { raw: { top: Record<string, string> } } };
     try {
         const stdoutBuffer = Buffer.concat(stdoutChunks).toString();
         rawChainSpec = JSON.parse(stdoutBuffer);
