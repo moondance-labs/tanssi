@@ -1,0 +1,21 @@
+[package]
+name = "dancelight-emulated-chain"
+description = "Dancelight emulated chain"
+edition = "2021"
+license = "GPL-3.0-only"
+publish = false
+version = "0.0.0"
+[package.authors]
+workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+dancelight-runtime = { workspace = true }
+dancelight-runtime-constants = { workspace = true }
+emulated-integration-tests-common = { workspace = true }
+sp-core = { workspace = true }
+tanssi-emulated-integration-tests-common = { workspace = true }
+xcm = { workspace = true }
+xcm-emulator = { workspace = true }
