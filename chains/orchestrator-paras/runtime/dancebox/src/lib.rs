@@ -2044,6 +2044,8 @@ impl_runtime_apis! {
 
             use xcm::latest::prelude::*;
             use crate::xcm_config::SelfReserve;
+            use xcm_builder::MintLocation;
+
             parameter_types! {
                 pub ExistentialDepositAsset: Option<Asset> = Some((
                     SelfReserve::get(),
