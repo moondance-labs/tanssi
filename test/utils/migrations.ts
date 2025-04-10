@@ -1,7 +1,7 @@
-import type { ApiPromise } from "@polkadot/api";
-import { hexToU8a } from "@polkadot/util";
-import { spawn } from "node:child_process";
-import { createWriteStream } from "node:fs";
+import type {ApiPromise} from "@polkadot/api";
+import {hexToU8a} from "@polkadot/util";
+import {spawn} from "node:child_process";
+import {createWriteStream} from "node:fs";
 
 // Returns palletVersion stored on chain for each pallet
 // Pallets with no explicit storage_version attribute return 0
@@ -151,11 +151,7 @@ export async function buildRawSpecGenesisStorage(
     } catch (err) {
         throw new Error(`Failed to parse JSON from child process output: ${err.message}`);
     }
-
-    //console.log(rawChainSpec);
-    const rawGenesis = rawChainSpec.genesis.raw.top;
-
-    return rawGenesis;
+    return rawChainSpec.genesis.raw.top;
 }
 
 // Assert that the pallet storage versions found on chain are the same as the storage versions generated in a new genesis.
