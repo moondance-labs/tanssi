@@ -1438,6 +1438,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "bridge-dancelight-integration-tests"
+version = "0.0.0"
+dependencies = [
+ "alloy-sol-types",
+ "dancelight-emulated-chain",
+ "dancelight-runtime",
+ "dancelight-system-emulated-network",
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "snowbridge-core",
+ "snowbridge-pallet-inbound-queue",
+ "snowbridge-router-primitives",
+ "sp-core",
+ "sp-keyring",
+ "staging-xcm",
+ "tanssi-emulated-integration-tests-common",
+ "tp-bridge",
+ "xcm-emulator",
+]
+
+[[package]]
 name = "bridge-hub-common"
 version = "0.1.0"
 source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2412#33a925ed7a1a70f3db904cb88bc301c7b6c0ce30"

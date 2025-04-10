@@ -13,6 +13,7 @@ members = [
 	"chains/xcm-integration-tests/emulated/dancebox-runtime-test-utils",
 	"chains/xcm-integration-tests/emulated/networks/*",
 	"chains/xcm-integration-tests/emulated/tests/assets/*",
+	"chains/xcm-integration-tests/emulated/tests/bridges/*",
 	"client/*",
 	"pallets/*",
 	"pallets/collator-assignment/runtime-api",
