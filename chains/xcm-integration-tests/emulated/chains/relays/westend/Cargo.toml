@@ -29,10 +29,10 @@ xcm-emulator = { workspace = true }
 
 [features]
 runtime-benchmarks = [
-  "cumulus-primitives-core/runtime-benchmarks",
-  "pallet-staking/runtime-benchmarks",
-  "runtime-common/runtime-benchmarks",
-  "runtime-parachains/runtime-benchmarks",
-  "sp-runtime/runtime-benchmarks",
-  "westend-runtime/runtime-benchmarks"
+	"cumulus-primitives-core/runtime-benchmarks",
+	"pallet-staking/runtime-benchmarks",
+	"runtime-common/runtime-benchmarks",
+	"runtime-parachains/runtime-benchmarks",
+	"sp-runtime/runtime-benchmarks",
+	"westend-runtime/runtime-benchmarks",
 ]
