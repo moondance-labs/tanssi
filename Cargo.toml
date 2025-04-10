@@ -8,6 +8,8 @@ members = [
 	"chains/orchestrator-relays/node/*",
 	"chains/orchestrator-relays/runtime/dancelight",
 	"chains/orchestrator-relays/runtime/dancelight/constants",
+	"chains/orchestrator-relays/runtime/starlight",
+	"chains/orchestrator-relays/runtime/starlight/constants",
 	"chains/xcm-integration-tests/emulated/chains/orchestrator-paras/*",
 	"chains/xcm-integration-tests/emulated/chains/relays/*",
 	"chains/xcm-integration-tests/emulated/chains/templates/*",
@@ -97,6 +99,9 @@ tanssi-runtime-common = { path = "chains/orchestrator-paras/runtime/common", def
 
 dancelight-runtime = { path = "chains/orchestrator-relays/runtime/dancelight", default-features = false }
 dancelight-runtime-constants = { path = "chains/orchestrator-relays/runtime/dancelight/constants", default-features = false }
+
+starlight-runtime = { path = "chains/orchestrator-relays/runtime/starlight", default-features = false }
+starlight-runtime-constants = { path = "chains/orchestrator-relays/runtime/starlight/constants", default-features = false }
 
 tanssi-relay-cli = { path = "chains/orchestrator-relays/client/cli" }
 tanssi-relay-service = { path = "chains/orchestrator-relays/node/tanssi-relay-service" }
