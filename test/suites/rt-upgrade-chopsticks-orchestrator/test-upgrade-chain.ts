@@ -62,7 +62,7 @@ describeSuite({
                     // we send queries
                     batchTx.push(api.tx.registrar.setCurrentHead(1, "0x11"));
                     batchTx.push(api.tx.xcmPallet.forceSubscribeVersionNotify(versionedLocation));
-                } else if (runtimeName !== "flasbox") {
+                } else if (runtimeName !== "flashbox") {
                     batchTx.push(api.tx.polkadotXcm.forceSubscribeVersionNotify(versionedLocation));
                 }
 
