@@ -23,17 +23,16 @@ sp-consensus-beefy = { workspace = true }
 sp-core = { workspace = true }
 sp-runtime = { workspace = true }
 tanssi-emulated-integration-tests-common = { workspace = true }
-westend-runtime = { workspace = true }
+westend-runtime = { workspace = true, features = [ "std" ] }
 westend-runtime-constants = { workspace = true }
 xcm-emulator = { workspace = true }
 
 [features]
-default = [
-	"std",
-]
-std = [
-  "westend-runtime/std",
-]
 runtime-benchmarks = [
-  "westend-runtime/runtime-benchmarks",
+  "cumulus-primitives-core/runtime-benchmarks",
+  "pallet-staking/runtime-benchmarks",
+  "runtime-common/runtime-benchmarks",
+  "runtime-parachains/runtime-benchmarks",
+  "sp-runtime/runtime-benchmarks",
+  "westend-runtime/runtime-benchmarks"
 ]

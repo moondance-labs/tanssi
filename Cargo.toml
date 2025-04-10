@@ -9,6 +9,8 @@ members = [
 	"chains/orchestrator-relays/runtime/dancelight",
 	"chains/orchestrator-relays/runtime/dancelight/constants",
 	"chains/xcm-integration-tests/emulated/chains/orchestrator-paras/*",
+	"chains/xcm-integration-tests/emulated/chains/relays/*",
+	"chains/xcm-integration-tests/emulated/chains/templates/*",
 	"chains/xcm-integration-tests/emulated/common",
 	"chains/xcm-integration-tests/emulated/dancebox-runtime-test-utils",
 	"chains/xcm-integration-tests/emulated/networks/*",
