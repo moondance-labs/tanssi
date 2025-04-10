@@ -223,8 +223,15 @@ describeSuite({
             id: "T6",
             title: "Test pallet versions for missed migrations",
             test: async () => {
-                const command = "../target/release/tanssi-node";
-                const args = ["build-spec", "--chain=dancebox-local", "--raw"];
+                let command: string;
+                let args: string[];
+                if (runtimeName.includes("light")) {
+                    command = "../target/release/tanssi-relay";
+                    args = ["build-spec", "--chain=dancelight-local", "--raw"];
+                } else {
+                    command = "../target/release/tanssi-node";
+                    args = ["build-spec", "--chain=dancebox-local", "--raw"];
+                }
 
                 await testPalletVersions(api, command, args);
             },
