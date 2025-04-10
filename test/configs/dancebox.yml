@@ -12,3 +12,5 @@ import-storage:
                     free: "100000000000000000000000"
     Sudo:
         Key: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
+    PolkadotXcm:
+        QueryCounter: 0
