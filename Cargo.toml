@@ -1,5 +1,7 @@
 [workspace]
+exclude = [ "bin/utils/tanssi-utils" ]
 members = [
+	"bin/utils/tanssi-utils",
 	"chains/container-chains/nodes/*",
 	"chains/container-chains/runtime-templates/*",
 	"chains/orchestrator-paras/node",

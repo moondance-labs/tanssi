@@ -1,0 +1,27 @@
+[package]
+name = "tanssi-utils"
+description = "Generate test vectors for reward claim generation"
+edition = "2021"
+license = "GPL-3.0-only"
+readme = "README.md"
+version = "0.1.0"
+[package.authors]
+workspace = true
+[package.repository]
+workspace = true
+
+[[bin]]
+path = "src/main.rs"
+name = "tanssi-utils"
+
+[lints]
+workspace = true
+
+[dependencies]
+clap = { workspace = true, features = [ "derive", "std" ] }
+hex = { workspace = true }
+pallet-external-validators-rewards = { workspace = true, features = [ "std" ] }
+serde = { workspace = true, default-features = true }
+serde_json = { workspace = true, default-features = true }
+snowbridge-outbound-queue-merkle-tree = { workspace = true }
+sp-runtime = { workspace = true, features = [ "std" ] }
