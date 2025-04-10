@@ -110,6 +110,7 @@ frame-benchmarking = { workspace = true, optional = true }
 frame-system-benchmarking = { workspace = true, optional = true }
 frame-try-runtime = { workspace = true, optional = true }
 hex-literal = { workspace = true }
+cumulus-pallet-session-benchmarking = { workspace = true }
 
 polkadot-parachain-primitives = { workspace = true }
 primitives = { workspace = true }
@@ -341,6 +342,7 @@ std = [
 	"xcm-executor/std",
 	"xcm-runtime-apis/std",
 	"xcm/std",
+	"cumulus-pallet-session-benchmarking/std"
 ]
 no_std = []
 
@@ -429,6 +431,7 @@ runtime-benchmarks = [
 	"xcm-builder/runtime-benchmarks",
 	"xcm-executor/runtime-benchmarks",
 	"xcm-runtime-apis/runtime-benchmarks",
+	"cumulus-pallet-session-benchmarking/runtime-benchmarks"
 ]
 try-runtime = [
 	"container-chain-template-frontier-runtime/try-runtime",

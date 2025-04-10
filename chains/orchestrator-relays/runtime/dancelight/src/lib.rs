@@ -567,11 +567,7 @@ impl pallet_session::Config for Runtime {
     type SessionManager = pallet_session::historical::NoteHistoricalRoot<Self, ExternalValidators>;
     type SessionHandler = <SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
     type Keys = SessionKeys;
-    // TODO: Current benchmarking code for pallet_session requires that the runtime
-    // uses pallet_staking, which we don't use. We need to make a PR to Substrate to
-    // allow decoupling the benchmark from other pallets.
-    // See https://github.com/paritytech/polkadot-sdk/blob/0845044454c005b577eab7afaea18583bd7e3dd3/substrate/frame/session/benchmarking/src/inner.rs#L38
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_session::SubstrateWeight<Runtime>;
 }
 
 pub struct FullIdentificationOf;
@@ -2274,6 +2270,7 @@ mod benches {
         [pallet_mmr, Mmr]
         [pallet_beefy_mmr, BeefyMmrLeaf]
         [pallet_multiblock_migrations, MultiBlockMigrations]
+        [pallet_session, cumulus_pallet_session_benchmarking::Pallet::<Runtime>]
 
         // Tanssi
         [pallet_author_noting, AuthorNoting]
@@ -3200,6 +3197,8 @@ sp_api::impl_runtime_apis! {
                     Err(BenchmarkError::Skip)
                 }
             }
+
+            impl cumulus_pallet_session_benchmarking::Config for Runtime { }
 
             let mut whitelist: Vec<TrackedStorageKey> = AllPalletsWithSystem::whitelisted_storage_keys();
             let treasury_key = frame_system::Account::<Runtime>::hashed_key_for(Treasury::account_id());
