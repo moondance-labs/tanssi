@@ -17,7 +17,7 @@
 //! The bridge to ethereum config
 
 pub const SLOTS_PER_EPOCH: u32 = snowbridge_pallet_ethereum_client::config::SLOTS_PER_EPOCH as u32;
-#[cfg(not(test))]
+#[cfg(all(not(test), not(feature = "testing-helpers")))]
 use crate::EthereumBeaconClient;
 
 use sp_runtime::traits::MaybeEquivalence;
@@ -366,7 +366,7 @@ mod benchmark_helper {
     }
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "testing-helpers"))]
 mod test_helpers {
     use snowbridge_core::inbound::{Log, Proof, VerificationError, Verifier};
 
@@ -418,9 +418,9 @@ where
 
 impl snowbridge_pallet_inbound_queue::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    #[cfg(not(test))]
+    #[cfg(all(not(test), not(feature = "testing-helpers")))]
     type Verifier = EthereumBeaconClient;
-    #[cfg(test)]
+    #[cfg(any(test, feature = "testing-helpers"))]
     type Verifier = test_helpers::MockVerifier;
     type Token = Balances;
     // TODO: Revisit this when we enable xcmp messages
