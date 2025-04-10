@@ -26,3 +26,14 @@ tanssi-emulated-integration-tests-common = { workspace = true }
 westend-runtime = { workspace = true }
 westend-runtime-constants = { workspace = true }
 xcm-emulator = { workspace = true }
+
+[features]
+default = [
+	"std",
+]
+std = [
+  "westend-runtime/std",
+]
+runtime-benchmarks = [
+  "westend-runtime/runtime-benchmarks",
+]

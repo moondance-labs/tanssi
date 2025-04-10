@@ -21,7 +21,7 @@ sp-consensus-beefy = { workspace = true, default-features = true }
 sp-core = { workspace = true }
 
 # Polkadot
-rococo-runtime = { workspace = true, features = [ "runtime-benchmarks", "std" ] }
+rococo-runtime = { workspace = true, features = [ "std" ] }
 rococo-runtime-constants = { workspace = true }
 
 # Cumulus
@@ -29,3 +29,14 @@ emulated-integration-tests-common = { workspace = true }
 runtime-parachains = { workspace = true }
 tanssi-emulated-integration-tests-common = { workspace = true }
 xcm-emulator = { workspace = true }
+
+[features]
+default = [
+	"std",
+]
+std = [
+  "rococo-runtime/std",
+]
+runtime-benchmarks = [
+  "rococo-runtime/runtime-benchmarks",
+]

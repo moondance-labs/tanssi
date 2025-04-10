@@ -12,7 +12,7 @@ workspace = true
 workspace = true
 
 [dependencies]
-container-chain-template-frontier-runtime = { workspace = true }
+container-chain-template-frontier-runtime = { workspace = true, features = [ "std" ] }
 container-chain-template-simple-runtime = { workspace = true }
 cumulus-pallet-xcmp-queue = { workspace = true }
 cumulus-primitives-core = { workspace = true }
@@ -42,7 +42,7 @@ tanssi-emulated-integration-tests-common = { workspace = true }
 tp-traits = { workspace = true }
 tp-xcm-core-buyer = { workspace = true }
 westend-emulated-chain = { workspace = true }
-westend-runtime = { workspace = true, features = [ "runtime-benchmarks", "std" ] }
+westend-runtime = { workspace = true, features = [ "std" ] }
 westend-runtime-constants = { workspace = true }
 westend-system-emulated-network = { workspace = true }
 xcm = { workspace = true }
