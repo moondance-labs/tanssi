@@ -5,8 +5,8 @@
     "polkadot-execute-worker": "8932f0b07323a497470de2c7d8b9b7583af27de3836518fbf62047a68bc788f9"
   },
   "stable2412": {
-    "polkadot": "b84b2942edf66dd23c8f91f1db3bb2b4ba00c5b0836c400150f9f64479f013f1",
-    "polkadot-execute-worker": "23938ddc767ebf943d281ad154aabb8d987ce6c8bacbf7978f445f6d8935cf55",
-    "polkadot-prepare-worker": "ea258816aac8a0a7e3870ebec33f300dccc1e04f1f6e594dd53c282ae58bf089"
+    "polkadot": "c14a7a705c468e5c7d93ee655af5cd8a163aa5f7323a505b43f2b76515329272",
+    "polkadot-execute-worker": "fbc27a0ea4a7f14e169ffec1e410051998a93225b13a4652004c799f7769ad2d",
+    "polkadot-prepare-worker": "9342c6258e86bdf923fc5b2467e68f35365e9b528586796115fdff6fdf966a3c"
   }
 }

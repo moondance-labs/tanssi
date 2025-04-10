@@ -4,6 +4,7 @@ import { MoonwallContext, beforeAll, describeSuite, expect } from "@moonwall/cli
 import { type KeyringPair, generateKeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import fs from "node:fs";
+import { testPalletVersions } from "../../utils";
 
 describeSuite({
     id: "Z01",
@@ -105,6 +106,17 @@ describeSuite({
 
                 const balanceAfter = (await paraApi.query.system.account(randomAccount.address)).data.free.toBigInt();
                 expect(balanceBefore < balanceAfter).to.be.true;
+            },
+        });
+
+        it({
+            id: "T04",
+            title: "Test pallet versions for missed migrations",
+            test: async () => {
+                const command = "../target/release/tanssi-node";
+                const args = ["build-spec", "--chain=dancebox-local", "--raw"];
+
+                await testPalletVersions(paraApi, command, args);
             },
         });
     },

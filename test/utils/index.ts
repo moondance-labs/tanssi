@@ -7,6 +7,7 @@ export * from "./ethereum-contracts";
 export * from "./genesis-data";
 export * from "./invulnerables";
 export * from "./keys";
+export * from "./migrations";
 export * from "./payment";
 export * from "./relayInterface";
 export * from "./slashes";
