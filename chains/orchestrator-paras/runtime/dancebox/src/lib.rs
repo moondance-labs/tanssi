@@ -2051,17 +2051,13 @@ impl_runtime_apis! {
                     SelfReserve::get(),
                     ExistentialDeposit::get()
                 ).into());
-
-                pub LocalCheckAccount: Option<(AccountId, MintLocation)> = None;
-                pub TrustedTeleporter: Option<(Location, Asset)> = None;
-                pub TrustedReserve: Option<(Location, Asset)> = None;
             }
 
             impl pallet_xcm_benchmarks::fungible::Config for Runtime {
                 type TransactAsset = Balances;
-                type CheckedAccount = LocalCheckAccount;
-                type TrustedTeleporter = TrustedTeleporter;
-                type TrustedReserve = TrustedReserve;
+                type CheckedAccount = ();
+                type TrustedTeleporter = ();
+                type TrustedReserve = ();
 
                 fn get_asset() -> Asset {
                     Asset {
