@@ -1,7 +1,8 @@
 /**
 unhash-key
 
-Given a raw storage key, try to find which pallet it belongs to, and which storage item
+Given a raw storage key, try to find which pallet it belongs to, and which storage item.
+Only works for public storage items (exported with pub).
 
 Usage:
 # List all pallet prefixes for a selected chain
@@ -18,6 +19,8 @@ import { NETWORK_YARGS_OPTIONS, getApiFor } from "./utils/network";
 import { xxhashAsHex } from "@polkadot/util-crypto";
 import type { ApiPromise } from "@polkadot/api/promise/Api";
 
+// List of endpoints from which to get pallet metadata.
+// Should contain one endpoint for each network.
 const DEFAULT_ENDPOINTS = [
     "wss://rpc.polkadot.io",
     "wss://dancelight.tanssi-api.network",
@@ -63,14 +66,9 @@ yargs(hideBin(process.argv))
                 }
                 let api: ApiPromise;
                 try {
-                    // Wrap connection attempt in a 10 second timeout.
-                    const connectPromise: Promise<ApiPromise> = getApiFor({ ...argv, url: chosenEndpoint });
-                    const timeoutPromise: Promise<ApiPromise> = new Promise((_, reject) =>
-                        setTimeout(() => reject(new Error("Connection timed out after 10 seconds")), 10000)
-                    );
-                    api = await Promise.race([connectPromise, timeoutPromise]);
+                    api = await getApiFor({ ...argv, url: chosenEndpoint });
                 } catch (err) {
-                    console.error(`Failed to connect to ${chosenEndpoint}: ${err}`);
+                    console.error(`Failed to connect to ${chosenEndpoint}:"`, err);
                     throw err;
                 }
                 try {
@@ -116,14 +114,9 @@ yargs(hideBin(process.argv))
                 console.log(`\nTrying network endpoint: ${endpoint}`);
                 let api: ApiPromise;
                 try {
-                    // Wrap connection attempt in a 10 second timeout.
-                    const connectPromise: Promise<ApiPromise> = getApiFor({ ...argv, url: endpoint });
-                    const timeoutPromise: Promise<ApiPromise> = new Promise((_, reject) =>
-                        setTimeout(() => reject(new Error("Connection timed out after 10 seconds")), 10000)
-                    );
-                    api = await Promise.race([connectPromise, timeoutPromise]);
+                    api = await getApiFor({ ...argv, url: endpoint });
                 } catch (err) {
-                    console.error(`Failed to connect to ${endpoint}: ${err}`);
+                    console.error(`Failed to connect to ${endpoint}:"`, err);
                     continue;
                 }
 
@@ -147,7 +140,7 @@ yargs(hideBin(process.argv))
                             const keyValue = prefix + xxhashAsHex(storage.name.toString(), 128).slice(2);
                             // Check if the provided key and the storage key are prefix matches.
                             if (argv.key.startsWith(keyValue)) {
-                                console.log("✅ Found key:");
+                                console.log(`✅ Found key in network ${api.runtimeChain.toString()}:`);
                                 console.log("");
                                 console.log(`${keyValue}: ${module.name.toString()} ${storage.name.toString()}`);
                                 console.log("");
