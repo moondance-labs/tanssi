@@ -122,10 +122,10 @@ pub mod pallet {
             // We clear this storage item to make sure its always included
             DidSetContainerAuthorData::<T>::kill();
 
-            weight += T::DbWeight::get().writes(1);
+            weight.saturating_accrue(T::DbWeight::get().writes(1));
 
             // The read onfinalizes
-            weight += T::DbWeight::get().reads(1);
+            weight.saturating_accrue(T::DbWeight::get().reads(1));
 
             weight
         }
@@ -211,8 +211,8 @@ pub mod pallet {
                     }
                 }
 
-                total_weight = total_weight
-                    .saturating_add(T::AuthorNotingHook::on_container_authors_noted(&infos));
+                total_weight
+                    .saturating_accrue(T::AuthorNotingHook::on_container_authors_noted(&infos));
             }
 
             // We correctly set the data
