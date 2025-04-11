@@ -68,7 +68,7 @@ where
         assets.weigh_multi_assets(XcmBalancesWeight::<Runtime>::withdraw_asset())
     }
     fn reserve_asset_deposited(assets: &Assets) -> XCMWeight {
-        assets.weigh_multi_assets(XCMWeight::from_parts(200_000_000u64, 0))
+        assets.weigh_multi_assets(XcmBalancesWeight::<Runtime>::reserve_asset_deposited())
     }
     fn receive_teleported_asset(_assets: &Assets) -> XCMWeight {
         XCMWeight::MAX
