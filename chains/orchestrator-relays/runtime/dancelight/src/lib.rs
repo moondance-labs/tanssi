@@ -1407,7 +1407,7 @@ impl SessionInterface<AccountId> for DancelightSessionInterface {
 }
 
 prod_or_fast_parameter_types! {
-    pub const SessionsPerEra: SessionIndex = { prod: 6, fast: 3 };
+    pub const SessionsPerEra: SessionIndex = { prod: 4, fast: 3 };
     pub const SlashDeferDuration: EraIndex = { prod: 0, fast: 0 };
 }
 
