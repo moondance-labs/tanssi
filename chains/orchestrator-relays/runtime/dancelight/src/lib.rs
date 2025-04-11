@@ -2271,6 +2271,7 @@ mod benches {
         [pallet_beefy_mmr, BeefyMmrLeaf]
         [pallet_multiblock_migrations, MultiBlockMigrations]
         [pallet_session, cumulus_pallet_session_benchmarking::Pallet::<Runtime>]
+        [parachains_slashing, pallet_alt_benchmarks::bench_parachains_slashing::Pallet::<Runtime>]
 
         // Tanssi
         [pallet_author_noting, AuthorNoting]
@@ -3196,6 +3197,28 @@ sp_api::impl_runtime_apis! {
                     // The XCM executor of Dancelight doesn't have a configured `Aliasers`
                     Err(BenchmarkError::Skip)
                 }
+            }
+
+            pub struct SessionBenchValidators;
+            impl pallet_alt_benchmarks::bench_parachains_slashing::Validators<AccountId> for SessionBenchValidators {
+                /// Sets the validators to properly run a benchmark. Should take care of everything that
+                /// will make pallet_session use those validators, such as them having a balance.
+                fn set_validators(validators: &[AccountId]) {
+                    use frame_support::traits::fungible::Mutate;
+                    use tp_traits::ExternalIndexProvider;
+
+                    ExternalValidators::set_external_validators_inner(
+                        validators.to_vec(),
+                        ExternalValidators::get_external_index()
+                    ).expect("to set validators");
+
+                    for v in validators {
+                        Balances::set_balance(v, EXISTENTIAL_DEPOSIT);
+                    }
+                }
+            }
+            impl pallet_alt_benchmarks::bench_parachains_slashing::Config for Runtime {
+                type Validators = SessionBenchValidators;
             }
 
             impl cumulus_pallet_session_benchmarking::Config for Runtime { }

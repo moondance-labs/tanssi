@@ -3413,6 +3413,7 @@ dependencies = [
  "container-chain-template-frontier-runtime",
  "container-chain-template-simple-runtime",
  "cumulus-pallet-parachain-system",
+ "cumulus-pallet-session-benchmarking",
  "cumulus-primitives-core",
  "dancelight-runtime-constants",
  "dp-consensus",
@@ -3431,6 +3432,7 @@ dependencies = [
  "hex-literal 0.3.4",
  "log",
  "nimbus-primitives",
+ "pallet-alt-benchmarks",
  "pallet-asset-rate",
  "pallet-author-noting",
  "pallet-author-noting-runtime-api",
@@ -9165,6 +9167,30 @@ name = "owo-colors"
 version = "3.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c1b04fb49957986fdce4d6ee7a65027d55d4b6d2265e5848bbb507b58ccfdb6f"
+
+[[package]]
+name = "pallet-alt-benchmarks"
+version = "0.1.0"
+dependencies = [
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "pallet-balances",
+ "pallet-session",
+ "pallet-timestamp",
+ "parity-scale-codec",
+ "polkadot-primitives",
+ "polkadot-runtime-parachains",
+ "rand",
+ "rand_chacha",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-session",
+ "sp-staking",
+]
 
 [[package]]
 name = "pallet-asset-conversion"
