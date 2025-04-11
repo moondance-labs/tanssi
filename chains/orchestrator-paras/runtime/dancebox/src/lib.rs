@@ -2044,20 +2044,28 @@ impl_runtime_apis! {
 
             use xcm::latest::prelude::*;
             use crate::xcm_config::SelfReserve;
-            use xcm_builder::MintLocation;
 
             parameter_types! {
                 pub ExistentialDepositAsset: Option<Asset> = Some((
                     SelfReserve::get(),
                     ExistentialDeposit::get()
                 ).into());
+                pub TrustedReserve: Option<(Location, Asset)> = Some(
+                    (
+                        Location::here(),
+                        Asset {
+                            id: AssetId(SelfReserve::get()),
+                            fun: Fungible(1 * UNIT),
+                        },
+                    )
+                );
             }
 
             impl pallet_xcm_benchmarks::fungible::Config for Runtime {
                 type TransactAsset = Balances;
                 type CheckedAccount = ();
                 type TrustedTeleporter = ();
-                type TrustedReserve = ();
+                type TrustedReserve = TrustedReserve;
 
                 fn get_asset() -> Asset {
                     Asset {
