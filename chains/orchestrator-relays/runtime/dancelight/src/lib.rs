@@ -1523,6 +1523,7 @@ impl pallet_root_testing::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
 }
 
+type AssetRateId = u16;
 impl pallet_asset_rate::Config for Runtime {
     type WeightInfo = weights::pallet_asset_rate::SubstrateWeight<Runtime>;
     type RuntimeEvent = RuntimeEvent;
@@ -1530,7 +1531,7 @@ impl pallet_asset_rate::Config for Runtime {
     type RemoveOrigin = EnsureRoot<AccountId>;
     type UpdateOrigin = EnsureRoot<AccountId>;
     type Currency = Balances;
-    type AssetKind = <Runtime as pallet_treasury::Config>::AssetKind;
+    type AssetKind = AssetRateId;
     #[cfg(feature = "runtime-benchmarks")]
     type BenchmarkHelper = ();
 }

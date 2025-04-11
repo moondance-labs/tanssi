@@ -68,6 +68,9 @@ decl_test_relay_chains! {
             EthereumInboundQueue: crate::EthereumInboundQueue,
             EthereumSystem: crate::EthereumSystem,
             ExternalValidators: crate::ExternalValidators,
+            AssetRate: crate::AssetRate,
+            ForeignAssets: crate::ForeignAssets,
+            ForeignAssetsCreator: crate::ForeignAssetsCreator,
         }
     }
 }
@@ -112,6 +115,7 @@ decl_test_parachains! {
             ForeignAssets:  container_chain_template_simple_runtime::ForeignAssets,
             AssetRate:  container_chain_template_simple_runtime::AssetRate,
             ForeignAssetsCreator: container_chain_template_simple_runtime::ForeignAssetsCreator,
+            LocalAssets: container_chain_template_simple_runtime::ForeignAssets,
         }
     }
 }

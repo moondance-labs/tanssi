@@ -20,9 +20,9 @@ use {
     super::{
         parachains_origin,
         weights::{self, xcm::XcmWeight},
-        AccountId, AllPalletsWithSystem, Balance, Balances, Dmp, Fellows, ForeignAssets, ParaId,
-        Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin, TransactionByteFee, Treasury,
-        WeightToFee, XcmPallet,
+        AccountId, AllPalletsWithSystem, Balance, Balances, Dmp, Fellows, ForeignAssets,
+        ForeignAssetsCreator, ParaId, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin,
+        TransactionByteFee, Treasury, WeightToFee, XcmPallet,
     },
     crate::governance::StakingAdmin,
     dancelight_runtime_constants::{currency::CENTS, system_parachain::*},
@@ -46,14 +46,15 @@ use {
     xcm_builder::{
         AccountId32Aliases, AllowExplicitUnpaidExecutionFrom, AllowKnownQueryResponses,
         AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom, ChildParachainAsNative,
-        ChildParachainConvertsVia, DescribeAllTerminal, DescribeFamily, FixedWeightBounds,
-        FrameTransactionalProcessor, FungibleAdapter, HashedDescription, IsChildSystemParachain,
-        IsConcrete, MintLocation, OriginToPluralityVoice, SendXcmFeeToAccount,
-        SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation,
-        TakeWeightCredit, TrailingSetTopicAsId, UsingComponents, WeightInfoBounds,
-        WithComputedOrigin, WithUniqueTopic, XcmFeeManagerFromComponents,
+        ChildParachainConvertsVia, ConvertedConcreteId, DescribeAllTerminal, DescribeFamily,
+        FixedWeightBounds, FrameTransactionalProcessor, FungibleAdapter, FungiblesAdapter,
+        HashedDescription, IsChildSystemParachain, IsConcrete, MintLocation, NoChecking,
+        OriginToPluralityVoice, SendXcmFeeToAccount, SignedAccountId32AsNative,
+        SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId,
+        UsingComponents, WeightInfoBounds, WithComputedOrigin, WithUniqueTopic,
+        XcmFeeManagerFromComponents,
     },
-    xcm_executor::XcmExecutor,
+    xcm_executor::{traits::JustTry, XcmExecutor},
 };
 
 parameter_types! {
@@ -194,11 +195,29 @@ pub type Barrier = TrailingSetTopicAsId<(
 pub type WaivedLocations = Equals<RootLocation>;
 pub type XcmWeigher = WeightInfoBounds<XcmWeight<RuntimeCall>, RuntimeCall, MaxInstructions>;
 
+/// Means for transacting foreign assets from different global consensus.
+pub type ForeignFungiblesTransactor = FungiblesAdapter<
+    // Use this fungibles implementation:
+    ForeignAssets,
+    // Use this currency when it is a fungible asset matching the given location or name:
+    (ConvertedConcreteId<AssetId, Balance, ForeignAssetsCreator, JustTry>,),
+    // Convert an XCM Location into a local account id:
+    LocationConverter,
+    // Our chain's account ID type (we can't get away without mentioning it explicitly):
+    AccountId,
+    // We dont need to check teleports here.
+    NoChecking,
+    // The account to use for tracking teleports.
+    CheckingAccount,
+>;
+
+pub type AssetTransactors = (LocalAssetTransactor, ForeignFungiblesTransactor);
+
 pub struct XcmConfig;
 impl xcm_executor::Config for XcmConfig {
     type RuntimeCall = RuntimeCall;
     type XcmSender = XcmRouter;
-    type AssetTransactor = LocalAssetTransactor;
+    type AssetTransactor = AssetTransactors;
     type OriginConverter = LocalOriginConverter;
     type IsReserve = NativeAssetReserve;
     type IsTeleporter = ();
