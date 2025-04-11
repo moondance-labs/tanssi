@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-//! The Dancelight runtime for v1 parachains.
+//! The Starlight runtime for v1 parachains.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 // `construct_runtime!` does a lot of recursion and requires us to increase the limit.
@@ -149,7 +149,7 @@ pub use {
 use snowbridge_core::{AgentId, TokenId};
 
 /// Constant values used within the runtime.
-use dancelight_runtime_constants::{currency::*, fee::*, snowbridge::EthereumLocation, time::*};
+use starlight_runtime_constants::{currency::*, fee::*, snowbridge::EthereumLocation, time::*};
 
 // XCM configurations.
 pub mod xcm_config;
@@ -174,17 +174,17 @@ mod tests;
 
 pub mod genesis_config_presets;
 
-impl_runtime_weights!(dancelight_runtime_constants);
+impl_runtime_weights!(starlight_runtime_constants);
 
 // Make the WASM binary available.
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
-/// Runtime version (Dancelight).
+/// Runtime version (Starlight).
 #[sp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
-    spec_name: Cow::Borrowed("dancelight"),
-    impl_name: Cow::Borrowed("tanssi-dancelight-v2.0"),
+    spec_name: Cow::Borrowed("starlight"),
+    impl_name: Cow::Borrowed("tanssi-starlight-v2.0"),
     authoring_version: 0,
     spec_version: 1300,
     impl_version: 0,
@@ -300,7 +300,7 @@ impl Contains<RuntimeCall> for IsRelayRegister {
     }
 }
 
-/// Dancelight shouold not permit parathread registration for now
+/// Starlight shouold not permit parathread registration for now
 /// TODO: remove once they are enabled
 pub struct IsParathreadRegistrar;
 impl Contains<RuntimeCall> for IsParathreadRegistrar {
@@ -312,6 +312,35 @@ impl Contains<RuntimeCall> for IsParathreadRegistrar {
     }
 }
 
+/// Disable any extrinsic related to the balance transfer
+pub struct IsBalanceTransferExtrinsics;
+impl Contains<RuntimeCall> for IsBalanceTransferExtrinsics {
+    fn contains(c: &RuntimeCall) -> bool {
+        matches!(c, RuntimeCall::Balances(_))
+    }
+}
+
+pub struct IsBridgesExtrinsics;
+impl Contains<RuntimeCall> for IsBridgesExtrinsics {
+    fn contains(c: &RuntimeCall) -> bool {
+        matches!(
+            c,
+            RuntimeCall::EthereumOutboundQueue(_)
+                | RuntimeCall::EthereumInboundQueue(_)
+                | RuntimeCall::EthereumSystem(_)
+                | RuntimeCall::EthereumBeaconClient(_)
+                | RuntimeCall::EthereumTokenTransfers(_)
+        )
+    }
+}
+
+pub struct IsStakingExtrinsics;
+impl Contains<RuntimeCall> for IsStakingExtrinsics {
+    fn contains(c: &RuntimeCall) -> bool {
+        matches!(c, RuntimeCall::PooledStaking(_))
+    }
+}
+
 parameter_types! {
     pub const Version: RuntimeVersion = VERSION;
     pub const SS58Prefix: u8 = 42;
@@ -319,7 +348,13 @@ parameter_types! {
 
 #[derive_impl(frame_system::config_preludes::RelayChainDefaultConfig)]
 impl frame_system::Config for Runtime {
-    type BaseCallFilter = EverythingBut<(IsRelayRegister, IsParathreadRegistrar)>;
+    type BaseCallFilter = EverythingBut<(
+        IsRelayRegister,
+        IsParathreadRegistrar,
+        IsBalanceTransferExtrinsics,
+        IsBridgesExtrinsics,
+        IsStakingExtrinsics,
+    )>;
     type BlockWeights = BlockWeights;
     type BlockLength = BlockLength;
     type DbWeight = RocksDbWeight;
@@ -1391,8 +1426,8 @@ use {
     pallet_staking::SessionInterface,
 };
 
-pub struct DancelightSessionInterface;
-impl SessionInterface<AccountId> for DancelightSessionInterface {
+pub struct StarlightSessionInterface;
+impl SessionInterface<AccountId> for StarlightSessionInterface {
     fn disable_validator(validator_index: u32) -> bool {
         Session::disable_index(validator_index)
     }
@@ -1407,7 +1442,7 @@ impl SessionInterface<AccountId> for DancelightSessionInterface {
 }
 
 prod_or_fast_parameter_types! {
-    pub const SessionsPerEra: SessionIndex = { prod: 4, fast: 3 };
+    pub const SessionsPerEra: SessionIndex = { prod: 6, fast: 3 };
     pub const SlashDeferDuration: EraIndex = { prod: 0, fast: 0 };
 }
 
@@ -1503,7 +1538,7 @@ impl pallet_external_validator_slashes::Config for Runtime {
     type SlashDeferDuration = SlashDeferDuration;
     type BondingDuration = BondingDuration;
     type SlashId = u32;
-    type SessionInterface = DancelightSessionInterface;
+    type SessionInterface = StarlightSessionInterface;
     type EraIndexProvider = ExternalValidators;
     type InvulnerablesProvider = ExternalValidators;
     type ValidateMessage = tp_bridge::MessageValidator<Runtime>;
@@ -1572,7 +1607,7 @@ impl pallet_configuration::Config for Runtime {
 
 impl pallet_migrations::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type MigrationsList = (tanssi_runtime_common::migrations::DancelightMigrations<Runtime>,);
+    type MigrationsList = (tanssi_runtime_common::migrations::StarlightMigrations<Runtime>,);
     type XcmExecutionManager = ();
 }
 
@@ -1687,10 +1722,10 @@ impl pallet_data_preservers::Config for Runtime {
 }
 
 parameter_types! {
-    pub DancelightBondAccount: AccountId32 = PalletId(*b"StarBond").into_account_truncating();
+    pub StarlightBondAccount: AccountId32 = PalletId(*b"StarBond").into_account_truncating();
     pub PendingRewardsAccount: AccountId32 = PalletId(*b"PENDREWD").into_account_truncating();
 
-    // 30% for dancelight bond, so 70% for staking
+    // 30% for starlight bond, so 70% for staking
     pub const RewardsPortion: Perbill = Perbill::from_percent(70);
 }
 
@@ -1703,13 +1738,13 @@ parameter_types! {
 // computations at runtime.
 prod_or_fast_parameter_types! {
     pub const CollatorsInflationRatePerBlock: Perbill = { prod: Perbill::from_parts(9), fast: Perbill::from_parts(9) };
-    pub const ValidatorsInflationRatePerEra: Perbill = { prod: Perbill::from_parts(130570), fast: Perbill::from_parts(272) };
+    pub const ValidatorsInflationRatePerEra: Perbill = { prod: Perbill::from_parts(32641), fast: Perbill::from_parts(272) };
 }
 
 pub struct OnUnbalancedInflation;
 impl frame_support::traits::OnUnbalanced<Credit<AccountId, Balances>> for OnUnbalancedInflation {
     fn on_nonzero_unbalanced(credit: Credit<AccountId, Balances>) {
-        let _ = <Balances as Balanced<_>>::resolve(&DancelightBondAccount::get(), credit);
+        let _ = <Balances as Balanced<_>>::resolve(&StarlightBondAccount::get(), credit);
     }
 }
 
@@ -2006,11 +2041,11 @@ parameter_types! {
     pub const MaxEncodedGenesisDataSize: u32 = 5_000_000u32; // 5MB
 }
 
-pub struct InnerDancelightRegistrar<Runtime, AccountId, RegistrarManager, RegistrarWeightInfo>(
+pub struct InnerStarlightRegistrar<Runtime, AccountId, RegistrarManager, RegistrarWeightInfo>(
     PhantomData<(Runtime, AccountId, RegistrarManager, RegistrarWeightInfo)>,
 );
 impl<Runtime, AccountId, RegistrarManager, RegistrarWeightInfo> RegistrarHandler<AccountId>
-    for InnerDancelightRegistrar<Runtime, AccountId, RegistrarManager, RegistrarWeightInfo>
+    for InnerStarlightRegistrar<Runtime, AccountId, RegistrarManager, RegistrarWeightInfo>
 where
     RegistrarManager: RegistrarInterface<AccountId = AccountId>,
     RegistrarWeightInfo: paras_registrar::WeightInfo,
@@ -2105,8 +2140,8 @@ where
 
 impl pallet_registrar::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type RegistrarOrigin =
-        EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;
+    // TODO: revert to non-sudo later after stable
+    type RegistrarOrigin = EnsureRoot<AccountId>;
     type MarkValidForCollatingOrigin = EnsureRoot<AccountId>;
     type MaxLengthParaIds = MaxLengthParaIds;
     type MaxGenesisDataSize = MaxEncodedGenesisDataSize;
@@ -2116,10 +2151,10 @@ impl pallet_registrar::Config for Runtime {
     type SessionIndex = u32;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type Currency = Balances;
-    type RegistrarHooks = DancelightRegistrarHooks;
+    type RegistrarHooks = StarlightRegistrarHooks;
     type RuntimeHoldReason = RuntimeHoldReason;
 
-    type InnerRegistrar = InnerDancelightRegistrar<
+    type InnerRegistrar = InnerStarlightRegistrar<
         Runtime,
         AccountId,
         Registrar,
@@ -2129,9 +2164,9 @@ impl pallet_registrar::Config for Runtime {
     type DataDepositPerByte = DataDepositPerByte;
 }
 
-pub struct DancelightRegistrarHooks;
+pub struct StarlightRegistrarHooks;
 
-impl pallet_registrar::RegistrarHooks for DancelightRegistrarHooks {
+impl pallet_registrar::RegistrarHooks for StarlightRegistrarHooks {
     fn para_marked_valid_for_collating(para_id: ParaId) -> Weight {
         // Give free credits but only once per para id
         ServicesPayment::give_free_credits(&para_id)
@@ -2837,7 +2872,7 @@ sp_api::impl_runtime_apis! {
     #[cfg(feature = "try-runtime")]
     impl frame_try_runtime::TryRuntime<Block> for Runtime {
         fn on_runtime_upgrade(checks: frame_try_runtime::UpgradeCheckSelect) -> (Weight, Weight) {
-            log::info!("try-runtime::on_runtime_upgrade dancelight.");
+            log::info!("try-runtime::on_runtime_upgrade starlight.");
             let weight = Executive::try_runtime_upgrade(checks).unwrap();
             (weight, BlockWeights::get().max_block)
         }
@@ -2859,7 +2894,7 @@ sp_api::impl_runtime_apis! {
         fn registered_paras() -> Vec<ParaId> {
             // We should return the container-chains for the session in which we are kicking in
             // We could potentially predict whether the next block will yield a session change as in dancebox but this
-            // is innecesary: the dancelight blocks are being produced by validators, and therefore it should never
+            // is innecesary: the Starlight blocks are being produced by validators, and therefore it should never
             // stall because of any collator-rotation. Therefore it suffices for collators to predict the chain in
             // which they have to collate after the session-change block.
             let session_index = Session::current_index();
@@ -3030,7 +3065,7 @@ sp_api::impl_runtime_apis! {
                     TokenLocation::get(),
                     ExistentialDeposit::get()
                 ).into());
-                pub AssetHubParaId: ParaId = dancelight_runtime_constants::system_parachain::ASSET_HUB_ID.into();
+                pub AssetHubParaId: ParaId = starlight_runtime_constants::system_parachain::ASSET_HUB_ID.into();
                 pub const RandomParaId: ParaId = ParaId::new(43211234);
             }
 
@@ -3115,7 +3150,7 @@ sp_api::impl_runtime_apis! {
                     Ok(AssetHub::get())
                 }
                 fn worst_case_holding(_depositable_count: u32) -> Assets {
-                    // Dancelight only knows about STAR
+                    // Starlight only knows about STAR
                     vec![Asset{
                         id: AssetId(TokenLocation::get()),
                         fun: Fungible(1_000_000 * UNITS),
@@ -3155,12 +3190,12 @@ sp_api::impl_runtime_apis! {
                 }
 
                 fn worst_case_asset_exchange() -> Result<(Assets, Assets), BenchmarkError> {
-                    // Dancelight doesn't support asset exchanges
+                    // Starlight doesn't support asset exchanges
                     Err(BenchmarkError::Skip)
                 }
 
                 fn universal_alias() -> Result<(Location, Junction), BenchmarkError> {
-                    // The XCM executor of Dancelight doesn't have a configured `UniversalAliases`
+                    // The XCM executor of Starlight doesn't have a configured `UniversalAliases`
                     Err(BenchmarkError::Skip)
                 }
 
@@ -3187,18 +3222,18 @@ sp_api::impl_runtime_apis! {
                 }
 
                 fn unlockable_asset() -> Result<(Location, Location, Asset), BenchmarkError> {
-                    // Dancelight doesn't support asset locking
+                    // Starlight doesn't support asset locking
                     Err(BenchmarkError::Skip)
                 }
 
                 fn export_message_origin_and_destination(
                 ) -> Result<(Location, NetworkId, InteriorLocation), BenchmarkError> {
-                    // Dancelight doesn't support exporting messages
+                    // Starlight doesn't support exporting messages
                     Err(BenchmarkError::Skip)
                 }
 
                 fn alias_origin() -> Result<(Location, Location), BenchmarkError> {
-                    // The XCM executor of Dancelight doesn't have a configured `Aliasers`
+                    // The XCM executor of Starlight doesn't have a configured `Aliasers`
                     Err(BenchmarkError::Skip)
                 }
             }
@@ -3749,7 +3784,7 @@ mod remote_tests {
 
         sp_tracing::try_init_simple();
         let transport: Transport = var("WS")
-            .unwrap_or("wss://dancelight-rpc.polkadot.io:443".to_string())
+            .unwrap_or("wss://starlight-rpc.polkadot.io:443".to_string())
             .into();
         let maybe_state_snapshot: Option<SnapshotConfig> = var("SNAP").map(|s| s.into()).ok();
         let mut ext = Builder::<Block>::default()

@@ -50,7 +50,7 @@ pub mod time {
     pub const SLOT_DURATION: Moment = MILLISECS_PER_BLOCK;
 
     tp_traits::prod_or_fast_parameter_types! {
-        pub const EpochDurationInBlocks: BlockNumber = { prod: 6 * HOURS, fast: 1 * MINUTES };
+        pub const EpochDurationInBlocks: BlockNumber = { prod: 1 * HOURS, fast: 1 * MINUTES };
     }
 
     // These time units are defined in number of blocks.
@@ -120,7 +120,7 @@ pub mod fee {
     impl WeightToFeePolynomial for WeightToFee {
         type Balance = Balance;
         fn polynomial() -> WeightToFeeCoefficients<Self::Balance> {
-            // in Dancelight, extrinsic base weight (smallest non-zero weight) is mapped to 1/10 CENT:
+            // in Starlight, extrinsic base weight (smallest non-zero weight) is mapped to 1/10 CENT:
             let p = super::currency::CENTS;
             let q = 10 * Balance::from(ExtrinsicBaseWeight::get().ref_time());
             smallvec![WeightToFeeCoefficient {
@@ -150,11 +150,11 @@ pub mod system_parachain {
     /// Brokerage parachain ID.
     pub const BROKER_ID: u32 = 1005;
 
-    /// All system parachains of Dancelight.
+    /// All system parachains of Starlight.
     pub type SystemParachains = IsChildSystemParachain<Id>;
 }
 
-/// Dancelight Treasury pallet instance.
+/// Starlight Treasury pallet instance.
 pub const TREASURY_PALLET_ID: u8 = 40;
 
 #[cfg(test)]
