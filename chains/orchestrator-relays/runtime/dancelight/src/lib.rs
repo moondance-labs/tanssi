@@ -1703,7 +1703,7 @@ parameter_types! {
 // computations at runtime.
 prod_or_fast_parameter_types! {
     pub const CollatorsInflationRatePerBlock: Perbill = { prod: Perbill::from_parts(9), fast: Perbill::from_parts(9) };
-    pub const ValidatorsInflationRatePerEra: Perbill = { prod: Perbill::from_parts(32641), fast: Perbill::from_parts(272) };
+    pub const ValidatorsInflationRatePerEra: Perbill = { prod: Perbill::from_parts(130570), fast: Perbill::from_parts(272) };
 }
 
 pub struct OnUnbalancedInflation;
