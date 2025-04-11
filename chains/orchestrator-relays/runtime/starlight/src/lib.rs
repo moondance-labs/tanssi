@@ -312,6 +312,36 @@ impl Contains<RuntimeCall> for IsParathreadRegistrar {
     }
 }
 
+/// Disable any extrinsic related to the container registration
+pub struct IsContainerRegistrationExtrinsics;
+impl Contains<RuntimeCall> for IsContainerRegistrationExtrinsics {
+    fn contains(c: &RuntimeCall) -> bool {
+        matches!(c, RuntimeCall::ContainerRegistrar(_))
+    }
+}
+
+/// Disable any extrinsic related to the balance transfer
+pub struct IsBalanceTransferExtrinsics;
+impl Contains<RuntimeCall> for IsBalanceTransferExtrinsics {
+    fn contains(c: &RuntimeCall) -> bool {
+        matches!(c, RuntimeCall::Balances(_))
+    }
+}
+
+pub struct IsBridgesExtrinsics;
+impl Contains<RuntimeCall> for IsBridgesExtrinsics {
+    fn contains(c: &RuntimeCall) -> bool {
+        matches!(
+            c,
+            RuntimeCall::EthereumOutboundQueue(_)
+                | RuntimeCall::EthereumInboundQueue(_)
+                | RuntimeCall::EthereumSystem(_)
+                | RuntimeCall::EthereumBeaconClient(_)
+                | RuntimeCall::EthereumTokenTransfers(_)
+        )
+    }
+}
+
 parameter_types! {
     pub const Version: RuntimeVersion = VERSION;
     pub const SS58Prefix: u8 = 42;
@@ -319,7 +349,13 @@ parameter_types! {
 
 #[derive_impl(frame_system::config_preludes::RelayChainDefaultConfig)]
 impl frame_system::Config for Runtime {
-    type BaseCallFilter = EverythingBut<(IsRelayRegister, IsParathreadRegistrar)>;
+    type BaseCallFilter = EverythingBut<(
+        IsRelayRegister,
+        IsParathreadRegistrar,
+        IsContainerRegistrationExtrinsics,
+        IsBalanceTransferExtrinsics,
+        IsBridgesExtrinsics,
+    )>;
     type BlockWeights = BlockWeights;
     type BlockLength = BlockLength;
     type DbWeight = RocksDbWeight;
@@ -1678,7 +1714,6 @@ impl pallet_data_preservers::Config for Runtime {
     type ProfileDeposit = tp_traits::BytesDeposit<ProfileDepositBaseFee, ProfileDepositByteFee>;
     type AssignmentProcessor = tp_data_preservers_common::AssignmentProcessor<Runtime>;
 
-    // TODO: Revert origin later once stable
     type AssignmentOrigin = pallet_registrar::EnsureSignedByManager<Runtime>;
     type ForceSetProfileOrigin = EnsureRoot<AccountId>;
 

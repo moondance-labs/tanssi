@@ -42,6 +42,7 @@ mod session_keys;
 mod slashes;
 mod staking;
 mod sudo;
+mod test_disabled_extrinsics;
 
 #[test]
 fn check_whitelist() {
