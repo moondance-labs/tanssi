@@ -312,14 +312,6 @@ impl Contains<RuntimeCall> for IsParathreadRegistrar {
     }
 }
 
-/// Disable any extrinsic related to the container registration
-pub struct IsContainerRegistrationExtrinsics;
-impl Contains<RuntimeCall> for IsContainerRegistrationExtrinsics {
-    fn contains(c: &RuntimeCall) -> bool {
-        matches!(c, RuntimeCall::ContainerRegistrar(_))
-    }
-}
-
 /// Disable any extrinsic related to the balance transfer
 pub struct IsBalanceTransferExtrinsics;
 impl Contains<RuntimeCall> for IsBalanceTransferExtrinsics {
@@ -352,7 +344,6 @@ impl frame_system::Config for Runtime {
     type BaseCallFilter = EverythingBut<(
         IsRelayRegister,
         IsParathreadRegistrar,
-        IsContainerRegistrationExtrinsics,
         IsBalanceTransferExtrinsics,
         IsBridgesExtrinsics,
     )>;
@@ -2141,8 +2132,8 @@ where
 
 impl pallet_registrar::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type RegistrarOrigin =
-        EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;
+    // TODO: revert to non-sudo later after stable
+    type RegistrarOrigin = EnsureRoot<AccountId>;
     type MarkValidForCollatingOrigin = EnsureRoot<AccountId>;
     type MaxLengthParaIds = MaxLengthParaIds;
     type MaxGenesisDataSize = MaxEncodedGenesisDataSize;
