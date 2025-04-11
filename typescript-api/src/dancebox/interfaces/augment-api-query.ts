@@ -58,6 +58,7 @@ import type {
     PalletIdentityRegistrarInfo,
     PalletIdentityRegistration,
     PalletIdentityUsernameInformation,
+    PalletInactivityTrackingActivityTrackingStatus,
     PalletInflationRewardsChainsToRewardValue,
     PalletMessageQueueBookState,
     PalletMessageQueuePage,
@@ -573,6 +574,40 @@ declare module "@polkadot/api-base/types/storage" {
              **/
             [key: string]: QueryableStorageEntry<ApiType>;
         };
+        inactivityTracking: {
+            /**
+             * A list of double map of active collators for a session
+             **/
+            activeCollators: AugmentedQuery<
+                ApiType,
+                (arg: u32 | AnyNumber | Uint8Array) => Observable<BTreeSet<AccountId32>>,
+                [u32]
+            > &
+                QueryableStorageEntry<ApiType, [u32]>;
+            /**
+             * A list of active collators for a session. Repopulated at the start of every session
+             **/
+            activeCollatorsForCurrentSession: AugmentedQuery<ApiType, () => Observable<BTreeSet<AccountId32>>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * A list of active container chains for a session. Repopulated at the start of every session
+             **/
+            activeContainerChainsForCurrentSession: AugmentedQuery<ApiType, () => Observable<BTreeSet<u32>>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * Switch to enable/disable activity tracking
+             **/
+            currentActivityTrackingStatus: AugmentedQuery<
+                ApiType,
+                () => Observable<PalletInactivityTrackingActivityTrackingStatus>,
+                []
+            > &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * Generic query
+             **/
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
         inflationRewards: {
             /**
              * Container chains to reward per block
@@ -1079,6 +1114,20 @@ declare module "@polkadot/api-base/types/storage" {
             [key: string]: QueryableStorageEntry<ApiType>;
         };
         pooledStaking: {
+            /**
+             * Switch to enable/disable marking offline feature.
+             **/
+            enableMarkingOffline: AugmentedQuery<ApiType, () => Observable<bool>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * A list of offline collators
+             **/
+            offlineCollators: AugmentedQuery<
+                ApiType,
+                () => Observable<Vec<PalletPooledStakingCandidateEligibleCandidate>>,
+                []
+            > &
+                QueryableStorageEntry<ApiType, []>;
             /**
              * Pending operations balances.
              * Balances are expressed in joining/leaving shares amounts.
