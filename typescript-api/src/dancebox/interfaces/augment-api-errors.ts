@@ -378,6 +378,24 @@ declare module "@polkadot/api-base/types/errors" {
              **/
             [key: string]: AugmentedError<ApiType>;
         };
+        inactivityTracking: {
+            /**
+             * Error returned when the activity tracking status is attempted to be updated with the same status
+             **/
+            ActivityTrackingStatusAlreadySet: AugmentedError<ApiType>;
+            /**
+             * Error returned when the activity tracking status is attempted to be updated before the end session
+             **/
+            ActivityTrackingStatusUpdateSuspended: AugmentedError<ApiType>;
+            /**
+             * The size of a collator set for a session has already reached MaxCollatorsPerSession value
+             **/
+            MaxCollatorsPerSessionReached: AugmentedError<ApiType>;
+            /**
+             * Generic error
+             **/
+            [key: string]: AugmentedError<ApiType>;
+        };
         invulnerables: {
             /**
              * Account is already an Invulnerable.

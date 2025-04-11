@@ -272,6 +272,9 @@ pub trait GetHostConfiguration<SessionIndex> {
 /// Returns current session index.
 pub trait GetSessionIndex<SessionIndex> {
     fn session_index() -> SessionIndex;
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn skip_to_session(session_index: SessionIndex);
 }
 
 /// Should pallet_collator_assignment trigger a full rotation on this session?
@@ -608,4 +611,9 @@ impl FullRotationModes {
 // In starlight, used to retrieve the external index associated to validators
 pub trait ExternalIndexProvider {
     fn get_external_index() -> u64;
+}
+
+// A trait to verify if a node has been inactive during the last minimum activity
+pub trait NodeActivityTrackingHelper<AccountId> {
+    fn is_node_inactive(node: &AccountId) -> bool;
 }
