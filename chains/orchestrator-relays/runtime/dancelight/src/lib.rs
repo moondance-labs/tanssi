@@ -715,7 +715,7 @@ where
         // take the biggest period possible.
         let period = BlockHashCount::get()
             .checked_next_power_of_two()
-            .map(|c| c.saturating_div(2))
+            .map(|c| c.checked_div(2).expect("2 != 0; qed"))
             .unwrap_or(2) as u64;
 
         let current_block = System::block_number()
