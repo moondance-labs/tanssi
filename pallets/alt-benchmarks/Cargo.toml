@@ -1,0 +1,69 @@
+[package]
+name = "pallet-alt-benchmarks"
+authors = { workspace = true }
+description = "Alternative benchmarks for non-Tanssi pallets"
+edition = "2021"
+license = "GPL-3.0-only"
+version = "0.1.0"
+
+[package.metadata.docs.rs]
+targets = [ "x86_64-unknown-linux-gnu" ]
+
+[lints]
+workspace = true
+
+[dependencies]
+frame-benchmarking = { workspace = true }
+frame-support = { workspace = true }
+frame-system = { workspace = true }
+log = { workspace = true }
+pallet-session = { workspace = true }
+parity-scale-codec = { workspace = true }
+polkadot-primitives = { workspace = true }
+polkadot-runtime-parachains = { workspace = true }
+rand = { workspace = true }
+rand_chacha = { workspace = true }
+sp-core = { workspace = true }
+sp-runtime = { workspace = true }
+sp-session = { workspace = true }
+sp-staking = { workspace = true }
+
+[dev-dependencies]
+pallet-balances = { workspace = true, default-features = true }
+pallet-timestamp = { workspace = true, default-features = true }
+parity-scale-codec = { workspace = true, default-features = true, features = [ "derive" ] }
+scale-info = { workspace = true, default-features = true }
+sp-core = { workspace = true, default-features = true }
+sp-io = { workspace = true, default-features = true }
+
+[features]
+default = [ "std" ]
+std = [
+	"frame-benchmarking/std",
+	"frame-support/std",
+	"frame-system/std",
+	"pallet-balances/std",
+	"pallet-session/std",
+	"pallet-timestamp/std",
+	"polkadot-primitives/std",
+	"polkadot-runtime-parachains/std",
+	"rand/std",
+	"rand_chacha/std",
+	"sp-core/std",
+	"sp-io/std",
+	"sp-runtime/std",
+	"sp-session/std",
+	"sp-staking/std",
+]
+
+runtime-benchmarks = [
+	"frame-benchmarking/runtime-benchmarks",
+	"frame-support/runtime-benchmarks",
+	"frame-system/runtime-benchmarks",
+	"pallet-balances/runtime-benchmarks",
+	"pallet-timestamp/runtime-benchmarks",
+	"polkadot-primitives/runtime-benchmarks",
+	"polkadot-runtime-parachains/runtime-benchmarks",
+	"sp-runtime/runtime-benchmarks",
+	"sp-staking/runtime-benchmarks",
+]
