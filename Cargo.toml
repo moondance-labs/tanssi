@@ -1,4 +1,27 @@
 [workspace]
+default-members = [
+	"chains/container-chains/nodes/*",
+	"chains/container-chains/runtime-templates/*",
+	"chains/orchestrator-paras/node",
+	"chains/orchestrator-paras/runtime/*",
+	"chains/orchestrator-relays/client/*",
+	"chains/orchestrator-relays/node/*",
+	"chains/orchestrator-relays/runtime/dancelight",
+	"chains/orchestrator-relays/runtime/dancelight/constants",
+	"chains/xcm-integration-tests/emulated/chains/orchestrator-paras/*",
+	"chains/xcm-integration-tests/emulated/chains/relays/*",
+	"chains/xcm-integration-tests/emulated/chains/templates/*",
+	"chains/xcm-integration-tests/emulated/common",
+	"chains/xcm-integration-tests/emulated/dancebox-runtime-test-utils",
+	"chains/xcm-integration-tests/emulated/networks/*",
+	"chains/xcm-integration-tests/emulated/tests/assets/*",
+	"chains/xcm-integration-tests/emulated/tests/bridges/*",
+	"client/*",
+	"pallets/*",
+	"pallets/collator-assignment/runtime-api",
+	"pallets/registrar/runtime-api",
+	"primitives/*",
+]
 members = [
 	"bin/utils/tanssi-utils",
 	"chains/container-chains/nodes/*",
