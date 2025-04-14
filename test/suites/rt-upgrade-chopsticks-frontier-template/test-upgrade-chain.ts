@@ -1,6 +1,7 @@
 import { MoonwallContext, beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { alith, generateKeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
+import { chopsticksWaitTillIncluded } from "utils";
 
 const MAX_BALANCE_TRANSFER_TRIES = 5;
 describeSuite({
@@ -9,6 +10,7 @@ describeSuite({
     foundationMethods: "chopsticks",
     testCases: ({ it, context, log }) => {
         let api: ApiPromise;
+        let xcmQueryToAnalyze: number;
 
         beforeAll(async () => {
             api = context.polkadotJs();
@@ -29,6 +31,23 @@ describeSuite({
 
             const specName = api.consts.system.version.specName.toString();
             log(`Currently connected to chain: ${specName}`);
+
+            // Inject a forceSubscribe version to create a query to check migration to xcm
+            const queryLocation = {
+                parents: 1,
+                interior: "Here",
+            };
+            // fetch on-chain later
+            // TODO:Once we update the next runtime, remove this and take it form onchain
+            const previousXcmVersion = 5;
+            const latestVersion = `V${previousXcmVersion.toString()}`;
+
+            const versionedLocation = {
+                [latestVersion]: queryLocation,
+            };
+            xcmQueryToAnalyze = await api.query.polkadotXcm.queryCounter();
+            const finalTx = api.tx.sudo.sudo(api.tx.polkadotXcm.forceSubscribeVersionNotify(versionedLocation));
+            await chopsticksWaitTillIncluded(context, api, alith, finalTx);
         });
 
         it({
@@ -49,29 +68,27 @@ describeSuite({
             test: async () => {
                 const randomAccount = generateKeyringPair("ethereum");
 
-                let tries = 0;
                 const balanceBefore = (await api.query.system.account(randomAccount.address)).data.free.toBigInt();
 
-                /// It might happen that by accident we hit a session change
-                /// A block in which a session change occurs cannot hold any tx
-                /// Chopsticks does not have the notion of tx pool either, so we need to retry
-                /// Therefore we just retry at most MAX_BALANCE_TRANSFER_TRIES
-                while (tries < MAX_BALANCE_TRANSFER_TRIES) {
-                    const txHash = await api.tx.balances
-                        .transferAllowDeath(randomAccount.address, 1_000_000_000)
-                        .signAndSend(alith);
-                    const result = await context.createBlock({ count: 1 });
+                const balanceTransferTx = await api.tx.balances.transferAllowDeath(
+                    randomAccount.address,
+                    1_000_000_000
+                );
 
-                    const block = await api.rpc.chain.getBlock(result.result);
-                    const includedTxHashes = block.block.extrinsics.map((x) => x.hash.toString());
-                    if (includedTxHashes.includes(txHash.toString())) {
-                        break;
-                    }
-                    tries++;
-                }
+                await chopsticksWaitTillIncluded(context, api, alith, balanceTransferTx);
 
                 const balanceAfter = (await api.query.system.account(randomAccount.address)).data.free.toBigInt();
                 expect(balanceBefore < balanceAfter).to.be.true;
+            },
+        });
+        it({
+            id: "T3",
+            title: "Xcm migrations have runned, if any",
+            test: async () => {
+                const currentXcmVersion = await api.consts.polkadotXcm.advertisedXcmVersion.toNumber();
+                const query = await api.query.polkadotXcm.queries(xcmQueryToAnalyze);
+                const version = Object.keys(query.toJSON().versionNotifier.origin)[0];
+                expect(version).to.be.equal(`v${currentXcmVersion.toString()}`);
             },
         });
     },

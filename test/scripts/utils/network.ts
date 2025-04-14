@@ -53,6 +53,7 @@ export const getApiFor = async (argv: Argv) => {
     return await ApiPromise.create({
         noInitWarn: true,
         provider: wsProvider,
+        throwOnConnect: true,
     });
 };
 
@@ -61,7 +62,9 @@ export function isKnownNetwork(name: string): name is NETWORK_NAME {
 }
 
 export const getWsProviderForNetwork = (name: NETWORK_NAME) => {
-    return new WsProvider(NETWORK_WS_URLS[name]);
+    // Override default timeout of 60s
+    const timeout = 10_000;
+    return new WsProvider(NETWORK_WS_URLS[name], undefined, undefined, timeout);
 };
 
 // Supports providing an URL or a known network
@@ -69,5 +72,7 @@ export const getWsProviderFor = (argv: Argv) => {
     if (isKnownNetwork(argv.network)) {
         return getWsProviderForNetwork(argv.network);
     }
-    return new WsProvider(argv.url);
+    // Override default timeout of 60s
+    const timeout = 10_000;
+    return new WsProvider(argv.url, undefined, undefined, timeout);
 };

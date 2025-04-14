@@ -16,3 +16,5 @@ import-storage:
     # which would fetch live dancebox delegators info (900k+ keys)
     PooledStaking:
         PalletVersion: 1
+    PolkadotXcm:
+        QueryCounter: 0
