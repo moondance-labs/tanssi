@@ -1,7 +1,8 @@
 /**
 unhash-key
 
-Given a raw storage key, try to find which pallet it belongs to, and which storage item
+Given a raw storage key, try to find which pallet it belongs to, and which storage item.
+Only works for public storage items (exported with pub).
 
 Usage:
 # List all pallet prefixes for a selected chain
@@ -18,6 +19,8 @@ import { NETWORK_YARGS_OPTIONS, getApiFor } from "./utils/network";
 import { xxhashAsHex } from "@polkadot/util-crypto";
 import type { ApiPromise } from "@polkadot/api/promise/Api";
 
+// List of endpoints from which to get pallet metadata.
+// Should contain one endpoint for each network.
 const DEFAULT_ENDPOINTS = [
     "wss://rpc.polkadot.io",
     "wss://dancelight.tanssi-api.network",
@@ -63,14 +66,9 @@ yargs(hideBin(process.argv))
                 }
                 let api: ApiPromise;
                 try {
-                    // Wrap connection attempt in a 10 second timeout.
-                    const connectPromise: Promise<ApiPromise> = getApiFor({ ...argv, url: chosenEndpoint });
-                    const timeoutPromise: Promise<ApiPromise> = new Promise((_, reject) =>
-                        setTimeout(() => reject(new Error("Connection timed out after 10 seconds")), 10000)
-                    );
-                    api = await Promise.race([connectPromise, timeoutPromise]);
+                    api = await getApiFor({ ...argv, url: chosenEndpoint });
                 } catch (err) {
-                    console.error(`Failed to connect to ${chosenEndpoint}: ${err}`);
+                    console.error(`Failed to connect to ${chosenEndpoint}:"`, err);
                     throw err;
                 }
                 try {
@@ -116,63 +114,20 @@ yargs(hideBin(process.argv))
                 console.log(`\nTrying network endpoint: ${endpoint}`);
                 let api: ApiPromise;
                 try {
-                    // Wrap connection attempt in a 10 second timeout.
-                    const connectPromise: Promise<ApiPromise> = getApiFor({ ...argv, url: endpoint });
-                    const timeoutPromise: Promise<ApiPromise> = new Promise((_, reject) =>
-                        setTimeout(() => reject(new Error("Connection timed out after 10 seconds")), 10000)
-                    );
-                    api = await Promise.race([connectPromise, timeoutPromise]);
+                    api = await getApiFor({ ...argv, url: endpoint });
                 } catch (err) {
-                    console.error(`Failed to connect to ${endpoint}: ${err}`);
+                    console.error(`Failed to connect to ${endpoint}:"`, err);
                     continue;
                 }
 
                 const mt = api.runtimeMetadata;
-                // TODO: for testing, undo all changes to this file before merging
-
-                console.log(mt.asLatest.apis.toJSON());
-
-                console.log(Object.keys(api.call.genesisBuilder));
-
-                const genesisPreset = await api.call.genesisBuilder.getPreset(null);
-                const genesisPresetStr = api.createType("Option<Vec<u8>>", genesisPreset);
-                console.log(genesisPresetStr.toJSON());
-                const genesisPresetObj = JSON.parse(genesisPresetStr.toString());
-                console.log(genesisPresetObj);
-
                 // Iterate over all pallets.
                 for (const module of mt.asLatest.pallets) {
                     if (module.storage.isNone) {
                         continue;
                     }
-
-                    /*
-                    for (const item of module.storage.unwrap().items) {
-                        if (item.name.toString() == "PalletVersion") {
-                            console.log(module.name.toString(), item.toJSON());
-                        }
-                    }
-                     */
-                    //console.log(Object.keys(api.query.substrate));
-
-                    for (const module in api.query) {
-                        if (module == "substrate") {
-                            continue;
-                        }
-                        const palletVer = await api.query[module].palletVersion();
-                        console.log(module, palletVer.toJSON());
-                    }
-
                     // Compute pallet storage prefix.
                     const prefix = xxhashAsHex(module.storage.unwrap().prefix.toString(), 128);
-                    const keyValue = prefix + xxhashAsHex(":__STORAGE_VERSION__:", 128).slice(2);
-
-                    const rawStorageVersion = await api.rpc.state.getStorage(keyValue);
-                    const palletStorageVersion = api.createType("Option<u16>", rawStorageVersion);
-                    console.log(module.name.toString(), palletStorageVersion.toJSON());
-
-                    continue;
-
                     // Check if the provided key starts with the pallet prefix.
                     if (argv.key.startsWith(prefix)) {
                         // Found pallet, now find key
@@ -185,7 +140,7 @@ yargs(hideBin(process.argv))
                             const keyValue = prefix + xxhashAsHex(storage.name.toString(), 128).slice(2);
                             // Check if the provided key and the storage key are prefix matches.
                             if (argv.key.startsWith(keyValue)) {
-                                console.log("✅ Found key:");
+                                console.log(`✅ Found key in network ${api.runtimeChain.toString()}:`);
                                 console.log("");
                                 console.log(`${keyValue}: ${module.name.toString()} ${storage.name.toString()}`);
                                 console.log("");
@@ -215,22 +170,3 @@ yargs(hideBin(process.argv))
         }
     )
     .parse();
-
-async function getPalletVersions(api: ApiPromise): Promise<Record<string, number>> {
-    const versions: Record<string, number> = {};
-
-    // Loop over all modules in api.query.
-    for (const moduleName in api.query) {
-        // Ensure that the module has a 'palletVersion' query method.
-        const moduleQuery = api.query[moduleName];
-        if (typeof moduleQuery.palletVersion !== "function") {
-            continue;
-        }
-
-        // Call the query and convert the result to a number.
-        const palletVer = await moduleQuery.palletVersion();
-        versions[moduleName] = palletVer.toNumber();
-    }
-
-    return versions;
-}
