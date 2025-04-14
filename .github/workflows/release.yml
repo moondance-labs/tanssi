@@ -699,6 +699,7 @@ jobs:
                   path: target/release
             - name: "Install and run upgrade test"
               run: |
+                  chmod uog+x target/release/*
                   cd test
                   pnpm install
                   pnpm moonwall test chopsticks_${{ matrix.chains.chain }}_upgrade
