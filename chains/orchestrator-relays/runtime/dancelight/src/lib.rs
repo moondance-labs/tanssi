@@ -134,8 +134,8 @@ use {
     sp_staking::SessionIndex,
     sp_version::RuntimeVersion,
     xcm::{
-        latest::prelude::*, IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation,
-        VersionedXcm,
+        latest::prelude::{Junctions::*, *},
+        IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation, VersionedXcm,
     },
 };
 
@@ -1930,7 +1930,7 @@ construct_runtime! {
         AssetRate: pallet_asset_rate = 86,
 
         // Foreign assets.
-        ForeignAssets: pallet_assets = 87,
+        ForeignAssets: pallet_assets::<Instance1> = 87,
         ForeignAssetsCreator: pallet_foreign_asset_creator = 88,
 
         // Pallet for sending XCM.
@@ -3131,11 +3131,27 @@ sp_api::impl_runtime_apis! {
             }
 
             parameter_types! {
-                pub TrustedTeleporter: Option<(Location, Asset)> = Some((
-                    AssetHub::get(),
-                    Asset { fun: Fungible(1 * UNITS), id: AssetId(TokenLocation::get()) },
-                ));
-                pub TrustedReserve: Option<(Location, Asset)> = None;
+                pub TrustedTeleporter: Option<(Location, Asset)> = None;
+                pub TrustedReserve: Option<(Location, Asset)> = Some(
+                    (
+                        Location {
+                            parents: 0,
+                            interior: X1([
+                                Parachain(2002), // TODO: try to not hardcode this
+                            ].into())
+                        },
+                        (
+                            Location {
+                                parents: 0,
+                                interior: X2([
+                                    Parachain(2002),
+                                    PalletInstance(10) // TODO: try to not hardcode this
+                                ].into())
+                            },
+                            ExistentialDeposit::get() * 100_000
+                        ).into()
+                    )
+                );
             }
 
             impl pallet_xcm_benchmarks::fungible::Config for Runtime {

@@ -19,8 +19,8 @@ use {
         mocknets::{
             DancelightReceiver, DancelightRelay as Dancelight, DancelightSender,
             SimpleTemplateDancelightEmptyReceiver as SimpleTemplateEmptyReceiver,
-            SimpleTemplateDancelightSender as SimpleTemplateSender,
             SimpleTemplateDancelightPara as SimpleTemplateDancelight,
+            SimpleTemplateDancelightSender as SimpleTemplateSender,
         },
         *,
     },
@@ -158,9 +158,8 @@ fn transfer_assets_from_dancelight_to_one_of_its_parachains() {
 #[test]
 fn transfer_assets_from_parachain_to_dancelight() {
     // Parachain origin (sender)
-    let simple_template_origin = <SimpleTemplateDancelight as Chain>::RuntimeOrigin::signed(
-        SimpleTemplateSender::get(),
-    );
+    let simple_template_origin =
+        <SimpleTemplateDancelight as Chain>::RuntimeOrigin::signed(SimpleTemplateSender::get());
 
     // Destination location from the simple template parachain viewpoint pointing to dancelight relay
     let dancelight_dest: VersionedLocation = Location {
@@ -263,6 +262,8 @@ fn transfer_assets_from_parachain_to_dancelight() {
         // Calculate native balance based on weight
         let native_balance =
             westend_runtime_constants::fee::WeightToFee::weight_to_fee(&outcome_weight);
+
+        println!("native_balance: {}", native_balance); // should be: 12197361
 
         // Verify receiver's balance
         assert_eq!(

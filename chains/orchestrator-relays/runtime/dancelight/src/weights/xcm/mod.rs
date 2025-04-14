@@ -77,10 +77,10 @@ where
         assets.weigh_assets(XcmBalancesWeight::<Runtime>::withdraw_asset())
     }
     fn reserve_asset_deposited(assets: &Assets) -> XCMWeight {
-        assets.weigh_assets(XCMWeight::from_parts(200_000_000u64, 0))
+        assets.weigh_assets(XcmBalancesWeight::<Runtime>::reserve_asset_deposited())
     }
-    fn receive_teleported_asset(assets: &Assets) -> XCMWeight {
-        assets.weigh_assets(XcmBalancesWeight::<Runtime>::receive_teleported_asset())
+    fn receive_teleported_asset(_assets: &Assets) -> XCMWeight {
+        XCMWeight::MAX // We do not support teleported assets in dancelight
     }
     fn query_response(
         _query_id: &u64,
@@ -251,12 +251,11 @@ where
 
     fn initiate_transfer(
         _dest: &Location,
-        _remote_fees: &Option<AssetTransferFilter>,
+        remote_fees: &Option<AssetTransferFilter>,
         _preserve_origin: &bool,
-        _assets: &Vec<AssetTransferFilter>,
+        assets: &Vec<AssetTransferFilter>,
         _xcm: &Xcm<()>,
     ) -> Weight {
-        /*
         let mut weight = if let Some(remote_fees) = remote_fees {
             let fees = remote_fees.inner();
             fees.weigh_assets(XcmBalancesWeight::<Runtime>::initiate_transfer())
@@ -269,8 +268,6 @@ where
             weight = weight.saturating_add(extra);
         }
         weight
-        */
-        Weight::MAX
     }
 
     fn execute_with_origin(

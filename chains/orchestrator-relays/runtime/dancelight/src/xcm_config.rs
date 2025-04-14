@@ -20,7 +20,7 @@ use {
     super::{
         parachains_origin,
         weights::{self, xcm::XcmWeight},
-        AccountId, AllPalletsWithSystem, Balance, Balances, Dmp, Fellows, ForeignAssets,
+        AccountId, AllPalletsWithSystem, AssetRate, Balance, Balances, Dmp, Fellows, ForeignAssets,
         ForeignAssetsCreator, ParaId, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin,
         TransactionByteFee, Treasury, WeightToFee, XcmPallet,
     },
@@ -213,6 +213,14 @@ pub type ForeignFungiblesTransactor = FungiblesAdapter<
 
 pub type AssetTransactors = (LocalAssetTransactor, ForeignFungiblesTransactor);
 
+/// Multiplier used for dedicated `TakeFirstAssetTrader` with `ForeignAssets` instance.
+pub type AssetRateAsMultiplier =
+    parachains_common::xcm_config::AssetFeeAsExistentialDepositMultiplier<
+        Runtime,
+        WeightToFee,
+        AssetRate,
+        ForeignAssetsInstance,
+    >;
 pub struct XcmConfig;
 impl xcm_executor::Config for XcmConfig {
     type RuntimeCall = RuntimeCall;
@@ -224,8 +232,17 @@ impl xcm_executor::Config for XcmConfig {
     type UniversalLocation = UniversalLocation;
     type Barrier = Barrier;
     type Weigher = XcmWeigher;
-    type Trader =
-        UsingComponents<WeightToFee, TokenLocation, AccountId, Balances, ToAuthor<Runtime>>;
+    type Trader = (
+        UsingComponents<WeightToFee, TokenLocation, AccountId, Balances, ToAuthor<Runtime>>,
+        cumulus_primitives_utility::TakeFirstAssetTrader<
+            AccountId,
+            AssetRateAsMultiplier,
+            // Use this currency when it is a fungible asset matching the given location or name:
+            (ConvertedConcreteId<AssetId, Balance, ForeignAssetsCreator, JustTry>,),
+            ForeignAssets,
+            (),
+        >,
+    );
     type ResponseHandler = XcmPallet;
     type AssetTrap = XcmPallet;
     type AssetLocker = ();
@@ -322,8 +339,20 @@ parameter_types! {
     pub CheckingAccount: AccountId = XcmPallet::check_account();
 }
 
+#[cfg(feature = "runtime-benchmarks")]
+/// Simple conversion of `u32` into an `AssetId` for use in benchmarking.
+pub struct ForeignAssetBenchmarkHelper;
+#[cfg(feature = "runtime-benchmarks")]
+impl pallet_assets::BenchmarkHelper<AssetId> for ForeignAssetBenchmarkHelper {
+    fn create_asset_id_parameter(id: u32) -> AssetId {
+        id.try_into()
+            .expect("number too large to create benchmarks")
+    }
+}
+
 pub type AssetId = u16;
-impl pallet_assets::Config for Runtime {
+pub type ForeignAssetsInstance = pallet_assets::Instance1;
+impl pallet_assets::Config<ForeignAssetsInstance> for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Balance = Balance;
     type AssetId = AssetId;

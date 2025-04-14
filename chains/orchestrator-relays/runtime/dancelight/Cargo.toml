@@ -125,6 +125,8 @@ xcm-runtime-apis = { workspace = true }
 # Cumulus
 cumulus-pallet-parachain-system = { workspace = true }
 cumulus-primitives-core = { workspace = true }
+cumulus-primitives-utility = { workspace = true }
+parachains-common = { workspace = true }
 
 # Tanssi
 dp-consensus = { workspace = true }
@@ -205,6 +207,8 @@ std = [
 	"container-chain-template-simple-runtime/std",
 	"cumulus-pallet-parachain-system/std",
 	"cumulus-primitives-core/std",
+	"parachains-common/std",
+	"cumulus-primitives-utility/std",
 	"dancelight-runtime-constants/std",
 	"dp-consensus/std",
 	"dp-container-chain-genesis-data/std",
@@ -352,6 +356,8 @@ runtime-benchmarks = [
 	"container-chain-template-simple-runtime/runtime-benchmarks",
 	"cumulus-pallet-parachain-system/runtime-benchmarks",
 	"cumulus-primitives-core/runtime-benchmarks",
+	"parachains-common/runtime-benchmarks",
+	"cumulus-primitives-utility/runtime-benchmarks",
 	"dancelight-runtime-constants/runtime-benchmarks",
 	"dp-consensus/runtime-benchmarks",
 	"frame-benchmarking/runtime-benchmarks",
