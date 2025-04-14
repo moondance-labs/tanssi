@@ -10,7 +10,6 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-use std::convert::Into;
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 use {
@@ -21,6 +20,7 @@ use {
         traits::{BlakeTwo256, IdentityLookup},
         BuildStorage,
     },
+    sp_std::collections::btree_set::BTreeSet,
     tp_traits::ParaId,
 };
 
@@ -86,12 +86,23 @@ impl tp_traits::GetSessionIndex<u32> for CurrentSessionIndexGetter {
     fn skip_to_session(_session_index: u32) {}
 }
 
+pub struct CurrentCollatorsListFetcher;
+impl tp_traits::CurrentEligibleCollatorsHelper<AccountId> for CurrentCollatorsListFetcher {
+    fn get_eligible_collators() -> BTreeSet<AccountId> {
+        let mut collators = BTreeSet::new();
+        collators.insert(COLLATOR_1);
+        collators.insert(COLLATOR_2);
+        collators
+    }
+}
+
 impl pallet_inactivity_tracking::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type CollatorId = AccountId;
     type MaxInactiveSessions = ConstU32<2>;
     type MaxCollatorsPerSession = ConstU32<5>;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
+    type CurrentCollatorsListFetcher = CurrentCollatorsListFetcher;
     type GetSelfChainBlockAuthor = ();
     type WeightInfo = ();
 }

@@ -75,7 +75,7 @@ pub mod pallet {
         serde::{Deserialize, Serialize},
         sp_core::Get,
         sp_runtime::{BoundedVec, Perbill},
-        sp_std::vec::Vec,
+        sp_std::{collections::btree_set::BTreeSet, vec::Vec},
         tp_maths::MulDiv,
     };
 
@@ -679,6 +679,15 @@ pub mod pallet {
             rewards: CreditOf<T>,
         ) -> DispatchResultWithPostInfo {
             pools::distribute_rewards::<T>(&candidate, rewards)
+        }
+    }
+
+    impl<T: Config> tp_traits::CurrentEligibleCollatorsHelper<Candidate<T>> for Pallet<T> {
+        fn get_eligible_collators() -> BTreeSet<Candidate<T>> {
+            SortedEligibleCandidates::<T>::get()
+                .iter()
+                .map(|x| x.candidate.clone())
+                .collect()
         }
     }
 }

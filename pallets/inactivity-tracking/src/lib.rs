@@ -119,6 +119,11 @@ pub mod pallet {
         /// Helper that returns the current session index.
         type CurrentSessionIndex: GetSessionIndex<SessionIndex>;
 
+        /// Helper that fetches a list of collators eligible for to produce blocks for the current session
+        type CurrentCollatorsListFetcher: tp_traits::CurrentEligibleCollatorsHelper<
+            Self::CollatorId,
+        >;
+
         /// Helper that returns the block author for the orchestrator chain (if it exists)
         type GetSelfChainBlockAuthor: MaybeSelfChainBlockAuthor<Self::CollatorId>;
 
