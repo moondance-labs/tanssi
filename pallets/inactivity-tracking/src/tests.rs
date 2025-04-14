@@ -33,6 +33,19 @@ fn get_active_collators(block: u32) -> AuthorNotingInfo<AccountId> {
     }
 }
 
+fn get_overflowing_active_collators(block: u32) -> Vec<AuthorNotingInfo<AccountId>> {
+    let total_collators = <Test as Config>::MaxCollatorsPerSession::get();
+    let mut overflowing_active_collators: Vec<AuthorNotingInfo<AccountId>> = Vec::new();
+    for i in 0u32..=total_collators {
+        overflowing_active_collators.push(AuthorNotingInfo {
+            block_number: block,
+            author: (i + 1).into(),
+            para_id: (i + 2000).into(),
+        });
+    }
+    overflowing_active_collators
+}
+
 fn get_collator_set(
     collators: Vec<AccountId>,
 ) -> BoundedBTreeSet<AccountId, <Test as Config>::MaxCollatorsPerSession> {
@@ -530,5 +543,23 @@ fn disabling_inactivity_tracking_clears_the_current_active_collators_storage() {
             }
         );
         assert_eq!(ActiveCollatorsForCurrentSession::<Test>::get().len(), 0);
+    });
+}
+
+#[test]
+fn inactivity_tracking_is_disabled_if_current_active_collators_storage_overflows() {
+    ExtBuilder.build().execute_with(|| {
+        assert_eq!(
+            CurrentActivityTrackingStatus::<Test>::get(),
+            ActivityTrackingStatus::Enabled { start: 0, end: 0 }
+        );
+        roll_to(1);
+        <Pallet<Test> as AuthorNotingHook<AccountId>>::on_container_authors_noted(
+            &get_overflowing_active_collators(1).as_slice(),
+        );
+        assert_eq!(
+            CurrentActivityTrackingStatus::<Test>::get(),
+            ActivityTrackingStatus::Disabled { end: 2 }
+        );
     });
 }

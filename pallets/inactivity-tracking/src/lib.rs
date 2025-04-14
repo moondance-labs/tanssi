@@ -188,21 +188,7 @@ pub mod pallet {
                 current_session_index > current_status_end_session_index,
                 Error::<T>::ActivityTrackingStatusUpdateSuspended
             );
-            let new_status_end_session_index =
-                current_session_index.saturating_add(T::MaxInactiveSessions::get());
-            let new_status = if is_enabled {
-                ActivityTrackingStatus::Enabled {
-                    start: current_session_index.saturating_plus_one(),
-                    end: new_status_end_session_index,
-                }
-            } else {
-                <ActiveCollatorsForCurrentSession<T>>::put(BoundedBTreeSet::new());
-                ActivityTrackingStatus::Disabled {
-                    end: new_status_end_session_index,
-                }
-            };
-            <CurrentActivityTrackingStatus<T>>::put(new_status.clone());
-            Self::deposit_event(Event::<T>::ActivityTrackingStatusSet { status: new_status });
+            Self::set_inactivity_tracking_status_inner(current_session_index, is_enabled);
             Ok(())
         }
     }
@@ -230,6 +216,28 @@ pub mod pallet {
     }
 
     impl<T: Config> Pallet<T> {
+        /// Internal function to set the activity tracking status and
+        /// clear ActiveCollatorsForCurrentSession if disabled
+        fn set_inactivity_tracking_status_inner(
+            current_session_index: SessionIndex,
+            is_enabled: bool,
+        ) {
+            let new_status_end_session_index =
+                current_session_index.saturating_add(T::MaxInactiveSessions::get());
+            let new_status = if is_enabled {
+                ActivityTrackingStatus::Enabled {
+                    start: current_session_index.saturating_add(1),
+                    end: new_status_end_session_index,
+                }
+            } else {
+                <ActiveCollatorsForCurrentSession<T>>::put(BoundedBTreeSet::new());
+                ActivityTrackingStatus::Disabled {
+                    end: new_status_end_session_index,
+                }
+            };
+            <CurrentActivityTrackingStatus<T>>::put(new_status.clone());
+            Self::deposit_event(Event::<T>::ActivityTrackingStatusSet { status: new_status })
+        }
         pub fn process_ended_session() {
             let current_session_index = T::CurrentSessionIndex::session_index();
             // Since this function will be executed in the beginning of a session
@@ -248,7 +256,7 @@ pub mod pallet {
                 <crate::pallet::ActiveCollators<T>>::remove(
                     current_session_index
                         .saturating_sub(T::MaxInactiveSessions::get())
-                        .saturating_less_one(),
+                        .saturating_sub(1),
                 );
             }
         }
@@ -256,10 +264,16 @@ pub mod pallet {
             let mut total_weight = T::DbWeight::get().reads_writes(1, 0);
             let _ = <ActiveCollatorsForCurrentSession<T>>::try_mutate(
                 |active_collators| -> DispatchResult {
-                    if active_collators
-                        .try_insert(author)
-                        .map_err(|_| Error::<T>::MaxCollatorsPerSessionReached)?
-                    {
+                    if let Err(e) = active_collators.try_insert(author.clone()) {
+                        // If we reach MaxCollatorsPerSession limit there must be a bug in the pallet
+                        // so we disable the activity tracking
+                        Self::set_inactivity_tracking_status_inner(
+                            T::CurrentSessionIndex::session_index(),
+                            false,
+                        );
+                        total_weight.saturating_accrue(T::DbWeight::get().reads_writes(1, 2));
+                        return Err(Error::<T>::MaxCollatorsPerSessionReached.into());
+                    } else {
                         total_weight.saturating_accrue(T::DbWeight::get().writes(1));
                     }
                     Ok(())
