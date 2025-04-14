@@ -2052,10 +2052,10 @@ impl_runtime_apis! {
                 ).into());
                 pub TrustedReserve: Option<(Location, Asset)> = Some(
                     (
-                        Location::here(),
+                        Location::parent(),
                         Asset {
-                            id: AssetId(SelfReserve::get()),
-                            fun: Fungible(1 * UNIT),
+                            id: AssetId(Location::parent()),
+                            fun: Fungible(ExistentialDeposit::get() * 1000),
                         },
                     )
                 );
