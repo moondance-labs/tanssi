@@ -264,8 +264,6 @@ fn transfer_assets_from_parachain_to_dancelight() {
         let native_balance =
             dancelight_runtime_constants::fee::WeightToFee::weight_to_fee(&outcome_weight);
 
-        println!("native_balance: {}", native_balance); // should be: 12197361
-
         // Verify receiver's balance
         assert_eq!(
             <ForeignAssets as frame_support::traits::fungibles::Inspect<_>>::balance(

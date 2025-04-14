@@ -3137,7 +3137,7 @@ sp_api::impl_runtime_apis! {
                         Location {
                             parents: 0,
                             interior: X1([
-                                Parachain(2002), // TODO: try to not hardcode this
+                                Parachain(2002),
                             ].into())
                         },
                         (
@@ -3145,7 +3145,7 @@ sp_api::impl_runtime_apis! {
                                 parents: 0,
                                 interior: X2([
                                     Parachain(2002),
-                                    PalletInstance(10) // TODO: try to not hardcode this
+                                    PalletInstance(10),
                                 ].into())
                             },
                             ExistentialDeposit::get() * 100_000

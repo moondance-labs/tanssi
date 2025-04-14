@@ -4638,7 +4638,7 @@ fn test_ed_plus_block_credit_session_purchase_works() {
                 root_origin(),
                 1001.into()
             ));
-            // Need to reset credits to 0 because now rchains are given free credits on register
+            // Need to reset credits to 0 because now parachains are given free credits on register
             assert_ok!(ServicesPayment::set_block_production_credits(
                 root_origin(),
                 1001.into(),
