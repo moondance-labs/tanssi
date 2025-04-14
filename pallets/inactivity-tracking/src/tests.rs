@@ -33,7 +33,7 @@ fn get_active_collators(block: u32) -> AuthorNotingInfo<AccountId> {
     }
 }
 
-fn get_overflowing_active_collators(block: u32) -> Vec<AuthorNotingInfo<AccountId>> {
+fn get_overflowing_active_collators_vec(block: u32) -> Vec<AuthorNotingInfo<AccountId>> {
     let total_collators = <Test as Config>::MaxCollatorsPerSession::get();
     let mut overflowing_active_collators: Vec<AuthorNotingInfo<AccountId>> = Vec::new();
     for i in 0u32..=total_collators {
@@ -555,7 +555,7 @@ fn inactivity_tracking_is_disabled_if_current_active_collators_storage_overflows
         );
         roll_to(1);
         <Pallet<Test> as AuthorNotingHook<AccountId>>::on_container_authors_noted(
-            &get_overflowing_active_collators(1).as_slice(),
+            &get_overflowing_active_collators_vec(1).as_slice(),
         );
         assert_eq!(
             CurrentActivityTrackingStatus::<Test>::get(),

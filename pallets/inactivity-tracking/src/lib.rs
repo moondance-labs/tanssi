@@ -56,7 +56,6 @@ pub use pallet::*;
 
 #[frame_support::pallet]
 pub mod pallet {
-    use sp_runtime::Saturating;
     use {
         super::*,
         crate::weights::WeightInfo,
@@ -264,7 +263,7 @@ pub mod pallet {
             let mut total_weight = T::DbWeight::get().reads_writes(1, 0);
             let _ = <ActiveCollatorsForCurrentSession<T>>::try_mutate(
                 |active_collators| -> DispatchResult {
-                    if let Err(e) = active_collators.try_insert(author.clone()) {
+                    if let Err(_) = active_collators.try_insert(author.clone()) {
                         // If we reach MaxCollatorsPerSession limit there must be a bug in the pallet
                         // so we disable the activity tracking
                         Self::set_inactivity_tracking_status_inner(
