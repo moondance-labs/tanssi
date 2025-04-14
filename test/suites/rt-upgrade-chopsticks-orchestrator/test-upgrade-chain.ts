@@ -3,7 +3,9 @@ import { MoonwallContext, beforeAll, describeSuite, expect } from "@moonwall/cli
 import { generateKeyringPair } from "@moonwall/util";
 import { Keyring, type ApiPromise } from "@polkadot/api";
 
-const MAX_BALANCE_TRANSFER_TRIES = 5;
+import type { KeyringPair } from "@polkadot/keyring/types";
+import { chopsticksWaitTillIncluded } from "utils";
+
 describeSuite({
     id: "RT01",
     title: "Chopsticks Dancebox Upgrade Test",
@@ -11,17 +13,67 @@ describeSuite({
     testCases: ({ it, context, log }) => {
         let api: ApiPromise;
         let specName: string;
+        let alice: KeyringPair;
+        let runtimeName: string;
+        let xcmQueryToAnalyze: number;
 
         beforeAll(async () => {
             api = context.pjsApi;
             specName = api.consts.system.version.specName.toString();
             const specVersion = getSpecVersion(api);
             log(`Currently connected to chain: ${specName} : ${specVersion}`);
+            runtimeName = api.runtimeVersion.specName.toString();
+
+            const keyring = new Keyring({ type: "sr25519" });
+            context.keyring.alice;
+            alice = keyring.addFromUri("//Alice", { name: "Alice default" });
+
+            if (runtimeName !== "flashbox") {
+                // Inject a query so that there are migrations to execute in queries in case of new xcm version
+                // Right now we need to hardcode the xcm version
+                // this should not be necessary after we bring https://github.com/paritytech/polkadot-sdk/pull/8173
+                // since we would be able to fetch it on-chain
+                const queryLocation = runtimeName.includes("light")
+                    ? {
+                          parents: 0,
+                          interior: { X1: [{ Parachain: 1 }] },
+                      }
+                    : {
+                          parents: 1,
+                          interior: "Here",
+                      };
+
+                // fetch on-chain later
+                // TODO:Once we update the next runtime, remove this and take it form onchain
+                const previousXcmVersion = 5;
+                const latestVersion = `V${previousXcmVersion.toString()}`;
+
+                const versionedLocation = {
+                    [latestVersion]: queryLocation,
+                };
+
+                xcmQueryToAnalyze = runtimeName.includes("light")
+                    ? await api.query.xcmPallet.queryCounter()
+                    : await api.query.polkadotXcm.queryCounter();
+
+                const batchTx = [];
+                if (runtimeName.includes("light")) {
+                    // We first inject a random paras head in parachain 1. this is necessary as we need a chain to which
+                    // we send queries
+                    batchTx.push(api.tx.registrar.setCurrentHead(1, "0x11"));
+                    batchTx.push(api.tx.xcmPallet.forceSubscribeVersionNotify(versionedLocation));
+                } else if (runtimeName !== "flashbox") {
+                    batchTx.push(api.tx.polkadotXcm.forceSubscribeVersionNotify(versionedLocation));
+                }
+
+                const finalTx = api.tx.sudo.sudo(api.tx.utility.batchAll(batchTx));
+                await chopsticksWaitTillIncluded(context, api, alice, finalTx);
+            }
         });
 
         it({
             id: "T1",
-            timeout: 60000,
+            timeout: 80000,
             title: "Can upgrade runtime",
             test: async () => {
                 const rtBefore = getSpecVersion(api);
@@ -41,8 +93,6 @@ describeSuite({
                     log("New session encountered, just in case retrying");
                     await context.upgradeRuntime();
                 }
-
-                // console.log( api.call.tanssiUtilApi)
 
                 const rtafter = getSpecVersion(api);
 
@@ -68,30 +118,16 @@ describeSuite({
             title: "Can send balance transfers",
             test: async () => {
                 const randomAccount = generateKeyringPair("sr25519");
-                const keyring = new Keyring({ type: "sr25519" });
-                context.keyring.alice;
-                const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 
-                let tries = 0;
+                const tries = 0;
                 const balanceBefore = (await api.query.system.account(randomAccount.address)).data.free.toBigInt();
 
                 /// It might happen that by accident we hit a session change
                 /// A block in which a session change occurs cannot hold any tx
                 /// Chopsticks does not have the notion of tx pool either, so we need to retry
-                /// Therefore we just retry at most MAX_BALANCE_TRANSFER_TRIES
-                while (tries < MAX_BALANCE_TRANSFER_TRIES) {
-                    const txHash = await api.tx.balances
-                        .transferAllowDeath(randomAccount.address, 1_000_000_000)
-                        .signAndSend(alice);
-                    const result = await context.createBlock({ count: 1 });
-
-                    const block = await api.rpc.chain.getBlock(result.result);
-                    const includedTxHashes = block.block.extrinsics.map((x) => x.hash.toString());
-                    if (includedTxHashes.includes(txHash.toString())) {
-                        break;
-                    }
-                    tries++;
-                }
+                /// Therefore we just retry at most 5 times
+                const balancesTx = api.tx.balances.transferAllowDeath(randomAccount.address, 1_000_000_000);
+                await chopsticksWaitTillIncluded(context, api, alice, balancesTx);
 
                 const balanceAfter = (await api.query.system.account(randomAccount.address)).data.free.toBigInt();
                 expect(balanceBefore < balanceAfter).to.be.true;
@@ -100,6 +136,27 @@ describeSuite({
 
         it({
             id: "T4",
+            title: "Xcm migrations have runned, if any",
+            test: async ({ skip }) => {
+                if (runtimeName === "flashbox") {
+                    skip();
+                }
+                // Regardless of migrations, query should be in the latest version
+                // Unfortunately the api is not very friendly
+                const currentXcmVersion = runtimeName.includes("light")
+                    ? (await api.consts.xcmPallet.advertisedXcmVersion).toNumber()
+                    : (await api.consts.polkadotXcm.advertisedXcmVersion).toNumber();
+
+                const query = runtimeName.includes("light")
+                    ? await api.query.xcmPallet.queries(xcmQueryToAnalyze)
+                    : await api.query.polkadotXcm.queries(xcmQueryToAnalyze);
+                const version = Object.keys(query.toJSON().versionNotifier.origin)[0];
+                expect(version).to.be.equal(`v${currentXcmVersion.toString()}`);
+            },
+        });
+
+        it({
+            id: "T5",
             timeout: 60000,
             title: "Skip blocks until session change",
             test: async () => {
