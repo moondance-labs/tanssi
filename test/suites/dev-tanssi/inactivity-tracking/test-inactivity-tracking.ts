@@ -15,41 +15,53 @@ describeSuite({
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             alice = context.keyring.alice;
-
-            await context.createBlock(polkadotJs.tx.configuration.setMaxOrchestratorCollators(1).signAsync(alice));
         });
         it({
             id: "E01",
             title: "Pallet should correctly update collators' activity records",
             test: async () => {
                 const maxInactiveSessions = polkadotJs.consts.inactivityTracking.maxInactiveSessions.toNumber();
+                await context.createBlock(polkadotJs.tx.configuration.setMaxOrchestratorCollators(1).signAsync(alice));
                 jumpToSession(context, 2);
+                const startSession = (await polkadotJs.query.session.currentIndex()).toNumber();
+                // No container chains has produced blocks yet so activity tracking storage for current session should
+                // record orchestrator collators
                 const activeCollatorsForSessionBeforeNoting =
                     await polkadotJs.query.inactivityTracking.activeCollatorsForCurrentSession();
                 expect(activeCollatorsForSessionBeforeNoting.size).to.be.equal(1);
 
+                // After noting the first block, the collators should be added to the activity tracking storage
+                // for the current session
                 await context.createBlock();
                 const activeCollatorsForSession2AfterNoting =
                     await polkadotJs.query.inactivityTracking.activeCollatorsForCurrentSession();
                 expect(activeCollatorsForSession2AfterNoting.size).to.be.equal(3);
 
+                // If the same collator produces more than 1 block, the activity tracking storage
+                // for the current session should not add the collator again
                 await context.createBlock();
                 const activeCollatorsForSession2AfterSecondNoting =
                     await polkadotJs.query.inactivityTracking.activeCollatorsForCurrentSession();
                 expect(activeCollatorsForSession2AfterSecondNoting.size).to.be.equal(3);
 
-                const activeCollatorsRecordBeforeActivityWindow =
-                    await polkadotJs.query.inactivityTracking.activeCollators(2);
-                expect(activeCollatorsRecordBeforeActivityWindow.isEmpty).to.be.true;
-                await jumpToSession(context, 3);
-                const activeCollatorsRecordWithinActivityWindow =
-                    await polkadotJs.query.inactivityTracking.activeCollators(2);
-                expect(activeCollatorsRecordWithinActivityWindow.size).to.be.equal(3);
+                // Check that the collators are not added to the activity tracking storage for the current session
+                // before the end of the session
+                const activeCollatorsRecordBeforeActivityPeriod =
+                    await polkadotJs.query.inactivityTracking.activeCollators(startSession);
+                expect(activeCollatorsRecordBeforeActivityPeriod.isEmpty).to.be.true;
 
-                await jumpToSession(context, maxInactiveSessions + 3);
-                const activeCollatorsRecordAfterActivityWindow =
-                    await polkadotJs.query.inactivityTracking.activeCollators(2);
-                expect(activeCollatorsRecordAfterActivityWindow.isEmpty).to.be.true;
+                // Check that the collators are added to the activity tracking storage for the current session
+                // after the end of the session
+                await jumpToSession(context, startSession + 1);
+                const activeCollatorsRecordWithinActivityPeriod =
+                    await polkadotJs.query.inactivityTracking.activeCollators(startSession);
+                expect(activeCollatorsRecordWithinActivityPeriod.size).to.be.equal(3);
+
+                // After the end of activity period, the collators should be removed from the activity tracking storage
+                await jumpToSession(context, maxInactiveSessions + startSession + 1);
+                const activeCollatorsRecordAfterActivityPeriod =
+                    await polkadotJs.query.inactivityTracking.activeCollators(startSession);
+                expect(activeCollatorsRecordAfterActivityPeriod.isEmpty).to.be.true;
             },
         });
     },
