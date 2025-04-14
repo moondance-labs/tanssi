@@ -411,7 +411,14 @@ where
         slash_fraction: &[Perbill],
         slash_session: SessionIndex,
     ) -> Weight {
+        let mut consumed_weight = Weight::default();
+        let mut add_db_reads_writes = |reads, writes| {
+            consumed_weight += T::DbWeight::get().reads_writes(reads, writes);
+        };
+
         let slashing_mode = SlashingMode::<T>::get();
+        add_db_reads_writes(1, 0);
+
         if slashing_mode == SlashingModeOption::Disabled {
             return Weight::default();
         }
@@ -426,12 +433,18 @@ where
                 0
             });
 
+        // Account reads for active_era and era_to_session_start.
+        add_db_reads_writes(2, 0);
+
         // Fast path for active-era report - most likely.
         // `slash_session` cannot be in a future active era. It must be in `active_era` or before.
         let (slash_era, external_idx) = if slash_session >= active_era_start_session_index {
+            // Account for get_external_index read.
+            add_db_reads_writes(1, 0);
             (active_era, T::ExternalIndexProvider::get_external_index())
         } else {
             let eras = BondedEras::<T>::get();
+            add_db_reads_writes(1, 0);
 
             // Reverse because it's more likely to find reports from recent eras.
             match eras
@@ -441,15 +454,18 @@ where
             {
                 Some((slash_era, _, external_idx)) => (*slash_era, *external_idx),
                 // Before bonding period. defensive - should be filtered out.
-                None => return Weight::default(),
+                None => return consumed_weight,
             }
         };
 
         let slash_defer_duration = T::SlashDeferDuration::get();
+        add_db_reads_writes(1, 0);
 
         let invulnerables = T::InvulnerablesProvider::invulnerables();
+        add_db_reads_writes(1, 0);
 
         let mut next_slash_id = NextSlashId::<T>::get();
+        add_db_reads_writes(1, 0);
 
         for (details, slash_fraction) in offenders.iter().zip(slash_fraction) {
             let (stash, _) = &details.offender;
@@ -468,6 +484,9 @@ where
             if slashing_mode == SlashingModeOption::LogOnly {
                 continue;
             }
+
+            // Account for one read and one possible write inside compute_slash.
+            add_db_reads_writes(1, 1);
 
             let slash = compute_slash::<T>(
                 *slash_fraction,
@@ -497,6 +516,7 @@ where
                     Slashes::<T>::mutate(active_era.saturating_add(One::one()), move |for_now| {
                         for_now.push(slash)
                     });
+                    add_db_reads_writes(1, 1);
                 } else {
                     // Else, slashes are applied after slash_defer_period since the slashed era
                     Slashes::<T>::mutate(
@@ -505,6 +525,7 @@ where
                             .saturating_add(One::one()),
                         move |for_later| for_later.push(slash),
                     );
+                    add_db_reads_writes(1, 1);
                 }
 
                 // Fix unwrap
@@ -512,7 +533,8 @@ where
             }
         }
         NextSlashId::<T>::put(next_slash_id);
-        Weight::default()
+        add_db_reads_writes(0, 1);
+        consumed_weight
     }
 }
 

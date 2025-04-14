@@ -1,4 +1,4 @@
-import { type DevModeContext, type ZombieContext, expect } from "@moonwall/cli";
+import { type DevModeContext, type ZombieContext, expect, type ChopsticksContext } from "@moonwall/cli";
 import { filterAndApply, type KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 import type { SubmittableExtrinsic } from "@polkadot/api/types";
@@ -653,4 +653,27 @@ export async function mockAndInsertHeadData(
             .signAsync(sudoAccount),
         { allowFailures: false }
     );
+}
+
+// This function creates chopsticks blocks until a given tx is included
+export async function chopsticksWaitTillIncluded(
+    context: ChopsticksContext,
+    api: ApiPromise,
+    sender: KeyringPair,
+    tx: SubmittableExtrinsic<"promise">,
+    maxTries: number | null = 5
+) {
+    let tries = 0;
+
+    while (tries < maxTries) {
+        const txHash = await tx.signAndSend(sender);
+        const result = await context.createBlock({ count: 1 });
+
+        const block = await api.rpc.chain.getBlock(result.result);
+        const includedTxHashes = block.block.extrinsics.map((x) => x.hash.toString());
+        if (includedTxHashes.includes(txHash.toString())) {
+            break;
+        }
+        tries++;
+    }
 }

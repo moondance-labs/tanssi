@@ -1,0 +1,23 @@
+[package]
+name = "rococo-system-emulated-network"
+description = "Rococo System emulated bridged network"
+edition = "2021"
+license = "GPL-3.0-only"
+publish = false
+version = "0.0.0"
+[package.authors]
+workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+cumulus-primitives-core = { workspace = true }
+dancebox-emulated-chain = { workspace = true }
+frame-support = { workspace = true, features = [ "tuples-96" ] }
+frontier-template-emulated-chain = { workspace = true }
+rococo-emulated-chain = { workspace = true }
+simple-template-emulated-chain = { workspace = true }
+sp-keyring = { workspace = true }
+tanssi-emulated-integration-tests-common = { workspace = true }
+xcm-emulator = { workspace = true }

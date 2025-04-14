@@ -21,6 +21,7 @@
         "duplicate-function-finder": "tsx scripts/duplicateFunctionFinder.ts check suites",
         "sudo-register-para": "tsx scripts/sudoRegisterPara.ts",
         "sudo-starlight-register-para": "tsx scripts/sudoStarlightRegisterPara.ts",
+        "unhash-key": "tsx scripts/unhashKey.ts",
         "zombienet-restart": "tsx scripts/zombienetRestart.ts"
     },
     "keywords": [],

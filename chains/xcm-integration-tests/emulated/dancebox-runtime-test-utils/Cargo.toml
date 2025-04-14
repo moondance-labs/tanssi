@@ -1,0 +1,38 @@
+[package]
+name = "dancebox-runtime-test-utils"
+description = "Dancelight runtime test utils"
+edition = "2021"
+license = "GPL-3.0-only"
+publish = false
+version = "0.0.0"
+[package.authors]
+workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+cumulus-pallet-parachain-system = { workspace = true }
+cumulus-primitives-core = { workspace = true }
+cumulus-primitives-parachain-inherent = { workspace = true }
+cumulus-test-relay-sproof-builder = { workspace = true }
+dancebox-runtime = { workspace = true, features = [ "std" ] }
+dp-consensus = { workspace = true }
+frame-support = { workspace = true }
+frame-system = { workspace = true }
+nimbus-primitives = { workspace = true }
+pallet-async-backing = { workspace = true }
+pallet-author-inherent = { workspace = true }
+pallet-authority-mapping = { workspace = true }
+pallet-data-preservers = { workspace = true }
+pallet-registrar = { workspace = true }
+pallet-registrar-runtime-api = { workspace = true }
+parity-scale-codec = { workspace = true, features = [ "derive" ] }
+polkadot-parachain-primitives = { workspace = true }
+scale-info = { workspace = true, features = [ "derive" ] }
+sp-consensus-aura = { workspace = true }
+sp-consensus-slots = { workspace = true }
+sp-core = { workspace = true }
+sp-runtime = { workspace = true }
+sp-std = { workspace = true }
+tp-data-preservers-common = { workspace = true }
