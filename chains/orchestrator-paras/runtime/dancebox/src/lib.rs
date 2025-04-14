@@ -667,7 +667,7 @@ impl pallet_initializer::ApplyNewSession<Runtime> for OwnApplySession {
     }
 
     fn on_before_session_ending() {
-        InactivityTracking::process_inactive_chains_for_session();
+        InactivityTracking::on_before_session_ending();
     }
 }
 

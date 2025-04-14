@@ -359,8 +359,6 @@ fn inactivity_tracking_handler_with_enabled_tracking_after_disabling_it_works() 
 fn processing_ended_session_correctly_updates_current_session_collators_and_active_collators_records(
 ) {
     ExtBuilder.build().execute_with(|| {
-        roll_to(SESSION_BLOCK_LENGTH + 1);
-
         let current_session_active_collator_record: BoundedBTreeSet<AccountId, ConstU32<5>> =
             get_collator_set(vec![COLLATOR_1]);
         let empty_vec: BoundedBTreeSet<AccountId, ConstU32<5>> = BoundedBTreeSet::new();
@@ -375,6 +373,9 @@ fn processing_ended_session_correctly_updates_current_session_collators_and_acti
         );
         assert_eq!(ActiveCollators::<Test>::get(0), empty_vec);
 
+        roll_to(SESSION_BLOCK_LENGTH - 1);
+        Pallet::<Test>::on_before_session_ending();
+        roll_to(SESSION_BLOCK_LENGTH);
         Pallet::<Test>::process_ended_session();
 
         assert_eq!(ActiveCollatorsForCurrentSession::<Test>::get(), empty_vec);
@@ -388,8 +389,7 @@ fn processing_ended_session_correctly_updates_current_session_collators_and_acti
 #[test]
 fn processing_ended_session_correctly_cleans_outdated_collator_records() {
     ExtBuilder.build().execute_with(|| {
-        roll_to(SESSION_BLOCK_LENGTH + 1);
-        assert_eq!(<Test as Config>::CurrentSessionIndex::session_index(), 1);
+        assert_eq!(<Test as Config>::CurrentSessionIndex::session_index(), 0);
 
         let current_session_active_collator_record: BoundedBTreeSet<AccountId, ConstU32<5>> =
             get_collator_set(vec![COLLATOR_1]);
@@ -405,6 +405,9 @@ fn processing_ended_session_correctly_cleans_outdated_collator_records() {
         );
         assert_eq!(ActiveCollators::<Test>::get(0), empty_vec);
 
+        roll_to(SESSION_BLOCK_LENGTH - 1);
+        Pallet::<Test>::on_before_session_ending();
+        roll_to(SESSION_BLOCK_LENGTH);
         Pallet::<Test>::process_ended_session();
 
         assert_eq!(ActiveCollatorsForCurrentSession::<Test>::get(), empty_vec);
@@ -419,6 +422,7 @@ fn processing_ended_session_correctly_cleans_outdated_collator_records() {
             get_max_inactive_sessions()
         );
 
+        Pallet::<Test>::on_before_session_ending();
         Pallet::<Test>::process_ended_session();
 
         assert_eq!(ActiveCollatorsForCurrentSession::<Test>::get(), empty_vec);
@@ -434,6 +438,7 @@ fn processing_ended_session_correctly_cleans_outdated_collator_records() {
             get_max_inactive_sessions() + 1
         );
 
+        Pallet::<Test>::on_before_session_ending();
         Pallet::<Test>::process_ended_session();
 
         assert_eq!(ActiveCollatorsForCurrentSession::<Test>::get(), empty_vec);

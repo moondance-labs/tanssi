@@ -239,15 +239,6 @@ pub mod pallet {
         }
         pub fn process_ended_session() {
             let current_session_index = T::CurrentSessionIndex::session_index();
-            // Since this function will be executed in the beginning of a session
-            // we can populate the active collators from the session that just ended
-            // before resetting the collators storage for the current session
-            // without affecting the current session's active collators records
-            ActiveCollators::<T>::insert(
-                current_session_index.saturating_sub(1),
-                <ActiveCollatorsForCurrentSession<T>>::get(),
-            );
-
             <ActiveCollatorsForCurrentSession<T>>::put(BoundedBTreeSet::new());
 
             // Cleanup active collator info for sessions that are older than the maximum allowed
@@ -259,6 +250,14 @@ pub mod pallet {
                 );
             }
         }
+
+        pub fn on_before_session_ending() {
+            ActiveCollators::<T>::insert(
+                T::CurrentSessionIndex::session_index(),
+                <ActiveCollatorsForCurrentSession<T>>::get(),
+            );
+        }
+
         pub fn on_author_noted(author: T::CollatorId) -> Weight {
             let mut total_weight = T::DbWeight::get().reads_writes(1, 0);
             let _ = <ActiveCollatorsForCurrentSession<T>>::try_mutate(
@@ -285,12 +284,6 @@ pub mod pallet {
 
 impl<T: Config> NodeActivityTrackingHelper<T::CollatorId> for Pallet<T> {
     fn is_node_inactive(node: &T::CollatorId) -> bool {
-        // If inactivity tracking is not enabled all nodes are considered active.
-        // We don't need to check the activity records and can return false
-        // Inactivity tracking is not enabled if
-        // - the status is disabled
-        // - the CurrentSessionIndex < start session + MaxInactiveSessions index since there won't be
-        // sufficient activity records to determine inactivity
         let current_session_index = T::CurrentSessionIndex::session_index();
         let minimum_sessions_required = T::MaxInactiveSessions::get();
         match <CurrentActivityTrackingStatus<T>>::get() {
