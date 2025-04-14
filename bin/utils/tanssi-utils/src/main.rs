@@ -14,12 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use clap::{Parser, Subcommand};
-use serde::{Deserialize, Deserializer};
-use snowbridge_outbound_queue_merkle_tree::merkle_proof;
-use sp_runtime::{traits::Keccak256, AccountId32};
-use std::collections::BTreeMap;
-use std::path::{Path, PathBuf};
+use {
+    clap::{Parser, Subcommand},
+    serde::{Deserialize, Deserializer},
+    snowbridge_outbound_queue_merkle_tree::merkle_proof,
+    sp_runtime::{traits::Keccak256, AccountId32},
+    std::{collections::BTreeMap, path::{PathBuf, Path}}
+};
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct RewardData {
