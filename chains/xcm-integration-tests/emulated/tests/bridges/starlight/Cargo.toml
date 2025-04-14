@@ -13,9 +13,6 @@ workspace = true
 
 [dependencies]
 alloy-sol-types = { workspace = true, features = [ "std" ] }
-starlight-emulated-chain = { workspace = true }
-starlight-runtime = { workspace = true, features = [ "std", "testing-helpers" ] }
-starlight-system-emulated-network = { workspace = true }
 frame-support = { workspace = true, features = [ "tuples-96" ] }
 frame-system = { workspace = true }
 keyring = { workspace = true }
@@ -24,6 +21,9 @@ snowbridge-core = { workspace = true }
 snowbridge-pallet-inbound-queue = { workspace = true, features = [ "std" ] }
 snowbridge-router-primitives = { workspace = true, features = [ "std" ] }
 sp-core = { workspace = true }
+starlight-emulated-chain = { workspace = true }
+starlight-runtime = { workspace = true, features = [ "std", "testing-helpers" ] }
+starlight-system-emulated-network = { workspace = true }
 tanssi-emulated-integration-tests-common = { workspace = true }
 tp-bridge = { workspace = true, features = [ "std" ] }
 xcm = { workspace = true }

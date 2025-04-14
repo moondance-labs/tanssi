@@ -12,10 +12,10 @@ workspace = true
 workspace = true
 
 [dependencies]
-starlight-runtime = { workspace = true }
-starlight-runtime-constants = { workspace = true }
 emulated-integration-tests-common = { workspace = true }
 sp-core = { workspace = true }
+starlight-runtime = { workspace = true }
+starlight-runtime-constants = { workspace = true }
 tanssi-emulated-integration-tests-common = { workspace = true }
 xcm = { workspace = true }
 xcm-emulator = { workspace = true }
