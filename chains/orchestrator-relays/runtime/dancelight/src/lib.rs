@@ -134,8 +134,8 @@ use {
     sp_staking::SessionIndex,
     sp_version::RuntimeVersion,
     xcm::{
-        latest::prelude::{Junctions::*, *},
-        IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation, VersionedXcm,
+        latest::prelude::*, IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation,
+        VersionedXcm,
     },
 };
 

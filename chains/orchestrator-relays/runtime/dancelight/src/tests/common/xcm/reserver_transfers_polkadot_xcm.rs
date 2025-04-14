@@ -155,6 +155,7 @@ fn transfer_assets_from_dancelight_to_one_of_its_parachains() {
     });
 }
 
+#[allow(unused_assignments)]
 #[test]
 fn transfer_assets_from_parachain_to_dancelight() {
     // Parachain origin (sender)
@@ -261,7 +262,7 @@ fn transfer_assets_from_parachain_to_dancelight() {
 
         // Calculate native balance based on weight
         let native_balance =
-            westend_runtime_constants::fee::WeightToFee::weight_to_fee(&outcome_weight);
+            dancelight_runtime_constants::fee::WeightToFee::weight_to_fee(&outcome_weight);
 
         println!("native_balance: {}", native_balance); // should be: 12197361
 
