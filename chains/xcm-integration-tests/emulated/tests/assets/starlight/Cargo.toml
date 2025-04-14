@@ -1,0 +1,28 @@
+[package]
+name = "asset-starlight-integration-tests"
+description = "Starlight runtime integration tests with xcm-emulator"
+edition = "2021"
+license = "GPL-3.0-only"
+publish = false
+version = "0.0.0"
+[package.authors]
+workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+container-chain-template-simple-runtime = { workspace = true }
+starlight-emulated-chain = { workspace = true }
+starlight-runtime = { workspace = true }
+starlight-system-emulated-network  = { workspace = true }
+frame-support = { workspace = true, features = [ "tuples-96" ] }
+pallet-message-queue = { workspace = true }
+pallet-xcm = { workspace = true }
+primitives = { workspace = true }
+simple-template-emulated-chain = { workspace = true }
+sp-runtime = { workspace = true }
+tanssi-emulated-integration-tests-common = { workspace = true }
+xcm = { workspace = true }
+xcm-emulator = { workspace = true }
+xcm-executor = { workspace = true }

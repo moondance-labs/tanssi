@@ -155,7 +155,7 @@ fn starlight_session_keys(
     }
 }
 
-fn default_parachains_host_configuration(
+pub fn default_parachains_host_configuration(
 ) -> runtime_parachains::configuration::HostConfiguration<primitives::BlockNumber> {
     use primitives::{
         node_features::FeatureIndex, AsyncBackingParams, MAX_CODE_SIZE, MAX_POV_SIZE,

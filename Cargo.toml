@@ -119,6 +119,8 @@ dancebox-emulated-chain = { path = "chains/xcm-integration-tests/emulated/chains
 dancebox-runtime-test-utils = { path = "chains/xcm-integration-tests/emulated/dancebox-runtime-test-utils" }
 dancelight-emulated-chain = { path = "chains/xcm-integration-tests/emulated/chains/relays/dancelight" }
 dancelight-system-emulated-network = { path = "chains/xcm-integration-tests/emulated/networks/dancelight-system" }
+starlight-emulated-chain = { path = "chains/xcm-integration-tests/emulated/chains/relays/starlight" }
+starlight-system-emulated-network = { path = "chains/xcm-integration-tests/emulated/networks/starlight-system" }
 frontier-template-emulated-chain = { path = "chains/xcm-integration-tests/emulated/chains/templates/frontier-template" }
 rococo-emulated-chain = { path = "chains/xcm-integration-tests/emulated/chains/relays/rococo" }
 rococo-system-emulated-network = { path = "chains/xcm-integration-tests/emulated/networks/rococo-system" }

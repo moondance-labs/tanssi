@@ -1,0 +1,30 @@
+[package]
+name = "bridge-starlight-integration-tests"
+description = "Bridge Hub Rococo runtime integration tests with xcm-emulator"
+edition = "2021"
+license = "GPL-3.0-only"
+publish = false
+version = "0.0.0"
+[package.authors]
+workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+alloy-sol-types = { workspace = true, features = [ "std" ] }
+starlight-emulated-chain = { workspace = true }
+starlight-runtime = { workspace = true, features = [ "std", "testing-helpers" ] }
+starlight-system-emulated-network = { workspace = true }
+frame-support = { workspace = true, features = [ "tuples-96" ] }
+frame-system = { workspace = true }
+keyring = { workspace = true }
+parity-scale-codec = { workspace = true, features = [ "derive", "max-encoded-len", "std" ] }
+snowbridge-core = { workspace = true }
+snowbridge-pallet-inbound-queue = { workspace = true, features = [ "std" ] }
+snowbridge-router-primitives = { workspace = true, features = [ "std" ] }
+sp-core = { workspace = true }
+tanssi-emulated-integration-tests-common = { workspace = true }
+tp-bridge = { workspace = true, features = [ "std" ] }
+xcm = { workspace = true }
+xcm-emulator = { workspace = true }
