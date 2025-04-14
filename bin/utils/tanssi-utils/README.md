@@ -7,7 +7,7 @@ Ensure you are located in the root of the Tanssi repo.
 Then build the binary:
 
 ```bash
-cargo build -p tanssi-utils
+cargo build -p tanssi-utils --release
 ```
 
 After that, run the tool with:
