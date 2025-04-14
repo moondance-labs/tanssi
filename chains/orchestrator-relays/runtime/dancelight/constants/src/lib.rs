@@ -50,7 +50,7 @@ pub mod time {
     pub const SLOT_DURATION: Moment = MILLISECS_PER_BLOCK;
 
     tp_traits::prod_or_fast_parameter_types! {
-        pub const EpochDurationInBlocks: BlockNumber = { prod: 6 * HOURS, fast: 1 * MINUTES };
+        pub const EpochDurationInBlocks: BlockNumber = { prod: 1 * HOURS, fast: 1 * MINUTES };
     }
 
     // These time units are defined in number of blocks.
