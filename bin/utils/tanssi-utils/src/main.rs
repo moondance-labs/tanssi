@@ -19,7 +19,10 @@ use {
     serde::{Deserialize, Deserializer},
     snowbridge_outbound_queue_merkle_tree::merkle_proof,
     sp_runtime::{traits::Keccak256, AccountId32},
-    std::{collections::BTreeMap, path::{PathBuf, Path}}
+    std::{
+        collections::BTreeMap,
+        path::{Path, PathBuf},
+    },
 };
 
 #[derive(Deserialize, Debug, Clone)]

@@ -4,10 +4,10 @@
 
 Ensure you are located in the root of the Tanssi repo.
 
-Then build the binaries:
+Then build the binary:
 
 ```bash
-cargo build --release
+cargo build -p tanssi-utils
 ```
 
 After that, run the tool with:
