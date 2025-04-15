@@ -1546,15 +1546,6 @@ declare module "@polkadot/api-base/types/storage" {
         };
         inactivityTracking: {
             /**
-             * A list of double map of active collators for a session
-             **/
-            activeCollators: AugmentedQuery<
-                ApiType,
-                (arg: u32 | AnyNumber | Uint8Array) => Observable<BTreeSet<AccountId32>>,
-                [u32]
-            > &
-                QueryableStorageEntry<ApiType, [u32]>;
-            /**
              * A list of active collators for a session. Repopulated at the start of every session
              **/
             activeCollatorsForCurrentSession: AugmentedQuery<ApiType, () => Observable<BTreeSet<AccountId32>>, []> &
@@ -1568,6 +1559,15 @@ declare module "@polkadot/api-base/types/storage" {
                 []
             > &
                 QueryableStorageEntry<ApiType, []>;
+            /**
+             * A storage map of inactive collators for a session
+             **/
+            inactiveCollators: AugmentedQuery<
+                ApiType,
+                (arg: u32 | AnyNumber | Uint8Array) => Observable<BTreeSet<AccountId32>>,
+                [u32]
+            > &
+                QueryableStorageEntry<ApiType, [u32]>;
             /**
              * Generic query
              **/
