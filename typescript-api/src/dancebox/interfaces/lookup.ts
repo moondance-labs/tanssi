@@ -5097,6 +5097,7 @@ export default {
     PalletInactivityTrackingError: {
         _enum: [
             "MaxCollatorsPerSessionReached",
+            "MaxContainerChainsReached",
             "ActivityTrackingStatusUpdateSuspended",
             "ActivityTrackingStatusAlreadyEnabled",
             "ActivityTrackingStatusAlreadyDisabled",

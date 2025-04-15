@@ -78,6 +78,7 @@ impl frame_system::Config for Test {
 pub struct CurrentSessionIndexGetter;
 
 impl tp_traits::GetSessionIndex<u32> for CurrentSessionIndexGetter {
+    /// Returns current session index.
     fn session_index() -> u32 {
         // For tests, let 1 session be 5 blocks
         (System::block_number() / SESSION_BLOCK_LENGTH) as u32
@@ -116,12 +117,14 @@ impl pallet_inactivity_tracking::Config for Test {
     type CollatorId = AccountId;
     type MaxInactiveSessions = ConstU32<2>;
     type MaxCollatorsPerSession = ConstU32<5>;
+    type MaxContainerChains = ConstU32<3>;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type CurrentCollatorsFetcher = MockContainerChainsInfoFetcher;
     type GetSelfChainBlockAuthor = ();
     type WeightInfo = ();
 }
 
+#[derive(Default)]
 pub(crate) struct ExtBuilder;
 
 impl ExtBuilder {

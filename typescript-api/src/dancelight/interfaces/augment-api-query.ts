@@ -1551,6 +1551,11 @@ declare module "@polkadot/api-base/types/storage" {
             activeCollatorsForCurrentSession: AugmentedQuery<ApiType, () => Observable<BTreeSet<AccountId32>>, []> &
                 QueryableStorageEntry<ApiType, []>;
             /**
+             * A list of active container chains for a session. Repopulated at the start of every session
+             **/
+            activeContainerChainsForCurrentSession: AugmentedQuery<ApiType, () => Observable<BTreeSet<u32>>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
              * Switch to enable/disable activity tracking
              **/
             currentActivityTrackingStatus: AugmentedQuery<
