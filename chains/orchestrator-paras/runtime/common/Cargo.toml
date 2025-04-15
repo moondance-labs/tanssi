@@ -42,6 +42,7 @@ frame-system = { workspace = true }
 frame-try-runtime = { workspace = true, optional = true }
 pallet-balances = { workspace = true }
 pallet-beefy-mmr = { workspace = true }
+runtime-parachains = { workspace = true }
 
 # Cumulus
 cumulus-pallet-xcmp-queue = { workspace = true }
@@ -87,6 +88,7 @@ std = [
 	"pallet-treasury/std",
 	"pallet-xcm/std",
 	"parity-scale-codec/std",
+	"runtime-parachains/std",
 	"scale-info/std",
 	"snowbridge-core/std",
 	"snowbridge-pallet-system/std",
@@ -117,6 +119,7 @@ runtime-benchmarks = [
 	"pallet-stream-payment/runtime-benchmarks",
 	"pallet-treasury/runtime-benchmarks",
 	"pallet-xcm/runtime-benchmarks",
+	"runtime-parachains/runtime-benchmarks",
 	"snowbridge-core/runtime-benchmarks",
 	"snowbridge-pallet-system/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
@@ -144,6 +147,7 @@ try-runtime = [
 	"pallet-stream-payment/try-runtime",
 	"pallet-treasury/try-runtime",
 	"pallet-xcm/try-runtime",
+	"runtime-parachains/try-runtime",
 	"snowbridge-pallet-system/try-runtime",
 	"sp-runtime/try-runtime",
 ]

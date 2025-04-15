@@ -1,11 +1,21 @@
-import { type DevModeContext, type ZombieContext, expect } from "@moonwall/cli";
-import { filterAndApply } from "@moonwall/util";
-
+import { type DevModeContext, type ZombieContext, expect, type ChopsticksContext } from "@moonwall/cli";
+import { filterAndApply, type KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 import type { SubmittableExtrinsic } from "@polkadot/api/types";
 import { TypeRegistry } from "@polkadot/types";
 import type { Vec, bool, u8, u32, u128 } from "@polkadot/types-codec";
-import type { AccountId32, BlockHash, EventRecord, ParaId } from "@polkadot/types/interfaces";
+import type {
+    AccountId32,
+    BlockHash,
+    Digest,
+    DigestItem,
+    EventRecord,
+    HeadData,
+    Header,
+    ParaId,
+    Slot,
+} from "@polkadot/types/interfaces";
+import { stringToHex } from "@polkadot/util";
 
 export async function jumpSessions(context: DevModeContext, count: number): Promise<string | null> {
     const session = (await context.polkadotJs().query.session.currentIndex()).addn(count.valueOf()).toNumber();
@@ -601,3 +611,69 @@ export const findEraBlockUsingBinarySearch = async (
         blockNumber: eraStartBlock,
     };
 };
+
+// Helper function to make rewards work for a specific block and slot.
+// We need to mock a proper HeadData object for AuthorNoting inherent to work, and thus
+// rewards take place.
+//
+// Basically, if we don't call this function before testing the rewards given
+// to collators in a block, the HeadData object mocked in genesis will not be decoded properly
+// and the AuthorNoting inherent will fail.
+export async function mockAndInsertHeadData(
+    context: DevModeContext,
+    paraId: ParaId,
+    blockNumber: number,
+    slotNumber: number,
+    sudoAccount: KeyringPair
+) {
+    const relayApi = context.polkadotJs();
+    const aura_engine_id = stringToHex("aura");
+
+    const slotNumberT: Slot = relayApi.createType("Slot", slotNumber);
+    const digestItem: DigestItem = relayApi.createType("DigestItem", {
+        PreRuntime: [aura_engine_id, slotNumberT.toHex(true)],
+    });
+    const digest: Digest = relayApi.createType("Digest", {
+        logs: [digestItem],
+    });
+    const header: Header = relayApi.createType("Header", {
+        parentHash: "0x0000000000000000000000000000000000000000000000000000000000000000",
+        number: blockNumber,
+        stateRoot: "0x0000000000000000000000000000000000000000000000000000000000000000",
+        extrinsicsRoot: "0x0000000000000000000000000000000000000000000000000000000000000000",
+        digest,
+    });
+
+    const headData: HeadData = relayApi.createType("HeadData", header.toHex());
+    const paraHeadKey = relayApi.query.paras.heads.key(paraId);
+
+    await context.createBlock(
+        relayApi.tx.sudo
+            .sudo(relayApi.tx.system.setStorage([[paraHeadKey, `0xc101${headData.toHex().slice(2)}`]]))
+            .signAsync(sudoAccount),
+        { allowFailures: false }
+    );
+}
+
+// This function creates chopsticks blocks until a given tx is included
+export async function chopsticksWaitTillIncluded(
+    context: ChopsticksContext,
+    api: ApiPromise,
+    sender: KeyringPair,
+    tx: SubmittableExtrinsic<"promise">,
+    maxTries: number | null = 5
+) {
+    let tries = 0;
+
+    while (tries < maxTries) {
+        const txHash = await tx.signAndSend(sender);
+        const result = await context.createBlock({ count: 1 });
+
+        const block = await api.rpc.chain.getBlock(result.result);
+        const includedTxHashes = block.block.extrinsics.map((x) => x.hash.toString());
+        if (includedTxHashes.includes(txHash.toString())) {
+            break;
+        }
+        tries++;
+    }
+}

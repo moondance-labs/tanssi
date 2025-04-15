@@ -691,8 +691,15 @@ jobs:
               with:
                   name: runtimes
                   path: target/release/wbuild/${{ matrix.chains.runtime }}-runtime/
+            # Binaries needed for testPalletVersions test
+            - name: "Download binaries"
+              uses: actions/download-artifact@v4
+              with:
+                  name: binaries
+                  path: target/release
             - name: "Install and run upgrade test"
               run: |
+                  chmod uog+x target/release/*
                   cd test
                   pnpm install
                   pnpm moonwall test chopsticks_${{ matrix.chains.chain }}_upgrade
@@ -893,7 +900,7 @@ jobs:
                   driver-opts: |
                       image=moby/buildkit:master
             - name: Login to DockerHub
-              uses: docker/login-action@v3.3.0
+              uses: docker/login-action@v3.4.0
               with:
                   username: ${{ secrets.DOCKERHUB_USERNAME }}
                   password: ${{ secrets.DOCKERHUB_TOKEN }}

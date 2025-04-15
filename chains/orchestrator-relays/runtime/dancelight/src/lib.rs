@@ -1440,7 +1440,7 @@ parameter_types! {
             &EthereumLocation::get()
         ).expect("to convert EthereumSovereignAccount");
 
-    pub ExternalRewardsEraInflationProvider: u128 = CollatorsInflationRatePerBlock::get() * Balances::total_issuance();
+    pub ExternalRewardsEraInflationProvider: u128 = ValidatorsInflationRatePerEra::get() * Balances::total_issuance();
 
     pub TokenLocationReanchored: Location = xcm_config::TokenLocation::get().reanchored(
         &EthereumLocation::get(),
@@ -1466,6 +1466,8 @@ impl tp_bridge::TokenChannelSetterBenchmarkHelperTrait for RewardsBenchHelper {
 
     fn set_up_channel(_channel_id: ChannelId, _para_id: ParaId, _agent_id: AgentId) {}
 }
+
+// Pallet to reward validators.
 impl pallet_external_validators_rewards::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type EraIndexProvider = ExternalValidators;
@@ -1707,12 +1709,13 @@ impl frame_support::traits::OnUnbalanced<Credit<AccountId, Balances>> for OnUnba
     }
 }
 
+// Pallet to reward container chains collators.
 impl pallet_inflation_rewards::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type ContainerChains = ContainerRegistrar;
     type GetSelfChainBlockAuthor = ();
-    type InflationRate = ValidatorsInflationRatePerEra;
+    type InflationRate = CollatorsInflationRatePerBlock;
     type OnUnbalanced = OnUnbalancedInflation;
     type PendingRewardsAccount = PendingRewardsAccount;
     type StakingRewardsDistributor = InvulnerableRewardDistribution<Self, Balances, PooledStaking>;
@@ -1976,7 +1979,6 @@ pub type UncheckedExtrinsic =
     generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, TxExtension>;
 
 /// The runtime migrations per release.
-#[allow(deprecated, missing_docs)]
 pub mod migrations {
     /// Unreleased migrations. Add new ones here:
     pub type Unreleased = ();
