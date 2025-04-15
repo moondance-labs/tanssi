@@ -5,6 +5,7 @@ import type { KeyringPair } from "@moonwall/util";
 import { alith, generateKeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import fs from "node:fs";
+import { testPalletVersions } from "../../utils";
 
 describeSuite({
     id: "ZOMBI01",
@@ -101,6 +102,23 @@ describeSuite({
 
                 const balanceAfter = (await paraApi.query.system.account(randomAccount.address)).data.free.toBigInt();
                 expect(balanceBefore < balanceAfter).to.be.true;
+            },
+        });
+
+        it({
+            id: "T04",
+            title: "Test pallet versions for missed migrations",
+            test: async () => {
+                let command: string;
+                const container2001Network = paraApi.consts.system.version.specName.toString();
+                if (container2001Network.includes("frontier-template")) {
+                    command = "../target/release/container-chain-frontier-node";
+                } else {
+                    command = "../target/release/container-chain-simple-node";
+                }
+                const args = ["build-spec", "--raw"];
+
+                await testPalletVersions(paraApi, command, args);
             },
         });
     },
