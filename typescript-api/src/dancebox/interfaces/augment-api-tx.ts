@@ -2044,7 +2044,7 @@ declare module "@polkadot/api-base/types/submittable" {
         };
         inactivityTracking: {
             setInactivityTrackingStatus: AugmentedSubmittable<
-                (isEnabled: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                (enableInactivityTracking: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>,
                 [bool]
             >;
             /**

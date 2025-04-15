@@ -2507,7 +2507,7 @@ export default {
     PalletInactivityTrackingCall: {
         _enum: {
             set_inactivity_tracking_status: {
-                isEnabled: "bool",
+                enableInactivityTracking: "bool",
             },
         },
     },
@@ -6883,7 +6883,12 @@ export default {
      * Lookup699: pallet_inactivity_tracking::pallet::Error<T>
      **/
     PalletInactivityTrackingError: {
-        _enum: ["MaxCollatorsPerSessionReached", "MaxContainerChainsReached", "ActivityStatusUpdateSuspended"],
+        _enum: [
+            "MaxCollatorsPerSessionReached",
+            "ActivityTrackingStatusUpdateSuspended",
+            "ActivityTrackingStatusAlreadyEnabled",
+            "ActivityTrackingStatusAlreadyDisabled",
+        ],
     },
     /**
      * Lookup700: pallet_treasury::Proposal<sp_core::crypto::AccountId32, Balance>

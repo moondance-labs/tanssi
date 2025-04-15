@@ -1,14 +1,12 @@
 import { afterAll, beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
-import { exec, spawn } from "node:child_process";
+import { spawn } from "node:child_process";
 import { createWriteStream } from "node:fs";
-import fs from "node:fs/promises";
 import {
     countUniqueBlockAuthorsExact,
     directoryExists,
     findCollatorProcessPid,
     getAuthorFromDigest,
-    getAuthorFromDigestRange,
     getHeaderFromRelay,
     getKeyringNimbusIdHex,
     getTmpZombiePath,

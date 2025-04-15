@@ -23,8 +23,9 @@ mod benchmarks {
 
     #[benchmark]
     fn set_inactivity_tracking_status() -> Result<(), BenchmarkError> {
+        <T as crate::pallet::Config>::CurrentSessionIndex::skip_to_session(1);
         #[extrinsic_call]
-        _(RawOrigin::Root, true);
+        _(RawOrigin::Root, false);
 
         Ok(())
     }

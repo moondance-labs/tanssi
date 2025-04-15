@@ -1444,7 +1444,7 @@ parameter_types! {
             &EthereumLocation::get()
         ).expect("to convert EthereumSovereignAccount");
 
-    pub ExternalRewardsEraInflationProvider: u128 = CollatorsInflationRatePerBlock::get() * Balances::total_issuance();
+    pub ExternalRewardsEraInflationProvider: u128 = ValidatorsInflationRatePerEra::get() * Balances::total_issuance();
 
     pub TokenLocationReanchored: Location = xcm_config::TokenLocation::get().reanchored(
         &EthereumLocation::get(),
@@ -1470,6 +1470,8 @@ impl tp_bridge::TokenChannelSetterBenchmarkHelperTrait for RewardsBenchHelper {
 
     fn set_up_channel(_channel_id: ChannelId, _para_id: ParaId, _agent_id: AgentId) {}
 }
+
+// Pallet to reward validators.
 impl pallet_external_validators_rewards::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type EraIndexProvider = ExternalValidators;
@@ -1557,6 +1559,13 @@ impl tp_traits::GetSessionIndex<SessionIndex> for CurrentSessionIndexGetter {
     /// Returns current session index.
     fn session_index() -> SessionIndex {
         Session::current_index()
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn skip_to_session(session_index: SessionIndex) {
+        while Session::current_index() < session_index {
+            Session::rotate_session();
+        }
     }
 }
 
@@ -1711,12 +1720,13 @@ impl frame_support::traits::OnUnbalanced<Credit<AccountId, Balances>> for OnUnba
     }
 }
 
+// Pallet to reward container chains collators.
 impl pallet_inflation_rewards::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type ContainerChains = ContainerRegistrar;
     type GetSelfChainBlockAuthor = ();
-    type InflationRate = ValidatorsInflationRatePerEra;
+    type InflationRate = CollatorsInflationRatePerBlock;
     type OnUnbalanced = OnUnbalancedInflation;
     type PendingRewardsAccount = PendingRewardsAccount;
     type StakingRewardsDistributor = InvulnerableRewardDistribution<Self, Balances, PooledStaking>;
@@ -1818,16 +1828,9 @@ impl pallet_pooled_staking::Config for Runtime {
     type RewardsCollatorCommission = RewardsCollatorCommission;
     type JoiningRequestTimer = SessionTimer<StakingSessionDelay>;
     type LeavingRequestTimer = SessionTimer<StakingSessionDelay>;
-    type EligibleCandidatesBufferSize = MaxCandidatesBufferSize;
+    type EligibleCandidatesBufferSize = ConstU32<100>;
     type EligibleCandidatesFilter = CandidateHasRegisteredKeys;
     type WeightInfo = weights::pallet_pooled_staking::SubstrateWeight<Runtime>;
-}
-pub struct MockCurrentSessionGetter;
-
-impl tp_traits::GetSessionIndex<u32> for MockCurrentSessionGetter {
-    fn session_index() -> u32 {
-        1
-    }
 }
 
 impl pallet_inactivity_tracking::Config for Runtime {
@@ -1836,12 +1839,9 @@ impl pallet_inactivity_tracking::Config for Runtime {
     type MaxInactiveSessions = ConstU32<5>;
     type MaxCollatorsPerSession = MaxCandidatesBufferSize;
     type MaxContainerChains = MaxLengthParaIds;
-    #[cfg(not(feature = "runtime-benchmarks"))]
     type CurrentSessionIndex = CurrentSessionIndexGetter;
-    #[cfg(feature = "runtime-benchmarks")]
-    type CurrentSessionIndex = MockCurrentSessionGetter;
+    type CurrentCollatorsFetcher = TanssiCollatorAssignment;
     type GetSelfChainBlockAuthor = ();
-    type ContainerChainsFetcher = TanssiCollatorAssignment;
     type WeightInfo = weights::pallet_inactivity_tracking::SubstrateWeight<Runtime>;
 }
 
@@ -2007,7 +2007,6 @@ pub type UncheckedExtrinsic =
     generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, TxExtension>;
 
 /// The runtime migrations per release.
-#[allow(deprecated, missing_docs)]
 pub mod migrations {
     /// Unreleased migrations. Add new ones here:
     pub type Unreleased = ();
@@ -3352,7 +3351,7 @@ impl tanssi_initializer::ApplyNewSession<Runtime> for OwnApplySession {
         InactivityTracking::process_ended_session();
     }
     fn on_before_session_ending() {
-        InactivityTracking::process_inactive_chains_for_session();
+        InactivityTracking::on_before_session_ending();
     }
 }
 parameter_types! {

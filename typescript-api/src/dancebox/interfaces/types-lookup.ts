@@ -4240,7 +4240,7 @@ declare module "@polkadot/types/lookup" {
     interface PalletInactivityTrackingCall extends Enum {
         readonly isSetInactivityTrackingStatus: boolean;
         readonly asSetInactivityTrackingStatus: {
-            readonly isEnabled: bool;
+            readonly enableInactivityTracking: bool;
         } & Struct;
         readonly type: "SetInactivityTrackingStatus";
     }
@@ -6187,9 +6187,14 @@ declare module "@polkadot/types/lookup" {
     /** @name PalletInactivityTrackingError (542) */
     interface PalletInactivityTrackingError extends Enum {
         readonly isMaxCollatorsPerSessionReached: boolean;
-        readonly isMaxContainerChainsReached: boolean;
-        readonly isActivityStatusUpdateSuspended: boolean;
-        readonly type: "MaxCollatorsPerSessionReached" | "MaxContainerChainsReached" | "ActivityStatusUpdateSuspended";
+        readonly isActivityTrackingStatusUpdateSuspended: boolean;
+        readonly isActivityTrackingStatusAlreadyEnabled: boolean;
+        readonly isActivityTrackingStatusAlreadyDisabled: boolean;
+        readonly type:
+            | "MaxCollatorsPerSessionReached"
+            | "ActivityTrackingStatusUpdateSuspended"
+            | "ActivityTrackingStatusAlreadyEnabled"
+            | "ActivityTrackingStatusAlreadyDisabled";
     }
 
     /** @name PalletTreasuryProposal (543) */

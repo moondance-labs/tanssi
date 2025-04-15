@@ -380,14 +380,21 @@ declare module "@polkadot/api-base/types/errors" {
         };
         inactivityTracking: {
             /**
+             * Error returned when the activity tracking status is attempted to be disabled when it is already disabled
+             **/
+            ActivityTrackingStatusAlreadyDisabled: AugmentedError<ApiType>;
+            /**
+             * Error returned when the activity tracking status is attempted to be enabled when it is already enabled
+             **/
+            ActivityTrackingStatusAlreadyEnabled: AugmentedError<ApiType>;
+            /**
              * Error returned when the activity tracking status is attempted to be updated before the end session
              **/
-            ActivityStatusUpdateSuspended: AugmentedError<ApiType>;
+            ActivityTrackingStatusUpdateSuspended: AugmentedError<ApiType>;
             /**
              * The size of a collator set for a session has already reached MaxCollatorsPerSession value
              **/
             MaxCollatorsPerSessionReached: AugmentedError<ApiType>;
-            MaxContainerChainsReached: AugmentedError<ApiType>;
             /**
              * Generic error
              **/
