@@ -164,8 +164,10 @@ pub mod pallet {
         MaxCollatorsPerSessionReached,
         /// Error returned when the activity tracking status is attempted to be updated before the end session
         ActivityTrackingStatusUpdateSuspended,
-        /// Error returned when the activity tracking status is attempted to be updated with the same status
-        ActivityTrackingStatusAlreadySet,
+        /// Error returned when the activity tracking status is attempted to be enabled when it is already enabled
+        ActivityTrackingStatusAlreadyEnabled,
+        /// Error returned when the activity tracking status is attempted to be disabled when it is already disabled
+        ActivityTrackingStatusAlreadyDisabled,
     }
 
     #[pallet::call]
@@ -174,16 +176,22 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::set_inactivity_tracking_status())]
         pub fn set_inactivity_tracking_status(
             origin: OriginFor<T>,
-            is_enabled: bool,
+            enable_inactivity_tracking: bool,
         ) -> DispatchResult {
             ensure_root(origin)?;
             let current_status_end_session_index = match <CurrentActivityTrackingStatus<T>>::get() {
                 ActivityTrackingStatus::Enabled { start: _, end } => {
-                    ensure!(!is_enabled, Error::<T>::ActivityTrackingStatusAlreadySet);
+                    ensure!(
+                        !enable_inactivity_tracking,
+                        Error::<T>::ActivityTrackingStatusAlreadyEnabled
+                    );
                     end
                 }
                 ActivityTrackingStatus::Disabled { end } => {
-                    ensure!(is_enabled, Error::<T>::ActivityTrackingStatusAlreadySet);
+                    ensure!(
+                        enable_inactivity_tracking,
+                        Error::<T>::ActivityTrackingStatusAlreadyDisabled
+                    );
                     end
                 }
             };
@@ -192,7 +200,10 @@ pub mod pallet {
                 current_session_index > current_status_end_session_index,
                 Error::<T>::ActivityTrackingStatusUpdateSuspended
             );
-            Self::set_inactivity_tracking_status_inner(current_session_index, is_enabled);
+            Self::set_inactivity_tracking_status_inner(
+                current_session_index,
+                enable_inactivity_tracking,
+            );
             Ok(())
         }
     }
@@ -224,11 +235,11 @@ pub mod pallet {
         /// clear ActiveCollatorsForCurrentSession if disabled
         fn set_inactivity_tracking_status_inner(
             current_session_index: SessionIndex,
-            is_enabled: bool,
+            enable_inactivity_tracking: bool,
         ) {
             let new_status_end_session_index =
                 current_session_index.saturating_add(T::MaxInactiveSessions::get());
-            let new_status = if is_enabled {
+            let new_status = if enable_inactivity_tracking {
                 ActivityTrackingStatus::Enabled {
                     start: current_session_index.saturating_add(1),
                     end: new_status_end_session_index,
@@ -242,6 +253,10 @@ pub mod pallet {
             <CurrentActivityTrackingStatus<T>>::put(new_status.clone());
             Self::deposit_event(Event::<T>::ActivityTrackingStatusSet { status: new_status })
         }
+
+        /// Internal function to clear the active collators for the current session
+        /// and remove the collators records that are outside the activity period.
+        /// Triggered at the beginning of each session.
         pub fn process_ended_session() {
             let current_session_index = T::CurrentSessionIndex::session_index();
             <ActiveCollatorsForCurrentSession<T>>::put(BoundedBTreeSet::new());
@@ -256,6 +271,8 @@ pub mod pallet {
             }
         }
 
+        /// Internal function to populate the activity tracking storage used for marking collator
+        /// as inactive. Triggered at the end of a session.
         pub fn on_before_session_ending() {
             ActiveCollators::<T>::insert(
                 T::CurrentSessionIndex::session_index(),
@@ -263,6 +280,8 @@ pub mod pallet {
             );
         }
 
+        /// Internal update the current session active collator records.
+        /// This function is called when a container chain or orchestrator collator is noted.
         pub fn on_author_noted(author: T::CollatorId) -> Weight {
             let mut total_weight = T::DbWeight::get().reads_writes(1, 0);
             let _ = <ActiveCollatorsForCurrentSession<T>>::try_mutate(

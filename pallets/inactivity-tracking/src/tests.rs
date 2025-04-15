@@ -130,7 +130,7 @@ fn setting_the_same_inactivity_tracking_status_fails() {
     ExtBuilder.build().execute_with(|| {
         assert_noop!(
             Pallet::<Test>::set_inactivity_tracking_status(RuntimeOrigin::root(), true),
-            Error::<Test>::ActivityTrackingStatusAlreadySet
+            Error::<Test>::ActivityTrackingStatusAlreadyEnabled
         );
         roll_to(SESSION_BLOCK_LENGTH);
         assert_ok!(Pallet::<Test>::set_inactivity_tracking_status(
@@ -139,7 +139,7 @@ fn setting_the_same_inactivity_tracking_status_fails() {
         ));
         assert_noop!(
             Pallet::<Test>::set_inactivity_tracking_status(RuntimeOrigin::root(), false),
-            Error::<Test>::ActivityTrackingStatusAlreadySet
+            Error::<Test>::ActivityTrackingStatusAlreadyDisabled
         );
     });
 }

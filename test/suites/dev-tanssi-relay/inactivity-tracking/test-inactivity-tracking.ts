@@ -1,46 +1,8 @@
 import "@tanssi/api-augment";
-import { type DevModeContext, beforeAll, describeSuite, expect } from "@moonwall/cli";
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
-import type { Digest, DigestItem, HeadData, Header, ParaId, Slot } from "@polkadot/types/interfaces";
-import { jumpToSession } from "utils";
-import { stringToHex } from "@polkadot/util";
-
-async function mockAndInsertHeadData(
-    context: DevModeContext,
-    paraId: ParaId,
-    blockNumber: number,
-    slotNumber: number,
-    sudoAccount: KeyringPair
-) {
-    const relayApi = context.polkadotJs();
-    const aura_engine_id = stringToHex("aura");
-
-    const slotNumberT: Slot = relayApi.createType("Slot", slotNumber);
-    const digestItem: DigestItem = relayApi.createType("DigestItem", {
-        PreRuntime: [aura_engine_id, slotNumberT.toHex(true)],
-    });
-    const digest: Digest = relayApi.createType("Digest", {
-        logs: [digestItem],
-    });
-    const header: Header = relayApi.createType("Header", {
-        parentHash: "0x0000000000000000000000000000000000000000000000000000000000000000",
-        number: blockNumber,
-        stateRoot: "0x0000000000000000000000000000000000000000000000000000000000000000",
-        extrinsicsRoot: "0x0000000000000000000000000000000000000000000000000000000000000000",
-        digest,
-    });
-
-    const headData: HeadData = relayApi.createType("HeadData", header.toHex());
-    const paraHeadKey = relayApi.query.paras.heads.key(paraId);
-
-    await context.createBlock(
-        relayApi.tx.sudo
-            .sudo(relayApi.tx.system.setStorage([[paraHeadKey, `0xc101${headData.toHex().slice(2)}`]]))
-            .signAsync(sudoAccount),
-        { allowFailures: false }
-    );
-}
+import { jumpToSession, mockAndInsertHeadData } from "utils";
 
 describeSuite({
     id: "DEVT2001",
@@ -79,6 +41,7 @@ describeSuite({
                 const activeCollatorsForSession2AfterNoting =
                     await polkadotJs.query.inactivityTracking.activeCollatorsForCurrentSession();
                 expect(activeCollatorsForSession2AfterNoting.size).to.be.equal(1);
+                const activeCollatorAddress = activeCollatorsForSession2AfterNoting.toHuman()[0];
 
                 // If the same collator produces more than 1 block, the activity tracking storage
                 // for the current session should not add the collator again
@@ -87,6 +50,7 @@ describeSuite({
                 const activeCollatorsForSession2AfterSecondNoting =
                     await polkadotJs.query.inactivityTracking.activeCollatorsForCurrentSession();
                 expect(activeCollatorsForSession2AfterSecondNoting.size).to.be.equal(1);
+                expect(activeCollatorsForSession2AfterSecondNoting.toHuman()[0]).to.be.equal(activeCollatorAddress);
 
                 // Check that the collators are not added to the activity tracking storage for the current session
                 // before the end of the session
@@ -100,6 +64,7 @@ describeSuite({
                 const activeCollatorsRecordWithinActivityWindow =
                     await polkadotJs.query.inactivityTracking.activeCollators(startSession);
                 expect(activeCollatorsRecordWithinActivityWindow.size).to.be.equal(1);
+                expect(activeCollatorsRecordWithinActivityWindow.toHuman()[0]).to.be.equal(activeCollatorAddress);
 
                 // After the end of activity period, the collators should be removed from the activity tracking storage
                 await jumpToSession(context, maxInactiveSessions + startSession + 1);
