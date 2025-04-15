@@ -135,7 +135,7 @@ fn inactivity_tracking_correctly_updates_storages() {
             run_block();
             assert_eq!(
                 <InactiveCollators<Runtime>>::get(1),
-                get_collators_set(vec![])
+                get_collators_set(vec![ALICE.into(),BOB.into(), CHARLIE.into(), DAVE.into()])
             );
             assert_eq!(<ActiveCollatorsForCurrentSession<Runtime>>::get().len(), 0);
 

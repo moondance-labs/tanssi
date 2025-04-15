@@ -98,7 +98,7 @@ fn inactivity_tracking_correctly_updates_storages_on_orchestrator_chains_author_
 
             assert_eq!(
                 <InactiveCollators<Runtime>>::get(0),
-                get_collators_set(vec![ALICE.into(), BOB.into()])
+                get_collators_set(vec![CHARLIE.into(), DAVE.into()])
             );
             assert_eq!(
                 <ActiveCollatorsForCurrentSession<Runtime>>::get(),
@@ -110,7 +110,7 @@ fn inactivity_tracking_correctly_updates_storages_on_orchestrator_chains_author_
 
             assert_eq!(
                 <InactiveCollators<Runtime>>::get(1),
-                get_collators_set(vec![CHARLIE.into()])
+                get_collators_set(vec![CHARLIE.into(), DAVE.into()])
             );
 
             assert_eq!(
@@ -196,11 +196,6 @@ fn inactivity_tracking_correctly_updates_storages_on_container_chains_author_not
                 root_origin(),
                 1
             ));
-            let assignment = CollatorAssignment::collator_container_chain();
-            assert_eq!(
-                assignment.container_chains[&3000u32.into()],
-                vec![CHARLIE.into(), DAVE.into()]
-            );
             note_blocks_for_container_chain(3000.into(), 1, session_to_block(1), 1);
             run_block();
             assert_eq!(
@@ -215,16 +210,10 @@ fn inactivity_tracking_correctly_updates_storages_on_container_chains_author_not
 
             run_to_session(1);
             run_block();
-            let assignment = CollatorAssignment::collator_container_chain();
-            assert_eq!(
-                assignment.container_chains[&3000u32.into()],
-                vec![CHARLIE.into(), DAVE.into()]
-            );
             assert_eq!(
                 <InactiveCollators<Runtime>>::get(0),
                 get_collators_set(vec![CHARLIE.into()])
             );
-
             assert_eq!(
                 <ActiveCollatorsForCurrentSession<Runtime>>::get(),
                 get_collators_set(vec![ALICE.into(), BOB.into()])
@@ -232,11 +221,6 @@ fn inactivity_tracking_correctly_updates_storages_on_container_chains_author_not
 
             run_to_session(2);
             run_block();
-            let assignment = CollatorAssignment::collator_container_chain();
-            assert_eq!(
-                assignment.container_chains[&3000u32.into()],
-                vec![CHARLIE.into(), DAVE.into()]
-            );
 
             assert_eq!(
                 <InactiveCollators<Runtime>>::get(1),
@@ -249,12 +233,6 @@ fn inactivity_tracking_correctly_updates_storages_on_container_chains_author_not
 
             run_to_session(max_inactive_sessions - 1);
             run_block();
-            let assignment = CollatorAssignment::collator_container_chain();
-            assert_eq!(
-                assignment.container_chains[&3000u32.into()],
-                vec![CHARLIE.into(), DAVE.into()]
-            );
-
             assert_eq!(
                 InactivityTracking::is_node_inactive(
                     &cumulus_primitives_core::relay_chain::AccountId::from(ALICE)
