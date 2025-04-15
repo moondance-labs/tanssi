@@ -28,6 +28,9 @@ members = [
 	"pallets/registrar/runtime-api",
 	"primitives/*",
 ]
+# default-members is the subset of members that is compiled when running cargo build.
+# some binaries are intentionally left out of this list because we don't want to compile them every time.
+
 resolver = "2"
 
 [workspace.package]
