@@ -559,7 +559,8 @@
             "testFileDir": ["suites/zombie_dancebox_upgrade"],
             "runScripts": [
                 "download-latest-rt-binaries.sh",
-                "build-spec-dancebox.sh"
+                "build-spec-dancebox.sh",
+                "downloadPolkadot.ts"
             ],
             "timeout": 600000,
             "foundation": {
