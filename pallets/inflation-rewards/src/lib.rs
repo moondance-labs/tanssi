@@ -110,7 +110,13 @@ pub mod pallet {
                 let total_rewards = T::RewardsPortion::get() * new_supply.peek();
                 let (rewards_credit, reminder_credit) = new_supply.split(total_rewards);
 
-                let rewards_per_chain: BalanceOf<T> = rewards_credit.peek() / number_of_chains;
+                let rewards_per_chain: BalanceOf<T> = rewards_credit
+                    .peek()
+                    .checked_div(&number_of_chains)
+                    .unwrap_or_else(|| {
+                        log::error!("Rewards per chain is zero");
+                        BalanceOf::<T>::zero()
+                    });
                 let (mut total_reminder, staking_rewards) = rewards_credit.split_merge(
                     total_rewards % number_of_chains,
                     (reminder_credit, CreditOf::<T>::zero()),
