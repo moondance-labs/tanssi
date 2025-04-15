@@ -99,6 +99,10 @@ use {
         prod_or_fast_parameter_types, EraIndex, GetHostConfiguration, GetSessionContainerChains,
         ParaIdAssignmentHooks, RegistrarHandler, Slot, SlotFrequency,
     },
+    xcm_runtime_apis::{
+        dry_run::{CallDryRunEffects, Error as XcmDryRunApiError, XcmDryRunEffects},
+        fees::Error as XcmPaymentApiError,
+    },
 };
 
 #[cfg(any(feature = "std", test))]
@@ -166,7 +170,6 @@ use {
         pallet_custom_origins, AuctionAdmin, Fellows, GeneralAdmin, Treasurer, TreasurySpender,
     },
     pallet_collator_assignment::CoreAllocationConfiguration,
-    xcm_runtime_apis::fees::Error as XcmPaymentApiError,
 };
 
 #[cfg(test)]
@@ -2315,6 +2318,16 @@ sp_api::impl_runtime_apis! {
 
         fn initialize_block(header: &<Block as BlockT>::Header) -> sp_runtime::ExtrinsicInclusionMode {
             Executive::initialize_block(header)
+        }
+    }
+
+    impl xcm_runtime_apis::dry_run::DryRunApi<Block, RuntimeCall, RuntimeEvent, OriginCaller> for Runtime {
+        fn dry_run_call(origin: OriginCaller, call: RuntimeCall) -> Result<CallDryRunEffects<RuntimeEvent>, XcmDryRunApiError> {
+            XcmPallet::dry_run_call::<Runtime, xcm_config::XcmRouter, OriginCaller, RuntimeCall>(origin, call)
+        }
+
+        fn dry_run_xcm(origin_location: VersionedLocation, xcm: VersionedXcm<RuntimeCall>) -> Result<XcmDryRunEffects<RuntimeEvent>, XcmDryRunApiError> {
+            XcmPallet::dry_run_xcm::<Runtime, xcm_config::XcmRouter, RuntimeCall, xcm_config::XcmConfig>(origin_location, xcm)
         }
     }
 
