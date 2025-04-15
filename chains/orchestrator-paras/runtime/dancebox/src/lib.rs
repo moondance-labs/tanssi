@@ -2055,7 +2055,7 @@ impl_runtime_apis! {
                         Location::parent(),
                         Asset {
                             id: AssetId(Location::parent()),
-                            fun: Fungible(ExistentialDeposit::get() * 1000),
+                            fun: Fungible(ExistentialDeposit::get() * 100),
                         },
                     )
                 );
@@ -2070,7 +2070,7 @@ impl_runtime_apis! {
                 fn get_asset() -> Asset {
                     Asset {
                         id: AssetId(SelfReserve::get()),
-                        fun: Fungible(1 * UNIT),
+                        fun: Fungible(ExistentialDeposit::get() * 100),
                     }
                 }
             }
