@@ -2,7 +2,7 @@ import "@tanssi/api-augment";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
-import { jumpToSession } from "utils";
+import { jumpToSession, jumpSessions } from "utils";
 import { u8aToHex } from "@polkadot/util";
 
 describeSuite({
@@ -83,24 +83,25 @@ describeSuite({
             test: async () => {
                 const maxInactiveSessions = polkadotJs.consts.inactivityTracking.maxInactiveSessions.toNumber();
                 const nimbusPublicKey = collatorNimbusKey.publicKey;
-                const collatorAccountId = context.polkadotJs().createType("AccountId", collatorAccountKey.publicKey);
+                const collatorAccountId = polkadotJs.createType("AccountId", collatorAccountKey.publicKey);
+                await context.createBlock(polkadotJs.tx.configuration.setMaxOrchestratorCollators(1).signAsync(alice));
+
+                await jumpSessions(context, 4);
                 await polkadotJs.tx.session.setKeys(u8aToHex(nimbusPublicKey), []).signAndSend(collatorAccountKey);
                 context.createBlock();
                 const addInvulnerablesTx = polkadotJs.tx.sudo.sudo(
                     polkadotJs.tx.invulnerables.addInvulnerable(collatorAccountId)
                 );
                 await context.createBlock([await addInvulnerablesTx.signAsync(alice)]);
-
-                jumpToSession(context, 3);
+                await jumpSessions(context, 2);
                 const startSession = (await polkadotJs.query.session.currentIndex()).toNumber();
                 const collators = await polkadotJs.query.collatorAssignment.collatorContainerChain();
-                expect(collators.toJSON().containerChains["2001"]).to.contain(collatorAccountId.toHuman());
-                // No container chains has produced blocks yet so activity tracking storage for current session should
-                // record orchestrator collators
-                const activeCollatorsForSessionBeforeNoting =
-                    await polkadotJs.query.inactivityTracking.activeCollatorsForCurrentSession();
-                expect(activeCollatorsForSessionBeforeNoting.toHuman()).to.deep.eq([alice.address]);
-
+                expect(collators.toJSON().orchestratorChain).to.deep.eq([alice.address]);
+                expect(collators.toJSON().containerChains["2000"]).to.deep.eq([
+                    context.keyring.bob.address,
+                    context.keyring.charlie.address,
+                ]);
+                expect(collators.toJSON().containerChains["2001"]).to.deep.eq([collatorAccountId.toHuman()]);
                 // After noting the first block, the collators should be added to the activity tracking storage
                 // for the current session
                 await context.createBlock();
@@ -125,8 +126,8 @@ describeSuite({
                     await polkadotJs.query.inactivityTracking.inactiveCollators(startSession);
                 expect(inactiveCollatorsRecordBeforeActivityPeriod.isEmpty).to.be.true;
 
-                // Check that the active collators are not added to the inactivity tracking storage for the current session
-                // after the end of the session. Storge must contain only collatorAccountId because it is inactive
+                // Check that the active collators are not added to the inactivity tracking storage after the end of the session.
+                // Storge must contain only collatorAccountId because it is inactive
                 await jumpToSession(context, startSession + 1);
                 const inactiveCollatorsRecordWithinActivityPeriod =
                     await polkadotJs.query.inactivityTracking.inactiveCollators(startSession);
