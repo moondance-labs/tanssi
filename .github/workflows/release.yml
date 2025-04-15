@@ -736,7 +736,7 @@ jobs:
               run: |
                   cd test
                   pnpm install
-                  pnpm moonwall test zombie_${{ matrix.chains.chain }}_upgrade
+                  pnpm moonwall test zombie_${{ matrix.chain }}_upgrade
             - name: Zip and Upload Node Logs on Failure
               if: failure()
               run: |
