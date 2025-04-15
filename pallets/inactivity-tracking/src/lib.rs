@@ -32,8 +32,8 @@ use {
     sp_runtime::{traits::Get, BoundedBTreeSet},
     sp_staking::SessionIndex,
     tp_traits::{
-        AuthorNotingHook, AuthorNotingInfo, GetSessionIndex, MaybeSelfChainBlockAuthor,
-        NodeActivityTrackingHelper,
+        AuthorNotingHook, AuthorNotingInfo, CurrentEligibleCollatorsHelper, GetSessionIndex,
+        MaybeSelfChainBlockAuthor, NodeActivityTrackingHelper,
     },
 };
 
@@ -62,6 +62,7 @@ pub mod pallet {
         core::marker::PhantomData,
         frame_support::{pallet_prelude::*, storage::types::StorageMap},
         frame_system::pallet_prelude::*,
+        sp_std::collections::btree_set::BTreeSet,
     };
 
     /// The status of the activity tracking
@@ -119,10 +120,8 @@ pub mod pallet {
         /// Helper that returns the current session index.
         type CurrentSessionIndex: GetSessionIndex<SessionIndex>;
 
-        /// Helper that fetches a list of collators eligible for to produce blocks for the current session
-        type CurrentCollatorsListFetcher: tp_traits::CurrentEligibleCollatorsHelper<
-            Self::CollatorId,
-        >;
+        /// Helper that fetches a list of collators eligible to produce blocks for the current session
+        type CurrentCollatorsListFetcher: CurrentEligibleCollatorsHelper<Self::CollatorId>;
 
         /// Helper that returns the block author for the orchestrator chain (if it exists)
         type GetSelfChainBlockAuthor: MaybeSelfChainBlockAuthor<Self::CollatorId>;
@@ -136,9 +135,9 @@ pub mod pallet {
     pub type CurrentActivityTrackingStatus<T: Config> =
         StorageValue<_, ActivityTrackingStatus, ValueQuery>;
 
-    /// A list of double map of active collators for a session
+    /// A storage map of inactive collators for a session
     #[pallet::storage]
-    pub type ActiveCollators<T: Config> = StorageMap<
+    pub type InactiveCollators<T: Config> = StorageMap<
         _,
         Twox64Concat,
         SessionIndex,
@@ -263,7 +262,7 @@ pub mod pallet {
 
             // Cleanup active collator info for sessions that are older than the maximum allowed
             if current_session_index > T::MaxInactiveSessions::get() {
-                <crate::pallet::ActiveCollators<T>>::remove(
+                <crate::pallet::InactiveCollators<T>>::remove(
                     current_session_index
                         .saturating_sub(T::MaxInactiveSessions::get())
                         .saturating_sub(1),
@@ -271,13 +270,29 @@ pub mod pallet {
             }
         }
 
-        /// Internal function to populate the activity tracking storage used for marking collator
+        /// Internal function to populate the inactivity tracking storage used for marking collator
         /// as inactive. Triggered at the end of a session.
         pub fn on_before_session_ending() {
-            ActiveCollators::<T>::insert(
-                T::CurrentSessionIndex::session_index(),
-                <ActiveCollatorsForCurrentSession<T>>::get(),
-            );
+            if let Ok(inactive_collators) =
+                BoundedBTreeSet::<T::CollatorId, T::MaxCollatorsPerSession>::try_from(
+                    T::CurrentCollatorsListFetcher::get_eligible_collators()
+                        .difference(&<ActiveCollatorsForCurrentSession<T>>::get())
+                        .cloned()
+                        .collect::<BTreeSet<T::CollatorId>>(),
+                )
+            {
+                InactiveCollators::<T>::insert(
+                    T::CurrentSessionIndex::session_index(),
+                    inactive_collators,
+                );
+            } else {
+                // If we reach MaxCollatorsPerSession limit there must be a bug in the pallet
+                // so we disable the activity tracking
+                Self::set_inactivity_tracking_status_inner(
+                    T::CurrentSessionIndex::session_index(),
+                    false,
+                );
+            }
         }
 
         /// Internal update the current session active collator records.
@@ -321,7 +336,7 @@ impl<T: Config> NodeActivityTrackingHelper<T::CollatorId> for Pallet<T> {
 
         let start_session_index = current_session_index.saturating_sub(minimum_sessions_required);
         for session_index in start_session_index..current_session_index {
-            if <ActiveCollators<T>>::get(session_index).contains(node) {
+            if !<InactiveCollators<T>>::get(session_index).contains(node) {
                 return false;
             }
         }

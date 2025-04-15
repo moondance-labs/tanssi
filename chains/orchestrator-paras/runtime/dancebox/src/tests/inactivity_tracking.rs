@@ -18,7 +18,7 @@
 use {
     crate::tests::common::*,
     frame_support::{assert_ok, traits::Get, BoundedBTreeSet},
-    pallet_inactivity_tracking::pallet::{ActiveCollators, ActiveCollatorsForCurrentSession},
+    pallet_inactivity_tracking::pallet::{ActiveCollatorsForCurrentSession, InactiveCollators},
     parity_scale_codec::Encode,
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_runtime::{traits::BlakeTwo256, DigestItem},
@@ -97,7 +97,7 @@ fn inactivity_tracking_correctly_updates_storages_on_orchestrator_chains_author_
             run_block();
 
             assert_eq!(
-                <ActiveCollators<Runtime>>::get(0),
+                <InactiveCollators<Runtime>>::get(0),
                 get_collators_set(vec![ALICE.into(), BOB.into()])
             );
             assert_eq!(
@@ -109,8 +109,8 @@ fn inactivity_tracking_correctly_updates_storages_on_orchestrator_chains_author_
             run_block();
 
             assert_eq!(
-                <ActiveCollators<Runtime>>::get(0),
-                get_collators_set(vec![ALICE.into(), BOB.into()])
+                <InactiveCollators<Runtime>>::get(1),
+                get_collators_set(vec![CHARLIE.into()])
             );
 
             assert_eq!(
@@ -171,11 +171,10 @@ fn inactivity_tracking_correctly_updates_storages_on_orchestrator_chains_author_
                 ),
                 true
             );
-            assert_eq!(<ActiveCollators<Runtime>>::get(0).is_empty(), false);
-
+            assert_eq!(<InactiveCollators<Runtime>>::get(0).is_empty(), false);
             run_to_session(max_inactive_sessions + 1);
             run_block();
-            assert_eq!(<ActiveCollators<Runtime>>::get(0).is_empty(), true);
+            assert_eq!(<InactiveCollators<Runtime>>::get(0).is_empty(), true);
         });
 }
 
@@ -222,8 +221,8 @@ fn inactivity_tracking_correctly_updates_storages_on_container_chains_author_not
                 vec![CHARLIE.into(), DAVE.into()]
             );
             assert_eq!(
-                <ActiveCollators<Runtime>>::get(0),
-                get_collators_set(vec![ALICE.into(), BOB.into(), DAVE.into()])
+                <InactiveCollators<Runtime>>::get(0),
+                get_collators_set(vec![CHARLIE.into()])
             );
 
             assert_eq!(
@@ -240,8 +239,8 @@ fn inactivity_tracking_correctly_updates_storages_on_container_chains_author_not
             );
 
             assert_eq!(
-                <ActiveCollators<Runtime>>::get(1),
-                get_collators_set(vec![ALICE.into(), BOB.into()])
+                <InactiveCollators<Runtime>>::get(1),
+                get_collators_set(vec![CHARLIE.into(), DAVE.into()])
             );
             assert_eq!(
                 <ActiveCollatorsForCurrentSession<Runtime>>::get(),
@@ -305,10 +304,10 @@ fn inactivity_tracking_correctly_updates_storages_on_container_chains_author_not
                 ),
                 false
             );
-            assert_eq!(<ActiveCollators<Runtime>>::get(0).is_empty(), false);
+            assert_eq!(<InactiveCollators<Runtime>>::get(0).is_empty(), false);
 
             run_to_session(max_inactive_sessions + 1);
             run_block();
-            assert_eq!(<ActiveCollators<Runtime>>::get(0).is_empty(), true);
+            assert_eq!(<InactiveCollators<Runtime>>::get(0).is_empty(), true);
         });
 }

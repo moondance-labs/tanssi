@@ -53,23 +53,22 @@ describeSuite({
 
                 // Check that the collators are not added to the activity tracking storage for the current session
                 // before the end of the session
-                const activeCollatorsRecordBeforeActivityPeriod =
-                    await polkadotJs.query.inactivityTracking.activeCollators(startSession);
-                expect(activeCollatorsRecordBeforeActivityPeriod.isEmpty).to.be.true;
+                const inactiveCollatorsRecordBeforeActivityPeriod =
+                    await polkadotJs.query.inactivityTracking.inactiveCollators(startSession);
+                expect(inactiveCollatorsRecordBeforeActivityPeriod.isEmpty).to.be.true;
 
-                // Check that the collators are added to the activity tracking storage for the current session
-                // after the end of the session
+                // Check that the active collators are not added to the inactivity tracking storage for the current session
+                // after the end of the session. Storage must be empty because all collators are active
                 await jumpToSession(context, startSession + 1);
-                const activeCollatorsRecordWithinActivityPeriod =
-                    await polkadotJs.query.inactivityTracking.activeCollators(startSession);
-                expect(activeCollatorsRecordWithinActivityPeriod.size).to.be.equal(3);
-                expect(activeCollatorsRecordWithinActivityPeriod).to.deep.eq(activeCollatorsForSession2AfterNoting);
+                const inactiveCollatorsRecordWithinActivityPeriod =
+                    await polkadotJs.query.inactivityTracking.inactiveCollators(startSession);
+                expect(inactiveCollatorsRecordWithinActivityPeriod.isEmpty).to.be.true;
 
-                // After the end of activity period, the collators should be removed from the activity tracking storage
+                // After the end of activity period, the inactivity tracking storage for startSession should be empty
                 await jumpToSession(context, maxInactiveSessions + startSession + 1);
-                const activeCollatorsRecordAfterActivityPeriod =
-                    await polkadotJs.query.inactivityTracking.activeCollators(startSession);
-                expect(activeCollatorsRecordAfterActivityPeriod.isEmpty).to.be.true;
+                const inactiveCollatorsRecordAfterActivityPeriod =
+                    await polkadotJs.query.inactivityTracking.inactiveCollators(startSession);
+                expect(inactiveCollatorsRecordAfterActivityPeriod.isEmpty).to.be.true;
             },
         });
     },
