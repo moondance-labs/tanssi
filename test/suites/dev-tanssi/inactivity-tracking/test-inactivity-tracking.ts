@@ -11,14 +11,10 @@ describeSuite({
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
-        let bob: KeyringPair;
-        let charlie: KeyringPair;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             alice = context.keyring.alice;
-            bob = context.keyring.bob;
-            charlie = context.keyring.charlie;
             await context.createBlock(polkadotJs.tx.configuration.setMaxOrchestratorCollators(1).signAsync(alice));
         });
         it({
@@ -41,9 +37,11 @@ describeSuite({
                 const activeCollatorsForSession2AfterNoting =
                     await polkadotJs.query.inactivityTracking.activeCollatorsForCurrentSession();
                 expect(activeCollatorsForSession2AfterNoting.size).to.be.equal(3);
-                expect(activeCollatorsForSession2AfterNoting.toHuman()[0]).to.be.equal(bob.address);
-                expect(activeCollatorsForSession2AfterNoting.toHuman()[1]).to.be.equal(charlie.address);
-                expect(activeCollatorsForSession2AfterNoting.toHuman()[2]).to.be.equal(alice.address);
+                expect(activeCollatorsForSession2AfterNoting.toHuman()).to.deep.eq([
+                    context.keyring.bob.address,
+                    context.keyring.charlie.address,
+                    alice.address,
+                ]);
 
                 // If the same collator produces more than 1 block, the activity tracking storage
                 // for the current session should not add the collator again
@@ -51,9 +49,7 @@ describeSuite({
                 const activeCollatorsForSession2AfterSecondNoting =
                     await polkadotJs.query.inactivityTracking.activeCollatorsForCurrentSession();
                 expect(activeCollatorsForSession2AfterSecondNoting.size).to.be.equal(3);
-                expect(activeCollatorsForSession2AfterSecondNoting.toString()).to.be.equal(
-                    activeCollatorsForSession2AfterNoting.toString()
-                );
+                expect(activeCollatorsForSession2AfterSecondNoting).to.deep.eq(activeCollatorsForSession2AfterNoting);
 
                 // Check that the collators are not added to the activity tracking storage for the current session
                 // before the end of the session
@@ -67,9 +63,7 @@ describeSuite({
                 const activeCollatorsRecordWithinActivityPeriod =
                     await polkadotJs.query.inactivityTracking.activeCollators(startSession);
                 expect(activeCollatorsRecordWithinActivityPeriod.size).to.be.equal(3);
-                expect(activeCollatorsRecordWithinActivityPeriod.toHuman()[0]).to.be.equal(bob.address);
-                expect(activeCollatorsRecordWithinActivityPeriod.toHuman()[1]).to.be.equal(charlie.address);
-                expect(activeCollatorsRecordWithinActivityPeriod.toHuman()[2]).to.be.equal(alice.address);
+                expect(activeCollatorsRecordWithinActivityPeriod).to.deep.eq(activeCollatorsForSession2AfterNoting);
 
                 // After the end of activity period, the collators should be removed from the activity tracking storage
                 await jumpToSession(context, maxInactiveSessions + startSession + 1);
