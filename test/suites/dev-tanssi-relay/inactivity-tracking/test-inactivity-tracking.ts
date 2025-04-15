@@ -53,11 +53,12 @@ describeSuite({
                 expect(inactiveCollatorsRecordBeforeActivityWindow.isEmpty).to.be.true;
 
                 // Check that the activeCollatorAddress is not added to the inactivity tracking storage for the current session
-                // after the end of the session. Storage must be empty because all collators are active
+                // after the end of the session.
                 await jumpToSession(context, startSession + 1);
                 const inactiveCollatorsRecordWithinActivityWindow =
                     await polkadotJs.query.inactivityTracking.inactiveCollators(startSession);
-                //expect(inactiveCollatorsRecordWithinActivityWindow.isEmpty).to.be.true;
+                expect(inactiveCollatorsRecordWithinActivityWindow.isEmpty).to.be.false;
+                expect(inactiveCollatorsRecordWithinActivityWindow.toHuman()).not.to.contain(activeCollatorAddress);
 
                 // After the end of activity period, the inactivity tracking storage for startSession should be empty
                 await jumpToSession(context, maxInactiveSessions + startSession + 1);
