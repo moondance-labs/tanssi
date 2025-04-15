@@ -59,6 +59,7 @@ import type {
     Balance,
     Block,
     BlockNumber,
+    Call,
     ExtrinsicInclusionMode,
     Hash,
     Header,
@@ -720,6 +721,44 @@ declare module "@polkadot/api-base/types/calls" {
                 ApiType,
                 (
                     uxt: Extrinsic | IExtrinsic | string | Uint8Array,
+                    len: u32 | AnyNumber | Uint8Array
+                ) => Observable<RuntimeDispatchInfo>
+            >;
+            /**
+             * Query the output of the current LengthToFee given some input
+             **/
+            queryLengthToFee: AugmentedCall<ApiType, (length: u32 | AnyNumber | Uint8Array) => Observable<Balance>>;
+            /**
+             * Query the output of the current WeightToFee given some input
+             **/
+            queryWeightToFee: AugmentedCall<
+                ApiType,
+                (weight: Weight | { refTime?: any; proofSize?: any } | string | Uint8Array) => Observable<Balance>
+            >;
+            /**
+             * Generic call
+             **/
+            [key: string]: DecoratedCallBase<ApiType>;
+        };
+        /** 0xf3ff14d5ab527059/3 */
+        transactionPaymentCallApi: {
+            /**
+             * The call fee details
+             **/
+            queryCallFeeDetails: AugmentedCall<
+                ApiType,
+                (
+                    call: Call | IMethod | string | Uint8Array,
+                    len: u32 | AnyNumber | Uint8Array
+                ) => Observable<FeeDetails>
+            >;
+            /**
+             * The call info
+             **/
+            queryCallInfo: AugmentedCall<
+                ApiType,
+                (
+                    call: Call | IMethod | string | Uint8Array,
                     len: u32 | AnyNumber | Uint8Array
                 ) => Observable<RuntimeDispatchInfo>
             >;
