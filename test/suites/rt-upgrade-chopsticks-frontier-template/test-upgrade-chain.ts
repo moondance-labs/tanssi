@@ -1,7 +1,7 @@
 import { MoonwallContext, beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { alith, generateKeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
-import { chopsticksWaitTillIncluded } from "utils";
+import { chopsticksWaitTillIncluded, testPalletVersions } from "utils";
 
 const MAX_BALANCE_TRANSFER_TRIES = 5;
 describeSuite({
@@ -89,6 +89,17 @@ describeSuite({
                 const query = await api.query.polkadotXcm.queries(xcmQueryToAnalyze);
                 const version = Object.keys(query.toJSON().versionNotifier.origin)[0];
                 expect(version).to.be.equal(`v${currentXcmVersion.toString()}`);
+            },
+        });
+
+        it({
+            id: "T4",
+            title: "Test pallet versions for missed migrations",
+            test: async () => {
+                const command = "../target/release/container-chain-frontier-node";
+                const args = ["build-spec", "--raw"];
+
+                await testPalletVersions(api, command, args);
             },
         });
     },
