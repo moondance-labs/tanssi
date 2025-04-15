@@ -732,24 +732,11 @@ jobs:
               with:
                   name: runtimes
                   path: target/release/wbuild/${{ matrix.chain }}-runtime/
-            - name: Retrieve tanssi binary from docker (for plainSpec generation)
+            - name: "Install and run upgrade test"
               run: |
-                  TANSSI_COMMIT=${{ needs.set-tags.outputs.latest_rt_sha8 }}
-                  DOCKER_TAG="moondancelabs/tanssi:sha-$TANSSI_COMMIT"
-                  docker rm -f tanssi_container 2> /dev/null | true
-                  docker create --name tanssi_container $DOCKER_TAG bash
-                  docker cp tanssi_container:tanssi/tanssi-node test/tmp/tanssi_rt
-                  docker rm -f tanssi_container
-            - name: "Run zombie upgrade test"
-              run: |
-                  chmod uog+x target/release/tanssi-node
                   cd test
                   pnpm install
-                  chmod uog+x tmp/tanssi_rt
-                  tmp/tanssi_rt build-spec --chain ${{ matrix.chain }}-local > tmp/${{ matrix.chain }}-plain-spec.json
-                  pnpm tsx scripts/modify-plain-specs.ts process tmp/${{ matrix.chain }}-plain-spec.json tmp/${{ matrix.chain }}-modified-spec.json
-                  tmp/tanssi_rt build-spec --chain tmp/${{ matrix.chain }}-modified-spec.json --raw > tmp/${{ matrix.chain }}-raw-spec.json
-                  pnpm moonwall test zombie_${{ matrix.chain }}_upgrade
+                  pnpm moonwall test zombie_${{ matrix.chains.chain }}_upgrade            
             - name: Zip and Upload Node Logs on Failure
               if: failure()
               run: |
