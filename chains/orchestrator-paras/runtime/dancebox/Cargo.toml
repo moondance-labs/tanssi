@@ -33,6 +33,7 @@ pallet-collator-assignment-runtime-api = { workspace = true }
 pallet-configuration = { workspace = true }
 pallet-data-preservers = { workspace = true }
 pallet-data-preservers-runtime-api = { workspace = true }
+pallet-inactivity-tracking = { workspace = true }
 pallet-inflation-rewards = { workspace = true }
 pallet-initializer = { workspace = true }
 pallet-pooled-staking = { workspace = true }
@@ -207,6 +208,7 @@ std = [
 	"pallet-data-preservers/std",
 	"pallet-foreign-asset-creator/std",
 	"pallet-identity/std",
+	"pallet-inactivity-tracking/std",
 	"pallet-inflation-rewards/std",
 	"pallet-initializer/std",
 	"pallet-invulnerables/std",
@@ -317,6 +319,7 @@ runtime-benchmarks = [
 	"pallet-data-preservers/runtime-benchmarks",
 	"pallet-foreign-asset-creator/runtime-benchmarks",
 	"pallet-identity/runtime-benchmarks",
+	"pallet-inactivity-tracking/runtime-benchmarks",
 	"pallet-inflation-rewards/runtime-benchmarks",
 	"pallet-invulnerables/runtime-benchmarks",
 	"pallet-message-queue/runtime-benchmarks",
@@ -383,6 +386,7 @@ try-runtime = [
 	"pallet-data-preservers/try-runtime",
 	"pallet-foreign-asset-creator/try-runtime",
 	"pallet-identity/try-runtime",
+	"pallet-inactivity-tracking/try-runtime",
 	"pallet-inflation-rewards/try-runtime",
 	"pallet-initializer/try-runtime",
 	"pallet-invulnerables/try-runtime",

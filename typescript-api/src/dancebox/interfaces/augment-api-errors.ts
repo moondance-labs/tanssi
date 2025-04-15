@@ -378,6 +378,24 @@ declare module "@polkadot/api-base/types/errors" {
              **/
             [key: string]: AugmentedError<ApiType>;
         };
+        inactivityTracking: {
+            /**
+             * Error returned when the activity tracking status is attempted to be updated before the end session
+             **/
+            ActivityStatusUpdateSuspended: AugmentedError<ApiType>;
+            /**
+             * The size of a collator set for a session has already reached MaxCollatorsPerSession value
+             **/
+            MaxCollatorsPerSessionReached: AugmentedError<ApiType>;
+            /**
+             * The size of a chains set for a session has already reached MaxContainerChains value
+             **/
+            MaxContainerChainsReached: AugmentedError<ApiType>;
+            /**
+             * Generic error
+             **/
+            [key: string]: AugmentedError<ApiType>;
+        };
         invulnerables: {
             /**
              * Account is already an Invulnerable.
@@ -706,9 +724,13 @@ declare module "@polkadot/api-base/types/errors" {
         };
         pooledStaking: {
             CandidateTransferingOwnSharesForbidden: AugmentedError<ApiType>;
+            CollatorCannotBeNotifiedAsInactive: AugmentedError<ApiType>;
+            CollatorDoesNotExist: AugmentedError<ApiType>;
             DisabledFeature: AugmentedError<ApiType>;
             InconsistentState: AugmentedError<ApiType>;
             InvalidPalletSetting: AugmentedError<ApiType>;
+            MarkingInvulnerableOfflineInvalid: AugmentedError<ApiType>;
+            MarkingOfflineNotEnabled: AugmentedError<ApiType>;
             MathOverflow: AugmentedError<ApiType>;
             MathUnderflow: AugmentedError<ApiType>;
             NoOneIsStaking: AugmentedError<ApiType>;

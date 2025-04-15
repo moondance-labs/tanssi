@@ -661,6 +661,13 @@ impl pallet_initializer::ApplyNewSession<Runtime> for OwnApplySession {
             &queued_id_to_nimbus_map,
             &assignments.next_assignment,
         );
+
+        // Next: InactivityTracking
+        InactivityTracking::process_ended_session();
+    }
+
+    fn on_before_session_ending() {
+        InactivityTracking::process_inactive_chains_for_session();
     }
 }
 
@@ -1074,7 +1081,12 @@ impl pallet_author_noting::Config for Runtime {
     type ContainerChains = CollatorAssignment;
     type SlotBeacon = dp_consensus::AuraDigestSlotBeacon<Runtime>;
     type ContainerChainAuthor = CollatorAssignment;
-    type AuthorNotingHook = (XcmCoreBuyer, InflationRewards, ServicesPayment);
+    type AuthorNotingHook = (
+        XcmCoreBuyer,
+        InflationRewards,
+        ServicesPayment,
+        InactivityTracking,
+    );
     type RelayOrPara = pallet_author_noting::ParaMode<
         cumulus_pallet_parachain_system::RelaychainDataProvider<Self>,
     >;
@@ -1545,6 +1557,20 @@ impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
     }
 }
 
+parameter_types! {
+    pub const MaxCandidatesBufferSize: u32 = 100;
+}
+
+pub struct InvulnerableCheckHandler<AccountId>(PhantomData<AccountId>);
+
+impl tp_traits::CheckInvulnerables<cumulus_primitives_core::relay_chain::AccountId>
+    for InvulnerableCheckHandler<cumulus_primitives_core::relay_chain::AccountId>
+{
+    fn is_invulnerable(account: &cumulus_primitives_core::relay_chain::AccountId) -> bool {
+        Invulnerables::invulnerables().contains(account)
+    }
+}
+
 impl pallet_pooled_staking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
@@ -1557,8 +1583,10 @@ impl pallet_pooled_staking::Config for Runtime {
     type RewardsCollatorCommission = RewardsCollatorCommission;
     type JoiningRequestTimer = SessionTimer<StakingSessionDelay>;
     type LeavingRequestTimer = SessionTimer<StakingSessionDelay>;
-    type EligibleCandidatesBufferSize = ConstU32<100>;
+    type EligibleCandidatesBufferSize = MaxCandidatesBufferSize;
     type EligibleCandidatesFilter = CandidateHasRegisteredKeys;
+    type ActivityTrackingHelper = InactivityTracking;
+    type InvulnerablesHelper = InvulnerableCheckHandler<AccountId>;
     type WeightInfo = weights::pallet_pooled_staking::SubstrateWeight<Runtime>;
 }
 
@@ -1729,6 +1757,29 @@ impl pallet_multisig::Config for Runtime {
     type WeightInfo = weights::pallet_multisig::SubstrateWeight<Runtime>;
 }
 
+pub struct MockCurrentSessionGetter;
+
+impl tp_traits::GetSessionIndex<u32> for MockCurrentSessionGetter {
+    fn session_index() -> u32 {
+        1
+    }
+}
+
+impl pallet_inactivity_tracking::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type CollatorId = CollatorId;
+    type MaxInactiveSessions = ConstU32<5>;
+    type MaxCollatorsPerSession = MaxCandidatesBufferSize;
+    type MaxContainerChains = MaxLengthParaIds;
+    #[cfg(not(feature = "runtime-benchmarks"))]
+    type CurrentSessionIndex = CurrentSessionIndexGetter;
+    #[cfg(feature = "runtime-benchmarks")]
+    type CurrentSessionIndex = MockCurrentSessionGetter;
+    type GetSelfChainBlockAuthor = GetSelfChainBlockAuthor;
+    type ContainerChainsFetcher = CollatorAssignment;
+    type WeightInfo = weights::pallet_inactivity_tracking::SubstrateWeight<Runtime>;
+}
+
 // Create the runtime by composing the FRAME pallets that were previously configured.
 construct_runtime!(
     pub enum Runtime
@@ -1773,6 +1824,7 @@ construct_runtime!(
         PooledStaking: pallet_pooled_staking = 34,
         // InflationRewards must be after Session and AuthorInherent
         InflationRewards: pallet_inflation_rewards = 35,
+        InactivityTracking: pallet_inactivity_tracking = 36,
 
         // Treasury stuff.
         Treasury: pallet_treasury::{Pallet, Storage, Config<T>, Event<T>, Call} = 40,
@@ -1822,6 +1874,7 @@ mod benches {
         [pallet_session, SessionBench::<Runtime>]
         [pallet_author_inherent, AuthorInherent]
         [pallet_pooled_staking, PooledStaking]
+        [pallet_inactivity_tracking, InactivityTracking]
         [pallet_treasury, Treasury]
         [cumulus_pallet_xcmp_queue, XcmpQueue]
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
