@@ -32,7 +32,7 @@ use {
     sp_runtime::{traits::Get, BoundedBTreeSet},
     sp_staking::SessionIndex,
     tp_traits::{
-        AuthorNotingHook, AuthorNotingInfo, CurrentEligibleCollatorsHelper, GetSessionIndex,
+        AuthorNotingHook, AuthorNotingInfo, GetContainerChainsWithCollators, GetSessionIndex,
         MaybeSelfChainBlockAuthor, NodeActivityTrackingHelper,
     },
 };
@@ -56,6 +56,7 @@ pub use pallet::*;
 
 #[frame_support::pallet]
 pub mod pallet {
+    use tp_traits::ForSession;
     use {
         super::*,
         crate::weights::WeightInfo,
@@ -121,7 +122,7 @@ pub mod pallet {
         type CurrentSessionIndex: GetSessionIndex<SessionIndex>;
 
         /// Helper that fetches a list of collators eligible to produce blocks for the current session
-        type CurrentCollatorsListFetcher: CurrentEligibleCollatorsHelper<Self::CollatorId>;
+        type CurrentCollatorsFetcher: GetContainerChainsWithCollators<Self::CollatorId>;
 
         /// Helper that returns the block author for the orchestrator chain (if it exists)
         type GetSelfChainBlockAuthor: MaybeSelfChainBlockAuthor<Self::CollatorId>;
@@ -275,10 +276,12 @@ pub mod pallet {
         pub fn on_before_session_ending() {
             if let Ok(inactive_collators) =
                 BoundedBTreeSet::<T::CollatorId, T::MaxCollatorsPerSession>::try_from(
-                    T::CurrentCollatorsListFetcher::get_eligible_collators()
-                        .difference(&<ActiveCollatorsForCurrentSession<T>>::get())
-                        .cloned()
-                        .collect::<BTreeSet<T::CollatorId>>(),
+                    T::CurrentCollatorsFetcher::get_all_collators_assigned_to_chains(
+                        ForSession::Current,
+                    )
+                    .difference(&<ActiveCollatorsForCurrentSession<T>>::get())
+                    .cloned()
+                    .collect::<BTreeSet<T::CollatorId>>(),
                 )
             {
                 InactiveCollators::<T>::insert(

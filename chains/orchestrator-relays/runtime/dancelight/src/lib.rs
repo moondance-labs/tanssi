@@ -1835,7 +1835,7 @@ impl pallet_inactivity_tracking::Config for Runtime {
     type MaxInactiveSessions = ConstU32<5>;
     type MaxCollatorsPerSession = ConstU32<100>;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
-    type CurrentCollatorsListFetcher = PooledStaking;
+    type CurrentCollatorsFetcher = TanssiCollatorAssignment;
     type GetSelfChainBlockAuthor = ();
     type WeightInfo = weights::pallet_inactivity_tracking::SubstrateWeight<Runtime>;
 }

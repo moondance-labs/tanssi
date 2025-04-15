@@ -156,6 +156,8 @@ pub enum ForSession {
 pub trait GetContainerChainsWithCollators<AccountId> {
     fn container_chains_with_collators(for_session: ForSession) -> Vec<(ParaId, Vec<AccountId>)>;
 
+    fn get_all_collators_assigned_to_chains(for_session: ForSession) -> BTreeSet<AccountId>;
+
     #[cfg(feature = "runtime-benchmarks")]
     fn set_container_chains_with_collators(
         for_session: ForSession,
@@ -611,11 +613,6 @@ impl FullRotationModes {
 // In starlight, used to retrieve the external index associated to validators
 pub trait ExternalIndexProvider {
     fn get_external_index() -> u64;
-}
-
-// A trait to retrieve the current set of collators that are eligible to produce blocks
-pub trait CurrentEligibleCollatorsHelper<AccountId> {
-    fn get_eligible_collators() -> BTreeSet<AccountId>;
 }
 
 // A trait to verify if a node has been inactive during the last minimum activity

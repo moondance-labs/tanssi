@@ -640,6 +640,22 @@ pub mod pallet {
             chains.container_chains.into_iter().collect()
         }
 
+        fn get_all_collators_assigned_to_chains(for_session: ForSession) -> BTreeSet<T::AccountId> {
+            let mut all_chains: Vec<T::AccountId> =
+                Self::container_chains_with_collators(for_session)
+                    .iter()
+                    .flat_map(|(_para_id, collators)| collators.iter())
+                    .cloned()
+                    .collect();
+            all_chains.extend(
+                Self::collator_container_chain()
+                    .orchestrator_chain
+                    .iter()
+                    .cloned(),
+            );
+            all_chains.into_iter().collect()
+        }
+
         #[cfg(feature = "runtime-benchmarks")]
         fn set_container_chains_with_collators(
             for_session: ForSession,

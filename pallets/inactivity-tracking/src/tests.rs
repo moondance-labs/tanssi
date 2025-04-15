@@ -29,7 +29,7 @@ fn get_active_collators(block: u32) -> AuthorNotingInfo<AccountId> {
     AuthorNotingInfo {
         block_number: block,
         author: COLLATOR_1,
-        para_id: CONTAINER_CHAIN_ID,
+        para_id: CONTAINER_CHAIN_ID_1,
     }
 }
 

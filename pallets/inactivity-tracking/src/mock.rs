@@ -21,7 +21,7 @@ use {
         BuildStorage,
     },
     sp_std::collections::btree_set::BTreeSet,
-    tp_traits::ParaId,
+    tp_traits::{ForSession, ParaId},
 };
 
 type Block = frame_system::mocking::MockBlock<Test>;
@@ -29,7 +29,8 @@ pub type AccountId = u64;
 
 pub const COLLATOR_1: AccountId = 1;
 pub const COLLATOR_2: AccountId = 2;
-pub const CONTAINER_CHAIN_ID: ParaId = ParaId::new(3000);
+pub const CONTAINER_CHAIN_ID_1: ParaId = ParaId::new(3000);
+pub const CONTAINER_CHAIN_ID_2: ParaId = ParaId::new(3001);
 pub const SESSION_BLOCK_LENGTH: u64 = 5;
 
 // Configure a mock runtime to test the pallet.
@@ -86,13 +87,27 @@ impl tp_traits::GetSessionIndex<u32> for CurrentSessionIndexGetter {
     fn skip_to_session(_session_index: u32) {}
 }
 
-pub struct CurrentCollatorsListFetcher;
-impl tp_traits::CurrentEligibleCollatorsHelper<AccountId> for CurrentCollatorsListFetcher {
-    fn get_eligible_collators() -> BTreeSet<AccountId> {
+pub struct MockContainerChainsInfoFetcher;
+impl tp_traits::GetContainerChainsWithCollators<AccountId> for MockContainerChainsInfoFetcher {
+    fn container_chains_with_collators(_for_session: ForSession) -> Vec<(ParaId, Vec<AccountId>)> {
+        vec![
+            (CONTAINER_CHAIN_ID_1, vec![COLLATOR_1, COLLATOR_2]),
+            (CONTAINER_CHAIN_ID_2, vec![]),
+        ]
+    }
+
+    fn get_all_collators_assigned_to_chains(_for_session: ForSession) -> BTreeSet<AccountId> {
         let mut collators = BTreeSet::new();
         collators.insert(COLLATOR_1);
         collators.insert(COLLATOR_2);
         collators
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn set_container_chains_with_collators(
+        for_session: ForSession,
+        container_chains: &[(ParaId, Vec<AccountId>)],
+    ) {
     }
 }
 
@@ -102,7 +117,7 @@ impl pallet_inactivity_tracking::Config for Test {
     type MaxInactiveSessions = ConstU32<2>;
     type MaxCollatorsPerSession = ConstU32<5>;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
-    type CurrentCollatorsListFetcher = CurrentCollatorsListFetcher;
+    type CurrentCollatorsFetcher = MockContainerChainsInfoFetcher;
     type GetSelfChainBlockAuthor = ();
     type WeightInfo = ();
 }
