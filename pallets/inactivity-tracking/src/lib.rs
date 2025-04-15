@@ -281,7 +281,7 @@ pub mod pallet {
         }
 
         /// Internal update the current session active collator records.
-        /// This function is called when a container chain or orchestrator collator is noted.
+        /// This function is called when a container chain or orchestrator chain collator is noted.
         pub fn on_author_noted(author: T::CollatorId) -> Weight {
             let mut total_weight = T::DbWeight::get().reads_writes(1, 0);
             let _ = <ActiveCollatorsForCurrentSession<T>>::try_mutate(

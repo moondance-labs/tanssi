@@ -3565,7 +3565,7 @@ export default {
     PalletInactivityTrackingCall: {
         _enum: {
             set_inactivity_tracking_status: {
-                isEnabled: "bool",
+                enableInactivityTracking: "bool",
             },
         },
     },
@@ -5098,7 +5098,8 @@ export default {
         _enum: [
             "MaxCollatorsPerSessionReached",
             "ActivityTrackingStatusUpdateSuspended",
-            "ActivityTrackingStatusAlreadySet",
+            "ActivityTrackingStatusAlreadyEnabled",
+            "ActivityTrackingStatusAlreadyDisabled",
         ],
     },
     /**

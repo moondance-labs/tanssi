@@ -2898,7 +2898,7 @@ declare module "@polkadot/types/lookup" {
     interface PalletInactivityTrackingCall extends Enum {
         readonly isSetInactivityTrackingStatus: boolean;
         readonly asSetInactivityTrackingStatus: {
-            readonly isEnabled: bool;
+            readonly enableInactivityTracking: bool;
         } & Struct;
         readonly type: "SetInactivityTrackingStatus";
     }
@@ -7910,11 +7910,13 @@ declare module "@polkadot/types/lookup" {
     interface PalletInactivityTrackingError extends Enum {
         readonly isMaxCollatorsPerSessionReached: boolean;
         readonly isActivityTrackingStatusUpdateSuspended: boolean;
-        readonly isActivityTrackingStatusAlreadySet: boolean;
+        readonly isActivityTrackingStatusAlreadyEnabled: boolean;
+        readonly isActivityTrackingStatusAlreadyDisabled: boolean;
         readonly type:
             | "MaxCollatorsPerSessionReached"
             | "ActivityTrackingStatusUpdateSuspended"
-            | "ActivityTrackingStatusAlreadySet";
+            | "ActivityTrackingStatusAlreadyEnabled"
+            | "ActivityTrackingStatusAlreadyDisabled";
     }
 
     /** @name PalletTreasuryProposal (700) */
