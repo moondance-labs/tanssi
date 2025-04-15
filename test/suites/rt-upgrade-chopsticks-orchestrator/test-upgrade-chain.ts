@@ -4,7 +4,7 @@ import { generateKeyringPair } from "@moonwall/util";
 import { Keyring, type ApiPromise } from "@polkadot/api";
 
 import type { KeyringPair } from "@polkadot/keyring/types";
-import { chopsticksWaitTillIncluded } from "utils";
+import { chopsticksWaitTillIncluded, testPalletVersions } from "utils";
 
 describeSuite({
     id: "RT01",
@@ -216,6 +216,24 @@ describeSuite({
                         "Session index should be incremented"
                     ).toBe(newSessionIndex + 1);
                 }
+            },
+        });
+
+        it({
+            id: "T6",
+            title: "Test pallet versions for missed migrations",
+            test: async () => {
+                let command: string;
+                let args: string[];
+                if (runtimeName.includes("light")) {
+                    command = "../target/release/tanssi-relay";
+                    args = ["build-spec", "--chain=dancelight-local", "--raw"];
+                } else {
+                    command = "../target/release/tanssi-node";
+                    args = ["build-spec", "--chain=dancebox-local", "--raw"];
+                }
+
+                await testPalletVersions(api, command, args);
             },
         });
 
