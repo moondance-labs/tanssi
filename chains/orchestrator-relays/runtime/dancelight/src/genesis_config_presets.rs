@@ -694,6 +694,29 @@ pub fn dancelight_development_config_genesis(
     )
 }
 
+pub fn starlight_development_config_genesis(
+    container_chains: Vec<(ParaId, ContainerChainGenesisData, Vec<Vec<u8>>)>,
+    invulnerables: Vec<String>,
+) -> serde_json::Value {
+    //TODO: change to starlight testnet genesis
+    dancelight_testnet_genesis(
+        Vec::from([get_authority_keys_from_seed("Alice")]),
+        Sr25519Keyring::Alice.to_account_id(),
+        None,
+        container_chains,
+        invulnerables,
+        HostConfiguration {
+            max_collators: 100u32,
+            min_orchestrator_collators: 0u32,
+            max_orchestrator_collators: 0u32,
+            collators_per_container: 2u32,
+            full_rotation_period: runtime_common::prod_or_fast!(24u32, 5u32),
+            max_parachain_cores_percentage: Some(Perbill::from_percent(60)),
+            ..Default::default()
+        },
+    )
+}
+
 //local_testnet
 pub fn dancelight_local_testnet_genesis(
     container_chains: Vec<(ParaId, ContainerChainGenesisData, Vec<Vec<u8>>)>,
