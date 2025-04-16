@@ -1,0 +1,24 @@
+[package]
+name = "westend-system-emulated-network"
+description = "Westend System emulated bridged network"
+edition = "2021"
+license = "GPL-3.0-only"
+publish = false
+version = "0.0.0"
+[package.authors]
+workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+container-chain-template-simple-runtime  = { workspace = true, features = [ "std" ] }
+cumulus-primitives-core = { workspace = true }
+dancebox-emulated-chain = { workspace = true }
+frame-support = { workspace = true, features = [ "tuples-96" ] }
+frontier-template-emulated-chain = { workspace = true }
+simple-template-emulated-chain = { workspace = true }
+sp-keyring = { workspace = true }
+tanssi-emulated-integration-tests-common = { workspace = true }
+westend-emulated-chain = { workspace = true }
+xcm-emulator = { workspace = true }
