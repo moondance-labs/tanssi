@@ -16,8 +16,9 @@
 
 use {
     crate::{
-        candidate::Candidates, weights::WeightInfo, Candidate, Config, CreditOf, Delegator, Error,
-        Event, Pallet, Pools, PoolsKey, Shares, Stake,
+        candidate::Candidates, weights::WeightInfo, Candidate, CandidateSummaries, Config,
+        CreditOf, Delegator, DelegatorCandidateSummaries, Error, Event, Pallet, Pools, PoolsKey,
+        Shares, Stake,
     },
     core::marker::PhantomData,
     frame_support::{
@@ -25,6 +26,7 @@ use {
         pallet_prelude::*,
         traits::{fungible::Balanced, Imbalance},
     },
+    serde::{Deserialize, Serialize},
     sp_core::Get,
     sp_runtime::traits::{CheckedAdd, CheckedDiv, Zero},
     tp_maths::{ErrAdd, ErrMul, ErrSub, MulDiv},
@@ -52,6 +54,8 @@ pub trait Pool<T: Config> {
 
     /// Get the initial value of a share in case none exist yet.
     fn initial_share_value() -> Stake<T::Balance>;
+    /// Pool variant in PoolKind
+    fn pool_kind() -> PoolKind;
 
     /// Convert an amount of shares to an amount of staked currency for given candidate.
     /// Returns an error if there are no shares for that candidate.
@@ -158,9 +162,32 @@ pub trait Pool<T: Config> {
 
         let stake = Self::shares_to_stake_or_init(candidate, shares)?;
 
+        let old_shares = Self::shares(candidate, delegator);
+
         let new_shares_supply = Self::shares_supply(candidate).0.err_add(&shares.0)?;
-        let new_shares = Self::shares(candidate, delegator).0.err_add(&shares.0)?;
+        let new_shares = old_shares.0.err_add(&shares.0)?;
         let new_total_stake = Self::total_staked(candidate).0.err_add(&stake.0)?;
+
+        let new_pool_member = old_shares.0.is_zero();
+        let mut new_delegator = false;
+
+        DelegatorCandidateSummaries::<T>::mutate(&delegator, &candidate, |summary| {
+            if summary.is_empty() {
+                new_delegator = true;
+            }
+            summary.set_pool(Self::pool_kind(), true);
+        });
+
+        CandidateSummaries::<T>::mutate(&candidate, |summary| {
+            if new_pool_member {
+                let count = summary.pool_delegators_mut(Self::pool_kind());
+                *count = count.saturating_add(1);
+            }
+
+            if new_delegator {
+                summary.delegators = summary.delegators.saturating_add(1);
+            }
+        });
 
         Self::set_shares_supply(candidate, Shares(new_shares_supply));
         Self::set_shares(candidate, delegator, Shares(new_shares));
@@ -184,6 +211,45 @@ pub trait Pool<T: Config> {
         let new_shares_supply = Self::shares_supply(candidate).0.err_sub(&shares.0)?;
         let new_shares = Self::shares(candidate, delegator).0.err_sub(&shares.0)?;
         let new_total_stake = Self::total_staked(candidate).0.err_sub(&stake.0)?;
+
+        let rem_pool_member = new_shares.is_zero();
+        let mut rem_delegator = false;
+
+        DelegatorCandidateSummaries::<T>::mutate_exists(&delegator, &candidate, |summary| {
+            let mut s = summary.unwrap_or_default();
+
+            if rem_pool_member {
+                s.set_pool(Self::pool_kind(), false);
+            }
+
+            // storage entry will be deleted if empty
+            if s.is_empty() {
+                rem_delegator = true;
+                *summary = None;
+            } else {
+                *summary = Some(s)
+            };
+        });
+
+        CandidateSummaries::<T>::mutate_exists(&candidate, |summary| {
+            let mut s = summary.unwrap_or_default();
+
+            if rem_pool_member {
+                let count = s.pool_delegators_mut(Self::pool_kind());
+                *count = count.saturating_sub(1);
+            }
+
+            if rem_delegator {
+                s.delegators = s.delegators.saturating_sub(1);
+            }
+
+            // storage entry will be deleted if empty
+            if s.delegators == 0 {
+                *summary = None;
+            } else {
+                *summary = Some(s)
+            }
+        });
 
         Self::set_shares_supply(candidate, Shares(new_shares_supply));
         Self::set_shares(candidate, delegator, Shares(new_shares));
@@ -301,6 +367,10 @@ macro_rules! impl_pool {
 
             fn initial_share_value() -> Stake<T::Balance> {
                 Stake($init)
+            }
+
+            fn pool_kind() -> PoolKind {
+                PoolKind::$name
             }
         }
     };
@@ -561,4 +631,190 @@ fn distribute_rewards_inner<T: Config>(
     });
 
     Ok(candidate_manual_rewards)
+}
+
+const MASK_JOINING: u8 = 1u8;
+const MASK_AUTO: u8 = 1u8 << 1;
+const MASK_MANUAL: u8 = 1u8 << 2;
+const MASK_LEAVING: u8 = 1u8 << 3;
+
+/// Enum of all available pools.
+/// Must match with the names of the pool structs generated with `impl_pool!`.
+#[derive(
+    RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo, Serialize, Deserialize,
+)]
+pub enum PoolKind {
+    Joining,
+    AutoCompounding,
+    ManualRewards,
+    Leaving,
+}
+
+/// Restricted list of pools that represent active delegation. Those can be targetted by joining
+/// requests.
+#[derive(
+    RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo, Serialize, Deserialize,
+)]
+pub enum ActivePoolKind {
+    AutoCompounding,
+    ManualRewards,
+}
+
+impl From<ActivePoolKind> for PoolKind {
+    fn from(value: ActivePoolKind) -> Self {
+        match value {
+            ActivePoolKind::AutoCompounding => PoolKind::AutoCompounding,
+            ActivePoolKind::ManualRewards => PoolKind::ManualRewards,
+        }
+    }
+}
+
+impl PoolKind {
+    fn to_bitmask(&self) -> u8 {
+        match self {
+            Self::Joining => MASK_JOINING,
+            Self::AutoCompounding => MASK_AUTO,
+            Self::ManualRewards => MASK_MANUAL,
+            Self::Leaving => MASK_LEAVING,
+        }
+    }
+}
+
+/// Keeps track of which pools of some candidate a delegator is into.
+/// This is used in storage to have a quick way to fetch all the delegations of
+/// a delegator, and then know exactly which storage entries to look at to get
+/// more detailed info.
+#[derive(
+    RuntimeDebug,
+    Default,
+    PartialEq,
+    Eq,
+    Encode,
+    Decode,
+    Copy,
+    Clone,
+    TypeInfo,
+    Serialize,
+    Deserialize,
+    MaxEncodedLen,
+)]
+pub struct DelegatorCandidateSummary(pub(crate) u8);
+
+impl DelegatorCandidateSummary {
+    pub fn new() -> Self {
+        Self(0)
+    }
+
+    fn bit(&self, mask: u8) -> bool {
+        self.0 & mask != 0
+    }
+
+    fn set_bit(&mut self, mask: u8, value: bool) {
+        if value {
+            self.0 = self.0 | mask
+        } else {
+            self.0 = self.0 & !mask
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.0 == 0
+    }
+
+    pub fn joining(&self) -> bool {
+        self.bit(MASK_JOINING)
+    }
+
+    pub fn auto(&self) -> bool {
+        self.bit(MASK_AUTO)
+    }
+
+    pub fn manual(&self) -> bool {
+        self.bit(MASK_MANUAL)
+    }
+
+    pub fn leaving(&self) -> bool {
+        self.bit(MASK_LEAVING)
+    }
+
+    pub fn pool(&self, pool: PoolKind) -> bool {
+        self.bit(pool.to_bitmask())
+    }
+
+    pub fn set_pool(&mut self, pool: PoolKind, value: bool) {
+        self.set_bit(pool.to_bitmask(), value)
+    }
+
+    pub fn with_bit(mut self, mask: u8, value: bool) -> Self {
+        self.set_bit(mask, value);
+        self
+    }
+
+    pub fn with_joining(self, value: bool) -> Self {
+        self.with_bit(MASK_JOINING, value)
+    }
+
+    pub fn with_auto(self, value: bool) -> Self {
+        self.with_bit(MASK_AUTO, value)
+    }
+
+    pub fn with_manual(self, value: bool) -> Self {
+        self.with_bit(MASK_MANUAL, value)
+    }
+
+    pub fn with_leaving(self, value: bool) -> Self {
+        self.with_bit(MASK_LEAVING, value)
+    }
+
+    pub fn with_pool(self, pool: PoolKind, value: bool) -> Self {
+        self.with_bit(pool.to_bitmask(), value)
+    }
+}
+
+/// Keeps track of stats that are useful for dApps and block explorers which can
+/// be tricky or expensive to gather otherwise.
+#[derive(
+    RuntimeDebug,
+    Default,
+    PartialEq,
+    Eq,
+    Encode,
+    Decode,
+    Copy,
+    Clone,
+    TypeInfo,
+    Serialize,
+    Deserialize,
+    MaxEncodedLen,
+)]
+pub struct CandidateSummary {
+    /// Amount of delegators in any pool without duplicates.
+    pub delegators: u32,
+    /// Amount of joining delegators. A single delegator joining multiple times
+    /// only count once.
+    pub joining_delegators: u32,
+    /// Amount of delegators in the auto compounding pool.
+    pub auto_compounding_delegators: u32,
+    /// Amount of delegators in the manual rewards pool.
+    pub manual_rewards_delegators: u32,
+    /// Amount of leaving delegators. A single delegator leaving multiple times
+    //// only count once.
+    pub leaving_delegators: u32,
+}
+
+impl CandidateSummary {
+    pub fn pool_delegators_mut(&mut self, pool: PoolKind) -> &mut u32 {
+        match pool {
+            PoolKind::Joining => &mut self.joining_delegators,
+            PoolKind::AutoCompounding => &mut self.auto_compounding_delegators,
+            PoolKind::ManualRewards => &mut self.manual_rewards_delegators,
+            PoolKind::Leaving => &mut self.leaving_delegators,
+        }
+    }
+
+    pub fn with_pool(mut self, pool: PoolKind, count: u32) -> Self {
+        let pool = self.pool_delegators_mut(pool);
+        *pool = count;
+        self
+    }
 }
