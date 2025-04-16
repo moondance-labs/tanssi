@@ -333,7 +333,7 @@ pub mod pallet {
 
             // Ensure we don't accidentally pass huge params that would stall the chain
             ensure!(
-                num_msgs <= 32 && msg_size <= 900,
+                num_msgs <= 100 && msg_size <= 2048,
                 Error::<T>::RootTestInvalidParams
             );
 
