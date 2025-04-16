@@ -14,59 +14,38 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use hex_literal::hex;
 use snowbridge_beacon_primitives::{Fork, ForkVersions};
 
-#[cfg(feature = "runtime-benchmarks")]
-pub const ELECTRA_TEST_FORK_EPOCH: u64 = 80000000000;
-#[cfg(not(feature = "runtime-benchmarks"))]
-pub const ELECTRA_TEST_FORK_EPOCH: u64 = 0;
+enum BuildEnv {
+    Prod,
+    Benchmark,
+    TestLike,
+}
 
-/// Fork versions for different build environments.
-pub const fn fork_versions() -> ForkVersions {
-    #[cfg(any(
-        feature = "std",
-        feature = "fast-runtime",
-        feature = "runtime-benchmarks",
-        test
-    ))]
-    {
-        ForkVersions {
-            genesis: Fork {
-                version: [0, 0, 0, 0],
-                epoch: 0,
-            },
-            altair: Fork {
-                version: [1, 0, 0, 0],
-                epoch: 0,
-            },
-            bellatrix: Fork {
-                version: [2, 0, 0, 0],
-                epoch: 0,
-            },
-            capella: Fork {
-                version: [3, 0, 0, 0],
-                epoch: 0,
-            },
-            deneb: Fork {
-                version: [4, 0, 0, 0],
-                epoch: 0,
-            },
-            electra: Fork {
-                version: [5, 0, 0, 0],
-                epoch: ELECTRA_TEST_FORK_EPOCH,
-            },
-        }
+const fn current_env() -> BuildEnv {
+    if cfg!(feature = "runtime-benchmarks") {
+        BuildEnv::Benchmark
+    } else if cfg!(any(feature = "std", feature = "fast-runtime", test)) {
+        BuildEnv::TestLike
+    } else {
+        BuildEnv::Prod
     }
+}
 
-    #[cfg(not(any(
-        feature = "std",
-        feature = "fast-runtime",
-        feature = "runtime-benchmarks",
-        test
-    )))]
-    {
-        use hex_literal::hex;
-        ForkVersions {
+// Very stupid, but benchmarks are written assuming a fork epoch,
+// and test vectors assuming another one
+// We need allow dead code here because for regular builds this variable is not used
+// This variable is only used in test, fast-runtime or runtime-benchmarks
+pub const ELECTRA_TEST_FORK_EPOCH: u64 = match current_env() {
+    BuildEnv::Benchmark => 80000000000,
+    _ => 0,
+};
+
+// For tests, benchmarks and fast-runtime configurations we use the mocked fork versions
+pub const fn fork_versions() -> ForkVersions {
+    match current_env() {
+        BuildEnv::Prod => ForkVersions {
             genesis: Fork {
                 version: hex!("90000069"),
                 epoch: 0,
@@ -91,6 +70,32 @@ pub const fn fork_versions() -> ForkVersions {
                 version: hex!("90000074"),
                 epoch: 222464,
             },
-        }
+        },
+        _ => ForkVersions {
+            genesis: Fork {
+                version: [0, 0, 0, 0],
+                epoch: 0,
+            },
+            altair: Fork {
+                version: [1, 0, 0, 0],
+                epoch: 0,
+            },
+            bellatrix: Fork {
+                version: [2, 0, 0, 0],
+                epoch: 0,
+            },
+            capella: Fork {
+                version: [3, 0, 0, 0],
+                epoch: 0,
+            },
+            deneb: Fork {
+                version: [4, 0, 0, 0],
+                epoch: 0,
+            },
+            electra: Fork {
+                version: [5, 0, 0, 0],
+                epoch: ELECTRA_TEST_FORK_EPOCH,
+            },
+        },
     }
 }
