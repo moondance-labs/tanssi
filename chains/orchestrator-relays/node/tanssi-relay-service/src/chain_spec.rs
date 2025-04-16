@@ -20,7 +20,7 @@ use {
     beefy_primitives::ecdsa_crypto::AuthorityId as BeefyId,
     cumulus_primitives_core::ParaId,
     dancelight_runtime::genesis_config_presets::{
-        dancelight_development_config_genesis, dancelight_local_testnet_genesis,
+        dancelight_development_config_genesis, dancelight_local_testnet_genesis, starlight_development_config_genesis
     },
     dp_container_chain_genesis_data::{
         json::container_chain_genesis_data_from_path, ContainerChainGenesisData,
@@ -35,6 +35,10 @@ use {
 
 #[cfg(feature = "dancelight-native")]
 use dancelight_runtime as dancelight;
+
+#[cfg(feature = "dancelight-native")]
+use starlight_runtime as starlight;
+
 #[cfg(feature = "dancelight-native")]
 use sc_chain_spec::ChainType;
 #[cfg(feature = "dancelight-native")]
@@ -73,6 +77,10 @@ pub type GenericChainSpec = service::GenericChainSpec<Extensions>;
 /// The `ChainSpec` parameterized for the dancelight runtime.
 #[cfg(feature = "dancelight-native")]
 pub type DancelightChainSpec = service::GenericChainSpec<Extensions>;
+
+/// The `ChainSpec` parameterized for the dancelight runtime.
+#[cfg(feature = "dancelight-native")]
+pub type StarlightChainSpec = service::GenericChainSpec<Extensions>;
 
 /// The `ChainSpec` parameterized for the dancelight runtime.
 // Dummy chain spec, but that is fine when we don't have the native runtime.
@@ -159,6 +167,53 @@ pub fn dancelight_development_config(
     container_chains: Vec<String>,
     mock_container_chains: Vec<ParaId>,
     invulnerables: Vec<String>,
+) -> Result<StarlightChainSpec, String> {
+    // Give your base currency a unit name and decimal places
+    let mut properties = sc_chain_spec::Properties::new();
+    properties.insert("tokenSymbol".into(), "STAR".into());
+    properties.insert("tokenDecimals".into(), 12.into());
+    properties.insert("ss58Format".into(), 42.into());
+    properties.insert("isEthereum".into(), false.into());
+
+    let container_chains: Vec<_> = container_chains
+        .iter()
+        .map(|x| {
+            container_chain_genesis_data_from_path(x).unwrap_or_else(|e| {
+                panic!(
+                    "Failed to build genesis data for container chain {:?}: {}",
+                    x, e
+                )
+            })
+        })
+        .chain(
+            mock_container_chains
+                .iter()
+                .map(|x| (*x, mock_container_chain_genesis_data(*x), vec![])),
+        )
+        .collect();
+
+    Ok(StarlightChainSpec::builder(
+        dancelight::WASM_BINARY.ok_or("Dancelight development wasm not available")?,
+        Default::default(),
+    )
+    .with_name("Development")
+    .with_id("dancelight_dev")
+    .with_chain_type(ChainType::Development)
+    .with_genesis_config_patch(dancelight_development_config_genesis(
+        container_chains,
+        invulnerables,
+    ))
+    .with_protocol_id(DEFAULT_PROTOCOL_ID)
+    .with_properties(properties)
+    .build())
+}
+
+/// Dancelight development config (single validator Alice)
+#[cfg(feature = "dancelight-native")]
+pub fn starlight_development_config(
+    container_chains: Vec<String>,
+    mock_container_chains: Vec<ParaId>,
+    invulnerables: Vec<String>,
 ) -> Result<DancelightChainSpec, String> {
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
@@ -185,13 +240,13 @@ pub fn dancelight_development_config(
         .collect();
 
     Ok(DancelightChainSpec::builder(
-        dancelight::WASM_BINARY.ok_or("Dancelight development wasm not available")?,
+        starlight::WASM_BINARY.ok_or("Starlight development wasm not available")?,
         Default::default(),
     )
     .with_name("Development")
-    .with_id("dancelight_dev")
+    .with_id("starlight_dev")
     .with_chain_type(ChainType::Development)
-    .with_genesis_config_patch(dancelight_development_config_genesis(
+    .with_genesis_config_patch(starlight_development_config_genesis(
         container_chains,
         invulnerables,
     ))

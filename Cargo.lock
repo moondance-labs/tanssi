@@ -19601,6 +19601,7 @@ dependencies = [
  "sp-version",
  "sp-weights",
  "staging-xcm",
+ "starlight-runtime",
  "substrate-frame-rpc-system",
  "substrate-prometheus-endpoint",
  "tempfile",

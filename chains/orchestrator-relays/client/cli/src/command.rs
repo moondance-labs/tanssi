@@ -518,6 +518,24 @@ fn load_spec(
             )
         }
         #[cfg(feature = "dancelight-native")]
+        "starlight-dev" => {
+            // Default invulnerables for dev mode, used in dev_tanssi_relay tests
+            let invulnerables = invulnerables.unwrap_or(vec![
+                "Bob".to_string(),
+                "Charlie".to_string(),
+                "Dave".to_string(),
+                "Eve".to_string(),
+            ]);
+
+            Box::new(
+                tanssi_relay_service::chain_spec::starlight_development_config(
+                    container_chains,
+                    mock_container_chains,
+                    invulnerables,
+                )?,
+            )
+        }
+        #[cfg(feature = "dancelight-native")]
         "dancelight-local" => {
             let invulnerables = invulnerables.unwrap_or_default();
 

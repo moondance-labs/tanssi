@@ -117,6 +117,7 @@ dancelight-runtime-constants = { workspace = true, optional = true, features = [
 
 # Polkadot Runtimes
 dancelight-runtime = { workspace = true, optional = true, features = [ "std" ] }
+starlight-runtime = { workspace = true, optional = true, features = [ "std" ] }
 
 # Polkadot Subsystems
 polkadot-approval-distribution = { workspace = true, optional = true }
@@ -196,13 +197,17 @@ full-node = [
 ]
 
 # Configure the native runtimes to use.
-dancelight-native = [ "bitvec", "dancelight-runtime", "dancelight-runtime-constants" ]
+dancelight-native = [ "bitvec", "dancelight-runtime", "dancelight-runtime-constants", "starlight-runtime" ]
 
-fast-runtime = [ "dancelight-runtime?/fast-runtime" ]
+fast-runtime = [ 
+	"dancelight-runtime?/fast-runtime",
+	"starlight-runtime?/fast-runtime"
+]
 runtime-benchmarks = [
 	"cumulus-primitives-core/runtime-benchmarks",
 	"dancelight-runtime-constants?/runtime-benchmarks",
 	"dancelight-runtime?/runtime-benchmarks",
+	"starlight-runtime?/runtime-benchmarks",
 	"frame-benchmarking-cli/runtime-benchmarks",
 	"frame-benchmarking/runtime-benchmarks",
 	"frame-support/runtime-benchmarks",
@@ -222,6 +227,7 @@ runtime-benchmarks = [
 ]
 try-runtime = [
 	"dancelight-runtime?/try-runtime",
+	"starlight-runtime?/try-runtime",
 	"frame-support/try-runtime",
 	"frame-system/try-runtime",
 	"pallet-babe/try-runtime",
@@ -235,5 +241,6 @@ try-runtime = [
 malus = [ "full-node" ]
 runtime-metrics = [
 	"dancelight-runtime?/runtime-metrics",
+	"starlight-runtime?/runtime-metrics",
 	"polkadot-runtime-parachains/runtime-metrics",
 ]
