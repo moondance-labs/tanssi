@@ -1165,7 +1165,8 @@ fn external_validators_rewards_test_command_integrity() {
                 })
                 .count();
 
-            let rewards_utils = ExternalValidatorsRewards::generate_era_rewards_utils(1, None);
+            let era_rewards = pallet_external_validators_rewards::RewardPointsForEra::<Runtime>::get(1);
+            let rewards_utils = era_rewards.generate_era_rewards_utils::<<Runtime as pallet_external_validators_rewards::Config>::Hashing>(1, None);
 
             let blocks_per_session: u128 = Babe::current_epoch().duration.into();
             let points_per_block = 20;
