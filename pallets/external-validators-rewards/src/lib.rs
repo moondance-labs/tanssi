@@ -154,6 +154,58 @@ pub mod pallet {
         pub individual: BTreeMap<AccountId, RewardPoints>,
     }
 
+    impl<AccountId: Ord + sp_runtime::traits::Debug + Parameter> EraRewardPoints<AccountId> {
+        // Helper function used to generate the following utils:
+        //  - rewards_merkle_root: merkle root corresponding [(validatorId, rewardPoints)]
+        //      for the era_index specified.
+        //  - leaves: that were used to generate the previous merkle root.
+        //  - leaf_index: index of the validatorId's leaf in the previous leaves array (if any).
+        //  - total_points: number of total points of the era_index specified.
+        pub fn generate_era_rewards_utils<Hasher: sp_runtime::traits::Hash<Output = H256>>(
+            &self,
+            era_index: EraIndex,
+            maybe_account_id_check: Option<AccountId>,
+        ) -> Option<EraRewardsUtils> {
+            let total_points: u128 = self.total as u128;
+            let mut leaves = Vec::with_capacity(self.individual.len());
+            let mut leaf_index = None;
+
+            if let Some(account) = &maybe_account_id_check {
+                if !self.individual.contains_key(account) {
+                    log::error!(
+                        target: "ext_validators_rewards",
+                        "AccountId {:?} not found for era {:?}!",
+                        account,
+                        era_index
+                    );
+                    return None;
+                }
+            }
+
+            for (index, (account_id, reward_points)) in self.individual.iter().enumerate() {
+                let encoded = (account_id, reward_points).encode();
+                let hashed = <Hasher as sp_runtime::traits::Hash>::hash(&encoded);
+
+                leaves.push(hashed);
+
+                if let Some(ref check_account_id) = maybe_account_id_check {
+                    if account_id == check_account_id {
+                        leaf_index = Some(index as u64);
+                    }
+                }
+            }
+
+            let rewards_merkle_root = merkle_root::<Hasher, _>(leaves.iter().cloned());
+
+            Some(EraRewardsUtils {
+                rewards_merkle_root,
+                leaves,
+                leaf_index,
+                total_points,
+            })
+        }
+    }
+
     impl<AccountId> Default for EraRewardPoints<AccountId> {
         fn default() -> Self {
             EraRewardPoints {
@@ -183,61 +235,15 @@ pub mod pallet {
             })
         }
 
-        // Helper function used to generate the following utils:
-        //  - rewards_merkle_root: merkle root corresponding [(validatorId, rewardPoints)]
-        //      for the era_index specified.
-        //  - leaves: that were used to generate the previous merkle root.
-        //  - leaf_index: index of the validatorId's leaf in the previous leaves array (if any).
-        //  - total_points: number of total points of the era_index specified.
-        pub fn generate_era_rewards_utils(
-            era_index: EraIndex,
-            maybe_account_id_check: Option<T::AccountId>,
-        ) -> Option<EraRewardsUtils> {
-            let era_rewards = RewardPointsForEra::<T>::get(&era_index);
-            let total_points: u128 = era_rewards.total as u128;
-            let mut leaves = Vec::with_capacity(era_rewards.individual.len());
-            let mut leaf_index = None;
-
-            if let Some(account) = &maybe_account_id_check {
-                if !era_rewards.individual.contains_key(account) {
-                    log::error!(
-                        target: "ext_validators_rewards",
-                        "AccountId {:?} not found for era {:?}!",
-                        account,
-                        era_index
-                    );
-                    return None;
-                }
-            }
-
-            for (index, (account_id, reward_points)) in era_rewards.individual.iter().enumerate() {
-                let encoded = (account_id, reward_points).encode();
-                let hashed = <T as Config>::Hashing::hash(&encoded);
-                leaves.push(hashed);
-
-                if let Some(ref check_account_id) = maybe_account_id_check {
-                    if account_id == check_account_id {
-                        leaf_index = Some(index as u64);
-                    }
-                }
-            }
-
-            let rewards_merkle_root =
-                merkle_root::<<T as Config>::Hashing, _>(leaves.iter().cloned());
-
-            Some(EraRewardsUtils {
-                rewards_merkle_root,
-                leaves,
-                leaf_index,
-                total_points,
-            })
-        }
-
         pub fn generate_rewards_merkle_proof(
             account_id: T::AccountId,
             era_index: EraIndex,
         ) -> Option<MerkleProof> {
-            let utils = Self::generate_era_rewards_utils(era_index, Some(account_id))?;
+            let era_rewards = RewardPointsForEra::<T>::get(&era_index);
+            let utils = era_rewards.generate_era_rewards_utils::<<T as Config>::Hashing>(
+                era_index,
+                Some(account_id),
+            )?;
             utils.leaf_index.map(|index| {
                 merkle_proof::<<T as Config>::Hashing, _>(utils.leaves.into_iter(), index)
             })
@@ -276,82 +282,82 @@ pub mod pallet {
             let token_location = T::TokenLocationReanchored::get();
             let token_id = T::TokenIdFromLocation::convert_back(&token_location);
 
-            let Some(token_id) = token_id else {
-                log::error!(target: "ext_validators_rewards", "no token id found for location {:?}", token_location);
-                return;
-            };
+            if let Some(token_id) = token_id {
+                let era_rewards = RewardPointsForEra::<T>::get(&era_index);
+                if let Some(utils) = era_rewards
+                    .generate_era_rewards_utils::<<T as Config>::Hashing>(era_index, None)
+                {
+                    let tokens_inflated = T::EraInflationProvider::get();
 
-            let Some(utils) = Self::generate_era_rewards_utils(era_index, None) else {
-                // Unreachable, this should never happen as we are sending
-                // None as the second param in Self::generate_era_rewards_utils.
-                log::error!(
-                    target: "ext_validators_rewards",
-                    "Outbound message not sent for era {:?}!",
-                    era_index
-                );
-                return;
-            };
-
-            let tokens_inflated = T::EraInflationProvider::get();
-
-            if tokens_inflated.is_zero() {
-                log::error!(target: "ext_validators_rewards", "Not sending message because tokens_inflated is 0");
-                return;
-            }
-
-            if utils.total_points.is_zero() {
-                log::error!(target: "ext_validators_rewards", "Not sending message because total_points is 0");
-                return;
-            }
-
-            let ethereum_sovereign_account = T::RewardsEthereumSovereignAccount::get();
-            if let Err(err) =
-                T::Currency::mint_into(&ethereum_sovereign_account, tokens_inflated.into())
-            {
-                log::error!(target: "ext_validators_rewards", "Failed to mint inflation into Ethereum Soverein Account: {err:?}");
-                log::error!(target: "ext_validators_rewards", "Not sending message since there are no rewards to distribute");
-                return;
-            }
-
-            let command = Command::ReportRewards {
-                external_idx: T::ExternalIndexProvider::get_external_index(),
-                era_index,
-                total_points: utils.total_points,
-                tokens_inflated,
-                rewards_merkle_root: utils.rewards_merkle_root,
-                token_id,
-            };
-
-            let channel_id: ChannelId = snowbridge_core::PRIMARY_GOVERNANCE_CHANNEL;
-
-            let outbound_message = Message {
-                id: None,
-                channel_id,
-                command: command.clone(),
-            };
-
-            // Validate and deliver the message
-            match T::ValidateMessage::validate(&outbound_message) {
-                Ok((ticket, _fee)) => {
-                    let message_id = ticket.message_id();
-                    if let Err(err) = T::OutboundQueue::deliver(ticket) {
-                        log::error!(target: "ext_validators_rewards", "OutboundQueue delivery of message failed. {err:?}");
-                    } else {
-                        Self::deposit_event(Event::RewardsMessageSent {
-                            message_id,
-                            rewards_command: command,
-                        });
+                    if tokens_inflated.is_zero() {
+                        log::error!(target: "ext_validators_rewards", "Not sending message because tokens_inflated is 0");
+                        return;
                     }
-                }
-                Err(err) => {
-                    log::error!(target: "ext_validators_rewards", "OutboundQueue validation of message failed. {err:?}");
+
+                    if utils.total_points.is_zero() {
+                        log::error!(target: "ext_validators_rewards", "Not sending message because total_points is 0");
+                        return;
+                    }
+
+                    let ethereum_sovereign_account = T::RewardsEthereumSovereignAccount::get();
+                    if let Err(err) =
+                        T::Currency::mint_into(&ethereum_sovereign_account, tokens_inflated.into())
+                    {
+                        log::error!(target: "ext_validators_rewards", "Failed to mint inflation into Ethereum Soverein Account: {err:?}");
+                        log::error!(target: "ext_validators_rewards", "Not sending message since there are no rewards to distribute");
+                        return;
+                    }
+
+                    let command = Command::ReportRewards {
+                        external_idx: T::ExternalIndexProvider::get_external_index(),
+                        era_index,
+                        total_points: utils.total_points,
+                        tokens_inflated,
+                        rewards_merkle_root: utils.rewards_merkle_root,
+                        token_id,
+                    };
+
+                    let channel_id: ChannelId = snowbridge_core::PRIMARY_GOVERNANCE_CHANNEL;
+
+                    let outbound_message = Message {
+                        id: None,
+                        channel_id,
+                        command: command.clone(),
+                    };
+
+                    // Validate and deliver the message
+                    match T::ValidateMessage::validate(&outbound_message) {
+                        Ok((ticket, _fee)) => {
+                            let message_id = ticket.message_id();
+                            if let Err(err) = T::OutboundQueue::deliver(ticket) {
+                                log::error!(target: "ext_validators_rewards", "OutboundQueue delivery of message failed. {err:?}");
+                            } else {
+                                Self::deposit_event(Event::RewardsMessageSent {
+                                    message_id,
+                                    rewards_command: command,
+                                });
+                            }
+                        }
+                        Err(err) => {
+                            log::error!(target: "ext_validators_rewards", "OutboundQueue validation of message failed. {err:?}");
+                        }
+                    }
+
+                    frame_system::Pallet::<T>::register_extra_weight_unchecked(
+                        T::WeightInfo::on_era_end(),
+                        DispatchClass::Mandatory,
+                    );
+                } else {
+                    // Unreachable, this should never happen as we are sending
+                    // None as the second param in Self::generate_era_rewards_utils.
+                    log::error!(
+                        target: "ext_validators_rewards",
+                        "Outbound message not sent for era {:?}!",
+                        era_index
+                    );
+                    return;
                 }
             }
-
-            frame_system::Pallet::<T>::register_extra_weight_unchecked(
-                T::WeightInfo::on_era_end(),
-                DispatchClass::Mandatory,
-            );
         }
     }
 }
