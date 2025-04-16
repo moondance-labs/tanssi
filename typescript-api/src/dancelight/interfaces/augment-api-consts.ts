@@ -839,5 +839,16 @@ declare module "@polkadot/api-base/types/consts" {
              **/
             [key: string]: Codec;
         };
+        xcmPallet: {
+            /**
+             * The latest supported version that we advertise. Generally just set it to
+             * `pallet_xcm::CurrentXcmVersion`.
+             **/
+            advertisedXcmVersion: u32 & AugmentedConst<ApiType>;
+            /**
+             * Generic const
+             **/
+            [key: string]: Codec;
+        };
     } // AugmentedConsts
 } // declare module

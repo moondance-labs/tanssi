@@ -1,0 +1,37 @@
+[package]
+name = "tanssi-emulated-integration-tests-common"
+description = "Common resources for integration testing with xcm-emulator"
+edition = "2021"
+license = "GPL-3.0-only"
+publish = false
+version = "0.0.0"
+[package.authors]
+workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+# Substrate
+babe-primitives = { workspace = true }
+frame-support = { workspace = true, default-features = true }
+pallet-message-queue = { workspace = true, default-features = true }
+sc-consensus-grandpa = { workspace = true, default-features = true }
+sp-core = { workspace = true, default-features = true }
+sp-std = { workspace = true }
+
+# Polkadot
+frame-system = { workspace = true }
+xcm = { workspace = true, default-features = true }
+
+# Cumulus
+cumulus-primitives-core = { workspace = true, default-features = true }
+xcm-emulator = { workspace = true, default-features = true }
+
+# Bridges
+dancelight-runtime = { workspace = true, features = [ "std" ] }
+keyring = { workspace = true }
+nimbus-primitives = { workspace = true }
+snowbridge-beacon-primitives = { workspace = true }
+snowbridge-core = { workspace = true }
+snowbridge-pallet-outbound-queue = { workspace = true }

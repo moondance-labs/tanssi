@@ -1,0 +1,39 @@
+[package]
+name = "rococo-emulated-chain"
+description = "Rococo emulated chain"
+edition = "2021"
+license = "GPL-3.0-only"
+publish = false
+version = "0.0.0"
+[package.authors]
+workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+# Substrate
+cumulus-primitives-core = { workspace = true }
+polkadot-parachain-primitives = { workspace = true }
+sc-consensus-grandpa = { workspace = true }
+sp-consensus-babe = { workspace = true }
+sp-consensus-beefy = { workspace = true, default-features = true }
+sp-core = { workspace = true }
+
+# Polkadot
+rococo-runtime = { workspace = true, features = [ "std" ] }
+rococo-runtime-constants = { workspace = true }
+
+# Cumulus
+emulated-integration-tests-common = { workspace = true }
+runtime-parachains = { workspace = true }
+tanssi-emulated-integration-tests-common = { workspace = true }
+xcm-emulator = { workspace = true }
+
+[features]
+runtime-benchmarks = [
+	"cumulus-primitives-core/runtime-benchmarks",
+	"polkadot-parachain-primitives/runtime-benchmarks",
+	"rococo-runtime/runtime-benchmarks",
+	"runtime-parachains/runtime-benchmarks",
+]

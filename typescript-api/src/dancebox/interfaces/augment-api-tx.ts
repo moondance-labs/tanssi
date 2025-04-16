@@ -30,10 +30,10 @@ import type {
     PalletMigrationsHistoricCleanupSelector,
     PalletMigrationsMigrationCursor,
     PalletMultisigTimepoint,
-    PalletPooledStakingAllTargetPool,
     PalletPooledStakingPendingOperationQuery,
+    PalletPooledStakingPoolsActivePoolKind,
+    PalletPooledStakingPoolsPoolKind,
     PalletPooledStakingSharesOrStake,
-    PalletPooledStakingTargetPool,
     PalletStreamPaymentChangeKind,
     PalletStreamPaymentDepositChange,
     PalletStreamPaymentStreamConfig,
@@ -2831,7 +2831,7 @@ declare module "@polkadot/api-base/types/submittable" {
                     candidate: AccountId32 | string | Uint8Array,
                     delegator: AccountId32 | string | Uint8Array,
                     pool:
-                        | PalletPooledStakingAllTargetPool
+                        | PalletPooledStakingPoolsPoolKind
                         | "Joining"
                         | "AutoCompounding"
                         | "ManualRewards"
@@ -2839,15 +2839,20 @@ declare module "@polkadot/api-base/types/submittable" {
                         | number
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [AccountId32, AccountId32, PalletPooledStakingAllTargetPool]
+                [AccountId32, AccountId32, PalletPooledStakingPoolsPoolKind]
             >;
             requestDelegate: AugmentedSubmittable<
                 (
                     candidate: AccountId32 | string | Uint8Array,
-                    pool: PalletPooledStakingTargetPool | "AutoCompounding" | "ManualRewards" | number | Uint8Array,
+                    pool:
+                        | PalletPooledStakingPoolsActivePoolKind
+                        | "AutoCompounding"
+                        | "ManualRewards"
+                        | number
+                        | Uint8Array,
                     stake: u128 | AnyNumber | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [AccountId32, PalletPooledStakingTargetPool, u128]
+                [AccountId32, PalletPooledStakingPoolsActivePoolKind, u128]
             >;
             /**
              * Request undelegate can incur in either claim manual rewards or hold rebalances, we simply add the worst case
@@ -2855,23 +2860,28 @@ declare module "@polkadot/api-base/types/submittable" {
             requestUndelegate: AugmentedSubmittable<
                 (
                     candidate: AccountId32 | string | Uint8Array,
-                    pool: PalletPooledStakingTargetPool | "AutoCompounding" | "ManualRewards" | number | Uint8Array,
-                    amount: PalletPooledStakingSharesOrStake | { Shares: any } | { Stake: any } | string | Uint8Array
-                ) => SubmittableExtrinsic<ApiType>,
-                [AccountId32, PalletPooledStakingTargetPool, PalletPooledStakingSharesOrStake]
-            >;
-            swapPool: AugmentedSubmittable<
-                (
-                    candidate: AccountId32 | string | Uint8Array,
-                    sourcePool:
-                        | PalletPooledStakingTargetPool
+                    pool:
+                        | PalletPooledStakingPoolsActivePoolKind
                         | "AutoCompounding"
                         | "ManualRewards"
                         | number
                         | Uint8Array,
                     amount: PalletPooledStakingSharesOrStake | { Shares: any } | { Stake: any } | string | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [AccountId32, PalletPooledStakingTargetPool, PalletPooledStakingSharesOrStake]
+                [AccountId32, PalletPooledStakingPoolsActivePoolKind, PalletPooledStakingSharesOrStake]
+            >;
+            swapPool: AugmentedSubmittable<
+                (
+                    candidate: AccountId32 | string | Uint8Array,
+                    sourcePool:
+                        | PalletPooledStakingPoolsActivePoolKind
+                        | "AutoCompounding"
+                        | "ManualRewards"
+                        | number
+                        | Uint8Array,
+                    amount: PalletPooledStakingSharesOrStake | { Shares: any } | { Stake: any } | string | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [AccountId32, PalletPooledStakingPoolsActivePoolKind, PalletPooledStakingSharesOrStake]
             >;
             updateCandidatePosition: AugmentedSubmittable<
                 (candidates: Vec<AccountId32> | (AccountId32 | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>,
