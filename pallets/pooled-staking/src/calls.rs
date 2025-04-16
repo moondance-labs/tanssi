@@ -17,11 +17,11 @@
 use {
     crate::{
         candidate::Candidates,
-        pools::{self, Pool},
+        pools::{self, ActivePoolKind, Pool, PoolKind},
         traits::Timer,
-        AllTargetPool, Candidate, Config, Delegator, Error, Event, HoldReason, Pallet,
+        Candidate, Config, Delegator, Error, Event, HoldReason, Pallet, PausePoolsExtrinsics,
         PendingOperationKey, PendingOperationQuery, PendingOperationQueryOf, PendingOperations,
-        Shares, SharesOrStake, Stake, TargetPool,
+        Shares, SharesOrStake, Stake,
     },
     frame_support::{
         dispatch::DispatchErrorWithPostInfo,
@@ -42,31 +42,31 @@ impl<T: Config> Calls<T> {
     pub fn rebalance_hold(
         candidate: Candidate<T>,
         delegator: Delegator<T>,
-        pool: AllTargetPool,
+        pool: PoolKind,
     ) -> DispatchResultWithPostInfo {
         let (held, stake) = match pool {
-            AllTargetPool::Joining => {
+            PoolKind::Joining => {
                 let held = pools::Joining::<T>::hold(&candidate, &delegator);
                 let shares = pools::Joining::<T>::shares(&candidate, &delegator);
                 let stake = pools::Joining::<T>::shares_to_stake(&candidate, shares)?;
                 pools::Joining::<T>::set_hold(&candidate, &delegator, stake);
                 (held, stake)
             }
-            AllTargetPool::AutoCompounding => {
+            PoolKind::AutoCompounding => {
                 let held = pools::AutoCompounding::<T>::hold(&candidate, &delegator);
                 let shares = pools::AutoCompounding::<T>::shares(&candidate, &delegator);
                 let stake = pools::AutoCompounding::<T>::shares_to_stake(&candidate, shares)?;
                 pools::AutoCompounding::<T>::set_hold(&candidate, &delegator, stake);
                 (held, stake)
             }
-            AllTargetPool::ManualRewards => {
+            PoolKind::ManualRewards => {
                 let held = pools::ManualRewards::<T>::hold(&candidate, &delegator);
                 let shares = pools::ManualRewards::<T>::shares(&candidate, &delegator);
                 let stake = pools::ManualRewards::<T>::shares_to_stake(&candidate, shares)?;
                 pools::ManualRewards::<T>::set_hold(&candidate, &delegator, stake);
                 (held, stake)
             }
-            AllTargetPool::Leaving => {
+            PoolKind::Leaving => {
                 let held = pools::Leaving::<T>::hold(&candidate, &delegator);
                 let shares = pools::Leaving::<T>::shares(&candidate, &delegator);
                 let stake = pools::Leaving::<T>::shares_to_stake(&candidate, shares)?;
@@ -113,9 +113,14 @@ impl<T: Config> Calls<T> {
     pub fn request_delegate(
         candidate: Candidate<T>,
         delegator: Delegator<T>,
-        pool: TargetPool,
+        pool: ActivePoolKind,
         stake: T::Balance,
     ) -> DispatchResultWithPostInfo {
+        ensure!(
+            !PausePoolsExtrinsics::<T>::get(),
+            Error::<T>::PoolsExtrinsicsArePaused
+        );
+
         ensure!(!stake.is_zero(), Error::<T>::StakeMustBeNonZero);
 
         // Convert stake into joining shares quantity.
@@ -137,11 +142,11 @@ impl<T: Config> Calls<T> {
         // We create/mutate a request for joining.
         let now = T::JoiningRequestTimer::now();
         let operation_key = match pool {
-            TargetPool::AutoCompounding => PendingOperationKey::JoiningAutoCompounding {
+            ActivePoolKind::AutoCompounding => PendingOperationKey::JoiningAutoCompounding {
                 candidate: candidate.clone(),
                 at: now,
             },
-            TargetPool::ManualRewards => PendingOperationKey::JoiningManualRewards {
+            ActivePoolKind::ManualRewards => PendingOperationKey::JoiningManualRewards {
                 candidate: candidate.clone(),
                 at: now,
             },
@@ -169,22 +174,27 @@ impl<T: Config> Calls<T> {
     pub fn request_undelegate(
         candidate: Candidate<T>,
         delegator: Delegator<T>,
-        pool: TargetPool,
+        pool: ActivePoolKind,
         amount: SharesOrStake<T::Balance>,
     ) -> DispatchResultWithPostInfo {
+        ensure!(
+            !PausePoolsExtrinsics::<T>::get(),
+            Error::<T>::PoolsExtrinsicsArePaused
+        );
+
         // Converts amount to shares of the correct pool
         let shares = match (amount, pool) {
             (SharesOrStake::Shares(s), _) => s,
-            (SharesOrStake::Stake(s), TargetPool::AutoCompounding) => {
+            (SharesOrStake::Stake(s), ActivePoolKind::AutoCompounding) => {
                 pools::AutoCompounding::<T>::stake_to_shares(&candidate, Stake(s))?.0
             }
-            (SharesOrStake::Stake(s), TargetPool::ManualRewards) => {
+            (SharesOrStake::Stake(s), ActivePoolKind::ManualRewards) => {
                 pools::ManualRewards::<T>::stake_to_shares(&candidate, Stake(s))?.0
             }
         };
 
         // Any change in the amount of Manual Rewards shares requires to claim manual rewards.
-        if let TargetPool::ManualRewards = pool {
+        if let ActivePoolKind::ManualRewards = pool {
             Self::claim_manual_rewards(&[(candidate.clone(), delegator.clone())])?;
         }
 
@@ -214,6 +224,11 @@ impl<T: Config> Calls<T> {
     pub fn execute_pending_operations(
         operations: Vec<PendingOperationQueryOf<T>>,
     ) -> DispatchResultWithPostInfo {
+        ensure!(
+            !PausePoolsExtrinsics::<T>::get(),
+            Error::<T>::PoolsExtrinsicsArePaused
+        );
+
         for (index, query) in operations.into_iter().enumerate() {
             // We deconstruct the query and find the balance associated with it.
             // If it is zero it may not exist or have been executed before, thus
@@ -239,7 +254,7 @@ impl<T: Config> Calls<T> {
                     Self::execute_joining(
                         candidate.clone(),
                         delegator.clone(),
-                        TargetPool::AutoCompounding,
+                        ActivePoolKind::AutoCompounding,
                         Shares(value),
                     )?;
                 }
@@ -252,7 +267,7 @@ impl<T: Config> Calls<T> {
                     Self::execute_joining(
                         candidate.clone(),
                         delegator.clone(),
-                        TargetPool::ManualRewards,
+                        ActivePoolKind::ManualRewards,
                         Shares(value),
                     )?;
                 }
@@ -275,9 +290,14 @@ impl<T: Config> Calls<T> {
     fn execute_joining(
         candidate: Candidate<T>,
         delegator: Delegator<T>,
-        pool: TargetPool,
+        pool: ActivePoolKind,
         joining_shares: Shares<T::Balance>,
     ) -> DispatchResultWithPostInfo {
+        ensure!(
+            !PausePoolsExtrinsics::<T>::get(),
+            Error::<T>::PoolsExtrinsicsArePaused
+        );
+
         // Convert joining shares into stake.
         let stake = pools::Joining::<T>::sub_shares(&candidate, &delegator, joining_shares)?;
 
@@ -286,16 +306,16 @@ impl<T: Config> Calls<T> {
         pools::Joining::<T>::decrease_hold(&candidate, &delegator, &stake)?;
 
         // Any change in the amount of Manual Rewards shares requires to claim manual rewards.
-        if let TargetPool::ManualRewards = pool {
+        if let ActivePoolKind::ManualRewards = pool {
             Self::claim_manual_rewards(&[(candidate.clone(), delegator.clone())])?;
         }
 
         // Convert stake into shares quantity.
         let shares = match pool {
-            TargetPool::AutoCompounding => {
+            ActivePoolKind::AutoCompounding => {
                 pools::AutoCompounding::<T>::stake_to_shares_or_init(&candidate, stake)?
             }
-            TargetPool::ManualRewards => {
+            ActivePoolKind::ManualRewards => {
                 pools::ManualRewards::<T>::stake_to_shares_or_init(&candidate, stake)?
             }
         };
@@ -316,13 +336,13 @@ impl<T: Config> Calls<T> {
         // We create the new shares. It returns the actual amount of stake those shares
         // represents (due to rounding).
         let actually_staked = match pool {
-            TargetPool::AutoCompounding => {
+            ActivePoolKind::AutoCompounding => {
                 let stake =
                     pools::AutoCompounding::<T>::add_shares(&candidate, &delegator, shares)?;
                 pools::AutoCompounding::<T>::increase_hold(&candidate, &delegator, &stake)?;
                 stake
             }
-            TargetPool::ManualRewards => {
+            ActivePoolKind::ManualRewards => {
                 let stake = pools::ManualRewards::<T>::add_shares(&candidate, &delegator, shares)?;
                 pools::ManualRewards::<T>::increase_hold(&candidate, &delegator, &stake)?;
                 stake
@@ -345,13 +365,13 @@ impl<T: Config> Calls<T> {
 
         // Events
         let event = match pool {
-            TargetPool::AutoCompounding => Event::<T>::StakedAutoCompounding {
+            ActivePoolKind::AutoCompounding => Event::<T>::StakedAutoCompounding {
                 candidate: candidate.clone(),
                 delegator: delegator.clone(),
                 shares: shares.0,
                 stake: actually_staked.0,
             },
-            TargetPool::ManualRewards => Event::<T>::StakedManualRewards {
+            ActivePoolKind::ManualRewards => Event::<T>::StakedManualRewards {
                 candidate: candidate.clone(),
                 delegator: delegator.clone(),
                 shares: shares.0,
@@ -378,6 +398,11 @@ impl<T: Config> Calls<T> {
         delegator: Delegator<T>,
         leavinig_shares: Shares<T::Balance>,
     ) -> DispatchResultWithPostInfo {
+        ensure!(
+            !PausePoolsExtrinsics::<T>::get(),
+            Error::<T>::PoolsExtrinsicsArePaused
+        );
+
         // Convert leaving shares into stake.
         let stake = pools::Leaving::<T>::sub_shares(&candidate, &delegator, leavinig_shares)?;
 
@@ -441,16 +466,21 @@ impl<T: Config> Calls<T> {
     pub fn swap_pool(
         candidate: Candidate<T>,
         delegator: Delegator<T>,
-        source_pool: TargetPool,
+        source_pool: ActivePoolKind,
         amount: SharesOrStake<T::Balance>,
     ) -> DispatchResultWithPostInfo {
+        ensure!(
+            !PausePoolsExtrinsics::<T>::get(),
+            Error::<T>::PoolsExtrinsicsArePaused
+        );
+
         // Converts amount to shares of the correct pool
         let old_shares = match (amount, source_pool) {
             (SharesOrStake::Shares(s), _) => s,
-            (SharesOrStake::Stake(s), TargetPool::AutoCompounding) => {
+            (SharesOrStake::Stake(s), ActivePoolKind::AutoCompounding) => {
                 pools::AutoCompounding::<T>::stake_to_shares(&candidate, Stake(s))?.0
             }
-            (SharesOrStake::Stake(s), TargetPool::ManualRewards) => {
+            (SharesOrStake::Stake(s), ActivePoolKind::ManualRewards) => {
                 pools::ManualRewards::<T>::stake_to_shares(&candidate, Stake(s))?.0
             }
         };
@@ -465,10 +495,10 @@ impl<T: Config> Calls<T> {
 
         // Convert removed amount to new pool shares.
         let new_shares = match source_pool {
-            TargetPool::AutoCompounding => {
+            ActivePoolKind::AutoCompounding => {
                 pools::ManualRewards::<T>::stake_to_shares_or_init(&candidate, removed_stake)?
             }
-            TargetPool::ManualRewards => {
+            ActivePoolKind::ManualRewards => {
                 pools::AutoCompounding::<T>::stake_to_shares_or_init(&candidate, removed_stake)?
             }
         };
@@ -478,13 +508,13 @@ impl<T: Config> Calls<T> {
         // We create new shares in the new pool. It returns the actual amount of stake those shares
         // represents (due to rounding).
         let actually_staked = match source_pool {
-            TargetPool::ManualRewards => {
+            ActivePoolKind::ManualRewards => {
                 let stake =
                     pools::AutoCompounding::<T>::add_shares(&candidate, &delegator, new_shares)?;
                 pools::AutoCompounding::<T>::increase_hold(&candidate, &delegator, &stake)?;
                 stake
             }
-            TargetPool::AutoCompounding => {
+            ActivePoolKind::AutoCompounding => {
                 let stake =
                     pools::ManualRewards::<T>::add_shares(&candidate, &delegator, new_shares)?;
                 pools::ManualRewards::<T>::increase_hold(&candidate, &delegator, &stake)?;
@@ -530,18 +560,18 @@ impl<T: Config> Calls<T> {
     fn destroy_shares(
         candidate: &Candidate<T>,
         delegator: &Delegator<T>,
-        pool: TargetPool,
+        pool: ActivePoolKind,
         shares: Shares<T::Balance>,
     ) -> Result<Stake<T::Balance>, DispatchErrorWithPostInfo> {
         match pool {
-            TargetPool::AutoCompounding => {
+            ActivePoolKind::AutoCompounding => {
                 let stake = pools::AutoCompounding::<T>::shares_to_stake(candidate, shares)?;
 
                 if stake.0 > pools::AutoCompounding::<T>::hold(candidate, delegator).0 {
                     Self::rebalance_hold(
                         candidate.clone(),
                         delegator.clone(),
-                        AllTargetPool::AutoCompounding,
+                        PoolKind::AutoCompounding,
                     )?;
                 }
 
@@ -551,14 +581,14 @@ impl<T: Config> Calls<T> {
                 pools::AutoCompounding::<T>::decrease_hold(candidate, delegator, &stake)?;
                 Ok(stake)
             }
-            TargetPool::ManualRewards => {
+            ActivePoolKind::ManualRewards => {
                 let stake = pools::ManualRewards::<T>::shares_to_stake(candidate, shares)?;
 
                 if stake.0 > pools::ManualRewards::<T>::hold(candidate, delegator).0 {
                     Self::rebalance_hold(
                         candidate.clone(),
                         delegator.clone(),
-                        AllTargetPool::ManualRewards,
+                        PoolKind::ManualRewards,
                     )?;
                 }
 

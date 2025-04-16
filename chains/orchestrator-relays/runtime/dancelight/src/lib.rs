@@ -99,6 +99,10 @@ use {
         prod_or_fast_parameter_types, EraIndex, GetHostConfiguration, GetSessionContainerChains,
         ParaIdAssignmentHooks, RegistrarHandler, Slot, SlotFrequency,
     },
+    xcm_runtime_apis::{
+        dry_run::{CallDryRunEffects, Error as XcmDryRunApiError, XcmDryRunEffects},
+        fees::Error as XcmPaymentApiError,
+    },
 };
 
 #[cfg(any(feature = "std", test))]
@@ -166,7 +170,6 @@ use {
         pallet_custom_origins, AuctionAdmin, Fellows, GeneralAdmin, Treasurer, TreasurySpender,
     },
     pallet_collator_assignment::CoreAllocationConfiguration,
-    xcm_runtime_apis::fees::Error as XcmPaymentApiError,
 };
 
 #[cfg(test)]
@@ -1583,7 +1586,10 @@ parameter_types! {
 impl pallet_multiblock_migrations::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     #[cfg(not(feature = "runtime-benchmarks"))]
-    type Migrations = pallet_identity::migration::v2::LazyMigrationV1ToV2<Runtime>;
+    type Migrations = (
+        pallet_identity::migration::v2::LazyMigrationV1ToV2<Runtime>,
+        pallet_pooled_staking::migrations::MigrationGenerateSummaries<Runtime>,
+    );
     // Benchmarks need mocked migrations to guarantee that they succeed.
     #[cfg(feature = "runtime-benchmarks")]
     type Migrations = pallet_multiblock_migrations::mock_helpers::MockedMigrations;
@@ -2318,6 +2324,16 @@ sp_api::impl_runtime_apis! {
         }
     }
 
+    impl xcm_runtime_apis::dry_run::DryRunApi<Block, RuntimeCall, RuntimeEvent, OriginCaller> for Runtime {
+        fn dry_run_call(origin: OriginCaller, call: RuntimeCall) -> Result<CallDryRunEffects<RuntimeEvent>, XcmDryRunApiError> {
+            XcmPallet::dry_run_call::<Runtime, xcm_config::XcmRouter, OriginCaller, RuntimeCall>(origin, call)
+        }
+
+        fn dry_run_xcm(origin_location: VersionedLocation, xcm: VersionedXcm<RuntimeCall>) -> Result<XcmDryRunEffects<RuntimeEvent>, XcmDryRunApiError> {
+            XcmPallet::dry_run_xcm::<Runtime, xcm_config::XcmRouter, RuntimeCall, xcm_config::XcmConfig>(origin_location, xcm)
+        }
+    }
+
     impl xcm_runtime_apis::fees::XcmPaymentApi<Block> for Runtime {
         fn query_acceptable_payment_assets(xcm_version: xcm::Version) -> Result<Vec<VersionedAssetId>, XcmPaymentApiError> {
             if !matches!(xcm_version, 3..=5) {
@@ -2815,6 +2831,23 @@ sp_api::impl_runtime_apis! {
         }
         fn query_fee_details(uxt: <Block as BlockT>::Extrinsic, len: u32) -> FeeDetails<Balance> {
             TransactionPayment::query_fee_details(uxt, len)
+        }
+        fn query_weight_to_fee(weight: Weight) -> Balance {
+            TransactionPayment::weight_to_fee(weight)
+        }
+        fn query_length_to_fee(length: u32) -> Balance {
+            TransactionPayment::length_to_fee(length)
+        }
+    }
+
+    impl pallet_transaction_payment_rpc_runtime_api::TransactionPaymentCallApi<Block, Balance, RuntimeCall>
+        for Runtime
+    {
+        fn query_call_info(call: RuntimeCall, len: u32) -> RuntimeDispatchInfo<Balance> {
+            TransactionPayment::query_call_info(call, len)
+        }
+        fn query_call_fee_details(call: RuntimeCall, len: u32) -> FeeDetails<Balance> {
+            TransactionPayment::query_call_fee_details(call, len)
         }
         fn query_weight_to_fee(weight: Weight) -> Balance {
             TransactionPayment::weight_to_fee(weight)

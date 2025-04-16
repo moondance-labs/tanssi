@@ -12,9 +12,6 @@ import-storage:
                     free: "100000000000000000000000"
     Sudo:
         Key: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
-    # Override storage version of PooledStaking to not trigger the migration,
-    # which would fetch live dancebox delegators info (900k+ keys)
-    PooledStaking:
-        PalletVersion: 1
-    PolkadotXcm:
-        QueryCounter: 0
+
+prefetch-storages:
+    - PooledStaking: Pools
