@@ -69,6 +69,7 @@ runs:
         cp target/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm runtimes/;
         cp target/release/wbuild/flashbox-runtime/flashbox_runtime.compact.compressed.wasm runtimes/;
         cp target/release/wbuild/dancelight-runtime/dancelight_runtime.compact.compressed.wasm runtimes/;
+        cp target/release/wbuild/starlight-runtime/starlight_runtime.compact.compressed.wasm runtimes/;
     - name: Save binaries
       shell: bash
       run: |
