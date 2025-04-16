@@ -384,6 +384,7 @@ describeSuite({
                         "Failed to start container chain",
                         "Shutting down container chain service",
                         "Entering off-chain worker.",
+                        "Overweight para inherent data after enacting the candidates",
                     ]);
                 }
             },
