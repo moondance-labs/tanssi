@@ -1,5 +1,11 @@
 [workspace]
+default-members = [
+	"chains/container-chains/nodes/*",
+	"chains/orchestrator-paras/node",
+	"chains/orchestrator-relays/node/*",
+]
 members = [
+	"bin/utils/tanssi-utils",
 	"chains/container-chains/nodes/*",
 	"chains/container-chains/runtime-templates/*",
 	"chains/orchestrator-paras/node",
@@ -24,6 +30,9 @@ members = [
 	"pallets/registrar/runtime-api",
 	"primitives/*",
 ]
+# default-members is the subset of members that is compiled when running cargo build.
+# some binaries are intentionally left out of this list because we don't want to compile them every time.
+
 resolver = "2"
 
 [workspace.package]
