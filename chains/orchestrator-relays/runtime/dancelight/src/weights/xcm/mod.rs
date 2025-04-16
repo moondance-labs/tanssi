@@ -33,27 +33,6 @@ use {
 
 const MAX_ASSETS: u64 = 1;
 
-pub enum AssetTypes {
-    Balances,
-    Unknown,
-}
-
-impl From<&Asset> for AssetTypes {
-    fn from(asset: &Asset) -> Self {
-        match asset {
-            Asset {
-                id:
-                    AssetId(Location {
-                        parents: 0,
-                        interior: Here,
-                    }),
-                ..
-            } => AssetTypes::Balances,
-            _ => AssetTypes::Unknown,
-        }
-    }
-}
-
 trait WeighAssets {
     fn weigh_assets(&self, balances_weight: Weight) -> Weight;
 }
@@ -64,11 +43,7 @@ impl WeighAssets for AssetFilter {
             Self::Definite(assets) => assets
                 .inner()
                 .into_iter()
-                .map(From::from)
-                .map(|t| match t {
-                    AssetTypes::Balances => balances_weight,
-                    AssetTypes::Unknown => Weight::MAX,
-                })
+                .map(|_t| balances_weight)
                 .fold(Weight::zero(), |acc, x| acc.saturating_add(x)),
             Self::Wild(AllOf { .. } | AllOfCounted { .. }) => balances_weight,
             Self::Wild(AllCounted(count)) => {
@@ -83,11 +58,7 @@ impl WeighAssets for Assets {
     fn weigh_assets(&self, balances_weight: Weight) -> Weight {
         self.inner()
             .into_iter()
-            .map(|m| <AssetTypes as From<&Asset>>::from(m))
-            .map(|t| match t {
-                AssetTypes::Balances => balances_weight,
-                AssetTypes::Unknown => Weight::MAX,
-            })
+            .map(|_t| balances_weight)
             .fold(Weight::zero(), |acc, x| acc.saturating_add(x))
     }
 }
@@ -108,8 +79,8 @@ where
     fn reserve_asset_deposited(assets: &Assets) -> XCMWeight {
         assets.weigh_assets(XcmBalancesWeight::<Runtime>::reserve_asset_deposited())
     }
-    fn receive_teleported_asset(assets: &Assets) -> XCMWeight {
-        assets.weigh_assets(XcmBalancesWeight::<Runtime>::receive_teleported_asset())
+    fn receive_teleported_asset(_assets: &Assets) -> XCMWeight {
+        XCMWeight::MAX // We do not support teleported assets in dancelight
     }
     fn query_response(
         _query_id: &u64,
@@ -280,12 +251,11 @@ where
 
     fn initiate_transfer(
         _dest: &Location,
-        _remote_fees: &Option<AssetTransferFilter>,
+        remote_fees: &Option<AssetTransferFilter>,
         _preserve_origin: &bool,
-        _assets: &Vec<AssetTransferFilter>,
+        assets: &Vec<AssetTransferFilter>,
         _xcm: &Xcm<()>,
     ) -> Weight {
-        /*
         let mut weight = if let Some(remote_fees) = remote_fees {
             let fees = remote_fees.inner();
             fees.weigh_assets(XcmBalancesWeight::<Runtime>::initiate_transfer())
@@ -298,8 +268,6 @@ where
             weight = weight.saturating_add(extra);
         }
         weight
-        */
-        Weight::MAX
     }
 
     fn execute_with_origin(

@@ -1526,6 +1526,7 @@ impl pallet_root_testing::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
 }
 
+type AssetRateId = u16;
 impl pallet_asset_rate::Config for Runtime {
     type WeightInfo = weights::pallet_asset_rate::SubstrateWeight<Runtime>;
     type RuntimeEvent = RuntimeEvent;
@@ -1533,7 +1534,7 @@ impl pallet_asset_rate::Config for Runtime {
     type RemoveOrigin = EnsureRoot<AccountId>;
     type UpdateOrigin = EnsureRoot<AccountId>;
     type Currency = Balances;
-    type AssetKind = <Runtime as pallet_treasury::Config>::AssetKind;
+    type AssetKind = AssetRateId;
     #[cfg(feature = "runtime-benchmarks")]
     type BenchmarkHelper = ();
 }
@@ -1934,6 +1935,10 @@ construct_runtime! {
         // Asset rate.
         AssetRate: pallet_asset_rate = 86,
 
+        // Foreign assets.
+        ForeignAssets: pallet_assets::<Instance1> = 87,
+        ForeignAssetsCreator: pallet_foreign_asset_creator = 88,
+
         // Pallet for sending XCM.
         XcmPallet: pallet_xcm = 90,
 
@@ -2295,7 +2300,9 @@ mod benches {
         [pallet_pooled_staking, PooledStaking]
         [pallet_configuration, CollatorConfiguration]
         [pallet_stream_payment, StreamPayment]
-
+        // Foreign Assets
+        //[pallet_foreign_asset_creator, ForeignAssetsCreator]
+        [pallet_assets, ForeignAssets]
         // XCM
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
         [pallet_xcm_benchmarks::fungible, pallet_xcm_benchmarks::fungible::Pallet::<Runtime>]
@@ -3157,11 +3164,27 @@ sp_api::impl_runtime_apis! {
             }
 
             parameter_types! {
-                pub TrustedTeleporter: Option<(Location, Asset)> = Some((
-                    AssetHub::get(),
-                    Asset { fun: Fungible(1 * UNITS), id: AssetId(TokenLocation::get()) },
-                ));
-                pub TrustedReserve: Option<(Location, Asset)> = None;
+                pub TrustedTeleporter: Option<(Location, Asset)> = None;
+                pub TrustedReserve: Option<(Location, Asset)> = Some(
+                    (
+                        Location {
+                            parents: 0,
+                            interior: X1([
+                                Parachain(2002),
+                            ].into())
+                        },
+                        (
+                            Location {
+                                parents: 0,
+                                interior: X2([
+                                    Parachain(2002),
+                                    PalletInstance(10),
+                                ].into())
+                            },
+                            ExistentialDeposit::get() * 100_000
+                        ).into()
+                    )
+                );
             }
 
             impl pallet_xcm_benchmarks::fungible::Config for Runtime {
