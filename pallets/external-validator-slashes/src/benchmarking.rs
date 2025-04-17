@@ -92,8 +92,8 @@ mod benchmarks {
     fn root_test_send_msg_to_eth() -> Result<(), BenchmarkError> {
         let nonce = Default::default();
         // Max limits depend on runtime, these are for Dancelight
-        let num_msgs = 32;
-        let msg_size = 900;
+        let num_msgs = 100;
+        let msg_size = 2048;
 
         #[extrinsic_call]
         _(RawOrigin::Root, nonce, num_msgs, msg_size);

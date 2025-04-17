@@ -541,6 +541,10 @@ declare module "@polkadot/api-base/types/errors" {
              **/
             ProvidedNonSlashableEra: AugmentedError<ApiType>;
             /**
+             * Invalid params for root_test_send_msg_to_eth
+             **/
+            RootTestInvalidParams: AugmentedError<ApiType>;
+            /**
              * Generic error
              **/
             [key: string]: AugmentedError<ApiType>;
