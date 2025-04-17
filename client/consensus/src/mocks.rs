@@ -993,6 +993,7 @@ impl CollatorLookaheadTestBuilder {
                 orchestrator_tx_pool: orchestrator_tx_pool.clone(),
             },
             orchestrator_slot_duration: SlotDuration::from_millis(SLOT_DURATION_MS),
+            max_pov_percentage: Some(85),
         };
         let (fut, exit_notification_receiver) = crate::collators::lookahead::run::<
             _,

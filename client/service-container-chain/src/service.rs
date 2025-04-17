@@ -290,6 +290,7 @@ pub fn start_node_impl_container<
                 para_id,
                 overseer_handle.clone(),
                 announce_block.clone(),
+                container_chain_cli.base.experimental_max_pov_percentage,
             );
         }
 
@@ -366,6 +367,7 @@ fn start_consensus_container<RuntimeApi: MinimalContainerRuntimeApi>(
     para_id: ParaId,
     overseer_handle: OverseerHandle,
     announce_block: Arc<dyn Fn(Hash, Option<Vec<u8>>) + Send + Sync>,
+    max_pov_percentage: Option<u32>,
 ) {
     let crate::spawner::CollationParams {
         collator_key,
@@ -432,6 +434,7 @@ fn start_consensus_container<RuntimeApi: MinimalContainerRuntimeApi>(
     };
 
     let params = LookaheadTanssiAuraParams {
+        max_pov_percentage,
         get_current_slot_duration: move |block_hash| {
             // Default to 12s if runtime API does not exist
             let slot_duration_ms = client_for_slot_duration
