@@ -628,6 +628,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "asset-starlight-integration-tests"
+version = "0.0.0"
+dependencies = [
+ "container-chain-template-simple-runtime",
+ "frame-support",
+ "pallet-message-queue",
+ "pallet-xcm",
+ "polkadot-primitives",
+ "simple-template-emulated-chain",
+ "sp-runtime",
+ "staging-xcm",
+ "staging-xcm-executor",
+ "starlight-emulated-chain",
+ "starlight-runtime",
+ "starlight-system-emulated-network",
+ "tanssi-emulated-integration-tests-common",
+ "xcm-emulator",
+]
+
+[[package]]
 name = "asset-test-utils"
 version = "7.0.0"
 source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2412#dc67d11292a3baa36a873e2d04c41b2ed5805f31"
@@ -1506,6 +1526,28 @@ dependencies = [
  "sp-weights",
  "staging-xcm",
  "tuplex",
+]
+
+[[package]]
+name = "bridge-starlight-integration-tests"
+version = "0.0.0"
+dependencies = [
+ "alloy-sol-types",
+ "frame-support",
+ "frame-system",
+ "parity-scale-codec",
+ "snowbridge-core",
+ "snowbridge-pallet-inbound-queue",
+ "snowbridge-router-primitives",
+ "sp-core",
+ "sp-keyring",
+ "staging-xcm",
+ "starlight-emulated-chain",
+ "starlight-runtime",
+ "starlight-system-emulated-network",
+ "tanssi-emulated-integration-tests-common",
+ "tp-bridge",
+ "xcm-emulator",
 ]
 
 [[package]]
@@ -18454,6 +18496,214 @@ dependencies = [
 ]
 
 [[package]]
+name = "starlight-emulated-chain"
+version = "0.0.0"
+dependencies = [
+ "emulated-integration-tests-common",
+ "sp-core",
+ "staging-xcm",
+ "starlight-runtime",
+ "starlight-runtime-constants",
+ "tanssi-emulated-integration-tests-common",
+ "xcm-emulator",
+]
+
+[[package]]
+name = "starlight-runtime"
+version = "0.1.0"
+dependencies = [
+ "alloy-sol-types",
+ "binary-merkle-tree",
+ "bitvec",
+ "container-chain-template-frontier-runtime",
+ "container-chain-template-simple-runtime",
+ "cumulus-pallet-parachain-system",
+ "cumulus-primitives-core",
+ "dp-consensus",
+ "dp-container-chain-genesis-data",
+ "emulated-integration-tests-common",
+ "finality-grandpa",
+ "frame-benchmarking",
+ "frame-executive",
+ "frame-metadata-hash-extension",
+ "frame-remote-externalities",
+ "frame-support",
+ "frame-system",
+ "frame-system-benchmarking",
+ "frame-system-rpc-runtime-api",
+ "frame-try-runtime",
+ "hex-literal 0.3.4",
+ "log",
+ "nimbus-primitives",
+ "pallet-asset-rate",
+ "pallet-author-noting",
+ "pallet-author-noting-runtime-api",
+ "pallet-authority-assignment",
+ "pallet-authority-discovery",
+ "pallet-authority-mapping",
+ "pallet-authorship",
+ "pallet-babe",
+ "pallet-balances",
+ "pallet-beefy",
+ "pallet-beefy-mmr",
+ "pallet-collator-assignment",
+ "pallet-collective",
+ "pallet-configuration",
+ "pallet-conviction-voting",
+ "pallet-data-preservers",
+ "pallet-democracy",
+ "pallet-elections-phragmen",
+ "pallet-ethereum-token-transfers",
+ "pallet-external-validator-slashes",
+ "pallet-external-validators",
+ "pallet-external-validators-rewards",
+ "pallet-external-validators-rewards-runtime-api",
+ "pallet-grandpa",
+ "pallet-identity",
+ "pallet-inflation-rewards",
+ "pallet-initializer",
+ "pallet-invulnerables",
+ "pallet-membership",
+ "pallet-message-queue",
+ "pallet-migrations 0.1.0",
+ "pallet-migrations 1.0.0",
+ "pallet-mmr",
+ "pallet-multisig",
+ "pallet-offences",
+ "pallet-outbound-message-commitment-recorder",
+ "pallet-parameters",
+ "pallet-pooled-staking",
+ "pallet-preimage",
+ "pallet-proxy",
+ "pallet-ranked-collective",
+ "pallet-referenda",
+ "pallet-registrar",
+ "pallet-registrar-runtime-api",
+ "pallet-root-testing",
+ "pallet-scheduler",
+ "pallet-services-payment",
+ "pallet-services-payment-runtime-api",
+ "pallet-session",
+ "pallet-staking",
+ "pallet-stream-payment",
+ "pallet-stream-payment-runtime-api",
+ "pallet-sudo",
+ "pallet-timestamp",
+ "pallet-tips",
+ "pallet-transaction-payment",
+ "pallet-transaction-payment-rpc-runtime-api",
+ "pallet-treasury",
+ "pallet-utility",
+ "pallet-whitelist",
+ "pallet-xcm",
+ "pallet-xcm-benchmarks",
+ "parity-scale-codec",
+ "polkadot-parachain-primitives",
+ "polkadot-primitives",
+ "polkadot-runtime-common",
+ "polkadot-runtime-parachains",
+ "rand",
+ "rococo-runtime",
+ "rococo-runtime-constants",
+ "sc-consensus-grandpa",
+ "scale-info",
+ "separator",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "smallvec",
+ "snowbridge-beacon-primitives",
+ "snowbridge-core",
+ "snowbridge-milagro-bls",
+ "snowbridge-outbound-queue-runtime-api",
+ "snowbridge-pallet-ethereum-client",
+ "snowbridge-pallet-inbound-queue",
+ "snowbridge-pallet-inbound-queue-fixtures",
+ "snowbridge-pallet-outbound-queue",
+ "snowbridge-pallet-system",
+ "snowbridge-router-primitives",
+ "sp-api",
+ "sp-application-crypto",
+ "sp-arithmetic",
+ "sp-authority-discovery",
+ "sp-block-builder",
+ "sp-consensus-aura",
+ "sp-consensus-babe",
+ "sp-consensus-beefy",
+ "sp-consensus-grandpa",
+ "sp-core",
+ "sp-debug-derive",
+ "sp-genesis-builder",
+ "sp-inherents",
+ "sp-io",
+ "sp-keyring",
+ "sp-keystore",
+ "sp-mmr-primitives",
+ "sp-offchain",
+ "sp-runtime",
+ "sp-session",
+ "sp-staking",
+ "sp-std",
+ "sp-storage",
+ "sp-tracing",
+ "sp-transaction-pool",
+ "sp-trie",
+ "sp-version",
+ "staging-xcm",
+ "staging-xcm-builder",
+ "staging-xcm-executor",
+ "starlight-runtime-constants",
+ "static_assertions",
+ "substrate-wasm-builder",
+ "tanssi-runtime-common",
+ "test-relay-sproof-builder",
+ "tiny-keccak",
+ "tokio",
+ "tp-author-noting-inherent",
+ "tp-bridge",
+ "tp-data-preservers-common",
+ "tp-stream-payment-common",
+ "tp-traits",
+ "tp-xcm-commons",
+ "westend-runtime",
+ "westend-runtime-constants",
+ "xcm-emulator",
+ "xcm-runtime-apis",
+]
+
+[[package]]
+name = "starlight-runtime-constants"
+version = "0.1.0"
+dependencies = [
+ "frame-support",
+ "polkadot-primitives",
+ "polkadot-runtime-common",
+ "smallvec",
+ "sp-core",
+ "sp-runtime",
+ "sp-weights",
+ "staging-xcm",
+ "staging-xcm-builder",
+ "tp-traits",
+]
+
+[[package]]
+name = "starlight-system-emulated-network"
+version = "0.0.0"
+dependencies = [
+ "container-chain-template-simple-runtime",
+ "frame-support",
+ "frame-system",
+ "frontier-template-emulated-chain",
+ "simple-template-emulated-chain",
+ "snowbridge-pallet-outbound-queue",
+ "sp-keyring",
+ "starlight-emulated-chain",
+ "tanssi-emulated-integration-tests-common",
+ "xcm-emulator",
+]
+
+[[package]]
 name = "static_assertions"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -19055,6 +19305,7 @@ dependencies = [
  "sp-core",
  "sp-keyring",
  "sp-std",
+ "sp-weights",
  "staging-xcm",
  "xcm-emulator",
 ]
