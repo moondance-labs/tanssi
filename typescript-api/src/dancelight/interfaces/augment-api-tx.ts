@@ -2963,6 +2963,16 @@ declare module "@polkadot/api-base/types/submittable" {
              **/
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
+        inactivityTracking: {
+            setInactivityTrackingStatus: AugmentedSubmittable<
+                (enableInactivityTracking: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [bool]
+            >;
+            /**
+             * Generic tx
+             **/
+            [key: string]: SubmittableExtrinsicFunction<ApiType>;
+        };
         initializer: {
             /**
              * Issue a signal to the consensus engine to forcibly act as though all parachain
