@@ -160,6 +160,8 @@ pub mod xcm_config;
 
 pub mod bridge_to_ethereum_config;
 
+pub mod eth_chain_config;
+
 // Weights
 mod weights;
 
