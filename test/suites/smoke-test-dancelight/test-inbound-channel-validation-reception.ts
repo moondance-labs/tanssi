@@ -90,16 +90,20 @@ Bonded era: ${JSON.stringify(bondedEra)}
                     const event = blockToCheck.events.find((event) => event.event.method === "ExternalValidatorsSet");
 
                     if (event) {
-                        const [apiAtPreviousBlock, currentBlockNonce] = await Promise.all([
+                        const [apiAtPreviousBlock, apiAtCurrentBlock] = await Promise.all([
                             api.at(await api.rpc.chain.getBlockHash(blockToCheck.blockNum - 1)),
-                            api.query.ethereumInboundQueue.nonce(PRIMARY_GOVERNANCE_CHANNEL_ID),
+                            api.at(await api.rpc.chain.getBlockHash(blockToCheck.blockNum)),
                         ]);
 
-                        const previousBlockNonce =
-                            await apiAtPreviousBlock.query.ethereumInboundQueue.nonce(PRIMARY_GOVERNANCE_CHANNEL_ID);
+                        const [previousBlockNonce, currentBlockNonce] = await Promise.all([
+                            await apiAtPreviousBlock.query.ethereumInboundQueue.nonce(PRIMARY_GOVERNANCE_CHANNEL_ID),
+                            await apiAtCurrentBlock.query.ethereumInboundQueue.nonce(PRIMARY_GOVERNANCE_CHANNEL_ID),
+                        ]);
 
-                        // TODO: Find the block with this event and test
-                        expect(previousBlockNonce.toBigInt() + 1n).toEqual(currentBlockNonce.toBigInt());
+                        expect(
+                            previousBlockNonce.toBigInt() + 1n,
+                            `Nonce for block: ${blockToCheck.blockNum} should increment by 1, because event with method: ${event.event.method} was emitted`
+                        ).toEqual(currentBlockNonce.toBigInt());
                     }
                 }
             },
