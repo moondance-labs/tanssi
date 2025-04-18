@@ -381,16 +381,25 @@ fn processing_ended_session_correctly_updates_current_session_collators_and_acti
             get_collator_set(vec![COLLATOR_1]);
         let inactive_collator_record: BoundedBTreeSet<AccountId, ConstU32<5>> =
             get_collator_set(vec![COLLATOR_2]);
+        let current_session_active_chain_record = get_active_chains_set(vec![CONTAINER_CHAIN_ID_1]);
         let empty_vec: BoundedBTreeSet<AccountId, ConstU32<5>> = BoundedBTreeSet::new();
 
         ActiveCollatorsForCurrentSession::<Test>::put(
             current_session_active_collator_record.clone(),
+        );
+        ActiveContainerChainsForCurrentSession::<Test>::put(
+            current_session_active_chain_record.clone(),
         );
 
         assert_eq!(
             ActiveCollatorsForCurrentSession::<Test>::get(),
             current_session_active_collator_record
         );
+        assert_eq!(
+            ActiveContainerChainsForCurrentSession::<Test>::get(),
+            current_session_active_chain_record
+        );
+
         assert_eq!(InactiveCollators::<Test>::get(0), empty_vec);
 
         roll_to(SESSION_BLOCK_LENGTH - 1);
@@ -412,15 +421,23 @@ fn processing_ended_session_correctly_cleans_outdated_collator_records() {
             get_collator_set(vec![COLLATOR_1]);
         let inactive_collator_record: BoundedBTreeSet<AccountId, ConstU32<5>> =
             get_collator_set(vec![COLLATOR_2]);
+        let current_session_active_chain_record = get_active_chains_set(vec![CONTAINER_CHAIN_ID_1]);
         let empty_vec: BoundedBTreeSet<AccountId, ConstU32<5>> = BoundedBTreeSet::new();
 
         ActiveCollatorsForCurrentSession::<Test>::put(
             current_session_active_collator_record.clone(),
         );
+        ActiveContainerChainsForCurrentSession::<Test>::put(
+            current_session_active_chain_record.clone(),
+        );
 
         assert_eq!(
             ActiveCollatorsForCurrentSession::<Test>::get(),
             current_session_active_collator_record
+        );
+        assert_eq!(
+            ActiveContainerChainsForCurrentSession::<Test>::get(),
+            current_session_active_chain_record
         );
         assert_eq!(InactiveCollators::<Test>::get(0), empty_vec);
 

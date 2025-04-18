@@ -97,7 +97,7 @@ fn get_chains_set(
 }
 
 #[test]
-fn inactivity_tracking_correctly_updates_storages_with_all_chain_being_active() {
+fn inactivity_tracking_correctly_updates_storages() {
     ExtBuilder::default()
         .with_empty_parachains(vec![3000, 3001])
         .with_collators(vec![
@@ -123,11 +123,19 @@ fn inactivity_tracking_correctly_updates_storages_with_all_chain_being_active() 
                 <ActiveCollatorsForCurrentSession<Runtime>>::get(),
                 get_collators_set(vec![ALICE.into(), DAVE.into()])
             );
+            assert_eq!(
+                <ActiveContainerChainsForCurrentSession<Runtime>>::get(),
+                get_chains_set(vec![3000.into(), 3001.into()])
+            );
 
             run_block();
             assert_eq!(
                 <ActiveCollatorsForCurrentSession<Runtime>>::get(),
                 get_collators_set(vec![ALICE.into(), DAVE.into()])
+            );
+            assert_eq!(
+                <ActiveContainerChainsForCurrentSession<Runtime>>::get(),
+                get_chains_set(vec![3000.into(), 3001.into()])
             );
 
             run_to_session(1);
@@ -140,17 +148,27 @@ fn inactivity_tracking_correctly_updates_storages_with_all_chain_being_active() 
                 <ActiveCollatorsForCurrentSession<Runtime>>::get(),
                 get_collators_set(vec![])
             );
+            assert_eq!(
+                <ActiveContainerChainsForCurrentSession<Runtime>>::get(),
+                get_chains_set(vec![])
+            );
 
             run_block();
             assert_eq!(
                 <ActiveCollatorsForCurrentSession<Runtime>>::get(),
                 get_collators_set(vec![])
             );
+            assert_eq!(
+                <ActiveContainerChainsForCurrentSession<Runtime>>::get(),
+                get_chains_set(vec![])
+            );
             run_to_session(2);
             run_block();
+
+            // Since chains 3000 and 3001 are inactive, all collators should be marked as inactive
             assert_eq!(
                 <InactiveCollators<Runtime>>::get(1),
-                get_collators_set(vec![ALICE.into(), BOB.into(), CHARLIE.into(), DAVE.into()])
+                get_collators_set(vec![])
             );
             assert_eq!(<ActiveCollatorsForCurrentSession<Runtime>>::get().len(), 0);
 
@@ -182,11 +200,11 @@ fn inactivity_tracking_correctly_updates_storages_with_all_chain_being_active() 
             );
             assert_eq!(
                 InactivityTracking::is_node_inactive(&AccountId::from(BOB)),
-                true
+                false
             );
             assert_eq!(
                 InactivityTracking::is_node_inactive(&AccountId::from(CHARLIE)),
-                true
+                false
             );
             assert_eq!(
                 InactivityTracking::is_node_inactive(&AccountId::from(DAVE)),
@@ -198,60 +216,5 @@ fn inactivity_tracking_correctly_updates_storages_with_all_chain_being_active() 
             run_block();
 
             assert_eq!(<InactiveCollators<Runtime>>::get(0).is_empty(), true);
-        });
-}
-
-#[test]
-fn inactivity_tracking_correctly_updates_storages_with_all_chain_being_inactive() {
-    ExtBuilder::default()
-        .with_empty_parachains(vec![3000])
-        .with_collators(vec![
-            (AccountId::from(ALICE), 100_000),
-            (AccountId::from(BOB), 100_000),
-        ])
-        .build()
-        .execute_with(|| {
-            run_block();
-            assert_eq!(<ActiveCollatorsForCurrentSession<Runtime>>::get().len(), 0);
-            assert_eq!(
-                <ActiveContainerChainsForCurrentSession<Runtime>>::get().len(),
-                0
-            );
-            run_to_session(1);
-            assert_eq!(<ActiveCollatorsForCurrentSession<Runtime>>::get().len(), 0);
-            assert_eq!(
-                <ActiveContainerChainsForCurrentSession<Runtime>>::get().len(),
-                0
-            );
-            run_block();
-
-            // Since chain 3000 is inactive, all collators should be marked as active
-            assert_eq!(
-                <InactiveCollators<Runtime>>::get(0),
-                get_collators_set(vec![ALICE.into(), BOB.into()])
-            );
-            assert_eq!(<ActiveCollatorsForCurrentSession<Runtime>>::get().len(), 0);
-            assert_eq!(
-                <ActiveContainerChainsForCurrentSession<Runtime>>::get().len(),
-                0
-            );
-
-            run_to_session(2);
-            assert_eq!(<ActiveCollatorsForCurrentSession<Runtime>>::get().len(), 0);
-            assert_eq!(
-                <ActiveContainerChainsForCurrentSession<Runtime>>::get().len(),
-                0
-            );
-            run_block();
-
-            assert_eq!(
-                <InactiveCollators<Runtime>>::get(1),
-                get_collators_set(vec![ALICE.into(), BOB.into()])
-            );
-            assert_eq!(<ActiveCollatorsForCurrentSession<Runtime>>::get().len(), 0);
-            assert_eq!(
-                <ActiveContainerChainsForCurrentSession<Runtime>>::get().len(),
-                0
-            );
         });
 }
