@@ -165,12 +165,16 @@ fn inactivity_tracking_correctly_updates_storages() {
             run_to_session(2);
             run_block();
 
-            // Since chains 3000 and 3001 are inactive, all collators should be marked as inactive
+            // Since chains 3000 and 3001 are inactive, all collators should be marked as active
             assert_eq!(
                 <InactiveCollators<Runtime>>::get(1),
                 get_collators_set(vec![])
             );
             assert_eq!(<ActiveCollatorsForCurrentSession<Runtime>>::get().len(), 0);
+            assert_eq!(
+                <ActiveContainerChainsForCurrentSession<Runtime>>::get(),
+                get_chains_set(vec![])
+            );
 
             let max_inactive_sessions =
                 <Runtime as pallet_inactivity_tracking::Config>::MaxInactiveSessions::get();

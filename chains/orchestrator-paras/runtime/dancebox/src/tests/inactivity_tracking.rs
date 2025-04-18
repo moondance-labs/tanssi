@@ -268,7 +268,7 @@ fn inactivity_tracking_correctly_updates_storages_on_container_chains_author_not
 }
 
 #[test]
-fn inactivity_tracking_correctly_updates_storages_with_all_chain_being_inactive() {
+fn inactivity_tracking_correctly_updates_storages_with_all_chains_being_inactive() {
     ExtBuilder::default()
         .with_empty_parachains(vec![3000, 3001])
         .with_collators(vec![

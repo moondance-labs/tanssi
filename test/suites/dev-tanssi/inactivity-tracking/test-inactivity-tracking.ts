@@ -39,22 +39,28 @@ describeSuite({
                 expect(activeCollatorsForSessionBeforeNoting.toHuman()).to.deep.eq([alice.address]);
 
                 // After noting the first block, the collators should be added to the activity tracking storage
-                // for the current session
+                // for the current session and the chains will be added to chain activity tracking storage
                 await context.createBlock();
-                const activeCollatorsForSession2AfterNoting =
+                const activeCollatorsForSessionAfterNoting =
                     await polkadotJs.query.inactivityTracking.activeCollatorsForCurrentSession();
-                expect(activeCollatorsForSession2AfterNoting.toHuman()).to.deep.eq([
+                expect(activeCollatorsForSessionAfterNoting.toHuman()).to.deep.eq([
                     context.keyring.bob.address,
                     context.keyring.charlie.address,
                     alice.address,
                 ]);
+                const activeChainsForSessionAfterNoting =
+                    await polkadotJs.query.inactivityTracking.activeContainerChainsForCurrentSession();
+                expect(activeChainsForSessionAfterNoting.toHuman()).to.deep.eq(["2,000"]);
 
                 // If the same collator produces more than 1 block, the activity tracking storage
-                // for the current session should not add the collator again
+                // for the current session should not add the collator and the chain again
                 await context.createBlock();
-                const activeCollatorsForSession2AfterSecondNoting =
+                const activeCollatorsForSessionAfterSecondNoting =
                     await polkadotJs.query.inactivityTracking.activeCollatorsForCurrentSession();
-                expect(activeCollatorsForSession2AfterSecondNoting).to.deep.eq(activeCollatorsForSession2AfterNoting);
+                expect(activeCollatorsForSessionAfterSecondNoting).to.deep.eq(activeCollatorsForSessionAfterNoting);
+                const activeChainsForSessionAfterSecondNoting =
+                    await polkadotJs.query.inactivityTracking.activeContainerChainsForCurrentSession();
+                expect(activeChainsForSessionAfterSecondNoting).to.deep.eq(activeChainsForSessionAfterNoting);
 
                 // Check that the collators are not added to the activity tracking storage for the current session
                 // before the end of the session
@@ -105,9 +111,9 @@ describeSuite({
                 // After noting the first block, the collators should be added to the activity tracking storage
                 // for the current session
                 await context.createBlock();
-                const activeCollatorsForSession2AfterNoting =
+                const activeCollatorsForSessionAfterNoting =
                     await polkadotJs.query.inactivityTracking.activeCollatorsForCurrentSession();
-                expect(activeCollatorsForSession2AfterNoting.toHuman()).to.deep.eq([
+                expect(activeCollatorsForSessionAfterNoting.toHuman()).to.deep.eq([
                     context.keyring.bob.address,
                     context.keyring.charlie.address,
                     alice.address,
@@ -116,9 +122,9 @@ describeSuite({
                 // If the same collator produces more than 1 block, the activity tracking storage
                 // for the current session should not add the collator again
                 await context.createBlock();
-                const activeCollatorsForSession2AfterSecondNoting =
+                const activeCollatorsForSessionAfterSecondNoting =
                     await polkadotJs.query.inactivityTracking.activeCollatorsForCurrentSession();
-                expect(activeCollatorsForSession2AfterSecondNoting).to.deep.eq(activeCollatorsForSession2AfterNoting);
+                expect(activeCollatorsForSessionAfterSecondNoting).to.deep.eq(activeCollatorsForSessionAfterNoting);
 
                 // Check that the collators are not added to the activity tracking storage for the current session
                 // before the end of the session
