@@ -19397,6 +19397,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "tanssi-utils"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "hex",
+ "pallet-external-validators-rewards",
+ "serde",
+ "serde_json",
+ "snowbridge-outbound-queue-merkle-tree",
+ "sp-runtime",
+]
+
+[[package]]
 name = "tap"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"

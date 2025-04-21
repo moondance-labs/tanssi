@@ -56,6 +56,7 @@ std = [
 	"tp-maths/std",
 	"tp-traits/std",
 ]
+migrations = []
 runtime-benchmarks = [
 	"frame-benchmarking",
 	"frame-benchmarking/runtime-benchmarks",
