@@ -41,10 +41,14 @@ def get_emoji(size, limit):
 
 
 def main():
+    # get the directory where this script lives
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    # go up one level
+    parent_dir = os.path.dirname(script_dir)
     # Run ripgrep to find all Weight::from_parts(arg1, arg2) occurrences
     try:
         result = subprocess.run([
-            'rg', '-Hno', r'Weight::from_parts\([0-9_,]+\s*,\s*[0-9_,]+\)', '.'
+            'rg', '-Hno', r'Weight::from_parts\([0-9_,]+\s*,\s*[0-9_,]+\)', parent_dir
         ], check=True, capture_output=True, text=True)
     except subprocess.CalledProcessError as e:
         print(f"Error running ripgrep: {e}")
