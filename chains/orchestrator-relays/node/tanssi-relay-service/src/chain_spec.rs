@@ -20,7 +20,7 @@ use {
     beefy_primitives::ecdsa_crypto::AuthorityId as BeefyId,
     cumulus_primitives_core::ParaId,
     dancelight_runtime::genesis_config_presets::{
-        dancelight_development_config_genesis, dancelight_local_testnet_genesis, starlight_development_config_genesis
+        dancelight_development_config_genesis, dancelight_local_testnet_genesis
     },
     dp_container_chain_genesis_data::{
         json::container_chain_genesis_data_from_path, ContainerChainGenesisData,
@@ -31,12 +31,13 @@ use {
     sp_authority_discovery::AuthorityId as AuthorityDiscoveryId,
     sp_consensus_babe::AuthorityId as BabeId,
     sp_core::crypto::get_public_from_string_or_panic,
+    starlight_runtime::genesis_config_presets::starlight_development_config_genesis,
 };
 
 #[cfg(feature = "dancelight-native")]
 use dancelight_runtime as dancelight;
 
-#[cfg(feature = "dancelight-native")]
+#[cfg(feature = "starlight-native")]
 use starlight_runtime as starlight;
 
 #[cfg(feature = "dancelight-native")]
@@ -78,8 +79,8 @@ pub type GenericChainSpec = service::GenericChainSpec<Extensions>;
 #[cfg(feature = "dancelight-native")]
 pub type DancelightChainSpec = service::GenericChainSpec<Extensions>;
 
-/// The `ChainSpec` parameterized for the dancelight runtime.
-#[cfg(feature = "dancelight-native")]
+/// The `ChainSpec` parameterized for the starlight runtime.
+#[cfg(feature = "starlight-native")]
 pub type StarlightChainSpec = service::GenericChainSpec<Extensions>;
 
 /// The `ChainSpec` parameterized for the dancelight runtime.
@@ -208,8 +209,8 @@ pub fn dancelight_development_config(
     .build())
 }
 
-/// Dancelight development config (single validator Alice)
-#[cfg(feature = "dancelight-native")]
+/// Starlight development config (single validator Alice)
+#[cfg(feature = "starlight-native")]
 pub fn starlight_development_config(
     container_chains: Vec<String>,
     mock_container_chains: Vec<ParaId>,
