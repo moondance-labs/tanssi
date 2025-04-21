@@ -114,6 +114,7 @@ polkadot-runtime-parachains = { workspace = true }
 
 # Polkadot Runtime Constants
 dancelight-runtime-constants = { workspace = true, optional = true, features = [ "std" ] }
+starlight-runtime-constants = { workspace = true, optional = true, features = [ "std" ] }
 
 # Polkadot Runtimes
 dancelight-runtime = { workspace = true, optional = true, features = [ "std" ] }
@@ -197,7 +198,8 @@ full-node = [
 ]
 
 # Configure the native runtimes to use.
-dancelight-native = [ "bitvec", "dancelight-runtime", "dancelight-runtime-constants", "starlight-runtime" ]
+dancelight-native = [ "bitvec", "dancelight-runtime", "dancelight-runtime-constants" ]
+starlight-native = [ "bitvec", "starlight-runtime", "starlight-runtime-constants" ]
 
 fast-runtime = [ 
 	"dancelight-runtime?/fast-runtime",
@@ -208,6 +210,7 @@ runtime-benchmarks = [
 	"dancelight-runtime-constants?/runtime-benchmarks",
 	"dancelight-runtime?/runtime-benchmarks",
 	"starlight-runtime?/runtime-benchmarks",
+	"starlight-runtime-constants?/runtime-benchmarks",
 	"frame-benchmarking-cli/runtime-benchmarks",
 	"frame-benchmarking/runtime-benchmarks",
 	"frame-support/runtime-benchmarks",

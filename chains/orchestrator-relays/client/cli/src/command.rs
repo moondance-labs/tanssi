@@ -517,7 +517,7 @@ fn load_spec(
                 )?,
             )
         }
-        #[cfg(feature = "dancelight-native")]
+        #[cfg(feature = "starlight-native")]
         "starlight-dev" => {
             // Default invulnerables for dev mode, used in dev_tanssi_relay tests
             let invulnerables = invulnerables.unwrap_or(vec![
