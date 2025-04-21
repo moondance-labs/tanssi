@@ -60,7 +60,7 @@ function help {
 }
 
 function choose_and_bench {
-    readarray -t options < <(${BINARY} benchmark pallet  --chain=${CHAIN} --list | sed 1d)
+    readarray -t options < <(${BINARY} benchmark pallet  --runtime=${RUNTIME} --list | sed 1d)
     options+=('EXIT')
 
     select opt in "${options[@]}"; do
@@ -84,7 +84,7 @@ function bench {
     if [[ ${1} == "*" ]] ; then
         # Load all pallet names in an array.
         ALL_PALLETS=($(
-        $BINARY benchmark pallet --list --chain="${CHAIN}" |\
+        $BINARY benchmark pallet --list --runtime="${RUNTIME}" |\
             tail -n+2 |\
             cut -d',' -f1 |\
             sort |\
@@ -105,11 +105,10 @@ function bench {
             fi
             touch "$OUTPUT"
             WASMTIME_BACKTRACE_DETAILS=1 ${BINARY} benchmark pallet \
-            --execution=wasm \
-            --wasm-execution=compiled \
             --pallet "$PALLET" \
             --extrinsic "*" \
             --runtime="${RUNTIME}" \
+            --wasm-execution=compiled \
             --steps "${STEPS}" \
             --repeat "${REPEAT}" \
             --template="${TEMPLATE_TO_USE}" \
@@ -129,10 +128,9 @@ function bench {
         fi
         touch "$OUTPUT"
         WASMTIME_BACKTRACE_DETAILS=1 ${BINARY} benchmark pallet \
-            --execution=wasm \
-            --wasm-execution=compiled \
             --pallet "${1}" \
             --extrinsic "${2}" \
+            --wasm-execution=compiled \
             --runtime="${RUNTIME}" \
             --steps "${STEPS}" \
             --repeat "${REPEAT}" \
