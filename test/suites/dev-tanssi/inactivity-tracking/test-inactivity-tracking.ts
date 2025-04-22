@@ -2,7 +2,7 @@ import "@tanssi/api-augment";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
-import { jumpToSession, jumpSessions, mockAndInsertHeadData } from "utils";
+import { jumpToSession, jumpSessions } from "utils";
 
 describeSuite({
     id: "DEV1001",
