@@ -29,6 +29,7 @@ sp-std = { workspace = true }
 tp-traits = { workspace = true }
 
 [dev-dependencies]
+pallet-session = { workspace = true }
 sp-core = { workspace = true }
 sp-io = { workspace = true }
 
@@ -38,6 +39,7 @@ std = [
 	"frame-benchmarking/std",
 	"frame-support/std",
 	"frame-system/std",
+	"pallet-session/std",
 	"parity-scale-codec/std",
 	"scale-info/std",
 	"serde/std",

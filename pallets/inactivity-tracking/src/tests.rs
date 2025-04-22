@@ -371,7 +371,7 @@ fn processing_ended_session_correctly_updates_current_session_collators_and_acti
             get_collator_set(vec![COLLATOR_1]);
         let inactive_collator_record: BoundedBTreeSet<AccountId, ConstU32<5>> =
             get_collator_set(vec![COLLATOR_2]);
-        let empty_vec: BoundedBTreeSet<AccountId, ConstU32<5>> = BoundedBTreeSet::new();
+        let empty_set: BoundedBTreeSet<AccountId, ConstU32<5>> = BoundedBTreeSet::new();
 
         ActiveCollatorsForCurrentSession::<Test>::put(
             current_session_active_collator_record.clone(),
@@ -381,14 +381,11 @@ fn processing_ended_session_correctly_updates_current_session_collators_and_acti
             ActiveCollatorsForCurrentSession::<Test>::get(),
             current_session_active_collator_record
         );
-        assert_eq!(InactiveCollators::<Test>::get(0), empty_vec);
+        assert_eq!(InactiveCollators::<Test>::get(0), empty_set);
 
-        roll_to(SESSION_BLOCK_LENGTH - 1);
-        Pallet::<Test>::on_before_session_ending();
-        roll_to(SESSION_BLOCK_LENGTH);
-        Pallet::<Test>::process_ended_session();
+        roll_to(SESSION_BLOCK_LENGTH + 1);
 
-        assert_eq!(ActiveCollatorsForCurrentSession::<Test>::get(), empty_vec);
+        assert_eq!(ActiveCollatorsForCurrentSession::<Test>::get(), empty_set);
         assert_eq!(InactiveCollators::<Test>::get(0), inactive_collator_record);
     });
 }
@@ -402,7 +399,7 @@ fn processing_ended_session_correctly_cleans_outdated_collator_records() {
             get_collator_set(vec![COLLATOR_1]);
         let inactive_collator_record: BoundedBTreeSet<AccountId, ConstU32<5>> =
             get_collator_set(vec![COLLATOR_2]);
-        let empty_vec: BoundedBTreeSet<AccountId, ConstU32<5>> = BoundedBTreeSet::new();
+        let empty_set: BoundedBTreeSet<AccountId, ConstU32<5>> = BoundedBTreeSet::new();
 
         ActiveCollatorsForCurrentSession::<Test>::put(
             current_session_active_collator_record.clone(),
@@ -412,14 +409,11 @@ fn processing_ended_session_correctly_cleans_outdated_collator_records() {
             ActiveCollatorsForCurrentSession::<Test>::get(),
             current_session_active_collator_record
         );
-        assert_eq!(InactiveCollators::<Test>::get(0), empty_vec);
+        assert_eq!(InactiveCollators::<Test>::get(0), empty_set);
 
-        roll_to(SESSION_BLOCK_LENGTH - 1);
-        Pallet::<Test>::on_before_session_ending();
         roll_to(SESSION_BLOCK_LENGTH);
-        Pallet::<Test>::process_ended_session();
 
-        assert_eq!(ActiveCollatorsForCurrentSession::<Test>::get(), empty_vec);
+        assert_eq!(ActiveCollatorsForCurrentSession::<Test>::get(), empty_set);
         assert_eq!(InactiveCollators::<Test>::get(0), inactive_collator_record);
 
         roll_to(get_max_inactive_sessions() as u64 * SESSION_BLOCK_LENGTH + 1);
@@ -428,12 +422,12 @@ fn processing_ended_session_correctly_cleans_outdated_collator_records() {
             get_max_inactive_sessions()
         );
 
-        Pallet::<Test>::on_before_session_ending();
-        Pallet::<Test>::process_ended_session();
-
-        assert_eq!(ActiveCollatorsForCurrentSession::<Test>::get(), empty_vec);
+        assert_eq!(ActiveCollatorsForCurrentSession::<Test>::get(), empty_set);
         assert_eq!(InactiveCollators::<Test>::get(0), inactive_collator_record);
-        assert_eq!(InactiveCollators::<Test>::get(1), empty_vec);
+        assert_eq!(
+            InactiveCollators::<Test>::get(1),
+            get_collator_set(vec![COLLATOR_1, COLLATOR_2])
+        );
 
         roll_to((get_max_inactive_sessions() as u64 + 1) * SESSION_BLOCK_LENGTH + 1);
         assert_eq!(
@@ -441,11 +435,8 @@ fn processing_ended_session_correctly_cleans_outdated_collator_records() {
             get_max_inactive_sessions() + 1
         );
 
-        Pallet::<Test>::on_before_session_ending();
-        Pallet::<Test>::process_ended_session();
-
-        assert_eq!(ActiveCollatorsForCurrentSession::<Test>::get(), empty_vec);
-        assert_eq!(InactiveCollators::<Test>::get(0), empty_vec);
+        assert_eq!(ActiveCollatorsForCurrentSession::<Test>::get(), empty_set);
+        assert_eq!(InactiveCollators::<Test>::get(0), empty_set);
     });
 }
 
@@ -539,7 +530,7 @@ fn disabling_inactivity_tracking_clears_the_current_active_collators_storage() {
         ]);
         assert_eq!(ActiveCollatorsForCurrentSession::<Test>::get().len(), 1);
 
-        roll_to(SESSION_BLOCK_LENGTH + 1);
+        roll_to(SESSION_BLOCK_LENGTH);
         assert_ok!(Pallet::<Test>::set_inactivity_tracking_status(
             RuntimeOrigin::root(),
             false
