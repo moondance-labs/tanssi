@@ -460,7 +460,7 @@ impl pallet_xcm_core_buyer::Config for Runtime {
     type CheckCollatorValidity = CheckCollatorValidityImpl;
     type UnsignedPriority = ParasUnsignedPriority;
     type PendingBlocksTtl = PendingBlockTtl;
-    type CoreBuyingXCMQueryTtl = AdditionalTtlForInflightOrders;
+    type CoreBuyingXCMQueryTtl = CoreBuyingXCMQueryTtl;
     type AdditionalTtlForInflightOrders = AdditionalTtlForInflightOrders;
     type BuyCoreSlotDrift = BuyCoreSlotDrift;
     type UniversalLocation = UniversalLocation;
