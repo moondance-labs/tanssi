@@ -31,6 +31,7 @@ polkadot-node-core-pvf = { workspace = true }
 polkadot-node-core-pvf-common = { workspace = true }
 polkadot-node-core-pvf-execute-worker = { workspace = true }
 polkadot-node-core-pvf-prepare-worker = { workspace = true }
+sp-debug-derive = { workspace = true }
 
 polkadot-overseer = { workspace = true }
 tanssi-relay-cli = { workspace = true, features = [ "dancelight-native" ] }
@@ -46,6 +47,7 @@ substrate-build-script-utils = { workspace = true }
 
 [features]
 fast-runtime = [ "tanssi-relay-cli/fast-runtime" ]
+force-debug = [ "sp-debug-derive/force-debug" ]
 pyroscope = [ "tanssi-relay-cli/pyroscope" ]
 runtime-benchmarks = [ "tanssi-relay-cli/runtime-benchmarks" ]
 runtime-metrics = [ "tanssi-relay-cli/runtime-metrics" ]
