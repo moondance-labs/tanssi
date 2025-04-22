@@ -66,12 +66,7 @@ pub mod pallet {
         sp_std::collections::btree_set::BTreeSet,
     };
 
-    /// The status of the activity tracking. It has two possible states:
-    /// - Enabled with 2 parameters 'start' and 'end'
-    ///     - start: the session in which we will start recording the collator activity after enabling it
-    ///     - end: the session after which the activity tracking can be disabled
-    /// - Disabled with 1 parameter 'end'
-    ///     - end: the session after which the activity tracking can be enabled
+    /// The status of collator activity tracking
     #[derive(
         Clone,
         PartialEq,
@@ -86,10 +81,13 @@ pub mod pallet {
     )]
     pub enum ActivityTrackingStatus {
         Enabled {
+            /// The session in which we will start recording the collator activity after enabling it
             start: SessionIndex,
+            /// The session after which the activity tracking can be disabled
             end: SessionIndex,
         },
         Disabled {
+            /// The session after which the activity tracking can be enabled
             end: SessionIndex,
         },
     }
