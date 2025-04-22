@@ -4,6 +4,7 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 import { jumpSessions } from "utils";
+import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SERVICES_PAYMENT, checkCallIsFiltered } from "helpers";
 
 describeSuite({
     id: "COMM0205",
@@ -18,6 +19,9 @@ describeSuite({
         const costPerBlock = 1_000_000n;
         const blocksPerSession = 10n;
         let collatorAssignmentAlias: any;
+        let isStarlight: boolean;
+        let specVersion: number;
+        let shouldSkipStarlightSP: boolean;
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             alice = context.keyring.alice;
@@ -25,6 +29,10 @@ describeSuite({
             collatorAssignmentAlias = runtimeName.includes("light")
                 ? polkadotJs.query.tanssiCollatorAssignment
                 : polkadotJs.query.collatorAssignment;
+            
+            isStarlight = runtimeName === "starlight";
+            specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
+            shouldSkipStarlightSP = isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SERVICES_PAYMENT.includes(specVersion);
         });
         it({
             id: "E01",
@@ -36,7 +44,16 @@ describeSuite({
                     polkadotJs.tx.servicesPayment.setBlockProductionCredits(paraId2000, 0n),
                     polkadotJs.tx.servicesPayment.setBlockProductionCredits(paraId2001, 0n),
                 ]);
-                await context.createBlock([await polkadotJs.tx.sudo.sudo(removeFreeCredits).signAsync(alice)]);
+
+                const sudoSignedTx = await polkadotJs.tx.sudo.sudo(removeFreeCredits).signAsync(alice);
+
+                if (shouldSkipStarlightSP) {
+                    console.log(`Skipping E01 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(context, polkadotJs, sudoSignedTx);
+                    return;
+                }
+
+                await context.createBlock([sudoSignedTx]);
                 // Check that after 2 sessions, chain is deregistered
                 await jumpSessions(context, 2);
 
@@ -64,6 +81,13 @@ describeSuite({
                 const purchasedCredits = costPerSession + existentialDeposit;
                 // Check that after 2 sessions, container chain 2000 has not collators
                 const tx = polkadotJs.tx.servicesPayment.purchaseCredits(paraId2000, purchasedCredits);
+
+                if (shouldSkipStarlightSP) {
+                    console.log(`Skipping E02 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(context, polkadotJs, await tx.signAsync(alice));
+                    return;
+                }
+
                 await context.createBlock([await tx.signAsync(alice)]);
 
                 // Check that after 2 sessions, container chain 2000 has 0 collators and is not producing blocks
@@ -84,6 +108,13 @@ describeSuite({
                 const purchasedCredits = blocksPerSession * costPerBlock * 2n;
                 // Check that after 2 sessions, container chain 2000 has not collators
                 const tx = polkadotJs.tx.servicesPayment.purchaseCredits(paraId2000, purchasedCredits);
+
+                if (shouldSkipStarlightSP) {
+                    console.log(`Skipping E03 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(context, polkadotJs, await tx.signAsync(alice));
+                    return;
+                }
+
                 await context.createBlock([await tx.signAsync(alice)]);
 
                 // Check that after 2 sessions, container chain 2000 has collators
@@ -100,6 +131,10 @@ describeSuite({
             id: "E04",
             title: "Just one session later they should be unassinged",
             test: async () => {
+                if (shouldSkipStarlightSP) {
+                    console.log(`Skipping E04 test for Starlight version ${specVersion}`);
+                    return;
+                }
                 // Check that after 1 sessions
                 await jumpSessions(context, 1);
 
