@@ -36,7 +36,7 @@ use sp_session::MembershipProof;
 // Candidate hash of the disputed candidate.
 const CANDIDATE_HASH: CandidateHash = CandidateHash(Hash::zero());
 
-const MAX_VALIDATORS: u32 = 1000;
+const MAX_VALIDATORS: u32 = 100;
 
 pub struct Pallet<T: Config>(PhantomData<T>);
 pub trait Config:
@@ -90,9 +90,15 @@ where
 
     pallet_session::Pallet::<T>::on_initialize(BlockNumberFor::<T>::one());
     initializer::Pallet::<T>::on_initialize(BlockNumberFor::<T>::one());
+
     // skip sessions until the new validator set is enacted
+    let mut tries = 0;
     while pallet_session::Pallet::<T>::validators().len() < n as usize {
-        log::info!("rotate_session");
+        tries += 1;
+        if tries > 100 {
+            panic!("failed to enact new validators (n={n}) after rotating many sessions");
+        }
+
         pallet_session::Pallet::<T>::rotate_session();
     }
     initializer::Pallet::<T>::on_finalize(BlockNumberFor::<T>::one());
@@ -168,14 +174,11 @@ mod benchmarks {
 
     #[benchmark]
     fn report_dispute_lost_unsigned(n: Linear<4, MAX_VALIDATORS>) {
-        log::info!("setup_validator_set");
         let (session_index, key_owner_proof, validator_id) = setup_validator_set::<T>(n);
 
-        log::info!("setup_dispute");
         // submit a single `ForInvalid` dispute for a past session.
         let dispute_proof = setup_dispute::<T>(session_index, validator_id);
 
-        log::info!("extrinsic call");
         #[extrinsic_call]
         _(RawOrigin::None, Box::new(dispute_proof), key_owner_proof);
 
