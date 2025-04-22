@@ -5,6 +5,7 @@ import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 import { fetchIssuance, jumpSessions } from "utils";
 import { paraIdTank } from "utils";
+import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SERVICES_PAYMENT, checkCallIsFiltered } from "helpers";
 
 describeSuite({
     id: "COMM0201",
@@ -18,14 +19,33 @@ describeSuite({
         const costPerBlock = 1_000_000n;
         let balanceTankBefore: bigint;
         let registerAlias: any;
+        let isStarlight: boolean;
+        let specVersion: number;
+        let shouldSkipStarlightSP: boolean;
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             alice = context.keyring.alice;
             const runtimeName = polkadotJs.runtimeVersion.specName.toString();
             registerAlias = runtimeName.includes("light") ? polkadotJs.tx.containerRegistrar : polkadotJs.tx.registrar;
 
+            isStarlight = runtimeName === "starlight";
+            specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
+            shouldSkipStarlightSP = isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SERVICES_PAYMENT.includes(specVersion);
+
             const tx2000OneSession = polkadotJs.tx.servicesPayment.setBlockProductionCredits(paraId2001, 0);
-            await context.createBlock([await polkadotJs.tx.sudo.sudo(tx2000OneSession).signAsync(alice)]);
+            const sudoSignedTx = await polkadotJs.tx.sudo.sudo(tx2000OneSession).signAsync(alice);
+
+            if (shouldSkipStarlightSP) {
+                console.log(`Services payment tests for Starlight version ${specVersion}`);
+                await checkCallIsFiltered(context, polkadotJs, sudoSignedTx);
+
+                // Purchase credits should be filtered too
+                const tx = polkadotJs.tx.servicesPayment.purchaseCredits(paraId2001, 100n);
+                await checkCallIsFiltered(context, polkadotJs, await tx.signAsync(alice));
+                return;
+            }
+
+            await context.createBlock([sudoSignedTx]);
             const existentialDeposit = await polkadotJs.consts.balances.existentialDeposit.toBigInt();
             // Now, buy some credits for container chain 2001
             const purchasedCredits = blocksPerSession * costPerBlock + existentialDeposit;
@@ -38,6 +58,10 @@ describeSuite({
             id: "E01",
             title: "We deregister 2000, check the issuance drops",
             test: async () => {
+                if (shouldSkipStarlightSP) {
+                    console.log(`Skipping E01 test for Starlight version ${specVersion}`);
+                    return;
+                }
                 // We deregister the chain
                 const deregister2001 = polkadotJs.tx.sudo.sudo(registerAlias.deregister(paraId2001));
                 await context.createBlock([await deregister2001.signAsync(alice)]);

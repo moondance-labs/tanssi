@@ -4,6 +4,8 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 
+import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_REGISTRAR, checkCallIsFiltered } from "helpers";
+
 describeSuite({
     id: "COMM0301",
     title: "Registrar extrinsics permissions",
@@ -13,6 +15,9 @@ describeSuite({
         let alice: KeyringPair;
         let bob: KeyringPair;
         const paraId = 2001;
+        let isStarlight: boolean;
+        let specVersion: number;
+        let shouldSkipStarlightCR: boolean;
 
         beforeAll(() => {
             alice = context.keyring.alice;
@@ -26,11 +31,27 @@ describeSuite({
             test: async () => {
                 const runtimeName = api.runtimeVersion.specName.toString();
 
+                isStarlight = runtimeName === "starlight";
+                specVersion = api.consts.system.version.specVersion.toNumber();
+                shouldSkipStarlightCR = isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_REGISTRAR.includes(specVersion);
+
                 const registerAlias = runtimeName.includes("light") ? api.tx.containerRegistrar : api.tx.registrar;
+
+                const pausedSignedTx = await registerAlias.pauseContainerChain(paraId).signAsync(bob);
+
+                if (shouldSkipStarlightCR) {
+                    console.log(`Skipping E01 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(context, api, pausedSignedTx);
+
+                    // SetParaManager should be also filtered
+                    const sudoSignedTx = await api.tx.sudo.sudo(registerAlias.setParaManager(paraId, bob.address)).signAsync(alice);
+                    await checkCallIsFiltered(context, api, sudoSignedTx);
+                    return;
+                }
 
                 // Bob is not a manager, extrinsic requiring RegistrarOrigin should fail with BadOrigin error
                 const { result: pauseContainerResultAttempt1 } = await context.createBlock(
-                    await registerAlias.pauseContainerChain(paraId).signAsync(bob)
+                    pausedSignedTx
                 );
                 expect(pauseContainerResultAttempt1.successful).toEqual(false);
                 expect(pauseContainerResultAttempt1.error.name).toEqual("BadOrigin");

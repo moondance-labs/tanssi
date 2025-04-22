@@ -4,6 +4,7 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 import { initializeCustomCreateBlock } from "utils";
+import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_PROXY, checkCallIsFiltered } from "helpers";
 
 describeSuite({
     id: "C0301",
@@ -16,6 +17,9 @@ describeSuite({
         let charlie: KeyringPair;
         let dave: KeyringPair;
         let chain: string;
+        let isStarlight: boolean;
+        let specVersion: number;
+        let shouldSkipStarlightProxy: boolean;
 
         beforeAll(() => {
             initializeCustomCreateBlock(context);
@@ -25,6 +29,9 @@ describeSuite({
             dave = context.keyring.dave;
             polkadotJs = context.polkadotJs();
             chain = polkadotJs.consts.system.version.specName.toString();
+            isStarlight = chain === "starlight";
+            specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
+            shouldSkipStarlightProxy = isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_PROXY.includes(specVersion);
         });
 
         it({
@@ -41,13 +48,18 @@ describeSuite({
             id: "E02",
             title: "Add proxy Any",
             test: async () => {
-                await context.createBlock();
-
                 const delegate = bob.address;
                 const delay = 3;
                 const tx = polkadotJs.tx.proxy.addProxy(delegate, "Any", delay);
-                await context.createBlock([await tx.signAsync(alice)]);
 
+                if (shouldSkipStarlightProxy) {
+                    console.log(`Skipping E02 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(context, polkadotJs, await tx.signAsync(alice));
+                    return;
+                }
+
+                await context.createBlock();
+                await context.createBlock([await tx.signAsync(alice)]);
                 const events = await polkadotJs.query.system.events();
                 const ev1 = events.filter((a) => {
                     return a.event.method === "ProxyAdded";
@@ -107,6 +119,13 @@ describeSuite({
                 const balanceCall = polkadotJs.tx.balances.transferAllowDeath(bob.address, 200_000);
                 const callHash = balanceCall.method.hash.toString();
                 const tx1 = polkadotJs.tx.proxy.announce(alice.address, callHash);
+
+                if (shouldSkipStarlightProxy) {
+                    console.log(`Skipping E04 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(context, polkadotJs, await tx1.signAsync(bob));
+                    return;
+                }
+
                 await context.createBlock([await tx1.signAsync(bob)]);
                 let events = await polkadotJs.query.system.events();
                 const ev1 = events.filter((a) => {
@@ -154,6 +173,13 @@ describeSuite({
                 const balanceCall = polkadotJs.tx.balances.transferAllowDeath(bob.address, 200_000);
                 const callHash = balanceCall.method.hash.toString();
                 const tx1 = polkadotJs.tx.proxy.announce(alice.address, callHash);
+
+                if (shouldSkipStarlightProxy) {
+                    console.log(`Skipping E05 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(context, polkadotJs, await tx1.signAsync(bob));
+                    return;
+                }
+
                 await context.createBlock([await tx1.signAsync(bob)]);
                 let events = await polkadotJs.query.system.events();
                 const ev1 = events.filter((a) => {
@@ -206,6 +232,13 @@ describeSuite({
                     null,
                     polkadotJs.tx.balances.transferAllowDeath(charlie.address, 200_000)
                 );
+
+                if (shouldSkipStarlightProxy) {
+                    console.log(`Skipping E06 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(context, polkadotJs, await tx.signAsync(charlie));
+                    return;
+                }
+
                 await context.createBlock([await tx.signAsync(charlie)]);
 
                 const events = await polkadotJs.query.system.events();
