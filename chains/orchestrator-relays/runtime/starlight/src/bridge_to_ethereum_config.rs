@@ -156,27 +156,27 @@ parameter_types! {
 parameter_types! {
     pub const ChainForkVersions: ForkVersions = ForkVersions {
         genesis: Fork {
-            version: hex_literal::hex!("0x00000000"), // 0x90000069
+            version: hex_literal::hex!("00000000"), // 0x00000000
             epoch: 0,
         },
         altair: Fork {
-            version: hex_literal::hex!("0x01000000"), // 0x90000070
+            version: hex_literal::hex!("01000000"), // 0x01000000
             epoch: 74240,
         },
         bellatrix: Fork {
-            version: hex_literal::hex!("0x02000000"), // 0x90000071
+            version: hex_literal::hex!("02000000"), // 0x02000000
             epoch: 144896,
         },
         capella: Fork {
-            version: hex_literal::hex!("0x03000000"), // 0x90000072
+            version: hex_literal::hex!("03000000"), // 0x03000000
             epoch: 194048,
         },
         deneb: Fork {
-            version: hex_literal::hex!("0x04000000"), // 0x90000073
+            version: hex_literal::hex!("04000000"), // 0x04000000
             epoch: 269568,
         },
         electra: Fork {
-            version: hex_literal::hex!("0x05000000"), // 0x90000074
+            version: hex_literal::hex!("05000000"), // 0x05000000
             epoch: 364032,
         },
     };
