@@ -36,11 +36,12 @@ describeSuite({
 
             refundAddress = generateKeyringPair("sr25519");
             const tx2001OneSession = polkadotJs.tx.servicesPayment.setBlockProductionCredits(paraId2001, 0);
-            const sudoSignedTx = await polkadotJs.tx.sudo.sudo(tx2001OneSession).signAsync(alice);
 
             if (shouldSkipStarlightSP) {
                 console.log(`Services payment tests for Starlight version ${specVersion}`);
-                await checkCallIsFiltered(context, polkadotJs, sudoSignedTx);
+
+                // We check that the call (without sudo) is filtered.
+                await checkCallIsFiltered(context, polkadotJs, await tx2001OneSession.signAsync(alice));
 
                 // Purchase credits should be filtered too
                 const tx = polkadotJs.tx.servicesPayment.purchaseCredits(paraId2001, 100n);
@@ -48,6 +49,7 @@ describeSuite({
                 return;
             }
 
+            const sudoSignedTx = await polkadotJs.tx.sudo.sudo(tx2001OneSession).signAsync(alice);
             await context.createBlock([sudoSignedTx]);
             const existentialDeposit = await polkadotJs.consts.balances.existentialDeposit.toBigInt();
             // Now, buy some credits for container chain 2001
@@ -62,17 +64,17 @@ describeSuite({
             title: "Sudo can set refund address",
             test: async () => {
                 // We deregister the chain
-                const setRefundAddress = polkadotJs.tx.sudo.sudo(
-                    polkadotJs.tx.servicesPayment.setRefundAddress(paraId2001, refundAddress.address)
-                );
 
+                const setRefundAddress = polkadotJs.tx.servicesPayment.setRefundAddress(paraId2001, refundAddress.address);
+                
                 if (shouldSkipStarlightSP) {
                     console.log(`Skipping E01 test for Starlight version ${specVersion}`);
                     await checkCallIsFiltered(context, polkadotJs, await setRefundAddress.signAsync(alice));
                     return;
                 }
 
-                await context.createBlock([await setRefundAddress.signAsync(alice)]);
+                const setRefundAddressSudo = polkadotJs.tx.sudo.sudo(setRefundAddress);
+                await context.createBlock([await setRefundAddressSudo.signAsync(alice)]);
                 // Check that we can fetch the address
                 const refundAddressOnChain = await polkadotJs.query.servicesPayment.refundAddress(paraId2001);
                 expect(refundAddressOnChain.toString(), "Refund address should be set").toBe(refundAddress.address);

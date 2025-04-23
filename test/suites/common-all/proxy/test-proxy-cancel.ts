@@ -85,6 +85,13 @@ describeSuite({
                 const cancelProxy = ["frontier-template", "container-chain-template"].includes(chain) ? 3 : 4;
                 const delay = 0;
                 const tx = polkadotJs.tx.proxy.addProxy(delegate, cancelProxy, delay);
+
+                if (shouldSkipStarlightProxy) {
+                    console.log(`Skipping E03 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(context, polkadotJs, await tx.signAsync(alice));
+                    return;
+                }
+
                 await context.createBlock([await tx.signAsync(alice)]);
 
                 const events = await polkadotJs.query.system.events();

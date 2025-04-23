@@ -88,15 +88,17 @@ describeSuite({
                 // Value needs to be higher than the transaction fee paid by dave, but lower than the total treasury pot
                 const proposal_value = 1000000000n;
                 const tx = polkadotJs.tx.treasury.spendLocal(proposal_value, user_dave.address);
-                const signedTx = await polkadotJs.tx.sudo.sudo(tx).signAsync(sudo_alice);
+                const sudoSignedTx = await polkadotJs.tx.sudo.sudo(tx).signAsync(sudo_alice);
 
                 if (shouldSkipStarlightTreasury) {
                     console.log(`Skipping E02 test for Starlight version ${specVersion}`);
-                    await checkCallIsFiltered(context, polkadotJs, signedTx);
+
+                    // We check that the call (without sudo pallet) is filtered.
+                    await checkCallIsFiltered(context, polkadotJs, await tx.signAsync(sudo_alice));
                     return;
                 }
 
-                await context.createBlock([signedTx]);
+                await context.createBlock([sudoSignedTx]);
 
                 // Local spends dont upadte the spend count
                 expect((await polkadotJs.query.treasury.spendCount()).toNumber()).to.equal(0);
@@ -148,11 +150,13 @@ describeSuite({
                 const proposal_value = 1000000000n;
                 const assetKind = null;
                 const tx = polkadotJs.tx.treasury.spend(assetKind, proposal_value, user_dave.address, null);
-                const signedTx = await polkadotJs.tx.sudo.sudo(tx).signAsync(sudo_alice);
+                const sudoSignedTx = await polkadotJs.tx.sudo.sudo(tx).signAsync(sudo_alice);
 
                 if (shouldSkipStarlightTreasury) {
                     console.log(`Skipping E03 test for Starlight version ${specVersion}`);
-                    await checkCallIsFiltered(context, polkadotJs, signedTx);
+
+                    // We check that the call (without sudo pallet) is filtered.
+                    await checkCallIsFiltered(context, polkadotJs, await tx.signAsync(sudo_alice));
 
                     // Payouts also filtered
                     const tx2 = polkadotJs.tx.treasury.payout(0);
@@ -162,7 +166,7 @@ describeSuite({
                     return;
                 }
 
-                await context.createBlock([signedTx]);
+                await context.createBlock([sudoSignedTx]);
 
                 expect((await polkadotJs.query.treasury.spendCount()).toNumber()).to.equal(1);
 

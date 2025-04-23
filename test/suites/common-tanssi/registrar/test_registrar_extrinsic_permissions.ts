@@ -43,9 +43,9 @@ describeSuite({
                     console.log(`Skipping E01 test for Starlight version ${specVersion}`);
                     await checkCallIsFiltered(context, api, pausedSignedTx);
 
-                    // SetParaManager should be also filtered
-                    const sudoSignedTx = await api.tx.sudo.sudo(registerAlias.setParaManager(paraId, bob.address)).signAsync(alice);
-                    await checkCallIsFiltered(context, api, sudoSignedTx);
+                    // SetParaManager (without sudo) should be also filtered
+                    const signedTx = await registerAlias.setParaManager(paraId, bob.address).signAsync(alice);
+                    await checkCallIsFiltered(context, api, signedTx);
                     return;
                 }
 

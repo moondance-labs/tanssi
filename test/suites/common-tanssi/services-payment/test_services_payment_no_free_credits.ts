@@ -45,14 +45,15 @@ describeSuite({
                     polkadotJs.tx.servicesPayment.setBlockProductionCredits(paraId2001, 0n),
                 ]);
 
-                const sudoSignedTx = await polkadotJs.tx.sudo.sudo(removeFreeCredits).signAsync(alice);
-
                 if (shouldSkipStarlightSP) {
                     console.log(`Skipping E01 test for Starlight version ${specVersion}`);
-                    await checkCallIsFiltered(context, polkadotJs, sudoSignedTx);
+
+                    // We check that the call (without sudo) is filtered.
+                    await checkCallIsFiltered(context, polkadotJs, await removeFreeCredits.signAsync(alice));
                     return;
                 }
 
+                const sudoSignedTx = await polkadotJs.tx.sudo.sudo(removeFreeCredits).signAsync(alice);
                 await context.createBlock([sudoSignedTx]);
                 // Check that after 2 sessions, chain is deregistered
                 await jumpSessions(context, 2);
