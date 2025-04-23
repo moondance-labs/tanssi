@@ -7,7 +7,6 @@ import { encodeAddress, xxhashAsU8a } from "@polkadot/util-crypto";
 import { generateEventLog, generateUpdate, SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS, type MultiLocation } from "utils";
 import { expectEventCount } from "../../../helpers/events";
 import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_ETH_TOKEN_TRANSFERS, checkCallIsFiltered } from "helpers";
-import { Key } from "readline";
 import { KeyringPair } from "@moonwall/util";
 
 describeSuite({
@@ -20,7 +19,7 @@ describeSuite({
         let alice: KeyringPair;
         let isStarlight: boolean;
         let specVersion: number;
-        let shouldSkipStarlighETT: boolean;
+        let shouldSkipStarlightETT: boolean;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
@@ -30,7 +29,7 @@ describeSuite({
             const runtimeName = polkadotJs.runtimeVersion.specName.toString();
             isStarlight = runtimeName === "starlight";
             specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
-            shouldSkipStarlighETT = isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_ETH_TOKEN_TRANSFERS.includes(specVersion);
+            shouldSkipStarlightETT = isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_ETH_TOKEN_TRANSFERS.includes(specVersion);
         });
 
         it({
@@ -62,7 +61,7 @@ describeSuite({
                     decimals: 12,
                 };
 
-                if (shouldSkipStarlighETT) {
+                if (shouldSkipStarlightETT) {
                     console.log(`Skipping E01 test for Starlight version ${specVersion}`);
                     await checkCallIsFiltered(context, polkadotJs, await tx1.signAsync(alice));
 
@@ -132,7 +131,7 @@ describeSuite({
             id: "E02",
             title: "receive native token from Ethereum",
             test: async () => {
-                if (shouldSkipStarlighETT) {
+                if (shouldSkipStarlightETT) {
                     console.log(`Skipping E02 test for Starlight version ${specVersion}`);
 
                     // Check that inboundQueue.submit is filtered
