@@ -18,8 +18,8 @@ use {
     super::*,
     crate::{
         assert_eq_last_events,
-        pools::{AutoCompounding, ManualRewards},
-        Pallet, TargetPool,
+        pools::{ActivePoolKind, AutoCompounding, ManualRewards},
+        Pallet,
     },
     frame_support::assert_err,
     sp_runtime::DispatchError,
@@ -29,7 +29,7 @@ use {
 struct Delegation {
     candidate: AccountId,
     delegator: AccountId,
-    pool: TargetPool,
+    pool: ActivePoolKind,
     stake: Balance,
 }
 
@@ -93,11 +93,12 @@ fn test_distribution(
             vec![PendingOperationQuery {
                 delegator: d.delegator,
                 operation: match d.pool {
-                    TargetPool::AutoCompounding => PendingOperationKey::JoiningAutoCompounding {
-                        candidate: d.candidate,
-                        at: block_number
-                    },
-                    TargetPool::ManualRewards => PendingOperationKey::JoiningManualRewards {
+                    ActivePoolKind::AutoCompounding =>
+                        PendingOperationKey::JoiningAutoCompounding {
+                            candidate: d.candidate,
+                            at: block_number
+                        },
+                    ActivePoolKind::ManualRewards => PendingOperationKey::JoiningManualRewards {
                         candidate: d.candidate,
                         at: block_number
                     },
@@ -191,7 +192,7 @@ fn test_distribution(
     let sum_auto_stake_before: Balance = delegations
         .iter()
         .filter_map(|d| match d.pool {
-            TargetPool::AutoCompounding => Some(d.stake),
+            ActivePoolKind::AutoCompounding => Some(d.stake),
             _ => None,
         })
         .sum();
@@ -211,7 +212,7 @@ fn candidate_only_manual_only() {
             &[Delegation {
                 candidate: ACCOUNT_CANDIDATE_1,
                 delegator: ACCOUNT_CANDIDATE_1,
-                pool: TargetPool::ManualRewards,
+                pool: ActivePoolKind::ManualRewards,
                 stake: 1_000_000_000,
             }],
             RewardRequest {
@@ -244,7 +245,7 @@ fn candidate_only_auto_only() {
             &[Delegation {
                 candidate: ACCOUNT_CANDIDATE_1,
                 delegator: ACCOUNT_CANDIDATE_1,
-                pool: TargetPool::AutoCompounding,
+                pool: ActivePoolKind::AutoCompounding,
                 stake: 1_000_000_000,
             }],
             RewardRequest {
@@ -288,13 +289,13 @@ fn candidate_only_mixed() {
                 Delegation {
                     candidate: ACCOUNT_CANDIDATE_1,
                     delegator: ACCOUNT_CANDIDATE_1,
-                    pool: TargetPool::AutoCompounding,
+                    pool: ActivePoolKind::AutoCompounding,
                     stake: 1_000_000_000,
                 },
                 Delegation {
                     candidate: ACCOUNT_CANDIDATE_1,
                     delegator: ACCOUNT_CANDIDATE_1,
-                    pool: TargetPool::ManualRewards,
+                    pool: ActivePoolKind::ManualRewards,
                     stake: 250_000_000,
                 },
             ],
@@ -329,13 +330,13 @@ fn delegators_manual_only() {
                 Delegation {
                     candidate: ACCOUNT_CANDIDATE_1,
                     delegator: ACCOUNT_CANDIDATE_1,
-                    pool: TargetPool::ManualRewards,
+                    pool: ActivePoolKind::ManualRewards,
                     stake: 1_000_000_000,
                 },
                 Delegation {
                     candidate: ACCOUNT_CANDIDATE_1,
                     delegator: ACCOUNT_DELEGATOR_1,
-                    pool: TargetPool::ManualRewards,
+                    pool: ActivePoolKind::ManualRewards,
                     stake: 250_000_000,
                 },
             ],
@@ -381,13 +382,13 @@ fn delegators_auto_only() {
                 Delegation {
                     candidate: ACCOUNT_CANDIDATE_1,
                     delegator: ACCOUNT_CANDIDATE_1,
-                    pool: TargetPool::AutoCompounding,
+                    pool: ActivePoolKind::AutoCompounding,
                     stake: 1_000_000_000,
                 },
                 Delegation {
                     candidate: ACCOUNT_CANDIDATE_1,
                     delegator: ACCOUNT_DELEGATOR_1,
-                    pool: TargetPool::AutoCompounding,
+                    pool: ActivePoolKind::AutoCompounding,
                     stake: 250_000_000,
                 },
             ],
@@ -433,25 +434,25 @@ fn delegators_mixed() {
                 Delegation {
                     candidate: ACCOUNT_CANDIDATE_1,
                     delegator: ACCOUNT_CANDIDATE_1,
-                    pool: TargetPool::AutoCompounding,
+                    pool: ActivePoolKind::AutoCompounding,
                     stake: 1_000_000_000,
                 },
                 Delegation {
                     candidate: ACCOUNT_CANDIDATE_1,
                     delegator: ACCOUNT_CANDIDATE_1,
-                    pool: TargetPool::ManualRewards,
+                    pool: ActivePoolKind::ManualRewards,
                     stake: 500_000_000,
                 },
                 Delegation {
                     candidate: ACCOUNT_CANDIDATE_1,
                     delegator: ACCOUNT_DELEGATOR_1,
-                    pool: TargetPool::ManualRewards,
+                    pool: ActivePoolKind::ManualRewards,
                     stake: 250_000_000,
                 },
                 Delegation {
                     candidate: ACCOUNT_CANDIDATE_1,
                     delegator: ACCOUNT_DELEGATOR_1,
-                    pool: TargetPool::AutoCompounding,
+                    pool: ActivePoolKind::AutoCompounding,
                     stake: 500_000_000,
                 },
             ],
@@ -532,7 +533,7 @@ fn delegator_only_candidate_zero() {
             &[Delegation {
                 candidate: ACCOUNT_CANDIDATE_1,
                 delegator: ACCOUNT_DELEGATOR_1,
-                pool: TargetPool::ManualRewards,
+                pool: ActivePoolKind::ManualRewards,
                 stake: 250_000_000,
             }],
             RewardRequest {
@@ -567,7 +568,7 @@ fn delegator_only_candidate_no_stake_auto_compounding() {
             &[Delegation {
                 candidate: ACCOUNT_CANDIDATE_1,
                 delegator: ACCOUNT_DELEGATOR_1,
-                pool: TargetPool::AutoCompounding,
+                pool: ActivePoolKind::AutoCompounding,
                 stake: 250_000_000,
             }],
             RewardRequest {
@@ -594,7 +595,7 @@ fn reward_distribution_is_transactional() {
         assert_ok!(Staking::request_delegate(
             RuntimeOrigin::signed(ACCOUNT_CANDIDATE_1),
             ACCOUNT_CANDIDATE_1,
-            TargetPool::AutoCompounding,
+            ActivePoolKind::AutoCompounding,
             1_000_000_000,
         ));
 

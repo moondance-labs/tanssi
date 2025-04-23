@@ -47,11 +47,18 @@ mod tests;
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarking;
 
+#[cfg(any(feature = "migrations", feature = "try-runtime"))]
+pub mod migrations;
+
 pub mod weights;
 use frame_support::pallet;
 pub use weights::WeightInfo;
 
-pub use {candidate::EligibleCandidate, pallet::*};
+pub use {
+    candidate::EligibleCandidate,
+    pallet::*,
+    pools::{ActivePoolKind, CandidateSummary, DelegatorCandidateSummary, PoolKind},
+};
 
 #[pallet]
 pub mod pallet {
@@ -201,33 +208,6 @@ pub mod pallet {
         <<T as Config>::LeavingRequestTimer as Timer>::Instant,
     >;
 
-    #[derive(
-        RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo, Serialize, Deserialize,
-    )]
-    pub enum TargetPool {
-        AutoCompounding,
-        ManualRewards,
-    }
-
-    #[derive(
-        RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo, Serialize, Deserialize,
-    )]
-    pub enum AllTargetPool {
-        Joining,
-        AutoCompounding,
-        ManualRewards,
-        Leaving,
-    }
-
-    impl From<TargetPool> for AllTargetPool {
-        fn from(value: TargetPool) -> Self {
-            match value {
-                TargetPool::AutoCompounding => AllTargetPool::AutoCompounding,
-                TargetPool::ManualRewards => AllTargetPool::ManualRewards,
-            }
-        }
-    }
-
     /// Allow calls to be performed using either share amounts or stake.
     /// When providing stake, calls will convert them into share amounts that are
     /// worth up to the provided stake. The amount of stake thus will be at most the provided
@@ -272,8 +252,11 @@ pub mod pallet {
     )]
     pub struct Stake<T>(pub T);
 
+    const STORAGE_VERSION: StorageVersion = StorageVersion::new(1);
+
     /// Pooled Staking pallet.
     #[pallet::pallet]
+    #[pallet::storage_version(STORAGE_VERSION)]
     pub struct Pallet<T>(PhantomData<T>);
 
     #[pallet::config]
@@ -374,6 +357,33 @@ pub mod pallet {
         ValueQuery,
     >;
 
+    /// Summary of a delegator's delegation.
+    /// Used to quickly fetch all delegations of a delegator.
+    #[pallet::storage]
+    pub type DelegatorCandidateSummaries<T: Config> = StorageDoubleMap<
+        _,
+        Blake2_128Concat,
+        Delegator<T>,
+        Blake2_128Concat,
+        Candidate<T>,
+        DelegatorCandidateSummary,
+        ValueQuery,
+    >;
+
+    /// Summary of a candidate state.
+    #[pallet::storage]
+    pub type CandidateSummaries<T: Config> =
+        StorageMap<_, Blake2_128Concat, Candidate<T>, CandidateSummary, ValueQuery>;
+
+    /// Pauses the ability to modify pools through extrinsics.
+    ///
+    /// Currently added only to run the multi-block migration to compute
+    /// `DelegatorCandidateSummaries` and `CandidateSummaries`. It will NOT
+    /// prevent to distribute rewards, which is fine as the reward distribution
+    /// process doesn't alter the pools in a way that will mess with the migration.
+    #[pallet::storage]
+    pub type PausePoolsExtrinsics<T: Config> = StorageValue<_, bool, ValueQuery>;
+
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
@@ -391,7 +401,7 @@ pub mod pallet {
         RequestedDelegate {
             candidate: Candidate<T>,
             delegator: Delegator<T>,
-            pool: TargetPool,
+            pool: ActivePoolKind,
             pending: T::Balance,
         },
         /// Delegation request was executed. `staked` has been properly staked
@@ -400,7 +410,7 @@ pub mod pallet {
         ExecutedDelegate {
             candidate: Candidate<T>,
             delegator: Delegator<T>,
-            pool: TargetPool,
+            pool: ActivePoolKind,
             staked: T::Balance,
             released: T::Balance,
         },
@@ -411,7 +421,7 @@ pub mod pallet {
         RequestedUndelegate {
             candidate: Candidate<T>,
             delegator: Delegator<T>,
-            from: TargetPool,
+            from: ActivePoolKind,
             pending: T::Balance,
             released: T::Balance,
         },
@@ -482,7 +492,7 @@ pub mod pallet {
         SwappedPool {
             candidate: Candidate<T>,
             delegator: Delegator<T>,
-            source_pool: TargetPool,
+            source_pool: ActivePoolKind,
             source_shares: T::Balance,
             source_stake: T::Balance,
             target_shares: T::Balance,
@@ -508,6 +518,7 @@ pub mod pallet {
         CandidateTransferingOwnSharesForbidden,
         RequestCannotBeExecuted(u16),
         SwapResultsInZeroShares,
+        PoolsExtrinsicsArePaused,
     }
 
     impl<T: Config> From<tp_maths::OverflowError> for Error<T> {
@@ -526,7 +537,9 @@ pub mod pallet {
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         #[cfg(feature = "try-runtime")]
         fn try_state(_n: BlockNumberFor<T>) -> Result<(), sp_runtime::TryRuntimeError> {
+            use frame_support::storage_alias;
             use sp_std::collections::btree_set::BTreeSet;
+
             let mut all_candidates = BTreeSet::new();
             for (candidate, _k2) in Pools::<T>::iter_keys() {
                 all_candidates.insert(candidate);
@@ -549,6 +562,70 @@ pub mod pallet {
                 "SortedEligibleCandidates",
             );
 
+            if Pallet::<T>::on_chain_storage_version() < 1 {
+                return Ok(());
+            }
+
+            // Summaries updated dynamically matches summaries generated entirely from shares.
+            #[storage_alias(pallet_name)]
+            pub type TryStateDelegatorSummaries<T: Config> = StorageDoubleMap<
+                Pallet<T>,
+                Blake2_128Concat,
+                Delegator<T>,
+                Blake2_128Concat,
+                Candidate<T>,
+                DelegatorCandidateSummary,
+                ValueQuery,
+            >;
+
+            #[storage_alias(pallet_name)]
+            pub type TryStateCandidateSummaries<T: Config> =
+                StorageMap<Pallet<T>, Blake2_128Concat, Candidate<T>, CandidateSummary, ValueQuery>;
+
+            assert!(
+                migrations::stepped_generate_summaries::<
+                    T,
+                    TryStateDelegatorSummaries<T>,
+                    TryStateCandidateSummaries<T>,
+                >(
+                    None,
+                    &mut frame_support::weights::WeightMeter::new(), // call with no limit on weight
+                )
+                .expect("to generate summaries without errors")
+                .is_none(),
+                "failed to generate all summaries"
+            );
+
+            let mut candidate_summaries_count = 0;
+            for (candidate, summary) in TryStateCandidateSummaries::<T>::iter() {
+                candidate_summaries_count += 1;
+                assert_eq!(
+                    CandidateSummaries::<T>::get(&candidate),
+                    summary,
+                    "candidate summary for {candidate:?} didn't match"
+                );
+            }
+            assert_eq!(
+                candidate_summaries_count,
+                CandidateSummaries::<T>::iter().count(),
+                "count of candidate summaries didn't match"
+            );
+
+            let mut delegator_summaries_count = 0;
+            for (delegator, candidate, summary) in TryStateDelegatorSummaries::<T>::iter() {
+                delegator_summaries_count += 1;
+                assert_eq!(
+                    DelegatorCandidateSummaries::<T>::get(&delegator, &candidate),
+                    summary,
+                    "delegator summary for {delegator:?} to {candidate:?} didn't match"
+                );
+            }
+            assert_eq!(
+                delegator_summaries_count,
+                DelegatorCandidateSummaries::<T>::iter().count(),
+                "count of delegator summaries didn't match"
+            );
+
             Ok(())
         }
     }
@@ -561,7 +638,7 @@ pub mod pallet {
             origin: OriginFor<T>,
             candidate: Candidate<T>,
             delegator: Delegator<T>,
-            pool: AllTargetPool,
+            pool: PoolKind,
         ) -> DispatchResultWithPostInfo {
             // We don't care about the sender.
             let _ = ensure_signed(origin)?;
@@ -574,7 +651,7 @@ pub mod pallet {
         pub fn request_delegate(
             origin: OriginFor<T>,
             candidate: Candidate<T>,
-            pool: TargetPool,
+            pool: ActivePoolKind,
             stake: T::Balance,
         ) -> DispatchResultWithPostInfo {
             let delegator = ensure_signed(origin)?;
@@ -601,7 +678,7 @@ pub mod pallet {
         pub fn request_undelegate(
             origin: OriginFor<T>,
             candidate: Candidate<T>,
-            pool: TargetPool,
+            pool: ActivePoolKind,
             amount: SharesOrStake<T::Balance>,
         ) -> DispatchResultWithPostInfo {
             let delegator = ensure_signed(origin)?;
@@ -638,7 +715,7 @@ pub mod pallet {
         pub fn swap_pool(
             origin: OriginFor<T>,
             candidate: Candidate<T>,
-            source_pool: TargetPool,
+            source_pool: ActivePoolKind,
             amount: SharesOrStake<T::Balance>,
         ) -> DispatchResultWithPostInfo {
             let delegator = ensure_signed(origin)?;
@@ -651,22 +728,18 @@ pub mod pallet {
         pub fn computed_stake(
             candidate: Candidate<T>,
             delegator: Delegator<T>,
-            pool: AllTargetPool,
+            pool: PoolKind,
         ) -> Option<T::Balance> {
             use pools::Pool;
             match pool {
-                AllTargetPool::Joining => {
-                    pools::Joining::<T>::computed_stake(&candidate, &delegator)
-                }
-                AllTargetPool::AutoCompounding => {
+                PoolKind::Joining => pools::Joining::<T>::computed_stake(&candidate, &delegator),
+                PoolKind::AutoCompounding => {
                     pools::AutoCompounding::<T>::computed_stake(&candidate, &delegator)
                 }
-                AllTargetPool::ManualRewards => {
+                PoolKind::ManualRewards => {
                     pools::ManualRewards::<T>::computed_stake(&candidate, &delegator)
                 }
-                AllTargetPool::Leaving => {
-                    pools::Leaving::<T>::computed_stake(&candidate, &delegator)
-                }
+                PoolKind::Leaving => pools::Leaving::<T>::computed_stake(&candidate, &delegator),
             }
             .ok()
             .map(|x| x.0)

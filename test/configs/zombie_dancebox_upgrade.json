@@ -39,7 +39,7 @@
         {
             "id": 1000,
             "chain": "dancebox-local",
-            "chain_spec_path": "tmp/dancebox-raw-spec.json",
+            "chain_spec_path": "specs/dancebox-raw-spec.json",
             "collator": {
                 "name": "Alice",
                 "ws_port": 33345,

@@ -120,9 +120,9 @@ impl<T: frame_system::Config> runtime_parachains::inclusion::WeightInfo for Subs
 	fn enact_candidate(u: u32, h: u32, c: u32, ) -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `1222 + c * (15992 ±0) + h * (92 ±0) + u * (32955 ±0)`
-		//  Estimated: `26163213704008592 + c * (16000 ±288) + h * (7630 ±353) + u * (20830 ±156)`
+		//  Estimated: `36310 + c * (16000 ±288) + h * (7630 ±353) + u * (20830 ±156)`
 		// Minimum execution time: 434_558_000 picoseconds.
-		Weight::from_parts(79_583_282, 26163213704008592)
+		Weight::from_parts(79_583_282, 36310)
 			// Standard Error: 388_986
 			.saturating_add(Weight::from_parts(147_483_427, 0).saturating_mul(u.into()))
 			// Standard Error: 388_986
