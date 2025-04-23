@@ -15,6 +15,8 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 #![cfg(test)]
+
+use std::collections::BTreeSet;
 use {
     crate::tests::common::*,
     frame_support::{assert_ok, traits::Get, BoundedBTreeSet},
@@ -287,5 +289,128 @@ fn inactivity_tracking_correctly_updates_storages_on_container_chains_author_not
             run_to_session(max_inactive_sessions + 1);
             run_block();
             assert_eq!(<InactiveCollators<Runtime>>::get(0).is_empty(), true);
+        });
+}
+
+#[test]
+fn inactivity_tracking_edge_case_one_block_per_collator() {
+    // Check that all block authors are marked as active, even on edge cases such as the first or
+    // last block of each session.
+
+    // Skip test if not compiled with fast-runtime
+    let session_period = crate::Period::get();
+    if session_period > 10 {
+        println!(
+            "Skipping test because session period must be 10, is {:?}",
+            session_period
+        );
+        return;
+    }
+
+    ExtBuilder::default()
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 100,
+            ..Default::default()
+        })
+        .with_collators(vec![
+            (AccountId::from(ALICE), 100_000),
+            (AccountId::from(BOB), 100_000),
+            (AccountId::from(CHARLIE), 100_000),
+            (AccountId::from(DAVE), 100_000),
+            (AccountId::from([8; 32]), 100_000),
+            (AccountId::from([9; 32]), 100_000),
+            (AccountId::from([10; 32]), 100_000),
+            (AccountId::from([11; 32]), 100_000),
+            (AccountId::from([12; 32]), 100_000),
+            (AccountId::from([13; 32]), 100_000),
+            (AccountId::from([14; 32]), 100_000),
+            (AccountId::from([15; 32]), 100_000),
+            (AccountId::from([16; 32]), 100_000),
+            (AccountId::from([17; 32]), 100_000),
+        ])
+        .build()
+        .execute_with(|| {
+            run_to_session(2);
+
+            // Confirm that all 14 collators have been assigned to orchestrator chain
+            let collators =
+                pallet_collator_assignment::Pallet::<Runtime>::collator_container_chain();
+            let num_collators = collators.orchestrator_chain.len();
+            assert_eq!(num_collators, 14);
+
+            // Since 1 session = 10 blocks, at most 10 block authors will be marked as active per session.
+            // In tests we use a simple round robin collator selection, so no collator will produce more
+            // than one block per sessoin. Thus we can assert that we will see exactly 4 inactive collators
+            // per session.
+            let inactive_collators = InactiveCollators::<Runtime>::get(1);
+            assert_eq!(
+                inactive_collators.len(),
+                num_collators - session_period as usize,
+                "{:3}: {} inactive: {:?}",
+                1,
+                inactive_collators.len(),
+                inactive_collators
+            );
+        });
+}
+
+#[test]
+fn inactivity_tracking_edge_case_inactive_at_session_start() {
+    // Check that an inactive collator can always be marked as inactive, even on edge cases such as the first or
+    // last block of each session.
+
+    // Skip test if not compiled with fast-runtime
+    let session_period = crate::Period::get();
+    if session_period > 10 {
+        println!(
+            "Skipping test because session period must be 10, is {:?}",
+            session_period
+        );
+        return;
+    }
+
+    ExtBuilder::default()
+        .with_config(pallet_configuration::HostConfiguration {
+            max_collators: 100,
+            min_orchestrator_collators: 2,
+            max_orchestrator_collators: 100,
+            ..Default::default()
+        })
+        .with_collators(vec![
+            (AccountId::from(ALICE), 100_000),
+            (AccountId::from(BOB), 100_000),
+            (AccountId::from(CHARLIE), 100_000),
+            (AccountId::from(DAVE), 100_000),
+        ])
+        .build()
+        .execute_with(|| {
+            let inactivity_period: u32 =
+                <Runtime as pallet_inactivity_tracking::Config>::MaxInactiveSessions::get();
+            run_to_session(2 + inactivity_period);
+
+            // Mock inactive collator by writing directly into storage
+            for s in 2..(2 + inactivity_period) {
+                InactiveCollators::<Runtime>::insert(
+                    s,
+                    BoundedBTreeSet::try_from(BTreeSet::from([AccountId::from(BOB)])).unwrap(),
+                );
+            }
+
+            let expected_session_index = Session::current_index();
+            for _ in 0..10 {
+                assert_eq!(expected_session_index, Session::current_index());
+                let bob_inactive = pallet_inactivity_tracking::Pallet::<Runtime>::is_node_inactive(
+                    &AccountId::from(BOB),
+                );
+                assert!(bob_inactive);
+                run_block();
+            }
+
+            // The next block is a new session
+            run_block();
+            let session_index = Session::current_index();
+            assert_eq!(session_index, 8);
         });
 }
