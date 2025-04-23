@@ -26,17 +26,18 @@ describeSuite({
             id: "E01",
             title: "Pallet should correctly update collators' activity records with no inactive collators",
             test: async () => {
-                await context.createBlock(polkadotJs.tx.configuration.setMaxOrchestratorCollators(1).signAsync(alice));
                 const maxInactiveSessions = polkadotJs.consts.inactivityTracking.maxInactiveSessions.toNumber();
-                jumpToSession(context, 2);
+                await jumpToSession(context, 2);
                 const startSession = (await polkadotJs.query.session.currentIndex()).toNumber();
                 // No container chains has produced blocks yet so activity tracking storage for current session should
-                // record orchestrator collators
+                // record orchestrator collators and one of the container chain's collators
                 const activeCollatorsForSessionBeforeNoting =
                     await polkadotJs.query.inactivityTracking.activeCollatorsForCurrentSession();
-                expect(activeCollatorsForSessionBeforeNoting.toHuman()).to.deep.eq([alice.address]);
+                expect(activeCollatorsForSessionBeforeNoting.size).to.be.equal(2);
+                expect(activeCollatorsForSessionBeforeNoting.toHuman()).to.contain(alice.address);
+                expect(activeCollatorsForSessionBeforeNoting.toHuman()).to.contain(context.keyring.charlie.address);
 
-                // After noting the first block, the collators should be added to the activity tracking storage
+                // After noting the first block, the 2 container chain collators should be added to the activity tracking storage
                 // for the current session
                 await context.createBlock();
                 const activeCollatorsForSession2AfterNoting =
