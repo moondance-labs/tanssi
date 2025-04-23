@@ -478,7 +478,7 @@ impl EnsureOriginWithArg<RuntimeOrigin, RuntimeParametersKey> for DynamicParamet
         match key {
             Preimage(_) => frame_system::ensure_root(origin.clone()),
         }
-            .map_err(|_| origin)
+        .map_err(|_| origin)
     }
 
     #[cfg(feature = "runtime-benchmarks")]
@@ -541,7 +541,7 @@ impl pallet_babe::Config for Runtime {
     type MaxNominators = ConstU32<0>;
     type KeyOwnerProof = sp_session::MembershipProof;
     type EquivocationReportSystem =
-    pallet_babe::EquivocationReportSystem<Self, Offences, Historical, ReportLongevity>;
+        pallet_babe::EquivocationReportSystem<Self, Offences, Historical, ReportLongevity>;
 }
 
 parameter_types! {
@@ -768,7 +768,7 @@ impl pallet_grandpa::Config for Runtime {
     type MaxSetIdSessionEntries = MaxSetIdSessionEntries;
     type KeyOwnerProof = sp_session::MembershipProof;
     type EquivocationReportSystem =
-    pallet_grandpa::EquivocationReportSystem<Self, Offences, Historical, ReportLongevity>;
+        pallet_grandpa::EquivocationReportSystem<Self, Offences, Historical, ReportLongevity>;
 }
 
 /// Submits a transaction with the node's public and signature type. Adheres to the signed extension
@@ -1076,7 +1076,7 @@ impl parachains_session_info::Config for Runtime {
 }
 
 pub type RewardValidators =
-pallet_external_validators_rewards::RewardValidatorsWithEraPoints<Runtime>;
+    pallet_external_validators_rewards::RewardValidatorsWithEraPoints<Runtime>;
 
 impl parachains_inclusion::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
@@ -1132,7 +1132,7 @@ impl ProcessMessage for MessageProcessor {
                     xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
                     RuntimeCall,
                 >::process_message(
-                    message, Junction::Parachain(para.into()), meter, id,
+                    message, Junction::Parachain(para.into()), meter, id
                 )
             }
             AggregateMessageOrigin::Snowbridge(_) => {
@@ -1160,7 +1160,7 @@ impl pallet_message_queue::Config for Runtime {
     type MessageProcessor = MessageProcessor;
     #[cfg(feature = "runtime-benchmarks")]
     type MessageProcessor =
-    pallet_message_queue::mock_helpers::NoopMessageProcessor<AggregateMessageOrigin>;
+        pallet_message_queue::mock_helpers::NoopMessageProcessor<AggregateMessageOrigin>;
     type QueueChangeHandler = ParaInclusion;
     type QueuePausedQuery = ();
     type WeightInfo = weights::pallet_message_queue::SubstrateWeight<Runtime>;
@@ -1178,10 +1178,10 @@ impl parachains_hrmp::Config for Runtime {
     type ChannelManager = EnsureRoot<AccountId>;
     type Currency = Balances;
     type DefaultChannelSizeAndCapacityWithSystem =
-    parachains_configuration::ActiveConfigHrmpChannelSizeAndCapacityRatio<
-        Runtime,
-        HrmpChannelSizeAndCapacityWithSystemRatio,
-    >;
+        parachains_configuration::ActiveConfigHrmpChannelSizeAndCapacityRatio<
+            Runtime,
+            HrmpChannelSizeAndCapacityWithSystemRatio,
+        >;
     type WeightInfo = weights::runtime_parachains_hrmp::SubstrateWeight<Runtime>;
     type VersionWrapper = XcmPallet;
 }
@@ -1198,7 +1198,7 @@ impl parachains_scheduler::Config for Runtime {
 
 pub struct CollatorAssignmentProvider;
 impl parachains_scheduler::common::AssignmentProvider<BlockNumberFor<Runtime>>
-for CollatorAssignmentProvider
+    for CollatorAssignmentProvider
 {
     fn pop_assignment_for_core(core_idx: CoreIndex) -> Option<Assignment> {
         let assigned_collators = TanssiCollatorAssignment::collator_container_chain();
@@ -1335,7 +1335,7 @@ impl parachains_disputes::Config for Runtime {
 impl parachains_slashing::Config for Runtime {
     type KeyOwnerProofSystem = Historical;
     type KeyOwnerProof =
-    <Self::KeyOwnerProofSystem as KeyOwnerProofSystem<(KeyTypeId, ValidatorId)>>::Proof;
+        <Self::KeyOwnerProofSystem as KeyOwnerProofSystem<(KeyTypeId, ValidatorId)>>::Proof;
     type KeyOwnerIdentification = <Self::KeyOwnerProofSystem as KeyOwnerProofSystem<(
         KeyTypeId,
         ValidatorId,
@@ -1371,7 +1371,6 @@ impl pallet_parameters::Config for Runtime {
 }
 
 parameter_types! {
-    // TODO: BondingDuration is set to 28 days on Polkadot,
     // check which value to use in Starlight.
     pub BeefySetIdSessionEntries: u32 = BondingDuration::get() * SessionsPerEra::get();
 }
@@ -1391,7 +1390,7 @@ impl pallet_beefy::Config for Runtime {
     type WeightInfo = ();
     type KeyOwnerProof = <Historical as KeyOwnerProofSystem<(KeyTypeId, BeefyId)>>::Proof;
     type EquivocationReportSystem =
-    pallet_beefy::EquivocationReportSystem<Self, Offences, Historical, ReportLongevity>;
+        pallet_beefy::EquivocationReportSystem<Self, Offences, Historical, ReportLongevity>;
     type AncestryHelper = BeefyMmrLeaf;
 }
 
@@ -1511,8 +1510,8 @@ impl Get<u64> for TimestampProvider {
 }
 
 parameter_types! {
-    // Chain ID of Sepolia.
-    // Output is: 34cdd3f84040fb44d70e83b892797846a8c0a556ce08cd470bf6d4cf7b94ff77
+    // Chain ID of Mainnet.
+    // Output is: 204dfe37731e8e2b4866ad0da9a17c49f434542c3477c5f914a3349acd88ba1a
     pub EthereumSovereignAccount: AccountId =
         tp_bridge::EthereumLocationsConverterFor::<AccountId>::convert_location(
             &EthereumLocation::get()
@@ -2054,7 +2053,7 @@ pub type TxExtension = (
 
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic =
-generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, TxExtension>;
+    generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, TxExtension>;
 
 /// The runtime migrations per release.
 pub mod migrations {
@@ -2084,9 +2083,9 @@ pub struct InnerStarlightRegistrar<Runtime, AccountId, RegistrarManager, Registr
     PhantomData<(Runtime, AccountId, RegistrarManager, RegistrarWeightInfo)>,
 );
 impl<Runtime, AccountId, RegistrarManager, RegistrarWeightInfo> RegistrarHandler<AccountId>
-for InnerStarlightRegistrar<Runtime, AccountId, RegistrarManager, RegistrarWeightInfo>
+    for InnerStarlightRegistrar<Runtime, AccountId, RegistrarManager, RegistrarWeightInfo>
 where
-    RegistrarManager: RegistrarInterface<AccountId=AccountId>,
+    RegistrarManager: RegistrarInterface<AccountId = AccountId>,
     RegistrarWeightInfo: paras_registrar::WeightInfo,
     Runtime: pallet_registrar::Config + paras_registrar::Config,
     sp_runtime::AccountId32: From<AccountId>,
@@ -2263,7 +2262,7 @@ impl pallet_registrar::RegistrarHooks for StarlightRegistrarHooks {
             <Runtime as pallet_data_preservers::Config>::AssignmentOrigin::try_successful_origin(
                 &para_id,
             )
-                .expect("should be able to get para manager");
+            .expect("should be able to get para manager");
 
         DataPreservers::start_assignment(
             para_manager,
@@ -2271,7 +2270,7 @@ impl pallet_registrar::RegistrarHooks for StarlightRegistrarHooks {
             para_id,
             tp_data_preservers_common::AssignerExtra::Free,
         )
-            .expect("assignment to work");
+        .expect("assignment to work");
 
         assert!(
             pallet_data_preservers::Assignments::<Runtime>::get(para_id).contains(&profile_id),
@@ -3563,7 +3562,7 @@ impl ParaIdAssignmentHooksImpl {
             &pallet_services_payment::Pallet::<Runtime>::parachain_tank(para_id),
             remaining_to_pay,
         )
-            .into_result(true)?;
+        .into_result(true)?;
         // TODO: Have proper weight
         Ok(Weight::zero())
     }
@@ -3583,7 +3582,7 @@ impl<AC> ParaIdAssignmentHooks<BalanceOf<Runtime>, AC> for ParaIdAssignmentHooks
                     &Some(max_tip),
                 ))
             })
-                .is_ok()
+            .is_ok()
         });
     }
 
@@ -3607,10 +3606,10 @@ impl<AC> ParaIdAssignmentHooks<BalanceOf<Runtime>, AC> for ParaIdAssignmentHooks
                     maybe_tip,
                 )
             })
-                .inspect(|weight| {
-                    total_weight += *weight;
-                })
-                .is_ok()
+            .inspect(|weight| {
+                total_weight += *weight;
+            })
+            .is_ok()
         });
         total_weight
     }
@@ -3698,7 +3697,7 @@ impl pallet_collator_assignment::Config for Runtime {
     type SessionIndex = u32;
     type SelfParaId = MockParaId;
     type ShouldRotateAllCollators =
-    RotateCollatorsEveryNSessions<ConfigurationCollatorRotationSessionPeriod>;
+        RotateCollatorsEveryNSessions<ConfigurationCollatorRotationSessionPeriod>;
     type GetRandomnessForNextBlock = BabeGetRandomnessForNextBlock;
     type RemoveInvulnerables = ();
     type ParaIdAssignmentHooks = ParaIdAssignmentHooksImpl;
@@ -3750,7 +3749,7 @@ mod benchmark_helpers {
                     slot: slot.into(),
                     authority_index: 0,
                 })
-                    .encode(),
+                .encode(),
             )],
         };
 
