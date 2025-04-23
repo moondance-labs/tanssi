@@ -145,8 +145,8 @@ parameter_types! {
     };
 }
 
-// Sepolia: https://github.com/eth-clients/sepolia
-// Fork versions: https://github.com/eth-clients/sepolia/blob/main/metadata/config.yaml
+// Mainnet: https://github.com/eth-clients/mainnet
+// Fork versions: https://github.com/eth-clients/mainnet/blob/main/metadata/config.yaml
 #[cfg(not(any(
     feature = "std",
     feature = "fast-runtime",
@@ -156,28 +156,28 @@ parameter_types! {
 parameter_types! {
     pub const ChainForkVersions: ForkVersions = ForkVersions {
         genesis: Fork {
-            version: hex_literal::hex!("90000069"), // 0x90000069
+            version: hex_literal::hex!("0x00000000"), // 0x90000069
             epoch: 0,
         },
         altair: Fork {
-            version: hex_literal::hex!("90000070"), // 0x90000070
-            epoch: 50,
+            version: hex_literal::hex!("0x01000000"), // 0x90000070
+            epoch: 74240,
         },
         bellatrix: Fork {
-            version: hex_literal::hex!("90000071"), // 0x90000071
-            epoch: 100,
+            version: hex_literal::hex!("0x02000000"), // 0x90000071
+            epoch: 144896,
         },
         capella: Fork {
-            version: hex_literal::hex!("90000072"), // 0x90000072
-            epoch: 56832,
+            version: hex_literal::hex!("0x03000000"), // 0x90000072
+            epoch: 194048,
         },
         deneb: Fork {
-            version: hex_literal::hex!("90000073"), // 0x90000073
-            epoch: 132608,
+            version: hex_literal::hex!("0x04000000"), // 0x90000073
+            epoch: 269568,
         },
         electra: Fork {
-            version: hex_literal::hex!("90000074"), // 0x90000074
-            epoch: 222464,
+            version: hex_literal::hex!("0x05000000"), // 0x90000074
+            epoch: 364032,
         },
     };
 }

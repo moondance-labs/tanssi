@@ -285,38 +285,74 @@ impl Convert<AggregateMessageOrigin, ParaId> for GetParaFromAggregateMessageOrig
     }
 }
 
-/// The relay register and deregister calls should no longer be necessary
-/// Everything is handled by the containerRegistrar
-pub struct IsRelayRegister;
-impl Contains<RuntimeCall> for IsRelayRegister {
-    fn contains(c: &RuntimeCall) -> bool {
-        matches!(
-            c,
-            RuntimeCall::Registrar(paras_registrar::Call::register { .. })
-        ) || matches!(
-            c,
-            RuntimeCall::Registrar(paras_registrar::Call::deregister { .. })
-        )
-    }
-}
-
-/// Starlight shouold not permit parathread registration for now
-/// TODO: remove once they are enabled
-pub struct IsParathreadRegistrar;
-impl Contains<RuntimeCall> for IsParathreadRegistrar {
-    fn contains(c: &RuntimeCall) -> bool {
-        matches!(
-            c,
-            RuntimeCall::ContainerRegistrar(pallet_registrar::Call::register_parathread { .. })
-        )
-    }
-}
-
 /// Disable any extrinsic related to the balance transfer
 pub struct IsBalanceTransferExtrinsics;
 impl Contains<RuntimeCall> for IsBalanceTransferExtrinsics {
     fn contains(c: &RuntimeCall) -> bool {
         matches!(c, RuntimeCall::Balances(_))
+    }
+}
+
+pub struct IsContainerChainManagementExtrinsics;
+impl Contains<RuntimeCall> for IsContainerChainManagementExtrinsics {
+    fn contains(c: &RuntimeCall) -> bool {
+        matches!(
+            c,
+            RuntimeCall::ServicesPayment(_)
+                | RuntimeCall::StreamPayment(_)
+                | RuntimeCall::DataPreservers(_)
+        )
+    }
+}
+
+pub struct IsDemocracyExtrinsics;
+impl Contains<RuntimeCall> for IsDemocracyExtrinsics {
+    fn contains(c: &RuntimeCall) -> bool {
+        matches!(
+            c,
+            RuntimeCall::Treasury(_)
+                | RuntimeCall::ConvictionVoting(_)
+                | RuntimeCall::Referenda(_)
+                | RuntimeCall::FellowshipCollective(_)
+                | RuntimeCall::FellowshipReferenda(_)
+                | RuntimeCall::Whitelist(_)
+                | RuntimeCall::Preimage(_)
+        )
+    }
+}
+
+pub struct IsMiscellaneousExtrinsics;
+impl Contains<RuntimeCall> for IsMiscellaneousExtrinsics {
+    fn contains(c: &RuntimeCall) -> bool {
+        matches!(
+            c,
+            RuntimeCall::Proxy(_) | RuntimeCall::Utility(_) | RuntimeCall::Identity(_)
+        )
+    }
+}
+
+pub struct IsXcmExtrinsics;
+impl Contains<RuntimeCall> for IsXcmExtrinsics {
+    fn contains(c: &RuntimeCall) -> bool {
+        matches!(
+            c,
+            RuntimeCall::Hrmp(_)
+                | RuntimeCall::MessageQueue(_)
+                | RuntimeCall::AssetRate(_)
+                | RuntimeCall::XcmPallet(_)
+        )
+    }
+}
+
+pub struct IsContainerChainRegistrationExtrinsics;
+impl Contains<RuntimeCall> for IsContainerChainRegistrationExtrinsics {
+    fn contains(c: &RuntimeCall) -> bool {
+        matches!(
+            c,
+            RuntimeCall::ContainerRegistrar(_)
+                | RuntimeCall::OnDemandAssignmentProvider(_)
+                | RuntimeCall::Registrar(_)
+        )
     }
 }
 
@@ -349,9 +385,12 @@ parameter_types! {
 #[derive_impl(frame_system::config_preludes::RelayChainDefaultConfig)]
 impl frame_system::Config for Runtime {
     type BaseCallFilter = EverythingBut<(
-        IsRelayRegister,
-        IsParathreadRegistrar,
         IsBalanceTransferExtrinsics,
+        IsContainerChainManagementExtrinsics,
+        IsDemocracyExtrinsics,
+        IsMiscellaneousExtrinsics,
+        IsXcmExtrinsics,
+        IsContainerChainRegistrationExtrinsics,
         IsBridgesExtrinsics,
         IsStakingExtrinsics,
     )>;
@@ -1332,7 +1371,6 @@ impl pallet_parameters::Config for Runtime {
 }
 
 parameter_types! {
-    // TODO: BondingDuration is set to 28 days on Polkadot,
     // check which value to use in Starlight.
     pub BeefySetIdSessionEntries: u32 = BondingDuration::get() * SessionsPerEra::get();
 }
@@ -1472,8 +1510,8 @@ impl Get<u64> for TimestampProvider {
 }
 
 parameter_types! {
-    // Chain ID of Sepolia.
-    // Output is: 34cdd3f84040fb44d70e83b892797846a8c0a556ce08cd470bf6d4cf7b94ff77
+    // Chain ID of Mainnet.
+    // Output is: 204dfe37731e8e2b4866ad0da9a17c49f434542c3477c5f914a3349acd88ba1a
     pub EthereumSovereignAccount: AccountId =
         tp_bridge::EthereumLocationsConverterFor::<AccountId>::convert_location(
             &EthereumLocation::get()

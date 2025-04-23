@@ -1363,16 +1363,6 @@ pub struct StarlightMigrations<Runtime>(PhantomData<Runtime>);
 impl<Runtime> GetMigrations for StarlightMigrations<Runtime>
 where
     Runtime: frame_system::Config,
-    Runtime: pallet_external_validators::Config,
-    Runtime: pallet_configuration::Config,
-    Runtime: pallet_session::Config<
-        ValidatorId = <Runtime as pallet_external_validators::Config>::ValidatorId,
-    >,
-    Runtime: pallet_external_validator_slashes::Config,
-    Runtime: snowbridge_pallet_system::Config,
-    Runtime: runtime_parachains::scheduler::Config,
-    Runtime: runtime_parachains::shared::Config,
-    Runtime: pallet_xcm::Config,
 {
     fn get_migrations() -> Vec<Box<dyn Migration>> {
         vec![]
