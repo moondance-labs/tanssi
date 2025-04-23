@@ -261,6 +261,35 @@ pub mod pallet {
         /// and remove the collators records that are outside the activity period.
         /// Triggered at the beginning of each session.
         pub fn process_ended_session() {
+            if let Some(current_session_index) =
+                T::CurrentSessionIndex::session_index().checked_sub(1)
+            {
+                match <CurrentActivityTrackingStatus<T>>::get() {
+                    ActivityTrackingStatus::Disabled { .. } => return,
+                    ActivityTrackingStatus::Enabled { start, end: _ } => {
+                        if start > current_session_index {
+                            return;
+                        }
+                    }
+                }
+                if let Ok(inactive_collators) =
+                    BoundedBTreeSet::<T::CollatorId, T::MaxCollatorsPerSession>::try_from(
+                        T::CurrentCollatorsFetcher::get_all_collators_assigned_to_chains(
+                            ForSession::Current,
+                        )
+                        .difference(&<ActiveCollatorsForCurrentSession<T>>::get())
+                        .cloned()
+                        .collect::<BTreeSet<T::CollatorId>>(),
+                    )
+                {
+                    InactiveCollators::<T>::insert(current_session_index, inactive_collators);
+                } else {
+                    // If we reach MaxCollatorsPerSession limit there must be a bug in the pallet
+                    // so we disable the activity tracking
+                    Self::set_inactivity_tracking_status_inner(current_session_index, false);
+                }
+            }
+
             let current_session_index = T::CurrentSessionIndex::session_index();
             <ActiveCollatorsForCurrentSession<T>>::put(BoundedBTreeSet::new());
 
@@ -271,36 +300,6 @@ pub mod pallet {
                         .saturating_sub(T::MaxInactiveSessions::get())
                         .saturating_sub(1),
                 );
-            }
-        }
-
-        /// Internal function to populate the inactivity tracking storage used for marking collator
-        /// as inactive. Triggered at the end of a session.
-        pub fn on_before_session_ending() {
-            let current_session_index = T::CurrentSessionIndex::session_index();
-            match <CurrentActivityTrackingStatus<T>>::get() {
-                ActivityTrackingStatus::Disabled { .. } => return,
-                ActivityTrackingStatus::Enabled { start, end: _ } => {
-                    if start > current_session_index {
-                        return;
-                    }
-                }
-            }
-            if let Ok(inactive_collators) =
-                BoundedBTreeSet::<T::CollatorId, T::MaxCollatorsPerSession>::try_from(
-                    T::CurrentCollatorsFetcher::get_all_collators_assigned_to_chains(
-                        ForSession::Current,
-                    )
-                    .difference(&<ActiveCollatorsForCurrentSession<T>>::get())
-                    .cloned()
-                    .collect::<BTreeSet<T::CollatorId>>(),
-                )
-            {
-                InactiveCollators::<T>::insert(current_session_index, inactive_collators);
-            } else {
-                // If we reach MaxCollatorsPerSession limit there must be a bug in the pallet
-                // so we disable the activity tracking
-                Self::set_inactivity_tracking_status_inner(current_session_index, false);
             }
         }
 

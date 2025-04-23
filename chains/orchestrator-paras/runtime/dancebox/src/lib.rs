@@ -666,9 +666,7 @@ impl pallet_initializer::ApplyNewSession<Runtime> for OwnApplySession {
         InactivityTracking::process_ended_session();
     }
 
-    fn on_before_session_ending() {
-        InactivityTracking::on_before_session_ending();
-    }
+    fn on_before_session_ending() {}
 }
 
 impl pallet_initializer::Config for Runtime {
