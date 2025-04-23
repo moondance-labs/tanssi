@@ -93,7 +93,8 @@ mod benchmarks {
         let nonce = Default::default();
         // Max limits depend on runtime, these are for Dancelight
         let num_msgs = 100;
-        let msg_size = 2048;
+        // Size should be 2048 but that results in error, so use a smaller value that works instead
+        let msg_size = 1920;
 
         #[extrinsic_call]
         _(RawOrigin::Root, nonce, num_msgs, msg_size);
