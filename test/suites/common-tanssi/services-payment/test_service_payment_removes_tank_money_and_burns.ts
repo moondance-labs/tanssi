@@ -33,11 +33,11 @@ describeSuite({
             shouldSkipStarlightSP = isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SERVICES_PAYMENT.includes(specVersion);
 
             const tx2000OneSession = polkadotJs.tx.servicesPayment.setBlockProductionCredits(paraId2001, 0);
-            const sudoSignedTx = await polkadotJs.tx.sudo.sudo(tx2000OneSession).signAsync(alice);
-
             if (shouldSkipStarlightSP) {
-                console.log(`Services payment tests for Starlight version ${specVersion}`);
-                await checkCallIsFiltered(context, polkadotJs, sudoSignedTx);
+                console.log(`Skipping services payment tests for Starlight version ${specVersion}`);
+
+                // We check that the call (without sudo) is filtered. 
+                await checkCallIsFiltered(context, polkadotJs, await tx2000OneSession.signAsync(alice));
 
                 // Purchase credits should be filtered too
                 const tx = polkadotJs.tx.servicesPayment.purchaseCredits(paraId2001, 100n);
@@ -45,6 +45,7 @@ describeSuite({
                 return;
             }
 
+            const sudoSignedTx = await polkadotJs.tx.sudo.sudo(tx2000OneSession).signAsync(alice);
             await context.createBlock([sudoSignedTx]);
             const existentialDeposit = await polkadotJs.consts.balances.existentialDeposit.toBigInt();
             // Now, buy some credits for container chain 2001

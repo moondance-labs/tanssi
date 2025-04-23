@@ -74,11 +74,11 @@ describeSuite({
                     blocksPerSession / 2n
                 );
 
-                const sudoSignedTx = await polkadotJs.tx.sudo.sudo(tx2000OneSession).signAsync(alice);
-
                 if (shouldSkipStarlightSP) {
                     console.log(`Skipping E02 test for Starlight version ${specVersion}`);
-                    await checkCallIsFiltered(context, polkadotJs, sudoSignedTx);
+
+                    // We check that the call (without sudo) is filtered.
+                    await checkCallIsFiltered(context, polkadotJs, await tx2000OneSession.signAsync(alice));
 
                     // Purchase credits should be filtered too
                     const tx = polkadotJs.tx.servicesPayment.purchaseCredits(paraId2000, 100n);
@@ -86,6 +86,7 @@ describeSuite({
                     return;
                 }
 
+                const sudoSignedTx = await polkadotJs.tx.sudo.sudo(tx2000OneSession).signAsync(alice);
                 await context.createBlock([sudoSignedTx]);
                 const existentialDeposit = await polkadotJs.consts.balances.existentialDeposit.toBigInt();
                 // Now, buy some credits for container chain 2000. we only the second half of the needed credits - 1
