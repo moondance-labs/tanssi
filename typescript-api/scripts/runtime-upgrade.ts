@@ -40,7 +40,7 @@ function hackXcmV5Support() {
 
     // For dancelight, replace "Lookup77" with "StagingXcmV5Junction"
     const dancelightFilePath = "src/dancelight/interfaces/types-lookup.ts";
-    hackTypeReplacement(dancelightFilePath, "Lookup77", "StagingXcmV5Junction", 8);
+    hackTypeReplacement(dancelightFilePath, "Lookup76", "StagingXcmV5Junction", 8);
 }
 
 function hackTypeReplacement(filePath: string, oldType: string, newType: string, expectedCount: number) {
@@ -120,12 +120,26 @@ async function main() {
             "--rpc-cors=all",
         ]);
 
-        const onProcessExit = () => {
+        nodeProcess.stdout.on("data", (data) => {
+            console.log(`stdout: ${data}`);
+        });
+
+        nodeProcess.stderr.on("data", (data) => {
+            console.error(`stderr: ${data}`);
+        });
+
+        const onProcessExit = (code: number) => {
+            console.log(`Process exited with code: ${code}`);
+            nodeProcess?.kill();
+        };
+
+        const onSignal = (signal: NodeJS.Signals) => {
+            console.log(`Received signal: ${signal}`);
             nodeProcess?.kill();
         };
 
         process.once("exit", onProcessExit);
-        process.once("SIGINT", onProcessExit);
+        process.once("SIGINT", onSignal);
 
         await new Promise((resolve, reject) => {
             const onData = async (data: any) => {

@@ -785,7 +785,7 @@ export default {
             },
             MaxCorePriceUpdated: {
                 paraId: "u32",
-                maxCorePrice: "Option<u128>",
+                maxCorePrice: "u128",
             },
             CollatorAssignmentCreditsSet: {
                 paraId: "u32",
@@ -794,7 +794,7 @@ export default {
         },
     },
     /**
-     * Lookup73: pallet_data_preservers::pallet::Event<T>
+     * Lookup72: pallet_data_preservers::pallet::Event<T>
      **/
     PalletDataPreserversEvent: {
         _enum: {
@@ -826,7 +826,7 @@ export default {
         },
     },
     /**
-     * Lookup74: pallet_invulnerables::pallet::Event<T>
+     * Lookup73: pallet_invulnerables::pallet::Event<T>
      **/
     PalletInvulnerablesEvent: {
         _enum: {
@@ -839,7 +839,7 @@ export default {
         },
     },
     /**
-     * Lookup75: pallet_session::pallet::Event
+     * Lookup74: pallet_session::pallet::Event
      **/
     PalletSessionEvent: {
         _enum: {
@@ -849,7 +849,7 @@ export default {
         },
     },
     /**
-     * Lookup76: pallet_inflation_rewards::pallet::Event<T>
+     * Lookup75: pallet_inflation_rewards::pallet::Event<T>
      **/
     PalletInflationRewardsEvent: {
         _enum: {
@@ -865,7 +865,7 @@ export default {
         },
     },
     /**
-     * Lookup77: pallet_treasury::pallet::Event<T, I>
+     * Lookup76: pallet_treasury::pallet::Event<T, I>
      **/
     PalletTreasuryEvent: {
         _enum: {
@@ -920,13 +920,13 @@ export default {
         },
     },
     /**
-     * Lookup78: pallet_root_testing::pallet::Event<T>
+     * Lookup77: pallet_root_testing::pallet::Event<T>
      **/
     PalletRootTestingEvent: {
         _enum: ["DefensiveTestCall"],
     },
     /**
-     * Lookup79: frame_system::Phase
+     * Lookup78: frame_system::Phase
      **/
     FrameSystemPhase: {
         _enum: {
@@ -936,21 +936,21 @@ export default {
         },
     },
     /**
-     * Lookup83: frame_system::LastRuntimeUpgradeInfo
+     * Lookup82: frame_system::LastRuntimeUpgradeInfo
      **/
     FrameSystemLastRuntimeUpgradeInfo: {
         specVersion: "Compact<u32>",
         specName: "Text",
     },
     /**
-     * Lookup87: frame_system::CodeUpgradeAuthorization<T>
+     * Lookup86: frame_system::CodeUpgradeAuthorization<T>
      **/
     FrameSystemCodeUpgradeAuthorization: {
         codeHash: "H256",
         checkVersion: "bool",
     },
     /**
-     * Lookup88: frame_system::pallet::Call<T>
+     * Lookup87: frame_system::pallet::Call<T>
      **/
     FrameSystemCall: {
         _enum: {
@@ -995,7 +995,7 @@ export default {
         },
     },
     /**
-     * Lookup92: frame_system::limits::BlockWeights
+     * Lookup91: frame_system::limits::BlockWeights
      **/
     FrameSystemLimitsBlockWeights: {
         baseBlock: "SpWeightsWeightV2Weight",
@@ -1003,7 +1003,7 @@ export default {
         perClass: "FrameSupportDispatchPerDispatchClassWeightsPerClass",
     },
     /**
-     * Lookup93: frame_support::dispatch::PerDispatchClass<frame_system::limits::WeightsPerClass>
+     * Lookup92: frame_support::dispatch::PerDispatchClass<frame_system::limits::WeightsPerClass>
      **/
     FrameSupportDispatchPerDispatchClassWeightsPerClass: {
         normal: "FrameSystemLimitsWeightsPerClass",
@@ -1011,7 +1011,7 @@ export default {
         mandatory: "FrameSystemLimitsWeightsPerClass",
     },
     /**
-     * Lookup94: frame_system::limits::WeightsPerClass
+     * Lookup93: frame_system::limits::WeightsPerClass
      **/
     FrameSystemLimitsWeightsPerClass: {
         baseExtrinsic: "SpWeightsWeightV2Weight",
@@ -1020,13 +1020,13 @@ export default {
         reserved: "Option<SpWeightsWeightV2Weight>",
     },
     /**
-     * Lookup96: frame_system::limits::BlockLength
+     * Lookup95: frame_system::limits::BlockLength
      **/
     FrameSystemLimitsBlockLength: {
         max: "FrameSupportDispatchPerDispatchClassU32",
     },
     /**
-     * Lookup97: frame_support::dispatch::PerDispatchClass<T>
+     * Lookup96: frame_support::dispatch::PerDispatchClass<T>
      **/
     FrameSupportDispatchPerDispatchClassU32: {
         normal: "u32",
@@ -1034,14 +1034,14 @@ export default {
         mandatory: "u32",
     },
     /**
-     * Lookup98: sp_weights::RuntimeDbWeight
+     * Lookup97: sp_weights::RuntimeDbWeight
      **/
     SpWeightsRuntimeDbWeight: {
         read: "u64",
         write: "u64",
     },
     /**
-     * Lookup99: sp_version::RuntimeVersion
+     * Lookup98: sp_version::RuntimeVersion
      **/
     SpVersionRuntimeVersion: {
         specName: "Text",
@@ -1054,7 +1054,7 @@ export default {
         systemVersion: "u8",
     },
     /**
-     * Lookup104: frame_system::pallet::Error<T>
+     * Lookup103: frame_system::pallet::Error<T>
      **/
     FrameSystemError: {
         _enum: [
@@ -1070,7 +1070,7 @@ export default {
         ],
     },
     /**
-     * Lookup106: cumulus_pallet_parachain_system::unincluded_segment::Ancestor<primitive_types::H256>
+     * Lookup105: cumulus_pallet_parachain_system::unincluded_segment::Ancestor<primitive_types::H256>
      **/
     CumulusPalletParachainSystemUnincludedSegmentAncestor: {
         usedBandwidth: "CumulusPalletParachainSystemUnincludedSegmentUsedBandwidth",
@@ -1078,7 +1078,7 @@ export default {
         consumedGoAheadSignal: "Option<PolkadotPrimitivesV8UpgradeGoAhead>",
     },
     /**
-     * Lookup107: cumulus_pallet_parachain_system::unincluded_segment::UsedBandwidth
+     * Lookup106: cumulus_pallet_parachain_system::unincluded_segment::UsedBandwidth
      **/
     CumulusPalletParachainSystemUnincludedSegmentUsedBandwidth: {
         umpMsgCount: "u32",
@@ -1086,20 +1086,20 @@ export default {
         hrmpOutgoing: "BTreeMap<u32, CumulusPalletParachainSystemUnincludedSegmentHrmpChannelUpdate>",
     },
     /**
-     * Lookup109: cumulus_pallet_parachain_system::unincluded_segment::HrmpChannelUpdate
+     * Lookup108: cumulus_pallet_parachain_system::unincluded_segment::HrmpChannelUpdate
      **/
     CumulusPalletParachainSystemUnincludedSegmentHrmpChannelUpdate: {
         msgCount: "u32",
         totalBytes: "u32",
     },
     /**
-     * Lookup114: polkadot_primitives::v8::UpgradeGoAhead
+     * Lookup113: polkadot_primitives::v8::UpgradeGoAhead
      **/
     PolkadotPrimitivesV8UpgradeGoAhead: {
         _enum: ["Abort", "GoAhead"],
     },
     /**
-     * Lookup115: cumulus_pallet_parachain_system::unincluded_segment::SegmentTracker<primitive_types::H256>
+     * Lookup114: cumulus_pallet_parachain_system::unincluded_segment::SegmentTracker<primitive_types::H256>
      **/
     CumulusPalletParachainSystemUnincludedSegmentSegmentTracker: {
         usedBandwidth: "CumulusPalletParachainSystemUnincludedSegmentUsedBandwidth",
@@ -1107,7 +1107,7 @@ export default {
         consumedGoAheadSignal: "Option<PolkadotPrimitivesV8UpgradeGoAhead>",
     },
     /**
-     * Lookup117: polkadot_primitives::v8::PersistedValidationData<primitive_types::H256, N>
+     * Lookup116: polkadot_primitives::v8::PersistedValidationData<primitive_types::H256, N>
      **/
     PolkadotPrimitivesV8PersistedValidationData: {
         parentHead: "Bytes",
@@ -1116,19 +1116,19 @@ export default {
         maxPovSize: "u32",
     },
     /**
-     * Lookup120: polkadot_primitives::v8::UpgradeRestriction
+     * Lookup119: polkadot_primitives::v8::UpgradeRestriction
      **/
     PolkadotPrimitivesV8UpgradeRestriction: {
         _enum: ["Present"],
     },
     /**
-     * Lookup121: sp_trie::storage_proof::StorageProof
+     * Lookup120: sp_trie::storage_proof::StorageProof
      **/
     SpTrieStorageProof: {
         trieNodes: "BTreeSet<Bytes>",
     },
     /**
-     * Lookup123: cumulus_pallet_parachain_system::relay_state_snapshot::MessagingStateSnapshot
+     * Lookup122: cumulus_pallet_parachain_system::relay_state_snapshot::MessagingStateSnapshot
      **/
     CumulusPalletParachainSystemRelayStateSnapshotMessagingStateSnapshot: {
         dmqMqcHead: "H256",
@@ -1138,14 +1138,14 @@ export default {
         egressChannels: "Vec<(u32,PolkadotPrimitivesV8AbridgedHrmpChannel)>",
     },
     /**
-     * Lookup124: cumulus_pallet_parachain_system::relay_state_snapshot::RelayDispatchQueueRemainingCapacity
+     * Lookup123: cumulus_pallet_parachain_system::relay_state_snapshot::RelayDispatchQueueRemainingCapacity
      **/
     CumulusPalletParachainSystemRelayStateSnapshotRelayDispatchQueueRemainingCapacity: {
         remainingCount: "u32",
         remainingSize: "u32",
     },
     /**
-     * Lookup127: polkadot_primitives::v8::AbridgedHrmpChannel
+     * Lookup126: polkadot_primitives::v8::AbridgedHrmpChannel
      **/
     PolkadotPrimitivesV8AbridgedHrmpChannel: {
         maxCapacity: "u32",
@@ -1156,7 +1156,7 @@ export default {
         mqcHead: "Option<H256>",
     },
     /**
-     * Lookup128: polkadot_primitives::v8::AbridgedHostConfiguration
+     * Lookup127: polkadot_primitives::v8::AbridgedHostConfiguration
      **/
     PolkadotPrimitivesV8AbridgedHostConfiguration: {
         maxCodeSize: "u32",
@@ -1171,21 +1171,21 @@ export default {
         asyncBackingParams: "PolkadotPrimitivesV8AsyncBackingAsyncBackingParams",
     },
     /**
-     * Lookup129: polkadot_primitives::v8::async_backing::AsyncBackingParams
+     * Lookup128: polkadot_primitives::v8::async_backing::AsyncBackingParams
      **/
     PolkadotPrimitivesV8AsyncBackingAsyncBackingParams: {
         maxCandidateDepth: "u32",
         allowedAncestryLen: "u32",
     },
     /**
-     * Lookup135: polkadot_core_primitives::OutboundHrmpMessage<polkadot_parachain_primitives::primitives::Id>
+     * Lookup134: polkadot_core_primitives::OutboundHrmpMessage<polkadot_parachain_primitives::primitives::Id>
      **/
     PolkadotCorePrimitivesOutboundHrmpMessage: {
         recipient: "u32",
         data: "Bytes",
     },
     /**
-     * Lookup137: cumulus_pallet_parachain_system::pallet::Call<T>
+     * Lookup136: cumulus_pallet_parachain_system::pallet::Call<T>
      **/
     CumulusPalletParachainSystemCall: {
         _enum: {
@@ -1198,7 +1198,7 @@ export default {
         },
     },
     /**
-     * Lookup138: cumulus_primitives_parachain_inherent::ParachainInherentData
+     * Lookup137: cumulus_primitives_parachain_inherent::ParachainInherentData
      **/
     CumulusPrimitivesParachainInherentParachainInherentData: {
         validationData: "PolkadotPrimitivesV8PersistedValidationData",
@@ -1207,21 +1207,21 @@ export default {
         horizontalMessages: "BTreeMap<u32, Vec<PolkadotCorePrimitivesInboundHrmpMessage>>",
     },
     /**
-     * Lookup140: polkadot_core_primitives::InboundDownwardMessage<BlockNumber>
+     * Lookup139: polkadot_core_primitives::InboundDownwardMessage<BlockNumber>
      **/
     PolkadotCorePrimitivesInboundDownwardMessage: {
         sentAt: "u32",
         msg: "Bytes",
     },
     /**
-     * Lookup143: polkadot_core_primitives::InboundHrmpMessage<BlockNumber>
+     * Lookup142: polkadot_core_primitives::InboundHrmpMessage<BlockNumber>
      **/
     PolkadotCorePrimitivesInboundHrmpMessage: {
         sentAt: "u32",
         data: "Bytes",
     },
     /**
-     * Lookup146: cumulus_pallet_parachain_system::pallet::Error<T>
+     * Lookup145: cumulus_pallet_parachain_system::pallet::Error<T>
      **/
     CumulusPalletParachainSystemError: {
         _enum: [
@@ -1236,7 +1236,7 @@ export default {
         ],
     },
     /**
-     * Lookup147: pallet_timestamp::pallet::Call<T>
+     * Lookup146: pallet_timestamp::pallet::Call<T>
      **/
     PalletTimestampCall: {
         _enum: {
@@ -1246,11 +1246,11 @@ export default {
         },
     },
     /**
-     * Lookup148: staging_parachain_info::pallet::Call<T>
+     * Lookup147: staging_parachain_info::pallet::Call<T>
      **/
     StagingParachainInfoCall: "Null",
     /**
-     * Lookup149: pallet_sudo::pallet::Call<T>
+     * Lookup148: pallet_sudo::pallet::Call<T>
      **/
     PalletSudoCall: {
         _enum: {
@@ -1275,7 +1275,7 @@ export default {
         },
     },
     /**
-     * Lookup151: pallet_utility::pallet::Call<T>
+     * Lookup150: pallet_utility::pallet::Call<T>
      **/
     PalletUtilityCall: {
         _enum: {
@@ -1303,7 +1303,7 @@ export default {
         },
     },
     /**
-     * Lookup153: flashbox_runtime::OriginCaller
+     * Lookup152: flashbox_runtime::OriginCaller
      **/
     FlashboxRuntimeOriginCaller: {
         _enum: {
@@ -1312,7 +1312,7 @@ export default {
         },
     },
     /**
-     * Lookup154: frame_support::dispatch::RawOrigin<sp_core::crypto::AccountId32>
+     * Lookup153: frame_support::dispatch::RawOrigin<sp_core::crypto::AccountId32>
      **/
     FrameSupportDispatchRawOrigin: {
         _enum: {
@@ -1322,11 +1322,11 @@ export default {
         },
     },
     /**
-     * Lookup155: sp_core::Void
+     * Lookup154: sp_core::Void
      **/
     SpCoreVoid: "Null",
     /**
-     * Lookup156: pallet_proxy::pallet::Call<T>
+     * Lookup155: pallet_proxy::pallet::Call<T>
      **/
     PalletProxyCall: {
         _enum: {
@@ -1379,7 +1379,7 @@ export default {
         },
     },
     /**
-     * Lookup161: pallet_migrations::pallet::Call<T>
+     * Lookup160: pallet_migrations::pallet::Call<T>
      **/
     PalletMigrationsCall: {
         _enum: {
@@ -1398,7 +1398,7 @@ export default {
         },
     },
     /**
-     * Lookup163: pallet_migrations::MigrationCursor<bounded_collections::bounded_vec::BoundedVec<T, S>, BlockNumber>
+     * Lookup162: pallet_migrations::MigrationCursor<bounded_collections::bounded_vec::BoundedVec<T, S>, BlockNumber>
      **/
     PalletMigrationsMigrationCursor: {
         _enum: {
@@ -1407,7 +1407,7 @@ export default {
         },
     },
     /**
-     * Lookup165: pallet_migrations::ActiveCursor<bounded_collections::bounded_vec::BoundedVec<T, S>, BlockNumber>
+     * Lookup164: pallet_migrations::ActiveCursor<bounded_collections::bounded_vec::BoundedVec<T, S>, BlockNumber>
      **/
     PalletMigrationsActiveCursor: {
         index: "u32",
@@ -1415,7 +1415,7 @@ export default {
         startedAt: "u32",
     },
     /**
-     * Lookup167: pallet_migrations::HistoricCleanupSelector<bounded_collections::bounded_vec::BoundedVec<T, S>>
+     * Lookup166: pallet_migrations::HistoricCleanupSelector<bounded_collections::bounded_vec::BoundedVec<T, S>>
      **/
     PalletMigrationsHistoricCleanupSelector: {
         _enum: {
@@ -1427,13 +1427,13 @@ export default {
         },
     },
     /**
-     * Lookup169: pallet_maintenance_mode::pallet::Call<T>
+     * Lookup168: pallet_maintenance_mode::pallet::Call<T>
      **/
     PalletMaintenanceModeCall: {
         _enum: ["enter_maintenance_mode", "resume_normal_operation"],
     },
     /**
-     * Lookup170: pallet_tx_pause::pallet::Call<T>
+     * Lookup169: pallet_tx_pause::pallet::Call<T>
      **/
     PalletTxPauseCall: {
         _enum: {
@@ -1446,7 +1446,7 @@ export default {
         },
     },
     /**
-     * Lookup171: pallet_balances::pallet::Call<T, I>
+     * Lookup170: pallet_balances::pallet::Call<T, I>
      **/
     PalletBalancesCall: {
         _enum: {
@@ -1491,13 +1491,13 @@ export default {
         },
     },
     /**
-     * Lookup174: pallet_balances::types::AdjustmentDirection
+     * Lookup173: pallet_balances::types::AdjustmentDirection
      **/
     PalletBalancesAdjustmentDirection: {
         _enum: ["Increase", "Decrease"],
     },
     /**
-     * Lookup175: pallet_stream_payment::pallet::Call<T>
+     * Lookup174: pallet_stream_payment::pallet::Call<T>
      **/
     PalletStreamPaymentCall: {
         _enum: {
@@ -1534,7 +1534,7 @@ export default {
         },
     },
     /**
-     * Lookup176: pallet_stream_payment::pallet::ChangeKind<Time>
+     * Lookup175: pallet_stream_payment::pallet::ChangeKind<Time>
      **/
     PalletStreamPaymentChangeKind: {
         _enum: {
@@ -1545,7 +1545,7 @@ export default {
         },
     },
     /**
-     * Lookup177: pallet_identity::pallet::Call<T>
+     * Lookup176: pallet_identity::pallet::Call<T>
      **/
     PalletIdentityCall: {
         _enum: {
@@ -1638,7 +1638,7 @@ export default {
         },
     },
     /**
-     * Lookup178: pallet_identity::legacy::IdentityInfo<FieldLimit>
+     * Lookup177: pallet_identity::legacy::IdentityInfo<FieldLimit>
      **/
     PalletIdentityLegacyIdentityInfo: {
         additional: "Vec<(Data,Data)>",
@@ -1652,7 +1652,7 @@ export default {
         twitter: "Data",
     },
     /**
-     * Lookup215: pallet_identity::types::Judgement<Balance>
+     * Lookup214: pallet_identity::types::Judgement<Balance>
      **/
     PalletIdentityJudgement: {
         _enum: {
@@ -1666,7 +1666,7 @@ export default {
         },
     },
     /**
-     * Lookup217: sp_runtime::MultiSignature
+     * Lookup216: sp_runtime::MultiSignature
      **/
     SpRuntimeMultiSignature: {
         _enum: {
@@ -1676,7 +1676,7 @@ export default {
         },
     },
     /**
-     * Lookup220: pallet_multisig::pallet::Call<T>
+     * Lookup219: pallet_multisig::pallet::Call<T>
      **/
     PalletMultisigCall: {
         _enum: {
@@ -1707,7 +1707,7 @@ export default {
         },
     },
     /**
-     * Lookup222: pallet_registrar::pallet::Call<T>
+     * Lookup221: pallet_registrar::pallet::Call<T>
      **/
     PalletRegistrarCall: {
         _enum: {
@@ -1760,7 +1760,7 @@ export default {
         },
     },
     /**
-     * Lookup223: dp_container_chain_genesis_data::ContainerChainGenesisData
+     * Lookup222: dp_container_chain_genesis_data::ContainerChainGenesisData
      **/
     DpContainerChainGenesisDataContainerChainGenesisData: {
         storage: "Vec<DpContainerChainGenesisDataContainerChainGenesisDataItem>",
@@ -1771,21 +1771,21 @@ export default {
         properties: "DpContainerChainGenesisDataProperties",
     },
     /**
-     * Lookup225: dp_container_chain_genesis_data::ContainerChainGenesisDataItem
+     * Lookup224: dp_container_chain_genesis_data::ContainerChainGenesisDataItem
      **/
     DpContainerChainGenesisDataContainerChainGenesisDataItem: {
         key: "Bytes",
         value: "Bytes",
     },
     /**
-     * Lookup228: dp_container_chain_genesis_data::Properties
+     * Lookup227: dp_container_chain_genesis_data::Properties
      **/
     DpContainerChainGenesisDataProperties: {
         tokenMetadata: "DpContainerChainGenesisDataTokenMetadata",
         isEthereum: "bool",
     },
     /**
-     * Lookup229: dp_container_chain_genesis_data::TokenMetadata
+     * Lookup228: dp_container_chain_genesis_data::TokenMetadata
      **/
     DpContainerChainGenesisDataTokenMetadata: {
         tokenSymbol: "Bytes",
@@ -1793,20 +1793,20 @@ export default {
         tokenDecimals: "u32",
     },
     /**
-     * Lookup232: tp_traits::SlotFrequency
+     * Lookup231: tp_traits::SlotFrequency
      **/
     TpTraitsSlotFrequency: {
         min: "u32",
         max: "u32",
     },
     /**
-     * Lookup234: tp_traits::ParathreadParams
+     * Lookup233: tp_traits::ParathreadParams
      **/
     TpTraitsParathreadParams: {
         slotFrequency: "TpTraitsSlotFrequency",
     },
     /**
-     * Lookup235: pallet_configuration::pallet::Call<T>
+     * Lookup234: pallet_configuration::pallet::Call<T>
      **/
     PalletConfigurationCall: {
         _enum: {
@@ -1912,11 +1912,11 @@ export default {
         },
     },
     /**
-     * Lookup238: pallet_collator_assignment::pallet::Call<T>
+     * Lookup237: pallet_collator_assignment::pallet::Call<T>
      **/
     PalletCollatorAssignmentCall: "Null",
     /**
-     * Lookup239: pallet_author_noting::pallet::Call<T>
+     * Lookup238: pallet_author_noting::pallet::Call<T>
      **/
     PalletAuthorNotingCall: {
         _enum: {
@@ -1935,17 +1935,17 @@ export default {
         },
     },
     /**
-     * Lookup240: tp_author_noting_inherent::OwnParachainInherentData
+     * Lookup239: tp_author_noting_inherent::OwnParachainInherentData
      **/
     TpAuthorNotingInherentOwnParachainInherentData: {
         relayStorageProof: "SpTrieStorageProof",
     },
     /**
-     * Lookup241: pallet_authority_assignment::pallet::Call<T>
+     * Lookup240: pallet_authority_assignment::pallet::Call<T>
      **/
     PalletAuthorityAssignmentCall: "Null",
     /**
-     * Lookup242: pallet_services_payment::pallet::Call<T>
+     * Lookup241: pallet_services_payment::pallet::Call<T>
      **/
     PalletServicesPaymentCall: {
         _enum: {
@@ -1971,7 +1971,7 @@ export default {
             },
             set_max_core_price: {
                 paraId: "u32",
-                maxCorePrice: "Option<u128>",
+                maxCorePrice: "u128",
             },
             set_max_tip: {
                 paraId: "u32",
