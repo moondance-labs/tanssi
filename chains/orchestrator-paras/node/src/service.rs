@@ -293,6 +293,7 @@ async fn start_node_impl(
                 command_sink: None,
                 xcm_senders: None,
                 randomness_sender: None,
+                container_chain_exclusion_sender: None,
             };
 
             crate::rpc::create_full(deps).map_err(Into::into)
@@ -912,6 +913,7 @@ pub fn start_dev_node(
     let mut command_sink = None;
     let mut xcm_senders = None;
     let mut randomness_sender = None;
+    let mut container_chains_exclusion_sender = None;
     if parachain_config.role.is_authority() {
         let client = node_builder.client.clone();
         let (downward_xcm_sender, downward_xcm_receiver) = flume::bounded::<Vec<u8>>(100);
@@ -919,9 +921,13 @@ pub fn start_dev_node(
         // Create channels for mocked parachain candidates.
         let (mock_randomness_sender, mock_randomness_receiver) =
             flume::bounded::<(bool, Option<[u8; 32]>)>(100);
+        // Create channels for mocked exclusion of parachains from producing blocks
+        let (mock_container_chains_exclusion_sender, mock_container_chains_exclusion_receiver) =
+            flume::bounded::<Vec<ParaId>>(100);
 
         xcm_senders = Some((downward_xcm_sender, hrmp_xcm_sender));
         randomness_sender = Some(mock_randomness_sender);
+        container_chains_exclusion_sender = Some(mock_container_chains_exclusion_sender);
 
         command_sink = node_builder.install_manual_seal(ManualSealConfiguration {
             block_import,
@@ -1098,6 +1104,7 @@ pub fn start_dev_node(
                 command_sink: command_sink.clone(),
                 xcm_senders: xcm_senders.clone(),
                 randomness_sender: randomness_sender.clone(),
+                container_chain_exclusion_sender: container_chains_exclusion_sender.clone(),
             };
 
             crate::rpc::create_full(deps).map_err(Into::into)
