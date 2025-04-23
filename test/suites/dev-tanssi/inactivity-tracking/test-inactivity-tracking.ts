@@ -83,9 +83,6 @@ describeSuite({
                 const maxInactiveSessions = polkadotJs.consts.inactivityTracking.maxInactiveSessions.toNumber();
                 const daveAccountId = polkadotJs.createType("AccountId", daveAccountKey.publicKey);
                 const ferdieAccountId = polkadotJs.createType("AccountId", ferdieAccountKey.publicKey);
-                await context.createBlock(
-                    await polkadotJs.tx.configuration.setMaxOrchestratorCollators(1).signAsync(alice)
-                );
 
                 // Registering 2 new collators so they appear as collators for chain 2001
                 await jumpSessions(context, 4);
