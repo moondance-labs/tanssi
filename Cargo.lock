@@ -8302,6 +8302,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b8dd856d451cc0da70e2ef2ce95a18e39a93b7558bedf10201ad28503f918568"
 
 [[package]]
+name = "manual-container-chains-exclusion-rpc"
+version = "0.1.0"
+dependencies = [
+ "cumulus-primitives-core",
+ "flume 0.10.14",
+ "jsonrpsee 0.24.7",
+]
+
+[[package]]
 name = "manual-randomness-rpc"
 version = "0.1.0"
 dependencies = [
@@ -19117,6 +19126,7 @@ dependencies = [
  "hex-literal 0.3.4",
  "jsonrpsee 0.24.7",
  "log",
+ "manual-container-chains-exclusion-rpc",
  "manual-randomness-rpc",
  "manual-xcm-rpc",
  "nimbus-consensus",

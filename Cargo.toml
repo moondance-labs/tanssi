@@ -102,6 +102,7 @@ dancelight-runtime-constants = { path = "chains/orchestrator-relays/runtime/danc
 tanssi-relay-cli = { path = "chains/orchestrator-relays/client/cli" }
 tanssi-relay-service = { path = "chains/orchestrator-relays/node/tanssi-relay-service" }
 
+manual-container-chains-exclusion-rpc = { path = "client/manual-container-chains-exclusion" }
 manual-randomness-rpc = { path = "client/manual-randomness" }
 manual-xcm-rpc = { path = "client/manual-xcm" }
 node-common = { path = "client/node-common" }
