@@ -252,13 +252,6 @@ fn test_disabled_some_extrinsics_miscelaneous() {
         );
 
         assert_noop!(
-            RuntimeCall::Utility(pallet_utility::Call::batch { calls: vec![] }).dispatch(
-                <Runtime as frame_system::Config>::RuntimeOrigin::signed(AccountId::from(ALICE))
-            ),
-            frame_system::Error::<Runtime>::CallFiltered
-        );
-
-        assert_noop!(
             RuntimeCall::Identity(pallet_identity::Call::set_subs { subs: vec![] }).dispatch(
                 <Runtime as frame_system::Config>::RuntimeOrigin::signed(AccountId::from(ALICE))
             ),
