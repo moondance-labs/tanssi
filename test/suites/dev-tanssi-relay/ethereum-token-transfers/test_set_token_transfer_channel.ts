@@ -2,6 +2,7 @@ import "@tanssi/api-augment";
 
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
+import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_ETH_TOKEN_TRANSFERS, checkCallIsFiltered } from "helpers";
 
 describeSuite({
     id: "DTR1701",
@@ -10,9 +11,16 @@ describeSuite({
 
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
+        let isStarlight: boolean;
+        let specVersion: number;
+        let shouldSkipStarlighETT: boolean;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
+            const runtimeName = polkadotJs.runtimeVersion.specName.toString();
+            isStarlight = runtimeName === "starlight";
+            specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
+            shouldSkipStarlighETT = isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_ETH_TOKEN_TRANSFERS.includes(specVersion);
         });
 
         it({
@@ -31,16 +39,23 @@ describeSuite({
                 const newAgentId = "0x0000000000000000000000000000000000000000000000000000000000000005";
                 const newParaId = 500;
 
-                const tx = await polkadotJs.tx.sudo
-                    .sudo(
-                        polkadotJs.tx.ethereumTokenTransfers.setTokenTransferChannel(
-                            newChannelId,
-                            newAgentId,
-                            newParaId
-                        )
-                    )
+                const tx = polkadotJs.tx.ethereumTokenTransfers.setTokenTransferChannel(
+                    newChannelId,
+                    newAgentId,
+                    newParaId
+                );
+
+                if (shouldSkipStarlighETT) {
+                    console.log(`Skipping E01 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(context, polkadotJs, await tx.signAsync(alice));
+                    return;
+                }
+
+                const sudoSignedTx = await polkadotJs.tx.sudo
+                    .sudo(tx)
                     .signAsync(alice);
-                await context.createBlock([tx], { allowFailures: false });
+                
+                await context.createBlock([sudoSignedTx], { allowFailures: false });
 
                 const currentChannelInfoAfter = (
                     await polkadotJs.query.ethereumTokenTransfers.currentChannelInfo()
