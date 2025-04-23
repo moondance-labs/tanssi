@@ -98,6 +98,8 @@ mod mocked_relay_keys;
 // We use this to detect whether randomness is activated
 const RANDOMNESS_ACTIVATED_AUX_KEY: &[u8] = b"__DEV_RANDOMNESS_ACTIVATED";
 
+const CONTAINER_CHAINS_EXCLUSION_AUX_KEY: &[u8] = b"__DEV_CONTAINER_CHAINS_EXCLUSION";
+
 type FullBackend = TFullBackend<Block>;
 
 pub struct NodeConfig;
@@ -947,7 +949,7 @@ pub fn start_dev_node(
                     .expect("Header lookup should succeed")
                     .expect("Header passed in as parent should be present in backend.");
 
-                let para_ids = client
+                let mut para_ids: Vec<ParaId> = client
                     .runtime_api()
                     .registered_paras(block)
                     .expect("registered_paras runtime API should exist")
@@ -1016,6 +1018,21 @@ pub fn start_dev_node(
                     .expect("Should be able to query aux storage; qed").unwrap_or((false, Option::<[u8; 32]>::None).encode());
                 let (mock_additional_randomness, mock_randomness_seed): (bool, Option<[u8; 32]>) = Decode::decode(&mut value.as_slice()).expect("Boolean non-decodable");
 
+                let container_chains_exclusion_messages: Vec<Vec<ParaId>> = mock_container_chains_exclusion_receiver.drain().collect();
+                // If there is a new set of excluded container chains, we update it
+                if let Some(mock_excluded_container_chains) = container_chains_exclusion_messages.last() {
+                    client
+                        .insert_aux(
+                            &[(CONTAINER_CHAINS_EXCLUSION_AUX_KEY, mock_excluded_container_chains.encode().as_slice())],
+                            &[],
+                        )
+                        .expect("Should be able to write to aux storage; qed");
+                }
+                let new_excluded_container_chains_value = client
+                    .get_aux(CONTAINER_CHAINS_EXCLUSION_AUX_KEY)
+                    .expect("Should be able to query aux storage; qed").unwrap_or(Vec::<ParaId>::new().encode());
+                let mock_excluded_container_chains: Vec<ParaId> = Decode::decode(&mut new_excluded_container_chains_value.as_slice()).expect("Vector non-decodable");
+                para_ids.retain(|x| !mock_excluded_container_chains.contains(x));
                 let client_set_aside_for_cidp = client.clone();
                 let client_for_xcm = client.clone();
                 async move {
