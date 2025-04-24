@@ -440,7 +440,8 @@ impl XCMNotifier<Runtime> for XCMNotifierImpl {
 }
 
 parameter_types! {
-    pub const CoreBuyingXCMQueryTtl: BlockNumber = 100;
+    // TODO: used to be 100 but TS tests failed if we set it to 100, previously it used AdditionalTtlForInflightOrders with value 5
+    pub const CoreBuyingXCMQueryTtl: BlockNumber = 5;
     pub const AdditionalTtlForInflightOrders: BlockNumber = 5;
     pub const PendingBlockTtl: BlockNumber = 10;
     pub BuyCoreSlotDrift: Slot = Slot::from(5u64);
