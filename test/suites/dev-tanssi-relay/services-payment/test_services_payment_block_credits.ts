@@ -25,7 +25,8 @@ describeSuite({
             const runtimeName = polkadotJs.runtimeVersion.specName.toString();
             isStarlight = runtimeName === "starlight";
             specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
-            shouldSkipStarlightSP = isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SERVICES_PAYMENT.includes(specVersion);
+            shouldSkipStarlightSP =
+                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SERVICES_PAYMENT.includes(specVersion);
         });
         it({
             id: "E01",
@@ -35,7 +36,11 @@ describeSuite({
 
                 if (shouldSkipStarlightSP) {
                     console.log(`Skipping E01 test for Starlight version ${specVersion}`);
-                    await checkCallIsFiltered(context, polkadotJs, await polkadotJs.tx.servicesPayment.setCollatorAssignmentCredits(2000, 1000n).signAsync(alice)); 
+                    await checkCallIsFiltered(
+                        context,
+                        polkadotJs,
+                        await polkadotJs.tx.servicesPayment.setCollatorAssignmentCredits(2000, 1000n).signAsync(alice)
+                    );
                     return;
                 }
 
@@ -78,7 +83,6 @@ describeSuite({
             id: "E02",
             title: "Creating a container chain block costs credits",
             test: async () => {
-
                 if (shouldSkipStarlightSP) {
                     console.log(`Skipping E02 test for Starlight version ${specVersion}`);
                     return;
@@ -169,10 +173,13 @@ describeSuite({
             id: "E04",
             title: "Root can remove credits",
             test: async () => {
-
                 if (shouldSkipStarlightSP) {
                     console.log(`Skipping E04 test for Starlight version ${specVersion}`);
-                    await checkCallIsFiltered(context, polkadotJs, await polkadotJs.tx.servicesPayment.setCollatorAssignmentCredits(2000, 1000n).signAsync(alice)); 
+                    await checkCallIsFiltered(
+                        context,
+                        polkadotJs,
+                        await polkadotJs.tx.servicesPayment.setCollatorAssignmentCredits(2000, 1000n).signAsync(alice)
+                    );
                     return;
                 }
 
@@ -249,7 +256,11 @@ describeSuite({
 
                 if (shouldSkipStarlightSP) {
                     console.log(`Skipping E05 test for Starlight version ${specVersion}`);
-                    await checkCallIsFiltered(context, polkadotJs, await polkadotJs.tx.servicesPayment.purchaseCredits(paraId, 1000n).signAsync(alice));  
+                    await checkCallIsFiltered(
+                        context,
+                        polkadotJs,
+                        await polkadotJs.tx.servicesPayment.purchaseCredits(paraId, 1000n).signAsync(alice)
+                    );
                     return;
                 }
 

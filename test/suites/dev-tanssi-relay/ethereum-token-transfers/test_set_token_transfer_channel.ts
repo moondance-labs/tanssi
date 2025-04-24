@@ -20,7 +20,8 @@ describeSuite({
             const runtimeName = polkadotJs.runtimeVersion.specName.toString();
             isStarlight = runtimeName === "starlight";
             specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
-            shouldSkipStarlighETT = isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_ETH_TOKEN_TRANSFERS.includes(specVersion);
+            shouldSkipStarlighETT =
+                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_ETH_TOKEN_TRANSFERS.includes(specVersion);
         });
 
         it({
@@ -51,10 +52,8 @@ describeSuite({
                     return;
                 }
 
-                const sudoSignedTx = await polkadotJs.tx.sudo
-                    .sudo(tx)
-                    .signAsync(alice);
-                
+                const sudoSignedTx = await polkadotJs.tx.sudo.sudo(tx).signAsync(alice);
+
                 await context.createBlock([sudoSignedTx], { allowFailures: false });
 
                 const currentChannelInfoAfter = (

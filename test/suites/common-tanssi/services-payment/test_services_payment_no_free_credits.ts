@@ -29,10 +29,11 @@ describeSuite({
             collatorAssignmentAlias = runtimeName.includes("light")
                 ? polkadotJs.query.tanssiCollatorAssignment
                 : polkadotJs.query.collatorAssignment;
-            
+
             isStarlight = runtimeName === "starlight";
             specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
-            shouldSkipStarlightSP = isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SERVICES_PAYMENT.includes(specVersion);
+            shouldSkipStarlightSP =
+                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SERVICES_PAYMENT.includes(specVersion);
         });
         it({
             id: "E01",

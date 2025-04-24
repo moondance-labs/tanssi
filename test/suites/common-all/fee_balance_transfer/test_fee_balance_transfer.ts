@@ -4,7 +4,7 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type KeyringPair, extractWeight, filterAndApply } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 import { extractFeeAuthor, filterRewardFromOrchestrator } from "utils";
-import {STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_BALANCES, checkCallIsFiltered} from "helpers";
+import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_BALANCES, checkCallIsFiltered } from "helpers";
 import { aw } from "vitest/dist/chunks/reporters.D7Jzd9GS.js";
 
 describeSuite({
@@ -45,7 +45,7 @@ describeSuite({
                 if (shouldSkipBalances) {
                     console.log(`Skipping E01 test for Starlight version ${specVersion}`);
                     await checkCallIsFiltered(context, polkadotJs, await tx.signAsync(alice));
-                    return
+                    return;
                 }
 
                 const balanceBefore = (await polkadotJs.query.system.account(alice.address)).data.free.toBigInt();
@@ -138,9 +138,9 @@ describeSuite({
                 if (shouldSkipBalances) {
                     console.log(`Skipping E02 test for Starlight version ${specVersion}`);
                     await checkCallIsFiltered(context, polkadotJs, await tx.signAsync(alice));
-                    return
+                    return;
                 }
-                
+
                 const balanceBefore = (await polkadotJs.query.system.account(alice.address)).data.free.toBigInt();
                 const signedTx = await tx.signAsync(alice);
                 const feeDetails = await polkadotJs.call.transactionPaymentApi.queryFeeDetails(
@@ -204,7 +204,7 @@ describeSuite({
                 if (shouldSkipBalances) {
                     console.log(`Skipping E03 test for Starlight version ${specVersion}`);
                     await checkCallIsFiltered(context, polkadotJs, await tx.signAsync(alice));
-                    return
+                    return;
                 }
                 const fillAmount = 600_000_000; // equal to 60% Perbill
 

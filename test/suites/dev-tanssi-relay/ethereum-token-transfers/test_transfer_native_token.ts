@@ -29,7 +29,8 @@ describeSuite({
             const runtimeName = polkadotJs.runtimeVersion.specName.toString();
             isStarlight = runtimeName === "starlight";
             specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
-            shouldSkipStarlightETT = isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_ETH_TOKEN_TRANSFERS.includes(specVersion);
+            shouldSkipStarlightETT =
+                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_ETH_TOKEN_TRANSFERS.includes(specVersion);
         });
 
         it({
@@ -66,16 +67,22 @@ describeSuite({
                     await checkCallIsFiltered(context, polkadotJs, await tx1.signAsync(alice));
 
                     // EthereumSystem call should be also filtered
-                    await checkCallIsFiltered(context, polkadotJs, await polkadotJs.tx.ethereumSystem.registerToken(versionedLocation, metadata).signAsync(alice)); 
+                    await checkCallIsFiltered(
+                        context,
+                        polkadotJs,
+                        await polkadotJs.tx.ethereumSystem.registerToken(versionedLocation, metadata).signAsync(alice)
+                    );
 
                     // Token transfer call should be filtered as well
-                    await checkCallIsFiltered(context, polkadotJs, await polkadotJs.tx.ethereumTokenTransfers.transferNativeToken(1000, "0x").signAsync(alice));
+                    await checkCallIsFiltered(
+                        context,
+                        polkadotJs,
+                        await polkadotJs.tx.ethereumTokenTransfers.transferNativeToken(1000, "0x").signAsync(alice)
+                    );
                     return;
                 }
 
-                const sudoSignedTx1 = await polkadotJs.tx.sudo
-                    .sudo(tx1)
-                    .signAsync(alice);
+                const sudoSignedTx1 = await polkadotJs.tx.sudo.sudo(tx1).signAsync(alice);
                 await context.createBlock([sudoSignedTx1], { allowFailures: false });
 
                 // Register token on EthereumSystem.
@@ -135,7 +142,11 @@ describeSuite({
                     console.log(`Skipping E02 test for Starlight version ${specVersion}`);
 
                     // Check that inboundQueue.submit is filtered
-                    await checkCallIsFiltered(context, polkadotJs, await polkadotJs.tx.ethereumInboundQueue.submit("0x").signAsync(alice));
+                    await checkCallIsFiltered(
+                        context,
+                        polkadotJs,
+                        await polkadotJs.tx.ethereumInboundQueue.submit("0x").signAsync(alice)
+                    );
                     return;
                 }
                 const transferAmount = BigInt(10_000);

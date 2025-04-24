@@ -32,7 +32,8 @@ describeSuite({
 
             isStarlight = runtimeName === "starlight";
             specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
-            shouldSkipStarlightSP = isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SERVICES_PAYMENT.includes(specVersion);
+            shouldSkipStarlightSP =
+                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SERVICES_PAYMENT.includes(specVersion);
 
             refundAddress = generateKeyringPair("sr25519");
             const tx2001OneSession = polkadotJs.tx.servicesPayment.setBlockProductionCredits(paraId2001, 0);
@@ -65,8 +66,11 @@ describeSuite({
             test: async () => {
                 // We deregister the chain
 
-                const setRefundAddress = polkadotJs.tx.servicesPayment.setRefundAddress(paraId2001, refundAddress.address);
-                
+                const setRefundAddress = polkadotJs.tx.servicesPayment.setRefundAddress(
+                    paraId2001,
+                    refundAddress.address
+                );
+
                 if (shouldSkipStarlightSP) {
                     console.log(`Skipping E01 test for Starlight version ${specVersion}`);
                     await checkCallIsFiltered(context, polkadotJs, await setRefundAddress.signAsync(alice));

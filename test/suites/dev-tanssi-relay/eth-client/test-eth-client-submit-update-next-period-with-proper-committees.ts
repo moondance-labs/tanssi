@@ -57,14 +57,16 @@ describeSuite({
                     readFileSync("tmp/ethereum_client_test/sync-committee-update.json").toString()
                 );
 
-                const signedTx = await polkadotJs.tx.ethereumBeaconClient.submit(thisPeriodNextSyncCommitteeUpdate).signAsync(alice);
+                const signedTx = await polkadotJs.tx.ethereumBeaconClient
+                    .submit(thisPeriodNextSyncCommitteeUpdate)
+                    .signAsync(alice);
 
                 if (shouldSkipStarlighEC) {
                     console.log(`Skipping E01 test for Starlight version ${specVersion}`);
                     await checkCallIsFiltered(context, polkadotJs, signedTx);
                     return;
                 }
-                
+
                 await context.createBlock([signedTx]);
 
                 // Now the next sync committee should have been populated

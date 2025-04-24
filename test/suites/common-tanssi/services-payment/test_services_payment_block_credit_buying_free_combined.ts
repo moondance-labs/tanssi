@@ -31,7 +31,8 @@ describeSuite({
 
             isStarlight = runtimeName === "starlight";
             specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
-            shouldSkipStarlightSP = isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SERVICES_PAYMENT.includes(specVersion);
+            shouldSkipStarlightSP =
+                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SERVICES_PAYMENT.includes(specVersion);
         });
 
         it({
@@ -119,7 +120,7 @@ describeSuite({
                     await checkCallIsFiltered(context, polkadotJs, await tx.signAsync(alice));
                     return;
                 }
-                
+
                 await context.createBlock([await tx.signAsync(alice)]);
 
                 // Check that after 2 sessions, container chain 2000 has collators and is producing blocks

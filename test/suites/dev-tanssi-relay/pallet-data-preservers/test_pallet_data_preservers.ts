@@ -32,7 +32,8 @@ describeSuite({
             const runtimeName = polkadotJs.runtimeVersion.specName.toString();
             isStarlight = runtimeName === "starlight";
             specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
-            shouldSkipStarlightDP = isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_DATA_PRESERVERS.includes(specVersion);
+            shouldSkipStarlightDP =
+                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_DATA_PRESERVERS.includes(specVersion);
         });
 
         it({
@@ -335,10 +336,16 @@ describeSuite({
 
                 if (shouldSkipStarlightDP) {
                     console.log(`Skipping E07 test for Starlight version ${specVersion}`);
-                    await checkCallIsFiltered(context, polkadotJs, await polkadotJs.tx.dataPreservers.startAssignment(profileId, paraId, "Free").signAsync(sudo_alice));  
+                    await checkCallIsFiltered(
+                        context,
+                        polkadotJs,
+                        await polkadotJs.tx.dataPreservers
+                            .startAssignment(profileId, paraId, "Free")
+                            .signAsync(sudo_alice)
+                    );
                     return;
                 }
-                
+
                 await context.createBlock([await polkadotJs.tx.registrar.reserve().signAsync(sudo_alice)]);
                 const registerTx = polkadotJs.tx.containerRegistrar.register(
                     paraId,
@@ -385,7 +392,13 @@ describeSuite({
                 const paraId = 2003;
                 if (shouldSkipStarlightDP) {
                     console.log(`Skipping E08 test for Starlight version ${specVersion}`);
-                    await checkCallIsFiltered(context, polkadotJs, await polkadotJs.tx.dataPreservers.forceStartAssignment(profileId, paraId, "Free").signAsync(sudo_alice));  
+                    await checkCallIsFiltered(
+                        context,
+                        polkadotJs,
+                        await polkadotJs.tx.dataPreservers
+                            .forceStartAssignment(profileId, paraId, "Free")
+                            .signAsync(sudo_alice)
+                    );
                     return;
                 }
 
@@ -436,7 +449,11 @@ describeSuite({
 
                 if (shouldSkipStarlightDP) {
                     console.log(`Skipping E09 test for Starlight version ${specVersion}`);
-                    await checkCallIsFiltered(context, polkadotJs, await polkadotJs.tx.dataPreservers.stopAssignment(profileId, paraId).signAsync(sudo_alice));  
+                    await checkCallIsFiltered(
+                        context,
+                        polkadotJs,
+                        await polkadotJs.tx.dataPreservers.stopAssignment(profileId, paraId).signAsync(sudo_alice)
+                    );
                     return;
                 }
 
@@ -489,7 +506,11 @@ describeSuite({
                 const paraId = 2005;
                 if (shouldSkipStarlightDP) {
                     console.log(`Skipping E10 test for Starlight version ${specVersion}`);
-                    await checkCallIsFiltered(context, polkadotJs, await polkadotJs.tx.dataPreservers.stopAssignment(profileId, paraId).signAsync(sudo_alice));  
+                    await checkCallIsFiltered(
+                        context,
+                        polkadotJs,
+                        await polkadotJs.tx.dataPreservers.stopAssignment(profileId, paraId).signAsync(sudo_alice)
+                    );
                     return;
                 }
                 await context.createBlock([await polkadotJs.tx.registrar.reserve().signAsync(sudo_alice)]);
@@ -541,7 +562,11 @@ describeSuite({
 
                 if (shouldSkipStarlightDP) {
                     console.log(`Skipping E11 test for Starlight version ${specVersion}`);
-                    await checkCallIsFiltered(context, polkadotJs, await polkadotJs.tx.dataPreservers.stopAssignment(profileId, paraId).signAsync(sudo_alice));  
+                    await checkCallIsFiltered(
+                        context,
+                        polkadotJs,
+                        await polkadotJs.tx.dataPreservers.stopAssignment(profileId, paraId).signAsync(sudo_alice)
+                    );
                     return;
                 }
 
