@@ -871,7 +871,7 @@ parameter_types! {
     pub SuicideQuickClearLimit: u32 = 0;
     pub GasLimitPovSizeRatio: u32 = 16;
     pub GasLimitStorageGrowthRatio: u64 =
-        BlockGasLimit::get().min(u64::MAX.into()).low_u64().saturating_div(BLOCK_STORAGE_LIMIT);
+        BlockGasLimit::get().min(u64::MAX.into()).low_u64() / BLOCK_STORAGE_LIMIT;
 }
 
 impl_on_charge_evm_transaction!();
