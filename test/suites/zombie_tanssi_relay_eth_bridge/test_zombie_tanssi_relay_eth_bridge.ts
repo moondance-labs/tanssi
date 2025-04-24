@@ -135,9 +135,6 @@ describeSuite({
             console.log("Waiting some time for ethereum node to produce block, before we deploy contract");
             await sleep(20000);
 
-            console.log(process.env)
-            console.log(operatorAccount.addressRaw)
-
             // We override the operator 3 key because it goes to a slashing vault
             await execCommand("./scripts/bridge/deploy-ethereum-contracts.sh", {
                 env: {
@@ -159,10 +156,7 @@ describeSuite({
             console.log("Symbiotic middleware address is: ", ethInfo.symbiotic_info.contracts.MiddlewareProxy.address);
             const middlewareCallerDetails = ethInfo.symbiotic_info.contracts.Middleware;
             const middlewareReaderDetails = ethInfo.symbiotic_info.contracts.OBaseMiddlewareReader;
-            const combinedMiddlewareAbi = [
-                ...middlewareCallerDetails.abi,
-                ...middlewareReaderDetails.abi,
-            ];
+            const combinedMiddlewareAbi = [...middlewareCallerDetails.abi, ...middlewareReaderDetails.abi];
             middlewareAddress = ethInfo.symbiotic_info.contracts.MiddlewareProxy.address;
 
             console.log(
@@ -178,7 +172,6 @@ describeSuite({
                 alice
             );
             console.log("Set gateway address transaction hash:", setGatewayAddressTxHash.txHash.toHex());
-
 
             customHttpProvider = new ethers.WebSocketProvider(ethUrl);
             ethereumWallet = new ethers.Wallet(ethInfo.ethereum_key, customHttpProvider);
