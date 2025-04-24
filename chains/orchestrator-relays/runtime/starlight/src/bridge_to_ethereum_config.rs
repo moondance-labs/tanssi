@@ -41,7 +41,7 @@ use {
     },
     pallet_xcm::EnsureXcm,
     parity_scale_codec::DecodeAll,
-    snowbridge_beacon_primitives::{Fork, ForkVersions},
+    snowbridge_beacon_primitives::ForkVersions,
     snowbridge_core::{gwei, inbound::Message, meth, Channel, PricingParameters, Rewards},
     snowbridge_pallet_inbound_queue::RewardProcessor,
     snowbridge_pallet_outbound_queue::OnNewCommitment,
@@ -98,88 +98,8 @@ impl snowbridge_pallet_outbound_queue::Config for Runtime {
     type OnNewCommitment = CommitmentRecorder;
 }
 
-// Very stupid, but benchmarks are written assuming a fork eopch,
-// and test vectors assuming another one
-// We need allow dead code here because for regular builds this variable is not used
-// This variable is only used in test, fast-runtime or runtime-benchmarks
-#[cfg(not(feature = "runtime-benchmarks"))]
-#[allow(dead_code)]
-pub const ELECTRA_TEST_FORK_EPOCH: u64 = 0;
-#[cfg(feature = "runtime-benchmarks")]
-pub const ELECTRA_TEST_FORK_EPOCH: u64 = 80000000000;
-
-// For tests, benchmarks and fast-runtime configurations we use the mocked fork versions
-#[cfg(any(
-    feature = "std",
-    feature = "fast-runtime",
-    feature = "runtime-benchmarks",
-    test
-))]
 parameter_types! {
-    pub const ChainForkVersions: ForkVersions = ForkVersions {
-        genesis: Fork {
-            version: [0, 0, 0, 0], // 0x00000000
-            epoch: 0,
-        },
-        altair: Fork {
-            version: [1, 0, 0, 0], // 0x01000000
-            epoch: 0,
-        },
-        bellatrix: Fork {
-            version: [2, 0, 0, 0], // 0x02000000
-            epoch: 0,
-        },
-        capella: Fork {
-            version: [3, 0, 0, 0], // 0x03000000
-            epoch: 0,
-        },
-        deneb: Fork {
-            version: [4, 0, 0, 0], // 0x04000000
-            epoch: 0,
-        },
-        electra: Fork {
-            version: [5, 0, 0, 0], // 0x05000000
-            epoch:
-            ELECTRA_TEST_FORK_EPOCH,
-        }
-    };
-}
-
-// Mainnet: https://github.com/eth-clients/mainnet
-// Fork versions: https://github.com/eth-clients/mainnet/blob/main/metadata/config.yaml
-#[cfg(not(any(
-    feature = "std",
-    feature = "fast-runtime",
-    feature = "runtime-benchmarks",
-    test
-)))]
-parameter_types! {
-    pub const ChainForkVersions: ForkVersions = ForkVersions {
-        genesis: Fork {
-            version: hex_literal::hex!("0x00000000"), // 0x90000069
-            epoch: 0,
-        },
-        altair: Fork {
-            version: hex_literal::hex!("0x01000000"), // 0x90000070
-            epoch: 74240,
-        },
-        bellatrix: Fork {
-            version: hex_literal::hex!("0x02000000"), // 0x90000071
-            epoch: 144896,
-        },
-        capella: Fork {
-            version: hex_literal::hex!("0x03000000"), // 0x90000072
-            epoch: 194048,
-        },
-        deneb: Fork {
-            version: hex_literal::hex!("0x04000000"), // 0x90000073
-            epoch: 269568,
-        },
-        electra: Fork {
-            version: hex_literal::hex!("0x05000000"), // 0x90000074
-            epoch: 364032,
-        },
-    };
+    pub const ChainForkVersions: ForkVersions = crate::eth_chain_config::fork_versions();
 }
 
 impl snowbridge_pallet_ethereum_client::Config for Runtime {

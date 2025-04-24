@@ -156,6 +156,8 @@ pub mod xcm_config;
 
 pub mod bridge_to_ethereum_config;
 
+pub mod eth_chain_config;
+
 // Weights
 mod weights;
 
@@ -324,10 +326,7 @@ impl Contains<RuntimeCall> for IsDemocracyExtrinsics {
 pub struct IsMiscellaneousExtrinsics;
 impl Contains<RuntimeCall> for IsMiscellaneousExtrinsics {
     fn contains(c: &RuntimeCall) -> bool {
-        matches!(
-            c,
-            RuntimeCall::Proxy(_) | RuntimeCall::Utility(_) | RuntimeCall::Identity(_)
-        )
+        matches!(c, RuntimeCall::Proxy(_) | RuntimeCall::Identity(_))
     }
 }
 

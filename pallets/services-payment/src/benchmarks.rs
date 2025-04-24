@@ -157,7 +157,7 @@ mod benchmarks {
         assert_eq!(crate::MaxCorePrice::<T>::get(para_id), None);
 
         #[extrinsic_call]
-        Pallet::<T>::set_max_core_price(origin as T::RuntimeOrigin, para_id, Some(max_price));
+        Pallet::<T>::set_max_core_price(origin as T::RuntimeOrigin, para_id, max_price);
 
         // After call: some
         assert_eq!(crate::MaxCorePrice::<T>::get(para_id), Some(max_price));
