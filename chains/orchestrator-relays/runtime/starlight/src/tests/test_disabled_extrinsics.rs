@@ -171,7 +171,7 @@ fn test_disabled_some_extrinsics_democracy() {
         run_to_block(2);
 
         assert_noop!(
-            RuntimeCall::Treasury(pallet_treasury::Call::payout { index: 0u32.into() }).dispatch(
+            RuntimeCall::Treasury(pallet_treasury::Call::payout { index: 0u32 }).dispatch(
                 <Runtime as frame_system::Config>::RuntimeOrigin::signed(AccountId::from(ALICE))
             ),
             frame_system::Error::<Runtime>::CallFiltered
@@ -179,7 +179,7 @@ fn test_disabled_some_extrinsics_democracy() {
 
         assert_noop!(
             RuntimeCall::ConvictionVoting(pallet_conviction_voting::Call::undelegate {
-                class: 0u16.into(),
+                class: 0u16,
             })
             .dispatch(<Runtime as frame_system::Config>::RuntimeOrigin::signed(
                 AccountId::from(ALICE)
@@ -188,12 +188,10 @@ fn test_disabled_some_extrinsics_democracy() {
         );
 
         assert_noop!(
-            RuntimeCall::Referenda(pallet_referenda::Call::place_decision_deposit {
-                index: 0u32.into(),
-            })
-            .dispatch(<Runtime as frame_system::Config>::RuntimeOrigin::signed(
-                AccountId::from(ALICE)
-            )),
+            RuntimeCall::Referenda(pallet_referenda::Call::place_decision_deposit { index: 0u32 })
+                .dispatch(<Runtime as frame_system::Config>::RuntimeOrigin::signed(
+                    AccountId::from(ALICE)
+                )),
             frame_system::Error::<Runtime>::CallFiltered
         );
 
@@ -212,7 +210,7 @@ fn test_disabled_some_extrinsics_democracy() {
                 Runtime,
                 pallet_referenda::Instance2,
             >::cancel {
-                index: 0u32.into()
+                index: 0u32
             })
             .dispatch(<Runtime as frame_system::Config>::RuntimeOrigin::signed(
                 AccountId::from(ALICE)
