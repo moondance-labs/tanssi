@@ -4,6 +4,7 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 import { fetchCollatorAssignmentTip, jumpSessions } from "utils";
+import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SERVICES_PAYMENT, checkCallIsFiltered } from "helpers";
 
 describeSuite({
     id: "DEVT1203",
@@ -12,10 +13,17 @@ describeSuite({
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
+        let isStarlight: boolean;
+        let specVersion: number;
+        let shouldSkipStarlightSP: boolean;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             alice = context.keyring.alice;
+            const runtimeName = polkadotJs.runtimeVersion.specName.toString();
+            isStarlight = runtimeName === "starlight";
+            specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
+            shouldSkipStarlightSP = isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SERVICES_PAYMENT.includes(specVersion);
         });
         it({
             id: "E01",
@@ -28,6 +36,13 @@ describeSuite({
                 const tip = 123;
 
                 const tx = polkadotJs.tx.servicesPayment.purchaseCredits(paraId, 1_000_000_000_000_000);
+
+                if (shouldSkipStarlightSP) {
+                    console.log(`Skipping E01 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(context, polkadotJs, await tx.signAsync(alice));
+                    return;
+                }
+                
                 await context.createBlock([await tx.signAsync(alice)]);
 
                 const txMaxTip = polkadotJs.tx.servicesPayment.setMaxTip(paraId, tip);

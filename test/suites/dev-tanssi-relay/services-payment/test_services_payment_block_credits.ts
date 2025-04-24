@@ -4,6 +4,7 @@ import { beforeAll, customDevRpcRequest, describeSuite, expect } from "@moonwall
 import { type KeyringPair, generateKeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 import { jumpSessions, jumpToSession, paraIdTank } from "utils";
+import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SERVICES_PAYMENT, checkCallIsFiltered } from "helpers";
 
 describeSuite({
     id: "DEVT1201",
@@ -13,16 +14,31 @@ describeSuite({
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
         const blocksPerSession = 10n;
+        let isStarlight: boolean;
+        let specVersion: number;
+        let shouldSkipStarlightSP: boolean;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             alice = context.keyring.alice;
+
+            const runtimeName = polkadotJs.runtimeVersion.specName.toString();
+            isStarlight = runtimeName === "starlight";
+            specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
+            shouldSkipStarlightSP = isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SERVICES_PAYMENT.includes(specVersion);
         });
         it({
             id: "E01",
             title: "Genesis container chains have credits and collators",
             test: async () => {
                 await context.createBlock();
+
+                if (shouldSkipStarlightSP) {
+                    console.log(`Skipping E01 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(context, polkadotJs, await polkadotJs.tx.servicesPayment.setCollatorAssignmentCredits(2000, 1000n).signAsync(alice)); 
+                    return;
+                }
+
                 await customDevRpcRequest("mock_enableParaInherentCandidate", []);
                 // Since collators are not assigned until session 2, we need to go till session 2 to actually see heads being injected
                 await jumpToSession(context, 2);
@@ -62,6 +78,12 @@ describeSuite({
             id: "E02",
             title: "Creating a container chain block costs credits",
             test: async () => {
+
+                if (shouldSkipStarlightSP) {
+                    console.log(`Skipping E02 test for Starlight version ${specVersion}`);
+                    return;
+                }
+
                 // Read num credits of para 2000, then create that many blocks. Check that authorNoting.blockNum does not increase anymore
                 // and collatorAssignment does not have collators
 
@@ -104,6 +126,10 @@ describeSuite({
             id: "E03",
             title: "Collators are unassigned when a container chain does not have enough credits",
             test: async () => {
+                if (shouldSkipStarlightSP) {
+                    console.log(`Skipping E03 test for Starlight version ${specVersion}`);
+                    return;
+                }
                 // Create blocks until authorNoting.blockNum does not increase anymore.
                 // Check that collatorAssignment does not have collators and num credits is less than 2 sessions.
 
@@ -143,6 +169,13 @@ describeSuite({
             id: "E04",
             title: "Root can remove credits",
             test: async () => {
+
+                if (shouldSkipStarlightSP) {
+                    console.log(`Skipping E04 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(context, polkadotJs, await polkadotJs.tx.servicesPayment.setCollatorAssignmentCredits(2000, 1000n).signAsync(alice)); 
+                    return;
+                }
+
                 // Remove all the credits of container chain 2001, which should have assigned collators now
                 // This checks that the node does not panic when we try to subtract credits from 0 (saturating_sub)
 
@@ -213,6 +246,12 @@ describeSuite({
             test: async () => {
                 // As alice, buy credits for para 2000. Check that it is assigned collators again
                 const paraId = 2000;
+
+                if (shouldSkipStarlightSP) {
+                    console.log(`Skipping E05 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(context, polkadotJs, await polkadotJs.tx.servicesPayment.purchaseCredits(paraId, 1000n).signAsync(alice));  
+                    return;
+                }
 
                 // Create blocks until no collators are assigned to any container chain
                 for (;;) {
