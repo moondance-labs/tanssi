@@ -399,7 +399,9 @@ fn inactivity_tracking_edge_case_inactive_at_session_start() {
             }
 
             let expected_session_index = Session::current_index();
-            for _ in 0..10 {
+            // Since run_block ends a block then starts one the last block of the session
+            // we need to run the loop until session_period - 1
+            for _ in 0..(session_period - 1) {
                 assert_eq!(expected_session_index, Session::current_index());
                 let bob_inactive = pallet_inactivity_tracking::Pallet::<Runtime>::is_node_inactive(
                     &AccountId::from(BOB),

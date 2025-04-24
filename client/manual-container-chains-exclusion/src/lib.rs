@@ -21,7 +21,7 @@ use {
 #[rpc(server)]
 #[jsonrpsee::core::async_trait]
 pub trait ManualContainerChainsExclusionApi {
-    /// Prevent container chains from producing blocks
+    /// Preventing container chains from producing blocks
     #[method(name = "mock_excludeContainerChains")]
     async fn exclude_container_chains(&self, para_ids: Vec<ParaId>) -> RpcResult<()>;
 }
