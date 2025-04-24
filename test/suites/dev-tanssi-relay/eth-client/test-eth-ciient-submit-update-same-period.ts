@@ -58,7 +58,7 @@ describeSuite({
                     await checkCallIsFiltered(context, polkadotJs, signedTx);
                     return;
                 }
-                
+
                 await context.createBlock([signedTx]);
 
                 const latestFinalizedBlockRoot = await polkadotJs.query.ethereumBeaconClient.latestFinalizedBlockRoot();

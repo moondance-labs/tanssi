@@ -29,7 +29,8 @@ describeSuite({
             const runtimeName = polkadotJs.runtimeVersion.specName.toString();
             isStarlight = runtimeName === "starlight";
             specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
-            shouldSkipStarlightIdentity = isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_IDENTITY.includes(specVersion);
+            shouldSkipStarlightIdentity =
+                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_IDENTITY.includes(specVersion);
         });
 
         it({
@@ -162,7 +163,7 @@ describeSuite({
                     // Both setFee and setFields should be filtered as well
                     const tx2 = polkadotJs.tx.identity.setFee(0, 100);
                     await checkCallIsFiltered(context, polkadotJs, await tx2.signAsync(registrar_bob));
-                    const tx3 = polkadotJs.tx.identity.setFields(0, 2); 
+                    const tx3 = polkadotJs.tx.identity.setFields(0, 2);
                     await checkCallIsFiltered(context, polkadotJs, await tx3.signAsync(registrar_bob));
 
                     return;

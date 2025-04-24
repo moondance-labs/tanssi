@@ -30,13 +30,14 @@ describeSuite({
 
             isStarlight = runtimeName === "starlight";
             specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
-            shouldSkipStarlightSP = isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SERVICES_PAYMENT.includes(specVersion);
+            shouldSkipStarlightSP =
+                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SERVICES_PAYMENT.includes(specVersion);
 
             const tx2000OneSession = polkadotJs.tx.servicesPayment.setBlockProductionCredits(paraId2001, 0);
             if (shouldSkipStarlightSP) {
                 console.log(`Skipping services payment tests for Starlight version ${specVersion}`);
 
-                // We check that the call (without sudo) is filtered. 
+                // We check that the call (without sudo) is filtered.
                 await checkCallIsFiltered(context, polkadotJs, await tx2000OneSession.signAsync(alice));
 
                 // Purchase credits should be filtered too

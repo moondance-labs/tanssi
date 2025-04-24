@@ -5,6 +5,7 @@ import { type KeyringPair, generateKeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 import { numberToHex } from "@polkadot/util";
 import { jumpToBlock } from "utils";
+import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_POOLED_STAKING, checkCallIsFiltered } from "helpers";
 
 describeSuite({
     id: "DEVT1804",
@@ -16,11 +17,18 @@ describeSuite({
         let bob: KeyringPair;
         // TODO: don't hardcode the period here
         const sessionPeriod = 10;
+        let isStarlight: boolean;
+        let specVersion: number;
+        let shouldSkipStarlightPS: boolean;
 
         beforeAll(async () => {
             alice = context.keyring.alice;
             bob = context.keyring.bob;
             polkadotJs = context.polkadotJs();
+            const runtimeName = polkadotJs.runtimeVersion.specName.toString();
+            isStarlight = runtimeName === "starlight";
+            specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
+            shouldSkipStarlightPS = isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_POOLED_STAKING.includes(specVersion);
 
             // Add alice and box keys to pallet session. In dancebox they are already there in genesis.
             const newKey1 = await polkadotJs.rpc.author.rotateKeys();
@@ -36,6 +44,18 @@ describeSuite({
             id: "E01",
             title: "It takes 2 sessions to update pallet_session collators",
             test: async () => {
+                if (shouldSkipStarlightPS) {
+                    console.log(`Skipping E01 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(
+                        context,
+                        polkadotJs,
+                        await polkadotJs.tx.pooledStaking
+                            .requestDelegate(alice.address, "AutoCompounding", 10000n)
+                            .signAsync(alice)
+                    );
+                    return;
+                }
+
                 const initialCollators = await polkadotJs.query.tanssiCollatorAssignment.collatorContainerChain();
 
                 const randomAccount = generateKeyringPair("sr25519");

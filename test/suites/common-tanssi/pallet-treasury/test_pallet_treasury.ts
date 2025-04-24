@@ -4,7 +4,11 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 import { jumpBlocks } from "utils";
-import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_TREASURY, STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_BALANCES, checkCallIsFiltered } from "helpers";
+import {
+    STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_TREASURY,
+    STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_BALANCES,
+    checkCallIsFiltered,
+} from "helpers";
 
 describeSuite({
     id: "COMM0101",
@@ -36,11 +40,12 @@ describeSuite({
 
             isStarlight = runtimeName === "starlight";
             specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
-            shouldSkipStarlightBalances = isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_BALANCES.includes(specVersion);
-            shouldSkipStarlightTreasury = isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_TREASURY.includes(specVersion);
+            shouldSkipStarlightBalances =
+                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_BALANCES.includes(specVersion);
+            shouldSkipStarlightTreasury =
+                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_TREASURY.includes(specVersion);
 
-            const tx = polkadotJs.tx.balances
-                .transferAllowDeath(treasuryAddress, 1_000_000_000_000);
+            const tx = polkadotJs.tx.balances.transferAllowDeath(treasuryAddress, 1_000_000_000_000);
 
             const signedTx = await tx.signAsync(sudo_alice);
 
@@ -162,7 +167,7 @@ describeSuite({
                     const tx2 = polkadotJs.tx.treasury.payout(0);
                     const signedTx2 = await tx2.signAsync(user_dave);
                     await checkCallIsFiltered(context, polkadotJs, signedTx2);
-                    
+
                     return;
                 }
 

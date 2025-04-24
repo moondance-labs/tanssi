@@ -23,7 +23,8 @@ describeSuite({
             const runtimeName = polkadotJs.runtimeVersion.specName.toString();
             isStarlight = runtimeName === "starlight";
             specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
-            shouldSkipStarlightSP = isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SERVICES_PAYMENT.includes(specVersion);
+            shouldSkipStarlightSP =
+                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SERVICES_PAYMENT.includes(specVersion);
         });
         it({
             id: "E01",
@@ -42,7 +43,7 @@ describeSuite({
                     await checkCallIsFiltered(context, polkadotJs, await tx.signAsync(alice));
                     return;
                 }
-                
+
                 await context.createBlock([await tx.signAsync(alice)]);
 
                 const txMaxTip = polkadotJs.tx.servicesPayment.setMaxTip(paraId, tip);

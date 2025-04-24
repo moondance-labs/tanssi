@@ -4,7 +4,7 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 import { extractFeeAuthor, filterRewardFromContainer, initializeCustomCreateBlock } from "utils";
-import {STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_PROXY, checkCallIsFiltered} from "helpers"
+import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_PROXY, checkCallIsFiltered } from "helpers";
 
 describeSuite({
     id: "C0303",
@@ -178,7 +178,7 @@ describeSuite({
                         await checkCallIsFiltered(context, polkadotJs, await tx.signAsync(alice));
                         return;
                     }
-                    
+
                     txs.push(await tx.signAsync(alice, { nonce: nonce.addn(i) }));
                 }
                 await context.createBlock(txs);
@@ -211,7 +211,7 @@ describeSuite({
                     await checkCallIsFiltered(context, polkadotJs, await tx.signAsync(dave));
                     return;
                 }
-                
+
                 await context.createBlock([await tx.signAsync(dave)]);
 
                 const events = await polkadotJs.query.system.events();
@@ -250,7 +250,7 @@ describeSuite({
                     await checkCallIsFiltered(context, polkadotJs, await tx.signAsync(dave));
                     return;
                 }
-                
+
                 await context.createBlock([await tx.signAsync(dave)]);
 
                 const events = await polkadotJs.query.system.events();

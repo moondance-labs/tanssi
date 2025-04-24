@@ -33,7 +33,8 @@ describeSuite({
 
                 isStarlight = runtimeName === "starlight";
                 specVersion = api.consts.system.version.specVersion.toNumber();
-                shouldSkipStarlightCR = isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_REGISTRAR.includes(specVersion);
+                shouldSkipStarlightCR =
+                    isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_REGISTRAR.includes(specVersion);
 
                 const registerAlias = runtimeName.includes("light") ? api.tx.containerRegistrar : api.tx.registrar;
 
@@ -50,9 +51,7 @@ describeSuite({
                 }
 
                 // Bob is not a manager, extrinsic requiring RegistrarOrigin should fail with BadOrigin error
-                const { result: pauseContainerResultAttempt1 } = await context.createBlock(
-                    pausedSignedTx
-                );
+                const { result: pauseContainerResultAttempt1 } = await context.createBlock(pausedSignedTx);
                 expect(pauseContainerResultAttempt1.successful).toEqual(false);
                 expect(pauseContainerResultAttempt1.error.name).toEqual("BadOrigin");
 

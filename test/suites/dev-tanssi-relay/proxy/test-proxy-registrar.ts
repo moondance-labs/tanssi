@@ -125,7 +125,11 @@ describeSuite({
             test: async () => {
                 if (shouldSkipStarlightProxy) {
                     console.log(`Skipping E03 test for Starlight version ${specVersion}`);
-                    await checkCallIsFiltered(context, polkadotJs, await polkadotJs.tx.proxy.proxy(sudoAlice.address, null, "0x").signAsync(delegateBob));
+                    await checkCallIsFiltered(
+                        context,
+                        polkadotJs,
+                        await polkadotJs.tx.proxy.proxy(sudoAlice.address, null, "0x").signAsync(delegateBob)
+                    );
                     return;
                 }
 

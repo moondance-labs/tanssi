@@ -39,10 +39,10 @@ describeSuite({
             let example_call;
             if (isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_BALANCES.includes(specVersion)) {
                 example_call = context.polkadotJs().tx.system.remark("0x");
-            }else {
+            } else {
                 example_call = context.polkadotJs().tx.balances.transferKeepAlive(charlie_or_charleth.address, 20);
             }
-            
+
             call = example_call.method.toHex();
             callHash = blake2AsHex(call);
         });
