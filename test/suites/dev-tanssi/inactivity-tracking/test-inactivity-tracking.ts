@@ -1,5 +1,5 @@
 import "@tanssi/api-augment";
-import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import { beforeAll, customDevRpcRequest, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import { jumpToSession, jumpSessions } from "utils";
@@ -78,7 +78,7 @@ describeSuite({
 
         it({
             id: "E02",
-            title: "Pallet should correctly update collators' activity records with one inactive collator",
+            title: "Pallet should correctly update collators' activity records with inactive collator",
             test: async () => {
                 const maxInactiveSessions = polkadotJs.consts.inactivityTracking.maxInactiveSessions.toNumber();
                 const daveAccountId = polkadotJs.createType("AccountId", daveAccountKey.publicKey);
@@ -103,7 +103,9 @@ describeSuite({
                 await context.createBlock([await addInvulnerablesDaveTx.signAsync(alice)]);
                 await context.createBlock([await addInvulnerablesFerdieTx.signAsync(alice)]);
 
-                //!!! TO DO: Both new collators should be assigned to the same slot so only one of them processes blocks
+                // Chain 2001 will be producing blocks and we want to disable that for this test
+                const excludedChains = polkadotJs.createType("Vec<ParaId>", [2001]);
+                await customDevRpcRequest("mock_excludeContainerChains", [excludedChains]);
 
                 await jumpSessions(context, 3);
                 const startSession = (await polkadotJs.query.session.currentIndex()).toNumber();
@@ -118,8 +120,8 @@ describeSuite({
                 const activeCollatorsForSession2AfterNoting =
                     await polkadotJs.query.inactivityTracking.activeCollatorsForCurrentSession();
                 expect(activeCollatorsForSession2AfterNoting.toHuman()).to.deep.eq([
-                    daveAccountKey.address,
                     context.keyring.bob.address,
+                    context.keyring.charlie.address,
                     alice.address,
                 ]);
 
@@ -143,7 +145,7 @@ describeSuite({
                     await polkadotJs.query.inactivityTracking.inactiveCollators(startSession);
                 expect(inactiveCollatorsRecordWithinActivityPeriod.toHuman()).to.deep.eq([
                     ferdieAccountKey.address,
-                    context.keyring.charlie.address,
+                    daveAccountKey.address,
                 ]);
 
                 // After the end of activity period, the inactivity tracking storage for startSession should be empty
