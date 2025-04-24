@@ -1168,11 +1168,7 @@ impl_runtime_apis! {
                         <Runtime as pallet_evm::Config>::GasWeightMapping::weight_to_gas(
                             dispatch_info.call_weight
                         );
-                    let tip_per_gas = if effective_gas > 0 {
-                        tip.saturating_div(u128::from(effective_gas))
-                    } else {
-                        0
-                    };
+                    let tip_per_gas = tip.checked_div(u128::from(effective_gas)).unwrap_or(0);
 
                     // Overwrite the original prioritization with this ethereum one
                     intermediate_valid.priority = tip_per_gas as u64;

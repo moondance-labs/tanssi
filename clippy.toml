@@ -1,0 +1,13 @@
+disallowed-methods = [
+    { path = "u8::saturating_div", reason = "TODO" },
+    { path = "u16::saturating_div", reason = "TODO" },
+    { path = "u32::saturating_div", reason = "TODO" },
+    { path = "u64::saturating_div", reason = "TODO" },
+    { path = "u128::saturating_div", reason = "TODO" },
+    { path = "i8::saturating_div", reason = "TODO" },
+    { path = "i16::saturating_div", reason = "TODO" },
+    { path = "i32::saturating_div", reason = "TODO" },
+    { path = "i64::saturating_div", reason = "TODO" },
+    { path = "i128::saturating_div", reason = "TODO" },
+    { path = "sp_runtime::Weight::saturating_div", reason = "TODO" },
+]
