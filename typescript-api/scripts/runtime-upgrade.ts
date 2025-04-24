@@ -7,21 +7,21 @@ let nodeProcess: ChildProcessWithoutNullStreams | undefined = undefined;
 
 // Hack: polkadot-js does not support XCM v5 yet, we need to manually change some types
 //
-// Lookup89 => StagingXcmV5Junction
+// Lookup88 => StagingXcmV5Junction
 // Lookup77 => StagingXcmV5Junction
 // The index of LookupXX depends on this comment in the same file:
 //     /** @name StagingXcmV5Junction (77) */
 //     /** @name StagingXcmV5Junction (89) */
 /*
 src/dancebox/interfaces/types-lookup.ts
-1616:        readonly asX1: Vec<Lookup89>;
-1618:        readonly asX2: Vec<Lookup89>;
-1620:        readonly asX3: Vec<Lookup89>;
-1622:        readonly asX4: Vec<Lookup89>;
-1624:        readonly asX5: Vec<Lookup89>;
-1626:        readonly asX6: Vec<Lookup89>;
-1628:        readonly asX7: Vec<Lookup89>;
-1630:        readonly asX8: Vec<Lookup89>;
+1616:        readonly asX1: Vec<Lookup88>;
+1618:        readonly asX2: Vec<Lookup88>;
+1620:        readonly asX3: Vec<Lookup88>;
+1622:        readonly asX4: Vec<Lookup88>;
+1624:        readonly asX5: Vec<Lookup88>;
+1626:        readonly asX6: Vec<Lookup88>;
+1628:        readonly asX7: Vec<Lookup88>;
+1630:        readonly asX8: Vec<Lookup88>;
 
 src/dancelight/interfaces/types-lookup.ts
 902:        readonly asX1: Vec<Lookup77>;
@@ -34,13 +34,13 @@ src/dancelight/interfaces/types-lookup.ts
 916:        readonly asX8: Vec<Lookup77>;
  */
 function hackXcmV5Support() {
-    // For dancebox, replace "Lookup89" with "StagingXcmV5Junction"
+    // For dancebox, replace "Lookup88" with "StagingXcmV5Junction"
     const danceboxFilePath = "src/dancebox/interfaces/types-lookup.ts";
-    hackTypeReplacement(danceboxFilePath, "Lookup91", "StagingXcmV5Junction", 8);
+    hackTypeReplacement(danceboxFilePath, "Lookup88", "StagingXcmV5Junction", 8);
 
     // For dancelight, replace "Lookup77" with "StagingXcmV5Junction"
     const dancelightFilePath = "src/dancelight/interfaces/types-lookup.ts";
-    hackTypeReplacement(dancelightFilePath, "Lookup77", "StagingXcmV5Junction", 8);
+    hackTypeReplacement(dancelightFilePath, "Lookup76", "StagingXcmV5Junction", 8);
 }
 
 function hackTypeReplacement(filePath: string, oldType: string, newType: string, expectedCount: number) {
@@ -60,12 +60,18 @@ function hackTypeReplacement(filePath: string, oldType: string, newType: string,
     if (count !== expectedCount) {
         // This check is to ensure we don't accidentally replace more than needed, if there is a Lookup777 for example,
         // we only want to replace Lookup77
-        console.error(chalk.red(`Error: Expected ${expectedCount} occurrences of "${oldType}" in ${filePath} but found ${count}. Aborting hack.`));
+        console.error(
+            chalk.red(
+                `Error: Expected ${expectedCount} occurrences of "${oldType}" in ${filePath} but found ${count}. Aborting hack.`
+            )
+        );
         process.exit(1);
     }
     const newContent = content.replace(regex, newType);
     writeFileSync(filePath, newContent);
-    console.log(chalk.green(`Successfully replaced ${count} occurrences of "${oldType}" with "${newType}" in ${filePath}`));
+    console.log(
+        chalk.green(`Successfully replaced ${count} occurrences of "${oldType}" with "${newType}" in ${filePath}`)
+    );
 }
 
 function logMatchingLines(filePath: string, substring: string) {
@@ -100,7 +106,7 @@ async function main() {
     for (const CHAIN of CHAINS) {
         console.log(`Starting ${CHAIN} node`);
         const isStarlightChain = CHAIN.includes("light");
-        nodeProcess = spawn(`../target/release/tanssi-${isStarlightChain ? 'relay' : 'node'}`, [
+        nodeProcess = spawn(`../target/release/tanssi-${isStarlightChain ? "relay" : "node"}`, [
             "--no-hardware-benchmarks",
             "--no-telemetry",
             "--no-prometheus",
@@ -114,12 +120,26 @@ async function main() {
             "--rpc-cors=all",
         ]);
 
-        const onProcessExit = () => {
+        nodeProcess.stdout.on("data", (data) => {
+            console.log(`stdout: ${data}`);
+        });
+
+        nodeProcess.stderr.on("data", (data) => {
+            console.error(`stderr: ${data}`);
+        });
+
+        const onProcessExit = (code: number) => {
+            console.log(`Process exited with code: ${code}`);
+            nodeProcess?.kill();
+        };
+
+        const onSignal = (signal: NodeJS.Signals) => {
+            console.log(`Received signal: ${signal}`);
             nodeProcess?.kill();
         };
 
         process.once("exit", onProcessExit);
-        process.once("SIGINT", onProcessExit);
+        process.once("SIGINT", onSignal);
 
         await new Promise((resolve, reject) => {
             const onData = async (data: any) => {

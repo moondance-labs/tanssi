@@ -1859,8 +1859,11 @@ mod benches {
         [pallet_inactivity_tracking, InactivityTracking]
         [pallet_treasury, Treasury]
         [cumulus_pallet_xcmp_queue, XcmpQueue]
+        // XCM
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
+        [pallet_xcm_benchmarks::fungible, pallet_xcm_benchmarks::fungible::Pallet::<Runtime>]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
+
         [pallet_assets, ForeignAssets]
         [pallet_foreign_asset_creator, ForeignAssetsCreator]
         [pallet_asset_rate, AssetRate]
@@ -2073,11 +2076,35 @@ impl_runtime_apis! {
 
             use xcm::latest::prelude::*;
             use crate::xcm_config::SelfReserve;
+
             parameter_types! {
                 pub ExistentialDepositAsset: Option<Asset> = Some((
                     SelfReserve::get(),
                     ExistentialDeposit::get()
                 ).into());
+                pub TrustedReserve: Option<(Location, Asset)> = Some(
+                    (
+                        Location::parent(),
+                        Asset {
+                            id: AssetId(Location::parent()),
+                            fun: Fungible(ExistentialDeposit::get() * 100),
+                        },
+                    )
+                );
+            }
+
+            impl pallet_xcm_benchmarks::fungible::Config for Runtime {
+                type TransactAsset = Balances;
+                type CheckedAccount = ();
+                type TrustedTeleporter = ();
+                type TrustedReserve = TrustedReserve;
+
+                fn get_asset() -> Asset {
+                    Asset {
+                        id: AssetId(SelfReserve::get()),
+                        fun: Fungible(ExistentialDeposit::get() * 100),
+                    }
+                }
             }
 
             impl pallet_xcm_benchmarks::Config for Runtime {

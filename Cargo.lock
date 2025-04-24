@@ -19205,6 +19205,7 @@ dependencies = [
  "polkadot-node-core-pvf-execute-worker",
  "polkadot-node-core-pvf-prepare-worker",
  "polkadot-overseer",
+ "sp-debug-derive",
  "substrate-build-script-utils",
  "substrate-rpc-client",
  "tanssi-relay-cli",
@@ -19425,6 +19426,19 @@ dependencies = [
  "sp-staking",
  "sp-std",
  "staging-xcm",
+]
+
+[[package]]
+name = "tanssi-utils"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "hex",
+ "pallet-external-validators-rewards",
+ "serde",
+ "serde_json",
+ "snowbridge-outbound-queue-merkle-tree",
+ "sp-runtime",
 ]
 
 [[package]]

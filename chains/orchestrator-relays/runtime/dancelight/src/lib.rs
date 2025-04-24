@@ -160,6 +160,8 @@ pub mod xcm_config;
 
 pub mod bridge_to_ethereum_config;
 
+pub mod eth_chain_config;
+
 // Weights
 mod weights;
 
@@ -3176,20 +3178,12 @@ sp_api::impl_runtime_apis! {
                 }
             }
 
-            parameter_types! {
-                pub TrustedTeleporter: Option<(Location, Asset)> = Some((
-                    AssetHub::get(),
-                    Asset { fun: Fungible(1 * UNITS), id: AssetId(TokenLocation::get()) },
-                ));
-                pub TrustedReserve: Option<(Location, Asset)> = None;
-            }
-
             impl pallet_xcm_benchmarks::fungible::Config for Runtime {
                 type TransactAsset = Balances;
 
                 type CheckedAccount = LocalCheckAccount;
-                type TrustedTeleporter = TrustedTeleporter;
-                type TrustedReserve = TrustedReserve;
+                type TrustedTeleporter = ();
+                type TrustedReserve = ();
 
                 fn get_asset() -> Asset {
                     Asset {

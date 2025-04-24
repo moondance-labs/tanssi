@@ -253,6 +253,7 @@ async fn start_node_impl(
     collator_options: CollatorOptions,
     para_id: ParaId,
     hwbench: Option<sc_sysinfo::HwBench>,
+    max_pov_percentage: Option<u32>,
 ) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> {
     let parachain_config = prepare_node_config(orchestrator_config);
     let chain_type: sc_chain_spec::ChainType = parachain_config.chain_spec.chain_type();
@@ -404,6 +405,7 @@ async fn start_node_impl(
                     announce_block.clone(),
                     proposer_factory.clone(),
                     orchestrator_tx_pool.clone(),
+                    max_pov_percentage,
                 )
             }
         };
@@ -526,6 +528,7 @@ fn start_consensus_orchestrator(
     announce_block: Arc<dyn Fn(Hash, Option<Vec<u8>>) + Send + Sync>,
     proposer_factory: ParachainProposerFactory,
     orchestrator_tx_pool: Arc<TransactionPoolHandle<Block, ParachainClient>>,
+    max_pov_percentage: Option<u32>,
 ) -> (CancellationToken, futures::channel::oneshot::Receiver<()>) {
     let slot_duration = cumulus_client_consensus_aura::slot_duration(&*client)
         .expect("start_consensus_orchestrator: slot duration should exist");
@@ -560,6 +563,7 @@ fn start_consensus_orchestrator(
     };
 
     let params = LookaheadTanssiAuraParams {
+        max_pov_percentage,
         get_current_slot_duration: move |block_hash| {
             sc_consensus_aura::standalone::slot_duration_at(
                 &*client_for_slot_duration_provider,
@@ -687,6 +691,7 @@ pub async fn start_parachain_node(
     collator_options: CollatorOptions,
     para_id: ParaId,
     hwbench: Option<sc_sysinfo::HwBench>,
+    max_pov_percentage: Option<u32>,
 ) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> {
     start_node_impl(
         parachain_config,
@@ -695,6 +700,7 @@ pub async fn start_parachain_node(
         collator_options,
         para_id,
         hwbench,
+        max_pov_percentage,
     )
     .instrument(sc_tracing::tracing::info_span!(
         sc_tracing::logging::PREFIX_LOG_SPAN,
