@@ -23,6 +23,7 @@ use {
     frame_system::Pallet as SystemPallet,
     sc_consensus_grandpa::AuthorityId as GrandpaId,
     sp_core::{crypto::get_public_from_string_or_panic, sr25519},
+    sp_weights::Weight,
     xcm_emulator::{Parachain, RelayChain},
 };
 
@@ -31,7 +32,7 @@ pub mod impls;
 pub mod snowbridge;
 pub mod validators;
 
-pub fn force_process_bridge<R, P>()
+pub fn force_process_bridge<R, P>(weight: Weight)
 where
     R: RelayChain,
     P: Parachain<Network = R::Network>,
@@ -41,7 +42,7 @@ where
     R::execute_with(|| {
         <pallet_message_queue::Pallet<R::Runtime>>::on_idle(
             SystemPallet::<R::Runtime>::block_number(),
-            dancelight_runtime::MessageQueueServiceWeight::get(),
+            weight,
         );
     });
 

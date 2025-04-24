@@ -1357,3 +1357,14 @@ where
         ]
     }
 }
+
+pub struct StarlightMigrations<Runtime>(PhantomData<Runtime>);
+
+impl<Runtime> GetMigrations for StarlightMigrations<Runtime>
+where
+    Runtime: frame_system::Config,
+{
+    fn get_migrations() -> Vec<Box<dyn Migration>> {
+        vec![]
+    }
+}
