@@ -215,7 +215,7 @@ pub fn starlight_development_config(
     container_chains: Vec<String>,
     mock_container_chains: Vec<ParaId>,
     invulnerables: Vec<String>,
-) -> Result<DancelightChainSpec, String> {
+) -> Result<StarlightChainSpec, String> {
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
     properties.insert("tokenSymbol".into(), "STAR".into());
@@ -240,7 +240,7 @@ pub fn starlight_development_config(
         )
         .collect();
 
-    Ok(DancelightChainSpec::builder(
+    Ok(StarlightChainSpec::builder(
         starlight::WASM_BINARY.ok_or("Starlight development wasm not available")?,
         Default::default(),
     )
