@@ -5,7 +5,6 @@ import { type KeyringPair, extractWeight, filterAndApply } from "@moonwall/util"
 import type { ApiPromise } from "@polkadot/api";
 import { extractFeeAuthor, filterRewardFromOrchestrator } from "utils";
 import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_BALANCES, checkCallIsFiltered } from "helpers";
-import { aw } from "vitest/dist/chunks/reporters.D7Jzd9GS.js";
 
 describeSuite({
     id: "C0101",
