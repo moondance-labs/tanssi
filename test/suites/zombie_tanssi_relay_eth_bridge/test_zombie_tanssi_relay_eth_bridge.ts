@@ -70,7 +70,6 @@ describeSuite({
         let tokenContract: ethers.Contract;
         let gatewayProxyAddress: string;
         let middlewareAddress: string;
-        let middlewareDetails: any;
         let operatorRewardAddress: string;
         let operatorRewardContract: ethers.Contract;
         let operatorRewardContractImpl: ethers.Contract;
@@ -136,6 +135,9 @@ describeSuite({
             console.log("Waiting some time for ethereum node to produce block, before we deploy contract");
             await sleep(20000);
 
+            console.log(process.env)
+            console.log(operatorAccount.addressRaw)
+
             // We override the operator 3 key because it goes to a slashing vault
             await execCommand("./scripts/bridge/deploy-ethereum-contracts.sh", {
                 env: {
@@ -155,7 +157,12 @@ describeSuite({
             gatewayProxyAddress = ethInfo.snowbridge_info.contracts.GatewayProxy.address;
 
             console.log("Symbiotic middleware address is: ", ethInfo.symbiotic_info.contracts.MiddlewareProxy.address);
-            middlewareDetails = ethInfo.symbiotic_info.contracts.Middleware;
+            const middlewareCallerDetails = ethInfo.symbiotic_info.contracts.Middleware;
+            const middlewareReaderDetails = ethInfo.symbiotic_info.contracts.OBaseMiddlewareReader;
+            const combinedMiddlewareAbi = [
+                ...middlewareCallerDetails.abi,
+                ...middlewareReaderDetails.abi,
+            ];
             middlewareAddress = ethInfo.symbiotic_info.contracts.MiddlewareProxy.address;
 
             console.log(
@@ -172,11 +179,13 @@ describeSuite({
             );
             console.log("Set gateway address transaction hash:", setGatewayAddressTxHash.txHash.toHex());
 
+
             customHttpProvider = new ethers.WebSocketProvider(ethUrl);
             ethereumWallet = new ethers.Wallet(ethInfo.ethereum_key, customHttpProvider);
 
             // Setting up Middleware
-            middlewareContract = new ethers.Contract(middlewareAddress, middlewareDetails.abi, ethereumWallet);
+            middlewareContract = new ethers.Contract(middlewareAddress, combinedMiddlewareAbi, ethereumWallet);
+
             const tx = await middlewareContract.setGateway(gatewayProxyAddress);
             await tx.wait();
 
@@ -299,7 +308,7 @@ describeSuite({
                 const externalValidatorsBefore = await relayApi.query.externalValidators.externalValidators();
 
                 const epoch = await middlewareContract.getCurrentEpoch();
-                const currentOperatorsKeys = await middlewareContract.sortOperatorsByVaults(epoch);
+                const currentOperatorsKeys = await middlewareContract.sortOperatorsByPower(epoch);
 
                 console.log("Middleware: Epoch is:", epoch);
                 console.log("Middleware: Operator keys are:", currentOperatorsKeys);
@@ -564,14 +573,7 @@ describeSuite({
                 // Setting up slasher
                 const slasherContract = new ethers.Contract(slasher, slasherDetails.abi, ethereumWallet);
 
-                const baseMiddlewareReader = ethInfo.symbiotic_info.contracts.BaseMiddlewareReader;
-                const middlewareBaseReadersContract = new ethers.Contract(
-                    middlewareAddress,
-                    baseMiddlewareReader.abi,
-                    ethereumWallet
-                );
-
-                const network = await middlewareBaseReadersContract.NETWORK();
+                const network = await middlewareContract.NETWORK();
                 const subnetwork = `${network}000000000000000000000000`;
                 // type 0 means instant slash
                 if ((await slasherContract.TYPE()) === 0n) {
