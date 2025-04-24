@@ -5,7 +5,7 @@ import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 import { generateEmptyGenesisData, initializeCustomCreateBlock } from "utils";
 import type { DpContainerChainGenesisDataContainerChainGenesisData } from "@polkadot/types/lookup";
-import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_DATA_PRESERVERS, STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_REGISTRAR, checkCallIsFiltered } from "helpers";
+import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_DATA_PRESERVERS, checkCallIsFiltered } from "helpers";
 
 describeSuite({
     id: "DEVT0901",
@@ -21,7 +21,6 @@ describeSuite({
         let isStarlight: boolean;
         let specVersion: number;
         let shouldSkipStarlightDP: boolean;
-        let shouldSkipStarlightCR: boolean;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
@@ -34,7 +33,6 @@ describeSuite({
             isStarlight = runtimeName === "starlight";
             specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
             shouldSkipStarlightDP = isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_DATA_PRESERVERS.includes(specVersion);
-            shouldSkipStarlightCR = isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_REGISTRAR.includes(specVersion);
         });
 
         it({

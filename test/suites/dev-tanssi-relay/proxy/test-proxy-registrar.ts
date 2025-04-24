@@ -5,6 +5,7 @@ import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 import type { u32 } from "@polkadot/types";
 import { initializeCustomCreateBlock, jumpSessions } from "utils";
+import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_PROXY, checkCallIsFiltered } from "helpers";
 
 describeSuite({
     id: "DEVT1501",
@@ -20,6 +21,9 @@ describeSuite({
         const VALIDATION_CODE = "0x546865205761736d20436f6465";
         const GENESIS_HEAD = "0x6865616465722064617461";
         const FORCED_PARA_ID = 5555;
+        let isStarlight: boolean;
+        let specVersion: number;
+        let shouldSkipStarlightProxy: boolean;
 
         beforeAll(() => {
             initializeCustomCreateBlock(context);
@@ -50,6 +54,11 @@ describeSuite({
                     isEthereum: false,
                 },
             });
+
+            const runtimeName = polkadotJs.runtimeVersion.specName.toString();
+            isStarlight = runtimeName === "starlight";
+            specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
+            shouldSkipStarlightProxy = isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_PROXY.includes(specVersion);
         });
 
         it({
@@ -59,6 +68,13 @@ describeSuite({
                 await context.createBlock();
 
                 const tx = polkadotJs.tx.proxy.addProxy(delegateBob.address, REGISTRAR_PROXY_INDEX, 0);
+
+                if (shouldSkipStarlightProxy) {
+                    console.log(`Skipping E01 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(context, polkadotJs, await tx.signAsync(sudoAlice));
+                    return;
+                }
+
                 await context.createBlock([await tx.signAsync(sudoAlice)]);
 
                 const proxies = await polkadotJs.query.proxy.proxies(sudoAlice.address);
@@ -89,6 +105,13 @@ describeSuite({
                         )
                     )
                 );
+
+                if (shouldSkipStarlightProxy) {
+                    console.log(`Skipping E02 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(context, polkadotJs, await txReserve.signAsync(delegateBob));
+                    return;
+                }
+
                 await context.createBlock([await txReserve.signAsync(delegateBob)]);
 
                 const registrar_info = await polkadotJs.query.registrar.paras(FORCED_PARA_ID);
@@ -100,6 +123,12 @@ describeSuite({
             id: "E03",
             title: "Delegated account can sudo txs in data preservers, paras, paraSudoWrapper, and registrar",
             test: async () => {
+                if (shouldSkipStarlightProxy) {
+                    console.log(`Skipping E03 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(context, polkadotJs, await polkadotJs.tx.proxy.proxy(sudoAlice.address, null, "0x").signAsync(delegateBob));
+                    return;
+                }
+
                 // A regular user registers a new avs
 
                 const txReserve = polkadotJs.tx.registrar.reserve();
@@ -220,6 +249,12 @@ describeSuite({
                     null,
                     polkadotJs.tx.sudo.sudo(polkadotJs.tx.paras.addTrustedValidationCode(VALIDATION_CODE_NOT_INCLUDED))
                 );
+
+                if (shouldSkipStarlightProxy) {
+                    console.log(`Skipping E04 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(context, polkadotJs, await txAddsCode.signAsync(charlie));
+                    return;
+                }
 
                 await context.createBlock([await txAddsCode.signAsync(charlie)]);
                 await jumpSessions(context, 2);
