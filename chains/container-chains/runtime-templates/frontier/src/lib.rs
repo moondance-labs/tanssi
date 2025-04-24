@@ -860,6 +860,9 @@ pub const GAS_PER_SECOND: u64 = 40_000_000;
 /// u64 works for approximations because Weight is a very small unit compared to gas.
 pub const WEIGHT_PER_GAS: u64 = WEIGHT_REF_TIME_PER_SECOND / GAS_PER_SECOND;
 
+/// Block storage limit in bytes. Set to 40 KB.
+const BLOCK_STORAGE_LIMIT: u64 = 40 * 1024;
+
 parameter_types! {
     pub BlockGasLimit: U256
         = U256::from(NORMAL_DISPATCH_RATIO * MAXIMUM_BLOCK_WEIGHT.ref_time() / WEIGHT_PER_GAS);
@@ -867,7 +870,8 @@ parameter_types! {
     pub WeightPerGas: Weight = Weight::from_parts(WEIGHT_PER_GAS, 0);
     pub SuicideQuickClearLimit: u32 = 0;
     pub GasLimitPovSizeRatio: u32 = 16;
-    pub GasLimitStorageGrowthRatio: u64 = 366;
+    pub GasLimitStorageGrowthRatio: u64 =
+        BlockGasLimit::get().min(u64::MAX.into()).low_u64().saturating_div(BLOCK_STORAGE_LIMIT);
 }
 
 impl_on_charge_evm_transaction!();
@@ -897,7 +901,7 @@ impl pallet_evm::Config for Runtime {
     type OnCreate = ();
     type FindAuthor = FindAuthorAdapter;
     type GasLimitPovSizeRatio = GasLimitPovSizeRatio;
-    type GasLimitStorageGrowthRatio = ();
+    type GasLimitStorageGrowthRatio = GasLimitStorageGrowthRatio;
     type Timestamp = Timestamp;
     type WeightInfo = ();
 }
