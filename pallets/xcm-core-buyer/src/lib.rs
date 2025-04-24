@@ -22,7 +22,7 @@
 
 use frame_support::{Deserialize, Serialize};
 pub use pallet::*;
-use sp_runtime::Saturating;
+use sp_runtime::{SaturatedConversion, Saturating};
 
 #[cfg(test)]
 mod mock;
@@ -121,12 +121,11 @@ pub enum BuyingError<BlockNumber> {
 
 impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
     fn on_container_authors_noted(info: &[AuthorNotingInfo<T::AccountId>]) -> Weight {
-        let mut writes = 0;
+        let writes = info.len().saturated_into();
 
         for info in info {
             let para_id = info.para_id;
             PendingBlocks::<T>::remove(para_id);
-            writes.saturating_inc();
         }
 
         T::DbWeight::get().writes(writes)
