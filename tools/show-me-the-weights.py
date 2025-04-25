@@ -81,7 +81,7 @@ def diff_mode(git_ref):
             text=True
         )
     except subprocess.CalledProcessError as e:
-        print(f"Error running git diff: {e}", file=sys.stderr)
+        print(f"Error running git diff: {e}\n{result}", file=sys.stderr)
         sys.exit(1)
 
     diff_lines = result.stdout.splitlines()
