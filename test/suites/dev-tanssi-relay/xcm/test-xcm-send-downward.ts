@@ -61,7 +61,7 @@ describeSuite({
                     console.log(`Skipping T01 test for Starlight version ${specVersion}`);
                     await checkCallIsFiltered(context, polkadotJs, await txRoot.signAsync(alice));
                     return;
-                }   
+                }
 
                 await context.createBlock(await txRoot.signAsync(alice), { allowFailures: false });
 

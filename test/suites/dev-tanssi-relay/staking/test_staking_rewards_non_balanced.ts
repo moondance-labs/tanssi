@@ -38,7 +38,8 @@ describeSuite({
             const runtimeName = polkadotJs.runtimeVersion.specName.toString();
             isStarlight = runtimeName === "starlight";
             specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
-            shouldSkipStarlightPS = isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_POOLED_STAKING.includes(specVersion);
+            shouldSkipStarlightPS =
+                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_POOLED_STAKING.includes(specVersion);
 
             await createBlockAndRemoveInvulnerables(context, alice, true);
 

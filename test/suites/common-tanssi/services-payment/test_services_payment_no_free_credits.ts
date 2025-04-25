@@ -50,7 +50,13 @@ describeSuite({
                     console.log(`Skipping E01 test for Starlight version ${specVersion}`);
 
                     // We check that the call (without sudo) is filtered.
-                    await checkCallIsFiltered(context, polkadotJs, await removeFreeCredits.signAsync(alice));
+                    await checkCallIsFiltered(
+                        context,
+                        polkadotJs,
+                        await polkadotJs.tx.servicesPayment
+                            .setCollatorAssignmentCredits(paraId2000, 0n)
+                            .signAsync(alice)
+                    );
                     return;
                 }
 
