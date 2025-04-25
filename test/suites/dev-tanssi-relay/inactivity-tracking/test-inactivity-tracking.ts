@@ -18,7 +18,7 @@ describeSuite({
         });
         it({
             id: "E01",
-            title: "Pallet should correctly update collators' activity records",
+            title: "Pallet should correctly update collators' activity records with active chains",
             test: async () => {
                 const maxInactiveSessions = polkadotJs.consts.inactivityTracking.maxInactiveSessions.toNumber();
                 const paraId = polkadotJs.createType("ParaId", 2000);

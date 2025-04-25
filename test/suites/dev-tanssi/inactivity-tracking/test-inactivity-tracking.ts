@@ -40,9 +40,9 @@ describeSuite({
                 // After noting the first block, the 2 container chain collators should be added to the activity tracking storage
                 // for the current session
                 await context.createBlock();
-                const activeCollatorsForSession2AfterNoting =
+                const activeCollatorsForSessionAfterNoting =
                     await polkadotJs.query.inactivityTracking.activeCollatorsForCurrentSession();
-                expect(activeCollatorsForSession2AfterNoting.toHuman()).to.deep.eq([
+                expect(activeCollatorsForSessionAfterNoting.toHuman()).to.deep.eq([
                     context.keyring.bob.address,
                     context.keyring.charlie.address,
                     alice.address,
@@ -84,7 +84,7 @@ describeSuite({
 
         it({
             id: "E02",
-            title: "Pallet should correctly update collators' activity records with inactive collator",
+            title: "Pallet should correctly update collators' activity records with inactive chain",
             test: async () => {
                 const maxInactiveSessions = polkadotJs.consts.inactivityTracking.maxInactiveSessions.toNumber();
                 const daveAccountId = polkadotJs.createType("AccountId", daveAccountKey.publicKey);
@@ -130,6 +130,9 @@ describeSuite({
                     context.keyring.charlie.address,
                     alice.address,
                 ]);
+                const activeChainsForSessionAfterNoting =
+                    await polkadotJs.query.inactivityTracking.activeContainerChainsForCurrentSession();
+                expect(activeChainsForSessionAfterNoting.toHuman()).to.deep.eq(["2,000"]);
 
                 // If the same collator produces more than 1 block, the activity tracking storage
                 // for the current session should not add the collator again
@@ -137,6 +140,9 @@ describeSuite({
                 const activeCollatorsForSessionAfterSecondNoting =
                     await polkadotJs.query.inactivityTracking.activeCollatorsForCurrentSession();
                 expect(activeCollatorsForSessionAfterSecondNoting).to.deep.eq(activeCollatorsForSessionAfterNoting);
+                const activeChainsForSessionAfterSecondNoting =
+                    await polkadotJs.query.inactivityTracking.activeContainerChainsForCurrentSession();
+                expect(activeChainsForSessionAfterSecondNoting).to.deep.eq(activeChainsForSessionAfterNoting);
 
                 // Check that the collators are not added to the activity tracking storage for the current session
                 // before the end of the session
@@ -145,14 +151,11 @@ describeSuite({
                 expect(inactiveCollatorsRecordBeforeActivityPeriod.isEmpty).to.be.true;
 
                 // Check that the active collators are not added to the inactivity tracking storage after the end of the session.
-                // Storge must contain only daveAccountKey's address because it is inactive
+                // Storge must be empty because all collators for chain 2000 are active and chain 2001 is inactive
                 await jumpToSession(context, startSession + 1);
                 const inactiveCollatorsRecordWithinActivityPeriod =
                     await polkadotJs.query.inactivityTracking.inactiveCollators(startSession);
-                expect(inactiveCollatorsRecordWithinActivityPeriod.toHuman()).to.deep.eq([
-                    ferdieAccountKey.address,
-                    daveAccountKey.address,
-                ]);
+                expect(inactiveCollatorsRecordWithinActivityPeriod.isEmpty).to.be.true;
 
                 // After the end of activity period, the inactivity tracking storage for startSession should be empty
                 await jumpToSession(context, maxInactiveSessions + startSession + 1);
