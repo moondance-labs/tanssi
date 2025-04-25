@@ -66,7 +66,7 @@ def get_emoji(size, limit):
         emoji = "🚨 "
     return emoji
 
-def diff_mode():
+def diff_mode(git_ref):
     """
     Apply regex to added lines in git diff origin/master.
     Outputs each problematic match as: {emoji}{matching_line}.
@@ -75,7 +75,7 @@ def diff_mode():
     try:
         # -U0 to show only the changed lines, no context
         result = subprocess.run(
-            ['git', 'diff', '-U0', 'origin/master'],
+            ['git', 'diff', '-U0', git_ref],
             check=True,
             capture_output=True,
             text=True
@@ -184,7 +184,10 @@ def main():
 
     # If called with "diff", use diff mode
     if len(sys.argv) > 1 and sys.argv[1] == 'diff':
-        diff_mode()
+        ref = "origin/master"
+        if len(sys.argv) > 2:
+            ref = sys.argv[2]
+        diff_mode(ref)
         return
 
     ripgrep_mode()

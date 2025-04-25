@@ -354,7 +354,7 @@ jobs:
             ref: ${{ needs.set-tags.outputs.git_ref }}
         - name: Retrieve runtime diff
           run: |
-            ./tools/show-me-the-weights.py diff > runtime_size_report.md
+            ./tools/show-me-the-weights.py diff ${{ github.event.pull_request.base.sha }} > runtime_size_report.md
             cat runtime_size_report.md
         - name: Check for report content
           # set HAS_REPORT=true if file has any bytes, else false
