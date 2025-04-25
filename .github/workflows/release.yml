@@ -340,6 +340,56 @@ jobs:
                   body-path: runtime_size_report.md
                   edit-mode: replace
 
+    check-new-weights:
+      name: "Check new weights for values greater than the block limit"
+      runs-on: ubuntu-latest
+      if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+      needs: [ "set-tags" ]
+      env:
+        GH_TOKEN: ${{ github.token }}
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+          with:
+            ref: ${{ needs.set-tags.outputs.git_ref }}
+        - name: Retrieve runtime diff
+          run: |
+            python3 ./tools/show-me-the-weights.py diff > runtime_size_report.md
+            cat runtime_size_report.md
+        - name: Check for report content
+          # set HAS_REPORT=true if file has any bytes, else false
+          run: |
+            if [ -s runtime_size_report.md ]; then
+              echo "HAS_REPORT=true" >> $GITHUB_ENV
+            else
+              echo "HAS_REPORT=false" >> $GITHUB_ENV
+            fi
+        - name: Find existing bot comment
+          id: fc
+          uses: peter-evans/find-comment@v3
+          with:
+            issue-number: ${{ github.event.pull_request.number }}
+            comment-author: "github-actions[bot]"
+            body-includes: "Found problematic weights in PR diff."
+        - name: Post detailed report
+          if: env.HAS_REPORT == 'true'
+          uses: peter-evans/create-or-update-comment@v4
+          with:
+            comment-id:   ${{ steps.fc.outputs.comment-id }}
+            issue-number: ${{ github.event.pull_request.number }}
+            body-path:    runtime_size_report.md
+            edit-mode:    replace
+        - name: Mark “all good” when empty
+          if: >
+            env.HAS_REPORT == 'false' &&
+            steps.fc.outputs.comment-id != ''
+          uses: peter-evans/create-or-update-comment@v4
+          with:
+            comment-id:   ${{ steps.fc.outputs.comment-id }}
+            issue-number: ${{ github.event.pull_request.number }}
+            body:         |
+              **All weights are good now.** 🎉
+            edit-mode:    replace
     rust-test:
       runs-on: self-hosted
       needs: ["set-tags", "build"]
