@@ -2,6 +2,34 @@
 import subprocess
 import re
 import os
+import sys
+
+HELP_MSG = """
+Usage: show-me-the-weights.py [OPTIONS]
+
+Scan for heavy `Weight::from_parts(...)` calls in the codebase.
+
+Positional arguments:
+  diff          Only inspect added lines in `git diff origin/master`
+                (ignores deletions, and unchanged lines).
+
+Options:
+  -h, --help    Show this help message and exit.
+
+Description:
+  • Without any arguments, runs `ripgrep` on the repository, then lists the top 10 calls by
+    ref-time and proof-size, the enclosing function name and emojis according to severity.
+
+  • With `diff` arg, runs `git diff origin/master`, filters to only newly added lines and prints
+    problematic values. In case of no problems nothing is printed.
+
+Examples:
+  # Full scan of repository:
+  ./show-me-the-weights.py
+
+  # Only check newly added lines against origin/master:
+  ./show-me-the-weights.py diff
+"""
 
 # Max block weights from
 # polkadot/runtime/common/src/lib.rs
@@ -25,7 +53,6 @@ def find_function_name(filepath, lineno):
             return match.group(1)
     return '<unknown>'
 
-
 def format_number_with_underscores(n):
     # Use Python's formatting to insert underscores every three digits
     return format(n, '_')
@@ -39,13 +66,60 @@ def get_emoji(size, limit):
         emoji = "🚨 "
     return emoji
 
+def diff_mode():
+    """
+    Apply regex to added lines in git diff origin/master.
+    Outputs each problematic match as: {emoji}{matching_line}.
+    If all matches are green, outputs nothing.
+    """
+    try:
+        # -U0 to show only the changed lines, no context
+        result = subprocess.run(
+            ['git', 'diff', '-U0', 'origin/master'],
+            check=True,
+            capture_output=True,
+            text=True
+        )
+    except subprocess.CalledProcessError as e:
+        print(f"Error running git diff: {e}")
+        sys.exit(1)
 
-def main():
-    # get the directory where this script lives
+    diff_lines = result.stdout.splitlines()
+    pattern = re.compile(r'Weight::from_parts\(\s*([0-9_,]+)\s*,\s*([0-9_,]+)\s*\)')
+
+    any_issues = False
+    for line in diff_lines:
+        # Only consider added lines
+        if not line.startswith('+'):
+            continue
+        m = pattern.search(line)
+        if not m:
+            continue
+        arg1 = int(m.group(1).replace('_', ''))
+        arg2 = int(m.group(2).replace('_', ''))
+        emoji_ref = get_emoji(arg1, MAX_REF_TIME)
+        emoji_proof = get_emoji(arg2, MAX_PROOF_SIZE)
+        # Use worst severity
+        if emoji_ref == "🚨 " or emoji_proof == "🚨 ":
+            emoji = "🚨 "
+        elif emoji_ref == "⚠️  " or emoji_proof == "⚠️  ":
+            emoji = "⚠️  "
+        else:
+            emoji = "✅ "
+        # Only record non-green issues
+        if emoji != "✅ ":
+            if any_issues == False:
+                print("🚨 Found problematic weights in PR diff. Check them to ensure all extrinsics can still be called.")
+            any_issues = True
+            # Strip leading '+' for clarity
+            print(f'{line[1:]}')
+
+def ripgrep_mode():
+    """
+    Apply regex to all files in repo using ripgrep
+    """
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    # go up one level
     parent_dir = os.path.dirname(script_dir)
-    # Run ripgrep to find all Weight::from_parts(arg1, arg2) occurrences
     try:
         result = subprocess.run([
             'rg', '-Hno', r'Weight::from_parts\([0-9_,]+\s*,\s*[0-9_,]+\)', parent_dir
@@ -54,7 +128,6 @@ def main():
         print(f"Error running ripgrep: {e}")
         return
 
-    # Regex to parse file, line, arg1, arg2
     pattern = re.compile(
         r'^(.*?):(\d+):Weight::from_parts\(\s*([0-9_,]+)\s*,\s*([0-9_,]+)\s*\)'
     )
@@ -80,7 +153,7 @@ def main():
         print("No matches found.")
         return
 
-    # Print top 10 by arg1
+    # Print top 10 by ref time
     print("Top calls by ref time:")
     for i, m in enumerate(sorted(matches, key=lambda x: x['arg1'], reverse=True)):
         print(m['text'])
@@ -91,8 +164,8 @@ def main():
         if i+2 > 10 and m['arg1'] < MAX_REF_TIME:
             break
 
-    # Print top 10 by arg2
     print("")
+    # Print top 10 by proof size
     print("Top calls by proof size:")
     for i, m in enumerate(sorted(matches, key=lambda x: x['arg2'], reverse=True)):
         print(m['text'])
@@ -103,6 +176,18 @@ def main():
         if i+2 > 10 and m['arg2'] < MAX_PROOF_SIZE:
             break
 
+def main():
+    #
+    if len(sys.argv) > 1 and sys.argv[1] in ['--help', '-h']:
+        print(HELP_MSG)
+        return
+
+    # If called with "diff", use diff mode
+    if len(sys.argv) > 1 and sys.argv[1] == 'diff':
+        diff_mode()
+        return
+
+    ripgrep_mode()
+
 if __name__ == '__main__':
     main()
-
