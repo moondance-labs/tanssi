@@ -98,6 +98,8 @@ mod mocked_relay_keys;
 // We use this to detect whether randomness is activated
 const RANDOMNESS_ACTIVATED_AUX_KEY: &[u8] = b"__DEV_RANDOMNESS_ACTIVATED";
 
+const CONTAINER_CHAINS_EXCLUSION_AUX_KEY: &[u8] = b"__DEV_CONTAINER_CHAINS_EXCLUSION";
+
 type FullBackend = TFullBackend<Block>;
 
 pub struct NodeConfig;
@@ -294,6 +296,7 @@ async fn start_node_impl(
                 command_sink: None,
                 xcm_senders: None,
                 randomness_sender: None,
+                container_chain_exclusion_sender: None,
             };
 
             crate::rpc::create_full(deps).map_err(Into::into)
@@ -918,6 +921,7 @@ pub fn start_dev_node(
     let mut command_sink = None;
     let mut xcm_senders = None;
     let mut randomness_sender = None;
+    let mut container_chains_exclusion_sender = None;
     if parachain_config.role.is_authority() {
         let client = node_builder.client.clone();
         let (downward_xcm_sender, downward_xcm_receiver) = flume::bounded::<Vec<u8>>(100);
@@ -925,9 +929,13 @@ pub fn start_dev_node(
         // Create channels for mocked parachain candidates.
         let (mock_randomness_sender, mock_randomness_receiver) =
             flume::bounded::<(bool, Option<[u8; 32]>)>(100);
+        // Create channels for mocked exclusion of parachains from producing blocks
+        let (mock_container_chains_exclusion_sender, mock_container_chains_exclusion_receiver) =
+            flume::bounded::<Vec<ParaId>>(100);
 
         xcm_senders = Some((downward_xcm_sender, hrmp_xcm_sender));
         randomness_sender = Some(mock_randomness_sender);
+        container_chains_exclusion_sender = Some(mock_container_chains_exclusion_sender);
 
         command_sink = node_builder.install_manual_seal(ManualSealConfiguration {
             block_import,
@@ -947,7 +955,7 @@ pub fn start_dev_node(
                     .expect("Header lookup should succeed")
                     .expect("Header passed in as parent should be present in backend.");
 
-                let para_ids = client
+                let mut para_ids: Vec<ParaId> = client
                     .runtime_api()
                     .registered_paras(block)
                     .expect("registered_paras runtime API should exist")
@@ -1016,6 +1024,21 @@ pub fn start_dev_node(
                     .expect("Should be able to query aux storage; qed").unwrap_or((false, Option::<[u8; 32]>::None).encode());
                 let (mock_additional_randomness, mock_randomness_seed): (bool, Option<[u8; 32]>) = Decode::decode(&mut value.as_slice()).expect("Boolean non-decodable");
 
+                let container_chains_exclusion_messages: Vec<Vec<ParaId>> = mock_container_chains_exclusion_receiver.drain().collect();
+                // If there is a new set of excluded container chains, we update it
+                if let Some(mock_excluded_container_chains) = container_chains_exclusion_messages.last() {
+                    client
+                        .insert_aux(
+                            &[(CONTAINER_CHAINS_EXCLUSION_AUX_KEY, mock_excluded_container_chains.encode().as_slice())],
+                            &[],
+                        )
+                        .expect("Should be able to write to aux storage; qed");
+                }
+                let new_excluded_container_chains_value = client
+                    .get_aux(CONTAINER_CHAINS_EXCLUSION_AUX_KEY)
+                    .expect("Should be able to query aux storage; qed").unwrap_or(Vec::<ParaId>::new().encode());
+                let mock_excluded_container_chains: Vec<ParaId> = Decode::decode(&mut new_excluded_container_chains_value.as_slice()).expect("Vector non-decodable");
+                para_ids.retain(|x| !mock_excluded_container_chains.contains(x));
                 let client_set_aside_for_cidp = client.clone();
                 let client_for_xcm = client.clone();
                 async move {
@@ -1104,6 +1127,7 @@ pub fn start_dev_node(
                 command_sink: command_sink.clone(),
                 xcm_senders: xcm_senders.clone(),
                 randomness_sender: randomness_sender.clone(),
+                container_chain_exclusion_sender: container_chains_exclusion_sender.clone(),
             };
 
             crate::rpc::create_full(deps).map_err(Into::into)

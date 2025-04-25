@@ -1565,6 +1565,13 @@ impl tp_traits::GetSessionIndex<SessionIndex> for CurrentSessionIndexGetter {
     fn session_index() -> SessionIndex {
         Session::current_index()
     }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn skip_to_session(session_index: SessionIndex) {
+        while Session::current_index() < session_index {
+            Session::rotate_session();
+        }
+    }
 }
 
 impl pallet_configuration::Config for Runtime {
@@ -1830,6 +1837,17 @@ impl pallet_pooled_staking::Config for Runtime {
     type WeightInfo = weights::pallet_pooled_staking::SubstrateWeight<Runtime>;
 }
 
+impl pallet_inactivity_tracking::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type CollatorId = AccountId;
+    type MaxInactiveSessions = ConstU32<5>;
+    type MaxCollatorsPerSession = ConstU32<100>;
+    type CurrentSessionIndex = CurrentSessionIndexGetter;
+    type CurrentCollatorsFetcher = TanssiCollatorAssignment;
+    type GetSelfChainBlockAuthor = ();
+    type WeightInfo = weights::pallet_inactivity_tracking::SubstrateWeight<Runtime>;
+}
+
 construct_runtime! {
     pub enum Runtime
     {
@@ -1883,6 +1901,7 @@ construct_runtime! {
         // InflationRewards must be after Session
         InflationRewards: pallet_inflation_rewards = 33,
         PooledStaking: pallet_pooled_staking = 34,
+        InactivityTracking: pallet_inactivity_tracking = 35,
 
         // Governance stuff; uncallable initially.
         Treasury: pallet_treasury = 40,
@@ -2232,7 +2251,7 @@ impl pallet_author_noting::Config for Runtime {
     type ContainerChains = TanssiCollatorAssignment;
     type SlotBeacon = BabeSlotBeacon;
     type ContainerChainAuthor = TanssiCollatorAssignment;
-    type AuthorNotingHook = (InflationRewards, ServicesPayment);
+    type AuthorNotingHook = (InflationRewards, ServicesPayment, InactivityTracking);
     type RelayOrPara = pallet_author_noting::RelayMode;
     type MaxContainerChains = MaxLengthParaIds;
     type WeightInfo = weights::pallet_author_noting::SubstrateWeight<Runtime>;
@@ -2295,6 +2314,7 @@ mod benches {
         [pallet_invulnerables, TanssiInvulnerables]
         [pallet_data_preservers, DataPreservers]
         [pallet_pooled_staking, PooledStaking]
+        [pallet_inactivity_tracking, InactivityTracking]
         [pallet_configuration, CollatorConfiguration]
         [pallet_stream_payment, StreamPayment]
 
@@ -3349,6 +3369,11 @@ impl tanssi_initializer::ApplyNewSession<Runtime> for OwnApplySession {
             &queued_id_to_nimbus_map,
             &assignments.next_assignment,
         );
+        // 6. InactivityTracking
+        InactivityTracking::process_ended_session();
+    }
+    fn on_before_session_ending() {
+        InactivityTracking::on_before_session_ending();
     }
 }
 parameter_types! {
