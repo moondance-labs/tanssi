@@ -64,21 +64,31 @@ describeSuite({
             test: async () => {
                 await context.createBlock();
 
-                const reserveTx = await polkadotJs.tx.registrar.reserve().signAsync(alice);
+                if (shouldSkipStarlightCR) {
+                    console.log(`Skipping E01 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(
+                        context,
+                        polkadotJs,
+                        await polkadotJs.tx.registrar.reserve().signAsync(alice)
+                    );
+
+                    // Registrar tx is also filtered
+                    await checkCallIsFiltered(
+                        context,
+                        polkadotJs,
+                        await polkadotJs.tx.containerRegistrar
+                            .register(2002, containerChainGenesisData, "0x1111")
+                            .signAsync(alice)
+                    );
+                    return;
+                }
+
+                await context.createBlock([await polkadotJs.tx.registrar.reserve().signAsync(alice)]);
+
                 const registerTx = await polkadotJs.tx.containerRegistrar
                     .register(2002, containerChainGenesisData, "0x1111")
                     .signAsync(alice);
 
-                if (shouldSkipStarlightCR) {
-                    console.log(`Skipping E01 test for Starlight version ${specVersion}`);
-                    await checkCallIsFiltered(context, polkadotJs, reserveTx);
-
-                    // Registrar tx is also filtered
-                    await checkCallIsFiltered(context, polkadotJs, registerTx);
-                    return;
-                }
-
-                await context.createBlock([reserveTx]);
                 await context.createBlock([registerTx], { allowFailures: false });
 
                 await jumpSessions(context, 1);
