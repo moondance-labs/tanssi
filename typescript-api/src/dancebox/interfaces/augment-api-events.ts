@@ -17,7 +17,7 @@ import type {
     FrameSystemDispatchEventInfo,
     PalletInactivityTrackingActivityTrackingStatus,
     PalletMultisigTimepoint,
-    PalletPooledStakingTargetPool,
+    PalletPooledStakingPoolsActivePoolKind,
     PalletStreamPaymentDepositChange,
     PalletStreamPaymentParty,
     PalletStreamPaymentStreamConfig,
@@ -1241,14 +1241,14 @@ declare module "@polkadot/api-base/types/events" {
                 [
                     candidate: AccountId32,
                     delegator: AccountId32,
-                    pool: PalletPooledStakingTargetPool,
+                    pool: PalletPooledStakingPoolsActivePoolKind,
                     staked: u128,
                     released: u128,
                 ],
                 {
                     candidate: AccountId32;
                     delegator: AccountId32;
-                    pool: PalletPooledStakingTargetPool;
+                    pool: PalletPooledStakingPoolsActivePoolKind;
                     staked: u128;
                     released: u128;
                 }
@@ -1274,8 +1274,18 @@ declare module "@polkadot/api-base/types/events" {
              **/
             RequestedDelegate: AugmentedEvent<
                 ApiType,
-                [candidate: AccountId32, delegator: AccountId32, pool: PalletPooledStakingTargetPool, pending: u128],
-                { candidate: AccountId32; delegator: AccountId32; pool: PalletPooledStakingTargetPool; pending: u128 }
+                [
+                    candidate: AccountId32,
+                    delegator: AccountId32,
+                    pool: PalletPooledStakingPoolsActivePoolKind,
+                    pending: u128,
+                ],
+                {
+                    candidate: AccountId32;
+                    delegator: AccountId32;
+                    pool: PalletPooledStakingPoolsActivePoolKind;
+                    pending: u128;
+                }
             >;
             /**
              * User requested to undelegate from a candidate.
@@ -1288,14 +1298,14 @@ declare module "@polkadot/api-base/types/events" {
                 [
                     candidate: AccountId32,
                     delegator: AccountId32,
-                    from: PalletPooledStakingTargetPool,
+                    from: PalletPooledStakingPoolsActivePoolKind,
                     pending: u128,
                     released: u128,
                 ],
                 {
                     candidate: AccountId32;
                     delegator: AccountId32;
-                    from: PalletPooledStakingTargetPool;
+                    from: PalletPooledStakingPoolsActivePoolKind;
                     pending: u128;
                     released: u128;
                 }
@@ -1340,7 +1350,7 @@ declare module "@polkadot/api-base/types/events" {
                 [
                     candidate: AccountId32,
                     delegator: AccountId32,
-                    sourcePool: PalletPooledStakingTargetPool,
+                    sourcePool: PalletPooledStakingPoolsActivePoolKind,
                     sourceShares: u128,
                     sourceStake: u128,
                     targetShares: u128,
@@ -1351,7 +1361,7 @@ declare module "@polkadot/api-base/types/events" {
                 {
                     candidate: AccountId32;
                     delegator: AccountId32;
-                    sourcePool: PalletPooledStakingTargetPool;
+                    sourcePool: PalletPooledStakingPoolsActivePoolKind;
                     sourceShares: u128;
                     sourceStake: u128;
                     targetShares: u128;
@@ -1518,8 +1528,8 @@ declare module "@polkadot/api-base/types/events" {
             >;
             MaxCorePriceUpdated: AugmentedEvent<
                 ApiType,
-                [paraId: u32, maxCorePrice: Option<u128>],
-                { paraId: u32; maxCorePrice: Option<u128> }
+                [paraId: u32, maxCorePrice: u128],
+                { paraId: u32; maxCorePrice: u128 }
             >;
             RefundAddressUpdated: AugmentedEvent<
                 ApiType,

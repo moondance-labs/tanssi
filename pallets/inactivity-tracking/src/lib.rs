@@ -22,6 +22,7 @@
 //! The tracking functionality can be enabled or disabled with root privileges.
 //! By default, the tracking is enabled.
 #![cfg_attr(not(feature = "std"), no_std)]
+
 use {
     frame_support::{dispatch::DispatchResult, pallet_prelude::Weight},
     parity_scale_codec::{Decode, Encode},
@@ -63,7 +64,7 @@ pub mod pallet {
         sp_std::collections::btree_set::BTreeSet,
     };
 
-    /// The status of the activity tracking
+    /// The status of collator activity tracking
     #[derive(
         Clone,
         PartialEq,
@@ -78,10 +79,13 @@ pub mod pallet {
     )]
     pub enum ActivityTrackingStatus {
         Enabled {
+            /// The session in which we will start recording the collator activity after enabling it
             start: SessionIndex,
+            /// The session after which the activity tracking can be disabled
             end: SessionIndex,
         },
         Disabled {
+            /// The session after which the activity tracking can be enabled
             end: SessionIndex,
         },
     }

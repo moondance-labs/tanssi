@@ -1373,6 +1373,7 @@ declare module "@polkadot/api-base/types/errors" {
             MathUnderflow: AugmentedError<ApiType>;
             NoOneIsStaking: AugmentedError<ApiType>;
             NotEnoughShares: AugmentedError<ApiType>;
+            PoolsExtrinsicsArePaused: AugmentedError<ApiType>;
             RequestCannotBeExecuted: AugmentedError<ApiType>;
             RewardsMustBeNonZero: AugmentedError<ApiType>;
             StakeMustBeNonZero: AugmentedError<ApiType>;

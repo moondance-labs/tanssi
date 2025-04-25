@@ -21,6 +21,7 @@ import type {
     u16,
     u32,
     u64,
+    u8,
 } from "@polkadot/types-codec";
 import type { AnyNumber, ITuple } from "@polkadot/types-codec/types";
 import type { AccountId32, H256, Perbill } from "@polkadot/types/interfaces/runtime";
@@ -67,6 +68,7 @@ import type {
     PalletMultisigMultisig,
     PalletPooledStakingCandidateEligibleCandidate,
     PalletPooledStakingPendingOperationKey,
+    PalletPooledStakingPoolsCandidateSummary,
     PalletPooledStakingPoolsKey,
     PalletPreimageOldRequestStatus,
     PalletPreimageRequestStatus,
@@ -2336,6 +2338,35 @@ declare module "@polkadot/api-base/types/storage" {
             [key: string]: QueryableStorageEntry<ApiType>;
         };
         pooledStaking: {
+            /**
+             * Summary of a candidate state.
+             **/
+            candidateSummaries: AugmentedQuery<
+                ApiType,
+                (arg: AccountId32 | string | Uint8Array) => Observable<PalletPooledStakingPoolsCandidateSummary>,
+                [AccountId32]
+            > &
+                QueryableStorageEntry<ApiType, [AccountId32]>;
+            /**
+             * Summary of a delegator's delegation.
+             * Used to quickly fetch all delegations of a delegator.
+             **/
+            delegatorCandidateSummaries: AugmentedQuery<
+                ApiType,
+                (arg1: AccountId32 | string | Uint8Array, arg2: AccountId32 | string | Uint8Array) => Observable<u8>,
+                [AccountId32, AccountId32]
+            > &
+                QueryableStorageEntry<ApiType, [AccountId32, AccountId32]>;
+            /**
+             * Pauses the ability to modify pools through extrinsics.
+             *
+             * Currently added only to run the multi-block migration to compute
+             * `DelegatorCandidateSummaries` and `CandidateSummaries`. It will NOT
+             * prevent to distribute rewards, which is fine as the reward distribution
+             * process doesn't alter the pools in a way that will mess with the migration.
+             **/
+            pausePoolsExtrinsics: AugmentedQuery<ApiType, () => Observable<bool>, []> &
+                QueryableStorageEntry<ApiType, []>;
             /**
              * Pending operations balances.
              * Balances are expressed in joining/leaving shares amounts.

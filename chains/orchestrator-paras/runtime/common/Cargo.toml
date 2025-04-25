@@ -25,7 +25,7 @@ pallet-external-validator-slashes = { workspace = true }
 pallet-external-validators = { workspace = true }
 pallet-foreign-asset-creator = { workspace = true }
 pallet-invulnerables = { workspace = true }
-pallet-pooled-staking = { workspace = true }
+pallet-pooled-staking = { workspace = true, features = [ "migrations" ] }
 pallet-registrar = { workspace = true }
 pallet-services-payment = { workspace = true }
 pallet-session = { workspace = true }
