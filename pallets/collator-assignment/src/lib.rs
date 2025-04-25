@@ -294,8 +294,11 @@ pub mod pallet {
             // We get the containerChains that we will have at the target session
             let container_chains =
                 T::ContainerChains::session_container_chains(target_session_index);
-            let num_total_registered_paras =
-                (container_chains.parachains.len() + container_chains.parathreads.len()) as u32;
+            let num_total_registered_paras = container_chains
+                .parachains
+                .len()
+                .saturating_add(container_chains.parathreads.len())
+                as u32;
             let mut container_chain_ids = container_chains.parachains;
             let mut parathreads: Vec<_> = container_chains
                 .parathreads
@@ -519,9 +522,9 @@ pub mod pallet {
         ) {
             // Count number of assigned collators
             let mut num_collators = 0;
-            num_collators += new_assigned.orchestrator_chain.len();
+            num_collators.saturating_accrue(new_assigned.orchestrator_chain.len());
             for (_para_id, collators) in &new_assigned.container_chains {
-                num_collators += collators.len();
+                num_collators.saturating_accrue(collators.len());
             }
 
             let mut num_collators = num_collators as u32;
@@ -612,7 +615,7 @@ pub mod pallet {
 
             // Account reads and writes for on_finalize
             if T::GetRandomnessForNextBlock::should_end_session(n.saturating_add(One::one())) {
-                weight += T::DbWeight::get().reads_writes(1, 1);
+                weight.saturating_accrue(T::DbWeight::get().reads_writes(1, 1));
             }
 
             weight

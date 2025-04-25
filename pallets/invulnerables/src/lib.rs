@@ -281,16 +281,17 @@ where
         let collator_id = Runtime::CollatorIdOf::convert(rewarded.clone())
             .ok_or(Error::<Runtime>::UnableToDeriveCollatorId)?;
         // weight to read invulnerables
-        total_weight += Runtime::DbWeight::get().reads(1);
+        total_weight.saturating_accrue(Runtime::DbWeight::get().reads(1));
         if !Invulnerables::<Runtime>::get().contains(&collator_id) {
             let post_info = Fallback::distribute_rewards(rewarded, amount)?;
             if let Some(weight) = post_info.actual_weight {
-                total_weight += weight;
+                total_weight.saturating_accrue(weight);
             }
         } else {
             Currency::resolve(&rewarded, amount).map_err(|_| TokenError::NotExpendable)?;
-            total_weight +=
-                Runtime::WeightInfo::reward_invulnerable(Runtime::MaxInvulnerables::get())
+            total_weight.saturating_accrue(Runtime::WeightInfo::reward_invulnerable(
+                Runtime::MaxInvulnerables::get(),
+            ))
         }
         Ok(Some(total_weight).into())
     }
