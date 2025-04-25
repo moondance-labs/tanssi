@@ -23,7 +23,7 @@ start_geth() {
         ' \
         $assets_dir/genesis.json > $output_dir/genesis.json
     geth init --datadir "$ethereum_data_dir" --state.scheme=hash "$output_dir/genesis.json"
-    geth --vmdebug --datadir "$ethereum_data_dir" --networkid 11155111 \
+    geth --vmdebug --datadir "$ethereum_data_dir" --networkid 31337 \
     --http --http.api debug,personal,eth,net,web3,txpool,engine,miner --ws --ws.api debug,eth,net,web3 \
     --rpc.allow-unprotected-txs --mine \
     --miner.etherbase=0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD \
