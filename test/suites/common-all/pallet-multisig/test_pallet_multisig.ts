@@ -36,7 +36,7 @@ describeSuite({
             specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
             isStarlight = polkadotJs.consts.system.version.specName.toString() === "starlight";
             // exmple call and hash to be used in tests
-            let example_call;
+            let example_call: any;
             if (isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_BALANCES.includes(specVersion)) {
                 example_call = context.polkadotJs().tx.system.remark("0x");
             } else {

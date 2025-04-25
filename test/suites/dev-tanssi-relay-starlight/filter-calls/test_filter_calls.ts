@@ -2,7 +2,7 @@ import "@tanssi/api-augment";
 
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
-import { type ApiPromise } from "@polkadot/api";
+import type { ApiPromise } from "@polkadot/api";
 import type { SpRuntimeDispatchError } from "@polkadot/types/lookup";
 
 describeSuite({

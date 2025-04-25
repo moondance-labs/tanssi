@@ -1,8 +1,8 @@
 import { expect } from "@moonwall/cli";
-import { type ApiPromise } from "@polkadot/api";
+import type { ApiPromise } from "@polkadot/api";
 import type { SpRuntimeDispatchError } from "@polkadot/types/lookup";
 
-export async function expectEventCount(polkadotJs, eventCounts: Record<string, number>): Promise<void> {
+export async function expectEventCount(polkadotJs: ApiPromise, eventCounts: Record<string, number>): Promise<void> {
     const events = await polkadotJs.query.system.events();
 
     for (const [eventMethod, expectedCount] of Object.entries(eventCounts)) {
