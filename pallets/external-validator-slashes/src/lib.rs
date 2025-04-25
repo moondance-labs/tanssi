@@ -259,7 +259,7 @@ pub mod pallet {
             // fetch slashes for the era in which we want to defer
             let mut era_slashes = Slashes::<T>::get(&era);
 
-            let last_item = slash_indices[slash_indices.len() - 1];
+            let last_item = slash_indices[slash_indices.len().saturating_sub(1)];
             ensure!(
                 (last_item as usize) < era_slashes.len(),
                 Error::<T>::InvalidSlashIndex
