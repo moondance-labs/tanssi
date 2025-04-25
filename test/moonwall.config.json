@@ -48,7 +48,7 @@
             }
         },
         {
-            "name": "dev_tanssi_relay",
+            "name": "dev_tanssi_relay_dancelight",
             "envVars": ["DEBUG_COLORS=1"],
             "testFileDir": ["suites/dev-tanssi-relay", "suites/common-all", "suites/common-tanssi"],
             "runScripts": [

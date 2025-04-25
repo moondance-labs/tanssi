@@ -44,8 +44,10 @@ Run tests:
 ```sh
 # manual-seal tests, only orchestrator chain runs, container chains are mocked
 pnpm moonwall test dev_tanssi
-# manual-seal tests, only orchestrator chain runs in relay mode, container chains are mocked
-pnpm moonwall test dev_tanssi_relay
+# manual-seal tests, only orchestrator chain runs in (dancelight) relay mode, container chains are mocked
+pnpm moonwall test dev_tanssi_relay_dancelight
+# manual-seal tests, only orchestrator chain runs in (starlight) relay mode, container chains are mocked
+pnpm moonwall test dev_tanssi_relay_starlight
 # manual-seal tests, only frontier template runs, orchestrator is mocked
 pnpm moonwall test dev_frontier_template
 # zombienet tests, all the chains run
