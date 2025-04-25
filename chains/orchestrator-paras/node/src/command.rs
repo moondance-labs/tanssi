@@ -491,6 +491,7 @@ pub fn run() -> Result<()> {
                     collator_options,
                     id,
                     hwbench,
+                    cli.run.experimental_max_pov_percentage,
                 )
                     .await
                     .map(|r| r.0)

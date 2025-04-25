@@ -160,6 +160,8 @@ pub mod xcm_config;
 
 pub mod bridge_to_ethereum_config;
 
+pub mod eth_chain_config;
+
 // Weights
 mod weights;
 
@@ -1441,7 +1443,7 @@ impl Get<u64> for TimestampProvider {
 
 parameter_types! {
     // Chain ID of Sepolia.
-    // Output is: 34cdd3f84040fb44d70e83b892797846a8c0a556ce08cd470bf6d4cf7b94ff77
+    // Output is: ce796ae65569a670d0c1cc1ac12515a3ce21b5fbf729d63d7b289baad070139d
     pub EthereumSovereignAccount: AccountId =
         tp_bridge::EthereumLocationsConverterFor::<AccountId>::convert_location(
             &EthereumLocation::get()

@@ -230,7 +230,7 @@ pub fn do_test(
             assert_ok!(ServicesPayment::set_max_core_price(
                 root_origin,
                 PARATHREAD_ID.into(),
-                Some(max_core_price)
+                max_core_price
             ));
         }
     });
