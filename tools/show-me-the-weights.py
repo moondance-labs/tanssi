@@ -81,9 +81,12 @@ def diff_mode(git_ref):
             text=True
         )
     except subprocess.CalledProcessError as e:
-        print(f"Error running git diff: {e}\n{result}", file=sys.stderr)
-        sys.exit(1)
-
+        print(f"Error running git diff: {e}: (exit {e.returncode})", file=sys.stderr)
+        if e.stdout:
+            print(e.stdout, file=sys.stderr)
+        if e.stderr:
+            print(e.stderr, file=sys.stderr)
+        sys.exit(e.returncode)
     diff_lines = result.stdout.splitlines()
     pattern = re.compile(r'Weight::from_parts\(\s*([0-9_,]+)\s*,\s*([0-9_,]+)\s*\)')
 
