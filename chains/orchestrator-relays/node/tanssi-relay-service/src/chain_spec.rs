@@ -20,7 +20,7 @@ use {
     beefy_primitives::ecdsa_crypto::AuthorityId as BeefyId,
     cumulus_primitives_core::ParaId,
     dancelight_runtime::genesis_config_presets::{
-        dancelight_development_config_genesis, dancelight_local_testnet_genesis
+        dancelight_development_config_genesis, dancelight_local_testnet_genesis,
     },
     dp_container_chain_genesis_data::{
         json::container_chain_genesis_data_from_path, ContainerChainGenesisData,
