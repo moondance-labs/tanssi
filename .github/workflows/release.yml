@@ -352,6 +352,10 @@ jobs:
           uses: actions/checkout@v4
           with:
             ref: ${{ needs.set-tags.outputs.git_ref }}
+        - name: Fetch PR base commit
+          # bring in the base SHA so we can diff against it
+          run: |
+            git fetch origin ${{ github.event.pull_request.base.sha }}
         - name: Retrieve runtime diff
           run: |
             ./tools/show-me-the-weights.py diff ${{ github.event.pull_request.base.sha }} > runtime_size_report.md \
