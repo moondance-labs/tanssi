@@ -12,10 +12,12 @@ describeSuite({
         let multiplyContractAddress: `0x${string}`;
 
         beforeAll(async () => {
-            const { contractAddress: addr1 } = await context.deployContract("SmartContractPrecompileCallTest");
+            const { contractAddress: addr1 } = await context.deployContract("SmartContractPrecompileCallTest", {
+                gas: 20000000n,
+            });
             testContractAddress = addr1;
 
-            const { contractAddress: addr3 } = await context.deployContract("MultiplyBy7");
+            const { contractAddress: addr3 } = await context.deployContract("MultiplyBy7", { gas: 20000000n });
             multiplyContractAddress = addr3;
         });
         it({

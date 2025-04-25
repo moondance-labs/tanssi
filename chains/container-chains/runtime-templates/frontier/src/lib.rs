@@ -860,9 +860,6 @@ pub const GAS_PER_SECOND: u64 = 40_000_000;
 /// u64 works for approximations because Weight is a very small unit compared to gas.
 pub const WEIGHT_PER_GAS: u64 = WEIGHT_REF_TIME_PER_SECOND / GAS_PER_SECOND;
 
-/// Block storage limit in bytes. Set to 40 KB.
-const BLOCK_STORAGE_LIMIT: u64 = 40 * 1024;
-
 parameter_types! {
     pub BlockGasLimit: U256
         = U256::from(NORMAL_DISPATCH_RATIO * MAXIMUM_BLOCK_WEIGHT.ref_time() / WEIGHT_PER_GAS);
@@ -870,8 +867,8 @@ parameter_types! {
     pub WeightPerGas: Weight = Weight::from_parts(WEIGHT_PER_GAS, 0);
     pub SuicideQuickClearLimit: u32 = 0;
     pub GasLimitPovSizeRatio: u32 = 16;
-    pub GasLimitStorageGrowthRatio: u64 =
-        BlockGasLimit::get().min(u64::MAX.into()).low_u64() / BLOCK_STORAGE_LIMIT;
+    /// Hardcoding the value, since it is computed on block execution. Check calculations in the tests
+    pub GasLimitStorageGrowthRatio: u64 = 1464;
 }
 
 impl_on_charge_evm_transaction!();
@@ -1847,4 +1844,20 @@ cumulus_pallet_parachain_system::register_validate_block! {
     Runtime = Runtime,
     CheckInherents = CheckInherents,
     BlockExecutor = pallet_author_inherent::BlockExecutor::<Runtime, Executive>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Block storage limit in bytes. Set to 40 KB.
+    const BLOCK_STORAGE_LIMIT: u64 = 40 * 1024;
+
+    #[test]
+    fn check_ratio_constant() {
+        assert_eq!(
+            BlockGasLimit::get().min(u64::MAX.into()).low_u64() / BLOCK_STORAGE_LIMIT,
+            GasLimitStorageGrowthRatio::get()
+        );
+    }
 }

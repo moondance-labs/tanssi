@@ -18,7 +18,9 @@ describeSuite({
         beforeAll(async () => {
             assetId = context.polkadotJs().createType("u16", ASSET_ID);
 
-            const { abi, contractAddress } = await deployCreateCompiledContract(context, "ERC20Instance");
+            const { abi, contractAddress } = await deployCreateCompiledContract(context, "ERC20Instance", {
+                gas: 20000000n,
+            });
             erc20Abi = abi;
             erc20InstanceAddress = contractAddress;
 

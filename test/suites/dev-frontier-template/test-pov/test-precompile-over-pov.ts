@@ -22,7 +22,11 @@ describeSuite({
         let callData: `0x${string}`;
 
         beforeAll(async () => {
-            const { contractAddress: contractAdd1, abi } = await deployCreateCompiledContract(context, "CallForwarder");
+            const { contractAddress: contractAdd1, abi } = await deployCreateCompiledContract(
+                context,
+                "CallForwarder",
+                { gas: 20000000n }
+            );
             proxyAddress = contractAdd1;
             proxyAbi = abi;
             contracts = await deployHeavyContracts(context, 6000, 6000 + MAX_CONTRACTS);
