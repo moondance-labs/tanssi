@@ -128,7 +128,7 @@ pub mod pallet {
         },
         MaxCorePriceUpdated {
             para_id: ParaId,
-            max_core_price: Option<u128>,
+            max_core_price: u128,
         },
         CollatorAssignmentCreditsSet {
             para_id: ParaId,
@@ -273,15 +273,11 @@ pub mod pallet {
         pub fn set_max_core_price(
             origin: OriginFor<T>,
             para_id: ParaId,
-            max_core_price: Option<u128>,
+            max_core_price: u128,
         ) -> DispatchResultWithPostInfo {
             T::ManagerOrigin::ensure_origin(origin, &para_id)?;
 
-            if let Some(max_core_price) = max_core_price {
-                MaxCorePrice::<T>::insert(para_id, max_core_price);
-            } else {
-                MaxCorePrice::<T>::remove(para_id);
-            }
+            MaxCorePrice::<T>::insert(para_id, max_core_price);
 
             Self::deposit_event(Event::<T>::MaxCorePriceUpdated {
                 para_id,
