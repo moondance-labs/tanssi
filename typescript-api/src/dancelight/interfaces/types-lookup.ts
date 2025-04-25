@@ -7568,6 +7568,7 @@ declare module "@polkadot/types/lookup" {
         readonly isErrorComputingSlash: boolean;
         readonly isEthereumValidateFail: boolean;
         readonly isEthereumDeliverFail: boolean;
+        readonly isRootTestInvalidParams: boolean;
         readonly type:
             | "EmptyTargets"
             | "InvalidSlashIndex"
@@ -7577,7 +7578,8 @@ declare module "@polkadot/types/lookup" {
             | "DeferPeriodIsOver"
             | "ErrorComputingSlash"
             | "EthereumValidateFail"
-            | "EthereumDeliverFail";
+            | "EthereumDeliverFail"
+            | "RootTestInvalidParams";
     }
 
     /** @name PalletExternalValidatorsRewardsEraRewardPoints (663) */

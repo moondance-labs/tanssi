@@ -6636,6 +6636,7 @@ export default {
             "ErrorComputingSlash",
             "EthereumValidateFail",
             "EthereumDeliverFail",
+            "RootTestInvalidParams",
         ],
     },
     /**
