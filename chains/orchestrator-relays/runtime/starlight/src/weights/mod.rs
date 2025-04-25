@@ -17,6 +17,7 @@
 pub mod frame_system;
 pub mod frame_system_extensions;
 pub mod pallet_asset_rate;
+pub mod pallet_assets;
 pub mod pallet_author_noting;
 pub mod pallet_balances;
 pub mod pallet_beefy_mmr;
@@ -28,6 +29,7 @@ pub mod pallet_ethereum_token_transfers;
 pub mod pallet_external_validator_slashes;
 pub mod pallet_external_validators;
 pub mod pallet_external_validators_rewards;
+pub mod pallet_foreign_asset_creator;
 pub mod pallet_identity;
 pub mod pallet_invulnerables;
 pub mod pallet_message_queue;

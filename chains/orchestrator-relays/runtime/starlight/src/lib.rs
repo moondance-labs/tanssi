@@ -2007,6 +2007,10 @@ construct_runtime! {
         // Asset rate.
         AssetRate: pallet_asset_rate = 86,
 
+        // Foreign assets.
+        ForeignAssets: pallet_assets::<Instance1> = 87,
+        ForeignAssetsCreator: pallet_foreign_asset_creator = 88,
+
         // Pallet for sending XCM.
         XcmPallet: pallet_xcm = 90,
 
@@ -2368,6 +2372,10 @@ mod benches {
         [pallet_pooled_staking, PooledStaking]
         [pallet_configuration, CollatorConfiguration]
         [pallet_stream_payment, StreamPayment]
+
+        // Foreign Assets
+        [pallet_foreign_asset_creator, ForeignAssetsCreator]
+        [pallet_assets, ForeignAssets]
 
         // XCM
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
