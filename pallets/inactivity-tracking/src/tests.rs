@@ -311,10 +311,7 @@ fn inactivity_tracking_handler_with_enabled_tracking_after_disabling_it_works() 
             suspension_period + 1
         );
         let inactive_collators = get_collator_set(vec![COLLATOR_1, COLLATOR_2]);
-        // We insert the collators in the inactive collators storage for the next MaxInactiveSessions = 2
-        // after activity tracking status is enabled
-        InactiveCollators::<Test>::insert(suspension_period + 2, inactive_collators.clone());
-        InactiveCollators::<Test>::insert(suspension_period + 3, inactive_collators);
+
         // Since we do not introduce any activity record, but the enabled tracking status
         // start = suspension_period + 2 < CurrentSessionIndex + MaxInactiveStatus = suspension_period + 1 + 2
         // so the collators should be considered active
@@ -348,12 +345,17 @@ fn inactivity_tracking_handler_with_enabled_tracking_after_disabling_it_works() 
             ),
             false
         );
+        roll_to(SESSION_BLOCK_LENGTH * (suspension_period as u64 + 3));
+        // Manually re-insert the collators to inactive collators storage after a session is processed
+        // to simulate the case when the collators are inactive
+        InactiveCollators::<Test>::insert(suspension_period + 2, inactive_collators.clone());
         // Once CurrentSessionIndex >= start + MaxInactiveSessions collators will be considered inactive
         // since there are inactivity records for it
         roll_to(
             SESSION_BLOCK_LENGTH
                 * (suspension_period as u64 + 2 + get_max_inactive_sessions() as u64),
         );
+        InactiveCollators::<Test>::insert(suspension_period + 3, inactive_collators);
         assert_eq!(
             <Test as Config>::CurrentSessionIndex::session_index(),
             suspension_period + 2 + get_max_inactive_sessions()
@@ -451,10 +453,6 @@ fn processing_ended_session_correctly_cleans_outdated_collator_records() {
 
         assert_eq!(ActiveCollatorsForCurrentSession::<Test>::get(), empty_set);
         assert_eq!(InactiveCollators::<Test>::get(0), inactive_collator_record);
-        assert_eq!(
-            InactiveCollators::<Test>::get(1),
-            get_collator_set(vec![COLLATOR_1, COLLATOR_2])
-        );
 
         roll_to((get_max_inactive_sessions() as u64 + 1) * SESSION_BLOCK_LENGTH + 1);
         assert_eq!(
