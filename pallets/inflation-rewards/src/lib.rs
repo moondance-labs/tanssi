@@ -89,7 +89,7 @@ pub mod pallet {
                 };
 
             // Get the number of chains at this block (tanssi + container chain blocks)
-            weight += T::DbWeight::get().reads_writes(1, 1);
+            weight.saturating_accrue(T::DbWeight::get().reads_writes(1, 1));
             let registered_para_ids = T::ContainerChains::current_container_chains();
 
             let mut number_of_chains: BalanceOf<T> = (registered_para_ids.len() as u32).into();
@@ -97,7 +97,7 @@ pub mod pallet {
             // We only add 1 extra chain to number_of_chains if we are
             // in a parachain context with an orchestrator configured.
             if T::GetSelfChainBlockAuthor::get_block_author().is_some() {
-                number_of_chains = number_of_chains.saturating_add(1u32.into());
+                number_of_chains.saturating_inc();
             }
 
             // Only create new supply and rewards if number_of_chains is not zero.
@@ -110,7 +110,13 @@ pub mod pallet {
                 let total_rewards = T::RewardsPortion::get() * new_supply.peek();
                 let (rewards_credit, reminder_credit) = new_supply.split(total_rewards);
 
-                let rewards_per_chain: BalanceOf<T> = rewards_credit.peek() / number_of_chains;
+                let rewards_per_chain: BalanceOf<T> = rewards_credit
+                    .peek()
+                    .checked_div(&number_of_chains)
+                    .unwrap_or_else(|| {
+                        log::error!("Rewards per chain is zero");
+                        BalanceOf::<T>::zero()
+                    });
                 let (mut total_reminder, staking_rewards) = rewards_credit.split_merge(
                     total_rewards % number_of_chains,
                     (reminder_credit, CreditOf::<T>::zero()),
@@ -134,7 +140,7 @@ pub mod pallet {
 
                 // We don't reward the orchestrator in solochain mode
                 if let Some(orchestrator_author) = T::GetSelfChainBlockAuthor::get_block_author() {
-                    weight += Self::reward_orchestrator_author(orchestrator_author);
+                    weight.saturating_accrue(Self::reward_orchestrator_author(orchestrator_author));
                 }
             }
 
@@ -210,7 +216,7 @@ pub mod pallet {
         fn reward_orchestrator_author(orchestrator_author: T::AccountId) -> Weight {
             let mut total_weight = T::DbWeight::get().reads(1);
             if let Some(chains_to_reward) = ChainsToReward::<T>::get() {
-                total_weight += T::DbWeight::get().reads(1);
+                total_weight.saturating_accrue(T::DbWeight::get().reads(1));
                 match T::StakingRewardsDistributor::distribute_rewards(
                     orchestrator_author.clone(),
                     T::Currency::withdraw(
@@ -229,7 +235,7 @@ pub mod pallet {
                         });
 
                         if let Some(weight) = actual_weight {
-                            total_weight += weight
+                            total_weight.saturating_accrue(weight)
                         }
                     }
                     Err(e) => {
@@ -282,7 +288,7 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
                                 para_id,
                             });
                             if let Some(weight) = actual_weight {
-                                total_weight += weight
+                                total_weight.saturating_accrue(weight)
                             }
                         }
                         Err(e) => {
@@ -295,7 +301,7 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
                 }
             }
 
-            total_weight += T::DbWeight::get().writes(1);
+            total_weight.saturating_accrue(T::DbWeight::get().writes(1));
             // Keep track of chains to reward
             ChainsToReward::<T>::put(container_chains_to_reward);
         } else {
@@ -311,7 +317,7 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
         // arbitrary amount to perform rewarding
         // we mint twice as much to the rewards account to make it possible
         let reward_amount = 1_000_000_000u32;
-        let mint = reward_amount * 2;
+        let mint = reward_amount.saturating_mul(2);
 
         T::Currency::resolve(
             &T::PendingRewardsAccount::get(),

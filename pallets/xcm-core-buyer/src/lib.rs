@@ -22,6 +22,7 @@
 
 use frame_support::{Deserialize, Serialize};
 pub use pallet::*;
+use sp_runtime::{SaturatedConversion, Saturating};
 
 #[cfg(test)]
 mod mock;
@@ -120,12 +121,11 @@ pub enum BuyingError<BlockNumber> {
 
 impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
     fn on_container_authors_noted(info: &[AuthorNotingInfo<T::AccountId>]) -> Weight {
-        let mut writes = 0;
+        let writes = info.len().saturated_into();
 
         for info in info {
             let para_id = info.para_id;
             PendingBlocks::<T>::remove(para_id);
-            writes += 1;
         }
 
         T::DbWeight::get().writes(writes)
@@ -374,7 +374,7 @@ pub mod pallet {
             ensure_none(origin)?;
 
             let current_nonce = CollatorSignatureNonce::<T>::get(para_id);
-            CollatorSignatureNonce::<T>::set(para_id, current_nonce + 1);
+            CollatorSignatureNonce::<T>::set(para_id, current_nonce.saturating_add(1));
 
             Self::on_collator_instantaneous_core_requested(para_id, Some(proof.public_key))
         }
@@ -448,7 +448,7 @@ pub mod pallet {
                     // Success. Add para id to pending block
                     let now = <frame_system::Pallet<T>>::block_number();
                     let ttl = T::PendingBlocksTtl::get();
-                    PendingBlocks::<T>::insert(para_id, now + ttl);
+                    PendingBlocks::<T>::insert(para_id, now.saturating_add(ttl));
                 }
                 Response::DispatchResult(_) => {
                     // We do not add paraid to pending block on failure
@@ -664,8 +664,8 @@ pub mod pallet {
             });
             let notify_call_weight = notify_call.get_dispatch_info().call_weight;
 
-            let notify_query_ttl =
-                <frame_system::Pallet<T>>::block_number() + T::CoreBuyingXCMQueryTtl::get();
+            let notify_query_ttl = <frame_system::Pallet<T>>::block_number()
+                .saturating_add(T::CoreBuyingXCMQueryTtl::get());
 
             // Send XCM to relay chain
             let relay_chain = Location::parent();
@@ -707,7 +707,8 @@ pub mod pallet {
                 transaction_status_query_id: query_id,
             });
 
-            let in_flight_order_ttl = notify_query_ttl + T::AdditionalTtlForInflightOrders::get();
+            let in_flight_order_ttl =
+                notify_query_ttl.saturating_add(T::AdditionalTtlForInflightOrders::get());
             InFlightOrders::<T>::insert(
                 para_id,
                 InFlightCoreBuyingOrder {
