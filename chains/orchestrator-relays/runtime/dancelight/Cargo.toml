@@ -154,8 +154,8 @@ pallet-stream-payment-runtime-api = { workspace = true }
 tanssi-runtime-common = { workspace = true }
 
 # Moonkit
-pallet-migrations = { workspace = true }
 pallet-foreign-asset-creator = { workspace = true }
+pallet-migrations = { workspace = true }
 
 # Bridges
 keyring = { workspace = true }
@@ -254,6 +254,7 @@ std = [
 	"pallet-external-validators-rewards-runtime-api/std",
 	"pallet-external-validators-rewards/std",
 	"pallet-external-validators/std",
+	"pallet-foreign-asset-creator/std",
 	"pallet-grandpa/std",
 	"pallet-identity/std",
 	"pallet-inactivity-tracking/std",
@@ -263,7 +264,6 @@ std = [
 	"pallet-membership/std",
 	"pallet-message-queue/std",
 	"pallet-migrations/std",
-	"pallet-foreign-asset-creator/std",
 	"pallet-mmr/std",
 	"pallet-multiblock-migrations/std",
 	"pallet-multisig/std",
@@ -386,6 +386,7 @@ runtime-benchmarks = [
 	"pallet-external-validator-slashes/runtime-benchmarks",
 	"pallet-external-validators-rewards/runtime-benchmarks",
 	"pallet-external-validators/runtime-benchmarks",
+	"pallet-foreign-asset-creator/runtime-benchmarks",
 	"pallet-grandpa/runtime-benchmarks",
 	"pallet-identity/runtime-benchmarks",
 	"pallet-inactivity-tracking/runtime-benchmarks",
@@ -394,7 +395,6 @@ runtime-benchmarks = [
 	"pallet-membership/runtime-benchmarks",
 	"pallet-message-queue/runtime-benchmarks",
 	"pallet-migrations/runtime-benchmarks",
-	"pallet-foreign-asset-creator/runtime-benchmarks",
 	"pallet-mmr/runtime-benchmarks",
 	"pallet-multiblock-migrations/runtime-benchmarks",
 	"pallet-multisig/runtime-benchmarks",
@@ -477,6 +477,7 @@ try-runtime = [
 	"pallet-external-validator-slashes/try-runtime",
 	"pallet-external-validators-rewards/try-runtime",
 	"pallet-external-validators/try-runtime",
+	"pallet-foreign-asset-creator/try-runtime",
 	"pallet-grandpa/try-runtime",
 	"pallet-identity/try-runtime",
 	"pallet-inactivity-tracking/try-runtime",
@@ -486,7 +487,6 @@ try-runtime = [
 	"pallet-membership/try-runtime",
 	"pallet-message-queue/try-runtime",
 	"pallet-migrations/try-runtime",
-	"pallet-foreign-asset-creator/try-runtime",
 	"pallet-mmr/try-runtime",
 	"pallet-multiblock-migrations/try-runtime",
 	"pallet-multisig/try-runtime",
