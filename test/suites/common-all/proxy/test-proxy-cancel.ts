@@ -58,6 +58,7 @@ describeSuite({
                     return;
                 }
 
+                await context.createBlock();
                 await context.createBlock([await tx.signAsync(alice)]);
                 const events = await polkadotJs.query.system.events();
                 const ev1 = events.filter((a) => {
