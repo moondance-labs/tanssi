@@ -26,9 +26,7 @@ describeSuite({
                     contractAddress: contractAddressAlith,
                     hash: contractHashAlith,
                     status: contractStatusAlith,
-                } = await deployCreateCompiledContract(context, "Foo", {
-                    privateKey: ALITH_PRIVATE_KEY,
-                });
+                } = await deployCreateCompiledContract(context, "Foo", { privateKey: ALITH_PRIVATE_KEY });
 
                 expect(fooAlithAbi).toBeTruthy();
                 expect(contractAddressAlith).toBeTruthy();
@@ -40,9 +38,7 @@ describeSuite({
                     contractAddress: contractAddressBaltathar,
                     hash: contractHashBaltathar,
                     status: contractStatusBaltathar,
-                } = await deployCreateCompiledContract(context, "Foo", {
-                    privateKey: BALTATHAR_PRIVATE_KEY,
-                });
+                } = await deployCreateCompiledContract(context, "Foo", { privateKey: BALTATHAR_PRIVATE_KEY });
 
                 expect(fooBaltatharAbi).toBeTruthy();
                 expect(contractAddressBaltathar).toBeTruthy();
@@ -86,9 +82,7 @@ describeSuite({
                     contractAddress: contractAddressAlith,
                     hash: contractHashAlith,
                     status: contractStatusAlith,
-                } = await deployCreateCompiledContract(context, "Foo", {
-                    privateKey: ALITH_PRIVATE_KEY,
-                });
+                } = await deployCreateCompiledContract(context, "Foo", { privateKey: ALITH_PRIVATE_KEY });
 
                 expect(fooAlithAbi).toBeTruthy();
                 expect(contractAddressAlith).toBeTruthy();
@@ -120,9 +114,7 @@ describeSuite({
                     contractAddress: contractFooAddress,
                     hash: contractFooHash,
                     status: contractFooStatus,
-                } = await deployCreateCompiledContract(context, "Foo", {
-                    privateKey: ALITH_PRIVATE_KEY,
-                });
+                } = await deployCreateCompiledContract(context, "Foo", { privateKey: ALITH_PRIVATE_KEY });
 
                 expect(fooAbi).toBeTruthy();
                 expect(contractFooAddress).toBeTruthy();
@@ -211,9 +203,7 @@ describeSuite({
                     contractAddress: contractFooAddress,
                     hash: contractFooHash,
                     status: contractFooStatus,
-                } = await deployCreateCompiledContract(context, "Foo", {
-                    privateKey: ALITH_PRIVATE_KEY,
-                });
+                } = await deployCreateCompiledContract(context, "Foo", { privateKey: ALITH_PRIVATE_KEY });
 
                 expect(contractFooHash).toBeTruthy();
                 expect(contractFooStatus).to.eq("success");

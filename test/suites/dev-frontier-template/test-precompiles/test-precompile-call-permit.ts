@@ -23,9 +23,7 @@ describeSuite({
         let callPermitAbi: Abi;
 
         beforeAll(async () => {
-            const { abi: demoAbi, contractAddress } = await context.deployContract("CallPermitDemo", {
-                gas: 20000000n,
-            });
+            const { abi: demoAbi, contractAddress } = await context.deployContract("CallPermitDemo");
 
             callPermitDemoAbi = demoAbi;
             callPermitDemoAddr = contractAddress;
