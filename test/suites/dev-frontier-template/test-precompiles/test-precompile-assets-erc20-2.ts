@@ -42,7 +42,7 @@ describeSuite({
                 context.polkadotJs().tx.foreignAssets.mint(assetId.toU8a(), ALITH_ADDRESS, 100000000000000n)
             );
 
-            const { abi } = await deployCreateCompiledContract(context, "ERC20Instance", { gas: 20000000n });
+            const { abi } = await deployCreateCompiledContract(context, "ERC20Instance");
             erc20Abi = abi;
         });
 

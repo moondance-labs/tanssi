@@ -1,5 +1,5 @@
 import "@moonbeam-network/api-augment";
-import { beforeAll, deployCreateCompiledContract, describeSuite, expect } from "@moonwall/cli";
+import { beforeAll, deployCreateCompiledContract, describeSuite, expect, fetchCompiledContract } from "@moonwall/cli";
 import { ALITH_ADDRESS, alith } from "@moonwall/util";
 import type { u16 } from "@polkadot/types-codec";
 import { RELAY_SOURCE_LOCATION } from "utils";
@@ -35,9 +35,14 @@ describeSuite({
                 context.polkadotJs().tx.foreignAssets.mint(assetId.toU8a(), ALITH_ADDRESS, 2000000000000000000000n)
             );
 
-            const { abi, contractAddress } = await deployCreateCompiledContract(context, "ERC20Instance", {
-                gas: 20000000n,
+            const estimatedGas = await context.viem().estimateGas({
+                account: ALITH_ADDRESS,
+                data: fetchCompiledContract("ERC20Instance").bytecode,
             });
+
+            console.log("estimatedGas: ", estimatedGas);
+
+            const { abi, contractAddress } = await deployCreateCompiledContract(context, "ERC20Instance");
             erc20Abi = abi;
             contractInstanceAddress = contractAddress;
         });

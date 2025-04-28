@@ -41,7 +41,7 @@ describeSuite({
         };
 
         beforeAll(async () => {
-            const { hash } = await deployCreateCompiledContract(context, "EventEmitter", { gas: 20000000n });
+            const { hash } = await deployCreateCompiledContract(context, "EventEmitter");
             const receipt = await context.viem("public").getTransactionReceipt({ hash });
             nonMatchingCases = getNonMatchingCases(receipt);
         });

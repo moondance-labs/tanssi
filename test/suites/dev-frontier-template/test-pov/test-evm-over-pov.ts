@@ -18,9 +18,7 @@ describeSuite({
         const EXPECTED_POV_ROUGH = 40_000; // bytes
 
         beforeAll(async () => {
-            const { contractAddress, abi } = await deployCreateCompiledContract(context, "CallForwarder", {
-                gas: 2000000n,
-            });
+            const { contractAddress, abi } = await deployCreateCompiledContract(context, "CallForwarder");
             proxyAddress = contractAddress;
             proxyAbi = abi;
 

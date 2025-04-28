@@ -24,11 +24,7 @@ describeSuite({
             // Empty blocks usually do not exceed 50kb
             emptyBlockProofSize = BigInt(block.proofSize || 50_000);
 
-            const { contractAddress: contractAdd1, abi } = await deployCreateCompiledContract(
-                context,
-                "CallForwarder",
-                { gas: 20000000n }
-            );
+            const { contractAddress: contractAdd1, abi } = await deployCreateCompiledContract(context, "CallForwarder");
             proxyAddress = contractAdd1;
             proxyAbi = abi;
             contracts = await deployHeavyContracts(context, 6000, Number(6000n + MAX_ETH_POV_PER_TX / 24_000n + 1n));

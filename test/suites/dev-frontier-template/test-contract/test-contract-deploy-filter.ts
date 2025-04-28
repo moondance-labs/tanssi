@@ -28,7 +28,6 @@ describeSuite({
                     status: contractStatusAlith,
                 } = await deployCreateCompiledContract(context, "Foo", {
                     privateKey: ALITH_PRIVATE_KEY,
-                    gas: 30000000n,
                 });
 
                 expect(fooAlithAbi).toBeTruthy();
@@ -43,7 +42,6 @@ describeSuite({
                     status: contractStatusBaltathar,
                 } = await deployCreateCompiledContract(context, "Foo", {
                     privateKey: BALTATHAR_PRIVATE_KEY,
-                    gas: 30000000n,
                 });
 
                 expect(fooBaltatharAbi).toBeTruthy();
@@ -90,7 +88,6 @@ describeSuite({
                     status: contractStatusAlith,
                 } = await deployCreateCompiledContract(context, "Foo", {
                     privateKey: ALITH_PRIVATE_KEY,
-                    gas: 30000000n,
                 });
 
                 expect(fooAlithAbi).toBeTruthy();
@@ -125,7 +122,6 @@ describeSuite({
                     status: contractFooStatus,
                 } = await deployCreateCompiledContract(context, "Foo", {
                     privateKey: ALITH_PRIVATE_KEY,
-                    gas: 30000000n,
                 });
 
                 expect(fooAbi).toBeTruthy();
@@ -217,7 +213,6 @@ describeSuite({
                     status: contractFooStatus,
                 } = await deployCreateCompiledContract(context, "Foo", {
                     privateKey: ALITH_PRIVATE_KEY,
-                    gas: 20000000n,
                 });
 
                 expect(contractFooHash).toBeTruthy();
