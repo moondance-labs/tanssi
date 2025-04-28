@@ -1,0 +1,15 @@
+[package]
+name = "manual-container-chains-exclusion-rpc"
+authors = { workspace = true }
+edition = "2021"
+license = "GPL-3.0-only"
+repository = { workspace = true }
+version = "0.1.0"
+
+[lints]
+workspace = true
+
+[dependencies]
+cumulus-primitives-core = { workspace = true, features = [ "std" ] }
+flume = { workspace = true }
+jsonrpsee = { workspace = true, features = [ "macros", "server" ] }

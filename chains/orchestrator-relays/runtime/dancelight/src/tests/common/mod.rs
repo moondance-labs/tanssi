@@ -70,8 +70,9 @@ use {
 pub use crate::{
     genesis_config_presets::{get_authority_keys_from_seed, insert_authority_keys_into_keystore},
     AccountId, AuthorNoting, Babe, Balance, Balances, Beefy, BeefyMmrLeaf, ContainerRegistrar,
-    DataPreservers, Grandpa, InflationRewards, Initializer, Mmr, Runtime, RuntimeOrigin, Session,
-    System, TanssiAuthorityAssignment, TanssiCollatorAssignment, TransactionPayment,
+    DataPreservers, Grandpa, InactivityTracking, InflationRewards, Initializer, Mmr, Runtime,
+    RuntimeOrigin, Session, System, TanssiAuthorityAssignment, TanssiCollatorAssignment,
+    TransactionPayment,
 };
 
 pub const UNIT: Balance = 1_000_000_000_000;
@@ -288,6 +289,7 @@ pub fn start_block() -> RunSummary {
     Beefy::on_initialize(System::block_number());
     Mmr::on_initialize(System::block_number());
     BeefyMmrLeaf::on_initialize(System::block_number());
+    InactivityTracking::on_initialize(System::block_number());
     RunSummary {
         inflation: new_issuance - current_issuance,
     }
@@ -308,6 +310,7 @@ pub fn end_block() {
     Beefy::on_finalize(System::block_number());
     Mmr::on_finalize(System::block_number());
     BeefyMmrLeaf::on_finalize(System::block_number());
+    InactivityTracking::on_finalize(System::block_number());
 }
 
 pub fn run_block() -> RunSummary {

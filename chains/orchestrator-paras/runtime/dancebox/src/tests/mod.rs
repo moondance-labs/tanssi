@@ -15,4 +15,5 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 mod common;
+mod inactivity_tracking;
 mod integration_test;

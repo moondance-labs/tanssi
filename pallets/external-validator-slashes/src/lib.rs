@@ -175,6 +175,8 @@ pub mod pallet {
         EthereumValidateFail,
         /// Failed to deliver the message to Ethereum
         EthereumDeliverFail,
+        /// Invalid params for root_test_send_msg_to_eth
+        RootTestInvalidParams,
     }
 
     #[apply(derive_storage_traits)]
@@ -257,7 +259,7 @@ pub mod pallet {
             // fetch slashes for the era in which we want to defer
             let mut era_slashes = Slashes::<T>::get(&era);
 
-            let last_item = slash_indices[slash_indices.len() - 1];
+            let last_item = slash_indices[slash_indices.len().saturating_sub(1)];
             ensure!(
                 (last_item as usize) < era_slashes.len(),
                 Error::<T>::InvalidSlashIndex
@@ -328,6 +330,12 @@ pub mod pallet {
             msg_size: u32,
         ) -> DispatchResult {
             ensure_root(origin)?;
+
+            // Ensure we don't accidentally pass huge params that would stall the chain
+            ensure!(
+                num_msgs <= 100 && msg_size <= 2048,
+                Error::<T>::RootTestInvalidParams
+            );
 
             for i in 0..num_msgs {
                 // Make sure each message has a different payload
