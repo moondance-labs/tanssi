@@ -5,7 +5,7 @@ import type { KeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import {
     SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS,
-    ETHEREUM_SOVEREIGN_ACCOUNT_ADDRESS,
+    ETHEREUM_MAINNET_SOVEREIGN_ACCOUNT_ADDRESS,
     type MultiLocation,
     jumpToSession,
 } from "utils";
@@ -26,7 +26,7 @@ describeSuite({
             alice = context.keyring.alice;
             runtimeName = polkadotJs.runtimeVersion.specName.toString();
             if (runtimeName === "starlight") {
-                sovereignAccountToCheck = ETHEREUM_SOVEREIGN_ACCOUNT_ADDRESS;
+                sovereignAccountToCheck = ETHEREUM_MAINNET_SOVEREIGN_ACCOUNT_ADDRESS;
             } else {
                 sovereignAccountToCheck = SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS;
             }

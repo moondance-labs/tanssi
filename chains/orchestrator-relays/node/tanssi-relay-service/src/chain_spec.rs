@@ -31,7 +31,9 @@ use {
     sp_authority_discovery::AuthorityId as AuthorityDiscoveryId,
     sp_consensus_babe::AuthorityId as BabeId,
     sp_core::crypto::get_public_from_string_or_panic,
-    starlight_runtime::genesis_config_presets::starlight_development_config_genesis,
+    starlight_runtime::genesis_config_presets::{
+        starlight_development_config_genesis, starlight_local_testnet_genesis,
+    },
 };
 
 #[cfg(feature = "dancelight-native")]
@@ -288,6 +290,45 @@ pub fn dancelight_local_testnet_config(
     .with_id("dancelight_local_testnet")
     .with_chain_type(ChainType::Local)
     .with_genesis_config_patch(dancelight_local_testnet_genesis(
+        container_chains,
+        invulnerables,
+    ))
+    .with_protocol_id(DEFAULT_PROTOCOL_ID)
+    .build())
+}
+
+/// Starlight local testnet config (multivalidator Alice + Bob)
+#[cfg(feature = "starlight-native")]
+pub fn starlight_local_testnet_config(
+    container_chains: Vec<String>,
+    mock_container_chains: Vec<ParaId>,
+    invulnerables: Vec<String>,
+) -> Result<StarlightChainSpec, String> {
+    let container_chains: Vec<_> = container_chains
+        .iter()
+        .map(|x| {
+            container_chain_genesis_data_from_path(x).unwrap_or_else(|e| {
+                panic!(
+                    "Failed to build genesis data for container chain {:?}: {}",
+                    x, e
+                )
+            })
+        })
+        .chain(
+            mock_container_chains
+                .iter()
+                .map(|x| (*x, mock_container_chain_genesis_data(*x), vec![])),
+        )
+        .collect();
+
+    Ok(StarlightChainSpec::builder(
+        starlight::WASM_BINARY.ok_or("Starlight development wasm not available")?,
+        Default::default(),
+    )
+    .with_name("Starlight Local Testnet")
+    .with_id("starlight_local_testnet")
+    .with_chain_type(ChainType::Local)
+    .with_genesis_config_patch(starlight_local_testnet_genesis(
         container_chains,
         invulnerables,
     ))
