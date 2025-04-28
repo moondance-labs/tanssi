@@ -53,6 +53,7 @@ pub mod pallet_treasury;
 pub mod pallet_utility;
 pub mod pallet_whitelist;
 pub mod pallet_xcm;
+pub mod parachains_slashing;
 pub mod runtime_common_paras_registrar;
 pub mod runtime_parachains_assigner_on_demand;
 pub mod runtime_parachains_configuration;
