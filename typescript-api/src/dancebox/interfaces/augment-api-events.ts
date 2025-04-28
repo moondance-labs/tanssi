@@ -15,6 +15,7 @@ import type {
     FrameSupportMessagesProcessMessageError,
     FrameSupportTokensMiscBalanceStatus,
     FrameSystemDispatchEventInfo,
+    PalletInactivityTrackingActivityTrackingStatus,
     PalletMultisigTimepoint,
     PalletPooledStakingPoolsActivePoolKind,
     PalletStreamPaymentDepositChange,
@@ -623,6 +624,20 @@ declare module "@polkadot/api-base/types/events" {
              * A username has been unbound.
              **/
             UsernameUnbound: AugmentedEvent<ApiType, [username: Bytes], { username: Bytes }>;
+            /**
+             * Generic event
+             **/
+            [key: string]: AugmentedEvent<ApiType>;
+        };
+        inactivityTracking: {
+            /**
+             * Event emitted when the activity tracking status is updated
+             **/
+            ActivityTrackingStatusSet: AugmentedEvent<
+                ApiType,
+                [status: PalletInactivityTrackingActivityTrackingStatus],
+                { status: PalletInactivityTrackingActivityTrackingStatus }
+            >;
             /**
              * Generic event
              **/
@@ -1513,8 +1528,8 @@ declare module "@polkadot/api-base/types/events" {
             >;
             MaxCorePriceUpdated: AugmentedEvent<
                 ApiType,
-                [paraId: u32, maxCorePrice: Option<u128>],
-                { paraId: u32; maxCorePrice: Option<u128> }
+                [paraId: u32, maxCorePrice: u128],
+                { paraId: u32; maxCorePrice: u128 }
             >;
             RefundAddressUpdated: AugmentedEvent<
                 ApiType,

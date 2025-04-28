@@ -24,6 +24,9 @@
 use {
     cumulus_primitives_core::ParaId,
     dancebox_runtime::{opaque::Block, AccountId, Index as Nonce},
+    manual_container_chains_exclusion_rpc::{
+        ManualContainerChainsExclusion, ManualContainerChainsExclusionApiServer,
+    },
     manual_randomness_rpc::{ManualRandomness, ManualRandomnessApiServer},
     manual_xcm_rpc::{ManualXcm, ManualXcmApiServer},
     polkadot_primitives::Hash,
@@ -58,6 +61,8 @@ pub struct FullDeps<C, P> {
     pub xcm_senders: Option<(flume::Sender<Vec<u8>>, flume::Sender<(ParaId, Vec<u8>)>)>,
     /// Channels for manually activating the randomness
     pub randomness_sender: Option<flume::Sender<(bool, Option<[u8; 32]>)>>,
+    /// Channels for manually excluding container chains from producing blocks
+    pub container_chain_exclusion_sender: Option<flume::Sender<Vec<ParaId>>>,
 }
 
 /// Instantiate all RPC extensions.
@@ -88,6 +93,7 @@ where
         command_sink,
         xcm_senders,
         randomness_sender,
+        container_chain_exclusion_sender,
     } = deps;
 
     module.merge(System::new(client.clone(), pool).into_rpc())?;
@@ -116,6 +122,15 @@ where
         module.merge(
             ManualRandomness {
                 randomness_message_channel,
+            }
+            .into_rpc(),
+        )?;
+    }
+
+    if let Some(container_chain_exclusion_message_channel) = container_chain_exclusion_sender {
+        module.merge(
+            ManualContainerChainsExclusion {
+                container_chain_exclusion_message_channel,
             }
             .into_rpc(),
         )?;

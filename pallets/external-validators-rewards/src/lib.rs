@@ -64,8 +64,8 @@ pub struct EraRewardsUtils {
 pub mod pallet {
     pub use crate::weights::WeightInfo;
     use {
-        super::*, frame_support::pallet_prelude::*, sp_std::collections::btree_map::BTreeMap,
-        tp_traits::EraIndexProvider,
+        super::*, frame_support::pallet_prelude::*, sp_runtime::Saturating,
+        sp_std::collections::btree_map::BTreeMap, tp_traits::EraIndexProvider,
     };
 
     /// The current storage version.
@@ -229,8 +229,9 @@ pub mod pallet {
 
             RewardPointsForEra::<T>::mutate(active_era.index, |era_rewards| {
                 for (validator, points) in points.into_iter() {
-                    *era_rewards.individual.entry(validator).or_default() += points;
-                    era_rewards.total += points;
+                    (*era_rewards.individual.entry(validator.clone()).or_default())
+                        .saturating_accrue(points);
+                    era_rewards.total.saturating_accrue(points);
                 }
             })
         }

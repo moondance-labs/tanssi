@@ -140,6 +140,7 @@ pallet-author-noting = { workspace = true }
 pallet-author-noting-runtime-api = { workspace = true }
 pallet-configuration = { workspace = true }
 pallet-data-preservers = { workspace = true }
+pallet-inactivity-tracking = { workspace = true }
 pallet-inflation-rewards = { workspace = true }
 pallet-outbound-message-commitment-recorder = { workspace = true }
 pallet-pooled-staking = { workspace = true }
@@ -252,6 +253,7 @@ std = [
 	"pallet-external-validators/std",
 	"pallet-grandpa/std",
 	"pallet-identity/std",
+	"pallet-inactivity-tracking/std",
 	"pallet-inflation-rewards/std",
 	"pallet-initializer/std",
 	"pallet-invulnerables/std",
@@ -381,6 +383,7 @@ runtime-benchmarks = [
 	"pallet-external-validators/runtime-benchmarks",
 	"pallet-grandpa/runtime-benchmarks",
 	"pallet-identity/runtime-benchmarks",
+	"pallet-inactivity-tracking/runtime-benchmarks",
 	"pallet-inflation-rewards/runtime-benchmarks",
 	"pallet-invulnerables/runtime-benchmarks",
 	"pallet-membership/runtime-benchmarks",
@@ -469,6 +472,7 @@ try-runtime = [
 	"pallet-external-validators/try-runtime",
 	"pallet-grandpa/try-runtime",
 	"pallet-identity/try-runtime",
+	"pallet-inactivity-tracking/try-runtime",
 	"pallet-inflation-rewards/try-runtime",
 	"pallet-initializer/try-runtime",
 	"pallet-invulnerables/try-runtime",

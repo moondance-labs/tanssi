@@ -107,6 +107,8 @@ impl tp_traits::GetSessionIndex<u32> for CurrentSessionIndexGetter {
         // For tests, let 1 session be 5 blocks
         (System::block_number() / 5) as u32
     }
+    #[cfg(feature = "runtime-benchmarks")]
+    fn skip_to_session(_session_index: u32) {}
 }
 
 pub struct MockRelayStorageRootProvider;

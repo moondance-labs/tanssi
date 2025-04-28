@@ -36,6 +36,7 @@ import type {
     PalletConvictionVotingTally,
     PalletConvictionVotingVoteAccountVote,
     PalletExternalValidatorsForcing,
+    PalletInactivityTrackingActivityTrackingStatus,
     PalletMultisigTimepoint,
     PalletPooledStakingPoolsActivePoolKind,
     PalletRankedCollectiveTally,
@@ -957,6 +958,20 @@ declare module "@polkadot/api-base/types/events" {
              **/
             [key: string]: AugmentedEvent<ApiType>;
         };
+        inactivityTracking: {
+            /**
+             * Event emitted when the activity tracking status is updated
+             **/
+            ActivityTrackingStatusSet: AugmentedEvent<
+                ApiType,
+                [status: PalletInactivityTrackingActivityTrackingStatus],
+                { status: PalletInactivityTrackingActivityTrackingStatus }
+            >;
+            /**
+             * Generic event
+             **/
+            [key: string]: AugmentedEvent<ApiType>;
+        };
         inflationRewards: {
             /**
              * Rewarding container author
@@ -1826,8 +1841,8 @@ declare module "@polkadot/api-base/types/events" {
             >;
             MaxCorePriceUpdated: AugmentedEvent<
                 ApiType,
-                [paraId: u32, maxCorePrice: Option<u128>],
-                { paraId: u32; maxCorePrice: Option<u128> }
+                [paraId: u32, maxCorePrice: u128],
+                { paraId: u32; maxCorePrice: u128 }
             >;
             RefundAddressUpdated: AugmentedEvent<
                 ApiType,

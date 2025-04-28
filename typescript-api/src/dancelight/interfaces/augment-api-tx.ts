@@ -2963,6 +2963,16 @@ declare module "@polkadot/api-base/types/submittable" {
              **/
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
+        inactivityTracking: {
+            setInactivityTrackingStatus: AugmentedSubmittable<
+                (enableInactivityTracking: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [bool]
+            >;
+            /**
+             * Generic tx
+             **/
+            [key: string]: SubmittableExtrinsicFunction<ApiType>;
+        };
         initializer: {
             /**
              * Issue a signal to the consensus engine to forcibly act as though all parachain
@@ -4607,9 +4617,9 @@ declare module "@polkadot/api-base/types/submittable" {
             setMaxCorePrice: AugmentedSubmittable<
                 (
                     paraId: u32 | AnyNumber | Uint8Array,
-                    maxCorePrice: Option<u128> | null | Uint8Array | u128 | AnyNumber
+                    maxCorePrice: u128 | AnyNumber | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [u32, Option<u128>]
+                [u32, u128]
             >;
             /**
              * Set the maximum tip a container chain is willing to pay to be assigned a collator on congestion.
