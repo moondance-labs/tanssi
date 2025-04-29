@@ -23,9 +23,9 @@ describeSuite({
         let callHash: string;
         let threshold: number;
         let callWeight: Weight;
+        let callIsBalanceTransfer: boolean;
         let specVersion: number;
         let isStarlight: boolean;
-        let starlightVersionsToExclude: number[];
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
@@ -42,9 +42,11 @@ describeSuite({
             // Example call and hash to be used in tests
             let example_call: any;
             if (isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_BALANCES.includes(specVersion)) {
-                example_call = context.polkadotJs().tx.system.remark("0x");
+                example_call = context.polkadotJs().tx.system.remarkWithEvent("0x1234");
+                callIsBalanceTransfer = false;
             } else {
                 example_call = context.polkadotJs().tx.balances.transferKeepAlive(charlie_or_charleth.address, 20);
+                callIsBalanceTransfer = true;
             }
 
             call = example_call.method.toHex();
@@ -125,17 +127,25 @@ describeSuite({
                 );
 
                 // Fund multisig address with some balance, needed for the balance transfer call to succeed
-                const multisigAddress = encodeMultiAddress(
-                    [alice_or_alith.address, dave_or_baltathar.address, bob_or_dorothy.address],
-                    threshold
-                );
-                await context.createBlock(
-                    polkadotJs.tx.balances
-                        .transferKeepAlive(multisigAddress, 100_000_000_000_000_000n)
-                        .signAsync(alice_or_alith)
-                );
-                const multisigBalanceBefore = (await polkadotJs.query.system.account(multisigAddress)).data.free;
-                expect(multisigBalanceBefore.toBigInt() > 0n).toBeTruthy();
+                // In case the multisig call is a system.remark, that can be done without balance in the account, as the
+                // caller of asMulti will pay for fees.
+                if (callIsBalanceTransfer) {
+                    const multisigAddress = encodeMultiAddress(
+                        [alice_or_alith.address, dave_or_baltathar.address, bob_or_dorothy.address],
+                        threshold
+                    );
+                    const multisigBalanceBefore = (await polkadotJs.query.system.account(multisigAddress)).data.free;
+                    expect(multisigBalanceBefore.toBigInt() === 0n).toBeTruthy();
+
+                    await context.createBlock(
+                        polkadotJs.tx.balances
+                            .transferKeepAlive(multisigAddress, 100_000_000_000_000_000n)
+                            .signAsync(alice_or_alith)
+                    );
+
+                    const multisigBalanceAfter = (await polkadotJs.query.system.account(multisigAddress)).data.free;
+                    expect(multisigBalanceAfter.toBigInt() > 0n).toBeTruthy();
+                }
 
                 // Multisig call is a balance transfer to this address, so check that balance will increase
                 const balanceBefore = (await polkadotJs.query.system.account(charlie_or_charleth.address)).data.free;
@@ -166,9 +176,18 @@ describeSuite({
                     return a.event.method === "MultisigExecuted";
                 });
                 expect(eventCount.length).to.be.equal(1);
-                // Balance transfer is executed
-                const balanceAfter = (await polkadotJs.query.system.account(charlie_or_charleth.address)).data.free;
-                expect(balanceAfter.toBigInt() > balanceBefore.toBigInt()).toBeTruthy();
+                if (callIsBalanceTransfer) {
+                    // Balance transfer is executed
+                    const balanceAfter = (await polkadotJs.query.system.account(charlie_or_charleth.address)).data.free;
+                    expect(balanceAfter.toBigInt() > balanceBefore.toBigInt()).toBeTruthy();
+                } else {
+                    // system.remark is remarked
+                    const records = await polkadotJs.query.system.events();
+                    const eventCount = records.filter((a) => {
+                        return a.event.method === "Remarked";
+                    });
+                    expect(eventCount.length).to.be.equal(1);
+                }
             },
         });
     },
