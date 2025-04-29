@@ -217,6 +217,33 @@ fn test_on_offence_does_not_work_for_invulnerables() {
 }
 
 #[test]
+fn test_on_offence_does_not_work_if_slashing_disabled() {
+    new_test_ext().execute_with(|| {
+        start_era(0, 0, 0);
+        start_era(1, 1, 1);
+        assert_ok!(Pallet::<Test>::set_slashing_mode(
+            RuntimeOrigin::root(),
+            SlashingModeOption::Disabled,
+        ));
+        let weight = Pallet::<Test>::on_offence(
+            &[OffenceDetails {
+                // 1 and 2 are invulnerables
+                offender: (3, ()),
+                reporters: vec![],
+            }],
+            &[Perbill::from_percent(75)],
+            0,
+        );
+
+        // on_offence didn't do anything
+        assert_eq!(Slashes::<Test>::get(get_slashing_era(0)), vec![]);
+
+        // Weight is not zero
+        assert_ne!(weight, Weight::default());
+    });
+}
+
+#[test]
 fn defer_period_of_zero_confirms_immediately_slashes() {
     new_test_ext().execute_with(|| {
         crate::mock::DeferPeriodGetter::with_defer_period(0);
