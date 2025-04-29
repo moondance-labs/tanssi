@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
+import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_ETH_CLIENT, checkCallIsFiltered } from "helpers";
 
 describeSuite({
     id: "DEVT0404",
@@ -14,6 +15,9 @@ describeSuite({
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
         let initialSlot: string;
+        let isStarlight: boolean;
+        let specVersion: number;
+        let shouldSkipStarlighEC: boolean;
         String;
 
         beforeAll(async () => {
@@ -24,7 +28,20 @@ describeSuite({
                 readFileSync("tmp/ethereum_client_test/initial-checkpoint.json").toString()
             );
             initialSlot = initialCheckpoint.header.slot.toString();
+
+            const runtimeName = polkadotJs.runtimeVersion.specName.toString();
+            isStarlight = runtimeName === "starlight";
+            specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
+            shouldSkipStarlighEC = isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_ETH_CLIENT.includes(specVersion);
+
             const tx = polkadotJs.tx.ethereumBeaconClient.forceCheckpoint(initialCheckpoint);
+
+            if (shouldSkipStarlighEC) {
+                console.log(`Skipping ETH client test for Starlight version ${specVersion}`);
+                await checkCallIsFiltered(context, polkadotJs, await tx.signAsync(alice));
+                return;
+            }
+
             const signedTx = await polkadotJs.tx.sudo.sudo(tx).signAsync(alice);
             await context.createBlock([signedTx]);
         });
@@ -42,9 +59,17 @@ describeSuite({
                 const thisPeriodNextSyncCommitteeUpdate = JSON.parse(
                     readFileSync("tmp/ethereum_client_test/sync-committee-update.json").toString()
                 );
-                await context.createBlock([
-                    await polkadotJs.tx.ethereumBeaconClient.submit(thisPeriodNextSyncCommitteeUpdate).signAsync(alice),
-                ]);
+                const signedTx = await polkadotJs.tx.ethereumBeaconClient
+                    .submit(thisPeriodNextSyncCommitteeUpdate)
+                    .signAsync(alice);
+
+                if (shouldSkipStarlighEC) {
+                    console.log(`Skipping E01 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(context, polkadotJs, signedTx);
+                    return;
+                }
+
+                await context.createBlock([signedTx]);
 
                 // Now the next sync committee should have been populated
                 const nextSyncCommittee = await polkadotJs.query.ethereumBeaconClient.nextSyncCommittee();
@@ -58,8 +83,8 @@ describeSuite({
                     readFileSync("tmp/ethereum_client_test/next-finalized-header-update.json").toString()
                 );
                 const tx = polkadotJs.tx.ethereumBeaconClient.submit(nextPeriodUpdate);
-                const signedTx = await tx.signAsync(alice);
-                const { result } = await context.createBlock([signedTx]);
+                const signedTx1 = await tx.signAsync(alice);
+                const { result } = await context.createBlock([signedTx1]);
 
                 expect(result[0].successful).to.be.false;
                 expect(result[0].error.section).to.eq("ethereumBeaconClient");

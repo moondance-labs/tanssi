@@ -4,6 +4,7 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type KeyringPair, generateKeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 import { jumpSessions, jumpToSession, paraIdTank } from "utils";
+import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SERVICES_PAYMENT, checkCallIsFiltered } from "helpers";
 
 describeSuite({
     id: "DEVT1202",
@@ -13,15 +14,28 @@ describeSuite({
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
         const startingCredits = 100n;
+        let isStarlight: boolean;
+        let specVersion: number;
+        let shouldSkipStarlightSP: boolean;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             alice = context.keyring.alice;
+            const runtimeName = polkadotJs.runtimeVersion.specName.toString();
+            isStarlight = runtimeName === "starlight";
+            specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
+            shouldSkipStarlightSP =
+                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SERVICES_PAYMENT.includes(specVersion);
         });
         it({
             id: "E01",
             title: "Genesis container chains have credits and collators and should have one less credit",
             test: async () => {
+                if (shouldSkipStarlightSP) {
+                    console.log(`Skipping E01 test for Starlight version ${specVersion}`);
+                    return;
+                }
+
                 await context.createBlock();
                 await jumpToSession(context, 1);
 
@@ -50,6 +64,10 @@ describeSuite({
             id: "E02",
             title: "Getting assignation should consume credits",
             test: async () => {
+                if (shouldSkipStarlightSP) {
+                    console.log(`Skipping E02 test for Starlight version ${specVersion}`);
+                    return;
+                }
                 await jumpToSession(context, 2);
 
                 // Moving to the next session should have reduced the credit by one to both parachains
@@ -68,6 +86,10 @@ describeSuite({
             id: "E03",
             title: "Collators are unassigned when a container chain does not have enough credits",
             test: async () => {
+                if (shouldSkipStarlightSP) {
+                    console.log(`Skipping E03 test for Starlight version ${specVersion}`);
+                    return;
+                }
                 // Create blocks until authorNoting.blockNum does not increase anymore.
                 // Check that collatorAssignment does not have collators and num credits is less than 2 sessions.
 
@@ -110,6 +132,16 @@ describeSuite({
             test: async () => {
                 // As alice, buy credits for para 2000. Check that it is assigned collators again
                 const paraId = 2000;
+
+                if (shouldSkipStarlightSP) {
+                    console.log(`Skipping E05 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(
+                        context,
+                        polkadotJs,
+                        await polkadotJs.tx.servicesPayment.purchaseCredits(paraId, 1000n).signAsync(alice)
+                    );
+                    return;
+                }
 
                 // Create blocks until no collators are assigned to any container chain
                 for (;;) {

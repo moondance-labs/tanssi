@@ -2,6 +2,7 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type KeyringPair, alith } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import { type MultiLocation, extractPaidDeliveryFeesDancelight, getLastSentDmpMessageFee } from "utils";
+import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_XCM, checkCallIsFiltered } from "helpers";
 
 describeSuite({
     id: "DEVT1901",
@@ -16,6 +17,9 @@ describeSuite({
         const CENTS = UNITS / 30_000n;
         const MILICENTS = CENTS / 1000n;
         const txByteFee = 10n * MILICENTS;
+        let isStarlight: boolean;
+        let specVersion: number;
+        let shouldSkipStarlightXCM: boolean;
 
         const randomReceiver = "0x1111111111111111111111111111111111111111111111111111111111111111";
 
@@ -29,6 +33,10 @@ describeSuite({
                           name: "Alice default",
                       });
             baseDelivery = 100_000_000n;
+
+            isStarlight = chain === "starlight";
+            specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
+            shouldSkipStarlightXCM = isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_XCM.includes(specVersion);
         });
 
         it({
@@ -82,6 +90,12 @@ describeSuite({
                     0,
                     "Unlimited"
                 );
+
+                if (shouldSkipStarlightXCM) {
+                    console.log(`Skipping T01 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(context, polkadotJs, await tx.signAsync(alice));
+                    return;
+                }
 
                 await context.createBlock(await tx.signAsync(alice), { allowFailures: false });
 

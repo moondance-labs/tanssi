@@ -3,7 +3,12 @@ import "@tanssi/api-augment";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
-import { SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS, type MultiLocation, jumpToSession } from "utils";
+import {
+    SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS,
+    ETHEREUM_MAINNET_SOVEREIGN_ACCOUNT_ADDRESS,
+    type MultiLocation,
+    jumpToSession,
+} from "utils";
 
 describeSuite({
     id: "DEVT0602",
@@ -13,10 +18,18 @@ describeSuite({
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
+        let runtimeName: string;
+        let sovereignAccountToCheck: string;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             alice = context.keyring.alice;
+            runtimeName = polkadotJs.runtimeVersion.specName.toString();
+            if (runtimeName === "starlight") {
+                sovereignAccountToCheck = ETHEREUM_MAINNET_SOVEREIGN_ACCOUNT_ADDRESS;
+            } else {
+                sovereignAccountToCheck = SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS;
+            }
         });
 
         it({
@@ -119,14 +132,14 @@ describeSuite({
 
                 const {
                     data: { free: balanceBefore },
-                } = await context.polkadotJs().query.system.account(SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS);
+                } = await context.polkadotJs().query.system.account(sovereignAccountToCheck);
 
                 // We need to jump at least one era
                 await jumpToSession(context, currentIndex + sessionsPerEra.toNumber());
 
                 const {
                     data: { free: balanceAfter },
-                } = await context.polkadotJs().query.system.account(SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS);
+                } = await context.polkadotJs().query.system.account(sovereignAccountToCheck);
 
                 expect(balanceAfter.toBigInt()).to.be.greaterThan(balanceBefore.toBigInt());
             },

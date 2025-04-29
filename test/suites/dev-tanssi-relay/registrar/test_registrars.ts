@@ -3,6 +3,7 @@ import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 import type { DpContainerChainGenesisDataContainerChainGenesisData } from "@polkadot/types/lookup";
 import { generateEmptyGenesisData, jumpSessions } from "utils";
+import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_REGISTRAR, checkCallIsFiltered } from "helpers";
 
 describeSuite({
     id: "DEVT1601",
@@ -13,6 +14,9 @@ describeSuite({
         let alice: KeyringPair;
         let charlie: KeyringPair;
         let containerChainGenesisData: DpContainerChainGenesisDataContainerChainGenesisData;
+        let isStarlight: boolean;
+        let specVersion: number;
+        let shouldSkipStarlightCR: boolean;
 
         // let emptyGenesisData: any;
 
@@ -21,6 +25,11 @@ describeSuite({
             charlie = context.keyring.alice;
             polkadotJs = context.pjsApi;
             containerChainGenesisData = generateEmptyGenesisData(polkadotJs, true);
+            const runtimeName = polkadotJs.runtimeVersion.specName.toString();
+            isStarlight = runtimeName === "starlight";
+            specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
+            shouldSkipStarlightCR =
+                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_REGISTRAR.includes(specVersion);
             // emptyGenesisData = () => {
             //     const g = polkadotJs.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
             //         // Code key: 0x3a636f6465 or [58, 99, 111, 100, 101]
@@ -54,12 +63,33 @@ describeSuite({
             title: "should be able to register paraId",
             test: async () => {
                 await context.createBlock();
+
+                if (shouldSkipStarlightCR) {
+                    console.log(`Skipping E01 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(
+                        context,
+                        polkadotJs,
+                        await polkadotJs.tx.registrar.reserve().signAsync(alice)
+                    );
+
+                    // Registrar tx is also filtered
+                    await checkCallIsFiltered(
+                        context,
+                        polkadotJs,
+                        await polkadotJs.tx.containerRegistrar
+                            .register(2002, containerChainGenesisData, "0x1111")
+                            .signAsync(alice)
+                    );
+                    return;
+                }
+
                 await context.createBlock([await polkadotJs.tx.registrar.reserve().signAsync(alice)]);
-                const tx = await polkadotJs.tx.containerRegistrar
+
+                const registerTx = await polkadotJs.tx.containerRegistrar
                     .register(2002, containerChainGenesisData, "0x1111")
                     .signAsync(alice);
 
-                await context.createBlock([tx], { allowFailures: false });
+                await context.createBlock([registerTx], { allowFailures: false });
 
                 await jumpSessions(context, 1);
 
@@ -127,6 +157,13 @@ describeSuite({
                 const tx2 = polkadotJs.tx.containerRegistrar
                     .register(2002, containerChainGenesisData, containerChainGenesisData.storage[0].value)
                     .signAsync(alice);
+
+                if (shouldSkipStarlightCR) {
+                    console.log(`Skipping E02 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(context, polkadotJs, await tx2);
+                    return;
+                }
+
                 const { result: result2 } = await context.createBlock([tx2]);
                 expect(result2[0].successful).to.be.false;
                 expect(result2[0].error.section).to.eq("containerRegistrar");
@@ -138,6 +175,16 @@ describeSuite({
             id: "E03",
             title: "ContainerRegistrar::deregister should offboard the paraId",
             test: async () => {
+                if (shouldSkipStarlightCR) {
+                    console.log(`Skipping E03 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(
+                        context,
+                        polkadotJs,
+                        await polkadotJs.tx.containerRegistrar.deregister(2002).signAsync(alice)
+                    );
+                    return;
+                }
+
                 // Para should still be a parachain
                 const isParachain = await polkadotJs.query.paras.paraLifecycles(2002);
                 expect(isParachain.toString()).to.eq("Parachain");
@@ -168,6 +215,12 @@ describeSuite({
                     .register(4000, containerChainGenesisData, containerChainGenesisData.storage[0].value)
                     .signAsync(alice);
 
+                if (shouldSkipStarlightCR) {
+                    console.log(`Skipping E04 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(context, polkadotJs, await tx);
+                    return;
+                }
+
                 const { result } = await context.createBlock([tx]);
                 expect(result[0].successful).to.be.false;
                 expect(result[0].error.section).to.eq("system");
@@ -180,6 +233,12 @@ describeSuite({
             title: "should not be able to deregister through relay",
             test: async () => {
                 const tx = polkadotJs.tx.registrar.deregister(4000).signAsync(alice);
+
+                if (shouldSkipStarlightCR) {
+                    console.log(`Skipping E05 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(context, polkadotJs, await tx);
+                    return;
+                }
 
                 const { result } = await context.createBlock([tx]);
                 expect(result[0].successful).to.be.false;

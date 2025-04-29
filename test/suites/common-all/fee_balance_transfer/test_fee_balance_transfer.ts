@@ -4,6 +4,7 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type KeyringPair, extractWeight, filterAndApply } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 import { extractFeeAuthor, filterRewardFromOrchestrator } from "utils";
+import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_BALANCES, checkCallIsFiltered } from "helpers";
 
 describeSuite({
     id: "C0101",
@@ -14,6 +15,9 @@ describeSuite({
         let alice: KeyringPair;
         let bob: KeyringPair;
         let isRelay: boolean;
+        let isStarlight: boolean;
+        let specVersion: number;
+        let shouldSkipBalances: boolean;
 
         // Difference between the refTime estimated using paymentInfo and the actual refTime reported inside a block
         // https://github.com/paritytech/substrate/blob/5e49f6e44820affccaf517fd22af564f4b495d40/frame/support/src/weights/extrinsic_weights.rs#L56
@@ -26,14 +30,24 @@ describeSuite({
             baseWeight = extractWeight(polkadotJs.consts.system.blockWeights.perClass.normal.baseExtrinsic).toBigInt();
             const runtimeName = polkadotJs.runtimeVersion.specName.toString();
             isRelay = runtimeName.includes("light");
+            isStarlight = runtimeName === "starlight";
+            specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
+            shouldSkipBalances = isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_BALANCES.includes(specVersion);
         });
 
         it({
             id: "E01",
             title: "Fee of balances.transfer can be estimated using paymentInfo",
             test: async () => {
-                const balanceBefore = (await polkadotJs.query.system.account(alice.address)).data.free.toBigInt();
                 const tx = polkadotJs.tx.balances.transferAllowDeath(bob.address, 200_000);
+
+                if (shouldSkipBalances) {
+                    console.log(`Skipping E01 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(context, polkadotJs, await tx.signAsync(alice));
+                    return;
+                }
+
+                const balanceBefore = (await polkadotJs.query.system.account(alice.address)).data.free.toBigInt();
                 // Estimate fee of balances.transfer using paymentInfo API, before sending transaction
                 const info = await tx.paymentInfo(alice.address);
                 const signedTx = await tx.signAsync(alice);
@@ -118,8 +132,15 @@ describeSuite({
             id: "E02",
             title: "Fee of balances.transfer can be estimated using transactionPaymentApi.queryFeeDetails",
             test: async () => {
-                const balanceBefore = (await polkadotJs.query.system.account(alice.address)).data.free.toBigInt();
                 const tx = polkadotJs.tx.balances.transferAllowDeath(bob.address, 200_000);
+
+                if (shouldSkipBalances) {
+                    console.log(`Skipping E02 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(context, polkadotJs, await tx.signAsync(alice));
+                    return;
+                }
+
+                const balanceBefore = (await polkadotJs.query.system.account(alice.address)).data.free.toBigInt();
                 const signedTx = await tx.signAsync(alice);
                 const feeDetails = await polkadotJs.call.transactionPaymentApi.queryFeeDetails(
                     tx.toU8a(),
@@ -177,6 +198,13 @@ describeSuite({
             id: "E03",
             title: "Fee of balances.transfer does increase after 100 full blocks due to slow adjusting multiplier",
             test: async () => {
+                const tx = polkadotJs.tx.balances.transferAllowDeath(bob.address, 200_000);
+
+                if (shouldSkipBalances) {
+                    console.log(`Skipping E03 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(context, polkadotJs, await tx.signAsync(alice));
+                    return;
+                }
                 const fillAmount = 600_000_000; // equal to 60% Perbill
 
                 const previousfeeMultiplier = (
@@ -200,7 +228,6 @@ describeSuite({
                 }
 
                 const balanceBefore = (await polkadotJs.query.system.account(alice.address)).data.free.toBigInt();
-                const tx = polkadotJs.tx.balances.transferAllowDeath(bob.address, 200_000);
                 const signedTx = await tx.signAsync(alice);
                 const feeDetails = await polkadotJs.call.transactionPaymentApi.queryFeeDetails(
                     tx.toU8a(),
