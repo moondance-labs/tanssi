@@ -547,6 +547,18 @@ fn load_spec(
                 )?,
             )
         }
+        #[cfg(feature = "starlight-native")]
+        "starlight-local" => {
+            let invulnerables = invulnerables.unwrap_or_default();
+
+            Box::new(
+                tanssi_relay_service::chain_spec::starlight_local_testnet_config(
+                    container_chains,
+                    mock_container_chains,
+                    invulnerables,
+                )?,
+            )
+        }
         #[cfg(feature = "dancelight-native")]
         "dancelight-staging" => {
             Box::new(tanssi_relay_service::chain_spec::dancelight_staging_testnet_config()?)

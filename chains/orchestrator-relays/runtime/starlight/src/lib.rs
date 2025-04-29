@@ -1632,6 +1632,13 @@ impl tp_traits::GetSessionIndex<SessionIndex> for CurrentSessionIndexGetter {
     fn session_index() -> SessionIndex {
         Session::current_index()
     }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn skip_to_session(session_index: SessionIndex) {
+        while Session::current_index() < session_index {
+            Session::rotate_session();
+        }
+    }
 }
 
 impl pallet_configuration::Config for Runtime {
@@ -3395,6 +3402,8 @@ impl tanssi_initializer::ApplyNewSession<Runtime> for OwnApplySession {
             &assignments.next_assignment,
         );
     }
+
+    fn on_before_session_ending() {}
 }
 parameter_types! {
     pub MockParaId :ParaId = 0u32.into();

@@ -49,6 +49,8 @@ pub mod pallet {
             all_validators: Vec<(T::AccountId, T::AuthorityId)>,
             queued: Vec<(T::AccountId, T::AuthorityId)>,
         );
+
+        fn on_before_session_ending();
     }
 
     #[pallet::pallet]
@@ -137,4 +139,8 @@ impl<T: pallet_session::Config + Config> OneSessionHandler<T::AccountId> for Pal
     }
 
     fn on_disabled(_i: u32) {}
+
+    fn on_before_session_ending() {
+        <T as Config>::SessionHandler::on_before_session_ending();
+    }
 }

@@ -63,7 +63,6 @@ pub mod pallet {
 
     #[cfg(feature = "runtime-benchmarks")]
     use frame_support::traits::Currency;
-
     use {
         super::*,
         frame_support::{
@@ -482,7 +481,9 @@ pub mod pallet {
 
         /// Start a session potentially starting an era.
         pub(crate) fn start_session(start_session: SessionIndex) {
-            let next_active_era = Self::active_era().map(|e| e.index + 1).unwrap_or(0);
+            let next_active_era = Self::active_era()
+                .map(|e| e.index.saturating_add(1))
+                .unwrap_or(0);
             // This is only `Some` when current era has already progressed to the next era, while the
             // active era is one behind (i.e. in the *last session of the active era*, or *first session
             // of the new current era*, depending on how you look at it).
@@ -503,9 +504,9 @@ pub mod pallet {
         pub(crate) fn end_session(session_index: SessionIndex) {
             if let Some(active_era) = Self::active_era() {
                 if let Some(next_active_era_start_session_index) =
-                    Self::eras_start_session_index(active_era.index + 1)
+                    Self::eras_start_session_index(active_era.index.saturating_add(1))
                 {
-                    if next_active_era_start_session_index == session_index + 1 {
+                    if next_active_era_start_session_index == session_index.saturating_add(1) {
                         Self::end_era(active_era, session_index);
                     }
                 }
@@ -519,7 +520,10 @@ pub mod pallet {
         /// * call `OnEraStart` hook,
         pub(crate) fn start_era(start_session: SessionIndex) {
             let active_era = ActiveEra::<T>::mutate(|active_era| {
-                let new_index = active_era.as_ref().map(|info| info.index + 1).unwrap_or(0);
+                let new_index = active_era
+                    .as_ref()
+                    .map(|info| info.index.saturating_add(1))
+                    .unwrap_or(0);
                 *active_era = Some(ActiveEraInfo {
                     index: new_index,
                     // Set new active era start in next `on_finalize`. To guarantee usage of `Time`
@@ -553,13 +557,15 @@ pub mod pallet {
         pub fn trigger_new_era(start_session_index: SessionIndex) -> Vec<T::ValidatorId> {
             // Increment or set current era.
             let new_planned_era = CurrentEra::<T>::mutate(|s| {
-                *s = Some(s.map(|s| s + 1).unwrap_or(0));
+                *s = Some(s.map(|s| s.saturating_add(1)).unwrap_or(0));
                 s.unwrap()
             });
             ErasStartSessionIndex::<T>::insert(&new_planned_era, &start_session_index);
 
             // Clean old era information.
-            if let Some(old_era) = new_planned_era.checked_sub(T::HistoryDepth::get() + 1) {
+            if let Some(old_era) =
+                new_planned_era.checked_sub(T::HistoryDepth::get().saturating_add(1))
+            {
                 Self::clear_era_information(old_era);
             }
 
