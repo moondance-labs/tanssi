@@ -638,7 +638,7 @@ jobs:
                   cd test
                   pnpm moonwall test dev_dancebox_specs
 
-    typescript-tests-relay-dancelight:
+    typescript-tests-relay:
         runs-on: ubuntu-latest
         needs: ["set-tags", "build"]
         steps:
