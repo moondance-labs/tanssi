@@ -5,6 +5,7 @@ import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 import { numberToHex } from "@polkadot/util";
 import { jumpToBlock } from "utils";
+import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_POOLED_STAKING, checkCallIsFiltered } from "helpers";
 
 describeSuite({
     id: "DEVT1801",
@@ -16,6 +17,9 @@ describeSuite({
         let bob: KeyringPair;
         // TODO: don't hardcode the period here
         const sessionPeriod = 10;
+        let isStarlight: boolean;
+        let specVersion: number;
+        let shouldSkipStarlightPS: boolean;
 
         beforeAll(async () => {
             alice = context.keyring.alice;
@@ -30,6 +34,12 @@ describeSuite({
                 await polkadotJs.tx.session.setKeys(newKey1, []).signAsync(alice),
                 await polkadotJs.tx.session.setKeys(newKey2, []).signAsync(bob),
             ]);
+
+            const runtimeName = polkadotJs.runtimeVersion.specName.toString();
+            isStarlight = runtimeName === "starlight";
+            specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
+            shouldSkipStarlightPS =
+                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_POOLED_STAKING.includes(specVersion);
         });
 
         it({
@@ -42,6 +52,28 @@ describeSuite({
                     "AutoCompounding",
                     10000000000000000n
                 );
+
+                if (shouldSkipStarlightPS) {
+                    console.log(`Skipping E01 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(context, polkadotJs, await tx.signAsync(alice));
+
+                    const tx2 = polkadotJs.tx.pooledStaking.executePendingOperations([
+                        {
+                            delegator: alice.address,
+                            operation: {
+                                JoiningAutoCompounding: {
+                                    candidate: alice.address,
+                                    at: initialSession,
+                                },
+                            },
+                        },
+                    ]);
+
+                    // executePendingOperations should be filtered too
+                    await checkCallIsFiltered(context, polkadotJs, await tx2.signAsync(bob));
+                    return;
+                }
+
                 await context.createBlock([await tx.signAsync(alice)]);
                 const events = await polkadotJs.query.system.events();
                 const ev1 = events.filter((a) => {

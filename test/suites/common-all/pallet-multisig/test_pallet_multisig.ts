@@ -5,6 +5,7 @@ import { type KeyringPair, alith, baltathar, charleth, dorothy } from "@moonwall
 import type { ApiPromise } from "@polkadot/api";
 import { u8aToHex } from "@polkadot/util";
 import { blake2AsHex, createKeyMulti, encodeMultiAddress } from "@polkadot/util-crypto";
+import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_BALANCES } from "helpers";
 import type { Weight } from "@polkadot/types/interfaces";
 
 describeSuite({
@@ -22,6 +23,9 @@ describeSuite({
         let callHash: string;
         let threshold: number;
         let callWeight: Weight;
+        let specVersion: number;
+        let isStarlight: boolean;
+        let starlightVersionsToExclude: number[];
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
@@ -33,8 +37,16 @@ describeSuite({
             bob_or_dorothy = context.isEthereumChain ? dorothy : context.keyring.bob;
             // Need 2 out of 3 signatures to execute multisig call
             threshold = 2;
+            specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
+            isStarlight = polkadotJs.consts.system.version.specName.toString() === "starlight";
             // Example call and hash to be used in tests
-            const example_call = polkadotJs.tx.balances.transferKeepAlive(charlie_or_charleth.address, 20);
+            let example_call: any;
+            if (isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_BALANCES.includes(specVersion)) {
+                example_call = context.polkadotJs().tx.system.remark("0x");
+            } else {
+                example_call = context.polkadotJs().tx.balances.transferKeepAlive(charlie_or_charleth.address, 20);
+            }
+
             call = example_call.method.toHex();
             callHash = blake2AsHex(call);
             const feeInfo = await example_call.paymentInfo(alice_or_alith.address);
