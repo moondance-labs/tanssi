@@ -11,7 +11,6 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 
-use std::hint::assert_unchecked;
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 use {
@@ -667,21 +666,24 @@ fn active_chains_noting_for_current_session_works_when_activity_tracking_is_disa
 #[test]
 fn inactive_chain_collators_are_correctly_processed_when_activity_tracking_is_enabled() {
     ExtBuilder.build().execute_with(|| {
-        let current_session_active_collators_record =
-            get_collator_set(vec![COLLATOR_1, COLLATOR_2]);
         assert_eq!(
-            ActiveContainerChainsForCurrentSession::<Test>::get().len(),
-            0
+            ActiveContainerChainsForCurrentSession::<Test>::get().is_empty(),
+            true
         );
-        assert_eq!(ActiveCollatorsForCurrentSession::<Test>::get().len(), 0);
-        for i in 1..=SESSION_BLOCK_LENGTH {
-            assert_eq!(
-                ActiveContainerChainsForCurrentSession::<Test>::get().len(),
-                0
-            );
-            assert_eq!(ActiveCollatorsForCurrentSession::<Test>::get().len(), 0);
-            roll_to(i);
-        }
+        assert_eq!(
+            ActiveCollatorsForCurrentSession::<Test>::get().is_empty(),
+            true
+        );
+        roll_to(SESSION_BLOCK_LENGTH - 1);
+        assert_eq!(
+            ActiveContainerChainsForCurrentSession::<Test>::get().is_empty(),
+            true
+        );
+        assert_eq!(
+            ActiveCollatorsForCurrentSession::<Test>::get().is_empty(),
+            true
+        );
+        roll_to(SESSION_BLOCK_LENGTH);
         assert_eq!(InactiveCollators::<Test>::get(0).is_empty(), true);
     });
 }
@@ -700,17 +702,16 @@ fn inactive_collator_for_active_chain_is_correctly_processed_when_activity_track
         <Pallet<Test> as AuthorNotingHook<AccountId>>::on_container_authors_noted(&[
             get_active_collators(2),
         ]);
-        for i in 3..=SESSION_BLOCK_LENGTH {
-            assert_eq!(
-                ActiveContainerChainsForCurrentSession::<Test>::get(),
-                current_session_active_chain_record
-            );
-            assert_eq!(
-                ActiveCollatorsForCurrentSession::<Test>::get(),
-                current_session_active_collator_record
-            );
-            roll_to(i);
-        }
+        roll_to(SESSION_BLOCK_LENGTH - 1);
+        assert_eq!(
+            ActiveContainerChainsForCurrentSession::<Test>::get(),
+            current_session_active_chain_record
+        );
+        assert_eq!(
+            ActiveCollatorsForCurrentSession::<Test>::get(),
+            current_session_active_collator_record
+        );
+        roll_to(SESSION_BLOCK_LENGTH);
         assert_eq!(
             InactiveCollators::<Test>::get(0),
             get_collator_set(vec![COLLATOR_2])
@@ -722,8 +723,6 @@ fn inactive_collator_for_active_chain_is_correctly_processed_when_activity_track
 fn inactive_chain_collators_are_processed_correctly_when_activity_tracking_is_disabled_than_enabled(
 ) {
     ExtBuilder.build().execute_with(|| {
-        let current_session_active_collators_record =
-            get_collator_set(vec![COLLATOR_1, COLLATOR_2]);
         let last_disabled_session_id = get_max_inactive_sessions() + 2u32;
         assert_eq!(
             ActiveContainerChainsForCurrentSession::<Test>::get().len(),
