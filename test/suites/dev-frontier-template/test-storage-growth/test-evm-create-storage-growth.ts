@@ -28,7 +28,7 @@ describeSuite({
 
                     const { result } = await context.createBlock(rawSigned);
                     // Check that the transaction failed with an out of gas error
-                    expectEVMResult(result!.events, "Error", "OutOfGas");
+                    expectEVMResult(result.events, "Error", "OutOfGas");
                 },
             });
 
@@ -52,10 +52,10 @@ describeSuite({
                 test: async () => {
                     const contractData = fetchCompiledContract("Fibonacci");
                     const callCode = (await context.viem().call({ data: contractData.bytecode, gas: 1013235n })).data;
-                    const { contractAddress, hash } = await context.deployContract!("Fibonacci");
+                    const { contractAddress, hash } = await context.deployContract("Fibonacci");
                     const { gasUsed } = await context.viem().getTransactionReceipt({ hash });
                     expect(gasUsed).toEqual(BigInt(EXPECTED_STORAGE_GROWTH_GAS));
-                    const deployedCode = await context.viem("public").getBytecode({ address: contractAddress! });
+                    const deployedCode = await context.viem("public").getBytecode({ address: contractAddress });
                     expect(callCode).to.be.eq(deployedCode);
                 },
             });

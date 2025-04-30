@@ -45,7 +45,7 @@ describeSuite({
 
                     const { result } = await context.createBlock(rawSigned);
                     // Check that the transaction failed with an out of gas error
-                    expectEVMResult(result!.events, "Error", "OutOfGas");
+                    expectEVMResult(result.events, "Error", "OutOfGas");
                 },
             });
 
@@ -66,7 +66,7 @@ describeSuite({
 
                     const { result } = await context.createBlock(rawSigned);
 
-                    expectEVMResult(result!.events, "Succeed", "Stopped");
+                    expectEVMResult(result.events, "Succeed", "Stopped");
                 },
             });
         }
