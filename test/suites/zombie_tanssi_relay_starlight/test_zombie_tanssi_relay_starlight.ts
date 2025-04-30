@@ -2,9 +2,7 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { generateKeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import type { Signer } from "ethers";
-import {
-    STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_REGISTRAR,
-} from "helpers";
+import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_REGISTRAR } from "helpers";
 import fs from "node:fs/promises";
 import {
     chainSpecToContainerChainGenesisData,
@@ -219,7 +217,7 @@ describeSuite({
                     console.log(`Skipping T12 test for Starlight version ${specVersion}`);
                     return;
                 }
-                
+
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 
@@ -273,7 +271,7 @@ describeSuite({
             id: "T13",
             title: "Test live registration of container chain 2002 - Wait 2 sessions",
             timeout: 300000,
-            test: async () => {                
+            test: async () => {
                 await waitSessions(context, relayApi, 2, null, "Tanssi-relay");
             },
         });
@@ -287,7 +285,7 @@ describeSuite({
                     console.log(`Skipping T14 test for Starlight version ${specVersion}`);
                     return;
                 }
-                
+
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 
@@ -310,7 +308,7 @@ describeSuite({
                     console.log(`Skipping T15 test for Starlight version ${specVersion}`);
                     return;
                 }
-                
+
                 await waitSessions(
                     context,
                     relayApi,
@@ -333,7 +331,7 @@ describeSuite({
                     console.log(`Skipping T16 test for Starlight version ${specVersion}`);
                     return;
                 }
-                
+
                 const registered5 = await relayApi.query.containerRegistrar.registeredParaIds();
                 expect(registered5.toJSON().includes(2002)).to.be.true;
             },
@@ -381,7 +379,7 @@ describeSuite({
                     console.log(`Skipping T19 test for Starlight version ${specVersion}`);
                     return;
                 }
-                
+
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 
@@ -415,7 +413,7 @@ describeSuite({
                     console.log(`Skipping T19 test for Starlight version ${specVersion}`);
                     return;
                 }
-                
+
                 const logs = [
                     "/Collator-01.log",
                     "/Collator-02.log",
