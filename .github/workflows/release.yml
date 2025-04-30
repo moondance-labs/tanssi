@@ -433,7 +433,7 @@ jobs:
         - name: Install nextest
           uses: taiki-e/install-action@nextest
         - name: Run Tests
-          run: cargo nextest run --release --no-fail-fast --workspace --features=fast-rintime
+          run: cargo nextest run --release --no-fail-fast --workspace --features=fast-runtime
 
     check-api-augment:
         runs-on: ubuntu-latest
