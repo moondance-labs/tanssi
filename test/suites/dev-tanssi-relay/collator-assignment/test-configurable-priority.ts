@@ -3,6 +3,12 @@ import "@tanssi/api-augment";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import { jumpSessions } from "utils";
+import {
+    STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SERVICES_PAYMENT,
+    STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_DATA_PRESERVERS,
+    STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_REGISTRAR,
+    checkCallIsFiltered,
+} from "helpers";
 
 describeSuite({
     id: "DEVT0302",
@@ -11,11 +17,49 @@ describeSuite({
 
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
+        let specVersion: number;
+        let isStarlight: boolean;
+        let shouldSkipStarlightSP: boolean;
+        let shouldSkipStarlightDP: boolean;
+        let shouldSkipStarlightCR: boolean;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             const keyring = new Keyring({ type: "sr25519" });
             const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
+
+            const runtimeName = polkadotJs.runtimeVersion.specName.toString();
+            isStarlight = runtimeName === "starlight";
+            specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
+            shouldSkipStarlightSP =
+                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SERVICES_PAYMENT.includes(specVersion);
+            shouldSkipStarlightDP =
+                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_DATA_PRESERVERS.includes(specVersion);
+            shouldSkipStarlightCR =
+                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_REGISTRAR.includes(specVersion);
+
+            // If one on these features is enabled and the others aren't, the test should fail.
+            // It will only succeed when the three features are enabled (or disabled) for the current starlight runtime version.
+            if (shouldSkipStarlightSP || shouldSkipStarlightDP || shouldSkipStarlightCR) {
+                console.log(`Skipping Collator Assignment tests for Starlight version ${specVersion}`);
+
+                const registerTx1 = polkadotJs.tx.containerRegistrar.register(2000, "0x", "0x");
+                await checkCallIsFiltered(context, polkadotJs, await registerTx1.signAsync(alice));
+
+                const registerTx2 = polkadotJs.tx.containerRegistrar.registerParathread(2000, "0x", "0x", "0x");
+                await checkCallIsFiltered(context, polkadotJs, await registerTx2.signAsync(alice));
+
+                const profileTx = polkadotJs.tx.dataPreservers.forceCreateProfile("0x", "0x");
+                await checkCallIsFiltered(context, polkadotJs, await profileTx.signAsync(alice));
+
+                const creditsTx = polkadotJs.tx.servicesPayment.purchaseCredits(2000, 1000);
+                await checkCallIsFiltered(context, polkadotJs, await creditsTx.signAsync(alice));
+
+                const maxTipTx = polkadotJs.tx.servicesPayment.setMaxTip(2000, 1000);
+                await checkCallIsFiltered(context, polkadotJs, await maxTipTx.signAsync(alice));
+                return;
+            }
+
             const nextProfileId = await polkadotJs.query.dataPreservers.nextProfileId();
             const slotFrequency = polkadotJs.createType("TpTraitsSlotFrequency", {
                 min: 6,
@@ -153,6 +197,11 @@ describeSuite({
             id: "E01",
             title: "Set of Parathreads would not be truncated",
             test: async () => {
+                if (shouldSkipStarlightSP || shouldSkipStarlightDP || shouldSkipStarlightCR) {
+                    console.log(`Skipping E01 test for Starlight version ${specVersion}`);
+                    return;
+                }
+
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 
@@ -187,6 +236,11 @@ describeSuite({
             id: "E02",
             title: "Set of Parachains should be sort by tip and truncated according to max cores allocated if we have less cores",
             test: async () => {
+                if (shouldSkipStarlightSP || shouldSkipStarlightDP || shouldSkipStarlightCR) {
+                    console.log(`Skipping E01 test for Starlight version ${specVersion}`);
+                    return;
+                }
+
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
 

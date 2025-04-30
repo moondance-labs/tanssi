@@ -4,6 +4,7 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 import { hexToString } from "viem";
+import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_IDENTITY, checkCallIsFiltered } from "helpers";
 
 describeSuite({
     id: "DEVT1001",
@@ -15,12 +16,21 @@ describeSuite({
         let sudo_alice: KeyringPair;
         let registrar_bob: KeyringPair;
         let general_user_charlie: KeyringPair;
+        let isStarlight: boolean;
+        let specVersion: number;
+        let shouldSkipStarlightIdentity: boolean;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             sudo_alice = context.keyring.alice;
             registrar_bob = context.keyring.bob;
             general_user_charlie = context.keyring.charlie;
+
+            const runtimeName = polkadotJs.runtimeVersion.specName.toString();
+            isStarlight = runtimeName === "starlight";
+            specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
+            shouldSkipStarlightIdentity =
+                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_IDENTITY.includes(specVersion);
         });
 
         it({
@@ -32,6 +42,13 @@ describeSuite({
                 const tx = polkadotJs.tx.identity.addRegistrar({
                     Id: registrar_bob.address,
                 });
+
+                if (shouldSkipStarlightIdentity) {
+                    console.log(`Skipping E01 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(context, polkadotJs, await tx.signAsync(sudo_alice));
+                    return;
+                }
+
                 const signedTx = await polkadotJs.tx.sudo.sudo(tx).signAsync(sudo_alice);
                 await context.createBlock([signedTx]);
 
@@ -65,6 +82,13 @@ describeSuite({
                     Id: registrar_bob.address,
                 });
                 const signedTx = await tx.signAsync(general_user_charlie);
+
+                if (shouldSkipStarlightIdentity) {
+                    console.log(`Skipping E02 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(context, polkadotJs, signedTx);
+                    return;
+                }
+
                 await context.createBlock([signedTx]);
 
                 const identity_registrars = await polkadotJs.query.identity.registrars();
@@ -90,6 +114,13 @@ describeSuite({
                     web: { raw: "0x68747470733A2F2F636861726C69652E696F" },
                 });
                 const signedTx = await tx.signAsync(general_user_charlie);
+
+                if (shouldSkipStarlightIdentity) {
+                    console.log(`Skipping E03 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(context, polkadotJs, signedTx);
+                    return;
+                }
+
                 await context.createBlock([signedTx]);
 
                 const charlie_identity = await polkadotJs.query.identity.identityOf(general_user_charlie.address);
@@ -121,10 +152,23 @@ describeSuite({
             title: "Registrar sets fee and fields",
             test: async () => {
                 await context.createBlock();
-
                 const tx1 = polkadotJs.tx.identity.addRegistrar({
                     Id: registrar_bob.address,
                 });
+
+                if (shouldSkipStarlightIdentity) {
+                    console.log(`Skipping E03 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(context, polkadotJs, await tx1.signAsync(sudo_alice));
+
+                    // Both setFee and setFields should be filtered as well
+                    const tx2 = polkadotJs.tx.identity.setFee(0, 100);
+                    await checkCallIsFiltered(context, polkadotJs, await tx2.signAsync(registrar_bob));
+                    const tx3 = polkadotJs.tx.identity.setFields(0, 2);
+                    await checkCallIsFiltered(context, polkadotJs, await tx3.signAsync(registrar_bob));
+
+                    return;
+                }
+
                 const signedTx1 = await polkadotJs.tx.sudo.sudo(tx1).signAsync(sudo_alice);
                 await context.createBlock([signedTx1]);
 
