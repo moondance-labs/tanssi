@@ -7,6 +7,7 @@ import { u8aToHex } from "@polkadot/util";
 import { blake2AsHex, createKeyMulti, encodeMultiAddress } from "@polkadot/util-crypto";
 import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_BALANCES } from "helpers";
 import type { Weight } from "@polkadot/types/interfaces";
+import { addressToU8a } from "@polkadot/util-crypto/address/util";
 
 describeSuite({
     id: "C0201",
@@ -26,6 +27,7 @@ describeSuite({
         let callIsBalanceTransfer: boolean;
         let specVersion: number;
         let isStarlight: boolean;
+        let isFrontier: boolean;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
@@ -39,6 +41,7 @@ describeSuite({
             threshold = 2;
             specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
             isStarlight = polkadotJs.consts.system.version.specName.toString() === "starlight";
+            isFrontier = polkadotJs.consts.system.version.specName.toString() === "frontier-template";
             // Example call and hash to be used in tests
             let example_call: any;
             if (isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_BALANCES.includes(specVersion)) {
@@ -130,10 +133,19 @@ describeSuite({
                 // In case the multisig call is a system.remark, that can be done without balance in the account, as the
                 // caller of asMulti will pay for fees.
                 if (callIsBalanceTransfer) {
-                    const multisigAddress = encodeMultiAddress(
+                    let multisigAddress = encodeMultiAddress(
                         [alice_or_alith.address, dave_or_baltathar.address, bob_or_dorothy.address],
                         threshold
                     );
+                    if (isFrontier) {
+                        // Frontier template uses 20-byte hex account id, encodeMultiAddress returns 32 bytes in polkadot
+                        // format (starting with 5G).
+                        // For whatever reason, frontier template does not error when you try to balance transfer to a
+                        // 32 byte address, and that results in a completely different address than just truncating the
+                        // address to the first 20 bytes. Anyway.
+                        const hexMultisigAddress = u8aToHex(addressToU8a(multisigAddress));
+                        multisigAddress = hexMultisigAddress.slice(0, 42);
+                    }
                     const multisigBalanceBefore = (await polkadotJs.query.system.account(multisigAddress)).data.free;
                     expect(multisigBalanceBefore.toBigInt() === 0n).toBeTruthy();
 
