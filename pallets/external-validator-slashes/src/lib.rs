@@ -428,7 +428,7 @@ where
         add_db_reads_writes(1, 0);
 
         if slashing_mode == SlashingModeOption::Disabled {
-            return Weight::default();
+            return consumed_weight;
         }
 
         let active_era = {
