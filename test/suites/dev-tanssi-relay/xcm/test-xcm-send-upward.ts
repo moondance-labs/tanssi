@@ -3,6 +3,7 @@ import { type KeyringPair, generateKeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import { u8aToHex } from "@polkadot/util";
 import { type RawXcmMessage, XcmFragment, injectUmpMessageAndSeal, jumpToSession } from "utils";
+import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_XCM } from "helpers";
 
 describeSuite({
     id: "DEVT1903",
@@ -13,6 +14,10 @@ describeSuite({
         let alice: KeyringPair;
         let random: KeyringPair;
         let transferredBalance: bigint;
+        let chain: string;
+        let isStarlight: boolean;
+        let specVersion: number;
+        let shouldSkipStarlightXCM: boolean;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
@@ -21,6 +26,16 @@ describeSuite({
             });
 
             random = generateKeyringPair("sr25519");
+
+            chain = polkadotJs.consts.system.version.specName.toString();
+            isStarlight = chain === "starlight";
+            specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
+            shouldSkipStarlightXCM = isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_XCM.includes(specVersion);
+
+            if (shouldSkipStarlightXCM) {
+                console.log(`Skipping XCM tests for Starlight version ${specVersion}`);
+                return;
+            }
 
             transferredBalance = 100_000_000_000_000_000n;
 
@@ -52,6 +67,11 @@ describeSuite({
             id: "T01",
             title: "Should succeed receiving tokens",
             test: async () => {
+                if (shouldSkipStarlightXCM) {
+                    console.log(`Skipping T01 test for Starlight version ${specVersion}`);
+                    return;
+                }
+
                 const balanceRandomBefore = (
                     await polkadotJs.query.system.account(random.address)
                 ).data.free.toBigInt();
