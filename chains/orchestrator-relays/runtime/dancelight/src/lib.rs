@@ -1272,7 +1272,7 @@ impl parachains_slashing::Config for Runtime {
         Offences,
         ReportLongevity,
     >;
-    type WeightInfo = weights::parachains_slashing::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::runtime_parachains_disputes_slashing::SubstrateWeight<Runtime>;
     type BenchmarkingConfig = parachains_slashing::BenchConfig<200>;
 }
 
@@ -2272,6 +2272,8 @@ mod benches {
         [runtime_parachains::paras_inherent, ParaInherent]
         [runtime_parachains::paras, Paras]
         [runtime_parachains::assigner_on_demand, OnDemandAssignmentProvider]
+        [runtime_parachains::disputes::slashing, pallet_alt_benchmarks::bench_parachains_slashing::Pallet::<Runtime>]
+
         // Substrate
         [pallet_balances, Balances]
         [frame_benchmarking::baseline, Baseline::<Runtime>]
@@ -2300,7 +2302,6 @@ mod benches {
         [pallet_beefy_mmr, BeefyMmrLeaf]
         [pallet_multiblock_migrations, MultiBlockMigrations]
         [pallet_session, cumulus_pallet_session_benchmarking::Pallet::<Runtime>]
-        [parachains_slashing, pallet_alt_benchmarks::bench_parachains_slashing::Pallet::<Runtime>]
 
         // Tanssi
         [pallet_author_noting, AuthorNoting]

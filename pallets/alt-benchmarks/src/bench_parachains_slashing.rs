@@ -17,7 +17,7 @@
 use alloc::boxed::Box;
 use alloc::vec;
 use core::marker::PhantomData;
-use frame_benchmarking::v2::*;
+use frame_benchmarking::{account, benchmarks};
 use frame_support::traits::{KeyOwnerProofSystem, OnFinalize, OnInitialize, ValidatorSet};
 use frame_system::{pallet_prelude::BlockNumberFor, RawOrigin};
 use parity_scale_codec::Decode;
@@ -25,10 +25,7 @@ use polkadot_primitives::{
     slashing::{DisputeProof, DisputesTimeSlot, SlashingOffenceKind},
     CandidateHash, Hash, SessionIndex, ValidatorId, ValidatorIndex, PARACHAIN_KEY_TYPE_ID,
 };
-use polkadot_runtime_parachains::{
-    disputes::{slashing::*, SlashingHandler},
-    initializer,
-};
+use polkadot_runtime_parachains::{disputes::SlashingHandler, initializer};
 use sp_runtime::traits::{One, OpaqueKeys};
 use sp_runtime::Vec;
 use sp_session::MembershipProof;
@@ -168,21 +165,25 @@ fn dispute_proof(
     }
 }
 
-#[allow(clippy::multiple_bound_locations)]
-#[benchmarks(where T: Config<KeyOwnerProof = MembershipProof>)]
-mod benchmarks {
-    use super::*;
+benchmarks! {
+    where_clause {
+        where T: Config<KeyOwnerProof = MembershipProof>,
+    }
 
-    #[benchmark]
-    fn report_dispute_lost_unsigned(n: Linear<4, MAX_VALIDATORS>) {
+    // submit a single `ForInvalid` dispute for a past session.
+    report_dispute_lost {
+        let n in 4..MAX_VALIDATORS;
+
         let (session_index, key_owner_proof, validator_id) = setup_validator_set::<T>(n);
-
-        // submit a single `ForInvalid` dispute for a past session.
         let dispute_proof = setup_dispute::<T>(session_index, validator_id);
-
-        #[extrinsic_call]
-        _(RawOrigin::None, Box::new(dispute_proof), key_owner_proof);
-
+    }: {
+        let result = polkadot_runtime_parachains::disputes::slashing::Pallet::<T>::report_dispute_lost_unsigned(
+            RawOrigin::None.into(),
+            Box::new(dispute_proof),
+            key_owner_proof,
+        );
+        assert!(result.is_ok());
+    } verify {
         // // TODO: Storage is pub(crate) so cannot be accessed here
         // let unapplied = <UnappliedSlashes<T>>::get(session_index, CANDIDATE_HASH);
         // assert!(unapplied.is_none());
