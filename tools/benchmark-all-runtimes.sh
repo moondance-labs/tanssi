@@ -41,3 +41,10 @@ BINARY=target/release/tanssi-relay\
     CHAIN=dancelight-dev \
     OUTPUT_PATH=tmp/dancelight_weights \
     tools/benchmarking.sh "*" "*"
+
+# Starlight weights
+BINARY=target/release/tanssi-relay\
+    TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs \
+    CHAIN=starlight-dev \
+    OUTPUT_PATH=tmp/starlight_weights \
+    tools/benchmarking.sh "*" "*"

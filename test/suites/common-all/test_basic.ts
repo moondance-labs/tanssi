@@ -1,6 +1,7 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
+import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_BALANCES, checkCallIsFiltered } from "helpers";
 
 describeSuite({
     id: "C01",
@@ -10,12 +11,22 @@ describeSuite({
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
         let bob: KeyringPair;
+        let chain: string;
+        let isStarlight: boolean;
+        let specVersion: number;
+        let shouldSkipStarlightBalances: boolean;
 
         beforeAll(() => {
             polkadotJs = context.pjsApi;
             log(`This chain is ${context.isEthereumChain ? "Ethereum" : "Substrate"}`);
             alice = context.keyring.alice;
             bob = context.keyring.bob;
+
+            chain = polkadotJs.consts.system.version.specName.toString();
+            isStarlight = chain === "starlight";
+            specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
+            shouldSkipStarlightBalances =
+                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_BALANCES.includes(specVersion);
         });
 
         it({
@@ -38,7 +49,15 @@ describeSuite({
             test: async () => {
                 const balanceBefore = (await polkadotJs.query.system.account(bob.address)).data.free;
 
-                await polkadotJs.tx.balances.transferAllowDeath(bob.address, 1000).signAndSend(alice);
+                const tx = polkadotJs.tx.balances.transferAllowDeath(bob.address, 1000);
+
+                if (shouldSkipStarlightBalances) {
+                    console.log(`Skipping E02 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(context, polkadotJs, await tx.signAsync(alice));
+                    return;
+                }
+
+                await tx.signAndSend(alice);
 
                 await context.createBlock();
                 const balanceAfter = (await polkadotJs.query.system.account(bob.address)).data.free;

@@ -433,7 +433,7 @@ jobs:
         - name: Install nextest
           uses: taiki-e/install-action@nextest
         - name: Run Tests
-          run: cargo nextest run --release --no-fail-fast --workspace
+          run: cargo nextest run --release --no-fail-fast --workspace --features=fast-runtime
 
     check-api-augment:
         runs-on: ubuntu-latest
@@ -667,14 +667,22 @@ jobs:
                   cd typescript-api
                   pnpm install
                   pnpm create-local-interfaces
-            - name: "Run Dev tests"
+            - name: "Run Dev tests (Dancelight)"
               run: |
                   chmod uog+x target/release/tanssi-node
                   chmod uog+x target/release/tanssi-relay
                   chmod uog+x target/release/tanssi-relay-execute-worker
                   chmod uog+x target/release/tanssi-relay-prepare-worker
                   cd test
-                  pnpm moonwall test dev_tanssi_relay
+                  pnpm moonwall test dev_tanssi_relay_dancelight
+            - name: "Run Dev tests (Starlight)"
+              run: |
+                  chmod uog+x target/release/tanssi-node
+                  chmod uog+x target/release/tanssi-relay
+                  chmod uog+x target/release/tanssi-relay-execute-worker
+                  chmod uog+x target/release/tanssi-relay-prepare-worker
+                  cd test
+                  pnpm moonwall test dev_tanssi_relay_starlight
 
     zombienet-tests:
         runs-on: self-hosted
