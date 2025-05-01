@@ -169,23 +169,23 @@ dp-container-chain-genesis-data = { git = "https://github.com/moondance-labs/dan
 dc-orchestrator-chain-interface = { git = "https://github.com/moondance-labs/dancekit", branch = "tanssi-polkadot-stable2412" }
 
 # Moonkit (wasm)
-async-backing-primitives = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-stable2412", default-features = false }
-nimbus-consensus = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-stable2412" }
-nimbus-primitives = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-stable2412", default-features = false }
-pallet-async-backing = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-stable2412", default-features = false }
-pallet-author-inherent = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-stable2412", default-features = false }
-pallet-evm-precompile-balances-erc20 = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-stable2412", default-features = false }
-pallet-evm-precompile-batch = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-stable2412", default-features = false }
-pallet-evm-precompile-call-permit = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-stable2412", default-features = false }
-pallet-evm-precompile-proxy = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-stable2412", default-features = false }
-pallet-evm-precompile-xcm = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-stable2412", default-features = false }
-pallet-evm-precompile-xcm-utils = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-stable2412", default-features = false }
-pallet-evm-precompileset-assets-erc20 = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-stable2412", default-features = false }
-pallet-foreign-asset-creator = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-stable2412", default-features = false }
-pallet-maintenance-mode = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-stable2412", default-features = false }
-pallet-migrations = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-stable2412", default-features = false }
-pallet-relay-storage-roots = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-stable2412", default-features = false }
-xcm-primitives = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-stable2412", default-features = false }
+async-backing-primitives = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-stable2412-update-upstream", default-features = false }
+nimbus-consensus = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-stable2412-update-upstream" }
+nimbus-primitives = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-stable2412-update-upstream", default-features = false }
+pallet-async-backing = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-stable2412-update-upstream", default-features = false }
+pallet-author-inherent = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-stable2412-update-upstream", default-features = false }
+pallet-evm-precompile-balances-erc20 = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-stable2412-update-upstream", default-features = false }
+pallet-evm-precompile-batch = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-stable2412-update-upstream", default-features = false }
+pallet-evm-precompile-call-permit = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-stable2412-update-upstream", default-features = false }
+pallet-evm-precompile-proxy = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-stable2412-update-upstream", default-features = false }
+pallet-evm-precompile-xcm = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-stable2412-update-upstream", default-features = false }
+pallet-evm-precompile-xcm-utils = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-stable2412-update-upstream", default-features = false }
+pallet-evm-precompileset-assets-erc20 = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-stable2412-update-upstream", default-features = false }
+pallet-foreign-asset-creator = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-stable2412-update-upstream", default-features = false }
+pallet-maintenance-mode = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-stable2412-update-upstream", default-features = false }
+pallet-migrations = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-stable2412-update-upstream", default-features = false }
+pallet-relay-storage-roots = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-stable2412-update-upstream", default-features = false }
+xcm-primitives = { git = "https://github.com/moondance-labs/moonkit", branch = "tanssi-polkadot-stable2412-update-upstream", default-features = false }
 
 # Substrate (wasm)
 
