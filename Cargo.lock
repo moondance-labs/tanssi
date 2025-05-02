@@ -19532,6 +19532,7 @@ dependencies = [
  "kvdb",
  "kvdb-rocksdb",
  "log",
+ "manual-container-chains-exclusion-rpc",
  "node-common",
  "pallet-babe",
  "pallet-staking",

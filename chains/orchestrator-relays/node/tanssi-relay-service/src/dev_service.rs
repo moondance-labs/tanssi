@@ -36,9 +36,13 @@ use {
     babe::{BabeBlockImport, BabeLink},
     codec::{Decode, Encode},
     consensus_common::SelectChain,
+    cumulus_primitives_core::ParaId,
     dancelight_runtime::RuntimeApi,
     futures::{Stream, StreamExt},
     jsonrpsee::RpcModule,
+    manual_container_chains_exclusion_rpc::{
+        ManualContainerChainsExclusion, ManualContainerChainsExclusionApiServer,
+    },
     node_common::service::Sealing,
     polkadot_core_primitives::{AccountId, Balance, Block, Hash, Nonce},
     polkadot_node_core_parachains_inherent::Error as InherentError,
@@ -79,6 +83,8 @@ use {
 // We use this key to store whether we want the para inherent mocker to be active
 const PARA_INHERENT_SELECTOR_AUX_KEY: &[u8] = b"__DEV_PARA_INHERENT_SELECTOR";
 
+const CONTAINER_CHAINS_EXCLUSION_AUX_KEY: &[u8] = b"__DEV_CONTAINER_CHAINS_EXCLUSION";
+
 pub type FullBackend = service::TFullBackend<Block>;
 
 pub type FullClient = service::TFullClient<
@@ -110,6 +116,8 @@ struct DevDeps<C, P> {
     pub command_sink: Option<futures::channel::mpsc::Sender<EngineCommand<Hash>>>,
     /// Dev rpcs
     pub dev_rpc: Option<DevRpc>,
+    /// Channels for manually excluding container chains from producing blocks
+    pub container_chain_exclusion_sender: Option<flume::Sender<Vec<ParaId>>>,
 }
 
 fn create_dev_rpc_extension<C, P>(
@@ -118,6 +126,7 @@ fn create_dev_rpc_extension<C, P>(
         pool,
         command_sink: maybe_command_sink,
         dev_rpc: maybe_dev_rpc,
+        container_chain_exclusion_sender: maybe_container_chain_exclusion_sender,
     }: DevDeps<C, P>,
 ) -> Result<RpcExtension, Box<dyn std::error::Error + Send + Sync>>
 where
@@ -148,6 +157,16 @@ where
 
     if let Some(dev_rpc_data) = maybe_dev_rpc {
         io.merge(dev_rpc_data.into_rpc())?;
+    }
+
+    if let Some(container_chain_exclusion_message_channel) = maybe_container_chain_exclusion_sender
+    {
+        io.merge(
+            ManualContainerChainsExclusion {
+                container_chain_exclusion_message_channel,
+            }
+            .into_rpc(),
+        )?;
     }
 
     Ok(io)
@@ -223,6 +242,7 @@ struct MockParachainsInherentDataProvider<C: HeaderBackend<Block> + ProvideRunti
     pub parent: Hash,
     pub keystore: KeystorePtr,
     pub upward_messages_receiver: flume::Receiver<Vec<u8>>,
+    pub container_chain_exclusion_receiver: flume::Receiver<Vec<ParaId>>,
 }
 
 impl<C: HeaderBackend<Block> + ProvideRuntimeApi<Block>> MockParachainsInherentDataProvider<C>
@@ -235,12 +255,14 @@ where
         parent: Hash,
         keystore: KeystorePtr,
         upward_messages_receiver: flume::Receiver<Vec<u8>>,
+        container_chain_exclusion_receiver: flume::Receiver<Vec<ParaId>>,
     ) -> Self {
         MockParachainsInherentDataProvider {
             client,
             parent,
             keystore,
             upward_messages_receiver,
+            container_chain_exclusion_receiver,
         }
     }
 
@@ -249,6 +271,7 @@ where
         parent: Hash,
         keystore: KeystorePtr,
         upward_messages_receiver: flume::Receiver<Vec<u8>>,
+        container_chain_exclusion_receiver: flume::Receiver<Vec<ParaId>>,
     ) -> Result<ParachainsInherentData, InherentError> {
         let parent_header = match client.header(parent) {
             Ok(Some(h)) => h,
@@ -493,6 +516,7 @@ where
                         self.parent,
                         self.keystore.clone(),
                         self.upward_messages_receiver.clone(),
+                        self.container_chain_exclusion_receiver.clone(),
                     )
                     .await
                     .map_err(|e| sp_inherents::Error::Application(Box::new(e)))?
@@ -646,6 +670,7 @@ fn new_full<
     }
 
     let mut command_sink = None;
+    let mut container_chain_exclusion_sender = None;
 
     if role.is_authority() {
         let proposer = sc_basic_authorship::ProposerFactory::with_proof_recording(
@@ -701,6 +726,10 @@ fn new_full<
             Error::Consensus(consensus_common::Error::Other(babe_error.into()))
         })?;
 
+        let (mock_container_chains_exclusion_sender, mock_container_chains_exclusion_receiver) =
+            flume::bounded::<Vec<ParaId>>(100);
+        container_chain_exclusion_sender = Some(mock_container_chains_exclusion_sender);
+
         // Need to clone it and store here to avoid moving of `client`
         // variable in closure below.
         let client_clone = client.clone();
@@ -720,6 +749,7 @@ fn new_full<
                     let keystore = keystore_clone.clone();
                     let downward_mock_para_inherent_receiver = downward_mock_para_inherent_receiver.clone();
                     let upward_mock_receiver = upward_mock_receiver.clone();
+                    let mock_container_chains_exclusion_receiver = mock_container_chains_exclusion_receiver.clone();
                     async move {
 
                         let downward_mock_para_inherent_receiver = downward_mock_para_inherent_receiver.clone();
@@ -743,6 +773,7 @@ fn new_full<
                             parent,
                             keystore,
                             upward_messages_receiver,
+                            mock_container_chains_exclusion_receiver
                         );
 
                         let timestamp = get_next_timestamp(client_clone, slot_duration);
@@ -781,6 +812,7 @@ fn new_full<
                 pool: transaction_pool.clone(),
                 command_sink: command_sink.clone(),
                 dev_rpc: dev_rpc.clone(),
+                container_chain_exclusion_sender: container_chain_exclusion_sender.clone(),
             };
 
             create_dev_rpc_extension(deps).map_err(Into::into)
