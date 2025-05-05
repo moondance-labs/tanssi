@@ -24,42 +24,48 @@ describeSuite({
                 const tokenLocation = {
                     parents: 0,
                     interior: {
-                      x2: [
-                        {
-                            globalConsensus: {
-                            ethereum: { chainId: 1 },
-                          },
-                        },
-                        {
-                            accountKey20: {
-                            network: {
-                                ethereum: { chainId: 1 },
+                        x2: [
+                            {
+                                globalConsensus: {
+                                    ethereum: { chainId: 1 },
+                                },
                             },
-                            key: "0x0000000000000000000000000000000000000000",
-                          },
-                        },
-                      ],
+                            {
+                                accountKey20: {
+                                    network: {
+                                        ethereum: { chainId: 1 },
+                                    },
+                                    key: "0x0000000000000000000000000000000000000000",
+                                },
+                            },
+                        ],
                     },
-                  };
+                };
 
                 const assetId = 42;
 
-                const tx = await polkadotJs.tx.sudo.sudo(polkadotJs.tx.foreignAssetsCreator.createForeignAsset(
-                    tokenLocation,
-                    assetId,
-                    bob.address,
-                    true,
-                    1
-                )).signAsync(alice)
+                const tx = await polkadotJs.tx.sudo
+                    .sudo(
+                        polkadotJs.tx.foreignAssetsCreator.createForeignAsset(
+                            tokenLocation,
+                            assetId,
+                            bob.address,
+                            true,
+                            1
+                        )
+                    )
+                    .signAsync(alice);
 
                 await context.createBlock([tx], { allowFailures: false });
 
-
                 // Check events
                 const events = await polkadotJs.query.system.events();
-                const foreignAssetsCreatorEvent = events.find(
-                    ({ event: { section, method } }) => section === "foreignAssetsCreator" && method === "ForeignAssetCreated"
-                ).event.data.toJSON();
+                const foreignAssetsCreatorEvent = events
+                    .find(
+                        ({ event: { section, method } }) =>
+                            section === "foreignAssetsCreator" && method === "ForeignAssetCreated"
+                    )
+                    .event.data.toJSON();
 
                 expect(foreignAssetsCreatorEvent).toBeDefined();
             },
@@ -72,35 +78,33 @@ describeSuite({
                 const tokenLocation = {
                     parents: 0,
                     interior: {
-                      x2: [
-                        {
-                            globalConsensus: {
-                            ethereum: { chainId: 1 },
-                          },
-                        },
-                        {
-                            accountKey20: {
-                            network: {
-                                ethereum: { chainId: 1 },
+                        x2: [
+                            {
+                                globalConsensus: {
+                                    ethereum: { chainId: 1 },
+                                },
                             },
-                            key: "0x0000000000000000000000000000000000000000",
-                          },
-                        },
-                      ],
+                            {
+                                accountKey20: {
+                                    network: {
+                                        ethereum: { chainId: 1 },
+                                    },
+                                    key: "0x0000000000000000000000000000000000000000",
+                                },
+                            },
+                        ],
                     },
-                  };
+                };
 
                 const assetId = 42;
 
-                const tx = await polkadotJs.tx.foreignAssetsCreator.createForeignAsset(
-                    tokenLocation,
-                    assetId,
-                    bob.address,
-                    true,
-                    1
-                ).signAsync(alice)
+                const tx = await polkadotJs.tx.foreignAssetsCreator
+                    .createForeignAsset(tokenLocation, assetId, bob.address, true, 1)
+                    .signAsync(alice);
 
-                const { result: [foreignAssetsCreatorAttempt] } = await context.createBlock([tx]);
+                const {
+                    result: [foreignAssetsCreatorAttempt],
+                } = await context.createBlock([tx]);
                 expect(foreignAssetsCreatorAttempt.successful).toEqual(false);
                 expect(foreignAssetsCreatorAttempt.error.name).toEqual("BadOrigin");
             },
