@@ -287,14 +287,6 @@ impl Convert<AggregateMessageOrigin, ParaId> for GetParaFromAggregateMessageOrig
     }
 }
 
-/// Disable any extrinsic related to the balance transfer
-pub struct IsBalanceTransferExtrinsics;
-impl Contains<RuntimeCall> for IsBalanceTransferExtrinsics {
-    fn contains(c: &RuntimeCall) -> bool {
-        matches!(c, RuntimeCall::Balances(_))
-    }
-}
-
 pub struct IsContainerChainManagementExtrinsics;
 impl Contains<RuntimeCall> for IsContainerChainManagementExtrinsics {
     fn contains(c: &RuntimeCall) -> bool {
@@ -320,13 +312,6 @@ impl Contains<RuntimeCall> for IsDemocracyExtrinsics {
                 | RuntimeCall::Whitelist(_)
                 | RuntimeCall::Preimage(_)
         )
-    }
-}
-
-pub struct IsMiscellaneousExtrinsics;
-impl Contains<RuntimeCall> for IsMiscellaneousExtrinsics {
-    fn contains(c: &RuntimeCall) -> bool {
-        matches!(c, RuntimeCall::Proxy(_) | RuntimeCall::Identity(_))
     }
 }
 
@@ -384,10 +369,8 @@ parameter_types! {
 #[derive_impl(frame_system::config_preludes::RelayChainDefaultConfig)]
 impl frame_system::Config for Runtime {
     type BaseCallFilter = EverythingBut<(
-        IsBalanceTransferExtrinsics,
         IsContainerChainManagementExtrinsics,
         IsDemocracyExtrinsics,
-        IsMiscellaneousExtrinsics,
         IsXcmExtrinsics,
         IsContainerChainRegistrationExtrinsics,
         IsBridgesExtrinsics,
