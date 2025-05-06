@@ -994,6 +994,36 @@ declare module "@polkadot/api-base/types/events" {
              **/
             [key: string]: AugmentedEvent<ApiType>;
         };
+        maintenanceMode: {
+            /**
+             * The chain was put into Maintenance Mode
+             **/
+            EnteredMaintenanceMode: AugmentedEvent<ApiType, []>;
+            /**
+             * The call to resume on_idle XCM execution failed with inner error
+             **/
+            FailedToResumeIdleXcmExecution: AugmentedEvent<
+                ApiType,
+                [error: SpRuntimeDispatchError],
+                { error: SpRuntimeDispatchError }
+            >;
+            /**
+             * The call to suspend on_idle XCM execution failed with inner error
+             **/
+            FailedToSuspendIdleXcmExecution: AugmentedEvent<
+                ApiType,
+                [error: SpRuntimeDispatchError],
+                { error: SpRuntimeDispatchError }
+            >;
+            /**
+             * The chain returned to its normal operating state
+             **/
+            NormalOperationResumed: AugmentedEvent<ApiType, []>;
+            /**
+             * Generic event
+             **/
+            [key: string]: AugmentedEvent<ApiType>;
+        };
         messageQueue: {
             /**
              * Message placed in overweight queue.
