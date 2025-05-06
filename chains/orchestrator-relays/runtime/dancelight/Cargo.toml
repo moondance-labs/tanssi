@@ -153,8 +153,8 @@ pallet-stream-payment-runtime-api = { workspace = true }
 tanssi-runtime-common = { workspace = true }
 
 # Moonkit
-pallet-migrations = { workspace = true }
 pallet-maintenance-mode = { workspace = true, features = [ "xcm-support" ] }
+pallet-migrations = { workspace = true }
 
 # Bridges
 keyring = { workspace = true }

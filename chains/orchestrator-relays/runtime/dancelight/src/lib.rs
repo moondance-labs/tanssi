@@ -38,7 +38,7 @@ use {
         traits::{
             fungible::Inspect,
             tokens::{PayFromAccount, UnityAssetBalanceConversion},
-            ConstBool, Contains, EverythingBut,
+            ConstBool, Contains
         },
     },
     frame_system::{pallet_prelude::BlockNumberFor, EnsureNever},

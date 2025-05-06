@@ -32,7 +32,7 @@ describeSuite({
             title: "No maintenance mode at genesis",
             test: async () => {
                 if (isStarlight) {
-                    console.log(`Skipping E01 test for Starlight: maintenance mode is not available yet`);
+                    console.log("Skipping E01 test for Starlight: maintenance mode is not available yet");
                     expect(polkadotJs.query.maintenanceMode).to.be.undefined;
                     return;
                 }
@@ -48,7 +48,7 @@ describeSuite({
             title: "Signed origin cannot enable maintenance mode",
             test: async () => {
                 if (isStarlight) {
-                    console.log(`Skipping E02 test for Starlight: maintenance mode is not available yet`);
+                    console.log("Skipping E02 test for Starlight: maintenance mode is not available yet");
                     expect(polkadotJs.query.maintenanceMode).to.be.undefined;
                     return;
                 }
@@ -74,7 +74,7 @@ describeSuite({
             title: "Root origin can enable maintenance mode",
             test: async () => {
                 if (isStarlight) {
-                    console.log(`Skipping E03 test for Starlight: maintenance mode is not available yet`);
+                    console.log("Skipping E03 test for Starlight: maintenance mode is not available yet");
                     expect(polkadotJs.query.maintenanceMode).to.be.undefined;
                     return;
                 }
@@ -100,7 +100,7 @@ describeSuite({
             title: "No transfers allowed in maintenance mode",
             test: async () => {
                 if (isStarlight) {
-                    console.log(`Skipping E04 test for Starlight: maintenance mode is not available yet`);
+                    console.log("Skipping E04 test for Starlight: maintenance mode is not available yet");
                     expect(polkadotJs.query.maintenanceMode).to.be.undefined;
                     return;
                 }
@@ -134,7 +134,7 @@ describeSuite({
             title: "Transfer with sudo allowed in maintenance mode",
             test: async () => {
                 if (isStarlight) {
-                    console.log(`Skipping E05 test for Starlight: maintenance mode is not available yet`);
+                    console.log("Skipping E05 test for Starlight: maintenance mode is not available yet");
                     expect(polkadotJs.query.maintenanceMode).to.be.undefined;
                     return;
                 }
@@ -162,7 +162,7 @@ describeSuite({
             title: "Signed origin cannot disable maintenance mode",
             test: async () => {
                 if (isStarlight) {
-                    console.log(`Skipping E06 test for Starlight: maintenance mode is not available yet`);
+                    console.log("Skipping E06 test for Starlight: maintenance mode is not available yet");
                     expect(polkadotJs.query.maintenanceMode).to.be.undefined;
                     return;
                 }
@@ -189,7 +189,7 @@ describeSuite({
             title: "Root origin can disable maintenance mode",
             test: async () => {
                 if (isStarlight) {
-                    console.log(`Skipping E07 test for Starlight: maintenance mode is not available yet`);
+                    console.log("Skipping E07 test for Starlight: maintenance mode is not available yet");
                     expect(polkadotJs.query.maintenanceMode).to.be.undefined;
                     return;
                 }
@@ -215,7 +215,7 @@ describeSuite({
             title: "Transfers allowed again after disabling maintenance mode",
             test: async () => {
                 if (isStarlight) {
-                    console.log(`Skipping E08 test for Starlight: maintenance mode is not available yet`);
+                    console.log("Skipping E08 test for Starlight: maintenance mode is not available yet");
                     expect(polkadotJs.query.maintenanceMode).to.be.undefined;
                     return;
                 }
