@@ -82,13 +82,13 @@ describeSuite({
 
                 // The event is triggered, nonce should be incremented
                 if (event) {
-                    const supplyBefore = (await apiAtCheckpointA.query.balances.totalIssuance()).toBigInt(); 
-                    const sovereignIssuance = (supplyBefore * 32641n)  / 1_000_000_000n;
+                    const supplyBefore = (await apiAtCheckpointA.query.balances.totalIssuance()).toBigInt();
+                    const sovereignIssuance = (supplyBefore * 32641n) / 1_000_000_000n;
 
                     expect(nonceDiff).toEqual(1);
-                    expect(
-                        sovereignBalanceCheckpointB.toBigInt() - sovereignBalanceCheckpointA.toBigInt()
-                    ).to.be.equal(sovereignIssuance);
+                    expect(sovereignBalanceCheckpointB.toBigInt() - sovereignBalanceCheckpointA.toBigInt()).to.be.equal(
+                        sovereignIssuance
+                    );
                 }
                 // The event is not triggered, nonce should be the same
                 else {
