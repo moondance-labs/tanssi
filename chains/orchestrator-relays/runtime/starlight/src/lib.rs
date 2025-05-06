@@ -348,8 +348,9 @@ impl Contains<RuntimeCall> for IsBridgesExtrinsics {
             RuntimeCall::EthereumOutboundQueue(_)
                 | RuntimeCall::EthereumInboundQueue(_)
                 | RuntimeCall::EthereumSystem(_)
-                | RuntimeCall::EthereumBeaconClient(_)
                 | RuntimeCall::EthereumTokenTransfers(_)
+                // Beacon client enabled in 1301
+                // | RuntimeCall::EthereumBeaconClient(_)
         )
     }
 }
