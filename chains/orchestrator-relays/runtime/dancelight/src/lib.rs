@@ -38,7 +38,7 @@ use {
         traits::{
             fungible::Inspect,
             tokens::{PayFromAccount, UnityAssetBalanceConversion},
-            ConstBool, Contains,
+            ConstBool, Contains, EverythingBut,
         },
     },
     frame_system::{pallet_prelude::BlockNumberFor, EnsureNever},
@@ -1635,12 +1635,7 @@ impl Contains<RuntimeCall> for MaintenanceFilter {
 }
 
 /// Normal Call Filter
-pub struct NormalFilter;
-impl Contains<RuntimeCall> for NormalFilter {
-    fn contains(c: &RuntimeCall) -> bool {
-        !IsRelayRegister::contains(c) || !IsParathreadRegistrar::contains(c)
-    }
-}
+type NormalFilter = EverythingBut<(IsRelayRegister, IsParathreadRegistrar)>;
 
 impl pallet_maintenance_mode::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
