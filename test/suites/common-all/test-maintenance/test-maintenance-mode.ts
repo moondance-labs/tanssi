@@ -232,7 +232,7 @@ describeSuite({
                 const tx = polkadotJs.tx.balances.transferAllowDeath(randomAccount.address, DANCE);
 
                 await context.createBlock([await tx.signAsync(alice)]);
-                const balanceAfter = (await polkadotJs.query.system.account(randomAccount.address)).data.free;                
+                const balanceAfter = (await polkadotJs.query.system.account(randomAccount.address)).data.free;
                 expect(balanceBefore.lt(balanceAfter)).to.be.true;
             },
         });
