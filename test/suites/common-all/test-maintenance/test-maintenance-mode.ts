@@ -6,7 +6,7 @@ import type { ApiPromise } from "@polkadot/api";
 import { initializeCustomCreateBlock } from "utils";
 
 describeSuite({
-    id: "CO0101",
+    id: "C0401",
     title: "Maintenance mode test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -14,6 +14,7 @@ describeSuite({
         let alice: KeyringPair;
         let bob: KeyringPair;
         let chain: string;
+        let isStarlight: boolean;
 
         beforeAll(() => {
             initializeCustomCreateBlock(context);
@@ -22,12 +23,20 @@ describeSuite({
             chain = polkadotJs.consts.system.version.specName.toString();
             alice = context.keyring.alice;
             bob = context.keyring.bob;
+            const runtimeName = polkadotJs.runtimeVersion.specName.toString();
+            isStarlight = runtimeName === "starlight";
         });
 
         it({
             id: "E01",
             title: "No maintenance mode at genesis",
             test: async () => {
+                if (isStarlight) {
+                    console.log(`Skipping E01 test for Starlight: maintenance mode is not available yet`);
+                    expect(polkadotJs.query.maintenanceMode).to.be.undefined;
+                    return;
+                }
+
                 await context.createBlock();
                 const enabled = (await polkadotJs.query.maintenanceMode.maintenanceMode()).toJSON();
                 expect(enabled).to.be.false;
@@ -38,6 +47,12 @@ describeSuite({
             id: "E02",
             title: "Signed origin cannot enable maintenance mode",
             test: async () => {
+                if (isStarlight) {
+                    console.log(`Skipping E02 test for Starlight: maintenance mode is not available yet`);
+                    expect(polkadotJs.query.maintenanceMode).to.be.undefined;
+                    return;
+                }
+
                 await context.createBlock();
 
                 const tx = polkadotJs.tx.maintenanceMode.enterMaintenanceMode();
@@ -58,6 +73,11 @@ describeSuite({
             id: "E03",
             title: "Root origin can enable maintenance mode",
             test: async () => {
+                if (isStarlight) {
+                    console.log(`Skipping E03 test for Starlight: maintenance mode is not available yet`);
+                    expect(polkadotJs.query.maintenanceMode).to.be.undefined;
+                    return;
+                }
                 await context.createBlock();
                 await context.createBlock();
 
@@ -79,6 +99,13 @@ describeSuite({
             id: "E04",
             title: "No transfers allowed in maintenance mode",
             test: async () => {
+                if (isStarlight) {
+                    console.log(`Skipping E04 test for Starlight: maintenance mode is not available yet`);
+                    expect(polkadotJs.query.maintenanceMode).to.be.undefined;
+                    return;
+                }
+
+                await context.createBlock();
                 await context.createBlock();
 
                 const enabled = (await polkadotJs.query.maintenanceMode.maintenanceMode()).toJSON();
@@ -106,6 +133,12 @@ describeSuite({
             id: "E05",
             title: "Transfer with sudo allowed in maintenance mode",
             test: async () => {
+                if (isStarlight) {
+                    console.log(`Skipping E05 test for Starlight: maintenance mode is not available yet`);
+                    expect(polkadotJs.query.maintenanceMode).to.be.undefined;
+                    return;
+                }
+
                 await context.createBlock();
                 await context.createBlock();
 
@@ -128,6 +161,12 @@ describeSuite({
             id: "E06",
             title: "Signed origin cannot disable maintenance mode",
             test: async () => {
+                if (isStarlight) {
+                    console.log(`Skipping E06 test for Starlight: maintenance mode is not available yet`);
+                    expect(polkadotJs.query.maintenanceMode).to.be.undefined;
+                    return;
+                }
+
                 await context.createBlock();
                 await context.createBlock();
 
@@ -149,6 +188,12 @@ describeSuite({
             id: "E07",
             title: "Root origin can disable maintenance mode",
             test: async () => {
+                if (isStarlight) {
+                    console.log(`Skipping E07 test for Starlight: maintenance mode is not available yet`);
+                    expect(polkadotJs.query.maintenanceMode).to.be.undefined;
+                    return;
+                }
+
                 await context.createBlock();
 
                 const tx = polkadotJs.tx.maintenanceMode.resumeNormalOperation();
@@ -169,6 +214,12 @@ describeSuite({
             id: "E08",
             title: "Transfers allowed again after disabling maintenance mode",
             test: async () => {
+                if (isStarlight) {
+                    console.log(`Skipping E08 test for Starlight: maintenance mode is not available yet`);
+                    expect(polkadotJs.query.maintenanceMode).to.be.undefined;
+                    return;
+                }
+
                 await context.createBlock();
 
                 const enabled = (await polkadotJs.query.maintenanceMode.maintenanceMode()).toJSON();
