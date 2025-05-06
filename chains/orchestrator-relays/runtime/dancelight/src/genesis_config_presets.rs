@@ -421,6 +421,10 @@ fn dancelight_testnet_genesis(
                 .collect::<Vec<_>>(),
             ..Default::default()
         },
+        "maintenanceMode": crate::MaintenanceModeConfig {
+            start_in_maintenance_mode: false,
+            ..Default::default()
+        },
     })
 }
 
