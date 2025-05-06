@@ -5,7 +5,11 @@ import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 import type { u32 } from "@polkadot/types";
 import { initializeCustomCreateBlock, jumpSessions } from "utils";
-import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_PROXY, checkCallIsFiltered } from "helpers";
+import {
+    STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_PROXY,
+    checkCallIsFiltered,
+    STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_REGISTRAR,
+} from "helpers";
 
 describeSuite({
     id: "DEVT1501",
@@ -24,6 +28,7 @@ describeSuite({
         let isStarlight: boolean;
         let specVersion: number;
         let shouldSkipStarlightProxy: boolean;
+        let shouldSkipStarlightRegistrar: boolean;
 
         beforeAll(() => {
             initializeCustomCreateBlock(context);
@@ -59,6 +64,8 @@ describeSuite({
             isStarlight = runtimeName === "starlight";
             specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
             shouldSkipStarlightProxy = isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_PROXY.includes(specVersion);
+            shouldSkipStarlightRegistrar =
+                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_REGISTRAR.includes(specVersion);
         });
 
         it({
@@ -129,6 +136,15 @@ describeSuite({
                         context,
                         polkadotJs,
                         await polkadotJs.tx.proxy.proxy(sudoAlice.address, null, "0x").signAsync(delegateBob)
+                    );
+                    return;
+                }
+                if (shouldSkipStarlightRegistrar) {
+                    console.log(`Skipping E03 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(
+                        context,
+                        polkadotJs,
+                        await polkadotJs.tx.registrar.reserve().signAsync(charlie)
                     );
                     return;
                 }
@@ -257,6 +273,15 @@ describeSuite({
                 if (shouldSkipStarlightProxy) {
                     console.log(`Skipping E04 test for Starlight version ${specVersion}`);
                     await checkCallIsFiltered(context, polkadotJs, await txAddsCode.signAsync(charlie));
+                    return;
+                }
+                if (shouldSkipStarlightRegistrar) {
+                    console.log(`Skipping E04 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(
+                        context,
+                        polkadotJs,
+                        await polkadotJs.tx.registrar.reserve().signAsync(charlie)
+                    );
                     return;
                 }
 
