@@ -19,8 +19,6 @@
 use {
     crate::{tests::common::*, RuntimeCall},
     frame_support::assert_noop,
-    snowbridge_core::BasicOperatingMode::Halted,
-    sp_core::H160,
     sp_runtime::traits::Dispatchable,
 };
 
