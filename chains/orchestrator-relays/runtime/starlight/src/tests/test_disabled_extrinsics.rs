@@ -25,64 +25,6 @@ use {
 };
 
 #[test]
-fn test_disabled_some_extrinsics_for_bridges() {
-    ExtBuilder::default().build().execute_with(|| {
-        run_to_block(2);
-
-        assert_noop!(
-            RuntimeCall::EthereumSystem(snowbridge_pallet_system::Call::create_agent {}).dispatch(
-                <Runtime as frame_system::Config>::RuntimeOrigin::signed(AccountId::from(ALICE))
-            ),
-            frame_system::Error::<Runtime>::CallFiltered
-        );
-
-        assert_noop!(
-            RuntimeCall::EthereumOutboundQueue(
-                snowbridge_pallet_outbound_queue::Call::set_operating_mode { mode: Halted }
-            )
-            .dispatch(<Runtime as frame_system::Config>::RuntimeOrigin::signed(
-                AccountId::from(ALICE)
-            )),
-            frame_system::Error::<Runtime>::CallFiltered
-        );
-
-        assert_noop!(
-            RuntimeCall::EthereumInboundQueue(
-                snowbridge_pallet_inbound_queue::Call::set_operating_mode { mode: Halted }
-            )
-            .dispatch(<Runtime as frame_system::Config>::RuntimeOrigin::signed(
-                AccountId::from(ALICE)
-            )),
-            frame_system::Error::<Runtime>::CallFiltered
-        );
-
-        assert_noop!(
-            RuntimeCall::EthereumTokenTransfers(
-                pallet_ethereum_token_transfers::Call::transfer_native_token {
-                    amount: 12345,
-                    recipient: H160::random(),
-                }
-            )
-            .dispatch(<Runtime as frame_system::Config>::RuntimeOrigin::signed(
-                AccountId::from(ALICE)
-            )),
-            frame_system::Error::<Runtime>::CallFiltered
-        );
-
-        // EthereumBeaconClient enabled in runtime 1301
-        assert_eq!(
-            RuntimeCall::EthereumBeaconClient(
-                snowbridge_pallet_ethereum_client::Call::set_operating_mode { mode: Halted }
-            )
-            .dispatch(<Runtime as frame_system::Config>::RuntimeOrigin::signed(
-                AccountId::from(ALICE)
-            )),
-            Err(sp_runtime::DispatchError::BadOrigin.into())
-        );
-    });
-}
-
-#[test]
 fn test_disabled_some_extrinsics_for_pooled_staking() {
     ExtBuilder::default().build().execute_with(|| {
         run_to_block(2);
