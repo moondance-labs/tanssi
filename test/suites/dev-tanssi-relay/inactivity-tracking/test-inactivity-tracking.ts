@@ -95,7 +95,6 @@ describeSuite({
             id: "E02",
             title: "Pallet should correctly update collators' activity records with inactive chain",
             test: async () => {
-                const maxInactiveSessions = polkadotJs.consts.inactivityTracking.maxInactiveSessions.toNumber();
                 const paraId = polkadotJs.createType("ParaId", 2000);
                 await jumpToSession(context, 2);
                 const startSession = (await polkadotJs.query.session.currentIndex()).toNumber();
