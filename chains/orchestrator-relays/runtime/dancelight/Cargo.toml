@@ -57,6 +57,7 @@ frame-support = { workspace = true, features = [ "tuples-96" ] }
 frame-system = { workspace = true }
 frame-system-rpc-runtime-api = { workspace = true }
 nimbus-primitives = { workspace = true }
+pallet-alt-benchmarks = { workspace = true, optional = true }
 pallet-asset-rate = { workspace = true }
 pallet-authority-assignment = { workspace = true }
 pallet-authority-discovery = { workspace = true }
@@ -106,6 +107,7 @@ pallet-whitelist = { workspace = true }
 pallet-xcm = { workspace = true }
 pallet-xcm-benchmarks = { workspace = true, optional = true }
 
+cumulus-pallet-session-benchmarking = { workspace = true }
 frame-benchmarking = { workspace = true, optional = true }
 frame-system-benchmarking = { workspace = true, optional = true }
 frame-try-runtime = { workspace = true, optional = true }
@@ -204,6 +206,7 @@ std = [
 	"container-chain-template-frontier-runtime/std",
 	"container-chain-template-simple-runtime/std",
 	"cumulus-pallet-parachain-system/std",
+	"cumulus-pallet-session-benchmarking/std",
 	"cumulus-primitives-core/std",
 	"dancelight-runtime-constants/std",
 	"dp-consensus/std",
@@ -224,6 +227,7 @@ std = [
 	"milagro-bls/std",
 	"nimbus-primitives/std",
 	"offchain-primitives/std",
+	"pallet-alt-benchmarks?/std",
 	"pallet-asset-rate/std",
 	"pallet-author-noting-runtime-api/std",
 	"pallet-author-noting/std",
@@ -350,6 +354,7 @@ runtime-benchmarks = [
 	"container-chain-template-frontier-runtime/runtime-benchmarks",
 	"container-chain-template-simple-runtime/runtime-benchmarks",
 	"cumulus-pallet-parachain-system/runtime-benchmarks",
+	"cumulus-pallet-session-benchmarking/runtime-benchmarks",
 	"cumulus-primitives-core/runtime-benchmarks",
 	"dancelight-runtime-constants/runtime-benchmarks",
 	"dp-consensus/runtime-benchmarks",
@@ -358,6 +363,7 @@ runtime-benchmarks = [
 	"frame-system-benchmarking/runtime-benchmarks",
 	"frame-system/runtime-benchmarks",
 	"nimbus-primitives/runtime-benchmarks",
+	"pallet-alt-benchmarks/runtime-benchmarks",
 	"pallet-asset-rate/runtime-benchmarks",
 	"pallet-author-noting/runtime-benchmarks",
 	"pallet-babe/runtime-benchmarks",
