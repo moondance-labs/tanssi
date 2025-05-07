@@ -287,14 +287,6 @@ impl Convert<AggregateMessageOrigin, ParaId> for GetParaFromAggregateMessageOrig
     }
 }
 
-/// Disable any extrinsic related to the balance transfer
-pub struct IsBalanceTransferExtrinsics;
-impl Contains<RuntimeCall> for IsBalanceTransferExtrinsics {
-    fn contains(c: &RuntimeCall) -> bool {
-        matches!(c, RuntimeCall::Balances(_))
-    }
-}
-
 pub struct IsContainerChainManagementExtrinsics;
 impl Contains<RuntimeCall> for IsContainerChainManagementExtrinsics {
     fn contains(c: &RuntimeCall) -> bool {
@@ -323,13 +315,6 @@ impl Contains<RuntimeCall> for IsDemocracyExtrinsics {
     }
 }
 
-pub struct IsMiscellaneousExtrinsics;
-impl Contains<RuntimeCall> for IsMiscellaneousExtrinsics {
-    fn contains(c: &RuntimeCall) -> bool {
-        matches!(c, RuntimeCall::Proxy(_) | RuntimeCall::Identity(_))
-    }
-}
-
 pub struct IsXcmExtrinsics;
 impl Contains<RuntimeCall> for IsXcmExtrinsics {
     fn contains(c: &RuntimeCall) -> bool {
@@ -355,20 +340,6 @@ impl Contains<RuntimeCall> for IsContainerChainRegistrationExtrinsics {
     }
 }
 
-pub struct IsBridgesExtrinsics;
-impl Contains<RuntimeCall> for IsBridgesExtrinsics {
-    fn contains(c: &RuntimeCall) -> bool {
-        matches!(
-            c,
-            RuntimeCall::EthereumOutboundQueue(_)
-                | RuntimeCall::EthereumInboundQueue(_)
-                | RuntimeCall::EthereumSystem(_)
-                | RuntimeCall::EthereumBeaconClient(_)
-                | RuntimeCall::EthereumTokenTransfers(_)
-        )
-    }
-}
-
 pub struct IsStakingExtrinsics;
 impl Contains<RuntimeCall> for IsStakingExtrinsics {
     fn contains(c: &RuntimeCall) -> bool {
@@ -384,13 +355,10 @@ parameter_types! {
 #[derive_impl(frame_system::config_preludes::RelayChainDefaultConfig)]
 impl frame_system::Config for Runtime {
     type BaseCallFilter = EverythingBut<(
-        IsBalanceTransferExtrinsics,
         IsContainerChainManagementExtrinsics,
         IsDemocracyExtrinsics,
-        IsMiscellaneousExtrinsics,
         IsXcmExtrinsics,
         IsContainerChainRegistrationExtrinsics,
-        IsBridgesExtrinsics,
         IsStakingExtrinsics,
     )>;
     type BlockWeights = BlockWeights;
