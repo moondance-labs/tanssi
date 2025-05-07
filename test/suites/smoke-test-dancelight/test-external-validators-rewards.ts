@@ -9,6 +9,7 @@ import {
     HOLESKY_SOVEREIGN_ACCOUNT_ADDRESS,
     PRIMARY_GOVERNANCE_CHANNEL_ID,
     SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS,
+    DANCELIGHT_ERA_INFLATION_PERBILL,
 } from "utils";
 
 describeSuite({
@@ -83,7 +84,7 @@ describeSuite({
                 // The event is triggered, nonce should be incremented
                 if (event) {
                     const supplyBefore = (await apiAtCheckpointA.query.balances.totalIssuance()).toBigInt();
-                    const sovereignIssuance = (supplyBefore * 32641n) / 1_000_000_000n;
+                    const sovereignIssuance = (supplyBefore * DANCELIGHT_ERA_INFLATION_PERBILL) / 1_000_000_000n;
 
                     expect(nonceDiff).toEqual(1);
                     expect(sovereignBalanceCheckpointB.toBigInt() - sovereignBalanceCheckpointA.toBigInt()).to.be.equal(
