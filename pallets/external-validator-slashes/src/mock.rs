@@ -19,6 +19,7 @@ use {
     frame_support::{
         parameter_types,
         traits::{ConstU16, ConstU32, ConstU64, Get, Hooks},
+        weights::constants::RocksDbWeight,
     },
     frame_system as system,
     snowbridge_core::outbound::{SendError, SendMessageFeeProvider},
@@ -58,7 +59,7 @@ impl system::Config for Test {
     type BaseCallFilter = frame_support::traits::Everything;
     type BlockWeights = ();
     type BlockLength = ();
-    type DbWeight = ();
+    type DbWeight = RocksDbWeight;
     type RuntimeOrigin = RuntimeOrigin;
     type RuntimeCall = RuntimeCall;
     type Nonce = u64;

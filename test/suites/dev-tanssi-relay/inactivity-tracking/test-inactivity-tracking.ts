@@ -3,6 +3,7 @@ import { beforeAll, customDevRpcRequest, describeSuite, expect } from "@moonwall
 import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 import { jumpToSession, mockAndInsertHeadData } from "utils";
+import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_INACTIVITY_TRACKING } from "helpers";
 
 describeSuite({
     id: "DEVT2001",
@@ -11,15 +12,30 @@ describeSuite({
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
+        let isStarlight: boolean;
+        let specVersion: number;
+        let shouldSkipStarlightIT: boolean;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             alice = context.keyring.alice;
+
+            const runtimeName = polkadotJs.runtimeVersion.specName.toString();
+            isStarlight = runtimeName === "starlight";
+            specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
+            shouldSkipStarlightIT =
+                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_INACTIVITY_TRACKING.includes(specVersion);
         });
         it({
             id: "E01",
             title: "Pallet should correctly update collators' activity records with active chains",
             test: async () => {
+                if (shouldSkipStarlightIT) {
+                    console.log(`Skipping E01 test for Starlight version ${specVersion}`);
+                    // TODO: once the pallet is in starlight, check the calls are filtered,
+                    // in case we don't want them for a specific runtime version.
+                    return;
+                }
                 const maxInactiveSessions = polkadotJs.consts.inactivityTracking.maxInactiveSessions.toNumber();
                 const paraId = polkadotJs.createType("ParaId", 2000);
                 await jumpToSession(context, 2);

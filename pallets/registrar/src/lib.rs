@@ -840,7 +840,7 @@ pub mod pallet {
         }
 
         pub fn get_genesis_cost(size: usize) -> <T::Currency as Inspect<T::AccountId>>::Balance {
-            T::DataDepositPerByte::get() * (size as u32).into()
+            T::DataDepositPerByte::get().saturating_mul((size as u32).into())
         }
 
         fn do_register(
