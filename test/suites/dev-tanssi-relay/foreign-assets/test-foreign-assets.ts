@@ -1,6 +1,7 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import { type ApiPromise } from "@polkadot/api";
+import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_FOREIGN_ASSETS_CREATOR } from "helpers";
 
 describeSuite({
     id: "DEVT2001",
@@ -10,17 +11,29 @@ describeSuite({
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
         let bob: KeyringPair;
+        let specVersion: number;
+        let shouldSkipStarlightForeignAssetsCreation: boolean;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             alice = context.keyring.alice;
             bob = context.keyring.bob;
+
+            const chain = polkadotJs.consts.system.version.specName.toString();
+            const isStarlight = chain === "starlight";
+            specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
+            shouldSkipStarlightForeignAssetsCreation = isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_FOREIGN_ASSETS_CREATOR.includes(specVersion);
         });
 
         it({
             id: "T01",
             title: "Should succeed calling foreign assets creation for ethereum token and sudo",
             test: async () => {
+                if (shouldSkipStarlightForeignAssetsCreation) {
+                    console.log(`Skipping DEVT2001T01 test for Starlight version ${specVersion}`);
+                    return;
+                }
+                
                 const tokenLocation = {
                     parents: 0,
                     interior: {
@@ -75,6 +88,11 @@ describeSuite({
             id: "T02",
             title: "Should succeed calling foreign assets creation for ethereum token and sudo",
             test: async () => {
+                if (shouldSkipStarlightForeignAssetsCreation) {
+                    console.log(`Skipping DEVT2001T02 test for Starlight version ${specVersion}`);
+                    return;
+                }
+
                 const tokenLocation = {
                     parents: 0,
                     interior: {
