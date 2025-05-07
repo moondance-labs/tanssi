@@ -1,5 +1,5 @@
 import "@tanssi/api-augment";
-import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import { beforeAll, customDevRpcRequest, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 import { jumpToSession, mockAndInsertHeadData } from "utils";
@@ -89,6 +89,60 @@ describeSuite({
                 const inactiveCollatorsRecordAfterActivityWindow =
                     await polkadotJs.query.inactivityTracking.inactiveCollators(startSession);
                 expect(inactiveCollatorsRecordAfterActivityWindow.isEmpty).to.be.true;
+            },
+        });
+        it({
+            id: "E02",
+            title: "Pallet should correctly update collators' activity records with inactive chain",
+            test: async () => {
+                const maxInactiveSessions = polkadotJs.consts.inactivityTracking.maxInactiveSessions.toNumber();
+                const paraId = polkadotJs.createType("ParaId", 2000);
+                await jumpToSession(context, 2);
+                const startSession = (await polkadotJs.query.session.currentIndex()).toNumber();
+                // Disable chain 2000 from producing blocks and we want to disable that for this test
+                const excludedChains = polkadotJs.createType("Vec<ParaId>", [paraId]);
+                await customDevRpcRequest("mock_excludeContainerChains", [excludedChains]);
+                // No container chains has produced blocks yet so activity tracking storages for current session should
+                // be empty
+                const activeCollatorsForSessionBeforeNoting =
+                    await polkadotJs.query.inactivityTracking.activeCollatorsForCurrentSession();
+                expect(activeCollatorsForSessionBeforeNoting.isEmpty).to.be.true;
+                const activeChainsForSessionBeforeNoting =
+                    await polkadotJs.query.inactivityTracking.activeContainerChainsForCurrentSession();
+                expect(activeChainsForSessionBeforeNoting.isEmpty).to.be.true;
+
+                // Since chain 2000 is disabled, the collators should not be added to the activity tracking storage
+                // the chain will not be added to chain activity tracking storage for the current session
+                await mockAndInsertHeadData(context, paraId, 2, 2, alice);
+                await context.createBlock();
+                const activeCollatorsForSessionAfterNoting =
+                    await polkadotJs.query.inactivityTracking.activeCollatorsForCurrentSession();
+                expect(activeCollatorsForSessionAfterNoting.isEmpty).to.be.true;
+                const activeChainsForSessionAfterNoting =
+                    await polkadotJs.query.inactivityTracking.activeContainerChainsForCurrentSession();
+                expect(activeChainsForSessionAfterNoting.isEmpty).to.be.true;
+
+                // Check again if chain 2000 is disabled
+                await mockAndInsertHeadData(context, paraId, 3, 2, alice);
+                await context.createBlock();
+                const activeCollatorsForSessionAfterSecondNoting =
+                    await polkadotJs.query.inactivityTracking.activeCollatorsForCurrentSession();
+                expect(activeCollatorsForSessionAfterNoting.isEmpty).to.be.true;
+                const activeChainsForSessionAfterSecondNoting =
+                    await polkadotJs.query.inactivityTracking.activeContainerChainsForCurrentSession();
+                expect(activeChainsForSessionAfterSecondNoting.isEmpty).to.be.true;
+
+                // Check that no collators are added to the inactivity tracking storage for the current session
+                // before the end of the session
+                const inactiveCollatorsRecordBeforeActivityWindow =
+                    await polkadotJs.query.inactivityTracking.inactiveCollators(startSession);
+                expect(inactiveCollatorsRecordBeforeActivityWindow.isEmpty).to.be.true;
+
+                // Since chain 2000 is disabled, the collators should not be added to the inactivity tracking storage
+                await jumpToSession(context, startSession + 1);
+                const inactiveCollatorsRecordWithinActivityWindow =
+                    await polkadotJs.query.inactivityTracking.inactiveCollators(startSession);
+                expect(inactiveCollatorsRecordWithinActivityWindow.isEmpty).to.be.true;
             },
         });
     },
