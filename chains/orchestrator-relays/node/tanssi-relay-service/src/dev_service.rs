@@ -271,7 +271,7 @@ where
         parent: Hash,
         keystore: KeystorePtr,
         upward_messages_receiver: flume::Receiver<Vec<u8>>,
-        container_chain_exclusion_receiver: flume::Receiver<Vec<ParaId>>,
+        container_chains_exclusion_receiver: flume::Receiver<Vec<ParaId>>,
     ) -> Result<ParachainsInherentData, InherentError> {
         let parent_header = match client.header(parent) {
             Ok(Some(h)) => h,
@@ -364,8 +364,32 @@ where
         let collator_pair = CollatorPair::generate().0;
         let mut backed_cand: Vec<BackedCandidate<H256>> = vec![];
 
+        let container_chains_exclusion_messages: Vec<Vec<ParaId>> =
+            container_chains_exclusion_receiver.drain().collect();
+        // If there is a new set of excluded container chains, we update it
+        if let Some(mock_excluded_container_chains) = container_chains_exclusion_messages.last() {
+            client
+                .insert_aux(
+                    &[(
+                        CONTAINER_CHAINS_EXCLUSION_AUX_KEY,
+                        mock_excluded_container_chains.encode().as_slice(),
+                    )],
+                    &[],
+                )
+                .expect("Should be able to write to aux storage; qed");
+        }
+        let new_excluded_container_chains_value = client
+            .get_aux(CONTAINER_CHAINS_EXCLUSION_AUX_KEY)
+            .expect("Should be able to query aux storage; qed")
+            .unwrap_or(Vec::<ParaId>::new().encode());
+        let mock_excluded_container_chains: Vec<ParaId> =
+            Decode::decode(&mut new_excluded_container_chains_value.as_slice())
+                .expect("Vector non-decodable");
+
         // iterate over every core|para pair
         for (core, para) in claim_queue {
+            let mut para = para.clone();
+            para.retain(|x| !mock_excluded_container_chains.contains(x));
             // check which group is assigned to each core
             let group_assigned_to_core =
                 core.0 + rotations_since_session_start % groups.len() as u32;
