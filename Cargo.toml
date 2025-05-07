@@ -52,6 +52,7 @@ cast_possible_wrap = { level = "warn", priority = 2 }
 cast_precision_loss = { level = "warn", priority = 2 }
 cast_sign_loss = { level = "warn", priority = 2 }
 debug_assert_with_mut_call = { level = "warn", priority = 2 }
+disallowed_methods = { level = "deny", priority = 2 }
 fn_to_numeric_cast_any = { level = "warn", priority = 2 }
 invalid_upcast_comparisons = { level = "warn", priority = 2 }
 
