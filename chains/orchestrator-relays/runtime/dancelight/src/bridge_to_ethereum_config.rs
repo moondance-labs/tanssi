@@ -52,16 +52,17 @@ use {
     },
     sp_core::{ConstU32, ConstU8, Get, H160, H256},
     sp_runtime::{traits::Zero, DispatchError, DispatchResult},
-    sp_std::vec,
+    sp_std::{marker::PhantomData, vec},
     tp_bridge::{DoNothingConvertMessage, DoNothingRouter, EthereumSystemHandler},
     xcm::{
         latest::prelude::*,
         latest::{
-            Asset as XcmAsset, AssetId as XcmAssetId, Assets as XcmAssets, Fungibility,
+            Asset as XcmAsset, AssetId as XcmAssetId, Assets as XcmAssets, ExecuteXcm, Fungibility,
             Junctions::*,
         },
         VersionedXcm,
     },
+    xcm_executor::traits::WeightBounds,
 };
 
 // Ethereum Bridge
@@ -247,17 +248,22 @@ where
     }
 }
 
-pub struct EthTokensLocalProcessor<T, XcmProcessor>(
-    sp_std::marker::PhantomData<T>,
-    sp_std::marker::PhantomData<XcmProcessor>,
+pub struct EthTokensLocalProcessor<T, XcmProcessor, XcmWeigher, EthereumLocation, EthereumNetwork>(
+    PhantomData<T>,
+    PhantomData<XcmProcessor>,
+    PhantomData<XcmWeigher>,
+    PhantomData<EthereumLocation>,
+    PhantomData<EthereumNetwork>,
 );
-impl<T, XcmProcessor> MessageProcessor for EthTokensLocalProcessor<T, XcmProcessor>
+impl<T, XcmProcessor, XcmWeigher, EthereumLocation, EthereumNetwork> MessageProcessor
+    for EthTokensLocalProcessor<T, XcmProcessor, XcmWeigher, EthereumLocation, EthereumNetwork>
 where
-    T: snowbridge_pallet_inbound_queue::Config
-        + pallet_ethereum_token_transfers::Config
-        + snowbridge_pallet_system::Config,
+    T: snowbridge_pallet_inbound_queue::Config + pallet_ethereum_token_transfers::Config,
     T::AccountId: From<[u8; 32]>,
-    XcmProcessor: ProcessMessage<Origin = Location>,
+    XcmProcessor: ExecuteXcm<T::RuntimeCall>,
+    XcmWeigher: WeightBounds<T::RuntimeCall>,
+    EthereumLocation: Get<Location>,
+    EthereumNetwork: Get<NetworkId>,
 {
     fn can_process_message(channel: &Channel, envelope: &Envelope) -> bool {
         // Ensure that the message is intended for the current channel, para_id and agent_id
@@ -279,7 +285,7 @@ where
             return false;
         }
 
-        // Try decode the message and check the token is registered on ForeignAssetCreator pallet
+        // Try decoding the message
         match VersionedXcmMessage::decode_all(&mut envelope.payload.as_slice()) {
             Ok(VersionedXcmMessage::V1(MessageV1 {
                 command:
@@ -332,33 +338,27 @@ where
                                 id: destination_account,
                             },
                         amount,
-                        fee,
+                        fee: _,
                     },
             }) => {
-                // if fee >= amount {
-                //     return Err(DispatchError::Other("fee is greater than amount"));
-                // }
-
-                // - Transfer the amounts of tokens from Ethereum sov account to the destination
-                let sovereign_account = T::EthereumSovereignAccount::get();
-
-                // T::Currency::transfer(
-                //     &sovereign_account,
-                //     &destination_account.into(),
-                //     amount.into(),
-                //     Preservation::Preserve,
-                // )?;
-
-                let token_location = Location {
-                    parents: 1,
-                    interior: X2([
-                        GlobalConsensus(NetworkId::Ethereum { chain_id: 1 }),
-                        AccountKey20 {
-                            network: Some(NetworkId::Ethereum { chain_id: 1 }),
-                            key: token_address.into(),
-                        },
-                    ]
-                    .into()),
+                // If the token address is 0, represent the ETH native token
+                let token_location = if token_address == H160::zero() {
+                    Location {
+                        parents: 1,
+                        interior: X1([GlobalConsensus(EthereumNetwork::get())].into()),
+                    }
+                } else {
+                    Location {
+                        parents: 1,
+                        interior: X2([
+                            GlobalConsensus(EthereumNetwork::get()),
+                            AccountKey20 {
+                                network: Some(EthereumNetwork::get()),
+                                key: token_address.into(),
+                            },
+                        ]
+                        .into()),
+                    }
                 };
 
                 let assets_to_holding: XcmAssets = vec![XcmAsset {
@@ -367,7 +367,7 @@ where
                 }]
                 .into();
 
-                let xcm = Xcm::<T::RuntimeCall>(vec![
+                let mut xcm = Xcm::<T::RuntimeCall>(vec![
                     ReserveAssetDeposited(assets_to_holding),
                     DepositAsset {
                         assets: AllCounted(1).into(),
@@ -381,32 +381,29 @@ where
                     },
                 ]);
 
-                let encoded_xcm = VersionedXcm::<T::RuntimeCall>::from(xcm).encode();
+                let ethereum_location = EthereumLocation::get();
 
-                // TODO: this set the weight to MAX. Revisit.
-                let mut weight_meter = WeightMeter::new();
-                let mut message_id = [0u8; 32];
-                let ethereum_location = T::EthereumLocation::get();
+                let weight = XcmWeigher::weight(&mut xcm)
+                    .map_err(|()| DispatchError::Other("UnweighableMessage"))?;
+                let mut message_id = xcm.using_encoded(sp_io::hashing::blake2_256);
 
-                let result = XcmProcessor::process_message(
-                    encoded_xcm.as_slice(),
+                let outcome = XcmProcessor::prepare_and_execute(
                     ethereum_location,
-                    &mut weight_meter,
+                    xcm,
                     &mut message_id,
+                    weight,
+                    weight,
                 );
 
-                match result {
-                    Ok(true) => {
-                        return Ok(());
-                    }
-                    Ok(false) => {
-                        return Err(DispatchError::Other("XCM message execution failed"));
-                    }
-                    Err(e) => {
-                        // TODO: log the error
-                        return Err(DispatchError::Other("ProcessMessageError"));
-                    }
-                }
+                outcome.ensure_complete().map_err(|error| {
+                    log::error!(
+                        "EthTokensLocalProcessor: XCM execution failed with error {:?}",
+                        error
+                    );
+                    DispatchError::Other("LocalExecutionIncomplete")
+                })?;
+
+                Ok(())
             }
             _ => return Err(DispatchError::Other("unexpected message")),
         }
@@ -541,11 +538,10 @@ impl snowbridge_pallet_inbound_queue::Config for Runtime {
         NativeTokenTransferMessageProcessor<Self>,
         EthTokensLocalProcessor<
             Self,
-            xcm_builder::ProcessXcmMessage<
-                Location,
-                xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
-                Self::RuntimeCall,
-            >,
+            xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
+            <xcm_config::XcmConfig as xcm_executor::Config>::Weigher,
+            dancelight_runtime_constants::snowbridge::EthereumLocation,
+            dancelight_runtime_constants::snowbridge::EthereumNetwork,
         >,
     );
     type RewardProcessor = RewardThroughFeesAccount<Self>;
