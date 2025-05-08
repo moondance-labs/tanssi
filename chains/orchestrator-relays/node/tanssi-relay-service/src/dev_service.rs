@@ -30,6 +30,8 @@
 //! 10. If amount of time passed between two block is less than slot duration, we emulate passing of time babe block import and runtime
 //!     by incrementing timestamp by slot duration.
 
+#[allow(deprecated)]
+use sc_executor::NativeElseWasmExecutor;
 use {
     crate::dev_rpcs::{DevApiServer, DevRpc},
     async_io::Timer,
@@ -81,13 +83,30 @@ const PARA_INHERENT_SELECTOR_AUX_KEY: &[u8] = b"__DEV_PARA_INHERENT_SELECTOR";
 
 pub type FullBackend = service::TFullBackend<Block>;
 
+/// Native executor type.
+pub struct ParachainNativeExecutor;
+
+impl sc_executor::NativeExecutionDispatch for ParachainNativeExecutor {
+    type ExtendHostFunctions = (
+        sp_io::SubstrateHostFunctions,
+        frame_benchmarking::benchmarking::HostFunctions,
+    );
+
+    fn dispatch(method: &str, data: &[u8]) -> Option<Vec<u8>> {
+        // TODO: how to know when to use starlight_runtime?
+        dancelight_runtime::api::dispatch(method, data)
+    }
+
+    fn native_version() -> sc_executor::NativeVersion {
+        dancelight_runtime::native_version()
+    }
+}
+
+#[allow(deprecated)]
 pub type FullClient = service::TFullClient<
     Block,
     RuntimeApi,
-    WasmExecutor<(
-        sp_io::SubstrateHostFunctions,
-        frame_benchmarking::benchmarking::HostFunctions,
-    )>,
+    NativeElseWasmExecutor<ParachainNativeExecutor>,
 >;
 
 pub struct NewFull {
@@ -916,7 +935,8 @@ fn new_partial_basics(
     if let Some(ref wasmtime_precompiled_path) = config.executor.wasmtime_precompiled {
         wasm_builder = wasm_builder.with_wasmtime_precompiled_path(wasmtime_precompiled_path);
     }
-    let executor = wasm_builder.build();
+    #[allow(deprecated)]
+    let executor = NativeElseWasmExecutor::new_with_wasm_executor(wasm_builder.build());
 
     let (client, backend, keystore_container, task_manager) =
         service::new_full_parts::<Block, RuntimeApi, _>(
