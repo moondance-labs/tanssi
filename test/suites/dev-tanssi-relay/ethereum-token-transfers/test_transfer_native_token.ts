@@ -4,7 +4,13 @@ import { type DevModeContext, beforeAll, describeSuite, expect } from "@moonwall
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import { hexToU8a, u8aToHex } from "@polkadot/util";
 import { encodeAddress, xxhashAsU8a } from "@polkadot/util-crypto";
-import { generateEventLog, generateUpdate, SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS, type MultiLocation } from "utils";
+import {
+    generateEventLog,
+    generateUpdate,
+    SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS,
+    type MultiLocation,
+    ETHEREUM_MAINNET_SOVEREIGN_ACCOUNT_ADDRESS,
+} from "utils";
 import { expectEventCount } from "../../../helpers/events";
 import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_ETH_TOKEN_TRANSFERS, checkCallIsFiltered } from "helpers";
 import type { KeyringPair } from "@moonwall/util";
@@ -20,6 +26,7 @@ describeSuite({
         let isStarlight: boolean;
         let specVersion: number;
         let shouldSkipStarlightETT: boolean;
+        let sovereignAccount: string;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
@@ -31,6 +38,9 @@ describeSuite({
             specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
             shouldSkipStarlightETT =
                 isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_ETH_TOKEN_TRANSFERS.includes(specVersion);
+            sovereignAccount = isStarlight
+                ? ETHEREUM_MAINNET_SOVEREIGN_ACCOUNT_ADDRESS
+                : SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS;
         });
 
         it({
@@ -164,7 +174,7 @@ describeSuite({
 
                 // Ethereum sovereign account: send some balance to it
                 signedTx = await polkadotJs.tx.balances
-                    .transferKeepAlive(SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS, 100_000_000_000_000_000n)
+                    .transferKeepAlive(sovereignAccount, 100_000_000_000_000_000n)
                     .signAsync(alice);
 
                 await context.createBlock([signedTx], { allowFailures: false });
@@ -234,7 +244,7 @@ describeSuite({
                 // Sovereign balance before
                 const {
                     data: { free: sovereignBalanceBefore },
-                } = await context.polkadotJs().query.system.account(SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS);
+                } = await context.polkadotJs().query.system.account(sovereignAccount);
 
                 // Bob balance before
                 const {
@@ -247,7 +257,7 @@ describeSuite({
                 // Check balances were updated correctly.
                 const {
                     data: { free: sovereignBalanceAfter },
-                } = await context.polkadotJs().query.system.account(SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS);
+                } = await context.polkadotJs().query.system.account(sovereignAccount);
 
                 const {
                     data: { free: bobBalanceAfter },

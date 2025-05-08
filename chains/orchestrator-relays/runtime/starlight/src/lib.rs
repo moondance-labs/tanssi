@@ -340,20 +340,6 @@ impl Contains<RuntimeCall> for IsContainerChainRegistrationExtrinsics {
     }
 }
 
-pub struct IsBridgesExtrinsics;
-impl Contains<RuntimeCall> for IsBridgesExtrinsics {
-    fn contains(c: &RuntimeCall) -> bool {
-        matches!(
-            c,
-            RuntimeCall::EthereumOutboundQueue(_)
-                | RuntimeCall::EthereumInboundQueue(_)
-                | RuntimeCall::EthereumSystem(_)
-                | RuntimeCall::EthereumTokenTransfers(_) // Beacon client enabled in 1301
-                                                         // | RuntimeCall::EthereumBeaconClient(_)
-        )
-    }
-}
-
 pub struct IsStakingExtrinsics;
 impl Contains<RuntimeCall> for IsStakingExtrinsics {
     fn contains(c: &RuntimeCall) -> bool {
@@ -373,7 +359,6 @@ impl frame_system::Config for Runtime {
         IsDemocracyExtrinsics,
         IsXcmExtrinsics,
         IsContainerChainRegistrationExtrinsics,
-        IsBridgesExtrinsics,
         IsStakingExtrinsics,
     )>;
     type BlockWeights = BlockWeights;
