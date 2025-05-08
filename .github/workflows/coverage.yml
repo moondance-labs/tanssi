@@ -121,9 +121,8 @@ jobs:
 
           echo "Executing grcov"
           mkdir -p coverage
-          ./grcov proffiles/ -s ./ --binary-path ./target/release/ \
+          ./grcov proffiles/ -s $HOME --binary-path ./target/release/ \
             -t html,covdir --branch --ignore-not-existing --ignore "target/release/build/*" \
-            --ignore "*mock.rs" --ignore "*tests.rs" --ignore "$HOME/.cargo/**" \
             -o coverage/ --llvm 2>&1 \
             | tee grcov.log
 
@@ -136,29 +135,7 @@ jobs:
           echo "Invalid files: $INVALID"
           if [ -n "$INVALID" ]; then
             echo "Removing invalid files: $INVALID"
-            cd proffiles/
-            rm $INVALID
-            cd ..
-            ./grcov proffiles/ -s ./ --binary-path ./target/release/ \
-            -t html,covdir --branch --ignore-not-existing --ignore "target/release/build/*" \
-            --ignore "*mock.rs" --ignore "*tests.rs" --ignore "$HOME/.cargo/**" \
-            -o coverage/ --llvm
-          fi
-
-          if [ "${{ (needs.set-tags.outputs.coverage_report == 'true') && (github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push') }}" == "true" ]; then
-            echo "Generating coverage report"
-            wget ${{ vars.S3_BUCKET_URL }}/tanssi-coverage/branches/master/covdir \
-              -O base_covdir || true
-
-            python3 .github/scripts/coverage-report.py \
-              --base-covdir ./base_covdir \
-              --incoming-covdir ./coverage/covdir \
-              --base-branch ${{ needs.set-tags.outputs.git_target_branch }} \
-              --incoming-branch ${{ needs.set-tags.outputs.git_branch }} \
-              --base-html-url ${{ vars.S3_BUCKET_URL }}/${{ needs.set-tags.outputs.coverage_dir }} \
-            > coverage_report.md
-
-            echo "coverage_date=\"$(date)\"" >> $GITHUB_OUTPUT
+            exit 1
           fi
 
           rm -rf proffiles/
@@ -167,47 +144,47 @@ jobs:
         with:
           name: coverage
           path: coverage
-      - name: Upload coverage s3
-        if: ${{(github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push') }}
-        uses: mario-sangar/upload-s3-action@master
-        id: S3
-        with:
-          aws_key_id: ${{ secrets.S3_COVERAGE_ID }}
-          aws_secret_access_key: ${{ secrets.S3_COVERAGE_KEY }}
-          aws_bucket: ${{ vars.S3_COVERAGE_BUCKET }}
-          destination_dir: "${{ needs.set-tags.outputs.coverage_dir }}"
-          source_dir: "coverage"
-          acl: "none"
-      - name: Link To Report
-        if: ${{(github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push') }}
-        run: |
-          echo "${{steps.S3.outputs.object_key}}"
-          echo "${{ vars.S3_BUCKET_URL }}/${{steps.S3.outputs.object_key}}/html/index.html"
+      #- name: Upload coverage s3
+      #  if: ${{(github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push') }}
+      #  uses: mario-sangar/upload-s3-action@master
+      #  id: S3
+      #  with:
+      #    aws_key_id: ${{ secrets.S3_COVERAGE_ID }}
+      #    aws_secret_access_key: ${{ secrets.S3_COVERAGE_KEY }}
+      #    aws_bucket: ${{ vars.S3_COVERAGE_BUCKET }}
+      #    destination_dir: "${{ needs.set-tags.outputs.coverage_dir }}"
+      #    source_dir: "coverage"
+      #    acl: "none"
+      #- name: Link To Report
+      #  if: ${{(github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push') }}
+      #  run: |
+      #    echo "${{steps.S3.outputs.object_key}}"
+      #    echo "${{ vars.S3_BUCKET_URL }}/${{steps.S3.outputs.object_key}}/html/index.html"
 
-      - name: Create coverage report comment
-        if: ${{ (needs.set-tags.outputs.coverage_report == 'true') && (github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push') }}
-        run: |
-          mv coverage_report.md temp_coverage_report.md
-          echo "## [Coverage Report](${{ vars.S3_BUCKET_URL }}/${{steps.S3.outputs.object_key}}/html/index.html)" > coverage_report.md
-          echo "[(master)](${{ vars.S3_BUCKET_URL }}/tanssi-coverage/branches/master/html/index.html)" >> coverage_report.md
-          cat temp_coverage_report.md >> coverage_report.md
-          rm temp_coverage_report.md
-          echo "> Coverage generated ${{ steps.coverage.outputs.coverage_date }}" >> coverage_report.md
-          echo "Generated coverage report comment"
-          cat coverage_report.md
-      - name: Find Comment
-        if: ${{ (needs.set-tags.outputs.coverage_report == 'true') && (github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push') }}
-        uses: peter-evans/find-comment@v2
-        id: fc
-        with:
-          issue-number: ${{ github.event.pull_request.number }}
-          comment-author: "github-actions[bot]"
-          body-includes: Coverage generated
-      - name: Create or update comment
-        if: ${{ (needs.set-tags.outputs.coverage_report == 'true') && (github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push') }}
-        uses: peter-evans/create-or-update-comment@v3
-        with:
-          comment-id: ${{ steps.fc.outputs.comment-id }}
-          issue-number: ${{ github.event.pull_request.number }}
-          body-path: coverage_report.md
-          edit-mode: replace
+      #- name: Create coverage report comment
+      #  if: ${{ (needs.set-tags.outputs.coverage_report == 'true') && (github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push') }}
+      #  run: |
+      #    mv coverage_report.md temp_coverage_report.md
+      #    echo "## [Coverage Report](${{ vars.S3_BUCKET_URL }}/${{steps.S3.outputs.object_key}}/html/index.html)" > coverage_report.md
+      #    echo "[(master)](${{ vars.S3_BUCKET_URL }}/tanssi-coverage/branches/master/html/index.html)" >> coverage_report.md
+      #    cat temp_coverage_report.md >> coverage_report.md
+      #    rm temp_coverage_report.md
+      #    echo "> Coverage generated ${{ steps.coverage.outputs.coverage_date }}" >> coverage_report.md
+      #    echo "Generated coverage report comment"
+      #    cat coverage_report.md
+      #- name: Find Comment
+      #  if: ${{ (needs.set-tags.outputs.coverage_report == 'true') && (github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push') }}
+      #  uses: peter-evans/find-comment@v2
+      #  id: fc
+      #  with:
+      #    issue-number: ${{ github.event.pull_request.number }}
+      #    comment-author: "github-actions[bot]"
+      #    body-includes: Coverage generated
+      #- name: Create or update comment
+      #  if: ${{ (needs.set-tags.outputs.coverage_report == 'true') && (github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push') }}
+      #  uses: peter-evans/create-or-update-comment@v3
+      #  with:
+      #    comment-id: ${{ steps.fc.outputs.comment-id }}
+      #    issue-number: ${{ github.event.pull_request.number }}
+      #    body-path: coverage_report.md
+      #    edit-mode: replace
