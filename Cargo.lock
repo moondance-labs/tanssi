@@ -20501,6 +20501,7 @@ version = "0.1.0"
 dependencies = [
  "frame-support",
  "log",
+ "sp-std",
  "staging-xcm",
 ]
 

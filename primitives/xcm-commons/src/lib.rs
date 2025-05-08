@@ -17,6 +17,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use xcm::latest::prelude::*;
+use frame_support::traits::Get;
 trait Parse {
     /// Returns the "chain" location part. It could be parent, sibling
     /// parachain, or child parachain.
@@ -49,6 +50,30 @@ impl frame_support::traits::ContainsPair<Asset, Location> for NativeAssetReserve
             asset.id.0.chain_part()
         };
 
+        if let Some(ref reserve) = reserve {
+            if reserve == origin {
+                return true;
+            }
+        }
+        false
+    }
+}
+
+pub struct EthereumAssetReserve<EthereumLocation>(sp_std::marker::PhantomData<EthereumLocation>);
+impl<EthereumLocation> frame_support::traits::ContainsPair<Asset, Location> for EthereumAssetReserve<EthereumLocation>
+ where EthereumLocation: Get<Location>
+ {
+    fn contains(asset: &Asset, origin: &Location) -> bool {
+        log::trace!(target: "xcm::contains", "EthereumAssetReserve asset: {:?}, origin: {:?}", asset, origin);
+        let reserve = if asset.id.0.parents == 1
+            && matches!(asset.id.0.first_interior(), Some(GlobalConsensus(Ethereum { .. })))
+        {
+            Some(EthereumLocation::get())
+        } else {
+            None
+        };
+
+        // Origin must match the EthereumLocation reserve
         if let Some(ref reserve) = reserve {
             if reserve == origin {
                 return true;
