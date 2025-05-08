@@ -109,8 +109,11 @@ fn runtime_inflations_values_are_correct_prod_or_fast(prod: bool) {
         let blocks_per_era = blocks_per_session * sessions_per_era;
         let eras_per_year = (365 * DAYS) / blocks_per_era;
 
-        let annual_inflation = 0.1; // 10%
-        let collators_fraction = 0.5; // 50% of era inflation goes to collators.
+        let annual_inflation = 0.075; // 7.5%
+        // Collators+staking get 3.5% out of the 100%,
+        // so 3.5 / 7.5 as a fraction
+        // Rest goes to validators (4%)
+        let collators_fraction = 3.5 / 7.5;
 
         let rates = compute_inflation_rates(
             annual_inflation,
