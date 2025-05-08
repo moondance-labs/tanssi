@@ -144,6 +144,7 @@ jobs:
         with:
           name: coverage
           path: coverage
+          include-hidden-files: true
       #- name: Upload coverage s3
       #  if: ${{(github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push') }}
       #  uses: mario-sangar/upload-s3-action@master
