@@ -24,7 +24,7 @@ use {
         RuntimeEvent, RuntimeOrigin, TransactionByteFee, Treasury, WeightToFee, XcmPallet,
     },
     crate::governance::StakingAdmin,
-    dancelight_runtime_constants::{currency::CENTS, system_parachain::*},
+    dancelight_runtime_constants::{currency::CENTS, system_parachain::*, snowbridge::EthereumLocation},
     frame_support::{
         parameter_types,
         traits::{Contains, Equals, Everything, Nothing},
@@ -37,7 +37,7 @@ use {
     },
     sp_core::ConstU32,
     tp_bridge::EthereumLocationsConverterFor,
-    tp_xcm_commons::NativeAssetReserve,
+    tp_xcm_commons::{NativeAssetReserve, EthereumAssetReserve},
     xcm::{
         latest::prelude::*,
         opaque::latest::{ROCOCO_GENESIS_HASH, WESTEND_GENESIS_HASH},
@@ -199,7 +199,7 @@ impl xcm_executor::Config for XcmConfig {
     type XcmSender = XcmRouter;
     type AssetTransactor = LocalAssetTransactor;
     type OriginConverter = LocalOriginConverter;
-    type IsReserve = NativeAssetReserve;
+    type IsReserve = (NativeAssetReserve, EthereumAssetReserve<EthereumLocation>);
     type IsTeleporter = ();
     type UniversalLocation = UniversalLocation;
     type Barrier = Barrier;
