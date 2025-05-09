@@ -114,6 +114,20 @@ jobs:
       - name: Install llvm tools
         run:
           rustup component add llvm-tools-preview
+      - name: Try new coverage tool
+        id: coverage_new
+        run: |
+          cargo install cargo-binutils -f
+          cargo-profdata -- merge --sparse proffiles/ -o coverage.profdata
+          # TODO: add more binaries here using -object
+          cargo-cov -- show target/release/tanssi-node  --instr-profile=coverage.profdata   --format=html   --output-dir coverage_new/html   --show-branches=count -show-line-counts-or-regions -show-expansions -show-mcdc
+          #rm -rf proffiles/
+      - name: Upload coverate to gha
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage_new
+          path: coverage_new
+          include-hidden-files: true
       - name: Retrieve coverage
         id: coverage
         run: |
