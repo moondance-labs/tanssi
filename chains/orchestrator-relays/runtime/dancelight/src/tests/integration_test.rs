@@ -20,11 +20,12 @@ use sp_runtime::traits::BadOrigin;
 use {
     crate::{
         tests::common::*, Balances, CollatorConfiguration, ContainerRegistrar, DataPreservers,
-        ForeignAssetsCreator, Registrar, StreamPayment,
+        ForeignAssetsCreator, Registrar, RuntimeEvent, StreamPayment,
     },
     cumulus_primitives_core::{relay_chain::HeadData, ParaId},
     dancelight_runtime_constants::currency::EXISTENTIAL_DEPOSIT,
     frame_support::{assert_err, assert_noop, assert_ok, BoundedVec},
+    pallet_foreign_asset_creator::{AssetIdToForeignAsset, ForeignAssetToAssetId},
     pallet_registrar_runtime_api::{
         runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
     },
@@ -652,12 +653,37 @@ fn test_register_eth_foreign_asset() {
 
             assert_ok!(ForeignAssetsCreator::create_foreign_asset(
                 root_origin(),
-                asset_location,
+                asset_location.clone(),
                 asset_id,
                 AccountId::from(BOB),
                 true,
                 1
             ));
+
+            let foreign_asset_created_event = System::events()
+                .iter()
+                .filter(|r| match r.event {
+                    RuntimeEvent::ForeignAssetsCreator(
+                        pallet_foreign_asset_creator::Event::ForeignAssetCreated { .. },
+                    ) => true,
+                    _ => false,
+                })
+                .count();
+
+            assert_eq!(
+                foreign_asset_created_event, 1,
+                "ForeignAssetCreated event should be emitted!"
+            );
+
+            assert_eq!(
+                AssetIdToForeignAsset::<Runtime>::get(asset_id),
+                Some(asset_location.clone())
+            );
+
+            assert_eq!(
+                ForeignAssetToAssetId::<Runtime>::get(asset_location.clone()),
+                Some(asset_id)
+            );
         });
 }
 
