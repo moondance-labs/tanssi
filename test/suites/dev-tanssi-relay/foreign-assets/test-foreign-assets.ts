@@ -36,7 +36,7 @@ describeSuite({
                 }
 
                 const tokenLocation = {
-                    parents: 0,
+                    parents: 1,
                     interior: {
                         x2: [
                             {
@@ -95,7 +95,7 @@ describeSuite({
                 }
 
                 const tokenLocation = {
-                    parents: 0,
+                    parents: 1,
                     interior: {
                         x2: [
                             {
