@@ -16,8 +16,8 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use xcm::latest::prelude::*;
 use frame_support::traits::Get;
+use xcm::latest::prelude::*;
 trait Parse {
     /// Returns the "chain" location part. It could be parent, sibling
     /// parachain, or child parachain.
@@ -59,16 +59,25 @@ impl frame_support::traits::ContainsPair<Asset, Location> for NativeAssetReserve
     }
 }
 
-pub struct EthereumAssetReserve<EthereumLocation>(sp_std::marker::PhantomData<EthereumLocation>);
-impl<EthereumLocation> frame_support::traits::ContainsPair<Asset, Location> for EthereumAssetReserve<EthereumLocation>
- where EthereumLocation: Get<Location>
- {
+pub struct EthereumAssetReserve<EthereumLocation, EthereumNetwork>(
+    sp_std::marker::PhantomData<(EthereumLocation, EthereumNetwork)>,
+);
+impl<EthereumLocation, EthereumNetwork> frame_support::traits::ContainsPair<Asset, Location>
+    for EthereumAssetReserve<EthereumLocation, EthereumNetwork>
+where
+    EthereumLocation: Get<Location>,
+    EthereumNetwork: Get<NetworkId>,
+{
     fn contains(asset: &Asset, origin: &Location) -> bool {
         log::trace!(target: "xcm::contains", "EthereumAssetReserve asset: {:?}, origin: {:?}", asset, origin);
-        let reserve = if asset.id.0.parents == 1
-            && matches!(asset.id.0.first_interior(), Some(GlobalConsensus(Ethereum { .. })))
-        {
-            Some(EthereumLocation::get())
+        let ethereum_network = EthereumNetwork::get();
+        let reserve = if asset.id.0.parents == 1 {
+            match asset.id.0.first_interior() {
+                Some(GlobalConsensus(network)) if *network == ethereum_network => {
+                    Some(EthereumLocation::get())
+                }
+                _ => None,
+            }
         } else {
             None
         };
