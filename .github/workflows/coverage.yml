@@ -54,6 +54,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ needs.set-tags.outputs.git_ref }}
+      - name: Install new coverage tool
+        id: coverage_new_install
+        run: |
+          rustup component add llvm-tools-preview
+          cargo install cargo-binutils -f --locked
+          cargo-profdata -- --help
       - name: Setup Variables
         shell: bash
         run: |
