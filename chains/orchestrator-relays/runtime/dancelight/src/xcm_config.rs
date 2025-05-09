@@ -294,6 +294,7 @@ impl pallet_xcm::Config for Runtime {
 }
 
 parameter_types! {
+    // TODO: revisit these values in the future
     pub const ForeignAssetsAssetDeposit: Balance = 0;
     pub const ForeignAssetsAssetAccountDeposit: Balance = 0;
     pub const ForeignAssetsApprovalDeposit: Balance = 0;
