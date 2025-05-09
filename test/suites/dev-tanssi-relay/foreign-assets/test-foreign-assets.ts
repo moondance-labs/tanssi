@@ -86,7 +86,7 @@ describeSuite({
 
         it({
             id: "T02",
-            title: "Should succeed calling foreign assets creation for ethereum token and sudo",
+            title: "Bad origin when trying to create foreign asset without sudo",
             test: async () => {
                 if (shouldSkipStarlightForeignAssetsCreation) {
                     console.log(`Skipping DEVT2001T02 test for Starlight version ${specVersion}`);
