@@ -1,6 +1,6 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
-import { type ApiPromise } from "@polkadot/api";
+import type { ApiPromise } from "@polkadot/api";
 import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_FOREIGN_ASSETS_CREATOR } from "helpers";
 
 describeSuite({
