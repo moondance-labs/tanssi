@@ -637,7 +637,7 @@ fn test_register_eth_foreign_asset() {
         .build()
         .execute_with(|| {
             let asset_location = Location {
-                parents: 0,
+                parents: 1,
                 interior: X2([
                     GlobalConsensus(NetworkId::Ethereum { chain_id: 1 }),
                     AccountKey20 {
@@ -671,7 +671,7 @@ fn test_register_eth_foreign_asset_not_root_should_fail() {
         .build()
         .execute_with(|| {
             let asset_location = Location {
-                parents: 0,
+                parents: 1,
                 interior: X2([
                     GlobalConsensus(NetworkId::Ethereum { chain_id: 1 }),
                     AccountKey20 {
@@ -708,7 +708,7 @@ fn test_register_same_eth_foreign_asset_twice_should_fail() {
         .build()
         .execute_with(|| {
             let asset_location = Location {
-                parents: 0,
+                parents: 1,
                 interior: X2([
                     GlobalConsensus(NetworkId::Ethereum { chain_id: 1 }),
                     AccountKey20 {
@@ -731,7 +731,7 @@ fn test_register_same_eth_foreign_asset_twice_should_fail() {
             ));
 
             let asset_location = Location {
-                parents: 0,
+                parents: 1,
                 interior: X2([
                     GlobalConsensus(NetworkId::Ethereum { chain_id: 1 }),
                     AccountKey20 {
