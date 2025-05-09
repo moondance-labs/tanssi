@@ -127,8 +127,10 @@ jobs:
           cargo install cargo-binutils -f --locked
           export PATH="$HOME/.cargo/bin:$PATH"
           cargo-profdata -- merge --sparse proffiles/ -o coverage.profdata
-          # TODO: add more binaries here using -object
-          cargo-cov -- show target/release/tanssi-node  --instr-profile=coverage.profdata   --format=html   --output-dir coverage_new/html   --show-branches=count -show-line-counts-or-regions -show-expansions -show-mcdc
+          ALL_BINARIES=$(python3 .github/scripts/get-object-files-for-coverage.py --cargo-profile release)
+          echo "Gathered binaries:"
+          echo $ALL_BINARIES
+          cargo-cov -- show $ALL_BINARIES --instr-profile=coverage.profdata   --format=html   --output-dir coverage_new/html   --show-branches=count -show-line-counts-or-regions -show-expansions -show-mcdc
           #rm -rf proffiles/
       - name: Upload coverate to gha
         uses: actions/upload-artifact@v4
