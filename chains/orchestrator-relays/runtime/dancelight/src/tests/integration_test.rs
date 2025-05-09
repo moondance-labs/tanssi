@@ -20,11 +20,12 @@ use sp_runtime::traits::BadOrigin;
 use {
     crate::{
         tests::common::*, Balances, CollatorConfiguration, ContainerRegistrar, DataPreservers,
-        Registrar, StreamPayment,
+        ForeignAssetsCreator, Registrar, RuntimeEvent, StreamPayment,
     },
     cumulus_primitives_core::{relay_chain::HeadData, ParaId},
     dancelight_runtime_constants::currency::EXISTENTIAL_DEPOSIT,
     frame_support::{assert_err, assert_noop, assert_ok, BoundedVec},
+    pallet_foreign_asset_creator::{AssetIdToForeignAsset, ForeignAssetToAssetId},
     pallet_registrar_runtime_api::{
         runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
     },
@@ -33,6 +34,7 @@ use {
     tp_stream_payment_common::{
         AssetId as StreamPaymentAssetId, TimeUnit as StreamPaymentTimeUnit,
     },
+    xcm::latest::prelude::{Junctions::X2, *},
 };
 
 #[test]
@@ -624,4 +626,158 @@ fn stream_payment_stored_profile_correct_size() {
         size, OPEN_STREAM_HOLD_AMOUNT as usize,
         "encoded len doesn't match size configured for hold"
     );
+}
+
+#[test]
+fn test_register_eth_foreign_asset() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            let asset_location = Location {
+                parents: 1,
+                interior: X2([
+                    GlobalConsensus(NetworkId::Ethereum { chain_id: 1 }),
+                    AccountKey20 {
+                        network: Some(NetworkId::Ethereum { chain_id: 1 }),
+                        key: [0; 20],
+                    },
+                ]
+                .into()),
+            };
+
+            let asset_id = 42u16;
+
+            assert_ok!(ForeignAssetsCreator::create_foreign_asset(
+                root_origin(),
+                asset_location.clone(),
+                asset_id,
+                AccountId::from(BOB),
+                true,
+                1
+            ));
+
+            let foreign_asset_created_event = System::events()
+                .iter()
+                .filter(|r| match r.event {
+                    RuntimeEvent::ForeignAssetsCreator(
+                        pallet_foreign_asset_creator::Event::ForeignAssetCreated { .. },
+                    ) => true,
+                    _ => false,
+                })
+                .count();
+
+            assert_eq!(
+                foreign_asset_created_event, 1,
+                "ForeignAssetCreated event should be emitted!"
+            );
+
+            assert_eq!(
+                AssetIdToForeignAsset::<Runtime>::get(asset_id),
+                Some(asset_location.clone())
+            );
+
+            assert_eq!(
+                ForeignAssetToAssetId::<Runtime>::get(asset_location.clone()),
+                Some(asset_id)
+            );
+        });
+}
+
+#[test]
+fn test_register_eth_foreign_asset_not_root_should_fail() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            let asset_location = Location {
+                parents: 1,
+                interior: X2([
+                    GlobalConsensus(NetworkId::Ethereum { chain_id: 1 }),
+                    AccountKey20 {
+                        network: Some(NetworkId::Ethereum { chain_id: 1 }),
+                        key: [0; 20],
+                    },
+                ]
+                .into()),
+            };
+
+            let asset_id = 42u16;
+
+            assert_noop!(
+                ForeignAssetsCreator::create_foreign_asset(
+                    origin_of(AccountId::from(ALICE)),
+                    asset_location,
+                    asset_id,
+                    AccountId::from(BOB),
+                    true,
+                    1
+                ),
+                BadOrigin
+            );
+        });
+}
+
+#[test]
+fn test_register_same_eth_foreign_asset_twice_should_fail() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            let asset_location = Location {
+                parents: 1,
+                interior: X2([
+                    GlobalConsensus(NetworkId::Ethereum { chain_id: 1 }),
+                    AccountKey20 {
+                        network: Some(NetworkId::Ethereum { chain_id: 1 }),
+                        key: [0; 20],
+                    },
+                ]
+                .into()),
+            };
+
+            let asset_id = 42u16;
+
+            assert_ok!(ForeignAssetsCreator::create_foreign_asset(
+                root_origin(),
+                asset_location,
+                asset_id,
+                AccountId::from(BOB),
+                true,
+                1
+            ));
+
+            let asset_location = Location {
+                parents: 1,
+                interior: X2([
+                    GlobalConsensus(NetworkId::Ethereum { chain_id: 1 }),
+                    AccountKey20 {
+                        network: Some(NetworkId::Ethereum { chain_id: 1 }),
+                        key: [1; 20],
+                    },
+                ]
+                .into()),
+            };
+
+            assert_noop!(
+                ForeignAssetsCreator::create_foreign_asset(
+                    root_origin(),
+                    asset_location,
+                    asset_id,
+                    AccountId::from(BOB),
+                    true,
+                    1
+                ),
+                pallet_foreign_asset_creator::Error::<Runtime>::AssetAlreadyExists
+            );
+        });
 }
