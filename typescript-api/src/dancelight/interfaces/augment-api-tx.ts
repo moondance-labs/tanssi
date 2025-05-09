@@ -2988,6 +2988,28 @@ declare module "@polkadot/api-base/types/submittable" {
              **/
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
+        maintenanceMode: {
+            /**
+             * Place the chain in maintenance mode
+             *
+             * Weight cost is:
+             * * One DB read to ensure we're not already in maintenance mode
+             * * Three DB writes - 1 for the mode, 1 for suspending xcm execution, 1 for the event
+             **/
+            enterMaintenanceMode: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
+            /**
+             * Return the chain to normal operating mode
+             *
+             * Weight cost is:
+             * * One DB read to ensure we're in maintenance mode
+             * * Three DB writes - 1 for the mode, 1 for resuming xcm execution, 1 for the event
+             **/
+            resumeNormalOperation: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
+            /**
+             * Generic tx
+             **/
+            [key: string]: SubmittableExtrinsicFunction<ApiType>;
+        };
         messageQueue: {
             /**
              * Execute an overweight message.

@@ -149,6 +149,9 @@ import type {
     PalletInvulnerablesCall,
     PalletInvulnerablesError,
     PalletInvulnerablesEvent,
+    PalletMaintenanceModeCall,
+    PalletMaintenanceModeError,
+    PalletMaintenanceModeEvent,
     PalletMessageQueueBookState,
     PalletMessageQueueCall,
     PalletMessageQueueError,
@@ -677,6 +680,9 @@ declare module "@polkadot/types/types/registry" {
         PalletInvulnerablesCall: PalletInvulnerablesCall;
         PalletInvulnerablesError: PalletInvulnerablesError;
         PalletInvulnerablesEvent: PalletInvulnerablesEvent;
+        PalletMaintenanceModeCall: PalletMaintenanceModeCall;
+        PalletMaintenanceModeError: PalletMaintenanceModeError;
+        PalletMaintenanceModeEvent: PalletMaintenanceModeEvent;
         PalletMessageQueueBookState: PalletMessageQueueBookState;
         PalletMessageQueueCall: PalletMessageQueueCall;
         PalletMessageQueueError: PalletMessageQueueError;
