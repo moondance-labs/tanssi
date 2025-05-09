@@ -55,10 +55,9 @@ use {
     sp_std::{marker::PhantomData, vec},
     tp_bridge::{DoNothingConvertMessage, DoNothingRouter, EthereumSystemHandler},
     xcm::{
-        latest::prelude::*,
         latest::{
-            Asset as XcmAsset, AssetId as XcmAssetId, Assets as XcmAssets, ExecuteXcm, Fungibility,
-            Junctions::*,
+            prelude::*, Asset as XcmAsset, AssetId as XcmAssetId, Assets as XcmAssets, ExecuteXcm,
+            Fungibility, Junctions::*,
         },
         VersionedXcm,
     },
@@ -258,7 +257,9 @@ pub struct EthTokensLocalProcessor<T, XcmProcessor, XcmWeigher, EthereumLocation
 impl<T, XcmProcessor, XcmWeigher, EthereumLocation, EthereumNetwork> MessageProcessor
     for EthTokensLocalProcessor<T, XcmProcessor, XcmWeigher, EthereumLocation, EthereumNetwork>
 where
-    T: snowbridge_pallet_inbound_queue::Config + pallet_ethereum_token_transfers::Config,
+    T: snowbridge_pallet_inbound_queue::Config
+        + pallet_ethereum_token_transfers::Config
+        + pallet_foreign_asset_creator::Config,
     T::AccountId: From<[u8; 32]>,
     XcmProcessor: ExecuteXcm<T::RuntimeCall>,
     XcmWeigher: WeightBounds<T::RuntimeCall>,
@@ -290,7 +291,7 @@ where
             Ok(VersionedXcmMessage::V1(MessageV1 {
                 command:
                     Command::SendToken {
-                        token,
+                        token: token_address,
                         destination:
                             Destination::AccountId32 {
                                 id: destination_account,
@@ -300,21 +301,31 @@ where
                     },
                 ..
             })) => {
-                // TODO: Check if the token is registered on ForeignAssetCreator pallet
-                // using the token address and possibly doing something like:
+                // Check if the token is registered on ForeignAssetCreator pallet
+                let token_location = if token_address == H160::zero() {
+                    Location {
+                        parents: 1,
+                        interior: X1([GlobalConsensus(EthereumNetwork::get())].into()),
+                    }
+                } else {
+                    Location {
+                        parents: 1,
+                        interior: X2([
+                            GlobalConsensus(EthereumNetwork::get()),
+                            AccountKey20 {
+                                network: Some(EthereumNetwork::get()),
+                                key: token_address.into(),
+                            },
+                        ]
+                        .into()),
+                    }
+                };
 
-                // iterate over the assetIdToForeignAsset storage and check if any location matches with:
-                // Location {
-                //     parents: 1,
-                //     interior: X2([
-                //         GlobalConsensus(NetworkId::Ethereum { chain_id: 1 }),
-                //         AccountKey20 {
-                //             network: Some(NetworkId::Ethereum { chain_id: 1 }),
-                //             key: token_address,
-                //         },
-                //     ]
-                //     .into()),
-                // };
+                if let None = pallet_foreign_asset_creator::ForeignAssetToAssetId::<Runtime>::get(
+                    token_location,
+                ) {
+                    return false;
+                }
 
                 return true;
             }
