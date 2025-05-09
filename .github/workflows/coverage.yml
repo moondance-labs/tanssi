@@ -74,6 +74,7 @@ jobs:
         run: |
           rustup component add llvm-tools-preview
           cargo install cargo-binutils -f --locked
+          export PATH="$HOME/.cargo/bin:$PATH"
           cargo-profdata -- --help
       - name: Enable coverage gathering
         run: |
@@ -124,6 +125,7 @@ jobs:
         id: coverage_new
         run: |
           cargo install cargo-binutils -f --locked
+          export PATH="$HOME/.cargo/bin:$PATH"
           cargo-profdata -- merge --sparse proffiles/ -o coverage.profdata
           # TODO: add more binaries here using -object
           cargo-cov -- show target/release/tanssi-node  --instr-profile=coverage.profdata   --format=html   --output-dir coverage_new/html   --show-branches=count -show-line-counts-or-regions -show-expansions -show-mcdc
