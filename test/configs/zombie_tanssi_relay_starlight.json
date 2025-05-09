@@ -4,7 +4,7 @@
         "provider": "native"
     },
     "relaychain": {
-        "chain_spec_path": "specs/tanssi-starlight-relay.json",
+        "chain_spec_path": "specs/tanssi-relay-starlight.json",
         "default_command": "../target/release/tanssi-relay",
         "default_args": [
             "--no-hardware-benchmarks",
