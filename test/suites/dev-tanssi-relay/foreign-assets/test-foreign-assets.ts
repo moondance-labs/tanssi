@@ -22,7 +22,8 @@ describeSuite({
             const chain = polkadotJs.consts.system.version.specName.toString();
             const isStarlight = chain === "starlight";
             specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
-            shouldSkipStarlightForeignAssetsCreation = isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_FOREIGN_ASSETS_CREATOR.includes(specVersion);
+            shouldSkipStarlightForeignAssetsCreation =
+                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_FOREIGN_ASSETS_CREATOR.includes(specVersion);
         });
 
         it({
@@ -33,7 +34,7 @@ describeSuite({
                     console.log(`Skipping DEVT2001T01 test for Starlight version ${specVersion}`);
                     return;
                 }
-                
+
                 const tokenLocation = {
                     parents: 1,
                     interior: {
