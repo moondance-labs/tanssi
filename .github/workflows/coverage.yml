@@ -65,16 +65,16 @@ jobs:
           wget https://github.com/mozilla/grcov/releases/download/v${{ env.GRCOV_VERSION }}/grcov-x86_64-unknown-linux-gnu.tar.bz2
           tar xvf grcov-x86_64-unknown-linux-gnu.tar.bz2
           chmod +x grcov
+      - name: Cargo build
+        uses: ./.github/workflow-templates/cargo-build
+        with:
+          features: "fast-runtime"
       - name: Install new coverage tool
         id: coverage_new_install
         run: |
           rustup component add llvm-tools-preview
           cargo install cargo-binutils -f --locked
           cargo-profdata -- --help
-      - name: Cargo build
-        uses: ./.github/workflow-templates/cargo-build
-        with:
-          features: "fast-runtime"
       - name: Enable coverage gathering
         run: |
           # Enable coverage when running tests
