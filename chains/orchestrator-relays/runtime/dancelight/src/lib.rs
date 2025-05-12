@@ -99,6 +99,10 @@ use {
         prod_or_fast_parameter_types, EraIndex, GetHostConfiguration, GetSessionContainerChains,
         ParaIdAssignmentHooks, RegistrarHandler, Slot, SlotFrequency,
     },
+    xcm_runtime_apis::{
+        dry_run::{CallDryRunEffects, Error as XcmDryRunApiError, XcmDryRunEffects},
+        fees::Error as XcmPaymentApiError,
+    },
 };
 
 #[cfg(any(feature = "std", test))]
@@ -156,6 +160,8 @@ pub mod xcm_config;
 
 pub mod bridge_to_ethereum_config;
 
+pub mod eth_chain_config;
+
 // Weights
 mod weights;
 
@@ -166,7 +172,6 @@ use {
         pallet_custom_origins, AuctionAdmin, Fellows, GeneralAdmin, Treasurer, TreasurySpender,
     },
     pallet_collator_assignment::CoreAllocationConfiguration,
-    xcm_runtime_apis::fees::Error as XcmPaymentApiError,
 };
 
 #[cfg(test)]
@@ -567,11 +572,7 @@ impl pallet_session::Config for Runtime {
     type SessionManager = pallet_session::historical::NoteHistoricalRoot<Self, ExternalValidators>;
     type SessionHandler = <SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
     type Keys = SessionKeys;
-    // TODO: Current benchmarking code for pallet_session requires that the runtime
-    // uses pallet_staking, which we don't use. We need to make a PR to Substrate to
-    // allow decoupling the benchmark from other pallets.
-    // See https://github.com/paritytech/polkadot-sdk/blob/0845044454c005b577eab7afaea18583bd7e3dd3/substrate/frame/session/benchmarking/src/inner.rs#L38
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_session::SubstrateWeight<Runtime>;
 }
 
 pub struct FullIdentificationOf;
@@ -715,7 +716,7 @@ where
         // take the biggest period possible.
         let period = BlockHashCount::get()
             .checked_next_power_of_two()
-            .map(|c| c / 2)
+            .map(|c| c.checked_div(2).expect("2 != 0; qed"))
             .unwrap_or(2) as u64;
 
         let current_block = System::block_number()
@@ -1271,7 +1272,7 @@ impl parachains_slashing::Config for Runtime {
         Offences,
         ReportLongevity,
     >;
-    type WeightInfo = parachains_slashing::TestWeightInfo;
+    type WeightInfo = weights::runtime_parachains_disputes_slashing::SubstrateWeight<Runtime>;
     type BenchmarkingConfig = parachains_slashing::BenchConfig<200>;
 }
 
@@ -1438,13 +1439,13 @@ impl Get<u64> for TimestampProvider {
 
 parameter_types! {
     // Chain ID of Sepolia.
-    // Output is: 34cdd3f84040fb44d70e83b892797846a8c0a556ce08cd470bf6d4cf7b94ff77
+    // Output is: ce796ae65569a670d0c1cc1ac12515a3ce21b5fbf729d63d7b289baad070139d
     pub EthereumSovereignAccount: AccountId =
         tp_bridge::EthereumLocationsConverterFor::<AccountId>::convert_location(
             &EthereumLocation::get()
         ).expect("to convert EthereumSovereignAccount");
 
-    pub ExternalRewardsEraInflationProvider: u128 = CollatorsInflationRatePerBlock::get() * Balances::total_issuance();
+    pub ExternalRewardsEraInflationProvider: u128 = ValidatorsInflationRatePerEra::get() * Balances::total_issuance();
 
     pub TokenLocationReanchored: Location = xcm_config::TokenLocation::get().reanchored(
         &EthereumLocation::get(),
@@ -1470,6 +1471,8 @@ impl tp_bridge::TokenChannelSetterBenchmarkHelperTrait for RewardsBenchHelper {
 
     fn set_up_channel(_channel_id: ChannelId, _para_id: ParaId, _agent_id: AgentId) {}
 }
+
+// Pallet to reward validators.
 impl pallet_external_validators_rewards::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type EraIndexProvider = ExternalValidators;
@@ -1558,6 +1561,13 @@ impl tp_traits::GetSessionIndex<SessionIndex> for CurrentSessionIndexGetter {
     fn session_index() -> SessionIndex {
         Session::current_index()
     }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn skip_to_session(session_index: SessionIndex) {
+        while Session::current_index() < session_index {
+            Session::rotate_session();
+        }
+    }
 }
 
 impl pallet_configuration::Config for Runtime {
@@ -1581,7 +1591,10 @@ parameter_types! {
 impl pallet_multiblock_migrations::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     #[cfg(not(feature = "runtime-benchmarks"))]
-    type Migrations = pallet_identity::migration::v2::LazyMigrationV1ToV2<Runtime>;
+    type Migrations = (
+        pallet_identity::migration::v2::LazyMigrationV1ToV2<Runtime>,
+        pallet_pooled_staking::migrations::MigrationGenerateSummaries<Runtime>,
+    );
     // Benchmarks need mocked migrations to guarantee that they succeed.
     #[cfg(feature = "runtime-benchmarks")]
     type Migrations = pallet_multiblock_migrations::mock_helpers::MockedMigrations;
@@ -1711,12 +1724,13 @@ impl frame_support::traits::OnUnbalanced<Credit<AccountId, Balances>> for OnUnba
     }
 }
 
+// Pallet to reward container chains collators.
 impl pallet_inflation_rewards::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type ContainerChains = ContainerRegistrar;
     type GetSelfChainBlockAuthor = ();
-    type InflationRate = ValidatorsInflationRatePerEra;
+    type InflationRate = CollatorsInflationRatePerBlock;
     type OnUnbalanced = OnUnbalancedInflation;
     type PendingRewardsAccount = PendingRewardsAccount;
     type StakingRewardsDistributor = InvulnerableRewardDistribution<Self, Balances, PooledStaking>;
@@ -1826,18 +1840,11 @@ impl pallet_pooled_staking::Config for Runtime {
     type RewardsCollatorCommission = RewardsCollatorCommission;
     type JoiningRequestTimer = SessionTimer<StakingSessionDelay>;
     type LeavingRequestTimer = SessionTimer<StakingSessionDelay>;
-    type EligibleCandidatesBufferSize = MaxCandidatesBufferSize;
+    type EligibleCandidatesBufferSize = ConstU32<100>;
     type EligibleCandidatesFilter = CandidateHasRegisteredKeys;
     type ActivityTrackingHelper = InactivityTracking;
     type InvulnerablesHelper = InvulnerableCheckHandler<AccountId>;
     type WeightInfo = weights::pallet_pooled_staking::SubstrateWeight<Runtime>;
-}
-pub struct MockCurrentSessionGetter;
-
-impl tp_traits::GetSessionIndex<u32> for MockCurrentSessionGetter {
-    fn session_index() -> u32 {
-        1
-    }
 }
 
 impl pallet_inactivity_tracking::Config for Runtime {
@@ -1846,12 +1853,9 @@ impl pallet_inactivity_tracking::Config for Runtime {
     type MaxInactiveSessions = ConstU32<5>;
     type MaxCollatorsPerSession = MaxCandidatesBufferSize;
     type MaxContainerChains = MaxLengthParaIds;
-    #[cfg(not(feature = "runtime-benchmarks"))]
     type CurrentSessionIndex = CurrentSessionIndexGetter;
-    #[cfg(feature = "runtime-benchmarks")]
-    type CurrentSessionIndex = MockCurrentSessionGetter;
+    type CurrentCollatorsFetcher = TanssiCollatorAssignment;
     type GetSelfChainBlockAuthor = ();
-    type ContainerChainsFetcher = TanssiCollatorAssignment;
     type WeightInfo = weights::pallet_inactivity_tracking::SubstrateWeight<Runtime>;
 }
 
@@ -2017,7 +2021,6 @@ pub type UncheckedExtrinsic =
     generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, TxExtension>;
 
 /// The runtime migrations per release.
-#[allow(deprecated, missing_docs)]
 pub mod migrations {
     /// Unreleased migrations. Add new ones here:
     pub type Unreleased = ();
@@ -2284,6 +2287,8 @@ mod benches {
         [runtime_parachains::paras_inherent, ParaInherent]
         [runtime_parachains::paras, Paras]
         [runtime_parachains::assigner_on_demand, OnDemandAssignmentProvider]
+        [runtime_parachains::disputes::slashing, pallet_alt_benchmarks::bench_parachains_slashing::Pallet::<Runtime>]
+
         // Substrate
         [pallet_balances, Balances]
         [frame_benchmarking::baseline, Baseline::<Runtime>]
@@ -2311,6 +2316,7 @@ mod benches {
         [pallet_mmr, Mmr]
         [pallet_beefy_mmr, BeefyMmrLeaf]
         [pallet_multiblock_migrations, MultiBlockMigrations]
+        [pallet_session, cumulus_pallet_session_benchmarking::Pallet::<Runtime>]
 
         // Tanssi
         [pallet_author_noting, AuthorNoting]
@@ -2351,6 +2357,16 @@ sp_api::impl_runtime_apis! {
 
         fn initialize_block(header: &<Block as BlockT>::Header) -> sp_runtime::ExtrinsicInclusionMode {
             Executive::initialize_block(header)
+        }
+    }
+
+    impl xcm_runtime_apis::dry_run::DryRunApi<Block, RuntimeCall, RuntimeEvent, OriginCaller> for Runtime {
+        fn dry_run_call(origin: OriginCaller, call: RuntimeCall) -> Result<CallDryRunEffects<RuntimeEvent>, XcmDryRunApiError> {
+            XcmPallet::dry_run_call::<Runtime, xcm_config::XcmRouter, OriginCaller, RuntimeCall>(origin, call)
+        }
+
+        fn dry_run_xcm(origin_location: VersionedLocation, xcm: VersionedXcm<RuntimeCall>) -> Result<XcmDryRunEffects<RuntimeEvent>, XcmDryRunApiError> {
+            XcmPallet::dry_run_xcm::<Runtime, xcm_config::XcmRouter, RuntimeCall, xcm_config::XcmConfig>(origin_location, xcm)
         }
     }
 
@@ -2860,6 +2876,23 @@ sp_api::impl_runtime_apis! {
         }
     }
 
+    impl pallet_transaction_payment_rpc_runtime_api::TransactionPaymentCallApi<Block, Balance, RuntimeCall>
+        for Runtime
+    {
+        fn query_call_info(call: RuntimeCall, len: u32) -> RuntimeDispatchInfo<Balance> {
+            TransactionPayment::query_call_info(call, len)
+        }
+        fn query_call_fee_details(call: RuntimeCall, len: u32) -> FeeDetails<Balance> {
+            TransactionPayment::query_call_fee_details(call, len)
+        }
+        fn query_weight_to_fee(weight: Weight) -> Balance {
+            TransactionPayment::weight_to_fee(weight)
+        }
+        fn query_length_to_fee(length: u32) -> Balance {
+            TransactionPayment::length_to_fee(length)
+        }
+    }
+
     impl pallet_beefy_mmr::BeefyMmrApi<Block, Hash> for RuntimeApi {
         fn authority_set_proof() -> beefy_primitives::mmr::BeefyAuthoritySet<Hash> {
             BeefyMmrLeaf::authority_set_proof()
@@ -3159,20 +3192,12 @@ sp_api::impl_runtime_apis! {
                 }
             }
 
-            parameter_types! {
-                pub TrustedTeleporter: Option<(Location, Asset)> = Some((
-                    AssetHub::get(),
-                    Asset { fun: Fungible(1 * UNITS), id: AssetId(TokenLocation::get()) },
-                ));
-                pub TrustedReserve: Option<(Location, Asset)> = None;
-            }
-
             impl pallet_xcm_benchmarks::fungible::Config for Runtime {
                 type TransactAsset = Balances;
 
                 type CheckedAccount = LocalCheckAccount;
-                type TrustedTeleporter = TrustedTeleporter;
-                type TrustedReserve = TrustedReserve;
+                type TrustedTeleporter = ();
+                type TrustedReserve = ();
 
                 fn get_asset() -> Asset {
                     Asset {
@@ -3238,6 +3263,30 @@ sp_api::impl_runtime_apis! {
                     Err(BenchmarkError::Skip)
                 }
             }
+
+            pub struct SessionBenchValidators;
+            impl pallet_alt_benchmarks::bench_parachains_slashing::Validators<AccountId> for SessionBenchValidators {
+                /// Sets the validators to properly run a benchmark. Should take care of everything that
+                /// will make pallet_session use those validators, such as them having a balance.
+                fn set_validators(validators: &[AccountId]) {
+                    use frame_support::traits::fungible::Mutate;
+                    use tp_traits::ExternalIndexProvider;
+
+                    ExternalValidators::set_external_validators_inner(
+                        validators.to_vec(),
+                        ExternalValidators::get_external_index()
+                    ).expect("to set validators");
+
+                    for v in validators {
+                        Balances::set_balance(v, EXISTENTIAL_DEPOSIT);
+                    }
+                }
+            }
+            impl pallet_alt_benchmarks::bench_parachains_slashing::Config for Runtime {
+                type Validators = SessionBenchValidators;
+            }
+
+            impl cumulus_pallet_session_benchmarking::Config for Runtime { }
 
             let mut whitelist: Vec<TrackedStorageKey> = AllPalletsWithSystem::whitelisted_storage_keys();
             let treasury_key = frame_system::Account::<Runtime>::hashed_key_for(Treasury::account_id());
@@ -3333,7 +3382,7 @@ impl tanssi_initializer::ApplyNewSession<Runtime> for OwnApplySession {
         // the current collators and their keys.
         // In contrast, we have the keys for the validators only
         TanssiAuthorityMapping::initializer_on_new_session(
-            &(session_index + 1),
+            &(session_index.saturating_add(1)),
             &queued_amalgamated,
         );
 
@@ -3362,7 +3411,7 @@ impl tanssi_initializer::ApplyNewSession<Runtime> for OwnApplySession {
         InactivityTracking::process_ended_session();
     }
     fn on_before_session_ending() {
-        InactivityTracking::process_inactive_chains_for_session();
+        InactivityTracking::on_before_session_ending();
     }
 }
 parameter_types! {
@@ -3507,7 +3556,7 @@ impl ParaIdAssignmentHooksImpl {
         // If the para has been assigned collators for this session it must have enough block credits
         // for the current and the next session.
         let block_credits_needed = if currently_assigned.contains(&para_id) {
-            blocks_per_session * 2
+            blocks_per_session.saturating_mul(2)
         } else {
             blocks_per_session
         };
@@ -3575,7 +3624,7 @@ impl<AC> ParaIdAssignmentHooks<BalanceOf<Runtime>, AC> for ParaIdAssignmentHooks
                 )
             })
             .inspect(|weight| {
-                total_weight += *weight;
+                total_weight.saturating_accrue(*weight);
             })
             .is_ok()
         });
@@ -3589,7 +3638,7 @@ impl<AC> ParaIdAssignmentHooks<BalanceOf<Runtime>, AC> for ParaIdAssignmentHooks
 
         let blocks_per_session = EpochDurationInBlocks::get();
         // Enough credits to run any benchmark
-        let block_credits = 20 * blocks_per_session;
+        let block_credits = blocks_per_session.saturating_mul(20);
         let session_credits = 20;
 
         for para_id in para_ids {
@@ -3643,7 +3692,7 @@ impl Get<Option<CoreAllocationConfiguration>> for GetCoreAllocationConfiguration
         // We do not have to check for session ending as new session always starts at block initialization which means
         // whenever this is called, we are either in old session or in start of a one
         // as on block initialization epoch index have been incremented and by extension session has been changed.
-        let session_index_to_consider = Session::current_index() + 1;
+        let session_index_to_consider = Session::current_index().saturating_add(1);
 
         let max_parachain_percentage =
             CollatorConfiguration::max_parachain_cores_percentage(session_index_to_consider)
@@ -3723,7 +3772,7 @@ mod benchmark_helpers {
 
         System::reset_events();
         System::initialize(
-            &(System::block_number() + 1),
+            &(System::block_number().saturating_add(1)),
             &System::parent_hash(),
             &pre_digest,
         );
@@ -3734,7 +3783,7 @@ mod benchmark_helpers {
     }
 
     fn start_block() {
-        insert_authorities_and_slot_digests(current_slot() + 1);
+        insert_authorities_and_slot_digests(current_slot().saturating_add(1));
 
         // Initialize the new block
         Babe::on_initialize(System::block_number());
@@ -3747,11 +3796,14 @@ mod benchmark_helpers {
 
     pub fn session_to_block(n: u32) -> u32 {
         // let block_number = flashbox_runtime::Period::get() * n;
-        let block_number = Babe::current_epoch().duration.saturated_into::<u32>() * n;
+        let block_number = Babe::current_epoch()
+            .duration
+            .saturated_into::<u32>()
+            .saturating_mul(n);
 
         // Add 1 because the block that emits the NewSession event cannot contain any extrinsics,
         // so this is the first block of the new session that can actually be used
-        block_number + 1
+        block_number.saturating_add(1)
     }
 
     pub fn run_to_block(n: u32) {

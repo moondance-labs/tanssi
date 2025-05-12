@@ -667,7 +667,7 @@ impl pallet_initializer::ApplyNewSession<Runtime> for OwnApplySession {
     }
 
     fn on_before_session_ending() {
-        InactivityTracking::process_inactive_chains_for_session();
+        InactivityTracking::on_before_session_ending();
     }
 }
 
@@ -1128,6 +1128,13 @@ impl tp_traits::GetSessionIndex<u32> for CurrentSessionIndexGetter {
     fn session_index() -> u32 {
         Session::current_index()
     }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn skip_to_session(session_index: SessionIndex) {
+        while Session::current_index() < session_index {
+            Session::rotate_session();
+        }
+    }
 }
 
 impl pallet_configuration::Config for Runtime {
@@ -1428,7 +1435,10 @@ parameter_types! {
 impl pallet_multiblock_migrations::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     #[cfg(not(feature = "runtime-benchmarks"))]
-    type Migrations = pallet_identity::migration::v2::LazyMigrationV1ToV2<Runtime>;
+    type Migrations = (
+        pallet_identity::migration::v2::LazyMigrationV1ToV2<Runtime>,
+        pallet_pooled_staking::migrations::MigrationGenerateSummaries<Runtime>,
+    );
     // Benchmarks need mocked migrations to guarantee that they succeed.
     #[cfg(feature = "runtime-benchmarks")]
     type Migrations = pallet_multiblock_migrations::mock_helpers::MockedMigrations;
@@ -1757,26 +1767,15 @@ impl pallet_multisig::Config for Runtime {
     type WeightInfo = weights::pallet_multisig::SubstrateWeight<Runtime>;
 }
 
-pub struct MockCurrentSessionGetter;
-
-impl tp_traits::GetSessionIndex<u32> for MockCurrentSessionGetter {
-    fn session_index() -> u32 {
-        1
-    }
-}
-
 impl pallet_inactivity_tracking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type CollatorId = CollatorId;
     type MaxInactiveSessions = ConstU32<5>;
     type MaxCollatorsPerSession = MaxCandidatesBufferSize;
     type MaxContainerChains = MaxLengthParaIds;
-    #[cfg(not(feature = "runtime-benchmarks"))]
     type CurrentSessionIndex = CurrentSessionIndexGetter;
-    #[cfg(feature = "runtime-benchmarks")]
-    type CurrentSessionIndex = MockCurrentSessionGetter;
+    type CurrentCollatorsFetcher = CollatorAssignment;
     type GetSelfChainBlockAuthor = GetSelfChainBlockAuthor;
-    type ContainerChainsFetcher = CollatorAssignment;
     type WeightInfo = weights::pallet_inactivity_tracking::SubstrateWeight<Runtime>;
 }
 
@@ -1877,8 +1876,11 @@ mod benches {
         [pallet_inactivity_tracking, InactivityTracking]
         [pallet_treasury, Treasury]
         [cumulus_pallet_xcmp_queue, XcmpQueue]
+        // XCM
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
+        [pallet_xcm_benchmarks::fungible, pallet_xcm_benchmarks::fungible::Pallet::<Runtime>]
         [pallet_xcm_benchmarks::generic, pallet_xcm_benchmarks::generic::Pallet::<Runtime>]
+
         [pallet_assets, ForeignAssets]
         [pallet_foreign_asset_creator, ForeignAssetsCreator]
         [pallet_asset_rate, AssetRate]
@@ -2091,11 +2093,35 @@ impl_runtime_apis! {
 
             use xcm::latest::prelude::*;
             use crate::xcm_config::SelfReserve;
+
             parameter_types! {
                 pub ExistentialDepositAsset: Option<Asset> = Some((
                     SelfReserve::get(),
                     ExistentialDeposit::get()
                 ).into());
+                pub TrustedReserve: Option<(Location, Asset)> = Some(
+                    (
+                        Location::parent(),
+                        Asset {
+                            id: AssetId(Location::parent()),
+                            fun: Fungible(ExistentialDeposit::get() * 100),
+                        },
+                    )
+                );
+            }
+
+            impl pallet_xcm_benchmarks::fungible::Config for Runtime {
+                type TransactAsset = Balances;
+                type CheckedAccount = ();
+                type TrustedTeleporter = ();
+                type TrustedReserve = TrustedReserve;
+
+                fn get_asset() -> Asset {
+                    Asset {
+                        id: AssetId(SelfReserve::get()),
+                        fun: Fungible(ExistentialDeposit::get() * 100),
+                    }
+                }
             }
 
             impl pallet_xcm_benchmarks::Config for Runtime {

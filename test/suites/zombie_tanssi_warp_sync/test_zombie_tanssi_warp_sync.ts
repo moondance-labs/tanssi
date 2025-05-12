@@ -2,8 +2,8 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { ApiPromise, Keyring, WsProvider } from "@polkadot/api";
 import { stringToHex, u8aToHex } from "@polkadot/util";
 import { decodeAddress } from "@polkadot/util-crypto";
-import fs from "node:fs/promises";
 import {
+    checkLogs,
     checkLogsNotExist,
     directoryExists,
     getAuthorFromDigest,
@@ -331,37 +331,3 @@ TRACE tokio-runtime-worker sync::import-queue: [Container-2000] Scheduling 7 blo
         });
     },
 });
-
-// Read log file path and check that all the logs are found in order.
-// Only supports single-line logs.
-async function checkLogs(logFilePath: string, logs: string[]): Promise<void> {
-    const fileContent = await fs.readFile(logFilePath, "utf8");
-    const lines = fileContent.split("\n");
-
-    let logIndex = 0;
-    let lastFoundLogIndex = 0;
-
-    for (let i = 0; i < lines.length; i++) {
-        if (logIndex < logs.length && lines[i].includes(logs[logIndex])) {
-            logIndex++;
-            lastFoundLogIndex = i;
-        }
-
-        if (logIndex === logs.length) {
-            break;
-        }
-    }
-
-    if (logIndex !== logs.length) {
-        // In case of missing logs, show some context around the last found log
-        const contextSize = 3;
-        const contextStart = Math.max(0, lastFoundLogIndex - contextSize);
-        const contextEnd = Math.min(lines.length - 1, lastFoundLogIndex + contextSize);
-        const contextLines = lines.slice(contextStart, contextEnd + 1);
-        const contextStr = contextLines.join("\n");
-
-        expect.fail(
-            `Not all logs were found in the correct order. Missing log: '${logs[logIndex]}'\nContext around the last found log:\n${contextStr}`
-        );
-    }
-}

@@ -19,9 +19,9 @@ use {
     crate::{
         self as pallet_pooled_staking,
         candidate::Candidates,
-        pools::Pool,
+        pools::{ActivePoolKind, Pool},
         traits::{BlockNumberTimer, Timer},
-        Candidate, Delegator, PendingOperationKey, PendingOperationKeyOf, TargetPool,
+        Candidate, Delegator, PendingOperationKey, PendingOperationKeyOf,
     },
     frame_support::{
         parameter_types,
@@ -202,7 +202,7 @@ impl pallet_pooled_staking::Config for Runtime {
 pub trait PoolExt<T: crate::Config>: Pool<T> {
     type OppositePool: PoolExt<T>;
 
-    fn target_pool() -> TargetPool;
+    fn target_pool() -> ActivePoolKind;
     fn event_staked(
         candidate: Candidate<T>,
         delegator: Delegator<T>,
@@ -218,8 +218,8 @@ pub trait PoolExt<T: crate::Config>: Pool<T> {
 impl<T: crate::Config> PoolExt<T> for crate::pools::ManualRewards<T> {
     type OppositePool = crate::pools::AutoCompounding<T>;
 
-    fn target_pool() -> TargetPool {
-        TargetPool::ManualRewards
+    fn target_pool() -> ActivePoolKind {
+        ActivePoolKind::ManualRewards
     }
 
     fn event_staked(
@@ -247,8 +247,8 @@ impl<T: crate::Config> PoolExt<T> for crate::pools::ManualRewards<T> {
 impl<T: crate::Config> PoolExt<T> for crate::pools::AutoCompounding<T> {
     type OppositePool = crate::pools::ManualRewards<T>;
 
-    fn target_pool() -> TargetPool {
-        TargetPool::AutoCompounding
+    fn target_pool() -> ActivePoolKind {
+        ActivePoolKind::AutoCompounding
     }
     fn event_staked(
         candidate: Candidate<T>,

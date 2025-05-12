@@ -1,10 +1,8 @@
 import "@tanssi/api-augment";
 
-import { type DevModeContext, beforeAll, describeSuite, expect } from "@moonwall/cli";
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
-import type { Digest, DigestItem, HeadData, Header, ParaId, Slot } from "@polkadot/types/interfaces";
-import { stringToHex } from "@polkadot/util";
 import {
     createBlockAndRemoveInvulnerables,
     DANCE,
@@ -13,50 +11,9 @@ import {
     filterRewardStakingCollator,
     filterRewardStakingDelegators,
     jumpSessions,
+    mockAndInsertHeadData,
 } from "utils";
-
-// Helper function to make rewards work for a specific block and slot.
-// We need to mock a proper HeadData object for AuthorNoting inherent to work, and thus
-// rewards take place.
-//
-// Basically, if we don't call this function before testing the rewards given
-// to collators in a block, the HeadData object mocked in genesis will not be decoded properly
-// and the AuthorNoting inherent will fail.
-async function mockAndInsertHeadData(
-    context: DevModeContext,
-    paraId: ParaId,
-    blockNumber: number,
-    slotNumber: number,
-    sudoAccount: KeyringPair
-) {
-    const relayApi = context.polkadotJs();
-    const aura_engine_id = stringToHex("aura");
-
-    const slotNumberT: Slot = relayApi.createType("Slot", slotNumber);
-    const digestItem: DigestItem = relayApi.createType("DigestItem", {
-        PreRuntime: [aura_engine_id, slotNumberT.toHex(true)],
-    });
-    const digest: Digest = relayApi.createType("Digest", {
-        logs: [digestItem],
-    });
-    const header: Header = relayApi.createType("Header", {
-        parentHash: "0x0000000000000000000000000000000000000000000000000000000000000000",
-        number: blockNumber,
-        stateRoot: "0x0000000000000000000000000000000000000000000000000000000000000000",
-        extrinsicsRoot: "0x0000000000000000000000000000000000000000000000000000000000000000",
-        digest,
-    });
-
-    const headData: HeadData = relayApi.createType("HeadData", header.toHex());
-    const paraHeadKey = relayApi.query.paras.heads.key(paraId);
-
-    await context.createBlock(
-        relayApi.tx.sudo
-            .sudo(relayApi.tx.system.setStorage([[paraHeadKey, `0xc101${headData.toHex().slice(2)}`]]))
-            .signAsync(sudoAccount),
-        { allowFailures: false }
-    );
-}
+import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_POOLED_STAKING, checkCallIsFiltered } from "helpers";
 
 describeSuite({
     id: "DEVT1802",
@@ -68,6 +25,9 @@ describeSuite({
         let bob: KeyringPair;
         let charlie: KeyringPair;
         let dave: KeyringPair;
+        let isStarlight: boolean;
+        let specVersion: number;
+        let shouldSkipStarlightPS: boolean;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
@@ -75,6 +35,11 @@ describeSuite({
             bob = context.keyring.bob;
             charlie = context.keyring.charlie;
             dave = context.keyring.dave;
+            const runtimeName = polkadotJs.runtimeVersion.specName.toString();
+            isStarlight = runtimeName === "starlight";
+            specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
+            shouldSkipStarlightPS =
+                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_POOLED_STAKING.includes(specVersion);
 
             await createBlockAndRemoveInvulnerables(context, alice, true);
 
@@ -99,6 +64,18 @@ describeSuite({
             let bobNonce = (await polkadotJs.rpc.system.accountNextIndex(bob.address)).toNumber();
             let charlieNonce = (await polkadotJs.rpc.system.accountNextIndex(charlie.address)).toNumber();
             let daveNonce = (await polkadotJs.rpc.system.accountNextIndex(dave.address)).toNumber();
+
+            if (shouldSkipStarlightPS) {
+                console.log(`Skipping Staking tests for Starlight version ${specVersion}`);
+                await checkCallIsFiltered(
+                    context,
+                    polkadotJs,
+                    await polkadotJs.tx.pooledStaking
+                        .requestDelegate(alice.address, "AutoCompounding", 10000n * DANCE)
+                        .signAsync(alice)
+                );
+                return;
+            }
 
             await context.createBlock([
                 await polkadotJs.tx.pooledStaking
@@ -136,6 +113,10 @@ describeSuite({
             id: "E01",
             title: "Alice should receive rewards through staking now",
             test: async () => {
+                if (shouldSkipStarlightPS) {
+                    console.log(`Skipping E01 test for Starlight version ${specVersion}`);
+                    return;
+                }
                 const assignment = (await polkadotJs.query.tanssiCollatorAssignment.collatorContainerChain()).toJSON();
 
                 // Find alice in list of collators
@@ -197,6 +178,26 @@ describeSuite({
             id: "E02",
             title: "Alice should receive shared rewards with delegators through staking now",
             test: async () => {
+                if (shouldSkipStarlightPS) {
+                    console.log(`Skipping E02 test for Starlight version ${specVersion}`);
+
+                    const tx = polkadotJs.tx.pooledStaking.executePendingOperations([
+                        {
+                            delegator: alice.address,
+                            operation: {
+                                JoiningAutoCompounding: {
+                                    candidate: alice.address,
+                                    at: 0,
+                                },
+                            },
+                        },
+                    ]);
+
+                    // executePendingOperations should be filtered
+                    await checkCallIsFiltered(context, polkadotJs, await tx.signAsync(alice));
+                    return;
+                }
+
                 await jumpSessions(context, 1);
                 // All pending operations where in session 0
                 await context.createBlock([

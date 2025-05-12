@@ -156,6 +156,8 @@ pub enum ForSession {
 pub trait GetContainerChainsWithCollators<AccountId> {
     fn container_chains_with_collators(for_session: ForSession) -> Vec<(ParaId, Vec<AccountId>)>;
 
+    fn get_all_collators_assigned_to_chains(for_session: ForSession) -> BTreeSet<AccountId>;
+
     #[cfg(feature = "runtime-benchmarks")]
     fn set_container_chains_with_collators(
         for_session: ForSession,
@@ -272,6 +274,9 @@ pub trait GetHostConfiguration<SessionIndex> {
 /// Returns current session index.
 pub trait GetSessionIndex<SessionIndex> {
     fn session_index() -> SessionIndex;
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn skip_to_session(session_index: SessionIndex);
 }
 
 /// Should pallet_collator_assignment trigger a full rotation on this session?

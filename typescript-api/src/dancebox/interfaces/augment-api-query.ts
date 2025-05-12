@@ -20,6 +20,7 @@ import type {
     u16,
     u32,
     u64,
+    u8,
 } from "@polkadot/types-codec";
 import type { AnyNumber, ITuple } from "@polkadot/types-codec/types";
 import type { AccountId32, H256, Perbill } from "@polkadot/types/interfaces/runtime";
@@ -66,6 +67,7 @@ import type {
     PalletMultisigMultisig,
     PalletPooledStakingCandidateEligibleCandidate,
     PalletPooledStakingPendingOperationKey,
+    PalletPooledStakingPoolsCandidateSummary,
     PalletPooledStakingPoolsKey,
     PalletProxyAnnouncement,
     PalletProxyProxyDefinition,
@@ -576,15 +578,6 @@ declare module "@polkadot/api-base/types/storage" {
         };
         inactivityTracking: {
             /**
-             * A list of double map of active collators for a session
-             **/
-            activeCollators: AugmentedQuery<
-                ApiType,
-                (arg: u32 | AnyNumber | Uint8Array) => Observable<BTreeSet<AccountId32>>,
-                [u32]
-            > &
-                QueryableStorageEntry<ApiType, [u32]>;
-            /**
              * A list of active collators for a session. Repopulated at the start of every session
              **/
             activeCollatorsForCurrentSession: AugmentedQuery<ApiType, () => Observable<BTreeSet<AccountId32>>, []> &
@@ -603,6 +596,15 @@ declare module "@polkadot/api-base/types/storage" {
                 []
             > &
                 QueryableStorageEntry<ApiType, []>;
+            /**
+             * A storage map of inactive collators for a session
+             **/
+            inactiveCollators: AugmentedQuery<
+                ApiType,
+                (arg: u32 | AnyNumber | Uint8Array) => Observable<BTreeSet<AccountId32>>,
+                [u32]
+            > &
+                QueryableStorageEntry<ApiType, [u32]>;
             /**
              * Generic query
              **/
@@ -1115,18 +1117,33 @@ declare module "@polkadot/api-base/types/storage" {
         };
         pooledStaking: {
             /**
-             * Switch to enable/disable marking offline feature.
+             * Summary of a candidate state.
              **/
-            enableMarkingOffline: AugmentedQuery<ApiType, () => Observable<bool>, []> &
-                QueryableStorageEntry<ApiType, []>;
-            /**
-             * A list of offline collators
-             **/
-            offlineCollators: AugmentedQuery<
+            candidateSummaries: AugmentedQuery<
                 ApiType,
-                () => Observable<Vec<PalletPooledStakingCandidateEligibleCandidate>>,
-                []
+                (arg: AccountId32 | string | Uint8Array) => Observable<PalletPooledStakingPoolsCandidateSummary>,
+                [AccountId32]
             > &
+                QueryableStorageEntry<ApiType, [AccountId32]>;
+            /**
+             * Summary of a delegator's delegation.
+             * Used to quickly fetch all delegations of a delegator.
+             **/
+            delegatorCandidateSummaries: AugmentedQuery<
+                ApiType,
+                (arg1: AccountId32 | string | Uint8Array, arg2: AccountId32 | string | Uint8Array) => Observable<u8>,
+                [AccountId32, AccountId32]
+            > &
+                QueryableStorageEntry<ApiType, [AccountId32, AccountId32]>;
+            /**
+             * Pauses the ability to modify pools through extrinsics.
+             *
+             * Currently added only to run the multi-block migration to compute
+             * `DelegatorCandidateSummaries` and `CandidateSummaries`. It will NOT
+             * prevent to distribute rewards, which is fine as the reward distribution
+             * process doesn't alter the pools in a way that will mess with the migration.
+             **/
+            pausePoolsExtrinsics: AugmentedQuery<ApiType, () => Observable<bool>, []> &
                 QueryableStorageEntry<ApiType, []>;
             /**
              * Pending operations balances.

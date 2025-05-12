@@ -3,11 +3,11 @@ import "@tanssi/api-augment";
 import { type DevModeContext, beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import { hexToU8a, u8aToHex } from "@polkadot/util";
-import { encodeAddress, keccakAsHex, xxhashAsU8a } from "@polkadot/util-crypto";
-import { readFileSync } from "node:fs";
+import { encodeAddress, xxhashAsU8a } from "@polkadot/util-crypto";
 import { generateEventLog, generateUpdate, SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS, type MultiLocation } from "utils";
 import { expectEventCount } from "../../../helpers/events";
-import type { SnowbridgeCoreInboundLog } from "@polkadot/types/lookup";
+import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_ETH_TOKEN_TRANSFERS, checkCallIsFiltered } from "helpers";
+import type { KeyringPair } from "@moonwall/util";
 
 describeSuite({
     id: "DTR1702",
@@ -16,33 +16,37 @@ describeSuite({
 
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
+        let alice: KeyringPair;
+        let isStarlight: boolean;
+        let specVersion: number;
+        let shouldSkipStarlightETT: boolean;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
+            const keyring = new Keyring({ type: "sr25519" });
+            alice = keyring.addFromUri("//Alice", { name: "Alice default" });
+
+            const runtimeName = polkadotJs.runtimeVersion.specName.toString();
+            isStarlight = runtimeName === "starlight";
+            specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
+            shouldSkipStarlightETT =
+                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_ETH_TOKEN_TRANSFERS.includes(specVersion);
         });
 
         it({
             id: "E01",
             title: "transferNativeToken should send message to Ethereum",
             test: async () => {
-                const keyring = new Keyring({ type: "sr25519" });
-                const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
-
                 const newChannelId = "0x0000000000000000000000000000000000000000000000000000000000000004";
                 const newAgentId = "0x0000000000000000000000000000000000000000000000000000000000000005";
                 const newParaId = 500;
 
                 // Set channel info on EthereumTokenTransfers pallet.
-                const tx1 = await polkadotJs.tx.sudo
-                    .sudo(
-                        polkadotJs.tx.ethereumTokenTransfers.setTokenTransferChannel(
-                            newChannelId,
-                            newAgentId,
-                            newParaId
-                        )
-                    )
-                    .signAsync(alice);
-                await context.createBlock([tx1], { allowFailures: false });
+                const tx1 = polkadotJs.tx.ethereumTokenTransfers.setTokenTransferChannel(
+                    newChannelId,
+                    newAgentId,
+                    newParaId
+                );
 
                 const tokenLocation: MultiLocation = {
                     parents: 0,
@@ -57,6 +61,29 @@ describeSuite({
                     symbol: "dance",
                     decimals: 12,
                 };
+
+                if (shouldSkipStarlightETT) {
+                    console.log(`Skipping E01 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(context, polkadotJs, await tx1.signAsync(alice));
+
+                    // EthereumSystem call should be also filtered
+                    await checkCallIsFiltered(
+                        context,
+                        polkadotJs,
+                        await polkadotJs.tx.ethereumSystem.registerToken(versionedLocation, metadata).signAsync(alice)
+                    );
+
+                    // Token transfer call should be filtered as well
+                    await checkCallIsFiltered(
+                        context,
+                        polkadotJs,
+                        await polkadotJs.tx.ethereumTokenTransfers.transferNativeToken(1000, "0x").signAsync(alice)
+                    );
+                    return;
+                }
+
+                const sudoSignedTx1 = await polkadotJs.tx.sudo.sudo(tx1).signAsync(alice);
+                await context.createBlock([sudoSignedTx1], { allowFailures: false });
 
                 // Register token on EthereumSystem.
                 const tx2 = await polkadotJs.tx.sudo
@@ -111,12 +138,18 @@ describeSuite({
             id: "E02",
             title: "receive native token from Ethereum",
             test: async () => {
-                const transferAmount = BigInt(10_000);
+                if (shouldSkipStarlightETT) {
+                    console.log(`Skipping E02 test for Starlight version ${specVersion}`);
 
-                const keyring = new Keyring({ type: "sr25519" });
-                const alice = keyring.addFromUri("//Alice", {
-                    name: "Alice default",
-                });
+                    // Check that inboundQueue.submit is filtered
+                    await checkCallIsFiltered(
+                        context,
+                        polkadotJs,
+                        await polkadotJs.tx.ethereumInboundQueue.submit("0x").signAsync(alice)
+                    );
+                    return;
+                }
+                const transferAmount = BigInt(10_000);
 
                 // Create token receiver account and send some balance to it
                 const tokenReceiver = encodeAddress(

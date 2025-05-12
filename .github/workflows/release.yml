@@ -271,7 +271,7 @@ jobs:
                   rustup override unset
                   rustup show
             - name: Download Twiggy
-              run: cargo install twiggy
+              run: cargo install twiggy --locked
             - name: Lookup for latest target branch build
               id: latest-target-build
               run: |
@@ -340,6 +340,66 @@ jobs:
                   body-path: runtime_size_report.md
                   edit-mode: replace
 
+    check-new-weights:
+      name: "Check new weights for values greater than the block limit"
+      runs-on: ubuntu-latest
+      if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+      needs: [ "set-tags" ]
+      env:
+        GH_TOKEN: ${{ github.token }}
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+          with:
+            ref: ${{ needs.set-tags.outputs.git_ref }}
+        - name: Fetch PR base commit
+          # bring in the base SHA so we can diff against it
+          run: |
+            git fetch origin ${{ github.event.pull_request.base.sha }}
+        - name: Retrieve runtime diff
+          run: |
+            ./tools/show-me-the-weights.py diff ${{ github.event.pull_request.base.sha }} > runtime_size_report.md \
+            || {
+              # print error in case of failure
+              rc=$?
+              cat runtime_size_report.md
+              exit $rc
+            }
+            cat runtime_size_report.md
+        - name: Check for report content
+          # set HAS_REPORT=true if file has any bytes, else false
+          run: |
+            if [ -s runtime_size_report.md ]; then
+              echo "HAS_REPORT=true" >> $GITHUB_ENV
+            else
+              echo "HAS_REPORT=false" >> $GITHUB_ENV
+            fi
+        - name: Find existing bot comment
+          id: fc
+          uses: peter-evans/find-comment@v3
+          with:
+            issue-number: ${{ github.event.pull_request.number }}
+            comment-author: "github-actions[bot]"
+            body-includes: "Found problematic weights in PR diff."
+        - name: Post detailed report
+          if: env.HAS_REPORT == 'true'
+          uses: peter-evans/create-or-update-comment@v4
+          with:
+            comment-id:   ${{ steps.fc.outputs.comment-id }}
+            issue-number: ${{ github.event.pull_request.number }}
+            body-path:    runtime_size_report.md
+            edit-mode:    replace
+        - name: Mark “all good” when empty
+          if: >
+            env.HAS_REPORT == 'false' &&
+            steps.fc.outputs.comment-id != ''
+          uses: peter-evans/create-or-update-comment@v4
+          with:
+            comment-id:   ${{ steps.fc.outputs.comment-id }}
+            issue-number: ${{ github.event.pull_request.number }}
+            body:         |
+              **All weights are good now.** 🎉
+            edit-mode:    replace
     rust-test:
       runs-on: self-hosted
       needs: ["set-tags", "build"]
@@ -373,7 +433,7 @@ jobs:
         - name: Install nextest
           uses: taiki-e/install-action@nextest
         - name: Run Tests
-          run: cargo nextest run --release --no-fail-fast --workspace
+          run: cargo nextest run --release --no-fail-fast --workspace --features=fast-runtime
 
     check-api-augment:
         runs-on: ubuntu-latest
@@ -607,14 +667,22 @@ jobs:
                   cd typescript-api
                   pnpm install
                   pnpm create-local-interfaces
-            - name: "Run Dev tests"
+            - name: "Run Dev tests (Dancelight)"
               run: |
                   chmod uog+x target/release/tanssi-node
                   chmod uog+x target/release/tanssi-relay
                   chmod uog+x target/release/tanssi-relay-execute-worker
                   chmod uog+x target/release/tanssi-relay-prepare-worker
                   cd test
-                  pnpm moonwall test dev_tanssi_relay
+                  pnpm moonwall test dev_tanssi_relay_dancelight
+            - name: "Run Dev tests (Starlight)"
+              run: |
+                  chmod uog+x target/release/tanssi-node
+                  chmod uog+x target/release/tanssi-relay
+                  chmod uog+x target/release/tanssi-relay-execute-worker
+                  chmod uog+x target/release/tanssi-relay-prepare-worker
+                  cd test
+                  pnpm moonwall test dev_tanssi_relay_starlight
 
     zombienet-tests:
         runs-on: self-hosted
@@ -691,8 +759,15 @@ jobs:
               with:
                   name: runtimes
                   path: target/release/wbuild/${{ matrix.chains.runtime }}-runtime/
+            # Binaries needed for testPalletVersions test
+            - name: "Download binaries"
+              uses: actions/download-artifact@v4
+              with:
+                  name: binaries
+                  path: target/release
             - name: "Install and run upgrade test"
               run: |
+                  chmod uog+x target/release/*
                   cd test
                   pnpm install
                   pnpm moonwall test chopsticks_${{ matrix.chains.chain }}_upgrade
@@ -732,23 +807,10 @@ jobs:
               with:
                   name: runtimes
                   path: target/release/wbuild/${{ matrix.chain }}-runtime/
-            - name: Retrieve tanssi binary from docker (for plainSpec generation)
+            - name: "Install and run upgrade test"
               run: |
-                  TANSSI_COMMIT=${{ needs.set-tags.outputs.latest_rt_sha8 }}
-                  DOCKER_TAG="moondancelabs/tanssi:sha-$TANSSI_COMMIT"
-                  docker rm -f tanssi_container 2> /dev/null | true
-                  docker create --name tanssi_container $DOCKER_TAG bash
-                  docker cp tanssi_container:tanssi/tanssi-node test/tmp/tanssi_rt
-                  docker rm -f tanssi_container
-            - name: "Run zombie upgrade test"
-              run: |
-                  chmod uog+x target/release/tanssi-node
                   cd test
                   pnpm install
-                  chmod uog+x tmp/tanssi_rt
-                  tmp/tanssi_rt build-spec --chain ${{ matrix.chain }}-local > tmp/${{ matrix.chain }}-plain-spec.json
-                  pnpm tsx scripts/modify-plain-specs.ts process tmp/${{ matrix.chain }}-plain-spec.json tmp/${{ matrix.chain }}-modified-spec.json
-                  tmp/tanssi_rt build-spec --chain tmp/${{ matrix.chain }}-modified-spec.json --raw > tmp/${{ matrix.chain }}-raw-spec.json
                   pnpm moonwall test zombie_${{ matrix.chain }}_upgrade
             - name: Zip and Upload Node Logs on Failure
               if: failure()

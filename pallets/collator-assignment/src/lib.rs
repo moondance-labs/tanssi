@@ -294,8 +294,11 @@ pub mod pallet {
             // We get the containerChains that we will have at the target session
             let container_chains =
                 T::ContainerChains::session_container_chains(target_session_index);
-            let num_total_registered_paras =
-                (container_chains.parachains.len() + container_chains.parathreads.len()) as u32;
+            let num_total_registered_paras = container_chains
+                .parachains
+                .len()
+                .saturating_add(container_chains.parathreads.len())
+                as u32;
             let mut container_chain_ids = container_chains.parachains;
             let mut parathreads: Vec<_> = container_chains
                 .parathreads
@@ -519,9 +522,9 @@ pub mod pallet {
         ) {
             // Count number of assigned collators
             let mut num_collators = 0;
-            num_collators += new_assigned.orchestrator_chain.len();
+            num_collators.saturating_accrue(new_assigned.orchestrator_chain.len());
             for (_para_id, collators) in &new_assigned.container_chains {
-                num_collators += collators.len();
+                num_collators.saturating_accrue(collators.len());
             }
 
             let mut num_collators = num_collators as u32;
@@ -612,7 +615,7 @@ pub mod pallet {
 
             // Account reads and writes for on_finalize
             if T::GetRandomnessForNextBlock::should_end_session(n.saturating_add(One::one())) {
-                weight += T::DbWeight::get().reads_writes(1, 1);
+                weight.saturating_accrue(T::DbWeight::get().reads_writes(1, 1));
             }
 
             weight
@@ -638,6 +641,22 @@ pub mod pallet {
                 .unwrap_or_else(|| CollatorContainerChain::<T>::get());
 
             chains.container_chains.into_iter().collect()
+        }
+
+        fn get_all_collators_assigned_to_chains(for_session: ForSession) -> BTreeSet<T::AccountId> {
+            let mut all_chains: Vec<T::AccountId> =
+                Self::container_chains_with_collators(for_session)
+                    .iter()
+                    .flat_map(|(_para_id, collators)| collators.iter())
+                    .cloned()
+                    .collect();
+            all_chains.extend(
+                Self::collator_container_chain()
+                    .orchestrator_chain
+                    .iter()
+                    .cloned(),
+            );
+            all_chains.into_iter().collect()
         }
 
         #[cfg(feature = "runtime-benchmarks")]

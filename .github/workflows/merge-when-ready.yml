@@ -116,7 +116,19 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                binary: [tanssi-relay, tanssi-node, container-chain-simple-node, container-chain-frontier-node]
+                chains:
+                    - binary: tanssi-relay
+                      chain: dancelight-dev
+                    - binary: tanssi-relay
+                      chain: starlight-dev
+                    - binary: tanssi-node
+                      chain: flashbox-dev
+                    - binary: tanssi-node
+                      chain: dancebox-dev
+                    - binary: container-chain-simple-node
+                      chain: dev
+                    - binary: container-chain-frontier-node
+                      chain: dev
         steps:
             - name: Checkout
               uses: actions/checkout@v4
@@ -137,4 +149,4 @@ jobs:
             - name: "Benchmark test ${{ matrix.binary }}"
               shell: bash
               run: |
-                BINARY=./target/release/${{ matrix.binary }} TEMPLATE_PATH=./benchmarking/frame-weight-runtime-template.hbs tools/benchmarking.sh "*" "*" --check
+                BINARY=./target/release/${{ matrix.chains.binary }} CHAIN=${{ matrix.chains.chain }} TEMPLATE_PATH=./benchmarking/frame-weight-runtime-template.hbs tools/benchmarking.sh "*" "*" --check

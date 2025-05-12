@@ -76,16 +76,16 @@ describeSuite({
                     await apiAtCheckpointA.query.ethereumOutboundQueue.nonce(PRIMARY_GOVERNANCE_CHANNEL_ID);
 
                 const checkpointBPrimaryChannelNonce =
-                    await api.query.ethereumOutboundQueue.nonce(PRIMARY_GOVERNANCE_CHANNEL_ID);
+                    await apiAtCheckpointB.query.ethereumOutboundQueue.nonce(PRIMARY_GOVERNANCE_CHANNEL_ID);
 
                 const nonceDiff = checkpointBPrimaryChannelNonce.toNumber() - checkpointAPrimaryChannelNonce.toNumber();
 
                 // The event is triggered, nonce should be incremented
                 if (event) {
                     expect(nonceDiff).toEqual(1);
-                    expect(sovereignBalanceCheckpointA.toNumber()).to.be.lessThan(
-                        sovereignBalanceCheckpointB.toNumber()
-                    );
+                    expect(
+                        sovereignBalanceCheckpointA.toBigInt() - sovereignBalanceCheckpointB.toBigInt()
+                    ).to.be.lessThan(0);
 
                     // The event is not triggered, nonce should be the same
                 } else {

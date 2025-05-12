@@ -28,9 +28,9 @@ use {
         candidate::Candidates,
         mock::*,
         pool_test,
-        pools::{self, Pool},
-        AllTargetPool, Error, Event, PendingOperationKey, PendingOperationQuery, PendingOperations,
-        Shares, SharesOrStake, Stake, TargetPool,
+        pools::{self, ActivePoolKind, Pool, PoolKind},
+        Error, Event, PendingOperationKey, PendingOperationQuery, PendingOperations, Shares,
+        SharesOrStake, Stake,
     },
     frame_support::{
         assert_noop, assert_ok,
@@ -49,14 +49,16 @@ pub fn default<T: Default>() -> T {
 pub(crate) fn operation_stake(
     candidate: AccountId,
     delegator: AccountId,
-    pool: TargetPool,
+    pool: ActivePoolKind,
     at: u64,
 ) -> Balance {
     let operation_key = match pool {
-        TargetPool::AutoCompounding => {
+        ActivePoolKind::AutoCompounding => {
             PendingOperationKey::JoiningAutoCompounding { candidate, at }
         }
-        TargetPool::ManualRewards => PendingOperationKey::JoiningManualRewards { candidate, at },
+        ActivePoolKind::ManualRewards => {
+            PendingOperationKey::JoiningManualRewards { candidate, at }
+        }
     };
 
     let shares = PendingOperations::<Runtime>::get(delegator, operation_key);
@@ -73,7 +75,7 @@ pub(crate) fn operation_stake(
 pub(crate) struct RequestDelegation {
     candidate: AccountId,
     delegator: AccountId,
-    pool: TargetPool,
+    pool: ActivePoolKind,
     amount: Balance,
     expected_joining: Balance,
 }
@@ -449,7 +451,7 @@ impl FullUndelegation {
 pub(crate) fn do_rebalance_hold<P: Pool<Runtime>>(
     candidate: AccountId,
     delegator: AccountId,
-    target_pool: AllTargetPool,
+    target_pool: PoolKind,
     expected_rebalance: SignedBalance,
 ) {
     let before = State::extract(candidate, delegator);

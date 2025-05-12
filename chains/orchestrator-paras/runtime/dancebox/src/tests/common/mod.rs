@@ -45,8 +45,6 @@ pub use crate::{
     RuntimeCall, ServicesPayment, Session, System, TransactionPayment,
 };
 
-mod xcm;
-
 pub const UNIT: Balance = 1_000_000_000_000;
 
 pub fn session_to_block(n: u32) -> u32 {
@@ -398,16 +396,6 @@ impl ExtBuilder {
 
     pub fn with_config(mut self, config: pallet_configuration::HostConfiguration) -> Self {
         self.config = config;
-        self
-    }
-
-    pub fn with_safe_xcm_version(mut self, safe_xcm_version: u32) -> Self {
-        self.safe_xcm_version = Some(safe_xcm_version);
-        self
-    }
-
-    pub fn with_own_para_id(mut self, own_para_id: ParaId) -> Self {
-        self.own_para_id = Some(own_para_id);
         self
     }
 

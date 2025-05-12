@@ -541,6 +541,10 @@ declare module "@polkadot/api-base/types/errors" {
              **/
             ProvidedNonSlashableEra: AugmentedError<ApiType>;
             /**
+             * Invalid params for root_test_send_msg_to_eth
+             **/
+            RootTestInvalidParams: AugmentedError<ApiType>;
+            /**
              * Generic error
              **/
             [key: string]: AugmentedError<ApiType>;
@@ -908,9 +912,17 @@ declare module "@polkadot/api-base/types/errors" {
         };
         inactivityTracking: {
             /**
+             * Error returned when the activity tracking status is attempted to be disabled when it is already disabled
+             **/
+            ActivityTrackingStatusAlreadyDisabled: AugmentedError<ApiType>;
+            /**
+             * Error returned when the activity tracking status is attempted to be enabled when it is already enabled
+             **/
+            ActivityTrackingStatusAlreadyEnabled: AugmentedError<ApiType>;
+            /**
              * Error returned when the activity tracking status is attempted to be updated before the end session
              **/
-            ActivityStatusUpdateSuspended: AugmentedError<ApiType>;
+            ActivityTrackingStatusUpdateSuspended: AugmentedError<ApiType>;
             /**
              * The size of a collator set for a session has already reached MaxCollatorsPerSession value
              **/
@@ -1369,6 +1381,7 @@ declare module "@polkadot/api-base/types/errors" {
             MathUnderflow: AugmentedError<ApiType>;
             NoOneIsStaking: AugmentedError<ApiType>;
             NotEnoughShares: AugmentedError<ApiType>;
+            PoolsExtrinsicsArePaused: AugmentedError<ApiType>;
             RequestCannotBeExecuted: AugmentedError<ApiType>;
             RewardsMustBeNonZero: AugmentedError<ApiType>;
             StakeMustBeNonZero: AugmentedError<ApiType>;

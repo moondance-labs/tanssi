@@ -360,7 +360,7 @@ pub mod pallet {
             let buffered_paras = BufferedParasToDeregister::<T>::take();
 
             for para_id in buffered_paras {
-                weight += T::InnerRegistrar::deregister_weight();
+                weight.saturating_accrue(T::InnerRegistrar::deregister_weight());
                 // Deregister (in the relay context) each paraId present inside the buffer
                 T::InnerRegistrar::deregister(para_id);
             }
@@ -813,7 +813,9 @@ pub mod pallet {
                 }
 
                 let deposit = Self::get_genesis_cost(genesis_data.encoded_size());
-                let new_balance = T::Currency::minimum_balance() * 10_000_000u32.into() + deposit;
+                let new_balance = T::Currency::minimum_balance()
+                    .saturating_mul(10_000_000u32.into())
+                    .saturating_add(deposit);
                 let account = create_funded_user::<T>("caller", 1000, new_balance).0;
                 T::InnerRegistrar::prepare_chain_registration(*para_id, account.clone());
                 let origin = RawOrigin::Signed(account);
@@ -830,14 +832,15 @@ pub mod pallet {
 
             let deposit = Self::get_genesis_cost(genesis_data.encoded_size());
             // Fund deposit creator, just in case it is not a new account
-            let new_balance = (T::Currency::minimum_balance() + deposit) * 2u32.into();
+            let new_balance = (T::Currency::minimum_balance().saturating_add(deposit))
+                .saturating_mul(2u32.into());
             assert_ok!(T::Currency::mint_into(&deposit_info.creator, new_balance));
 
             deposit_info.creator
         }
 
         pub fn get_genesis_cost(size: usize) -> <T::Currency as Inspect<T::AccountId>>::Balance {
-            T::DataDepositPerByte::get() * (size as u32).into()
+            T::DataDepositPerByte::get().saturating_mul((size as u32).into())
         }
 
         fn do_register(

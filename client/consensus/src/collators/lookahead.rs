@@ -344,6 +344,9 @@ pub struct Params<
     pub force_authoring: bool,
     pub cancellation_token: CancellationToken,
     pub buy_core_params: BuyCoreParams<TxPool, OClient>,
+    /// The maximum percentage of the maximum PoV size that the collator can use.
+    /// It will be removed once <https://github.com/paritytech/polkadot-sdk/issues/6020> is fixed.
+    pub max_pov_percentage: Option<u32>,
 }
 
 pub enum BuyCoreParams<TxPool, OClient> {
@@ -735,6 +738,16 @@ where
                             Some(v) => v,
                         };
 
+                        let allowed_pov_size = if let Some(max_pov_percentage) = params.max_pov_percentage {
+                            validation_data.max_pov_size * max_pov_percentage / 100
+                        } else {
+                            // Set the block limit to 85% of the maximum PoV size.
+                            //
+                            // Once https://github.com/paritytech/polkadot-sdk/issues/6020 issue is
+                            // fixed, the reservation should be removed.
+                            validation_data.max_pov_size * 85 / 100
+                        } as usize;
+
                         match collator
                             .collate(
                                 &parent_header,
@@ -742,11 +755,7 @@ where
                                 None,
                                 (parachain_inherent_data, other_inherent_data),
                                 params.authoring_duration,
-                                // Set the block limit to 50% of the maximum PoV size.
-                                //
-                                // TODO: If we got benchmarking that includes the proof size,
-                                // we should be able to use the maximum pov size.
-                                (validation_data.max_pov_size / 2) as usize,
+                                allowed_pov_size,
                             )
                             .await
                         {
