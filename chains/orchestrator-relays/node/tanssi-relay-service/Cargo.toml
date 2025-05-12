@@ -242,12 +242,12 @@ try-runtime = [
 ]
 
 malus = [ "full-node" ]
+metadata-hash = [
+	"dancelight-runtime?/metadata-hash",
+	"starlight-runtime?/metadata-hash",
+]
 runtime-metrics = [
 	"dancelight-runtime?/runtime-metrics",
 	"polkadot-runtime-parachains/runtime-metrics",
 	"starlight-runtime?/runtime-metrics",
-]
-metadata-hash = [
-	"starlight-runtime?/metadata-hash",
-	"dancelight-runtime?/metadata-hash",
 ]
