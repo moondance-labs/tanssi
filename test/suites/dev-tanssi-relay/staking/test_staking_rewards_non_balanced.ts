@@ -145,8 +145,14 @@ describeSuite({
                 await context.createBlock();
                 const events = await polkadotJs.query.system.events();
                 const issuance = await fetchIssuance(events).amount.toBigInt();
-                const chainRewards = (issuance * 7n) / 10n;
-                const rounding = chainRewards % 3n > 0 ? 1n : 0n;
+                let chainRewards: bigint;
+                if (isStarlight) {
+                    chainRewards = (issuance * 4n) / 7n;
+                } else {
+                    // dancelight
+                    chainRewards = (issuance * 7n) / 10n;
+                }
+                const rounding = chainRewards % 2n > 0 ? 1n : 0n;
                 const expectedContainerReward = chainRewards / 2n - rounding;
                 const rewards = fetchRewardAuthorContainers(events);
                 expect(rewards.length).toBe(1);
