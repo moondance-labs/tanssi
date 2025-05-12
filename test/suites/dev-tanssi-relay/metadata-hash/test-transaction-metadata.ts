@@ -38,10 +38,10 @@ describeSuite({
         it({
             id: "T01",
             title: "Should fail with an invalid metadata hash",
-            test: async function () {
+            test: async () => {
                 const withMetadataOpts: Partial<SignerOptions> = {
                     mode: 1,
-                    metadataHash: "0x" + "00".repeat(32),
+                    metadataHash: `0x${"00".repeat(32)}`,
                 };
 
                 let errorMsg = "";
@@ -58,7 +58,7 @@ describeSuite({
         it({
             id: "T02",
             title: "Should succeed with a valid metadata hash",
-            test: async function () {
+            test: async () => {
                 const withMetadataOpts = {
                     mode: 1,
                     metadataHash: await getMetadataHash(polkadotJs),
