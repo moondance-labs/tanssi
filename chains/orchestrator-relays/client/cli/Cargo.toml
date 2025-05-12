@@ -79,7 +79,7 @@ try-runtime = [
 dancelight-native = [ "tanssi-relay-service/dancelight-native" ]
 starlight-native = [ "tanssi-relay-service/starlight-native" ]
 
-metadata-hash = ["tanssi-relay-service/metadata-hash"]
+metadata-hash = [ "tanssi-relay-service/metadata-hash" ]
 
 malus = [ "full-node", "polkadot-service/malus" ]
 runtime-metrics = [
