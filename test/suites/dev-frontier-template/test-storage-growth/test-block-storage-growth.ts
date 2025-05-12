@@ -1,0 +1,36 @@
+import "@tanssi/api-augment";
+import { describeSuite, expect, fetchCompiledContract } from "@moonwall/cli";
+import { createEthersTransaction, sendRawTransaction } from "@moonwall/util";
+import { encodeDeployData } from "viem";
+
+describeSuite({
+    id: "DE1501",
+    title: "Storage Block (40kB) - Storage Growth Limit",
+    foundationMethods: "dev",
+    testCases: ({ context, it, log }) => {
+        it({
+            id: "T01",
+            title: "should fill a block with 61 tx at most",
+            test: async () => {
+                const { abi, bytecode } = fetchCompiledContract("Fibonacci");
+                const deployData = encodeDeployData({
+                    abi,
+                    bytecode,
+                });
+
+                for (let i = 0; i < 300; i++) {
+                    const rawTxn = await createEthersTransaction(context, {
+                        data: deployData,
+                        nonce: i,
+                        gasLimit: 969168, // (112[account] + 550[contract]) * 1464[ratio] = 969168
+                    });
+
+                    await sendRawTransaction(context, rawTxn);
+                }
+
+                await context.createBlock();
+                expect((await context.viem().getBlock()).transactions.length).toBe(61);
+            },
+        });
+    },
+});
