@@ -19,7 +19,7 @@ use {
         xcm_config::{AssetId, ForeignAssetsInstance, XcmConfig},
         AccountId, Balances, ForeignAssetsCreator, Runtime,
     },
-    frame_support::parameter_types,
+    frame_support::{parameter_types, traits::ConstU64},
     pallet_evm_precompile_balances_erc20::{Erc20BalancesPrecompile, Erc20Metadata},
     pallet_evm_precompile_batch::BatchPrecompile,
     pallet_evm_precompile_call_permit::CallPermitPrecompile,
@@ -71,6 +71,10 @@ pub const FOREIGN_ASSET_PRECOMPILE_ADDRESS_PREFIX: &[u8] = &[255u8; 18];
 /// Const to identify ERC20_BALANCES_PRECOMPILE address
 pub const ERC20_BALANCES_PRECOMPILE: u64 = 2048;
 
+/// System account size in bytes = Pallet_Name_Hash (16) + Storage_name_hash (16) +
+/// Blake2_128Concat (16) + AccountId (20) + AccountInfo (4 + 12 + AccountData (4* 16)) = 148
+pub const SYSTEM_ACCOUNT_SIZE: u64 = 148;
+
 parameter_types! {
     pub ForeignAssetPrefix: &'static [u8] = FOREIGN_ASSET_PRECOMPILE_ADDRESS_PREFIX;
 }
@@ -99,7 +103,7 @@ type TemplatePrecompilesAt<R> = (
     // Template specific precompiles:
     PrecompileAt<
         AddressU64<ERC20_BALANCES_PRECOMPILE>,
-        Erc20BalancesPrecompile<R, NativeErc20Metadata>,
+        Erc20BalancesPrecompile<R, NativeErc20Metadata, ConstU64<SYSTEM_ACCOUNT_SIZE>>,
         (CallableByContract, CallableByPrecompile),
     >,
     PrecompileAt<AddressU64<2049>, BatchPrecompile<R>, SubcallWithMaxNesting<2>>,
@@ -110,8 +114,8 @@ type TemplatePrecompilesAt<R> = (
     >,
     PrecompileAt<
         AddressU64<2051>,
-        XcmUtilsPrecompile<R, XcmConfig>,
-        CallableByContract<AllExceptXcmExecute<R, XcmConfig>>,
+        XcmUtilsPrecompile<R, XcmConfig, ConstU64<SYSTEM_ACCOUNT_SIZE>>,
+        CallableByContract<AllExceptXcmExecute<R, XcmConfig, ConstU64<SYSTEM_ACCOUNT_SIZE>>>,
     >,
     PrecompileAt<
         AddressU64<2052>,
