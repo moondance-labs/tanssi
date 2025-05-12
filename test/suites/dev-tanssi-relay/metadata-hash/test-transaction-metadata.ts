@@ -10,12 +10,12 @@ async function getMetadataHash(api: ApiPromise) {
     const metadata = await api.call.metadata.metadataAtVersion(15);
     const { specName, specVersion } = api.runtimeVersion;
 
-    const hash = merkleizeMetadata(metadata.toU8a(), {
+    const hash = merkleizeMetadata(metadata.toHex(), {
+        base58Prefix: api.consts.system.ss58Prefix.toNumber(),
+        decimals: api.registry.chainDecimals[0],
         specName: specName.toString(),
         specVersion: specVersion.toNumber(),
-        base58Prefix: api.consts.system.ss58Prefix.toNumber(),
-        tokenSymbol: api.registry.chainTokens?.[0] ?? "",
-        decimals: api.registry.chainDecimals?.[0] ?? 12,
+        tokenSymbol: api.registry.chainTokens[0],
     });
 
     return u8aToHex(hash.digest());
