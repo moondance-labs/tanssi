@@ -17,13 +17,13 @@
 #[cfg(all(feature = "std", feature = "metadata-hash"))]
 fn main() {
     substrate_wasm_builder::WasmBuilder::init_with_defaults()
-		.enable_metadata_hash("TANSSI", 12)
-		.build();
+        .enable_metadata_hash("TANSSI", 12)
+        .build();
 }
 
 #[cfg(all(feature = "std", not(feature = "metadata-hash")))]
 fn main() {
-	substrate_wasm_builder::WasmBuilder::build_using_defaults();
+    substrate_wasm_builder::WasmBuilder::build_using_defaults();
 }
 
 #[cfg(not(feature = "std"))]
