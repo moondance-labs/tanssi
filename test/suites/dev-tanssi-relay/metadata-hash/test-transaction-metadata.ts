@@ -6,69 +6,66 @@ import { u8aToHex } from "@polkadot/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import type { KeyringPair } from "@moonwall/util";
 
-
 async function getMetadataHash(api: ApiPromise) {
+    const metadata = await api.call.metadata.metadataAtVersion(15);
+    const { specName, specVersion } = api.runtimeVersion;
 
-  const metadata = await api.call.metadata.metadataAtVersion(15);
-  const { specName, specVersion } = api.runtimeVersion;
+    const hash = merkleizeMetadata(metadata.toU8a(), {
+        specName: specName.toString(),
+        specVersion: specVersion.toNumber(),
+        base58Prefix: api.consts.system.ss58Prefix.toNumber(),
+        tokenSymbol: api.registry.chainTokens?.[0] ?? "",
+        decimals: api.registry.chainDecimals?.[0] ?? 12,
+    });
 
-  const hash = merkleizeMetadata(metadata.toU8a(), {
-    specName: specName.toString(),
-    specVersion: specVersion.toNumber(),
-    base58Prefix: api.consts.system.ss58Prefix.toNumber(),
-    tokenSymbol: api.registry.chainTokens?.[0] ?? '',
-    decimals: api.registry.chainDecimals?.[0] ?? 12
-  });
-
-  return u8aToHex(hash.digest());
+    return u8aToHex(hash.digest());
 }
 
 describeSuite({
-  id: "DEVT2001",
-  title: "Test transaction with metadata hash",
-  foundationMethods: "dev",
-  testCases: ({ context, it, log }) => {
+    id: "DEVT2001",
+    title: "Test transaction with metadata hash",
+    foundationMethods: "dev",
+    testCases: ({ context, it, log }) => {
+        let polkadotJs: ApiPromise;
+        let alice: KeyringPair;
 
-    let polkadotJs: ApiPromise;
-    let alice: KeyringPair;
-
-    beforeAll(async () => {
+        beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             const keyring = new Keyring({ type: "sr25519" });
             alice = keyring.addFromUri("//Alice", { name: "Alice default" });
-    });
+        });
 
-    it({
-      id: "T01",
-      title: "Should fail with an invalid metadata hash",
-      test: async function () {
-        const withMetadataOpts: Partial<SignerOptions> = {
-          mode: 1,
-          metadataHash: "0x" + "00".repeat(32),
-        };
+        it({
+            id: "T01",
+            title: "Should fail with an invalid metadata hash",
+            test: async function () {
+                const withMetadataOpts: Partial<SignerOptions> = {
+                    mode: 1,
+                    metadataHash: "0x" + "00".repeat(32),
+                };
 
-        let errorMsg = "";
-        try {
-          await polkadotJs.tx.system.remark("0x00").signAndSend(alice, withMetadataOpts);
-        } catch (e) {
-          errorMsg = e.message;
-        }
+                let errorMsg = "";
+                try {
+                    await polkadotJs.tx.system.remark("0x00").signAndSend(alice, withMetadataOpts);
+                } catch (e) {
+                    errorMsg = e.message;
+                }
 
-        expect(errorMsg).to.be.eq("1010: Invalid Transaction: Transaction has a bad signature");
-      },
-    });
+                expect(errorMsg).to.be.eq("1010: Invalid Transaction: Transaction has a bad signature");
+            },
+        });
 
-    it({
-      id: "T02",
-      title: "Should succeed with a valid metadata hash",
-      test: async function () {
-        const withMetadataOpts = {
-          mode: 1,
-          metadataHash: await getMetadataHash(polkadotJs),
-        };
+        it({
+            id: "T02",
+            title: "Should succeed with a valid metadata hash",
+            test: async function () {
+                const withMetadataOpts = {
+                    mode: 1,
+                    metadataHash: await getMetadataHash(polkadotJs),
+                };
 
-        await polkadotJs.tx.system.remark("0x00").signAndSend(alice, withMetadataOpts);
-      },
-    });
-  },
+                await polkadotJs.tx.system.remark("0x00").signAndSend(alice, withMetadataOpts);
+            },
+        });
+    },
 });
