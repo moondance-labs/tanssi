@@ -84,12 +84,19 @@ describeSuite({
                 // The event is triggered, nonce should be incremented
                 if (event) {
                     const supplyBefore = (await apiAtCheckpointA.query.balances.totalIssuance()).toBigInt();
-                    const sovereignIssuance = (supplyBefore * DANCELIGHT_ERA_INFLATION_PERBILL) / 1_000_000_000n;
+                    const expectedSovereignIssuance =
+                        (supplyBefore * DANCELIGHT_ERA_INFLATION_PERBILL) / 1_000_000_000n;
 
                     expect(nonceDiff).toEqual(1);
-                    expect(sovereignBalanceCheckpointB.toBigInt() - sovereignBalanceCheckpointA.toBigInt()).to.be.equal(
-                        sovereignIssuance
-                    );
+
+                    const errorMargin = 1n;
+                    const issuance = sovereignBalanceCheckpointB.toBigInt() - sovereignBalanceCheckpointA.toBigInt();
+
+                    // we know there might be rounding errors, so we always check it is in the range +-1
+                    expect(
+                        issuance >= expectedSovereignIssuance - 1n && issuance <= expectedSovereignIssuance + 1n,
+                        `Issuance not in the range, Actual: ${issuance}, Expected:  ${expectedSovereignIssuance}, Error margin: ${errorMargin}`
+                    ).to.be.true;
                 }
                 // The event is not triggered, nonce should be the same
                 else {
