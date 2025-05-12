@@ -147,7 +147,9 @@ describeSuite({
                 const issuance = await fetchIssuance(events).amount.toBigInt();
                 let chainRewards: bigint;
                 if (isStarlight) {
-                    chainRewards = (issuance * 4n) / 7n;
+                    const BILLION = 1_000_000_000n;
+                    const perBill = (4n * BILLION) / 7n;
+                    chainRewards = (perBill * issuance) / BILLION;
                 } else {
                     // dancelight
                     chainRewards = (issuance * 7n) / 10n;
