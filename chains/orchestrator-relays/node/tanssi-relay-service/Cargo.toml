@@ -247,3 +247,7 @@ runtime-metrics = [
 	"polkadot-runtime-parachains/runtime-metrics",
 	"starlight-runtime?/runtime-metrics",
 ]
+metadata-hash = [
+	"starlight-runtime?/metadata-hash",
+	"dancelight-runtime?/metadata-hash",
+]
