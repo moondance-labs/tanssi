@@ -50,10 +50,10 @@ jobs:
           mkdir -p "$REPORT_DIR"
 
           section "Switching to nightly"
-          
+          rustup target add wasm32-unknown-unknown --toolchain nightly-2024-07-11-x86_64-unknown-linux-gnu
+          rustup override set nightly-2024-07-11
 
           section "Running Security Analysis"
-          rustup override set nightly-2024-07-11
           cargo -Znext-lockfile-bump scout-audit --output-path "$REPORT_PATH" --output-format md-gh --cicd "$REPORT_DIR"
           
           if [ ! -f "$REPORT_PATH" ]; then
