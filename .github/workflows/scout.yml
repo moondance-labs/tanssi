@@ -49,8 +49,12 @@ jobs:
           log "Creating report directory..."
           mkdir -p "$REPORT_DIR"
 
+          section "Switching to nightly"
+          
+
           section "Running Security Analysis"
-          cargo scout-audit --output-path "$REPORT_PATH" --output-format md-gh --cicd "$REPORT_DIR"
+          rustup override set nightly-2024-07-11
+          cargo -Znext-lockfile-bump scout-audit --output-path "$REPORT_PATH" --output-format md-gh --cicd "$REPORT_DIR"
           
           if [ ! -f "$REPORT_PATH" ]; then
             echo "[ERROR] Scout analysis failed!"
