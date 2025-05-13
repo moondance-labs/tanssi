@@ -77,7 +77,7 @@ jobs:
       - name: Cargo build
         uses: ./.github/workflow-templates/cargo-build
         with:
-          features: "fast-runtime"
+          features: "fast-runtime,metadata-hash"
 
       - name: Pnpm
         uses: pnpm/action-setup@v4.1.0
