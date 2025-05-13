@@ -62,10 +62,7 @@ use {
         parameter_types,
         traits::{
             fungible::{Balanced, Credit, Inspect},
-            tokens::{
-                ConversionToAssetBalance, PayFromAccount,
-                UnityAssetBalanceConversion,
-            },
+            tokens::{ConversionToAssetBalance, PayFromAccount, UnityAssetBalanceConversion},
             ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Contains, EitherOfDiverse,
             InsideBoth, InstanceFilter, OnUnbalanced, ValidatorRegistration,
         },
