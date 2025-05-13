@@ -1,0 +1,13 @@
+{
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"rootDir": ".",
+		"outDir": "../../build/starlight",
+		"paths": {
+			"@tanssi/api-augment/starlight/*": ["src/starlight/*"],
+			"@polkadot/api/augment": ["src/starlight/interfaces/augment-api.ts"],
+			"@polkadot/types/augment": ["src/starlight/interfaces/augment-types.ts"],
+			"@polkadot/types/lookup": ["src/starlight/interfaces/types-lookup.ts"]
+		}
+	}
+}

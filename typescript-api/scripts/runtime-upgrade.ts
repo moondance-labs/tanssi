@@ -23,7 +23,7 @@ src/dancebox/interfaces/types-lookup.ts
 1628:        readonly asX7: Vec<Lookup88>;
 1630:        readonly asX8: Vec<Lookup88>;
 
-src/dancelight/interfaces/types-lookup.ts
+src/dancelight/interfaces/types-lookup.ts & src/starlight/interfaces/types-lookup.ts
 902:        readonly asX1: Vec<Lookup77>;
 904:        readonly asX2: Vec<Lookup77>;
 906:        readonly asX3: Vec<Lookup77>;
@@ -41,6 +41,10 @@ function hackXcmV5Support() {
     // For dancelight, replace "Lookup77" with "StagingXcmV5Junction"
     const dancelightFilePath = "src/dancelight/interfaces/types-lookup.ts";
     hackTypeReplacement(dancelightFilePath, "Lookup76", "StagingXcmV5Junction", 8);
+
+    // For starlight, replace "Lookup77" with "StagingXcmV5Junction"
+    const starlightFilePath = "src/starlight/interfaces/types-lookup.ts";
+    hackTypeReplacement(starlightFilePath, "Lookup76", "StagingXcmV5Junction", 8);
 }
 
 function hackTypeReplacement(filePath: string, oldType: string, newType: string, expectedCount: number) {
@@ -85,7 +89,7 @@ function logMatchingLines(filePath: string, substring: string) {
 }
 
 async function main() {
-    const CHAINS = ["dancebox", "flashbox", "dancelight"];
+    const CHAINS = ["dancebox", "flashbox", "dancelight", "starlight"];
 
     const RUNTIME_CHAIN_SPEC = process.argv[2];
 
