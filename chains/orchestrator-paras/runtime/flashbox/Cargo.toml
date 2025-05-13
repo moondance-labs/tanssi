@@ -316,3 +316,5 @@ try-runtime = [
 ]
 
 fast-runtime = []
+
+metadata-hash = []

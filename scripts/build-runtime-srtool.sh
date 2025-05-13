@@ -28,6 +28,7 @@ CMD="docker run \
   -e PACKAGE=${PACKAGE} \
   -e RUNTIME_DIR=${RUNTIME_DIR} \
   -e PROFILE=production \
+  -e FEATURES=metadata-hash \
   -v ${PWD}:/build \
   ${GH_WORKFLOW_MATRIX_SRTOOL_IMAGE}:${GH_WORKFLOW_MATRIX_SRTOOL_IMAGE_TAG} \
     build --app --json -cM"

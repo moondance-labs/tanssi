@@ -273,3 +273,5 @@ try-runtime = [
 	"sp-runtime/try-runtime",
 	"tanssi-runtime-common/try-runtime",
 ]
+
+metadata-hash = []
