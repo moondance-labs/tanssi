@@ -1571,7 +1571,7 @@ impl MaybeSelfChainBlockAuthor<AccountId32> for GetSelfChainBlockAuthor {
 pub struct OnUnbalancedInflation;
 impl frame_support::traits::OnUnbalanced<Credit<AccountId, Balances>> for OnUnbalancedInflation {
     fn on_nonzero_unbalanced(credit: Credit<AccountId, Balances>) {
-        let _ = <Balances as Balanced<_>>::resolve(&ParachainBondAccount::get(), credit);
+        <Balances as Balanced<_>>::resolve(&ParachainBondAccount::get(), credit).unwrap();
     }
 }
 

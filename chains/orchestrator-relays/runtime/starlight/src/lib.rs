@@ -1757,7 +1757,7 @@ prod_or_fast_parameter_types! {
 pub struct OnUnbalancedInflation;
 impl frame_support::traits::OnUnbalanced<Credit<AccountId, Balances>> for OnUnbalancedInflation {
     fn on_nonzero_unbalanced(credit: Credit<AccountId, Balances>) {
-        let _ = <Balances as Balanced<_>>::resolve(&StarlightBondAccount::get(), credit);
+        <Balances as Balanced<_>>::resolve(&StarlightBondAccount::get(), credit).unwrap();
     }
 }
 
