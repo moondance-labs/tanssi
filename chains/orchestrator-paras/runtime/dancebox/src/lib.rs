@@ -468,42 +468,13 @@ impl pallet_balances::Config for Runtime {
     type WeightInfo = weights::pallet_balances::SubstrateWeight<Runtime>;
 }
 
-pub struct DealWithFees<R>(sp_std::marker::PhantomData<R>);
-impl<R> OnUnbalanced<Credit<R::AccountId, pallet_balances::Pallet<R>>> for DealWithFees<R>
-where
-    R: pallet_balances::Config + pallet_treasury::Config + frame_system::Config,
-    pallet_treasury::NegativeImbalanceOf<R>: From<NegativeImbalance<R>>,
-{
-    // this seems to be called for substrate-based transactions
-    fn on_unbalanceds(
-        mut fees_then_tips: impl Iterator<Item = Credit<R::AccountId, pallet_balances::Pallet<R>>>,
-    ) {
-        if let Some(fees) = fees_then_tips.next() {
-            // 100% of fees & tips goes to the treasury.
-            ResolveTo::<pallet_treasury::TreasuryAccountId<R>, pallet_balances::Pallet<R>>::on_unbalanced(fees);
-            
-            if let Some(tip) = fees_then_tips.next() {
-                ResolveTo::<pallet_treasury::TreasuryAccountId<R>, pallet_balances::Pallet<R>>::on_unbalanced(tip);
-            }
-        }
-    }
-
-    // this is called from pallet_evm for Ethereum-based transactions
-    // (technically, it calls on_unbalanced, which calls this when non-zero)
-    fn on_nonzero_unbalanced(amount: Credit<R::AccountId, pallet_balances::Pallet<R>>) {
-        // 100% goes to the treasury
-        ResolveTo::<pallet_treasury::TreasuryAccountId<R>, pallet_balances::Pallet<R>>::on_unbalanced(amount);
-    }
-}
-
 parameter_types! {
     pub const TransactionByteFee: Balance = 1;
 }
 
 impl pallet_transaction_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    // This will burn 80% from fees & tips and deposit the remainder into the treasury
-    type OnChargeTransaction = FungibleAdapter<Balances, DealWithFees<Runtime>>;
+    type OnChargeTransaction = FungibleAdapter<Balances, tanssi_runtime_common::DealWithFees<Runtime>>;
     type OperationalFeeMultiplier = ConstU8<5>;
     type WeightToFee = WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
