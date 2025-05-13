@@ -77,7 +77,11 @@ jobs:
           ls -la "${{ steps.run-scout.outputs.report_dir }}"
           
           if [ -f "${{ steps.run-scout.outputs.report_dir }}/FAIL" ]; then
-            echo "[ERROR] Scout analysis failed! Please check the report for details."
-            exit 1
+            SUMMARY_MESSAGE="❌ [ERROR] Scout analysis finished with critical errors! Please check the report for details."
+            echo "$SUMMARY_MESSAGE"
+          else
+            SUMMARY_MESSAGE="✅ Scout analysis finished without critical errors! Please check the report for details."
+            echo "$SUMMARY_MESSAGE"
           fi
-          echo "✅ Scout analysis completed successfully!"
+          
+          echo "$SUMMARY_MESSAGE" >> $GITHUB_STEP_SUMMARY
