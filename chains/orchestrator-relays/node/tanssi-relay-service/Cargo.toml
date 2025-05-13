@@ -65,6 +65,7 @@ sp-version = { workspace = true }
 sp-weights = { workspace = true }
 
 # Substrate Pallets
+frame-metadata-hash-extension = { workspace = true, default-features = true, optional = true }
 frame-system = { workspace = true }
 pallet-babe = { workspace = true }
 pallet-staking = { workspace = true }
@@ -198,8 +199,8 @@ full-node = [
 ]
 
 # Configure the native runtimes to use.
-dancelight-native = [ "bitvec", "dancelight-runtime", "dancelight-runtime-constants" ]
-starlight-native = [ "bitvec", "starlight-runtime", "starlight-runtime-constants" ]
+dancelight-native = [ "bitvec", "dancelight-runtime", "dancelight-runtime-constants", "frame-metadata-hash-extension" ]
+starlight-native = [ "bitvec", "frame-metadata-hash-extension", "starlight-runtime", "starlight-runtime-constants" ]
 
 fast-runtime = [
 	"dancelight-runtime?/fast-runtime",
@@ -242,6 +243,10 @@ try-runtime = [
 ]
 
 malus = [ "full-node" ]
+metadata-hash = [
+	"dancelight-runtime?/metadata-hash",
+	"starlight-runtime?/metadata-hash",
+]
 runtime-metrics = [
 	"dancelight-runtime?/runtime-metrics",
 	"polkadot-runtime-parachains/runtime-metrics",
