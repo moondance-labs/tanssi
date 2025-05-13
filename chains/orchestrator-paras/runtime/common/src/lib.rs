@@ -34,7 +34,7 @@ where
         if let Some(fees) = fees_then_tips.next() {
             // 100% of fees & tips goes to the treasury.
             ResolveTo::<pallet_treasury::TreasuryAccountId<R>, pallet_balances::Pallet<R>>::on_unbalanced(fees);
-            
+
             if let Some(tip) = fees_then_tips.next() {
                 ResolveTo::<pallet_treasury::TreasuryAccountId<R>, pallet_balances::Pallet<R>>::on_unbalanced(tip);
             }

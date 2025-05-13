@@ -63,11 +63,11 @@ use {
         traits::{
             fungible::{Balanced, Credit, Inspect},
             tokens::{
-                imbalance::ResolveTo, ConversionToAssetBalance, PayFromAccount,
+                ConversionToAssetBalance, PayFromAccount,
                 UnityAssetBalanceConversion,
             },
             ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Contains, EitherOfDiverse,
-            Imbalance, InsideBoth, InstanceFilter, OnUnbalanced, ValidatorRegistration,
+            InsideBoth, InstanceFilter, OnUnbalanced, ValidatorRegistration,
         },
         weights::{
             constants::{
@@ -84,7 +84,6 @@ use {
         EnsureRoot, EnsureSigned,
     },
     nimbus_primitives::{NimbusId, SlotBeacon},
-    pallet_balances::NegativeImbalance,
     pallet_collator_assignment::{GetRandomnessForNextBlock, RotateCollatorsEveryNSessions},
     pallet_invulnerables::InvulnerableRewardDistribution,
     pallet_pooled_staking::traits::{IsCandidateEligible, Timer},
@@ -474,7 +473,8 @@ parameter_types! {
 
 impl pallet_transaction_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type OnChargeTransaction = FungibleAdapter<Balances, tanssi_runtime_common::DealWithFees<Runtime>>;
+    type OnChargeTransaction =
+        FungibleAdapter<Balances, tanssi_runtime_common::DealWithFees<Runtime>>;
     type OperationalFeeMultiplier = ConstU8<5>;
     type WeightToFee = WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
