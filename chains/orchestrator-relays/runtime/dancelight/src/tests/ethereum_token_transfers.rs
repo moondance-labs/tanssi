@@ -25,7 +25,7 @@ use {
         SnowbridgeFeesAccount, TokenLocationReanchored,
     },
     alloy_sol_types::SolEvent,
-    dancelight_runtime_constants::snowbridge::{EthereumLocation, EthereumNetwork},
+    dancelight_runtime_constants::snowbridge::EthereumNetwork,
     frame_support::{assert_noop, assert_ok},
     hex_literal::hex,
     parity_scale_codec::Encode,
@@ -673,6 +673,8 @@ fn receive_erc20_tokens_in_tanssi_non_zero_address() {
                     fee,
                 },
             });
+
+            println!("payload: {:?}", payload.encode());
 
             let event = OutboundMessageAccepted {
                 channel_id: <[u8; 32]>::from(channel_id).into(),
