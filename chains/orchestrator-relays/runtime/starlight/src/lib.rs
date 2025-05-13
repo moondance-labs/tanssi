@@ -1880,6 +1880,22 @@ impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
     }
 }
 
+pub struct InvulnerableCheckHandler<AccountId>(PhantomData<AccountId>);
+
+impl tp_traits::CheckInvulnerables<AccountId> for InvulnerableCheckHandler<AccountId> {
+    fn is_invulnerable(account: &AccountId) -> bool {
+        TanssiInvulnerables::invulnerables().contains(account)
+    }
+}
+
+pub struct InactivityTrackingHelper;
+
+impl tp_traits::NodeActivityTrackingHelper<AccountId> for InactivityTrackingHelper {
+    fn is_node_inactive(_node: &AccountId) -> bool {
+        false
+    }
+}
+
 impl pallet_pooled_staking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
@@ -1894,6 +1910,8 @@ impl pallet_pooled_staking::Config for Runtime {
     type LeavingRequestTimer = SessionTimer<StakingSessionDelay>;
     type EligibleCandidatesBufferSize = ConstU32<100>;
     type EligibleCandidatesFilter = CandidateHasRegisteredKeys;
+    type ActivityTrackingHelper = InactivityTrackingHelper;
+    type InvulnerablesHelper = InvulnerableCheckHandler<AccountId>;
     type WeightInfo = weights::pallet_pooled_staking::SubstrateWeight<Runtime>;
 }
 

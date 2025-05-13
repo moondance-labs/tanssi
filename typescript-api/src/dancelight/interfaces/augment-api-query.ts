@@ -2358,6 +2358,20 @@ declare module "@polkadot/api-base/types/storage" {
             > &
                 QueryableStorageEntry<ApiType, [AccountId32, AccountId32]>;
             /**
+             * Switch to enable/disable marking offline feature.
+             **/
+            enableMarkingOffline: AugmentedQuery<ApiType, () => Observable<bool>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * A list of offline collators
+             **/
+            offlineCollators: AugmentedQuery<
+                ApiType,
+                () => Observable<Vec<PalletPooledStakingCandidateEligibleCandidate>>,
+                []
+            > &
+                QueryableStorageEntry<ApiType, []>;
+            /**
              * Pauses the ability to modify pools through extrinsics.
              *
              * Currently added only to run the multi-block migration to compute
