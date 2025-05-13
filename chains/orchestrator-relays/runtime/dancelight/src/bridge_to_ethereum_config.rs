@@ -26,20 +26,18 @@ use tp_bridge::symbiotic_message_processor::SymbioticMessageProcessor;
 
 use {
     crate::{
-        parameter_types, weights, xcm_config, AggregateMessageOrigin, Balance, Balances, Decode,
-        Encode, EthereumInboundQueue, EthereumOutboundQueue, EthereumSovereignAccount,
-        EthereumSystem, FixedU128, GetAggregateMessageOrigin, Keccak256, MaxEncodedLen,
-        MessageQueue, OutboundMessageCommitmentRecorder, Runtime, RuntimeDebug, RuntimeEvent,
-        SnowbridgeFeesAccount, TokenLocationReanchored, TransactionByteFee, TreasuryAccount,
-        TypeInfo, WeightToFee, UNITS,
+        parameter_types, weights, xcm_config, AggregateMessageOrigin, Balance, Balances, Encode,
+        EthereumInboundQueue, EthereumOutboundQueue, EthereumSovereignAccount, EthereumSystem,
+        FixedU128, GetAggregateMessageOrigin, Keccak256, MessageQueue,
+        OutboundMessageCommitmentRecorder, Runtime, RuntimeEvent, SnowbridgeFeesAccount,
+        TokenLocationReanchored, TransactionByteFee, TreasuryAccount, WeightToFee, UNITS,
     },
     frame_support::{
         traits::{
             fungible::{Inspect, Mutate},
             tokens::{Fortitude, Preservation},
-            ProcessMessage,
         },
-        weights::{ConstantMultiplier, WeightMeter},
+        weights::ConstantMultiplier,
     },
     pallet_xcm::EnsureXcm,
     parity_scale_codec::DecodeAll,
@@ -54,12 +52,9 @@ use {
     sp_runtime::{traits::Zero, DispatchError, DispatchResult},
     sp_std::{marker::PhantomData, vec},
     tp_bridge::{DoNothingConvertMessage, DoNothingRouter, EthereumSystemHandler},
-    xcm::{
-        latest::{
-            prelude::*, Asset as XcmAsset, AssetId as XcmAssetId, Assets as XcmAssets, ExecuteXcm,
-            Fungibility, Junctions::*,
-        },
-        VersionedXcm,
+    xcm::latest::{
+        prelude::*, Asset as XcmAsset, AssetId as XcmAssetId, Assets as XcmAssets, ExecuteXcm,
+        Fungibility, Junctions::*,
     },
     xcm_executor::traits::WeightBounds,
 };
@@ -292,12 +287,9 @@ where
                 command:
                     Command::SendToken {
                         token: token_address,
-                        destination:
-                            Destination::AccountId32 {
-                                id: destination_account,
-                            },
-                        amount,
-                        fee,
+                        destination: Destination::AccountId32 { id: _ },
+                        amount: _,
+                        fee: _,
                     },
                 ..
             })) => {
@@ -334,7 +326,7 @@ where
     }
 
     fn process_message(_channel: Channel, envelope: Envelope) -> DispatchResult {
-        // - Decode payload as SendNativeToken
+        // - Decode payload as SendToken
         let message = VersionedXcmMessage::decode_all(&mut envelope.payload.as_slice())
             .map_err(|_| DispatchError::Other("unable to parse the envelope payload"))?;
 
