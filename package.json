@@ -18,7 +18,7 @@
     "postinstall": "pnpm build"
   },
   "dependencies": {
-    "@polkadot/api": "15.5.1",
+    "@polkadot/api": "15.10.1",
     "@polkadot/api-augment": "15.5.1",
     "@polkadot/api-base": "15.5.1",
     "@polkadot/api-derive": "15.5.1",
