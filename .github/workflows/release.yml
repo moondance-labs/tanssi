@@ -241,7 +241,7 @@ jobs:
             - name: Cargo build
               uses: ./.github/workflow-templates/cargo-build
               with:
-                features: "fast-runtime"
+                features: "fast-runtime,metadata-hash"
             - name: Upload runtimes
               uses: actions/upload-artifact@v4
               with:
