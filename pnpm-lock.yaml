@@ -143,6 +143,9 @@ importers:
       '@lodestar/utils':
         specifier: 1.27.1
         version: 1.27.1
+      '@polkadot-api/merkleize-metadata':
+        specifier: ^1.1.15
+        version: 1.1.15
       '@polkadot/api':
         specifier: 15.5.1
         version: 15.5.1
@@ -182,7 +185,7 @@ importers:
         version: 5.10.0(@types/node@22.10.5)(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.4.49)(rxjs@7.8.1)(ts-node@10.9.2(@types/node@22.10.5)(typescript@5.5.4))(tsx@4.19.2)(typescript@5.5.4)(zod@3.24.2)
       '@moonwall/util':
         specifier: 5.10.0
-        version: 5.10.0(@types/node@22.10.5)(@vitest/ui@2.1.5(vitest@2.1.5))(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.4.49)(rxjs@7.8.1)(tsx@4.19.2)(typescript@5.5.4)(yaml@2.7.0)(zod@3.24.2)
+        version: 5.10.0(@types/node@22.10.5)(@vitest/ui@2.1.5)(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.4.49)(rxjs@7.8.1)(tsx@4.19.2)(typescript@5.5.4)(yaml@2.7.0)(zod@3.24.2)
       '@polkadot/wasm-crypto':
         specifier: ^7.4.1
         version: 7.4.1(@polkadot/util@13.3.1)(@polkadot/x-randomvalues@13.3.1(@polkadot/util@13.3.1)(@polkadot/wasm-util@7.4.1(@polkadot/util@13.3.1)))
@@ -1338,6 +1341,10 @@ packages:
     resolution: {integrity: sha512-B8XBPsn4vT/KJAGqDzbwztd+6Yte3P4V7iafm24bxgDe/mlRuK6xmWPuCNrKt2vDafZ8MfJLlchDG/vYafQEjQ==}
     engines: {node: ^14.21.3 || >=16}
 
+  '@noble/hashes@1.8.0':
+    resolution: {integrity: sha512-jCs9ldd7NwzpgXDIf6P3+NrHh9/sD6CQdxHyjQI+h/6rDNo88ypBxxz45UDuZHz9r3tNz7N/VInSVoVdtXEI4A==}
+    engines: {node: ^14.21.3 || >=16}
+
   '@noble/secp256k1@1.7.1':
     resolution: {integrity: sha512-hOUk6AyBFmqVrv7k5WAw/LpszxVbj9gGN4JRkIX52fdFAj1UA61KXmZDvqVEm+pOyec3+fIeZB02LYa/pWOArw==}
 
@@ -1464,6 +1471,12 @@ packages:
   '@polkadot-api/logs-provider@0.0.6':
     resolution: {integrity: sha512-4WgHlvy+xee1ADaaVf6+MlK/+jGMtsMgAzvbQOJZnP4PfQuagoTqaeayk8HYKxXGphogLlPbD06tANxcb+nvAg==}
 
+  '@polkadot-api/merkleize-metadata@1.1.15':
+    resolution: {integrity: sha512-wl/c+qjIqrAPBqs23BkNiBiIeLaTenk8Bz7eTTkmTbx8m9tB8pwJ2kUy7LkZjeLk239a8DEbcc/3/vTxvcXEbQ==}
+
+  '@polkadot-api/metadata-builders@0.11.0':
+    resolution: {integrity: sha512-OoKF/mViUJMEk4DUOauHBuGLGa0tKi5sIiPfWTsXdVczjmb6+JumqWBhS0JU/KGJkK2VuKTCsqeZMJxZtuSgMQ==}
+
   '@polkadot-api/metadata-builders@0.3.2':
     resolution: {integrity: sha512-TKpfoT6vTb+513KDzMBTfCb/ORdgRnsS3TDFpOhAhZ08ikvK+hjHMt5plPiAX/OWkm1Wc9I3+K6W0hX5Ab7MVg==}
 
@@ -1536,6 +1549,9 @@ packages:
 
   '@polkadot-api/smoldot@0.3.7':
     resolution: {integrity: sha512-Fnrz0Xt8fli7LhHSOWbNraiXpLJWCwOglI+BgBWnYpsdHXSMU5TsYEw5oo9rkfI9zDeZsbtXvMTW3MqTeCLtQg==}
+
+  '@polkadot-api/substrate-bindings@0.12.0':
+    resolution: {integrity: sha512-cIjDeJRHW6g3z+/55UzpoG4LG1N0HbT4x3NvZsQkYg4eoio9Sw7Pw2aZZX86pWemxc7vQbNw7WSz2Gz+ckdX6Q==}
 
   '@polkadot-api/substrate-bindings@0.6.0':
     resolution: {integrity: sha512-lGuhE74NA1/PqdN7fKFdE5C1gNYX357j1tWzdlPXI0kQ7h3kN0zfxNOpPUN7dIrPcOFZ6C0tRRVrBylXkI6xPw==}
@@ -1840,6 +1856,9 @@ packages:
 
   '@scure/base@1.2.4':
     resolution: {integrity: sha512-5Yy9czTO47mqz+/J8GM6GIId4umdCk1wc1q8rKERQulIoc8VP9pzDcghv10Tl2E7R96ZUx/PhND3ESYUQX8NuQ==}
+
+  '@scure/base@1.2.5':
+    resolution: {integrity: sha512-9rE6EOVeIQzt5TSu4v+K523F8u6DhBsoZWPGKlnCshhlDhy0kJzUX4V+tr2dWmzF1GdekvThABoEQBGBQI7xZw==}
 
   '@scure/bip32@1.4.0':
     resolution: {integrity: sha512-sVUpc0Vq3tXCkDGYVWGIZTRfnvu8LoTDaev7vbwh0omSvVORONr960MQWdKqJDCReIEmTj3PAr73O3aoxz7OPg==}
@@ -6331,8 +6350,8 @@ snapshots:
       '@acala-network/chopsticks': 1.0.2(debug@4.4.0)(ts-node@10.9.2(@types/node@22.10.5)(typescript@5.5.4))
       '@inquirer/prompts': 7.3.1(@types/node@22.10.5)
       '@moonbeam-network/api-augment': 0.3401.2(postcss@8.4.49)(yaml@2.7.0)
-      '@moonwall/types': 5.10.0(@vitest/ui@2.1.5(vitest@2.1.5))(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.4.49)(rxjs@7.8.1)(tsx@4.19.2)(typescript@5.5.4)(yaml@2.7.0)(zod@3.24.2)
-      '@moonwall/util': 5.10.0(@types/node@22.10.5)(@vitest/ui@2.1.5(vitest@2.1.5))(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.4.49)(rxjs@7.8.1)(tsx@4.19.2)(typescript@5.5.4)(yaml@2.7.0)(zod@3.24.2)
+      '@moonwall/types': 5.10.0(@vitest/ui@2.1.5)(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.4.49)(rxjs@7.8.1)(tsx@4.19.2)(typescript@5.5.4)(yaml@2.7.0)(zod@3.24.2)
+      '@moonwall/util': 5.10.0(@types/node@22.10.5)(@vitest/ui@2.1.5)(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.4.49)(rxjs@7.8.1)(tsx@4.19.2)(typescript@5.5.4)(yaml@2.7.0)(zod@3.24.2)
       '@octokit/rest': 21.1.0
       '@polkadot/api': 15.5.1
       '@polkadot/api-derive': 15.5.1
@@ -6420,7 +6439,7 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@moonwall/types@5.10.0(@vitest/ui@2.1.5(vitest@2.1.5))(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.4.49)(rxjs@7.8.1)(tsx@4.19.2)(typescript@5.5.4)(yaml@2.7.0)(zod@3.24.2)':
+  '@moonwall/types@5.10.0(@vitest/ui@2.1.5)(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.4.49)(rxjs@7.8.1)(tsx@4.19.2)(typescript@5.5.4)(yaml@2.7.0)(zod@3.24.2)':
     dependencies:
       '@polkadot/api': 15.5.1
       '@polkadot/api-base': 15.5.1
@@ -6435,7 +6454,7 @@ snapshots:
       ethers: 6.13.4
       polkadot-api: 1.7.7(postcss@8.4.49)(rxjs@7.8.1)(tsx@4.19.2)(yaml@2.7.0)
       viem: 2.22.21(typescript@5.5.4)(zod@3.24.2)
-      vitest: 2.1.5(@types/node@22.12.0)(@vitest/ui@2.1.5(vitest@2.1.5))(jsdom@23.2.0)
+      vitest: 2.1.5(@types/node@22.12.0)(@vitest/ui@2.1.5)(jsdom@23.2.0)
       web3: 4.15.0(encoding@0.1.13)(typescript@5.5.4)(zod@3.24.2)
     transitivePeerDependencies:
       - '@edge-runtime/vm'
@@ -6467,11 +6486,11 @@ snapshots:
       - yaml
       - zod
 
-  '@moonwall/util@5.10.0(@types/node@22.10.5)(@vitest/ui@2.1.5(vitest@2.1.5))(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.4.49)(rxjs@7.8.1)(tsx@4.19.2)(typescript@5.5.4)(yaml@2.7.0)(zod@3.24.2)':
+  '@moonwall/util@5.10.0(@types/node@22.10.5)(@vitest/ui@2.1.5)(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.4.49)(rxjs@7.8.1)(tsx@4.19.2)(typescript@5.5.4)(yaml@2.7.0)(zod@3.24.2)':
     dependencies:
       '@inquirer/prompts': 7.3.1(@types/node@22.10.5)
       '@moonbeam-network/api-augment': 0.3401.2(postcss@8.4.49)(yaml@2.7.0)
-      '@moonwall/types': 5.10.0(@vitest/ui@2.1.5(vitest@2.1.5))(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.4.49)(rxjs@7.8.1)(tsx@4.19.2)(typescript@5.5.4)(yaml@2.7.0)(zod@3.24.2)
+      '@moonwall/types': 5.10.0(@vitest/ui@2.1.5)(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.4.49)(rxjs@7.8.1)(tsx@4.19.2)(typescript@5.5.4)(yaml@2.7.0)(zod@3.24.2)
       '@polkadot/api': 15.5.1
       '@polkadot/api-derive': 15.5.1
       '@polkadot/keyring': 13.3.1(@polkadot/util-crypto@13.3.1(@polkadot/util@13.3.1))(@polkadot/util@13.3.1)
@@ -6552,6 +6571,8 @@ snapshots:
   '@noble/hashes@1.5.0': {}
 
   '@noble/hashes@1.7.1': {}
+
+  '@noble/hashes@1.8.0': {}
 
   '@noble/secp256k1@1.7.1': {}
 
@@ -6772,6 +6793,17 @@ snapshots:
     dependencies:
       '@polkadot-api/json-rpc-provider': 0.0.4
 
+  '@polkadot-api/merkleize-metadata@1.1.15':
+    dependencies:
+      '@polkadot-api/metadata-builders': 0.11.0
+      '@polkadot-api/substrate-bindings': 0.12.0
+      '@polkadot-api/utils': 0.1.2
+
+  '@polkadot-api/metadata-builders@0.11.0':
+    dependencies:
+      '@polkadot-api/substrate-bindings': 0.12.0
+      '@polkadot-api/utils': 0.1.2
+
   '@polkadot-api/metadata-builders@0.3.2':
     dependencies:
       '@polkadot-api/substrate-bindings': 0.6.0
@@ -6902,6 +6934,13 @@ snapshots:
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
+
+  '@polkadot-api/substrate-bindings@0.12.0':
+    dependencies:
+      '@noble/hashes': 1.8.0
+      '@polkadot-api/utils': 0.1.2
+      '@scure/base': 1.2.5
+      scale-ts: 1.6.1
 
   '@polkadot-api/substrate-bindings@0.6.0':
     dependencies:
@@ -7340,6 +7379,8 @@ snapshots:
   '@scure/base@1.1.9': {}
 
   '@scure/base@1.2.4': {}
+
+  '@scure/base@1.2.5': {}
 
   '@scure/bip32@1.4.0':
     dependencies:
@@ -10633,7 +10674,7 @@ snapshots:
       - supports-color
       - terser
 
-  vitest@2.1.5(@types/node@22.12.0)(@vitest/ui@2.1.5(vitest@2.1.5))(jsdom@23.2.0):
+  vitest@2.1.5(@types/node@22.12.0)(@vitest/ui@2.1.5)(jsdom@23.2.0):
     dependencies:
       '@vitest/expect': 2.1.5
       '@vitest/mocker': 2.1.5(vite@5.4.11(@types/node@22.12.0))
