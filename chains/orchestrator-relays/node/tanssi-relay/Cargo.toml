@@ -53,6 +53,9 @@ runtime-benchmarks = [ "tanssi-relay-cli/runtime-benchmarks" ]
 runtime-metrics = [ "tanssi-relay-cli/runtime-metrics" ]
 try-runtime = [ "tanssi-relay-cli/try-runtime" ]
 
+metadata-hash = [
+	"tanssi-relay-cli/metadata-hash",
+]
 
 # Enables timeout-based tests supposed to be run only in CI environment as they may be flaky
 # when run locally depending on system load
