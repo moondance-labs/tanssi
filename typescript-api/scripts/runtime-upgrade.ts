@@ -1,5 +1,5 @@
 import { execSync, spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import chalk from "chalk";
 

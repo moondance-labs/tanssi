@@ -172,8 +172,8 @@ importers:
         version: 0.1.6
     devDependencies:
       '@acala-network/chopsticks':
-        specifier: 1.0.2
-        version: 1.0.2(debug@4.3.7)(ts-node@10.9.2(@types/node@22.15.17)(typescript@5.5.4))
+        specifier: 1.0.5
+        version: 1.0.5(debug@4.3.7)(ts-node@10.9.2(@types/node@22.15.17)(typescript@5.5.4))
       '@moonbeam-network/api-augment':
         specifier: 0.3401.2
         version: 0.3401.2(postcss@8.5.3)(yaml@2.7.1)
@@ -182,7 +182,7 @@ importers:
         version: 5.10.0(@types/node@22.15.17)(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.5.3)(rxjs@7.8.2)(ts-node@10.9.2(@types/node@22.15.17)(typescript@5.5.4))(tsx@4.19.4)(typescript@5.5.4)(zod@3.24.4)
       '@moonwall/util':
         specifier: 5.10.0
-        version: 5.10.0(@types/node@22.15.17)(@vitest/ui@2.1.5(vitest@2.1.5))(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.5.3)(rxjs@7.8.2)(tsx@4.19.4)(typescript@5.5.4)(yaml@2.7.1)(zod@3.24.4)
+        version: 5.10.0(@types/node@22.15.17)(@vitest/ui@2.1.5)(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.5.3)(rxjs@7.8.2)(tsx@4.19.4)(typescript@5.5.4)(yaml@2.7.1)(zod@3.24.4)
       '@polkadot/wasm-crypto':
         specifier: ^7.4.1
         version: 7.4.1(@polkadot/util@13.3.1)(@polkadot/x-randomvalues@13.3.1(@polkadot/util@13.3.1)(@polkadot/wasm-util@7.4.1(@polkadot/util@13.3.1)))
@@ -313,19 +313,19 @@ importers:
 
 packages:
 
-  '@acala-network/chopsticks-core@1.0.2':
-    resolution: {integrity: sha512-j45pTfgamgI7YjJHI943GFoj15kjciIP0nAVfX1CVMXwNA5YewLY8t8SCoyKhnPvS9OskdVtC54jWjjJRttC+w==}
+  '@acala-network/chopsticks-core@1.0.5':
+    resolution: {integrity: sha512-erAbVwteGK/AFu65UYTUcmrQTe25xmCygTDrs2GfeZkOzcctE5/X2BpyY5KtbVWk66lRcivuGVE+XvNkJig3jQ==}
     engines: {node: '>=v20'}
 
-  '@acala-network/chopsticks-db@1.0.2':
-    resolution: {integrity: sha512-ky94awHwhK6uHsPLRqryIhhriBWK9RQDXHplybU+icdMq9C9aAYMmejQsF2T7lAC8LwFoe3mI0tDYRMDK0zhJA==}
+  '@acala-network/chopsticks-db@1.0.5':
+    resolution: {integrity: sha512-utMjWSxTTvy41xLUWrI9ygjyYAA7nYl45Q0mbxVm8XSw50KiBNEKPRJx5i/puUUJAA94fP1ENleVXSXN2OHeRQ==}
     engines: {node: '>=v20'}
 
-  '@acala-network/chopsticks-executor@1.0.2':
-    resolution: {integrity: sha512-I0fie9j9pcnQMO89Ix5ZoLwWRcsUj7L2ba1b4UeJB0JwVibcJcCwSmAMefmcceDZPEkwvWya1ukv0gy/AY93Lw==}
+  '@acala-network/chopsticks-executor@1.0.5':
+    resolution: {integrity: sha512-Twowg3/UCTnFxUvyOrFBWVoAwCAocoGGwDE5IJhmUdb5DrKKgCzOhcgSutUgrkSFFgF8qgbTwtKYr1GCUqdQvg==}
 
-  '@acala-network/chopsticks@1.0.2':
-    resolution: {integrity: sha512-3CqyGAv2/G0yMiZrX+zZgBvyIFpxAtgm2gJGj/OZK2oVXcQBVXxUkQW5FQEoN9eftVIfMfzC+YlZN4t/TxkhoA==}
+  '@acala-network/chopsticks@1.0.5':
+    resolution: {integrity: sha512-KEkBMsB1+yUb+JnXlJ76SD33lEVHIcEhexU+cGeJAlSbgw3KFtgHQNAv/hFlNKlFwchuRGXHstZ9ZmHbmV0ZUQ==}
     engines: {node: '>=v20'}
     hasBin: true
 
@@ -1478,8 +1478,8 @@ packages:
     resolution: {integrity: sha512-YcPQ8a0jwYU9bTdJDpXjMi7Brhkr1mXsXrUJvjqM2mQDgkRiz8jFaQGOdaLxgjtUfQgZhKy/O3cG/YwmgKaxLA==}
     engines: {node: '>=12.22.0'}
 
-  '@pnpm/npm-conf@2.3.1':
-    resolution: {integrity: sha512-c83qWb22rNRuB0UaVCI0uRPNRr8Z0FWnEIvT47jiHAmOIUHbBOg5XvV7pM5x+rKn9HRpjxquDbXYSXr3fAKFcw==}
+  '@pnpm/npm-conf@3.0.0':
+    resolution: {integrity: sha512-LdFkv/+4ONkQ9ZyE8ihC2L2RcPjvNcOTQq6pvvvZp8KeDYATCJeJX7gpHZF3Bx1XvUSU35dyF9Q9dS+JShtOFA==}
     engines: {node: '>=12'}
 
   '@polka/url@1.0.0-next.29':
@@ -5148,9 +5148,9 @@ packages:
 
 snapshots:
 
-  '@acala-network/chopsticks-core@1.0.2':
+  '@acala-network/chopsticks-core@1.0.5':
     dependencies:
-      '@acala-network/chopsticks-executor': 1.0.2
+      '@acala-network/chopsticks-executor': 1.0.5
       '@polkadot/rpc-provider': 15.10.1
       '@polkadot/types': 15.10.1
       '@polkadot/types-codec': 15.10.1
@@ -5170,9 +5170,9 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@acala-network/chopsticks-db@1.0.2(ts-node@10.9.2(@types/node@22.15.17)(typescript@5.5.4))':
+  '@acala-network/chopsticks-db@1.0.5(ts-node@10.9.2(@types/node@22.15.17)(typescript@5.5.4))':
     dependencies:
-      '@acala-network/chopsticks-core': 1.0.2
+      '@acala-network/chopsticks-core': 1.0.5
       '@polkadot/util': 13.3.1
       idb: 8.0.3
       sqlite3: 5.1.7
@@ -5200,16 +5200,16 @@ snapshots:
       - typeorm-aurora-data-api-driver
       - utf-8-validate
 
-  '@acala-network/chopsticks-executor@1.0.2':
+  '@acala-network/chopsticks-executor@1.0.5':
     dependencies:
       '@polkadot/util': 13.3.1
       '@polkadot/wasm-util': 7.4.1(@polkadot/util@13.3.1)
 
-  '@acala-network/chopsticks@1.0.2(debug@4.3.7)(ts-node@10.9.2(@types/node@22.15.17)(typescript@5.5.4))':
+  '@acala-network/chopsticks@1.0.5(debug@4.3.7)(ts-node@10.9.2(@types/node@22.15.17)(typescript@5.5.4))':
     dependencies:
-      '@acala-network/chopsticks-core': 1.0.2
-      '@acala-network/chopsticks-db': 1.0.2(ts-node@10.9.2(@types/node@22.15.17)(typescript@5.5.4))
-      '@pnpm/npm-conf': 2.3.1
+      '@acala-network/chopsticks-core': 1.0.5
+      '@acala-network/chopsticks-db': 1.0.5(ts-node@10.9.2(@types/node@22.15.17)(typescript@5.5.4))
+      '@pnpm/npm-conf': 3.0.0
       '@polkadot/api': 15.10.1
       '@polkadot/api-augment': 15.10.1
       '@polkadot/rpc-provider': 15.10.1
@@ -5250,11 +5250,11 @@ snapshots:
       - typeorm-aurora-data-api-driver
       - utf-8-validate
 
-  '@acala-network/chopsticks@1.0.2(debug@4.4.0)(ts-node@10.9.2(@types/node@22.15.17)(typescript@5.5.4))':
+  '@acala-network/chopsticks@1.0.5(debug@4.4.0)(ts-node@10.9.2(@types/node@22.15.17)(typescript@5.5.4))':
     dependencies:
-      '@acala-network/chopsticks-core': 1.0.2
-      '@acala-network/chopsticks-db': 1.0.2(ts-node@10.9.2(@types/node@22.15.17)(typescript@5.5.4))
-      '@pnpm/npm-conf': 2.3.1
+      '@acala-network/chopsticks-core': 1.0.5
+      '@acala-network/chopsticks-db': 1.0.5(ts-node@10.9.2(@types/node@22.15.17)(typescript@5.5.4))
+      '@pnpm/npm-conf': 3.0.0
       '@polkadot/api': 15.10.1
       '@polkadot/api-augment': 15.10.1
       '@polkadot/rpc-provider': 15.10.1
@@ -6543,11 +6543,11 @@ snapshots:
 
   '@moonwall/cli@5.10.0(@types/node@22.15.17)(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.5.3)(rxjs@7.8.2)(ts-node@10.9.2(@types/node@22.15.17)(typescript@5.5.4))(tsx@4.19.4)(typescript@5.5.4)(zod@3.24.4)':
     dependencies:
-      '@acala-network/chopsticks': 1.0.2(debug@4.4.0)(ts-node@10.9.2(@types/node@22.15.17)(typescript@5.5.4))
+      '@acala-network/chopsticks': 1.0.5(debug@4.4.0)(ts-node@10.9.2(@types/node@22.15.17)(typescript@5.5.4))
       '@inquirer/prompts': 7.3.1(@types/node@22.15.17)
       '@moonbeam-network/api-augment': 0.3401.2(postcss@8.5.3)(yaml@2.7.0)
-      '@moonwall/types': 5.10.0(@vitest/ui@2.1.5(vitest@2.1.5))(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.5.3)(rxjs@7.8.2)(tsx@4.19.4)(typescript@5.5.4)(yaml@2.7.0)(zod@3.24.4)
-      '@moonwall/util': 5.10.0(@types/node@22.15.17)(@vitest/ui@2.1.5(vitest@2.1.5))(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.5.3)(rxjs@7.8.2)(tsx@4.19.4)(typescript@5.5.4)(yaml@2.7.0)(zod@3.24.4)
+      '@moonwall/types': 5.10.0(@vitest/ui@2.1.5)(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.5.3)(rxjs@7.8.2)(tsx@4.19.4)(typescript@5.5.4)(yaml@2.7.0)(zod@3.24.4)
+      '@moonwall/util': 5.10.0(@types/node@22.15.17)(@vitest/ui@2.1.5)(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.5.3)(rxjs@7.8.2)(tsx@4.19.4)(typescript@5.5.4)(yaml@2.7.0)(zod@3.24.4)
       '@octokit/rest': 21.1.0
       '@polkadot/api': 15.10.1
       '@polkadot/api-derive': 15.10.1
@@ -6636,7 +6636,7 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@moonwall/types@5.10.0(@vitest/ui@2.1.5(vitest@2.1.5))(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.5.3)(rxjs@7.8.2)(tsx@4.19.4)(typescript@5.5.4)(yaml@2.7.0)(zod@3.24.4)':
+  '@moonwall/types@5.10.0(@vitest/ui@2.1.5)(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.5.3)(rxjs@7.8.2)(tsx@4.19.4)(typescript@5.5.4)(yaml@2.7.0)(zod@3.24.4)':
     dependencies:
       '@polkadot/api': 15.10.1
       '@polkadot/api-base': 15.10.1
@@ -6651,7 +6651,7 @@ snapshots:
       ethers: 6.14.0
       polkadot-api: 1.9.9(postcss@8.5.3)(rxjs@7.8.2)(tsx@4.19.4)(yaml@2.7.0)
       viem: 2.22.21(typescript@5.5.4)(zod@3.24.4)
-      vitest: 2.1.5(@types/node@22.12.0)(@vitest/ui@2.1.5(vitest@2.1.5))(jsdom@23.2.0)
+      vitest: 2.1.5(@types/node@22.12.0)(@vitest/ui@2.1.5)(jsdom@23.2.0)
       web3: 4.15.0(encoding@0.1.13)(typescript@5.5.4)(zod@3.24.4)
     transitivePeerDependencies:
       - '@edge-runtime/vm'
@@ -6683,7 +6683,7 @@ snapshots:
       - yaml
       - zod
 
-  '@moonwall/types@5.10.0(@vitest/ui@2.1.5(vitest@2.1.5))(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.5.3)(rxjs@7.8.2)(tsx@4.19.4)(typescript@5.5.4)(yaml@2.7.1)(zod@3.24.4)':
+  '@moonwall/types@5.10.0(@vitest/ui@2.1.5)(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.5.3)(rxjs@7.8.2)(tsx@4.19.4)(typescript@5.5.4)(yaml@2.7.1)(zod@3.24.4)':
     dependencies:
       '@polkadot/api': 15.10.1
       '@polkadot/api-base': 15.10.1
@@ -6698,7 +6698,7 @@ snapshots:
       ethers: 6.14.0
       polkadot-api: 1.9.9(postcss@8.5.3)(rxjs@7.8.2)(tsx@4.19.4)(yaml@2.7.1)
       viem: 2.22.21(typescript@5.5.4)(zod@3.24.4)
-      vitest: 2.1.5(@types/node@22.12.0)(@vitest/ui@2.1.5(vitest@2.1.5))(jsdom@23.2.0)
+      vitest: 2.1.5(@types/node@22.12.0)(@vitest/ui@2.1.5)(jsdom@23.2.0)
       web3: 4.15.0(encoding@0.1.13)(typescript@5.5.4)(zod@3.24.4)
     transitivePeerDependencies:
       - '@edge-runtime/vm'
@@ -6730,11 +6730,11 @@ snapshots:
       - yaml
       - zod
 
-  '@moonwall/util@5.10.0(@types/node@22.15.17)(@vitest/ui@2.1.5(vitest@2.1.5))(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.5.3)(rxjs@7.8.2)(tsx@4.19.4)(typescript@5.5.4)(yaml@2.7.0)(zod@3.24.4)':
+  '@moonwall/util@5.10.0(@types/node@22.15.17)(@vitest/ui@2.1.5)(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.5.3)(rxjs@7.8.2)(tsx@4.19.4)(typescript@5.5.4)(yaml@2.7.0)(zod@3.24.4)':
     dependencies:
       '@inquirer/prompts': 7.3.1(@types/node@22.15.17)
       '@moonbeam-network/api-augment': 0.3401.2(postcss@8.5.3)(yaml@2.7.0)
-      '@moonwall/types': 5.10.0(@vitest/ui@2.1.5(vitest@2.1.5))(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.5.3)(rxjs@7.8.2)(tsx@4.19.4)(typescript@5.5.4)(yaml@2.7.0)(zod@3.24.4)
+      '@moonwall/types': 5.10.0(@vitest/ui@2.1.5)(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.5.3)(rxjs@7.8.2)(tsx@4.19.4)(typescript@5.5.4)(yaml@2.7.0)(zod@3.24.4)
       '@polkadot/api': 15.10.1
       '@polkadot/api-derive': 15.10.1
       '@polkadot/keyring': 13.3.1(@polkadot/util-crypto@13.3.1(@polkadot/util@13.3.1))(@polkadot/util@13.3.1)
@@ -6788,11 +6788,11 @@ snapshots:
       - yaml
       - zod
 
-  '@moonwall/util@5.10.0(@types/node@22.15.17)(@vitest/ui@2.1.5(vitest@2.1.5))(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.5.3)(rxjs@7.8.2)(tsx@4.19.4)(typescript@5.5.4)(yaml@2.7.1)(zod@3.24.4)':
+  '@moonwall/util@5.10.0(@types/node@22.15.17)(@vitest/ui@2.1.5)(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.5.3)(rxjs@7.8.2)(tsx@4.19.4)(typescript@5.5.4)(yaml@2.7.1)(zod@3.24.4)':
     dependencies:
       '@inquirer/prompts': 7.3.1(@types/node@22.15.17)
       '@moonbeam-network/api-augment': 0.3401.2(postcss@8.5.3)(yaml@2.7.1)
-      '@moonwall/types': 5.10.0(@vitest/ui@2.1.5(vitest@2.1.5))(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.5.3)(rxjs@7.8.2)(tsx@4.19.4)(typescript@5.5.4)(yaml@2.7.1)(zod@3.24.4)
+      '@moonwall/types': 5.10.0(@vitest/ui@2.1.5)(chokidar@3.6.0)(encoding@0.1.13)(jsdom@23.2.0)(postcss@8.5.3)(rxjs@7.8.2)(tsx@4.19.4)(typescript@5.5.4)(yaml@2.7.1)(zod@3.24.4)
       '@polkadot/api': 15.10.1
       '@polkadot/api-derive': 15.10.1
       '@polkadot/keyring': 13.3.1(@polkadot/util-crypto@13.3.1(@polkadot/util@13.3.1))(@polkadot/util@13.3.1)
@@ -6969,7 +6969,7 @@ snapshots:
     dependencies:
       graceful-fs: 4.2.10
 
-  '@pnpm/npm-conf@2.3.1':
+  '@pnpm/npm-conf@3.0.0':
     dependencies:
       '@pnpm/config.env-replace': 1.1.0
       '@pnpm/network.ca-file': 1.0.2
@@ -11130,7 +11130,7 @@ snapshots:
       '@types/node': 22.15.17
       fsevents: 2.3.3
 
-  vitest@2.1.5(@types/node@22.12.0)(@vitest/ui@2.1.5(vitest@2.1.5))(jsdom@23.2.0):
+  vitest@2.1.5(@types/node@22.12.0)(@vitest/ui@2.1.5)(jsdom@23.2.0):
     dependencies:
       '@vitest/expect': 2.1.5
       '@vitest/mocker': 2.1.5(vite@5.4.19(@types/node@22.12.0))
