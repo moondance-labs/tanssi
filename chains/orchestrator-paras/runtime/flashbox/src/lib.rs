@@ -451,19 +451,11 @@ where
         mut fees_then_tips: impl Iterator<Item = Credit<R::AccountId, pallet_balances::Pallet<R>>>,
     ) {
         if let Some(fees) = fees_then_tips.next() {
-            // 80% is burned, 20% goes to the treasury
-            // Same policy applies for tips as well
-            let burn_percentage = 80;
-            let treasury_percentage = 20;
-
-            let (_, to_treasury) = fees.ration(burn_percentage, treasury_percentage);
-            ResolveTo::<pallet_treasury::TreasuryAccountId<R>, pallet_balances::Pallet<R>>::on_unbalanced(to_treasury);
-            // Balances pallet automatically burns dropped Negative Imbalances by decreasing total_supply accordingly
-            // We need to convert the new Credit type to a negative imbalance
-            // handle tip if there is one
+            // 100% of fees & tips goes to the treasury.
+            ResolveTo::<pallet_treasury::TreasuryAccountId<R>, pallet_balances::Pallet<R>>::on_unbalanced(fees);
+            
             if let Some(tip) = fees_then_tips.next() {
-                let (_, to_treasury) = tip.ration(burn_percentage, treasury_percentage);
-                ResolveTo::<pallet_treasury::TreasuryAccountId<R>, pallet_balances::Pallet<R>>::on_unbalanced(to_treasury);
+                ResolveTo::<pallet_treasury::TreasuryAccountId<R>, pallet_balances::Pallet<R>>::on_unbalanced(tip);
             }
         }
     }
@@ -471,12 +463,8 @@ where
     // this is called from pallet_evm for Ethereum-based transactions
     // (technically, it calls on_unbalanced, which calls this when non-zero)
     fn on_nonzero_unbalanced(amount: Credit<R::AccountId, pallet_balances::Pallet<R>>) {
-        // 80% is burned, 20% goes to the treasury
-        let burn_percentage = 80;
-        let treasury_percentage = 20;
-
-        let (_, to_treasury) = amount.ration(burn_percentage, treasury_percentage);
-        ResolveTo::<pallet_treasury::TreasuryAccountId<R>, pallet_balances::Pallet<R>>::on_unbalanced(to_treasury);
+        // 100% goes to the treasury
+        ResolveTo::<pallet_treasury::TreasuryAccountId<R>, pallet_balances::Pallet<R>>::on_unbalanced(amount);
     }
 }
 
