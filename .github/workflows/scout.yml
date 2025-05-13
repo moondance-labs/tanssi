@@ -73,6 +73,9 @@ jobs:
       - name: Check for failures
         shell: bash
         run: |
+          echo "Checking for failures in the report..."
+          ls -la "${{ steps.run-scout.outputs.report_dir }}"
+          
           if [ -f "${{ steps.run-scout.outputs.report_dir }}/FAIL" ]; then
             echo "[ERROR] Scout analysis failed! Please check the report for details."
             exit 1
