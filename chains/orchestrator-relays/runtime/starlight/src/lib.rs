@@ -99,6 +99,10 @@ use {
         prod_or_fast_parameter_types, EraIndex, GetHostConfiguration, GetSessionContainerChains,
         ParaIdAssignmentHooks, RegistrarHandler, Slot, SlotFrequency,
     },
+    xcm_runtime_apis::{
+        dry_run::{CallDryRunEffects, Error as XcmDryRunApiError, XcmDryRunEffects},
+        fees::Error as XcmPaymentApiError,
+    },
 };
 
 #[cfg(any(feature = "std", test))]
@@ -168,7 +172,6 @@ use {
         pallet_custom_origins, AuctionAdmin, Fellows, GeneralAdmin, Treasurer, TreasurySpender,
     },
     pallet_collator_assignment::CoreAllocationConfiguration,
-    xcm_runtime_apis::fees::Error as XcmPaymentApiError,
 };
 
 #[cfg(test)]
@@ -188,7 +191,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: Cow::Borrowed("starlight"),
     impl_name: Cow::Borrowed("tanssi-starlight-v2.0"),
     authoring_version: 0,
-    spec_version: 1300,
+    spec_version: 1400,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 26,
@@ -287,14 +290,6 @@ impl Convert<AggregateMessageOrigin, ParaId> for GetParaFromAggregateMessageOrig
     }
 }
 
-/// Disable any extrinsic related to the balance transfer
-pub struct IsBalanceTransferExtrinsics;
-impl Contains<RuntimeCall> for IsBalanceTransferExtrinsics {
-    fn contains(c: &RuntimeCall) -> bool {
-        matches!(c, RuntimeCall::Balances(_))
-    }
-}
-
 pub struct IsContainerChainManagementExtrinsics;
 impl Contains<RuntimeCall> for IsContainerChainManagementExtrinsics {
     fn contains(c: &RuntimeCall) -> bool {
@@ -323,13 +318,6 @@ impl Contains<RuntimeCall> for IsDemocracyExtrinsics {
     }
 }
 
-pub struct IsMiscellaneousExtrinsics;
-impl Contains<RuntimeCall> for IsMiscellaneousExtrinsics {
-    fn contains(c: &RuntimeCall) -> bool {
-        matches!(c, RuntimeCall::Proxy(_) | RuntimeCall::Identity(_))
-    }
-}
-
 pub struct IsXcmExtrinsics;
 impl Contains<RuntimeCall> for IsXcmExtrinsics {
     fn contains(c: &RuntimeCall) -> bool {
@@ -355,20 +343,6 @@ impl Contains<RuntimeCall> for IsContainerChainRegistrationExtrinsics {
     }
 }
 
-pub struct IsBridgesExtrinsics;
-impl Contains<RuntimeCall> for IsBridgesExtrinsics {
-    fn contains(c: &RuntimeCall) -> bool {
-        matches!(
-            c,
-            RuntimeCall::EthereumOutboundQueue(_)
-                | RuntimeCall::EthereumInboundQueue(_)
-                | RuntimeCall::EthereumSystem(_)
-                | RuntimeCall::EthereumBeaconClient(_)
-                | RuntimeCall::EthereumTokenTransfers(_)
-        )
-    }
-}
-
 pub struct IsStakingExtrinsics;
 impl Contains<RuntimeCall> for IsStakingExtrinsics {
     fn contains(c: &RuntimeCall) -> bool {
@@ -384,13 +358,10 @@ parameter_types! {
 #[derive_impl(frame_system::config_preludes::RelayChainDefaultConfig)]
 impl frame_system::Config for Runtime {
     type BaseCallFilter = EverythingBut<(
-        IsBalanceTransferExtrinsics,
         IsContainerChainManagementExtrinsics,
         IsDemocracyExtrinsics,
-        IsMiscellaneousExtrinsics,
         IsXcmExtrinsics,
         IsContainerChainRegistrationExtrinsics,
-        IsBridgesExtrinsics,
         IsStakingExtrinsics,
     )>;
     type BlockWeights = BlockWeights;
@@ -1765,8 +1736,9 @@ parameter_types! {
     pub StarlightBondAccount: AccountId32 = PalletId(*b"StarBond").into_account_truncating();
     pub PendingRewardsAccount: AccountId32 = PalletId(*b"PENDREWD").into_account_truncating();
 
-    // 30% for starlight bond, so 70% for staking
-    pub const RewardsPortion: Perbill = Perbill::from_percent(70);
+    // Parachain bond: 1.5% out of 100%, so staking gets 2% out of 100%,
+    // so staking gets 2/3.5 fracion of rewards, so 4/7
+    pub RewardsPortion: Perbill = Perbill::from_rational::<u32>(4, 7);
 }
 
 // We want a global annual inflation rate of 10%.
@@ -1777,8 +1749,8 @@ parameter_types! {
 // runtime match the formulas. We write the results as constants here to ensure we don't perform
 // computations at runtime.
 prod_or_fast_parameter_types! {
-    pub const CollatorsInflationRatePerBlock: Perbill = { prod: Perbill::from_parts(9), fast: Perbill::from_parts(9) };
-    pub const ValidatorsInflationRatePerEra: Perbill = { prod: Perbill::from_parts(130570), fast: Perbill::from_parts(272) };
+    pub const CollatorsInflationRatePerBlock: Perbill = { prod: Perbill::from_parts(6), fast: Perbill::from_parts(6) };
+    pub const ValidatorsInflationRatePerEra: Perbill = { prod: Perbill::from_parts(105679), fast: Perbill::from_parts(220) };
 }
 
 pub struct OnUnbalancedInflation;
@@ -2413,6 +2385,16 @@ sp_api::impl_runtime_apis! {
         }
     }
 
+    impl xcm_runtime_apis::dry_run::DryRunApi<Block, RuntimeCall, RuntimeEvent, OriginCaller> for Runtime {
+        fn dry_run_call(origin: OriginCaller, call: RuntimeCall) -> Result<CallDryRunEffects<RuntimeEvent>, XcmDryRunApiError> {
+            XcmPallet::dry_run_call::<Runtime, xcm_config::XcmRouter, OriginCaller, RuntimeCall>(origin, call)
+        }
+
+        fn dry_run_xcm(origin_location: VersionedLocation, xcm: VersionedXcm<RuntimeCall>) -> Result<XcmDryRunEffects<RuntimeEvent>, XcmDryRunApiError> {
+            XcmPallet::dry_run_xcm::<Runtime, xcm_config::XcmRouter, RuntimeCall, xcm_config::XcmConfig>(origin_location, xcm)
+        }
+    }
+
     impl xcm_runtime_apis::fees::XcmPaymentApi<Block> for Runtime {
         fn query_acceptable_payment_assets(xcm_version: xcm::Version) -> Result<Vec<VersionedAssetId>, XcmPaymentApiError> {
             if !matches!(xcm_version, 3..=5) {
@@ -2910,6 +2892,23 @@ sp_api::impl_runtime_apis! {
         }
         fn query_fee_details(uxt: <Block as BlockT>::Extrinsic, len: u32) -> FeeDetails<Balance> {
             TransactionPayment::query_fee_details(uxt, len)
+        }
+        fn query_weight_to_fee(weight: Weight) -> Balance {
+            TransactionPayment::weight_to_fee(weight)
+        }
+        fn query_length_to_fee(length: u32) -> Balance {
+            TransactionPayment::length_to_fee(length)
+        }
+    }
+
+    impl pallet_transaction_payment_rpc_runtime_api::TransactionPaymentCallApi<Block, Balance, RuntimeCall>
+        for Runtime
+    {
+        fn query_call_info(call: RuntimeCall, len: u32) -> RuntimeDispatchInfo<Balance> {
+            TransactionPayment::query_call_info(call, len)
+        }
+        fn query_call_fee_details(call: RuntimeCall, len: u32) -> FeeDetails<Balance> {
+            TransactionPayment::query_call_fee_details(call, len)
         }
         fn query_weight_to_fee(weight: Weight) -> Balance {
             TransactionPayment::weight_to_fee(weight)
