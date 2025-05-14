@@ -224,6 +224,7 @@ fn testnet_genesis(
         dancebox_runtime::StakingAccount::get(),
         dancebox_runtime::ParachainBondAccount::get(),
         dancebox_runtime::PendingRewardsAccount::get(),
+        dancebox_runtime::TreasuryAccountId::get(),
     ];
     let g = dancebox_runtime::RuntimeGenesisConfig {
         system: Default::default(),

@@ -226,6 +226,7 @@ fn testnet_genesis(
         flashbox_runtime::StakingAccount::get(),
         flashbox_runtime::ParachainBondAccount::get(),
         flashbox_runtime::PendingRewardsAccount::get(),
+        flashbox_runtime::TreasuryAccountId::get(),
     ];
     let g = flashbox_runtime::RuntimeGenesisConfig {
         system: Default::default(),
