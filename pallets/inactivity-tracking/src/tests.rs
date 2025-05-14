@@ -660,10 +660,7 @@ fn inactivity_tracking_is_disabled_if_current_active_collators_storage_overflows
             CurrentActivityTrackingStatus::<Test>::get(),
             ActivityTrackingStatus::Disabled { end: 2 }
         );
-        assert_eq!(
-            InactiveCollators::<Test>::get(0).len(),
-            0
-        );
+        assert_eq!(InactiveCollators::<Test>::get(0).len(), 0);
     });
 }
 
