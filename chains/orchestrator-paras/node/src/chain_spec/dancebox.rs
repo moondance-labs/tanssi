@@ -29,7 +29,7 @@ use {
     nimbus_primitives::NimbusId,
     pallet_configuration::HostConfiguration,
     sc_service::ChainType,
-    sp_runtime::Perbill,
+    sp_runtime::{traits::AccountIdConversion, Perbill},
 };
 /// Specialized `ChainSpec` for the normal parachain runtime.
 pub type ChainSpec = sc_service::GenericChainSpec<Extensions>;
@@ -224,6 +224,7 @@ fn testnet_genesis(
         dancebox_runtime::StakingAccount::get(),
         dancebox_runtime::ParachainBondAccount::get(),
         dancebox_runtime::PendingRewardsAccount::get(),
+        dancebox_runtime::TreasuryId::get().into_account_truncating(),
     ];
     let g = dancebox_runtime::RuntimeGenesisConfig {
         system: Default::default(),
