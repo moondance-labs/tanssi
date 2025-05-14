@@ -39,6 +39,7 @@ use {
         sr25519, ByteArray, Pair, Public,
     },
     sp_keystore::{Keystore, KeystorePtr},
+    sp_runtime::traits::AccountIdConversion,
     sp_std::{cmp::max, vec::Vec},
     tp_traits::ParaId,
 };
@@ -323,7 +324,7 @@ fn dancelight_testnet_genesis(
         crate::PendingRewardsAccount::get(),
         crate::EthereumSovereignAccount::get(),
         crate::SnowbridgeFeesAccount::get(),
-        crate::TreasuryAccountId::get(),
+        crate::TreasuryPalletId::get().into_account_truncating(),
     ];
 
     serde_json::json!({

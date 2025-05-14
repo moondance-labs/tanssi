@@ -29,7 +29,7 @@ use {
     nimbus_primitives::NimbusId,
     pallet_configuration::HostConfiguration,
     sc_service::ChainType,
-    sp_runtime::Perbill,
+    sp_runtime::{Perbill, traits::AccountIdConversion},
 };
 
 /// Specialized `ChainSpec` for the normal parachain runtime.
@@ -226,7 +226,7 @@ fn testnet_genesis(
         flashbox_runtime::StakingAccount::get(),
         flashbox_runtime::ParachainBondAccount::get(),
         flashbox_runtime::PendingRewardsAccount::get(),
-        flashbox_runtime::TreasuryAccountId::get(),
+        flashbox_runtime::TreasuryId::get().into_account_truncating(),
     ];
     let g = flashbox_runtime::RuntimeGenesisConfig {
         system: Default::default(),
