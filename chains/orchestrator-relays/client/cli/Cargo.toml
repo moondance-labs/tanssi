@@ -3,7 +3,7 @@ name = "tanssi-relay-cli"
 description = "Tanssi Relay-chain Client Node"
 edition = "2021"
 license = "GPL-3.0-only"
-version = "0.13.0"
+version = "0.14.0"
 
 [package.metadata.wasm-pack.profile.release]
 # `wasm-opt` has some problems on Linux, see
@@ -78,6 +78,8 @@ try-runtime = [
 # Configure the native runtimes to use.
 dancelight-native = [ "tanssi-relay-service/dancelight-native" ]
 starlight-native = [ "tanssi-relay-service/starlight-native" ]
+
+metadata-hash = [ "tanssi-relay-service/metadata-hash" ]
 
 malus = [ "full-node", "polkadot-service/malus" ]
 runtime-metrics = [
