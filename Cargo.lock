@@ -19551,6 +19551,7 @@ dependencies = [
  "flume 0.10.14",
  "frame-benchmarking",
  "frame-benchmarking-cli",
+ "frame-metadata-hash-extension",
  "frame-support",
  "frame-system",
  "frame-system-rpc-runtime-api",
