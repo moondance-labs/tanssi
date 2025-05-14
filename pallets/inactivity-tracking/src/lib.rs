@@ -288,6 +288,7 @@ pub mod pallet {
         /// as inactive. Triggered at the end of a session.
         pub fn on_before_session_ending() {
             let current_session_index = T::CurrentSessionIndex::session_index();
+            Self::process_inactive_chains_for_session();
             match <CurrentActivityTrackingStatus<T>>::get() {
                 ActivityTrackingStatus::Disabled { .. } => return,
                 ActivityTrackingStatus::Enabled { start, end: _ } => {
@@ -296,7 +297,6 @@ pub mod pallet {
                     }
                 }
             }
-            Self::process_inactive_chains_for_session();
             if let Ok(inactive_collators) =
                 BoundedBTreeSet::<T::CollatorId, T::MaxCollatorsPerSession>::try_from(
                     T::CurrentCollatorsFetcher::get_all_collators_assigned_to_chains(

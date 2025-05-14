@@ -33,12 +33,25 @@ fn get_active_collators(block: u32) -> AuthorNotingInfo<AccountId> {
     }
 }
 
+fn get_max_active_collators_vec(block: u32) -> Vec<AuthorNotingInfo<AccountId>> {
+    let total_collators: u32 = <Test as Config>::MaxCollatorsPerSession::get();
+    let mut active_collators: Vec<AuthorNotingInfo<AccountId>> = Vec::new();
+    for i in 0u32..total_collators {
+        active_collators.push(AuthorNotingInfo {
+            block_number: block + i,
+            author: (i + 3).into(),
+            para_id: 3002.into(),
+        });
+    }
+    active_collators
+}
+
 fn get_overflowing_active_collators_vec(block: u32) -> Vec<AuthorNotingInfo<AccountId>> {
     let total_collators = <Test as Config>::MaxCollatorsPerSession::get();
     let mut overflowing_active_collators: Vec<AuthorNotingInfo<AccountId>> = Vec::new();
     for i in 0u32..=total_collators {
         overflowing_active_collators.push(AuthorNotingInfo {
-            block_number: block,
+            block_number: block + i,
             author: (i + 1).into(),
             para_id: 2000.into(),
         });
@@ -603,7 +616,7 @@ fn inactivity_tracking_is_disabled_if_current_active_collators_storage_overflows
 }
 
 #[test]
-fn inactivity_tracking_is_disabled_if_current_active_chains_storage_overflows() {
+fn inactivity_tracking_is_disabled_if_ctive_chains_storage_overflows() {
     ExtBuilder.build().execute_with(|| {
         assert_eq!(
             CurrentActivityTrackingStatus::<Test>::get(),
@@ -616,6 +629,40 @@ fn inactivity_tracking_is_disabled_if_current_active_chains_storage_overflows() 
         assert_eq!(
             CurrentActivityTrackingStatus::<Test>::get(),
             ActivityTrackingStatus::Disabled { end: 2 }
+        );
+    });
+}
+
+#[test]
+fn inactivity_tracking_is_disabled_if_current_active_collators_storage_overflows_while_processing_inactive_chains_in_the_end_of_a_session(
+) {
+    ExtBuilder.build().execute_with(|| {
+        assert_eq!(
+            CurrentActivityTrackingStatus::<Test>::get(),
+            ActivityTrackingStatus::Enabled { start: 0, end: 0 }
+        );
+        roll_to(1);
+        // We note the max active collators for the session which are not COLLATOR_1 and COLLATOR_2
+        // for chains that are not CONTAINER_CHAIN_ID_1 and CONTAINER_CHAIN_ID_2
+        <Pallet<Test> as AuthorNotingHook<AccountId>>::on_container_authors_noted(
+            &get_max_active_collators_vec(1),
+        );
+        // Since the active collators storage is not overflowing,
+        // we will not disable the activity tracking
+        assert_eq!(
+            CurrentActivityTrackingStatus::<Test>::get(),
+            ActivityTrackingStatus::Enabled { start: 0, end: 0 }
+        );
+        // Since chain with id CONTAINER_CHAIN_ID_1 is inactive COLLATOR_1 and COLLATOR_2
+        // will be added to the active collators storage for current session and it will overflow
+        roll_to(SESSION_BLOCK_LENGTH + 1);
+        assert_eq!(
+            CurrentActivityTrackingStatus::<Test>::get(),
+            ActivityTrackingStatus::Disabled { end: 2 }
+        );
+        assert_eq!(
+            InactiveCollators::<Test>::get(0).len(),
+            0
         );
     });
 }
