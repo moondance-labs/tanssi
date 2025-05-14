@@ -329,13 +329,14 @@ pub mod pallet {
             let active_chains = <ActiveContainerChainsForCurrentSession<T>>::get();
             let _ = <ActiveCollatorsForCurrentSession<T>>::try_mutate(
                 |active_collators| -> DispatchResult {
-                    T::CurrentCollatorsFetcher::container_chains_with_collators(
-                        ForSession::Current,
-                    )
-                    .iter()
-                    .for_each(|(para_id, collator_ids)| {
+                    let container_chains_with_collators =
+                        T::CurrentCollatorsFetcher::container_chains_with_collators(
+                            ForSession::Current,
+                        );
+                    for (para_id, collator_ids) in container_chains_with_collators.iter() {
                         if !active_chains.contains(para_id) {
-                            // Inactive collator assigned to inactive chain becomes active
+                            // Collators assigned to inactive chain are added
+                            // to the current active collators storage
                             for collator_id in collator_ids {
                                 if !active_collators.contains(&collator_id) {
                                     if let Err(_) = active_collators.try_insert(collator_id.clone())
@@ -346,12 +347,14 @@ pub mod pallet {
                                             T::CurrentSessionIndex::session_index(),
                                             false,
                                         );
-                                        return;
+                                        return Err(
+                                            Error::<T>::MaxCollatorsPerSessionReached.into()
+                                        );
                                     }
                                 }
                             }
                         }
-                    });
+                    }
                     Ok(())
                 },
             );
