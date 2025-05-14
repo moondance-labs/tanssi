@@ -44,6 +44,7 @@
         "@lodestar/prover": "1.27.1",
         "@lodestar/types": "1.27.1",
         "@lodestar/utils": "1.27.1",
+        "@polkadot-api/merkleize-metadata": "^1.1.15",
         "@polkadot/api": "*",
         "@polkadot/keyring": "*",
         "@polkadot/types": "*",
