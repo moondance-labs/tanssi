@@ -29,7 +29,7 @@ use {
     nimbus_primitives::NimbusId,
     pallet_configuration::HostConfiguration,
     sc_service::ChainType,
-    sp_runtime::{Perbill, traits::AccountIdConversion},
+    sp_runtime::{traits::AccountIdConversion, Perbill},
 };
 
 /// Specialized `ChainSpec` for the normal parachain runtime.
