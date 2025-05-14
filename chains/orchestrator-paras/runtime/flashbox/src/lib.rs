@@ -55,9 +55,9 @@ use {
         parameter_types,
         traits::{
             fungible::{Balanced, Credit, Inspect},
-            tokens::{imbalance::ResolveTo, PayFromAccount, UnityAssetBalanceConversion},
+            tokens::{PayFromAccount, UnityAssetBalanceConversion},
             ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Contains, EitherOfDiverse,
-            EverythingBut, Imbalance, InsideBoth, InstanceFilter, OnUnbalanced,
+            EverythingBut, InsideBoth, InstanceFilter, OnUnbalanced,
         },
         weights::{
             constants::{
@@ -74,7 +74,6 @@ use {
         EnsureNever, EnsureRoot,
     },
     nimbus_primitives::{NimbusId, SlotBeacon},
-    pallet_balances::NegativeImbalance,
     pallet_invulnerables::InvulnerableRewardDistribution,
     pallet_registrar::RegistrarHooks,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
@@ -440,54 +439,14 @@ impl pallet_balances::Config for Runtime {
     type WeightInfo = weights::pallet_balances::SubstrateWeight<Runtime>;
 }
 
-pub struct DealWithFees<R>(sp_std::marker::PhantomData<R>);
-impl<R> OnUnbalanced<Credit<R::AccountId, pallet_balances::Pallet<R>>> for DealWithFees<R>
-where
-    R: pallet_balances::Config + pallet_treasury::Config + frame_system::Config,
-    pallet_treasury::NegativeImbalanceOf<R>: From<NegativeImbalance<R>>,
-{
-    // this seems to be called for substrate-based transactions
-    fn on_unbalanceds(
-        mut fees_then_tips: impl Iterator<Item = Credit<R::AccountId, pallet_balances::Pallet<R>>>,
-    ) {
-        if let Some(fees) = fees_then_tips.next() {
-            // 80% is burned, 20% goes to the treasury
-            // Same policy applies for tips as well
-            let burn_percentage = 80;
-            let treasury_percentage = 20;
-
-            let (_, to_treasury) = fees.ration(burn_percentage, treasury_percentage);
-            ResolveTo::<pallet_treasury::TreasuryAccountId<R>, pallet_balances::Pallet<R>>::on_unbalanced(to_treasury);
-            // Balances pallet automatically burns dropped Negative Imbalances by decreasing total_supply accordingly
-            // We need to convert the new Credit type to a negative imbalance
-            // handle tip if there is one
-            if let Some(tip) = fees_then_tips.next() {
-                let (_, to_treasury) = tip.ration(burn_percentage, treasury_percentage);
-                ResolveTo::<pallet_treasury::TreasuryAccountId<R>, pallet_balances::Pallet<R>>::on_unbalanced(to_treasury);
-            }
-        }
-    }
-
-    // this is called from pallet_evm for Ethereum-based transactions
-    // (technically, it calls on_unbalanced, which calls this when non-zero)
-    fn on_nonzero_unbalanced(amount: Credit<R::AccountId, pallet_balances::Pallet<R>>) {
-        // 80% is burned, 20% goes to the treasury
-        let burn_percentage = 80;
-        let treasury_percentage = 20;
-
-        let (_, to_treasury) = amount.ration(burn_percentage, treasury_percentage);
-        ResolveTo::<pallet_treasury::TreasuryAccountId<R>, pallet_balances::Pallet<R>>::on_unbalanced(to_treasury);
-    }
-}
-
 parameter_types! {
     pub const TransactionByteFee: Balance = 1;
 }
 
 impl pallet_transaction_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    // This will burn the fees
-    type OnChargeTransaction = FungibleAdapter<Balances, DealWithFees<Runtime>>;
+    type OnChargeTransaction =
+        FungibleAdapter<Balances, tanssi_runtime_common::DealWithFees<Runtime>>;
     type OperationalFeeMultiplier = ConstU8<5>;
     type WeightToFee = WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
