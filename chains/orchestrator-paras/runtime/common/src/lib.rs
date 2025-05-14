@@ -39,12 +39,11 @@ where
                 ResolveTo::<pallet_treasury::TreasuryAccountId<R>, pallet_balances::Pallet<R>>::on_unbalanced(tip);
             }
         }
+
+        assert_eq!(fees_then_tips.next(), None);
     }
 
-    // this is called from pallet_evm for Ethereum-based transactions
-    // (technically, it calls on_unbalanced, which calls this when non-zero)
-    fn on_nonzero_unbalanced(amount: Credit<R::AccountId, pallet_balances::Pallet<R>>) {
-        // 100% goes to the treasury
-        ResolveTo::<pallet_treasury::TreasuryAccountId<R>, pallet_balances::Pallet<R>>::on_unbalanced(amount);
+    fn on_nonzero_unbalanced(_amount: Credit<R::AccountId, pallet_balances::Pallet<R>>) {
+        panic!("called on_nonzero_unbalanced")
     }
 }
