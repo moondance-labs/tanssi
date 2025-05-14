@@ -335,13 +335,21 @@ pub mod pallet {
                     .iter()
                     .for_each(|(para_id, collator_ids)| {
                         if !active_chains.contains(para_id) {
-                            collator_ids.iter().for_each(|collator_id| {
-                                if !active_collators.contains(collator_id) {
-                                    let _ = active_collators
-                                        .try_insert(collator_id.clone())
-                                        .map_err(|_| Error::<T>::MaxCollatorsPerSessionReached);
+                            // Inactive collator assigned to inactive chain becomes active
+                            for collator_id in collator_ids {
+                                if !active_collators.contains(&collator_id) {
+                                    if let Err(_) = active_collators.try_insert(collator_id.clone())
+                                    {
+                                        // If we reach MaxCollatorsPerSession limit there must be a bug in the pallet
+                                        // so we disable the activity tracking
+                                        Self::set_inactivity_tracking_status_inner(
+                                            T::CurrentSessionIndex::session_index(),
+                                            false,
+                                        );
+                                        return;
+                                    }
                                 }
-                            });
+                            }
                         }
                     });
                     Ok(())
