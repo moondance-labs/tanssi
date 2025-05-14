@@ -628,7 +628,7 @@ mod benchmarks {
         PooledStaking::<T>::request_delegate(
             RawOrigin::Signed(caller.clone()).into(),
             caller.clone(),
-            TargetPool::AutoCompounding,
+            ActivePoolKind::AutoCompounding,
             source_stake,
         )?;
 
@@ -656,7 +656,7 @@ mod benchmarks {
         PooledStaking::<T>::request_delegate(
             RawOrigin::Signed(caller.clone()).into(),
             caller.clone(),
-            TargetPool::AutoCompounding,
+            ActivePoolKind::AutoCompounding,
             source_stake,
         )?;
 
