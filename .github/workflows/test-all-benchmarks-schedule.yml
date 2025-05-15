@@ -11,7 +11,15 @@ on:
 
 jobs:
   test-all-benchmarks:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
+    env:
+      TMP_TARGET: "/tmp/target"
+      CARGO_TARGET_DIR: "target"
+      RUSTC_WRAPPER: "sccache"
+      CARGO_INCREMENTAL: "0"
+      SCCACHE_CACHE_SIZE: "100GB"
+      SCCACHE_GHA_ENABLED: "true"
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
