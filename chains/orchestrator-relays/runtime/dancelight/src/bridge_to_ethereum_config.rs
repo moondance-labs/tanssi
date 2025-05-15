@@ -242,7 +242,7 @@ where
     }
 }
 
-/// `EthTokensLocalProcessor` is responsible for receiving and processing the ETH native 
+/// `EthTokensLocalProcessor` is responsible for receiving and processing the ETH native
 /// token and ERC20s coming from Ethereum with Tanssi chain as final destination.
 pub struct EthTokensLocalProcessor<T, XcmProcessor, XcmWeigher, EthereumLocation, EthereumNetwork>(
     PhantomData<T>,

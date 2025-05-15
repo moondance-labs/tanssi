@@ -13,8 +13,8 @@ workspace = true
 [dependencies]
 frame-support = { workspace = true }
 log = { workspace = true }
-xcm = { workspace = true }
 sp-std = { workspace = true }
+xcm = { workspace = true }
 
 [features]
 default = [
