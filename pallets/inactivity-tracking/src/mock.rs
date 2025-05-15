@@ -34,8 +34,10 @@ pub type AccountId = u64;
 
 pub const COLLATOR_1: AccountId = 1;
 pub const COLLATOR_2: AccountId = 2;
+pub const COLLATOR_3: AccountId = 3;
 pub const CONTAINER_CHAIN_ID_1: ParaId = ParaId::new(3000);
 pub const CONTAINER_CHAIN_ID_2: ParaId = ParaId::new(3001);
+pub const CONTAINER_CHAIN_ID_3: ParaId = ParaId::new(3002);
 pub const SESSION_BLOCK_LENGTH: u64 = 5;
 
 // Configure a mock runtime to test the pallet.
@@ -166,6 +168,7 @@ impl tp_traits::GetContainerChainsWithCollators<AccountId> for MockContainerChai
         vec![
             (CONTAINER_CHAIN_ID_1, vec![COLLATOR_1, COLLATOR_2]),
             (CONTAINER_CHAIN_ID_2, vec![]),
+            (CONTAINER_CHAIN_ID_3, vec![COLLATOR_3]),
         ]
     }
 
@@ -173,6 +176,7 @@ impl tp_traits::GetContainerChainsWithCollators<AccountId> for MockContainerChai
         let mut collators = BTreeSet::new();
         collators.insert(COLLATOR_1);
         collators.insert(COLLATOR_2);
+        collators.insert(COLLATOR_3);
         collators
     }
 
@@ -181,6 +185,13 @@ impl tp_traits::GetContainerChainsWithCollators<AccountId> for MockContainerChai
         for_session: ForSession,
         container_chains: &[(ParaId, Vec<AccountId>)],
     ) {
+    }
+}
+
+pub struct MockParathreadHelper;
+impl tp_traits::ParathreadHelper for MockParathreadHelper {
+    fn is_parathread(para_id: &ParaId) -> bool {
+        *para_id == CONTAINER_CHAIN_ID_3
     }
 }
 
@@ -193,6 +204,7 @@ impl pallet_inactivity_tracking::Config for Test {
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type CurrentCollatorsFetcher = MockContainerChainsInfoFetcher;
     type GetSelfChainBlockAuthor = ();
+    type ParathreadHelper = MockParathreadHelper;
     type WeightInfo = ();
 }
 

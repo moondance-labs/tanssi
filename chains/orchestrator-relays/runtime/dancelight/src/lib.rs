@@ -1837,6 +1837,14 @@ impl pallet_pooled_staking::Config for Runtime {
     type WeightInfo = weights::pallet_pooled_staking::SubstrateWeight<Runtime>;
 }
 
+pub struct DancelightParathreadHelper;
+
+impl tp_traits::ParathreadHelper for DancelightParathreadHelper {
+    fn is_parathread(_para_id: &ParaId) -> bool {
+        // TODO: Implement once parathread support is added
+        false
+    }
+}
 impl pallet_inactivity_tracking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type CollatorId = AccountId;
@@ -1846,6 +1854,7 @@ impl pallet_inactivity_tracking::Config for Runtime {
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type CurrentCollatorsFetcher = TanssiCollatorAssignment;
     type GetSelfChainBlockAuthor = ();
+    type ParathreadHelper = DancelightParathreadHelper;
     type WeightInfo = weights::pallet_inactivity_tracking::SubstrateWeight<Runtime>;
 }
 

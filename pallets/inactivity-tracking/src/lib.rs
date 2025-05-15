@@ -34,6 +34,7 @@ use {
     tp_traits::{
         AuthorNotingHook, AuthorNotingInfo, ForSession, GetContainerChainsWithCollators,
         GetSessionIndex, MaybeSelfChainBlockAuthor, NodeActivityTrackingHelper, ParaId,
+        ParathreadHelper,
     },
 };
 
@@ -131,6 +132,9 @@ pub mod pallet {
 
         /// Helper that returns the block author for the orchestrator chain (if it exists)
         type GetSelfChainBlockAuthor: MaybeSelfChainBlockAuthor<Self::CollatorId>;
+
+        /// Helper that checks if a ParaId is a parathread
+        type ParathreadHelper: ParathreadHelper;
 
         /// The weight information of this pallet.
         type WeightInfo: weights::WeightInfo;
@@ -334,7 +338,9 @@ pub mod pallet {
                             ForSession::Current,
                         );
                     for (para_id, collator_ids) in container_chains_with_collators.iter() {
-                        if !active_chains.contains(para_id) {
+                        if !active_chains.contains(para_id)
+                            && !T::ParathreadHelper::is_parathread(para_id)
+                        {
                             // Collators assigned to inactive chain are added
                             // to the current active collators storage
                             for collator_id in collator_ids {

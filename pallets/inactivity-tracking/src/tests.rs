@@ -408,8 +408,8 @@ fn processing_ended_session_correctly_updates_current_session_collators_and_acti
     ExtBuilder.build().execute_with(|| {
         let current_session_active_collator_record: BoundedBTreeSet<AccountId, ConstU32<5>> =
             get_collator_set(vec![COLLATOR_1]);
-        let inactive_collator_record: BoundedBTreeSet<AccountId, ConstU32<5>> =
-            get_collator_set(vec![COLLATOR_2]);
+        let inactive_collators_record: BoundedBTreeSet<AccountId, ConstU32<5>> =
+            get_collator_set(vec![COLLATOR_2, COLLATOR_3]);
         let current_session_active_chain_record = get_active_chains_set(vec![CONTAINER_CHAIN_ID_1]);
         let empty_set: BoundedBTreeSet<AccountId, ConstU32<5>> = BoundedBTreeSet::new();
 
@@ -434,7 +434,7 @@ fn processing_ended_session_correctly_updates_current_session_collators_and_acti
         roll_to(SESSION_BLOCK_LENGTH + 1);
 
         assert_eq!(ActiveCollatorsForCurrentSession::<Test>::get(), empty_set);
-        assert_eq!(InactiveCollators::<Test>::get(0), inactive_collator_record);
+        assert_eq!(InactiveCollators::<Test>::get(0), inactive_collators_record);
     });
 }
 
@@ -445,8 +445,8 @@ fn processing_ended_session_correctly_cleans_outdated_collator_records() {
 
         let current_session_active_collator_record: BoundedBTreeSet<AccountId, ConstU32<5>> =
             get_collator_set(vec![COLLATOR_1]);
-        let inactive_collator_record: BoundedBTreeSet<AccountId, ConstU32<5>> =
-            get_collator_set(vec![COLLATOR_2]);
+        let inactive_collators_record: BoundedBTreeSet<AccountId, ConstU32<5>> =
+            get_collator_set(vec![COLLATOR_2, COLLATOR_3]);
         let current_session_active_chain_record = get_active_chains_set(vec![CONTAINER_CHAIN_ID_1]);
         let empty_set: BoundedBTreeSet<AccountId, ConstU32<5>> = BoundedBTreeSet::new();
 
@@ -470,7 +470,7 @@ fn processing_ended_session_correctly_cleans_outdated_collator_records() {
         roll_to(SESSION_BLOCK_LENGTH);
 
         assert_eq!(ActiveCollatorsForCurrentSession::<Test>::get(), empty_set);
-        assert_eq!(InactiveCollators::<Test>::get(0), inactive_collator_record);
+        assert_eq!(InactiveCollators::<Test>::get(0), inactive_collators_record);
 
         roll_to(get_max_inactive_sessions() as u64 * SESSION_BLOCK_LENGTH + 1);
         assert_eq!(
@@ -479,7 +479,7 @@ fn processing_ended_session_correctly_cleans_outdated_collator_records() {
         );
 
         assert_eq!(ActiveCollatorsForCurrentSession::<Test>::get(), empty_set);
-        assert_eq!(InactiveCollators::<Test>::get(0), inactive_collator_record);
+        assert_eq!(InactiveCollators::<Test>::get(0), inactive_collators_record);
 
         roll_to((get_max_inactive_sessions() as u64 + 1) * SESSION_BLOCK_LENGTH + 1);
         assert_eq!(
@@ -759,7 +759,14 @@ fn inactive_chain_collators_are_correctly_processed_when_activity_tracking_is_en
             true
         );
         roll_to(SESSION_BLOCK_LENGTH);
-        assert_eq!(InactiveCollators::<Test>::get(0).is_empty(), true);
+        // Since we have one container chain with id CONTAINER_CHAIN_ID_3 which is a parathread
+        // which has COLLATOR_3 assigned to it, COLLATOR_3 will be added as inactive collator
+        // but COLLATOR_1 and COLLATOR_2 will not be added to the inactive collators storage
+        // as they are assigned to a parachain
+        assert_eq!(
+            InactiveCollators::<Test>::get(0),
+            get_collator_set(vec![COLLATOR_3])
+        );
     });
 }
 
@@ -789,7 +796,7 @@ fn inactive_collator_for_active_chain_is_correctly_processed_when_activity_track
         roll_to(SESSION_BLOCK_LENGTH);
         assert_eq!(
             InactiveCollators::<Test>::get(0),
-            get_collator_set(vec![COLLATOR_2])
+            get_collator_set(vec![COLLATOR_2, COLLATOR_3])
         );
     });
 }
@@ -873,7 +880,7 @@ fn inactive_chain_collators_are_processed_correctly_when_activity_tracking_is_di
         );
         assert_eq!(
             InactiveCollators::<Test>::get(last_disabled_session_id + 1),
-            get_collator_set(vec![COLLATOR_2])
+            get_collator_set(vec![COLLATOR_2, COLLATOR_3])
         );
     });
 }
