@@ -18,3 +18,5 @@ jobs:
         shell: bash
         run: |
           ping 100.68.0.66 -c 10
+          
+          exit 0
