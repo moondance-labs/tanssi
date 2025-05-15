@@ -4,7 +4,11 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import { encodeAddress } from "@polkadot/util-crypto";
 import { generateEventLog, generateUpdate } from "utils";
-import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_ETH_TOKEN_TRANSFERS, checkCallIsFiltered } from "helpers";
+import {
+    STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_ETH_TOKEN_TRANSFERS,
+    STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_FOREIGN_ASSETS_CREATOR,
+    checkCallIsFiltered,
+} from "helpers";
 import type { KeyringPair } from "@moonwall/util";
 import { hexToU8a } from "@polkadot/util";
 
@@ -19,6 +23,7 @@ describeSuite({
         let isStarlight: boolean;
         let specVersion: number;
         let shouldSkipStarlightETT: boolean;
+        let shouldSkipStarlightForeignAssetsCreator: boolean;
         let assetId: number;
 
         beforeAll(async () => {
@@ -32,14 +37,23 @@ describeSuite({
             specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
             shouldSkipStarlightETT =
                 isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_ETH_TOKEN_TRANSFERS.includes(specVersion);
+            shouldSkipStarlightForeignAssetsCreator =
+                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_FOREIGN_ASSETS_CREATOR.includes(specVersion);
         });
 
         it({
             id: "E01",
             title: "Receive ERC20 token from Ethereum in Tanssi chain",
             test: async () => {
+                if (shouldSkipStarlightForeignAssetsCreator) {
+                    console.log(
+                        `Skipping E01 test for Starlight version ${specVersion}: ForeignAssetsCreator pallet not available yet`
+                    );
+                    return;
+                }
+
                 if (shouldSkipStarlightETT) {
-                    console.log(`Skipping E02 test for Starlight version ${specVersion}`);
+                    console.log(`Skipping E01 test for Starlight version ${specVersion}`);
 
                     // Check that inboundQueue.submit is filtered
                     await checkCallIsFiltered(
