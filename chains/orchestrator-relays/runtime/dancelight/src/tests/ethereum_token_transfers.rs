@@ -674,8 +674,6 @@ fn receive_erc20_tokens_in_tanssi_non_zero_address() {
                 },
             });
 
-            println!("payload: {:?}", payload.encode());
-
             let event = OutboundMessageAccepted {
                 channel_id: <[u8; 32]>::from(channel_id).into(),
                 nonce: 1,

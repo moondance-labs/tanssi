@@ -156,8 +156,8 @@ impl pallet_ethereum_token_transfers::Config for Runtime {
     type WeightInfo = crate::weights::pallet_ethereum_token_transfers::SubstrateWeight<Runtime>;
 }
 
-/// `NativeTokenTransferMessageProcessor` is responsible for receiving and processing native tokens
-/// sent from Ethereum. If the message is valid, it performs the token transfer
+/// `NativeTokenTransferMessageProcessor` is responsible for receiving and processing the Tanssi
+/// native token sent from Ethereum. If the message is valid, it performs the token transfer
 /// from the Ethereum sovereign account to the specified destination account.
 pub struct NativeTokenTransferMessageProcessor<T>(sp_std::marker::PhantomData<T>);
 impl<T> MessageProcessor for NativeTokenTransferMessageProcessor<T>
@@ -242,6 +242,8 @@ where
     }
 }
 
+/// `EthTokensLocalProcessor` is responsible for receiving and processing the ETH native 
+/// token and ERC20s coming from Ethereum with Tanssi chain as final destination.
 pub struct EthTokensLocalProcessor<T, XcmProcessor, XcmWeigher, EthereumLocation, EthereumNetwork>(
     PhantomData<T>,
     PhantomData<XcmProcessor>,

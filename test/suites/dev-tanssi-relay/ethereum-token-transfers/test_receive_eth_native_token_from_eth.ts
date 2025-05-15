@@ -38,7 +38,7 @@ describeSuite({
             title: "Receive ETH native token from Ethereum in Tanssi chain",
             test: async () => {
                 if (shouldSkipStarlightETT) {
-                    console.log(`Skipping E02 test for Starlight version ${specVersion}`);
+                    console.log(`Skipping E01 test for Starlight version ${specVersion}`);
 
                     // Check that inboundQueue.submit is filtered
                     await checkCallIsFiltered(
