@@ -11,12 +11,42 @@ on:
 
 jobs:
   test-all-benchmarks:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
-      - name: Run the benchmarks on the remote server
-        id: run-benchmark
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: master
+
+      - name: Cargo build
+        uses: ./.github/workflow-templates/cargo-build
+        with:
+          features: "fast-runtime,metadata-hash"
+
+      - name: Run all benchmarks
+        id: run-benchmarks
         shell: bash
         run: |
-          ping 100.68.0.66 -c 10
-          
-          exit 0
+          ./tools/benchmark-all-runtimes.sh
+
+      - name: Copy weights
+        id: copy-weights
+        shell: bash
+        run: |
+          cp -r ./tmp/dancelight_weights/* ./chains/orchestrator-relays/runtime/dancelight/src/weights/
+          cp -r ./tmp/starlight_weights/* ./chains/orchestrator-relays/runtime/starlight/src/weights/
+          cp -r ./tmp/dancebox_weights/* ./chains/orchestrator-paras/runtime/dancebox/src/weights/
+          cp -r ./tmp/flashbox_weights/* ./chains/orchestrator-paras/runtime/flashbox/src/weights/
+          cp -r ./tmp/simple_template_weights/* ./chains/container-chains/runtime-templates/simple/src/weights/
+          cp -r ./tmp/frontier_template_weights/* ./chains/container-chains/runtime-templates/frontier/src/weights/
+
+      - name: Retrieve runtime diff and send to the Summary
+        run: |
+          ./tools/show-me-the-weights.py diff > runtime_size_report.md \
+          || {
+            # print error in case of failure
+            rc=$?
+            cat runtime_size_report.md >> $GITHUB_STEP_SUMMARY
+            exit $rc
+          }
+          cat runtime_size_report.md >> $GITHUB_STEP_SUMMARY
