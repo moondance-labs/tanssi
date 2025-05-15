@@ -1,0 +1,20 @@
+name: Test all benchmarks on schedule
+
+on:
+  push:
+#  TODO: Remove
+    branches:
+      - MD-1043-evgeny-benchmarks
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * 0" # Runs every Sunday at 12 AM UTC
+
+jobs:
+  test-all-benchmarks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run the benchmarks on the remote server
+        id: run-benchmark
+        shell: bash
+        run: |
+          ping 100.68.0.66 -c 10
