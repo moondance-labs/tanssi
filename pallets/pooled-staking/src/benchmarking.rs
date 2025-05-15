@@ -617,23 +617,9 @@ mod benchmarks {
     #[benchmark]
     fn set_offline() -> Result<(), BenchmarkError> {
         const USER_SEED: u32 = 1;
-
         let source_stake = min_candidate_stk::<T>() * 10u32.into();
-
         let (caller, _deposit_amount) =
             create_funded_user::<T>("caller", USER_SEED, source_stake * 2u32.into());
-
-        T::EligibleCandidatesFilter::make_candidate_eligible(&caller, true);
-
-        PooledStaking::<T>::request_delegate(
-            RawOrigin::Signed(caller.clone()).into(),
-            caller.clone(),
-            ActivePoolKind::AutoCompounding,
-            source_stake,
-        )?;
-
-        T::Currency::mint_into(&T::StakingAccount::get(), source_stake).unwrap();
-
         PooledStaking::<T>::enable_offline_marking(RawOrigin::Root.into(), true)?;
 
         #[extrinsic_call]
@@ -645,23 +631,9 @@ mod benchmarks {
     #[benchmark]
     fn set_online() -> Result<(), BenchmarkError> {
         const USER_SEED: u32 = 1;
-
         let source_stake = min_candidate_stk::<T>() * 10u32.into();
-
         let (caller, _deposit_amount) =
             create_funded_user::<T>("caller", USER_SEED, source_stake * 2u32.into());
-
-        T::EligibleCandidatesFilter::make_candidate_eligible(&caller, true);
-
-        PooledStaking::<T>::request_delegate(
-            RawOrigin::Signed(caller.clone()).into(),
-            caller.clone(),
-            ActivePoolKind::AutoCompounding,
-            source_stake,
-        )?;
-
-        T::Currency::mint_into(&T::StakingAccount::get(), source_stake).unwrap();
-
         PooledStaking::<T>::enable_offline_marking(RawOrigin::Root.into(), true)?;
         PooledStaking::<T>::set_offline(RawOrigin::Signed(caller.clone()).into())?;
 

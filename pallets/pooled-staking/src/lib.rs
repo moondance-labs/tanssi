@@ -399,14 +399,8 @@ pub mod pallet {
 
     /// A list of offline collators
     #[pallet::storage]
-    pub type OfflineCollators<T: Config> = StorageValue<
-        _,
-        BoundedVec<
-            candidate::EligibleCandidate<Candidate<T>, T::Balance>,
-            T::EligibleCandidatesBufferSize,
-        >,
-        ValueQuery,
-    >;
+    pub type OfflineCollators<T: Config> =
+        StorageMap<_, Blake2_128Concat, Candidate<T>, bool, ValueQuery>;
 
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -548,6 +542,7 @@ pub mod pallet {
         SwapResultsInZeroShares,
         MarkingOfflineNotEnabled,
         CollatorDoesNotExist,
+        CollatorNotOffline,
         CollatorCannotBeNotifiedAsInactive,
         MarkingInvulnerableOfflineInvalid,
         PoolsExtrinsicsArePaused,
@@ -765,14 +760,14 @@ pub mod pallet {
 
         #[pallet::call_index(8)]
         #[pallet::weight(T::WeightInfo::swap_pool())]
-        pub fn set_offline(origin: OriginFor<T>) -> DispatchResult {
+        pub fn set_offline(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
             let collator = ensure_signed(origin)?;
             Self::set_offline_inner(collator)
         }
 
         #[pallet::call_index(9)]
         #[pallet::weight(T::WeightInfo::swap_pool())]
-        pub fn set_online(origin: OriginFor<T>) -> DispatchResult {
+        pub fn set_online(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
             let collator = ensure_signed(origin)?;
             Self::set_online_inner(collator)
         }
@@ -782,16 +777,8 @@ pub mod pallet {
         pub fn notify_inactive_collator(
             origin: OriginFor<T>,
             collator: Candidate<T>,
-        ) -> DispatchResult {
+        ) -> DispatchResultWithPostInfo {
             ensure_signed(origin)?;
-            ensure!(
-                <EnableMarkingOffline<T>>::get(),
-                Error::<T>::MarkingOfflineNotEnabled
-            );
-            ensure!(
-                !T::InvulnerablesHelper::is_invulnerable(&collator),
-                Error::<T>::MarkingInvulnerableOfflineInvalid
-            );
             ensure!(
                 T::ActivityTrackingHelper::is_node_inactive(&collator),
                 Error::<T>::CollatorCannotBeNotifiedAsInactive
@@ -821,7 +808,7 @@ pub mod pallet {
             .map(|x| x.0)
         }
 
-        pub fn set_offline_inner(collator: Candidate<T>) -> DispatchResult {
+        pub fn set_offline_inner(collator: Candidate<T>) -> DispatchResultWithPostInfo {
             ensure!(
                 <EnableMarkingOffline<T>>::get(),
                 Error::<T>::MarkingOfflineNotEnabled
@@ -831,42 +818,30 @@ pub mod pallet {
                 Error::<T>::MarkingInvulnerableOfflineInvalid
             );
 
-            let collator_info = <SortedEligibleCandidates<T>>::get()
-                .into_iter()
-                .find(|c| c.candidate == collator.clone())
-                .ok_or(Error::<T>::CollatorDoesNotExist)?;
+            ensure!(
+                <SortedEligibleCandidates<T>>::get()
+                    .into_iter()
+                    .find(|c| c.candidate == collator.clone())
+                    .is_some(),
+                Error::<T>::CollatorDoesNotExist
+            );
 
-            let _ = <SortedEligibleCandidates<T>>::try_mutate(
-                |eligible_candidates| -> DispatchResult {
-                    eligible_candidates.retain(|c| c.candidate != collator.clone());
-                    Ok(())
-                },
-            )?;
-
-            let _ = <OfflineCollators<T>>::try_mutate(|offline_collators| {
-                offline_collators.try_push(collator_info)
+            <OfflineCollators<T>>::insert(collator.clone(), true);
+            Self::deposit_event(Event::<T>::CollatorOffline {
+                collator: collator.clone(),
             });
-
-            Self::deposit_event(Event::<T>::CollatorOffline { collator });
-            Ok(())
+            Calls::<T>::update_candidate_position(&[collator])
         }
-        pub fn set_online_inner(collator: Candidate<T>) -> DispatchResult {
-            let offline_collator = <OfflineCollators<T>>::get()
-                .into_iter()
-                .find(|c| c.candidate == collator.clone())
-                .ok_or(Error::<T>::CollatorDoesNotExist)?;
-
-            let _ = <OfflineCollators<T>>::try_mutate(|offline_collators| -> DispatchResult {
-                offline_collators.retain(|c| c.candidate != collator.clone());
-                Ok(())
-            })?;
-
-            let _ = <SortedEligibleCandidates<T>>::try_mutate(|eligible_candidates| {
-                eligible_candidates.try_push(offline_collator)
+        pub fn set_online_inner(collator: Candidate<T>) -> DispatchResultWithPostInfo {
+            ensure!(
+                OfflineCollators::<T>::get(&collator),
+                Error::<T>::CollatorNotOffline
+            );
+            <OfflineCollators<T>>::insert(collator.clone(), false);
+            Self::deposit_event(Event::<T>::CollatorOnline {
+                collator: collator.clone(),
             });
-
-            Self::deposit_event(Event::<T>::CollatorOnline { collator });
-            Ok(())
+            Calls::<T>::update_candidate_position(&[collator])
         }
     }
 

@@ -175,7 +175,7 @@ pub struct MockActivityTrackingHelper<AccountId>(PhantomData<AccountId>);
 
 impl tp_traits::NodeActivityTrackingHelper<AccountId> for MockActivityTrackingHelper<AccountId> {
     fn is_node_inactive(node: &AccountId) -> bool {
-        *node == ACCOUNT_CANDIDATE_2
+        *node == ACCOUNT_CANDIDATE_2 || *node == ACCOUNT_CANDIDATE_1
     }
 }
 
