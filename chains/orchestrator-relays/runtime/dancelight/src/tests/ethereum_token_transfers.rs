@@ -572,7 +572,7 @@ fn receive_eth_native_token_in_tanssi_zero_address() {
                 chain_id: 1,
                 command: Command::SendToken {
                     token: H160::zero(),
-                    destination: Destination::AccountId32 { id: BOB.into() },
+                    destination: Destination::AccountId32 { id: BOB },
                     amount: amount_to_transfer,
                     fee,
                 },
@@ -668,7 +668,7 @@ fn receive_erc20_tokens_in_tanssi_non_zero_address() {
                 chain_id: 1,
                 command: Command::SendToken {
                     token: token_address, // Use the ERC20 token address
-                    destination: Destination::AccountId32 { id: BOB.into() },
+                    destination: Destination::AccountId32 { id: BOB },
                     amount: amount_to_transfer,
                     fee,
                 },
@@ -763,7 +763,7 @@ fn receive_erc20_tokens_fails_if_not_registered_in_foreign_assets() {
                 chain_id: 1,
                 command: Command::SendToken {
                     token: token_address,
-                    destination: Destination::AccountId32 { id: BOB.into() },
+                    destination: Destination::AccountId32 { id: BOB },
                     amount: amount_to_transfer,
                     fee,
                 },
@@ -850,7 +850,7 @@ fn receive_eth_native_token_fails_if_not_registered_in_foreign_assets() {
                 chain_id: 1,
                 command: Command::SendToken {
                     token: eth_native_token_address,
-                    destination: Destination::AccountId32 { id: BOB.into() },
+                    destination: Destination::AccountId32 { id: BOB },
                     amount: amount_to_transfer,
                     fee,
                 },
