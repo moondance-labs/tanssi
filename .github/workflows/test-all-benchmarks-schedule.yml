@@ -11,7 +11,7 @@ on:
 
 jobs:
   test-all-benchmarks:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - name: Run the benchmarks on the remote server
         id: run-benchmark
