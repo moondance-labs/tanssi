@@ -7,7 +7,7 @@ on:
       - MD-1043-evgeny-benchmarks
   workflow_dispatch:
   schedule:
-    - cron: "0 0 * * 0" # Runs every Sunday at 12 AM UTC
+    - cron: "0 0 * * 6"  # Runs every Saturday at 12 AM UTC
 
 jobs:
   test-all-benchmarks:
