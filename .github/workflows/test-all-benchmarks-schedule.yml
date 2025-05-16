@@ -83,7 +83,6 @@ jobs:
           ~/bin/bin/gh pr create \
             --title "chore(weights): auto-update weights on benchmark failure" \
             --body "Auto-generated PR with new weights after benchmark failure." \
-#           TODO: Update branch to master before merge
             --base MD-1043-evgeny-benchmarks \
             --head "$BRANCH" \
             --draft \
