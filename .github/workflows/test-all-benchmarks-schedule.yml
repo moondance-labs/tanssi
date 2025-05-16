@@ -26,7 +26,8 @@ jobs:
         with:
           ref: master
 
-      - uses: ./.github/workflow-templates/gh-cli
+      - name: Install GitHub CLI
+        uses: ./.github/workflow-templates/gh-cli
 
 #      - name: Cargo build
 #        uses: ./.github/workflow-templates/cargo-build
