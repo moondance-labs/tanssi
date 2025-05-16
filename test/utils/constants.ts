@@ -25,3 +25,9 @@ export const ETHEREUM_MAINNET_SOVEREIGN_ACCOUNT_ADDRESS =
 
 export const DANCELIGHT_ERA_INFLATION_PERBILL = 32641n;
 export const DANCELIGHT_BLOCK_INFLATION_PERBILL = 9n;
+
+// Relay chain Tanssi: Pallet Id "py/trsry"
+export const TREASURY_ADDRESS_LIGHT_CHAINS = "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z";
+
+// Parachain Tanssi: Pallet Id "tns/tsry"
+export const TREASURY_ADDRESS_BOX_CHAINS = "5EYCAe5jXiVvytpxmBupXPCNE9Vduq7gPeTwy9xMgQtKWMnR";
