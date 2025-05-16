@@ -67,12 +67,7 @@ jobs:
         with:
           ref: refs/pull/${{ github.event.issue.number }}/head
 
-      - name: Install GitHub CLI
-        run: |
-          mkdir -p ~/bin
-          curl -L -o ~/bin/gh.tar.gz https://github.com/cli/cli/releases/download/v2.69.0/gh_2.69.0_linux_amd64.tar.gz
-          tar -xzf ~/bin/gh.tar.gz -C ~/bin --strip-components=1
-          ~/bin/bin/gh --version
+      - uses: ./.github/workflow-templates/gh-cli
 
       - name: Cargo build
         uses: ./.github/workflow-templates/cargo-build

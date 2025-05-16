@@ -1,0 +1,13 @@
+name: Install GitHub CLI
+description: |
+  Install GitHub CLI
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install GitHub CLI
+      run: |
+        mkdir -p ~/bin
+        curl -L -o ~/bin/gh.tar.gz https://github.com/cli/cli/releases/download/v2.69.0/gh_2.69.0_linux_amd64.tar.gz
+        tar -xzf ~/bin/gh.tar.gz -C ~/bin --strip-components=1
+        ~/bin/bin/gh --version
