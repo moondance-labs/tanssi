@@ -28,12 +28,12 @@ describeSuite({
                 // there should be no collator in orchestrator
                 expect(
                     currentAssignment.orchestratorChain.toHuman(),
-                    `In tanssi-solo there should be no collator assigned to orchestrator`
+                    "In tanssi-solo there should be no collator assigned to orchestrator"
                 ).to.be.empty;
 
                 const containerAssignment = currentAssignment.containerChains.toHuman();
 
-                for (var para in containerAssignment) {
+                for (const para in containerAssignment) {
                     const collatorsForPara = containerAssignment[para.toString()];
                     collators = collators.concat(collatorsForPara);
                 }
