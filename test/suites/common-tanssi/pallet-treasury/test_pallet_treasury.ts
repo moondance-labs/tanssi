@@ -3,7 +3,7 @@ import "@tanssi/api-augment";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
-import { jumpBlocks } from "utils";
+import { jumpBlocks, extractFeeAuthor, getTreasuryAddress } from "utils";
 import {
     STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_TREASURY,
     STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_BALANCES,
@@ -20,23 +20,22 @@ describeSuite({
         let sudo_alice: KeyringPair;
         let user_dave: KeyringPair;
         let user_bob: KeyringPair;
-        let chain: string;
+        let user_charlie: KeyringPair;
         let isStarlight: boolean;
         let specVersion: number;
         let shouldSkipStarlightBalances: boolean;
         let shouldSkipStarlightTreasury: boolean;
-        // From Pallet Id "py/trsry" -> Account if relay chain
-        // From Pallet Id "tns/tsry" -> Account if parachain
+        let treasuryAddress: string;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             sudo_alice = context.keyring.alice;
             user_dave = context.keyring.dave;
             user_bob = context.keyring.bob;
+            user_charlie = context.keyring.charlie;
             const runtimeName = polkadotJs.runtimeVersion.specName.toString();
-            const treasuryAddress = runtimeName.includes("light")
-                ? "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z"
-                : "5EYCAe5jXiVvytpxmBupXPCNE9Vduq7gPeTwy9xMgQtKWMnR";
+
+            treasuryAddress = getTreasuryAddress(polkadotJs);
 
             isStarlight = runtimeName === "starlight";
             specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
@@ -182,6 +181,30 @@ describeSuite({
 
                 const balanceAfter = (await polkadotJs.query.system.account(user_dave.address)).data.free.toBigInt();
                 expect(balanceAfter).toBeGreaterThan(balanceBefore);
+            },
+        });
+
+        it({
+            id: "E05",
+            title: "100% of fees & tips go for treasury account",
+            test: async () => {
+                // Gets the initial pot deposit value
+                const initial_pot = await polkadotJs.query.system.account(treasuryAddress);
+                const initial_free_pot = initial_pot.data.free.toBigInt();
+
+                // Executes a tx adding an additional tip
+                const tx = polkadotJs.tx.balances.transferAllowDeath(user_charlie.address, 200_000);
+                const signedTx = await tx.signAsync(user_dave, { tip: 100_000 });
+                await context.createBlock([signedTx]);
+                const events = await polkadotJs.query.system.events();
+                const fee = extractFeeAuthor(events, user_dave.address).amount.toBigInt();
+
+                // Gets the new pot deposit value
+                const new_pot = await polkadotJs.query.system.account(treasuryAddress);
+                const new_free_pot = new_pot.data.free.toBigInt();
+
+                // Treasury pot should increase with the paid fee & tip
+                expect(new_free_pot).to.be.equal(initial_free_pot + fee);
             },
         });
     },

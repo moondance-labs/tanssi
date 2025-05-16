@@ -9,21 +9,6 @@ import type {
     BinaryHeapEnqueuedOrder,
     BinaryHeapReverseQueueIndex,
     BitvecOrderLsb0,
-    DancelightRuntimeAggregateMessageOrigin,
-    DancelightRuntimeDynamicParamsPreimageBaseDeposit,
-    DancelightRuntimeDynamicParamsPreimageByteDeposit,
-    DancelightRuntimeDynamicParamsPreimageParameters,
-    DancelightRuntimeDynamicParamsPreimageParametersKey,
-    DancelightRuntimeDynamicParamsPreimageParametersValue,
-    DancelightRuntimeGovernanceOriginsPalletCustomOriginsOrigin,
-    DancelightRuntimeOriginCaller,
-    DancelightRuntimeProxyType,
-    DancelightRuntimeRuntime,
-    DancelightRuntimeRuntimeHoldReason,
-    DancelightRuntimeRuntimeParameters,
-    DancelightRuntimeRuntimeParametersKey,
-    DancelightRuntimeRuntimeParametersValue,
-    DancelightRuntimeSessionKeys,
     DpCollatorAssignmentAssignedCollatorsAccountId32,
     DpCollatorAssignmentAssignedCollatorsPublic,
     DpContainerChainGenesisDataContainerChainGenesisData,
@@ -71,16 +56,6 @@ import type {
     PalletAssetRateCall,
     PalletAssetRateError,
     PalletAssetRateEvent,
-    PalletAssetsAccountStatus,
-    PalletAssetsApproval,
-    PalletAssetsAssetAccount,
-    PalletAssetsAssetDetails,
-    PalletAssetsAssetMetadata,
-    PalletAssetsAssetStatus,
-    PalletAssetsCall,
-    PalletAssetsError,
-    PalletAssetsEvent,
-    PalletAssetsExistenceReason,
     PalletAuthorNotingCall,
     PalletAuthorNotingError,
     PalletAuthorNotingEvent,
@@ -135,9 +110,6 @@ import type {
     PalletExternalValidatorsForcing,
     PalletExternalValidatorsRewardsEraRewardPoints,
     PalletExternalValidatorsRewardsEvent,
-    PalletForeignAssetCreatorCall,
-    PalletForeignAssetCreatorError,
-    PalletForeignAssetCreatorEvent,
     PalletGrandpaCall,
     PalletGrandpaError,
     PalletGrandpaEvent,
@@ -153,10 +125,6 @@ import type {
     PalletIdentityRegistrarInfo,
     PalletIdentityRegistration,
     PalletIdentityUsernameInformation,
-    PalletInactivityTrackingActivityTrackingStatus,
-    PalletInactivityTrackingCall,
-    PalletInactivityTrackingError,
-    PalletInactivityTrackingEvent,
     PalletInflationRewardsChainsToRewardValue,
     PalletInflationRewardsEvent,
     PalletInvulnerablesCall,
@@ -500,6 +468,21 @@ import type {
     StagingXcmV5Response,
     StagingXcmV5TraitsOutcome,
     StagingXcmV5Xcm,
+    StarlightRuntimeAggregateMessageOrigin,
+    StarlightRuntimeDynamicParamsPreimageBaseDeposit,
+    StarlightRuntimeDynamicParamsPreimageByteDeposit,
+    StarlightRuntimeDynamicParamsPreimageParameters,
+    StarlightRuntimeDynamicParamsPreimageParametersKey,
+    StarlightRuntimeDynamicParamsPreimageParametersValue,
+    StarlightRuntimeGovernanceOriginsPalletCustomOriginsOrigin,
+    StarlightRuntimeOriginCaller,
+    StarlightRuntimeProxyType,
+    StarlightRuntimeRuntime,
+    StarlightRuntimeRuntimeHoldReason,
+    StarlightRuntimeRuntimeParameters,
+    StarlightRuntimeRuntimeParametersKey,
+    StarlightRuntimeRuntimeParametersValue,
+    StarlightRuntimeSessionKeys,
     TpBridgeChannelInfo,
     TpBridgeCommand,
     TpBridgeSlashData,
@@ -550,21 +533,6 @@ declare module "@polkadot/types/types/registry" {
         BinaryHeapEnqueuedOrder: BinaryHeapEnqueuedOrder;
         BinaryHeapReverseQueueIndex: BinaryHeapReverseQueueIndex;
         BitvecOrderLsb0: BitvecOrderLsb0;
-        DancelightRuntimeAggregateMessageOrigin: DancelightRuntimeAggregateMessageOrigin;
-        DancelightRuntimeDynamicParamsPreimageBaseDeposit: DancelightRuntimeDynamicParamsPreimageBaseDeposit;
-        DancelightRuntimeDynamicParamsPreimageByteDeposit: DancelightRuntimeDynamicParamsPreimageByteDeposit;
-        DancelightRuntimeDynamicParamsPreimageParameters: DancelightRuntimeDynamicParamsPreimageParameters;
-        DancelightRuntimeDynamicParamsPreimageParametersKey: DancelightRuntimeDynamicParamsPreimageParametersKey;
-        DancelightRuntimeDynamicParamsPreimageParametersValue: DancelightRuntimeDynamicParamsPreimageParametersValue;
-        DancelightRuntimeGovernanceOriginsPalletCustomOriginsOrigin: DancelightRuntimeGovernanceOriginsPalletCustomOriginsOrigin;
-        DancelightRuntimeOriginCaller: DancelightRuntimeOriginCaller;
-        DancelightRuntimeProxyType: DancelightRuntimeProxyType;
-        DancelightRuntimeRuntime: DancelightRuntimeRuntime;
-        DancelightRuntimeRuntimeHoldReason: DancelightRuntimeRuntimeHoldReason;
-        DancelightRuntimeRuntimeParameters: DancelightRuntimeRuntimeParameters;
-        DancelightRuntimeRuntimeParametersKey: DancelightRuntimeRuntimeParametersKey;
-        DancelightRuntimeRuntimeParametersValue: DancelightRuntimeRuntimeParametersValue;
-        DancelightRuntimeSessionKeys: DancelightRuntimeSessionKeys;
         DpCollatorAssignmentAssignedCollatorsAccountId32: DpCollatorAssignmentAssignedCollatorsAccountId32;
         DpCollatorAssignmentAssignedCollatorsPublic: DpCollatorAssignmentAssignedCollatorsPublic;
         DpContainerChainGenesisDataContainerChainGenesisData: DpContainerChainGenesisDataContainerChainGenesisData;
@@ -612,16 +580,6 @@ declare module "@polkadot/types/types/registry" {
         PalletAssetRateCall: PalletAssetRateCall;
         PalletAssetRateError: PalletAssetRateError;
         PalletAssetRateEvent: PalletAssetRateEvent;
-        PalletAssetsAccountStatus: PalletAssetsAccountStatus;
-        PalletAssetsApproval: PalletAssetsApproval;
-        PalletAssetsAssetAccount: PalletAssetsAssetAccount;
-        PalletAssetsAssetDetails: PalletAssetsAssetDetails;
-        PalletAssetsAssetMetadata: PalletAssetsAssetMetadata;
-        PalletAssetsAssetStatus: PalletAssetsAssetStatus;
-        PalletAssetsCall: PalletAssetsCall;
-        PalletAssetsError: PalletAssetsError;
-        PalletAssetsEvent: PalletAssetsEvent;
-        PalletAssetsExistenceReason: PalletAssetsExistenceReason;
         PalletAuthorNotingCall: PalletAuthorNotingCall;
         PalletAuthorNotingError: PalletAuthorNotingError;
         PalletAuthorNotingEvent: PalletAuthorNotingEvent;
@@ -676,9 +634,6 @@ declare module "@polkadot/types/types/registry" {
         PalletExternalValidatorsForcing: PalletExternalValidatorsForcing;
         PalletExternalValidatorsRewardsEraRewardPoints: PalletExternalValidatorsRewardsEraRewardPoints;
         PalletExternalValidatorsRewardsEvent: PalletExternalValidatorsRewardsEvent;
-        PalletForeignAssetCreatorCall: PalletForeignAssetCreatorCall;
-        PalletForeignAssetCreatorError: PalletForeignAssetCreatorError;
-        PalletForeignAssetCreatorEvent: PalletForeignAssetCreatorEvent;
         PalletGrandpaCall: PalletGrandpaCall;
         PalletGrandpaError: PalletGrandpaError;
         PalletGrandpaEvent: PalletGrandpaEvent;
@@ -694,10 +649,6 @@ declare module "@polkadot/types/types/registry" {
         PalletIdentityRegistrarInfo: PalletIdentityRegistrarInfo;
         PalletIdentityRegistration: PalletIdentityRegistration;
         PalletIdentityUsernameInformation: PalletIdentityUsernameInformation;
-        PalletInactivityTrackingActivityTrackingStatus: PalletInactivityTrackingActivityTrackingStatus;
-        PalletInactivityTrackingCall: PalletInactivityTrackingCall;
-        PalletInactivityTrackingError: PalletInactivityTrackingError;
-        PalletInactivityTrackingEvent: PalletInactivityTrackingEvent;
         PalletInflationRewardsChainsToRewardValue: PalletInflationRewardsChainsToRewardValue;
         PalletInflationRewardsEvent: PalletInflationRewardsEvent;
         PalletInvulnerablesCall: PalletInvulnerablesCall;
@@ -1041,6 +992,21 @@ declare module "@polkadot/types/types/registry" {
         StagingXcmV5Response: StagingXcmV5Response;
         StagingXcmV5TraitsOutcome: StagingXcmV5TraitsOutcome;
         StagingXcmV5Xcm: StagingXcmV5Xcm;
+        StarlightRuntimeAggregateMessageOrigin: StarlightRuntimeAggregateMessageOrigin;
+        StarlightRuntimeDynamicParamsPreimageBaseDeposit: StarlightRuntimeDynamicParamsPreimageBaseDeposit;
+        StarlightRuntimeDynamicParamsPreimageByteDeposit: StarlightRuntimeDynamicParamsPreimageByteDeposit;
+        StarlightRuntimeDynamicParamsPreimageParameters: StarlightRuntimeDynamicParamsPreimageParameters;
+        StarlightRuntimeDynamicParamsPreimageParametersKey: StarlightRuntimeDynamicParamsPreimageParametersKey;
+        StarlightRuntimeDynamicParamsPreimageParametersValue: StarlightRuntimeDynamicParamsPreimageParametersValue;
+        StarlightRuntimeGovernanceOriginsPalletCustomOriginsOrigin: StarlightRuntimeGovernanceOriginsPalletCustomOriginsOrigin;
+        StarlightRuntimeOriginCaller: StarlightRuntimeOriginCaller;
+        StarlightRuntimeProxyType: StarlightRuntimeProxyType;
+        StarlightRuntimeRuntime: StarlightRuntimeRuntime;
+        StarlightRuntimeRuntimeHoldReason: StarlightRuntimeRuntimeHoldReason;
+        StarlightRuntimeRuntimeParameters: StarlightRuntimeRuntimeParameters;
+        StarlightRuntimeRuntimeParametersKey: StarlightRuntimeRuntimeParametersKey;
+        StarlightRuntimeRuntimeParametersValue: StarlightRuntimeRuntimeParametersValue;
+        StarlightRuntimeSessionKeys: StarlightRuntimeSessionKeys;
         TpBridgeChannelInfo: TpBridgeChannelInfo;
         TpBridgeCommand: TpBridgeCommand;
         TpBridgeSlashData: TpBridgeSlashData;
