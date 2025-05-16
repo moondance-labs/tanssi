@@ -24,7 +24,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: master
+          ref: MD-1043-evgeny-benchmarks # TODO Change to master before merge
 
       - name: Install GitHub CLI
         uses: ./.github/workflow-templates/gh-cli
