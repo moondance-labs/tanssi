@@ -154,8 +154,8 @@ pallet-stream-payment-runtime-api = { workspace = true }
 tanssi-runtime-common = { workspace = true }
 
 # Moonkit
-pallet-maintenance-mode = { workspace = true, features = [ "xcm-support" ] }
 pallet-foreign-asset-creator = { workspace = true }
+pallet-maintenance-mode = { workspace = true, features = [ "xcm-support" ] }
 pallet-migrations = { workspace = true }
 
 # Bridges
