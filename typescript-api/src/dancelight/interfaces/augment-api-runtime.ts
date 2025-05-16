@@ -263,6 +263,7 @@ declare module "@polkadot/api-base/types/calls" {
                         | { V2: any }
                         | { V3: any }
                         | { V4: any }
+                        | { v5: any }
                         | string
                         | Uint8Array,
                     xcm:
@@ -272,6 +273,7 @@ declare module "@polkadot/api-base/types/calls" {
                         | { V2: any }
                         | { V3: any }
                         | { V4: any }
+                        | { V5: any }
                         | string
                         | Uint8Array
                 ) => Observable<Result<XcmDryRunEffects, XcmDryRunApiError>>
