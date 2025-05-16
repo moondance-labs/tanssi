@@ -87,9 +87,9 @@ impl<T: frame_system::Config> frame_system::ExtensionsWeightInfo for SubstrateWe
 	fn check_nonce() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `101`
-		//  Estimated: `3593`
+		//  Estimated: `99999999999`
 		// Minimum execution time: 12_000_000 picoseconds.
-		Weight::from_parts(12_332_000, 3593)
+		Weight::from_parts(12_332_000, 99999999999)
 			.saturating_add(T::DbWeight::get().reads(1_u64))
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
