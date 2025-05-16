@@ -26,35 +26,69 @@ jobs:
         with:
           ref: master
 
-      - name: Cargo build
-        uses: ./.github/workflow-templates/cargo-build
-        with:
-          features: "fast-runtime,runtime-benchmarks,metadata-hash"
+#      - name: Cargo build
+#        uses: ./.github/workflow-templates/cargo-build
+#        with:
+#          features: "fast-runtime,runtime-benchmarks,metadata-hash"
+#
+#      - name: Run all benchmarks
+#        id: run-benchmarks
+#        shell: bash
+#        run: |
+#          ./tools/benchmark-all-runtimes.sh
+#
+#      - name: Copy weights
+#        id: copy-weights
+#        shell: bash
+#        run: |
+#          cp -r ./tmp/dancelight_weights/* ./chains/orchestrator-relays/runtime/dancelight/src/weights/
+#          cp -r ./tmp/starlight_weights/* ./chains/orchestrator-relays/runtime/starlight/src/weights/
+#          cp -r ./tmp/dancebox_weights/* ./chains/orchestrator-paras/runtime/dancebox/src/weights/
+#          cp -r ./tmp/flashbox_weights/* ./chains/orchestrator-paras/runtime/flashbox/src/weights/
+#          cp -r ./tmp/simple_template_weights/* ./chains/container-chains/runtime-templates/simple/src/weights/
+#          cp -r ./tmp/frontier_template_weights/* ./chains/container-chains/runtime-templates/frontier/src/weights/
 
-      - name: Run all benchmarks
-        id: run-benchmarks
-        shell: bash
+      - name: Patch weight value in dancelight (ONLY FOR TESTING PURPOSE, REMOVE LATER)
+        id: update-weight
         run: |
-          ./tools/benchmark-all-runtimes.sh
+          sed -i 's/3593/99999999999/' ./chains/orchestrator-relays/runtime/dancelight/src/weights/frame_system_extensions.rs
 
-      - name: Copy weights
-        id: copy-weights
-        shell: bash
-        run: |
-          cp -r ./tmp/dancelight_weights/* ./chains/orchestrator-relays/runtime/dancelight/src/weights/
-          cp -r ./tmp/starlight_weights/* ./chains/orchestrator-relays/runtime/starlight/src/weights/
-          cp -r ./tmp/dancebox_weights/* ./chains/orchestrator-paras/runtime/dancebox/src/weights/
-          cp -r ./tmp/flashbox_weights/* ./chains/orchestrator-paras/runtime/flashbox/src/weights/
-          cp -r ./tmp/simple_template_weights/* ./chains/container-chains/runtime-templates/simple/src/weights/
-          cp -r ./tmp/frontier_template_weights/* ./chains/container-chains/runtime-templates/frontier/src/weights/
 
-      - name: Retrieve runtime diff and send to the Summary
+      - name: Retrieve the diff and send to the Summary
+        id: weights-diff
         run: |
-          ./tools/show-me-the-weights.py diff > runtime_size_report.md \
-          || {
-            # print error in case of failure
-            rc=$?
-            cat runtime_size_report.md >> $GITHUB_STEP_SUMMARY
-            exit $rc
-          }
+          ./tools/show-me-the-weights.py diff > runtime_size_report.md || true
+          
           cat runtime_size_report.md >> $GITHUB_STEP_SUMMARY
+      
+          if grep -q "Found problematic" runtime_size_report.md; then
+            echo "status=1" >> $GITHUB_OUTPUT
+          else
+            echo "status=0" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create a draft PR with weight changes
+        if: steps.weights-diff.outputs.status != '0'
+        run: |
+          if git diff --quiet; then
+            echo "No changes to commit, skipping PR creation."
+            exit 0
+          fi
+
+          BRANCH="auto/weights-update-$(date +%s)"
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git checkout -b "$BRANCH"
+          git add .
+          git commit -m "chore(weights): update weights after benchmark failure"
+          git push origin "$BRANCH"
+
+          gh pr create \
+            --title "chore(weights): auto-update weights on benchmark failure" \
+            --body "Auto-generated PR with new weights after benchmark failure." \
+            --base master \
+            --head "$BRANCH" \
+            --draft \
+            --reviewer "CoreDev"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
