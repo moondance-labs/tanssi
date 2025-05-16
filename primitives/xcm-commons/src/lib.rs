@@ -16,6 +16,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use frame_support::traits::Get;
 use xcm::latest::prelude::*;
 trait Parse {
     /// Returns the "chain" location part. It could be parent, sibling
@@ -49,6 +50,40 @@ impl frame_support::traits::ContainsPair<Asset, Location> for NativeAssetReserve
             asset.id.0.chain_part()
         };
 
+        if let Some(ref reserve) = reserve {
+            if reserve == origin {
+                return true;
+            }
+        }
+        false
+    }
+}
+
+/// Filter to ensure an ETH asset is coming from a trusted Ethereum location.
+pub struct EthereumAssetReserve<EthereumLocation, EthereumNetwork>(
+    sp_std::marker::PhantomData<(EthereumLocation, EthereumNetwork)>,
+);
+impl<EthereumLocation, EthereumNetwork> frame_support::traits::ContainsPair<Asset, Location>
+    for EthereumAssetReserve<EthereumLocation, EthereumNetwork>
+where
+    EthereumLocation: Get<Location>,
+    EthereumNetwork: Get<NetworkId>,
+{
+    fn contains(asset: &Asset, origin: &Location) -> bool {
+        log::trace!(target: "xcm::contains", "EthereumAssetReserve asset: {:?}, origin: {:?}", asset, origin);
+        let ethereum_network = EthereumNetwork::get();
+        let reserve = if asset.id.0.parents == 1 {
+            match asset.id.0.first_interior() {
+                Some(GlobalConsensus(network)) if *network == ethereum_network => {
+                    Some(EthereumLocation::get())
+                }
+                _ => None,
+            }
+        } else {
+            None
+        };
+
+        // Origin must match the EthereumLocation reserve
         if let Some(ref reserve) = reserve {
             if reserve == origin {
                 return true;
