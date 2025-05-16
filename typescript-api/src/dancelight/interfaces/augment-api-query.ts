@@ -140,7 +140,6 @@ import type {
     SpWeightsWeightV2Weight,
     StagingXcmV5Instruction,
     StagingXcmV5Location,
-    StagingXcmV5Xcm,
     TpBridgeChannelInfo,
     TpTraitsActiveEraInfo,
     TpTraitsContainerChainBlockInfo,

@@ -3,7 +3,7 @@ import "@tanssi/api-augment";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
-import { jumpBlocks, extractFeeAuthor } from "utils";
+import { jumpBlocks, extractFeeAuthor, getTreasuryAddress } from "utils";
 import {
     STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_TREASURY,
     STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_BALANCES,
@@ -35,11 +35,7 @@ describeSuite({
             user_charlie = context.keyring.charlie;
             const runtimeName = polkadotJs.runtimeVersion.specName.toString();
 
-            // Relay chain Tanssi: Pallet Id "py/trsry" -> 5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z
-            // Parachain Tanssi: Pallet Id "tns/tsry" -> 5EYCAe5jXiVvytpxmBupXPCNE9Vduq7gPeTwy9xMgQtKWMnR
-            treasuryAddress = runtimeName.includes("light")
-                ? "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z"
-                : "5EYCAe5jXiVvytpxmBupXPCNE9Vduq7gPeTwy9xMgQtKWMnR";
+            treasuryAddress = getTreasuryAddress(polkadotJs);
 
             isStarlight = runtimeName === "starlight";
             specVersion = polkadotJs.consts.system.version.specVersion.toNumber();

@@ -106,7 +106,7 @@ describeSuite({
                 expect(babeConsensusLog[1].eq(babeAuthoritiesFromPallet)).toBe(true);
 
                 const keyOwnersArray: string[] = [];
-                const keyOwnersInPalletSession = await keyOwners(babeAuthoritiesFromPallet, api);
+                const keyOwnersInPalletSession = await keyOwners(babeAuthoritiesFromPallet, apiAtSessionChange);
 
                 for (const keyOwner of keyOwnersInPalletSession) {
                     keyOwnersArray.push(keyOwner[0]);
