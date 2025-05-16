@@ -29,33 +29,27 @@ jobs:
       - name: Install GitHub CLI
         uses: ./.github/workflow-templates/gh-cli
 
-#      - name: Cargo build
-#        uses: ./.github/workflow-templates/cargo-build
-#        with:
-#          features: "fast-runtime,runtime-benchmarks,metadata-hash"
-#
-#      - name: Run all benchmarks
-#        id: run-benchmarks
-#        shell: bash
-#        run: |
-#          ./tools/benchmark-all-runtimes.sh
-#
-#      - name: Copy weights
-#        id: copy-weights
-#        shell: bash
-#        run: |
-#          cp -r ./tmp/dancelight_weights/* ./chains/orchestrator-relays/runtime/dancelight/src/weights/
-#          cp -r ./tmp/starlight_weights/* ./chains/orchestrator-relays/runtime/starlight/src/weights/
-#          cp -r ./tmp/dancebox_weights/* ./chains/orchestrator-paras/runtime/dancebox/src/weights/
-#          cp -r ./tmp/flashbox_weights/* ./chains/orchestrator-paras/runtime/flashbox/src/weights/
-#          cp -r ./tmp/simple_template_weights/* ./chains/container-chains/runtime-templates/simple/src/weights/
-#          cp -r ./tmp/frontier_template_weights/* ./chains/container-chains/runtime-templates/frontier/src/weights/
+      - name: Cargo build
+        uses: ./.github/workflow-templates/cargo-build
+        with:
+          features: "fast-runtime,runtime-benchmarks,metadata-hash"
 
-      - name: Patch weight value in dancelight (ONLY FOR TESTING PURPOSE, REMOVE LATER)
-        id: update-weight
+      - name: Run all benchmarks
+        id: run-benchmarks
+        shell: bash
         run: |
-          sed -i 's/3593/99999999999/' ./chains/orchestrator-relays/runtime/dancelight/src/weights/frame_system_extensions.rs
+          ./tools/benchmark-all-runtimes.sh
 
+      - name: Copy weights
+        id: copy-weights
+        shell: bash
+        run: |
+          cp -r ./tmp/dancelight_weights/* ./chains/orchestrator-relays/runtime/dancelight/src/weights/
+          cp -r ./tmp/starlight_weights/* ./chains/orchestrator-relays/runtime/starlight/src/weights/
+          cp -r ./tmp/dancebox_weights/* ./chains/orchestrator-paras/runtime/dancebox/src/weights/
+          cp -r ./tmp/flashbox_weights/* ./chains/orchestrator-paras/runtime/flashbox/src/weights/
+          cp -r ./tmp/simple_template_weights/* ./chains/container-chains/runtime-templates/simple/src/weights/
+          cp -r ./tmp/frontier_template_weights/* ./chains/container-chains/runtime-templates/frontier/src/weights/
 
       - name: Retrieve the diff and send to the Summary
         id: weights-diff
@@ -89,7 +83,8 @@ jobs:
           ~/bin/bin/gh pr create \
             --title "chore(weights): auto-update weights on benchmark failure" \
             --body "Auto-generated PR with new weights after benchmark failure." \
-            --base master \
+#           TODO: Update branch to master before merge
+            --base MD-1043-evgeny-benchmarks \
             --head "$BRANCH" \
             --draft \
             --reviewer "CoreDev"
