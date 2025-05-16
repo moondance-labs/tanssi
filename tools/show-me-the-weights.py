@@ -112,6 +112,7 @@ def diff_mode(git_ref):
         # Only record non-green issues
         if emoji != "✅ ":
             if any_issues == False:
+                # We rely on the keyword "Found problematic" in the benchmarking schedule run
                 print("🚨 Found problematic weights in PR diff. Check them to ensure all extrinsics can still be called.")
             any_issues = True
             # Strip leading '+' for clarity
