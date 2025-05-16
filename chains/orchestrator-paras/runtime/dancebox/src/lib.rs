@@ -1762,8 +1762,7 @@ impl tp_traits::ParathreadHelper for DanceboxParathreadHelper {
         Registrar::session_container_chains(Session::current_index())
             .parathreads
             .iter()
-            .find(|(x_para_id, _)| x_para_id == para_id)
-            .is_some()
+            .any(|(x_para_id, _)| x_para_id == para_id)
     }
 }
 
