@@ -86,10 +86,15 @@ jobs:
       - name: Unit tests
         run: |
           cargo test --release --all --features=fast-runtime --exclude tc-consensus
-      - name: Typescript Tests Tanssi (Dev Service)
+      - name: Typescript Tests Tanssi Dancebox (Dev Service)
         uses: ./.github/workflow-templates/typescript-tests-moonwall
         with:
           moonwall-environment: dev_tanssi
+          force-pass: true
+      - name: Typescript Tests Tanssi Flashbox (Dev Service)
+        uses: ./.github/workflow-templates/typescript-tests-moonwall
+        with:
+          moonwall-environment: dev_flashbox
           force-pass: true
       - name: Typescript Tests Frontier Template (Dev Service)
         uses: ./.github/workflow-templates/typescript-tests-moonwall
