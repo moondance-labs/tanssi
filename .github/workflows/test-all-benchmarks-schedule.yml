@@ -86,7 +86,7 @@ jobs:
           git commit -m "chore(weights): update weights after benchmark failure"
           git push origin "$BRANCH"
 
-          gh pr create \
+          ~/bin/bin/gh pr create \
             --title "chore(weights): auto-update weights on benchmark failure" \
             --body "Auto-generated PR with new weights after benchmark failure." \
             --base master \
