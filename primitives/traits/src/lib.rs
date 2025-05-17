@@ -615,6 +615,12 @@ pub trait ExternalIndexProvider {
     fn get_external_index() -> u64;
 }
 
+// A trait to check invulnerables
+pub trait CheckInvulnerables<AccountId> {
+    /// Checks if the given `AccountId` is invulnerable.
+    fn is_invulnerable(account_id: &AccountId) -> bool;
+}
+
 // A trait to verify if a node has been inactive during the last minimum activity
 pub trait NodeActivityTrackingHelper<AccountId> {
     fn is_node_inactive(node: &AccountId) -> bool;

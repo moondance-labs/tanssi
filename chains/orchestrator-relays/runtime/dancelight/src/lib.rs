@@ -1856,6 +1856,18 @@ impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
     }
 }
 
+parameter_types! {
+    pub const MaxCandidatesBufferSize: u32 = 100;
+}
+
+pub struct InvulnerableCheckHandler<AccountId>(PhantomData<AccountId>);
+
+impl tp_traits::CheckInvulnerables<AccountId> for InvulnerableCheckHandler<AccountId> {
+    fn is_invulnerable(account: &AccountId) -> bool {
+        TanssiInvulnerables::invulnerables().contains(account)
+    }
+}
+
 impl pallet_pooled_staking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
@@ -1870,6 +1882,8 @@ impl pallet_pooled_staking::Config for Runtime {
     type LeavingRequestTimer = SessionTimer<StakingSessionDelay>;
     type EligibleCandidatesBufferSize = ConstU32<100>;
     type EligibleCandidatesFilter = CandidateHasRegisteredKeys;
+    type ActivityTrackingHelper = InactivityTracking;
+    type InvulnerablesHelper = InvulnerableCheckHandler<AccountId>;
     type WeightInfo = weights::pallet_pooled_staking::SubstrateWeight<Runtime>;
 }
 
@@ -1877,7 +1891,8 @@ impl pallet_inactivity_tracking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type CollatorId = AccountId;
     type MaxInactiveSessions = ConstU32<5>;
-    type MaxCollatorsPerSession = ConstU32<100>;
+    type MaxCollatorsPerSession = MaxCandidatesBufferSize;
+    type MaxContainerChains = MaxLengthParaIds;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type CurrentCollatorsFetcher = TanssiCollatorAssignment;
     type GetSelfChainBlockAuthor = ();
