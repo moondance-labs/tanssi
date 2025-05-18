@@ -1720,6 +1720,16 @@ declare module "@polkadot/api-base/types/storage" {
              **/
             [key: string]: QueryableStorageEntry<ApiType>;
         };
+        maintenanceMode: {
+            /**
+             * Whether the site is in maintenance mode
+             **/
+            maintenanceMode: AugmentedQuery<ApiType, () => Observable<bool>, []> & QueryableStorageEntry<ApiType, []>;
+            /**
+             * Generic query
+             **/
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
         messageQueue: {
             /**
              * The index of the first and last (non-empty) pages.
