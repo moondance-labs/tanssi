@@ -12,6 +12,7 @@ on:
 jobs:
   test-all-benchmarks:
     runs-on: self-hosted
+    timeout-minutes: 720
     env:
       TMP_TARGET: "/tmp/target"
       CARGO_TARGET_DIR: "target"
