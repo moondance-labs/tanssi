@@ -1033,6 +1033,20 @@ declare module "@polkadot/api-base/types/errors" {
              **/
             [key: string]: AugmentedError<ApiType>;
         };
+        maintenanceMode: {
+            /**
+             * The chain cannot enter maintenance mode because it is already in maintenance mode
+             **/
+            AlreadyInMaintenanceMode: AugmentedError<ApiType>;
+            /**
+             * The chain cannot resume normal operation because it is not in maintenance mode
+             **/
+            NotInMaintenanceMode: AugmentedError<ApiType>;
+            /**
+             * Generic error
+             **/
+            [key: string]: AugmentedError<ApiType>;
+        };
         messageQueue: {
             /**
              * The message was already processed and cannot be processed again.
