@@ -89,7 +89,7 @@ fn cannot_inject_era_offence_too_far_in_the_past() {
 }
 
 #[test]
-fn root_can_cance_deferred_slash() {
+fn root_can_cancel_deferred_slash() {
     new_test_ext().execute_with(|| {
         start_era(1, 0, 1);
         assert_ok!(ExternalValidatorSlashes::force_inject_slash(
@@ -126,6 +126,71 @@ fn root_cannot_cancel_deferred_slash_if_outside_deferring_period() {
         assert_noop!(
             ExternalValidatorSlashes::cancel_deferred_slash(RuntimeOrigin::root(), 0, vec![0]),
             Error::<Test>::DeferPeriodIsOver
+        );
+    });
+}
+
+#[test]
+fn root_cannot_cancel_out_of_bounds() {
+    new_test_ext().execute_with(|| {
+        start_era(1, 0, 1);
+        assert_ok!(ExternalValidatorSlashes::force_inject_slash(
+            RuntimeOrigin::root(),
+            0,
+            1u64,
+            Perbill::from_percent(75),
+            1
+        ));
+        assert_noop!(
+            ExternalValidatorSlashes::cancel_deferred_slash(
+                RuntimeOrigin::root(),
+                3,
+                vec![u32::MAX]
+            ),
+            Error::<Test>::InvalidSlashIndex
+        );
+    });
+}
+
+#[test]
+fn root_cannot_cancel_duplicates() {
+    new_test_ext().execute_with(|| {
+        start_era(1, 0, 1);
+        assert_ok!(ExternalValidatorSlashes::force_inject_slash(
+            RuntimeOrigin::root(),
+            0,
+            1u64,
+            Perbill::from_percent(75),
+            1
+        ));
+        assert_noop!(
+            ExternalValidatorSlashes::cancel_deferred_slash(RuntimeOrigin::root(), 3, vec![0, 0]),
+            Error::<Test>::NotSortedAndUnique
+        );
+    });
+}
+
+#[test]
+fn root_cannot_cancel_if_not_sorted() {
+    new_test_ext().execute_with(|| {
+        start_era(1, 0, 1);
+        assert_ok!(ExternalValidatorSlashes::force_inject_slash(
+            RuntimeOrigin::root(),
+            0,
+            1u64,
+            Perbill::from_percent(75),
+            1
+        ));
+        assert_ok!(ExternalValidatorSlashes::force_inject_slash(
+            RuntimeOrigin::root(),
+            0,
+            2u64,
+            Perbill::from_percent(75),
+            2
+        ));
+        assert_noop!(
+            ExternalValidatorSlashes::cancel_deferred_slash(RuntimeOrigin::root(), 3, vec![1, 0]),
+            Error::<Test>::NotSortedAndUnique
         );
     });
 }
