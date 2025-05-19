@@ -1,7 +1,7 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 
 import type { ApiPromise } from "@polkadot/api";
-import { fetchRandomnessEvent } from "utils";
+import { fetchRandomnessEventTanssiSolo } from "utils";
 
 describeSuite({
     id: "SMOK13",
@@ -58,7 +58,7 @@ describeSuite({
 
                 // The rotation event should have kicked in, if enabled
                 const events = await apiAtNewSession.query.system.events();
-                const randomnessEvent = fetchRandomnessEvent(events);
+                const randomnessEvent = fetchRandomnessEventTanssiSolo(events);
                 const session = await apiAtNewSession.query.session.currentIndex();
 
                 expect(randomnessEvent.randomSeed.toHex()).to.not.be.equal(
