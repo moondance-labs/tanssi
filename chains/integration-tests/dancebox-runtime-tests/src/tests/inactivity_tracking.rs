@@ -298,7 +298,7 @@ fn inactivity_tracking_edge_case_one_block_per_collator() {
     // last block of each session.
 
     // Skip test if not compiled with fast-runtime
-    let session_period = crate::Period::get();
+    let session_period = dancebox_runtime::Period::get();
     if session_period > 10 {
         println!(
             "Skipping test because session period must be 10, is {:?}",
@@ -362,7 +362,7 @@ fn inactivity_tracking_edge_case_inactive_at_session_start() {
     // last block of each session.
 
     // Skip test if not compiled with fast-runtime
-    let session_period = crate::Period::get();
+    let session_period = dancebox_runtime::Period::get();
     if session_period > 10 {
         println!(
             "Skipping test because session period must be 10, is {:?}",

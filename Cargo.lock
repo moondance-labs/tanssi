@@ -3597,6 +3597,66 @@ dependencies = [
 ]
 
 [[package]]
+name = "dancebox-runtime-tests"
+version = "0.0.0"
+dependencies = [
+ "cumulus-pallet-parachain-system",
+ "cumulus-primitives-core",
+ "cumulus-primitives-parachain-inherent",
+ "cumulus-test-relay-sproof-builder",
+ "dancebox-runtime",
+ "dancebox-runtime-test-utils",
+ "dp-consensus",
+ "dp-core",
+ "frame-support",
+ "frame-system",
+ "hex-literal 0.3.4",
+ "nimbus-primitives",
+ "pallet-asset-rate",
+ "pallet-assets",
+ "pallet-async-backing",
+ "pallet-author-inherent",
+ "pallet-author-noting",
+ "pallet-author-noting-runtime-api",
+ "pallet-authority-mapping",
+ "pallet-balances",
+ "pallet-collator-assignment",
+ "pallet-collator-assignment-runtime-api",
+ "pallet-configuration",
+ "pallet-data-preservers",
+ "pallet-inactivity-tracking",
+ "pallet-invulnerables",
+ "pallet-migrations 0.1.0",
+ "pallet-pooled-staking",
+ "pallet-registrar",
+ "pallet-registrar-runtime-api",
+ "pallet-services-payment",
+ "pallet-session",
+ "pallet-stream-payment",
+ "pallet-sudo",
+ "pallet-utility",
+ "pallet-xcm",
+ "parity-scale-codec",
+ "polkadot-parachain-primitives",
+ "rococo-runtime-constants",
+ "scale-info",
+ "sp-consensus-aura",
+ "sp-consensus-slots",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "staging-parachain-info",
+ "staging-xcm",
+ "tanssi-runtime-common",
+ "test-relay-sproof-builder",
+ "tp-author-noting-inherent",
+ "tp-data-preservers-common",
+ "tp-stream-payment-common",
+ "tp-traits",
+]
+
+[[package]]
 name = "dancelight-emulated-chain"
 version = "0.0.0"
 dependencies = [

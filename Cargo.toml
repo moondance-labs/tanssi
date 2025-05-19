@@ -9,6 +9,7 @@ members = [
 	"chains/container-chains/nodes/*",
 	"chains/container-chains/runtime-templates/*",
 	"chains/integration-tests/dancebox-runtime-test-utils",
+	"chains/integration-tests/dancebox-runtime-tests",
 	"chains/integration-tests/xcm/emulated/chains/orchestrator-paras/*",
 	"chains/integration-tests/xcm/emulated/chains/relays/*",
 	"chains/integration-tests/xcm/emulated/chains/templates/*",
@@ -129,6 +130,7 @@ tc-service-container-chain = { path = "client/service-container-chain" }
 
 dancebox-emulated-chain = { path = "chains/integration-tests/xcm/emulated/chains/orchestrator-paras/dancebox" }
 dancebox-runtime-test-utils = { path = "chains/integration-tests/dancebox-runtime-test-utils" }
+dancebox-runtime-tests = { path = "chains/integration-tests/dancebox-runtime-tests" }
 dancelight-emulated-chain = { path = "chains/integration-tests/xcm/emulated/chains/relays/dancelight" }
 dancelight-system-emulated-network = { path = "chains/integration-tests/xcm/emulated/networks/dancelight-system" }
 frontier-template-emulated-chain = { path = "chains/integration-tests/xcm/emulated/chains/templates/frontier-template" }
