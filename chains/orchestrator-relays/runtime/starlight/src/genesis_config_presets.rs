@@ -38,6 +38,7 @@ use {
         sr25519, ByteArray, Pair, Public,
     },
     sp_keystore::{Keystore, KeystorePtr},
+    sp_runtime::traits::AccountIdConversion,
     sp_std::{cmp::max, vec::Vec},
     starlight_runtime_constants::currency::UNITS as STAR,
     tp_traits::ParaId,
@@ -323,6 +324,7 @@ fn starlight_testnet_genesis(
         crate::PendingRewardsAccount::get(),
         crate::EthereumSovereignAccount::get(),
         crate::SnowbridgeFeesAccount::get(),
+        crate::TreasuryPalletId::get().into_account_truncating(),
     ];
 
     serde_json::json!({

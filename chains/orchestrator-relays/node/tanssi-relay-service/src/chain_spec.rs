@@ -220,7 +220,7 @@ pub fn starlight_development_config(
 ) -> Result<StarlightChainSpec, String> {
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
-    properties.insert("tokenSymbol".into(), "STAR".into());
+    properties.insert("tokenSymbol".into(), "TANSSI".into());
     properties.insert("tokenDecimals".into(), 12.into());
     properties.insert("ss58Format".into(), 42.into());
     properties.insert("isEthereum".into(), false.into());

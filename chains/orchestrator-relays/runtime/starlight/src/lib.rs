@@ -60,8 +60,8 @@ use {
         ValidationCodeHash, ValidatorId, ValidatorIndex, PARACHAIN_KEY_TYPE_ID,
     },
     runtime_common::{
-        self as polkadot_runtime_common, impl_runtime_weights, impls::ToAuthor, paras_registrar,
-        paras_sudo_wrapper, traits::Registrar as RegistrarInterface, BlockHashCount, BlockLength,
+        self as polkadot_runtime_common, impl_runtime_weights, paras_registrar, paras_sudo_wrapper,
+        traits::Registrar as RegistrarInterface, BlockHashCount, BlockLength,
         SlowAdjustingFeeUpdate,
     },
     runtime_parachains::{
@@ -538,7 +538,8 @@ parameter_types! {
 
 impl pallet_transaction_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type OnChargeTransaction = FungibleAdapter<Balances, ToAuthor<Runtime>>;
+    type OnChargeTransaction =
+        FungibleAdapter<Balances, tanssi_runtime_common::DealWithFees<Runtime>>;
     type OperationalFeeMultiplier = OperationalFeeMultiplier;
     type WeightToFee = WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
