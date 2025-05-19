@@ -397,8 +397,9 @@ pub mod pallet {
     #[pallet::storage]
     pub type EnableMarkingOffline<T: Config> = StorageValue<_, bool, ValueQuery>;
 
-    /// A list of offline collators
+    /// Storage map that indicates the offline status of a collator
     #[pallet::storage]
+    #[pallet::getter(fn is_offline)]
     pub type OfflineCollators<T: Config> =
         StorageMap<_, Blake2_128Concat, Candidate<T>, bool, ValueQuery>;
 
@@ -821,8 +822,7 @@ pub mod pallet {
             ensure!(
                 <SortedEligibleCandidates<T>>::get()
                     .into_iter()
-                    .find(|c| c.candidate == collator.clone())
-                    .is_some(),
+                    .any(|c| c.candidate == collator.clone()),
                 Error::<T>::CollatorDoesNotExist
             );
 
