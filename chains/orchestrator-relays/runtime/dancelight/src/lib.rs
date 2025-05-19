@@ -1840,9 +1840,11 @@ impl pallet_pooled_staking::Config for Runtime {
 pub struct DancelightParathreadHelper;
 
 impl tp_traits::ParathreadHelper for DancelightParathreadHelper {
-    fn is_parathread(_para_id: &ParaId) -> bool {
-        // TODO: Implement once parathread support is added
-        false
+    fn is_parathread(para_id: &ParaId) -> bool {
+        ContainerRegistrar::session_container_chains(Session::current_index())
+            .parathreads
+            .iter()
+            .any(|(x_para_id, _)| x_para_id == para_id)
     }
 }
 impl pallet_inactivity_tracking::Config for Runtime {
