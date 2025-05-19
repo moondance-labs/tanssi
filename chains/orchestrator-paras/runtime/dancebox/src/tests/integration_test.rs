@@ -17,8 +17,8 @@
 #![cfg(test)]
 
 use {
-    crate::{tests::common::*, RewardsCollatorCommission, StreamPayment, TransactionPayment},
     cumulus_primitives_core::ParaId,
+    dancebox_runtime_test_utils::*,
     dp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApiV1,
     dp_core::well_known_keys,
     frame_support::{
@@ -300,14 +300,14 @@ fn test_author_collation_aura_change_of_authorities_on_session() {
             // Set CHARLIE and DAVE keys
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
-                crate::SessionKeys {
+                SessionKeys {
                     nimbus: charlie_id.clone(),
                 },
                 vec![]
             ));
             assert_ok!(Session::set_keys(
                 origin_of(DAVE.into()),
-                crate::SessionKeys {
+                SessionKeys {
                     nimbus: dave_id.clone(),
                 },
                 vec![]
@@ -373,12 +373,12 @@ fn test_author_collation_aura_add_assigned_to_paras() {
             // Set CHARLIE and DAVE keys
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
-                crate::SessionKeys { nimbus: charlie_id },
+                SessionKeys { nimbus: charlie_id },
                 vec![]
             ));
             assert_ok!(Session::set_keys(
                 origin_of(DAVE.into()),
-                crate::SessionKeys { nimbus: dave_id },
+                SessionKeys { nimbus: dave_id },
                 vec![]
             ));
 
@@ -1101,12 +1101,12 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
             // Set CHARLIE and DAVE keys
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
-                crate::SessionKeys { nimbus: charlie_id },
+                SessionKeys { nimbus: charlie_id },
                 vec![]
             ));
             assert_ok!(Session::set_keys(
                 origin_of(DAVE.into()),
-                crate::SessionKeys { nimbus: dave_id },
+                SessionKeys { nimbus: dave_id },
                 vec![]
             ));
 
@@ -1245,14 +1245,14 @@ fn test_consensus_runtime_api() {
             // Set CHARLIE and DAVE keys
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
-                crate::SessionKeys {
+                SessionKeys {
                     nimbus: charlie_id.clone(),
                 },
                 vec![]
             ));
             assert_ok!(Session::set_keys(
                 origin_of(DAVE.into()),
-                crate::SessionKeys {
+                SessionKeys {
                     nimbus: dave_id.clone(),
                 },
                 vec![]
@@ -1333,14 +1333,14 @@ fn test_consensus_runtime_api_session_changes() {
             // Set CHARLIE and DAVE keys
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
-                crate::SessionKeys {
+                SessionKeys {
                     nimbus: charlie_id.clone(),
                 },
                 vec![]
             ));
             assert_ok!(Session::set_keys(
                 origin_of(DAVE.into()),
-                crate::SessionKeys {
+                SessionKeys {
                     nimbus: dave_id.clone(),
                 },
                 vec![]
@@ -1460,14 +1460,14 @@ fn test_consensus_runtime_api_next_session() {
             // Set CHARLIE and DAVE keys
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
-                crate::SessionKeys {
+                SessionKeys {
                     nimbus: charlie_id.clone(),
                 },
                 vec![]
             ));
             assert_ok!(Session::set_keys(
                 origin_of(DAVE.into()),
-                crate::SessionKeys {
+                SessionKeys {
                     nimbus: dave_id.clone(),
                 },
                 vec![]
@@ -1850,7 +1850,7 @@ fn test_collator_assignment_rotation() {
 
 #[test]
 fn session_keys_key_type_id() {
-    assert_eq!(crate::SessionKeys::key_ids(), vec![NIMBUS_KEY_ID]);
+    assert_eq!(SessionKeys::key_ids(), vec![NIMBUS_KEY_ID]);
 }
 
 #[test]
@@ -1884,14 +1884,14 @@ fn test_session_keys_with_authority_mapping() {
             // for now lets change it to alice_2 and bob_2
             assert_ok!(Session::set_keys(
                 origin_of(ALICE.into()),
-                crate::SessionKeys {
+                SessionKeys {
                     nimbus: alice_id_2.clone(),
                 },
                 vec![]
             ));
             assert_ok!(Session::set_keys(
                 origin_of(BOB.into()),
-                crate::SessionKeys {
+                SessionKeys {
                     nimbus: bob_id_2.clone(),
                 },
                 vec![]
@@ -1978,14 +1978,14 @@ fn test_session_keys_with_authority_assignment() {
             // for now lets change it to alice_2 and bob_2
             assert_ok!(Session::set_keys(
                 origin_of(ALICE.into()),
-                crate::SessionKeys {
+                SessionKeys {
                     nimbus: alice_id_2.clone(),
                 },
                 vec![]
             ));
             assert_ok!(Session::set_keys(
                 origin_of(BOB.into()),
-                crate::SessionKeys {
+                SessionKeys {
                     nimbus: bob_id_2.clone(),
                 },
                 vec![]
@@ -2432,7 +2432,7 @@ fn test_staking_register_keys_after_joining() {
             let new_account_id = get_aura_id_from_seed(&new_account.to_string());
             assert_ok!(Session::set_keys(
                 origin_of(new_account.clone()),
-                crate::SessionKeys {
+                SessionKeys {
                     nimbus: new_account_id,
                 },
                 vec![]
@@ -3390,7 +3390,7 @@ fn test_pallet_session_takes_validators_from_invulnerables_and_staking() {
             let dave_account_id = get_aura_id_from_seed(&AccountId::from(DAVE).to_string());
             assert_ok!(Session::set_keys(
                 origin_of(DAVE.into()),
-                crate::SessionKeys {
+                SessionKeys {
                     nimbus: dave_account_id,
                 },
                 vec![]
@@ -3485,7 +3485,7 @@ fn test_pallet_session_limits_num_validators() {
             let dave_account_id = get_aura_id_from_seed(&AccountId::from(DAVE).to_string());
             assert_ok!(Session::set_keys(
                 origin_of(DAVE.into()),
-                crate::SessionKeys {
+                SessionKeys {
                     nimbus: dave_account_id,
                 },
                 vec![]
@@ -3564,7 +3564,7 @@ fn test_pallet_session_limits_num_validators_from_staking() {
             let bob_account_id = get_aura_id_from_seed(&AccountId::from(BOB).to_string());
             assert_ok!(Session::set_keys(
                 origin_of(BOB.into()),
-                crate::SessionKeys {
+                SessionKeys {
                     nimbus: bob_account_id,
                 },
                 vec![]
@@ -3572,7 +3572,7 @@ fn test_pallet_session_limits_num_validators_from_staking() {
             let charlie_account_id = get_aura_id_from_seed(&AccountId::from(CHARLIE).to_string());
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
-                crate::SessionKeys {
+                SessionKeys {
                     nimbus: charlie_account_id,
                 },
                 vec![]
@@ -3580,7 +3580,7 @@ fn test_pallet_session_limits_num_validators_from_staking() {
             let dave_account_id = get_aura_id_from_seed(&AccountId::from(DAVE).to_string());
             assert_ok!(Session::set_keys(
                 origin_of(DAVE.into()),
-                crate::SessionKeys {
+                SessionKeys {
                     nimbus: dave_account_id,
                 },
                 vec![]
@@ -3662,7 +3662,7 @@ fn test_reward_to_staking_candidate() {
             let dave_account_id = get_aura_id_from_seed(&AccountId::from(DAVE).to_string());
             assert_ok!(Session::set_keys(
                 origin_of(DAVE.into()),
-                crate::SessionKeys {
+                SessionKeys {
                     nimbus: dave_account_id,
                 },
                 vec![]
@@ -3856,7 +3856,7 @@ fn test_reward_to_invulnerable_with_key_change() {
             let alice_new_key = get_aura_id_from_seed(&AccountId::from(DAVE).to_string());
             assert_ok!(Session::set_keys(
                 origin_of(ALICE.into()),
-                crate::SessionKeys {
+                SessionKeys {
                     nimbus: alice_new_key,
                 },
                 vec![]
@@ -4051,7 +4051,7 @@ fn test_collator_assignment_gives_priority_to_invulnerables() {
             let bob_account_id = get_aura_id_from_seed(&AccountId::from(BOB).to_string());
             assert_ok!(Session::set_keys(
                 origin_of(BOB.into()),
-                crate::SessionKeys {
+                SessionKeys {
                     nimbus: bob_account_id,
                 },
                 vec![]
@@ -4059,7 +4059,7 @@ fn test_collator_assignment_gives_priority_to_invulnerables() {
             let charlie_account_id = get_aura_id_from_seed(&AccountId::from(CHARLIE).to_string());
             assert_ok!(Session::set_keys(
                 origin_of(CHARLIE.into()),
-                crate::SessionKeys {
+                SessionKeys {
                     nimbus: charlie_account_id,
                 },
                 vec![]

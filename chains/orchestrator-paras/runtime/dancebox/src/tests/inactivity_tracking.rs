@@ -18,7 +18,7 @@
 
 use std::collections::BTreeSet;
 use {
-    crate::tests::common::*,
+    dancebox_runtime_test_utils::*,
     frame_support::{assert_ok, traits::Get, BoundedBTreeSet},
     pallet_inactivity_tracking::pallet::{ActiveCollatorsForCurrentSession, InactiveCollators},
     parity_scale_codec::Encode,
