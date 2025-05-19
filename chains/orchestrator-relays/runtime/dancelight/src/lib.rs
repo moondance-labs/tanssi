@@ -60,8 +60,8 @@ use {
         ValidationCodeHash, ValidatorId, ValidatorIndex, PARACHAIN_KEY_TYPE_ID,
     },
     runtime_common::{
-        self as polkadot_runtime_common, impl_runtime_weights, impls::ToAuthor, paras_registrar,
-        paras_sudo_wrapper, traits::Registrar as RegistrarInterface, BlockHashCount, BlockLength,
+        self as polkadot_runtime_common, impl_runtime_weights, paras_registrar, paras_sudo_wrapper,
+        traits::Registrar as RegistrarInterface, BlockHashCount, BlockLength,
         SlowAdjustingFeeUpdate,
     },
     runtime_parachains::{
@@ -324,7 +324,7 @@ parameter_types! {
 
 #[derive_impl(frame_system::config_preludes::RelayChainDefaultConfig)]
 impl frame_system::Config for Runtime {
-    type BaseCallFilter = EverythingBut<(IsRelayRegister, IsParathreadRegistrar)>;
+    type BaseCallFilter = MaintenanceMode;
     type BlockWeights = BlockWeights;
     type BlockLength = BlockLength;
     type DbWeight = RocksDbWeight;
@@ -507,7 +507,8 @@ parameter_types! {
 
 impl pallet_transaction_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type OnChargeTransaction = FungibleAdapter<Balances, ToAuthor<Runtime>>;
+    type OnChargeTransaction =
+        FungibleAdapter<Balances, tanssi_runtime_common::DealWithFees<Runtime>>;
     type OperationalFeeMultiplier = OperationalFeeMultiplier;
     type WeightToFee = WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
@@ -1089,7 +1090,7 @@ impl pallet_message_queue::Config for Runtime {
     type MessageProcessor =
         pallet_message_queue::mock_helpers::NoopMessageProcessor<AggregateMessageOrigin>;
     type QueueChangeHandler = ParaInclusion;
-    type QueuePausedQuery = ();
+    type QueuePausedQuery = MaintenanceMode;
     type WeightInfo = weights::pallet_message_queue::SubstrateWeight<Runtime>;
 }
 
@@ -1606,6 +1607,45 @@ impl pallet_multiblock_migrations::Config for Runtime {
     type WeightInfo = weights::pallet_multiblock_migrations::SubstrateWeight<Runtime>;
 }
 
+/// Maintenance mode Call filter
+pub struct MaintenanceFilter;
+impl Contains<RuntimeCall> for MaintenanceFilter {
+    fn contains(c: &RuntimeCall) -> bool {
+        !matches!(
+            c,
+            RuntimeCall::Balances(..)
+                | RuntimeCall::Registrar(..)
+                | RuntimeCall::Session(..)
+                | RuntimeCall::System(..)
+                | RuntimeCall::PooledStaking(..)
+                | RuntimeCall::Utility(..)
+                | RuntimeCall::Identity(..)
+                | RuntimeCall::XcmPallet(..)
+                | RuntimeCall::EthereumBeaconClient(..)
+                | RuntimeCall::EthereumSystem(..)
+                | RuntimeCall::EthereumTokenTransfers(..)
+                | RuntimeCall::OnDemandAssignmentProvider(..)
+                | RuntimeCall::ContainerRegistrar(..)
+                | RuntimeCall::ServicesPayment(..)
+                | RuntimeCall::DataPreservers(..)
+                | RuntimeCall::Hrmp(..)
+                | RuntimeCall::AssetRate(..)
+                | RuntimeCall::StreamPayment(..)
+        )
+    }
+}
+
+/// Normal Call Filter
+type NormalFilter = EverythingBut<(IsRelayRegister, IsParathreadRegistrar)>;
+
+impl pallet_maintenance_mode::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type NormalCallFilter = NormalFilter;
+    type MaintenanceCallFilter = MaintenanceFilter;
+    type MaintenanceOrigin = EnsureRoot<AccountId>;
+    type XcmExecutionManager = ();
+}
+
 pub const FIXED_BLOCK_PRODUCTION_COST: u128 = 1 * MICROUNITS;
 pub const FIXED_COLLATOR_ASSIGNMENT_COST: u128 = 100 * MICROUNITS;
 
@@ -1967,6 +2007,10 @@ construct_runtime! {
         // Asset rate.
         AssetRate: pallet_asset_rate = 86,
 
+        // Foreign assets.
+        ForeignAssets: pallet_assets::<Instance1> = 87,
+        ForeignAssetsCreator: pallet_foreign_asset_creator = 88,
+
         // Pallet for sending XCM.
         XcmPallet: pallet_xcm = 90,
 
@@ -1975,6 +2019,7 @@ construct_runtime! {
         // Migration stuff
         Migrations: pallet_migrations = 120,
         MultiBlockMigrations: pallet_multiblock_migrations = 121,
+        MaintenanceMode: pallet_maintenance_mode = 122,
 
         // BEEFY Bridges support.
         Beefy: pallet_beefy = 240,
@@ -2332,6 +2377,10 @@ mod benches {
         [pallet_inactivity_tracking, InactivityTracking]
         [pallet_configuration, CollatorConfiguration]
         [pallet_stream_payment, StreamPayment]
+
+        // Foreign Assets
+        [pallet_foreign_asset_creator, ForeignAssetsCreator]
+        [pallet_assets, ForeignAssets]
 
         // XCM
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
