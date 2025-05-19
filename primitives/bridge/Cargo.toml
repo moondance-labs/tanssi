@@ -16,6 +16,7 @@ ethabi = { workspace = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
 impl-trait-for-tuples = { workspace = true }
+log = { workspace = true }
 macro_rules_attribute = { workspace = true }
 pallet-external-validators = { workspace = true }
 parity-scale-codec = { workspace = true }
@@ -30,6 +31,7 @@ sp-core = { workspace = true }
 sp-runtime = { workspace = true }
 sp-std = { workspace = true }
 xcm = { workspace = true }
+xcm-builder = { workspace = true }
 xcm-executor = { workspace = true }
 
 # Cumulus
@@ -61,6 +63,8 @@ std = [
 	"sp-std/std",
 	"xcm-executor/std",
 	"xcm/std",
+	"log/std",
+	"xcm-builder/std"
 ]
 runtime-benchmarks = [
 	"cumulus-primitives-core/runtime-benchmarks",
@@ -73,4 +77,5 @@ runtime-benchmarks = [
 	"snowbridge-router-primitives/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"xcm-executor/runtime-benchmarks",
+	"xcm-builder/runtime-benchmarks"
 ]

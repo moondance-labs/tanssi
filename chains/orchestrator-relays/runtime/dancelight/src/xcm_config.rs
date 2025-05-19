@@ -20,9 +20,9 @@ use {
     super::{
         parachains_origin,
         weights::{self, xcm::XcmWeight},
-        AccountId, AllPalletsWithSystem, Balance, Balances, Dmp, Fellows, ForeignAssets,
-        ForeignAssetsCreator, ParaId, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin,
-        TransactionByteFee, Treasury, WeightToFee, XcmPallet,
+        AccountId, AllPalletsWithSystem, Balance, Balances, Dmp, EthereumSystem, Fellows,
+        ForeignAssets, ForeignAssetsCreator, ParaId, Runtime, RuntimeCall, RuntimeEvent,
+        RuntimeOrigin, TransactionByteFee, Treasury, WeightToFee, XcmPallet,
     },
     crate::governance::StakingAdmin,
     dancelight_runtime_constants::{
@@ -40,7 +40,11 @@ use {
         xcm_sender::{ChildParachainRouter, ExponentialPrice},
         ToAuthor,
     },
+    snowbridge_core::ChannelId,
     sp_core::ConstU32,
+    tp_bridge::snowbridge_outbound_token_transfer::{
+        EthereumBlobExporter, SnowbrigeTokenTransferRouter,
+    },
     tp_bridge::EthereumLocationsConverterFor,
     tp_xcm_commons::{EthereumAssetReserve, NativeAssetReserve},
     xcm::{
@@ -377,86 +381,11 @@ impl pallet_foreign_asset_creator::Config for Runtime {
     type OnForeignAssetDestroyed = ();
 }
 
-use core::marker::PhantomData;
-use sp_core::Get;
-use xcm::{
-    latest::SendError::{MissingArgument, NotApplicable},
-    VersionedLocation, VersionedXcm,
-};
-use xcm_builder::{ensure_is_remote, InspectMessageQueues};
-use xcm_executor::traits::{validate_export, ExportXcm};
-
-pub struct SnowbrigeTokenTransferRouter<Bridges, UniversalLocation>(
-    PhantomData<(Bridges, UniversalLocation)>,
-);
-
-impl<Bridges, UniversalLocation> SendXcm
-    for SnowbrigeTokenTransferRouter<Bridges, UniversalLocation>
-where
-    Bridges: ExportXcm,
-    UniversalLocation: Get<InteriorLocation>,
-{
-    type Ticket = Bridges::Ticket;
-
-    fn validate(
-        dest: &mut Option<Location>,
-        msg: &mut Option<Xcm<()>>,
-    ) -> SendResult<Self::Ticket> {
-        // TODO: Identical to following code expect channel and message filtering
-        // https://github.com/paritytech/polkadot-sdk/blob/ca9f4a7e60cdedbd97d68e7b5d53bf4e1944d7e7/polkadot/xcm/xcm-builder/src/universal_exports.rs#L117
-
-        let universal_source = UniversalLocation::get();
-        let channel = 0; // TODO: Better value?
-
-        // This `clone` ensures that `dest` is not consumed in any case.
-        let dest = dest.clone().ok_or(MissingArgument)?;
-        let (remote_network, remote_location) =
-            ensure_is_remote(universal_source.clone(), dest).map_err(|_| NotApplicable)?;
-        let xcm = msg.take().ok_or(MissingArgument)?;
-
-        // Ignore messages that don't send assets.
-        // TODO: Is it necessary? Bridges don't filter?
-        let &[Instruction::WithdrawAsset(_), Instruction::ClearOrigin, Instruction::DepositAsset { .. }, ..] =
-            &xcm.inner()
-        else {
-            // We need to make sure that msg is not consumed in case of `NotApplicable`.
-            *msg = Some(xcm);
-            return Err(NotApplicable);
-        };
-
-        // validate export message
-        validate_export::<Bridges>(
-            remote_network,
-            channel,
-            universal_source,
-            remote_location,
-            xcm.clone(),
-        )
-        .inspect_err(|err| {
-            if let NotApplicable = err {
-                // We need to make sure that msg is not consumed in case of `NotApplicable`.
-                *msg = Some(xcm);
-            }
-        })
-    }
-
-    fn deliver(ticket: Self::Ticket) -> Result<XcmHash, SendError> {
-        Bridges::deliver(ticket)
-    }
+parameter_types! {
+    pub SnowbridgeChannelId: Option<ChannelId> =
+        pallet_ethereum_token_transfers::CurrentChannelInfo::<Runtime>::get()
+            .map(|x| x.channel_id);
 }
-
-impl<Bridge, UniversalLocation> InspectMessageQueues
-    for SnowbrigeTokenTransferRouter<Bridge, UniversalLocation>
-{
-    fn clear_messages() {}
-    fn get_messages() -> Vec<(VersionedLocation, Vec<VersionedXcm<()>>)> {
-        Vec::new()
-    }
-}
-
-use super::EthereumSystem;
-use dancelight_runtime_constants::snowbridge::EthereumNetwork;
-use snowbridge_router_primitives::outbound::EthereumBlobExporter;
 
 /// Exports message to the Ethereum Gateway contract.
 pub type SnowbridgeExporter = EthereumBlobExporter<
@@ -465,4 +394,5 @@ pub type SnowbridgeExporter = EthereumBlobExporter<
     snowbridge_pallet_outbound_queue::Pallet<Runtime>,
     snowbridge_core::AgentIdOf,
     EthereumSystem,
+    SnowbridgeChannelId,
 >;
