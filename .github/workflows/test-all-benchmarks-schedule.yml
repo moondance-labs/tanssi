@@ -34,18 +34,20 @@ jobs:
         id: check-cores
         shell: bash
         run: |
-          echo "Number of CPU cores: $(nproc)" && exit 1
+          echo "Number of CPU cores: $(nproc)"
+          lscpu
+          exit 1
 
       - name: Cargo build
         uses: ./.github/workflow-templates/cargo-build
         with:
           features: "fast-runtime,runtime-benchmarks,metadata-hash"
 
-      - name: Run all benchmarks
+      - name: Run all benchmarks in parallel
         id: run-benchmarks
         shell: bash
         run: |
-          ./tools/benchmark-all-runtimes.sh
+          ./tools/benchmark-all-runtimes.sh --parallel
 
       - name: Copy weights
         id: copy-weights
