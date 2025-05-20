@@ -30,6 +30,12 @@ jobs:
       - name: Install GitHub CLI
         uses: ./.github/workflow-templates/gh-cli
 
+      - name: Check amount of cores on the machine and EXIT (ONLY FOR TESTS - TO BE REMOVED)
+        id: check-cores
+        shell: bash
+        run: |
+          echo "Number of CPU cores: $(nproc)" && exit 1
+
       - name: Cargo build
         uses: ./.github/workflow-templates/cargo-build
         with:
