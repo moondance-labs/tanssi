@@ -62,6 +62,7 @@ mod benchmarks {
     // * collators_per_container
     #[benchmark]
     fn new_session(x: Linear<1, 200>, y: Linear<1, 20>) -> Result<(), BenchmarkError> {
+        panic!("Test panic!");
         frame_system::Pallet::<T>::set_block_number(0u32.into());
 
         let collators = invulnerables::<T>(x, SEED);

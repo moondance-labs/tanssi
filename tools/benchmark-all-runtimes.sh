@@ -28,7 +28,7 @@ declare -a BENCHMARK_CMDS=(
   "BINARY=target/release/tanssi-relay TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs CHAIN=starlight-dev OUTPUT_PATH=tmp/starlight_weights tools/benchmarking.sh '*' '*'"
 )
 
-echo "Running benchmarks. Option parallel: ${$PARALLEL}"
+echo "Running benchmarks. Option parallel: $PARALLEL"
 
 if $PARALLEL; then
     for cmd in "${BENCHMARK_CMDS[@]}"; do

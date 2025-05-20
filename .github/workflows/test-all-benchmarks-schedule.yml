@@ -1,6 +1,10 @@
 name: Test all benchmarks on schedule
 
 on:
+  # TODO: Remove
+  push:
+    branches:
+      - MD-1043-evgeny-benchmarks
   workflow_dispatch:
     inputs:
       branch:
@@ -35,7 +39,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ steps.branch.outputs.branch }}
+          ref: MD-1043-evgeny-benchmarks # ${{ steps.branch.outputs.branch }}
 
       - name: Install GitHub CLI
         uses: ./.github/workflow-templates/gh-cli
@@ -49,7 +53,18 @@ jobs:
         id: run-benchmarks
         shell: bash
         run: |
+          exit 1
           ./tools/benchmark-all-runtimes.sh --parallel
+
+      - name: Create issue if scheduled benchmark failed
+        if: failure() # && github.event_name == 'schedule' // TODO: Revert
+        run: |
+          gh issue create \
+            --title "❌ Scheduled benchmark failed on `${{ github.ref_name }}`" \
+            --body "See the logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --assignee "CoreDev"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Copy weights
         id: copy-weights
