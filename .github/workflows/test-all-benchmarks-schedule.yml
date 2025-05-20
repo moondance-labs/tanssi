@@ -30,24 +30,6 @@ jobs:
       - name: Install GitHub CLI
         uses: ./.github/workflow-templates/gh-cli
 
-      - name: Check amount of cores on the machine and EXIT (ONLY FOR TESTS - TO BE REMOVED)
-        id: check-cores
-        shell: bash
-        run: |
-          sudo apt-get update && sudo apt-get install -y sysstat
-          CORES=$(nproc)
-          echo "Using $CORES cores"
-          for i in $(seq 1 $CORES); do
-            yes > /dev/null &
-          done
-          echo $! > pids.txt
-          sleep 15
-          pkill yes || true
-          echo "CPU usage snapshot with mpstat:"
-          mpstat -P ALL 1 5
-          
-          exit 1
-
       - name: Cargo build
         uses: ./.github/workflow-templates/cargo-build
         with:
