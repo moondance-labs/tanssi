@@ -44,10 +44,10 @@ jobs:
       - name: Install GitHub CLI
         uses: ./.github/workflow-templates/gh-cli
 
-      - name: Cargo build
-        uses: ./.github/workflow-templates/cargo-build
-        with:
-          features: "fast-runtime,runtime-benchmarks,metadata-hash"
+#      - name: Cargo build
+#        uses: ./.github/workflow-templates/cargo-build
+#        with:
+#          features: "fast-runtime,runtime-benchmarks,metadata-hash"
 
       - name: Run all benchmarks in parallel
         id: run-benchmarks
