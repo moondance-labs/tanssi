@@ -196,6 +196,18 @@ export function fetchRandomnessEvent(events: EventRecord[]) {
     return filtered[0];
 }
 
+export function fetchRandomnessEventTanssiSolo(events: EventRecord[]) {
+    const filtered = filterAndApply(
+        events,
+        "tanssiCollatorAssignment",
+        ["NewPendingAssignment"],
+        ({ event }: EventRecord) =>
+            event.data as unknown as { randomSeed: Vec<u8>; fullRotation: bool; targetSession: u32 }
+    );
+
+    return filtered[0];
+}
+
 export function fetchIssuance(events: EventRecord[]) {
     const filtered = filterAndApply(
         events,
