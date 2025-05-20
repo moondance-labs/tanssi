@@ -59,6 +59,7 @@ frame-system-rpc-runtime-api = { workspace = true }
 nimbus-primitives = { workspace = true }
 pallet-alt-benchmarks = { workspace = true, optional = true }
 pallet-asset-rate = { workspace = true }
+pallet-assets = { workspace = true }
 pallet-authority-assignment = { workspace = true }
 pallet-authority-discovery = { workspace = true }
 pallet-authority-mapping = { workspace = true }
@@ -153,6 +154,8 @@ pallet-stream-payment-runtime-api = { workspace = true }
 tanssi-runtime-common = { workspace = true }
 
 # Moonkit
+pallet-foreign-asset-creator = { workspace = true }
+pallet-maintenance-mode = { workspace = true, features = [ "xcm-support" ] }
 pallet-migrations = { workspace = true }
 
 # Bridges
@@ -229,6 +232,7 @@ std = [
 	"offchain-primitives/std",
 	"pallet-alt-benchmarks?/std",
 	"pallet-asset-rate/std",
+	"pallet-assets/std",
 	"pallet-author-noting-runtime-api/std",
 	"pallet-author-noting/std",
 	"pallet-authority-assignment/std",
@@ -251,12 +255,14 @@ std = [
 	"pallet-external-validators-rewards-runtime-api/std",
 	"pallet-external-validators-rewards/std",
 	"pallet-external-validators/std",
+	"pallet-foreign-asset-creator/std",
 	"pallet-grandpa/std",
 	"pallet-identity/std",
 	"pallet-inactivity-tracking/std",
 	"pallet-inflation-rewards/std",
 	"pallet-initializer/std",
 	"pallet-invulnerables/std",
+	"pallet-maintenance-mode/std",
 	"pallet-membership/std",
 	"pallet-message-queue/std",
 	"pallet-migrations/std",
@@ -365,6 +371,7 @@ runtime-benchmarks = [
 	"nimbus-primitives/runtime-benchmarks",
 	"pallet-alt-benchmarks/runtime-benchmarks",
 	"pallet-asset-rate/runtime-benchmarks",
+	"pallet-assets/runtime-benchmarks",
 	"pallet-author-noting/runtime-benchmarks",
 	"pallet-babe/runtime-benchmarks",
 	"pallet-balances/runtime-benchmarks",
@@ -381,6 +388,7 @@ runtime-benchmarks = [
 	"pallet-external-validator-slashes/runtime-benchmarks",
 	"pallet-external-validators-rewards/runtime-benchmarks",
 	"pallet-external-validators/runtime-benchmarks",
+	"pallet-foreign-asset-creator/runtime-benchmarks",
 	"pallet-grandpa/runtime-benchmarks",
 	"pallet-identity/runtime-benchmarks",
 	"pallet-inactivity-tracking/runtime-benchmarks",
@@ -450,6 +458,7 @@ try-runtime = [
 	"frame-try-runtime/try-runtime",
 	"nimbus-primitives/try-runtime",
 	"pallet-asset-rate/try-runtime",
+	"pallet-assets/try-runtime",
 	"pallet-author-noting/try-runtime",
 	"pallet-authority-assignment/try-runtime",
 	"pallet-authority-discovery/try-runtime",
@@ -470,12 +479,14 @@ try-runtime = [
 	"pallet-external-validator-slashes/try-runtime",
 	"pallet-external-validators-rewards/try-runtime",
 	"pallet-external-validators/try-runtime",
+	"pallet-foreign-asset-creator/try-runtime",
 	"pallet-grandpa/try-runtime",
 	"pallet-identity/try-runtime",
 	"pallet-inactivity-tracking/try-runtime",
 	"pallet-inflation-rewards/try-runtime",
 	"pallet-initializer/try-runtime",
 	"pallet-invulnerables/try-runtime",
+	"pallet-maintenance-mode/try-runtime",
 	"pallet-membership/try-runtime",
 	"pallet-message-queue/try-runtime",
 	"pallet-migrations/try-runtime",

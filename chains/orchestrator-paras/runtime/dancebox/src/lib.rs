@@ -62,12 +62,9 @@ use {
         parameter_types,
         traits::{
             fungible::{Balanced, Credit, Inspect},
-            tokens::{
-                imbalance::ResolveTo, ConversionToAssetBalance, PayFromAccount,
-                UnityAssetBalanceConversion,
-            },
+            tokens::{ConversionToAssetBalance, PayFromAccount, UnityAssetBalanceConversion},
             ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Contains, EitherOfDiverse,
-            Imbalance, InsideBoth, InstanceFilter, OnUnbalanced, ValidatorRegistration,
+            InsideBoth, InstanceFilter, OnUnbalanced, ValidatorRegistration,
         },
         weights::{
             constants::{
@@ -84,7 +81,6 @@ use {
         EnsureRoot, EnsureSigned,
     },
     nimbus_primitives::{NimbusId, SlotBeacon},
-    pallet_balances::NegativeImbalance,
     pallet_collator_assignment::{GetRandomnessForNextBlock, RotateCollatorsEveryNSessions},
     pallet_invulnerables::InvulnerableRewardDistribution,
     pallet_pooled_staking::traits::{IsCandidateEligible, Timer},
@@ -468,53 +464,14 @@ impl pallet_balances::Config for Runtime {
     type WeightInfo = weights::pallet_balances::SubstrateWeight<Runtime>;
 }
 
-pub struct DealWithFees<R>(sp_std::marker::PhantomData<R>);
-impl<R> OnUnbalanced<Credit<R::AccountId, pallet_balances::Pallet<R>>> for DealWithFees<R>
-where
-    R: pallet_balances::Config + pallet_treasury::Config + frame_system::Config,
-    pallet_treasury::NegativeImbalanceOf<R>: From<NegativeImbalance<R>>,
-{
-    // this seems to be called for substrate-based transactions
-    fn on_unbalanceds(
-        mut fees_then_tips: impl Iterator<Item = Credit<R::AccountId, pallet_balances::Pallet<R>>>,
-    ) {
-        if let Some(fees) = fees_then_tips.next() {
-            // 80% is burned, 20% goes to the treasury
-            // Same policy applies for tips as well
-            let burn_percentage = 80;
-            let treasury_percentage = 20;
-
-            let (_, to_treasury) = fees.ration(burn_percentage, treasury_percentage);
-            ResolveTo::<pallet_treasury::TreasuryAccountId<R>, pallet_balances::Pallet<R>>::on_unbalanced(to_treasury);
-            // Balances pallet automatically burns dropped Negative Imbalances by decreasing total_supply accordingly
-            // handle tip if there is one
-            if let Some(tip) = fees_then_tips.next() {
-                let (_, to_treasury) = tip.ration(burn_percentage, treasury_percentage);
-                ResolveTo::<pallet_treasury::TreasuryAccountId<R>, pallet_balances::Pallet<R>>::on_unbalanced(to_treasury);
-            }
-        }
-    }
-
-    // this is called from pallet_evm for Ethereum-based transactions
-    // (technically, it calls on_unbalanced, which calls this when non-zero)
-    fn on_nonzero_unbalanced(amount: Credit<R::AccountId, pallet_balances::Pallet<R>>) {
-        // 80% is burned, 20% goes to the treasury
-        let burn_percentage = 80;
-        let treasury_percentage = 20;
-
-        let (_, to_treasury) = amount.ration(burn_percentage, treasury_percentage);
-        ResolveTo::<pallet_treasury::TreasuryAccountId<R>, pallet_balances::Pallet<R>>::on_unbalanced(to_treasury);
-    }
-}
-
 parameter_types! {
     pub const TransactionByteFee: Balance = 1;
 }
 
 impl pallet_transaction_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    // This will burn 80% from fees & tips and deposit the remainder into the treasury
-    type OnChargeTransaction = FungibleAdapter<Balances, DealWithFees<Runtime>>;
+    type OnChargeTransaction =
+        FungibleAdapter<Balances, tanssi_runtime_common::DealWithFees<Runtime>>;
     type OperationalFeeMultiplier = ConstU8<5>;
     type WeightToFee = WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
@@ -1768,6 +1725,17 @@ impl pallet_multisig::Config for Runtime {
     type WeightInfo = weights::pallet_multisig::SubstrateWeight<Runtime>;
 }
 
+pub struct DanceboxParathreadHelper;
+
+impl tp_traits::ParathreadHelper for DanceboxParathreadHelper {
+    fn is_parathread(para_id: &ParaId) -> bool {
+        Registrar::session_container_chains(Session::current_index())
+            .parathreads
+            .iter()
+            .any(|(x_para_id, _)| x_para_id == para_id)
+    }
+}
+
 impl pallet_inactivity_tracking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type CollatorId = CollatorId;
@@ -1777,6 +1745,7 @@ impl pallet_inactivity_tracking::Config for Runtime {
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type CurrentCollatorsFetcher = CollatorAssignment;
     type GetSelfChainBlockAuthor = GetSelfChainBlockAuthor;
+    type ParathreadHelper = DanceboxParathreadHelper;
     type WeightInfo = weights::pallet_inactivity_tracking::SubstrateWeight<Runtime>;
 }
 

@@ -28,7 +28,7 @@ describeSuite({
 
         it({
             id: "E01",
-            title: "80% of Fees are burned",
+            title: "0% of Fees are burned, they are sent to treasury",
             test: async () => {
                 const totalSupplyBefore = (await polkadotJs.query.balances.totalIssuance()).toBigInt();
                 const balanceBefore = (await polkadotJs.query.system.account(alice.address)).data.free.toBigInt();
@@ -74,7 +74,7 @@ describeSuite({
 
                 const totalSupplyAfter = (await polkadotJs.query.balances.totalIssuance()).toBigInt();
 
-                expect(totalSupplyAfter - totalSupplyBefore).to.equal(issuance - (fee * 4n) / 5n);
+                expect(totalSupplyAfter - totalSupplyBefore).to.equal(issuance);
             },
         });
     },

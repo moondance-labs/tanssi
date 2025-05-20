@@ -111,6 +111,12 @@ describeSuite({
             id: "E02",
             title: "Pallet should correctly update collators' activity records with inactive chain",
             test: async () => {
+                if (shouldSkipStarlightIT) {
+                    console.log(`Skipping E02 test for Starlight version ${specVersion}`);
+                    // TODO: once the pallet is in starlight, check the calls are filtered,
+                    // in case we don't want them for a specific runtime version.
+                    return;
+                }
                 const paraId = polkadotJs.createType("ParaId", 2000);
                 await jumpToSession(context, 2);
                 const startSession = (await polkadotJs.query.session.currentIndex()).toNumber();

@@ -33,17 +33,43 @@ fn get_active_collators(block: u32) -> AuthorNotingInfo<AccountId> {
     }
 }
 
+fn get_max_active_collators_vec(block: u32) -> Vec<AuthorNotingInfo<AccountId>> {
+    let total_collators: u32 = <Test as Config>::MaxCollatorsPerSession::get();
+    let mut active_collators: Vec<AuthorNotingInfo<AccountId>> = Vec::new();
+    for i in 0u32..total_collators {
+        active_collators.push(AuthorNotingInfo {
+            block_number: block + i,
+            author: (i + 3).into(),
+            para_id: 3002.into(),
+        });
+    }
+    active_collators
+}
+
 fn get_overflowing_active_collators_vec(block: u32) -> Vec<AuthorNotingInfo<AccountId>> {
     let total_collators = <Test as Config>::MaxCollatorsPerSession::get();
     let mut overflowing_active_collators: Vec<AuthorNotingInfo<AccountId>> = Vec::new();
     for i in 0u32..=total_collators {
         overflowing_active_collators.push(AuthorNotingInfo {
-            block_number: block,
+            block_number: block + i,
             author: (i + 1).into(),
-            para_id: (i + 2000).into(),
+            para_id: 2000.into(),
         });
     }
     overflowing_active_collators
+}
+
+fn get_overflowing_active_chains_vec(block: u32) -> Vec<AuthorNotingInfo<AccountId>> {
+    let total_chains = <Test as Config>::MaxContainerChains::get();
+    let mut overflowing_active_chains: Vec<AuthorNotingInfo<AccountId>> = Vec::new();
+    for i in 0u32..=total_chains {
+        overflowing_active_chains.push(AuthorNotingInfo {
+            block_number: block,
+            author: COLLATOR_1,
+            para_id: (i + 2000).into(),
+        });
+    }
+    overflowing_active_chains
 }
 
 fn get_collator_set(
@@ -382,8 +408,8 @@ fn processing_ended_session_correctly_updates_current_session_collators_and_acti
     ExtBuilder.build().execute_with(|| {
         let current_session_active_collator_record: BoundedBTreeSet<AccountId, ConstU32<5>> =
             get_collator_set(vec![COLLATOR_1]);
-        let inactive_collator_record: BoundedBTreeSet<AccountId, ConstU32<5>> =
-            get_collator_set(vec![COLLATOR_2]);
+        let inactive_collators_record: BoundedBTreeSet<AccountId, ConstU32<5>> =
+            get_collator_set(vec![COLLATOR_2, COLLATOR_3]);
         let current_session_active_chain_record = get_active_chains_set(vec![CONTAINER_CHAIN_ID_1]);
         let empty_set: BoundedBTreeSet<AccountId, ConstU32<5>> = BoundedBTreeSet::new();
 
@@ -408,7 +434,7 @@ fn processing_ended_session_correctly_updates_current_session_collators_and_acti
         roll_to(SESSION_BLOCK_LENGTH + 1);
 
         assert_eq!(ActiveCollatorsForCurrentSession::<Test>::get(), empty_set);
-        assert_eq!(InactiveCollators::<Test>::get(0), inactive_collator_record);
+        assert_eq!(InactiveCollators::<Test>::get(0), inactive_collators_record);
     });
 }
 
@@ -419,8 +445,8 @@ fn processing_ended_session_correctly_cleans_outdated_collator_records() {
 
         let current_session_active_collator_record: BoundedBTreeSet<AccountId, ConstU32<5>> =
             get_collator_set(vec![COLLATOR_1]);
-        let inactive_collator_record: BoundedBTreeSet<AccountId, ConstU32<5>> =
-            get_collator_set(vec![COLLATOR_2]);
+        let inactive_collators_record: BoundedBTreeSet<AccountId, ConstU32<5>> =
+            get_collator_set(vec![COLLATOR_2, COLLATOR_3]);
         let current_session_active_chain_record = get_active_chains_set(vec![CONTAINER_CHAIN_ID_1]);
         let empty_set: BoundedBTreeSet<AccountId, ConstU32<5>> = BoundedBTreeSet::new();
 
@@ -444,7 +470,7 @@ fn processing_ended_session_correctly_cleans_outdated_collator_records() {
         roll_to(SESSION_BLOCK_LENGTH);
 
         assert_eq!(ActiveCollatorsForCurrentSession::<Test>::get(), empty_set);
-        assert_eq!(InactiveCollators::<Test>::get(0), inactive_collator_record);
+        assert_eq!(InactiveCollators::<Test>::get(0), inactive_collators_record);
 
         roll_to(get_max_inactive_sessions() as u64 * SESSION_BLOCK_LENGTH + 1);
         assert_eq!(
@@ -453,7 +479,7 @@ fn processing_ended_session_correctly_cleans_outdated_collator_records() {
         );
 
         assert_eq!(ActiveCollatorsForCurrentSession::<Test>::get(), empty_set);
-        assert_eq!(InactiveCollators::<Test>::get(0), inactive_collator_record);
+        assert_eq!(InactiveCollators::<Test>::get(0), inactive_collators_record);
 
         roll_to((get_max_inactive_sessions() as u64 + 1) * SESSION_BLOCK_LENGTH + 1);
         assert_eq!(
@@ -590,6 +616,55 @@ fn inactivity_tracking_is_disabled_if_current_active_collators_storage_overflows
 }
 
 #[test]
+fn inactivity_tracking_is_disabled_if_ctive_chains_storage_overflows() {
+    ExtBuilder.build().execute_with(|| {
+        assert_eq!(
+            CurrentActivityTrackingStatus::<Test>::get(),
+            ActivityTrackingStatus::Enabled { start: 0, end: 0 }
+        );
+        roll_to(1);
+        <Pallet<Test> as AuthorNotingHook<AccountId>>::on_container_authors_noted(
+            &get_overflowing_active_chains_vec(1).as_slice(),
+        );
+        assert_eq!(
+            CurrentActivityTrackingStatus::<Test>::get(),
+            ActivityTrackingStatus::Disabled { end: 2 }
+        );
+    });
+}
+
+#[test]
+fn inactivity_tracking_is_disabled_if_current_active_collators_storage_overflows_while_processing_inactive_chains_in_the_end_of_a_session(
+) {
+    ExtBuilder.build().execute_with(|| {
+        assert_eq!(
+            CurrentActivityTrackingStatus::<Test>::get(),
+            ActivityTrackingStatus::Enabled { start: 0, end: 0 }
+        );
+        roll_to(1);
+        // We note the max active collators for the session which are not COLLATOR_1 and COLLATOR_2
+        // for chains that are not CONTAINER_CHAIN_ID_1 and CONTAINER_CHAIN_ID_2
+        <Pallet<Test> as AuthorNotingHook<AccountId>>::on_container_authors_noted(
+            &get_max_active_collators_vec(1),
+        );
+        // Since the active collators storage is not overflowing,
+        // we will not disable the activity tracking
+        assert_eq!(
+            CurrentActivityTrackingStatus::<Test>::get(),
+            ActivityTrackingStatus::Enabled { start: 0, end: 0 }
+        );
+        // Since chain with id CONTAINER_CHAIN_ID_1 is inactive COLLATOR_1 and COLLATOR_2
+        // will be added to the active collators storage for current session and it will overflow
+        roll_to(SESSION_BLOCK_LENGTH + 1);
+        assert_eq!(
+            CurrentActivityTrackingStatus::<Test>::get(),
+            ActivityTrackingStatus::Disabled { end: 2 }
+        );
+        assert_eq!(InactiveCollators::<Test>::get(0).len(), 0);
+    });
+}
+
+#[test]
 fn active_chains_noting_for_current_session_works_when_activity_tracking_is_enabled() {
     ExtBuilder.build().execute_with(|| {
         let current_session_active_chain_record = get_active_chains_set(vec![CONTAINER_CHAIN_ID_1]);
@@ -684,7 +759,14 @@ fn inactive_chain_collators_are_correctly_processed_when_activity_tracking_is_en
             true
         );
         roll_to(SESSION_BLOCK_LENGTH);
-        assert_eq!(InactiveCollators::<Test>::get(0).is_empty(), true);
+        // Since we have one container chain with id CONTAINER_CHAIN_ID_3 which is a parathread
+        // which has COLLATOR_3 assigned to it, COLLATOR_3 will be added as inactive collator
+        // but COLLATOR_1 and COLLATOR_2 will not be added to the inactive collators storage
+        // as they are assigned to a parachain
+        assert_eq!(
+            InactiveCollators::<Test>::get(0),
+            get_collator_set(vec![COLLATOR_3])
+        );
     });
 }
 
@@ -714,7 +796,7 @@ fn inactive_collator_for_active_chain_is_correctly_processed_when_activity_track
         roll_to(SESSION_BLOCK_LENGTH);
         assert_eq!(
             InactiveCollators::<Test>::get(0),
-            get_collator_set(vec![COLLATOR_2])
+            get_collator_set(vec![COLLATOR_2, COLLATOR_3])
         );
     });
 }
@@ -798,7 +880,7 @@ fn inactive_chain_collators_are_processed_correctly_when_activity_tracking_is_di
         );
         assert_eq!(
             InactiveCollators::<Test>::get(last_disabled_session_id + 1),
-            get_collator_set(vec![COLLATOR_2])
+            get_collator_set(vec![COLLATOR_2, COLLATOR_3])
         );
     });
 }

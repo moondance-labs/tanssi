@@ -34,6 +34,7 @@ use {
     tp_traits::{
         AuthorNotingHook, AuthorNotingInfo, ForSession, GetContainerChainsWithCollators,
         GetSessionIndex, MaybeSelfChainBlockAuthor, NodeActivityTrackingHelper, ParaId,
+        ParathreadHelper,
     },
 };
 
@@ -131,6 +132,9 @@ pub mod pallet {
 
         /// Helper that returns the block author for the orchestrator chain (if it exists)
         type GetSelfChainBlockAuthor: MaybeSelfChainBlockAuthor<Self::CollatorId>;
+
+        /// Helper that checks if a ParaId is a parathread
+        type ParathreadHelper: ParathreadHelper;
 
         /// The weight information of this pallet.
         type WeightInfo: weights::WeightInfo;
@@ -288,6 +292,7 @@ pub mod pallet {
         /// as inactive. Triggered at the end of a session.
         pub fn on_before_session_ending() {
             let current_session_index = T::CurrentSessionIndex::session_index();
+            Self::process_inactive_chains_for_session();
             match <CurrentActivityTrackingStatus<T>>::get() {
                 ActivityTrackingStatus::Disabled { .. } => return,
                 ActivityTrackingStatus::Enabled { start, end: _ } => {
@@ -296,7 +301,6 @@ pub mod pallet {
                     }
                 }
             }
-            Self::process_inactive_chains_for_session();
             if let Ok(inactive_collators) =
                 BoundedBTreeSet::<T::CollatorId, T::MaxCollatorsPerSession>::try_from(
                     T::CurrentCollatorsFetcher::get_all_collators_assigned_to_chains(
@@ -329,21 +333,34 @@ pub mod pallet {
             let active_chains = <ActiveContainerChainsForCurrentSession<T>>::get();
             let _ = <ActiveCollatorsForCurrentSession<T>>::try_mutate(
                 |active_collators| -> DispatchResult {
-                    T::CurrentCollatorsFetcher::container_chains_with_collators(
-                        ForSession::Current,
-                    )
-                    .iter()
-                    .for_each(|(para_id, collator_ids)| {
-                        if !active_chains.contains(para_id) {
-                            collator_ids.iter().for_each(|collator_id| {
-                                if !active_collators.contains(collator_id) {
-                                    let _ = active_collators
-                                        .try_insert(collator_id.clone())
-                                        .map_err(|_| Error::<T>::MaxCollatorsPerSessionReached);
+                    let container_chains_with_collators =
+                        T::CurrentCollatorsFetcher::container_chains_with_collators(
+                            ForSession::Current,
+                        );
+                    for (para_id, collator_ids) in container_chains_with_collators.iter() {
+                        if !active_chains.contains(para_id)
+                            && !T::ParathreadHelper::is_parathread(para_id)
+                        {
+                            // Collators assigned to inactive chain are added
+                            // to the current active collators storage
+                            for collator_id in collator_ids {
+                                if !active_collators.contains(&collator_id) {
+                                    if let Err(_) = active_collators.try_insert(collator_id.clone())
+                                    {
+                                        // If we reach MaxCollatorsPerSession limit there must be a bug in the pallet
+                                        // so we disable the activity tracking
+                                        Self::set_inactivity_tracking_status_inner(
+                                            T::CurrentSessionIndex::session_index(),
+                                            false,
+                                        );
+                                        return Err(
+                                            Error::<T>::MaxCollatorsPerSessionReached.into()
+                                        );
+                                    }
                                 }
-                            });
+                            }
                         }
-                    });
+                    }
                     Ok(())
                 },
             );
@@ -379,10 +396,16 @@ pub mod pallet {
             let mut total_weight = T::DbWeight::get().reads_writes(1, 0);
             let _ = <ActiveContainerChainsForCurrentSession<T>>::try_mutate(
                 |active_chains| -> DispatchResult {
-                    if active_chains
-                        .try_insert(chain_id)
-                        .map_err(|_| Error::<T>::MaxContainerChainsReached)?
-                    {
+                    if let Err(_) = active_chains.try_insert(chain_id) {
+                        // If we reach MaxContainerChains limit there must be a bug in the pallet
+                        // so we disable the activity tracking
+                        Self::set_inactivity_tracking_status_inner(
+                            T::CurrentSessionIndex::session_index(),
+                            false,
+                        );
+                        total_weight.saturating_accrue(T::DbWeight::get().reads_writes(1, 2));
+                        return Err(Error::<T>::MaxContainerChainsReached.into());
+                    } else {
                         total_weight += T::DbWeight::get().writes(1);
                     }
                     Ok(())
