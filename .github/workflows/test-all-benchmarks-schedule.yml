@@ -62,7 +62,7 @@ jobs:
           ~/bin/bin/gh issue create \
             --title "❌ Scheduled benchmark failed on `${{ github.ref_name }}`" \
             --body "See the logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
-            --assignee evgeny-s,tmpolaczyk,
+            --assignee evgeny-s,tmpolaczyk,girazoki
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
