@@ -152,6 +152,7 @@ pallet-stream-payment-runtime-api = { workspace = true }
 tanssi-runtime-common = { workspace = true }
 
 # Moonkit
+pallet-maintenance-mode = { workspace = true, features = [ "xcm-support" ] }
 pallet-migrations = { workspace = true }
 
 # Bridges
@@ -345,6 +346,7 @@ std = [
 	"xcm-executor/std",
 	"xcm-runtime-apis/std",
 	"xcm/std",
+	"pallet-maintenance-mode/std"
 ]
 no_std = []
 
@@ -511,6 +513,7 @@ try-runtime = [
 	"sp-runtime/try-runtime",
 	"tanssi-runtime-common/try-runtime",
 	"westend-runtime/try-runtime",
+	"pallet-maintenance-mode/try-runtime"
 ]
 
 # Set timing constants (e.g. session period) to faster versions to speed up testing.
