@@ -37,6 +37,7 @@ jobs:
           echo "Number of CPU cores: $(nproc)"
           lscpu
           cat /proc/self/cgroup
+          /sys/fs/cgroup/system.slice/gh-runner.service/
           exit 1
 
       - name: Cargo build
