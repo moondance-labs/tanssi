@@ -34,14 +34,17 @@ jobs:
         id: check-cores
         shell: bash
         run: |
-          echo "Number of CPU cores: $(nproc)"
-          lscpu
-          cat /proc/self/cgroup
-          cat /sys/fs/cgroup/system.slice/gh-runner.service/cpu.max
-          echo "scaling governor"
-          cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
-          cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq
-          exit 1
+          sudo apt-get update && sudo apt-get install -y sysstat
+          CORES=$(nproc)
+          echo "Using $CORES cores"
+          for i in $(seq 1 $CORES); do
+            yes > /dev/null &
+          done
+          echo $! > pids.txt
+          sleep 15
+          pkill yes || true
+          echo "CPU usage snapshot with mpstat:"
+          mpstat -P ALL 1 5
 
       - name: Cargo build
         uses: ./.github/workflow-templates/cargo-build
