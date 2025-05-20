@@ -1,10 +1,6 @@
 name: Test all benchmarks on schedule
 
 on:
-  # TODO: Remove
-  push:
-    branches:
-      - MD-1043-evgeny-benchmarks
   workflow_dispatch:
     inputs:
       branch:
@@ -39,21 +35,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: MD-1043-evgeny-benchmarks # ${{ steps.branch.outputs.branch }}
+          ref: ${{ steps.branch.outputs.branch }}
 
       - name: Install GitHub CLI
         uses: ./.github/workflow-templates/gh-cli
 
-#      - name: Cargo build
-#        uses: ./.github/workflow-templates/cargo-build
-#        with:
-#          features: "fast-runtime,runtime-benchmarks,metadata-hash"
+      - name: Cargo build
+        uses: ./.github/workflow-templates/cargo-build
+        with:
+          features: "fast-runtime,runtime-benchmarks,metadata-hash"
 
       - name: Run all benchmarks in parallel
         id: run-benchmarks
         shell: bash
         run: |
-          exit 1
           ./tools/benchmark-all-runtimes.sh --parallel
 
       - name: Create issue if scheduled benchmark failed
@@ -103,12 +98,12 @@ jobs:
           git config user.email "github-actions@github.com"
           git checkout -b "$BRANCH"
           git add .
-          git commit -m "chore(weights): update weights after benchmark failure"
+          git commit -m "chore(weights): update weights after benchmark weights anomaly found"
           git push origin "$BRANCH"
 
           ~/bin/bin/gh pr create \
-            --title "chore(weights): auto-update weights on benchmark failure" \
-            --body "Auto-generated PR with new weights after benchmark failure." \
+            --title "chore(weights): auto-update weights on benchmark weights anomaly found" \
+            --body "Auto-generated PR with new weights after benchmark weights anomaly found." \
             --base ${{ steps.branch.outputs.branch }} \
             --head "$BRANCH" \
             --draft \
