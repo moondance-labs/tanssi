@@ -52,7 +52,7 @@ jobs:
           ./tools/benchmark-all-runtimes.sh --parallel
 
       - name: Create issue if scheduled benchmark failed
-        if: failure() # && github.event_name == 'schedule' // TODO: Revert
+        if: failure() && github.event_name == 'schedule'
         run: |
           ~/bin/bin/gh issue create \
             --title "❌ Scheduled benchmark failed on ${{ steps.branch.outputs.branch }}" \
