@@ -38,7 +38,7 @@ use {
         traits::{
             fungible::Inspect,
             tokens::{PayFromAccount, UnityAssetBalanceConversion},
-            ConstBool, Contains, EverythingBut,
+            ConstBool, Contains, EverythingBut, InsideBoth,
         },
     },
     frame_system::{pallet_prelude::BlockNumberFor, EnsureNever},
@@ -1676,7 +1676,7 @@ type NormalFilter = EverythingBut<(
 impl pallet_maintenance_mode::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type NormalCallFilter = NormalFilter;
-    type MaintenanceCallFilter = MaintenanceFilter;
+    type MaintenanceCallFilter = InsideBoth<MaintenanceFilter, NormalFilter>;
     type MaintenanceOrigin = EnsureRoot<AccountId>;
     type XcmExecutionManager = ();
 }

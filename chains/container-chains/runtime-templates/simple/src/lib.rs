@@ -640,7 +640,7 @@ impl Contains<RuntimeCall> for NormalFilter {
 impl pallet_maintenance_mode::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type NormalCallFilter = NormalFilter;
-    type MaintenanceCallFilter = MaintenanceFilter;
+    type MaintenanceCallFilter = InsideBoth<MaintenanceFilter, NormalFilter>;
     type MaintenanceOrigin = EnsureRoot<AccountId>;
     type XcmExecutionManager = XcmExecutionManager;
 }
