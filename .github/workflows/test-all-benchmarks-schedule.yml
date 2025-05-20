@@ -60,7 +60,7 @@ jobs:
         if: failure() # && github.event_name == 'schedule' // TODO: Revert
         run: |
           ~/bin/bin/gh issue create \
-            --title "❌ Scheduled benchmark failed on `${{ steps.branch.outputs.branch }}`" \
+            --title "❌ Scheduled benchmark failed on ${{ steps.branch.outputs.branch }}" \
             --body "See the logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
             --assignee evgeny-s,tmpolaczyk,girazoki
         env:
