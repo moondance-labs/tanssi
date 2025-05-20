@@ -2,9 +2,6 @@ name: Test all benchmarks on schedule
 
 on:
   push:
-#  TODO: Remove
-    branches:
-      - MD-1043-evgeny-benchmarks
   workflow_dispatch:
   schedule:
     - cron: "0 0 * * 6"  # Runs every Saturday at 12 AM UTC
@@ -25,7 +22,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: MD-1043-evgeny-benchmarks # TODO Change to master before merge
+          ref: master
 
       - name: Install GitHub CLI
         uses: ./.github/workflow-templates/gh-cli
@@ -66,7 +63,7 @@ jobs:
           fi
 
       - name: Create a draft PR with weight changes
-        if: steps.weights-diff.outputs.status != '0'
+        if: steps.weights-diff.outputs.status != '0' || github.event_name == 'workflow_dispatch'
         run: |
           if git diff --quiet; then
             echo "No changes to commit, skipping PR creation."
@@ -84,7 +81,7 @@ jobs:
           ~/bin/bin/gh pr create \
             --title "chore(weights): auto-update weights on benchmark failure" \
             --body "Auto-generated PR with new weights after benchmark failure." \
-            --base MD-1043-evgeny-benchmarks \
+            --base master \
             --head "$BRANCH" \
             --draft \
             --reviewer "CoreDev"
