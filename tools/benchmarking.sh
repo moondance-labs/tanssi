@@ -24,6 +24,7 @@ else
     CHAIN="${CHAIN}"
 fi
 
+: "${OUTPUT_PATH:=}"
 if [[ -z "${OUTPUT_PATH}" ]]; then
     mkdir -p tmp
     OUTPUT_PATH="tmp"
@@ -31,6 +32,7 @@ else
     OUTPUT_PATH="${OUTPUT_PATH}"
 fi
 
+: "${TEMPLATE_PATH:=}"
 if [[ -z "${TEMPLATE_PATH}" ]]; then
     TEMPLATE_PATH="./benchmarking/frame-weight-pallet-template.hbs"
 else
