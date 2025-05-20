@@ -3,6 +3,11 @@ name: Test all benchmarks on schedule
 on:
   push:
   workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to run benchmarks on"
+        required: true
+        default: "master"
   schedule:
     - cron: "0 0 * * 6"  # Runs every Saturday at 12 AM UTC
 
@@ -19,10 +24,19 @@ jobs:
       SCCACHE_GHA_ENABLED: "true"
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
+      - name: Determine branch
+        id: branch
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "branch=${{ github.event.inputs.branch }}" >> $GITHUB_OUTPUT
+          else
+            echo "branch=master" >> $GITHUB_OUTPUT
+          fi
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: master
+          ref: ${{ steps.branch.outputs.branch }}
 
       - name: Install GitHub CLI
         uses: ./.github/workflow-templates/gh-cli
@@ -81,7 +95,7 @@ jobs:
           ~/bin/bin/gh pr create \
             --title "chore(weights): auto-update weights on benchmark failure" \
             --body "Auto-generated PR with new weights after benchmark failure." \
-            --base master \
+            --base ${{ steps.branch.outputs.branch }} \
             --head "$BRANCH" \
             --draft \
             --reviewer "CoreDev"
