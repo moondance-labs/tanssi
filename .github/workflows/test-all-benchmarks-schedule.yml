@@ -36,7 +36,34 @@ jobs:
         run: |
           echo "Number of CPU cores: $(nproc)"
           lscpu
-          cat /sys/fs/cgroup/cpu.max
+          if mountpoint -q /sys/fs/cgroup; then
+            if [ -f /sys/fs/cgroup/cpu.max ]; then
+              echo "Detected: cgroups v2"
+              CPU_MAX=$(cat /sys/fs/cgroup/cpu.max)
+              QUOTA=$(echo "$CPU_MAX" | awk '{print $1}')
+              PERIOD=$(echo "$CPU_MAX" | awk '{print $2}')
+              if [ "$QUOTA" = "max" ]; then
+                echo "→ CPU Limit: No limit"
+              else
+                CPU_LIMIT=$(awk -v q="$QUOTA" -v p="$PERIOD" 'BEGIN { printf "%.2f", q/p }')
+                echo "→ CPU Limit: $CPU_LIMIT cores"
+              fi
+            elif [ -f /sys/fs/cgroup/cpu/cpu.cfs_quota_us ]; then
+              echo "Detected: cgroups v1"
+              QUOTA=$(cat /sys/fs/cgroup/cpu/cpu.cfs_quota_us)
+              PERIOD=$(cat /sys/fs/cgroup/cpu/cpu.cfs_period_us)
+              if [ "$QUOTA" -eq "-1" ]; then
+                echo "→ CPU Limit: No limit"
+              else
+                CPU_LIMIT=$(awk -v q="$QUOTA" -v p="$PERIOD" 'BEGIN { printf "%.2f", q/p }')
+                echo "→ CPU Limit: $CPU_LIMIT cores"
+              fi
+            else
+              echo "Could not detect cgroup CPU configuration."
+            fi
+          else
+            echo "/sys/fs/cgroup is not a mount point. Cannot detect cgroup info."
+          fi
           exit 1
 
       - name: Cargo build
