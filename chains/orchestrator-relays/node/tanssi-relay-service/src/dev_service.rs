@@ -388,6 +388,7 @@ where
 
         // iterate over every core|para pair
         for (core, para) in claim_queue {
+            // allows preventing container chains from producing blocks in dev mode
             let mut para = para.clone();
             para.retain(|x| !mock_excluded_container_chains.contains(x));
             // check which group is assigned to each core

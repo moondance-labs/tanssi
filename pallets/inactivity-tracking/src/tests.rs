@@ -616,7 +616,7 @@ fn inactivity_tracking_is_disabled_if_current_active_collators_storage_overflows
 }
 
 #[test]
-fn inactivity_tracking_is_disabled_if_ctive_chains_storage_overflows() {
+fn inactivity_tracking_is_disabled_if_active_chains_storage_overflows() {
     ExtBuilder.build().execute_with(|| {
         assert_eq!(
             CurrentActivityTrackingStatus::<Test>::get(),

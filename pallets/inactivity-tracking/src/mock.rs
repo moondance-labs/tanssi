@@ -204,7 +204,7 @@ impl pallet_inactivity_tracking::Config for Test {
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type CurrentCollatorsFetcher = MockContainerChainsInfoFetcher;
     type GetSelfChainBlockAuthor = ();
-    type ParathreadHelper = MockParathreadHelper;
+    type ParaFilter = MockParathreadHelper;
     type WeightInfo = ();
 }
 

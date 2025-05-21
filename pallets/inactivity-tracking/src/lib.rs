@@ -134,7 +134,7 @@ pub mod pallet {
         type GetSelfChainBlockAuthor: MaybeSelfChainBlockAuthor<Self::CollatorId>;
 
         /// Helper that checks if a ParaId is a parathread
-        type ParathreadHelper: ParathreadHelper;
+        type ParaFilter: ParathreadHelper;
 
         /// The weight information of this pallet.
         type WeightInfo: weights::WeightInfo;
@@ -339,7 +339,7 @@ pub mod pallet {
                         );
                     for (para_id, collator_ids) in container_chains_with_collators.iter() {
                         if !active_chains.contains(para_id)
-                            && !T::ParathreadHelper::is_parathread(para_id)
+                            && !T::ParaFilter::is_parathread(para_id)
                         {
                             // Collators assigned to inactive chain are added
                             // to the current active collators storage
