@@ -80,7 +80,7 @@ describeSuite({
                     if (!totalFee.isZero() || !treasuryDeposit.isZero()) {
                         expect(
                             totalFee.toString(),
-                            `Total fee (${totalFee.toString()}) should equal Treasury Deposit (${treasuryDeposit.toString()}) for block: ${blockNumber}`
+                            `Total fee (${totalFee.toString()}) should equal Treasury Deposit (${treasuryDeposit.toString()}) for block: ${blockNumber} with block hash: ${blockHash.toHuman()}`
                         ).toEqual(treasuryDeposit.toString());
                     } else {
                         log(`Skip for block number: ${blockNumber} as it has no fees`);
