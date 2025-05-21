@@ -62,12 +62,15 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22.x
-      - name: Regenerate typescript api with new runtime metadata
+
+      - name: Generate Typescript API Interfaces
+        uses: ./.github/workflow-templates/typescript-create-api-interfaces
+
+      - name: Update package version
         run: |
           cd typescript-api
-          pnpm install
-          pnpm create-local-interfaces
           pnpm version --no-git-tag-version 0.${{ github.event.inputs.spec_version }}.0
+
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v5
         with:
