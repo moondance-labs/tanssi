@@ -19,7 +19,8 @@ use {
     tp_traits::{GetSessionContainerChains, ParaId, ParathreadHelper},
 };
 
-// Implementation of the ParathreadHelper trait that excludes all parathreads
+// Common implementation of the ParathreadHelper trait for all chains 
+// supporting pallet_session and pallet_registrar.
 pub struct ExcludeAllParathreadsFilter<Runtime>(PhantomData<Runtime>);
 impl<Runtime: pallet_session::Config + pallet_registrar::Config> ParathreadHelper
     for ExcludeAllParathreadsFilter<Runtime>
