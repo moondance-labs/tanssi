@@ -599,13 +599,26 @@ fn receive_eth_native_token_in_tanssi_zero_address() {
                 proof: mock_snowbridge_message_proof(),
             };
 
-            let balance_before = ForeignAssets::balance(asset_id, AccountId::from(BOB));
-            assert_eq!(balance_before, 0u128);
+            let fees_account_balance_before = Balances::free_balance(SnowbridgeFeesAccount::get());
+            let relayer_balance_before = Balances::free_balance(AccountId::from(ALICE));
+            let bob_balance_before = ForeignAssets::balance(asset_id, AccountId::from(BOB));
+            assert_eq!(bob_balance_before, 0u128);
 
             assert_ok!(EthereumInboundQueue::submit(relayer, message));
 
-            let balance_after = ForeignAssets::balance(asset_id, AccountId::from(BOB));
-            assert_eq!(balance_after, amount_to_transfer);
+            let bob_balance_after = ForeignAssets::balance(asset_id, AccountId::from(BOB));
+            assert_eq!(bob_balance_after, amount_to_transfer);
+
+            // Ensure the relayer was rewarded
+            assert_eq!(
+                Balances::free_balance(SnowbridgeFeesAccount::get()),
+                fees_account_balance_before - fee
+            );
+
+            assert_eq!(
+                Balances::free_balance(AccountId::from(ALICE)),
+                relayer_balance_before + fee
+            );
         });
 }
 
@@ -695,13 +708,26 @@ fn receive_erc20_tokens_in_tanssi_non_zero_address() {
                 proof: mock_snowbridge_message_proof(),
             };
 
-            let balance_before = ForeignAssets::balance(asset_id, AccountId::from(BOB));
-            assert_eq!(balance_before, 0u128);
+            let fees_account_balance_before = Balances::free_balance(SnowbridgeFeesAccount::get());
+            let relayer_balance_before = Balances::free_balance(AccountId::from(ALICE));
+            let bob_balance_before = ForeignAssets::balance(asset_id, AccountId::from(BOB));
+            assert_eq!(bob_balance_before, 0u128);
 
             assert_ok!(EthereumInboundQueue::submit(relayer, message));
 
-            let balance_after = ForeignAssets::balance(asset_id, AccountId::from(BOB));
-            assert_eq!(balance_after, amount_to_transfer);
+            let bob_balance_after = ForeignAssets::balance(asset_id, AccountId::from(BOB));
+            assert_eq!(bob_balance_after, amount_to_transfer);
+
+            // Ensure the relayer was rewarded
+            assert_eq!(
+                Balances::free_balance(SnowbridgeFeesAccount::get()),
+                fees_account_balance_before - fee
+            );
+
+            assert_eq!(
+                Balances::free_balance(AccountId::from(ALICE)),
+                relayer_balance_before + fee
+            );
         });
 }
 
