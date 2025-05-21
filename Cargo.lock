@@ -3540,6 +3540,7 @@ dependencies = [
  "test-relay-sproof-builder",
  "tp-author-noting-inherent",
  "tp-data-preservers-common",
+ "tp-parathread-filter-common",
  "tp-stream-payment-common",
  "tp-traits",
  "tp-xcm-commons",
@@ -3754,6 +3755,7 @@ dependencies = [
  "tp-author-noting-inherent",
  "tp-bridge",
  "tp-data-preservers-common",
+ "tp-parathread-filter-common",
  "tp-stream-payment-common",
  "tp-traits",
  "tp-xcm-commons",
@@ -20459,6 +20461,16 @@ version = "0.1.0"
 dependencies = [
  "sp-core",
  "sp-runtime",
+]
+
+[[package]]
+name = "tp-parathread-filter-common"
+version = "0.1.0"
+dependencies = [
+ "pallet-registrar",
+ "pallet-session",
+ "sp-std",
+ "tp-traits",
 ]
 
 [[package]]

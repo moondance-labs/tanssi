@@ -1712,17 +1712,6 @@ impl pallet_multisig::Config for Runtime {
     type WeightInfo = weights::pallet_multisig::SubstrateWeight<Runtime>;
 }
 
-pub struct DanceboxParathreadHelper;
-
-impl tp_traits::ParathreadHelper for DanceboxParathreadHelper {
-    fn is_parathread(para_id: &ParaId) -> bool {
-        Registrar::session_container_chains(Session::current_index())
-            .parathreads
-            .iter()
-            .any(|(x_para_id, _)| x_para_id == para_id)
-    }
-}
-
 impl pallet_inactivity_tracking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type CollatorId = CollatorId;
@@ -1732,7 +1721,7 @@ impl pallet_inactivity_tracking::Config for Runtime {
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type CurrentCollatorsFetcher = CollatorAssignment;
     type GetSelfChainBlockAuthor = GetSelfChainBlockAuthor;
-    type ParaFilter = DanceboxParathreadHelper;
+    type ParaFilter = tp_parathread_filter_common::ExcludeAllParathreadsFilter<Runtime>;
     type WeightInfo = weights::pallet_inactivity_tracking::SubstrateWeight<Runtime>;
 }
 
