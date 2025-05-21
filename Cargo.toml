@@ -69,6 +69,7 @@ unsafe-code = { level = "deny", priority = 1 }
 [workspace.dependencies]
 
 # Members
+pallet-alt-benchmarks = { path = "pallets/alt-benchmarks", default-features = false }
 pallet-author-noting = { path = "pallets/author-noting", default-features = false }
 pallet-author-noting-runtime-api = { path = "pallets/author-noting/runtime-api", default-features = false }
 pallet-authority-assignment = { path = "pallets/authority-assignment", default-features = false }

@@ -43,6 +43,10 @@ import type {
     FrameSystemLastRuntimeUpgradeInfo,
     FrameSystemPhase,
     NimbusPrimitivesNimbusCryptoPublic,
+    PalletAssetsApproval,
+    PalletAssetsAssetAccount,
+    PalletAssetsAssetDetails,
+    PalletAssetsAssetMetadata,
     PalletBalancesAccountData,
     PalletBalancesBalanceLock,
     PalletBalancesReserveData,
@@ -136,7 +140,6 @@ import type {
     SpWeightsWeightV2Weight,
     StagingXcmV5Instruction,
     StagingXcmV5Location,
-    StagingXcmV5Xcm,
     TpBridgeChannelInfo,
     TpTraitsActiveEraInfo,
     TpTraitsContainerChainBlockInfo,
@@ -1193,6 +1196,100 @@ declare module "@polkadot/api-base/types/storage" {
              **/
             [key: string]: QueryableStorageEntry<ApiType>;
         };
+        foreignAssets: {
+            /**
+             * The holdings of a specific account for a specific asset.
+             **/
+            account: AugmentedQuery<
+                ApiType,
+                (
+                    arg1: u16 | AnyNumber | Uint8Array,
+                    arg2: AccountId32 | string | Uint8Array
+                ) => Observable<Option<PalletAssetsAssetAccount>>,
+                [u16, AccountId32]
+            > &
+                QueryableStorageEntry<ApiType, [u16, AccountId32]>;
+            /**
+             * Approved balance transfers. First balance is the amount approved for transfer. Second
+             * is the amount of `T::Currency` reserved for storing this.
+             * First key is the asset ID, second key is the owner and third key is the delegate.
+             **/
+            approvals: AugmentedQuery<
+                ApiType,
+                (
+                    arg1: u16 | AnyNumber | Uint8Array,
+                    arg2: AccountId32 | string | Uint8Array,
+                    arg3: AccountId32 | string | Uint8Array
+                ) => Observable<Option<PalletAssetsApproval>>,
+                [u16, AccountId32, AccountId32]
+            > &
+                QueryableStorageEntry<ApiType, [u16, AccountId32, AccountId32]>;
+            /**
+             * Details of an asset.
+             **/
+            asset: AugmentedQuery<
+                ApiType,
+                (arg: u16 | AnyNumber | Uint8Array) => Observable<Option<PalletAssetsAssetDetails>>,
+                [u16]
+            > &
+                QueryableStorageEntry<ApiType, [u16]>;
+            /**
+             * Metadata of an asset.
+             **/
+            metadata: AugmentedQuery<
+                ApiType,
+                (arg: u16 | AnyNumber | Uint8Array) => Observable<PalletAssetsAssetMetadata>,
+                [u16]
+            > &
+                QueryableStorageEntry<ApiType, [u16]>;
+            /**
+             * The asset ID enforced for the next asset creation, if any present. Otherwise, this storage
+             * item has no effect.
+             *
+             * This can be useful for setting up constraints for IDs of the new assets. For example, by
+             * providing an initial [`NextAssetId`] and using the [`crate::AutoIncAssetId`] callback, an
+             * auto-increment model can be applied to all new asset IDs.
+             *
+             * The initial next asset ID can be set using the [`GenesisConfig`] or the
+             * [SetNextAssetId](`migration::next_asset_id::SetNextAssetId`) migration.
+             **/
+            nextAssetId: AugmentedQuery<ApiType, () => Observable<Option<u16>>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * Generic query
+             **/
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
+        foreignAssetsCreator: {
+            /**
+             * Mapping from an asset id to a Foreign asset type.
+             * This is mostly used when receiving transaction specifying an asset directly,
+             * like transferring an asset from this chain to another.
+             **/
+            assetIdToForeignAsset: AugmentedQuery<
+                ApiType,
+                (arg: u16 | AnyNumber | Uint8Array) => Observable<Option<StagingXcmV5Location>>,
+                [u16]
+            > &
+                QueryableStorageEntry<ApiType, [u16]>;
+            /**
+             * Reverse mapping of AssetIdToForeignAsset. Mapping from a foreign asset to an asset id.
+             * This is mostly used when receiving a multilocation XCM message to retrieve
+             * the corresponding asset in which tokens should me minted.
+             **/
+            foreignAssetToAssetId: AugmentedQuery<
+                ApiType,
+                (
+                    arg: StagingXcmV5Location | { parents?: any; interior?: any } | string | Uint8Array
+                ) => Observable<Option<u16>>,
+                [StagingXcmV5Location]
+            > &
+                QueryableStorageEntry<ApiType, [StagingXcmV5Location]>;
+            /**
+             * Generic query
+             **/
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
         grandpa: {
             /**
              * The current list of authorities.
@@ -1618,6 +1715,16 @@ declare module "@polkadot/api-base/types/storage" {
              **/
             hasInitialized: AugmentedQuery<ApiType, () => Observable<Option<Null>>, []> &
                 QueryableStorageEntry<ApiType, []>;
+            /**
+             * Generic query
+             **/
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
+        maintenanceMode: {
+            /**
+             * Whether the site is in maintenance mode
+             **/
+            maintenanceMode: AugmentedQuery<ApiType, () => Observable<bool>, []> & QueryableStorageEntry<ApiType, []>;
             /**
              * Generic query
              **/

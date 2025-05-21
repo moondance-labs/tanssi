@@ -4,7 +4,7 @@ authors = { workspace = true }
 description = "Utils to tie different Tanssi components together and allow instantiation of a node."
 edition = "2021"
 license = "GPL-3.0-only"
-version = "0.13.0"
+version = "0.14.0"
 
 [lints]
 workspace = true
@@ -65,6 +65,7 @@ sp-version = { workspace = true }
 sp-weights = { workspace = true }
 
 # Substrate Pallets
+frame-metadata-hash-extension = { workspace = true, default-features = true, optional = true }
 frame-system = { workspace = true }
 pallet-babe = { workspace = true }
 pallet-staking = { workspace = true }
@@ -114,9 +115,11 @@ polkadot-runtime-parachains = { workspace = true }
 
 # Polkadot Runtime Constants
 dancelight-runtime-constants = { workspace = true, optional = true, features = [ "std" ] }
+starlight-runtime-constants = { workspace = true, optional = true, features = [ "std" ] }
 
 # Polkadot Runtimes
 dancelight-runtime = { workspace = true, optional = true, features = [ "std" ] }
+starlight-runtime = { workspace = true, optional = true, features = [ "std" ] }
 
 # Polkadot Subsystems
 polkadot-approval-distribution = { workspace = true, optional = true }
@@ -196,9 +199,13 @@ full-node = [
 ]
 
 # Configure the native runtimes to use.
-dancelight-native = [ "bitvec", "dancelight-runtime", "dancelight-runtime-constants" ]
+dancelight-native = [ "bitvec", "dancelight-runtime", "dancelight-runtime-constants", "frame-metadata-hash-extension" ]
+starlight-native = [ "bitvec", "frame-metadata-hash-extension", "starlight-runtime", "starlight-runtime-constants" ]
 
-fast-runtime = [ "dancelight-runtime?/fast-runtime" ]
+fast-runtime = [
+	"dancelight-runtime?/fast-runtime",
+	"starlight-runtime?/fast-runtime",
+]
 runtime-benchmarks = [
 	"cumulus-primitives-core/runtime-benchmarks",
 	"dancelight-runtime-constants?/runtime-benchmarks",
@@ -218,6 +225,8 @@ runtime-benchmarks = [
 	"sc-client-db/runtime-benchmarks",
 	"service/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
+	"starlight-runtime-constants?/runtime-benchmarks",
+	"starlight-runtime?/runtime-benchmarks",
 	"xcm-runtime-apis/runtime-benchmarks",
 ]
 try-runtime = [
@@ -230,10 +239,16 @@ try-runtime = [
 	"polkadot-runtime-parachains/try-runtime",
 	"polkadot-service/try-runtime",
 	"sp-runtime/try-runtime",
+	"starlight-runtime?/try-runtime",
 ]
 
 malus = [ "full-node" ]
+metadata-hash = [
+	"dancelight-runtime?/metadata-hash",
+	"starlight-runtime?/metadata-hash",
+]
 runtime-metrics = [
 	"dancelight-runtime?/runtime-metrics",
 	"polkadot-runtime-parachains/runtime-metrics",
+	"starlight-runtime?/runtime-metrics",
 ]

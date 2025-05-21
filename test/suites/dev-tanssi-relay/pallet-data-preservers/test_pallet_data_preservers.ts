@@ -5,6 +5,7 @@ import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 import { generateEmptyGenesisData, initializeCustomCreateBlock } from "utils";
 import type { DpContainerChainGenesisDataContainerChainGenesisData } from "@polkadot/types/lookup";
+import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_DATA_PRESERVERS, checkCallIsFiltered } from "helpers";
 
 describeSuite({
     id: "DEVT0901",
@@ -17,6 +18,9 @@ describeSuite({
         let general_user_bob: KeyringPair;
         let profileId = 0;
         let containerChainGenesisData: DpContainerChainGenesisDataContainerChainGenesisData;
+        let isStarlight: boolean;
+        let specVersion: number;
+        let shouldSkipStarlightDP: boolean;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
@@ -24,6 +28,12 @@ describeSuite({
             general_user_bob = context.keyring.charlie;
             initializeCustomCreateBlock(context);
             containerChainGenesisData = generateEmptyGenesisData(context.pjsApi, true);
+
+            const runtimeName = polkadotJs.runtimeVersion.specName.toString();
+            isStarlight = runtimeName === "starlight";
+            specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
+            shouldSkipStarlightDP =
+                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_DATA_PRESERVERS.includes(specVersion);
         });
 
         it({
@@ -39,6 +49,13 @@ describeSuite({
 
                 const tx = polkadotJs.tx.dataPreservers.createProfile(profile);
                 const signedTx = await tx.signAsync(general_user_bob);
+
+                if (shouldSkipStarlightDP) {
+                    console.log(`Skipping E01 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(context, polkadotJs, signedTx);
+                    return;
+                }
+
                 await context.createBlock([signedTx]);
 
                 const storedProfile = await polkadotJs.query.dataPreservers.profiles(profileId);
@@ -68,6 +85,17 @@ describeSuite({
 
                 const tx = polkadotJs.tx.dataPreservers.createProfile(profile);
                 const signedTx = await tx.signAsync(general_user_bob);
+
+                if (shouldSkipStarlightDP) {
+                    console.log(`Skipping E02 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(context, polkadotJs, signedTx);
+
+                    // Update profile should be filtered too
+                    const tx2 = polkadotJs.tx.dataPreservers.updateProfile(profileId, profile);
+                    await checkCallIsFiltered(context, polkadotJs, await tx2.signAsync(general_user_bob));
+                    return;
+                }
+
                 await context.createBlock([signedTx]);
 
                 const storedProfile = await polkadotJs.query.dataPreservers.profiles(++profileId);
@@ -120,6 +148,17 @@ describeSuite({
 
                 const tx = polkadotJs.tx.dataPreservers.createProfile(profile);
                 const signedTx = await tx.signAsync(general_user_bob);
+
+                if (shouldSkipStarlightDP) {
+                    console.log(`Skipping E02 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(context, polkadotJs, signedTx);
+
+                    // Delete profile should be filtered too
+                    const tx2 = polkadotJs.tx.dataPreservers.deleteProfile(profileId);
+                    await checkCallIsFiltered(context, polkadotJs, await tx2.signAsync(general_user_bob));
+                    return;
+                }
+
                 await context.createBlock([signedTx]);
 
                 const storedProfile = await polkadotJs.query.dataPreservers.profiles(++profileId);
@@ -155,6 +194,13 @@ describeSuite({
                 };
 
                 const tx = polkadotJs.tx.dataPreservers.forceCreateProfile(profile, general_user_bob.address);
+
+                if (shouldSkipStarlightDP) {
+                    console.log(`Skipping E04 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(context, polkadotJs, await tx.signAsync(sudo_alice));
+                    return;
+                }
+
                 const signedTx = await polkadotJs.tx.sudo.sudo(tx).signAsync(sudo_alice);
                 await context.createBlock([signedTx]);
 
@@ -185,6 +231,16 @@ describeSuite({
 
                 const tx = polkadotJs.tx.dataPreservers.createProfile(profile);
                 const signedTx = await tx.signAsync(general_user_bob);
+
+                if (shouldSkipStarlightDP) {
+                    console.log(`Skipping E05 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(context, polkadotJs, signedTx);
+
+                    // Force update profile should be filtered too
+                    const tx2 = polkadotJs.tx.dataPreservers.forceUpdateProfile(profileId, profile);
+                    await checkCallIsFiltered(context, polkadotJs, await tx2.signAsync(sudo_alice));
+                    return;
+                }
                 await context.createBlock([signedTx]);
 
                 const storedProfile = await polkadotJs.query.dataPreservers.profiles(++profileId);
@@ -237,6 +293,16 @@ describeSuite({
 
                 const tx = polkadotJs.tx.dataPreservers.createProfile(profile);
                 const signedTx = await tx.signAsync(general_user_bob);
+
+                if (shouldSkipStarlightDP) {
+                    console.log(`Skipping E06 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(context, polkadotJs, signedTx);
+
+                    // Force delete profile should be filtered too
+                    const tx2 = polkadotJs.tx.dataPreservers.forceDeleteProfile(profileId);
+                    await checkCallIsFiltered(context, polkadotJs, await tx2.signAsync(sudo_alice));
+                    return;
+                }
                 await context.createBlock([signedTx]);
 
                 const storedProfile = await polkadotJs.query.dataPreservers.profiles(++profileId);
@@ -267,6 +333,19 @@ describeSuite({
             test: async () => {
                 const paraId = 2002;
                 await context.createBlock([]);
+
+                if (shouldSkipStarlightDP) {
+                    console.log(`Skipping E07 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(
+                        context,
+                        polkadotJs,
+                        await polkadotJs.tx.dataPreservers
+                            .startAssignment(profileId, paraId, "Free")
+                            .signAsync(sudo_alice)
+                    );
+                    return;
+                }
+
                 await context.createBlock([await polkadotJs.tx.registrar.reserve().signAsync(sudo_alice)]);
                 const registerTx = polkadotJs.tx.containerRegistrar.register(
                     paraId,
@@ -311,6 +390,18 @@ describeSuite({
             title: "Profile can be force assigned",
             test: async () => {
                 const paraId = 2003;
+                if (shouldSkipStarlightDP) {
+                    console.log(`Skipping E08 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(
+                        context,
+                        polkadotJs,
+                        await polkadotJs.tx.dataPreservers
+                            .forceStartAssignment(profileId, paraId, "Free")
+                            .signAsync(sudo_alice)
+                    );
+                    return;
+                }
+
                 await context.createBlock([await polkadotJs.tx.registrar.reserve().signAsync(sudo_alice)]);
                 const registerTx = polkadotJs.tx.containerRegistrar.register(
                     paraId,
@@ -355,6 +446,16 @@ describeSuite({
             title: "Profile can be unassigned",
             test: async () => {
                 const paraId = 2004;
+
+                if (shouldSkipStarlightDP) {
+                    console.log(`Skipping E09 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(
+                        context,
+                        polkadotJs,
+                        await polkadotJs.tx.dataPreservers.stopAssignment(profileId, paraId).signAsync(sudo_alice)
+                    );
+                    return;
+                }
 
                 await context.createBlock([await polkadotJs.tx.registrar.reserve().signAsync(sudo_alice)]);
                 const registerTx = polkadotJs.tx.containerRegistrar.register(
@@ -403,6 +504,15 @@ describeSuite({
             title: "Profile can be force unassigned",
             test: async () => {
                 const paraId = 2005;
+                if (shouldSkipStarlightDP) {
+                    console.log(`Skipping E10 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(
+                        context,
+                        polkadotJs,
+                        await polkadotJs.tx.dataPreservers.stopAssignment(profileId, paraId).signAsync(sudo_alice)
+                    );
+                    return;
+                }
                 await context.createBlock([await polkadotJs.tx.registrar.reserve().signAsync(sudo_alice)]);
                 const registerTx = polkadotJs.tx.containerRegistrar.register(
                     paraId,
@@ -449,6 +559,17 @@ describeSuite({
             title: "Profile will be unassigned on container deregister",
             test: async () => {
                 const paraId = 2006;
+
+                if (shouldSkipStarlightDP) {
+                    console.log(`Skipping E11 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(
+                        context,
+                        polkadotJs,
+                        await polkadotJs.tx.dataPreservers.stopAssignment(profileId, paraId).signAsync(sudo_alice)
+                    );
+                    return;
+                }
+
                 await context.createBlock([]);
                 await context.createBlock([await polkadotJs.tx.registrar.reserve().signAsync(sudo_alice)]);
                 const registerTx = polkadotJs.tx.containerRegistrar.register(

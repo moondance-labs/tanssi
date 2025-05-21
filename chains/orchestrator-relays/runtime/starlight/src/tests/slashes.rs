@@ -268,7 +268,7 @@ fn test_slashes_are_cleaned_after_bonding_period() {
             assert_eq!(slashes.len(), 1);
             // The first session in which the era 3 will be pruned is
             // (28+3+1)*sessionsPerEra
-            let fist_session_era_3_pruned = (ExternalValidators::current_era().unwrap()
+            let first_session_era_3_pruned = (ExternalValidators::current_era().unwrap()
                 + SlashDeferDuration::get()
                 + 1
                 + BondingDuration::get()
@@ -279,7 +279,11 @@ fn test_slashes_are_cleaned_after_bonding_period() {
                 ExternalValidators::current_era().unwrap() + SlashDeferDuration::get() + 1;
 
             println!("first era deferred {:?}", first_era_deferred);
-            run_to_session(fist_session_era_3_pruned);
+            println!("first_session_era_3_pruned {:?}", first_session_era_3_pruned);
+            if first_session_era_3_pruned > 20 {
+                panic!("Test will take too long, aborting. Make sure to compile with --features fast-runtime");
+            }
+            run_to_session(first_session_era_3_pruned);
 
             let slashes_after_bonding_period =
                 ExternalValidatorSlashes::slashes(first_era_deferred);

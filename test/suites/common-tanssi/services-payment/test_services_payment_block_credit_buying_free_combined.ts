@@ -4,6 +4,7 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 import { jumpSessions } from "utils";
+import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SERVICES_PAYMENT, checkCallIsFiltered } from "helpers";
 
 describeSuite({
     id: "COMM0203",
@@ -17,6 +18,9 @@ describeSuite({
         const paraId2001 = 2001;
         const costPerBlock = 1_000_000n;
         let collatorAssignmentAlias: any;
+        let isStarlight: boolean;
+        let specVersion: number;
+        let shouldSkipStarlightSP: boolean;
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             alice = context.keyring.alice;
@@ -24,6 +28,11 @@ describeSuite({
             collatorAssignmentAlias = runtimeName.includes("light")
                 ? polkadotJs.query.tanssiCollatorAssignment
                 : polkadotJs.query.collatorAssignment;
+
+            isStarlight = runtimeName === "starlight";
+            specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
+            shouldSkipStarlightSP =
+                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SERVICES_PAYMENT.includes(specVersion);
         });
 
         it({
@@ -35,6 +44,13 @@ describeSuite({
 
                 const tx2000free = polkadotJs.tx.servicesPayment.setBlockProductionCredits(paraId2000, 0n);
                 const tx2001free = polkadotJs.tx.servicesPayment.setBlockProductionCredits(paraId2001, 0n);
+
+                if (shouldSkipStarlightSP) {
+                    console.log(`Skipping E01 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(context, polkadotJs, await tx2000free.signAsync(alice));
+                    await checkCallIsFiltered(context, polkadotJs, await tx2001free.signAsync(alice));
+                    return;
+                }
 
                 await context.createBlock([await polkadotJs.tx.sudo.sudo(tx2000free).signAsync(alice)]);
                 await context.createBlock([await polkadotJs.tx.sudo.sudo(tx2001free).signAsync(alice)]);
@@ -58,7 +74,21 @@ describeSuite({
                     paraId2000,
                     blocksPerSession / 2n
                 );
-                await context.createBlock([await polkadotJs.tx.sudo.sudo(tx2000OneSession).signAsync(alice)]);
+
+                if (shouldSkipStarlightSP) {
+                    console.log(`Skipping E02 test for Starlight version ${specVersion}`);
+
+                    // We check that the call (without sudo) is filtered.
+                    await checkCallIsFiltered(context, polkadotJs, await tx2000OneSession.signAsync(alice));
+
+                    // Purchase credits should be filtered too
+                    const tx = polkadotJs.tx.servicesPayment.purchaseCredits(paraId2000, 100n);
+                    await checkCallIsFiltered(context, polkadotJs, await tx.signAsync(alice));
+                    return;
+                }
+
+                const sudoSignedTx = await polkadotJs.tx.sudo.sudo(tx2000OneSession).signAsync(alice);
+                await context.createBlock([sudoSignedTx]);
                 const existentialDeposit = await polkadotJs.consts.balances.existentialDeposit.toBigInt();
                 // Now, buy some credits for container chain 2000. we only the second half of the needed credits - 1
                 const purchasedCredits = (blocksPerSession / 2n) * costPerBlock + existentialDeposit - 1n;
@@ -84,6 +114,13 @@ describeSuite({
                 const purchasedCredits = 1n;
                 // Purchase the remaining 1
                 const tx = polkadotJs.tx.servicesPayment.purchaseCredits(paraId2000, purchasedCredits);
+
+                if (shouldSkipStarlightSP) {
+                    console.log(`Skipping E03 test for Starlight version ${specVersion}`);
+                    await checkCallIsFiltered(context, polkadotJs, await tx.signAsync(alice));
+                    return;
+                }
+
                 await context.createBlock([await tx.signAsync(alice)]);
 
                 // Check that after 2 sessions, container chain 2000 has collators and is producing blocks

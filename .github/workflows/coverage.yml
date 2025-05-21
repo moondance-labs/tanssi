@@ -68,7 +68,7 @@ jobs:
       - name: Cargo build
         uses: ./.github/workflow-templates/cargo-build
         with:
-          features: "fast-runtime"
+          features: "fast-runtime,metadata-hash"
       - name: Enable coverage gathering
         run: |
           # Enable coverage when running tests
@@ -101,10 +101,15 @@ jobs:
         with:
           moonwall-environment: dev_simple_template
           force-pass: true
-      - name: Typescript Tests Tanssi Relay (Dev Service)
+      - name: Typescript Tests Tanssi Relay Dancelight (Dev Service)
         uses: ./.github/workflow-templates/typescript-tests-moonwall
         with:
-          moonwall-environment: dev_tanssi_relay
+          moonwall-environment: dev_tanssi_relay_dancelight
+          force-pass: true
+      - name: Typescript Tests Tanssi Relay Starlight (Dev Service)
+        uses: ./.github/workflow-templates/typescript-tests-moonwall
+        with:
+          moonwall-environment: dev_tanssi_relay_starlight
           force-pass: true
       - name: Install llvm tools
         run:

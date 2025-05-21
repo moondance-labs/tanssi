@@ -60,8 +60,8 @@ use {
         ValidationCodeHash, ValidatorId, ValidatorIndex, PARACHAIN_KEY_TYPE_ID,
     },
     runtime_common::{
-        self as polkadot_runtime_common, impl_runtime_weights, impls::ToAuthor, paras_registrar,
-        paras_sudo_wrapper, traits::Registrar as RegistrarInterface, BlockHashCount, BlockLength,
+        self as polkadot_runtime_common, impl_runtime_weights, paras_registrar, paras_sudo_wrapper,
+        traits::Registrar as RegistrarInterface, BlockHashCount, BlockLength,
         SlowAdjustingFeeUpdate,
     },
     runtime_parachains::{
@@ -98,6 +98,10 @@ use {
     tp_traits::{
         prod_or_fast_parameter_types, EraIndex, GetHostConfiguration, GetSessionContainerChains,
         ParaIdAssignmentHooks, RegistrarHandler, Slot, SlotFrequency,
+    },
+    xcm_runtime_apis::{
+        dry_run::{CallDryRunEffects, Error as XcmDryRunApiError, XcmDryRunEffects},
+        fees::Error as XcmPaymentApiError,
     },
 };
 
@@ -168,7 +172,6 @@ use {
         pallet_custom_origins, AuctionAdmin, Fellows, GeneralAdmin, Treasurer, TreasurySpender,
     },
     pallet_collator_assignment::CoreAllocationConfiguration,
-    xcm_runtime_apis::fees::Error as XcmPaymentApiError,
 };
 
 #[cfg(test)]
@@ -188,7 +191,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: Cow::Borrowed("starlight"),
     impl_name: Cow::Borrowed("tanssi-starlight-v2.0"),
     authoring_version: 0,
-    spec_version: 1300,
+    spec_version: 1400,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 26,
@@ -287,14 +290,6 @@ impl Convert<AggregateMessageOrigin, ParaId> for GetParaFromAggregateMessageOrig
     }
 }
 
-/// Disable any extrinsic related to the balance transfer
-pub struct IsBalanceTransferExtrinsics;
-impl Contains<RuntimeCall> for IsBalanceTransferExtrinsics {
-    fn contains(c: &RuntimeCall) -> bool {
-        matches!(c, RuntimeCall::Balances(_))
-    }
-}
-
 pub struct IsContainerChainManagementExtrinsics;
 impl Contains<RuntimeCall> for IsContainerChainManagementExtrinsics {
     fn contains(c: &RuntimeCall) -> bool {
@@ -323,13 +318,6 @@ impl Contains<RuntimeCall> for IsDemocracyExtrinsics {
     }
 }
 
-pub struct IsMiscellaneousExtrinsics;
-impl Contains<RuntimeCall> for IsMiscellaneousExtrinsics {
-    fn contains(c: &RuntimeCall) -> bool {
-        matches!(c, RuntimeCall::Proxy(_) | RuntimeCall::Identity(_))
-    }
-}
-
 pub struct IsXcmExtrinsics;
 impl Contains<RuntimeCall> for IsXcmExtrinsics {
     fn contains(c: &RuntimeCall) -> bool {
@@ -355,20 +343,6 @@ impl Contains<RuntimeCall> for IsContainerChainRegistrationExtrinsics {
     }
 }
 
-pub struct IsBridgesExtrinsics;
-impl Contains<RuntimeCall> for IsBridgesExtrinsics {
-    fn contains(c: &RuntimeCall) -> bool {
-        matches!(
-            c,
-            RuntimeCall::EthereumOutboundQueue(_)
-                | RuntimeCall::EthereumInboundQueue(_)
-                | RuntimeCall::EthereumSystem(_)
-                | RuntimeCall::EthereumBeaconClient(_)
-                | RuntimeCall::EthereumTokenTransfers(_)
-        )
-    }
-}
-
 pub struct IsStakingExtrinsics;
 impl Contains<RuntimeCall> for IsStakingExtrinsics {
     fn contains(c: &RuntimeCall) -> bool {
@@ -384,13 +358,10 @@ parameter_types! {
 #[derive_impl(frame_system::config_preludes::RelayChainDefaultConfig)]
 impl frame_system::Config for Runtime {
     type BaseCallFilter = EverythingBut<(
-        IsBalanceTransferExtrinsics,
         IsContainerChainManagementExtrinsics,
         IsDemocracyExtrinsics,
-        IsMiscellaneousExtrinsics,
         IsXcmExtrinsics,
         IsContainerChainRegistrationExtrinsics,
-        IsBridgesExtrinsics,
         IsStakingExtrinsics,
     )>;
     type BlockWeights = BlockWeights;
@@ -575,7 +546,8 @@ parameter_types! {
 
 impl pallet_transaction_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type OnChargeTransaction = FungibleAdapter<Balances, ToAuthor<Runtime>>;
+    type OnChargeTransaction =
+        FungibleAdapter<Balances, tanssi_runtime_common::DealWithFees<Runtime>>;
     type OperationalFeeMultiplier = OperationalFeeMultiplier;
     type WeightToFee = WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
@@ -640,11 +612,7 @@ impl pallet_session::Config for Runtime {
     type SessionManager = pallet_session::historical::NoteHistoricalRoot<Self, ExternalValidators>;
     type SessionHandler = <SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
     type Keys = SessionKeys;
-    // TODO: Current benchmarking code for pallet_session requires that the runtime
-    // uses pallet_staking, which we don't use. We need to make a PR to Substrate to
-    // allow decoupling the benchmark from other pallets.
-    // See https://github.com/paritytech/polkadot-sdk/blob/0845044454c005b577eab7afaea18583bd7e3dd3/substrate/frame/session/benchmarking/src/inner.rs#L38
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_session::SubstrateWeight<Runtime>;
 }
 
 pub struct FullIdentificationOf;
@@ -1344,7 +1312,7 @@ impl parachains_slashing::Config for Runtime {
         Offences,
         ReportLongevity,
     >;
-    type WeightInfo = parachains_slashing::TestWeightInfo;
+    type WeightInfo = weights::runtime_parachains_disputes_slashing::SubstrateWeight<Runtime>;
     type BenchmarkingConfig = parachains_slashing::BenchConfig<200>;
 }
 
@@ -1769,8 +1737,9 @@ parameter_types! {
     pub StarlightBondAccount: AccountId32 = PalletId(*b"StarBond").into_account_truncating();
     pub PendingRewardsAccount: AccountId32 = PalletId(*b"PENDREWD").into_account_truncating();
 
-    // 30% for starlight bond, so 70% for staking
-    pub const RewardsPortion: Perbill = Perbill::from_percent(70);
+    // Parachain bond: 1.5% out of 100%, so staking gets 2% out of 100%,
+    // so staking gets 2/3.5 fracion of rewards, so 4/7
+    pub RewardsPortion: Perbill = Perbill::from_rational::<u32>(4, 7);
 }
 
 // We want a global annual inflation rate of 10%.
@@ -1781,8 +1750,8 @@ parameter_types! {
 // runtime match the formulas. We write the results as constants here to ensure we don't perform
 // computations at runtime.
 prod_or_fast_parameter_types! {
-    pub const CollatorsInflationRatePerBlock: Perbill = { prod: Perbill::from_parts(9), fast: Perbill::from_parts(9) };
-    pub const ValidatorsInflationRatePerEra: Perbill = { prod: Perbill::from_parts(130570), fast: Perbill::from_parts(272) };
+    pub const CollatorsInflationRatePerBlock: Perbill = { prod: Perbill::from_parts(6), fast: Perbill::from_parts(6) };
+    pub const ValidatorsInflationRatePerEra: Perbill = { prod: Perbill::from_parts(105679), fast: Perbill::from_parts(220) };
 }
 
 pub struct OnUnbalancedInflation;
@@ -2328,6 +2297,7 @@ mod benches {
         [runtime_parachains::paras_inherent, ParaInherent]
         [runtime_parachains::paras, Paras]
         [runtime_parachains::assigner_on_demand, OnDemandAssignmentProvider]
+        [runtime_parachains::disputes::slashing, pallet_alt_benchmarks::bench_parachains_slashing::Pallet::<Runtime>]
         // Substrate
         [pallet_balances, Balances]
         [frame_benchmarking::baseline, Baseline::<Runtime>]
@@ -2355,6 +2325,7 @@ mod benches {
         [pallet_mmr, Mmr]
         [pallet_beefy_mmr, BeefyMmrLeaf]
         [pallet_multiblock_migrations, MultiBlockMigrations]
+        [pallet_session, cumulus_pallet_session_benchmarking::Pallet::<Runtime>]
 
         // Tanssi
         [pallet_author_noting, AuthorNoting]
@@ -2394,6 +2365,16 @@ sp_api::impl_runtime_apis! {
 
         fn initialize_block(header: &<Block as BlockT>::Header) -> sp_runtime::ExtrinsicInclusionMode {
             Executive::initialize_block(header)
+        }
+    }
+
+    impl xcm_runtime_apis::dry_run::DryRunApi<Block, RuntimeCall, RuntimeEvent, OriginCaller> for Runtime {
+        fn dry_run_call(origin: OriginCaller, call: RuntimeCall) -> Result<CallDryRunEffects<RuntimeEvent>, XcmDryRunApiError> {
+            XcmPallet::dry_run_call::<Runtime, xcm_config::XcmRouter, OriginCaller, RuntimeCall>(origin, call)
+        }
+
+        fn dry_run_xcm(origin_location: VersionedLocation, xcm: VersionedXcm<RuntimeCall>) -> Result<XcmDryRunEffects<RuntimeEvent>, XcmDryRunApiError> {
+            XcmPallet::dry_run_xcm::<Runtime, xcm_config::XcmRouter, RuntimeCall, xcm_config::XcmConfig>(origin_location, xcm)
         }
     }
 
@@ -2903,6 +2884,23 @@ sp_api::impl_runtime_apis! {
         }
     }
 
+    impl pallet_transaction_payment_rpc_runtime_api::TransactionPaymentCallApi<Block, Balance, RuntimeCall>
+        for Runtime
+    {
+        fn query_call_info(call: RuntimeCall, len: u32) -> RuntimeDispatchInfo<Balance> {
+            TransactionPayment::query_call_info(call, len)
+        }
+        fn query_call_fee_details(call: RuntimeCall, len: u32) -> FeeDetails<Balance> {
+            TransactionPayment::query_call_fee_details(call, len)
+        }
+        fn query_weight_to_fee(weight: Weight) -> Balance {
+            TransactionPayment::weight_to_fee(weight)
+        }
+        fn query_length_to_fee(length: u32) -> Balance {
+            TransactionPayment::length_to_fee(length)
+        }
+    }
+
     impl pallet_beefy_mmr::BeefyMmrApi<Block, Hash> for RuntimeApi {
         fn authority_set_proof() -> beefy_primitives::mmr::BeefyAuthoritySet<Hash> {
             BeefyMmrLeaf::authority_set_proof()
@@ -3281,6 +3279,30 @@ sp_api::impl_runtime_apis! {
                     Err(BenchmarkError::Skip)
                 }
             }
+
+            pub struct SessionBenchValidators;
+            impl pallet_alt_benchmarks::bench_parachains_slashing::Validators<AccountId> for SessionBenchValidators {
+                /// Sets the validators to properly run a benchmark. Should take care of everything that
+                /// will make pallet_session use those validators, such as them having a balance.
+                fn set_validators(validators: &[AccountId]) {
+                    use frame_support::traits::fungible::Mutate;
+                    use tp_traits::ExternalIndexProvider;
+
+                    ExternalValidators::set_external_validators_inner(
+                        validators.to_vec(),
+                        ExternalValidators::get_external_index()
+                    ).expect("to set validators");
+
+                    for v in validators {
+                        Balances::set_balance(v, EXISTENTIAL_DEPOSIT);
+                    }
+                }
+            }
+            impl pallet_alt_benchmarks::bench_parachains_slashing::Config for Runtime {
+                type Validators = SessionBenchValidators;
+            }
+
+            impl cumulus_pallet_session_benchmarking::Config for Runtime { }
 
             let mut whitelist: Vec<TrackedStorageKey> = AllPalletsWithSystem::whitelisted_storage_keys();
             let treasury_key = frame_system::Account::<Runtime>::hashed_key_for(Treasury::account_id());

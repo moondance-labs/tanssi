@@ -20,3 +20,11 @@ export const ASSET_HUB_PARA_ID = 0;
 
 export const HOLESKY_SOVEREIGN_ACCOUNT_ADDRESS = "0x34cdd3f84040fb44d70e83b892797846a8c0a556ce08cd470bf6d4cf7b94ff77";
 export const SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS = "0xce796ae65569a670d0c1cc1ac12515a3ce21b5fbf729d63d7b289baad070139d";
+export const ETHEREUM_MAINNET_SOVEREIGN_ACCOUNT_ADDRESS =
+    "0x204dfe37731e8e2b4866ad0da9a17c49f434542c3477c5f914a3349acd88ba1a";
+
+// Relay chain Tanssi: Pallet Id "py/trsry"
+export const TREASURY_ADDRESS_LIGHT_CHAINS = "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG4QkoQkkQNB5e6Z";
+
+// Parachain Tanssi: Pallet Id "tns/tsry"
+export const TREASURY_ADDRESS_BOX_CHAINS = "5EYCAe5jXiVvytpxmBupXPCNE9Vduq7gPeTwy9xMgQtKWMnR";
