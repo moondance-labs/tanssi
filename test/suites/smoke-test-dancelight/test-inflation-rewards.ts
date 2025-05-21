@@ -3,7 +3,7 @@ import "@tanssi/api-augment/dancelight";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
 import type { ApiDecoration } from "@polkadot/api/types";
-import { DANCELIGHT_BOND, fetchIssuance, fetchRewardAuthorContainers } from "utils";
+import { DANCELIGHT_BLOCK_INFLATION_PERBILL, DANCELIGHT_BOND, fetchIssuance, fetchRewardAuthorContainers } from "utils";
 
 describeSuite({
     id: "SMOK06",
@@ -78,7 +78,7 @@ describeSuite({
                 const issuance = fetchIssuance(events).amount.toBigInt();
 
                 // expected issuance block increment in prod
-                const expectedIssuanceIncrement = (supplyBefore * 9n) / 1_000_000_000n;
+                const expectedIssuanceIncrement = (supplyBefore * DANCELIGHT_BLOCK_INFLATION_PERBILL) / 1_000_000_000n;
 
                 // we know there might be rounding errors, so we always check it is in the range +-1
                 expect(
