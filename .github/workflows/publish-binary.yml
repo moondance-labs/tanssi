@@ -1,3 +1,4 @@
+#TODO: Try to combine with publish-binary-tanssi-solochain
 name: Publish Binary Draft
 
 # The code (like generate-release-body) will be taken from the tag version, not master
