@@ -25,12 +25,13 @@ pub struct ExcludeAllParathreadsFilter<Runtime>(PhantomData<Runtime>);
 impl<Runtime: pallet_session::Config + pallet_registrar::Config> ParathreadHelper
     for ExcludeAllParathreadsFilter<Runtime>
 {
-    fn is_parathread(para_id: &ParaId) -> bool {
+    fn get_parathreads_for_session() -> Vec<ParaId> {
         pallet_registrar::Pallet::<Runtime>::session_container_chains(
             pallet_session::Pallet::<Runtime>::current_index().into(),
         )
         .parathreads
         .iter()
-        .any(|(id, _)| id == para_id)
+        .map(|(id, _)| *id)
+        .collect()
     }
 }

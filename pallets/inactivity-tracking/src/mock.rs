@@ -190,8 +190,8 @@ impl tp_traits::GetContainerChainsWithCollators<AccountId> for MockContainerChai
 
 pub struct MockParathreadHelper;
 impl tp_traits::ParathreadHelper for MockParathreadHelper {
-    fn is_parathread(para_id: &ParaId) -> bool {
-        *para_id == CONTAINER_CHAIN_ID_3
+    fn get_parathreads_for_session() -> Vec<ParaId> {
+        vec![CONTAINER_CHAIN_ID_3]
     }
 }
 

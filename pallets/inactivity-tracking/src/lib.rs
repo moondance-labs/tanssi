@@ -331,19 +331,26 @@ pub mod pallet {
                 }
             }
             let active_chains = <ActiveContainerChainsForCurrentSession<T>>::get();
+            // Fetching the parathreads for the current session and remove them
+            // from the active chains array. In this way we handle all parathreads
+            // as inactive chains. This solution would only work if a collator either:
+            // - is assigned to one chain only
+            // - is assigned to multiple chains but all of them are parathreads
+            let parathreads_for_session = T::ParaFilter::get_parathreads_for_session();
+            active_chains
+                .clone()
+                .into_inner()
+                .retain(|x| !parathreads_for_session.contains(x));
+
             let _ = <ActiveCollatorsForCurrentSession<T>>::try_mutate(
                 |active_collators| -> DispatchResult {
                     let container_chains_with_collators =
                         T::CurrentCollatorsFetcher::container_chains_with_collators(
                             ForSession::Current,
                         );
+
                     for (para_id, collator_ids) in container_chains_with_collators.iter() {
-                        // Currently we handle all parathreads as inactive chains. This solution
-                        // would only work if a collator either:
-                        // - is assigned to one chain only
-                        // - is assigned to multiple chains but all of them are parathreads
-                        if !active_chains.contains(para_id) || T::ParaFilter::is_parathread(para_id)
-                        {
+                        if !active_chains.contains(para_id) {
                             // Collators assigned to inactive chain are added
                             // to the current active collators storage
                             for collator_id in collator_ids {
