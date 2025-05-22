@@ -1,6 +1,7 @@
 import { beforeAll, deployCreateCompiledContract, describeSuite, expect } from "@moonwall/cli";
 import { customWeb3Request } from "@moonwall/util";
 import type { TransactionReceipt } from "viem";
+import { RpcResponse } from "../../../types/rpc-response.type.ts";
 
 describeSuite({
     id: "DE0703",
@@ -80,16 +81,19 @@ describeSuite({
                     await context.createBlock();
                 }
 
-                expect(
-                    async () =>
-                        await customWeb3Request(context.web3(), "eth_getLogs", [
-                            {
-                                fromBlock: "0x0",
-                                toBlock: "latest",
-                                topics: [],
-                            },
-                        ])
-                ).rejects.toThrowError("block range is too wide (maximum 1024)");
+                const result = (await customWeb3Request(context.web3(), "eth_getLogs", [
+                    {
+                        fromBlock: "0x0",
+                        toBlock: "latest",
+                        topics: [],
+                    },
+                ])) as RpcResponse;
+
+                if ("error" in result) {
+                    expect(result.error.message).toEqual("block range is too wide (maximum 1024)");
+                } else {
+                    throw new Error("Unexpected response, failing the test");
+                }
             },
         });
     },
