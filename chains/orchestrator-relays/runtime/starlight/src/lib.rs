@@ -38,7 +38,7 @@ use {
         traits::{
             fungible::Inspect,
             tokens::{PayFromAccount, UnityAssetBalanceConversion},
-            ConstBool, Contains, EverythingBut,
+            ConstBool, Contains, EverythingBut, InsideBoth,
         },
     },
     frame_system::{pallet_prelude::BlockNumberFor, EnsureNever},
@@ -350,12 +350,7 @@ parameter_types! {
 
 #[derive_impl(frame_system::config_preludes::RelayChainDefaultConfig)]
 impl frame_system::Config for Runtime {
-    type BaseCallFilter = EverythingBut<(
-        IsContainerChainManagementExtrinsics,
-        IsDemocracyExtrinsics,
-        IsXcmExtrinsics,
-        IsContainerChainRegistrationExtrinsics,
-    )>;
+    type BaseCallFilter = MaintenanceMode;
     type BlockWeights = BlockWeights;
     type BlockLength = BlockLength;
     type DbWeight = RocksDbWeight;
@@ -1634,6 +1629,50 @@ impl pallet_multiblock_migrations::Config for Runtime {
     type WeightInfo = weights::pallet_multiblock_migrations::SubstrateWeight<Runtime>;
 }
 
+/// Maintenance mode Call filter
+pub struct MaintenanceFilter;
+impl Contains<RuntimeCall> for MaintenanceFilter {
+    fn contains(c: &RuntimeCall) -> bool {
+        !matches!(
+            c,
+            RuntimeCall::Balances(..)
+                | RuntimeCall::Registrar(..)
+                | RuntimeCall::Session(..)
+                | RuntimeCall::System(..)
+                | RuntimeCall::PooledStaking(..)
+                | RuntimeCall::Utility(..)
+                | RuntimeCall::Identity(..)
+                | RuntimeCall::XcmPallet(..)
+                | RuntimeCall::EthereumBeaconClient(..)
+                | RuntimeCall::EthereumSystem(..)
+                | RuntimeCall::EthereumTokenTransfers(..)
+                | RuntimeCall::OnDemandAssignmentProvider(..)
+                | RuntimeCall::ContainerRegistrar(..)
+                | RuntimeCall::ServicesPayment(..)
+                | RuntimeCall::DataPreservers(..)
+                | RuntimeCall::Hrmp(..)
+                | RuntimeCall::AssetRate(..)
+                | RuntimeCall::StreamPayment(..)
+        )
+    }
+}
+
+/// Normal Call Filter
+type NormalFilter = EverythingBut<(
+    IsContainerChainManagementExtrinsics,
+    IsDemocracyExtrinsics,
+    IsXcmExtrinsics,
+    IsContainerChainRegistrationExtrinsics,
+)>;
+
+impl pallet_maintenance_mode::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type NormalCallFilter = NormalFilter;
+    type MaintenanceCallFilter = InsideBoth<MaintenanceFilter, NormalFilter>;
+    type MaintenanceOrigin = EnsureRoot<AccountId>;
+    type XcmExecutionManager = ();
+}
+
 pub const FIXED_BLOCK_PRODUCTION_COST: u128 = 1 * MICROUNITS;
 pub const FIXED_COLLATOR_ASSIGNMENT_COST: u128 = 100 * MICROUNITS;
 
@@ -1976,6 +2015,7 @@ construct_runtime! {
         // Migration stuff
         Migrations: pallet_migrations = 120,
         MultiBlockMigrations: pallet_multiblock_migrations = 121,
+        MaintenanceMode: pallet_maintenance_mode = 122,
 
         // BEEFY Bridges support.
         Beefy: pallet_beefy = 240,
