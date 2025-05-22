@@ -1,7 +1,7 @@
 import { beforeAll, deployCreateCompiledContract, describeSuite, expect } from "@moonwall/cli";
 import { customWeb3Request } from "@moonwall/util";
 import type { TransactionReceipt } from "viem";
-import { RpcResponse } from "../../../types/rpc-response.type.ts";
+import type { RpcResponse } from "../../../types/rpc-response.type.ts";
 
 describeSuite({
     id: "DE0703",
