@@ -38,6 +38,10 @@ pub struct RunCmd {
     #[arg(long, default_value = "10000")]
     pub max_past_logs: u32,
 
+    /// Maximum block range to query logs from.
+    #[clap(long, default_value = "1024")]
+    pub max_block_range: u32,
+
     /// Id of the parachain this collator collates for.
     #[arg(long)]
     pub parachain_id: Option<u32>,
@@ -150,4 +154,5 @@ pub struct RpcConfig {
     pub eth_statuses_cache: usize,
     pub fee_history_limit: u64,
     pub max_past_logs: u32,
+    pub max_block_range: u32,
 }

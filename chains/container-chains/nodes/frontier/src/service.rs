@@ -245,6 +245,7 @@ async fn start_node_impl(
         let filter_pool = filter_pool.clone();
         let backend = node_builder.backend.clone();
         let max_past_logs = rpc_config.max_past_logs;
+        let max_block_range = rpc_config.max_block_range;
         let overrides = overrides;
         let fee_history_cache = fee_history_cache.clone();
         let block_data_cache = block_data_cache;
@@ -268,6 +269,7 @@ async fn start_node_impl(
                 graph: graph_pool.pool().clone(),
                 pool: pool.clone(),
                 max_past_logs,
+                max_block_range,
                 fee_history_limit,
                 fee_history_cache: fee_history_cache.clone(),
                 network: Arc::new(network.clone()),
@@ -525,6 +527,7 @@ pub async fn start_dev_node(
         let frontier_backend = frontier_backend.clone();
         let backend = node_builder.backend.clone();
         let max_past_logs = rpc_config.max_past_logs;
+        let max_block_range = rpc_config.max_block_range;
         let overrides = overrides;
         let block_data_cache = block_data_cache;
 
@@ -545,6 +548,7 @@ pub async fn start_dev_node(
                 graph: graph_pool.pool().clone(),
                 pool: pool.clone(),
                 max_past_logs,
+                max_block_range,
                 fee_history_limit,
                 fee_history_cache: fee_history_cache.clone(),
                 network: network.clone(),

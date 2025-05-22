@@ -70,5 +70,27 @@ describeSuite({
                 }
             },
         });
+
+        it({
+            id: "T03",
+            title: "Validate eth_getLogs block range limit",
+            test: async () => {
+                let blocksToCreate = 1025;
+                for (; blocksToCreate > 0; blocksToCreate--) {
+                    await context.createBlock();
+                }
+
+                expect(
+                    async () =>
+                        await customWeb3Request(context.web3(), "eth_getLogs", [
+                            {
+                                fromBlock: "0x0",
+                                toBlock: "latest",
+                                topics: [],
+                            },
+                        ])
+                ).rejects.toThrowError("block range is too wide (maximum 1024)");
+            },
+        });
     },
 });

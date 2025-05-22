@@ -111,6 +111,8 @@ pub struct FullDeps<C, P, A: ChainApi, BE> {
     pub backend: Arc<BE>,
     /// Maximum number of logs in a query.
     pub max_past_logs: u32,
+    /// Maximum block range in a query.
+    pub max_block_range: u32,
     /// Maximum fee history cache size.
     pub fee_history_limit: u64,
     /// Fee history cache.
@@ -170,6 +172,7 @@ where
         frontier_backend,
         backend: _,
         max_past_logs,
+        max_block_range,
         fee_history_limit,
         fee_history_cache,
         overrides,
@@ -282,6 +285,7 @@ where
                 filter_pool,
                 500_usize, // max stored filters
                 max_past_logs,
+                max_block_range,
                 block_data_cache,
             )
             .into_rpc(),
@@ -515,6 +519,7 @@ const _: () = {
             }: GenerateRpcBuilderParams<RuntimeApi>,
         ) -> Result<CompleteRpcBuilder, ServiceError> {
             let max_past_logs = self.rpc_config.max_past_logs;
+            let max_block_range = self.rpc_config.max_block_range;
 
             // Frontier specific stuff
             let filter_pool: Option<FilterPool> = Some(Arc::new(Mutex::new(BTreeMap::new())));
@@ -568,6 +573,7 @@ const _: () = {
                     graph: graph_pool.pool().clone(),
                     pool: transaction_pool.clone(),
                     max_past_logs,
+                    max_block_range,
                     fee_history_limit,
                     fee_history_cache: fee_history_cache.clone(),
                     network: Arc::new(network.clone()),
