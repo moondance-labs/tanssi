@@ -582,6 +582,11 @@ declare module "@polkadot/api-base/types/storage" {
             activeCollatorsForCurrentSession: AugmentedQuery<ApiType, () => Observable<BTreeSet<AccountId32>>, []> &
                 QueryableStorageEntry<ApiType, []>;
             /**
+             * A list of active container chains for a session. Repopulated at the start of every session
+             **/
+            activeContainerChainsForCurrentSession: AugmentedQuery<ApiType, () => Observable<BTreeSet<u32>>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
              * Switch to enable/disable activity tracking
              **/
             currentActivityTrackingStatus: AugmentedQuery<
@@ -1129,6 +1134,20 @@ declare module "@polkadot/api-base/types/storage" {
                 [AccountId32, AccountId32]
             > &
                 QueryableStorageEntry<ApiType, [AccountId32, AccountId32]>;
+            /**
+             * Switch to enable/disable marking offline feature.
+             **/
+            enableMarkingOffline: AugmentedQuery<ApiType, () => Observable<bool>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * A list of offline collators
+             **/
+            offlineCollators: AugmentedQuery<
+                ApiType,
+                () => Observable<Vec<PalletPooledStakingCandidateEligibleCandidate>>,
+                []
+            > &
+                QueryableStorageEntry<ApiType, []>;
             /**
              * Pauses the ability to modify pools through extrinsics.
              *

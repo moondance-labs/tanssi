@@ -607,6 +607,42 @@ mod benchmarks {
         Ok(())
     }
 
+    #[benchmark]
+    fn enable_offline_marking() -> Result<(), BenchmarkError> {
+        #[extrinsic_call]
+        _(RawOrigin::Root, true);
+
+        Ok(())
+    }
+    #[benchmark]
+    fn set_offline() -> Result<(), BenchmarkError> {
+        const USER_SEED: u32 = 1;
+        let source_stake = min_candidate_stk::<T>() * 10u32.into();
+        let (caller, _deposit_amount) =
+            create_funded_user::<T>("caller", USER_SEED, source_stake * 2u32.into());
+        PooledStaking::<T>::enable_offline_marking(RawOrigin::Root.into(), true)?;
+
+        #[extrinsic_call]
+        _(RawOrigin::Signed(caller.clone()));
+
+        Ok(())
+    }
+
+    #[benchmark]
+    fn set_online() -> Result<(), BenchmarkError> {
+        const USER_SEED: u32 = 1;
+        let source_stake = min_candidate_stk::<T>() * 10u32.into();
+        let (caller, _deposit_amount) =
+            create_funded_user::<T>("caller", USER_SEED, source_stake * 2u32.into());
+        PooledStaking::<T>::enable_offline_marking(RawOrigin::Root.into(), true)?;
+        PooledStaking::<T>::set_offline(RawOrigin::Signed(caller.clone()).into())?;
+
+        #[extrinsic_call]
+        _(RawOrigin::Signed(caller.clone()));
+
+        Ok(())
+    }
+
     impl_benchmark_test_suite!(
         PooledStaking,
         crate::mock::ExtBuilder::default().build(),
