@@ -897,7 +897,7 @@ fn send_eth_native_token_works() {
         ])
         .build()
         .execute_with(|| {
-            sp_tracing::init_for_tests();
+            //sp_tracing::init_for_tests();
 
             // Setup bridge and token
             let relayer =
@@ -950,10 +950,11 @@ fn send_eth_native_token_works() {
 
             // User tries to send tokens
             let beneficiary_address = H160(hex!("0123456789abcdef0123456789abcdef01234567"));
+
+            // Beneficiary location must be represented using destination's point of view.
             let beneficiary_location = Location {
                 parents: 0,
-                interior: X2([
-                    GlobalConsensus(EthereumNetwork::get()),
+                interior: X1([
                     AccountKey20 {
                         network: Some(EthereumNetwork::get()),
                         key: beneficiary_address.into(),
@@ -962,24 +963,17 @@ fn send_eth_native_token_works() {
                 .into()),
             };
 
-            let native_asset = AssetId(Location::here()).into_asset(Fungibility::Fungible(fee));
             let eth_asset = AssetId(erc20_asset_location.clone())
                 .into_asset(Fungibility::Fungible(amount_to_transfer));
 
-            let (assets, fee_index) = into_assets_checked(native_asset.clone(), eth_asset.clone());
-
-            let result = XcmPallet::transfer_assets(
+            assert_ok!(XcmPallet::transfer_assets(
                 RuntimeOrigin::signed(AccountId::from(BOB)),
                 Box::new(EthereumLocation::get().into()),
                 Box::new(beneficiary_location.into()),
-                Box::new(assets.into()),
-                fee_index as u32,
+                Box::new(vec![eth_asset].into()),
+                0u32,
                 Unlimited,
-            );
-
-            println!("{result:?}");
-
-            panic!();
+            ));
         })
 }
 
