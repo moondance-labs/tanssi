@@ -338,8 +338,11 @@ pub mod pallet {
                             ForSession::Current,
                         );
                     for (para_id, collator_ids) in container_chains_with_collators.iter() {
-                        if !active_chains.contains(para_id)
-                            && !T::ParaFilter::is_parathread(para_id)
+                        // Currently we handle all parathreads as inactive chains. This solution
+                        // would only work if a collator either:
+                        // - is assigned to one chain only
+                        // - is assigned to multiple chains but all of them are parathreads
+                        if !active_chains.contains(para_id) || T::ParaFilter::is_parathread(para_id)
                         {
                             // Collators assigned to inactive chain are added
                             // to the current active collators storage
