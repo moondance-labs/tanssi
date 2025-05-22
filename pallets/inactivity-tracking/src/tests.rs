@@ -877,3 +877,29 @@ fn inactive_chain_collators_are_processed_correctly_when_activity_tracking_is_di
         );
     });
 }
+
+#[test]
+fn chain_inactivity_tracking_correctly_processes_parathreads() {
+    ExtBuilder.build().execute_with(|| {
+        // We will insert CONTAINER_CHAIN_ID_3 as an active chain but not add the collator assigned
+        // to it (COLLATOR_3) to the list of active collators. Since all parathreads are considered
+        // inactive, we should not see the collator in inactive collators storage after the session
+        // is processed
+        let current_session_active_chain_record = get_active_chains_set(vec![CONTAINER_CHAIN_ID_3]);
+        <ActiveContainerChainsForCurrentSession<Test>>::put(
+            current_session_active_chain_record.clone(),
+        );
+        assert_eq!(ActiveCollatorsForCurrentSession::<Test>::get().len(), 0);
+        roll_to(SESSION_BLOCK_LENGTH - 1);
+        assert_eq!(
+            ActiveContainerChainsForCurrentSession::<Test>::get(),
+            current_session_active_chain_record
+        );
+        assert_eq!(
+            ActiveCollatorsForCurrentSession::<Test>::get().is_empty(),
+            true
+        );
+        roll_to(SESSION_BLOCK_LENGTH);
+        assert_eq!(InactiveCollators::<Test>::get(0).is_empty(), true);
+    });
+}
