@@ -24,7 +24,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use {
-    frame_support::{dispatch::DispatchResult, pallet_prelude::Weight},
+    frame_support::{dispatch::DispatchResult, ensure, pallet_prelude::Weight},
     parity_scale_codec::{Decode, Encode},
     scale_info::TypeInfo,
     serde::{Deserialize, Serialize},
@@ -165,11 +165,21 @@ pub mod pallet {
     pub type ActiveContainerChainsForCurrentSession<T: Config> =
         StorageValue<_, BoundedBTreeSet<ParaId, T::MaxContainerChains>, ValueQuery>;
 
+    /// Storage map indicating the offline status of a collator
+    #[pallet::storage]
+    pub type OfflineCollators<T: Config> =
+        StorageMap<_, Blake2_128Concat, T::CollatorId, bool, ValueQuery>;
+
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
         /// Event emitted when the activity tracking status is updated
         ActivityTrackingStatusSet { status: ActivityTrackingStatus },
+        /// Collator online status updated
+        CollatorStatusUpdated {
+            collator: T::CollatorId,
+            is_offline: bool,
+        },
     }
 
     #[pallet::error]
@@ -184,6 +194,10 @@ pub mod pallet {
         ActivityTrackingStatusAlreadyEnabled,
         /// Error returned when the activity tracking status is attempted to be disabled when it is already disabled
         ActivityTrackingStatusAlreadyDisabled,
+        /// Error returned when the collator status is attempted to be set to offline when it is already offline
+        CollatorNotOnline,
+        /// Error returned when the collator status is attempted to be set to online when it is already online
+        CollatorNotOffline,
     }
 
     #[pallet::call]
@@ -442,6 +456,35 @@ impl<T: Config> NodeActivityTrackingHelper<T::CollatorId> for Pallet<T> {
             }
         }
         true
+    }
+    fn is_node_offline(node: &T::CollatorId) -> bool {
+        <OfflineCollators<T>>::get(node)
+    }
+
+    fn set_offline(node: &T::CollatorId) -> DispatchResult {
+        ensure!(
+            !<OfflineCollators<T>>::get(node),
+            Error::<T>::CollatorNotOnline
+        );
+        <OfflineCollators<T>>::insert(node.clone(), true);
+        Self::deposit_event(Event::<T>::CollatorStatusUpdated {
+            collator: node.clone(),
+            is_offline: true,
+        });
+        Ok(())
+    }
+
+    fn set_online(node: &T::CollatorId) -> DispatchResult {
+        ensure!(
+            <OfflineCollators<T>>::get(node),
+            Error::<T>::CollatorNotOffline
+        );
+        <OfflineCollators<T>>::insert(node.clone(), false);
+        Self::deposit_event(Event::<T>::CollatorStatusUpdated {
+            collator: node.clone(),
+            is_offline: false,
+        });
+        Ok(())
     }
 }
 

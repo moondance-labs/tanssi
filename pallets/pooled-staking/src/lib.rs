@@ -397,12 +397,6 @@ pub mod pallet {
     #[pallet::storage]
     pub type EnableMarkingOffline<T: Config> = StorageValue<_, bool, ValueQuery>;
 
-    /// Storage map that indicates the offline status of a collator
-    #[pallet::storage]
-    #[pallet::getter(fn is_offline)]
-    pub type OfflineCollators<T: Config> =
-        StorageMap<_, Blake2_128Concat, Candidate<T>, bool, ValueQuery>;
-
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
@@ -519,10 +513,6 @@ pub mod pallet {
             pending_leaving: T::Balance,
             released: T::Balance,
         },
-        /// Candidate temporarily leave the set of collator candidates without unbonding.
-        CollatorOffline { collator: Candidate<T> },
-        /// Candidate rejoins the set of collator candidates.
-        CollatorOnline { collator: Candidate<T> },
     }
 
     #[pallet::error]
@@ -543,7 +533,6 @@ pub mod pallet {
         SwapResultsInZeroShares,
         MarkingOfflineNotEnabled,
         CollatorDoesNotExist,
-        CollatorNotOffline,
         CollatorCannotBeNotifiedAsInactive,
         MarkingInvulnerableOfflineInvalid,
         PoolsExtrinsicsArePaused,
@@ -770,7 +759,8 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::swap_pool())]
         pub fn set_online(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
             let collator = ensure_signed(origin)?;
-            Self::set_online_inner(collator)
+            T::ActivityTrackingHelper::set_online(&collator)?;
+            Calls::<T>::update_candidate_position(&[collator])
         }
 
         #[pallet::call_index(10)]
@@ -818,7 +808,6 @@ pub mod pallet {
                 !T::InvulnerablesHelper::is_invulnerable(&collator),
                 Error::<T>::MarkingInvulnerableOfflineInvalid
             );
-
             ensure!(
                 <SortedEligibleCandidates<T>>::get()
                     .into_iter()
@@ -826,21 +815,7 @@ pub mod pallet {
                 Error::<T>::CollatorDoesNotExist
             );
 
-            <OfflineCollators<T>>::insert(collator.clone(), true);
-            Self::deposit_event(Event::<T>::CollatorOffline {
-                collator: collator.clone(),
-            });
-            Calls::<T>::update_candidate_position(&[collator])
-        }
-        pub fn set_online_inner(collator: Candidate<T>) -> DispatchResultWithPostInfo {
-            ensure!(
-                OfflineCollators::<T>::get(&collator),
-                Error::<T>::CollatorNotOffline
-            );
-            <OfflineCollators<T>>::insert(collator.clone(), false);
-            Self::deposit_event(Event::<T>::CollatorOnline {
-                collator: collator.clone(),
-            });
+            T::ActivityTrackingHelper::set_offline(&collator);
             Calls::<T>::update_candidate_position(&[collator])
         }
     }

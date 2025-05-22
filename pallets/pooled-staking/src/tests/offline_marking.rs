@@ -16,8 +16,7 @@
 use {
     super::*,
     crate::{
-        candidate::EligibleCandidate, EnableMarkingOffline, Error, OfflineCollators, Pallet,
-        SortedEligibleCandidates,
+        candidate::EligibleCandidate, EnableMarkingOffline, Error, Pallet, SortedEligibleCandidates,
     },
     frame_support::{assert_noop, assert_ok},
     sp_runtime::{BoundedVec, DispatchError::BadOrigin},
@@ -104,10 +103,7 @@ fn set_offline_works() {
         SortedEligibleCandidates::<Runtime>::put(BoundedVec::truncate_from(
             vec![candidate.clone()],
         ));
-        assert_eq!(
-            OfflineCollators::<Runtime>::get(&ACCOUNT_CANDIDATE_2),
-            false
-        );
+
         assert_ok!(Pallet::<Runtime>::enable_offline_marking(
             RuntimeOrigin::root(),
             true
@@ -115,21 +111,6 @@ fn set_offline_works() {
         assert_ok!(Pallet::<Runtime>::set_offline(RuntimeOrigin::signed(
             ACCOUNT_CANDIDATE_2
         )));
-        assert_eq!(OfflineCollators::<Runtime>::get(&ACCOUNT_CANDIDATE_2), true);
-    });
-}
-
-#[test]
-fn set_online_fails_if_collator_is_not_offline() {
-    ExtBuilder::default().build().execute_with(|| {
-        assert_ok!(Pallet::<Runtime>::enable_offline_marking(
-            RuntimeOrigin::root(),
-            true
-        ));
-        assert_noop!(
-            Pallet::<Runtime>::set_online(RuntimeOrigin::signed(ACCOUNT_CANDIDATE_1)),
-            Error::<Runtime>::CollatorNotOffline
-        );
     });
 }
 
@@ -140,15 +121,9 @@ fn set_online_works() {
             RuntimeOrigin::root(),
             true
         ));
-        OfflineCollators::<Runtime>::insert(ACCOUNT_CANDIDATE_2, true);
-        assert_eq!(OfflineCollators::<Runtime>::get(&ACCOUNT_CANDIDATE_2), true);
         assert_ok!(Pallet::<Runtime>::set_online(RuntimeOrigin::signed(
-            ACCOUNT_CANDIDATE_2
+            ACCOUNT_CANDIDATE_3
         )));
-        assert_eq!(
-            OfflineCollators::<Runtime>::get(&ACCOUNT_CANDIDATE_2),
-            false
-        );
     });
 }
 
@@ -185,6 +160,14 @@ fn notify_inactive_collator_fails_if_collator_is_invulnerable() {
 #[test]
 fn notify_inactive_collator_fails_if_collator_is_active() {
     ExtBuilder::default().build().execute_with(|| {
+        let share = InitialAutoCompoundingShareValue::get();
+        let candidate = EligibleCandidate {
+            candidate: ACCOUNT_CANDIDATE_3,
+            stake: 1 * share,
+        };
+        SortedEligibleCandidates::<Runtime>::put(BoundedVec::truncate_from(
+            vec![candidate.clone()],
+        ));
         assert_ok!(Pallet::<Runtime>::enable_offline_marking(
             RuntimeOrigin::root(),
             true
@@ -210,10 +193,6 @@ fn notify_inactive_collator_works() {
         SortedEligibleCandidates::<Runtime>::put(BoundedVec::truncate_from(
             vec![candidate.clone()],
         ));
-        assert_eq!(
-            OfflineCollators::<Runtime>::get(&ACCOUNT_CANDIDATE_2),
-            false
-        );
         assert_ok!(Pallet::<Runtime>::enable_offline_marking(
             RuntimeOrigin::root(),
             true
@@ -222,6 +201,5 @@ fn notify_inactive_collator_works() {
             RuntimeOrigin::signed(ACCOUNT_DELEGATOR_1),
             ACCOUNT_CANDIDATE_2
         ));
-        assert_eq!(OfflineCollators::<Runtime>::get(&ACCOUNT_CANDIDATE_2), true);
     });
 }

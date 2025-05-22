@@ -118,8 +118,8 @@ use {
     tp_stream_payment_common::StreamId,
     tp_traits::{
         apply, derive_storage_traits, GetContainerChainAuthor, GetHostConfiguration,
-        GetSessionContainerChains, MaybeSelfChainBlockAuthor, ParaIdAssignmentHooks,
-        RelayStorageRootProvider, RemoveInvulnerables, SlotFrequency,
+        GetSessionContainerChains, MaybeSelfChainBlockAuthor, NodeActivityTrackingHelper,
+        ParaIdAssignmentHooks, RelayStorageRootProvider, RemoveInvulnerables, SlotFrequency,
     },
     tp_xcm_core_buyer::BuyCoreCollatorProof,
     xcm::{IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation, VersionedXcm},
@@ -1505,7 +1505,7 @@ pub struct CandidateHasRegisteredKeys;
 impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
     fn is_candidate_eligible(a: &AccountId) -> bool {
         <Session as ValidatorRegistration<AccountId>>::is_registered(a)
-            && !PooledStaking::is_offline(a)
+            && !InactivityTracking::is_node_offline(a)
     }
     #[cfg(feature = "runtime-benchmarks")]
     fn make_candidate_eligible(a: &AccountId, eligible: bool) {

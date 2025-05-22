@@ -24,6 +24,7 @@ use {
         Candidate, Delegator, PendingOperationKey, PendingOperationKeyOf,
     },
     frame_support::{
+        dispatch::DispatchResult,
         parameter_types,
         traits::{
             tokens::fungible::{Inspect, InspectHold},
@@ -176,6 +177,16 @@ pub struct MockActivityTrackingHelper<AccountId>(PhantomData<AccountId>);
 impl tp_traits::NodeActivityTrackingHelper<AccountId> for MockActivityTrackingHelper<AccountId> {
     fn is_node_inactive(node: &AccountId) -> bool {
         *node == ACCOUNT_CANDIDATE_2 || *node == ACCOUNT_CANDIDATE_1
+    }
+    fn is_node_offline(node: &AccountId) -> bool {
+        *node == ACCOUNT_CANDIDATE_3
+    }
+
+    fn set_online(node: &AccountId) -> DispatchResult {
+        Ok(())
+    }
+    fn set_offline(node: &AccountId) -> DispatchResult {
+        Ok(())
     }
 }
 

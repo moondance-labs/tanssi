@@ -13,11 +13,12 @@
 
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
+use crate::Event;
 use {
     crate::{
         mock::*, ActiveCollatorsForCurrentSession, ActiveContainerChainsForCurrentSession,
         ActivityTrackingStatus, AuthorNotingHook, Config, CurrentActivityTrackingStatus, Error,
-        InactiveCollators, NodeActivityTrackingHelper, Pallet,
+        InactiveCollators, NodeActivityTrackingHelper, OfflineCollators, Pallet,
     },
     frame_support::{assert_noop, assert_ok, pallet_prelude::Get},
     sp_core::ConstU32,
@@ -881,6 +882,62 @@ fn inactive_chain_collators_are_processed_correctly_when_activity_tracking_is_di
         assert_eq!(
             InactiveCollators::<Test>::get(last_disabled_session_id + 1),
             get_collator_set(vec![COLLATOR_2, COLLATOR_3])
+        );
+    });
+}
+
+#[test]
+fn set_offline_works() {
+    ExtBuilder.build().execute_with(|| {
+        assert_eq!(OfflineCollators::<Test>::get(COLLATOR_1), false);
+        assert_ok!(Pallet::<Test>::set_offline(&COLLATOR_1));
+        System::assert_last_event(
+            Event::CollatorStatusUpdated {
+                collator: COLLATOR_1,
+                is_offline: true,
+            }
+            .into(),
+        );
+        assert_eq!(OfflineCollators::<Test>::get(COLLATOR_1), true);
+    });
+}
+
+#[test]
+fn set_offline_fails_for_offline_collators() {
+    ExtBuilder.build().execute_with(|| {
+        OfflineCollators::<Test>::insert(COLLATOR_1, true);
+        assert_eq!(OfflineCollators::<Test>::get(COLLATOR_1), true);
+        assert_noop!(
+            Pallet::<Test>::set_offline(&COLLATOR_1),
+            Error::<Test>::CollatorNotOnline
+        );
+    });
+}
+
+#[test]
+fn set_online_works() {
+    ExtBuilder.build().execute_with(|| {
+        OfflineCollators::<Test>::insert(COLLATOR_1, true);
+        assert_eq!(OfflineCollators::<Test>::get(COLLATOR_1), true);
+        assert_ok!(Pallet::<Test>::set_online(&COLLATOR_1));
+        System::assert_last_event(
+            Event::CollatorStatusUpdated {
+                collator: COLLATOR_1,
+                is_offline: false,
+            }
+            .into(),
+        );
+        assert_eq!(OfflineCollators::<Test>::get(COLLATOR_1), false);
+    });
+}
+
+#[test]
+fn set_online_fails_for_online_collators() {
+    ExtBuilder.build().execute_with(|| {
+        assert_eq!(OfflineCollators::<Test>::get(COLLATOR_1), false);
+        assert_noop!(
+            Pallet::<Test>::set_online(&COLLATOR_1),
+            Error::<Test>::CollatorNotOffline
         );
     });
 }
