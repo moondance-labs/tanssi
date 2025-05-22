@@ -15,7 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 #![cfg_attr(not(feature = "std"), no_std)]
 use {
-    sp_std::marker::PhantomData,
+    sp_std::{marker::PhantomData, vec::Vec},
     tp_traits::{GetSessionContainerChains, ParaId, ParathreadHelper},
 };
 
