@@ -514,8 +514,8 @@ impl pallet_balances::Config for Runtime {
 }
 
 parameter_types! {
-    pub const ReservedXcmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
-    pub const ReservedDmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
+    pub ReservedXcmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT / 4;
+    pub ReservedDmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT / 4;
     pub const RelayOrigin: AggregateMessageOrigin = AggregateMessageOrigin::Parent;
 }
 
@@ -769,7 +769,7 @@ impl Contains<RuntimeCall> for NormalFilter {
 impl pallet_maintenance_mode::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type NormalCallFilter = NormalFilter;
-    type MaintenanceCallFilter = MaintenanceFilter;
+    type MaintenanceCallFilter = InsideBoth<MaintenanceFilter, NormalFilter>;
     type MaintenanceOrigin = EnsureRoot<AccountId>;
     type XcmExecutionManager = XcmExecutionManager;
 }
@@ -1169,11 +1169,7 @@ impl_runtime_apis! {
                         <Runtime as pallet_evm::Config>::GasWeightMapping::weight_to_gas(
                             dispatch_info.call_weight
                         );
-                    let tip_per_gas = if effective_gas > 0 {
-                        tip.saturating_div(u128::from(effective_gas))
-                    } else {
-                        0
-                    };
+                    let tip_per_gas = tip.checked_div(u128::from(effective_gas)).unwrap_or(0);
 
                     // Overwrite the original prioritization with this ethereum one
                     intermediate_valid.priority = tip_per_gas as u64;

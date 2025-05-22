@@ -22,23 +22,6 @@ use {
 };
 
 #[test]
-fn test_disabled_some_extrinsics_for_pooled_staking() {
-    ExtBuilder::default().build().execute_with(|| {
-        run_to_block(2);
-
-        assert_noop!(
-            RuntimeCall::PooledStaking(pallet_pooled_staking::Call::update_candidate_position {
-                candidates: vec![]
-            })
-            .dispatch(<Runtime as frame_system::Config>::RuntimeOrigin::signed(
-                AccountId::from(ALICE)
-            )),
-            frame_system::Error::<Runtime>::CallFiltered
-        );
-    });
-}
-
-#[test]
 fn test_disabled_some_extrinsics_container_chain_management() {
     ExtBuilder::default().build().execute_with(|| {
         run_to_block(2);

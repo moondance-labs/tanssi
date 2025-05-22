@@ -9,6 +9,7 @@ import {
     HOLESKY_SOVEREIGN_ACCOUNT_ADDRESS,
     PRIMARY_GOVERNANCE_CHANNEL_ID,
     SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS,
+    DANCELIGHT_ERA_INFLATION_PERBILL,
 } from "utils";
 
 describeSuite({
@@ -82,13 +83,23 @@ describeSuite({
 
                 // The event is triggered, nonce should be incremented
                 if (event) {
-                    expect(nonceDiff).toEqual(1);
-                    expect(
-                        sovereignBalanceCheckpointA.toBigInt() - sovereignBalanceCheckpointB.toBigInt()
-                    ).to.be.lessThan(0);
+                    const supplyBefore = (await apiAtCheckpointA.query.balances.totalIssuance()).toBigInt();
+                    const expectedSovereignIssuance =
+                        (supplyBefore * DANCELIGHT_ERA_INFLATION_PERBILL) / 1_000_000_000n;
 
-                    // The event is not triggered, nonce should be the same
-                } else {
+                    expect(nonceDiff).toEqual(1);
+
+                    const errorMargin = 1n;
+                    const issuance = sovereignBalanceCheckpointB.toBigInt() - sovereignBalanceCheckpointA.toBigInt();
+
+                    // we know there might be rounding errors, so we always check it is in the range +-1
+                    expect(
+                        issuance >= expectedSovereignIssuance - 1n && issuance <= expectedSovereignIssuance + 1n,
+                        `Issuance not in the range, Actual: ${issuance}, Expected:  ${expectedSovereignIssuance}, Error margin: ${errorMargin}`
+                    ).to.be.true;
+                }
+                // The event is not triggered, nonce should be the same
+                else {
                     expect(nonceDiff).toEqual(0);
                 }
             },

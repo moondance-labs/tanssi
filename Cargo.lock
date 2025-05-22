@@ -18624,6 +18624,7 @@ dependencies = [
  "pallet-inflation-rewards",
  "pallet-initializer",
  "pallet-invulnerables",
+ "pallet-maintenance-mode",
  "pallet-membership",
  "pallet-message-queue",
  "pallet-migrations 0.1.0",
