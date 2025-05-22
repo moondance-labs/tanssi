@@ -39,7 +39,7 @@ pub struct RunCmd {
     pub max_past_logs: u32,
 
     /// Maximum block range to query logs from.
-    #[clap(long, default_value = "1024")]
+    #[arg(long, default_value = "1024")]
     pub max_block_range: u32,
 
     /// Id of the parachain this collator collates for.
