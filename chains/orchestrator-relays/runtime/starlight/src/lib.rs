@@ -343,13 +343,6 @@ impl Contains<RuntimeCall> for IsContainerChainRegistrationExtrinsics {
     }
 }
 
-pub struct IsStakingExtrinsics;
-impl Contains<RuntimeCall> for IsStakingExtrinsics {
-    fn contains(c: &RuntimeCall) -> bool {
-        matches!(c, RuntimeCall::PooledStaking(_))
-    }
-}
-
 parameter_types! {
     pub const Version: RuntimeVersion = VERSION;
     pub const SS58Prefix: u8 = 42;
@@ -1670,7 +1663,6 @@ type NormalFilter = EverythingBut<(
     IsDemocracyExtrinsics,
     IsXcmExtrinsics,
     IsContainerChainRegistrationExtrinsics,
-    IsStakingExtrinsics,
 )>;
 
 impl pallet_maintenance_mode::Config for Runtime {
