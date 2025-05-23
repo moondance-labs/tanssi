@@ -52,6 +52,7 @@ jobs:
           ./tools/benchmark-all-runtimes.sh --parallel
 
       - name: Upload benchmark logs
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: benchmark-logs
