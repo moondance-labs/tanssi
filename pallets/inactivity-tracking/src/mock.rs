@@ -34,8 +34,10 @@ pub type AccountId = u64;
 
 pub const COLLATOR_1: AccountId = 1;
 pub const COLLATOR_2: AccountId = 2;
+pub const COLLATOR_3: AccountId = 3;
 pub const CONTAINER_CHAIN_ID_1: ParaId = ParaId::new(3000);
 pub const CONTAINER_CHAIN_ID_2: ParaId = ParaId::new(3001);
+pub const CONTAINER_CHAIN_ID_3: ParaId = ParaId::new(3002);
 pub const SESSION_BLOCK_LENGTH: u64 = 5;
 
 // Configure a mock runtime to test the pallet.
@@ -151,6 +153,7 @@ impl pallet_session::Config for Test {
 pub struct CurrentSessionIndexGetter;
 
 impl tp_traits::GetSessionIndex<u32> for CurrentSessionIndexGetter {
+    /// Returns current session index.
     fn session_index() -> u32 {
         Session::current_index()
     }
@@ -165,6 +168,7 @@ impl tp_traits::GetContainerChainsWithCollators<AccountId> for MockContainerChai
         vec![
             (CONTAINER_CHAIN_ID_1, vec![COLLATOR_1, COLLATOR_2]),
             (CONTAINER_CHAIN_ID_2, vec![]),
+            (CONTAINER_CHAIN_ID_3, vec![COLLATOR_3]),
         ]
     }
 
@@ -172,6 +176,7 @@ impl tp_traits::GetContainerChainsWithCollators<AccountId> for MockContainerChai
         let mut collators = BTreeSet::new();
         collators.insert(COLLATOR_1);
         collators.insert(COLLATOR_2);
+        collators.insert(COLLATOR_3);
         collators
     }
 
@@ -183,17 +188,27 @@ impl tp_traits::GetContainerChainsWithCollators<AccountId> for MockContainerChai
     }
 }
 
+pub struct MockParathreadHelper;
+impl tp_traits::ParathreadHelper for MockParathreadHelper {
+    fn get_parathreads_for_session() -> Vec<ParaId> {
+        vec![CONTAINER_CHAIN_ID_3]
+    }
+}
+
 impl pallet_inactivity_tracking::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type CollatorId = AccountId;
     type MaxInactiveSessions = ConstU32<2>;
     type MaxCollatorsPerSession = ConstU32<5>;
+    type MaxContainerChains = ConstU32<3>;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type CurrentCollatorsFetcher = MockContainerChainsInfoFetcher;
     type GetSelfChainBlockAuthor = ();
+    type ParaFilter = MockParathreadHelper;
     type WeightInfo = ();
 }
 
+#[derive(Default)]
 pub(crate) struct ExtBuilder;
 
 impl ExtBuilder {
