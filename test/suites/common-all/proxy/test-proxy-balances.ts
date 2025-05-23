@@ -6,7 +6,7 @@ import type { ApiPromise } from "@polkadot/api";
 import { initializeCustomCreateBlock } from "utils";
 
 describeSuite({
-    id: "CO0301",
+    id: "C0304",
     title: "Proxy test suite - ProxyType::Balances",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -39,9 +39,18 @@ describeSuite({
             title: "Add proxy Balances",
             test: async () => {
                 const delegate = charlie.address;
-                const balances = ["frontier-template", "container-chain-template"].includes(chain) ? 4 : 5;
+                let balanceEnumIndex: number;
+                if (chain.includes("-template")) {
+                    balanceEnumIndex = 4;
+                } else if (chain.includes("box")) {
+                    balanceEnumIndex = 5;
+                } else if (chain.includes("light")) {
+                    balanceEnumIndex = 11;
+                } else {
+                    throw new Error("Unrecoginzed chain. Failing...");
+                }
                 const delay = 0;
-                const tx = polkadotJs.tx.proxy.addProxy(delegate, balances, delay);
+                const tx = polkadotJs.tx.proxy.addProxy(delegate, balanceEnumIndex, delay);
                 await context.createBlock([await tx.signAsync(alice)]);
 
                 const events = await polkadotJs.query.system.events();
