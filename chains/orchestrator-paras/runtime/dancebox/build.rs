@@ -16,7 +16,30 @@
 
 use substrate_wasm_builder::WasmBuilder;
 
+#[cfg(feature = "metadata-hash")]
 fn main() {
+    if std::env::vars().any(|(k, _)| k == "CARGO_FEATURE_METADATA_HASH") {
+        println!("cargo:warning=✔ Feature `metadata-hash` is ENABLED");
+    } else {
+        println!("cargo:warning=❌ Feature `metadata-hash` is DISABLED");
+    }
+
+    WasmBuilder::new()
+        .with_current_project()
+        .enable_metadata_hash("STAR", 12)
+        .export_heap_base()
+        .import_memory()
+        .build();
+}
+
+#[cfg(not(feature = "metadata-hash"))]
+fn main() {
+    if std::env::vars().any(|(k, _)| k == "CARGO_FEATURE_METADATA_HASH") {
+        println!("cargo:warning=✔ Feature `metadata-hash` is ENABLED");
+    } else {
+        println!("cargo:warning=❌ Feature `metadata-hash` is DISABLED");
+    }
+
     WasmBuilder::new()
         .with_current_project()
         .export_heap_base()
