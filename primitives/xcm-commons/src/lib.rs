@@ -71,24 +71,12 @@ where
 {
     fn contains(asset: &Asset, origin: &Location) -> bool {
         log::trace!(target: "xcm::contains", "EthereumAssetReserve asset: {:?}, origin: {:?}", asset, origin);
-        let ethereum_network = EthereumNetwork::get();
-        let reserve = if asset.id.0.parents == 1 {
-            match asset.id.0.first_interior() {
-                Some(GlobalConsensus(network)) if *network == ethereum_network => {
-                    Some(EthereumLocation::get())
-                }
-                _ => None,
-            }
-        } else {
-            None
-        };
-
-        // Origin must match the EthereumLocation reserve
-        if let Some(ref reserve) = reserve {
-            if reserve == origin {
-                return true;
-            }
+        if *origin != EthereumLocation::get() {
+            return false;
         }
-        false
+        match (asset.id.0.parents, asset.id.0.first_interior()) {
+            (1, Some(GlobalConsensus(network))) if *network == EthereumNetwork::get() => true,
+            _ => false,
+        }
     }
 }

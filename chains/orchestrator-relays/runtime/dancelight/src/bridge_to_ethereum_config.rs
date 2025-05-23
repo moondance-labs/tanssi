@@ -299,9 +299,8 @@ where
     }
 
     fn process_message(_channel: Channel, envelope: Envelope) -> DispatchResult {
-        let eth_transfer_data =
-            Self::decode_message_for_eth_transfer(envelope.payload.as_slice())
-                .ok_or_else(|| DispatchError::Other("unexpected message"))?;
+        let eth_transfer_data = Self::decode_message_for_eth_transfer(envelope.payload.as_slice())
+            .ok_or_else(|| DispatchError::Other("unexpected message"))?;
 
         match eth_transfer_data.destination {
             Destination::AccountId32 { id: _ } => {
