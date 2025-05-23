@@ -286,7 +286,7 @@ where
         }
 
         if let Some(eth_transfer_data) =
-            Self::decode_message_for_eth_transfer(&mut envelope.payload.as_slice())
+            Self::decode_message_for_eth_transfer(envelope.payload.as_slice())
         {
             // Check if the token location is a foreign asset included in ForeignAssetCreator
             return pallet_foreign_asset_creator::ForeignAssetToAssetId::<Runtime>::get(
@@ -300,7 +300,7 @@ where
 
     fn process_message(_channel: Channel, envelope: Envelope) -> DispatchResult {
         let eth_transfer_data =
-            Self::decode_message_for_eth_transfer(&mut envelope.payload.as_slice())
+            Self::decode_message_for_eth_transfer(envelope.payload.as_slice())
                 .ok_or_else(|| DispatchError::Other("unexpected message"))?;
 
         match eth_transfer_data.destination {
@@ -334,8 +334,8 @@ where
     EthereumNetwork: Get<NetworkId>,
 {
     /// Retrieve the eth transfer data from the message payload.
-    fn decode_message_for_eth_transfer(payload: &mut &[u8]) -> Option<EthTransferData> {
-        match VersionedXcmMessage::decode_all(payload) {
+    fn decode_message_for_eth_transfer(mut payload: &[u8]) -> Option<EthTransferData> {
+        match VersionedXcmMessage::decode_all(&mut payload) {
             Ok(VersionedXcmMessage::V1(MessageV1 {
                 command:
                     Command::SendToken {
