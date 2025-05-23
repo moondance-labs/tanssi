@@ -31,8 +31,12 @@ declare -a BENCHMARK_CMDS=(
 echo "Running benchmarks. Option parallel: $PARALLEL"
 
 if $PARALLEL; then
-    for cmd in "${BENCHMARK_CMDS[@]}"; do
-        bash -c "$cmd" &
+    mkdir -p tmp
+    for i in "${!BENCHMARK_CMDS[@]}"; do
+        cmd="${BENCHMARK_CMDS[$i]}"
+        log_file="tmp/benchmark_log_$i.txt"
+        echo "Running command [$i] in background: $cmd > $log_file"
+        bash -c "$cmd" > "$log_file" 2>&1 &
     done
     wait
 else
