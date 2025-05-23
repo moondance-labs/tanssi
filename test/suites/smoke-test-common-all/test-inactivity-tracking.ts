@@ -4,16 +4,18 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
 
 describeSuite({
-    id: "SMOK14",
+    id: "S09",
     title: "Inactivity tracking suit",
     foundationMethods: "read_only",
     testCases: ({ it, context, log }) => {
         let api: ApiPromise;
         let lastSessionIndex: number;
         let lastSessionEndBlock: number;
+        let chain: any;
 
         beforeAll(async () => {
             api = context.polkadotJs();
+            chain = api.consts.system.version.specName.toString();
             lastSessionIndex = (await api.query.session.currentIndex()).toNumber() - 1;
 
             const getLastSessionEndBlock = async (lastSessionIndex: number) => {
@@ -32,23 +34,46 @@ describeSuite({
         });
 
         it({
-            id: "C01",
+            id: "C100",
             title: "Collator marked as inactive has not produced any blocks in the last session",
             test: async () => {
-                const inactiveCollators = await api.query.inactivityTracking.inactiveCollators(lastSessionIndex);
-                if (inactiveCollators.size === 0) {
-                    log("No inactive collators found");
+                const isChainSupported = chain === "dancebox" || chain === "dancelight";
+                if (isChainSupported) {
+                    log("Inactivity tracking is not supported on this chain! Skipping test...");
                     return;
                 }
+                const inactiveCollators = await api.query.inactivityTracking.inactiveCollators(lastSessionIndex);
+
+                if (inactiveCollators.size === 0) {
+                    log("No inactive collators found. Skipping check...");
+                    return;
+                }
+
                 let currentBlockNumber = lastSessionEndBlock;
                 let currentBlockHash = await api.rpc.chain.getBlockHash(currentBlockNumber);
                 let currentBlockApi = await api.at(currentBlockHash);
                 let currentSessionIndex = (await currentBlockApi.query.session.currentIndex()).toNumber();
 
-                while (currentSessionIndex == lastSessionIndex) {
-                    // TODO: Verify that all inactive collators for the last session
-                    // haven't produced blocks in the past session
+                const registeredParaIds =
+                    chain === "dancebox"
+                        ? await currentBlockApi.query.registrar.registeredParaIds()
+                        : await currentBlockApi.query.containerRegistrar.registeredParaIds();
 
+                while (currentSessionIndex == lastSessionIndex) {
+                    // For every registered paraId, check if the latest author is in the inactive collators list
+                    for (const paraId of registeredParaIds) {
+                        const latestAuthorInfo = await currentBlockApi.query.authorNoting.latestAuthor(paraId);
+                        if (latestAuthorInfo.isSome) {
+                            const authorInfo = latestAuthorInfo.unwrap();
+                            const authorId = authorInfo.author;
+                            log(
+                                `Expecting block ${authorInfo.blockNumber} for container chain  with ID ${paraId} to be authored by an active collator`
+                            );
+                            expect(inactiveCollators.has(authorId)).toBe(false);
+                        }
+                    }
+
+                    // Move to the previous block
                     currentBlockNumber -= 1;
                     currentBlockHash = await api.rpc.chain.getBlockHash(currentBlockNumber);
                     currentBlockApi = await api.at(currentBlockHash);
