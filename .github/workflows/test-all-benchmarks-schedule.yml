@@ -92,6 +92,11 @@ jobs:
             echo "No changes to commit, skipping PR creation."
             exit 0
           fi
+          
+          rm -rf binaries
+          rm -rf mold
+          rm -rf runtime_size_report.md
+          rm -rf runtimes
 
           BRANCH="auto/weights-update-$(date +%s)"
           git config user.name "github-actions"
