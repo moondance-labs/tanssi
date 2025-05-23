@@ -59,7 +59,7 @@ describeSuite({
                         ? await currentBlockApi.query.registrar.registeredParaIds()
                         : await currentBlockApi.query.containerRegistrar.registeredParaIds();
 
-                while (currentSessionIndex == lastSessionIndex) {
+                while (currentSessionIndex === lastSessionIndex) {
                     // For every registered paraId, check if the latest author is in the inactive collators list
                     for (const paraId of registeredParaIds) {
                         const latestAuthorInfo = await currentBlockApi.query.authorNoting.latestAuthor(paraId);
