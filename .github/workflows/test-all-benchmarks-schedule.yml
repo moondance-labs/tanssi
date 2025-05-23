@@ -51,6 +51,12 @@ jobs:
         run: |
           ./tools/benchmark-all-runtimes.sh --parallel
 
+      - name: Upload benchmark logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-logs
+          path: tmp/benchmark_log_*.txt
+
       - name: Create issue if scheduled benchmark failed
         if: failure() && github.event_name == 'schedule'
         run: |
