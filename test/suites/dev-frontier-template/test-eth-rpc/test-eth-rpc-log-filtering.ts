@@ -1,6 +1,7 @@
 import { beforeAll, deployCreateCompiledContract, describeSuite, expect } from "@moonwall/cli";
 import { customWeb3Request } from "@moonwall/util";
 import type { TransactionReceipt } from "viem";
+import type { RpcResponse } from "../../../types/rpc-response.type.ts";
 
 describeSuite({
     id: "DE0703",
@@ -67,6 +68,31 @@ describeSuite({
                 for (const item of nonMatchingCases) {
                     const request = (await customWeb3Request(context.web3(), "eth_getLogs", [item])) as any;
                     expect(request.result.length).to.be.eq(0);
+                }
+            },
+        });
+
+        it({
+            id: "T03",
+            title: "Validate eth_getLogs block range limit",
+            test: async () => {
+                let blocksToCreate = 1025;
+                for (; blocksToCreate > 0; blocksToCreate--) {
+                    await context.createBlock();
+                }
+
+                const result = (await customWeb3Request(context.web3(), "eth_getLogs", [
+                    {
+                        fromBlock: "0x0",
+                        toBlock: "latest",
+                        topics: [],
+                    },
+                ])) as RpcResponse;
+
+                if ("error" in result) {
+                    expect(result.error.message).toEqual("block range is too wide (maximum 1024)");
+                } else {
+                    throw new Error("Unexpected response, failing the test");
                 }
             },
         });
