@@ -39,19 +39,8 @@ describeSuite({
             title: "Add proxy Balances",
             test: async () => {
                 const delegate = charlie.address;
-                // enum ProxyType
-                let balanceEnumIndex: number;
-                if (chain.includes("-template")) {
-                    balanceEnumIndex = 4;
-                } else if (chain.includes("box")) {
-                    balanceEnumIndex = 5;
-                } else if (chain.includes("light")) {
-                    balanceEnumIndex = 11;
-                } else {
-                    throw new Error("Unrecoginzed chain. Failing...");
-                }
                 const delay = 0;
-                const tx = polkadotJs.tx.proxy.addProxy(delegate, balanceEnumIndex, delay);
+                const tx = polkadotJs.tx.proxy.addProxy(delegate, "Balances", delay);
                 await context.createBlock([await tx.signAsync(alice)]);
 
                 const events = await polkadotJs.query.system.events();
