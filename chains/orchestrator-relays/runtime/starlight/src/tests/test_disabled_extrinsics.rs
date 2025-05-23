@@ -69,7 +69,7 @@ fn test_disabled_some_extrinsics_for_bridges() {
             frame_system::Error::<Runtime>::CallFiltered
         );
 
-        // EthereumBeaconClient enabled in runtime 1301
+        // EthereumBeaconClient enabled in runtime 1310
         assert_eq!(
             RuntimeCall::EthereumBeaconClient(
                 snowbridge_pallet_ethereum_client::Call::set_operating_mode { mode: Halted }

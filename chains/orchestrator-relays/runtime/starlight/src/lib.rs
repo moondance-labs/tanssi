@@ -188,7 +188,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: Cow::Borrowed("starlight"),
     impl_name: Cow::Borrowed("tanssi-starlight-v2.0"),
     authoring_version: 0,
-    spec_version: 1301,
+    spec_version: 1310,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 26,
@@ -348,7 +348,7 @@ impl Contains<RuntimeCall> for IsBridgesExtrinsics {
             RuntimeCall::EthereumOutboundQueue(_)
                 | RuntimeCall::EthereumInboundQueue(_)
                 | RuntimeCall::EthereumSystem(_)
-                | RuntimeCall::EthereumTokenTransfers(_) // Beacon client enabled in 1301
+                | RuntimeCall::EthereumTokenTransfers(_) // Beacon client enabled in 1310
                                                          // | RuntimeCall::EthereumBeaconClient(_)
         )
     }
