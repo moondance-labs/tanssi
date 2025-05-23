@@ -38,7 +38,7 @@ use {
         traits::{
             fungible::Inspect,
             tokens::{PayFromAccount, UnityAssetBalanceConversion},
-            ConstBool, Contains, EverythingBut,
+            ConstBool, Contains, EverythingBut, InsideBoth,
         },
     },
     frame_system::{pallet_prelude::BlockNumberFor, EnsureNever},
@@ -60,8 +60,8 @@ use {
         ValidationCodeHash, ValidatorId, ValidatorIndex, PARACHAIN_KEY_TYPE_ID,
     },
     runtime_common::{
-        self as polkadot_runtime_common, impl_runtime_weights, impls::ToAuthor, paras_registrar,
-        paras_sudo_wrapper, traits::Registrar as RegistrarInterface, BlockHashCount, BlockLength,
+        self as polkadot_runtime_common, impl_runtime_weights, paras_registrar, paras_sudo_wrapper,
+        traits::Registrar as RegistrarInterface, BlockHashCount, BlockLength,
         SlowAdjustingFeeUpdate,
     },
     runtime_parachains::{
@@ -98,6 +98,10 @@ use {
     tp_traits::{
         prod_or_fast_parameter_types, EraIndex, GetHostConfiguration, GetSessionContainerChains,
         ParaIdAssignmentHooks, RegistrarHandler, Slot, SlotFrequency,
+    },
+    xcm_runtime_apis::{
+        dry_run::{CallDryRunEffects, Error as XcmDryRunApiError, XcmDryRunEffects},
+        fees::Error as XcmPaymentApiError,
     },
 };
 
@@ -168,7 +172,6 @@ use {
         pallet_custom_origins, AuctionAdmin, Fellows, GeneralAdmin, Treasurer, TreasurySpender,
     },
     pallet_collator_assignment::CoreAllocationConfiguration,
-    xcm_runtime_apis::fees::Error as XcmPaymentApiError,
 };
 
 #[cfg(test)]
@@ -188,7 +191,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: Cow::Borrowed("starlight"),
     impl_name: Cow::Borrowed("tanssi-starlight-v2.0"),
     authoring_version: 0,
-    spec_version: 1300,
+    spec_version: 1400,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 26,
@@ -287,14 +290,6 @@ impl Convert<AggregateMessageOrigin, ParaId> for GetParaFromAggregateMessageOrig
     }
 }
 
-/// Disable any extrinsic related to the balance transfer
-pub struct IsBalanceTransferExtrinsics;
-impl Contains<RuntimeCall> for IsBalanceTransferExtrinsics {
-    fn contains(c: &RuntimeCall) -> bool {
-        matches!(c, RuntimeCall::Balances(_))
-    }
-}
-
 pub struct IsContainerChainManagementExtrinsics;
 impl Contains<RuntimeCall> for IsContainerChainManagementExtrinsics {
     fn contains(c: &RuntimeCall) -> bool {
@@ -323,13 +318,6 @@ impl Contains<RuntimeCall> for IsDemocracyExtrinsics {
     }
 }
 
-pub struct IsMiscellaneousExtrinsics;
-impl Contains<RuntimeCall> for IsMiscellaneousExtrinsics {
-    fn contains(c: &RuntimeCall) -> bool {
-        matches!(c, RuntimeCall::Proxy(_) | RuntimeCall::Identity(_))
-    }
-}
-
 pub struct IsXcmExtrinsics;
 impl Contains<RuntimeCall> for IsXcmExtrinsics {
     fn contains(c: &RuntimeCall) -> bool {
@@ -355,27 +343,6 @@ impl Contains<RuntimeCall> for IsContainerChainRegistrationExtrinsics {
     }
 }
 
-pub struct IsBridgesExtrinsics;
-impl Contains<RuntimeCall> for IsBridgesExtrinsics {
-    fn contains(c: &RuntimeCall) -> bool {
-        matches!(
-            c,
-            RuntimeCall::EthereumOutboundQueue(_)
-                | RuntimeCall::EthereumInboundQueue(_)
-                | RuntimeCall::EthereumSystem(_)
-                | RuntimeCall::EthereumBeaconClient(_)
-                | RuntimeCall::EthereumTokenTransfers(_)
-        )
-    }
-}
-
-pub struct IsStakingExtrinsics;
-impl Contains<RuntimeCall> for IsStakingExtrinsics {
-    fn contains(c: &RuntimeCall) -> bool {
-        matches!(c, RuntimeCall::PooledStaking(_))
-    }
-}
-
 parameter_types! {
     pub const Version: RuntimeVersion = VERSION;
     pub const SS58Prefix: u8 = 42;
@@ -383,16 +350,7 @@ parameter_types! {
 
 #[derive_impl(frame_system::config_preludes::RelayChainDefaultConfig)]
 impl frame_system::Config for Runtime {
-    type BaseCallFilter = EverythingBut<(
-        IsBalanceTransferExtrinsics,
-        IsContainerChainManagementExtrinsics,
-        IsDemocracyExtrinsics,
-        IsMiscellaneousExtrinsics,
-        IsXcmExtrinsics,
-        IsContainerChainRegistrationExtrinsics,
-        IsBridgesExtrinsics,
-        IsStakingExtrinsics,
-    )>;
+    type BaseCallFilter = MaintenanceMode;
     type BlockWeights = BlockWeights;
     type BlockLength = BlockLength;
     type DbWeight = RocksDbWeight;
@@ -575,7 +533,8 @@ parameter_types! {
 
 impl pallet_transaction_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type OnChargeTransaction = FungibleAdapter<Balances, ToAuthor<Runtime>>;
+    type OnChargeTransaction =
+        FungibleAdapter<Balances, tanssi_runtime_common::DealWithFees<Runtime>>;
     type OperationalFeeMultiplier = OperationalFeeMultiplier;
     type WeightToFee = WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
@@ -1670,6 +1629,50 @@ impl pallet_multiblock_migrations::Config for Runtime {
     type WeightInfo = weights::pallet_multiblock_migrations::SubstrateWeight<Runtime>;
 }
 
+/// Maintenance mode Call filter
+pub struct MaintenanceFilter;
+impl Contains<RuntimeCall> for MaintenanceFilter {
+    fn contains(c: &RuntimeCall) -> bool {
+        !matches!(
+            c,
+            RuntimeCall::Balances(..)
+                | RuntimeCall::Registrar(..)
+                | RuntimeCall::Session(..)
+                | RuntimeCall::System(..)
+                | RuntimeCall::PooledStaking(..)
+                | RuntimeCall::Utility(..)
+                | RuntimeCall::Identity(..)
+                | RuntimeCall::XcmPallet(..)
+                | RuntimeCall::EthereumBeaconClient(..)
+                | RuntimeCall::EthereumSystem(..)
+                | RuntimeCall::EthereumTokenTransfers(..)
+                | RuntimeCall::OnDemandAssignmentProvider(..)
+                | RuntimeCall::ContainerRegistrar(..)
+                | RuntimeCall::ServicesPayment(..)
+                | RuntimeCall::DataPreservers(..)
+                | RuntimeCall::Hrmp(..)
+                | RuntimeCall::AssetRate(..)
+                | RuntimeCall::StreamPayment(..)
+        )
+    }
+}
+
+/// Normal Call Filter
+type NormalFilter = EverythingBut<(
+    IsContainerChainManagementExtrinsics,
+    IsDemocracyExtrinsics,
+    IsXcmExtrinsics,
+    IsContainerChainRegistrationExtrinsics,
+)>;
+
+impl pallet_maintenance_mode::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type NormalCallFilter = NormalFilter;
+    type MaintenanceCallFilter = InsideBoth<MaintenanceFilter, NormalFilter>;
+    type MaintenanceOrigin = EnsureRoot<AccountId>;
+    type XcmExecutionManager = ();
+}
+
 pub const FIXED_BLOCK_PRODUCTION_COST: u128 = 1 * MICROUNITS;
 pub const FIXED_COLLATOR_ASSIGNMENT_COST: u128 = 100 * MICROUNITS;
 
@@ -2012,6 +2015,7 @@ construct_runtime! {
         // Migration stuff
         Migrations: pallet_migrations = 120,
         MultiBlockMigrations: pallet_multiblock_migrations = 121,
+        MaintenanceMode: pallet_maintenance_mode = 122,
 
         // BEEFY Bridges support.
         Beefy: pallet_beefy = 240,
@@ -2393,6 +2397,16 @@ sp_api::impl_runtime_apis! {
 
         fn initialize_block(header: &<Block as BlockT>::Header) -> sp_runtime::ExtrinsicInclusionMode {
             Executive::initialize_block(header)
+        }
+    }
+
+    impl xcm_runtime_apis::dry_run::DryRunApi<Block, RuntimeCall, RuntimeEvent, OriginCaller> for Runtime {
+        fn dry_run_call(origin: OriginCaller, call: RuntimeCall) -> Result<CallDryRunEffects<RuntimeEvent>, XcmDryRunApiError> {
+            XcmPallet::dry_run_call::<Runtime, xcm_config::XcmRouter, OriginCaller, RuntimeCall>(origin, call)
+        }
+
+        fn dry_run_xcm(origin_location: VersionedLocation, xcm: VersionedXcm<RuntimeCall>) -> Result<XcmDryRunEffects<RuntimeEvent>, XcmDryRunApiError> {
+            XcmPallet::dry_run_xcm::<Runtime, xcm_config::XcmRouter, RuntimeCall, xcm_config::XcmConfig>(origin_location, xcm)
         }
     }
 
@@ -2893,6 +2907,23 @@ sp_api::impl_runtime_apis! {
         }
         fn query_fee_details(uxt: <Block as BlockT>::Extrinsic, len: u32) -> FeeDetails<Balance> {
             TransactionPayment::query_fee_details(uxt, len)
+        }
+        fn query_weight_to_fee(weight: Weight) -> Balance {
+            TransactionPayment::weight_to_fee(weight)
+        }
+        fn query_length_to_fee(length: u32) -> Balance {
+            TransactionPayment::length_to_fee(length)
+        }
+    }
+
+    impl pallet_transaction_payment_rpc_runtime_api::TransactionPaymentCallApi<Block, Balance, RuntimeCall>
+        for Runtime
+    {
+        fn query_call_info(call: RuntimeCall, len: u32) -> RuntimeDispatchInfo<Balance> {
+            TransactionPayment::query_call_info(call, len)
+        }
+        fn query_call_fee_details(call: RuntimeCall, len: u32) -> FeeDetails<Balance> {
+            TransactionPayment::query_call_fee_details(call, len)
         }
         fn query_weight_to_fee(weight: Weight) -> Balance {
             TransactionPayment::weight_to_fee(weight)

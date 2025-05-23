@@ -1,0 +1,16 @@
+disallowed-methods = [
+	# saturating_div panics when dividing by 0. use checked_div instead
+	{ path = "u8::saturating_div", reason = "saturating_div panics when dividing by 0. use checked_div instead" },
+	{ path = "u16::saturating_div", reason = "saturating_div panics when dividing by 0. use checked_div instead" },
+	{ path = "u32::saturating_div", reason = "saturating_div panics when dividing by 0. use checked_div instead" },
+	{ path = "u64::saturating_div", reason = "saturating_div panics when dividing by 0. use checked_div instead" },
+	{ path = "u128::saturating_div", reason = "saturating_div panics when dividing by 0. use checked_div instead" },
+	{ path = "usize::saturating_div", reason = "saturating_div panics when dividing by 0. use checked_div instead" },
+	{ path = "i8::saturating_div", reason = "saturating_div panics when dividing by 0. use checked_div instead" },
+	{ path = "i16::saturating_div", reason = "saturating_div panics when dividing by 0. use checked_div instead" },
+	{ path = "i32::saturating_div", reason = "saturating_div panics when dividing by 0. use checked_div instead" },
+	{ path = "i64::saturating_div", reason = "saturating_div panics when dividing by 0. use checked_div instead" },
+	{ path = "i128::saturating_div", reason = "saturating_div panics when dividing by 0. use checked_div instead" },
+	{ path = "isize::saturating_div", reason = "saturating_div panics when dividing by 0. use checked_div instead" },
+	{ path = "sp_runtime::Weight::saturating_div", reason = "saturating_div panics when dividing by 0. use checked_div instead" },
+]

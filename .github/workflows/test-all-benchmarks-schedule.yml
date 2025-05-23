@@ -1,0 +1,124 @@
+name: Test all benchmarks on schedule
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to run benchmarks on"
+        required: true
+        default: "master"
+  schedule:
+    - cron: "0 0 * * 6"  # Runs every Saturday at 12 AM UTC
+
+jobs:
+  test-all-benchmarks:
+    runs-on: self-hosted
+    timeout-minutes: 720
+    env:
+      TMP_TARGET: "/tmp/target"
+      CARGO_TARGET_DIR: "target"
+      RUSTC_WRAPPER: "sccache"
+      CARGO_INCREMENTAL: "0"
+      SCCACHE_CACHE_SIZE: "100GB"
+      SCCACHE_GHA_ENABLED: "true"
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Determine branch
+        id: branch
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "branch=${{ github.event.inputs.branch }}" >> $GITHUB_OUTPUT
+          else
+            echo "branch=master" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.branch.outputs.branch }}
+
+      - name: Install GitHub CLI
+        uses: ./.github/workflow-templates/gh-cli
+
+      - name: Cargo build
+        uses: ./.github/workflow-templates/cargo-build
+        with:
+          features: "fast-runtime,runtime-benchmarks,metadata-hash"
+
+      - name: Run all benchmarks in parallel
+        id: run-benchmarks
+        shell: bash
+        run: |
+          ./tools/benchmark-all-runtimes.sh --parallel
+
+      - name: Upload benchmark logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-logs
+          path: tmp/benchmark_log_*.txt
+
+      - name: Create issue if scheduled benchmark failed
+        if: failure() && github.event_name == 'schedule'
+        run: |
+          ~/bin/bin/gh issue create \
+            --title "❌ Scheduled benchmark failed on ${{ steps.branch.outputs.branch }}" \
+            --body "See the logs: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --assignee evgeny-s,tmpolaczyk,girazoki
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Copy weights
+        id: copy-weights
+        shell: bash
+        run: |
+          cp -r ./tmp/dancelight_weights/* ./chains/orchestrator-relays/runtime/dancelight/src/weights/
+          cp -r ./tmp/starlight_weights/* ./chains/orchestrator-relays/runtime/starlight/src/weights/
+          cp -r ./tmp/dancebox_weights/* ./chains/orchestrator-paras/runtime/dancebox/src/weights/
+          cp -r ./tmp/flashbox_weights/* ./chains/orchestrator-paras/runtime/flashbox/src/weights/
+          cp -r ./tmp/simple_template_weights/* ./chains/container-chains/runtime-templates/simple/src/weights/
+          cp -r ./tmp/frontier_template_weights/* ./chains/container-chains/runtime-templates/frontier/src/weights/
+
+      - name: Retrieve the diff and send to the Summary
+        id: weights-diff
+        run: |
+          ./tools/show-me-the-weights.py diff > runtime_size_report.md || true
+          
+          cat runtime_size_report.md >> $GITHUB_STEP_SUMMARY
+      
+          if grep -q "Found problematic" runtime_size_report.md; then
+            echo "status=1" >> $GITHUB_OUTPUT
+          else
+            echo "status=0" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create a draft PR with weight changes
+        if: steps.weights-diff.outputs.status != '0' || github.event_name == 'workflow_dispatch'
+        run: |
+          if git diff --quiet; then
+            echo "No changes to commit, skipping PR creation."
+            exit 0
+          fi
+          
+          rm -rf binaries
+          rm -rf mold
+          rm -rf runtime_size_report.md
+          rm -rf runtimes
+
+          BRANCH="auto/weights-update-$(date +%s)"
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git checkout -b "$BRANCH"
+          git add .
+          git commit -m "chore(weights): update weights after benchmark weights anomaly found"
+          git push origin "$BRANCH"
+
+          ~/bin/bin/gh pr create \
+            --title "chore(weights): auto-update weights on benchmark weights anomaly found" \
+            --body "Auto-generated PR with new weights after benchmark weights anomaly found." \
+            --base ${{ steps.branch.outputs.branch }} \
+            --head "$BRANCH" \
+            --draft \
+            --reviewer "CoreDev"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

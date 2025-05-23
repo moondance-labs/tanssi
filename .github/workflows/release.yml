@@ -241,7 +241,7 @@ jobs:
             - name: Cargo build
               uses: ./.github/workflow-templates/cargo-build
               with:
-                features: "fast-runtime"
+                features: "fast-runtime,metadata-hash"
             - name: Upload runtimes
               uses: actions/upload-artifact@v4
               with:
@@ -260,7 +260,7 @@ jobs:
         needs: ["set-tags", "build"]
         env:
           GH_TOKEN: ${{ github.token }}
-          RUNTIMES_AS_STRING: "dancebox_runtime,flashbox_runtime,dancelight_runtime,container_chain_template_simple_runtime,container_chain_template_frontier_runtime"
+          RUNTIMES_AS_STRING: "dancebox_runtime,flashbox_runtime,dancelight_runtime,starlight_runtime,container_chain_template_simple_runtime,container_chain_template_frontier_runtime"
         steps:
             - name: Checkout
               uses: actions/checkout@v4

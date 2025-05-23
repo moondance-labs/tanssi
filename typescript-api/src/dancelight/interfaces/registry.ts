@@ -71,6 +71,16 @@ import type {
     PalletAssetRateCall,
     PalletAssetRateError,
     PalletAssetRateEvent,
+    PalletAssetsAccountStatus,
+    PalletAssetsApproval,
+    PalletAssetsAssetAccount,
+    PalletAssetsAssetDetails,
+    PalletAssetsAssetMetadata,
+    PalletAssetsAssetStatus,
+    PalletAssetsCall,
+    PalletAssetsError,
+    PalletAssetsEvent,
+    PalletAssetsExistenceReason,
     PalletAuthorNotingCall,
     PalletAuthorNotingError,
     PalletAuthorNotingEvent,
@@ -125,6 +135,9 @@ import type {
     PalletExternalValidatorsForcing,
     PalletExternalValidatorsRewardsEraRewardPoints,
     PalletExternalValidatorsRewardsEvent,
+    PalletForeignAssetCreatorCall,
+    PalletForeignAssetCreatorError,
+    PalletForeignAssetCreatorEvent,
     PalletGrandpaCall,
     PalletGrandpaError,
     PalletGrandpaEvent,
@@ -149,6 +162,9 @@ import type {
     PalletInvulnerablesCall,
     PalletInvulnerablesError,
     PalletInvulnerablesEvent,
+    PalletMaintenanceModeCall,
+    PalletMaintenanceModeError,
+    PalletMaintenanceModeEvent,
     PalletMessageQueueBookState,
     PalletMessageQueueCall,
     PalletMessageQueueError,
@@ -599,6 +615,16 @@ declare module "@polkadot/types/types/registry" {
         PalletAssetRateCall: PalletAssetRateCall;
         PalletAssetRateError: PalletAssetRateError;
         PalletAssetRateEvent: PalletAssetRateEvent;
+        PalletAssetsAccountStatus: PalletAssetsAccountStatus;
+        PalletAssetsApproval: PalletAssetsApproval;
+        PalletAssetsAssetAccount: PalletAssetsAssetAccount;
+        PalletAssetsAssetDetails: PalletAssetsAssetDetails;
+        PalletAssetsAssetMetadata: PalletAssetsAssetMetadata;
+        PalletAssetsAssetStatus: PalletAssetsAssetStatus;
+        PalletAssetsCall: PalletAssetsCall;
+        PalletAssetsError: PalletAssetsError;
+        PalletAssetsEvent: PalletAssetsEvent;
+        PalletAssetsExistenceReason: PalletAssetsExistenceReason;
         PalletAuthorNotingCall: PalletAuthorNotingCall;
         PalletAuthorNotingError: PalletAuthorNotingError;
         PalletAuthorNotingEvent: PalletAuthorNotingEvent;
@@ -653,6 +679,9 @@ declare module "@polkadot/types/types/registry" {
         PalletExternalValidatorsForcing: PalletExternalValidatorsForcing;
         PalletExternalValidatorsRewardsEraRewardPoints: PalletExternalValidatorsRewardsEraRewardPoints;
         PalletExternalValidatorsRewardsEvent: PalletExternalValidatorsRewardsEvent;
+        PalletForeignAssetCreatorCall: PalletForeignAssetCreatorCall;
+        PalletForeignAssetCreatorError: PalletForeignAssetCreatorError;
+        PalletForeignAssetCreatorEvent: PalletForeignAssetCreatorEvent;
         PalletGrandpaCall: PalletGrandpaCall;
         PalletGrandpaError: PalletGrandpaError;
         PalletGrandpaEvent: PalletGrandpaEvent;
@@ -677,6 +706,9 @@ declare module "@polkadot/types/types/registry" {
         PalletInvulnerablesCall: PalletInvulnerablesCall;
         PalletInvulnerablesError: PalletInvulnerablesError;
         PalletInvulnerablesEvent: PalletInvulnerablesEvent;
+        PalletMaintenanceModeCall: PalletMaintenanceModeCall;
+        PalletMaintenanceModeError: PalletMaintenanceModeError;
+        PalletMaintenanceModeEvent: PalletMaintenanceModeEvent;
         PalletMessageQueueBookState: PalletMessageQueueBookState;
         PalletMessageQueueCall: PalletMessageQueueCall;
         PalletMessageQueueError: PalletMessageQueueError;

@@ -5,7 +5,7 @@ build = "build.rs"
 description = "Simple container-chain template node"
 edition = "2021"
 license = "GPL-3.0-only"
-version = "0.13.0"
+version = "0.14.0"
 
 [lints]
 workspace = true

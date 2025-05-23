@@ -1575,6 +1575,18 @@ mod accept_requested_change {
     }
 
     #[test]
+    fn cannot_accept_requested_change_if_no_requested_change() {
+        ExtBuilder::default().build().execute_with(|| {
+            let open_stream = OpenStream::default();
+            assert_ok!(open_stream.call());
+            assert_err!(
+                StreamPayment::accept_requested_change(RuntimeOrigin::signed(ALICE), 0, 0, None),
+                Error::NoPendingRequest
+            );
+        });
+    }
+
+    #[test]
     fn third_party_cant_accept_change() {
         ExtBuilder::default().build().execute_with(|| {
             let open_stream = OpenStream::default();
@@ -1932,6 +1944,32 @@ mod cancel_change_request {
         })
     }
 
+    #[test]
+    fn can_cancel_own_request() {
+        ExtBuilder::default().build().execute_with(|| {
+            let open_stream = OpenStream::default();
+            assert_ok!(open_stream.call());
+
+            let change = StreamConfig {
+                time_unit: TimeUnit::Timestamp,
+                ..open_stream.config
+            };
+
+            assert_ok!(StreamPayment::request_change(
+                RuntimeOrigin::signed(ALICE),
+                0,
+                ChangeKind::Suggestion,
+                change,
+                None
+            ));
+
+            assert_ok!(StreamPayment::cancel_change_request(
+                RuntimeOrigin::signed(ALICE),
+                0
+            ),);
+        })
+    }
+
     fn can_only_cancel_own_request(caller1: AccountId, caller2: AccountId) {
         ExtBuilder::default().build().execute_with(|| {
             let open_stream = OpenStream::default();
@@ -2027,6 +2065,24 @@ mod immediately_change_deposit {
             ));
 
             assert_eq!(get_deposit(ALICE), 500);
+        })
+    }
+
+    #[test]
+    fn cannot_immediate_change_to_different_asset() {
+        ExtBuilder::default().build().execute_with(|| {
+            let open_stream = OpenStream::default();
+            assert_ok!(open_stream.call());
+
+            assert_err!(
+                StreamPayment::immediately_change_deposit(
+                    RuntimeOrigin::signed(ALICE),
+                    0,
+                    StreamPaymentAssetId::Dummy,
+                    DepositChange::Absolute(500)
+                ),
+                Error::ImmediateDepositChangeRequiresSameAssetId
+            );
         })
     }
 

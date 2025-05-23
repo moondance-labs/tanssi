@@ -39,6 +39,7 @@ use {
         sr25519, ByteArray, Pair, Public,
     },
     sp_keystore::{Keystore, KeystorePtr},
+    sp_runtime::traits::AccountIdConversion,
     sp_std::{cmp::max, vec::Vec},
     tp_traits::ParaId,
 };
@@ -323,6 +324,7 @@ fn dancelight_testnet_genesis(
         crate::PendingRewardsAccount::get(),
         crate::EthereumSovereignAccount::get(),
         crate::SnowbridgeFeesAccount::get(),
+        crate::TreasuryPalletId::get().into_account_truncating(),
     ];
 
     serde_json::json!({
@@ -419,6 +421,10 @@ fn dancelight_testnet_genesis(
                     x.stash.clone()
                 })
                 .collect::<Vec<_>>(),
+            ..Default::default()
+        },
+        "maintenanceMode": crate::MaintenanceModeConfig {
+            start_in_maintenance_mode: false,
             ..Default::default()
         },
     })

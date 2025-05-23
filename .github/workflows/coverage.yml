@@ -68,7 +68,7 @@ jobs:
       - name: Cargo build
         uses: ./.github/workflow-templates/cargo-build
         with:
-          features: "fast-runtime"
+          features: "fast-runtime,metadata-hash"
       - name: Install new coverage tool
         id: coverage_new_install
         run: |
