@@ -39,6 +39,7 @@ describeSuite({
             title: "Add proxy Balances",
             test: async () => {
                 const delegate = charlie.address;
+                // enum ProxyType
                 let balanceEnumIndex: number;
                 if (chain.includes("-template")) {
                     balanceEnumIndex = 4;
