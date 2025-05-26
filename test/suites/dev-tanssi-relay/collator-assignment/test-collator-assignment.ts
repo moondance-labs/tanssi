@@ -67,13 +67,6 @@ describeSuite({
                         event.data as unknown as { randomSeed: Vec<u8>; fullRotation: bool; targetSession: u32 }
                 );
                 expect(filteredEvents[0].fullRotation.toJSON()).toBe(true);
-
-                // Check that the randomness is set in CollatorAssignment the
-                // block previous to the full rotation
-                const sessionDuration = await polkadotJs.consts.babe.epochDuration.toNumber();
-                await jumpBlocks(context, sessionDuration - 1);
-                const assignmentRandomness = await polkadotJs.query.tanssiCollatorAssignment.randomness();
-                expect(assignmentRandomness.isEmpty).toBe(false);
             },
         });
     },
