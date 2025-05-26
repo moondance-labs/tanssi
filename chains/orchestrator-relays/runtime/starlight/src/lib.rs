@@ -3720,9 +3720,7 @@ fn host_config_at_session(
         .max_by_key(|(session, _config)| *session)
         .map(|(_session, config)| config)
         // If pending configs is empty after filter, read active config
-        .unwrap_or_else(|| {
-            runtime_parachains::configuration::ActiveConfig::<Runtime>::get()
-        })
+        .unwrap_or_else(|| runtime_parachains::configuration::ActiveConfig::<Runtime>::get())
 }
 
 pub struct GetCoreAllocationConfigurationImpl;
