@@ -61,7 +61,7 @@ describeSuite({
                 const storedProfile = await polkadotJs.query.dataPreservers.profiles(profileId);
                 expect(storedProfile.toJSON()).to.be.deep.equal({
                     account: general_user_bob.address,
-                    deposit: 120_000_000_000,
+                    deposit: 102_000_000_000,
                     profile: {
                         url: "0x6578656d706c65",
                         paraIds: { whitelist: [42, 43] },
@@ -101,7 +101,7 @@ describeSuite({
                 const storedProfile = await polkadotJs.query.dataPreservers.profiles(++profileId);
                 expect(storedProfile.toJSON()).to.be.deep.equal({
                     account: general_user_bob.address,
-                    deposit: 120_000_000_000,
+                    deposit: 102_000_000_000,
                     profile: {
                         url: "0x6578656d706c65",
                         paraIds: { whitelist: [42, 43] },
@@ -164,7 +164,7 @@ describeSuite({
                 const storedProfile = await polkadotJs.query.dataPreservers.profiles(++profileId);
                 expect(storedProfile.toJSON()).to.be.deep.equal({
                     account: general_user_bob.address,
-                    deposit: 120_000_000_000,
+                    deposit: 102_000_000_000,
                     profile: {
                         url: "0x6578656d706c65",
                         paraIds: { whitelist: [42, 43] },
@@ -246,7 +246,7 @@ describeSuite({
                 const storedProfile = await polkadotJs.query.dataPreservers.profiles(++profileId);
                 expect(storedProfile.toJSON()).to.be.deep.equal({
                     account: general_user_bob.address,
-                    deposit: 120_000_000_000,
+                    deposit: 102_000_000_000,
                     profile: {
                         url: "0x6578656d706c65",
                         paraIds: { whitelist: [42, 43] },
@@ -308,7 +308,7 @@ describeSuite({
                 const storedProfile = await polkadotJs.query.dataPreservers.profiles(++profileId);
                 expect(storedProfile.toJSON()).to.be.deep.equal({
                     account: general_user_bob.address,
-                    deposit: 120_000_000_000,
+                    deposit: 102_000_000_000,
                     profile: {
                         url: "0x6578656d706c65",
                         paraIds: { whitelist: [42, 43] },
