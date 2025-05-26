@@ -43,7 +43,7 @@ use {
     },
     frame_system::{pallet_prelude::BlockNumberFor, EnsureNever},
     nimbus_primitives::NimbusId,
-    pallet_collator_assignment::{GetRandomnessForNextBlock, RotateCollatorsEveryNSessions},
+    pallet_collator_assignment::RotateCollatorsEveryNSessions,
     pallet_initializer as tanssi_initializer,
     pallet_invulnerables::InvulnerableRewardDistribution,
     pallet_registrar::Error as ContainerRegistrarError,
@@ -3498,22 +3498,9 @@ impl Get<u32> for ConfigurationCollatorRotationSessionPeriod {
     }
 }
 
-// CollatorAssignment expects to set up the rotation's randomness seed on the
-// on_finalize hook of the block prior to the actual session change.
-// So should_end_session should be true on the last block of the current session
-pub struct BabeGetRandomnessForNextBlock;
-impl GetRandomnessForNextBlock<u32> for BabeGetRandomnessForNextBlock {
-    fn should_end_session(n: u32) -> bool {
-        // Check if next slot there is a session change
-        n != 1 && {
-            let diff = Babe::current_slot()
-                .saturating_add(1u64)
-                .saturating_sub(Babe::current_epoch_start());
-            *diff >= Babe::current_epoch().duration
-        }
-    }
-
-    fn get_randomness() -> [u8; 32] {
+pub struct BabeGetCollatorAssignmentRandomness;
+impl Get<[u8; 32]> for BabeGetCollatorAssignmentRandomness {
+    fn get() -> [u8; 32] {
         let block_number = System::block_number();
         let random_seed = if block_number != 0 {
             if let Some(random_hash) = {
@@ -3754,7 +3741,8 @@ impl pallet_collator_assignment::Config for Runtime {
     type SelfParaId = MockParaId;
     type ShouldRotateAllCollators =
         RotateCollatorsEveryNSessions<ConfigurationCollatorRotationSessionPeriod>;
-    type GetRandomnessForNextBlock = BabeGetRandomnessForNextBlock;
+    type Randomness =
+        pallet_collator_assignment::RelaychainRandomness<BabeGetCollatorAssignmentRandomness>;
     type RemoveInvulnerables = ();
     type ParaIdAssignmentHooks = ParaIdAssignmentHooksImpl;
     type CollatorAssignmentTip = ServicesPayment;
