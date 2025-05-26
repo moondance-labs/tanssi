@@ -373,7 +373,7 @@ describeSuite({
                 const storedProfile = await polkadotJs.query.dataPreservers.profiles(profileId);
                 expect(storedProfile.toJSON()).to.be.deep.equal({
                     account: general_user_bob.address,
-                    deposit: 10_160_000_000_000,
+                    deposit: 101_600_000_000,
                     profile: {
                         url: "0x6578656d706c65",
                         paraIds: { whitelist: [paraId] },
@@ -429,7 +429,7 @@ describeSuite({
                 const storedProfile = await polkadotJs.query.dataPreservers.profiles(profileId);
                 expect(storedProfile.toJSON()).to.be.deep.equal({
                     account: general_user_bob.address,
-                    deposit: 10_160_000_000_000,
+                    deposit: 101_600_000_000,
                     profile: {
                         url: "0x6578656d706c65",
                         paraIds: { whitelist: [paraId] },
@@ -487,7 +487,7 @@ describeSuite({
                 const storedProfile = await polkadotJs.query.dataPreservers.profiles(profileId);
                 expect(storedProfile.toJSON()).to.be.deep.equal({
                     account: general_user_bob.address,
-                    deposit: 10_160_000_000_000,
+                    deposit: 101_600_000_000,
                     profile: {
                         url: "0x6578656d706c65",
                         paraIds: { whitelist: [paraId] },
@@ -542,7 +542,7 @@ describeSuite({
                 const storedProfile = await polkadotJs.query.dataPreservers.profiles(profileId);
                 expect(storedProfile.toJSON()).to.be.deep.equal({
                     account: general_user_bob.address,
-                    deposit: 10_160_000_000_000,
+                    deposit: 101_600_000_000,
                     profile: {
                         url: "0x6578656d706c65",
                         paraIds: { whitelist: [paraId] },
