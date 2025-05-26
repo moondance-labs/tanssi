@@ -5,7 +5,7 @@ import { filterAndApply } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 import type { Vec, bool, u32, u8 } from "@polkadot/types-codec";
 import type { EventRecord } from "@polkadot/types/interfaces";
-import { jumpBlocks, jumpSessions, jumpToSession } from "utils";
+import { jumpSessions, jumpToSession } from "utils";
 
 describeSuite({
     id: "DEVT0301",

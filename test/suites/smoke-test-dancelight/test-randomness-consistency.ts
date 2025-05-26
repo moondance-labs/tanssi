@@ -60,7 +60,8 @@ describeSuite({
                 // After runtime upgrade, randomness in storage is always empty
                 if (runtimeVersion < 1400) {
                     // Just before, the randomness was not empty
-                    const randomnessBeforeSession = await apiBeforeNewSession.query.tanssiCollatorAssignment.randomness();
+                    const randomnessBeforeSession =
+                        await apiBeforeNewSession.query.tanssiCollatorAssignment.randomness();
                     expect(randomnessBeforeSession.isEmpty).to.not.be.true;
                 }
 
