@@ -3717,8 +3717,8 @@ fn host_config_at_session(
         // First remove any pending configs greater than session index in consideration
         .filter(|element| element.0 <= session_index_to_consider)
         // Take the config for the highest (most recent) session
-        .max_by_key(|(session, config)| *session)
-        .map(|(session, config)| config)
+        .max_by_key(|(session, _config)| *session)
+        .map(|(_session, config)| config)
         // If pending configs is empty after filter, read active config
         .unwrap_or_else(|| {
             runtime_parachains::configuration::ActiveConfig::<Runtime>::get()
