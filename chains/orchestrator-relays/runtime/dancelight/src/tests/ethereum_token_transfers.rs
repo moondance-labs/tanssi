@@ -26,7 +26,7 @@ use {
     },
     alloy_sol_types::SolEvent,
     dancelight_runtime_constants::snowbridge::EthereumNetwork,
-    frame_support::{assert_noop, assert_ok, traits::fungibles::Mutate},
+    frame_support::{assert_noop, assert_ok, traits::{fungibles::Mutate, fungible::Inspect}},
     hex_literal::hex,
     parity_scale_codec::Encode,
     snowbridge_core::{
@@ -944,8 +944,9 @@ fn send_eth_native_token_works() {
                 1
             ));
 
-            // Give tokens to user as if tokens were bridged before
-            ForeignAssets::mint_into(asset_id, &AccountId::from(BOB), amount_to_transfer)
+            // Give tokens to user as if tokens were bridged before + extra to check the correct
+            // amount is sent
+            ForeignAssets::mint_into(asset_id, &AccountId::from(BOB), amount_to_transfer + 10)
                 .expect("to mint amount");
 
             // User tries to send tokens
@@ -966,6 +967,8 @@ fn send_eth_native_token_works() {
             let eth_asset = AssetId(erc20_asset_location.clone())
                 .into_asset(Fungibility::Fungible(amount_to_transfer));
 
+            let balance_before = Balances::balance(&AccountId::from(BOB));
+
             assert_ok!(XcmPallet::transfer_assets(
                 RuntimeOrigin::signed(AccountId::from(BOB)),
                 Box::new(EthereumLocation::get().into()),
@@ -974,6 +977,14 @@ fn send_eth_native_token_works() {
                 0u32,
                 Unlimited,
             ));
+
+            // Correct amount has been sent
+            assert_eq!(ForeignAssets::balance(asset_id, &AccountId::from(BOB)), 10);
+
+            // Check fees have been payed (TODO: expect specific amount?)
+            let balance_after = Balances::balance(&AccountId::from(BOB));
+            assert!(balance_after - balance_before < 0);
+
         })
 }
 

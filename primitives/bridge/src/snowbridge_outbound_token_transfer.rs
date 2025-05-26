@@ -124,16 +124,6 @@ where
             return Err(SendError::NotApplicable);
         }
 
-        // // CHANGE: we don't want to deal with para id
-        //
-        // let para_id = match local_sub.as_slice() {
-        // 	[Parachain(para_id)] => *para_id,
-        // 	_ => {
-        // 		log::error!(target: "xcm::ethereum_blob_exporter", "could not get parachain id from universal source '{local_sub:?}'.");
-        // 		return Err(SendError::NotApplicable)
-        // 	},
-        // };
-
         let source_location = Location::new(1, local_sub.clone());
 
         let agent_id = match AgentHashedDescription::convert_location(&source_location) {
@@ -149,8 +139,6 @@ where
             SendError::MissingArgument
         })?;
 
-        log::error!("message: {message:?}");
-
         let mut converter =
             XcmConverter::<ConvertAssetId, ()>::new(&message, expected_network, agent_id);
         let (command, message_id) = converter.convert().map_err(|err|{
@@ -158,8 +146,6 @@ where
 			SendError::Unroutable
 		})?;
 
-        // // CHANGE: Just use the provided channel id.
-        // let channel_id: ChannelId = ParaId::from(para_id).into();
         let channel_id = BridgeChannelId::get().ok_or_else(|| {
             log::error!(target: "xcm::ethereum_blob_exporter", "channel id cannot be fetched");
             SendError::Unroutable
