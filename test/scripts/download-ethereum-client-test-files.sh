@@ -9,6 +9,16 @@ cd $(dirname $0)/..
 # Grab Polkadot version
 branch=$(egrep -o '/polkadot-sdk.*#([^\"]*)' ../Cargo.lock | head -1)
 polkadot_release=$(echo $branch | sed 's/.*branch=//' | sed 's/#.*//')
+
+if [ -z "$polkadot_release" ]; then
+    echo "Failed to read polkadot-sdk branch name from Cargo.lock"
+    echo "This happens when using diener or custom branch names"
+    echo "Edit script $0 as a workaround"
+    # Uncomment this to override version
+    #polkadot_release="stable2412"
+    exit 1;
+fi
+
 if [ -f tmp/ethereum_client_test/latest_version.txt ]; then
     stored_version=$(< tmp/ethereum_client_test/latest_version.txt)
     if [[ "$polkadot_release" == "$stored_version" ]]; then
