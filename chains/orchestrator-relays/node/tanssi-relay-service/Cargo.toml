@@ -200,7 +200,7 @@ full-node = [
 
 # Configure the native runtimes to use.
 dancelight-native = [ "bitvec", "dancelight-runtime", "dancelight-runtime-constants", "frame-metadata-hash-extension" ]
-starlight-native = [ "bitvec", "frame-metadata-hash-extension", "starlight-runtime", "starlight-runtime-constants" ]
+starlight-native = [ "bitvec", "starlight-runtime", "starlight-runtime-constants", "frame-metadata-hash-extension" ]
 
 fast-runtime = [
 	"dancelight-runtime?/fast-runtime",

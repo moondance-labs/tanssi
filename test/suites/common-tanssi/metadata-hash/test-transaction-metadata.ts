@@ -3,7 +3,7 @@ import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import type { SignerOptions } from "@polkadot/api/types";
 import { merkleizeMetadata } from "@polkadot-api/merkleize-metadata";
 import { u8aToHex } from "@polkadot/util";
-import { type ApiPromise, Keyring } from "@polkadot/api";
+import type { ApiPromise } from "@polkadot/api";
 import type { KeyringPair } from "@moonwall/util";
 
 async function getMetadataHash(api: ApiPromise) {
@@ -22,7 +22,7 @@ async function getMetadataHash(api: ApiPromise) {
 }
 
 describeSuite({
-    id: "DEVT2101",
+    id: "COMM0401",
     title: "Test transaction with metadata hash",
     foundationMethods: "dev",
     testCases: ({ context, it, log }) => {
@@ -31,8 +31,7 @@ describeSuite({
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
-            const keyring = new Keyring({ type: "sr25519" });
-            alice = keyring.addFromUri("//Alice", { name: "Alice default" });
+            alice = context.keyring.alice;
         });
 
         it({
@@ -44,9 +43,12 @@ describeSuite({
                     metadataHash: `0x${"00".repeat(32)}`,
                 };
 
+                await context.createBlock();
+
                 let errorMsg = "";
                 try {
                     await polkadotJs.tx.system.remark("0x00").signAndSend(alice, withMetadataOpts);
+                    await context.createBlock();
                 } catch (e) {
                     errorMsg = e.message;
                 }
@@ -59,12 +61,15 @@ describeSuite({
             id: "T02",
             title: "Should succeed with a valid metadata hash",
             test: async () => {
+                await context.createBlock();
+
                 const withMetadataOpts = {
                     mode: 1,
                     metadataHash: await getMetadataHash(polkadotJs),
                 };
 
                 await polkadotJs.tx.system.remark("0x00").signAndSend(alice, withMetadataOpts);
+                await context.createBlock();
             },
         });
     },
