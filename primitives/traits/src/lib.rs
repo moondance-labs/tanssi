@@ -622,5 +622,5 @@ pub trait NodeActivityTrackingHelper<AccountId> {
 
 // A trait to help verify if a ParaId is a chain or parathread
 pub trait ParathreadHelper {
-    fn get_parathreads_for_session() -> Vec<ParaId>;
+    fn get_parathreads_for_session() -> BTreeSet<ParaId>;
 }

@@ -564,7 +564,7 @@ fn inactivity_tracking_edge_case_parachain_and_parathread_with_one_active_collat
             );
             assert_eq!(
                 <Runtime as pallet_inactivity_tracking::Config>::ParaFilter::get_parathreads_for_session(),
-                vec![3001.into()]
+                get_chains_set(vec![3001.into()]).into_inner()
             );
             assert_eq!(
                 <ActiveContainerChainsForCurrentSession<Runtime>>::get(),
@@ -595,7 +595,7 @@ fn inactivity_tracking_edge_case_parachain_and_parathread_with_one_active_collat
                 );
                 run_block();
             }
-            // Container chain 3001 is an active parathread - so should be handled an inactive chain 
+            // Container chain 3001 is an active parathread - so should be handled an inactive chain
             // Container chain 3000 is an active parachain.
             // So only the inactive collator of the parachain should appear in the inactive collators set
             assert_eq!(
@@ -658,7 +658,7 @@ fn inactivity_tracking_edge_case_active_parachain_with_one_active_collator_and_i
             );
             assert_eq!(
                 <Runtime as pallet_inactivity_tracking::Config>::ParaFilter::get_parathreads_for_session(),
-                vec![3001.into()]
+                get_chains_set(vec![3001.into()]).into_inner()
             );
             assert_eq!(
                 <ActiveContainerChainsForCurrentSession<Runtime>>::get(),
@@ -688,7 +688,7 @@ fn inactivity_tracking_edge_case_active_parachain_with_one_active_collator_and_i
                 );
                 run_block();
             }
-            // Container chain 3001 is an inactive parathread 
+            // Container chain 3001 is an inactive parathread
             // Container chain 3000 is an active parachain.
             // So only the inactive collator of the parachain should appear in the inactive collators set
             assert_eq!(

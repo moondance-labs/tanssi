@@ -15,7 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 #![cfg_attr(not(feature = "std"), no_std)]
 use {
-    sp_std::{marker::PhantomData, vec::Vec},
+    sp_std::{collections::btree_set::BTreeSet, marker::PhantomData},
     tp_traits::{GetSessionContainerChains, ParaId, ParathreadHelper},
 };
 
@@ -25,7 +25,7 @@ pub struct ExcludeAllParathreadsFilter<Runtime>(PhantomData<Runtime>);
 impl<Runtime: pallet_session::Config + pallet_registrar::Config> ParathreadHelper
     for ExcludeAllParathreadsFilter<Runtime>
 {
-    fn get_parathreads_for_session() -> Vec<ParaId> {
+    fn get_parathreads_for_session() -> BTreeSet<ParaId> {
         pallet_registrar::Pallet::<Runtime>::session_container_chains(
             pallet_session::Pallet::<Runtime>::current_index().into(),
         )

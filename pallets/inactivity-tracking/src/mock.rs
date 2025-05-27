@@ -6,7 +6,6 @@
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-use sp_staking::SessionIndex;
 // Tanssi is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -25,6 +24,7 @@ use {
         traits::{BlakeTwo256, ConvertInto, IdentityLookup, OpaqueKeys},
         BuildStorage, RuntimeAppPublic,
     },
+    sp_staking::SessionIndex,
     sp_std::collections::btree_set::BTreeSet,
     tp_traits::{ForSession, ParaId},
 };
@@ -190,8 +190,10 @@ impl tp_traits::GetContainerChainsWithCollators<AccountId> for MockContainerChai
 
 pub struct MockParathreadHelper;
 impl tp_traits::ParathreadHelper for MockParathreadHelper {
-    fn get_parathreads_for_session() -> Vec<ParaId> {
-        vec![CONTAINER_CHAIN_ID_3]
+    fn get_parathreads_for_session() -> BTreeSet<ParaId> {
+        let mut paras_for_session = BTreeSet::new();
+        paras_for_session.insert(CONTAINER_CHAIN_ID_3);
+        paras_for_session
     }
 }
 
