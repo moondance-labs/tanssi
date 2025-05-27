@@ -354,7 +354,7 @@ impl Contains<RuntimeCall> for IsBridgesExtrinsics {
     }
 }
 
-pub struct IsStakingExtrinsics;
+pub struct IsStakingExtrinsics;https://github.com/moondance-labs/tanssi-tools/pull/4
 impl Contains<RuntimeCall> for IsStakingExtrinsics {
     fn contains(c: &RuntimeCall) -> bool {
         matches!(c, RuntimeCall::PooledStaking(_))
