@@ -38,6 +38,7 @@ use {
             tokens::{Fortitude, Preservation},
         },
         weights::ConstantMultiplier,
+        dispatch::DispatchClass,
     },
     pallet_xcm::EnsureXcm,
     parity_scale_codec::DecodeAll,
@@ -414,6 +415,8 @@ where
             weight,
             weight,
         );
+
+        frame_system::Pallet::<T>::register_extra_weight_unchecked(weight, DispatchClass::Normal);
 
         outcome.ensure_complete().map_err(|error| {
             log::error!(
