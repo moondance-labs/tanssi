@@ -353,19 +353,14 @@ pub mod pallet {
                             // Collators assigned to inactive chain are added
                             // to the current active collators storage
                             for collator_id in collator_ids {
-                                if !active_collators.contains(&collator_id) {
-                                    if let Err(_) = active_collators.try_insert(collator_id.clone())
-                                    {
-                                        // If we reach MaxCollatorsPerSession limit there must be a bug in the pallet
-                                        // so we disable the activity tracking
-                                        Self::set_inactivity_tracking_status_inner(
-                                            T::CurrentSessionIndex::session_index(),
-                                            false,
-                                        );
-                                        return Err(
-                                            Error::<T>::MaxCollatorsPerSessionReached.into()
-                                        );
-                                    }
+                                if let Err(_) = active_collators.try_insert(collator_id.clone()) {
+                                    // If we reach MaxCollatorsPerSession limit there must be a bug in the pallet
+                                    // so we disable the activity tracking
+                                    Self::set_inactivity_tracking_status_inner(
+                                        T::CurrentSessionIndex::session_index(),
+                                        false,
+                                    );
+                                    return Err(Error::<T>::MaxCollatorsPerSessionReached.into());
                                 }
                             }
                         }
