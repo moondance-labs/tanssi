@@ -5,23 +5,26 @@
 # The tanssi binary is required to be compiled with --features=runtime-benchmarks
 # in release mode.
 
-set -e
+set -euo pipefail
 
 # By default we use the tanssi-node release binary
 # However we can use any binary by running the benchmark tool with
 # BINARY=./target/release/container-chain-simple-node ./tools/benchmarking.sh
+: "${BINARY:=}"
 if [[ -z "${BINARY}" ]]; then
     BINARY="./target/release/tanssi-node"
 else
     BINARY="${BINARY}"
 fi
 
+: "${CHAIN:=}"
 if [[ -z "${CHAIN}" ]]; then
     CHAIN="dev"
 else
     CHAIN="${CHAIN}"
 fi
 
+: "${OUTPUT_PATH:=}"
 if [[ -z "${OUTPUT_PATH}" ]]; then
     mkdir -p tmp
     OUTPUT_PATH="tmp"
@@ -29,6 +32,7 @@ else
     OUTPUT_PATH="${OUTPUT_PATH}"
 fi
 
+: "${TEMPLATE_PATH:=}"
 if [[ -z "${TEMPLATE_PATH}" ]]; then
     TEMPLATE_PATH="./benchmarking/frame-weight-pallet-template.hbs"
 else

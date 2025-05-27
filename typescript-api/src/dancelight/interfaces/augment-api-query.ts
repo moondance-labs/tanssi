@@ -140,7 +140,6 @@ import type {
     SpWeightsWeightV2Weight,
     StagingXcmV5Instruction,
     StagingXcmV5Location,
-    StagingXcmV5Xcm,
     TpBridgeChannelInfo,
     TpTraitsActiveEraInfo,
     TpTraitsContainerChainBlockInfo,
@@ -1716,6 +1715,16 @@ declare module "@polkadot/api-base/types/storage" {
              **/
             hasInitialized: AugmentedQuery<ApiType, () => Observable<Option<Null>>, []> &
                 QueryableStorageEntry<ApiType, []>;
+            /**
+             * Generic query
+             **/
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
+        maintenanceMode: {
+            /**
+             * Whether the site is in maintenance mode
+             **/
+            maintenanceMode: AugmentedQuery<ApiType, () => Observable<bool>, []> & QueryableStorageEntry<ApiType, []>;
             /**
              * Generic query
              **/
