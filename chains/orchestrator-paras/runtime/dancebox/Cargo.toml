@@ -161,7 +161,7 @@ westend-runtime-constants = { workspace = true }
 xcm-emulator = { workspace = true }
 
 [build-dependencies]
-substrate-wasm-builder = { workspace = true, optional = true }
+substrate-wasm-builder = { workspace = true }
 
 [features]
 default = [
@@ -274,7 +274,6 @@ std = [
 	"sp-transaction-pool/std",
 	"sp-trie/std",
 	"sp-version/std",
-	"substrate-wasm-builder",
 	"tanssi-relay-encoder/std",
 	"tanssi-runtime-common/std",
 	"test-relay-sproof-builder/std",
