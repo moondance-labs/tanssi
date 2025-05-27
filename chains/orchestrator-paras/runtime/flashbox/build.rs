@@ -16,7 +16,7 @@
 
 use substrate_wasm_builder::WasmBuilder;
 
-#[cfg(all(feature = "std", feature = "metadata-hash"))]
+#[cfg(feature = "metadata-hash")]
 fn main() {
     WasmBuilder::new()
         .with_current_project()
@@ -26,7 +26,7 @@ fn main() {
         .build()
 }
 
-#[cfg(all(feature = "std", not(feature = "metadata-hash")))]
+#[cfg(not(feature = "metadata-hash"))]
 fn main() {
     WasmBuilder::new()
         .with_current_project()
@@ -34,6 +34,3 @@ fn main() {
         .import_memory()
         .build()
 }
-
-#[cfg(not(feature = "std"))]
-fn main() {}
