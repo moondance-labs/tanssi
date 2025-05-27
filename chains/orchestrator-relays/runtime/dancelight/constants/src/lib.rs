@@ -26,7 +26,7 @@ pub mod currency {
     pub const EXISTENTIAL_DEPOSIT: Balance = 1 * CENTS;
 
     // Provide a common factor between runtimes based on a supply of 10_000_000 tokens.
-    pub const SUPPLY_FACTOR: Balance = 100;
+    pub const SUPPLY_FACTOR: Balance = 1;
 
     pub const UNITS: Balance = 1_000_000_000_000;
     pub const CENTS: Balance = UNITS / 30_000;
