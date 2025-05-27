@@ -33,12 +33,12 @@ use {
         TokenLocationReanchored, TransactionByteFee, TreasuryAccount, WeightToFee, UNITS,
     },
     frame_support::{
+        dispatch::DispatchClass,
         traits::{
             fungible::{Inspect, Mutate},
             tokens::{Fortitude, Preservation},
         },
         weights::ConstantMultiplier,
-        dispatch::DispatchClass,
     },
     pallet_xcm::EnsureXcm,
     parity_scale_codec::DecodeAll,
