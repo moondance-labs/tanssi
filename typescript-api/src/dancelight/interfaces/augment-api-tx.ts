@@ -4801,6 +4801,7 @@ declare module "@polkadot/api-base/types/submittable" {
                         | "SudoValidatorManagement"
                         | "SessionKeyManagement"
                         | "Staking"
+                        | "Balances"
                         | number
                         | Uint8Array,
                     delay: u32 | AnyNumber | Uint8Array
@@ -4874,6 +4875,7 @@ declare module "@polkadot/api-base/types/submittable" {
                         | "SudoValidatorManagement"
                         | "SessionKeyManagement"
                         | "Staking"
+                        | "Balances"
                         | number
                         | Uint8Array,
                     delay: u32 | AnyNumber | Uint8Array,
@@ -4923,6 +4925,7 @@ declare module "@polkadot/api-base/types/submittable" {
                         | "SudoValidatorManagement"
                         | "SessionKeyManagement"
                         | "Staking"
+                        | "Balances"
                         | number
                         | Uint8Array,
                     index: u16 | AnyNumber | Uint8Array,
@@ -4969,6 +4972,7 @@ declare module "@polkadot/api-base/types/submittable" {
                         | "SudoValidatorManagement"
                         | "SessionKeyManagement"
                         | "Staking"
+                        | "Balances"
                         | number,
                     call: Call | IMethod | string | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
@@ -5023,6 +5027,7 @@ declare module "@polkadot/api-base/types/submittable" {
                         | "SudoValidatorManagement"
                         | "SessionKeyManagement"
                         | "Staking"
+                        | "Balances"
                         | number,
                     call: Call | IMethod | string | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
@@ -5124,6 +5129,7 @@ declare module "@polkadot/api-base/types/submittable" {
                         | "SudoValidatorManagement"
                         | "SessionKeyManagement"
                         | "Staking"
+                        | "Balances"
                         | number
                         | Uint8Array,
                     delay: u32 | AnyNumber | Uint8Array

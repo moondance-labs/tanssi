@@ -6,7 +6,7 @@ import type { ApiPromise } from "@polkadot/api";
 import { initializeCustomCreateBlock } from "utils";
 
 describeSuite({
-    id: "CO0301",
+    id: "C0304",
     title: "Proxy test suite - ProxyType::Balances",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
@@ -39,9 +39,8 @@ describeSuite({
             title: "Add proxy Balances",
             test: async () => {
                 const delegate = charlie.address;
-                const balances = ["frontier-template", "container-chain-template"].includes(chain) ? 4 : 5;
                 const delay = 0;
-                const tx = polkadotJs.tx.proxy.addProxy(delegate, balances, delay);
+                const tx = polkadotJs.tx.proxy.addProxy(delegate, "Balances", delay);
                 await context.createBlock([await tx.signAsync(alice)]);
 
                 const events = await polkadotJs.query.system.events();
