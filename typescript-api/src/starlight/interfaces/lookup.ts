@@ -3820,6 +3820,7 @@ export default {
             "SudoValidatorManagement",
             "SessionKeyManagement",
             "Staking",
+            "Balances",
         ],
     },
     /**
