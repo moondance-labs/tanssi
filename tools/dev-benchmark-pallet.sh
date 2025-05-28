@@ -22,7 +22,7 @@ set -e
 cd "$(dirname "$0")/.."
 
 # mkdir just in case as the benchmarking fails if they don't exist
-mkdir -p tmp/dancebox_weights tmp/flashbox_weights tmp/simple_template_weights tmp/frontier_template_weights tmp/dancelight_weights
+mkdir -p tmp/dancebox_weights tmp/flashbox_weights tmp/simple_template_weights tmp/frontier_template_weights tmp/dancelight_weights tmp/starlight_weights
 
 # Empty directories
 rm -rf tmp/*_weights/*
@@ -122,4 +122,16 @@ if [ "$FORCE_COPY" = "1" ] || [ -f "chains/orchestrator-relays/runtime/danceligh
 	    OUTPUT_PATH=tmp/dancelight_weights \
 	    tools/benchmarking.sh "$PALLET" "*" --check
 	cp -v tmp/dancelight_weights/$PALLET.rs chains/orchestrator-relays/runtime/dancelight/src/weights/$PALLET.rs
+fi
+
+if [ "$FORCE_COPY" = "1" ] || [ -f "chains/orchestrator-relays/runtime/starlight/src/weights/$PALLET.rs" ]; then
+	echo "------------------------------------------------------------"
+	echo "Starlight weights"
+	echo "------------------------------------------------------------"
+	BINARY=target/release/tanssi-relay \
+	    TEMPLATE_PATH=benchmarking/frame-weight-runtime-template.hbs \
+	    CHAIN=starlight-dev \
+	    OUTPUT_PATH=tmp/starlight_weights \
+	    tools/benchmarking.sh "$PALLET" "*" --check
+	cp -v tmp/starlight_weights/$PALLET.rs chains/orchestrator-relays/runtime/starlight/src/weights/$PALLET.rs
 fi
