@@ -88,12 +88,12 @@ impl<T: frame_system::Config> pallet_collator_assignment::WeightInfo for Substra
 		// Proof Size summary in bytes:
 		//  Measured:  `4666 + y * (384 ±0)`
 		//  Estimated: `8131 + y * (2511 ±0)`
-		// Minimum execution time: 257_389_000 picoseconds.
-		Weight::from_parts(132_283_017, 8131)
-			// Standard Error: 36_630
-			.saturating_add(Weight::from_parts(475_060, 0).saturating_mul(x.into()))
-			// Standard Error: 375_512
-			.saturating_add(Weight::from_parts(31_793_860, 0).saturating_mul(y.into()))
+		// Minimum execution time: 228_928_000 picoseconds.
+		Weight::from_parts(133_543_944, 8131)
+			// Standard Error: 36_258
+			.saturating_add(Weight::from_parts(412_420, 0).saturating_mul(x.into()))
+			// Standard Error: 371_694
+			.saturating_add(Weight::from_parts(30_538_349, 0).saturating_mul(y.into()))
 			.saturating_add(T::DbWeight::get().reads(9_u64))
 			.saturating_add(T::DbWeight::get().reads((4_u64).saturating_mul(y.into())))
 			.saturating_add(T::DbWeight::get().writes(5_u64))
