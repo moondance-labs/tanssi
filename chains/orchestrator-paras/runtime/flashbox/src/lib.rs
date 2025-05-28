@@ -32,6 +32,7 @@ use {
         traits::{ExistenceRequirement, WithdrawReasons},
     },
     pallet_services_payment::ProvideCollatorAssignmentCost,
+    parity_scale_codec::DecodeWithMemTracking,
     polkadot_runtime_common::SlowAdjustingFeeUpdate,
 };
 
@@ -134,7 +135,7 @@ pub type TxExtension = (
     frame_system::CheckNonce<Runtime>,
     frame_system::CheckWeight<Runtime>,
     pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
-    cumulus_primitives_storage_weight_reclaim::StorageWeightReclaim<Runtime>,
+    cumulus_pallet_weight_reclaim::StorageWeightReclaim<Runtime, ()>,
 );
 
 /// Unchecked extrinsic type as expected by this runtime.
@@ -589,6 +590,7 @@ impl pallet_session::Config for Runtime {
     type SessionHandler = <SessionKeys as sp_runtime::traits::OpaqueKeys>::KeyTypeIdProviders;
     type Keys = SessionKeys;
     type WeightInfo = weights::pallet_session::SubstrateWeight<Runtime>;
+    type DisablingStrategy = (); // TODO: revisit this
 }
 
 pub struct RemoveInvulnerablesImpl;
@@ -1083,7 +1085,7 @@ impl pallet_utility::Config for Runtime {
 
 /// The type used to represent the kinds of proxies allowed.
 #[apply(derive_storage_traits)]
-#[derive(Copy, Ord, PartialOrd, MaxEncodedLen)]
+#[derive(Copy, Ord, PartialOrd, MaxEncodedLen, DecodeWithMemTracking)]
 #[allow(clippy::unnecessary_cast)]
 pub enum ProxyType {
     /// All calls can be proxied. This is the trivial/most permissive filter.
@@ -1187,6 +1189,7 @@ impl pallet_proxy::Config for Runtime {
     // - 4 bytes BlockNumber (u32)
     type AnnouncementDepositFactor = ConstU128<{ currency::deposit(0, 68) }>;
     type WeightInfo = weights::pallet_proxy::SubstrateWeight<Runtime>;
+    type BlockNumberProvider = System;
 }
 
 impl pallet_migrations::Config for Runtime {
@@ -1437,6 +1440,11 @@ impl pallet_multisig::Config for Runtime {
     type DepositFactor = DepositFactor;
     type MaxSignatories = MaxSignatories;
     type WeightInfo = weights::pallet_multisig::SubstrateWeight<Runtime>;
+    type BlockNumberProvider = System;
+}
+
+impl cumulus_pallet_weight_reclaim::Config for Runtime {
+    type WeightInfo = ();
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.

@@ -37,7 +37,7 @@ pub struct EthDeps<C, P, A: ChainApi, CT, B: BlockT> {
     /// Transaction pool instance.
     pub pool: Arc<P>,
     /// Graph pool instance.
-    pub graph: Arc<Pool<A>>,
+    pub graph: Arc<Pool<A, ()>>,
     /// Ethereum transaction converter.
     pub converter: Option<CT>,
     /// The Node authority flag

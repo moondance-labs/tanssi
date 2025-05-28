@@ -27,7 +27,7 @@ use {
         inbound::{Log, Message},
         Channel, PRIMARY_GOVERNANCE_CHANNEL,
     },
-    snowbridge_router_primitives::inbound::envelope::OutboundMessageAccepted,
+    snowbridge_inbound_queue_primitives::inbound::envelope::OutboundMessageAccepted,
     sp_core::H256,
     sp_runtime::DispatchError,
     tp_bridge::symbiotic_message_processor::{

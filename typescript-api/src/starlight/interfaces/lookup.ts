@@ -6692,7 +6692,7 @@ export default {
         ],
     },
     /**
-     * Lookup673: snowbridge_router_primitives::inbound::ConvertMessageError
+     * Lookup673: snowbridge_inbound_queue_primitives::inbound::ConvertMessageError
      **/
     SnowbridgeRouterPrimitivesInboundConvertMessageError: {
         _enum: ["UnsupportedVersion", "InvalidDestination", "InvalidToken", "UnsupportedFeeAsset", "CannotReanchor"],

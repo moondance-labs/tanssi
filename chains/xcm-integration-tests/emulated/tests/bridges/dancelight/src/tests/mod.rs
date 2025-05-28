@@ -33,7 +33,7 @@ mod imports {
             inbound::{Log, Message},
             PRIMARY_GOVERNANCE_CHANNEL,
         },
-        snowbridge_router_primitives::inbound::envelope::OutboundMessageAccepted,
+        snowbridge_inbound_queue_primitives::inbound::envelope::OutboundMessageAccepted,
         sp_core::H256,
         tanssi_emulated_integration_tests_common::snowbridge::mock_snowbridge_message_proof,
         tp_bridge::{

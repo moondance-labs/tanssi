@@ -54,6 +54,7 @@ use sp_std::marker::PhantomData;
 /// Weights for frame_system_extensions using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> frame_system::ExtensionsWeightInfo for SubstrateWeight<T> {
+	fn weight_reclaim() -> sp_runtime::Weight { todo!() }
 	fn check_genesis() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `54`

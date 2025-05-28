@@ -306,6 +306,7 @@ where
     Clone,
     TypeInfo,
     MaxEncodedLen,
+    DecodeWithMemTracking,
 )]
 pub enum ProviderRequest {
     Free,
@@ -338,6 +339,7 @@ pub enum AssignerParameter {
     Clone,
     TypeInfo,
     MaxEncodedLen,
+    DecodeWithMemTracking,
 )]
 pub enum AssignmentWitness {
     Free,

@@ -33,7 +33,6 @@ use {
     cumulus_primitives_core::{ParaId, PersistedValidationData},
     cumulus_test_relay_sproof_builder::RelayStateSproofBuilder,
     fc_rpc::{EthTask, TxPool},
-    fc_rpc_core::TxPoolApiServer,
     fc_storage::StorageOverride,
     fp_rpc::EthereumRuntimeRPCApi,
     frame_support::CloneNoBound,
@@ -96,7 +95,7 @@ pub struct FullDeps<C, P, A: ChainApi, BE> {
     /// Transaction pool instance.
     pub pool: Arc<P>,
     /// Graph pool instance.
-    pub graph: Arc<Pool<A>>,
+    pub graph: Arc<Pool<A, ()>>,
     /// Network service
     pub network: Arc<dyn sc_network::service::traits::NetworkService>,
     /// Chain syncing service
@@ -153,10 +152,7 @@ where
     P: TransactionPool<Block = Block> + 'static,
 {
     use {
-        fc_rpc::{
-            Eth, EthApiServer, EthFilter, EthFilterApiServer, EthPubSub, EthPubSubApiServer, Net,
-            NetApiServer, Web3, Web3ApiServer,
-        },
+        fc_rpc::{Eth, EthFilter, EthPubSub, Net, NetApiServer, Web3, Web3ApiServer},
         finality::{FrontierFinality, FrontierFinalityApiServer},
         substrate_frame_rpc_system::{System, SystemApiServer},
     };
@@ -254,7 +250,7 @@ where
     ));
 
     io.merge(
-        Eth::<_, _, _, _, _, _, _, DefaultEthConfig<C, BE>>::new(
+        Eth::<_, _, _, _, _, _, DefaultEthConfig<C, BE>>::new(
             Arc::clone(&client),
             Arc::clone(&pool),
             Arc::clone(&graph),
@@ -272,7 +268,7 @@ where
             pending_create_inherent_data_providers,
             pending_consensus_data_provider_frontier,
         )
-        .into_rpc(),
+        .into(),
     )?;
 
     let tx_pool = TxPool::new(client.clone(), graph.clone());
@@ -288,7 +284,7 @@ where
                 max_block_range,
                 block_data_cache,
             )
-            .into_rpc(),
+            .into(),
         )?;
     }
 
@@ -320,9 +316,9 @@ where
             overrides,
             pubsub_notification_sinks,
         )
-        .into_rpc(),
+        .into(),
     )?;
-    io.merge(tx_pool.into_rpc())?;
+    io.merge(tx_pool.into())?;
 
     if let Some((downward_message_channel, hrmp_message_channel)) = xcm_senders {
         io.merge(

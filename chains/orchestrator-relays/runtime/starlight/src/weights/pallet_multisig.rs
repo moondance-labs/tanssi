@@ -54,6 +54,9 @@ use sp_std::marker::PhantomData;
 /// Weights for pallet_multisig using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> pallet_multisig::WeightInfo for SubstrateWeight<T> {
+	fn poke_deposit(_s: u32, ) -> Weight {
+		todo!()
+	}
 	/// The range of component `z` is `[0, 10000]`.
 	fn as_multi_threshold_1(z: u32, ) -> Weight {
 		// Proof Size summary in bytes:

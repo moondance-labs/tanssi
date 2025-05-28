@@ -42,12 +42,13 @@ use {
     pallet_xcm::EnsureXcm,
     parity_scale_codec::DecodeAll,
     snowbridge_beacon_primitives::ForkVersions,
-    snowbridge_core::{gwei, inbound::Message, meth, Channel, PricingParameters, Rewards},
+    snowbridge_core::{gwei, meth, Channel, PricingParameters, Rewards},
+    snowbridge_inbound_queue_primitives::v1::{
+        Command, Destination, Envelope, MessageProcessor, MessageV1, VersionedXcmMessage,
+    },
+    snowbridge_inbound_queue_primitives::EventProof,
     snowbridge_pallet_inbound_queue::RewardProcessor,
     snowbridge_pallet_outbound_queue::OnNewCommitment,
-    snowbridge_router_primitives::inbound::{
-        envelope::Envelope, Command, Destination, MessageProcessor, MessageV1, VersionedXcmMessage,
-    },
     sp_core::{ConstU32, ConstU8, Get, H160, H256},
     sp_runtime::{traits::Zero, DispatchError, DispatchResult},
     tp_bridge::{DoNothingConvertMessage, DoNothingRouter, EthereumSystemHandler},
@@ -89,7 +90,7 @@ impl snowbridge_pallet_outbound_queue::Config for Runtime {
     type Decimals = ConstU8<12>;
     type MaxMessagePayloadSize = ConstU32<2048>;
     type MaxMessagesPerBlock = ConstU32<32>;
-    type GasMeter = snowbridge_core::outbound::ConstantGasMeter;
+    type GasMeter = snowbridge_outbound_queue_primitives::v1::ConstantGasMeter;
     type Balance = Balance;
     type WeightToFee = WeightToFee;
     type WeightInfo = crate::weights::snowbridge_pallet_outbound_queue::SubstrateWeight<Runtime>;
@@ -242,8 +243,8 @@ mod benchmark_helper {
         crate::{EthereumBeaconClient, Runtime, RuntimeOrigin},
         snowbridge_beacon_primitives::BeaconHeader,
         snowbridge_core::Channel,
+        snowbridge_inbound_queue_primitives::inbound::{envelope::Envelope, MessageProcessor},
         snowbridge_pallet_system::Channels,
-        snowbridge_router_primitives::inbound::{envelope::Envelope, MessageProcessor},
         sp_core::H256,
         xcm::latest::Location,
     };
@@ -309,7 +310,7 @@ where
     T::AccountId: From<sp_runtime::AccountId32>,
     <T::Token as Inspect<T::AccountId>>::Balance: From<u128>,
 {
-    fn process_reward(who: T::AccountId, _channel: Channel, message: Message) -> DispatchResult {
+    fn process_reward(who: T::AccountId, _channel: Channel, message: EventProof) -> DispatchResult {
         let envelope = Envelope::try_from(&message.event_log)
             .map_err(|_| snowbridge_pallet_inbound_queue::Error::<T>::InvalidEnvelope)?;
 

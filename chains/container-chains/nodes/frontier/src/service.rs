@@ -298,8 +298,6 @@ async fn start_node_impl(
         relay_chain_slot_duration,
     )?;
 
-    node_builder.network.start_network.start_network();
-
     Ok((node_builder.task_manager, node_builder.client))
 }
 
@@ -572,6 +570,5 @@ pub async fn start_dev_node(
 
     log::info!("Development Service Ready");
 
-    node_builder.network.start_network.start_network();
     Ok(node_builder.task_manager)
 }

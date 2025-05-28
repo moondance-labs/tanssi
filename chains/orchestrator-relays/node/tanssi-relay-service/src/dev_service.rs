@@ -205,11 +205,14 @@ pub fn build_full<OverseerGenerator: OverseerGen>(
         });
 
     match config.network.network_backend {
-        sc_network::config::NetworkBackendType::Libp2p => {
+        Some(sc_network::config::NetworkBackendType::Libp2p) => {
             new_full::<_, sc_network::NetworkWorker<Block, Hash>>(sealing, config, params)
         }
-        sc_network::config::NetworkBackendType::Litep2p => {
+        Some(sc_network::config::NetworkBackendType::Litep2p) => {
             new_full::<_, sc_network::Litep2pNetworkBackend>(sealing, config, params)
+        }
+        None => {
+            panic!("Network backend is required"); // TODO: revisit this
         }
     }
 }
@@ -449,7 +452,7 @@ where
                                 candidate,
                                 validity_votes.clone(),
                                 bitvec::bitvec![u8, bitvec::order::Lsb0; 1; indices_associated_to_core.len()],
-                                Some(core),
+                                core,
                             ));
                         }
                     }
@@ -608,7 +611,7 @@ fn new_full<
 
     let (upward_mock_sender, upward_mock_receiver) = flume::bounded::<Vec<u8>>(100);
 
-    let (network, system_rpc_tx, tx_handler_controller, network_starter, sync_service) =
+    let (network, system_rpc_tx, tx_handler_controller, sync_service) =
         service::build_network(service::BuildNetworkParams {
             config: &config,
             net_config,
@@ -801,8 +804,6 @@ fn new_full<
         tx_handler_controller,
         telemetry: telemetry.as_mut(),
     })?;
-
-    network_starter.start_network();
 
     Ok(NewFull {
         task_manager,

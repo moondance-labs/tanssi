@@ -240,6 +240,7 @@ fn testnet_genesis(
                         .map(|k| (k, dancebox_runtime::EXISTENTIAL_DEPOSIT)),
                 )
                 .collect(),
+            ..Default::default()
         },
         parachain_info: dancebox_runtime::ParachainInfoConfig {
             parachain_id: id,

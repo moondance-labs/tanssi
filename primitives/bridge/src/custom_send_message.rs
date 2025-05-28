@@ -17,7 +17,8 @@
 use {
     super::*,
     frame_support::traits::EnqueueMessage,
-    snowbridge_core::{outbound::SendError, PRIMARY_GOVERNANCE_CHANNEL},
+    snowbridge_outbound_queue_primitives::SendError,
+    snowbridge_core::PRIMARY_GOVERNANCE_CHANNEL,
     sp_std::marker::PhantomData,
 };
 

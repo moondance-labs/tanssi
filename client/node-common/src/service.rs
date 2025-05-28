@@ -44,7 +44,7 @@ use {
     sc_network_sync::SyncingService,
     sc_network_transactions::TransactionsHandlerController,
     sc_service::{
-        Configuration, KeystoreContainer, NetworkStarter, SpawnTaskHandle, TFullBackend,
+        Configuration, KeystoreContainer, SpawnTaskHandle, TFullBackend,
         TFullClient, TaskManager,
     },
     sc_telemetry::{Telemetry, TelemetryWorker, TelemetryWorkerHandle},
@@ -186,7 +186,6 @@ pub struct NodeBuilder<
 pub struct Network<Block: cumulus_primitives_core::BlockT> {
     pub network: Arc<dyn sc_network::service::traits::NetworkService>,
     pub system_rpc_tx: TracingUnboundedSender<sc_rpc::system::Request<Block>>,
-    pub start_network: NetworkStarter,
     pub sync_service: Arc<SyncingService<Block>>,
 }
 
@@ -395,7 +394,7 @@ where
         let import_queue_service = import_queue.service();
         let spawn_handle = task_manager.spawn_handle();
 
-        let (network, system_rpc_tx, tx_handler_controller, start_network, sync_service) =
+        let (network, system_rpc_tx, tx_handler_controller, sync_service) =
             cumulus_client_service::build_network(cumulus_client_service::BuildNetworkParams {
                 parachain_config,
                 client: client.clone(),
@@ -422,7 +421,6 @@ where
             network: Network {
                 network,
                 system_rpc_tx,
-                start_network,
                 sync_service,
             },
             tx_handler_controller,
@@ -482,7 +480,7 @@ where
 
         let import_queue_service = import_queue.service();
 
-        let (network, system_rpc_tx, tx_handler_controller, start_network, sync_service) =
+        let (network, system_rpc_tx, tx_handler_controller, sync_service) =
             sc_service::build_network(sc_service::BuildNetworkParams {
                 config: parachain_config,
                 client: client.clone(),
@@ -509,7 +507,6 @@ where
             network: Network {
                 network,
                 system_rpc_tx,
-                start_network,
                 sync_service,
             },
             tx_handler_controller,

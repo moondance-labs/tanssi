@@ -39,12 +39,14 @@ pub use mock::*;
 mod tests;
 
 use {
-    parity_scale_codec::{Decode, Encode},
+    parity_scale_codec::{Decode, DecodeWithMemTracking, Encode},
     scale_info::TypeInfo,
     sp_inherents::InherentIdentifier,
 };
 
-#[derive(Encode, Decode, sp_core::RuntimeDebug, Clone, PartialEq, TypeInfo)]
+#[derive(
+    Encode, Decode, DecodeWithMemTracking, sp_core::RuntimeDebug, Clone, PartialEq, TypeInfo,
+)]
 pub struct OwnParachainInherentData {
     pub relay_storage_proof: sp_trie::StorageProof,
 }

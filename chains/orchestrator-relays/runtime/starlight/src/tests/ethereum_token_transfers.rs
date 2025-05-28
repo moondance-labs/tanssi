@@ -31,7 +31,7 @@ use {
         inbound::{Log, Message},
         AgentId, Channel, ChannelId, ParaId,
     },
-    snowbridge_router_primitives::inbound::{
+    snowbridge_inbound_queue_primitives::inbound::{
         envelope::{Envelope, OutboundMessageAccepted},
         Command, Destination, MessageProcessor, MessageV1, VersionedXcmMessage,
     },
