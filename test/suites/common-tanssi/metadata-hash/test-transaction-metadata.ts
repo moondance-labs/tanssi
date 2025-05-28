@@ -5,6 +5,7 @@ import { merkleizeMetadata } from "@polkadot-api/merkleize-metadata";
 import { u8aToHex } from "@polkadot/util";
 import type { ApiPromise } from "@polkadot/api";
 import type { KeyringPair } from "@moonwall/util";
+import { isDancebox } from "../../../utils/runtime.ts";
 
 async function getMetadataHash(api: ApiPromise) {
     const metadata = await api.call.metadata.metadataAtVersion(15);
@@ -37,7 +38,11 @@ describeSuite({
         it({
             id: "T01",
             title: "Should fail with an invalid metadata hash",
-            test: async () => {
+            test: async ({ skip }) => {
+                if (isDancebox(polkadotJs)) {
+                    skip();
+                }
+
                 const withMetadataOpts: Partial<SignerOptions> = {
                     mode: 1,
                     metadataHash: `0x${"00".repeat(32)}`,
@@ -60,7 +65,11 @@ describeSuite({
         it({
             id: "T02",
             title: "Should succeed with a valid metadata hash",
-            test: async () => {
+            test: async ({ skip }) => {
+                if (isDancebox(polkadotJs)) {
+                    skip();
+                }
+
                 await context.createBlock();
 
                 const withMetadataOpts = {
