@@ -786,6 +786,13 @@ where
     fn prepare_randomness(_n: BlockNumber) {}
 
     fn take_randomness() -> [u8; 32] {
+        #[cfg(feature = "runtime-benchmarks")]
+        if let Some(x) =
+            frame_support::storage::unhashed::take(b"__bench_collator_assignment_randomness")
+        {
+            return x;
+        }
+
         T::get()
     }
 }
