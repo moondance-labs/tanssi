@@ -142,7 +142,7 @@ describeSuite({
                 // Currency reserved as deposit from Charlie's account
                 const charlie_balance = await polkadotJs.query.system.account(general_user_charlie.address);
                 const charlie_balance_reserved = charlie_balance.toJSON().data.reserved;
-                const expected_reserve = 463333333000; // Basic deposit (1 item, 301 bytes)
+                const expected_reserve = 37633333000; // Basic deposit (1 item, 301 bytes)
                 expect(charlie_balance_reserved).to.be.equal(expected_reserve);
             },
         });
