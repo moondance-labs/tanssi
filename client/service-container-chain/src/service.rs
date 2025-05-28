@@ -76,7 +76,11 @@ impl sc_executor::NativeExecutionDispatch for ParachainNativeExecutor {
     }
 
     fn native_version() -> sc_executor::NativeVersion {
-        dancebox_runtime::native_version()
+        let mut native_version = dancebox_runtime::native_version();
+        // Set the spec version to 0, because of the metadata-hash feature is not supported for native runtimes
+        native_version.runtime_version.spec_version = Default::default();
+
+        native_version
     }
 }
 
