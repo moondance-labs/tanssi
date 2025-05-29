@@ -1240,10 +1240,12 @@ impl Contains<RuntimeCall> for IsRegisterParathreads {
     }
 }
 
+type NormalFilter = EverythingBut<IsRegisterParathreads>;
+
 impl pallet_maintenance_mode::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type NormalCallFilter = EverythingBut<IsRegisterParathreads>;
-    type MaintenanceCallFilter = MaintenanceFilter;
+    type NormalCallFilter = NormalFilter;
+    type MaintenanceCallFilter = InsideBoth<MaintenanceFilter, NormalFilter>;
     type MaintenanceOrigin = EnsureRoot<AccountId>;
     type XcmExecutionManager = ();
 }
