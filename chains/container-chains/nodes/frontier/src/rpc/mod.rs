@@ -24,15 +24,14 @@
 pub use sc_rpc::SubscriptionTaskExecutor;
 
 use {
-    container_chain_template_frontier_runtime::{
-        opaque::Block, AccountId, Hash, Index, RuntimeApi,
-    },
+    container_chain_template_frontier_runtime::{opaque::Block, AccountId, Hash, Index},
     core::marker::PhantomData,
     cumulus_client_parachain_inherent::ParachainInherentData,
-    cumulus_client_service::ParachainHostFunctions,
     cumulus_primitives_core::{ParaId, PersistedValidationData},
     cumulus_test_relay_sproof_builder::RelayStateSproofBuilder,
-    fc_rpc::{EthTask, TxPool},
+    fc_rpc::{
+        EthApiServer, EthFilterApiServer, EthPubSubApiServer, EthTask, TxPool, TxPoolApiServer,
+    },
     fc_storage::StorageOverride,
     fp_rpc::EthereumRuntimeRPCApi,
     frame_support::CloneNoBound,
@@ -45,9 +44,8 @@ use {
         AuxStore, BlockOf, StorageProvider,
     },
     sc_consensus_manual_seal::rpc::{EngineCommand, ManualSeal, ManualSealApiServer},
-    sc_executor::WasmExecutor,
     sc_network_sync::SyncingService,
-    sc_service::{TFullClient, TaskManager},
+    sc_service::TaskManager,
     sc_transaction_pool_api::TransactionPool,
     sp_api::{CallApiAt, ProvideRuntimeApi},
     sp_block_builder::BlockBuilder,
@@ -64,12 +62,6 @@ use {
     },
     tc_service_container_chain::service::{ContainerChainClient, MinimalContainerRuntimeApi},
 };
-
-type ParachainExecutor = WasmExecutor<ParachainHostFunctions>;
-type ParachainClient = TFullClient<Block, RuntimeApi, ParachainExecutor>;
-
-type FullPool<Client> =
-    sc_transaction_pool::BasicPool<sc_transaction_pool::FullChainApi<Client, Block>, Block>;
 
 pub struct DefaultEthConfig<C, BE>(std::marker::PhantomData<(C, BE)>);
 
@@ -138,6 +130,7 @@ pub fn create_full<C, P, BE>(
     >,
 ) -> Result<RpcModule<()>, Box<dyn std::error::Error + Send + Sync>>
 where
+    Block: BlockT,
     BE: Backend<Block> + 'static,
     BE::State: StateBackend<BlakeTwo256>,
     BE::Blockchain: BlockchainBackend<Block>,
@@ -194,7 +187,7 @@ where
     let authorities = vec![tc_consensus::get_aura_id_from_seed("alice")];
     let authorities_for_cdp = authorities.clone();
 
-    let pending_create_inherent_data_providers = move |_, _| {
+    let pending_create_inherent_data_providers = move |_, ()| {
         let authorities_for_cidp = authorities.clone();
 
         async move {
@@ -230,7 +223,7 @@ where
                 downward_messages: Default::default(),
                 horizontal_messages: Default::default(),
             };
-            Ok::<_, jsonrpsee::core::error::RegisterMethodError>((
+            Ok((
                 timestamp,
                 parachain_inherent_data,
                 mocked_authorities_noting,
@@ -269,7 +262,7 @@ where
         .into_rpc(),
     )?;
 
-    let tx_pool = TxPool::new(client.clone(), graph.clone());
+    let tx_pool: TxPool<Block, _, _> = TxPool::new(client.clone(), graph.clone());
     if let Some(filter_pool) = filter_pool {
         io.merge(
             EthFilter::new(
@@ -282,7 +275,7 @@ where
                 max_block_range,
                 block_data_cache,
             )
-            .into(),
+            .into_rpc(),
         )?;
     }
 
@@ -314,9 +307,9 @@ where
             overrides,
             pubsub_notification_sinks,
         )
-        .into(),
+        .into_rpc(),
     )?;
-    io.merge(tx_pool.into())?;
+    io.merge(tx_pool.into_rpc())?;
 
     if let Some((downward_message_channel, hrmp_message_channel)) = xcm_senders {
         io.merge(
