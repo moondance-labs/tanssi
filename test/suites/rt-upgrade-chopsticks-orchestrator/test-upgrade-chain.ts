@@ -6,6 +6,7 @@ import { Keyring, type ApiPromise } from "@polkadot/api";
 import type { KeyringPair } from "@polkadot/keyring/types";
 import { chopsticksWaitTillIncluded, testPalletVersions } from "utils";
 import { isLightRuntime } from "../../utils/runtime.ts";
+import type { u64 } from "@polkadot/types";
 
 describeSuite({
     id: "RT01",
@@ -16,7 +17,7 @@ describeSuite({
         let specName: string;
         let alice: KeyringPair;
         let runtimeName: string;
-        let xcmQueryToAnalyze: number;
+        let xcmQueryToAnalyze: u64;
 
         beforeAll(async () => {
             api = context.pjsApi;
