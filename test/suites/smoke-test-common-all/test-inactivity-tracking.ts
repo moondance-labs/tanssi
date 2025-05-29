@@ -1,6 +1,7 @@
 import "@tanssi/api-augment/dancelight";
 
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import { getLastSessionEndBlock } from "utils/block";
 import type { ApiPromise } from "@polkadot/api";
 
 describeSuite({
@@ -17,20 +18,7 @@ describeSuite({
             api = context.polkadotJs();
             chain = api.consts.system.version.specName.toString();
             lastSessionIndex = (await api.query.session.currentIndex()).toNumber() - 1;
-
-            const getLastSessionEndBlock = async (lastSessionIndex: number) => {
-                let blockNumber = (await api.rpc.chain.getBlock()).block.header.number.toNumber();
-                let currentSessionIndex = (await api.query.session.currentIndex()).toNumber();
-                while (currentSessionIndex > lastSessionIndex) {
-                    blockNumber -= 1;
-                    const blockHash = await api.rpc.chain.getBlockHash(blockNumber);
-                    const apiAtBlock = await api.at(blockHash);
-                    currentSessionIndex = (await apiAtBlock.query.session.currentIndex()).toNumber();
-                }
-                return blockNumber;
-            };
-
-            lastSessionEndBlock = await getLastSessionEndBlock(lastSessionIndex);
+            lastSessionEndBlock = await getLastSessionEndBlock(api, lastSessionIndex);
         });
 
         it({
