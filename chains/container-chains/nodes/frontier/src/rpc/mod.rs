@@ -147,7 +147,7 @@ where
     C: CallApiAt<Block>,
     C: Send + Sync + 'static,
     C::Api: RuntimeApiCollection,
-    P: TransactionPool<Block = Block> + 'static,
+    P: TransactionPool<Block = Block, Hash = <Block as BlockT>::Hash> + 'static,
 {
     use {
         fc_rpc::{Eth, EthFilter, EthPubSub, Net, NetApiServer, Web3, Web3ApiServer},
@@ -230,7 +230,7 @@ where
                 downward_messages: Default::default(),
                 horizontal_messages: Default::default(),
             };
-            Ok((
+            Ok::<_, jsonrpsee::core::error::RegisterMethodError>((
                 timestamp,
                 parachain_inherent_data,
                 mocked_authorities_noting,
@@ -266,7 +266,7 @@ where
             pending_create_inherent_data_providers,
             pending_consensus_data_provider_frontier,
         )
-        .into(),
+        .into_rpc(),
     )?;
 
     let tx_pool = TxPool::new(client.clone(), graph.clone());
