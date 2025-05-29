@@ -152,6 +152,7 @@ pallet-stream-payment-runtime-api = { workspace = true }
 tanssi-runtime-common = { workspace = true }
 
 # Moonkit
+pallet-maintenance-mode = { workspace = true, features = [ "xcm-support" ] }
 pallet-migrations = { workspace = true }
 
 # Bridges
@@ -254,6 +255,7 @@ std = [
 	"pallet-inflation-rewards/std",
 	"pallet-initializer/std",
 	"pallet-invulnerables/std",
+	"pallet-maintenance-mode/std",
 	"pallet-membership/std",
 	"pallet-message-queue/std",
 	"pallet-migrations/std",
@@ -472,6 +474,7 @@ try-runtime = [
 	"pallet-inflation-rewards/try-runtime",
 	"pallet-initializer/try-runtime",
 	"pallet-invulnerables/try-runtime",
+	"pallet-maintenance-mode/try-runtime",
 	"pallet-membership/try-runtime",
 	"pallet-message-queue/try-runtime",
 	"pallet-migrations/try-runtime",

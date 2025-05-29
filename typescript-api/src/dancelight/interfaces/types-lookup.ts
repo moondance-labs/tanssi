@@ -4297,6 +4297,7 @@ declare module "@polkadot/types/lookup" {
         readonly isSudoValidatorManagement: boolean;
         readonly isSessionKeyManagement: boolean;
         readonly isStaking: boolean;
+        readonly isBalances: boolean;
         readonly type:
             | "Any"
             | "NonTransfer"
@@ -4308,7 +4309,8 @@ declare module "@polkadot/types/lookup" {
             | "SudoRegistrar"
             | "SudoValidatorManagement"
             | "SessionKeyManagement"
-            | "Staking";
+            | "Staking"
+            | "Balances";
     }
 
     /** @name PalletMultisigCall (374) */

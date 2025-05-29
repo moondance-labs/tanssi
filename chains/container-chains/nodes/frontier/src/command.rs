@@ -302,6 +302,7 @@ pub fn run() -> Result<()> {
                     eth_statuses_cache: cli.run.eth_statuses_cache,
                     fee_history_limit: cli.run.fee_history_limit,
                     max_past_logs: cli.run.max_past_logs,
+                    max_block_range: cli.run.max_block_range,
                 };
 
                 let extension = node_common_chain_spec::Extensions::try_get(&*config.chain_spec);
@@ -476,6 +477,7 @@ fn rpc_provider_mode(cli: Cli, profile_id: u64) -> Result<()> {
                 eth_statuses_cache: cli.run.eth_statuses_cache,
                 fee_history_limit: cli.run.fee_history_limit,
                 max_past_logs: cli.run.max_past_logs,
+                max_block_range: cli.run.max_block_range,
             };
 
             let container_chain_spawner = ContainerChainSpawner {

@@ -623,6 +623,7 @@ pub struct TreasuryBenchmarkHelper<T>(PhantomData<T>);
 
 #[cfg(feature = "runtime-benchmarks")]
 use frame_support::traits::Currency;
+use frame_support::traits::InsideBoth;
 #[cfg(feature = "runtime-benchmarks")]
 use pallet_treasury::ArgumentsFactory;
 use {
@@ -872,6 +873,7 @@ pub enum ProxyType {
     SudoValidatorManagement,
     SessionKeyManagement,
     Staking,
+    Balances,
 }
 impl Default for ProxyType {
     fn default() -> Self {
@@ -960,6 +962,9 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
             }
             ProxyType::Staking => {
                 matches!(c, RuntimeCall::Session(..) | RuntimeCall::PooledStaking(..))
+            }
+            ProxyType::Balances => {
+                matches!(c, RuntimeCall::Balances(..))
             }
         }
     }
@@ -1641,7 +1646,7 @@ type NormalFilter = EverythingBut<(IsRelayRegister, IsParathreadRegistrar)>;
 impl pallet_maintenance_mode::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type NormalCallFilter = NormalFilter;
-    type MaintenanceCallFilter = MaintenanceFilter;
+    type MaintenanceCallFilter = InsideBoth<MaintenanceFilter, NormalFilter>;
     type MaintenanceOrigin = EnsureRoot<AccountId>;
     type XcmExecutionManager = ();
 }
