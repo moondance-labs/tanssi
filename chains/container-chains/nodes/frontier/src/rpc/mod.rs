@@ -48,7 +48,6 @@ use {
     sc_executor::WasmExecutor,
     sc_network_sync::SyncingService,
     sc_service::{TFullClient, TaskManager},
-    sc_transaction_pool::{ChainApi, Pool},
     sc_transaction_pool_api::TransactionPool,
     sp_api::{CallApiAt, ProvideRuntimeApi},
     sp_block_builder::BlockBuilder,
@@ -89,13 +88,13 @@ pub use eth::*;
 mod finality;
 
 /// Full client dependencies.
-pub struct FullDeps<C, P, A: ChainApi, BE> {
+pub struct FullDeps<C, P, BE> {
     /// The client instance to use.
     pub client: Arc<C>,
     /// Transaction pool instance.
     pub pool: Arc<P>,
     /// Graph pool instance.
-    pub graph: Arc<Pool<A, ()>>,
+    pub graph: Arc<P>,
     /// Network service
     pub network: Arc<dyn sc_network::service::traits::NetworkService>,
     /// Chain syncing service
@@ -129,8 +128,8 @@ pub struct FullDeps<C, P, A: ChainApi, BE> {
 }
 
 /// Instantiate all Full RPC extensions.
-pub fn create_full<C, P, BE, A>(
-    deps: FullDeps<C, P, A, BE>,
+pub fn create_full<C, P, BE>(
+    deps: FullDeps<C, P, BE>,
     subscription_task_executor: SubscriptionTaskExecutor,
     pubsub_notification_sinks: Arc<
         fc_mapping_sync::EthereumBlockNotificationSinks<
@@ -147,7 +146,6 @@ where
     C: HeaderBackend<Block> + HeaderMetadata<Block, Error = BlockChainError> + 'static,
     C: CallApiAt<Block>,
     C: Send + Sync + 'static,
-    A: ChainApi<Block = Block> + 'static,
     C::Api: RuntimeApiCollection,
     P: TransactionPool<Block = Block> + 'static,
 {
@@ -554,10 +552,6 @@ const _: () = {
             ));
 
             Ok(Box::new(move |subscription_task_executor| {
-                let graph_pool = transaction_pool.0
-                        .as_any()
-                        .downcast_ref::<FullPool<ParachainClient>>()
-                        .expect("Frontier container chain template supports only single state transaction pool! Use --pool-type=single-state");
                 let deps = crate::rpc::FullDeps {
                     backend: backend.clone(),
                     client: client.clone(),
@@ -566,7 +560,7 @@ const _: () = {
                         fc_db::Backend::KeyValue(b) => b.clone(),
                         fc_db::Backend::Sql(b) => b.clone(),
                     },
-                    graph: graph_pool.pool().clone(),
+                    graph: transaction_pool.clone(),
                     pool: transaction_pool.clone(),
                     max_past_logs,
                     max_block_range,
