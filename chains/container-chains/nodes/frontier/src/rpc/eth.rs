@@ -17,7 +17,6 @@
 use {
     sc_network::NetworkService,
     sc_network_sync::SyncingService,
-    sc_transaction_pool::{ChainApi, Pool},
     sp_core::H256,
     sp_runtime::traits::Block as BlockT,
     std::{collections::BTreeMap, sync::Arc},
@@ -31,13 +30,13 @@ pub use {
 };
 
 /// Extra dependencies for Ethereum compatibility.
-pub struct EthDeps<C, P, A: ChainApi, CT, B: BlockT> {
+pub struct EthDeps<C, P, CT, B: BlockT> {
     /// The client instance to use.
     pub client: Arc<C>,
     /// Transaction pool instance.
     pub pool: Arc<P>,
     /// Graph pool instance.
-    pub graph: Arc<Pool<A, ()>>,
+    pub graph: Arc<P>,
     /// Ethereum transaction converter.
     pub converter: Option<CT>,
     /// The Node authority flag
@@ -71,7 +70,7 @@ pub struct EthDeps<C, P, A: ChainApi, CT, B: BlockT> {
     pub forced_parent_hashes: Option<BTreeMap<H256, H256>>,
 }
 
-impl<C, P, A: ChainApi, CT: Clone, B: BlockT> Clone for EthDeps<C, P, A, CT, B> {
+impl<C, P, CT: Clone, B: BlockT> Clone for EthDeps<C, P, CT, B> {
     fn clone(&self) -> Self {
         Self {
             client: self.client.clone(),
