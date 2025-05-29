@@ -1059,7 +1059,7 @@
         },
         {
             "name": "stagelight_dancelight_smoke",
-            "testFileDir": ["suites/smoke-test-dancelight", "suites/smoke-test-common-all"],
+            "testFileDir": ["suites/smoke-test-common-solo", "suites/smoke-test-common-all"],
             "foundation": {
                 "type": "read_only"
             },
@@ -1074,7 +1074,7 @@
         },
         {
             "name": "dancelight_smoke",
-            "testFileDir": ["suites/smoke-test-dancelight", "suites/smoke-test-common-all"],
+            "testFileDir": ["suites/smoke-test-common-solo", "suites/smoke-test-common-all"],
             "foundation": {
                 "type": "read_only"
             },
@@ -1089,7 +1089,7 @@
         },
         {
             "name": "moonlight_smoke",
-            "testFileDir": ["suites/smoke-test-dancelight", "suites/smoke-test-common-all"],
+            "testFileDir": ["suites/smoke-test-common-solo", "suites/smoke-test-common-all"],
             "foundation": {
                 "type": "read_only"
             },
