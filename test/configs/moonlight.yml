@@ -1,0 +1,14 @@
+endpoint: wss://moonlight.tanssi-dev.network
+block: ${env.MOONLIGHT_BLOCK_NUMBER}
+mock-signature-host: true
+db: ./tmp/db_mba.sqlite
+
+import-storage:
+    System:
+        Account:
+            - - - 5FWzsmZBe3E5q9WTgAe37CZidpa9tW6mC1yUnxCZDFZJAKzG
+              - providers: 1
+                data:
+                    free: "100000000000000000000000"
+    Sudo:
+        Key: "5FWzsmZBe3E5q9WTgAe37CZidpa9tW6mC1yUnxCZDFZJAKzG"
