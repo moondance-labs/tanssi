@@ -45,7 +45,7 @@ describeSuite({
                 const inactiveCollators = await api.query.inactivityTracking.inactiveCollators(lastSessionIndex);
 
                 if (inactiveCollators.size === 0) {
-                    log("No inactive collators found. Skipping check...");
+                    log(`No inactive collators found for session ${lastSessionIndex}. Skipping check...`);
                     return;
                 }
 
@@ -54,11 +54,14 @@ describeSuite({
                 let currentBlockApi = await api.at(currentBlockHash);
                 let currentSessionIndex = (await currentBlockApi.query.session.currentIndex()).toNumber();
 
-                const registeredParaIds =
-                    chain === "dancebox"
-                        ? await currentBlockApi.query.registrar.registeredParaIds()
-                        : await currentBlockApi.query.containerRegistrar.registeredParaIds();
+                const isParachain = chain === "dancebox";
+                const registeredParaIds = isParachain
+                    ? await currentBlockApi.query.registrar.registeredParaIds()
+                    : await currentBlockApi.query.containerRegistrar.registeredParaIds();
 
+                const failureMessages: string[] = [];
+
+                log("Expecting no inactive collators to be block authors for any paraId in the last session!");
                 while (currentSessionIndex === lastSessionIndex) {
                     // For every registered paraId, check if the latest author is in the inactive collators list
                     for (const paraId of registeredParaIds) {
@@ -66,19 +69,22 @@ describeSuite({
                         if (latestAuthorInfo.isSome) {
                             const authorInfo = latestAuthorInfo.unwrap();
                             const authorId = authorInfo.author;
-                            log(
-                                `Expecting block ${authorInfo.blockNumber} for container chain  with ID ${paraId} to be authored by an active collator`
+                            failureMessages.push(
+                                `Collator ${authorId.toString()} is marked as inactive but authored block ${authorInfo.blockNumber} for container chain ${paraId} in session ${lastSessionIndex}.`
                             );
-                            expect(inactiveCollators.has(authorId)).toBe(false);
                         }
                     }
-
                     // Move to the previous block
                     currentBlockNumber -= 1;
                     currentBlockHash = await api.rpc.chain.getBlockHash(currentBlockNumber);
                     currentBlockApi = await api.at(currentBlockHash);
                     currentSessionIndex = (await currentBlockApi.query.session.currentIndex()).toNumber();
                 }
+                // Log all records of inactive collators being block authors for the last session
+                for (const message of failureMessages) {
+                    log(message);
+                }
+                expect(failureMessages.length).toBe(0);
             },
         });
     },
