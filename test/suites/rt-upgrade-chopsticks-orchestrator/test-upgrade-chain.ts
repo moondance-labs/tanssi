@@ -5,6 +5,7 @@ import { Keyring, type ApiPromise } from "@polkadot/api";
 
 import type { KeyringPair } from "@polkadot/keyring/types";
 import { chopsticksWaitTillIncluded, testPalletVersions } from "utils";
+import { isLightRuntime } from "../../utils/runtime.ts";
 
 describeSuite({
     id: "RT01",
@@ -186,7 +187,7 @@ describeSuite({
                 const newSessionIndex = (await api.query.session.currentIndex()).toNumber();
                 expect(sessionChangeEvent.sessionIndex.toNumber()).toBe(newSessionIndex);
 
-                if (specName === "dancelight") {
+                if (isLightRuntime(api)) {
                     const newPendingAssignmentEvent = blockEvents
                         .filter(({ event }) => api.events.tanssiCollatorAssignment.NewPendingAssignment.is(event))
                         .map(
