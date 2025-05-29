@@ -736,7 +736,7 @@ jobs:
                     - chain: dancelight
                       runtime: dancelight
                     - chain: moonlight
-                      runtime: dancelight
+                      runtime: starlight
         env:
           GH_WORKFLOW_MATRIX_CHAIN: ${{ matrix.chains.chain }}
           DEBUG_COLORS: 1

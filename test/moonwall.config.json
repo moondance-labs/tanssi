@@ -1237,7 +1237,7 @@
             "testFileDir": ["suites/rt-upgrade-chopsticks-orchestrator"],
             "foundation": {
                 "type": "chopsticks",
-                "rtUpgradePath": "../target/release/wbuild/dancelight-runtime/dancelight_runtime.compact.compressed.wasm",
+                "rtUpgradePath": "../target/release/wbuild/starlight-runtime/starlight.compact.compressed.wasm",
                 "launchSpec": [
                     {
                         "name": "db",
