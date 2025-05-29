@@ -41,6 +41,7 @@ use {
         ToAuthor,
     },
     sp_core::ConstU32,
+    sp_runtime::traits::TryConvertInto,
     tp_bridge::EthereumLocationsConverterFor,
     tp_xcm_commons::{EthereumAssetReserve, NativeAssetReserve},
     xcm::{
@@ -58,7 +59,7 @@ use {
         UsingComponents, WeightInfoBounds, WithComputedOrigin, WithUniqueTopic,
         XcmFeeManagerFromComponents,
     },
-    xcm_executor::{traits::JustTry, XcmExecutor},
+    xcm_executor::XcmExecutor,
 };
 
 parameter_types! {
@@ -111,7 +112,7 @@ pub type ForeignFungiblesTransactor = FungiblesAdapter<
     // Use this fungibles implementation:
     ForeignAssets,
     // Use this currency when it is a fungible asset matching the given location or name:
-    (ConvertedConcreteId<AssetId, Balance, ForeignAssetsCreator, JustTry>,),
+    (ConvertedConcreteId<AssetId, Balance, ForeignAssetsCreator, TryConvertInto>,),
     // Convert an XCM Location into a local account id:
     LocationConverter,
     // Our chain's account ID type (we can't get away without mentioning it explicitly):
