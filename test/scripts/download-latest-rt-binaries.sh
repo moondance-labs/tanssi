@@ -140,7 +140,7 @@ if $DOWNLOAD_TANSSI_NODE; then
   docker run --rm \
       --entrypoint tar \
       "$TANSSI_IMAGE" \
-      -C / -cf - tanssi/tanssi-node \
+      -C /tanssi -cf - tanssi-node \
     | tar -C tmp -xf -
   chmod +x tmp/tanssi-node
   echo "→ tmp/tanssi-node"
@@ -154,13 +154,13 @@ if $DOWNLOAD_FRONTIER_NODE; then
     docker run --rm \
         --entrypoint tar \
         "$FRONTIER_IMAGE" \
-        -C / -cf - container-chain-evm-template/container-chain-frontier-node \
+        -C /container-chain-evm-template -cf - container-chain-frontier-node \
       | tar -C tmp -xf -
   else
     docker run --rm \
         --entrypoint tar \
         "$FRONTIER_IMAGE" \
-        -C / -cf - container-chain-evm-template/container-chain-template-frontier-node \
+        -C /container-chain-evm-template -cf - container-chain-template-frontier-node \
       | tar -C tmp -xf -
   fi
   chmod +x tmp/container-chain-frontier-node
@@ -175,13 +175,13 @@ if $DOWNLOAD_SIMPLE_NODE; then
     docker run --rm \
         --entrypoint tar \
         "$SIMPLE_IMAGE" \
-        -C / -cf - container-chain-simple-template/container-chain-simple-node \
+        -C /container-chain-simple-template -cf - container-chain-simple-node \
       | tar -C tmp -xf -
   else
     docker run --rm \
         --entrypoint tar \
         "$SIMPLE_IMAGE" \
-        -C / -cf - container-chain-simple-template/container-chain-template-simple-node \
+        -C /container-chain-simple-template -cf - container-chain-template-simple-node \
       | tar -C tmp -xf -
   fi
   chmod +x tmp/container-chain-simple-node
@@ -193,10 +193,10 @@ if $DOWNLOAD_RELAY; then
   docker run --rm \
     --entrypoint tar \
     "$RELAY_IMAGE" \
-    -C / -cf - \
-      tanssi-relay/tanssi-relay \
-      tanssi-relay/tanssi-relay-execute-worker \
-      tanssi-relay/tanssi-relay-prepare-worker \
+    -C /tanssi-relay -cf - \
+      tanssi-relay \
+      tanssi-relay-execute-worker \
+      tanssi-relay-prepare-worker \
   | tar -C tmp -xf -
 
   chmod +x \
