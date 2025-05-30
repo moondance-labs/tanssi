@@ -1,3 +1,4 @@
+#TODO: Try to combine with publish-binary-tanssi-solochain
 name: Publish Binary Draft
 
 # The code (like generate-release-body) will be taken from the tag version, not master
@@ -44,20 +45,12 @@ jobs:
           sudo apt-get install protobuf-compiler
       - name: Build Node
         run: cargo build --profile=production --all
-      - name: Save parachain binary
-        if: ${{ matrix.cpu == '' }}
-        run: |
-          mkdir -p binaries
-          cp target/production/tanssi-node binaries/tanssi-node
-          cp target/production/container-chain-frontier-node binaries/container-chain-frontier-node
-          cp target/production/container-chain-simple-node binaries/container-chain-simple-node
-      - name: Save parachain custom binary
-        if: ${{ matrix.cpu != '' }}
-        run: |
-          mkdir -p binaries
-          cp target/production/tanssi-node binaries/tanssi-node-${{matrix.cpu}}
-          cp target/production/container-chain-frontier-node binaries/container-chain-frontier-node-${{matrix.cpu}}
-          cp target/production/container-chain-simple-node binaries/container-chain-simple-node-${{matrix.cpu}}
+
+      - name: Copy parachain node binaries
+        uses: ./.github/workflow-templates/copy-parachain-node-binaries
+        with:
+          cpu: ${{ matrix.cpu }}
+
       - name: Upload binaries
         uses: actions/upload-artifact@v4
         with:
