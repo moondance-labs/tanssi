@@ -23,7 +23,7 @@ describeSuite({
                 const bondedDuration = api.consts.externalValidatorSlashes.bondingDuration;
                 const currentEra = (await api.query.externalValidators.activeEra()).unwrap();
 
-                if (currentEra.index < bondedDuration) {
+                if (currentEra.index.toNumber() < bondedDuration.toNumber()) {
                     expect(bondedEras.length).to.be.lessThanOrEqual(bondedDuration.toNumber() + 1);
                 } else {
                     expect(bondedEras.length).to.be.eq(bondedDuration.toNumber() + 1);
@@ -53,7 +53,16 @@ describeSuite({
                 ) {
                     const blockNumberCheckpointPreviousEra = blockNumberCheckpointStartEra - 1;
 
-                    blockNumberCheckpointStartEra = await getPastEraStartBlock(api, blockNumberCheckpointPreviousEra);
+                    try {
+                        blockNumberCheckpointStartEra = await getPastEraStartBlock(
+                            api,
+                            blockNumberCheckpointPreviousEra
+                        );
+                    } catch (e) {
+                        log(`Current era is 0, exiting. Block: ${blockNumberCheckpointPreviousEra}`);
+                        break;
+                    }
+
                     const apiAtCheckpointStartEra = await api.at(
                         await api.rpc.chain.getBlockHash(blockNumberCheckpointStartEra)
                     );
@@ -159,7 +168,14 @@ describeSuite({
                 while (eraIndexToAnalyze > currentEraIndex - bondingDuration.toNumber() && eraIndexToAnalyze > 0) {
                     // Identify the start/end blocks for the previous era
                     const lastBlockNumberPreviousEra = startBlockNumberOfEra - 1;
-                    const firstBlockNumberPreviousEra = await getPastEraStartBlock(api, lastBlockNumberPreviousEra);
+
+                    let firstBlockNumberPreviousEra: number;
+                    try {
+                        firstBlockNumberPreviousEra = await getPastEraStartBlock(api, lastBlockNumberPreviousEra);
+                    } catch (e) {
+                        log(`Current era is 0, exiting. Block: ${lastBlockNumberPreviousEra}`);
+                        break;
+                    }
 
                     // Get the count of unreported slashes at the very start of the previous era
                     const apiAtStartPreviousEra = await api.at(
