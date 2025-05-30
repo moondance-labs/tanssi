@@ -1059,7 +1059,7 @@
         },
         {
             "name": "stagelight_dancelight_smoke",
-            "testFileDir": ["suites/smoke-test-dancelight", "suites/smoke-test-common-all"],
+            "testFileDir": ["suites/smoke-test-common-solo", "suites/smoke-test-common-all"],
             "foundation": {
                 "type": "read_only"
             },
@@ -1074,7 +1074,7 @@
         },
         {
             "name": "dancelight_smoke",
-            "testFileDir": ["suites/smoke-test-dancelight", "suites/smoke-test-common-all"],
+            "testFileDir": ["suites/smoke-test-common-solo", "suites/smoke-test-common-all"],
             "foundation": {
                 "type": "read_only"
             },
@@ -1084,6 +1084,21 @@
                     "name": "para",
                     "type": "polkadotJs",
                     "endpoints": ["wss://dancelight.tanssi-api.network"]
+                }
+            ]
+        },
+        {
+            "name": "moonlight_smoke",
+            "testFileDir": ["suites/smoke-test-common-solo", "suites/smoke-test-common-all"],
+            "foundation": {
+                "type": "read_only"
+            },
+            "reporters": ["basic","html"],
+            "connections": [
+                {
+                    "name": "para",
+                    "type": "polkadotJs",
+                    "endpoints": ["wss://moonlight.tanssi-dev.network"]
                 }
             ]
         },
@@ -1202,6 +1217,32 @@
                         "name": "db",
                         "type": "parachain",
                         "configPath": "./configs/dancelight.yml",
+                        "address": "127.0.0.1"
+                    }
+                ]
+            },
+            "vitestArgs": {
+                "bail": 1
+            },
+            "connections": [
+                {
+                    "name": "db",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:8000"]
+                }
+            ]
+        },
+        {
+            "name": "chopsticks_moonlight_upgrade",
+            "testFileDir": ["suites/rt-upgrade-chopsticks-orchestrator"],
+            "foundation": {
+                "type": "chopsticks",
+                "rtUpgradePath": "../target/release/wbuild/starlight-runtime/starlight_runtime.compact.compressed.wasm",
+                "launchSpec": [
+                    {
+                        "name": "db",
+                        "type": "parachain",
+                        "configPath": "./configs/moonlight.yml",
                         "address": "127.0.0.1"
                     }
                 ]

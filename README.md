@@ -179,3 +179,16 @@ npm run build-spec
 # Spawns Tanssi and container-chains with zombienet
 /path/to/zombienet spawn -p native ./configs/zombieTanssi.json
 ```
+
+### Issues with chopsticks tests on MacOS
+
+If you are using MacOS and having the following error, when trying to run chopsticks tests: `Error: Operation timed out`
+it might be related to the not complete `pnpm` installation.
+Check your logs after you did `pnm install` and if you see the warning, like:
+
+```
+Ignored build scripts: @biomejs/biome, @chainsafe/blst, bigint-buffer, classic-level, cpu-features, esbuild, protobufjs, sqlite3, ssh2.   │
+Run "pnpm approve-builds" to pick which dependencies should be allowed to run scripts. 
+```
+
+Run the mentioned command to approve the builds, and then try again.

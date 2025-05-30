@@ -62,7 +62,18 @@
       "@polkadot/util": "13.3.1",
       "@polkadot/util-crypto": "13.3.1",
       "typescript": "5.5.4"
-    }
+    },
+    "onlyBuiltDependencies": [
+      "@biomejs/biome",
+      "@chainsafe/blst",
+      "bigint-buffer",
+      "classic-level",
+      "cpu-features",
+      "esbuild",
+      "protobufjs",
+      "sqlite3",
+      "ssh2"
+    ]
   },
   "keywords": [],
   "author": "",
