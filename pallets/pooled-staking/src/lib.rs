@@ -84,7 +84,7 @@ pub mod pallet {
         sp_runtime::{BoundedVec, Perbill},
         sp_std::vec::Vec,
         tp_maths::MulDiv,
-        tp_traits::{CheckInvulnerables, NodeActivityTrackingHelper},
+        tp_traits::NodeActivityTrackingHelper,
     };
 
     /// A reason for this pallet placing a hold on funds.
@@ -322,9 +322,6 @@ pub mod pallet {
         /// Helper for collator activity tracking
         type ActivityTrackingHelper: NodeActivityTrackingHelper<Self::AccountId>;
 
-        /// Helper for dealing with invulnerables.
-        type InvulnerablesHelper: CheckInvulnerables<Self::AccountId>;
-
         type WeightInfo: WeightInfo;
     }
 
@@ -534,7 +531,6 @@ pub mod pallet {
         MarkingOfflineNotEnabled,
         CollatorDoesNotExist,
         CollatorCannotBeNotifiedAsInactive,
-        MarkingInvulnerableOfflineInvalid,
         PoolsExtrinsicsArePaused,
     }
 
@@ -805,17 +801,13 @@ pub mod pallet {
                 Error::<T>::MarkingOfflineNotEnabled
             );
             ensure!(
-                !T::InvulnerablesHelper::is_invulnerable(&collator),
-                Error::<T>::MarkingInvulnerableOfflineInvalid
-            );
-            ensure!(
                 <SortedEligibleCandidates<T>>::get()
                     .into_iter()
                     .any(|c| c.candidate == collator.clone()),
                 Error::<T>::CollatorDoesNotExist
             );
 
-            T::ActivityTrackingHelper::set_offline(&collator);
+            T::ActivityTrackingHelper::set_offline(&collator)?;
             Calls::<T>::update_candidate_position(&[collator])
         }
     }

@@ -32,9 +32,9 @@ use {
     sp_runtime::{traits::Get, BoundedBTreeSet},
     sp_staking::SessionIndex,
     tp_traits::{
-        AuthorNotingHook, AuthorNotingInfo, ForSession, GetContainerChainsWithCollators,
-        GetSessionIndex, MaybeSelfChainBlockAuthor, NodeActivityTrackingHelper, ParaId,
-        ParathreadHelper,
+        AuthorNotingHook, AuthorNotingInfo, CheckInvulnerables, ForSession,
+        GetContainerChainsWithCollators, GetSessionIndex, MaybeSelfChainBlockAuthor,
+        NodeActivityTrackingHelper, ParaId, ParathreadHelper,
     },
 };
 
@@ -56,6 +56,7 @@ use tp_traits::BlockNumber;
 pub use pallet::*;
 #[frame_support::pallet]
 pub mod pallet {
+    use tp_traits::CheckInvulnerables;
     use {
         super::*,
         crate::weights::WeightInfo,
@@ -136,6 +137,9 @@ pub mod pallet {
         /// Helper that checks if a ParaId is a parathread
         type ParathreadHelper: ParathreadHelper;
 
+        /// Helper for dealing with invulnerables.
+        type InvulnerablesHelper: CheckInvulnerables<Self::CollatorId>;
+
         /// The weight information of this pallet.
         type WeightInfo: weights::WeightInfo;
     }
@@ -198,6 +202,8 @@ pub mod pallet {
         CollatorNotOnline,
         /// Error returned when the collator status is attempted to be set to online when it is already online
         CollatorNotOffline,
+        /// Error returned when the collator attempted to be set offline is invulnerable
+        MarkingInvulnerableOfflineInvalid,
     }
 
     #[pallet::call]
@@ -465,6 +471,10 @@ impl<T: Config> NodeActivityTrackingHelper<T::CollatorId> for Pallet<T> {
         ensure!(
             !<OfflineCollators<T>>::get(node),
             Error::<T>::CollatorNotOnline
+        );
+        ensure!(
+            !T::InvulnerablesHelper::is_invulnerable(node),
+            Error::<T>::MarkingInvulnerableOfflineInvalid
         );
         <OfflineCollators<T>>::insert(node.clone(), true);
         Self::deposit_event(Event::<T>::CollatorStatusUpdated {

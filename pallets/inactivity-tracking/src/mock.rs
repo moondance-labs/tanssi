@@ -6,7 +6,6 @@
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-use sp_staking::SessionIndex;
 // Tanssi is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -25,7 +24,8 @@ use {
         traits::{BlakeTwo256, ConvertInto, IdentityLookup, OpaqueKeys},
         BuildStorage, RuntimeAppPublic,
     },
-    sp_std::collections::btree_set::BTreeSet,
+    sp_staking::SessionIndex,
+    sp_std::{collections::btree_set::BTreeSet, marker::PhantomData},
     tp_traits::{ForSession, ParaId},
 };
 
@@ -195,6 +195,14 @@ impl tp_traits::ParathreadHelper for MockParathreadHelper {
     }
 }
 
+pub struct MockInvulnerableCheckHandler<AccountId>(PhantomData<AccountId>);
+
+impl tp_traits::CheckInvulnerables<AccountId> for MockInvulnerableCheckHandler<AccountId> {
+    fn is_invulnerable(account: &AccountId) -> bool {
+        *account == COLLATOR_2
+    }
+}
+
 impl pallet_inactivity_tracking::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type CollatorId = AccountId;
@@ -205,6 +213,7 @@ impl pallet_inactivity_tracking::Config for Test {
     type CurrentCollatorsFetcher = MockContainerChainsInfoFetcher;
     type GetSelfChainBlockAuthor = ();
     type ParathreadHelper = MockParathreadHelper;
+    type InvulnerablesHelper = MockInvulnerableCheckHandler<AccountId>;
     type WeightInfo = ();
 }
 

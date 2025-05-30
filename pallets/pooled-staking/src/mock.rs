@@ -207,7 +207,6 @@ impl pallet_pooled_staking::Config for Runtime {
     type WeightInfo = ();
     type RuntimeHoldReason = RuntimeHoldReason;
     type ActivityTrackingHelper = MockActivityTrackingHelper<AccountId>;
-    type InvulnerablesHelper = InvulnerableCheckHandler<AccountId>;
 }
 
 pub trait PoolExt<T: crate::Config>: Pool<T> {

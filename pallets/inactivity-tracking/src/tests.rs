@@ -915,6 +915,16 @@ fn set_offline_fails_for_offline_collators() {
 }
 
 #[test]
+fn set_offline_fails_if_collator_is_invulnerable() {
+    ExtBuilder.build().execute_with(|| {
+        assert_noop!(
+            Pallet::<Test>::set_offline(&COLLATOR_2),
+            Error::<Test>::MarkingInvulnerableOfflineInvalid
+        );
+    });
+}
+
+#[test]
 fn set_online_works() {
     ExtBuilder.build().execute_with(|| {
         OfflineCollators::<Test>::insert(COLLATOR_1, true);

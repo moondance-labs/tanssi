@@ -1528,17 +1528,6 @@ impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
 parameter_types! {
     pub const MaxCandidatesBufferSize: u32 = 100;
 }
-
-pub struct InvulnerableCheckHandler<AccountId>(PhantomData<AccountId>);
-
-impl tp_traits::CheckInvulnerables<cumulus_primitives_core::relay_chain::AccountId>
-    for InvulnerableCheckHandler<cumulus_primitives_core::relay_chain::AccountId>
-{
-    fn is_invulnerable(account: &cumulus_primitives_core::relay_chain::AccountId) -> bool {
-        Invulnerables::invulnerables().contains(account)
-    }
-}
-
 impl pallet_pooled_staking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
@@ -1554,7 +1543,6 @@ impl pallet_pooled_staking::Config for Runtime {
     type EligibleCandidatesBufferSize = MaxCandidatesBufferSize;
     type EligibleCandidatesFilter = CandidateHasRegisteredKeys;
     type ActivityTrackingHelper = InactivityTracking;
-    type InvulnerablesHelper = InvulnerableCheckHandler<AccountId>;
     type WeightInfo = weights::pallet_pooled_staking::SubstrateWeight<Runtime>;
 }
 
@@ -1736,6 +1724,16 @@ impl tp_traits::ParathreadHelper for DanceboxParathreadHelper {
     }
 }
 
+pub struct InvulnerableCheckHandler<AccountId>(PhantomData<AccountId>);
+
+impl tp_traits::CheckInvulnerables<cumulus_primitives_core::relay_chain::AccountId>
+    for InvulnerableCheckHandler<cumulus_primitives_core::relay_chain::AccountId>
+{
+    fn is_invulnerable(account: &cumulus_primitives_core::relay_chain::AccountId) -> bool {
+        Invulnerables::invulnerables().contains(account)
+    }
+}
+
 impl pallet_inactivity_tracking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type CollatorId = CollatorId;
@@ -1746,6 +1744,7 @@ impl pallet_inactivity_tracking::Config for Runtime {
     type CurrentCollatorsFetcher = CollatorAssignment;
     type GetSelfChainBlockAuthor = GetSelfChainBlockAuthor;
     type ParathreadHelper = DanceboxParathreadHelper;
+    type InvulnerablesHelper = InvulnerableCheckHandler<AccountId>;
     type WeightInfo = weights::pallet_inactivity_tracking::SubstrateWeight<Runtime>;
 }
 

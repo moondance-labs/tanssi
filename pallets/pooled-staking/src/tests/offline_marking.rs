@@ -79,20 +79,6 @@ fn set_offline_fails_if_collator_is_not_in_eligible_candidates() {
 }
 
 #[test]
-fn set_offline_fails_if_collator_is_invulnerable() {
-    ExtBuilder::default().build().execute_with(|| {
-        assert_ok!(Pallet::<Runtime>::enable_offline_marking(
-            RuntimeOrigin::root(),
-            true
-        ));
-        assert_noop!(
-            Pallet::<Runtime>::set_offline(RuntimeOrigin::signed(ACCOUNT_CANDIDATE_1)),
-            Error::<Runtime>::MarkingInvulnerableOfflineInvalid
-        );
-    });
-}
-
-#[test]
 fn set_offline_works() {
     ExtBuilder::default().build().execute_with(|| {
         let share = InitialAutoCompoundingShareValue::get();
@@ -136,23 +122,6 @@ fn notify_inactive_collator_fails_if_offline_marking_is_not_enabled() {
                 ACCOUNT_CANDIDATE_2
             ),
             Error::<Runtime>::MarkingOfflineNotEnabled
-        );
-    });
-}
-
-#[test]
-fn notify_inactive_collator_fails_if_collator_is_invulnerable() {
-    ExtBuilder::default().build().execute_with(|| {
-        assert_ok!(Pallet::<Runtime>::enable_offline_marking(
-            RuntimeOrigin::root(),
-            true
-        ));
-        assert_noop!(
-            Pallet::<Runtime>::notify_inactive_collator(
-                RuntimeOrigin::signed(ACCOUNT_DELEGATOR_1),
-                ACCOUNT_CANDIDATE_1
-            ),
-            Error::<Runtime>::MarkingInvulnerableOfflineInvalid
         );
     });
 }

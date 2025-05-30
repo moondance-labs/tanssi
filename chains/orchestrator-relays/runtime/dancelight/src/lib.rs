@@ -1860,15 +1860,6 @@ impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
 parameter_types! {
     pub const MaxCandidatesBufferSize: u32 = 100;
 }
-
-pub struct InvulnerableCheckHandler<AccountId>(PhantomData<AccountId>);
-
-impl tp_traits::CheckInvulnerables<AccountId> for InvulnerableCheckHandler<AccountId> {
-    fn is_invulnerable(account: &AccountId) -> bool {
-        TanssiInvulnerables::invulnerables().contains(account)
-    }
-}
-
 impl pallet_pooled_staking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
@@ -1884,7 +1875,6 @@ impl pallet_pooled_staking::Config for Runtime {
     type EligibleCandidatesBufferSize = ConstU32<100>;
     type EligibleCandidatesFilter = CandidateHasRegisteredKeys;
     type ActivityTrackingHelper = InactivityTracking;
-    type InvulnerablesHelper = InvulnerableCheckHandler<AccountId>;
     type WeightInfo = weights::pallet_pooled_staking::SubstrateWeight<Runtime>;
 }
 
@@ -1898,6 +1888,15 @@ impl tp_traits::ParathreadHelper for DancelightParathreadHelper {
             .any(|(x_para_id, _)| x_para_id == para_id)
     }
 }
+
+pub struct InvulnerableCheckHandler<AccountId>(PhantomData<AccountId>);
+
+impl tp_traits::CheckInvulnerables<AccountId> for InvulnerableCheckHandler<AccountId> {
+    fn is_invulnerable(account: &AccountId) -> bool {
+        TanssiInvulnerables::invulnerables().contains(account)
+    }
+}
+
 impl pallet_inactivity_tracking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type CollatorId = AccountId;
@@ -1908,6 +1907,7 @@ impl pallet_inactivity_tracking::Config for Runtime {
     type CurrentCollatorsFetcher = TanssiCollatorAssignment;
     type GetSelfChainBlockAuthor = ();
     type ParathreadHelper = DancelightParathreadHelper;
+    type InvulnerablesHelper = InvulnerableCheckHandler<AccountId>;
     type WeightInfo = weights::pallet_inactivity_tracking::SubstrateWeight<Runtime>;
 }
 
