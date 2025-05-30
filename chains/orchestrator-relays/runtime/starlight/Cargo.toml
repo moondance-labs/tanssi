@@ -161,11 +161,13 @@ snowbridge-beacon-primitives = { workspace = true }
 snowbridge-core = { workspace = true }
 snowbridge-outbound-queue-runtime-api = { workspace = true }
 snowbridge-pallet-ethereum-client = { workspace = true }
+snowbridge-pallet-outbound-queue = { workspace = true }
+snowbridge-outbound-queue-primitives = { workspace = true }
 snowbridge-pallet-inbound-queue = { workspace = true }
 snowbridge-pallet-inbound-queue-fixtures = { workspace = true, optional = true }
-snowbridge-pallet-outbound-queue = { workspace = true }
+snowbridge-merkle-tree = { workspace = true }
 snowbridge-pallet-system = { workspace = true }
-snowbridge-router-primitives = { workspace = true }
+snowbridge-inbound-queue-primitives = { workspace = true }
 tp-bridge = { workspace = true }
 
 [dev-dependencies]
@@ -309,9 +311,9 @@ std = [
 	"snowbridge-pallet-ethereum-client/std",
 	"snowbridge-pallet-inbound-queue-fixtures/std",
 	"snowbridge-pallet-inbound-queue/std",
-	"snowbridge-pallet-outbound-queue/std",
+	"snowbridge-merkle-tree/std",
 	"snowbridge-pallet-system/std",
-	"snowbridge-router-primitives/std",
+	"snowbridge-inbound-queue-primitives/std",
 	"sp-api/std",
 	"sp-application-crypto/std",
 	"sp-arithmetic/std",
@@ -422,9 +424,8 @@ runtime-benchmarks = [
 	"snowbridge-pallet-inbound-queue-fixtures",
 	"snowbridge-pallet-inbound-queue-fixtures/runtime-benchmarks",
 	"snowbridge-pallet-inbound-queue/runtime-benchmarks",
-	"snowbridge-pallet-outbound-queue/runtime-benchmarks",
 	"snowbridge-pallet-system/runtime-benchmarks",
-	"snowbridge-router-primitives/runtime-benchmarks",
+	"snowbridge-inbound-queue-primitives/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"sp-staking/runtime-benchmarks",
 	"starlight-runtime-constants/runtime-benchmarks",
@@ -509,7 +510,6 @@ try-runtime = [
 	"runtime-parachains/try-runtime",
 	"snowbridge-pallet-ethereum-client/try-runtime",
 	"snowbridge-pallet-inbound-queue/try-runtime",
-	"snowbridge-pallet-outbound-queue/try-runtime",
 	"snowbridge-pallet-system/try-runtime",
 	"sp-runtime/try-runtime",
 	"tanssi-runtime-common/try-runtime",

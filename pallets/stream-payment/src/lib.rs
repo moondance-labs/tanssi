@@ -46,7 +46,7 @@ use {
         Blake2_128Concat,
     },
     frame_system::pallet_prelude::*,
-    parity_scale_codec::{FullCodec, MaxEncodedLen},
+    parity_scale_codec::{DecodeWithMemTracking, FullCodec, MaxEncodedLen},
     scale_info::TypeInfo,
     serde::{Deserialize, Serialize},
     sp_runtime::{
@@ -232,6 +232,7 @@ pub mod pallet {
         Serialize,
         Deserialize,
         MaxEncodedLen,
+        DecodeWithMemTracking,
     )]
     pub struct StreamConfig<Unit, AssetId, BalanceOrDuration> {
         /// Unit in which time is measured using a `TimeProvider`.
@@ -262,6 +263,7 @@ pub mod pallet {
         Eq,
         Encode,
         Decode,
+        DecodeWithMemTracking,
         Copy,
         Clone,
         TypeInfo,
@@ -296,6 +298,7 @@ pub mod pallet {
         Serialize,
         Deserialize,
         MaxEncodedLen,
+        DecodeWithMemTracking,
     )]
     pub enum ChangeKind<Time> {
         /// The requested change is a suggestion, and the other party doesn't
@@ -320,6 +323,7 @@ pub mod pallet {
         Serialize,
         Deserialize,
         MaxEncodedLen,
+        DecodeWithMemTracking,
     )]
     pub enum DepositChange<Balance> {
         /// Increase deposit by given amount.

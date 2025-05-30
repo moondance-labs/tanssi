@@ -54,6 +54,8 @@ use sp_std::marker::PhantomData;
 /// Weights for pallet_utility using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> pallet_utility::WeightInfo for SubstrateWeight<T> {
+	fn dispatch_as_fallible() -> cumulus_primitives_core::Weight { todo!() }
+	fn if_else() -> cumulus_primitives_core::Weight { todo!() }
 	/// Storage: `MaintenanceMode::MaintenanceMode` (r:1 w:0)
 	/// Proof: `MaintenanceMode::MaintenanceMode` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	/// Storage: `TxPause::PausedCalls` (r:1 w:0)

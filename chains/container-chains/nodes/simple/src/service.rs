@@ -166,8 +166,6 @@ pub async fn start_parachain_node(
         relay_chain_slot_duration,
     )?;
 
-    node_builder.network.start_network.start_network();
-
     Ok((node_builder.task_manager, node_builder.client))
 }
 
@@ -348,8 +346,6 @@ pub async fn start_dev_node(
     let node_builder = node_builder.spawn_common_tasks(parachain_config, rpc_builder)?;
 
     log::info!("Development Service Ready");
-
-    node_builder.network.start_network.start_network();
 
     Ok(node_builder.task_manager)
 }

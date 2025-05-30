@@ -77,7 +77,7 @@ pub mod pallet {
             Blake2_128Concat,
         },
         frame_system::pallet_prelude::*,
-        parity_scale_codec::{Decode, Encode, FullCodec},
+        parity_scale_codec::{Decode, DecodeWithMemTracking, Encode, FullCodec},
         scale_info::TypeInfo,
         serde::{Deserialize, Serialize},
         sp_core::Get,
@@ -178,6 +178,7 @@ pub mod pallet {
         Serialize,
         Deserialize,
         MaxEncodedLen,
+        DecodeWithMemTracking,
     )]
     pub enum PendingOperationKey<A: FullCodec, J: FullCodec, L: FullCodec> {
         /// Candidate requested to join the auto compounding pool of a candidate.
@@ -195,7 +196,16 @@ pub mod pallet {
     >;
 
     #[derive(
-        RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo, Serialize, Deserialize,
+        RuntimeDebug,
+        PartialEq,
+        Eq,
+        Encode,
+        Decode,
+        Clone,
+        TypeInfo,
+        Serialize,
+        Deserialize,
+        DecodeWithMemTracking,
     )]
     pub struct PendingOperationQuery<A: FullCodec, J: FullCodec, L: FullCodec> {
         pub delegator: A,
@@ -213,7 +223,16 @@ pub mod pallet {
     /// worth up to the provided stake. The amount of stake thus will be at most the provided
     /// amount.
     #[derive(
-        RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo, Serialize, Deserialize,
+        RuntimeDebug,
+        PartialEq,
+        Eq,
+        Encode,
+        Decode,
+        Clone,
+        TypeInfo,
+        Serialize,
+        Deserialize,
+        DecodeWithMemTracking,
     )]
     pub enum SharesOrStake<T> {
         Shares(T),

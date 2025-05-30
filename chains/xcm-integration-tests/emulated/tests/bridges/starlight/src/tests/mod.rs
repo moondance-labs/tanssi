@@ -28,7 +28,7 @@ mod imports {
             inbound::{Log, Message},
             PRIMARY_GOVERNANCE_CHANNEL,
         },
-        snowbridge_router_primitives::inbound::envelope::OutboundMessageAccepted,
+        snowbridge_inbound_queue_primitives::inbound::envelope::OutboundMessageAccepted,
         sp_core::H256,
         starlight_emulated_chain::StarlightRelayPallet,
         starlight_runtime::Runtime,

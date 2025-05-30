@@ -134,6 +134,7 @@ fn testnet_genesis(
                 .cloned()
                 .map(|k| (k, 1 << 80))
                 .collect(),
+            ..Default::default()
         },
         parachain_info: container_chain_template_frontier_runtime::ParachainInfoConfig {
             parachain_id: id,
