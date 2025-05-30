@@ -51,6 +51,13 @@ jobs:
         run: |
           ./tools/benchmark-all-runtimes.sh --parallel
 
+      - name: Upload benchmark logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-logs
+          path: tmp/benchmark_log_*.txt
+
       - name: Create issue if scheduled benchmark failed
         if: failure() && github.event_name == 'schedule'
         run: |
@@ -92,6 +99,11 @@ jobs:
             echo "No changes to commit, skipping PR creation."
             exit 0
           fi
+          
+          rm -rf binaries
+          rm -rf mold
+          rm -rf runtime_size_report.md
+          rm -rf runtimes
 
           BRANCH="auto/weights-update-$(date +%s)"
           git config user.name "github-actions"

@@ -150,7 +150,11 @@ pub use {
 };
 
 #[cfg(feature = "runtime-benchmarks")]
-use snowbridge_core::{AgentId, TokenId};
+use {
+    dancelight_runtime_constants::snowbridge::EthereumNetwork,
+    snowbridge_core::{AgentId, TokenId},
+    xcm::latest::Junctions::*,
+};
 
 /// Constant values used within the runtime.
 use dancelight_runtime_constants::{currency::*, fee::*, snowbridge::EthereumLocation, time::*};
@@ -623,6 +627,7 @@ pub struct TreasuryBenchmarkHelper<T>(PhantomData<T>);
 
 #[cfg(feature = "runtime-benchmarks")]
 use frame_support::traits::Currency;
+use frame_support::traits::InsideBoth;
 #[cfg(feature = "runtime-benchmarks")]
 use pallet_treasury::ArgumentsFactory;
 use {
@@ -872,6 +877,7 @@ pub enum ProxyType {
     SudoValidatorManagement,
     SessionKeyManagement,
     Staking,
+    Balances,
 }
 impl Default for ProxyType {
     fn default() -> Self {
@@ -960,6 +966,9 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
             }
             ProxyType::Staking => {
                 matches!(c, RuntimeCall::Session(..) | RuntimeCall::PooledStaking(..))
+            }
+            ProxyType::Balances => {
+                matches!(c, RuntimeCall::Balances(..))
             }
         }
     }
@@ -1641,7 +1650,7 @@ type NormalFilter = EverythingBut<(IsRelayRegister, IsParathreadRegistrar)>;
 impl pallet_maintenance_mode::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type NormalCallFilter = NormalFilter;
-    type MaintenanceCallFilter = MaintenanceFilter;
+    type MaintenanceCallFilter = InsideBoth<MaintenanceFilter, NormalFilter>;
     type MaintenanceOrigin = EnsureRoot<AccountId>;
     type XcmExecutionManager = ();
 }
@@ -3226,12 +3235,27 @@ sp_api::impl_runtime_apis! {
                 }
             }
 
+            parameter_types! {
+                pub TrustedReserve: Option<(Location, Asset)> = Some(
+                    (
+                        EthereumLocation::get(),
+                        Asset {
+                            id: AssetId(Location {
+                                parents: 1,
+                                interior: X1([GlobalConsensus(EthereumNetwork::get())].into()),
+                            }),
+                            fun: Fungible(ExistentialDeposit::get() * 100),
+                        },
+                    )
+                );
+            }
+
             impl pallet_xcm_benchmarks::fungible::Config for Runtime {
                 type TransactAsset = Balances;
 
                 type CheckedAccount = LocalCheckAccount;
                 type TrustedTeleporter = ();
-                type TrustedReserve = ();
+                type TrustedReserve = TrustedReserve;
 
                 fn get_asset() -> Asset {
                     Asset {

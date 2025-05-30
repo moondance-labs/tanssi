@@ -3,6 +3,7 @@ import "@tanssi/api-augment";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
 import { hasEnoughCredits } from "utils";
+import { isLightRuntime } from "../../utils/runtime.ts";
 
 describeSuite({
     id: "S03",
@@ -31,29 +32,25 @@ describeSuite({
                     return;
                 }
                 const currentBlock = (await api.rpc.chain.getBlock()).block.header.number.toNumber();
-                const blockToCheck =
-                    chain === "dancelight"
-                        ? (await api.query.babe.epochStart()).toJSON()[1]
-                        : Math.trunc(currentBlock / Number(blocksPerSession)) * Number(blocksPerSession);
+                const blockToCheck = isLightRuntime(api)
+                    ? (await api.query.babe.epochStart()).toJSON()[1]
+                    : Math.trunc(currentBlock / Number(blocksPerSession)) * Number(blocksPerSession);
                 const apiBeforeLatestNewSession = await api.at(await api.rpc.chain.getBlockHash(blockToCheck - 1));
 
                 // If they have collators scheduled, they should have at least enough money to pay
-                let pending =
-                    chain === "dancelight"
-                        ? await api.query.tanssiCollatorAssignment.pendingCollatorContainerChain()
-                        : await api.query.collatorAssignment.pendingCollatorContainerChain();
+                let pending = isLightRuntime(api)
+                    ? await api.query.tanssiCollatorAssignment.pendingCollatorContainerChain()
+                    : await api.query.collatorAssignment.pendingCollatorContainerChain();
 
                 if (pending.isNone) {
-                    pending =
-                        chain === "dancelight"
-                            ? await api.query.tanssiCollatorAssignment.collatorContainerChain()
-                            : await api.query.collatorAssignment.collatorContainerChain();
-                }
-
-                const current =
-                    chain === "dancelight"
+                    pending = isLightRuntime(api)
                         ? await api.query.tanssiCollatorAssignment.collatorContainerChain()
                         : await api.query.collatorAssignment.collatorContainerChain();
+                }
+
+                const current = isLightRuntime(api)
+                    ? await api.query.tanssiCollatorAssignment.collatorContainerChain()
+                    : await api.query.collatorAssignment.collatorContainerChain();
 
                 if (pending.containerChains !== undefined) {
                     for (const container of Object.keys(pending.toJSON().containerChains)) {
