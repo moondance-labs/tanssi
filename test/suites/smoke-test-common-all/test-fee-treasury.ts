@@ -53,7 +53,7 @@ describeSuite({
                     ).data.free.toBn();
 
                     // Expected treasury deposit for the current block
-                    const treasuryDeposit = treasureBalanceAfter.sub(treasureBalanceBefore);
+                    let treasuryDeposit = new BN(0);
                     // Accumulated fees and tips for the current block
                     let totalFee = new BN(0);
 
@@ -75,6 +75,16 @@ describeSuite({
                                     const fee = (actualFee as any).toBn();
                                     const tipBn = (tip as any).toBn();
                                     totalFee = totalFee.add(fee).add(tipBn);
+                                }
+
+                                // Check all the (balances.Deposit) events for the current extrinsic where "who" === "treasury"
+                                if (event.section === "balances" && event.method === "Deposit") {
+                                    const [who, amount] = event.data;
+                                    const amountBn = (amount as any).toBn();
+                                    const whoStr = (who as any).toString();
+                                    if (whoStr === treasuryAddress) {
+                                        treasuryDeposit = treasuryDeposit.add(amountBn);
+                                    }
                                 }
                             }
                         }
