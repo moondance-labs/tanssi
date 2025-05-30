@@ -39,6 +39,8 @@ import type {
     DpContainerChainGenesisDataContainerChainGenesisDataItem,
     DpContainerChainGenesisDataProperties,
     DpContainerChainGenesisDataTokenMetadata,
+    FrameMetadataHashExtensionCheckMetadataHash,
+    FrameMetadataHashExtensionMode,
     FrameSupportDispatchDispatchClass,
     FrameSupportDispatchPays,
     FrameSupportDispatchPerDispatchClassU32,
@@ -366,6 +368,8 @@ declare module "@polkadot/types/types/registry" {
         DpContainerChainGenesisDataContainerChainGenesisDataItem: DpContainerChainGenesisDataContainerChainGenesisDataItem;
         DpContainerChainGenesisDataProperties: DpContainerChainGenesisDataProperties;
         DpContainerChainGenesisDataTokenMetadata: DpContainerChainGenesisDataTokenMetadata;
+        FrameMetadataHashExtensionCheckMetadataHash: FrameMetadataHashExtensionCheckMetadataHash;
+        FrameMetadataHashExtensionMode: FrameMetadataHashExtensionMode;
         FrameSupportDispatchDispatchClass: FrameSupportDispatchDispatchClass;
         FrameSupportDispatchPays: FrameSupportDispatchPays;
         FrameSupportDispatchPerDispatchClassU32: FrameSupportDispatchPerDispatchClassU32;

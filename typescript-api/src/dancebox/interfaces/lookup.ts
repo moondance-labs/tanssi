@@ -5503,7 +5503,19 @@ export default {
      **/
     CumulusPrimitivesStorageWeightReclaimStorageWeightReclaim: "Null",
     /**
-     * Lookup618: dancebox_runtime::Runtime
+     * Lookup618: frame_metadata_hash_extension::CheckMetadataHash<T>
+     **/
+    FrameMetadataHashExtensionCheckMetadataHash: {
+        mode: "FrameMetadataHashExtensionMode",
+    },
+    /**
+     * Lookup619: frame_metadata_hash_extension::Mode
+     **/
+    FrameMetadataHashExtensionMode: {
+        _enum: ["Disabled", "Enabled"],
+    },
+    /**
+     * Lookup620: dancebox_runtime::Runtime
      **/
     DanceboxRuntimeRuntime: "Null",
 };
