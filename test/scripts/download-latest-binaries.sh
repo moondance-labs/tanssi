@@ -32,7 +32,7 @@ fi
 
 DOCKER_TAG_TANSSI="moondancelabs/tanssi:sha-$LATEST_NODE_SHA8"
 
-docker rm -f tanssi_container 2> /dev/null | true
+docker rm -f tanssi_container 2> /dev/null || true
 docker create --name tanssi_container $DOCKER_TAG_TANSSI bash
 docker cp tanssi_container:tanssi/tanssi-node $OUTPUT_FOLDER/tanssi-node
 docker rm -f tanssi_container
@@ -41,7 +41,7 @@ chmod uog+x $OUTPUT_FOLDER/tanssi-node
 
 DOCKER_TAG_CONTAINER_SIMPLE="moondancelabs/container-chain-simple-template:sha-$LATEST_NODE_SHA8"
 
-docker rm -f tanssi_container_simple 2> /dev/null | true
+docker rm -f tanssi_container_simple 2> /dev/null || true
 docker create --name tanssi_container_simple $DOCKER_TAG_CONTAINER_SIMPLE bash
 docker cp tanssi_container_simple:container-chain-template-simple/container-chain-simple-node $OUTPUT_FOLDER/container-chain-simple-node
 docker rm -f tanssi_container_simple
@@ -50,7 +50,7 @@ chmod uog+x $OUTPUT_FOLDER/container-chain-simple-node
 
 DOCKER_TAG_CONTAINER_FRONTIER="moondancelabs/container-chain-evm-template:sha-$LATEST_NODE_SHA8"
 
-docker rm -f tanssi_container_frontier 2> /dev/null | true
+docker rm -f tanssi_container_frontier 2> /dev/null || true
 docker create --name tanssi_container_frontier $DOCKER_TAG_CONTAINER_FRONTIER bash
 docker cp tanssi_container_frontier:container-chain-template-evm/container-chain-frontier-node $OUTPUT_FOLDER/container-chain-frontier-node
 docker rm -f tanssi_container_frontier
