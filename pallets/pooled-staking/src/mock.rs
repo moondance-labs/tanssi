@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use std::marker::PhantomData;
 use {
     crate::{
         self as pallet_pooled_staking,
@@ -23,6 +24,7 @@ use {
         Candidate, Delegator, PendingOperationKey, PendingOperationKeyOf,
     },
     frame_support::{
+        dispatch::DispatchResult,
         parameter_types,
         traits::{
             tokens::fungible::{Inspect, InspectHold},
@@ -64,6 +66,7 @@ pub type Balance = u128;
 pub const ACCOUNT_STAKING: u64 = 0;
 pub const ACCOUNT_CANDIDATE_1: u64 = 1;
 pub const ACCOUNT_CANDIDATE_2: u64 = 2;
+pub const ACCOUNT_CANDIDATE_3: u64 = 5;
 pub const ACCOUNT_DELEGATOR_1: u64 = 3;
 pub const ACCOUNT_DELEGATOR_2: u64 = 4;
 
@@ -161,6 +164,31 @@ parameter_types! {
     pub const RewardsCollatorCommission: Perbill = Perbill::from_percent(20);
     pub const BlocksToWait: u64 = BLOCKS_TO_WAIT;
 }
+pub struct InvulnerableCheckHandler<AccountId>(PhantomData<AccountId>);
+
+impl tp_traits::CheckInvulnerables<AccountId> for InvulnerableCheckHandler<AccountId> {
+    fn is_invulnerable(account: &AccountId) -> bool {
+        *account == ACCOUNT_CANDIDATE_1
+    }
+}
+
+pub struct MockActivityTrackingHelper<AccountId>(PhantomData<AccountId>);
+
+impl tp_traits::NodeActivityTrackingHelper<AccountId> for MockActivityTrackingHelper<AccountId> {
+    fn is_node_inactive(node: &AccountId) -> bool {
+        *node == ACCOUNT_CANDIDATE_2 || *node == ACCOUNT_CANDIDATE_1
+    }
+    fn is_node_offline(node: &AccountId) -> bool {
+        *node == ACCOUNT_CANDIDATE_3
+    }
+
+    fn set_online(node: &AccountId) -> DispatchResult {
+        Ok(())
+    }
+    fn set_offline(node: &AccountId) -> DispatchResult {
+        Ok(())
+    }
+}
 
 impl pallet_pooled_staking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
@@ -178,6 +206,7 @@ impl pallet_pooled_staking::Config for Runtime {
     type EligibleCandidatesFilter = ();
     type WeightInfo = ();
     type RuntimeHoldReason = RuntimeHoldReason;
+    type ActivityTrackingHelper = MockActivityTrackingHelper<AccountId>;
 }
 
 pub trait PoolExt<T: crate::Config>: Pool<T> {

@@ -84,6 +84,7 @@ pub mod pallet {
         sp_runtime::{BoundedVec, Perbill},
         sp_std::vec::Vec,
         tp_maths::MulDiv,
+        tp_traits::NodeActivityTrackingHelper,
     };
 
     /// A reason for this pallet placing a hold on funds.
@@ -97,6 +98,8 @@ pub mod pallet {
     pub type CreditOf<T> =
         fungible::Credit<<T as frame_system::Config>::AccountId, <T as Config>::Currency>;
     pub type Delegator<T> = <T as frame_system::Config>::AccountId;
+
+    pub type SessionIndex = u32;
 
     /// Key used by the `Pools` StorageDoubleMap, avoiding lots of maps.
     /// StorageDoubleMap first key is the account id of the candidate.
@@ -316,6 +319,9 @@ pub mod pallet {
         /// Additional filter for candidates to be eligible.
         type EligibleCandidatesFilter: IsCandidateEligible<Self::AccountId>;
 
+        /// Helper for collator activity tracking
+        type ActivityTrackingHelper: NodeActivityTrackingHelper<Self::AccountId>;
+
         type WeightInfo: WeightInfo;
     }
 
@@ -383,6 +389,10 @@ pub mod pallet {
     /// process doesn't alter the pools in a way that will mess with the migration.
     #[pallet::storage]
     pub type PausePoolsExtrinsics<T: Config> = StorageValue<_, bool, ValueQuery>;
+
+    /// Switch to enable/disable marking offline feature.
+    #[pallet::storage]
+    pub type EnableMarkingOffline<T: Config> = StorageValue<_, bool, ValueQuery>;
 
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -518,6 +528,9 @@ pub mod pallet {
         CandidateTransferingOwnSharesForbidden,
         RequestCannotBeExecuted(u16),
         SwapResultsInZeroShares,
+        MarkingOfflineNotEnabled,
+        CollatorDoesNotExist,
+        CollatorCannotBeNotifiedAsInactive,
         PoolsExtrinsicsArePaused,
     }
 
@@ -722,6 +735,43 @@ pub mod pallet {
 
             Calls::<T>::swap_pool(candidate, delegator, source_pool, amount)
         }
+
+        #[pallet::call_index(7)]
+        #[pallet::weight(T::WeightInfo::swap_pool())]
+        pub fn enable_offline_marking(origin: OriginFor<T>, value: bool) -> DispatchResult {
+            ensure_root(origin)?;
+            <EnableMarkingOffline<T>>::set(value);
+            Ok(())
+        }
+
+        #[pallet::call_index(8)]
+        #[pallet::weight(T::WeightInfo::swap_pool())]
+        pub fn set_offline(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
+            let collator = ensure_signed(origin)?;
+            Self::set_offline_inner(collator)
+        }
+
+        #[pallet::call_index(9)]
+        #[pallet::weight(T::WeightInfo::swap_pool())]
+        pub fn set_online(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
+            let collator = ensure_signed(origin)?;
+            T::ActivityTrackingHelper::set_online(&collator)?;
+            Calls::<T>::update_candidate_position(&[collator])
+        }
+
+        #[pallet::call_index(10)]
+        #[pallet::weight(T::WeightInfo::swap_pool())]
+        pub fn notify_inactive_collator(
+            origin: OriginFor<T>,
+            collator: Candidate<T>,
+        ) -> DispatchResultWithPostInfo {
+            ensure_signed(origin)?;
+            ensure!(
+                T::ActivityTrackingHelper::is_node_inactive(&collator),
+                Error::<T>::CollatorCannotBeNotifiedAsInactive
+            );
+            Self::set_offline_inner(collator)
+        }
     }
 
     impl<T: Config> Pallet<T> {
@@ -743,6 +793,22 @@ pub mod pallet {
             }
             .ok()
             .map(|x| x.0)
+        }
+
+        pub fn set_offline_inner(collator: Candidate<T>) -> DispatchResultWithPostInfo {
+            ensure!(
+                <EnableMarkingOffline<T>>::get(),
+                Error::<T>::MarkingOfflineNotEnabled
+            );
+            ensure!(
+                <SortedEligibleCandidates<T>>::get()
+                    .into_iter()
+                    .any(|c| c.candidate == collator.clone()),
+                Error::<T>::CollatorDoesNotExist
+            );
+
+            T::ActivityTrackingHelper::set_offline(&collator)?;
+            Calls::<T>::update_candidate_position(&[collator])
         }
     }
 
