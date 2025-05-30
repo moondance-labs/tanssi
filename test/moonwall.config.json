@@ -594,7 +594,6 @@
             "name": "zombie_dancebox_upgrade",
             "testFileDir": ["suites/zombie_dancebox_upgrade"],
             "runScripts": [
-                "print-args.sh",
                 "download-latest-rt-binaries.sh tanssi-node",
                 "build-spec-dancebox.sh",
                 "downloadPolkadot.ts"
