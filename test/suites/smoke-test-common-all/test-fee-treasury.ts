@@ -44,26 +44,21 @@ describeSuite({
                         return;
                     }
 
-                    const prevBlockApi = await api.at(await api.rpc.chain.getBlockHash(blockNumber - 1));
-                    const treasureBalanceBefore = (
-                        await prevBlockApi.query.system.account(treasuryAddress)
-                    ).data.free.toBn();
-                    const treasureBalanceAfter = (
-                        await apiAtBlock.query.system.account(treasuryAddress)
-                    ).data.free.toBn();
-
                     // Expected treasury deposit for the current block
-                    const treasuryDeposit = treasureBalanceAfter.sub(treasureBalanceBefore);
+                    let treasuryDeposit = new BN(0);
                     // Accumulated fees and tips for the current block
                     let totalFee = new BN(0);
 
                     const events = await apiAtBlock.query.system.events();
+                    let isSignedTxExist = false;
 
                     for (const [index, extrinsic] of extrinsics.entries()) {
                         // Skip unsigned extrinsics, since no commission is paid
                         if (!extrinsic.isSigned) {
                             continue;
                         }
+
+                        isSignedTxExist = true;
 
                         for (const { event, phase } of events) {
                             if (phase.isApplyExtrinsic && phase.asApplyExtrinsic.eq(index)) {
@@ -73,11 +68,21 @@ describeSuite({
                                     const tipBn = (tip as any).toBn();
                                     totalFee = totalFee.add(fee).add(tipBn);
                                 }
+
+                                // Check all the (balances.Deposit) events for the current extrinsic where "who" === "treasury"
+                                if (event.section === "balances" && event.method === "Deposit") {
+                                    const [who, amount] = event.data;
+                                    const amountBn = (amount as any).toBn();
+                                    const whoStr = (who as any).toString();
+                                    if (whoStr === treasuryAddress) {
+                                        treasuryDeposit = treasuryDeposit.add(amountBn);
+                                    }
+                                }
                             }
                         }
                     }
 
-                    if (!totalFee.isZero() || !treasuryDeposit.isZero()) {
+                    if (isSignedTxExist) {
                         expect(
                             totalFee.toString(),
                             `Total fee (${totalFee.toString()}) should equal Treasury Deposit (${treasuryDeposit.toString()}) for block: ${blockNumber} with block hash: ${blockHash.toHuman()}`
