@@ -32,12 +32,8 @@ runs:
         node-version: 22.x
         cache: "pnpm"
 
-    - name: Install typescript-api
-      shell: bash
-      run: |
-        cd ./typescript-api
-        pnpm install
-        pnpm create-local-interfaces
+    - name: Generate Typescript API Interfaces
+      uses: ./.github/workflow-templates/typescript-create-api-interfaces
 
     - name: Install and run
       shell: bash
