@@ -15,7 +15,6 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    crate::{AuthorInherent, BlockProductionCost, CollatorAssignmentCost, RuntimeOrigin},
     cumulus_primitives_core::{ParaId, PersistedValidationData},
     cumulus_primitives_parachain_inherent::ParachainInherentData,
     dp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApi,
@@ -37,18 +36,20 @@ use {
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
 };
 
-pub use crate::{
-    AccountId, AssetRate, AuthorNoting, AuthorityAssignment, AuthorityMapping, Balance, Balances,
-    CollatorAssignment, Configuration, DataPreservers, ForeignAssets, ForeignAssetsCreator,
-    InactivityTracking, InflationRewards, Initializer, Invulnerables, MinimumSelfDelegation,
-    ParachainInfo, PooledStaking, Proxy, ProxyType, Registrar, RewardsPortion, Runtime,
-    RuntimeCall, ServicesPayment, Session, System, TransactionPayment,
+pub use dancebox_runtime::{
+    AccountId, AssetRate, AuthorInherent, AuthorNoting, AuthorityAssignment, AuthorityMapping,
+    Balance, Balances, BlockProductionCost, CollatorAssignment, CollatorAssignmentCost,
+    Configuration, DataPreservers, ForeignAssets, ForeignAssetsCreator, InactivityTracking,
+    InflationRewards, Initializer, Invulnerables, MinimumSelfDelegation, ParachainInfo,
+    PooledStaking, Proxy, ProxyType, Registrar, RewardsCollatorCommission, RewardsPortion, Runtime,
+    RuntimeCall, RuntimeOrigin, ServicesPayment, Session, SessionKeys, StreamPayment, System,
+    TransactionPayment,
 };
 
 pub const UNIT: Balance = 1_000_000_000_000;
 
 pub fn session_to_block(n: u32) -> u32 {
-    let block_number = crate::Period::get() * n;
+    let block_number = dancebox_runtime::Period::get() * n;
 
     // Add 1 because the block that emits the NewSession event cannot contain any extrinsics,
     // so this is the first block of the new session that can actually be used
@@ -496,7 +497,7 @@ impl ExtBuilder {
                     (
                         account.clone(),
                         account,
-                        crate::SessionKeys { nimbus: nimbus_id },
+                        dancebox_runtime::SessionKeys { nimbus: nimbus_id },
                     )
                 })
                 .collect();
