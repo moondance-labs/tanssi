@@ -44,14 +44,6 @@ describeSuite({
                         return;
                     }
 
-                    const prevBlockApi = await api.at(await api.rpc.chain.getBlockHash(blockNumber - 1));
-                    const treasureBalanceBefore = (
-                        await prevBlockApi.query.system.account(treasuryAddress)
-                    ).data.free.toBn();
-                    const treasureBalanceAfter = (
-                        await apiAtBlock.query.system.account(treasuryAddress)
-                    ).data.free.toBn();
-
                     // Expected treasury deposit for the current block
                     let treasuryDeposit = new BN(0);
                     // Accumulated fees and tips for the current block
