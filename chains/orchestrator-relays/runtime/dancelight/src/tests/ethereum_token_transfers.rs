@@ -20,13 +20,16 @@ use {
     crate::{
         bridge_to_ethereum_config::{EthereumGatewayAddress, NativeTokenTransferMessageProcessor},
         tests::common::*,
-        Balances, EthereumInboundQueue, EthereumLocation, EthereumSovereignAccount, EthereumSystem,
-        EthereumTokenTransfers, ForeignAssets, ForeignAssetsCreator, RuntimeEvent,
+        Balances, DispatchError, EthereumInboundQueue, EthereumLocation, EthereumSovereignAccount,
+        EthereumSystem, EthereumTokenTransfers, ForeignAssets, ForeignAssetsCreator, RuntimeEvent,
         SnowbridgeFeesAccount, TokenLocationReanchored, XcmPallet,
     },
     alloy_sol_types::SolEvent,
     dancelight_runtime_constants::snowbridge::EthereumNetwork,
-    frame_support::{assert_noop, assert_ok, traits::{fungibles::Mutate, fungible::Inspect}},
+    frame_support::{
+        assert_noop, assert_ok,
+        traits::{fungible::Inspect, fungibles::Mutate},
+    },
     hex_literal::hex,
     parity_scale_codec::Encode,
     snowbridge_core::{
@@ -38,7 +41,7 @@ use {
         Command, Destination, MessageProcessor, MessageV1, VersionedXcmMessage,
     },
     sp_core::{H160, H256},
-    sp_runtime::{traits::MaybeEquivalence, FixedU128, TokenError},
+    sp_runtime::{traits::MaybeEquivalence, FixedU128, ModuleError, TokenError},
     sp_std::vec,
     xcm::{
         latest::{prelude::*, Junctions::*, Location},
@@ -897,19 +900,13 @@ fn send_eth_native_token_works() {
         ])
         .build()
         .execute_with(|| {
-            //sp_tracing::init_for_tests();
-
             // Setup bridge and token
-            let relayer =
-                <Runtime as frame_system::Config>::RuntimeOrigin::signed(AccountId::from(ALICE));
-
             let channel_id: ChannelId = ChannelId::new(hex!(
                 "00000000000000000000006e61746976655f746f6b656e5f7472616e73666572"
             ));
             let agent_id = AgentId::from_low_u64_be(10);
             let para_id: ParaId = 2000u32.into();
             let amount_to_transfer = 10_000u128;
-            let fee = 1000u128;
 
             assert_ok!(EthereumTokenTransfers::set_token_transfer_channel(
                 root_origin(),
@@ -955,12 +952,10 @@ fn send_eth_native_token_works() {
             // Beneficiary location must be represented using destination's point of view.
             let beneficiary_location = Location {
                 parents: 0,
-                interior: X1([
-                    AccountKey20 {
-                        network: Some(EthereumNetwork::get()),
-                        key: beneficiary_address.into(),
-                    },
-                ]
+                interior: X1([AccountKey20 {
+                    network: Some(EthereumNetwork::get()),
+                    key: beneficiary_address.into(),
+                }]
                 .into()),
             };
 
@@ -983,21 +978,176 @@ fn send_eth_native_token_works() {
 
             // Check fees have been payed (TODO: expect specific amount?)
             let balance_after = Balances::balance(&AccountId::from(BOB));
-            assert!(balance_after - balance_before < 0);
-
+            assert!(balance_before - balance_after > 0);
         })
 }
 
-// Helper function that provides correct `fee_index` after `sort()` done by
-// `vec![Asset, Asset].into()`.
-pub(crate) fn into_assets_checked(fee_asset: Asset, transfer_asset: Asset) -> (Assets, usize) {
-    let assets: Assets = vec![fee_asset.clone(), transfer_asset].into();
-    let fee_index = if assets.get(0).unwrap().eq(&fee_asset) {
-        0
-    } else {
-        1
-    };
-    (assets, fee_index)
+#[test]
+fn cant_send_eth_unknown_token() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (EthereumSovereignAccount::get(), 100_000 * UNIT),
+            (SnowbridgeFeesAccount::get(), 100_000 * UNIT),
+            (AccountId::from(ALICE), 100_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            // Setup bridge and token
+            let channel_id: ChannelId = ChannelId::new(hex!(
+                "00000000000000000000006e61746976655f746f6b656e5f7472616e73666572"
+            ));
+            let agent_id = AgentId::from_low_u64_be(10);
+            let para_id: ParaId = 2000u32.into();
+            let amount_to_transfer = 10_000u128;
+
+            assert_ok!(EthereumTokenTransfers::set_token_transfer_channel(
+                root_origin(),
+                channel_id,
+                agent_id,
+                para_id
+            ));
+
+            // Define a mock ERC20 token address
+            let token_address = H160(hex!("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"));
+
+            let erc20_asset_location = Location {
+                parents: 1,
+                interior: X2([
+                    GlobalConsensus(EthereumNetwork::get()),
+                    AccountKey20 {
+                        network: Some(EthereumNetwork::get()),
+                        key: token_address.into(),
+                    },
+                ]
+                .into()),
+            };
+
+            // WE DONT REGISTER THE ASSET
+
+            // User tries to send tokens
+            let beneficiary_address = H160(hex!("0123456789abcdef0123456789abcdef01234567"));
+
+            // Beneficiary location must be represented using destination's point of view.
+            let beneficiary_location = Location {
+                parents: 0,
+                interior: X1([AccountKey20 {
+                    network: Some(EthereumNetwork::get()),
+                    key: beneficiary_address.into(),
+                }]
+                .into()),
+            };
+
+            let eth_asset = AssetId(erc20_asset_location.clone())
+                .into_asset(Fungibility::Fungible(amount_to_transfer));
+
+            assert_noop!(
+                XcmPallet::transfer_assets(
+                    RuntimeOrigin::signed(AccountId::from(BOB)),
+                    Box::new(EthereumLocation::get().into()),
+                    Box::new(beneficiary_location.into()),
+                    Box::new(vec![eth_asset].into()),
+                    0u32,
+                    Unlimited,
+                ),
+                DispatchError::Module(ModuleError {
+                    index: 90,
+                    error: [24, 0, 0, 0],
+                    message: Some("LocalExecutionIncomplete")
+                })
+            );
+        })
+}
+
+#[test]
+fn cant_send_eth_native_token_more_than_owned() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (EthereumSovereignAccount::get(), 100_000 * UNIT),
+            (SnowbridgeFeesAccount::get(), 100_000 * UNIT),
+            (AccountId::from(ALICE), 100_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            // Setup bridge and token
+            let channel_id: ChannelId = ChannelId::new(hex!(
+                "00000000000000000000006e61746976655f746f6b656e5f7472616e73666572"
+            ));
+            let agent_id = AgentId::from_low_u64_be(10);
+            let para_id: ParaId = 2000u32.into();
+            let amount_to_transfer = 10_000u128;
+            let amount_to_mint = amount_to_transfer - 10;
+
+            assert_ok!(EthereumTokenTransfers::set_token_transfer_channel(
+                root_origin(),
+                channel_id,
+                agent_id,
+                para_id
+            ));
+
+            // Define a mock ERC20 token address
+            let token_address = H160(hex!("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"));
+
+            let erc20_asset_location = Location {
+                parents: 1,
+                interior: X2([
+                    GlobalConsensus(EthereumNetwork::get()),
+                    AccountKey20 {
+                        network: Some(EthereumNetwork::get()),
+                        key: token_address.into(),
+                    },
+                ]
+                .into()),
+            };
+
+            let asset_id = 42u16;
+
+            assert_ok!(ForeignAssetsCreator::create_foreign_asset(
+                root_origin(),
+                erc20_asset_location.clone(), // Use the ERC20 location
+                asset_id,
+                AccountId::from(ALICE),
+                true,
+                1
+            ));
+
+            // Give tokens to user as if tokens were bridged before (but less that what they'll send)
+            ForeignAssets::mint_into(asset_id, &AccountId::from(BOB), amount_to_mint)
+                .expect("to mint amount");
+
+            // User tries to send tokens
+            let beneficiary_address = H160(hex!("0123456789abcdef0123456789abcdef01234567"));
+
+            // Beneficiary location must be represented using destination's point of view.
+            let beneficiary_location = Location {
+                parents: 0,
+                interior: X1([AccountKey20 {
+                    network: Some(EthereumNetwork::get()),
+                    key: beneficiary_address.into(),
+                }]
+                .into()),
+            };
+
+            let eth_asset = AssetId(erc20_asset_location.clone())
+                .into_asset(Fungibility::Fungible(amount_to_transfer));
+
+            assert_noop!(
+                XcmPallet::transfer_assets(
+                    RuntimeOrigin::signed(AccountId::from(BOB)),
+                    Box::new(EthereumLocation::get().into()),
+                    Box::new(beneficiary_location.into()),
+                    Box::new(vec![eth_asset].into()),
+                    0u32,
+                    Unlimited,
+                ),
+                DispatchError::Module(ModuleError {
+                    index: 90,
+                    error: [24, 0, 0, 0],
+                    message: Some("LocalExecutionIncomplete")
+                })
+            );
+        })
 }
 
 #[test]
