@@ -58,12 +58,15 @@ describeSuite({
                     let totalFee = new BN(0);
 
                     const events = await apiAtBlock.query.system.events();
+                    let isSignedTxExist = false;
 
                     for (const [index, extrinsic] of extrinsics.entries()) {
                         // Skip unsigned extrinsics, since no commission is paid
                         if (!extrinsic.isSigned) {
                             continue;
                         }
+
+                        isSignedTxExist = true;
 
                         for (const { event, phase } of events) {
                             if (phase.isApplyExtrinsic && phase.asApplyExtrinsic.eq(index)) {
@@ -77,7 +80,7 @@ describeSuite({
                         }
                     }
 
-                    if (!totalFee.isZero() || !treasuryDeposit.isZero()) {
+                    if (isSignedTxExist) {
                         expect(
                             totalFee.toString(),
                             `Total fee (${totalFee.toString()}) should equal Treasury Deposit (${treasuryDeposit.toString()}) for block: ${blockNumber} with block hash: ${blockHash.toHuman()}`
