@@ -49,6 +49,7 @@ pallet-xcm-core-buyer = { workspace = true }
 pallet-xcm-core-buyer-runtime-api = { workspace = true }
 tanssi-relay-encoder = { workspace = true }
 tanssi-runtime-common = { workspace = true }
+tp-parathread-filter-common = { workspace = true }
 tp-xcm-commons = { workspace = true }
 tp-xcm-core-buyer = { workspace = true }
 
@@ -277,6 +278,7 @@ std = [
 	"test-relay-sproof-builder/std",
 	"tp-author-noting-inherent/std",
 	"tp-data-preservers-common/std",
+	"tp-parathread-filter-common/std",
 	"tp-stream-payment-common/std",
 	"tp-traits/std",
 	"tp-xcm-commons/std",
@@ -352,6 +354,7 @@ runtime-benchmarks = [
 	"sp-runtime/runtime-benchmarks",
 	"tanssi-runtime-common/runtime-benchmarks",
 	"tp-data-preservers-common/runtime-benchmarks",
+	"tp-parathread-filter-common/runtime-benchmarks",
 	"tp-stream-payment-common/runtime-benchmarks",
 	"tp-traits/runtime-benchmarks",
 	"tp-xcm-core-buyer/runtime-benchmarks",
