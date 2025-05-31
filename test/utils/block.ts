@@ -537,6 +537,10 @@ export const getPastEraStartBlock = async (currentApi: ApiPromise, block: number
         expect.fail("No external validators found");
     }
 
+    if (currentEra.unwrap().index.toNumber() === 0) {
+        throw new Error("There is no past era start block, current era is 0");
+    }
+
     let epochStartBlock = (await apiAtCheckpointForEra.query.babe.epochStart())[1].toNumber();
 
     let apiAtPreviousEpochBlock = await currentApi.at(await currentApi.rpc.chain.getBlockHash(epochStartBlock - 1));

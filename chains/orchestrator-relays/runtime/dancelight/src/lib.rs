@@ -150,7 +150,11 @@ pub use {
 };
 
 #[cfg(feature = "runtime-benchmarks")]
-use snowbridge_core::{AgentId, TokenId};
+use {
+    dancelight_runtime_constants::snowbridge::EthereumNetwork,
+    snowbridge_core::{AgentId, TokenId},
+    xcm::latest::Junctions::*,
+};
 
 /// Constant values used within the runtime.
 use dancelight_runtime_constants::{currency::*, fee::*, snowbridge::EthereumLocation, time::*};
@@ -3240,12 +3244,27 @@ sp_api::impl_runtime_apis! {
                 }
             }
 
+            parameter_types! {
+                pub TrustedReserve: Option<(Location, Asset)> = Some(
+                    (
+                        EthereumLocation::get(),
+                        Asset {
+                            id: AssetId(Location {
+                                parents: 1,
+                                interior: X1([GlobalConsensus(EthereumNetwork::get())].into()),
+                            }),
+                            fun: Fungible(ExistentialDeposit::get() * 100),
+                        },
+                    )
+                );
+            }
+
             impl pallet_xcm_benchmarks::fungible::Config for Runtime {
                 type TransactAsset = Balances;
 
                 type CheckedAccount = LocalCheckAccount;
                 type TrustedTeleporter = ();
-                type TrustedReserve = ();
+                type TrustedReserve = TrustedReserve;
 
                 fn get_asset() -> Asset {
                     Asset {
