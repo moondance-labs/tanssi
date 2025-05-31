@@ -17,7 +17,7 @@
 #![cfg(test)]
 use {
     crate::tests::common::*,
-    frame_support::{assert_ok, traits::Get, BoundedBTreeSet},
+    frame_support::{assert_ok, BoundedBTreeSet},
     pallet_inactivity_tracking::pallet::{
         ActiveCollatorsForCurrentSession, ActiveContainerChainsForCurrentSession, InactiveCollators,
     },
