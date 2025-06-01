@@ -32,8 +32,8 @@ use {
     sp_runtime::{traits::Get, BoundedBTreeSet},
     sp_staking::SessionIndex,
     tp_traits::{
-        AuthorNotingHook, AuthorNotingInfo, CheckInvulnerables, ForSession,
-        GetContainerChainsWithCollators, GetSessionIndex, MaybeSelfChainBlockAuthor,
+        AuthorNotingHook, AuthorNotingInfo, ForSession, GetContainerChainsWithCollators,
+        GetSessionIndex, InvulnerablesHelper, MaybeSelfChainBlockAuthor,
         NodeActivityTrackingHelper, ParaId, ParathreadHelper,
     },
 };
@@ -56,7 +56,6 @@ use tp_traits::BlockNumber;
 pub use pallet::*;
 #[frame_support::pallet]
 pub mod pallet {
-    use tp_traits::CheckInvulnerables;
     use {
         super::*,
         crate::weights::WeightInfo,
@@ -138,7 +137,7 @@ pub mod pallet {
         type ParathreadHelper: ParathreadHelper;
 
         /// Helper for dealing with invulnerables.
-        type InvulnerablesHelper: CheckInvulnerables<Self::CollatorId>;
+        type InvulnerablesFilter: InvulnerablesHelper<Self::CollatorId>;
 
         /// The weight information of this pallet.
         type WeightInfo: weights::WeightInfo;
@@ -473,7 +472,7 @@ impl<T: Config> NodeActivityTrackingHelper<T::CollatorId> for Pallet<T> {
             Error::<T>::CollatorNotOnline
         );
         ensure!(
-            !T::InvulnerablesHelper::is_invulnerable(node),
+            !T::InvulnerablesFilter::is_invulnerable(node),
             Error::<T>::MarkingInvulnerableOfflineInvalid
         );
         <OfflineCollators<T>>::insert(node.clone(), true);

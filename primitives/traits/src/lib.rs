@@ -616,7 +616,7 @@ pub trait ExternalIndexProvider {
 }
 
 // A trait to check invulnerables
-pub trait CheckInvulnerables<AccountId> {
+pub trait InvulnerablesHelper<AccountId> {
     /// Checks if the given `AccountId` is invulnerable.
     fn is_invulnerable(account_id: &AccountId) -> bool;
 }

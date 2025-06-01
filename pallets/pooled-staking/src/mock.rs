@@ -164,14 +164,6 @@ parameter_types! {
     pub const RewardsCollatorCommission: Perbill = Perbill::from_percent(20);
     pub const BlocksToWait: u64 = BLOCKS_TO_WAIT;
 }
-pub struct InvulnerableCheckHandler<AccountId>(PhantomData<AccountId>);
-
-impl tp_traits::CheckInvulnerables<AccountId> for InvulnerableCheckHandler<AccountId> {
-    fn is_invulnerable(account: &AccountId) -> bool {
-        *account == ACCOUNT_CANDIDATE_1
-    }
-}
-
 pub struct MockActivityTrackingHelper<AccountId>(PhantomData<AccountId>);
 
 impl tp_traits::NodeActivityTrackingHelper<AccountId> for MockActivityTrackingHelper<AccountId> {

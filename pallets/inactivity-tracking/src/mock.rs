@@ -197,7 +197,7 @@ impl tp_traits::ParathreadHelper for MockParathreadHelper {
 
 pub struct MockInvulnerableCheckHandler<AccountId>(PhantomData<AccountId>);
 
-impl tp_traits::CheckInvulnerables<AccountId> for MockInvulnerableCheckHandler<AccountId> {
+impl tp_traits::InvulnerablesHelper<AccountId> for MockInvulnerableCheckHandler<AccountId> {
     fn is_invulnerable(account: &AccountId) -> bool {
         *account == COLLATOR_2
     }
@@ -213,7 +213,7 @@ impl pallet_inactivity_tracking::Config for Test {
     type CurrentCollatorsFetcher = MockContainerChainsInfoFetcher;
     type GetSelfChainBlockAuthor = ();
     type ParathreadHelper = MockParathreadHelper;
-    type InvulnerablesHelper = MockInvulnerableCheckHandler<AccountId>;
+    type InvulnerablesFilter = MockInvulnerableCheckHandler<AccountId>;
     type WeightInfo = ();
 }
 
