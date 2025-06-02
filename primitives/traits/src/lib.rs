@@ -632,6 +632,9 @@ pub trait NodeActivityTrackingHelper<AccountId> {
     fn set_online(node: &AccountId) -> DispatchResult;
     /// Marks online node as offline
     fn set_offline(node: &AccountId) -> DispatchResult;
+    /// Marks node as inactive for the current activity window so it could be notified as inactive
+    #[cfg(feature = "runtime-benchmarks")]
+    fn make_node_inactive(node: &AccountId);
 }
 
 impl<AccountId> NodeActivityTrackingHelper<AccountId> for () {
@@ -650,6 +653,8 @@ impl<AccountId> NodeActivityTrackingHelper<AccountId> for () {
     fn set_offline(_node: &AccountId) -> DispatchResult {
         Ok(())
     }
+    #[cfg(feature = "runtime-benchmarks")]
+    fn make_node_inactive(_node: &AccountId) {}
 }
 
 // A trait to help verify if a ParaId is a chain or parathread

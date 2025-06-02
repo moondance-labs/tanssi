@@ -180,6 +180,8 @@ impl tp_traits::NodeActivityTrackingHelper<AccountId> for MockActivityTrackingHe
     fn set_offline(node: &AccountId) -> DispatchResult {
         Ok(())
     }
+    #[cfg(feature = "runtime-benchmarks")]
+    fn make_node_inactive(_node: &AccountId) {}
 }
 
 impl pallet_pooled_staking::Config for Runtime {

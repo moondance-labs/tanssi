@@ -495,6 +495,25 @@ impl<T: Config> NodeActivityTrackingHelper<T::CollatorId> for Pallet<T> {
         });
         Ok(())
     }
+    #[cfg(feature = "runtime-benchmarks")]
+    fn make_node_inactive(node: &T::CollatorId) {
+        // First we need to make sure that there are enough session
+        // so the node can be marked
+        let max_inactive_sessions = T::MaxInactiveSessions::get();
+        if T::CurrentSessionIndex::session_index() < max_inactive_sessions {
+            T::CurrentSessionIndex::skip_to_session(max_inactive_sessions)
+        }
+
+        // Now we can insert the node as inactive for all sessions in the current inactivity window
+        let mut inactive_nodes_set: BoundedBTreeSet<
+            <T as Config>::CollatorId,
+            <T as Config>::MaxCollatorsPerSession,
+        > = BoundedBTreeSet::new();
+        inactive_nodes_set.try_insert(node.clone());
+        for session_index in 0..max_inactive_sessions {
+            <InactiveCollators<T>>::insert(session_index, inactive_nodes_set.clone());
+        }
+    }
 }
 
 impl<T: Config> AuthorNotingHook<T::CollatorId> for Pallet<T> {
