@@ -174,10 +174,10 @@ impl tp_traits::NodeActivityTrackingHelper<AccountId> for MockActivityTrackingHe
         *node == ACCOUNT_CANDIDATE_3
     }
 
-    fn set_online(node: &AccountId) -> DispatchResult {
+    fn set_online(_node: &AccountId) -> DispatchResult {
         Ok(())
     }
-    fn set_offline(node: &AccountId) -> DispatchResult {
+    fn set_offline(_node: &AccountId) -> DispatchResult {
         Ok(())
     }
     #[cfg(feature = "runtime-benchmarks")]
