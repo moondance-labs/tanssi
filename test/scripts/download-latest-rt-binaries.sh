@@ -13,7 +13,7 @@ LATEST_RUNTIME_RELEASE=$(jq -r '.[]
       and (test("starlight";"i") | not)
     )
   | .tag_name' <<<"$RELEASES_JSON" | head -n1)
-
+[[ -n $LATEST_RUNTIME_RELEASE ]]
 ENDPOINT="https://api.github.com/repos/moondance-labs/tanssi/git/refs/tags/$LATEST_RUNTIME_RELEASE"
 RESPONSE=$(curl -s -H "Accept: application/vnd.github.v3+json" $ENDPOINT)
 TYPE=$(echo $RESPONSE | jq -r '.object.type')
