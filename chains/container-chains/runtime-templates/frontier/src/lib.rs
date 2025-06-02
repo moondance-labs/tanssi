@@ -337,7 +337,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: Cow::Borrowed("frontier-template"),
     impl_name: Cow::Borrowed("frontier-template"),
     authoring_version: 1,
-    spec_version: 1300,
+    spec_version: 1400,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -867,7 +867,8 @@ parameter_types! {
     pub WeightPerGas: Weight = Weight::from_parts(WEIGHT_PER_GAS, 0);
     pub SuicideQuickClearLimit: u32 = 0;
     pub GasLimitPovSizeRatio: u32 = 16;
-    pub GasLimitStorageGrowthRatio: u64 = 366;
+    /// Hardcoding the value, since it is computed on block execution. Check calculations in the tests
+    pub GasLimitStorageGrowthRatio: u64 = 1464;
 }
 
 impl_on_charge_evm_transaction!();
@@ -897,7 +898,7 @@ impl pallet_evm::Config for Runtime {
     type OnCreate = ();
     type FindAuthor = FindAuthorAdapter;
     type GasLimitPovSizeRatio = GasLimitPovSizeRatio;
-    type GasLimitStorageGrowthRatio = ();
+    type GasLimitStorageGrowthRatio = GasLimitStorageGrowthRatio;
     type Timestamp = Timestamp;
     type WeightInfo = ();
 }
@@ -1548,14 +1549,22 @@ impl_runtime_apis! {
             max_fee_per_gas: Option<U256>,
             max_priority_fee_per_gas: Option<U256>,
             nonce: Option<U256>,
-            _estimate: bool,
+            estimate: bool,
             access_list: Option<Vec<(H160, Vec<H256>)>>,
         ) -> Result<pallet_evm::CallInfo, sp_runtime::DispatchError> {
+            let config = if estimate {
+                let mut config = <Runtime as pallet_evm::Config>::config().clone();
+                config.estimate = true;
+                Some(config)
+            } else {
+                None
+            };
             let is_transactional = false;
             let validate = true;
 
             // Estimated encoded transaction size must be based on the heaviest transaction
             // type (EIP1559Transaction) to be compatible with all transaction types.
+            // TODO: remove, since we will get rid of base_cost
             let mut estimated_transaction_len = data.len() +
                 // pallet ethereum index: 1
                 // transact call index: 1
@@ -1571,13 +1580,15 @@ impl_runtime_apis! {
                 // 65 bytes signature
                 258;
 
-            if access_list.is_some() {
-                estimated_transaction_len += access_list.encoded_size();
+            if let Some(ref list) = access_list {
+                estimated_transaction_len += list.encoded_size();
             }
+
             let gas_limit = gas_limit.min(u64::MAX.into()).low_u64();
             let without_base_extrinsic_weight = true;
-            let (weight_limit, proof_size_base_cost) =
-                match <Runtime as pallet_evm::Config>::GasWeightMapping::gas_to_weight(
+
+            let (weight_limit, proof_size_base_cost) = match
+                <Runtime as pallet_evm::Config>::GasWeightMapping::gas_to_weight(
                     gas_limit,
                     without_base_extrinsic_weight
                 ) {
@@ -1601,7 +1612,7 @@ impl_runtime_apis! {
                 validate,
                 weight_limit,
                 proof_size_base_cost,
-                <Runtime as pallet_evm::Config>::config(),
+                config.as_ref().unwrap_or(<Runtime as pallet_evm::Config>::config()),
             ).map_err(|err| err.error.into())
         }
 
@@ -1613,25 +1624,67 @@ impl_runtime_apis! {
             max_fee_per_gas: Option<U256>,
             max_priority_fee_per_gas: Option<U256>,
             nonce: Option<U256>,
-            _estimate: bool,
+            estimate: bool,
             access_list: Option<Vec<(H160, Vec<H256>)>>,
         ) -> Result<pallet_evm::CreateInfo, sp_runtime::DispatchError> {
+            let config = if estimate {
+                let mut config = <Runtime as pallet_evm::Config>::config().clone();
+                config.estimate = true;
+                Some(config)
+            } else {
+                None
+            };
             let is_transactional = false;
             let validate = true;
+
+            let mut estimated_transaction_len = data.len() +
+                        // from: 20
+                        // value: 32
+                        // gas_limit: 32
+                        // nonce: 32
+                        // 1 byte transaction action variant
+                        // chain id 8 bytes
+                        // 65 bytes signature
+                        190;
+
+            if max_fee_per_gas.is_some() {
+                estimated_transaction_len += 32;
+            }
+            if max_priority_fee_per_gas.is_some() {
+                estimated_transaction_len += 32;
+            }
+            if let Some(ref list) = access_list {
+                estimated_transaction_len += list.encoded_size();
+            }
+
+            let gas_limit = gas_limit.min(u64::MAX.into()).low_u64();
+            let without_base_extrinsic_weight = true;
+
+            let (weight_limit, proof_size_base_cost) = match
+                <Runtime as pallet_evm::Config>::GasWeightMapping::gas_to_weight(
+                    gas_limit,
+                    without_base_extrinsic_weight
+                ) {
+                    weight_limit if weight_limit.proof_size() > 0 => {
+                        (Some(weight_limit), Some(estimated_transaction_len as u64))
+                    }
+                    _ => (None, None),
+                };
+
             <Runtime as pallet_evm::Config>::Runner::create(
                 from,
                 data,
                 value,
-                gas_limit.min(u64::MAX.into()).low_u64(),
+                gas_limit,
                 max_fee_per_gas,
                 max_priority_fee_per_gas,
                 nonce,
                 access_list.unwrap_or_default(),
                 is_transactional,
                 validate,
-                None,
-                None,
-                <Runtime as pallet_evm::Config>::config(),
+                weight_limit,
+                proof_size_base_cost,
+                config.as_ref().unwrap_or(<Runtime as pallet_evm::Config>::config()),
             ).map_err(|err| err.error.into())
         }
 
@@ -1843,4 +1896,20 @@ cumulus_pallet_parachain_system::register_validate_block! {
     Runtime = Runtime,
     CheckInherents = CheckInherents,
     BlockExecutor = pallet_author_inherent::BlockExecutor::<Runtime, Executive>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Block storage limit in bytes. Set to 40 KB.
+    const BLOCK_STORAGE_LIMIT: u64 = 40 * 1024;
+
+    #[test]
+    fn check_ratio_constant() {
+        assert_eq!(
+            BlockGasLimit::get().min(u64::MAX.into()).low_u64() / BLOCK_STORAGE_LIMIT,
+            GasLimitStorageGrowthRatio::get()
+        );
+    }
 }

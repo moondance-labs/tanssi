@@ -4,8 +4,10 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type KeyringPair, alith, baltathar, charleth, dorothy } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 import { u8aToHex } from "@polkadot/util";
-import { blake2AsHex, createKeyMulti } from "@polkadot/util-crypto";
+import { blake2AsHex, createKeyMulti, encodeMultiAddress } from "@polkadot/util-crypto";
 import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_BALANCES } from "helpers";
+import type { Weight } from "@polkadot/types/interfaces";
+import { addressToU8a } from "@polkadot/util-crypto/address/util";
 
 describeSuite({
     id: "C0201",
@@ -21,37 +23,46 @@ describeSuite({
         let call: string;
         let callHash: string;
         let threshold: number;
+        let callWeight: Weight;
+        let callIsBalanceTransfer: boolean;
         let specVersion: number;
         let isStarlight: boolean;
-        let starlightVersionsToExclude: number[];
+        let isFrontier: boolean;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             // This test will be run against frontier & substrate chains, hence the accounts used
             alice_or_alith = context.isEthereumChain ? alith : context.keyring.alice;
             charlie_or_charleth = context.isEthereumChain ? charleth : context.keyring.charlie;
+            // Multisig extrinsics expect accounts to be sorted, that's why we swap bob and dave here
             dave_or_baltathar = context.isEthereumChain ? baltathar : context.keyring.dave;
             bob_or_dorothy = context.isEthereumChain ? dorothy : context.keyring.bob;
+            // Need 2 out of 3 signatures to execute multisig call
             threshold = 2;
             specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
             isStarlight = polkadotJs.consts.system.version.specName.toString() === "starlight";
-            // exmple call and hash to be used in tests
+            isFrontier = polkadotJs.consts.system.version.specName.toString() === "frontier-template";
+            // Example call and hash to be used in tests
             let example_call: any;
             if (isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_BALANCES.includes(specVersion)) {
-                example_call = context.polkadotJs().tx.system.remark("0x");
+                example_call = context.polkadotJs().tx.system.remarkWithEvent("0x1234");
+                callIsBalanceTransfer = false;
             } else {
                 example_call = context.polkadotJs().tx.balances.transferKeepAlive(charlie_or_charleth.address, 20);
+                callIsBalanceTransfer = true;
             }
 
             call = example_call.method.toHex();
             callHash = blake2AsHex(call);
+            const feeInfo = await example_call.paymentInfo(alice_or_alith.address);
+            callWeight = feeInfo.weight;
         });
 
         it({
             id: "E01",
-            title: "Creates and cancel a multisig operation",
+            title: "Creates and cancels a multisig operation",
             test: async () => {
-                //Multisig creation
+                // Multisig creation
                 const otherSignatories = [dave_or_baltathar.address, bob_or_dorothy.address];
                 await context.createBlock(
                     polkadotJs.tx.multisig
@@ -66,7 +77,7 @@ describeSuite({
                 });
                 expect(eventCount.length).to.be.equal(1);
 
-                //Multisig Cancelation
+                // Multisig Cancelation
                 const encodedMultisigId = createKeyMulti(
                     [alice_or_alith.address, dave_or_baltathar.address, bob_or_dorothy.address],
                     threshold
@@ -85,6 +96,24 @@ describeSuite({
                     return a.event.method === "MultisigCancelled";
                 });
                 expect(eventCount.length).to.be.equal(1);
+
+                // Attempting to execute multisig call will now fail
+                await context.createBlock(
+                    polkadotJs.tx.multisig
+                        .asMulti(
+                            threshold,
+                            [dave_or_baltathar.address, alice_or_alith.address],
+                            multisigInfo.unwrap().when,
+                            call,
+                            callWeight
+                        )
+                        .signAsync(bob_or_dorothy)
+                );
+                records = await polkadotJs.query.system.events();
+                eventCount = records.filter((a) => {
+                    return a.event.method === "ExtrinsicFailed";
+                });
+                expect(eventCount.length).to.be.equal(1);
             },
         });
 
@@ -92,7 +121,7 @@ describeSuite({
             id: "E02",
             title: "Approves a multisig operation",
             test: async () => {
-                //Multisig creation
+                // Multisig creation
                 const otherSignatories = [dave_or_baltathar.address, bob_or_dorothy.address];
                 await context.createBlock(
                     polkadotJs.tx.multisig
@@ -100,9 +129,40 @@ describeSuite({
                         .signAsync(alice_or_alith)
                 );
 
-                //Multisig Approval
+                // Fund multisig address with some balance, needed for the balance transfer call to succeed
+                // In case the multisig call is a system.remark, that can be done without balance in the account, as the
+                // caller of asMulti will pay for fees.
+                if (callIsBalanceTransfer) {
+                    let multisigAddress = encodeMultiAddress(
+                        [alice_or_alith.address, dave_or_baltathar.address, bob_or_dorothy.address],
+                        threshold
+                    );
+                    if (isFrontier) {
+                        // Frontier template uses 20-byte hex account id, encodeMultiAddress returns 32 bytes in polkadot
+                        // format (starting with 5G).
+                        // For whatever reason, frontier template does not error when you try to balance transfer to a
+                        // 32 byte address, and that results in a completely different address than just truncating the
+                        // address to the first 20 bytes. Anyway.
+                        const hexMultisigAddress = u8aToHex(addressToU8a(multisigAddress));
+                        multisigAddress = hexMultisigAddress.slice(0, 42);
+                    }
+                    const multisigBalanceBefore = (await polkadotJs.query.system.account(multisigAddress)).data.free;
+                    expect(multisigBalanceBefore.toBigInt() === 0n).toBeTruthy();
 
-                // This is only needed to get get time point parameter
+                    await context.createBlock(
+                        polkadotJs.tx.balances
+                            .transferKeepAlive(multisigAddress, 100_000_000_000_000_000n)
+                            .signAsync(alice_or_alith)
+                    );
+
+                    const multisigBalanceAfter = (await polkadotJs.query.system.account(multisigAddress)).data.free;
+                    expect(multisigBalanceAfter.toBigInt() > 0n).toBeTruthy();
+                }
+
+                // Multisig call is a balance transfer to this address, so check that balance will increase
+                const balanceBefore = (await polkadotJs.query.system.account(charlie_or_charleth.address)).data.free;
+
+                // This is only needed to get the time point parameter
                 const encodedMultisigId = createKeyMulti(
                     [alice_or_alith.address, dave_or_baltathar.address, bob_or_dorothy.address],
                     threshold
@@ -111,24 +171,35 @@ describeSuite({
                 const multisigInfo = await polkadotJs.query.multisig.multisigs(multisigId, callHash);
 
                 await context.createBlock(
-                    context
-                        .polkadotJs()
-                        .tx.multisig.approveAsMulti(
+                    polkadotJs.tx.multisig
+                        .asMulti(
                             threshold,
                             [dave_or_baltathar.address, alice_or_alith.address],
                             multisigInfo.unwrap().when,
-                            callHash,
-                            {}
+                            call,
+                            callWeight
                         )
                         .signAsync(bob_or_dorothy)
                 );
 
-                // Multisig call is approved
+                // Multisig call is approved and executed
                 const records = await polkadotJs.query.system.events();
                 const eventCount = records.filter((a) => {
-                    return a.event.method === "MultisigApproval";
+                    return a.event.method === "MultisigExecuted";
                 });
                 expect(eventCount.length).to.be.equal(1);
+                if (callIsBalanceTransfer) {
+                    // Balance transfer is executed
+                    const balanceAfter = (await polkadotJs.query.system.account(charlie_or_charleth.address)).data.free;
+                    expect(balanceAfter.toBigInt() > balanceBefore.toBigInt()).toBeTruthy();
+                } else {
+                    // system.remark is remarked
+                    const records = await polkadotJs.query.system.events();
+                    const eventCount = records.filter((a) => {
+                        return a.event.method === "Remarked";
+                    });
+                    expect(eventCount.length).to.be.equal(1);
+                }
             },
         });
     },

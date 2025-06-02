@@ -150,7 +150,11 @@ pub use {
 };
 
 #[cfg(feature = "runtime-benchmarks")]
-use snowbridge_core::{AgentId, TokenId};
+use {
+    dancelight_runtime_constants::snowbridge::EthereumNetwork,
+    snowbridge_core::{AgentId, TokenId},
+    xcm::latest::Junctions::*,
+};
 
 /// Constant values used within the runtime.
 use dancelight_runtime_constants::{currency::*, fee::*, snowbridge::EthereumLocation, time::*};
@@ -191,7 +195,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: Cow::Borrowed("dancelight"),
     impl_name: Cow::Borrowed("tanssi-dancelight-v2.0"),
     authoring_version: 0,
-    spec_version: 1300,
+    spec_version: 1400,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 26,
@@ -572,11 +576,7 @@ impl pallet_session::Config for Runtime {
     type SessionManager = pallet_session::historical::NoteHistoricalRoot<Self, ExternalValidators>;
     type SessionHandler = <SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
     type Keys = SessionKeys;
-    // TODO: Current benchmarking code for pallet_session requires that the runtime
-    // uses pallet_staking, which we don't use. We need to make a PR to Substrate to
-    // allow decoupling the benchmark from other pallets.
-    // See https://github.com/paritytech/polkadot-sdk/blob/0845044454c005b577eab7afaea18583bd7e3dd3/substrate/frame/session/benchmarking/src/inner.rs#L38
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_session::SubstrateWeight<Runtime>;
 }
 
 pub struct FullIdentificationOf;
@@ -1276,7 +1276,7 @@ impl parachains_slashing::Config for Runtime {
         Offences,
         ReportLongevity,
     >;
-    type WeightInfo = parachains_slashing::TestWeightInfo;
+    type WeightInfo = weights::runtime_parachains_disputes_slashing::SubstrateWeight<Runtime>;
     type BenchmarkingConfig = parachains_slashing::BenchConfig<200>;
 }
 
@@ -1955,6 +1955,10 @@ construct_runtime! {
         // Asset rate.
         AssetRate: pallet_asset_rate = 86,
 
+        // Foreign assets.
+        ForeignAssets: pallet_assets::<Instance1> = 87,
+        ForeignAssetsCreator: pallet_foreign_asset_creator = 88,
+
         // Pallet for sending XCM.
         XcmPallet: pallet_xcm = 90,
 
@@ -2276,6 +2280,8 @@ mod benches {
         [runtime_parachains::paras_inherent, ParaInherent]
         [runtime_parachains::paras, Paras]
         [runtime_parachains::assigner_on_demand, OnDemandAssignmentProvider]
+        [runtime_parachains::disputes::slashing, pallet_alt_benchmarks::bench_parachains_slashing::Pallet::<Runtime>]
+
         // Substrate
         [pallet_balances, Balances]
         [frame_benchmarking::baseline, Baseline::<Runtime>]
@@ -2303,6 +2309,7 @@ mod benches {
         [pallet_mmr, Mmr]
         [pallet_beefy_mmr, BeefyMmrLeaf]
         [pallet_multiblock_migrations, MultiBlockMigrations]
+        [pallet_session, cumulus_pallet_session_benchmarking::Pallet::<Runtime>]
 
         // Tanssi
         [pallet_author_noting, AuthorNoting]
@@ -2317,6 +2324,10 @@ mod benches {
         [pallet_inactivity_tracking, InactivityTracking]
         [pallet_configuration, CollatorConfiguration]
         [pallet_stream_payment, StreamPayment]
+
+        // Foreign Assets
+        [pallet_foreign_asset_creator, ForeignAssetsCreator]
+        [pallet_assets, ForeignAssets]
 
         // XCM
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
@@ -3178,12 +3189,27 @@ sp_api::impl_runtime_apis! {
                 }
             }
 
+            parameter_types! {
+                pub TrustedReserve: Option<(Location, Asset)> = Some(
+                    (
+                        EthereumLocation::get(),
+                        Asset {
+                            id: AssetId(Location {
+                                parents: 1,
+                                interior: X1([GlobalConsensus(EthereumNetwork::get())].into()),
+                            }),
+                            fun: Fungible(ExistentialDeposit::get() * 100),
+                        },
+                    )
+                );
+            }
+
             impl pallet_xcm_benchmarks::fungible::Config for Runtime {
                 type TransactAsset = Balances;
 
                 type CheckedAccount = LocalCheckAccount;
                 type TrustedTeleporter = ();
-                type TrustedReserve = ();
+                type TrustedReserve = TrustedReserve;
 
                 fn get_asset() -> Asset {
                     Asset {
@@ -3249,6 +3275,30 @@ sp_api::impl_runtime_apis! {
                     Err(BenchmarkError::Skip)
                 }
             }
+
+            pub struct SessionBenchValidators;
+            impl pallet_alt_benchmarks::bench_parachains_slashing::Validators<AccountId> for SessionBenchValidators {
+                /// Sets the validators to properly run a benchmark. Should take care of everything that
+                /// will make pallet_session use those validators, such as them having a balance.
+                fn set_validators(validators: &[AccountId]) {
+                    use frame_support::traits::fungible::Mutate;
+                    use tp_traits::ExternalIndexProvider;
+
+                    ExternalValidators::set_external_validators_inner(
+                        validators.to_vec(),
+                        ExternalValidators::get_external_index()
+                    ).expect("to set validators");
+
+                    for v in validators {
+                        Balances::set_balance(v, EXISTENTIAL_DEPOSIT);
+                    }
+                }
+            }
+            impl pallet_alt_benchmarks::bench_parachains_slashing::Config for Runtime {
+                type Validators = SessionBenchValidators;
+            }
+
+            impl cumulus_pallet_session_benchmarking::Config for Runtime { }
 
             let mut whitelist: Vec<TrackedStorageKey> = AllPalletsWithSystem::whitelisted_storage_keys();
             let treasury_key = frame_system::Account::<Runtime>::hashed_key_for(Treasury::account_id());

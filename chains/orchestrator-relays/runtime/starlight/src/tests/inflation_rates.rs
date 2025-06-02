@@ -16,7 +16,7 @@
 
 use crate::{
     tests::common::ExtBuilder, Balances, CollatorsInflationRatePerBlock, EpochDurationInBlocks,
-    Perbill, Runtime, SessionsPerEra, ValidatorsInflationRatePerEra, DAYS,
+    Perbill, RewardsPortion, Runtime, SessionsPerEra, ValidatorsInflationRatePerEra, DAYS,
 };
 
 #[derive(Debug)]
@@ -109,8 +109,13 @@ fn runtime_inflations_values_are_correct_prod_or_fast(prod: bool) {
         let blocks_per_era = blocks_per_session * sessions_per_era;
         let eras_per_year = (365 * DAYS) / blocks_per_era;
 
-        let annual_inflation = 0.1; // 10%
-        let collators_fraction = 0.5; // 50% of era inflation goes to collators.
+        // Annual inflation as float [0 - 1]
+        // 7.5%
+        let annual_inflation = 0.075;
+        // Collators+staking get 3.5% out of the 100%,
+        // so 3.5 / 7.5 as a fraction
+        // Rest goes to validators (4%)
+        let collators_fraction = 3.5 / 7.5;
 
         let rates = compute_inflation_rates(
             annual_inflation,
@@ -165,4 +170,19 @@ fn runtime_inflations_values_are_correct_in_prod() {
 #[test]
 fn runtime_inflations_values_are_correct_in_fast() {
     runtime_inflations_values_are_correct_prod_or_fast(false)
+}
+
+#[test]
+fn inflation_table() {
+    // All values in percentages [0 - 100]
+    let total = 7.5;
+    let validators = 4.0;
+    let collators = 2.0;
+    let parachain_bond = 1.5;
+
+    assert_eq!(validators + collators + parachain_bond, total);
+    assert_eq!(
+        RewardsPortion::get(),
+        Perbill::from_float(collators / (collators + parachain_bond))
+    );
 }

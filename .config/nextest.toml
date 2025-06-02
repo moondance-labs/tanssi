@@ -1,0 +1,4 @@
+[profile.default]
+# Tests that take more than 60 seconds are considered slow
+# Tests that take 2 times that (2 minutes) are terminated making CI fail
+slow-timeout = { period = "60s", terminate-after = 2 }

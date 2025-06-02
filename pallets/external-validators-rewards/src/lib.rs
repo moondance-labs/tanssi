@@ -358,6 +358,8 @@ pub mod pallet {
                     );
                     return;
                 }
+            } else {
+                log::error!(target: "ext_validators_rewards", "no token id found for location {:?}", token_location);
             }
         }
     }
