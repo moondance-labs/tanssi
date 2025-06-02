@@ -22,8 +22,6 @@ jobs:
             git_ref: ${{ steps.check-git-ref.outputs.git_ref }}
             sha: ${{ steps.get-sha.outputs.sha }}
             sha8: ${{ steps.get-sha.outputs.sha8 }}
-            latest_rt: ${{ steps.get-sha.outputs.latest_rt }}
-            latest_rt_sha8: ${{ steps.get-sha.outputs.latest_rt_sha8 }}
         steps:
             - name: Check git ref
               id: check-git-ref
@@ -62,24 +60,6 @@ jobs:
               run: |
                   echo "sha=$(git log -1 --format='%H')" >> $GITHUB_OUTPUT
                   echo "sha8=$(git log -1 --format='%H' | cut -c1-8)" >> $GITHUB_OUTPUT
-
-                  ENDPOINT="https://api.github.com/repos/moondance-labs/tanssi/git/refs/tags/${{ steps.get-latest-rt.outputs.latest_rt }}"
-                  RESPONSE=$(curl -s -H "Accept: application/vnd.github.v3+json" $ENDPOINT)
-                  TYPE=$(echo $RESPONSE | jq -r '.object.type')
-
-                  if [[ $TYPE == "commit" ]]
-                  then
-                    LATEST_RT_SHA8=$(echo $RESPONSE | jq -r '.object.sha' | cut -c -8)
-                  elif [[ $TYPE == "tag" ]]
-                  then
-                    URL=$(echo $RESPONSE | jq -r '.object.url')
-                    TAG_RESPONSE=$(curl -s -H "Accept: application/vnd.github.v3+json" $URL)
-                    TAG_RESPONSE_CLEAN=$(echo $TAG_RESPONSE | tr -d '\000-\037')
-                    LATEST_RT_SHA8=$(echo $TAG_RESPONSE_CLEAN | jq -r '.object.sha' | cut -c -8)
-                  fi
-
-                  echo $LATEST_RT_SHA8
-                  echo "latest_rt_sha8=$LATEST_RT_SHA8" >> $GITHUB_OUTPUT
             - name: Check existing docker image
               id: check-docker-image
               run: |
@@ -90,9 +70,6 @@ jobs:
                   echo git_ref: ${{ steps.check-git-ref.outputs.git_ref }}
                   echo sha: ${{ steps.get-sha.outputs.sha }}
                   echo sha8: ${{ steps.get-sha.outputs.sha8 }}
-                  echo image_exists: ${{ steps.check-docker-image.outputs.image_exists }}
-                  echo latest_rt: ${{ steps.get-latest-rt.outputs.latest_rt }}
-                  echo latest_rt_sha8: ${{ steps.get-sha.outputs.latest_rt_sha8 }}
 
     check-copyright:
         runs-on: ubuntu-latest
@@ -756,7 +733,6 @@ jobs:
                   path: target/release
             - name: "Install and run upgrade test"
               run: |
-                  chmod uog+x target/release/*
                   cd test
                   pnpm install
                   pnpm moonwall test chopsticks_${{ matrix.chains.chain }}_upgrade
@@ -900,6 +876,7 @@ jobs:
             - name: "Install and run upgrade test"
               run: |
                   chmod uog+x target/release/container-chain-simple-node
+                  chmod uog+x target/release/tanssi-node
                   chmod uog+x target/release/tanssi-relay
                   chmod uog+x target/release/tanssi-relay-execute-worker
                   chmod uog+x target/release/tanssi-relay-prepare-worker
