@@ -263,4 +263,8 @@ impl RelayChainCli {
             base: clap::Parser::parse_from(relay_chain_args),
         }
     }
+
+    pub fn solo_chains() -> Vec<String> {
+        vec!["dancelight".to_string(), "tanssi".to_string()]
+    }
 }

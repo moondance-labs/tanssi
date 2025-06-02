@@ -19468,6 +19468,7 @@ dependencies = [
  "substrate-build-script-utils",
  "substrate-frame-rpc-system",
  "substrate-prometheus-endpoint",
+ "tanssi-relay-service",
  "tc-consensus",
  "tc-service-container-chain",
  "tokio",

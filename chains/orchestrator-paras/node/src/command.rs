@@ -167,10 +167,15 @@ impl SubstrateCli for RelayChainCli {
     }
 
     fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
+        println!("loading spec for id {:?}", id);
         match id {
             "westend_moonbase_relay_testnet" => Ok(Box::new(WestendChainSpec::from_json_bytes(
                 &include_bytes!("../../../../specs/dancebox/alphanet-relay-raw-specs.json")[..],
             )?)),
+            "dancelight" => Ok(Box::new(
+                tanssi_relay_service::chain_spec::dancelight_config()?,
+            )),
+            "tanssi" => Ok(Box::new(tanssi_relay_service::chain_spec::tanssi_config()?)),
             // If we are not using a moonbeam-centric pre-baked relay spec, then fall back to the
             // Polkadot service to interpret the id.
             _ => polkadot_cli::Cli::from_iter([RelayChainCli::executable_name()].iter())
@@ -389,6 +394,7 @@ pub fn run() -> Result<()> {
                         .iter()
                         .chain(cmd.relay_chain_args.iter()),
                 );
+
                 let tokio_handle = config.tokio_handle.clone();
                 let polkadot_config =
                     SubstrateCli::create_configuration(&polkadot_cli, &polkadot_cli, tokio_handle)
@@ -432,7 +438,7 @@ pub fn run() -> Result<()> {
 
                 let polkadot_cli = RelayChainCli::new(
                     &config,
-                    [RelayChainCli::executable_name()].iter().chain(cli.relaychain_args().iter()),
+                    [RelayChainCli::executable_name()].iter().chain(cli.relaychain_args().iter())
                 );
 
                 let extension = chain_spec::Extensions::try_get(&*config.chain_spec);
@@ -447,9 +453,14 @@ pub fn run() -> Result<()> {
                 }
 
                 let tokio_handle = config.tokio_handle.clone();
+
                 let polkadot_config =
                     SubstrateCli::create_configuration(&polkadot_cli, &polkadot_cli, tokio_handle)
                         .map_err(|err| format!("Relay chain argument error: {}", err))?;
+
+                if RelayChainCli::solo_chains().contains(&polkadot_config.chain_spec.id().to_string()) {
+                    panic!("{:?} should only be injected in solo-chain mode", polkadot_config.chain_spec.id());
+                }
 
                 let parachain_account =
                     AccountIdConversion::<polkadot_primitives::AccountId>::into_account_truncating(&id);
