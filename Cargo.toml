@@ -144,6 +144,7 @@ westend-system-emulated-network = { path = "chains/xcm-integration-tests/emulate
 tp-author-noting-inherent = { path = "primitives/author-noting-inherent", default-features = false }
 tp-bridge = { path = "primitives/bridge", default-features = false }
 tp-data-preservers-common = { path = "primitives/data-preservers-common", default-features = false }
+tp-invulnerables-filter-common = { path = "primitives/invulnerables-filter-common", default-features = false }
 tp-maths = { path = "primitives/maths", default-features = false }
 tp-stream-payment-common = { path = "primitives/stream-payment-common", default-features = false }
 tp-traits = { path = "primitives/traits", default-features = false }

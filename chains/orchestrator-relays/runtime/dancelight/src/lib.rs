@@ -1888,15 +1888,6 @@ impl tp_traits::ParathreadHelper for DancelightParathreadHelper {
             .any(|(x_para_id, _)| x_para_id == para_id)
     }
 }
-pub struct InvulnerableCheckHandler<AccountId>(PhantomData<AccountId>);
-
-impl tp_traits::InvulnerablesHelper<cumulus_primitives_core::relay_chain::AccountId>
-    for InvulnerableCheckHandler<cumulus_primitives_core::relay_chain::AccountId>
-{
-    fn is_invulnerable(account: &cumulus_primitives_core::relay_chain::AccountId) -> bool {
-        TanssiInvulnerables::invulnerables().contains(account)
-    }
-}
 impl pallet_inactivity_tracking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type CollatorId = AccountId;
@@ -1907,7 +1898,7 @@ impl pallet_inactivity_tracking::Config for Runtime {
     type CurrentCollatorsFetcher = TanssiCollatorAssignment;
     type GetSelfChainBlockAuthor = ();
     type ParathreadHelper = DancelightParathreadHelper;
-    type InvulnerablesFilter = InvulnerableCheckHandler<Self::CollatorId>;
+    type InvulnerablesFilter = tp_invulnerables_filter_common::InvulnerablesFilter<Runtime>;
 
     type WeightInfo = weights::pallet_inactivity_tracking::SubstrateWeight<Runtime>;
 }
