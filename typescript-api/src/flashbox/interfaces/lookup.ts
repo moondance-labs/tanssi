@@ -2772,7 +2772,19 @@ export default {
      **/
     CumulusPrimitivesStorageWeightReclaimStorageWeightReclaim: "Null",
     /**
-     * Lookup391: flashbox_runtime::Runtime
+     * Lookup391: frame_metadata_hash_extension::CheckMetadataHash<T>
+     **/
+    FrameMetadataHashExtensionCheckMetadataHash: {
+        mode: "FrameMetadataHashExtensionMode",
+    },
+    /**
+     * Lookup392: frame_metadata_hash_extension::Mode
+     **/
+    FrameMetadataHashExtensionMode: {
+        _enum: ["Disabled", "Enabled"],
+    },
+    /**
+     * Lookup393: flashbox_runtime::Runtime
      **/
     FlashboxRuntimeRuntime: "Null",
 };
