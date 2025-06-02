@@ -54,6 +54,7 @@ pallet-migrations = { workspace = true }
 
 # Substrate
 frame-executive = { workspace = true }
+frame-metadata-hash-extension = { workspace = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
 frame-system-rpc-runtime-api = { workspace = true }
@@ -144,6 +145,7 @@ std = [
 	"dp-slot-duration-runtime-api/std",
 	"frame-benchmarking?/std",
 	"frame-executive/std",
+	"frame-metadata-hash-extension/std",
 	"frame-support/std",
 	"frame-system-benchmarking?/std",
 	"frame-system-rpc-runtime-api/std",
@@ -317,4 +319,4 @@ try-runtime = [
 
 fast-runtime = []
 
-metadata-hash = []
+metadata-hash = [ "substrate-wasm-builder/metadata-hash" ]
