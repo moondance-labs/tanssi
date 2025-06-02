@@ -256,7 +256,6 @@ pub fn relay_chain_cli_new<'a>(
         base: clap::Parser::parse_from(relay_chain_args),
     }
 }
-
 /// Create a dummy [Configuration] that should only be used as input to polkadot-sdk functions that
 /// take this struct as input but only use one field of it.
 /// This is needed because [Configuration] does not implement [Default].
