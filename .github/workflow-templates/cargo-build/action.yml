@@ -70,13 +70,15 @@ runs:
         cp target/release/wbuild/flashbox-runtime/flashbox_runtime.compact.compressed.wasm runtimes/;
         cp target/release/wbuild/dancelight-runtime/dancelight_runtime.compact.compressed.wasm runtimes/;
         cp target/release/wbuild/starlight-runtime/starlight_runtime.compact.compressed.wasm runtimes/;
-    - name: Save binaries
-      shell: bash
-      run: |
-        mkdir -p binaries
-        cp target/release/tanssi-node binaries/tanssi-node;
-        cp target/release/container-chain-simple-node binaries/container-chain-simple-node;
-        cp target/release/container-chain-frontier-node binaries/container-chain-frontier-node;
-        cp target/release/tanssi-relay binaries/tanssi-relay;
-        cp target/release/tanssi-relay-prepare-worker binaries/tanssi-relay-prepare-worker;
-        cp target/release/tanssi-relay-execute-worker binaries/tanssi-relay-execute-worker;
+
+    - name: Copy parachain node binaries
+      uses: ./.github/workflow-templates/copy-parachain-node-binaries
+      with:
+        cpu: ""
+        profile: "release"
+
+    - name: Copy relaychain node binaries
+      uses: ./.github/workflow-templates/copy-relaychain-node-binaries
+      with:
+        cpu: ""
+        profile: "release"
