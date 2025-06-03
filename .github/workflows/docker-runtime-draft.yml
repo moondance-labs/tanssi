@@ -122,7 +122,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        image: ${{ toJson(needs.docker_matrix_prep.outputs.matrix_tests) }}
+        image: ${{ fromJSON(toJson(needs.docker_matrix_prep.outputs.matrix_tests)) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
