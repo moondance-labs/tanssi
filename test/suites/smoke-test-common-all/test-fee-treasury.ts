@@ -58,12 +58,16 @@ describeSuite({
                         return;
                     }
 
-                    const events = await apiAtBlock.query.system.events();
-                    for (const [_, extrinsic] of extrinsics.entries()) {
+                    const allRecords = await apiAtBlock.query.system.events();
+                    for (const [index, extrinsic] of extrinsics.entries()) {
                         // Skip unsigned extrinsics, since no commission is paid
                         if (!extrinsic.isSigned) {
                             continue;
                         }
+
+                        const events = allRecords.filter(
+                            ({ phase }) => phase.isApplyExtrinsic && phase.asApplyExtrinsic.eq(index)
+                        );
 
                         // Get all fee paid events for the current extrinsic
                         const feePaidEvents = filterAndApply(
