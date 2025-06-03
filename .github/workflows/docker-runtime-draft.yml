@@ -65,7 +65,7 @@ jobs:
         if: ${{ matrix.cpu == '' }}
         run: |
           mkdir -p binaries
-          if [[ "${{ needs.set-tags.outputs.git_branch }}" == "perm-runtime-para"* ]];
+          if [[ "${{ needs.set-tags.outputs.git_branch }}" == *"para"* ]];
             cp target/production/tanssi-node binaries/tanssi-node
             cp target/production/container-chain-frontier-node binaries/container-chain-frontier-node
             cp target/production/container-chain-simple-node binaries/container-chain-simple-node
