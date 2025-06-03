@@ -1304,7 +1304,7 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
                         let core_idx = runtime_parachains::configuration::ActiveConfig::<T>::get()
                             .node_features
                             .get(FeatureIndex::ElasticScalingMVP as usize)
-                            .expect("ElasticScalingMVP feature index should be present")
+                            .expect("ElasticScalingMVP feature index should be present");
 
                         assert_eq!(group_validators.len(), 1);
 
