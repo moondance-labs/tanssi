@@ -381,7 +381,7 @@ impl frame_system::Config for Runtime {
     /// The basic call filter to use in dispatchable.
     type BaseCallFilter = InsideBoth<MaintenanceMode, TxPause>;
     /// Weight information for the extrinsics of this pallet.
-    type SystemWeightInfo = (); //TODO recalculate: weights::frame_system::SubstrateWeight<Runtime>;
+    type SystemWeightInfo = weights::frame_system::SubstrateWeight<Runtime>;
     /// Block & extrinsics weights: base values and limits.
     type BlockWeights = RuntimeBlockWeights;
     /// The maximum length of a block (in bytes).
@@ -397,7 +397,7 @@ impl frame_system::Config for Runtime {
     type PreInherents = ();
     type PostInherents = ();
     type PostTransactions = ();
-    type ExtensionsWeightInfo = (); //TODO: recalculate: weights::frame_system_extensions::SubstrateWeight<Runtime>;
+    type ExtensionsWeightInfo = weights::frame_system_extensions::SubstrateWeight<Runtime>;
 }
 
 impl cumulus_pallet_weight_reclaim::Config for Runtime {
@@ -412,7 +412,7 @@ impl pallet_timestamp::Config for Runtime {
         ConstU64<{ SLOT_DURATION }>,
     >;
     type MinimumPeriod = ConstU64<{ SLOT_DURATION / 2 }>;
-    type WeightInfo = (); //TODO: recalculate: weights::pallet_timestamp::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_timestamp::SubstrateWeight<Runtime>;
 }
 
 pub struct CanAuthor;
@@ -444,7 +444,7 @@ impl pallet_author_inherent::Config for Runtime {
     type AccountLookup = dp_consensus::NimbusLookUp;
     type CanAuthor = CanAuthor;
     type SlotBeacon = dp_consensus::AuraDigestSlotBeacon<Runtime>;
-    type WeightInfo = (); //TODO: recalculate: weights::pallet_author_inherent::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_author_inherent::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -467,7 +467,7 @@ impl pallet_balances::Config for Runtime {
     type RuntimeHoldReason = RuntimeHoldReason;
     type RuntimeFreezeReason = RuntimeFreezeReason;
     type DoneSlashHandler = ();
-    type WeightInfo = (); //TODO: recalculate: weights::pallet_balances::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_balances::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -482,7 +482,7 @@ impl pallet_transaction_payment::Config for Runtime {
     type WeightToFee = WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
     type FeeMultiplierUpdate = SlowAdjustingFeeUpdate<Self>;
-    type WeightInfo = (); //TODO: recalculate: weights::pallet_transaction_payment::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_transaction_payment::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -502,7 +502,7 @@ type ConsensusHook = pallet_async_backing::consensus_hook::FixedVelocityConsensu
 >;
 
 impl cumulus_pallet_parachain_system::Config for Runtime {
-    type WeightInfo = (); //TODO: recalculate: weights::cumulus_pallet_parachain_system::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::cumulus_pallet_parachain_system::SubstrateWeight<Runtime>;
     type RuntimeEvent = RuntimeEvent;
     type OnSystemEvent = ();
     type SelfParaId = parachain_info::Pallet<Runtime>;
@@ -721,7 +721,7 @@ impl pallet_session::Config for Runtime {
     // Essentially just Aura, but let's be pedantic.
     type SessionHandler = <SessionKeys as sp_runtime::traits::OpaqueKeys>::KeyTypeIdProviders;
     type Keys = SessionKeys;
-    type WeightInfo = (); //TODO: recalculate: weights::pallet_session::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_session::SubstrateWeight<Runtime>;
     type DisablingStrategy = ();
 }
 
@@ -958,7 +958,7 @@ impl pallet_collator_assignment::Config for Runtime {
     type Currency = Balances;
     type ForceEmptyOrchestrator = ConstBool<false>;
     type CoreAllocationConfiguration = ();
-    type WeightInfo = (); //TODO: recalculate: weights::pallet_collator_assignment::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_collator_assignment::SubstrateWeight<Runtime>;
 }
 
 impl pallet_authority_assignment::Config for Runtime {
@@ -1008,7 +1008,7 @@ impl pallet_services_payment::Config for Runtime {
     type FreeCollatorAssignmentCredits = FreeCollatorAssignmentCredits;
     type ManagerOrigin =
         EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;
-    type WeightInfo = (); //TODO: recalculate: weights::pallet_services_payment::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_services_payment::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -1026,7 +1026,7 @@ impl pallet_data_preservers::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type RuntimeHoldReason = RuntimeHoldReason;
     type Currency = Balances;
-    type WeightInfo = (); //TODO: recalculate: weights::pallet_data_preservers::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_data_preservers::SubstrateWeight<Runtime>;
 
     type ProfileId = DataPreserversProfileId;
     type ProfileDeposit = tp_traits::BytesDeposit<ProfileDepositBaseFee, ProfileDepositByteFee>;
@@ -1055,7 +1055,7 @@ impl pallet_author_noting::Config for Runtime {
         cumulus_pallet_parachain_system::RelaychainDataProvider<Self>,
     >;
     type MaxContainerChains = MaxLengthParaIds;
-    type WeightInfo = (); //TODO: recalculate: weights::pallet_author_noting::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_author_noting::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -1074,7 +1074,7 @@ impl pallet_invulnerables::Config for Runtime {
     type CollatorId = <Self as frame_system::Config>::AccountId;
     type CollatorIdOf = ConvertInto;
     type CollatorRegistration = Session;
-    type WeightInfo = (); //TODO: recalculate: weights::pallet_invulnerables::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_invulnerables::SubstrateWeight<Runtime>;
     #[cfg(feature = "runtime-benchmarks")]
     type Currency = Balances;
 }
@@ -1106,7 +1106,7 @@ impl pallet_configuration::Config for Runtime {
     type SessionIndex = u32;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type ForceEmptyOrchestrator = ConstBool<false>;
-    type WeightInfo = (); //TODO: recalculate: weights::pallet_configuration::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_configuration::SubstrateWeight<Runtime>;
 }
 
 pub struct DanceboxRegistrarHooks;
@@ -1238,7 +1238,7 @@ impl pallet_registrar::Config for Runtime {
     type RegistrarHooks = DanceboxRegistrarHooks;
     type RuntimeHoldReason = RuntimeHoldReason;
     type InnerRegistrar = ();
-    type WeightInfo = (); //TODO: recalculate: weights::pallet_registrar::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_registrar::SubstrateWeight<Runtime>;
     type DataDepositPerByte = DataDepositPerByte;
 }
 
@@ -1251,14 +1251,14 @@ impl pallet_authority_mapping::Config for Runtime {
 impl pallet_sudo::Config for Runtime {
     type RuntimeCall = RuntimeCall;
     type RuntimeEvent = RuntimeEvent;
-    type WeightInfo = (); //TODO: recalculate: weights::pallet_sudo::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_sudo::SubstrateWeight<Runtime>;
 }
 
 impl pallet_utility::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type RuntimeCall = RuntimeCall;
     type PalletsOrigin = OriginCaller;
-    type WeightInfo = (); //TODO: recalculate: weights::pallet_utility::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_utility::SubstrateWeight<Runtime>;
 }
 
 /// The type used to represent the kinds of proxying allowed.
@@ -1373,7 +1373,7 @@ impl pallet_proxy::Config for Runtime {
     // - 32 bytes Hasher (Blake2256)
     // - 4 bytes BlockNumber (u32)
     type AnnouncementDepositFactor = ConstU128<{ currency::deposit(0, 68) }>;
-    type WeightInfo = (); //TODO: recalculate: weights::pallet_proxy::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_proxy::SubstrateWeight<Runtime>;
     type BlockNumberProvider = System;
 }
 
@@ -1412,7 +1412,7 @@ impl pallet_multiblock_migrations::Config for Runtime {
     type MigrationStatusHandler = ();
     type FailedMigrationHandler = frame_support::migrations::FreezeChainOnFailedMigration;
     type MaxServiceWeight = MbmServiceWeight;
-    type WeightInfo = (); //TODO: recalculate: weights::pallet_multiblock_migrations::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_multiblock_migrations::SubstrateWeight<Runtime>;
 }
 
 /// Maintenance mode Call filter
@@ -1455,7 +1455,7 @@ parameter_types! {
 impl pallet_relay_storage_roots::Config for Runtime {
     type RelaychainStateProvider = cumulus_pallet_parachain_system::RelaychainDataProvider<Self>;
     type MaxStorageRoots = MaxStorageRoots;
-    type WeightInfo = (); //TODO: recalculate: weights::pallet_relay_storage_roots::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_relay_storage_roots::SubstrateWeight<Runtime>;
 }
 
 impl pallet_root_testing::Config for Runtime {
@@ -1546,7 +1546,7 @@ impl pallet_pooled_staking::Config for Runtime {
     type LeavingRequestTimer = SessionTimer<StakingSessionDelay>;
     type EligibleCandidatesBufferSize = ConstU32<100>;
     type EligibleCandidatesFilter = CandidateHasRegisteredKeys;
-    type WeightInfo = (); //TODO: recalculate: weights::pallet_pooled_staking::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_pooled_staking::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -1602,7 +1602,7 @@ impl pallet_tx_pause::Config for Runtime {
     type UnpauseOrigin = EnsureRoot<AccountId>;
     type WhitelistedCalls = ();
     type MaxNameLen = ConstU32<256>;
-    type WeightInfo = (); //TODO: recalculate: weights::pallet_tx_pause::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_tx_pause::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -1621,7 +1621,7 @@ impl pallet_stream_payment::Config for Runtime {
     type OpenStreamHoldAmount = OpenStreamHoldAmount;
     type RuntimeHoldReason = RuntimeHoldReason;
     type TimeProvider = tp_stream_payment_common::TimeProvider<Runtime>;
-    type WeightInfo = (); //TODO: recalculate: weights::pallet_stream_payment::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_stream_payment::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -1658,7 +1658,7 @@ impl pallet_identity::Config for Runtime {
     type UsernameGracePeriod = ConstU32<{ 30 * DAYS }>;
     type MaxSuffixLength = ConstU32<7>;
     type MaxUsernameLength = ConstU32<32>;
-    type WeightInfo = (); //TODO: recalculate: weights::pallet_identity::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_identity::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -1682,7 +1682,7 @@ impl pallet_treasury::Config for Runtime {
     type Burn = ();
     type BurnDestination = ();
     type MaxApprovals = ConstU32<100>;
-    type WeightInfo = (); //TODO: recalculate: weights::pallet_treasury::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_treasury::SubstrateWeight<Runtime>;
     type SpendFunds = ();
     type SpendOrigin =
         frame_system::EnsureWithSuccess<EnsureRoot<AccountId>, AccountId, MaxBalance>;
@@ -1713,7 +1713,7 @@ impl pallet_multisig::Config for Runtime {
     type DepositBase = DepositBase;
     type DepositFactor = DepositFactor;
     type MaxSignatories = MaxSignatories;
-    type WeightInfo = (); //TODO: recalculate: weights::pallet_multisig::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_multisig::SubstrateWeight<Runtime>;
     type BlockNumberProvider = System;
 }
 
@@ -1725,7 +1725,7 @@ impl pallet_inactivity_tracking::Config for Runtime {
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type CurrentCollatorsFetcher = CollatorAssignment;
     type GetSelfChainBlockAuthor = GetSelfChainBlockAuthor;
-    type WeightInfo = (); //TODO: recalculate: weights::pallet_inactivity_tracking::SubstrateWeight<Runtime>;
+    type WeightInfo = weights::pallet_inactivity_tracking::SubstrateWeight<Runtime>;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
