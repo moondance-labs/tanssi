@@ -150,7 +150,11 @@ pub use {
 };
 
 #[cfg(feature = "runtime-benchmarks")]
-use snowbridge_core::{AgentId, TokenId};
+use {
+    dancelight_runtime_constants::snowbridge::EthereumNetwork,
+    snowbridge_core::{AgentId, TokenId},
+    xcm::latest::Junctions::*,
+};
 
 /// Constant values used within the runtime.
 use dancelight_runtime_constants::{currency::*, fee::*, snowbridge::EthereumLocation, time::*};
@@ -3231,12 +3235,27 @@ sp_api::impl_runtime_apis! {
                 }
             }
 
+            parameter_types! {
+                pub TrustedReserve: Option<(Location, Asset)> = Some(
+                    (
+                        EthereumLocation::get(),
+                        Asset {
+                            id: AssetId(Location {
+                                parents: 1,
+                                interior: X1([GlobalConsensus(EthereumNetwork::get())].into()),
+                            }),
+                            fun: Fungible(ExistentialDeposit::get() * 100),
+                        },
+                    )
+                );
+            }
+
             impl pallet_xcm_benchmarks::fungible::Config for Runtime {
                 type TransactAsset = Balances;
 
                 type CheckedAccount = LocalCheckAccount;
                 type TrustedTeleporter = ();
-                type TrustedReserve = ();
+                type TrustedReserve = TrustedReserve;
 
                 fn get_asset() -> Asset {
                     Asset {
@@ -3685,30 +3704,19 @@ impl<AC> ParaIdAssignmentHooks<BalanceOf<Runtime>, AC> for ParaIdAssignmentHooks
 fn host_config_at_session(
     session_index_to_consider: SessionIndex,
 ) -> HostConfiguration<BlockNumber> {
-    let active_config = runtime_parachains::configuration::ActiveConfig::<Runtime>::get();
-
-    let mut pending_configs = runtime_parachains::configuration::PendingConfigs::<Runtime>::get();
+    let pending_configs = runtime_parachains::configuration::PendingConfigs::<Runtime>::get();
 
     // We are not making any assumptions about number of configurations existing in pending config
     // storage item.
-    // First remove any pending configs greater than session index in consideration
-    pending_configs = pending_configs
+    pending_configs
         .into_iter()
+        // First remove any pending configs greater than session index in consideration
         .filter(|element| element.0 <= session_index_to_consider)
-        .collect::<Vec<_>>();
-    // Reverse sorting by the session index
-    pending_configs.sort_by(|a, b| b.0.cmp(&a.0));
-
-    if pending_configs.is_empty() {
-        active_config
-    } else {
-        // We will take first pending config which should be as close to the session index as possible
-        pending_configs
-            .first()
-            .expect("already checked for emptiness above")
-            .1
-            .clone()
-    }
+        // Take the config for the highest (most recent) session
+        .max_by_key(|(session, _config)| *session)
+        .map(|(_session, config)| config)
+        // If pending configs is empty after filter, read active config
+        .unwrap_or_else(|| runtime_parachains::configuration::ActiveConfig::<Runtime>::get())
 }
 
 pub struct GetCoreAllocationConfigurationImpl;
