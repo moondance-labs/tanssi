@@ -42,13 +42,11 @@ use {
     frame_system::unique,
     parity_scale_codec::{DecodeWithMemTracking, MaxEncodedLen},
     scale_info::TypeInfo,
-    snowbridge_outbound_queue_primitives::{SendError,v1::Fee},
-    snowbridge_core::{
-        AgentId, Channel, ChannelId, ParaId,
-    },
+    snowbridge_core::{AgentId, Channel, ChannelId, ParaId},
     snowbridge_inbound_queue_primitives::v1::{
         ConvertMessage, ConvertMessageError, VersionedXcmMessage,
     },
+    snowbridge_outbound_queue_primitives::{v1::Fee, SendError},
     snowbridge_pallet_outbound_queue::send_message_impl::Ticket,
     sp_core::{blake2_256, hashing, H256},
     sp_runtime::{app_crypto::sp_core, traits::Convert, RuntimeDebug},
@@ -390,7 +388,9 @@ impl<AccountId> EthereumLocationsConverterFor<AccountId> {
 }
 
 /// Information of a recently created channel.
-#[derive(Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo, Clone, PartialEq, MaxEncodedLen)]
+#[derive(
+    Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo, Clone, PartialEq, MaxEncodedLen,
+)]
 pub struct ChannelInfo {
     pub channel_id: ChannelId,
     pub para_id: ParaId,

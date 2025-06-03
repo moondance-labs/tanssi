@@ -33,7 +33,7 @@ use {
     frame_system::pallet_prelude::*,
     log::log,
     pallet_staking::SessionInterface,
-    parity_scale_codec::{Decode, Encode, DecodeWithMemTracking, FullCodec},
+    parity_scale_codec::{Decode, DecodeWithMemTracking, Encode, FullCodec},
     sp_core::H256,
     sp_runtime::{
         traits::{Convert, Debug, One, Saturating, Zero},

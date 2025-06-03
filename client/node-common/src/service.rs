@@ -44,8 +44,7 @@ use {
     sc_network_sync::SyncingService,
     sc_network_transactions::TransactionsHandlerController,
     sc_service::{
-        Configuration, KeystoreContainer, SpawnTaskHandle, TFullBackend,
-        TFullClient, TaskManager,
+        Configuration, KeystoreContainer, SpawnTaskHandle, TFullBackend, TFullClient, TaskManager,
     },
     sc_telemetry::{Telemetry, TelemetryWorker, TelemetryWorkerHandle},
     sc_transaction_pool_api::OffchainTransactionPoolFactory,

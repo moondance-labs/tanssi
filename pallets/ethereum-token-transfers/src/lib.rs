@@ -64,10 +64,10 @@ use {
     },
     frame_system::pallet_prelude::*,
     snowbridge_core::{AgentId, ChannelId, ParaId, TokenId},
-    snowbridge_outbound_queue_primitives::SendError,
     snowbridge_outbound_queue_primitives::v1::{
         Command as SnowbridgeCommand, Message as SnowbridgeMessage, SendMessage,
     },
+    snowbridge_outbound_queue_primitives::SendError,
     sp_core::{H160, H256},
     sp_runtime::{traits::MaybeEquivalence, DispatchResult},
     sp_std::vec,
