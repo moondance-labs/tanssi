@@ -18,7 +18,6 @@ mod pallet_xcm_benchmarks_fungible;
 mod pallet_xcm_benchmarks_generic;
 
 use frame_support::BoundedVec;
-use xcm::latest::AssetTransferFilter;
 use {
     crate::Runtime,
     frame_support::weights::Weight,
@@ -26,7 +25,7 @@ use {
     pallet_xcm_benchmarks_generic::WeightInfo as XcmGeneric,
     sp_std::prelude::*,
     xcm::{
-        latest::{prelude::*, Weight as XCMWeight},
+        latest::{prelude::*, AssetTransferFilter, Weight as XCMWeight},
         DoubleEncoded,
     },
 };
@@ -35,6 +34,7 @@ const MAX_ASSETS: u64 = 1;
 
 pub enum AssetTypes {
     Balances,
+    Ethereum,
     Unknown,
 }
 
@@ -49,6 +49,20 @@ impl From<&Asset> for AssetTypes {
                     }),
                 ..
             } => AssetTypes::Balances,
+            Asset {
+                id:
+                    AssetId(Location {
+                        parents: 1,
+                        interior,
+                    }),
+                ..
+            } => {
+                if let Some(GlobalConsensus(Ethereum { .. })) = interior.first() {
+                    AssetTypes::Ethereum
+                } else {
+                    AssetTypes::Unknown
+                }
+            }
             _ => AssetTypes::Unknown,
         }
     }
@@ -67,6 +81,7 @@ impl WeighAssets for AssetFilter {
                 .map(From::from)
                 .map(|t| match t {
                     AssetTypes::Balances => balances_weight,
+                    AssetTypes::Ethereum => balances_weight,
                     AssetTypes::Unknown => Weight::MAX,
                 })
                 .fold(Weight::zero(), |acc, x| acc.saturating_add(x)),
@@ -86,6 +101,7 @@ impl WeighAssets for Assets {
             .map(|m| <AssetTypes as From<&Asset>>::from(m))
             .map(|t| match t {
                 AssetTypes::Balances => balances_weight,
+                AssetTypes::Ethereum => balances_weight,
                 AssetTypes::Unknown => Weight::MAX,
             })
             .fold(Weight::zero(), |acc, x| acc.saturating_add(x))

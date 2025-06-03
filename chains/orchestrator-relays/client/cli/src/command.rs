@@ -520,6 +520,8 @@ fn load_spec(
             )
         }
         #[cfg(feature = "starlight-native")]
+        "tanssi" => Box::new(tanssi_relay_service::chain_spec::tanssi_config()?),
+        #[cfg(feature = "starlight-native")]
         "starlight-dev" => {
             // Default invulnerables for dev mode, used in dev_tanssi_relay tests
             let invulnerables = invulnerables.unwrap_or(vec![

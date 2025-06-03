@@ -6661,6 +6661,18 @@ declare module "@polkadot/types/lookup" {
     /** @name CumulusPrimitivesStorageWeightReclaimStorageWeightReclaim (617) */
     type CumulusPrimitivesStorageWeightReclaimStorageWeightReclaim = Null;
 
-    /** @name DanceboxRuntimeRuntime (618) */
+    /** @name FrameMetadataHashExtensionCheckMetadataHash (618) */
+    interface FrameMetadataHashExtensionCheckMetadataHash extends Struct {
+        readonly mode: FrameMetadataHashExtensionMode;
+    }
+
+    /** @name FrameMetadataHashExtensionMode (619) */
+    interface FrameMetadataHashExtensionMode extends Enum {
+        readonly isDisabled: boolean;
+        readonly isEnabled: boolean;
+        readonly type: "Disabled" | "Enabled";
+    }
+
+    /** @name DanceboxRuntimeRuntime (620) */
     type DanceboxRuntimeRuntime = Null;
 } // declare module
