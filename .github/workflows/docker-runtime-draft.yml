@@ -5,7 +5,12 @@ on:
   push:
     branches:
       - perm-runtime-*
-
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: The branch for which generate binaries from
+        required: true
+        type: string
 jobs:
   ####### Building binaries #######
   setup-scripts:
@@ -18,8 +23,25 @@ jobs:
           name: original-tools
           path: tools
 
+  set-tags:
+    runs-on: ubuntu-latest
+    outputs:
+      git_ref: ${{ steps.check-git-ref.outputs.git_ref }}
+      git_branch: ${{ steps.check-git-ref.outputs.git_branch }}
+
+    steps:
+      - name: Check git ref
+        id: check-git-ref
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "git_ref=${{ github.event.inputs.branch }}" >> $GITHUB_OUTPUT
+            echo "git_branch=${{ github.event.inputs.branch }}" >> $GITHUB_OUTPUT
+          else
+            echo "git_ref=${{ github.event.inputs.to }}" >> $GITHUB_OUTPUT
+            echo "git_branch=$(echo ${GITHUB_HEAD_REF})" >> $GITHUB_OUTPUT
+          fi
   build-binary:
-    needs: ["setup-scripts"]
+    needs: ["setup-scripts", "set-tags"]
     runs-on: self-hosted
     strategy:
       matrix:
@@ -30,38 +52,76 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.to }}
+          ref: ${{ steps.check-git-ref.outputs.git_ref }}
       - name: Setup Rust toolchain
         run: rustup show
-      - name: Build Node
-        run: cargo build --profile=production --all
-    
-      - name: Save parachain binary
+      - name: Build Node tanssi-relay
+        if: ${{ ${{ steps.check-git-ref.outputs.git_branch }} == "perm-runtime-starlight"* }}
+        run: cargo build -p tanssi-relay --profile=production
+      - name: Build Node parachains
+        if: ${{ ${{ steps.check-git-ref.outputs.git_branch }} == "perm-runtime-para"* }}
+        run: cargo build -p tanssi-node -p container-chain-frontier-node -p container-chain-simple-node --profile=production
+      - name: Save binary
         if: ${{ matrix.cpu == '' }}
         run: |
           mkdir -p binaries
-          cp target/production/tanssi-node binaries/tanssi-node
-          cp target/production/container-chain-frontier-node binaries/container-chain-frontier-node
-          cp target/production/container-chain-simple-node binaries/container-chain-simple-node
-      - name: Save parachain custom binary
+          if [[ "${{ needs.set-tags.outputs.git_branch}" == "perm-runtime-para"* ]];
+            cp target/production/tanssi-node binaries/tanssi-node
+            cp target/production/container-chain-frontier-node binaries/container-chain-frontier-node
+            cp target/production/container-chain-simple-node binaries/container-chain-simple-node
+          else
+            cp target/production/tanssi-relay binaries/tanssi-relay
+            cp target/production/tanssi-relay-execute-worker binaries/tanssi-relay-execute-worker-${{matrix.cpu}}
+            cp target/production/tanssi-relay-prepare-worker binaries/tanssi-relay-prepare-worker-${{matrix.cpu}}
+          fi
+      - name: Save custom binary
         if: ${{ matrix.cpu != '' }}
         run: |
           mkdir -p binaries
-          cp target/production/tanssi-node binaries/tanssi-node-${{matrix.cpu}}
-          cp target/production/container-chain-frontier-node binaries/container-chain-frontier-node-${{matrix.cpu}}
-          cp target/production/container-chain-simple-node binaries/container-chain-simple-node-${{matrix.cpu}}
+          if [[ "${{ needs.set-tags.outputs.git_branch}" == "perm-runtime-para"* ]];
+            cp target/production/tanssi-node binaries/tanssi-node-${{matrix.cpu}}
+            cp target/production/container-chain-frontier-node binaries/container-chain-frontier-node-${{matrix.cpu}}
+            cp target/production/container-chain-simple-node binaries/container-chain-simple-node-${{matrix.cpu}}
+          else
+            cp target/production/tanssi-relay binaries/tanssi-relay-${{matrix.cpu}}
+            cp target/production/tanssi-relay-execute-worker binaries/tanssi-relay-execute-worker-${{matrix.cpu}}
+            cp target/production/tanssi-relay-prepare-worker binaries/tanssi-relay-prepare-worker-${{matrix.cpu}}
+          fi
       - name: Upload binaries
         uses: actions/upload-artifact@v4
         with:
           name: binaries-${{ matrix.cpu }}
           path: binaries
+
+  docker_matrix_prep:
+    runs-on: ubuntu-latest
+    needs: ["set-tags"]
+    outputs:
+      matrix_tests: ${{ steps.prepare.outputs.matrix_tests }}
+    steps:
+      - uses: actions/checkout@v4
+
+    # Build input dependent matrix
+      - name: create matrix
+        id: prepare
+        run: |
+          tanssi_para='tanssi'
+          tanssi_solo='starlight'
+          container_chain_evm='container-chain-evm-template'
+          container_chain_simple='container-chain-simple-template'
+          if [[ "${{ needs.set-tags.outputs.git_branch}" == "perm-runtime-para"* ]];
+            echo "matrix_tests=[$tanssi_para, $container_chain_evm, $container_chain_simple]" >> $GITHUB_OUTPUT
+          else
+            echo "matrix_tests=[$tanssi_solo]" >> $GITHUB_OUTPUT
+          fi
   docker-tanssi:
     runs-on: ubuntu-latest
-    needs: ["build-binary"]
+    needs: ["build-binary", "docker_matrix_prep"]
+    
     strategy:
       fail-fast: false
       matrix:
-        image: ["tanssi", "container-chain-simple-template", "container-chain-evm-template"]
+        image: ${{ fromJson(needs.matrix_prep.outputs.matrix_tests) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
