@@ -84,7 +84,7 @@ describeSuite({
                             continue;
                         }
 
-                        const events = extrinsicIndexToEventsMap.get(`${index}`);
+                        const events = extrinsicIndexToEventsMap.get(`${index}`) || [];
 
                         // Get all fee paid events for the current extrinsic
                         const feePaidEvents = filterAndApply(
