@@ -171,6 +171,7 @@ snowbridge-pallet-system = { workspace = true }
 snowbridge-inbound-queue-primitives = { workspace = true }
 snowbridge-pallet-outbound-queue = { workspace = true }
 snowbridge-outbound-queue-primitives = { workspace = true }
+snowbridge-verification-primitives = { workspace = true }
 tp-bridge = { workspace = true }
 
 [dev-dependencies]
@@ -323,6 +324,7 @@ std = [
 	"snowbridge-pallet-system/std",
 	"snowbridge-inbound-queue-primitives/std",
 	"snowbridge-outbound-queue-primitives/std",
+	"snowbridge-verification-primitives/std",
 	"sp-api/std",
 	"sp-application-crypto/std",
 	"sp-arithmetic/std",

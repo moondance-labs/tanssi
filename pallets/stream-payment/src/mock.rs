@@ -114,7 +114,18 @@ impl pallet_balances::Config for Runtime {
     type WeightInfo = ();
 }
 
-#[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo, MaxEncodedLen)]
+#[derive(
+    RuntimeDebug,
+    PartialEq,
+    Eq,
+    Encode,
+    Decode,
+    DecodeWithMemTracking,
+    Copy,
+    Clone,
+    TypeInfo,
+    MaxEncodedLen,
+)]
 pub enum StreamPaymentAssetId {
     Native,
     Dummy,
@@ -301,6 +312,7 @@ impl ExtBuilder {
 
         pallet_balances::GenesisConfig::<Runtime> {
             balances: self.balances,
+            ..Default::default()
         }
         .assimilate_storage(&mut t)
         .expect("Pallet balances storage can be assimilated");

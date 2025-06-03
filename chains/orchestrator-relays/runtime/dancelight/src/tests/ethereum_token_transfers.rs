@@ -33,9 +33,9 @@ use {
         inbound::{Log, Message},
         AgentId, Channel, ChannelId, ParaId,
     },
-    snowbridge_inbound_queue_primitives::inbound::{
-        envelope::{Envelope, OutboundMessageAccepted},
-        Command, Destination, MessageProcessor, MessageV1, VersionedXcmMessage,
+    snowbridge_inbound_queue_primitives::{
+        Command, Destination, Envelope, MessageProcessor, MessageV1, OutboundMessageAccepted,
+        VersionedXcmMessage,
     },
     sp_core::{H160, H256},
     sp_runtime::{traits::MaybeEquivalence, FixedU128, TokenError},

@@ -23,11 +23,9 @@ use {
     frame_system::pallet_prelude::OriginFor,
     keyring::Sr25519Keyring,
     parity_scale_codec::Encode,
-    snowbridge_core::{
-        inbound::{Log, Message},
-        Channel, PRIMARY_GOVERNANCE_CHANNEL,
-    },
-    snowbridge_inbound_queue_primitives::inbound::envelope::OutboundMessageAccepted,
+    snowbridge_core::{Channel, PRIMARY_GOVERNANCE_CHANNEL},
+    snowbridge_inbound_queue_primitives::OutboundMessageAccepted,
+    snowbridge_verification_primitives::{EventProof, Log},
     sp_core::H256,
     sp_runtime::DispatchError,
     tp_bridge::symbiotic_message_processor::{

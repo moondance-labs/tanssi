@@ -20,7 +20,7 @@ use {
     crate::{tests::common::*, EthereumSystem},
     frame_support::assert_noop,
     pallet_xcm::Origin as XcmOrigin,
-    snowbridge_core::outbound::OperatingMode,
+    snowbridge_outbound_queue_primitives::OperatingMode,
     sp_core::H160,
     sp_runtime::DispatchError::BadOrigin,
     sp_std::vec,

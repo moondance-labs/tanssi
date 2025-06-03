@@ -53,7 +53,7 @@ use {
         paras_inherent as parachains_paras_inherent,
     },
     snowbridge_beacon_primitives::{types::deneb, ExecutionProof, VersionedExecutionPayloadHeader},
-    snowbridge_core::inbound::Proof,
+    snowbridge_verification_primitives::Proof,
     sp_core::Pair,
     sp_core::Public,
     sp_keystore::{KeystoreExt, KeystorePtr},

@@ -28,6 +28,7 @@ pub fn genesis() -> Storage {
                 .cloned()
                 .map(|k| (k, INITIAL_BALANCE))
                 .collect(),
+            ..Default::default()
         },
         babe: starlight_runtime::BabeConfig {
             authorities: Default::default(),

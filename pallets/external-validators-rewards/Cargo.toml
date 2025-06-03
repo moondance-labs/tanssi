@@ -34,6 +34,7 @@ runtime-parachains = { workspace = true }
 
 snowbridge-core = { workspace = true }
 snowbridge-merkle-tree = { workspace = true }
+snowbridge-outbound-queue-primitives = { workspace = true }
 
 cumulus-primitives-core = { workspace = true }
 polkadot-primitives = { workspace = true }
@@ -61,6 +62,7 @@ std = [
 	"scale-info/std",
 	"snowbridge-core/std",
 	"snowbridge-merkle-tree/std",
+	"snowbridge-outbound-queue-primitives/std",
 	"sp-core/std",
 	"sp-io/std",
 	"sp-runtime/std",

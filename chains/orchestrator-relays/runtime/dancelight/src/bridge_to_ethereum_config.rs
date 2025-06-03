@@ -483,7 +483,7 @@ mod benchmark_helper {
 
 #[cfg(any(test, feature = "testing-helpers"))]
 mod test_helpers {
-    use snowbridge_core::inbound::{Log, Proof, VerificationError, Verifier};
+    use snowbridge_inbound_queue_primitives::{Log, Proof, VerificationError, Verifier};
 
     pub struct MockVerifier;
 

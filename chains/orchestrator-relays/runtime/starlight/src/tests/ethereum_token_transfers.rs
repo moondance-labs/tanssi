@@ -27,13 +27,10 @@ use {
     frame_support::{assert_noop, assert_ok},
     hex_literal::hex,
     parity_scale_codec::Encode,
-    snowbridge_core::{
-        inbound::{Log, Message},
-        AgentId, Channel, ChannelId, ParaId,
-    },
-    snowbridge_inbound_queue_primitives::inbound::{
-        envelope::{Envelope, OutboundMessageAccepted},
-        Command, Destination, MessageProcessor, MessageV1, VersionedXcmMessage,
+    snowbridge_beacon_primitives::{AgentId, Channel, ChannelId, Log, Message, ParaId},
+    snowbridge_inbound_queue_primitives::v1::{
+        Command, Destination, Envelope, MessageProcessor, MessageV1, OutboundMessageAccepted,
+        VersionedXcmMessage,
     },
     sp_core::{H160, H256},
     sp_runtime::{traits::MaybeEquivalence, FixedU128, TokenError},

@@ -22,6 +22,7 @@ pallet-staking = { workspace = true }
 parity-scale-codec = { workspace = true, features = [ "derive", "max-encoded-len" ] }
 scale-info = { workspace = true }
 snowbridge-core = { workspace = true }
+snowbridge-outbound-queue-primitives = { workspace = true }
 sp-core = { workspace = true }
 sp-runtime = { workspace = true }
 sp-staking = { workspace = true }
@@ -49,6 +50,7 @@ std = [
 	"polkadot-core-primitives/std",
 	"scale-info/std",
 	"snowbridge-core/std",
+	"snowbridge-outbound-queue-primitives/std",
 	"sp-core/std",
 	"sp-io/std",
 	"sp-runtime/std",
