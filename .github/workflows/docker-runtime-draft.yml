@@ -65,7 +65,7 @@ jobs:
         if: ${{ matrix.cpu == '' }}
         run: |
           mkdir -p binaries
-          if [[ "${{ needs.set-tags.outputs.git_branch }}" == *"para"* ]];
+          if [[ "${{ needs.set-tags.outputs.git_branch }}" == *"para"* ]]; then
             cp target/production/tanssi-node binaries/tanssi-node
             cp target/production/container-chain-frontier-node binaries/container-chain-frontier-node
             cp target/production/container-chain-simple-node binaries/container-chain-simple-node
@@ -78,7 +78,7 @@ jobs:
         if: ${{ matrix.cpu != '' }}
         run: |
           mkdir -p binaries
-          if [[ "${{ needs.set-tags.outputs.git_branch }} " == *"para"* ]];
+          if [[ "${{ needs.set-tags.outputs.git_branch }} " == *"para"* ]]; then
             cp target/production/tanssi-node binaries/tanssi-node-${{matrix.cpu}}
             cp target/production/container-chain-frontier-node binaries/container-chain-frontier-node-${{matrix.cpu}}
             cp target/production/container-chain-simple-node binaries/container-chain-simple-node-${{matrix.cpu}}
@@ -109,7 +109,7 @@ jobs:
           tanssi_solo='starlight'
           container_chain_evm='container-chain-evm-template'
           container_chain_simple='container-chain-simple-template'
-          if [[ "${{ needs.set-tags.outputs.git_branch }}" == *"para"* ]];
+          if [[ "${{ needs.set-tags.outputs.git_branch }}" == *"para"* ]]; then
             echo "matrix_tests=[$tanssi_para, $container_chain_evm, $container_chain_simple]" >> $GITHUB_OUTPUT
           else
             echo "matrix_tests=[$tanssi_solo]" >> $GITHUB_OUTPUT
