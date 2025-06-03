@@ -56,10 +56,10 @@ jobs:
       - name: Setup Rust toolchain
         run: rustup show
       - name: Build Node tanssi-relay
-        if:  contains(needs.set-tags.outputs.git_branch, 'perm-runtime-starlight')
+        if:  contains(needs.set-tags.outputs.git_branch, 'starlight')
         run: cargo build -p tanssi-relay --profile=production
       - name: Build Node parachains
-        if:  contains(needs.set-tags.outputs.git_branch, 'perm-runtime-para')
+        if:  contains(needs.set-tags.outputs.git_branch, 'para')
         run: cargo build -p tanssi-node -p container-chain-frontier-node -p container-chain-simple-node --profile=production
       - name: Save binary
         if: ${{ matrix.cpu == '' }}
@@ -78,7 +78,7 @@ jobs:
         if: ${{ matrix.cpu != '' }}
         run: |
           mkdir -p binaries
-          if [[ "${{ needs.set-tags.outputs.git_branch }} " == "perm-runtime-para"* ]];
+          if [[ "${{ needs.set-tags.outputs.git_branch }} " == *"para"* ]];
             cp target/production/tanssi-node binaries/tanssi-node-${{matrix.cpu}}
             cp target/production/container-chain-frontier-node binaries/container-chain-frontier-node-${{matrix.cpu}}
             cp target/production/container-chain-simple-node binaries/container-chain-simple-node-${{matrix.cpu}}
@@ -109,7 +109,7 @@ jobs:
           tanssi_solo='starlight'
           container_chain_evm='container-chain-evm-template'
           container_chain_simple='container-chain-simple-template'
-          if [[ "${{ needs.set-tags.outputs.git_branch }}" == "perm-runtime-para"* ]];
+          if [[ "${{ needs.set-tags.outputs.git_branch }}" == *"para"* ]];
             echo "matrix_tests=[$tanssi_para, $container_chain_evm, $container_chain_simple]" >> $GITHUB_OUTPUT
           else
             echo "matrix_tests=[$tanssi_solo]" >> $GITHUB_OUTPUT
