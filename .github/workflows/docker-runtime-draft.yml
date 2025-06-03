@@ -39,6 +39,7 @@ jobs:
           else
             echo "git_ref=${{ github.event.inputs.to }}" >> $GITHUB_OUTPUT
             echo "git_branch=$(echo ${GITHUB_HEAD_REF})" >> $GITHUB_OUTPUT
+            echo ${GITHUB_HEAD_REF}
           fi
   build-binary:
     needs: ["setup-scripts", "set-tags"]
