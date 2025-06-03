@@ -615,7 +615,6 @@ parameter_types! {
     pub const ProposalBondMaximum: Balance = 1 * GRAND;
     // We allow it to be 1 minute in fast mode to be able to test it
     pub const SpendPeriod: BlockNumber = runtime_common::prod_or_fast!(6 * DAYS, 1 * MINUTES);
-    pub const Burn: Permill = Permill::from_perthousand(2);
     pub const TreasuryPalletId: PalletId = PalletId(*b"py/trsry");
     pub const PayoutSpendPeriod: BlockNumber = 30 * DAYS;
     // The asset's interior location for the paying account. This is the Treasury
@@ -674,7 +673,7 @@ impl pallet_treasury::Config for Runtime {
     type RejectOrigin = EitherOfDiverse<EnsureRoot<AccountId>, Treasurer>;
     type RuntimeEvent = RuntimeEvent;
     type SpendPeriod = SpendPeriod;
-    type Burn = Burn;
+    type Burn = ();
     type BurnDestination = ();
     type MaxApprovals = MaxApprovals;
     type WeightInfo = weights::pallet_treasury::SubstrateWeight<Runtime>;
@@ -1617,17 +1616,14 @@ parameter_types! {
 impl pallet_multiblock_migrations::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     #[cfg(not(feature = "runtime-benchmarks"))]
-    type Migrations = (
-        pallet_identity::migration::v2::LazyMigrationV1ToV2<Runtime>,
-        pallet_pooled_staking::migrations::MigrationGenerateSummaries<Runtime>,
-    );
+    type Migrations = ();
     // Benchmarks need mocked migrations to guarantee that they succeed.
     #[cfg(feature = "runtime-benchmarks")]
     type Migrations = pallet_multiblock_migrations::mock_helpers::MockedMigrations;
     type CursorMaxLen = ConstU32<65_536>;
     type IdentifierMaxLen = ConstU32<256>;
     type MigrationStatusHandler = ();
-    type FailedMigrationHandler = frame_support::migrations::FreezeChainOnFailedMigration;
+    type FailedMigrationHandler = MaintenanceMode;
     type MaxServiceWeight = MbmServiceWeight;
     type WeightInfo = weights::pallet_multiblock_migrations::SubstrateWeight<Runtime>;
 }
