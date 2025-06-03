@@ -1,10 +1,13 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
-import { BN } from "@polkadot/util";
 import { getTreasuryAddress } from "../../utils";
+import { filterAndApply } from "@moonwall/util";
+import type { EventRecord } from "@polkadot/types/interfaces";
 
 const RUNTIME_VERSION_THRESHOLD = 1300;
-const BLOCKS_AMOUNT_TO_CHECK = 100;
+let BLOCKS_AMOUNT_TO_CHECK = 100;
+// For debug purposes only, specify block here to check it
+const BLOCK_NUMBER_TO_DEBUG = undefined;
 
 describeSuite({
     id: "S07",
@@ -21,11 +24,22 @@ describeSuite({
             id: "C01",
             title: "Check if fees go to treasury",
             test: async () => {
-                const currentBlock = (await api.rpc.chain.getBlock()).block.header.number.toNumber();
+                let currentBlock = (await api.rpc.chain.getBlock()).block.header.number.toNumber();
                 const treasuryAddress = getTreasuryAddress(api);
+
+                if (BLOCK_NUMBER_TO_DEBUG !== undefined) {
+                    BLOCKS_AMOUNT_TO_CHECK = 1;
+                    currentBlock = BLOCK_NUMBER_TO_DEBUG + 1;
+                }
 
                 for (let i = 1; i <= BLOCKS_AMOUNT_TO_CHECK; i++) {
                     const blockNumber = currentBlock - i;
+
+                    // Track if any assertions executed for the block (to avoid false positives)
+                    let isAsserted = false;
+
+                    process.stdout.write(`\rProcessing block [${blockNumber}]: ${i}/${BLOCKS_AMOUNT_TO_CHECK}`);
+
                     const blockHash = await api.rpc.chain.getBlockHash(blockNumber);
                     const block = await api.rpc.chain.getBlock(blockHash);
                     const extrinsics = block.block.extrinsics;
@@ -44,46 +58,56 @@ describeSuite({
                         return;
                     }
 
-                    const prevBlockApi = await api.at(await api.rpc.chain.getBlockHash(blockNumber - 1));
-                    const treasureBalanceBefore = (
-                        await prevBlockApi.query.system.account(treasuryAddress)
-                    ).data.free.toBn();
-                    const treasureBalanceAfter = (
-                        await apiAtBlock.query.system.account(treasuryAddress)
-                    ).data.free.toBn();
-
-                    // Expected treasury deposit for the current block
-                    const treasuryDeposit = treasureBalanceAfter.sub(treasureBalanceBefore);
-                    // Accumulated fees and tips for the current block
-                    let totalFee = new BN(0);
-
                     const events = await apiAtBlock.query.system.events();
-
-                    for (const [index, extrinsic] of extrinsics.entries()) {
+                    for (const [_, extrinsic] of extrinsics.entries()) {
                         // Skip unsigned extrinsics, since no commission is paid
                         if (!extrinsic.isSigned) {
                             continue;
                         }
 
-                        for (const { event, phase } of events) {
-                            if (phase.isApplyExtrinsic && phase.asApplyExtrinsic.eq(index)) {
-                                if (event.section === "transactionPayment" && event.method === "TransactionFeePaid") {
-                                    const [_, actualFee, tip] = event.data;
-                                    const fee = (actualFee as any).toBn();
-                                    const tipBn = (tip as any).toBn();
-                                    totalFee = totalFee.add(fee).add(tipBn);
-                                }
-                            }
+                        // Get all fee paid events for the current extrinsic
+                        const feePaidEvents = filterAndApply(
+                            events,
+                            "transactionPayment",
+                            ["TransactionFeePaid"],
+                            ({ event }: EventRecord) =>
+                                event.data.toHuman() as unknown as { who: string; actualFee: string; tip: string }
+                        );
+
+                        // Get all balances deposit events for the current extrinsic
+                        let balancesDepositEvents = filterAndApply(
+                            events,
+                            "balances",
+                            ["Deposit"],
+                            ({ event }: EventRecord) =>
+                                event.data.toHuman() as unknown as { who: string; amount: string }
+                        );
+
+                        // Filter deposits only for treasury and check if the fee matches
+                        balancesDepositEvents = balancesDepositEvents.filter(
+                            (event) => event.who === treasuryAddress && event.amount === feePaidEvents[0].actualFee
+                        );
+
+                        // We skip extrinsics with zero fees
+                        if (feePaidEvents[0].actualFee === "0") {
+                            continue;
                         }
+
+                        expect(
+                            feePaidEvents.length,
+                            `[Block: ${blockNumber}, Hash: ${blockHash}] Expect the amount of \`transactionPayment.TransactionFeePaid\` equals 1`
+                        ).toEqual(1);
+
+                        expect(
+                            balancesDepositEvents.length,
+                            `[Block: ${blockNumber}, Hash: ${blockHash}] Expect the amount of \`balances.Deposit\` for treasury address with exact fee value equals 1`
+                        ).toEqual(1);
+
+                        isAsserted = true;
                     }
 
-                    if (!totalFee.isZero() || !treasuryDeposit.isZero()) {
-                        expect(
-                            totalFee.toString(),
-                            `Total fee (${totalFee.toString()}) should equal Treasury Deposit (${treasuryDeposit.toString()}) for block: ${blockNumber} with block hash: ${blockHash.toHuman()}`
-                        ).toEqual(treasuryDeposit.toString());
-                    } else {
-                        log(`Skip for block number: ${blockNumber} as it has no fees`);
+                    if (!isAsserted) {
+                        log("No assertions executed in this block, skipping...");
                     }
                 }
             },
