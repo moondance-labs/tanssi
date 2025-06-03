@@ -56,10 +56,10 @@ jobs:
       - name: Setup Rust toolchain
         run: rustup show
       - name: Build Node tanssi-relay
-        if:  contains(needs.set-tags.outputs.git_branch, 'perm-runtime-starlight'*)
+        if:  contains(needs.set-tags.outputs.git_branch, 'perm-runtime-starlight')
         run: cargo build -p tanssi-relay --profile=production
       - name: Build Node parachains
-        if:  contains(needs.set-tags.outputs.git_branch, 'perm-runtime-para'*)
+        if:  contains(needs.set-tags.outputs.git_branch, 'perm-runtime-para')
         run: cargo build -p tanssi-node -p container-chain-frontier-node -p container-chain-simple-node --profile=production
       - name: Save binary
         if: ${{ matrix.cpu == '' }}
