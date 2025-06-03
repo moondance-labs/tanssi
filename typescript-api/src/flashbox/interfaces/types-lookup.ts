@@ -3161,6 +3161,18 @@ declare module "@polkadot/types/lookup" {
     /** @name CumulusPrimitivesStorageWeightReclaimStorageWeightReclaim (390) */
     type CumulusPrimitivesStorageWeightReclaimStorageWeightReclaim = Null;
 
-    /** @name FlashboxRuntimeRuntime (391) */
+    /** @name FrameMetadataHashExtensionCheckMetadataHash (391) */
+    interface FrameMetadataHashExtensionCheckMetadataHash extends Struct {
+        readonly mode: FrameMetadataHashExtensionMode;
+    }
+
+    /** @name FrameMetadataHashExtensionMode (392) */
+    interface FrameMetadataHashExtensionMode extends Enum {
+        readonly isDisabled: boolean;
+        readonly isEnabled: boolean;
+        readonly type: "Disabled" | "Enabled";
+    }
+
+    /** @name FlashboxRuntimeRuntime (393) */
     type FlashboxRuntimeRuntime = Null;
 } // declare module

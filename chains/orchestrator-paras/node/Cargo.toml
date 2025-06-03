@@ -161,3 +161,4 @@ try-runtime = [
 ]
 
 fast-runtime = [ "dancebox-runtime/fast-runtime", "flashbox-runtime/fast-runtime" ]
+metadata-hash = [ "dancebox-runtime/metadata-hash", "flashbox-runtime/metadata-hash" ]

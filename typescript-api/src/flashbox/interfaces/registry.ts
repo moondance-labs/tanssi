@@ -29,6 +29,8 @@ import type {
     FlashboxRuntimeRuntimeFreezeReason,
     FlashboxRuntimeRuntimeHoldReason,
     FlashboxRuntimeSessionKeys,
+    FrameMetadataHashExtensionCheckMetadataHash,
+    FrameMetadataHashExtensionMode,
     FrameSupportDispatchDispatchClass,
     FrameSupportDispatchPays,
     FrameSupportDispatchPerDispatchClassU32,
@@ -225,6 +227,8 @@ declare module "@polkadot/types/types/registry" {
         FlashboxRuntimeRuntimeFreezeReason: FlashboxRuntimeRuntimeFreezeReason;
         FlashboxRuntimeRuntimeHoldReason: FlashboxRuntimeRuntimeHoldReason;
         FlashboxRuntimeSessionKeys: FlashboxRuntimeSessionKeys;
+        FrameMetadataHashExtensionCheckMetadataHash: FrameMetadataHashExtensionCheckMetadataHash;
+        FrameMetadataHashExtensionMode: FrameMetadataHashExtensionMode;
         FrameSupportDispatchDispatchClass: FrameSupportDispatchDispatchClass;
         FrameSupportDispatchPays: FrameSupportDispatchPays;
         FrameSupportDispatchPerDispatchClassU32: FrameSupportDispatchPerDispatchClassU32;
