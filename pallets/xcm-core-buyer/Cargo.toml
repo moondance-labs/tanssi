@@ -84,6 +84,7 @@ runtime-benchmarks = [
 	"sp-runtime/runtime-benchmarks",
 	"tp-traits/runtime-benchmarks",
 	"tp-xcm-core-buyer/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
 ]
 try-runtime = [
 	"frame-support/try-runtime",

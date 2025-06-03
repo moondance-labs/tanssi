@@ -86,6 +86,7 @@ runtime-benchmarks = [
 	"sp-staking/runtime-benchmarks",
 	"tp-bridge/runtime-benchmarks",
 	"tp-traits/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
 ]
 
 try-runtime = [
