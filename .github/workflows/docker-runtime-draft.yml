@@ -105,10 +105,10 @@ jobs:
       - name: create matrix
         id: prepare
         run: |
-          tanssi_para='tanssi'
-          tanssi_solo='starlight'
-          container_chain_evm='container-chain-evm-template'
-          container_chain_simple='container-chain-simple-template'
+          tanssi_para='{"image": "tanssi"}'
+          tanssi_solo='{"image": "starlight"}'
+          container_chain_evm='{"image": "container-chain-evm-template"}'
+          container_chain_simple='{"image": "container-chain-simple-template"}'
           if [[ "${{ needs.set-tags.outputs.git_branch }}" == *"para"* ]]; then
             echo "matrix_tests=[$tanssi_para, $container_chain_evm, $container_chain_simple]" >> $GITHUB_OUTPUT
           else
@@ -122,7 +122,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        image: ${{ toJson(needs.docker_matrix_prep.outputs.matrix_tests) }}
+        image: ${{ fromJson(needs.docker_matrix_prep.outputs.matrix_tests) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -135,7 +135,7 @@ jobs:
         id: prep
         run: |
           SHA8=$(git log -1 --format='%H' | cut -c1-8)
-          DOCKER_IMAGE=moondancelabs/${{matrix.image}}
+          DOCKER_IMAGE=moondancelabs/${{matrix.image.image}}
           TAGS="${DOCKER_IMAGE}:sha-${SHA8}"
           echo "tags=${TAGS}" >> $GITHUB_OUTPUT
           echo "created=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
@@ -157,7 +157,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./docker/${{matrix.image}}.Dockerfile
+          file: ./docker/${{matrix.image.image}}.Dockerfile
           platforms: linux/amd64
           push: true
           tags: ${{ steps.prep.outputs.tags }}
