@@ -308,15 +308,15 @@ alloy-sol-types = { version = "0.4.2", default-features = false }
 milagro-bls = { package = "snowbridge-milagro-bls", version = "1.5.4", default-features = false }
 snowbridge-beacon-primitives = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2503", default-features = false }
 snowbridge-core = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2503", default-features = false }
+snowbridge-inbound-queue-primitives = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2503", default-features = false }
 snowbridge-merkle-tree = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2503", default-features = false }
+snowbridge-outbound-queue-primitives = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2503", default-features = false }
 snowbridge-outbound-queue-runtime-api = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2503", default-features = false }
 snowbridge-pallet-ethereum-client = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2503", default-features = false }
 snowbridge-pallet-inbound-queue = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2503", default-features = false }
 snowbridge-pallet-inbound-queue-fixtures = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2503", default-features = false }
 snowbridge-pallet-outbound-queue = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2503", default-features = false }
 snowbridge-pallet-system = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2503", default-features = false }
-snowbridge-inbound-queue-primitives = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2503", default-features = false }
-snowbridge-outbound-queue-primitives = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2503", default-features = false }
 snowbridge-verification-primitives = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2503", default-features = false }
 
 # Polkadot (client)
@@ -348,12 +348,12 @@ cumulus-client-network = { git = "https://github.com/moondance-labs/polkadot-sdk
 cumulus-client-parachain-inherent = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2503", default-features = false }
 cumulus-client-pov-recovery = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2503", default-features = false }
 cumulus-client-service = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2503", default-features = false }
+cumulus-pallet-weight-reclaim = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2503", default-features = false }
 cumulus-primitives-parachain-inherent = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2503", default-features = false }
 cumulus-relay-chain-interface = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2503", default-features = false }
 cumulus-test-relay-sproof-builder = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2503", default-features = false }
 emulated-integration-tests-common = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2503" }
 xcm-emulator = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2503", default-features = false }
-cumulus-pallet-weight-reclaim = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2503", default-features = false }
 
 # Frontier (wasm)
 fp-account = { git = "https://github.com/moondance-labs/frontier", branch = "tanssi-polkadot-stable2503", default-features = false }
@@ -551,6 +551,9 @@ polkadot-node-core-pvf-prepare-worker  = { git = "https://github.com/moondance-l
 
 substrate-rpc-client = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2503", default-features = false }
 
+[patch.crates-io]
+bounded-collections = { git = "https://github.com/dimartiro/parity-common", branch = "0.2.4" }
+
 [profile.production]
 codegen-units = 1
 inherits = "release"
@@ -559,6 +562,3 @@ lto = true
 [profile.release]
 opt-level = 3
 panic = "unwind"
-
-[patch.crates-io]
-bounded-collections = { git = "https://github.com/dimartiro/parity-common", branch = "0.2.4" }

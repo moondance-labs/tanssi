@@ -21,8 +21,8 @@ frame-system = { workspace = true }
 keyring = { workspace = true }
 parity-scale-codec = { workspace = true, features = [ "derive", "max-encoded-len", "std" ] }
 snowbridge-core = { workspace = true }
-snowbridge-pallet-inbound-queue = { workspace = true, features = [ "std" ] }
 snowbridge-inbound-queue-primitives = { workspace = true, features = [ "std" ] }
+snowbridge-pallet-inbound-queue = { workspace = true, features = [ "std" ] }
 sp-core = { workspace = true }
 tanssi-emulated-integration-tests-common = { workspace = true }
 tp-bridge = { workspace = true, features = [ "std" ] }
