@@ -16,6 +16,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use frame_support::traits::Get;
 use xcm::latest::prelude::*;
 trait Parse {
     /// Returns the "chain" location part. It could be parent, sibling
@@ -55,5 +56,27 @@ impl frame_support::traits::ContainsPair<Asset, Location> for NativeAssetReserve
             }
         }
         false
+    }
+}
+
+/// Filter to ensure an ETH asset is coming from a trusted Ethereum location.
+pub struct EthereumAssetReserve<EthereumLocation, EthereumNetwork>(
+    sp_std::marker::PhantomData<(EthereumLocation, EthereumNetwork)>,
+);
+impl<EthereumLocation, EthereumNetwork> frame_support::traits::ContainsPair<Asset, Location>
+    for EthereumAssetReserve<EthereumLocation, EthereumNetwork>
+where
+    EthereumLocation: Get<Location>,
+    EthereumNetwork: Get<NetworkId>,
+{
+    fn contains(asset: &Asset, origin: &Location) -> bool {
+        log::trace!(target: "xcm::contains", "EthereumAssetReserve asset: {:?}, origin: {:?}", asset, origin);
+        if *origin != EthereumLocation::get() {
+            return false;
+        }
+        match (asset.id.0.parents, asset.id.0.first_interior()) {
+            (1, Some(GlobalConsensus(network))) if *network == EthereumNetwork::get() => true,
+            _ => false,
+        }
     }
 }

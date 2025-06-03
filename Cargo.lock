@@ -3439,6 +3439,7 @@ dependencies = [
  "emulated-integration-tests-common",
  "frame-benchmarking",
  "frame-executive",
+ "frame-metadata-hash-extension",
  "frame-support",
  "frame-system",
  "frame-system-benchmarking",
@@ -5166,6 +5167,7 @@ dependencies = [
  "dp-slot-duration-runtime-api",
  "frame-benchmarking",
  "frame-executive",
+ "frame-metadata-hash-extension",
  "frame-support",
  "frame-system",
  "frame-system-benchmarking",
@@ -20503,6 +20505,7 @@ version = "0.1.0"
 dependencies = [
  "frame-support",
  "log",
+ "sp-std",
  "staging-xcm",
 ]
 
