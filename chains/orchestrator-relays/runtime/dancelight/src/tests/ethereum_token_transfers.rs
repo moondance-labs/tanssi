@@ -29,12 +29,12 @@ use {
     frame_support::{assert_noop, assert_ok},
     hex_literal::hex,
     parity_scale_codec::Encode,
-    snowbridge_inbound_queue_primitives::{Log, EventProof},
     snowbridge_core::{AgentId, Channel, ChannelId, ParaId},
     snowbridge_inbound_queue_primitives::v1::{
         Command, Destination, Envelope, MessageProcessor, MessageV1, OutboundMessageAccepted,
         VersionedXcmMessage,
     },
+    snowbridge_inbound_queue_primitives::{EventProof, Log},
     sp_core::{H160, H256},
     sp_runtime::{traits::MaybeEquivalence, FixedU128, TokenError},
     sp_std::vec,

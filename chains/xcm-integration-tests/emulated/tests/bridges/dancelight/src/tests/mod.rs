@@ -29,9 +29,9 @@ mod imports {
         frame_support::assert_ok,
         keyring::Sr25519Keyring,
         parity_scale_codec::Encode,
-        snowbridge_inbound_queue_primitives::{Log, EventProof},
         snowbridge_core::PRIMARY_GOVERNANCE_CHANNEL,
         snowbridge_inbound_queue_primitives::v1::OutboundMessageAccepted,
+        snowbridge_inbound_queue_primitives::{EventProof, Log},
         sp_core::H256,
         tanssi_emulated_integration_tests_common::snowbridge::mock_snowbridge_message_proof,
         tp_bridge::{

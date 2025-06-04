@@ -21,7 +21,7 @@ use {
     keyring::Sr25519Keyring,
     snowbridge_core::{Channel, PRIMARY_GOVERNANCE_CHANNEL},
     snowbridge_inbound_queue_primitives::v1::{
-        Envelope, MessageProcessor,OutboundMessageAccepted,
+        Envelope, MessageProcessor, OutboundMessageAccepted,
     },
     sp_core::{H160, H256},
     sp_runtime::DispatchError,
