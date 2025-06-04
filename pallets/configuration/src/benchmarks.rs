@@ -18,17 +18,24 @@
 
 //! Benchmarking
 use {
-    crate::{Call, Config, Pallet},
-    frame_benchmarking::benchmarks,
+    crate::{Config, Pallet},
+    frame_benchmarking::v2::*,
     frame_system::RawOrigin,
 };
 
-benchmarks! {
-    set_config_with_u32 {}: set_max_collators(RawOrigin::Root, 100)
+#[benchmarks]
+mod benchmarks {
+    use super::*;
 
-    impl_benchmark_test_suite!(
-        Pallet,
-        crate::mock::new_test_ext(),
-        crate::mock::Test
-    );
+    #[benchmark]
+    fn set_config_with_u32() -> Result<(), BenchmarkError> {
+        #[block]
+        {
+            Pallet::<T>::set_max_collators(RawOrigin::Root.into(), 100).expect("to return Ok");
+        }
+
+        Ok(())
+    }
+
+    impl_benchmark_test_suite!(Pallet, crate::mock::new_test_ext(), crate::mock::Test);
 }
