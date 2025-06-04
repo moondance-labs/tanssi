@@ -55,10 +55,10 @@ use sp_std::marker::PhantomData;
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> pallet_utility::WeightInfo for SubstrateWeight<T> {
 	fn dispatch_as_fallible() -> Weight {
-		todo!()
+		Default::default()
 	}
 	fn if_else() -> Weight {
-		todo!()
+		Default::default()
 	}
 	/// The range of component `c` is `[0, 1000]`.
 	fn batch(c: u32, ) -> Weight {

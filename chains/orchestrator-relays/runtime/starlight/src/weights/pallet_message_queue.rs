@@ -55,7 +55,7 @@ use sp_std::marker::PhantomData;
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> pallet_message_queue::WeightInfo for SubstrateWeight<T> {
 	fn set_service_head() -> Weight {
-		todo!()
+		Default::default()
 	}
 	/// Storage: `MessageQueue::ServiceHead` (r:1 w:0)
 	/// Proof: `MessageQueue::ServiceHead` (`max_values`: Some(1), `max_size`: Some(33), added: 528, mode: `MaxEncodedLen`)

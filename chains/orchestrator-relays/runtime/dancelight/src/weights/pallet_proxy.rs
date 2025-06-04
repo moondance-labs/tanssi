@@ -55,7 +55,7 @@ use sp_std::marker::PhantomData;
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> pallet_proxy::WeightInfo for SubstrateWeight<T> {
 	fn poke_deposit() -> Weight {
-		todo!()
+		Default::default()
 	}
 	/// Storage: `Proxy::Proxies` (r:1 w:0)
 	/// Proof: `Proxy::Proxies` (`max_values`: None, `max_size`: Some(1241), added: 3716, mode: `MaxEncodedLen`)

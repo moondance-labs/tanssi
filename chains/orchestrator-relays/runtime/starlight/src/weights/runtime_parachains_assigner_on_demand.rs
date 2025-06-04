@@ -55,7 +55,7 @@ use sp_std::marker::PhantomData;
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> runtime_parachains::on_demand::WeightInfo for SubstrateWeight<T> {
 	fn place_order_with_credits(_s: u32) -> Weight {
-		todo!()
+		Default::default()
 	}
 	/// Storage: `OnDemandAssignmentProvider::QueueStatus` (r:1 w:1)
 	/// Proof: `OnDemandAssignmentProvider::QueueStatus` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)

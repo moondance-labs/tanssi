@@ -54,7 +54,9 @@ use sp_std::marker::PhantomData;
 /// Weights for pallet_proxy using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> pallet_proxy::WeightInfo for SubstrateWeight<T> {
-	fn poke_deposit() -> cumulus_primitives_core::Weight { todo!() }
+	fn poke_deposit() -> cumulus_primitives_core::Weight { 
+		Default::default() 
+	}
 	/// Storage: `Proxy::Proxies` (r:1 w:0)
 	/// Proof: `Proxy::Proxies` (`max_values`: None, `max_size`: Some(845), added: 3320, mode: `MaxEncodedLen`)
 	/// Storage: `MaintenanceMode::MaintenanceMode` (r:1 w:0)

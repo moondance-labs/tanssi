@@ -56,6 +56,6 @@ use runtime_parachains::initializer::ValidatorSetCount;
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> runtime_parachains::disputes::slashing::WeightInfo for SubstrateWeight<T> {
 	fn report_dispute_lost_unsigned(_validator_count: ValidatorSetCount) -> Weight{
-		todo!()
+		Default::default()
 	}
 }

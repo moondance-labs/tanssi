@@ -54,8 +54,12 @@ use sp_std::marker::PhantomData;
 /// Weights for cumulus_pallet_xcmp_queue using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> cumulus_pallet_xcmp_queue::WeightInfo for SubstrateWeight<T> {
-	fn enqueue_n_bytes_xcmp_message(_n: u32, ) -> Weight { todo!() }
-	fn enqueue_2_empty_xcmp_messages() -> Weight { todo!() }
+	fn enqueue_n_bytes_xcmp_message(_n: u32, ) -> Weight {
+		Default::default()
+	}
+	fn enqueue_2_empty_xcmp_messages() -> Weight {
+		Default::default()
+	}
 
 	/// Storage: `XcmpQueue::QueueConfig` (r:1 w:1)
 	/// Proof: `XcmpQueue::QueueConfig` (`max_values`: Some(1), `max_size`: Some(12), added: 507, mode: `MaxEncodedLen`)

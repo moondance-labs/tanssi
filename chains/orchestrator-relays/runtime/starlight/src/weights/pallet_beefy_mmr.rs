@@ -55,7 +55,7 @@ use sp_std::marker::PhantomData;
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> pallet_beefy_mmr::WeightInfo for SubstrateWeight<T> {
 	fn n_leafs_proof_is_optimal(_n: u32, ) -> Weight {
-		todo!()
+		Default::default()
 	}
 	/// Storage: `System::BlockHash` (r:1 w:0)
 	/// Proof: `System::BlockHash` (`max_values`: None, `max_size`: Some(44), added: 2519, mode: `MaxEncodedLen`)

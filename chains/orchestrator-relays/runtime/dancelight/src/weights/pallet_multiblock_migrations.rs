@@ -55,7 +55,7 @@ use sp_std::marker::PhantomData;
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> pallet_multiblock_migrations::WeightInfo for SubstrateWeight<T> {
 	fn reset_pallet_migration(_n: u32) -> Weight {
-		todo!()
+		Default::default()
 	}
 	/// Storage: `MultiBlockMigrations::Cursor` (r:1 w:1)
 	/// Proof: `MultiBlockMigrations::Cursor` (`max_values`: Some(1), `max_size`: Some(65550), added: 66045, mode: `MaxEncodedLen`)

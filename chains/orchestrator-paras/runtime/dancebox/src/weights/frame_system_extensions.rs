@@ -55,7 +55,7 @@ use sp_std::marker::PhantomData;
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> frame_system::ExtensionsWeightInfo for SubstrateWeight<T> {
 	fn weight_reclaim() -> Weight {
-		unimplemented!()
+		Default::default()
 	}
 
 	fn check_genesis() -> Weight {

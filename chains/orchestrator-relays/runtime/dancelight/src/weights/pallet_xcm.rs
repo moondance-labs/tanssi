@@ -54,8 +54,12 @@ use sp_std::marker::PhantomData;
 /// Weights for pallet_xcm using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> pallet_xcm::WeightInfo for SubstrateWeight<T> {
-	fn add_authorized_alias() -> sp_runtime::Weight { todo!() }
-	fn remove_authorized_alias() -> sp_runtime::Weight { todo!() }
+	fn add_authorized_alias() -> sp_runtime::Weight {
+		Default::default()
+	}
+	fn remove_authorized_alias() -> sp_runtime::Weight {
+		Default::default()
+	}
 	/// Storage: `Dmp::DeliveryFeeFactor` (r:1 w:0)
 	/// Proof: `Dmp::DeliveryFeeFactor` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	/// Storage: `XcmPallet::SupportedVersion` (r:1 w:0)

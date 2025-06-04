@@ -54,7 +54,9 @@ use sp_std::marker::PhantomData;
 /// Weights for pallet_multisig using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> pallet_multisig::WeightInfo for SubstrateWeight<T> {
-	fn poke_deposit(_: u32) -> cumulus_primitives_core::Weight { todo!() }
+	fn poke_deposit(_: u32) -> cumulus_primitives_core::Weight {
+		Default::default()
+	}
 	/// Storage: `MaintenanceMode::MaintenanceMode` (r:1 w:0)
 	/// Proof: `MaintenanceMode::MaintenanceMode` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	/// Storage: `TxPause::PausedCalls` (r:1 w:0)
