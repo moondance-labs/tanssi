@@ -15,6 +15,7 @@ workspace = true
 container-chain-template-simple-runtime  = { workspace = true }
 cumulus-primitives-core = { workspace = true }
 emulated-integration-tests-common = { workspace = true }
+frame-support = { workspace = true }
 sp-core = { workspace = true }
 tanssi-emulated-integration-tests-common = { workspace = true }
 xcm = { workspace = true }

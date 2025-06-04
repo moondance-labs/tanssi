@@ -492,6 +492,7 @@ pub mod pallet {
         /// and initial deposit (in the asset defined in the config).
         #[pallet::call_index(0)]
         #[pallet::weight(T::WeightInfo::open_stream())]
+        #[allow(clippy::useless_conversion)]
         pub fn open_stream(
             origin: OriginFor<T>,
             target: AccountIdOf<T>,
@@ -509,6 +510,7 @@ pub mod pallet {
         /// before closing the stream.
         #[pallet::call_index(1)]
         #[pallet::weight(T::WeightInfo::close_stream())]
+        #[allow(clippy::useless_conversion)]
         pub fn close_stream(
             origin: OriginFor<T>,
             stream_id: T::StreamId,
@@ -568,6 +570,7 @@ pub mod pallet {
         /// Perform the pending payment of a stream. Anyone can call this.
         #[pallet::call_index(2)]
         #[pallet::weight(T::WeightInfo::perform_payment())]
+        #[allow(clippy::useless_conversion)]
         pub fn perform_payment(
             origin: OriginFor<T>,
             stream_id: T::StreamId,
@@ -596,6 +599,7 @@ pub mod pallet {
             T::WeightInfo::request_change_immediate()
             .max(T::WeightInfo::request_change_delayed())
         )]
+        #[allow(clippy::useless_conversion)]
         pub fn request_change(
             origin: OriginFor<T>,
             stream_id: T::StreamId,
@@ -698,6 +702,7 @@ pub mod pallet {
         /// deposit.
         #[pallet::call_index(4)]
         #[pallet::weight(T::WeightInfo::accept_requested_change())]
+        #[allow(clippy::useless_conversion)]
         pub fn accept_requested_change(
             origin: OriginFor<T>,
             stream_id: T::StreamId,
@@ -802,6 +807,7 @@ pub mod pallet {
 
         #[pallet::call_index(5)]
         #[pallet::weight(T::WeightInfo::cancel_change_request())]
+        #[allow(clippy::useless_conversion)]
         pub fn cancel_change_request(
             origin: OriginFor<T>,
             stream_id: T::StreamId,
@@ -836,6 +842,7 @@ pub mod pallet {
         /// will not have the same scale/value.
         #[pallet::call_index(6)]
         #[pallet::weight(T::WeightInfo::immediately_change_deposit())]
+        #[allow(clippy::useless_conversion)]
         pub fn immediately_change_deposit(
             origin: OriginFor<T>,
             stream_id: T::StreamId,

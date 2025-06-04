@@ -20,7 +20,9 @@ use {
     hex_literal::hex,
     keyring::Sr25519Keyring,
     snowbridge_core::{Channel, PRIMARY_GOVERNANCE_CHANNEL},
-    snowbridge_inbound_queue_primitives::inbound::{envelope::Envelope, MessageProcessor},
+    snowbridge_inbound_queue_primitives::v1::{
+        Envelope, MessageProcessor,OutboundMessageAccepted,
+    },
     sp_core::{H160, H256},
     sp_runtime::DispatchError,
     tp_bridge::symbiotic_message_processor::{

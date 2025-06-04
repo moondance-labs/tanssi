@@ -29,11 +29,9 @@ use {
     frame_support::{assert_noop, assert_ok},
     hex_literal::hex,
     parity_scale_codec::Encode,
-    snowbridge_core::{
-        inbound::{Log, Message},
-        AgentId, Channel, ChannelId, ParaId,
-    },
-    snowbridge_inbound_queue_primitives::{
+    snowbridge_inbound_queue_primitives::{Log, EventProof},
+    snowbridge_core::{AgentId, Channel, ChannelId, ParaId},
+    snowbridge_inbound_queue_primitives::v1::{
         Command, Destination, Envelope, MessageProcessor, MessageV1, OutboundMessageAccepted,
         VersionedXcmMessage,
     },
@@ -477,7 +475,7 @@ fn receive_native_tokens_from_eth_happy_path() {
                 payload: payload.encode(),
             };
 
-            let message = Message {
+            let message = EventProof {
                 event_log: Log {
                     address:
                         <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
@@ -585,7 +583,7 @@ fn receive_eth_native_token_in_tanssi_zero_address() {
                 payload: payload.encode(),
             };
 
-            let message = Message {
+            let message = EventProof {
                 event_log: Log {
                     address:
                         <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
@@ -694,7 +692,7 @@ fn receive_erc20_tokens_in_tanssi_non_zero_address() {
                 payload: payload.encode(),
             };
 
-            let message = Message {
+            let message = EventProof {
                 event_log: Log {
                     address:
                         <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
@@ -802,7 +800,7 @@ fn receive_erc20_tokens_fails_if_not_registered_in_foreign_assets() {
                 payload: payload.encode(),
             };
 
-            let message = Message {
+            let message = EventProof {
                 event_log: Log {
                     address:
                         <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
@@ -889,7 +887,7 @@ fn receive_eth_native_token_fails_if_not_registered_in_foreign_assets() {
                 payload: payload.encode(),
             };
 
-            let message = Message {
+            let message = EventProof {
                 event_log: Log {
                     address:
                         <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),

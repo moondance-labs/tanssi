@@ -180,6 +180,7 @@ pub mod pallet {
         MaxEncodedLen,
         DecodeWithMemTracking,
     )]
+    #[allow(clippy::multiple_bound_locations)]
     pub enum PendingOperationKey<A: FullCodec, J: FullCodec, L: FullCodec> {
         /// Candidate requested to join the auto compounding pool of a candidate.
         JoiningAutoCompounding { candidate: A, at: J },
@@ -207,6 +208,7 @@ pub mod pallet {
         Deserialize,
         DecodeWithMemTracking,
     )]
+    #[allow(clippy::multiple_bound_locations)]
     pub struct PendingOperationQuery<A: FullCodec, J: FullCodec, L: FullCodec> {
         pub delegator: A,
         pub operation: PendingOperationKey<A, J, L>,
@@ -653,6 +655,7 @@ pub mod pallet {
     impl<T: Config> Pallet<T> {
         #[pallet::call_index(0)]
         #[pallet::weight(T::WeightInfo::rebalance_hold())]
+        #[allow(clippy::useless_conversion)]
         pub fn rebalance_hold(
             origin: OriginFor<T>,
             candidate: Candidate<T>,
@@ -667,6 +670,7 @@ pub mod pallet {
 
         #[pallet::call_index(1)]
         #[pallet::weight(T::WeightInfo::request_delegate())]
+        #[allow(clippy::useless_conversion)]
         pub fn request_delegate(
             origin: OriginFor<T>,
             candidate: Candidate<T>,
@@ -681,6 +685,7 @@ pub mod pallet {
         /// Execute pending operations can incur in claim manual rewards per operation, we simply add the worst case
         #[pallet::call_index(2)]
         #[pallet::weight(T::WeightInfo::execute_pending_operations(operations.len() as u32).saturating_add(T::WeightInfo::claim_manual_rewards(operations.len() as u32)))]
+        #[allow(clippy::useless_conversion)]
         pub fn execute_pending_operations(
             origin: OriginFor<T>,
             operations: Vec<PendingOperationQueryOf<T>>,
@@ -694,6 +699,7 @@ pub mod pallet {
         /// Request undelegate can incur in either claim manual rewards or hold rebalances, we simply add the worst case
         #[pallet::call_index(3)]
         #[pallet::weight(T::WeightInfo::request_undelegate().saturating_add(T::WeightInfo::claim_manual_rewards(1).max(T::WeightInfo::rebalance_hold())))]
+        #[allow(clippy::useless_conversion)]
         pub fn request_undelegate(
             origin: OriginFor<T>,
             candidate: Candidate<T>,
@@ -707,6 +713,7 @@ pub mod pallet {
 
         #[pallet::call_index(4)]
         #[pallet::weight(T::WeightInfo::claim_manual_rewards(pairs.len() as u32))]
+        #[allow(clippy::useless_conversion)]
         pub fn claim_manual_rewards(
             origin: OriginFor<T>,
             pairs: Vec<(Candidate<T>, Delegator<T>)>,
@@ -719,6 +726,7 @@ pub mod pallet {
 
         #[pallet::call_index(5)]
         #[pallet::weight(T::WeightInfo::update_candidate_position(candidates.len() as u32))]
+        #[allow(clippy::useless_conversion)]
         pub fn update_candidate_position(
             origin: OriginFor<T>,
             candidates: Vec<Candidate<T>>,
@@ -731,6 +739,7 @@ pub mod pallet {
 
         #[pallet::call_index(6)]
         #[pallet::weight(T::WeightInfo::swap_pool())]
+        #[allow(clippy::useless_conversion)]
         pub fn swap_pool(
             origin: OriginFor<T>,
             candidate: Candidate<T>,

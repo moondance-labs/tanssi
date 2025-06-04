@@ -168,6 +168,7 @@ pub mod pallet {
     {
         #[pallet::call_index(0)]
         #[pallet::weight(T::WeightInfo::purchase_credits())]
+        #[allow(clippy::useless_conversion)]
         pub fn purchase_credits(
             origin: OriginFor<T>,
             para_id: ParaId,
@@ -195,6 +196,7 @@ pub mod pallet {
         /// Can only be called by root.
         #[pallet::call_index(1)]
         #[pallet::weight(T::WeightInfo::set_block_production_credits())]
+        #[allow(clippy::useless_conversion)]
         pub fn set_block_production_credits(
             origin: OriginFor<T>,
             para_id: ParaId,
@@ -211,6 +213,7 @@ pub mod pallet {
         /// Can only be called by root.
         #[pallet::call_index(2)]
         #[pallet::weight(T::WeightInfo::set_given_free_credits())]
+        #[allow(clippy::useless_conversion)]
         pub fn set_given_free_credits(
             origin: OriginFor<T>,
             para_id: ParaId,
@@ -230,6 +233,7 @@ pub mod pallet {
         /// Call index to set the refund address for non-spent tokens
         #[pallet::call_index(3)]
         #[pallet::weight(T::WeightInfo::set_refund_address())]
+        #[allow(clippy::useless_conversion)]
         pub fn set_refund_address(
             origin: OriginFor<T>,
             para_id: ParaId,
@@ -255,6 +259,7 @@ pub mod pallet {
         /// Can only be called by root.
         #[pallet::call_index(4)]
         #[pallet::weight(T::WeightInfo::set_block_production_credits())]
+        #[allow(clippy::useless_conversion)]
         pub fn set_collator_assignment_credits(
             origin: OriginFor<T>,
             para_id: ParaId,
@@ -270,6 +275,7 @@ pub mod pallet {
         /// Max core price for parathread in relay chain currency
         #[pallet::call_index(5)]
         #[pallet::weight(T::WeightInfo::set_max_core_price())]
+        #[allow(clippy::useless_conversion)]
         pub fn set_max_core_price(
             origin: OriginFor<T>,
             para_id: ParaId,
@@ -291,6 +297,7 @@ pub mod pallet {
         /// Can only be called by container chain manager.
         #[pallet::call_index(6)]
         #[pallet::weight(T::WeightInfo::set_max_tip())]
+        #[allow(clippy::useless_conversion)]
         pub fn set_max_tip(
             origin: OriginFor<T>,
             para_id: ParaId,
@@ -522,7 +529,6 @@ pub type NegativeImbalanceOf<T> =
     <CurrencyOf<T> as Currency<<T as frame_system::Config>::AccountId>>::NegativeImbalance;
 /// Handler for fee charging. This will be invoked when fees need to be deducted from the fee
 /// account for a given paraId.
-
 /// Returns the cost for a given block credit at the current time. This can be a complex operation,
 /// so it also returns the weight it consumes. (TODO: or just rely on benchmarking)
 pub trait ProvideBlockProductionCost<T: Config> {

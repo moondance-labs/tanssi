@@ -164,6 +164,7 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::add_invulnerable(
 			T::MaxInvulnerables::get().saturating_sub(1),
 		))]
+        #[allow(clippy::useless_conversion)]
         pub fn add_invulnerable(
             origin: OriginFor<T>,
             who: T::AccountId,

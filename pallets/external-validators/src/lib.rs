@@ -301,6 +301,7 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::add_whitelisted(
 			T::MaxWhitelistedValidators::get().saturating_sub(1),
 		))]
+        #[allow(clippy::useless_conversion)]
         pub fn add_whitelisted(
             origin: OriginFor<T>,
             who: T::AccountId,

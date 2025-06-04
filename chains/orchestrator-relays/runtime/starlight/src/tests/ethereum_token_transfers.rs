@@ -27,11 +27,12 @@ use {
     frame_support::{assert_noop, assert_ok},
     hex_literal::hex,
     parity_scale_codec::Encode,
-    snowbridge_beacon_primitives::{AgentId, Channel, ChannelId, Log, Message, ParaId},
+    snowbridge_verification_primitives::{Log, EventProof},
     snowbridge_inbound_queue_primitives::v1::{
         Command, Destination, Envelope, MessageProcessor, MessageV1, OutboundMessageAccepted,
         VersionedXcmMessage,
     },
+    snowbridge_core::{ChannelId, AgentId, ParaId, Channel},
     sp_core::{H160, H256},
     sp_runtime::{traits::MaybeEquivalence, FixedU128, TokenError},
     sp_std::vec,
@@ -469,7 +470,7 @@ fn receive_native_tokens_from_eth_happy_path() {
                 payload: payload.encode(),
             };
 
-            let message = Message {
+            let message = EventProof {
                 event_log: Log {
                     address:
                         <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),

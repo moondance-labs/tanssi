@@ -243,7 +243,7 @@ mod benchmark_helper {
         crate::{EthereumBeaconClient, Runtime, RuntimeOrigin},
         snowbridge_beacon_primitives::BeaconHeader,
         snowbridge_core::Channel,
-        snowbridge_inbound_queue_primitives::inbound::{envelope::Envelope, MessageProcessor},
+        snowbridge_inbound_queue_primitives::v1::{Envelope, MessageProcessor},
         snowbridge_pallet_system::Channels,
         sp_core::H256,
         xcm::latest::Location,
@@ -260,7 +260,7 @@ mod benchmark_helper {
     impl snowbridge_pallet_inbound_queue::BenchmarkHelper<Runtime> for EthSystemBenchHelper {
         fn initialize_storage(beacon_header: BeaconHeader, block_roots_root: H256) {
             let submit_message = snowbridge_pallet_inbound_queue_fixtures::register_token::make_register_token_message();
-            let envelope: Envelope = Envelope::try_from(&submit_message.message.event_log).unwrap();
+            let envelope: Envelope = Envelope::try_from(&submit_message.event.event_log).unwrap();
 
             Channels::<Runtime>::set(
                 envelope.channel_id,
