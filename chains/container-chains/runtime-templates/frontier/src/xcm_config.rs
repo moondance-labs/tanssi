@@ -15,6 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
+    super::xcm_sender::SovereignPaidRemoteExporter,
     super::{
         currency::MICROUNIT,
         precompiles::FOREIGN_ASSET_PRECOMPILE_ADDRESS_PREFIX,
@@ -186,6 +187,7 @@ pub type XcmRouter = (
     cumulus_primitives_utility::ParentAsUmp<ParachainSystem, PolkadotXcm, PriceForParentDelivery>,
     // ..and XCMP to communicate with the sibling chains.
     XcmpQueue,
+    SovereignPaidRemoteExporter<XcmpQueue, UniversalLocation>,
 );
 
 pub struct XcmConfig;
