@@ -1,10 +1,11 @@
 import "@tanssi/api-augment";
 
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import type { KeyringPair } from "@moonwall/util";
+import { filterAndApply, type KeyringPair } from "@moonwall/util";
 import { extractWeight } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
-import { extractFeeAuthor, fetchIssuance, filterRewardFromOrchestrator } from "utils";
+import { extractFeeAuthor, fetchIssuance, filterRewardFromOrchestrator, getTreasuryAddress } from "utils";
+import type { EventRecord } from "@polkadot/types/interfaces";
 
 describeSuite({
     id: "COMMO1001",
@@ -75,6 +76,44 @@ describeSuite({
                 const totalSupplyAfter = (await polkadotJs.query.balances.totalIssuance()).toBigInt();
 
                 expect(totalSupplyAfter - totalSupplyBefore).to.equal(issuance);
+            },
+        });
+
+        it({
+            id: "E02",
+            title: "no funds are burned at the end of spend period",
+            test: async () => {
+                const polkadotJs = context.polkadotJs();
+                const treasuryAccount = getTreasuryAddress(polkadotJs);
+                const treasuryBalanceBefore = (
+                    await polkadotJs.query.system.account(treasuryAccount)
+                ).data.free.toBigInt();
+
+                const spendPeriod = Number(polkadotJs.consts.treasury.spendPeriod);
+                const start = performance.now();
+                for (let i = 0; i < spendPeriod - 1; i++) {
+                    await context.createBlock();
+                }
+                const end = performance.now();
+                console.log(`Took ${end - start} ms to create ${spendPeriod} blocks`);
+
+                const treasuryBalanceAfter = (
+                    await polkadotJs.query.system.account(treasuryAccount)
+                ).data.free.toBigInt();
+                const events = await polkadotJs.query.system.events();
+
+                const spendingEvents = filterAndApply(events, "treasury", ["Spending"], ({ event }: EventRecord) =>
+                    event.toHuman()
+                );
+
+                const burntEvents = filterAndApply(events, "treasury", ["Burnt"], ({ event }: EventRecord) =>
+                    event.toHuman()
+                );
+
+                expect(spendingEvents.length, "Expect the length of the treasury.Spending equals 1").toEqual(1);
+                expect(burntEvents.length, "Expect the length of the treasury.Burnt is 0").toEqual(0);
+
+                expect(treasuryBalanceAfter).to.equal(treasuryBalanceBefore);
             },
         });
     },
