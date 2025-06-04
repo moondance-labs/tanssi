@@ -30,7 +30,7 @@ use frame_support::{
 use parity_scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 use sp_core::{ConstU32, Get, MaxEncodedLen, RuntimeDebug};
-use sp_runtime::{Saturating, Vec};
+use sp_runtime::Saturating;
 
 const LOG_TARGET: &'static str = "pallet_pooled_staking::migrations::stepped_generate_summaries";
 pub const PALLET_MIGRATIONS_ID: &[u8; 21] = b"pallet-pooled-staking";
