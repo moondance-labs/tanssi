@@ -109,6 +109,9 @@ cumulus-primitives-utility = { workspace = true }
 parachain-info = { workspace = true }
 parachains-common = { workspace = true }
 
+# Bridges
+tp-bridge = { workspace = true }
+
 # Frontier
 fp-account = { workspace = true, features = [ "serde" ] }
 fp-evm = { workspace = true, features = [ "serde" ] }
@@ -142,6 +145,7 @@ std = [
 	"cumulus-primitives-core/std",
 	"cumulus-primitives-storage-weight-reclaim/std",
 	"cumulus-primitives-timestamp/std",
+	"tp-bridge/std",
 	"cumulus-primitives-utility/std",
 	"dp-consensus/std",
 	"dp-impl-tanssi-pallets-config/std",
@@ -261,6 +265,7 @@ runtime-benchmarks = [
 	"pallet-multiblock-migrations/runtime-benchmarks",
 	"pallet-multisig/runtime-benchmarks",
 	"pallet-parameters/runtime-benchmarks",
+	"tp-bridge/runtime-benchmarks",
 	"pallet-proxy/runtime-benchmarks",
 	"pallet-sudo/runtime-benchmarks",
 	"pallet-timestamp/runtime-benchmarks",

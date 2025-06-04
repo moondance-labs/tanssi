@@ -36,6 +36,8 @@ mod precompiles;
 pub mod weights;
 pub mod xcm_config;
 
+mod xcm_sender;
+
 use {
     crate::precompiles::TemplatePrecompiles,
     cumulus_primitives_core::AggregateMessageOrigin,
@@ -96,6 +98,9 @@ use {
     },
     sp_std::prelude::*,
     sp_version::RuntimeVersion,
+    tp_bridge::ConvertLocation,
+    xcm::v5::Location,
+    xcm::v5::NetworkId,
     xcm::{IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation, VersionedXcm},
     xcm_runtime_apis::{
         dry_run::{CallDryRunEffects, Error as XcmDryRunApiError, XcmDryRunEffects},
@@ -305,6 +310,23 @@ impl WeightToFeePolynomial for WeightToFee {
             coeff_integer: p / q,
         }]
     }
+}
+
+parameter_types! {
+        /// Network and location for the Ethereum chain. On Starlight, the Ethereum chain bridged
+        /// to is the Ethereum mainnet, with chain ID 1.
+        /// <https://chainlist.org/chain/1>
+        /// <https://ethereum.org/en/developers/docs/apis/json-rpc/#net_version>
+        pub EthereumNetwork: NetworkId = NetworkId::Ethereum { chain_id: 1 };
+        pub EthereumLocation: Location = Location::new(1, EthereumNetwork::get());
+
+}
+
+parameter_types! {
+    pub EthereumSovereignAccount: AccountId =
+        tp_bridge::EthereumLocationsConverterFor::<AccountId>::convert_location(
+            &EthereumLocation::get()
+        ).expect("to convert EthereumSovereignAccount");
 }
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
