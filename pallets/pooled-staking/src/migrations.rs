@@ -32,6 +32,9 @@ use scale_info::TypeInfo;
 use sp_core::{ConstU32, Get, MaxEncodedLen, RuntimeDebug};
 use sp_runtime::Saturating;
 
+#[cfg(not(feature = "std"))]
+use sp_runtime::Vec;
+
 const LOG_TARGET: &'static str = "pallet_pooled_staking::migrations::stepped_generate_summaries";
 pub const PALLET_MIGRATIONS_ID: &[u8; 21] = b"pallet-pooled-staking";
 
