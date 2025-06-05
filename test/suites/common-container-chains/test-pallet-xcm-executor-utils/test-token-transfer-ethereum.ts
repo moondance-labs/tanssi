@@ -33,10 +33,10 @@ describeSuite({
                 const assetId = 1;
                 // Random ETH destination that we send asset to
                 const destinationAddress = "0x1234567890abcdef1234567890abcdef12345678";
-                const ethereumMultilocation = {
+                const ethereumTokenLocation = {
                     parents: 1,
                     interior: {
-                        X1: [
+                        X2: [
                             {
                                 GlobalConsensus: { Ethereum: { chainId: ETHEREUM_NETWORK_ID } },
                             },
@@ -45,12 +45,12 @@ describeSuite({
                 };
 
                 // Let's create an asset and register it
-                const result = await context.createBlock(
+                await context.createBlock(
                     await polkadotJs.tx.sudo
                         .sudo(
                             polkadotJs.tx.utility.batch([
                                 polkadotJs.tx.foreignAssetsCreator.createForeignAsset(
-                                    ethereumMultilocation,
+                                    ethereumTokenLocation,
                                     assetId,
                                     alice.address,
                                     true,
@@ -65,12 +65,21 @@ describeSuite({
                     }
                 );
 
+                await context.createBlock(
+                    await polkadotJs.tx.foreignAssets.mint(assetId, alice.address, 1000).signAsync(alice),
+                    {
+                        allowFailures: false,
+                    }
+                );
+
                 // Check balance before transfer
                 const balanceBefore = (await polkadotJs.query.foreignAssets.account(assetId, alice.address))
                     .unwrap()
                     .balance.toBigInt();
 
-                const xcmMessage = new XcmFragment({
+                expect(balanceBefore).toEqual(1000n);
+
+                const xcmMessage: XcmFragment = new XcmFragment({
                     assets: [
                         {
                             multilocation: {
@@ -80,25 +89,11 @@ describeSuite({
                             fungible: transferredBalance,
                         },
                     ],
-                    beneficiary: {
-                        parents: 1,
-                        interior: {
-                            X2: [
-                                {
-                                    GlobalConsensus: { Ethereum: { chainId: ETHEREUM_NETWORK_ID } },
-                                },
-                                {
-                                    AccountKey20: {
-                                        network: null,
-                                        key: destinationAddress,
-                                    },
-                                },
-                            ],
-                        },
-                    },
+                    beneficiary: destinationAddress,
                 })
                     .withdraw_asset()
                     .buy_execution()
+                    .deposit_asset()
                     .export_message()
                     .as_v3();
 
