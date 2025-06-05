@@ -2,7 +2,7 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type KeyringPair, alith } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 
-import { type RawXcmMessage, XcmFragment, injectUmpMessageAndSeal, ETHEREUM_NETWORK_ID } from "utils";
+import { XcmFragment, ETHEREUM_NETWORK_ID } from "utils";
 
 describeSuite({
     id: "COM0103",
@@ -79,7 +79,7 @@ describeSuite({
 
                 expect(balanceBefore).toEqual(1000n);
 
-                const xcmMessage: XcmFragment = new XcmFragment({
+                const xcmMessage = new XcmFragment({
                     assets: [
                         {
                             multilocation: {
@@ -97,12 +97,11 @@ describeSuite({
                     .export_message()
                     .as_v3();
 
-                await injectUmpMessageAndSeal(context, {
-                    type: "XcmVersionedXcm",
-                    payload: xcmMessage,
-                } as RawXcmMessage);
+                const txRoot = polkadotJs.tx.polkadotXcm.execute(xcmMessage, { proofSize: 0, refTime: 100000000 });
 
-                await context.createBlock();
+                const result = await context.createBlock(await txRoot.signAsync(alice), { allowFailures: true }); // TODO: revert allow failures
+
+                console.log("result", result);
 
                 const balanceAfter = (await polkadotJs.query.foreignAssets.account(assetId, alice.address))
                     .unwrap()
