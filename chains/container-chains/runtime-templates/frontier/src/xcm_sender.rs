@@ -2,7 +2,6 @@ use {
     crate::alloc::vec,
     core::marker::PhantomData,
     frame_support::traits::{tokens::ConversionFromAssetBalance, Get},
-    sp_std::vec::Vec,
     xcm::{latest::Location, prelude::*},
     xcm_builder::InspectMessageQueues,
     SendError::*,
@@ -31,20 +30,6 @@ fn calculate_container_fee_from_tanssi_amount(
     })
 }
 
-fn get_withdrawn_amount(xcm: &Xcm<()>) -> Option<u128> {
-    for instr in &xcm.0 {
-        if let WithdrawAsset(assets) = instr {
-            let assets_vec: Vec<Asset> = assets.clone().into_inner();
-            for asset in assets_vec {
-                if let Fungible(amount) = asset.fun {
-                    return Some(amount);
-                }
-            }
-        }
-    }
-    None
-}
-
 pub struct SovereignPaidRemoteExporter<Router, UniversalLocation>(
     PhantomData<(Router, UniversalLocation)>,
 );
@@ -71,13 +56,31 @@ impl<Router: SendXcm, UniversalLocation: Get<InteriorLocation>> SendXcm
             xcm: xcm.clone(),
         };
 
-        let amount = get_withdrawn_amount(&xcm).ok_or(Transport("No withdraw amount found"))?;
+        // Get the asset to transfer to Ethereum
+        let withdrawn_assets = xcm
+            .0
+            .iter()
+            .find_map(|instr| {
+                if let WithdrawAsset(assets) = instr {
+                    Some(assets)
+                } else {
+                    None
+                }
+            })
+            .ok_or(Transport("No WithdrawAsset in XCM"))?;
 
-        // Prepare the asset to transfer to Ethereum
-        let asset = Asset {
-            id: AssetId(crate::xcm_config::SelfReserve::get()),
-            fun: Fungible(amount),
-        };
+        let assets_vec = withdrawn_assets.clone().into_inner();
+
+        let asset = assets_vec
+            .into_iter()
+            .find_map(|asset| {
+                if let Fungible(_) = asset.fun {
+                    Some(asset)
+                } else {
+                    None
+                }
+            })
+            .ok_or(Transport("No fungible asset found"))?;
 
         let tanssi_location: Location = Location {
             parents: 1,
