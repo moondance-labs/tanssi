@@ -16814,8 +16814,6 @@ dependencies = [
  "cumulus-primitives-core",
  "emulated-integration-tests-common",
  "frame-support",
- "sp-api",
- "sp-consensus-aura",
  "sp-core",
  "staging-xcm",
  "tanssi-emulated-integration-tests-common",
