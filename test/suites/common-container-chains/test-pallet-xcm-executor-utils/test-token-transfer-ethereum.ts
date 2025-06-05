@@ -2,7 +2,7 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type KeyringPair, alith } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 
-import { XcmFragment, ETHEREUM_NETWORK_ID } from "utils";
+import { ETHEREUM_NETWORK_ID } from "utils";
 
 describeSuite({
     id: "COM0103",
@@ -95,22 +95,10 @@ describeSuite({
 
                 expect(balanceBefore).toEqual(1000n);
 
-                const xcmMessage = new XcmFragment({
-                    assets: [
-                        {
-                            multilocation: {
-                                parents: 0,
-                                interior: { Here: null },
-                            },
-                            fungible: transferredBalance,
-                        },
-                    ],
-                })
-                    .withdraw_asset()
-                    .buy_execution()
-                    .deposit_asset()
-                    .export_message()
-                    .as_v3();
+                const metadata = await polkadotJs.rpc.state.getMetadata();
+                const foreignCreatorPalletIndex = metadata.asLatest.pallets
+                    .find(({ name }) => name.toString() === "ForeignAssets")
+                    .index.toNumber();
 
                 const dest = {
                     V3: {
@@ -122,7 +110,51 @@ describeSuite({
                         },
                     },
                 };
-                const txRoot = polkadotJs.tx.polkadotXcm.send(dest, xcmMessage);
+
+                const txRoot = polkadotJs.tx.polkadotXcm.send(dest, {
+                    V3: [
+                        {
+                            WithdrawAsset: [
+                                {
+                                    id: {
+                                        Concrete: {
+                                            parents: 0,
+                                            interior: {
+                                                X2: [
+                                                    { PalletInstance: Number(foreignCreatorPalletIndex) },
+                                                    { GeneralIndex: assetId },
+                                                ],
+                                            },
+                                        },
+                                    },
+                                    fun: { Fungible: 2500_000_000_000_000_000n },
+                                },
+                            ],
+                        },
+                        {
+                            DepositAsset: {
+                                assets: { Wild: "All" },
+                                maxAssets: 1,
+                                beneficiary: {
+                                    parents: 1,
+                                    interior: {
+                                        X2: [
+                                            {
+                                                GlobalConsensus: ethereumNetwork,
+                                            },
+                                            {
+                                                AccountKey20: {
+                                                    network: ethereumNetwork,
+                                                    key: destinationAddress,
+                                                },
+                                            },
+                                        ],
+                                    },
+                                },
+                            },
+                        },
+                    ],
+                });
 
                 const result = await context.createBlock(await txRoot.signAsync(alice), { allowFailures: true }); // TODO: revert allow failures
 
