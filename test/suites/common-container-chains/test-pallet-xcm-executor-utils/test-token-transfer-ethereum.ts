@@ -30,7 +30,9 @@ describeSuite({
             id: "T01",
             title: "Should allow sending asset to Ethereum",
             test: async () => {
+                const ethereumNetwork = { Ethereum: { chainId: ETHEREUM_NETWORK_ID } };
                 const assetId = 1;
+                const tanssiAssetId = 2;
                 // Random ETH destination that we send asset to
                 const destinationAddress = "0x1234567890abcdef1234567890abcdef12345678";
                 const ethereumTokenLocation = {
@@ -38,7 +40,13 @@ describeSuite({
                     interior: {
                         X2: [
                             {
-                                GlobalConsensus: { Ethereum: { chainId: ETHEREUM_NETWORK_ID } },
+                                GlobalConsensus: ethereumNetwork,
+                            },
+                            {
+                                AccountKey20: {
+                                    network: ethereumNetwork,
+                                    key: destinationAddress,
+                                },
                             },
                         ],
                     },
@@ -56,7 +64,15 @@ describeSuite({
                                     true,
                                     1
                                 ),
+                                polkadotJs.tx.foreignAssetsCreator.createForeignAsset(
+                                    { parents: 1, interior: "Here" },
+                                    tanssiAssetId,
+                                    alice.address,
+                                    true,
+                                    1
+                                ),
                                 polkadotJs.tx.assetRate.create(assetId, 2_000_000_000_000_000_000n),
+                                polkadotJs.tx.assetRate.create(tanssiAssetId, 1_000_000_000_000_000_000n),
                             ])
                         )
                         .signAsync(alice),
@@ -89,7 +105,6 @@ describeSuite({
                             fungible: transferredBalance,
                         },
                     ],
-                    beneficiary: destinationAddress,
                 })
                     .withdraw_asset()
                     .buy_execution()
@@ -97,7 +112,17 @@ describeSuite({
                     .export_message()
                     .as_v3();
 
-                const txRoot = polkadotJs.tx.polkadotXcm.execute(xcmMessage, { proofSize: 0, refTime: 100000000 });
+                const dest = {
+                    V3: {
+                        parents: 1,
+                        interior: {
+                            X1: {
+                                GlobalConsensus: ethereumNetwork,
+                            },
+                        },
+                    },
+                };
+                const txRoot = polkadotJs.tx.polkadotXcm.send(dest, xcmMessage);
 
                 const result = await context.createBlock(await txRoot.signAsync(alice), { allowFailures: true }); // TODO: revert allow failures
 
