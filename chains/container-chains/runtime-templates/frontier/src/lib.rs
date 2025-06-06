@@ -317,7 +317,7 @@ parameter_types! {
         /// to is the Ethereum mainnet, with chain ID 1.
         /// <https://chainlist.org/chain/1>
         /// <https://ethereum.org/en/developers/docs/apis/json-rpc/#net_version>
-        pub EthereumNetwork: NetworkId = NetworkId::Ethereum { chain_id: 1 };
+        pub EthereumNetwork: NetworkId = NetworkId::Ethereum { chain_id: 11155111 };
         pub EthereumLocation: Location = Location::new(1, EthereumNetwork::get());
 
 }

@@ -2,7 +2,8 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type KeyringPair, alith } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 
-import { ETHEREUM_NETWORK_ID } from "utils";
+import { TESTNET_ETHEREUM_NETWORK_ID } from "utils";
+import { hexToU8a } from "@polkadot/util";
 
 describeSuite({
     id: "COM0103",
@@ -30,13 +31,14 @@ describeSuite({
             id: "T01",
             title: "Should allow sending asset to Ethereum",
             test: async () => {
-                const ethereumNetwork = { Ethereum: { chainId: ETHEREUM_NETWORK_ID } };
-                const assetId = 1;
+                const ethereumNetwork = { Ethereum: { chainId: TESTNET_ETHEREUM_NETWORK_ID } };
+                const assetId = 42;
                 const tanssiAssetId = 2;
                 // Random ETH destination that we send asset to
                 const destinationAddress = "0x1234567890abcdef1234567890abcdef12345678";
+                const tokenAddress = hexToU8a("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef");
                 const ethereumTokenLocation = {
-                    parents: 1,
+                    parents: 2,
                     interior: {
                         X2: [
                             {
@@ -45,7 +47,7 @@ describeSuite({
                             {
                                 AccountKey20: {
                                     network: ethereumNetwork,
-                                    key: destinationAddress,
+                                    key: tokenAddress,
                                 },
                             },
                         ],
@@ -81,8 +83,12 @@ describeSuite({
                     }
                 );
 
+                const tanssiNativeTokenAmount = 1000n;
+
                 await context.createBlock(
-                    await polkadotJs.tx.foreignAssets.mint(assetId, alice.address, 1000).signAsync(alice),
+                    await polkadotJs.tx.foreignAssets
+                        .mint(assetId, alice.address, tanssiNativeTokenAmount)
+                        .signAsync(alice),
                     {
                         allowFailures: false,
                     }
@@ -93,7 +99,7 @@ describeSuite({
                     .unwrap()
                     .balance.toBigInt();
 
-                expect(balanceBefore).toEqual(1000n);
+                expect(balanceBefore).toEqual(tanssiNativeTokenAmount);
 
                 const metadata = await polkadotJs.rpc.state.getMetadata();
                 const foreignCreatorPalletIndex = metadata.asLatest.pallets
@@ -102,7 +108,7 @@ describeSuite({
 
                 const dest = {
                     V3: {
-                        parents: 1,
+                        parents: 2,
                         interior: {
                             X1: {
                                 GlobalConsensus: ethereumNetwork,
@@ -111,32 +117,29 @@ describeSuite({
                     },
                 };
 
+                const assetToTransfer = {
+                    id: {
+                        Concrete: {
+                            parents: 0,
+                            interior: {
+                                X2: [{ PalletInstance: foreignCreatorPalletIndex }, { GeneralIndex: assetId }],
+                            },
+                        },
+                    },
+                    fun: { Fungible: 2500_000_000_000_000_000n },
+                };
+
                 const txRoot = polkadotJs.tx.polkadotXcm.send(dest, {
                     V3: [
                         {
-                            WithdrawAsset: [
-                                {
-                                    id: {
-                                        Concrete: {
-                                            parents: 0,
-                                            interior: {
-                                                X2: [
-                                                    { PalletInstance: Number(foreignCreatorPalletIndex) },
-                                                    { GeneralIndex: assetId },
-                                                ],
-                                            },
-                                        },
-                                    },
-                                    fun: { Fungible: 2500_000_000_000_000_000n },
-                                },
-                            ],
+                            WithdrawAsset: [assetToTransfer],
                         },
                         {
                             DepositAsset: {
-                                assets: { Wild: "All" },
+                                assets: { Wild: "All" }, // TODO: Try to be more specific here, instead of "All"
                                 maxAssets: 1,
                                 beneficiary: {
-                                    parents: 1,
+                                    parents: 2,
                                     interior: {
                                         X2: [
                                             {
