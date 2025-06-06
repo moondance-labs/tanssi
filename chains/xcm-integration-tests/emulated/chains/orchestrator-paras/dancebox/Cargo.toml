@@ -15,6 +15,7 @@ workspace = true
 cumulus-primitives-core = { workspace = true }
 dancebox-runtime = { workspace = true }
 emulated-integration-tests-common = { workspace = true }
+frame-support = { workspace = true }
 pallet-configuration = { workspace = true }
 parity-scale-codec = { workspace = true }
 polkadot-parachain-primitives = { workspace = true }

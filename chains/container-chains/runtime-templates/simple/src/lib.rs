@@ -63,7 +63,7 @@ use {
     },
     nimbus_primitives::{NimbusId, SlotBeacon},
     pallet_transaction_payment::FungibleAdapter,
-    parity_scale_codec::{Decode, Encode},
+    parity_scale_codec::{Decode, DecodeWithMemTracking, Encode},
     polkadot_runtime_common::SlowAdjustingFeeUpdate,
     scale_info::TypeInfo,
     serde::{Deserialize, Serialize},
@@ -81,6 +81,7 @@ use {
     },
     sp_std::prelude::*,
     sp_version::RuntimeVersion,
+    xcm::Version as XcmVersion,
     xcm::{IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation, VersionedXcm},
     xcm_runtime_apis::{
         dry_run::{CallDryRunEffects, Error as XcmDryRunApiError, XcmDryRunEffects},
@@ -137,7 +138,7 @@ pub type TxExtension = (
     frame_system::CheckNonce<Runtime>,
     frame_system::CheckWeight<Runtime>,
     pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
-    cumulus_primitives_storage_weight_reclaim::StorageWeightReclaim<Runtime>,
+    cumulus_pallet_weight_reclaim::StorageWeightReclaim<Runtime, ()>,
 );
 
 /// Unchecked extrinsic type as expected by this runtime.
@@ -496,6 +497,7 @@ impl pallet_utility::Config for Runtime {
     Decode,
     Debug,
     MaxEncodedLen,
+    DecodeWithMemTracking,
     TypeInfo,
     Serialize,
     Deserialize,
@@ -580,6 +582,7 @@ impl pallet_proxy::Config for Runtime {
     // - 4 bytes BlockNumber (u32)
     type AnnouncementDepositFactor = ConstU128<{ deposit(0, 68) }>;
     type WeightInfo = weights::pallet_proxy::SubstrateWeight<Runtime>;
+    type BlockNumberProvider = System;
 }
 
 pub struct XcmExecutionManager;
@@ -682,6 +685,7 @@ impl pallet_multisig::Config for Runtime {
     type DepositFactor = DepositFactor;
     type MaxSignatories = MaxSignatories;
     type WeightInfo = weights::pallet_multisig::SubstrateWeight<Runtime>;
+    type BlockNumberProvider = System;
 }
 
 impl frame_system::offchain::SigningTypes for Runtime {
@@ -728,7 +732,7 @@ where
             frame_system::CheckNonce::<Runtime>::from(nonce),
             frame_system::CheckWeight::<Runtime>::new(),
             pallet_transaction_payment::ChargeTransactionPayment::<Runtime>::from(tip),
-            cumulus_primitives_storage_weight_reclaim::StorageWeightReclaim::<Runtime>::new(),
+            cumulus_pallet_weight_reclaim::StorageWeightReclaim::<Runtime, ()>::new(()),
             //frame_metadata_hash_extension::CheckMetadataHash::new(true),
         );
         let raw_payload = SignedPayload::new(call, tx_ext)
@@ -764,6 +768,10 @@ where
 impl pallet_ocw_testing::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type UnsignedInterval = ConstU32<6>;
+}
+
+impl cumulus_pallet_weight_reclaim::Config for Runtime {
+    type WeightInfo = ();
 }
 
 impl_tanssi_pallets_config!(Runtime);
@@ -995,7 +1003,6 @@ impl_runtime_apis! {
                     ExistentialDeposit::get()
                 ).into());
             }
-
             impl pallet_xcm_benchmarks::Config for Runtime {
                 type XcmConfig = xcm_config::XcmConfig;
                 type AccountIdConverter = xcm_config::LocationToAccountId;
@@ -1314,8 +1321,8 @@ impl_runtime_apis! {
     }
 
     impl xcm_runtime_apis::dry_run::DryRunApi<Block, RuntimeCall, RuntimeEvent, OriginCaller> for Runtime {
-        fn dry_run_call(origin: OriginCaller, call: RuntimeCall) -> Result<CallDryRunEffects<RuntimeEvent>, XcmDryRunApiError> {
-            PolkadotXcm::dry_run_call::<Runtime, xcm_config::XcmRouter, OriginCaller, RuntimeCall>(origin, call)
+        fn dry_run_call(origin: OriginCaller, call: RuntimeCall, result_xcms_version: XcmVersion) -> Result<CallDryRunEffects<RuntimeEvent>, XcmDryRunApiError> {
+            PolkadotXcm::dry_run_call::<Runtime, xcm_config::XcmRouter, OriginCaller, RuntimeCall>(origin, call, result_xcms_version)
         }
 
         fn dry_run_xcm(origin_location: VersionedLocation, xcm: VersionedXcm<RuntimeCall>) -> Result<XcmDryRunEffects<RuntimeEvent>, XcmDryRunApiError> {

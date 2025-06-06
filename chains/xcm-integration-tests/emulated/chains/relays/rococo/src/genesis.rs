@@ -70,6 +70,7 @@ pub fn genesis() -> Storage {
                 .cloned()
                 .map(|k| (k, ENDOWMENT))
                 .collect(),
+            ..Default::default()
         },
         session: rococo_runtime::SessionConfig {
             keys: validators::initial_authorities()

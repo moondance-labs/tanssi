@@ -14,6 +14,7 @@ import type {
     FrameSupportTokensMiscBalanceStatus,
     FrameSystemDispatchEventInfo,
     PalletMultisigTimepoint,
+    PalletProxyDepositKind,
     PalletStreamPaymentDepositChange,
     PalletStreamPaymentParty,
     PalletStreamPaymentStreamConfig,
@@ -526,6 +527,14 @@ declare module "@polkadot/api-base/types/events" {
         };
         multisig: {
             /**
+             * The deposit for a multisig operation has been updated/poked.
+             **/
+            DepositPoked: AugmentedEvent<
+                ApiType,
+                [who: AccountId32, callHash: U8aFixed, oldDeposit: u128, newDeposit: u128],
+                { who: AccountId32; callHash: U8aFixed; oldDeposit: u128; newDeposit: u128 }
+            >;
+            /**
              * A multisig operation has been approved by someone.
              **/
             MultisigApproval: AugmentedEvent<
@@ -635,6 +644,14 @@ declare module "@polkadot/api-base/types/events" {
                 ApiType,
                 [real: AccountId32, proxy: AccountId32, callHash: H256],
                 { real: AccountId32; proxy: AccountId32; callHash: H256 }
+            >;
+            /**
+             * A deposit stored for proxies or announcements was poked / updated.
+             **/
+            DepositPoked: AugmentedEvent<
+                ApiType,
+                [who: AccountId32, kind: PalletProxyDepositKind, oldDeposit: u128, newDeposit: u128],
+                { who: AccountId32; kind: PalletProxyDepositKind; oldDeposit: u128; newDeposit: u128 }
             >;
             /**
              * A proxy was added.
@@ -775,6 +792,14 @@ declare module "@polkadot/api-base/types/events" {
              **/
             NewSession: AugmentedEvent<ApiType, [sessionIndex: u32], { sessionIndex: u32 }>;
             /**
+             * Validator has been disabled.
+             **/
+            ValidatorDisabled: AugmentedEvent<ApiType, [validator: AccountId32], { validator: AccountId32 }>;
+            /**
+             * Validator has been re-enabled.
+             **/
+            ValidatorReenabled: AugmentedEvent<ApiType, [validator: AccountId32], { validator: AccountId32 }>;
+            /**
              * Generic event
              **/
             [key: string]: AugmentedEvent<ApiType>;
@@ -887,6 +912,14 @@ declare module "@polkadot/api-base/types/events" {
              * A new account was created.
              **/
             NewAccount: AugmentedEvent<ApiType, [account: AccountId32], { account: AccountId32 }>;
+            /**
+             * An invalid authorized upgrade was rejected while trying to apply it.
+             **/
+            RejectedInvalidAuthorizedUpgrade: AugmentedEvent<
+                ApiType,
+                [codeHash: H256, error: SpRuntimeDispatchError],
+                { codeHash: H256; error: SpRuntimeDispatchError }
+            >;
             /**
              * On on-chain remark happened.
              **/
@@ -1038,6 +1071,18 @@ declare module "@polkadot/api-base/types/events" {
                 [result: Result<Null, SpRuntimeDispatchError>],
                 { result: Result<Null, SpRuntimeDispatchError> }
             >;
+            /**
+             * The fallback call was dispatched.
+             **/
+            IfElseFallbackCalled: AugmentedEvent<
+                ApiType,
+                [mainError: SpRuntimeDispatchError],
+                { mainError: SpRuntimeDispatchError }
+            >;
+            /**
+             * Main call was dispatched.
+             **/
+            IfElseMainSuccess: AugmentedEvent<ApiType, []>;
             /**
              * A single item within a Batch of dispatches has completed with no error.
              **/

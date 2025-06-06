@@ -16,6 +16,7 @@
 
 pub mod genesis;
 
+use cumulus_primitives_core::relay_chain::runtime_api::runtime_decl_for_parachain_host::ParachainHostV13;
 use xcm_emulator::decl_test_relay_chains;
 pub use xcm_emulator::TestExt;
 
