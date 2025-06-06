@@ -2074,7 +2074,12 @@ pub type UncheckedExtrinsic =
 /// The runtime migrations per release.
 pub mod migrations {
     /// Unreleased migrations. Add new ones here:
-    pub type Unreleased = ();
+    pub type Unreleased = (
+        pallet_session::migrations::v1::MigrateV0ToV1<
+            Runtime,
+            pallet_session::migrations::v1::InitOffenceSeverity<Runtime>,
+        >,
+    );
 }
 
 /// Executive: handles dispatch to the various modules.
