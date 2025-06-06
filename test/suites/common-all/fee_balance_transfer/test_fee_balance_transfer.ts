@@ -3,8 +3,8 @@ import "@tanssi/api-augment";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type KeyringPair, extractWeight, filterAndApply } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
-import { extractFeeAuthor, filterRewardFromOrchestrator } from "utils";
 import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_BALANCES, checkCallIsFiltered } from "helpers";
+import { extractFeeAuthor, filterRewardFromOrchestrator } from "utils";
 
 describeSuite({
     id: "C0101",
@@ -63,7 +63,7 @@ describeSuite({
                 // "base weight"
                 const estimatedPlusBaseWeight = {
                     refTime: info.weight.refTime.toBigInt() + baseWeight,
-                    proofSize: info.weight.proofSize.toBigInt(),
+                    proofSize: info.weight.proofSize.toBigInt(), // TODO: fix me
                 };
                 expect(estimatedPlusBaseWeight).to.deep.equal({
                     refTime: info2.weight.refTime.toBigInt(),
@@ -326,7 +326,9 @@ function getDispatchInfo({ event: { data, method } }) {
 }
 
 function extractInfoForFee(events): any {
-    return filterAndApply(events, "system", ["ExtrinsicFailed", "ExtrinsicSuccess"], getDispatchInfo).filter((x) => {
+    const event = filterAndApply(events, "system", ["ExtrinsicFailed", "ExtrinsicSuccess"], getDispatchInfo).filter((x) => {
         return x.class.toString() === "Normal" && x.paysFee.toString() === "Yes";
-    })[0];
+    });
+    expect(event.length === 1)
+    return event[0];
 }

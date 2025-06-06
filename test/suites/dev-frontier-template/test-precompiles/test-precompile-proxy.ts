@@ -67,6 +67,9 @@ describeSuite({
             id: "T02",
             title: "should succeed with valid account",
             test: async () => {
+                process.stdout.write("Hello, world!\n"); // goes to stdout
+                process.stderr.write("Oops, something went wrong.\n"); // goes to stderr
+
                 const rawTxn = await context.writeContract?.({
                     contractAddress: PRECOMPILE_PROXY_ADDRESS,
                     contractName: "Proxy",
