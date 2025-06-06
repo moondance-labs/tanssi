@@ -1,31 +1,31 @@
 import bls from "@chainsafe/bls";
 import { Tree } from "@chainsafe/persistent-merkle-tree";
-import { type altair, ssz, type deneb, type Slot } from "@lodestar/types";
+import type { Log } from "@ethereumjs/evm";
+import { Trie } from "@ethereumjs/trie";
+import { TransactionType } from "@ethereumjs/tx";
+import { type PostByzantiumTxReceipt, encodeReceipt } from "@ethereumjs/vm";
+import type { SyncCommitteeFast } from "@lodestar/light-client";
 import {
+    BLOCK_BODY_EXECUTION_PAYLOAD_GINDEX,
     EPOCHS_PER_SYNC_COMMITTEE_PERIOD,
     SLOTS_PER_EPOCH,
     SYNC_COMMITTEE_SIZE,
-    BLOCK_BODY_EXECUTION_PAYLOAD_GINDEX,
 } from "@lodestar/params";
-import { Trie } from "@ethereumjs/trie";
-import { encodeReceipt, type PostByzantiumTxReceipt } from "@ethereumjs/vm";
-import type { Log } from "@ethereumjs/evm";
-import type { SyncCommitteeFast } from "@lodestar/light-client";
+import { type Slot, type altair, type deneb, ssz } from "@lodestar/types";
+import type { ApiPromise } from "@polkadot/api";
+import type { Bytes, Vec } from "@polkadot/types-codec";
+import type { H256 } from "@polkadot/types/interfaces";
 import type {
     SnowbridgeBeaconPrimitivesBeaconHeader,
     SnowbridgeBeaconPrimitivesDenebExecutionPayloadHeader,
     SnowbridgeBeaconPrimitivesExecutionProof,
     SnowbridgeBeaconPrimitivesUpdatesCheckpointUpdate,
     SnowbridgeBeaconPrimitivesVersionedExecutionPayloadHeader,
-    SnowbridgeCoreInboundLog,
-    SnowbridgeCoreInboundMessage,
-    SnowbridgeCoreInboundProof,
+    SnowbridgeVerificationPrimitivesEventProof,
+    SnowbridgeVerificationPrimitivesLog,
+    SnowbridgeVerificationPrimitivesProof,
 } from "@polkadot/types/lookup";
-import type { ApiPromise } from "@polkadot/api";
 import { u8aToHex } from "@polkadot/util";
-import type { H256 } from "@polkadot/types/interfaces";
-import type { Bytes, Vec } from "@polkadot/types-codec";
-import { TransactionType } from "@ethereumjs/tx";
 import { AbiCoder } from "ethers/abi";
 import { getBytes } from "ethers/utils";
 
@@ -67,7 +67,7 @@ function createSyncCommittee(seed: number) {
     };
 }
 
-async function createReceiptTrie(snowbridgeLogs: Array<SnowbridgeCoreInboundLog>, logsBloom: Uint8Array) {
+async function createReceiptTrie(snowbridgeLogs: Array<SnowbridgeVerificationPrimitivesLog>, logsBloom: Uint8Array) {
     const rawLogs = [];
     for (const log of snowbridgeLogs) {
         const rawLog: Log = [log.address, log.topics, log.data];
@@ -119,14 +119,14 @@ export async function generateEventLog(
     const encodedDataString = defaultAbiCoder.encode(["uint64", "bytes"], [nonce, payload]);
     const encodedData = getBytes(encodedDataString);
 
-    return api.createType<SnowbridgeCoreInboundLog>("SnowbridgeCoreInboundLog", {
+    return api.createType<SnowbridgeVerificationPrimitivesLog>("SnowbridgeVerificationPrimitivesLog", {
         address: gatewayAddress,
         topics,
         data: [].slice.call(encodedData),
     });
 }
 
-export async function generateUpdate(api: ApiPromise, logs: Array<SnowbridgeCoreInboundLog>) {
+export async function generateUpdate(api: ApiPromise, logs: Array<SnowbridgeVerificationPrimitivesLog>) {
     // Global variables
     const genValiRoot = Buffer.alloc(32, 9);
 
@@ -228,15 +228,18 @@ export async function generateUpdate(api: ApiPromise, logs: Array<SnowbridgeCore
         }
     );
 
-    const messageProof = api.createType<SnowbridgeCoreInboundProof>("SnowbridgeCoreInboundProof", {
-        receiptProof: [dummyReceiptRoot, receiptProof],
-        executionProof: executionProof,
-    });
+    const messageProof = api.createType<SnowbridgeVerificationPrimitivesProof>(
+        "SnowbridgeVerificationPrimitivesProof",
+        {
+            receiptProof: [dummyReceiptRoot, receiptProof],
+            executionProof: executionProof,
+        }
+    );
 
     const messageExtrinsics = [];
     for (const log of logs) {
         messageExtrinsics.push(
-            api.createType<SnowbridgeCoreInboundMessage>("SnowbridgeCoreInboundMessage", {
+            api.createType<SnowbridgeVerificationPrimitivesEventProof>("SnowbridgeVerificationPrimitivesEventProof", {
                 eventLog: log,
                 proof: messageProof,
             })
