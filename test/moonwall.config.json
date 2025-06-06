@@ -177,7 +177,8 @@
                             "--sealing=manual",
                             "--no-hardware-benchmarks",
                             "--wasmtime-precompiled=wasm",
-                            "--unsafe-force-node-key-generation"
+                            "--unsafe-force-node-key-generation",
+                            "-lruntime::xcm=trace"
                         ],
                         "newRpcBehaviour": true
                     }
@@ -1103,6 +1104,21 @@
             ]
         },
         {
+            "name": "tanssi_smoke",
+            "testFileDir": ["suites/smoke-test-common-solo", "suites/smoke-test-common-all"],
+            "foundation": {
+                "type": "read_only"
+            },
+            "reporters": ["basic","html"],
+            "connections": [
+                {
+                    "name": "para",
+                    "type": "polkadotJs",
+                    "endpoints": ["wss://replace.me"]
+                }
+            ]
+        },
+        {
             "name": "chopsticks_stagenet_dancebox_upgrade",
             "testFileDir": ["suites/rt-upgrade-chopsticks-orchestrator"],
             "foundation": {
@@ -1115,6 +1131,32 @@
                         "configPath": "./configs/stagenet-dancebox.yml",
                         "address": "127.0.0.1",
                         "buildBlockMode": "manual"                    }
+                ]
+            },
+            "vitestArgs": {
+                "bail": 1
+            },
+            "connections": [
+                {
+                    "name": "db",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:8000"]
+                }
+            ]
+        },
+        {
+            "name": "chopsticks_tanssi_upgrade",
+            "testFileDir": ["suites/rt-upgrade-chopsticks-orchestrator"],
+            "foundation": {
+                "type": "chopsticks",
+                "rtUpgradePath": "../target/release/wbuild/starlight-runtime/starlight_runtime.compact.compressed.wasm",
+                "launchSpec": [
+                    {
+                        "name": "db",
+                        "type": "parachain",
+                        "configPath": "./configs/tanssi.yml",
+                        "address": "127.0.0.1"
+                    }
                 ]
             },
             "vitestArgs": {
