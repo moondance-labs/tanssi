@@ -177,8 +177,7 @@
                             "--sealing=manual",
                             "--no-hardware-benchmarks",
                             "--wasmtime-precompiled=wasm",
-                            "--unsafe-force-node-key-generation",
-                            "-lruntime::xcm=trace"
+                            "--unsafe-force-node-key-generation"
                         ],
                         "newRpcBehaviour": true
                     }
