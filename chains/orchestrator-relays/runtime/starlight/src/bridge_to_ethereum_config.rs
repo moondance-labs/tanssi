@@ -211,14 +211,9 @@ where
                                 id: destination_account,
                             },
                         amount,
-                        fee,
                         ..
                     },
             }) => {
-                if fee >= amount {
-                    return Err(DispatchError::Other("fee is greater than amount"));
-                }
-
                 // - Transfer the amounts of tokens from Ethereum sov account to the destination
                 let sovereign_account = T::EthereumSovereignAccount::get();
 

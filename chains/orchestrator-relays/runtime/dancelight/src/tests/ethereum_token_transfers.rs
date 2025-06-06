@@ -1112,6 +1112,109 @@ fn can_process_message_returns_false_for_wrong_message_type() {
 }
 
 #[test]
+fn process_message_fee_lower_than_amount_ok() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (EthereumSovereignAccount::get(), 100_000 * UNIT),
+            (AccountId::from(ALICE), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            let channel_id = ChannelId::new([1; 32]);
+            let agent_id = AgentId::from_low_u64_be(10);
+            let para_id: ParaId = 2000u32.into();
+
+            let channel = Channel { para_id, agent_id };
+
+            let amount = 10;
+            let fee = amount - 5;
+
+            let envelope = Envelope {
+                channel_id,
+                gateway: EthereumGatewayAddress::get(),
+                payload: VersionedXcmMessage::V1(MessageV1 {
+                    chain_id: 1,
+                    command: Command::SendNativeToken {
+                        token_id: Default::default(),
+                        destination: Destination::AccountId32 {
+                            id: AccountId::from(ALICE).into(),
+                        },
+                        amount,
+                        fee,
+                    },
+                })
+                .encode(),
+                nonce: 1,
+                message_id: H256::zero(),
+            };
+
+            let alice_balance_before = Balances::free_balance(AccountId::from(ALICE));
+            let sovereign_balance_before = Balances::free_balance(EthereumSovereignAccount::get());
+
+            assert_ok!(
+                <NativeTokenTransferMessageProcessor<Runtime> as MessageProcessor>::process_message(
+                    channel, envelope
+                )
+            );
+
+            let alice_balance_after = Balances::free_balance(AccountId::from(ALICE));
+            let sovereign_balance_after = Balances::free_balance(EthereumSovereignAccount::get());
+            assert_eq!(alice_balance_after, alice_balance_before + amount);
+            assert_eq!(sovereign_balance_after, sovereign_balance_before - amount);
+        });
+}
+
+#[test]
+fn process_message_fee_greater_than_amount_ok() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (EthereumSovereignAccount::get(), 100_000 * UNIT),
+            (AccountId::from(ALICE), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            let channel_id = ChannelId::new([1; 32]);
+            let agent_id = AgentId::from_low_u64_be(10);
+            let para_id: ParaId = 2000u32.into();
+
+            let channel = Channel { para_id, agent_id };
+
+            let amount = 10;
+            let fee = amount + 5;
+
+            let envelope = Envelope {
+                channel_id,
+                gateway: EthereumGatewayAddress::get(),
+                payload: VersionedXcmMessage::V1(MessageV1 {
+                    chain_id: 1,
+                    command: Command::SendNativeToken {
+                        token_id: Default::default(),
+                        destination: Destination::AccountId32 {
+                            id: AccountId::from(ALICE).into(),
+                        },
+                        amount,
+                        fee,
+                    },
+                })
+                .encode(),
+                nonce: 1,
+                message_id: H256::zero(),
+            };
+
+            let alice_balance_before = Balances::free_balance(AccountId::from(ALICE));
+
+            assert_ok!(
+                <NativeTokenTransferMessageProcessor<Runtime> as MessageProcessor>::process_message(
+                    channel, envelope
+                )
+            );
+
+            let alice_balance_after = Balances::free_balance(AccountId::from(ALICE));
+            assert_eq!(alice_balance_after, alice_balance_before + amount);
+        });
+}
+
+#[test]
 fn test_pricing_parameters() {
     ExtBuilder::default()
         .with_balances(vec![
