@@ -2,29 +2,28 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type KeyringPair, alith } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 
-import { TESTNET_ETHEREUM_NETWORK_ID } from "utils";
+import { signAndSendAndInclude, TESTNET_ETHEREUM_NETWORK_ID } from "utils";
 import { hexToU8a } from "@polkadot/util";
 
 describeSuite({
-    id: "COM0103",
+    id: "ZOMBIETANSS02",
     title: "XCM transfer to Ethereum",
-    foundationMethods: "dev",
+    foundationMethods: "zombie",
     testCases: ({ context, it }) => {
-        let polkadotJs: ApiPromise;
+        let containerChainPolkadotJs: ApiPromise;
+        let relayChainPolkadotJs: ApiPromise;
         let alice: KeyringPair;
+        let aliceAccount32: KeyringPair;
         let chain: string;
-        let transferredBalance: bigint;
 
         beforeAll(async () => {
-            polkadotJs = context.polkadotJs();
-            chain = polkadotJs.consts.system.version.specName.toString();
-            alice =
-                chain === "frontier-template"
-                    ? alith
-                    : new Keyring({ type: "sr25519" }).addFromUri("//Alice", {
-                          name: "Alice default",
-                      });
-            transferredBalance = context.isEthereumChain ? 10_000_000_000_000_000_000n : 10_000_000_000_000n;
+            containerChainPolkadotJs = context.polkadotJs("Container2001");
+            relayChainPolkadotJs = context.polkadotJs("Tanssi-relay");
+            chain = containerChainPolkadotJs.consts.system.version.specName.toString();
+            aliceAccount32 = new Keyring({ type: "sr25519" }).addFromUri("//Alice", {
+                name: "Alice default",
+            });
+            alice = chain === "frontier-template" ? alith : aliceAccount32;
         });
 
         it({
@@ -55,65 +54,70 @@ describeSuite({
                 };
 
                 // Let's create an asset and register it
-                await context.createBlock(
-                    await polkadotJs.tx.sudo
-                        .sudo(
-                            polkadotJs.tx.utility.batch([
-                                polkadotJs.tx.foreignAssetsCreator.createForeignAsset(
-                                    ethereumTokenLocation,
-                                    assetId,
-                                    alice.address,
-                                    true,
-                                    1
-                                ),
-                                polkadotJs.tx.foreignAssetsCreator.createForeignAsset(
-                                    { parents: 1, interior: "Here" },
-                                    tanssiAssetId,
-                                    alice.address,
-                                    true,
-                                    1
-                                ),
-                                polkadotJs.tx.assetRate.create(assetId, 2_000_000_000_000_000_000n),
-                                polkadotJs.tx.assetRate.create(tanssiAssetId, 1_000_000_000_000_000_000n),
-                            ])
-                        )
-                        .signAsync(alice),
-                    {
-                        allowFailures: false,
-                    }
+                await signAndSendAndInclude(
+                    containerChainPolkadotJs.tx.sudo.sudo(
+                        containerChainPolkadotJs.tx.utility.batch([
+                            containerChainPolkadotJs.tx.foreignAssetsCreator.createForeignAsset(
+                                ethereumTokenLocation,
+                                assetId,
+                                alice.address,
+                                true,
+                                1
+                            ),
+                            containerChainPolkadotJs.tx.foreignAssetsCreator.createForeignAsset(
+                                { parents: 1, interior: "Here" },
+                                tanssiAssetId,
+                                alice.address,
+                                true,
+                                1
+                            ),
+                            containerChainPolkadotJs.tx.assetRate.create(assetId, 2_000_000_000_000_000_000n),
+                            containerChainPolkadotJs.tx.assetRate.create(tanssiAssetId, 1_000_000_000_000_000_000n),
+                        ])
+                    ),
+                    alice
+                );
+
+                await signAndSendAndInclude(
+                    relayChainPolkadotJs.tx.sudo.sudo(
+                        relayChainPolkadotJs.tx.utility.batch([
+                            relayChainPolkadotJs.tx.foreignAssetsCreator.createForeignAsset(
+                                { ...ethereumTokenLocation, parents: 1 }, // We decrease "parents" for the relay chain
+                                assetId,
+                                aliceAccount32.address,
+                                true,
+                                1
+                            ),
+                        ])
+                    ),
+                    aliceAccount32
                 );
 
                 const tanssiNativeTokenAmount = 1000n;
 
-                await context.createBlock(
-                    await polkadotJs.tx.foreignAssets
-                        .mint(assetId, alice.address, tanssiNativeTokenAmount)
-                        .signAsync(alice),
-                    {
-                        allowFailures: false,
-                    }
+                await signAndSendAndInclude(
+                    containerChainPolkadotJs.tx.foreignAssets.mint(assetId, alice.address, tanssiNativeTokenAmount),
+                    alice
                 );
 
                 // Check balance before transfer
-                const balanceBefore = (await polkadotJs.query.foreignAssets.account(assetId, alice.address))
+                const balanceBefore = (
+                    await containerChainPolkadotJs.query.foreignAssets.account(assetId, alice.address)
+                )
                     .unwrap()
                     .balance.toBigInt();
 
                 expect(balanceBefore).toEqual(tanssiNativeTokenAmount);
 
-                const metadata = await polkadotJs.rpc.state.getMetadata();
+                const metadata = await containerChainPolkadotJs.rpc.state.getMetadata();
                 const foreignCreatorPalletIndex = metadata.asLatest.pallets
                     .find(({ name }) => name.toString() === "ForeignAssets")
                     .index.toNumber();
 
                 const dest = {
                     V3: {
-                        parents: 2,
-                        interior: {
-                            X1: {
-                                GlobalConsensus: ethereumNetwork,
-                            },
-                        },
+                        parents: 1,
+                        interior: "Here",
                     },
                 };
 
@@ -129,7 +133,7 @@ describeSuite({
                     fun: { Fungible: 2500_000_000_000_000_000n },
                 };
 
-                const txRoot = polkadotJs.tx.polkadotXcm.send(dest, {
+                const txRoot = containerChainPolkadotJs.tx.polkadotXcm.send(dest, {
                     V3: [
                         {
                             WithdrawAsset: [assetToTransfer],
@@ -139,7 +143,7 @@ describeSuite({
                                 assets: { Wild: "All" }, // TODO: Try to be more specific here, instead of "All"
                                 maxAssets: 1,
                                 beneficiary: {
-                                    parents: 2,
+                                    parents: 1,
                                     interior: {
                                         X2: [
                                             {
@@ -159,11 +163,13 @@ describeSuite({
                     ],
                 });
 
-                const result = await context.createBlock(await txRoot.signAsync(alice), { allowFailures: true }); // TODO: revert allow failures
+                const result = await signAndSendAndInclude(txRoot, alice);
 
-                console.log("result", result);
+                console.log(result);
 
-                const balanceAfter = (await polkadotJs.query.foreignAssets.account(assetId, alice.address))
+                const balanceAfter = (
+                    await containerChainPolkadotJs.query.foreignAssets.account(assetId, alice.address)
+                )
                     .unwrap()
                     .balance.toBigInt();
                 expect(balanceAfter < balanceBefore).to.be.true;
