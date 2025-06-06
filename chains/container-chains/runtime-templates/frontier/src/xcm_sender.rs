@@ -27,7 +27,7 @@ fn is_ethereum_location(loc: &Location) -> bool {
     matches!(
         loc,
         Location {
-            parents: 1,
+            parents: 2,
             interior: Junctions::X1(juncs)
         } if juncs[0] == GlobalConsensus(crate::EthereumNetwork::get())
     )
