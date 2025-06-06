@@ -2083,6 +2083,8 @@ pub type UncheckedExtrinsic =
 
 /// The runtime migrations per release.
 pub mod migrations {
+    use super::Runtime;
+
     /// Unreleased migrations. Add new ones here:
     pub type Unreleased = (
         pallet_session::migrations::v1::MigrateV0ToV1<
