@@ -1675,6 +1675,37 @@ parameter_types! {
     pub const FreeCollatorAssignmentCredits: u32 = FreeBlockProductionCredits::get()/EpochDurationInBlocks::get();
 }
 
+pub struct EnsureParachainManager;
+impl EnsureOriginWithArg<RuntimeOrigin, ParaId> for EnsureParachainManager {
+    type Success = ();
+
+    fn try_origin(origin: RuntimeOrigin, para_id: &ParaId) -> Result<(), RuntimeOrigin> {
+        use polkadot_runtime_common::traits::Registrar as _;
+        use sp_runtime::traits::AsSystemOriginSigner;
+
+        let Some(origin_account) = origin.as_system_origin_signer() else {
+            return Err(origin);
+        };
+
+        let Some(manager) = Registrar::manager_of(*para_id) else {
+            return Err(origin);
+        };
+
+        if &manager != origin_account {
+            return Err(origin);
+        };
+
+        Ok(())
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn try_successful_origin(para_id: &ParaId) -> Result<RuntimeOrigin, ()> {
+        Registrar::manager_of(*para_id)
+            .map(RuntimeOrigin::signed)
+            .ok_or(())
+    }
+}
+
 impl pallet_services_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     /// Handler for fees
@@ -1691,7 +1722,7 @@ impl pallet_services_payment::Config for Runtime {
     type FreeBlockProductionCredits = FreeBlockProductionCredits;
     /// The maximum number of session credits that can be accumulated
     type FreeCollatorAssignmentCredits = FreeCollatorAssignmentCredits;
-    type ManagerOrigin = EnsureRoot<AccountId>;
+    type ManagerOrigin = EitherOf<EnsureRoot<AccountId>, EnsureParachainManager>;
     type WeightInfo = weights::pallet_services_payment::SubstrateWeight<Runtime>;
 }
 
