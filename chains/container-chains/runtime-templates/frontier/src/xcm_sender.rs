@@ -124,6 +124,10 @@ impl<Router: SendXcm, UniversalLocation: Get<InteriorLocation>> SendXcm
         // Prepare the message to send
         let message = Xcm(vec![
             WithdrawAsset(asset.clone().into()),
+            BuyExecution {
+                fees: container_fee.clone(),
+                weight_limit: Unlimited,
+            },
             DepositAsset {
                 assets: asset.clone().into(),
                 beneficiary: Location {
@@ -133,11 +137,6 @@ impl<Router: SendXcm, UniversalLocation: Get<InteriorLocation>> SendXcm
                         id: eth_32,
                     }])),
                 },
-            },
-            WithdrawAsset(Assets::from(vec![container_fee.clone()])),
-            BuyExecution {
-                fees: container_fee.clone(),
-                weight_limit: Unlimited,
             },
             export_instruction,
         ]);
