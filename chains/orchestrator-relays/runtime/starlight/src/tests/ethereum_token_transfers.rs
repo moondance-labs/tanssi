@@ -491,7 +491,7 @@ fn receive_native_tokens_from_eth_happy_path() {
             let relayer_balance_before = Balances::free_balance(AccountId::from(ALICE));
             let bob_balance_before = Balances::free_balance(AccountId::from(BOB));
 
-            assert_ok!(EthereumInboundQueue::submit(relayer, message));
+            assert_ok!(EthereumInboundQueue::submit(relayer, message.clone()));
 
             // Amount reduced from sovereign account
             assert_eq!(
@@ -505,15 +505,20 @@ fn receive_native_tokens_from_eth_happy_path() {
                 bob_balance_before + amount_to_transfer
             );
 
-            // Fees are payed
+            // Ensure the relayer was rewarded
+            let reward_amount =
+                snowbridge_pallet_inbound_queue::Pallet::<Runtime>::calculate_delivery_cost(
+                    message.encode().len() as u32,
+                );
+
             assert_eq!(
                 Balances::free_balance(SnowbridgeFeesAccount::get()),
-                fees_account_balance_before - fee
+                fees_account_balance_before - reward_amount
             );
 
             assert_eq!(
                 Balances::free_balance(AccountId::from(ALICE)),
-                relayer_balance_before + fee
+                relayer_balance_before + reward_amount
             );
         });
 }
