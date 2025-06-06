@@ -326,9 +326,11 @@ function getDispatchInfo({ event: { data, method } }) {
 }
 
 function extractInfoForFee(events): any {
-    const event = filterAndApply(events, "system", ["ExtrinsicFailed", "ExtrinsicSuccess"], getDispatchInfo).filter((x) => {
-        return x.class.toString() === "Normal" && x.paysFee.toString() === "Yes";
-    });
-    expect(event.length === 1)
+    const event = filterAndApply(events, "system", ["ExtrinsicFailed", "ExtrinsicSuccess"], getDispatchInfo).filter(
+        (x) => {
+            return x.class.toString() === "Normal" && x.paysFee.toString() === "Yes";
+        }
+    );
+    expect(event.length === 1);
     return event[0];
 }
