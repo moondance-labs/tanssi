@@ -3,6 +3,7 @@ import type { ApiPromise } from "@polkadot/api";
 import { getTreasuryAddress } from "../../utils";
 import { filterAndApply } from "@moonwall/util";
 import type { EventRecord } from "@polkadot/types/interfaces";
+import type { FrameSystemEventRecord } from "@polkadot/types/lookup";
 
 const RUNTIME_VERSION_THRESHOLD = 1300;
 let BLOCKS_AMOUNT_TO_CHECK = 100;
@@ -58,12 +59,32 @@ describeSuite({
                         return;
                     }
 
-                    const events = await apiAtBlock.query.system.events();
-                    for (const [_, extrinsic] of extrinsics.entries()) {
+                    const allRecords = await apiAtBlock.query.system.events();
+                    const extrinsicIndexToEventsMap = new Map<string, FrameSystemEventRecord[]>();
+
+                    for (const eventRecord of allRecords) {
+                        if (!eventRecord.phase.isApplyExtrinsic) {
+                            continue;
+                        }
+
+                        const extrinsicIndex = eventRecord.phase.asApplyExtrinsic.toString();
+                        if (!extrinsicIndexToEventsMap.has(extrinsicIndex)) {
+                            extrinsicIndexToEventsMap.set(extrinsicIndex, []);
+                        }
+
+                        const events = extrinsicIndexToEventsMap.get(extrinsicIndex);
+                        events.push(eventRecord);
+
+                        extrinsicIndexToEventsMap.set(extrinsicIndex, events);
+                    }
+
+                    for (const [index, extrinsic] of extrinsics.entries()) {
                         // Skip unsigned extrinsics, since no commission is paid
                         if (!extrinsic.isSigned) {
                             continue;
                         }
+
+                        const events = extrinsicIndexToEventsMap.get(`${index}`) || [];
 
                         // Get all fee paid events for the current extrinsic
                         const feePaidEvents = filterAndApply(
