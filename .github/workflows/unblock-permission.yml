@@ -17,18 +17,16 @@ jobs:
           
           if [ -d chains/orchestrator-relays/runtime/starlight/target/srtool ]; then
             ls -ln chains/orchestrator-relays/runtime/starlight
-            sudo chown -R 777 chains/orchestrator-relays/runtime/starlight/target
-            echo "trying to remove folder for starlight"
-            rm -rf chains/orchestrator-relays/runtime/starlight/target
+            docker run --rm -v ${PWD}:/build alpine \
+              sh -c "rm -rf /build/chains/orchestrator-relays/runtime/starlight/target"
           else
             echo "starlight srtool dir not found, skipping chown"
           fi
 
           if [ -d chains/orchestrator-relays/runtime/dancelight/target/srtool ]; then
             ls -ln chains/orchestrator-relays/runtime/dancelight
-            sudo chown -R 777 chains/orchestrator-relays/runtime/dancelight/target
-            echo "trying to remove folder for dancelight"
-            rm -rf chains/orchestrator-relays/runtime/dancelight/target
+            docker run --rm -v ${PWD}:/build alpine \
+              sh -c "rm -rf /build/chains/orchestrator-relays/runtime/dancelight/target"
           else
             echo "dancelight srtool dir not found, skipping chown"
           fi
