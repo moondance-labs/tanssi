@@ -219,14 +219,9 @@ where
                                 id: destination_account,
                             },
                         amount,
-                        fee,
                         ..
                     },
             }) => {
-                if fee >= amount {
-                    return Err(DispatchError::Other("fee is greater than amount"));
-                }
-
                 // - Transfer the amounts of tokens from Ethereum sov account to the destination
                 let sovereign_account = T::EthereumSovereignAccount::get();
 
@@ -505,18 +500,9 @@ where
     <T::Token as Inspect<T::AccountId>>::Balance: From<u128>,
 {
     fn process_reward(who: T::AccountId, _channel: Channel, message: EventProof) -> DispatchResult {
-        let envelope = Envelope::try_from(&message.event_log)
-            .map_err(|_| snowbridge_pallet_inbound_queue::Error::<T>::InvalidEnvelope)?;
-
-        let reward_amount: <T::Token as Inspect<T::AccountId>>::Balance =
-            match VersionedXcmMessage::decode_all(&mut envelope.payload.as_slice()) {
-                Ok(VersionedXcmMessage::V1(MessageV1 { command, .. })) => match command {
-                    Command::SendNativeToken { fee, .. }
-                    | Command::SendToken { fee, .. }
-                    | Command::RegisterToken { fee, .. } => fee.into(),
-                },
-                Err(_) => return Ok(()), // Do not reward if we cannot handle the message
-            };
+        let reward_amount = snowbridge_pallet_inbound_queue::Pallet::<T>::calculate_delivery_cost(
+            message.encode().len() as u32,
+        );
 
         let fees_account: T::AccountId = T::FeesAccount::get();
 
