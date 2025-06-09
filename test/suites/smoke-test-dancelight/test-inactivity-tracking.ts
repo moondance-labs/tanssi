@@ -21,7 +21,7 @@ describeSuite({
 
         it({
             id: "C01",
-            title: "Collator marked as inactive has not produced any blocks in the last session",
+            title: "Collators marked as inactive have not produced any blocks in the last session",
             test: async () => {
                 const inactiveCollators = await api.query.inactivityTracking.inactiveCollators(lastSessionIndex);
 
@@ -47,10 +47,11 @@ describeSuite({
                         if (latestAuthorInfo.isSome) {
                             const authorInfo = latestAuthorInfo.unwrap();
                             const authorId = authorInfo.author;
-
-                            failureMessages.push(
-                                `Collator ${authorId.toString()} is marked as inactive but authored block ${authorInfo.blockNumber} for container chain ${paraId} in session ${lastSessionIndex}.`
-                            );
+                            if (inactiveCollators.has(authorId)) {
+                                failureMessages.push(
+                                    `Collator ${authorId.toString()} is marked as inactive but authored block ${authorInfo.blockNumber} for container chain ${paraId} in session ${lastSessionIndex}.`
+                                );
+                            }
                         }
                     }
                     // Move to the previous block
