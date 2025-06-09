@@ -70,11 +70,11 @@ import type {
     SnowbridgeBeaconPrimitivesUpdatesUpdate,
     SnowbridgeCoreAssetMetadata,
     SnowbridgeCoreChannelId,
-    SnowbridgeCoreInboundMessage,
     SnowbridgeCoreOperatingModeBasicOperatingMode,
-    SnowbridgeCoreOutboundV1Initializer,
-    SnowbridgeCoreOutboundV1OperatingMode,
     SnowbridgeCorePricingPricingParameters,
+    SnowbridgeOutboundQueuePrimitivesOperatingMode,
+    SnowbridgeOutboundQueuePrimitivesV1MessageInitializer,
+    SnowbridgeVerificationPrimitivesEventProof,
     SpConsensusBabeDigestsNextConfigDescriptor,
     SpConsensusBeefyDoubleVotingProof,
     SpConsensusBeefyForkVotingProof,
@@ -1523,9 +1523,13 @@ declare module "@polkadot/api-base/types/submittable" {
              **/
             submit: AugmentedSubmittable<
                 (
-                    message: SnowbridgeCoreInboundMessage | { eventLog?: any; proof?: any } | string | Uint8Array
+                    event:
+                        | SnowbridgeVerificationPrimitivesEventProof
+                        | { eventLog?: any; proof?: any }
+                        | string
+                        | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [SnowbridgeCoreInboundMessage]
+                [SnowbridgeVerificationPrimitivesEventProof]
             >;
             /**
              * Generic tx
@@ -1548,81 +1552,6 @@ declare module "@polkadot/api-base/types/submittable" {
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
         ethereumSystem: {
-            /**
-             * Sends a command to the Gateway contract to instantiate a new agent contract representing
-             * `origin`.
-             *
-             * Fee required: Yes
-             *
-             * - `origin`: Must be `Location` of a sibling parachain
-             **/
-            createAgent: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
-            /**
-             * Sends a message to the Gateway contract to create a new channel representing `origin`
-             *
-             * Fee required: Yes
-             *
-             * This extrinsic is permissionless, so a fee is charged to prevent spamming and pay
-             * for execution costs on the remote side.
-             *
-             * The message is sent over the bridge on BridgeHub's own channel to the Gateway.
-             *
-             * - `origin`: Must be `Location`
-             * - `mode`: Initial operating mode of the channel
-             **/
-            createChannel: AugmentedSubmittable<
-                (
-                    mode:
-                        | SnowbridgeCoreOutboundV1OperatingMode
-                        | "Normal"
-                        | "RejectingOutboundMessages"
-                        | number
-                        | Uint8Array
-                ) => SubmittableExtrinsic<ApiType>,
-                [SnowbridgeCoreOutboundV1OperatingMode]
-            >;
-            /**
-             * Sends a message to the Gateway contract to transfer ether from an agent to `recipient`.
-             *
-             * Privileged. Can only be called by root.
-             *
-             * Fee required: No
-             *
-             * - `origin`: Must be root
-             * - `location`: Location used to resolve the agent
-             * - `recipient`: Recipient of funds
-             * - `amount`: Amount to transfer
-             **/
-            forceTransferNativeFromAgent: AugmentedSubmittable<
-                (
-                    location: XcmVersionedLocation | { V3: any } | { V4: any } | { V5: any } | string | Uint8Array,
-                    recipient: H160 | string | Uint8Array,
-                    amount: u128 | AnyNumber | Uint8Array
-                ) => SubmittableExtrinsic<ApiType>,
-                [XcmVersionedLocation, H160, u128]
-            >;
-            /**
-             * Sends a message to the Gateway contract to update an arbitrary channel
-             *
-             * Fee required: No
-             *
-             * - `origin`: Must be root
-             * - `channel_id`: ID of channel
-             * - `mode`: Initial operating mode of the channel
-             * - `outbound_fee`: Fee charged to users for sending outbound messages to Polkadot
-             **/
-            forceUpdateChannel: AugmentedSubmittable<
-                (
-                    channelId: SnowbridgeCoreChannelId | string | Uint8Array,
-                    mode:
-                        | SnowbridgeCoreOutboundV1OperatingMode
-                        | "Normal"
-                        | "RejectingOutboundMessages"
-                        | number
-                        | Uint8Array
-                ) => SubmittableExtrinsic<ApiType>,
-                [SnowbridgeCoreChannelId, SnowbridgeCoreOutboundV1OperatingMode]
-            >;
             /**
              * Registers a Polkadot-native token as a wrapped ERC20 token on Ethereum.
              * Privileged. Can only be called by root.
@@ -1654,13 +1583,13 @@ declare module "@polkadot/api-base/types/submittable" {
             setOperatingMode: AugmentedSubmittable<
                 (
                     mode:
-                        | SnowbridgeCoreOutboundV1OperatingMode
+                        | SnowbridgeOutboundQueuePrimitivesOperatingMode
                         | "Normal"
                         | "RejectingOutboundMessages"
                         | number
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [SnowbridgeCoreOutboundV1OperatingMode]
+                [SnowbridgeOutboundQueuePrimitivesOperatingMode]
             >;
             /**
              * Set pricing parameters on both sides of the bridge
@@ -1703,41 +1632,6 @@ declare module "@polkadot/api-base/types/submittable" {
                 [u128, u128, U256]
             >;
             /**
-             * Sends a message to the Gateway contract to transfer ether from an agent to `recipient`.
-             *
-             * A partial fee will be charged for local processing only.
-             *
-             * - `origin`: Must be `Location`
-             **/
-            transferNativeFromAgent: AugmentedSubmittable<
-                (
-                    recipient: H160 | string | Uint8Array,
-                    amount: u128 | AnyNumber | Uint8Array
-                ) => SubmittableExtrinsic<ApiType>,
-                [H160, u128]
-            >;
-            /**
-             * Sends a message to the Gateway contract to update a channel configuration
-             *
-             * The origin must already have a channel initialized, as this message is sent over it.
-             *
-             * A partial fee will be charged for local processing only.
-             *
-             * - `origin`: Must be `Location`
-             * - `mode`: Initial operating mode of the channel
-             **/
-            updateChannel: AugmentedSubmittable<
-                (
-                    mode:
-                        | SnowbridgeCoreOutboundV1OperatingMode
-                        | "Normal"
-                        | "RejectingOutboundMessages"
-                        | number
-                        | Uint8Array
-                ) => SubmittableExtrinsic<ApiType>,
-                [SnowbridgeCoreOutboundV1OperatingMode]
-            >;
-            /**
              * Sends command to the Gateway contract to upgrade itself with a new implementation
              * contract
              *
@@ -1753,14 +1647,14 @@ declare module "@polkadot/api-base/types/submittable" {
                     implAddress: H160 | string | Uint8Array,
                     implCodeHash: H256 | string | Uint8Array,
                     initializer:
-                        | Option<SnowbridgeCoreOutboundV1Initializer>
+                        | Option<SnowbridgeOutboundQueuePrimitivesV1MessageInitializer>
                         | null
                         | Uint8Array
-                        | SnowbridgeCoreOutboundV1Initializer
+                        | SnowbridgeOutboundQueuePrimitivesV1MessageInitializer
                         | { params?: any; maximumRequiredGas?: any }
                         | string
                 ) => SubmittableExtrinsic<ApiType>,
-                [H160, H256, Option<SnowbridgeCoreOutboundV1Initializer>]
+                [H160, H256, Option<SnowbridgeOutboundQueuePrimitivesV1MessageInitializer>]
             >;
             /**
              * Generic tx
@@ -2172,7 +2066,6 @@ declare module "@polkadot/api-base/types/submittable" {
                     proposalOrigin:
                         | DancelightRuntimeOriginCaller
                         | { system: any }
-                        | { Void: any }
                         | { Origins: any }
                         | { ParachainsOrigin: any }
                         | { XcmPallet: any }
@@ -2753,6 +2646,9 @@ declare module "@polkadot/api-base/types/submittable" {
              * refunded.
              * - `allow_burn`: If `true` then assets may be destroyed in order to complete the refund.
              *
+             * It will fail with either [`Error::ContainsHolds`] or [`Error::ContainsFreezes`] if
+             * the asset account contains holds or freezes in place.
+             *
              * Emits `Refunded` event when successful.
              **/
             refund: AugmentedSubmittable<
@@ -2771,6 +2667,9 @@ declare module "@polkadot/api-base/types/submittable" {
              *
              * - `id`: The identifier of the asset for the account holding a deposit.
              * - `who`: The account to refund.
+             *
+             * It will fail with either [`Error::ContainsHolds`] or [`Error::ContainsFreezes`] if
+             * the asset account contains holds or freezes in place.
              *
              * Emits `Refunded` event when successful.
              **/
@@ -2894,6 +2793,9 @@ declare module "@polkadot/api-base/types/submittable" {
              *
              * - `id`: The identifier of the asset to be destroyed. This must identify an existing
              * asset.
+             *
+             * It will fail with either [`Error::ContainsHolds`] or [`Error::ContainsFreezes`] if
+             * an account contains holds or freezes in place.
              **/
             startDestroy: AugmentedSubmittable<
                 (id: u16 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
@@ -4298,6 +4200,29 @@ declare module "@polkadot/api-base/types/submittable" {
                 [u16, Vec<AccountId32>, PalletMultisigTimepoint, U8aFixed]
             >;
             /**
+             * Poke the deposit reserved for an existing multisig operation.
+             *
+             * The dispatch origin for this call must be _Signed_ and must be the original depositor of
+             * the multisig operation.
+             *
+             * The transaction fee is waived if the deposit amount has changed.
+             *
+             * - `threshold`: The total number of approvals needed for this multisig.
+             * - `other_signatories`: The accounts (other than the sender) who are part of the
+             * multisig.
+             * - `call_hash`: The hash of the call this deposit is reserved for.
+             *
+             * Emits `DepositPoked` if successful.
+             **/
+            pokeDeposit: AugmentedSubmittable<
+                (
+                    threshold: u16 | AnyNumber | Uint8Array,
+                    otherSignatories: Vec<AccountId32> | (AccountId32 | string | Uint8Array)[],
+                    callHash: U8aFixed | string | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [u16, Vec<AccountId32>, U8aFixed]
+            >;
+            /**
              * Generic tx
              **/
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
@@ -4345,6 +4270,32 @@ declare module "@polkadot/api-base/types/submittable" {
              * - `OnDemandOrderPlaced`
              **/
             placeOrderKeepAlive: AugmentedSubmittable<
+                (
+                    maxAmount: u128 | AnyNumber | Uint8Array,
+                    paraId: u32 | AnyNumber | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [u128, u32]
+            >;
+            /**
+             * Create a single on demand core order with credits.
+             * Will charge the owner's on-demand credit account the spot price for the current block.
+             *
+             * Parameters:
+             * - `origin`: The sender of the call, on-demand credits will be withdrawn from this
+             * account.
+             * - `max_amount`: The maximum number of credits to spend from the origin to place an
+             * order.
+             * - `para_id`: A `ParaId` the origin wants to provide blockspace for.
+             *
+             * Errors:
+             * - `InsufficientCredits`
+             * - `QueueFull`
+             * - `SpotPriceHigherThanMaxAmount`
+             *
+             * Events:
+             * - `OnDemandOrderPlaced`
+             **/
+            placeOrderWithCredits: AugmentedSubmittable<
                 (
                     maxAmount: u128 | AnyNumber | Uint8Array,
                     paraId: u32 | AnyNumber | Uint8Array
@@ -4711,7 +4662,7 @@ declare module "@polkadot/api-base/types/submittable" {
         };
         preimage: {
             /**
-             * Ensure that the a bulk of pre-images is upgraded.
+             * Ensure that the bulk of pre-images is upgraded.
              *
              * The caller pays no fee if at least 90% of pre-images were successfully updated.
              **/
@@ -4934,6 +4885,17 @@ declare module "@polkadot/api-base/types/submittable" {
                 ) => SubmittableExtrinsic<ApiType>,
                 [MultiAddress, DancelightRuntimeProxyType, u16, Compact<u32>, Compact<u32>]
             >;
+            /**
+             * Poke / Adjust deposits made for proxies and announcements based on current values.
+             * This can be used by accounts to possibly lower their locked amount.
+             *
+             * The dispatch origin for this call must be _Signed_.
+             *
+             * The transaction fee is waived if the deposit amount has changed.
+             *
+             * Emits `DepositPoked` if successful.
+             **/
+            pokeDeposit: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
             /**
              * Dispatch the given `call` from an account that the sender is authorised for through
              * `add_proxy`.
@@ -5257,7 +5219,6 @@ declare module "@polkadot/api-base/types/submittable" {
                     proposalOrigin:
                         | DancelightRuntimeOriginCaller
                         | { system: any }
-                        | { Void: any }
                         | { Origins: any }
                         | { ParachainsOrigin: any }
                         | { XcmPallet: any }
@@ -6377,7 +6338,27 @@ declare module "@polkadot/api-base/types/submittable" {
                     asOrigin:
                         | DancelightRuntimeOriginCaller
                         | { system: any }
-                        | { Void: any }
+                        | { Origins: any }
+                        | { ParachainsOrigin: any }
+                        | { XcmPallet: any }
+                        | string
+                        | Uint8Array,
+                    call: Call | IMethod | string | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [DancelightRuntimeOriginCaller, Call]
+            >;
+            /**
+             * Dispatches a function call with a provided origin.
+             *
+             * Almost the same as [`Pallet::dispatch_as`] but forwards any error of the inner call.
+             *
+             * The dispatch origin for this call must be _Root_.
+             **/
+            dispatchAsFallible: AugmentedSubmittable<
+                (
+                    asOrigin:
+                        | DancelightRuntimeOriginCaller
+                        | { system: any }
                         | { Origins: any }
                         | { ParachainsOrigin: any }
                         | { XcmPallet: any }
@@ -6405,6 +6386,38 @@ declare module "@polkadot/api-base/types/submittable" {
             forceBatch: AugmentedSubmittable<
                 (calls: Vec<Call> | (Call | IMethod | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>,
                 [Vec<Call>]
+            >;
+            /**
+             * Dispatch a fallback call in the event the main call fails to execute.
+             * May be called from any origin except `None`.
+             *
+             * This function first attempts to dispatch the `main` call.
+             * If the `main` call fails, the `fallback` is attemted.
+             * if the fallback is successfully dispatched, the weights of both calls
+             * are accumulated and an event containing the main call error is deposited.
+             *
+             * In the event of a fallback failure the whole call fails
+             * with the weights returned.
+             *
+             * - `main`: The main call to be dispatched. This is the primary action to execute.
+             * - `fallback`: The fallback call to be dispatched in case the `main` call fails.
+             *
+             * ## Dispatch Logic
+             * - If the origin is `root`, both the main and fallback calls are executed without
+             * applying any origin filters.
+             * - If the origin is not `root`, the origin filter is applied to both the `main` and
+             * `fallback` calls.
+             *
+             * ## Use Case
+             * - Some use cases might involve submitting a `batch` type call in either main, fallback
+             * or both.
+             **/
+            ifElse: AugmentedSubmittable<
+                (
+                    main: Call | IMethod | string | Uint8Array,
+                    fallback: Call | IMethod | string | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [Call, Call]
             >;
             /**
              * Dispatch a function call with a specified weight.
@@ -6457,6 +6470,26 @@ declare module "@polkadot/api-base/types/submittable" {
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
         xcmPallet: {
+            /**
+             * Authorize another `aliaser` location to alias into the local `origin` making this call.
+             * The `aliaser` is only authorized until the provided `expiry` block number.
+             * The call can also be used for a previously authorized alias in order to update its
+             * `expiry` block number.
+             *
+             * Usually useful to allow your local account to be aliased into from a remote location
+             * also under your control (like your account on another chain).
+             *
+             * WARNING: make sure the caller `origin` (you) trusts the `aliaser` location to act in
+             * their/your name. Once authorized using this call, the `aliaser` can freely impersonate
+             * `origin` in XCM programs executed on the local chain.
+             **/
+            addAuthorizedAlias: AugmentedSubmittable<
+                (
+                    aliaser: XcmVersionedLocation | { V3: any } | { V4: any } | { V5: any } | string | Uint8Array,
+                    expires: Option<u64> | null | Uint8Array | u64 | AnyNumber
+                ) => SubmittableExtrinsic<ApiType>,
+                [XcmVersionedLocation, Option<u64>]
+            >;
             /**
              * Claims assets trapped on this pallet because of leftover assets during XCM execution.
              *
@@ -6622,6 +6655,21 @@ declare module "@polkadot/api-base/types/submittable" {
                     weightLimit: XcmV3WeightLimit | { Unlimited: any } | { Limited: any } | string | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
                 [XcmVersionedLocation, XcmVersionedLocation, XcmVersionedAssets, u32, XcmV3WeightLimit]
+            >;
+            /**
+             * Remove all previously authorized `aliaser`s that can alias into the local `origin`
+             * making this call.
+             **/
+            removeAllAuthorizedAliases: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
+            /**
+             * Remove a previously authorized `aliaser` from the list of locations that can alias into
+             * the local `origin` making this call.
+             **/
+            removeAuthorizedAlias: AugmentedSubmittable<
+                (
+                    aliaser: XcmVersionedLocation | { V3: any } | { V4: any } | { V5: any } | string | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [XcmVersionedLocation]
             >;
             /**
              * Transfer some assets from the local chain to the destination chain through their local,
