@@ -62,23 +62,17 @@ jobs:
       - name: Build Node parachains
         if:  contains(needs.set-tags.outputs.git_branch, 'para')
         run: cargo build -p tanssi-node -p container-chain-frontier-node -p container-chain-simple-node --profile=production
-      - name: Save binary
-        if: ${{ matrix.cpu == '' }}
-        run: |
-          suffix = ""
-          if [ "${{ matrix.cpu }}" != "" ]; then
-            suffix="-${{ matrix.cpu }}"
-          fi
-          mkdir -p binaries
-          if [[ "${{ needs.set-tags.outputs.git_branch }}" == *"para"* ]]; then
-            cp target/production/tanssi-node binaries/tanssi-node$suffix
-            cp target/production/container-chain-frontier-node binaries/container-chain-frontier-node$suffix
-            cp target/production/container-chain-simple-node binaries/container-chain-simple-node$suffix
-          else
-            cp target/production/tanssi-relay binaries/tanssi-relay$suffix
-            cp target/production/tanssi-relay-execute-worker binaries/tanssi-relay-execute-worker$suffix
-            cp target/production/tanssi-relay-prepare-worker binaries/tanssi-relay-prepare-worker$suffix
-          fi
+      - name: Save binary (parachain)
+        if: ${{ matrix.cpu == '' && contains(needs.set-tags.outputs.git_branch, 'para') }}
+        uses: ./.github/actions/copy-parachain-node-binaries
+        with:
+          cpu: ${{ matrix.cpu }}
+
+      - name: Save binary (relaychain)
+        if: ${{ matrix.cpu == '' && !contains(needs.set-tags.outputs.git_branch, 'para') }}
+        uses: ./.github/actions/copy-relaychain-node-binaries
+        with:
+          cpu: ${{ matrix.cpu }}
       - name: Upload binaries
         uses: actions/upload-artifact@v4
         with:
