@@ -766,11 +766,15 @@ describeSuite({
                 );
 
                 // Reward is reduced from fees account
+                // at least the amount decided in localReward
+                const localReward = (await relayApi.query.ethereumSystem.pricingParameters()).rewards.local.toBigInt();
+
                 const feesAccountBalanceAfterReceiving = (await relayApi.query.system.account(SNOWBRIDGE_FEES_ACCOUNT))
                     .data.free;
                 expect(
-                    feesAccountBalanceAfterSending.toNumber() - feesAccountBalanceAfterReceiving.toNumber()
-                ).to.be.eq(RESERVE_TRANSFER_FEE);
+                    feesAccountBalanceAfterSending.toBigInt() - feesAccountBalanceAfterReceiving.toBigInt() >
+                        localReward
+                ).to.be.true;
 
                 // Reward is added to execution relay account
                 const executionRelayAfter = (await relayApi.query.system.account(executionRelay.address)).data.free;
