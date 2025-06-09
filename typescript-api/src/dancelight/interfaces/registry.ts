@@ -206,7 +206,6 @@ import type {
     PalletPreimageRequestStatus,
     PalletProxyAnnouncement,
     PalletProxyCall,
-    PalletProxyDepositKind,
     PalletProxyError,
     PalletProxyEvent,
     PalletProxyProxyDefinition,
@@ -226,7 +225,7 @@ import type {
     PalletReferendaReferendumInfoRankedCollectiveTally,
     PalletReferendaReferendumStatusConvictionVotingTally,
     PalletReferendaReferendumStatusRankedCollectiveTally,
-    PalletReferendaTrackDetails,
+    PalletReferendaTrackInfo,
     PalletRegistrarCall,
     PalletRegistrarDepositInfo,
     PalletRegistrarError,
@@ -274,12 +273,9 @@ import type {
     PalletWhitelistCall,
     PalletWhitelistError,
     PalletWhitelistEvent,
-    PalletXcmAuthorizedAliasesEntry,
     PalletXcmCall,
     PalletXcmError,
     PalletXcmEvent,
-    PalletXcmHoldReason,
-    PalletXcmMaxAuthorizedAliases,
     PalletXcmOrigin,
     PalletXcmQueryStatus,
     PalletXcmRemoteLockedFungibleRecord,
@@ -397,14 +393,17 @@ import type {
     SnowbridgeCoreAssetMetadata,
     SnowbridgeCoreChannel,
     SnowbridgeCoreChannelId,
+    SnowbridgeCoreInboundLog,
+    SnowbridgeCoreInboundMessage,
+    SnowbridgeCoreInboundProof,
+    SnowbridgeCoreInboundVerificationError,
     SnowbridgeCoreOperatingModeBasicOperatingMode,
+    SnowbridgeCoreOutboundSendError,
+    SnowbridgeCoreOutboundV1Initializer,
+    SnowbridgeCoreOutboundV1OperatingMode,
     SnowbridgeCorePricingPricingParameters,
     SnowbridgeCorePricingRewards,
-    SnowbridgeInboundQueuePrimitivesV1ConvertMessageError,
     SnowbridgeMilagroBlsKeysPublicKey,
-    SnowbridgeOutboundQueuePrimitivesOperatingMode,
-    SnowbridgeOutboundQueuePrimitivesSendError,
-    SnowbridgeOutboundQueuePrimitivesV1MessageInitializer,
     SnowbridgePalletEthereumClientCall,
     SnowbridgePalletEthereumClientError,
     SnowbridgePalletEthereumClientEvent,
@@ -419,10 +418,7 @@ import type {
     SnowbridgePalletSystemCall,
     SnowbridgePalletSystemError,
     SnowbridgePalletSystemEvent,
-    SnowbridgeVerificationPrimitivesEventProof,
-    SnowbridgeVerificationPrimitivesLog,
-    SnowbridgeVerificationPrimitivesProof,
-    SnowbridgeVerificationPrimitivesVerificationError,
+    SnowbridgeRouterPrimitivesInboundConvertMessageError,
     SpArithmeticArithmeticError,
     SpAuthorityDiscoveryAppPublic,
     SpConsensusBabeAllowedSlots,
@@ -449,6 +445,7 @@ import type {
     SpConsensusSlotsEquivocationProof,
     SpCoreCryptoKeyTypeId,
     SpCoreSr25519VrfVrfSignature,
+    SpCoreVoid,
     SpMmrPrimitivesAncestryProof,
     SpRuntimeBlakeTwo256,
     SpRuntimeDigest,
@@ -521,7 +518,6 @@ import type {
     TpTraitsParathreadParams,
     TpTraitsSlotFrequency,
     XcmDoubleEncoded,
-    XcmRuntimeApisAuthorizedAliasesOriginAliaser,
     XcmV3Instruction,
     XcmV3Junction,
     XcmV3JunctionBodyId,
@@ -542,7 +538,6 @@ import type {
     XcmV3QueryResponseInfo,
     XcmV3Response,
     XcmV3TraitsError,
-    XcmV3TraitsSendError,
     XcmV3WeightLimit,
     XcmV3Xcm,
     XcmV5TraitsError,
@@ -755,7 +750,6 @@ declare module "@polkadot/types/types/registry" {
         PalletPreimageRequestStatus: PalletPreimageRequestStatus;
         PalletProxyAnnouncement: PalletProxyAnnouncement;
         PalletProxyCall: PalletProxyCall;
-        PalletProxyDepositKind: PalletProxyDepositKind;
         PalletProxyError: PalletProxyError;
         PalletProxyEvent: PalletProxyEvent;
         PalletProxyProxyDefinition: PalletProxyProxyDefinition;
@@ -775,7 +769,7 @@ declare module "@polkadot/types/types/registry" {
         PalletReferendaReferendumInfoRankedCollectiveTally: PalletReferendaReferendumInfoRankedCollectiveTally;
         PalletReferendaReferendumStatusConvictionVotingTally: PalletReferendaReferendumStatusConvictionVotingTally;
         PalletReferendaReferendumStatusRankedCollectiveTally: PalletReferendaReferendumStatusRankedCollectiveTally;
-        PalletReferendaTrackDetails: PalletReferendaTrackDetails;
+        PalletReferendaTrackInfo: PalletReferendaTrackInfo;
         PalletRegistrarCall: PalletRegistrarCall;
         PalletRegistrarDepositInfo: PalletRegistrarDepositInfo;
         PalletRegistrarError: PalletRegistrarError;
@@ -823,12 +817,9 @@ declare module "@polkadot/types/types/registry" {
         PalletWhitelistCall: PalletWhitelistCall;
         PalletWhitelistError: PalletWhitelistError;
         PalletWhitelistEvent: PalletWhitelistEvent;
-        PalletXcmAuthorizedAliasesEntry: PalletXcmAuthorizedAliasesEntry;
         PalletXcmCall: PalletXcmCall;
         PalletXcmError: PalletXcmError;
         PalletXcmEvent: PalletXcmEvent;
-        PalletXcmHoldReason: PalletXcmHoldReason;
-        PalletXcmMaxAuthorizedAliases: PalletXcmMaxAuthorizedAliases;
         PalletXcmOrigin: PalletXcmOrigin;
         PalletXcmQueryStatus: PalletXcmQueryStatus;
         PalletXcmRemoteLockedFungibleRecord: PalletXcmRemoteLockedFungibleRecord;
@@ -946,14 +937,17 @@ declare module "@polkadot/types/types/registry" {
         SnowbridgeCoreAssetMetadata: SnowbridgeCoreAssetMetadata;
         SnowbridgeCoreChannel: SnowbridgeCoreChannel;
         SnowbridgeCoreChannelId: SnowbridgeCoreChannelId;
+        SnowbridgeCoreInboundLog: SnowbridgeCoreInboundLog;
+        SnowbridgeCoreInboundMessage: SnowbridgeCoreInboundMessage;
+        SnowbridgeCoreInboundProof: SnowbridgeCoreInboundProof;
+        SnowbridgeCoreInboundVerificationError: SnowbridgeCoreInboundVerificationError;
         SnowbridgeCoreOperatingModeBasicOperatingMode: SnowbridgeCoreOperatingModeBasicOperatingMode;
+        SnowbridgeCoreOutboundSendError: SnowbridgeCoreOutboundSendError;
+        SnowbridgeCoreOutboundV1Initializer: SnowbridgeCoreOutboundV1Initializer;
+        SnowbridgeCoreOutboundV1OperatingMode: SnowbridgeCoreOutboundV1OperatingMode;
         SnowbridgeCorePricingPricingParameters: SnowbridgeCorePricingPricingParameters;
         SnowbridgeCorePricingRewards: SnowbridgeCorePricingRewards;
-        SnowbridgeInboundQueuePrimitivesV1ConvertMessageError: SnowbridgeInboundQueuePrimitivesV1ConvertMessageError;
         SnowbridgeMilagroBlsKeysPublicKey: SnowbridgeMilagroBlsKeysPublicKey;
-        SnowbridgeOutboundQueuePrimitivesOperatingMode: SnowbridgeOutboundQueuePrimitivesOperatingMode;
-        SnowbridgeOutboundQueuePrimitivesSendError: SnowbridgeOutboundQueuePrimitivesSendError;
-        SnowbridgeOutboundQueuePrimitivesV1MessageInitializer: SnowbridgeOutboundQueuePrimitivesV1MessageInitializer;
         SnowbridgePalletEthereumClientCall: SnowbridgePalletEthereumClientCall;
         SnowbridgePalletEthereumClientError: SnowbridgePalletEthereumClientError;
         SnowbridgePalletEthereumClientEvent: SnowbridgePalletEthereumClientEvent;
@@ -968,10 +962,7 @@ declare module "@polkadot/types/types/registry" {
         SnowbridgePalletSystemCall: SnowbridgePalletSystemCall;
         SnowbridgePalletSystemError: SnowbridgePalletSystemError;
         SnowbridgePalletSystemEvent: SnowbridgePalletSystemEvent;
-        SnowbridgeVerificationPrimitivesEventProof: SnowbridgeVerificationPrimitivesEventProof;
-        SnowbridgeVerificationPrimitivesLog: SnowbridgeVerificationPrimitivesLog;
-        SnowbridgeVerificationPrimitivesProof: SnowbridgeVerificationPrimitivesProof;
-        SnowbridgeVerificationPrimitivesVerificationError: SnowbridgeVerificationPrimitivesVerificationError;
+        SnowbridgeRouterPrimitivesInboundConvertMessageError: SnowbridgeRouterPrimitivesInboundConvertMessageError;
         SpArithmeticArithmeticError: SpArithmeticArithmeticError;
         SpAuthorityDiscoveryAppPublic: SpAuthorityDiscoveryAppPublic;
         SpConsensusBabeAllowedSlots: SpConsensusBabeAllowedSlots;
@@ -998,6 +989,7 @@ declare module "@polkadot/types/types/registry" {
         SpConsensusSlotsEquivocationProof: SpConsensusSlotsEquivocationProof;
         SpCoreCryptoKeyTypeId: SpCoreCryptoKeyTypeId;
         SpCoreSr25519VrfVrfSignature: SpCoreSr25519VrfVrfSignature;
+        SpCoreVoid: SpCoreVoid;
         SpMmrPrimitivesAncestryProof: SpMmrPrimitivesAncestryProof;
         SpRuntimeBlakeTwo256: SpRuntimeBlakeTwo256;
         SpRuntimeDigest: SpRuntimeDigest;
@@ -1070,7 +1062,6 @@ declare module "@polkadot/types/types/registry" {
         TpTraitsParathreadParams: TpTraitsParathreadParams;
         TpTraitsSlotFrequency: TpTraitsSlotFrequency;
         XcmDoubleEncoded: XcmDoubleEncoded;
-        XcmRuntimeApisAuthorizedAliasesOriginAliaser: XcmRuntimeApisAuthorizedAliasesOriginAliaser;
         XcmV3Instruction: XcmV3Instruction;
         XcmV3Junction: XcmV3Junction;
         XcmV3JunctionBodyId: XcmV3JunctionBodyId;
@@ -1091,7 +1082,6 @@ declare module "@polkadot/types/types/registry" {
         XcmV3QueryResponseInfo: XcmV3QueryResponseInfo;
         XcmV3Response: XcmV3Response;
         XcmV3TraitsError: XcmV3TraitsError;
-        XcmV3TraitsSendError: XcmV3TraitsSendError;
         XcmV3WeightLimit: XcmV3WeightLimit;
         XcmV3Xcm: XcmV3Xcm;
         XcmV5TraitsError: XcmV5TraitsError;

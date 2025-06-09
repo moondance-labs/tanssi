@@ -353,7 +353,7 @@ declare module "@polkadot/api-base/types/errors" {
              **/
             NoApprovalsNeeded: AugmentedError<ApiType>;
             /**
-             * Multisig operation not found in storage.
+             * Multisig operation not found when attempting to cancel.
              **/
             NotFound: AugmentedError<ApiType>;
             /**
@@ -361,8 +361,7 @@ declare module "@polkadot/api-base/types/errors" {
              **/
             NoTimepoint: AugmentedError<ApiType>;
             /**
-             * Only the account that originally created the multisig is able to cancel it or update
-             * its deposits.
+             * Only the account that originally created the multisig is able to cancel it.
              **/
             NotOwner: AugmentedError<ApiType>;
             /**
@@ -400,6 +399,10 @@ declare module "@polkadot/api-base/types/errors" {
              **/
             HostConfigurationNotAvailable: AugmentedError<ApiType>;
             /**
+             * No code upgrade has been authorized.
+             **/
+            NothingAuthorized: AugmentedError<ApiType>;
+            /**
              * No validation function upgrade is currently scheduled.
              **/
             NotScheduled: AugmentedError<ApiType>;
@@ -416,6 +419,10 @@ declare module "@polkadot/api-base/types/errors" {
              * willing to run.
              **/
             TooBig: AugmentedError<ApiType>;
+            /**
+             * The given code upgrade has not been authorized.
+             **/
+            Unauthorized: AugmentedError<ApiType>;
             /**
              * The inherent which supplies the validation data did not run this block.
              **/

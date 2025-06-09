@@ -13,7 +13,7 @@ import type {
     FrameSupportPalletId,
     FrameSystemLimitsBlockLength,
     FrameSystemLimitsBlockWeights,
-    PalletReferendaTrackDetails,
+    PalletReferendaTrackInfo,
     SnowbridgeBeaconPrimitivesForkVersions,
     SpVersionRuntimeVersion,
     SpWeightsRuntimeDbWeight,
@@ -308,11 +308,9 @@ declare module "@polkadot/api-base/types/consts" {
              **/
             submissionDeposit: u128 & AugmentedConst<ApiType>;
             /**
-             * A list of tracks.
-             *
-             * Note: if the tracks are dynamic, the value in the static metadata might be inaccurate.
+             * Information concerning the different referendum tracks.
              **/
-            tracks: Vec<ITuple<[u16, PalletReferendaTrackDetails]>> & AugmentedConst<ApiType>;
+            tracks: Vec<ITuple<[u16, PalletReferendaTrackInfo]>> & AugmentedConst<ApiType>;
             /**
              * The number of blocks after submission that a referendum must begin being decided by.
              * Once this passes, then anyone may cancel the referendum.
@@ -675,11 +673,9 @@ declare module "@polkadot/api-base/types/consts" {
              **/
             submissionDeposit: u128 & AugmentedConst<ApiType>;
             /**
-             * A list of tracks.
-             *
-             * Note: if the tracks are dynamic, the value in the static metadata might be inaccurate.
+             * Information concerning the different referendum tracks.
              **/
-            tracks: Vec<ITuple<[u16, PalletReferendaTrackDetails]>> & AugmentedConst<ApiType>;
+            tracks: Vec<ITuple<[u16, PalletReferendaTrackInfo]>> & AugmentedConst<ApiType>;
             /**
              * The number of blocks after submission that a referendum must begin being decided by.
              * Once this passes, then anyone may cancel the referendum.
@@ -862,10 +858,6 @@ declare module "@polkadot/api-base/types/consts" {
              * The period during which an approved treasury spend has to be claimed.
              **/
             payoutPeriod: u32 & AugmentedConst<ApiType>;
-            /**
-             * Gets this pallet's derived pot account.
-             **/
-            potAccount: AccountId32 & AugmentedConst<ApiType>;
             /**
              * Period between successive spends.
              **/

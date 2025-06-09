@@ -428,10 +428,6 @@ declare module "@polkadot/api-base/types/consts" {
              **/
             payoutPeriod: u32 & AugmentedConst<ApiType>;
             /**
-             * Gets this pallet's derived pot account.
-             **/
-            potAccount: AccountId32 & AugmentedConst<ApiType>;
-            /**
              * Period between successive spends.
              **/
             spendPeriod: u32 & AugmentedConst<ApiType>;
