@@ -14,16 +14,16 @@ jobs:
       - name: Fix ownership with podman unshare
         run: |
           pwd
-          ls -ln chains/orchestrator-relays/runtime/starlight
-          ls -ln chains/orchestrator-relays/runtime/dancelight
           
           if [ -d chains/orchestrator-relays/runtime/starlight/target/srtool ]; then
+            ls -ln chains/orchestrator-relays/runtime/starlight
             podman unshare chown -R $(id -u):$(id -g) chains/orchestrator-relays/runtime/starlight/target/srtool
           else
             echo "starlight srtool dir not found, skipping chown"
           fi
 
           if [ -d chains/orchestrator-relays/runtime/dancelight/target/srtool ]; then
+            ls -ln chains/orchestrator-relays/runtime/dancelight
             podman unshare chown -R $(id -u):$(id -g) chains/orchestrator-relays/runtime/dancelight/target/srtool
           else
             echo "dancelight srtool dir not found, skipping chown"
