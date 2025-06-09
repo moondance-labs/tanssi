@@ -2,6 +2,9 @@ name: Merge on ready
 on:
   pull_request:
     types: [labeled, unlabeled, opened, synchronize]
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
     enforce-ready-to-merge-label:
         runs-on: ubuntu-latest
