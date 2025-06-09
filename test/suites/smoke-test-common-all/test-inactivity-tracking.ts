@@ -26,7 +26,7 @@ describeSuite({
             title: "Collator marked as inactive has not produced any blocks in the last session",
             test: async () => {
                 const isChainSupported = chain === "dancebox" || chain === "dancelight";
-                if (isChainSupported) {
+                if (!isChainSupported) {
                     log("Inactivity tracking is not supported on this chain! Skipping test...");
                     return;
                 }
