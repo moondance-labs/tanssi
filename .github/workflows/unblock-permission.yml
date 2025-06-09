@@ -14,7 +14,7 @@ jobs:
       - name: Fix ownership with podman unshare
         run: |
           pwd
-          ls -ln chains/orchestrator-relays/runtime/starlight
+          ls -ln chains/orchestrator-relays/runtime/starlight/target
           podman unshare chown -R $(id -u):$(id -g) chains/orchestrator-relays/runtime/starlight/target/srtool
           podman unshare chown -R $(id -u):$(id -g) chains/orchestrator-relays/runtime/dancelight/target/srtool
-          ls -ln chains/orchestrator-relays/runtime/starlight
+          ls -ln chains/orchestrator-relays/runtime/starlight/target
