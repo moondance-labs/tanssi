@@ -34,7 +34,7 @@ runs:
           if [[ $CLEAN_VERSION =~ ^v[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
             MINOR=${CLEAN_VERSION%.*}
             echo tagging "${DOCKER_IMAGE}:${MINOR}"
-            docker tag "${DOCKER_IMAGE}:${VERSION}" "${DOCKER_IMAGE}:${MINOR}"
+            docker tag "${DOCKER_IMAGE}:${CLEAN_VERSION}" "${DOCKER_IMAGE}:${MINOR}"
             docker push "${DOCKER_IMAGE}:${MINOR}"
 
             MAJOR=${MINOR%.*}
