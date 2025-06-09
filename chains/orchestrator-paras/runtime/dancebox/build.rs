@@ -16,6 +16,17 @@
 
 use substrate_wasm_builder::WasmBuilder;
 
+#[cfg(feature = "metadata-hash")]
+fn main() {
+    WasmBuilder::new()
+        .with_current_project()
+        .enable_metadata_hash("DANCE", 12)
+        .export_heap_base()
+        .import_memory()
+        .build()
+}
+
+#[cfg(not(feature = "metadata-hash"))]
 fn main() {
     WasmBuilder::new()
         .with_current_project()
