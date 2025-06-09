@@ -933,15 +933,22 @@ where
     }
 }
 
-// Copied from
-// cumulus/parachains/runtimes/bridge-hubs/bridge-hub-westend/src/bridge_to_ethereum_config.rs
-// Changed westend => rococo
 pub mod snowbridge_system_migration {
     use super::*;
     use alloc::vec::Vec;
     use frame_support::pallet_prelude::*;
     use snowbridge_core::TokenId;
-    use xcm;
+    use xcm::{
+        self,
+        v5::NetworkId::ByGenesis,
+        v5::{Junction::GlobalConsensus, ROCOCO_GENESIS_HASH},
+    };
+
+    pub const TANSSI_GENESIS_HASH: [u8; 32] =
+        hex_literal::hex!["dd6d086f75ec041b66e20c4186d327b23c8af244c534a2418de6574e8c041a60"];
+
+    pub const DANCELIGHT_GENESIS_HASH: [u8; 32] =
+        hex_literal::hex!["983a1a72503d6cc3636776747ec627172b51272bf45e50a355348facb67a820a"];
 
     // Important: this cannot be called OldNativeToForeignId because that will be a different storage
     // item. Polkadot has a bug here.
@@ -949,34 +956,117 @@ pub mod snowbridge_system_migration {
     pub type NativeToForeignId<T: snowbridge_pallet_system::Config> = StorageMap<
         snowbridge_pallet_system::Pallet<T>,
         Blake2_128Concat,
-        xcm::v4::Location,
+        xcm::v5::Location,
         TokenId,
         OptionQuery,
     >;
 
-    /// One shot migration for NetworkId::Westend to NetworkId::ByGenesis(WESTEND_GENESIS_HASH)
-    pub struct MigrationForXcmV5<T: snowbridge_pallet_system::Config>(core::marker::PhantomData<T>);
+    /// One shot migration for NetworkId::ByGenesis(WESTEND_GENESIS_HASH) to NetworkId::ByGenesis(DANCELIGHT_GENESIS_HASH)
+    pub struct DancelightMigrationForGenesisHashes<T: snowbridge_pallet_system::Config>(
+        core::marker::PhantomData<T>,
+    );
     impl<T: snowbridge_pallet_system::Config> frame_support::traits::OnRuntimeUpgrade
-        for MigrationForXcmV5<T>
+        for DancelightMigrationForGenesisHashes<T>
     {
         fn on_runtime_upgrade() -> Weight {
             let mut weight = T::DbWeight::get().reads(1);
             let mut len_map1 = 0;
             let mut len_map2 = 0;
 
-            let translate_westend = |pre: xcm::v4::Location| -> Option<xcm::v5::Location> {
+            let translate_genesis_hashes = |pre: xcm::v5::Location| -> Option<xcm::v5::Location> {
                 weight.saturating_accrue(T::DbWeight::get().reads_writes(1, 1));
                 len_map1 += 1;
-                Some(xcm::v5::Location::try_from(pre).expect("valid location"))
+                let new_location: Option<xcm::v5::Location> = match pre.unpack() {
+                    (1, [GlobalConsensus(ByGenesis(ROCOCO_GENESIS_HASH))]) => {
+                        Some(xcm::v5::Location::new(
+                            1,
+                            [GlobalConsensus(ByGenesis(DANCELIGHT_GENESIS_HASH))],
+                        ))
+                    }
+                    _ => None,
+                };
+                Some(new_location.expect("valid location"))
             };
-            snowbridge_pallet_system::ForeignToNativeId::<T>::translate_values(translate_westend);
+            snowbridge_pallet_system::ForeignToNativeId::<T>::translate_values(
+                translate_genesis_hashes,
+            );
 
             let old_keys = NativeToForeignId::<T>::iter_keys().collect::<Vec<_>>();
 
             for old_key in old_keys {
                 if let Some(old_val) = NativeToForeignId::<T>::get(&old_key) {
+                    let new_location: Option<xcm::v5::Location> = match old_key.unpack() {
+                        (1, [GlobalConsensus(ByGenesis(ROCOCO_GENESIS_HASH))]) => {
+                            Some(xcm::v5::Location::new(
+                                1,
+                                [GlobalConsensus(ByGenesis(DANCELIGHT_GENESIS_HASH))],
+                            ))
+                        }
+                        _ => None,
+                    };
                     snowbridge_pallet_system::NativeToForeignId::<T>::insert(
-                        &xcm::v5::Location::try_from(old_key.clone()).expect("valid location"),
+                        &new_location.expect("valid location"),
+                        old_val,
+                    );
+                }
+                NativeToForeignId::<T>::remove(old_key);
+                weight.saturating_accrue(T::DbWeight::get().reads_writes(1, 2));
+                len_map2 += 1;
+            }
+
+            // Additional sanity check that both mappings have the same number of elements
+            assert_eq!(len_map1, len_map2);
+
+            weight
+        }
+    }
+
+    /// One shot migration for NetworkId::ByGenesis(ROCOCO_GENESIS_HASH) to NetworkId::ByGenesis(TANSSI_GENESIS_HASH)
+    pub struct StarlightMigrationForGenesisHashes<T: snowbridge_pallet_system::Config>(
+        core::marker::PhantomData<T>,
+    );
+    impl<T: snowbridge_pallet_system::Config> frame_support::traits::OnRuntimeUpgrade
+        for StarlightMigrationForGenesisHashes<T>
+    {
+        fn on_runtime_upgrade() -> Weight {
+            let mut weight = T::DbWeight::get().reads(1);
+            let mut len_map1 = 0;
+            let mut len_map2 = 0;
+
+            let translate_genesis_hashes = |pre: xcm::v5::Location| -> Option<xcm::v5::Location> {
+                weight.saturating_accrue(T::DbWeight::get().reads_writes(1, 1));
+                len_map1 += 1;
+                let new_location: Option<xcm::v5::Location> = match pre.unpack() {
+                    (1, [GlobalConsensus(ByGenesis(ROCOCO_GENESIS_HASH))]) => {
+                        Some(xcm::v5::Location::new(
+                            1,
+                            [GlobalConsensus(ByGenesis(TANSSI_GENESIS_HASH))],
+                        ))
+                    }
+                    _ => None,
+                };
+                Some(new_location.expect("valid location"))
+            };
+            snowbridge_pallet_system::ForeignToNativeId::<T>::translate_values(
+                translate_genesis_hashes,
+            );
+
+            let old_keys = NativeToForeignId::<T>::iter_keys().collect::<Vec<_>>();
+
+            for old_key in old_keys {
+                if let Some(old_val) = NativeToForeignId::<T>::get(&old_key) {
+                    let new_location: Option<xcm::v5::Location> = match old_key.unpack() {
+                        (1, [GlobalConsensus(ByGenesis(ROCOCO_GENESIS_HASH))]) => {
+                            Some(xcm::v5::Location::new(
+                                1,
+                                [GlobalConsensus(ByGenesis(TANSSI_GENESIS_HASH))],
+                            ))
+                        }
+                        _ => None,
+                    };
+
+                    snowbridge_pallet_system::NativeToForeignId::<T>::insert(
+                        &new_location.expect("valid location"),
                         old_val,
                     );
                 }
@@ -993,18 +1083,43 @@ pub mod snowbridge_system_migration {
     }
 }
 
-pub struct SnowbridgeEthereumSystemXcmV5<Runtime>(pub PhantomData<Runtime>);
+pub struct MigrateEthSystemGenesisHashesDancelight<Runtime>(pub PhantomData<Runtime>);
 
-impl<Runtime> Migration for SnowbridgeEthereumSystemXcmV5<Runtime>
+impl<Runtime> Migration for MigrateEthSystemGenesisHashesDancelight<Runtime>
 where
     Runtime: snowbridge_pallet_system::Config,
 {
     fn friendly_name(&self) -> &str {
-        "TM_SnowbridgeEthereumSystemXCMv5"
+        "TM_MigrateEthSystemGenesisHashesDancelight"
     }
 
     fn migrate(&self, _available_weight: Weight) -> Weight {
-        snowbridge_system_migration::MigrationForXcmV5::<Runtime>::on_runtime_upgrade()
+        snowbridge_system_migration::DancelightMigrationForGenesisHashes::<Runtime>::on_runtime_upgrade()
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        Ok(vec![])
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(&self, _state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        Ok(())
+    }
+}
+
+pub struct MigrateEthSystemGenesisHashesStarlight<Runtime>(pub PhantomData<Runtime>);
+
+impl<Runtime> Migration for MigrateEthSystemGenesisHashesStarlight<Runtime>
+where
+    Runtime: snowbridge_pallet_system::Config,
+{
+    fn friendly_name(&self) -> &str {
+        "TM_MigrateEthSystemGenesisHashesStarlight"
+    }
+
+    fn migrate(&self, _available_weight: Weight) -> Weight {
+        snowbridge_system_migration::StarlightMigrationForGenesisHashes::<Runtime>::on_runtime_upgrade()
     }
 
     #[cfg(feature = "try-runtime")]
@@ -1338,11 +1453,13 @@ where
 
         let external_validator_slashes_bonded_eras_timestamp =
             BondedErasTimestampMigration::<Runtime>(Default::default());
-        let snowbridge_ethereum_system_xcm_v5 =
-            SnowbridgeEthereumSystemXcmV5::<Runtime>(Default::default());
+        //let snowbridge_ethereum_system_xcm_v5 =
+        //    SnowbridgeEthereumSystemXcmV5::<Runtime>(Default::default());
         let migrate_pallet_xcm_v5 = MigrateToLatestXcmVersion::<Runtime>(Default::default());
         let para_shared_v1_migration = MigrateParaSharedToV1::<Runtime>(Default::default());
         let para_scheduler_v3_migration = MigrateParaSchedulerToV3::<Runtime>(Default::default());
+        let eth_system_genesis_hashes =
+            MigrateEthSystemGenesisHashesDancelight::<Runtime>(Default::default());
         vec![
             // Applied in runtime 1000
             //Box::new(migrate_mmr_leaf_pallet),
@@ -1350,10 +1467,11 @@ where
             //Box::new(migrate_external_validators),
             Box::new(migrate_config_full_rotation_mode),
             Box::new(external_validator_slashes_bonded_eras_timestamp),
-            Box::new(snowbridge_ethereum_system_xcm_v5),
+            //Box::new(snowbridge_ethereum_system_xcm_v5),
             Box::new(migrate_pallet_xcm_v5),
             Box::new(para_shared_v1_migration),
             Box::new(para_scheduler_v3_migration),
+            Box::new(eth_system_genesis_hashes),
         ]
     }
 }
@@ -1363,8 +1481,11 @@ pub struct StarlightMigrations<Runtime>(PhantomData<Runtime>);
 impl<Runtime> GetMigrations for StarlightMigrations<Runtime>
 where
     Runtime: frame_system::Config,
+    Runtime: snowbridge_pallet_system::Config,
 {
     fn get_migrations() -> Vec<Box<dyn Migration>> {
-        vec![]
+        let eth_system_genesis_hashes =
+            MigrateEthSystemGenesisHashesStarlight::<Runtime>(Default::default());
+        vec![Box::new(eth_system_genesis_hashes)]
     }
 }

@@ -10,6 +10,7 @@ workspace = true
 
 [dependencies]
 smallvec = { workspace = true }
+hex-literal = { workspace = true }
 
 frame-support = { workspace = true }
 primitives = { workspace = true }
