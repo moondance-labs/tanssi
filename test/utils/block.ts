@@ -307,7 +307,11 @@ export function filterRewardFromContainer(events: EventRecord[], feePayer: strin
 // @param account - The account (keypair or address) used to sign the transaction.
 // @param timeout - The timeout in milliseconds, or null for no timeout. Defaults to 5 minutes.
 // @returns A Promise resolving with the transaction hash, block hash, and the full status object.
-export async function signAndSendAndInclude(tx, account, timeout: number | null = 3 * 60 * 1000) {
+export async function signAndSendAndInclude(
+    tx,
+    account,
+    timeout: number | null = 3 * 60 * 1000
+): Promise<{ txHash: string; blockHash: string; status: string }> {
     // Inner function that doesn't handle timeout
     const signAndSendAndIncludeInner = (tx, account) => {
         return new Promise((resolve, reject) => {
@@ -323,7 +327,7 @@ export async function signAndSendAndInclude(tx, account, timeout: number | null 
                     });
                 }
             }).catch((error) => {
-                reject(error);
+                reject(error.toHuman());
             });
         });
     };
