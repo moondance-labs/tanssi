@@ -19,6 +19,7 @@ jobs:
             ls -ln chains/orchestrator-relays/runtime/starlight
             docker run --rm -v ${PWD}:/build alpine \
               sh -c "rm -rf /build/chains/orchestrator-relays/runtime/starlight/target"
+            ls -ln chains/orchestrator-relays/runtime/starlight
           else
             echo "starlight srtool dir not found, skipping chown"
           fi
@@ -27,6 +28,7 @@ jobs:
             ls -ln chains/orchestrator-relays/runtime/dancelight
             docker run --rm -v ${PWD}:/build alpine \
               sh -c "rm -rf /build/chains/orchestrator-relays/runtime/dancelight/target"
+            ls -ln chains/orchestrator-relays/runtime/dancelight
           else
             echo "dancelight srtool dir not found, skipping chown"
           fi
