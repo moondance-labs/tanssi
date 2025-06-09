@@ -5,31 +5,24 @@ import { getLastSessionEndBlock } from "utils/block";
 import type { ApiPromise } from "@polkadot/api";
 
 describeSuite({
-    id: "S09",
-    title: "Inactivity tracking suit",
+    id: "SMO05",
+    title: "Inactivity tracking suit that only runs on Dancebox chains",
     foundationMethods: "read_only",
     testCases: ({ it, context, log }) => {
         let api: ApiPromise;
         let lastSessionIndex: number;
         let lastSessionEndBlock: number;
-        let chain: any;
 
         beforeAll(async () => {
             api = context.polkadotJs();
-            chain = api.consts.system.version.specName.toString();
             lastSessionIndex = (await api.query.session.currentIndex()).toNumber() - 1;
             lastSessionEndBlock = await getLastSessionEndBlock(api, lastSessionIndex);
         });
 
         it({
-            id: "C100",
+            id: "C01",
             title: "Collator marked as inactive has not produced any blocks in the last session",
             test: async () => {
-                const isChainSupported = chain === "dancebox" || chain === "dancelight";
-                if (!isChainSupported) {
-                    log("Inactivity tracking is not supported on this chain! Skipping test...");
-                    return;
-                }
                 const inactiveCollators = await api.query.inactivityTracking.inactiveCollators(lastSessionIndex);
 
                 if (inactiveCollators.size === 0) {
@@ -42,10 +35,7 @@ describeSuite({
                 let currentBlockApi = await api.at(currentBlockHash);
                 let currentSessionIndex = (await currentBlockApi.query.session.currentIndex()).toNumber();
 
-                const isParachain = chain === "dancebox";
-                const registeredParaIds = isParachain
-                    ? await currentBlockApi.query.registrar.registeredParaIds()
-                    : await currentBlockApi.query.containerRegistrar.registeredParaIds();
+                const registeredParaIds = await currentBlockApi.query.registrar.registeredParaIds();
 
                 const failureMessages: string[] = [];
 
