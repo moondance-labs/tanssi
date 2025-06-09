@@ -1,0 +1,20 @@
+name: Unblock permission
+on:
+  push:
+    branches:
+      - evgeny-fix-srtools-permissions
+
+jobs:
+  unblock:
+    name: Fix Docker-created file permissions
+    runs-on: [self-hosted]
+    timeout-minutes: 10
+
+    steps:
+      - name: Fix ownership with podman unshare
+        run: |
+          pwd
+          ls -ln chains/orchestrator-relays/runtime/starlight
+          podman unshare chown -R $(id -u):$(id -g) chains/orchestrator-relays/runtime/starlight/target/srtool
+          podman unshare chown -R $(id -u):$(id -g) chains/orchestrator-relays/runtime/dancelight/target/srtool
+          ls -ln chains/orchestrator-relays/runtime/starlight
