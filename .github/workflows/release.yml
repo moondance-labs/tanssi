@@ -44,7 +44,13 @@ jobs:
             - name: Get Latest RT Release
               id: get-latest-rt
               run: |
-                LATEST_RUNTIME_RELEASE=$(curl -s https://api.github.com/repos/moondance-labs/tanssi/releases | jq -r '.[] | select(.name | test("runtime";"i")) | .tag_name' | head -n 1 | tr -d '[:blank:]') && [[ ! -z "${LATEST_RUNTIME_RELEASE}" ]]
+                RELEASES_JSON=$(curl -s https://api.github.com/repos/moondance-labs/tanssi/releases)
+                LATEST_RUNTIME_RELEASE=$(jq -r '.[]
+                  | select(
+                      .tag_name | test("runtime";"i")
+                    )
+                  | .tag_name' <<<"$RELEASES_JSON" | head -n1)
+                [[ -n $LATEST_RUNTIME_RELEASE ]]
                 echo $LATEST_RUNTIME_RELEASE
                 echo "latest_rt=$LATEST_RUNTIME_RELEASE" >> $GITHUB_OUTPUT
             - name: Get Sha

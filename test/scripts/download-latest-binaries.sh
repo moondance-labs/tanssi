@@ -12,7 +12,10 @@ else
     OUTPUT_FOLDER="${1}"
 fi
 
-LATEST_NODE_RELEASE=$(curl -s https://api.github.com/repos/moondance-labs/tanssi/releases | jq -r '.[] | select(.name | test("v0.";"i")) | .tag_name' | head -n 1 | tr -d '[:blank:]') && [[ ! -z "${LATEST_NODE_RELEASE}" ]]
+RELEASES_JSON=$(curl -s https://api.github.com/repos/moondance-labs/tanssi/releases)
+LATEST_NODE_RELEASE=$(jq -r '.[]
+  | select(.tag_name | test("v";"i"))
+  | .tag_name' <<<"$RELEASES_JSON" | head -n1)
 ENDPOINT="https://api.github.com/repos/moondance-labs/tanssi/git/refs/tags/$LATEST_NODE_RELEASE"
 RESPONSE=$(curl -s -H "Accept: application/vnd.github.v3+json" $ENDPOINT)
 TYPE=$(echo $RESPONSE | jq -r '.object.type')
