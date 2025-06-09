@@ -40,7 +40,7 @@ use {
         weights::ConstantMultiplier,
     },
     pallet_xcm::EnsureXcm,
-    parity_scale_codec::DecodeAll,
+    parity_scale_codec::{DecodeAll, Encode},
     snowbridge_beacon_primitives::ForkVersions,
     snowbridge_core::{gwei, inbound::Message, meth, Channel, PricingParameters, Rewards},
     snowbridge_pallet_inbound_queue::RewardProcessor,
