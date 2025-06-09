@@ -70,7 +70,6 @@ jobs:
         run: |
           cd typescript-api
           pnpm version --no-git-tag-version 0.${{ github.event.inputs.spec_version }}.0
-
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v5
         with:
