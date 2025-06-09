@@ -57,4 +57,6 @@ stdbuf -oL $CMD | {
 }
 
 # Clean up file permissions after srtool
-podman unshare chown -R 0:0 ${RUNTIME_DIR}/target/srtool
+podman unshare chown -R $(id -u):$(id -g) ${RUNTIME_DIR}/target/srtool
+# Check files permissions:
+ls -ln ${RUNTIME_DIR}/target/srtool
