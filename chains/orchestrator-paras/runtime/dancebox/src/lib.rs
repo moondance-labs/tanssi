@@ -42,9 +42,6 @@ use sp_runtime::{DispatchError, TransactionOutcome};
 
 pub mod weights;
 
-#[cfg(test)]
-mod tests;
-
 use {
     cumulus_pallet_parachain_system::{
         RelayChainStateProof, RelayNumberMonotonicallyIncreases, RelaychainDataProvider,
