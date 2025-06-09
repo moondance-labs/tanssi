@@ -18,6 +18,16 @@ else
   PACKAGE=${GH_WORKFLOW_MATRIX_CHAIN}-runtime
 fi
 
+# Default mode is build
+MODE="${1:-build}"
+
+if [[ "$MODE" == "cleanup" ]]; then
+  echo "About to clean the srtools folder"
+  docker run --rm -v "${PWD}:/build" alpine \
+    sh -c "rm -rf /build/${RUNTIME_DIR}/target"
+  exit 0
+fi
+
 mkdir -p ${RUNTIME_DIR}/target
 chmod uog+rwX ${RUNTIME_DIR}/target
 

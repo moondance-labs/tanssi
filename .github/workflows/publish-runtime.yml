@@ -149,6 +149,10 @@ jobs:
           echo '${{ steps.srtool_build.outputs.json }}' | jq . > ${{ matrix.chain.runtime_name }}-srtool-digest.json
           cat ${{ matrix.chain.runtime_name }}-srtool-digest.json
           cp ${{ steps.srtool_build.outputs.wasm_compressed }} ${{ matrix.chain.runtime_name }}-runtime.compact.compressed.wasm
+
+      - name: Clean Up
+        run: |
+          ./original-scripts/build-runtime-srtool.sh cleanup
       - name: Archive Artifacts for ${{ matrix.chain }}
         uses: actions/upload-artifact@v4
         with:
