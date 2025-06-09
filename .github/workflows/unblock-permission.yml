@@ -18,6 +18,8 @@ jobs:
           if [ -d chains/orchestrator-relays/runtime/starlight/target/srtool ]; then
             ls -ln chains/orchestrator-relays/runtime/starlight
             podman unshare chown -R $(id -u):$(id -g) chains/orchestrator-relays/runtime/starlight/target/srtool
+            echo "trying to remove folder for starlight"
+            rm -rf chains/orchestrator-relays/runtime/starlight/target
           else
             echo "starlight srtool dir not found, skipping chown"
           fi
@@ -25,6 +27,8 @@ jobs:
           if [ -d chains/orchestrator-relays/runtime/dancelight/target/srtool ]; then
             ls -ln chains/orchestrator-relays/runtime/dancelight
             podman unshare chown -R $(id -u):$(id -g) chains/orchestrator-relays/runtime/dancelight/target/srtool
+            echo "trying to remove folder for dancelight"
+            rm -rf chains/orchestrator-relays/runtime/dancelight/target
           else
             echo "dancelight srtool dir not found, skipping chown"
           fi
