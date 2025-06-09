@@ -153,6 +153,7 @@ jobs:
       - name: Clean Up
         run: |
           ./original-scripts/build-runtime-srtool.sh cleanup
+
       - name: Archive Artifacts for ${{ matrix.chain }}
         uses: actions/upload-artifact@v4
         with:
