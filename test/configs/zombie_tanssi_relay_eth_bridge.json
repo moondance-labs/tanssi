@@ -33,7 +33,7 @@
         "nodes": [
             {
                 "name": "alice",
-                "rpc_port": "9947",
+                "ws_port": "9947",
                 "validator": true,
                 "args": ["--pool-type=fork-aware"]
             },
@@ -43,7 +43,7 @@
             },
             {
                 "name": "charlie",
-                "rpc_port": "9948",
+                "ws_port": "9948",
                 "validator": true,
                 "args": ["--pool-type=fork-aware"]
             }

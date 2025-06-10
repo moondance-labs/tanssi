@@ -42,7 +42,7 @@
             "chain_spec_path": "specs/dancebox-raw-spec.json",
             "collator": {
                 "name": "Alice",
-                "rpc_port": 33345,
+                "ws_port": 33345,
                 "command": "../target/release/tanssi-node",
                 "args": ["--no-hardware-benchmarks", "--force-authoring", "-lparachain=debug", "--database=paritydb"]
             }

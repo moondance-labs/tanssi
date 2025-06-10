@@ -58,7 +58,7 @@ describeSuite({
                 log(`Current runtime hash: ${rtHex.slice(0, 10)}...${rtHex.slice(-10)}`);
                 log(`New runtime bytes: ${codeString.slice(0, 10)}...${codeString.slice(-10)}`);
 
-                await context.upgradeRuntime({ from: alice_or_alith });
+                await context.upgradeRuntime({ from: alice_or_alith, logger: log });
                 await context.waitBlock(2);
                 const rtafter = paraApi.consts.system.version.specVersion.toNumber();
                 log("New runtime spec version:", rtafter);
