@@ -11,6 +11,9 @@ on:
         description: The branch for which generate binaries from
         required: true
         type: string
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   ####### Building binaries #######
   setup-scripts:
