@@ -659,10 +659,5 @@ impl<AccountId> NodeActivityTrackingHelper<AccountId> for () {
 
 // A trait to help verify if a ParaId is a chain or parathread
 pub trait ParathreadHelper {
-    fn is_parathread(para_id: &ParaId) -> bool;
-}
-
-// A trait to help verify if a ParaId is a chain or parathread
-pub trait ParathreadHelper {
     fn get_parathreads_for_session() -> BTreeSet<ParaId>;
 }

@@ -17,7 +17,7 @@ use {
     crate::{
         mock::*, ActiveCollatorsForCurrentSession, ActiveContainerChainsForCurrentSession,
         ActivityTrackingStatus, AuthorNotingHook, Config, CurrentActivityTrackingStatus, Error,
-        InactiveCollators, NodeActivityTrackingHelper, OfflineCollators, Pallet,
+        Event, InactiveCollators, NodeActivityTrackingHelper, OfflineCollators, Pallet,
     },
     frame_support::{assert_noop, assert_ok, pallet_prelude::Get},
     sp_core::ConstU32,
@@ -409,7 +409,7 @@ fn processing_ended_session_correctly_updates_current_session_collators_and_acti
         let current_session_active_collator_record: BoundedBTreeSet<AccountId, ConstU32<5>> =
             get_collator_set(vec![COLLATOR_1]);
         let inactive_collators_record: BoundedBTreeSet<AccountId, ConstU32<5>> =
-            get_collator_set(vec![COLLATOR_2, COLLATOR_3]);
+            get_collator_set(vec![COLLATOR_2]);
         let current_session_active_chain_record = get_active_chains_set(vec![CONTAINER_CHAIN_ID_1]);
         let empty_set: BoundedBTreeSet<AccountId, ConstU32<5>> = BoundedBTreeSet::new();
 

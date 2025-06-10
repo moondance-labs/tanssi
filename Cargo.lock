@@ -3541,6 +3541,7 @@ dependencies = [
  "test-relay-sproof-builder",
  "tp-author-noting-inherent",
  "tp-data-preservers-common",
+ "tp-invulnerables-filter-common",
  "tp-parathread-filter-common",
  "tp-stream-payment-common",
  "tp-traits",
@@ -3756,6 +3757,7 @@ dependencies = [
  "tp-author-noting-inherent",
  "tp-bridge",
  "tp-data-preservers-common",
+ "tp-invulnerables-filter-common",
  "tp-parathread-filter-common",
  "tp-stream-payment-common",
  "tp-traits",
@@ -20454,6 +20456,16 @@ dependencies = [
  "sp-runtime",
  "sp-std",
  "tp-stream-payment-common",
+ "tp-traits",
+]
+
+[[package]]
+name = "tp-invulnerables-filter-common"
+version = "0.1.0"
+dependencies = [
+ "pallet-invulnerables",
+ "polkadot-primitives",
+ "sp-std",
  "tp-traits",
 ]
 

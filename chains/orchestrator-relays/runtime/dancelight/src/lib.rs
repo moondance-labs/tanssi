@@ -97,7 +97,7 @@ use {
     tp_bridge::ConvertLocation,
     tp_traits::{
         prod_or_fast_parameter_types, EraIndex, GetHostConfiguration, GetSessionContainerChains,
-        NodeActivityTrackingHelper, ParaIdAssignmentHooks, RegistrarHandler, Slot, SlotFrequency,
+        ParaIdAssignmentHooks, RegistrarHandler, Slot, SlotFrequency,
     },
     xcm_runtime_apis::{
         dry_run::{CallDryRunEffects, Error as XcmDryRunApiError, XcmDryRunEffects},
