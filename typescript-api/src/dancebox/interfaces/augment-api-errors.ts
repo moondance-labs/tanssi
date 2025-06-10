@@ -404,6 +404,10 @@ declare module "@polkadot/api-base/types/errors" {
              **/
             MaxCollatorsPerSessionReached: AugmentedError<ApiType>;
             /**
+             * The size of a chains set for a session has already reached MaxContainerChains value
+             **/
+            MaxContainerChainsReached: AugmentedError<ApiType>;
+            /**
              * Generic error
              **/
             [key: string]: AugmentedError<ApiType>;

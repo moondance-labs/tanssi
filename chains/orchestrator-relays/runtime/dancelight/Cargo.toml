@@ -133,6 +133,7 @@ dp-consensus = { workspace = true }
 dp-container-chain-genesis-data = { workspace = true }
 tp-author-noting-inherent = { workspace = true }
 tp-data-preservers-common = { workspace = true }
+tp-parathread-filter-common = { workspace = true }
 tp-stream-payment-common = { workspace = true }
 tp-traits = { workspace = true }
 tp-xcm-commons = { workspace = true }
@@ -349,6 +350,7 @@ std = [
 	"tp-author-noting-inherent/std",
 	"tp-bridge/std",
 	"tp-data-preservers-common/std",
+	"tp-parathread-filter-common/std",
 	"tp-stream-payment-common/std",
 	"tp-traits/std",
 	"tp-xcm-commons/std",
@@ -446,6 +448,7 @@ runtime-benchmarks = [
 	"tanssi-runtime-common/runtime-benchmarks",
 	"tp-bridge/runtime-benchmarks",
 	"tp-data-preservers-common/runtime-benchmarks",
+	"tp-parathread-filter-common/runtime-benchmarks",
 	"tp-stream-payment-common/runtime-benchmarks",
 	"tp-traits/runtime-benchmarks",
 	"westend-runtime/runtime-benchmarks",
