@@ -6198,11 +6198,13 @@ declare module "@polkadot/types/lookup" {
     /** @name PalletInactivityTrackingError (545) */
     interface PalletInactivityTrackingError extends Enum {
         readonly isMaxCollatorsPerSessionReached: boolean;
+        readonly isMaxContainerChainsReached: boolean;
         readonly isActivityTrackingStatusUpdateSuspended: boolean;
         readonly isActivityTrackingStatusAlreadyEnabled: boolean;
         readonly isActivityTrackingStatusAlreadyDisabled: boolean;
         readonly type:
             | "MaxCollatorsPerSessionReached"
+            | "MaxContainerChainsReached"
             | "ActivityTrackingStatusUpdateSuspended"
             | "ActivityTrackingStatusAlreadyEnabled"
             | "ActivityTrackingStatusAlreadyDisabled";
@@ -6661,6 +6663,18 @@ declare module "@polkadot/types/lookup" {
     /** @name CumulusPrimitivesStorageWeightReclaimStorageWeightReclaim (617) */
     type CumulusPrimitivesStorageWeightReclaimStorageWeightReclaim = Null;
 
-    /** @name DanceboxRuntimeRuntime (618) */
+    /** @name FrameMetadataHashExtensionCheckMetadataHash (618) */
+    interface FrameMetadataHashExtensionCheckMetadataHash extends Struct {
+        readonly mode: FrameMetadataHashExtensionMode;
+    }
+
+    /** @name FrameMetadataHashExtensionMode (619) */
+    interface FrameMetadataHashExtensionMode extends Enum {
+        readonly isDisabled: boolean;
+        readonly isEnabled: boolean;
+        readonly type: "Disabled" | "Enabled";
+    }
+
+    /** @name DanceboxRuntimeRuntime (620) */
     type DanceboxRuntimeRuntime = Null;
 } // declare module

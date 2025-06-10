@@ -727,7 +727,7 @@ impl pallet_multiblock_migrations::Config for Runtime {
     type CursorMaxLen = ConstU32<65_536>;
     type IdentifierMaxLen = ConstU32<256>;
     type MigrationStatusHandler = ();
-    type FailedMigrationHandler = frame_support::migrations::FreezeChainOnFailedMigration;
+    type FailedMigrationHandler = MaintenanceMode;
     type MaxServiceWeight = MbmServiceWeight;
     type WeightInfo = weights::pallet_multiblock_migrations::SubstrateWeight<Runtime>;
 }

@@ -49,6 +49,7 @@ pallet-xcm-core-buyer = { workspace = true }
 pallet-xcm-core-buyer-runtime-api = { workspace = true }
 tanssi-relay-encoder = { workspace = true }
 tanssi-runtime-common = { workspace = true }
+tp-parathread-filter-common = { workspace = true }
 tp-xcm-commons = { workspace = true }
 tp-xcm-core-buyer = { workspace = true }
 
@@ -64,6 +65,7 @@ xcm-primitives = { workspace = true }
 
 # Substrate
 frame-executive = { workspace = true }
+frame-metadata-hash-extension = { workspace = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
 frame-system-rpc-runtime-api = { workspace = true }
@@ -185,6 +187,7 @@ std = [
 	"dp-slot-duration-runtime-api/std",
 	"frame-benchmarking?/std",
 	"frame-executive/std",
+	"frame-metadata-hash-extension/std",
 	"frame-support/std",
 	"frame-system-benchmarking?/std",
 	"frame-system-rpc-runtime-api/std",
@@ -277,6 +280,7 @@ std = [
 	"test-relay-sproof-builder/std",
 	"tp-author-noting-inherent/std",
 	"tp-data-preservers-common/std",
+	"tp-parathread-filter-common/std",
 	"tp-stream-payment-common/std",
 	"tp-traits/std",
 	"tp-xcm-commons/std",
@@ -352,6 +356,7 @@ runtime-benchmarks = [
 	"sp-runtime/runtime-benchmarks",
 	"tanssi-runtime-common/runtime-benchmarks",
 	"tp-data-preservers-common/runtime-benchmarks",
+	"tp-parathread-filter-common/runtime-benchmarks",
 	"tp-stream-payment-common/runtime-benchmarks",
 	"tp-traits/runtime-benchmarks",
 	"tp-xcm-core-buyer/runtime-benchmarks",
@@ -424,4 +429,4 @@ try-runtime = [
 
 fast-runtime = []
 
-metadata-hash = []
+metadata-hash = [ "substrate-wasm-builder/metadata-hash" ]

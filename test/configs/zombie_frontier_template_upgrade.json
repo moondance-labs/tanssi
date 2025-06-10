@@ -27,7 +27,7 @@
         "nodes": [
             {
                 "name": "alice",
-                "ws_port": "9947",
+                "rpc_port": "9947",
                 "validator": true
             },
             {
@@ -48,7 +48,7 @@
             "collators": [
                 {
                     "name": "Collator1000-01",
-                    "ws_port": "9948",
+                    "rpc_port": "9948",
                     "command": "../target/release/tanssi-node",
                     "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"]
                 },
@@ -83,7 +83,7 @@
                     "validator": false,
                     "command": "../target/release/container-chain-frontier-node",
                     "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
-                    "ws_port": 9949,
+                    "rpc_port": 9949,
                     "p2p_port": 33049
                 }
             ]

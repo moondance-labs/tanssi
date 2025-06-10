@@ -96,6 +96,12 @@ pub fn dancelight_config() -> Result<DancelightChainSpec, String> {
     )
 }
 
+pub fn tanssi_config() -> Result<StarlightChainSpec, String> {
+    StarlightChainSpec::from_json_bytes(
+        &include_bytes!("../chain-specs/starlight-raw-specs.json")[..],
+    )
+}
+
 /// Dancelight staging testnet config.
 #[cfg(feature = "dancelight-native")]
 pub fn dancelight_staging_testnet_config() -> Result<DancelightChainSpec, String> {
