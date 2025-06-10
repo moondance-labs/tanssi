@@ -20416,6 +20416,7 @@ dependencies = [
  "frame-system",
  "hex-literal 0.3.4",
  "impl-trait-for-tuples",
+ "log",
  "macro_rules_attribute",
  "pallet-external-validators",
  "parity-scale-codec",
@@ -20430,6 +20431,7 @@ dependencies = [
  "sp-runtime",
  "sp-std",
  "staging-xcm",
+ "staging-xcm-builder",
  "staging-xcm-executor",
 ]
 
