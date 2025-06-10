@@ -31,7 +31,7 @@ use {
 pub const MAGIC_BYTES: [u8; 4] = [112, 21, 0, 56];
 
 /// Payload is the whole data we expect to receive from the relayer
-#[derive(Encode, Decode)]
+#[derive(Encode, Decode, DebugNoBound)]
 pub struct Payload<T>
 where
     T: pallet_external_validators::Config,
@@ -41,7 +41,7 @@ where
 }
 
 /// Actual message inside the payload
-#[derive(Encode, Decode)]
+#[derive(Encode, Decode, DebugNoBound)]
 pub enum Message<T>
 where
     T: pallet_external_validators::Config,
@@ -50,7 +50,7 @@ where
 }
 
 /// Command to be executed by this message processor
-#[derive(Encode, Decode)]
+#[derive(Encode, Decode, DebugNoBound)]
 pub enum InboundCommand<T>
 where
     T: pallet_external_validators::Config,
@@ -83,6 +83,8 @@ where
         } else {
             return Err(DispatchError::Other("unable to parse the envelope payload"));
         };
+
+        log::trace!("SymbioticMessageProcessor: {:?}", message);
 
         match message {
             Message::V1(InboundCommand::ReceiveValidators {

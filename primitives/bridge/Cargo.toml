@@ -15,6 +15,7 @@ dp-container-chain-genesis-data = { workspace = true }
 ethabi = { workspace = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
+log = { workspace = true }
 impl-trait-for-tuples = { workspace = true }
 macro_rules_attribute = { workspace = true }
 pallet-external-validators = { workspace = true }
