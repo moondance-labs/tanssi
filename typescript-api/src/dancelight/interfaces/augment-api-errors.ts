@@ -1025,6 +1025,18 @@ declare module "@polkadot/api-base/types/errors" {
              **/
             ActivityTrackingStatusUpdateSuspended: AugmentedError<ApiType>;
             /**
+             * Error returned when the collator status is attempted to be set to online when it is already online
+             **/
+            CollatorNotOffline: AugmentedError<ApiType>;
+            /**
+             * Error returned when the collator status is attempted to be set to offline when it is already offline
+             **/
+            CollatorNotOnline: AugmentedError<ApiType>;
+            /**
+             * Error returned when the collator attempted to be set offline is invulnerable
+             **/
+            MarkingInvulnerableOfflineInvalid: AugmentedError<ApiType>;
+            /**
              * The size of a collator set for a session has already reached MaxCollatorsPerSession value
              **/
             MaxCollatorsPerSessionReached: AugmentedError<ApiType>;
@@ -1490,7 +1502,6 @@ declare module "@polkadot/api-base/types/errors" {
             DisabledFeature: AugmentedError<ApiType>;
             InconsistentState: AugmentedError<ApiType>;
             InvalidPalletSetting: AugmentedError<ApiType>;
-            MarkingInvulnerableOfflineInvalid: AugmentedError<ApiType>;
             MarkingOfflineNotEnabled: AugmentedError<ApiType>;
             MathOverflow: AugmentedError<ApiType>;
             MathUnderflow: AugmentedError<ApiType>;

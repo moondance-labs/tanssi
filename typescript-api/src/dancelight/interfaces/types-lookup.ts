@@ -1503,14 +1503,6 @@ declare module "@polkadot/types/lookup" {
             readonly pendingLeaving: u128;
             readonly released: u128;
         } & Struct;
-        readonly isCollatorOffline: boolean;
-        readonly asCollatorOffline: {
-            readonly collator: AccountId32;
-        } & Struct;
-        readonly isCollatorOnline: boolean;
-        readonly asCollatorOnline: {
-            readonly collator: AccountId32;
-        } & Struct;
         readonly type:
             | "UpdatedCandidatePosition"
             | "RequestedDelegate"
@@ -1526,9 +1518,7 @@ declare module "@polkadot/types/lookup" {
             | "RewardedCollator"
             | "RewardedDelegators"
             | "ClaimedManualRewards"
-            | "SwappedPool"
-            | "CollatorOffline"
-            | "CollatorOnline";
+            | "SwappedPool";
     }
 
     /** @name PalletPooledStakingPoolsActivePoolKind (126) */
@@ -1544,7 +1534,12 @@ declare module "@polkadot/types/lookup" {
         readonly asActivityTrackingStatusSet: {
             readonly status: PalletInactivityTrackingActivityTrackingStatus;
         } & Struct;
-        readonly type: "ActivityTrackingStatusSet";
+        readonly isCollatorStatusUpdated: boolean;
+        readonly asCollatorStatusUpdated: {
+            readonly collator: AccountId32;
+            readonly isOffline: bool;
+        } & Struct;
+        readonly type: "ActivityTrackingStatusSet" | "CollatorStatusUpdated";
     }
 
     /** @name PalletInactivityTrackingActivityTrackingStatus (128) */
@@ -8411,7 +8406,6 @@ declare module "@polkadot/types/lookup" {
         readonly isMarkingOfflineNotEnabled: boolean;
         readonly isCollatorDoesNotExist: boolean;
         readonly isCollatorCannotBeNotifiedAsInactive: boolean;
-        readonly isMarkingInvulnerableOfflineInvalid: boolean;
         readonly isPoolsExtrinsicsArePaused: boolean;
         readonly type:
             | "InvalidPalletSetting"
@@ -8431,7 +8425,6 @@ declare module "@polkadot/types/lookup" {
             | "MarkingOfflineNotEnabled"
             | "CollatorDoesNotExist"
             | "CollatorCannotBeNotifiedAsInactive"
-            | "MarkingInvulnerableOfflineInvalid"
             | "PoolsExtrinsicsArePaused";
     }
 
@@ -8442,12 +8435,18 @@ declare module "@polkadot/types/lookup" {
         readonly isActivityTrackingStatusUpdateSuspended: boolean;
         readonly isActivityTrackingStatusAlreadyEnabled: boolean;
         readonly isActivityTrackingStatusAlreadyDisabled: boolean;
+        readonly isCollatorNotOnline: boolean;
+        readonly isCollatorNotOffline: boolean;
+        readonly isMarkingInvulnerableOfflineInvalid: boolean;
         readonly type:
             | "MaxCollatorsPerSessionReached"
             | "MaxContainerChainsReached"
             | "ActivityTrackingStatusUpdateSuspended"
             | "ActivityTrackingStatusAlreadyEnabled"
-            | "ActivityTrackingStatusAlreadyDisabled";
+            | "ActivityTrackingStatusAlreadyDisabled"
+            | "CollatorNotOnline"
+            | "CollatorNotOffline"
+            | "MarkingInvulnerableOfflineInvalid";
     }
 
     /** @name PalletTreasuryProposal (709) */

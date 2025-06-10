@@ -953,12 +953,6 @@ export default {
                 pendingLeaving: "u128",
                 released: "u128",
             },
-            CollatorOffline: {
-                collator: "AccountId32",
-            },
-            CollatorOnline: {
-                collator: "AccountId32",
-            },
         },
     },
     /**
@@ -990,6 +984,10 @@ export default {
         _enum: {
             ActivityTrackingStatusSet: {
                 status: "PalletInactivityTrackingActivityTrackingStatus",
+            },
+            CollatorStatusUpdated: {
+                collator: "AccountId32",
+                isOffline: "bool",
             },
         },
     },
@@ -5109,7 +5107,6 @@ export default {
             MarkingOfflineNotEnabled: "Null",
             CollatorDoesNotExist: "Null",
             CollatorCannotBeNotifiedAsInactive: "Null",
-            MarkingInvulnerableOfflineInvalid: "Null",
             PoolsExtrinsicsArePaused: "Null",
         },
     },
@@ -5130,6 +5127,9 @@ export default {
             "ActivityTrackingStatusUpdateSuspended",
             "ActivityTrackingStatusAlreadyEnabled",
             "ActivityTrackingStatusAlreadyDisabled",
+            "CollatorNotOnline",
+            "CollatorNotOffline",
+            "MarkingInvulnerableOfflineInvalid",
         ],
     },
     /**
