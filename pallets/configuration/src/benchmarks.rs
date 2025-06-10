@@ -31,7 +31,7 @@ mod benchmarks {
     fn set_config_with_u32() -> Result<(), BenchmarkError> {
         #[block]
         {
-            Pallet::<T>::set_max_collators(RawOrigin::Root.into(), 100).expect("to return Ok");
+            Pallet::<T>::set_max_collators(RawOrigin::Root.into(), 100)?;
         }
 
         Ok(())

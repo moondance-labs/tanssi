@@ -165,6 +165,7 @@ fn dispute_proof(
     }
 }
 
+#[allow(clippy::multiple_bound_locations)]
 #[benchmarks(
     where T: Config<KeyOwnerProof = MembershipProof>
 )]
