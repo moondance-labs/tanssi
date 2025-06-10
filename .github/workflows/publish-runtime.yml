@@ -23,6 +23,8 @@ on:
           - simple-template-only
           - frontier-template-only
           - orchestrator-solo-only
+          - dancelight-only
+          - starlight-only
           - run-all
 
 jobs:
@@ -75,6 +77,10 @@ jobs:
             echo "matrix_tests=[$frontier_template]" >> $GITHUB_OUTPUT
           elif [[ ${{ github.event.inputs.chains }} = "orchestrator-solo-only" ]]; then
             echo "matrix_tests=[$dancelight, $starlight]" >> $GITHUB_OUTPUT
+          elif [[ ${{ github.event.inputs.chains }} = "starlight-only" ]]; then
+            echo "matrix_tests=[$starlight]" >> $GITHUB_OUTPUT
+          elif [[ ${{ github.event.inputs.chains }} = "dancelight-only" ]]; then
+            echo "matrix_tests=[$dancelight]" >> $GITHUB_OUTPUT
           else
             echo "matrix_tests=[$dancebox, $flashbox, $simple_template, $frontier_template, $dancelight, $starlight]" >> $GITHUB_OUTPUT
           fi
@@ -143,6 +149,11 @@ jobs:
           echo '${{ steps.srtool_build.outputs.json }}' | jq . > ${{ matrix.chain.runtime_name }}-srtool-digest.json
           cat ${{ matrix.chain.runtime_name }}-srtool-digest.json
           cp ${{ steps.srtool_build.outputs.wasm_compressed }} ${{ matrix.chain.runtime_name }}-runtime.compact.compressed.wasm
+
+      - name: Clean Up
+        run: |
+          ./original-scripts/build-runtime-srtool.sh cleanup
+
       - name: Archive Artifacts for ${{ matrix.chain }}
         uses: actions/upload-artifact@v4
         with:

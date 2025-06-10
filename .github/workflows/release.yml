@@ -7,6 +7,10 @@ on:
             - master
             - perm-*
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   CARGO_TERM_COLOR: always
 
@@ -44,7 +48,13 @@ jobs:
             - name: Get Latest RT Release
               id: get-latest-rt
               run: |
-                LATEST_RUNTIME_RELEASE=$(curl -s https://api.github.com/repos/moondance-labs/tanssi/releases | jq -r '.[] | select(.name | test("runtime";"i")) | .tag_name' | head -n 1 | tr -d '[:blank:]') && [[ ! -z "${LATEST_RUNTIME_RELEASE}" ]]
+                RELEASES_JSON=$(curl -s https://api.github.com/repos/moondance-labs/tanssi/releases)
+                LATEST_RUNTIME_RELEASE=$(jq -r '.[]
+                  | select(
+                      .tag_name | test("runtime";"i")
+                    )
+                  | .tag_name' <<<"$RELEASES_JSON" | head -n1)
+                [[ -n $LATEST_RUNTIME_RELEASE ]]
                 echo $LATEST_RUNTIME_RELEASE
                 echo "latest_rt=$LATEST_RUNTIME_RELEASE" >> $GITHUB_OUTPUT
             - name: Get Sha
@@ -457,13 +467,10 @@ jobs:
               with:
                   node-version: 22.x
                   cache: "pnpm"
-            - name: "Generate Local interfaces"
-              run: |
-                  chmod uog+x target/release/tanssi-node
-                  chmod uog+x target/release/tanssi-relay
-                  cd typescript-api
-                  pnpm install
-                  pnpm create-local-interfaces
+
+            - name: Generate Typescript API Interfaces
+              uses: ./.github/workflow-templates/typescript-create-api-interfaces
+
             - name: Check for changes
               run: |
                   FAILURE_MESSAGE="There are uncommitted changes after running typegen script.\n Please make sure to run the command before pushing or hit the PR comment: /cmd generate-ts-api"
@@ -491,13 +498,10 @@ jobs:
               with:
                   node-version: 22.x
                   cache: "pnpm"
-            - name: "Generate typescript api"
-              run: |
-                  chmod uog+x target/release/tanssi-node
-                  chmod uog+x target/release/tanssi-relay
-                  cd typescript-api
-                  pnpm install
-                  pnpm create-local-interfaces
+
+            - name: Generate Typescript API Interfaces
+              uses: ./.github/workflow-templates/typescript-create-api-interfaces
+
             - name: "Run Dev tests"
               run: |
                   chmod uog+x target/release/tanssi-node
@@ -526,13 +530,10 @@ jobs:
               with:
                   node-version: 22.x
                   cache: "pnpm"
-            - name: "Generate typescript api"
-              run: |
-                  chmod uog+x target/release/tanssi-node
-                  chmod uog+x target/release/tanssi-relay
-                  cd typescript-api
-                  pnpm install
-                  pnpm create-local-interfaces
+
+            - name: Generate Typescript API Interfaces
+              uses: ./.github/workflow-templates/typescript-create-api-interfaces
+
             - name: "Run Flashbox tests"
               run: |
                   chmod uog+x target/release/tanssi-node
@@ -561,13 +562,10 @@ jobs:
               with:
                   name: binaries
                   path: target/release
-            - name: "Generate typescript api"
-              run: |
-                  chmod uog+x target/release/tanssi-node
-                  chmod uog+x target/release/tanssi-relay
-                  cd typescript-api
-                  pnpm install
-                  pnpm create-local-interfaces
+
+            - name: Generate Typescript API Interfaces
+              uses: ./.github/workflow-templates/typescript-create-api-interfaces
+
             - name: "Run Frontier tests"
               run: |
                   chmod uog+x target/release/container-chain-frontier-node
@@ -596,13 +594,10 @@ jobs:
               with:
                   name: binaries
                   path: target/release
-            - name: "Generate typescript api"
-              run: |
-                  chmod uog+x target/release/tanssi-node
-                  chmod uog+x target/release/tanssi-relay
-                  cd typescript-api
-                  pnpm install
-                  pnpm create-local-interfaces
+
+            - name: Generate Typescript API Interfaces
+              uses: ./.github/workflow-templates/typescript-create-api-interfaces
+
             - name: "Run Simple Template tests"
               run: |
                   chmod uog+x target/release/container-chain-simple-node
@@ -660,13 +655,10 @@ jobs:
               with:
                   node-version: 22.x
                   cache: "pnpm"
-            - name: "Generate typescript api"
-              run: |
-                  chmod uog+x target/release/tanssi-node
-                  chmod uog+x target/release/tanssi-relay
-                  cd typescript-api
-                  pnpm install
-                  pnpm create-local-interfaces
+
+            - name: Generate Typescript API Interfaces
+              uses: ./.github/workflow-templates/typescript-create-api-interfaces
+
             - name: "Run Dev tests (Dancelight)"
               run: |
                   chmod uog+x target/release/tanssi-node
@@ -701,15 +693,10 @@ jobs:
               with:
                   name: binaries
                   path: target/release
-            - name: "Make binaries executable"
-              shell: bash
-              run: |
-                  chmod uog+x target/release/tanssi-node
-                  chmod uog+x target/release/tanssi-relay
-                  chmod uog+x target/release/tanssi-relay-prepare-worker
-                  chmod uog+x target/release/tanssi-relay-execute-worker
-                  chmod uog+x target/release/container-chain-simple-node
-                  chmod uog+x target/release/container-chain-frontier-node
+
+            - name: Make binaries executable
+              uses: ./.github/workflow-templates/make-binaries-executable
+
             - name: Run Zombienet Test ${{ matrix.test_name }}
               uses: ./.github/workflow-templates/zombienet-tests
               with:
@@ -735,6 +722,8 @@ jobs:
                       runtime: dancelight
                     - chain: dancelight
                       runtime: dancelight
+                    - chain: moonlight
+                      runtime: starlight
         env:
           GH_WORKFLOW_MATRIX_CHAIN: ${{ matrix.chains.chain }}
           DEBUG_COLORS: 1

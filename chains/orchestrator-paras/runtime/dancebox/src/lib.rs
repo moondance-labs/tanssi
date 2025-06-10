@@ -154,6 +154,7 @@ pub type TxExtension = (
     frame_system::CheckWeight<Runtime>,
     pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
     cumulus_primitives_storage_weight_reclaim::StorageWeightReclaim<Runtime>,
+    frame_metadata_hash_extension::CheckMetadataHash<Runtime>,
 );
 
 /// Unchecked extrinsic type as expected by this runtime.
@@ -480,8 +481,8 @@ impl pallet_transaction_payment::Config for Runtime {
 }
 
 parameter_types! {
-    pub const ReservedXcmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
-    pub const ReservedDmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
+    pub ReservedXcmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT / 4;
+    pub ReservedDmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT / 4;
     pub const RelayOrigin: AggregateMessageOrigin = AggregateMessageOrigin::Parent;
 }
 
@@ -1392,17 +1393,14 @@ parameter_types! {
 impl pallet_multiblock_migrations::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     #[cfg(not(feature = "runtime-benchmarks"))]
-    type Migrations = (
-        pallet_identity::migration::v2::LazyMigrationV1ToV2<Runtime>,
-        pallet_pooled_staking::migrations::MigrationGenerateSummaries<Runtime>,
-    );
+    type Migrations = ();
     // Benchmarks need mocked migrations to guarantee that they succeed.
     #[cfg(feature = "runtime-benchmarks")]
     type Migrations = pallet_multiblock_migrations::mock_helpers::MockedMigrations;
     type CursorMaxLen = ConstU32<65_536>;
     type IdentifierMaxLen = ConstU32<256>;
     type MigrationStatusHandler = ();
-    type FailedMigrationHandler = frame_support::migrations::FreezeChainOnFailedMigration;
+    type FailedMigrationHandler = MaintenanceMode;
     type MaxServiceWeight = MbmServiceWeight;
     type WeightInfo = weights::pallet_multiblock_migrations::SubstrateWeight<Runtime>;
 }
@@ -1435,7 +1433,7 @@ impl Contains<RuntimeCall> for NormalFilter {
 impl pallet_maintenance_mode::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type NormalCallFilter = NormalFilter;
-    type MaintenanceCallFilter = MaintenanceFilter;
+    type MaintenanceCallFilter = InsideBoth<MaintenanceFilter, NormalFilter>;
     type MaintenanceOrigin = EnsureRoot<AccountId>;
     type XcmExecutionManager = XcmExecutionManager;
 }
@@ -1712,28 +1710,19 @@ impl pallet_multisig::Config for Runtime {
     type MaxSignatories = MaxSignatories;
     type WeightInfo = weights::pallet_multisig::SubstrateWeight<Runtime>;
 }
-
-pub struct DanceboxParathreadHelper;
-
-impl tp_traits::ParathreadHelper for DanceboxParathreadHelper {
-    fn is_parathread(para_id: &ParaId) -> bool {
-        Registrar::session_container_chains(Session::current_index())
-            .parathreads
-            .iter()
-            .any(|(x_para_id, _)| x_para_id == para_id)
-    }
+parameter_types! {
+    pub const MaxInactiveSessions: u32 = 5;
 }
-
 impl pallet_inactivity_tracking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type CollatorId = CollatorId;
-    type MaxInactiveSessions = ConstU32<5>;
+    type MaxInactiveSessions = MaxInactiveSessions;
     type MaxCollatorsPerSession = MaxCandidatesBufferSize;
     type MaxContainerChains = MaxLengthParaIds;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type CurrentCollatorsFetcher = CollatorAssignment;
     type GetSelfChainBlockAuthor = GetSelfChainBlockAuthor;
-    type ParathreadHelper = DanceboxParathreadHelper;
+    type ParaFilter = tp_parathread_filter_common::ExcludeAllParathreadsFilter<Runtime>;
     type InvulnerablesFilter = tp_invulnerables_filter_common::InvulnerablesFilter<Runtime>;
     type WeightInfo = weights::pallet_inactivity_tracking::SubstrateWeight<Runtime>;
 }

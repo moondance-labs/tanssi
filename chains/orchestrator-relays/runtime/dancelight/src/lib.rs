@@ -150,7 +150,11 @@ pub use {
 };
 
 #[cfg(feature = "runtime-benchmarks")]
-use snowbridge_core::{AgentId, TokenId};
+use {
+    dancelight_runtime_constants::snowbridge::EthereumNetwork,
+    snowbridge_core::{AgentId, TokenId},
+    xcm::latest::Junctions::*,
+};
 
 /// Constant values used within the runtime.
 use dancelight_runtime_constants::{currency::*, fee::*, snowbridge::EthereumLocation, time::*};
@@ -598,7 +602,6 @@ parameter_types! {
     pub const ProposalBondMaximum: Balance = 1 * GRAND;
     // We allow it to be 1 minute in fast mode to be able to test it
     pub const SpendPeriod: BlockNumber = runtime_common::prod_or_fast!(6 * DAYS, 1 * MINUTES);
-    pub const Burn: Permill = Permill::from_perthousand(2);
     pub const TreasuryPalletId: PalletId = PalletId(*b"py/trsry");
     pub const PayoutSpendPeriod: BlockNumber = 30 * DAYS;
     // The asset's interior location for the paying account. This is the Treasury
@@ -623,6 +626,7 @@ pub struct TreasuryBenchmarkHelper<T>(PhantomData<T>);
 
 #[cfg(feature = "runtime-benchmarks")]
 use frame_support::traits::Currency;
+use frame_support::traits::InsideBoth;
 #[cfg(feature = "runtime-benchmarks")]
 use pallet_treasury::ArgumentsFactory;
 use {
@@ -656,7 +660,7 @@ impl pallet_treasury::Config for Runtime {
     type RejectOrigin = EitherOfDiverse<EnsureRoot<AccountId>, Treasurer>;
     type RuntimeEvent = RuntimeEvent;
     type SpendPeriod = SpendPeriod;
-    type Burn = Burn;
+    type Burn = ();
     type BurnDestination = ();
     type MaxApprovals = MaxApprovals;
     type WeightInfo = weights::pallet_treasury::SubstrateWeight<Runtime>;
@@ -872,6 +876,7 @@ pub enum ProxyType {
     SudoValidatorManagement,
     SessionKeyManagement,
     Staking,
+    Balances,
 }
 impl Default for ProxyType {
     fn default() -> Self {
@@ -960,6 +965,9 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
             }
             ProxyType::Staking => {
                 matches!(c, RuntimeCall::Session(..) | RuntimeCall::PooledStaking(..))
+            }
+            ProxyType::Balances => {
+                matches!(c, RuntimeCall::Balances(..))
             }
         }
     }
@@ -1592,17 +1600,14 @@ parameter_types! {
 impl pallet_multiblock_migrations::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     #[cfg(not(feature = "runtime-benchmarks"))]
-    type Migrations = (
-        pallet_identity::migration::v2::LazyMigrationV1ToV2<Runtime>,
-        pallet_pooled_staking::migrations::MigrationGenerateSummaries<Runtime>,
-    );
+    type Migrations = ();
     // Benchmarks need mocked migrations to guarantee that they succeed.
     #[cfg(feature = "runtime-benchmarks")]
     type Migrations = pallet_multiblock_migrations::mock_helpers::MockedMigrations;
     type CursorMaxLen = ConstU32<65_536>;
     type IdentifierMaxLen = ConstU32<256>;
     type MigrationStatusHandler = ();
-    type FailedMigrationHandler = frame_support::migrations::FreezeChainOnFailedMigration;
+    type FailedMigrationHandler = MaintenanceMode;
     type MaxServiceWeight = MbmServiceWeight;
     type WeightInfo = weights::pallet_multiblock_migrations::SubstrateWeight<Runtime>;
 }
@@ -1641,7 +1646,7 @@ type NormalFilter = EverythingBut<(IsRelayRegister, IsParathreadRegistrar)>;
 impl pallet_maintenance_mode::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type NormalCallFilter = NormalFilter;
-    type MaintenanceCallFilter = MaintenanceFilter;
+    type MaintenanceCallFilter = InsideBoth<MaintenanceFilter, NormalFilter>;
     type MaintenanceOrigin = EnsureRoot<AccountId>;
     type XcmExecutionManager = ();
 }
@@ -1828,7 +1833,6 @@ pub struct CandidateHasRegisteredKeys;
 impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
     fn is_candidate_eligible(a: &AccountId) -> bool {
         <Session as ValidatorRegistration<AccountId>>::is_registered(a)
-            && !InactivityTracking::is_node_offline(a)
     }
     #[cfg(feature = "runtime-benchmarks")]
     fn make_candidate_eligible(a: &AccountId, eligible: bool) {
@@ -1878,28 +1882,20 @@ impl pallet_pooled_staking::Config for Runtime {
     type WeightInfo = weights::pallet_pooled_staking::SubstrateWeight<Runtime>;
 }
 
-pub struct DancelightParathreadHelper;
-
-impl tp_traits::ParathreadHelper for DancelightParathreadHelper {
-    fn is_parathread(para_id: &ParaId) -> bool {
-        ContainerRegistrar::session_container_chains(Session::current_index())
-            .parathreads
-            .iter()
-            .any(|(x_para_id, _)| x_para_id == para_id)
-    }
+parameter_types! {
+    pub const MaxInactiveSessions: u32 = 5;
 }
 impl pallet_inactivity_tracking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type CollatorId = AccountId;
-    type MaxInactiveSessions = ConstU32<5>;
+    type MaxInactiveSessions = MaxInactiveSessions;
     type MaxCollatorsPerSession = MaxCandidatesBufferSize;
     type MaxContainerChains = MaxLengthParaIds;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type CurrentCollatorsFetcher = TanssiCollatorAssignment;
     type GetSelfChainBlockAuthor = ();
-    type ParathreadHelper = DancelightParathreadHelper;
+    type ParaFilter = tp_parathread_filter_common::ExcludeAllParathreadsFilter<Runtime>;
     type InvulnerablesFilter = tp_invulnerables_filter_common::InvulnerablesFilter<Runtime>;
-
     type WeightInfo = weights::pallet_inactivity_tracking::SubstrateWeight<Runtime>;
 }
 
@@ -3245,12 +3241,27 @@ sp_api::impl_runtime_apis! {
                 }
             }
 
+            parameter_types! {
+                pub TrustedReserve: Option<(Location, Asset)> = Some(
+                    (
+                        EthereumLocation::get(),
+                        Asset {
+                            id: AssetId(Location {
+                                parents: 1,
+                                interior: X1([GlobalConsensus(EthereumNetwork::get())].into()),
+                            }),
+                            fun: Fungible(ExistentialDeposit::get() * 100),
+                        },
+                    )
+                );
+            }
+
             impl pallet_xcm_benchmarks::fungible::Config for Runtime {
                 type TransactAsset = Balances;
 
                 type CheckedAccount = LocalCheckAccount;
                 type TrustedTeleporter = ();
-                type TrustedReserve = ();
+                type TrustedReserve = TrustedReserve;
 
                 fn get_asset() -> Asset {
                     Asset {
@@ -3712,30 +3723,19 @@ impl<AC> ParaIdAssignmentHooks<BalanceOf<Runtime>, AC> for ParaIdAssignmentHooks
 fn host_config_at_session(
     session_index_to_consider: SessionIndex,
 ) -> HostConfiguration<BlockNumber> {
-    let active_config = runtime_parachains::configuration::ActiveConfig::<Runtime>::get();
-
-    let mut pending_configs = runtime_parachains::configuration::PendingConfigs::<Runtime>::get();
+    let pending_configs = runtime_parachains::configuration::PendingConfigs::<Runtime>::get();
 
     // We are not making any assumptions about number of configurations existing in pending config
     // storage item.
-    // First remove any pending configs greater than session index in consideration
-    pending_configs = pending_configs
+    pending_configs
         .into_iter()
+        // First remove any pending configs greater than session index in consideration
         .filter(|element| element.0 <= session_index_to_consider)
-        .collect::<Vec<_>>();
-    // Reverse sorting by the session index
-    pending_configs.sort_by(|a, b| b.0.cmp(&a.0));
-
-    if pending_configs.is_empty() {
-        active_config
-    } else {
-        // We will take first pending config which should be as close to the session index as possible
-        pending_configs
-            .first()
-            .expect("already checked for emptiness above")
-            .1
-            .clone()
-    }
+        // Take the config for the highest (most recent) session
+        .max_by_key(|(session, _config)| *session)
+        .map(|(_session, config)| config)
+        // If pending configs is empty after filter, read active config
+        .unwrap_or_else(|| runtime_parachains::configuration::ActiveConfig::<Runtime>::get())
 }
 
 pub struct GetCoreAllocationConfigurationImpl;

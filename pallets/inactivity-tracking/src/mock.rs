@@ -190,11 +190,12 @@ impl tp_traits::GetContainerChainsWithCollators<AccountId> for MockContainerChai
 
 pub struct MockParathreadHelper;
 impl tp_traits::ParathreadHelper for MockParathreadHelper {
-    fn is_parathread(para_id: &ParaId) -> bool {
-        *para_id == CONTAINER_CHAIN_ID_3
+    fn get_parathreads_for_session() -> BTreeSet<ParaId> {
+        let mut paras_for_session = BTreeSet::new();
+        paras_for_session.insert(CONTAINER_CHAIN_ID_3);
+        paras_for_session
     }
 }
-
 pub struct MockInvulnerableCheckHandler<AccountId>(PhantomData<AccountId>);
 
 impl tp_traits::InvulnerablesHelper<AccountId> for MockInvulnerableCheckHandler<AccountId> {
@@ -212,7 +213,7 @@ impl pallet_inactivity_tracking::Config for Test {
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type CurrentCollatorsFetcher = MockContainerChainsInfoFetcher;
     type GetSelfChainBlockAuthor = ();
-    type ParathreadHelper = MockParathreadHelper;
+    type ParaFilter = MockParathreadHelper;
     type InvulnerablesFilter = MockInvulnerableCheckHandler<AccountId>;
     type WeightInfo = ();
 }

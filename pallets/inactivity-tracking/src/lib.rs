@@ -134,7 +134,7 @@ pub mod pallet {
         type GetSelfChainBlockAuthor: MaybeSelfChainBlockAuthor<Self::CollatorId>;
 
         /// Helper that checks if a ParaId is a parathread
-        type ParathreadHelper: ParathreadHelper;
+        type ParaFilter: ParathreadHelper;
 
         /// Helper for dealing with invulnerables.
         type InvulnerablesFilter: InvulnerablesHelper<Self::CollatorId>;
@@ -349,33 +349,37 @@ pub mod pallet {
                     }
                 }
             }
-            let active_chains = <ActiveContainerChainsForCurrentSession<T>>::get();
+            let mut active_chains = <ActiveContainerChainsForCurrentSession<T>>::get().into_inner();
+            // Removing the parathreads for the current session from the active chains array.
+            // In this way we handle all parathreads as inactive chains.
+            // This solution would only work if a collator either:
+            // - is assigned to one chain only
+            // - is assigned to multiple chains but all of them are parathreads
+            active_chains = active_chains
+                .difference(&T::ParaFilter::get_parathreads_for_session())
+                .cloned()
+                .collect::<BTreeSet<ParaId>>();
+
             let _ = <ActiveCollatorsForCurrentSession<T>>::try_mutate(
                 |active_collators| -> DispatchResult {
                     let container_chains_with_collators =
                         T::CurrentCollatorsFetcher::container_chains_with_collators(
                             ForSession::Current,
                         );
+
                     for (para_id, collator_ids) in container_chains_with_collators.iter() {
-                        if !active_chains.contains(para_id)
-                            && !T::ParathreadHelper::is_parathread(para_id)
-                        {
+                        if !active_chains.contains(para_id) {
                             // Collators assigned to inactive chain are added
                             // to the current active collators storage
                             for collator_id in collator_ids {
-                                if !active_collators.contains(&collator_id) {
-                                    if let Err(_) = active_collators.try_insert(collator_id.clone())
-                                    {
-                                        // If we reach MaxCollatorsPerSession limit there must be a bug in the pallet
-                                        // so we disable the activity tracking
-                                        Self::set_inactivity_tracking_status_inner(
-                                            T::CurrentSessionIndex::session_index(),
-                                            false,
-                                        );
-                                        return Err(
-                                            Error::<T>::MaxCollatorsPerSessionReached.into()
-                                        );
-                                    }
+                                if let Err(_) = active_collators.try_insert(collator_id.clone()) {
+                                    // If we reach MaxCollatorsPerSession limit there must be a bug in the pallet
+                                    // so we disable the activity tracking
+                                    Self::set_inactivity_tracking_status_inner(
+                                        T::CurrentSessionIndex::session_index(),
+                                        false,
+                                    );
+                                    return Err(Error::<T>::MaxCollatorsPerSessionReached.into());
                                 }
                             }
                         }

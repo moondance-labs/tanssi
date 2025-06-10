@@ -1,5 +1,6 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
+import { isLightRuntime } from "../../utils/runtime.ts";
 
 describeSuite({
     id: "S02",
@@ -26,22 +27,20 @@ describeSuite({
                 const sessionIndex = (await api.query.session.currentIndex()).toNumber();
 
                 const assignmentCollatorKey = (
-                    chain === "dancelight"
+                    isLightRuntime(api)
                         ? await api.query.tanssiAuthorityAssignment.collatorContainerChain(sessionIndex)
                         : await api.query.authorityAssignment.collatorContainerChain(sessionIndex)
                 ).toJSON();
 
-                const configuration =
-                    chain === "dancelight"
-                        ? await api.query.collatorConfiguration.activeConfig()
-                        : await api.query.configuration.activeConfig();
+                const configuration = isLightRuntime(api)
+                    ? await api.query.collatorConfiguration.activeConfig()
+                    : await api.query.configuration.activeConfig();
 
                 if (assignmentCollatorKey.containerChains !== undefined) {
                     for (const container of Object.keys(assignmentCollatorKey.containerChains)) {
-                        const parathreadParams =
-                            chain === "dancelight"
-                                ? await api.query.containerRegistrar.parathreadParams(container)
-                                : await api.query.registrar.parathreadParams(container);
+                        const parathreadParams = isLightRuntime(api)
+                            ? await api.query.containerRegistrar.parathreadParams(container)
+                            : await api.query.registrar.parathreadParams(container);
 
                         // This is a parathread if this is Some
                         if (parathreadParams.isNone) {

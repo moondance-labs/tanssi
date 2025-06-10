@@ -13,7 +13,6 @@
 
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
-use crate::Event;
 use {
     crate::{
         mock::*, ActiveCollatorsForCurrentSession, ActiveContainerChainsForCurrentSession,
@@ -447,7 +446,7 @@ fn processing_ended_session_correctly_cleans_outdated_collator_records() {
         let current_session_active_collator_record: BoundedBTreeSet<AccountId, ConstU32<5>> =
             get_collator_set(vec![COLLATOR_1]);
         let inactive_collators_record: BoundedBTreeSet<AccountId, ConstU32<5>> =
-            get_collator_set(vec![COLLATOR_2, COLLATOR_3]);
+            get_collator_set(vec![COLLATOR_2]);
         let current_session_active_chain_record = get_active_chains_set(vec![CONTAINER_CHAIN_ID_1]);
         let empty_set: BoundedBTreeSet<AccountId, ConstU32<5>> = BoundedBTreeSet::new();
 
@@ -617,7 +616,7 @@ fn inactivity_tracking_is_disabled_if_current_active_collators_storage_overflows
 }
 
 #[test]
-fn inactivity_tracking_is_disabled_if_ctive_chains_storage_overflows() {
+fn inactivity_tracking_is_disabled_if_active_chains_storage_overflows() {
     ExtBuilder.build().execute_with(|| {
         assert_eq!(
             CurrentActivityTrackingStatus::<Test>::get(),
@@ -760,14 +759,7 @@ fn inactive_chain_collators_are_correctly_processed_when_activity_tracking_is_en
             true
         );
         roll_to(SESSION_BLOCK_LENGTH);
-        // Since we have one container chain with id CONTAINER_CHAIN_ID_3 which is a parathread
-        // which has COLLATOR_3 assigned to it, COLLATOR_3 will be added as inactive collator
-        // but COLLATOR_1 and COLLATOR_2 will not be added to the inactive collators storage
-        // as they are assigned to a parachain
-        assert_eq!(
-            InactiveCollators::<Test>::get(0),
-            get_collator_set(vec![COLLATOR_3])
-        );
+        assert_eq!(InactiveCollators::<Test>::get(0).is_empty(), true);
     });
 }
 
@@ -797,7 +789,7 @@ fn inactive_collator_for_active_chain_is_correctly_processed_when_activity_track
         roll_to(SESSION_BLOCK_LENGTH);
         assert_eq!(
             InactiveCollators::<Test>::get(0),
-            get_collator_set(vec![COLLATOR_2, COLLATOR_3])
+            get_collator_set(vec![COLLATOR_2])
         );
     });
 }
@@ -881,8 +873,34 @@ fn inactive_chain_collators_are_processed_correctly_when_activity_tracking_is_di
         );
         assert_eq!(
             InactiveCollators::<Test>::get(last_disabled_session_id + 1),
-            get_collator_set(vec![COLLATOR_2, COLLATOR_3])
+            get_collator_set(vec![COLLATOR_2])
         );
+    });
+}
+
+#[test]
+fn chain_inactivity_tracking_correctly_processes_parathreads() {
+    ExtBuilder.build().execute_with(|| {
+        // We will insert CONTAINER_CHAIN_ID_3 as an active chain but not add the collator assigned
+        // to it (COLLATOR_3) to the list of active collators. Since all parathreads are considered
+        // inactive, we should not see the collator in inactive collators storage after the session
+        // is processed
+        let current_session_active_chain_record = get_active_chains_set(vec![CONTAINER_CHAIN_ID_3]);
+        <ActiveContainerChainsForCurrentSession<Test>>::put(
+            current_session_active_chain_record.clone(),
+        );
+        assert_eq!(ActiveCollatorsForCurrentSession::<Test>::get().len(), 0);
+        roll_to(SESSION_BLOCK_LENGTH - 1);
+        assert_eq!(
+            ActiveContainerChainsForCurrentSession::<Test>::get(),
+            current_session_active_chain_record
+        );
+        assert_eq!(
+            ActiveCollatorsForCurrentSession::<Test>::get().is_empty(),
+            true
+        );
+        roll_to(SESSION_BLOCK_LENGTH);
+        assert_eq!(InactiveCollators::<Test>::get(0).is_empty(), true);
     });
 }
 
