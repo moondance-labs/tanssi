@@ -18,7 +18,6 @@ describeSuite({
         let isStarlight: boolean;
         let specVersion: number;
         let shouldSkipBalances: boolean;
-        let isContainer: boolean;
         let isPara: boolean;
 
         // Difference between the refTime estimated using paymentInfo and the actual refTime reported inside a block
@@ -31,8 +30,7 @@ describeSuite({
             polkadotJs = context.polkadotJs();
             baseWeight = extractWeight(polkadotJs.consts.system.blockWeights.perClass.normal.baseExtrinsic).toBigInt();
             const runtimeName = polkadotJs.runtimeVersion.specName.toString();
-            isContainer = runtimeName.includes("frontier-template") || runtimeName.includes("container-chain-template");
-            isPara = runtimeName.includes("box");
+            isPara = runtimeName === "frontier-template" || runtimeName === "container-chain-template" || runtimeName.includes("box");
             isRelay = runtimeName.includes("light");
             isStarlight = runtimeName === "starlight";
             specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
@@ -70,7 +68,7 @@ describeSuite({
                     proofSize: info.weight.proofSize.toBigInt(), // TODO: fix me
                 };
 
-                if (isContainer || isPara) {
+                if (isPara) {
                     const maxBlockProofSize = polkadotJs.consts.system.blockWeights.maxBlock.proofSize.toBigInt();
 
                     expect(estimatedPlusBaseWeight.refTime).to.equal(info2.weight.refTime.toBigInt());
