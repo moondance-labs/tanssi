@@ -152,7 +152,6 @@ pub mod migrations {
 
     /// Unreleased migrations. Add new ones here:
     pub type Unreleased = (
-        snowbridge_pallet_system::migration::FeePerGasMigrationV0ToV1<Runtime>,
         pallet_session::migrations::v1::MigrateV0ToV1<
             Runtime,
             pallet_session::migrations::v1::InitOffenceSeverity<Runtime>,
