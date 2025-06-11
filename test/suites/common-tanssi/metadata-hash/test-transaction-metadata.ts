@@ -3,8 +3,9 @@ import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import type { SignerOptions } from "@polkadot/api/types";
 import { merkleizeMetadata } from "@polkadot-api/merkleize-metadata";
 import { u8aToHex } from "@polkadot/util";
-import { type ApiPromise, Keyring } from "@polkadot/api";
+import type { ApiPromise } from "@polkadot/api";
 import type { KeyringPair } from "@moonwall/util";
+import { isDancebox } from "../../../utils/runtime.ts";
 
 async function getMetadataHash(api: ApiPromise) {
     const metadata = await api.call.metadata.metadataAtVersion(15);
@@ -22,7 +23,7 @@ async function getMetadataHash(api: ApiPromise) {
 }
 
 describeSuite({
-    id: "DEVT2101",
+    id: "COMM0401",
     title: "Test transaction with metadata hash",
     foundationMethods: "dev",
     testCases: ({ context, it, log }) => {
@@ -31,22 +32,29 @@ describeSuite({
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
-            const keyring = new Keyring({ type: "sr25519" });
-            alice = keyring.addFromUri("//Alice", { name: "Alice default" });
+            alice = context.keyring.alice;
         });
 
         it({
             id: "T01",
             title: "Should fail with an invalid metadata hash",
-            test: async () => {
+            test: async ({ skip }) => {
+                // We disable dancebox, until we switch from native runtime: https://github.com/moondance-labs/tanssi/pull/1060#issue-3093353402
+                if (isDancebox(polkadotJs)) {
+                    skip();
+                }
+
                 const withMetadataOpts: Partial<SignerOptions> = {
                     mode: 1,
                     metadataHash: `0x${"00".repeat(32)}`,
                 };
 
+                await context.createBlock();
+
                 let errorMsg = "";
                 try {
                     await polkadotJs.tx.system.remark("0x00").signAndSend(alice, withMetadataOpts);
+                    await context.createBlock();
                 } catch (e) {
                     errorMsg = e.message;
                 }
@@ -58,13 +66,21 @@ describeSuite({
         it({
             id: "T02",
             title: "Should succeed with a valid metadata hash",
-            test: async () => {
+            test: async ({ skip }) => {
+                // We disable dancebox, until we switch from native runtime: https://github.com/moondance-labs/tanssi/pull/1060#issue-3093353402
+                if (isDancebox(polkadotJs)) {
+                    skip();
+                }
+
+                await context.createBlock();
+
                 const withMetadataOpts = {
                     mode: 1,
                     metadataHash: await getMetadataHash(polkadotJs),
                 };
 
                 await polkadotJs.tx.system.remark("0x00").signAndSend(alice, withMetadataOpts);
+                await context.createBlock();
             },
         });
     },
