@@ -137,3 +137,22 @@ jobs:
               shell: bash
               run: |
                 BINARY=./target/release/${{ matrix.chains.binary }} CHAIN=${{ matrix.chains.chain }} TEMPLATE_PATH=./benchmarking/frame-weight-runtime-template.hbs tools/benchmarking.sh "*" "*" --check
+    smoke-tests-test:
+        needs: ["enforce-ready-to-merge-label"]
+        runs-on: self-hosted
+        strategy:
+            fail-fast: false
+            matrix:
+                test_name:
+                    - stagelight_dancelight_smoke S01
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Run Test ${{ matrix.test_name }}
+              shell: bash
+              run: |
+                pnpm install
+
+                cd test
+                pnpm moonwall test ${{ inputs.test_name }}
