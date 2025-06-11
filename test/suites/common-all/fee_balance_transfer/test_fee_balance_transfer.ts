@@ -18,6 +18,8 @@ describeSuite({
         let isStarlight: boolean;
         let specVersion: number;
         let shouldSkipBalances: boolean;
+        let isContainer: boolean;
+        let isPara: boolean;
 
         // Difference between the refTime estimated using paymentInfo and the actual refTime reported inside a block
         // https://github.com/paritytech/substrate/blob/5e49f6e44820affccaf517fd22af564f4b495d40/frame/support/src/weights/extrinsic_weights.rs#L56
@@ -29,6 +31,8 @@ describeSuite({
             polkadotJs = context.polkadotJs();
             baseWeight = extractWeight(polkadotJs.consts.system.blockWeights.perClass.normal.baseExtrinsic).toBigInt();
             const runtimeName = polkadotJs.runtimeVersion.specName.toString();
+            isContainer = runtimeName.includes("frontier-template") || runtimeName.includes("container-chain-template");
+            isPara = runtimeName.includes("box");
             isRelay = runtimeName.includes("light");
             isStarlight = runtimeName === "starlight";
             specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
@@ -65,10 +69,26 @@ describeSuite({
                     refTime: info.weight.refTime.toBigInt() + baseWeight,
                     proofSize: info.weight.proofSize.toBigInt(), // TODO: fix me
                 };
-                expect(estimatedPlusBaseWeight).to.deep.equal({
-                    refTime: info2.weight.refTime.toBigInt(),
-                    proofSize: info2.weight.proofSize.toBigInt(),
-                });
+
+                if (isContainer || isPara) {
+                    const maxBlockProofSize = polkadotJs.consts.system.blockWeights.maxBlock.proofSize.toBigInt();
+
+                    expect(estimatedPlusBaseWeight.refTime).to.equal(info2.weight.refTime.toBigInt());
+
+                    // Due to Storage weight reclaim, the on chain proof size is not the same as the estimated proof size
+                    // using the paymentInfo runtime-api.
+                    // The estimated should be greater than the on chain one.
+                    expect(estimatedPlusBaseWeight.proofSize).toBeGreaterThan(info2.weight.proofSize.toBigInt());
+
+                    // We check that the actual proof size is inside a ~500 bytes
+                    expect(info2.weight.proofSize.toBigInt()).toBeGreaterThan(0n);
+                    expect(info2.weight.proofSize.toBigInt()).toBeLessThanOrEqual(maxBlockProofSize / 10000n);
+                } else {
+                    expect(estimatedPlusBaseWeight).to.deep.equal({
+                        refTime: info2.weight.refTime.toBigInt(),
+                        proofSize: info2.weight.proofSize.toBigInt(),
+                    });
+                }
 
                 // queryWeightToFee expects the "base weight" to be included in the input, so info2.weight provides
                 // the correct estimation, but tx.paymentInfo().weight does not
