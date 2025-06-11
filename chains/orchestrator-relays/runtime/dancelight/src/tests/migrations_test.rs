@@ -350,7 +350,7 @@ fn snowbridge_ethereum_system_token_id_does_not_change() {
 
     let ethereum_location = EthereumLocation::get();
     // reanchor to Ethereum context
-    // This means to add this junction: GlobalConsensus(NetworkId::ByGenesis(ROCOCO_GENESIS_HASH))
+    // This means to add this junction: GlobalConsensus(NetworkId::ByGenesis(DANCELIGHT_GENESIS_HASH))
     let location = location
         .clone()
         .reanchored(&ethereum_location, &UniversalLocation::get())
@@ -364,7 +364,7 @@ fn snowbridge_ethereum_system_token_id_does_not_change() {
     // So the exact token id from below is not important, as long as it does not change:
     assert_eq!(
         token_id,
-        hex_literal::hex!("bcd4282ca0c30cbd9c578b5c790e88c803d80cd9cc91f28686f24ac25a61e06e")
+        hex_literal::hex!("e95142d5aca3299068a3d9b4a659f9589559382d0a130a1d7cedc67d6c3d401d")
             .into()
     );
 }
