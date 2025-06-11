@@ -166,4 +166,4 @@ jobs:
                 pnpm install
 
                 cd test
-                pnpm moonwall test ${{ inputs.test_name }}
+                pnpm moonwall test ${{ matrix.test_name }}
