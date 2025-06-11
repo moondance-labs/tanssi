@@ -34,9 +34,10 @@ use {
     parity_scale_codec::Encode,
     sp_arithmetic::Perbill,
     tanssi_runtime_common::migrations::{
-        BondedErasTimestampMigration, ExternalValidatorsInitialMigration, HostConfigurationV3,
+        snowbridge_system_migration::DancelightLocation, BondedErasTimestampMigration,
+        ExternalValidatorsInitialMigration, HostConfigurationV3,
         MigrateConfigurationAddFullRotationMode, MigrateEthSystemGenesisHashes,
-        MigrateMMRLeafPallet, snowbridge_system_migration::DancelightLocation,
+        MigrateMMRLeafPallet,
     },
     xcm::v3::Weight,
 };
