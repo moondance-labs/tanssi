@@ -504,27 +504,18 @@ where
         dest: &mut Option<Location>,
         msg: &mut Option<Xcm<()>>,
     ) -> SendResult<Self::Ticket> {
-        // TODO: Identical to following code expect channel and message filtering
-        // https://github.com/paritytech/polkadot-sdk/blob/ca9f4a7e60cdedbd97d68e7b5d53bf4e1944d7e7/polkadot/xcm/xcm-builder/src/universal_exports.rs#L117
-
         let universal_source = UniversalLocation::get();
-        let channel = 0; // TODO: Better value?
+
+        // TODO: Better value?
+        // This channel value is ignored anyway (like in original snowbridge code).
+        // Should we not ignore it and actually use this value instead?
+        let channel = 0; 
 
         // This `clone` ensures that `dest` is not consumed in any case.
         let dest = dest.clone().ok_or(MissingArgument)?;
         let (remote_network, remote_location) =
             ensure_is_remote(universal_source.clone(), dest).map_err(|_| NotApplicable)?;
         let xcm = msg.take().ok_or(MissingArgument)?;
-
-        // // Ignore messages that don't send assets.
-        // // TODO: Is it necessary? Bridges don't filter?
-        // let &[Instruction::WithdrawAsset(_), Instruction::ClearOrigin, Instruction::DepositAsset { .. }, ..] =
-        //     &xcm.inner()
-        // else {
-        //     // We need to make sure that msg is not consumed in case of `NotApplicable`.
-        //     *msg = Some(xcm);
-        //     return Err(NotApplicable);
-        // };
 
         // validate export message
         validate_export::<Bridges>(
