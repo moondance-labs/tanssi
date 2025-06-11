@@ -17,7 +17,6 @@
 use crate::xcm_config::UniversalLocation;
 use crate::EthereumLocation;
 use snowbridge_core::TokenIdOf;
-use starlight_runtime_constants::TANSSI_GENESIS_HASH;
 use xcm::latest::Junction::GlobalConsensus;
 use xcm::latest::Junctions::Here;
 use xcm::latest::Junctions::X1;
@@ -37,8 +36,8 @@ use {
     sp_arithmetic::Perbill,
     tanssi_runtime_common::migrations::{
         BondedErasTimestampMigration, ExternalValidatorsInitialMigration, HostConfigurationV3,
-        MigrateConfigurationAddFullRotationMode, MigrateEthSystemGenesisHashesStarlight,
-        MigrateMMRLeafPallet,
+        MigrateConfigurationAddFullRotationMode, MigrateEthSystemGenesisHashes,
+        MigrateMMRLeafPallet, snowbridge_system_migration::StarlightLocation,
     },
     xcm::v3::Weight,
 };
@@ -317,7 +316,7 @@ fn test_genesis_hashes_migration() {
             hex_literal::hex!("bcd4282ca0c30cbd9c578b5c790e88c803d80cd9cc91f28686f24ac25a61e06e").into(),
         )]);
 
-        let migration = MigrateEthSystemGenesisHashesStarlight::<Runtime>(Default::default());
+        let migration = MigrateEthSystemGenesisHashes::<Runtime, StarlightLocation>(Default::default());
         migration.migrate(Default::default());
 
         // Check storage after migration
@@ -326,16 +325,10 @@ fn test_genesis_hashes_migration() {
 
         assert_eq!(f_n, [(
             hex_literal::hex!("bcd4282ca0c30cbd9c578b5c790e88c803d80cd9cc91f28686f24ac25a61e06e").into(),
-            Location {
-                parents: 1,
-                interior: X1([GlobalConsensus(NetworkId::ByGenesis(TANSSI_GENESIS_HASH))].into()),
-            },
+            StarlightLocation::get(),
         )]);
         assert_eq!(n_f, [(
-            Location {
-                parents: 1,
-                interior: X1([GlobalConsensus(NetworkId::ByGenesis(TANSSI_GENESIS_HASH))].into()),
-            },
+            StarlightLocation::get(),
             hex_literal::hex!("bcd4282ca0c30cbd9c578b5c790e88c803d80cd9cc91f28686f24ac25a61e06e").into(),
         )]);
     });
