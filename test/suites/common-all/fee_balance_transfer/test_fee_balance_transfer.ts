@@ -30,7 +30,10 @@ describeSuite({
             polkadotJs = context.polkadotJs();
             baseWeight = extractWeight(polkadotJs.consts.system.blockWeights.perClass.normal.baseExtrinsic).toBigInt();
             const runtimeName = polkadotJs.runtimeVersion.specName.toString();
-            isPara = runtimeName === "frontier-template" || runtimeName === "container-chain-template" || runtimeName.includes("box");
+            isPara =
+                runtimeName === "frontier-template" ||
+                runtimeName === "container-chain-template" ||
+                runtimeName.includes("box");
             isRelay = runtimeName.includes("light");
             isStarlight = runtimeName === "starlight";
             specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
