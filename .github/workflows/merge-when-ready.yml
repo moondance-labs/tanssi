@@ -149,6 +149,17 @@ jobs:
             - name: Checkout
               uses: actions/checkout@v4
 
+            - name: Pnpm
+              uses: pnpm/action-setup@v4.0.0
+              with:
+                version: 9
+
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                node-version: 22.x
+                cache: "pnpm"
+
             - name: Run Test ${{ matrix.test_name }}
               shell: bash
               run: |
