@@ -4,6 +4,10 @@ on:
   issue_comment:
     types: [ created ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: write
   issues: write
@@ -86,14 +90,8 @@ jobs:
           node-version: 22.x
           cache: "pnpm"
 
-      # TODO: Extract to workflow template and re-use in other workflows (separate PR)
-      - name: "Generate Local interfaces"
-        run: |
-          chmod uog+x target/release/tanssi-node
-          chmod uog+x target/release/tanssi-relay
-          cd typescript-api
-          pnpm install --frozen-lockfile
-          pnpm create-local-interfaces
+      - name: Generate Typescript API Interfaces
+        uses: ./.github/workflow-templates/typescript-create-api-interfaces
 
       - name: Configure Git
         run: |
