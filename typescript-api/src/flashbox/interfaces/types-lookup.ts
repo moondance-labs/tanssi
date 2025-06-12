@@ -27,6 +27,7 @@ import type {
     u8,
 } from "@polkadot/types-codec";
 import type { ITuple } from "@polkadot/types-codec/types";
+import type { Era } from "@polkadot/types/interfaces/extrinsics";
 import type { AccountId32, Call, H256, MultiAddress, Perbill } from "@polkadot/types/interfaces/runtime";
 import type { Event } from "@polkadot/types/interfaces/system";
 
@@ -3197,29 +3198,42 @@ declare module "@polkadot/types/lookup" {
             | "Inconclusive";
     }
 
-    /** @name FrameSystemExtensionsCheckNonZeroSender (384) */
+    /** @name CumulusPalletWeightReclaimStorageWeightReclaim (383) */
+    interface CumulusPalletWeightReclaimStorageWeightReclaim
+        extends ITuple<
+            [
+                FrameSystemExtensionsCheckNonZeroSender,
+                FrameSystemExtensionsCheckSpecVersion,
+                FrameSystemExtensionsCheckTxVersion,
+                FrameSystemExtensionsCheckGenesis,
+                Era,
+                FrameSystemExtensionsCheckNonce,
+                FrameSystemExtensionsCheckWeight,
+                PalletTransactionPaymentChargeTransactionPayment,
+                FrameMetadataHashExtensionCheckMetadataHash,
+            ]
+        > {}
+
+    /** @name FrameSystemExtensionsCheckNonZeroSender (385) */
     type FrameSystemExtensionsCheckNonZeroSender = Null;
 
-    /** @name FrameSystemExtensionsCheckSpecVersion (385) */
+    /** @name FrameSystemExtensionsCheckSpecVersion (386) */
     type FrameSystemExtensionsCheckSpecVersion = Null;
 
-    /** @name FrameSystemExtensionsCheckTxVersion (386) */
+    /** @name FrameSystemExtensionsCheckTxVersion (387) */
     type FrameSystemExtensionsCheckTxVersion = Null;
 
-    /** @name FrameSystemExtensionsCheckGenesis (387) */
+    /** @name FrameSystemExtensionsCheckGenesis (388) */
     type FrameSystemExtensionsCheckGenesis = Null;
 
-    /** @name FrameSystemExtensionsCheckNonce (390) */
+    /** @name FrameSystemExtensionsCheckNonce (391) */
     interface FrameSystemExtensionsCheckNonce extends Compact<u32> {}
 
-    /** @name FrameSystemExtensionsCheckWeight (391) */
+    /** @name FrameSystemExtensionsCheckWeight (392) */
     type FrameSystemExtensionsCheckWeight = Null;
 
-    /** @name PalletTransactionPaymentChargeTransactionPayment (392) */
+    /** @name PalletTransactionPaymentChargeTransactionPayment (393) */
     interface PalletTransactionPaymentChargeTransactionPayment extends Compact<u128> {}
-
-    /** @name CumulusPalletWeightReclaimStorageWeightReclaim (393) */
-    type CumulusPalletWeightReclaimStorageWeightReclaim = Null;
 
     /** @name FrameMetadataHashExtensionCheckMetadataHash (394) */
     interface FrameMetadataHashExtensionCheckMetadataHash extends Struct {

@@ -5583,37 +5583,38 @@ export default {
         ],
     },
     /**
-     * Lookup619: frame_system::extensions::check_non_zero_sender::CheckNonZeroSender<T>
+     * Lookup618: cumulus_pallet_weight_reclaim::StorageWeightReclaim<T, S>
+     **/
+    CumulusPalletWeightReclaimStorageWeightReclaim:
+        "(FrameSystemExtensionsCheckNonZeroSender,FrameSystemExtensionsCheckSpecVersion,FrameSystemExtensionsCheckTxVersion,FrameSystemExtensionsCheckGenesis,Era,FrameSystemExtensionsCheckNonce,FrameSystemExtensionsCheckWeight,PalletTransactionPaymentChargeTransactionPayment,FrameMetadataHashExtensionCheckMetadataHash)",
+    /**
+     * Lookup620: frame_system::extensions::check_non_zero_sender::CheckNonZeroSender<T>
      **/
     FrameSystemExtensionsCheckNonZeroSender: "Null",
     /**
-     * Lookup620: frame_system::extensions::check_spec_version::CheckSpecVersion<T>
+     * Lookup621: frame_system::extensions::check_spec_version::CheckSpecVersion<T>
      **/
     FrameSystemExtensionsCheckSpecVersion: "Null",
     /**
-     * Lookup621: frame_system::extensions::check_tx_version::CheckTxVersion<T>
+     * Lookup622: frame_system::extensions::check_tx_version::CheckTxVersion<T>
      **/
     FrameSystemExtensionsCheckTxVersion: "Null",
     /**
-     * Lookup622: frame_system::extensions::check_genesis::CheckGenesis<T>
+     * Lookup623: frame_system::extensions::check_genesis::CheckGenesis<T>
      **/
     FrameSystemExtensionsCheckGenesis: "Null",
     /**
-     * Lookup625: frame_system::extensions::check_nonce::CheckNonce<T>
+     * Lookup626: frame_system::extensions::check_nonce::CheckNonce<T>
      **/
     FrameSystemExtensionsCheckNonce: "Compact<u32>",
     /**
-     * Lookup626: frame_system::extensions::check_weight::CheckWeight<T>
+     * Lookup627: frame_system::extensions::check_weight::CheckWeight<T>
      **/
     FrameSystemExtensionsCheckWeight: "Null",
     /**
-     * Lookup627: pallet_transaction_payment::ChargeTransactionPayment<T>
+     * Lookup628: pallet_transaction_payment::ChargeTransactionPayment<T>
      **/
     PalletTransactionPaymentChargeTransactionPayment: "Compact<u128>",
-    /**
-     * Lookup628: cumulus_pallet_weight_reclaim::StorageWeightReclaim<T, S>
-     **/
-    CumulusPalletWeightReclaimStorageWeightReclaim: "Null",
     /**
      * Lookup629: frame_metadata_hash_extension::CheckMetadataHash<T>
      **/
