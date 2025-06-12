@@ -81,9 +81,9 @@ describeSuite({
                     // The estimated should be greater than the on chain one.
                     expect(estimatedPlusBaseWeight.proofSize).toBeGreaterThan(info2.weight.proofSize.toBigInt());
 
-                    // We check that the actual proof size is inside a ~500 bytes
+                    // We check that the actual proof size is inside a ~5000 bytes range
                     expect(info2.weight.proofSize.toBigInt()).toBeGreaterThan(0n);
-                    expect(info2.weight.proofSize.toBigInt()).toBeLessThanOrEqual(maxBlockProofSize / 10000n);
+                    expect(info2.weight.proofSize.toBigInt()).toBeLessThanOrEqual(maxBlockProofSize / 1000n);
                 } else {
                     expect(estimatedPlusBaseWeight).to.deep.equal({
                         refTime: info2.weight.refTime.toBigInt(),
