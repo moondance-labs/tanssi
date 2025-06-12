@@ -16,6 +16,7 @@ ethabi = { workspace = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
 impl-trait-for-tuples = { workspace = true }
+log = { workspace = true }
 macro_rules_attribute = { workspace = true }
 pallet-external-validators = { workspace = true }
 parity-scale-codec = { workspace = true }
@@ -47,6 +48,7 @@ std = [
 	"ethabi/std",
 	"frame-support/std",
 	"frame-system/std",
+	"log/std",
 	"pallet-external-validators/std",
 	"parity-scale-codec/std",
 	"scale-info/std",

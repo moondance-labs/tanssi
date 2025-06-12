@@ -201,6 +201,8 @@ where
         let message = VersionedXcmMessage::decode_all(&mut envelope.payload.as_slice())
             .map_err(|_| DispatchError::Other("unable to parse the envelope payload"))?;
 
+        log::trace!("NativeTokenTransferMessageProcessor: {:?}", message);
+
         match message {
             VersionedXcmMessage::V1(MessageV1 {
                 chain_id: _,
@@ -302,7 +304,7 @@ impl<T> RewardProcessor<T> for RewardThroughFeesAccount<T>
 where
     T: snowbridge_pallet_inbound_queue::Config + pallet_ethereum_token_transfers::Config,
     T::AccountId: From<sp_runtime::AccountId32>,
-    <T::Token as Inspect<T::AccountId>>::Balance: From<u128>,
+    <T::Token as Inspect<T::AccountId>>::Balance: core::fmt::Display,
 {
     fn process_reward(who: T::AccountId, _channel: Channel, message: Message) -> DispatchResult {
         let reward_amount = snowbridge_pallet_inbound_queue::Pallet::<T>::calculate_delivery_cost(
@@ -314,6 +316,13 @@ where
         let amount =
             T::Token::reducible_balance(&fees_account, Preservation::Preserve, Fortitude::Polite)
                 .min(reward_amount);
+        if amount != reward_amount {
+            log::warn!(
+                "RewardThroughFeesAccount: fees account running low on funds {}: {}",
+                fees_account,
+                amount
+            );
+        }
         if !amount.is_zero() {
             T::Token::transfer(&fees_account, &who, amount, Preservation::Preserve)?;
         }

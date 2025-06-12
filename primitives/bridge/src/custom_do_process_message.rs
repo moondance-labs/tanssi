@@ -54,6 +54,11 @@ where
         let versioned_queued_message: VersionedQueuedMessage =
             VersionedQueuedMessage::decode(&mut message).map_err(|_| Corrupt)?;
 
+        log::trace!(
+            "CustomProcessSnowbridgeMessage: {:?}",
+            versioned_queued_message
+        );
+
         // Convert versioned message into latest supported message version
         let queued_message: QueuedMessage = versioned_queued_message
             .try_into()
