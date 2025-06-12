@@ -9,6 +9,7 @@ version = "0.1.0"
 workspace = true
 
 [dependencies]
+hex-literal = { workspace = true }
 smallvec = { workspace = true }
 
 frame-support = { workspace = true }

@@ -18,6 +18,9 @@
 
 pub mod weights;
 
+pub const TANSSI_GENESIS_HASH: [u8; 32] =
+    hex_literal::hex!["dd6d086f75ec041b66e20c4186d327b23c8af244c534a2418de6574e8c041a60"];
+
 /// Money matters.
 pub mod currency {
     use primitives::Balance;

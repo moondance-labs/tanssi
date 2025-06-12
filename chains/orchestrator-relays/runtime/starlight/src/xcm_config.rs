@@ -35,13 +35,10 @@ use {
         ToAuthor,
     },
     sp_core::ConstU32,
-    starlight_runtime_constants::{currency::CENTS, system_parachain::*},
+    starlight_runtime_constants::{currency::CENTS, system_parachain::*, TANSSI_GENESIS_HASH},
     tp_bridge::EthereumLocationsConverterFor,
     tp_xcm_commons::NativeAssetReserve,
-    xcm::{
-        latest::prelude::*,
-        opaque::latest::{ROCOCO_GENESIS_HASH, WESTEND_GENESIS_HASH},
-    },
+    xcm::{latest::prelude::*, opaque::latest::WESTEND_GENESIS_HASH},
     xcm_builder::{
         AccountId32Aliases, AllowExplicitUnpaidExecutionFrom, AllowKnownQueryResponses,
         AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom, ChildParachainAsNative,
@@ -58,7 +55,7 @@ use {
 parameter_types! {
     pub TokenLocation: Location = Here.into_location();
     pub RootLocation: Location = Location::here();
-    pub const ThisNetwork: NetworkId = NetworkId::ByGenesis(ROCOCO_GENESIS_HASH); // FIXME: Change to Starlight
+    pub const ThisNetwork: NetworkId = NetworkId::ByGenesis(TANSSI_GENESIS_HASH);
     pub UniversalLocation: InteriorLocation = ThisNetwork::get().into();
     pub CheckAccount: AccountId = XcmPallet::check_account();
     pub LocalCheckAccount: (AccountId, MintLocation) = (CheckAccount::get(), MintLocation::Local);
