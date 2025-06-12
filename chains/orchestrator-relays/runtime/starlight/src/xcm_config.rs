@@ -38,10 +38,7 @@ use {
     starlight_runtime_constants::{currency::CENTS, system_parachain::*, TANSSI_GENESIS_HASH},
     tp_bridge::EthereumLocationsConverterFor,
     tp_xcm_commons::NativeAssetReserve,
-    xcm::{
-        latest::prelude::*,
-        opaque::latest::WESTEND_GENESIS_HASH,
-    },
+    xcm::{latest::prelude::*, opaque::latest::WESTEND_GENESIS_HASH},
     xcm_builder::{
         AccountId32Aliases, AllowExplicitUnpaidExecutionFrom, AllowKnownQueryResponses,
         AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom, ChildParachainAsNative,
