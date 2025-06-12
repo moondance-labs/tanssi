@@ -18,7 +18,7 @@
 use {
     crate::{
         tests::common::*, InactivityTracking, MinimumSelfDelegation, PooledStaking,
-        TanssiCollatorAssignment, TanssiInvulnerables,
+        CollatorAssignment, Invulnerables,
     },
     frame_support::assert_ok,
     pallet_pooled_staking::{ActivePoolKind, SortedEligibleCandidates},
@@ -27,7 +27,7 @@ use {
 
 fn init_test_setup() {
     // Ensure that BOB is not an invulnerable collator and is part of the sorted eligible candidates list.
-    assert_ok!(TanssiInvulnerables::remove_invulnerable(
+    assert_ok!(Invulnerables::remove_invulnerable(
         root_origin(),
         BOB.into()
     ));
@@ -43,11 +43,11 @@ fn init_test_setup() {
     //- assigned to a container chain
     //- part of the sorted eligible candidates list.
     assert_eq!(
-        TanssiInvulnerables::invulnerables().contains(&BOB.into()),
+        Invulnerables::invulnerables().contains(&BOB.into()),
         false
     );
     assert_eq!(
-        TanssiCollatorAssignment::collator_container_chain()
+        CollatorAssignment::collator_container_chain()
             .container_chains
             .iter()
             .find(|(_, collators)| collators.contains(&BOB.into()))
@@ -71,8 +71,8 @@ fn set_collator_offline_using_set_offline_removes_it_from_assigned_collators_and
     ExtBuilder::default()
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 100,
-            min_orchestrator_collators: 0,
-            max_orchestrator_collators: 0,
+            min_orchestrator_collators: 1,
+            max_orchestrator_collators: 1,
             collators_per_container: 2,
             ..Default::default()
         })
@@ -82,12 +82,14 @@ fn set_collator_offline_using_set_offline_removes_it_from_assigned_collators_and
             (AccountId::from(BOB), 210_000 * UNIT),
             (AccountId::from(CHARLIE), 100_000 * UNIT),
             (AccountId::from(DAVE), 100_000 * UNIT),
+            (AccountId::from(FERDIE), 100_000 * UNIT),
         ])
         .with_collators(vec![
             (AccountId::from(ALICE), 100 * UNIT),
             (AccountId::from(BOB), 210 * UNIT),
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
+            (AccountId::from(FERDIE), 100 * UNIT),
         ])
         .with_empty_parachains(vec![3001u32, 3002u32])
         .build()
@@ -102,7 +104,7 @@ fn set_collator_offline_using_set_offline_removes_it_from_assigned_collators_and
             // - assigned to any container chain
             // - in the sorted eligible candidates list
             assert_eq!(
-                TanssiCollatorAssignment::collator_container_chain()
+                CollatorAssignment::collator_container_chain()
                     .container_chains
                     .iter()
                     .find(|(_, collators)| collators.contains(&BOB.into())),
@@ -122,8 +124,8 @@ fn set_collator_online_using_adds_it_to_assigned_collators_and_sorted_eligible_c
     ExtBuilder::default()
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 100,
-            min_orchestrator_collators: 0,
-            max_orchestrator_collators: 0,
+            min_orchestrator_collators: 1,
+            max_orchestrator_collators: 1,
             collators_per_container: 2,
             ..Default::default()
         })
@@ -133,12 +135,14 @@ fn set_collator_online_using_adds_it_to_assigned_collators_and_sorted_eligible_c
             (AccountId::from(BOB), 210_000 * UNIT),
             (AccountId::from(CHARLIE), 100_000 * UNIT),
             (AccountId::from(DAVE), 100_000 * UNIT),
+            (AccountId::from(FERDIE), 100_000 * UNIT),
         ])
         .with_collators(vec![
             (AccountId::from(ALICE), 100 * UNIT),
             (AccountId::from(BOB), 210 * UNIT),
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
+            (AccountId::from(FERDIE), 100 * UNIT),
         ])
         .with_empty_parachains(vec![3001u32, 3002u32])
         .build()
@@ -157,7 +161,7 @@ fn set_collator_online_using_adds_it_to_assigned_collators_and_sorted_eligible_c
             // - assigned to any container chain
             // - in the sorted eligible candidates list
             assert_eq!(
-                TanssiCollatorAssignment::collator_container_chain()
+                CollatorAssignment::collator_container_chain()
                     .container_chains
                     .iter()
                     .find(|(_, collators)| collators.contains(&BOB.into()))
