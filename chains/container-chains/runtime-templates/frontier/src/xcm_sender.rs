@@ -116,11 +116,6 @@ impl<Router: SendXcm, UniversalLocation: Get<InteriorLocation>> SendXcm
         let container_fee =
             calculate_container_fee_from_tanssi_amount(tanssi_fee, tanssi_asset_id)?;
 
-        // We need 32 bytes address, so convert 20 bytes to 32 by adding empty bytes
-        let eth_20: fp_account::AccountId20 = crate::EthereumSovereignAccount::get();
-        let mut eth_32 = [0u8; 32];
-        eth_32[12..32].copy_from_slice(&eth_20.as_ref());
-
         // Prepare the message to send
         let message = Xcm(vec![
             WithdrawAsset(asset.clone().into()),
@@ -132,9 +127,9 @@ impl<Router: SendXcm, UniversalLocation: Get<InteriorLocation>> SendXcm
                 assets: asset.clone().into(),
                 beneficiary: Location {
                     parents: 0,
-                    interior: Junctions::X1(alloc::sync::Arc::new([Junction::AccountId32 {
+                    interior: Junctions::X1(alloc::sync::Arc::new([Junction::AccountKey20 {
                         network: None,
-                        id: eth_32,
+                        key: crate::EthereumSovereignAccount::get().into(),
                     }])),
                 },
             },
