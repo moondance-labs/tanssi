@@ -1152,7 +1152,7 @@
                 "launchSpec": [
                     {
                         "name": "db",
-                        "type": "parachain",
+                        "type": "relaychain",
                         "configPath": "./configs/tanssi.yml",
                         "address": "127.0.0.1"
                     }
@@ -1230,7 +1230,7 @@
                 "launchSpec": [
                     {
                         "name": "db",
-                        "type": "parachain",
+                        "type": "relaychain",
                         "configPath": "./configs/stagelight.yml",
                         "address": "127.0.0.1"
                     }
@@ -1256,7 +1256,7 @@
                 "launchSpec": [
                     {
                         "name": "db",
-                        "type": "parachain",
+                        "type": "relaychain",
                         "configPath": "./configs/dancelight.yml",
                         "address": "127.0.0.1"
                     }
@@ -1282,7 +1282,7 @@
                 "launchSpec": [
                     {
                         "name": "db",
-                        "type": "parachain",
+                        "type": "relaychain",
                         "configPath": "./configs/moonlight.yml",
                         "address": "127.0.0.1"
                     }
