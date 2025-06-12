@@ -154,6 +154,7 @@ cumulus-primitives-core = { workspace = true }
 
 # Own
 dp-container-chain-genesis-data = { workspace = true, features = [ "json", "std" ] }
+manual-container-chains-exclusion-rpc = { workspace = true }
 node-common = { workspace = true }
 
 [dev-dependencies]
