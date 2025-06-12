@@ -164,11 +164,12 @@ fn test_cannot_produce_block_even_if_buying_on_demand_if_no_collators() {
             // Here para-id is registered but does not have collators, but we can indeed buy a on-demand core
             // however we should not be able to produce for it
             #[allow(deprecated)]
-            assert_ok!(OnDemandAssignmentProvider::place_order_allow_death(
+            let result = OnDemandAssignmentProvider::place_order_allow_death(
                 origin_of(ALICE.into()),
                 100 * UNIT,
-                1000u32.into()
-            ));
+                1000u32.into(),
+            );
+            assert_ok!(result);
             run_block();
 
             // We even have affinity with respect to what on-demand thinks
@@ -365,11 +366,12 @@ fn test_parathread_that_buys_core_has_affinity_and_can_produce() {
 
             // let's buy core
             #[allow(deprecated)]
-            assert_ok!(OnDemandAssignmentProvider::place_order_allow_death(
+            let result = OnDemandAssignmentProvider::place_order_allow_death(
                 origin_of(ALICE.into()),
                 100 * UNIT,
-                1000u32.into()
-            ));
+                1000u32.into(),
+            );
+            assert_ok!(result);
             run_block();
 
             // The claim queue this time allows us to produce blocks
@@ -474,11 +476,12 @@ fn test_on_demand_core_affinity_bound_to_core_gets_expired_at_session_boundaries
 
             // let's buy core
             #[allow(deprecated)]
-            assert_ok!(OnDemandAssignmentProvider::place_order_allow_death(
+            let result = OnDemandAssignmentProvider::place_order_allow_death(
                 origin_of(ALICE.into()),
                 100 * UNIT,
-                1000u32.into()
-            ));
+                1000u32.into(),
+            );
+            assert_ok!(result);
             run_block();
 
             // The claim queue this time allows us to produce blocks
@@ -640,11 +643,12 @@ fn test_parathread_uses_0_and_then_1_after_parachain_onboarded() {
 
             // let's buy core for 2001
             #[allow(deprecated)]
-            assert_ok!(OnDemandAssignmentProvider::place_order_allow_death(
+            let result = OnDemandAssignmentProvider::place_order_allow_death(
                 origin_of(ALICE.into()),
                 100 * UNIT,
-                2001u32.into()
-            ));
+                2001u32.into(),
+            );
+            assert_ok!(result);
 
             // We need to run one block for the place order to have effect in the claim queue
             run_block();
@@ -710,11 +714,12 @@ fn test_parathread_uses_0_and_then_1_after_parachain_onboarded() {
             // for parathread 2001 then it should assign core 1 to the parathread
             // let's buy core for 2001
             #[allow(deprecated)]
-            assert_ok!(OnDemandAssignmentProvider::place_order_allow_death(
+            let result = OnDemandAssignmentProvider::place_order_allow_death(
                 origin_of(ALICE.into()),
                 100 * UNIT,
-                2001u32.into()
-            ));
+                2001u32.into(),
+            );
+            assert_ok!(result);
             run_block();
 
             // The claim queue allows us to produce blocks at core 1 for 2001
