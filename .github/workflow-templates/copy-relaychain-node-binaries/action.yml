@@ -1,0 +1,26 @@
+name: Copy relaychain node binaries
+
+inputs:
+  cpu:
+    required: true
+    type: string
+  profile:
+      required: false
+      type: string
+      default: "production"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Copy relaychain node binaries
+      shell: bash
+      run: |
+        mkdir -p binaries
+        suffix=""
+        if [ "${{ inputs.cpu }}" != "" ]; then
+          suffix="-${{ inputs.cpu }}"
+        fi
+  
+        cp target/${{ inputs.profile }}/tanssi-relay binaries/tanssi-relay$suffix
+        cp target/${{ inputs.profile }}/tanssi-relay-execute-worker binaries/tanssi-relay-execute-worker$suffix
+        cp target/${{ inputs.profile }}/tanssi-relay-prepare-worker binaries/tanssi-relay-prepare-worker$suffix
