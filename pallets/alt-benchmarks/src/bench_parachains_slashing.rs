@@ -17,7 +17,7 @@
 use alloc::boxed::Box;
 use alloc::vec;
 use core::marker::PhantomData;
-use frame_benchmarking::{account, benchmarks};
+use frame_benchmarking::{account, v2::*};
 use frame_support::traits::{KeyOwnerProofSystem, OnFinalize, OnInitialize, ValidatorSet};
 use frame_system::{pallet_prelude::BlockNumberFor, RawOrigin};
 use parity_scale_codec::Decode;
@@ -165,27 +165,30 @@ fn dispute_proof(
     }
 }
 
-benchmarks! {
-    where_clause {
-        where T: Config<KeyOwnerProof = MembershipProof>,
-    }
+#[allow(clippy::multiple_bound_locations)]
+#[benchmarks(
+    where T: Config<KeyOwnerProof = MembershipProof>
+)]
+mod benchmarks {
+    use super::*;
 
-    // submit a single `ForInvalid` dispute for a past session.
-    report_dispute_lost {
-        let n in 4..MAX_VALIDATORS;
-
+    #[benchmark]
+    fn report_dispute_lost(n: Linear<4, MAX_VALIDATORS>) -> Result<(), BenchmarkError> {
         let (session_index, key_owner_proof, validator_id) = setup_validator_set::<T>(n);
         let dispute_proof = setup_dispute::<T>(session_index, validator_id);
-    }: {
-        let result = polkadot_runtime_parachains::disputes::slashing::Pallet::<T>::report_dispute_lost_unsigned(
-            RawOrigin::None.into(),
-            Box::new(dispute_proof),
-            key_owner_proof,
-        );
+
+        let result;
+        #[block]
+        {
+            result = polkadot_runtime_parachains::disputes::slashing::Pallet::<T>::report_dispute_lost_unsigned(
+                RawOrigin::None.into(),
+                Box::new(dispute_proof),
+                key_owner_proof,
+            );
+        }
+
         assert!(result.is_ok());
-    } verify {
-        // // TODO: Storage is pub(crate) so cannot be accessed here
-        // let unapplied = <UnappliedSlashes<T>>::get(session_index, CANDIDATE_HASH);
-        // assert!(unapplied.is_none());
+
+        Ok(())
     }
 }
