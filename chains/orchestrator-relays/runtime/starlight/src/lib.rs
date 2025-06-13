@@ -2083,16 +2083,8 @@ pub type UncheckedExtrinsic =
 
 /// The runtime migrations per release.
 pub mod migrations {
-    use super::Runtime;
-
     /// Unreleased migrations. Add new ones here:
-    pub type Unreleased = (
-        snowbridge_pallet_system::migration::FeePerGasMigrationV0ToV1<Runtime>,
-        pallet_session::migrations::v1::MigrateV0ToV1<
-            Runtime,
-            pallet_session::migrations::v1::InitOffenceSeverity<Runtime>,
-        >,
-    );
+    pub type Unreleased = ();
 }
 
 /// Executive: handles dispatch to the various modules.
