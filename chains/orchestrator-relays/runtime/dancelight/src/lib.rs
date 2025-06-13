@@ -97,7 +97,7 @@ use {
     tp_bridge::ConvertLocation,
     tp_traits::{
         prod_or_fast_parameter_types, EraIndex, GetHostConfiguration, GetSessionContainerChains,
-        ParaIdAssignmentHooks, RegistrarHandler, Slot, SlotFrequency,
+        NodeActivityTrackingHelper, ParaIdAssignmentHooks, RegistrarHandler, Slot, SlotFrequency,
     },
     xcm_runtime_apis::{
         dry_run::{CallDryRunEffects, Error as XcmDryRunApiError, XcmDryRunEffects},
@@ -1833,6 +1833,7 @@ pub struct CandidateHasRegisteredKeys;
 impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
     fn is_candidate_eligible(a: &AccountId) -> bool {
         <Session as ValidatorRegistration<AccountId>>::is_registered(a)
+            && !InactivityTracking::is_node_offline(a)
     }
     #[cfg(feature = "runtime-benchmarks")]
     fn make_candidate_eligible(a: &AccountId, eligible: bool) {

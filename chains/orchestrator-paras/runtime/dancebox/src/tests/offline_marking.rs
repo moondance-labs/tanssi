@@ -17,8 +17,8 @@
 
 use {
     crate::{
-        tests::common::*, InactivityTracking, MinimumSelfDelegation, PooledStaking,
-        CollatorAssignment, Invulnerables,
+        tests::common::*, CollatorAssignment, InactivityTracking, Invulnerables,
+        MinimumSelfDelegation, PooledStaking,
     },
     frame_support::assert_ok,
     pallet_pooled_staking::{ActivePoolKind, SortedEligibleCandidates},
@@ -42,23 +42,18 @@ fn init_test_setup() {
     //- a non-invulnerable collator
     //- assigned to a container chain
     //- part of the sorted eligible candidates list.
-    assert_eq!(
-        Invulnerables::invulnerables().contains(&BOB.into()),
-        false
-    );
+    assert_eq!(Invulnerables::invulnerables().contains(&BOB.into()), false);
     assert_eq!(
         CollatorAssignment::collator_container_chain()
             .container_chains
             .iter()
-            .find(|(_, collators)| collators.contains(&BOB.into()))
-            .is_some(),
+            .any(|(_, collators)| collators.contains(&BOB.into())),
         true
     );
     assert_eq!(
         <SortedEligibleCandidates<Runtime>>::get()
             .iter()
-            .find(|c| c.candidate == BOB.into())
-            .is_some(),
+            .any(|c| c.candidate == BOB.into()),
         true
     );
     // Enable offline marking.
@@ -107,14 +102,14 @@ fn set_collator_offline_using_set_offline_removes_it_from_assigned_collators_and
                 CollatorAssignment::collator_container_chain()
                     .container_chains
                     .iter()
-                    .find(|(_, collators)| collators.contains(&BOB.into())),
-                None
+                    .any(|(_, collators)| collators.contains(&BOB.into())),
+                false
             );
             assert_eq!(
                 <SortedEligibleCandidates<Runtime>>::get()
                     .iter()
-                    .find(|c| c.candidate == BOB.into()),
-                None
+                    .any(|c| c.candidate == BOB.into()),
+                false
             );
         });
 }
@@ -164,15 +159,13 @@ fn set_collator_online_using_adds_it_to_assigned_collators_and_sorted_eligible_c
                 CollatorAssignment::collator_container_chain()
                     .container_chains
                     .iter()
-                    .find(|(_, collators)| collators.contains(&BOB.into()))
-                    .is_some(),
+                    .any(|(_, collators)| collators.contains(&BOB.into())),
                 true
             );
             assert_eq!(
                 <SortedEligibleCandidates<Runtime>>::get()
                     .iter()
-                    .find(|c| c.candidate == BOB.into())
-                    .is_some(),
+                    .any(|c| c.candidate == BOB.into()),
                 true
             );
         });

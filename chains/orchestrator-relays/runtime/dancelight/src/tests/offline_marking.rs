@@ -31,10 +31,20 @@ fn init_test_setup() {
         root_origin(),
         BOB.into()
     ));
+    assert_ok!(TanssiInvulnerables::remove_invulnerable(
+        root_origin(),
+        CHARLIE.into()
+    ));
     let stake = MinimumSelfDelegation::get() * 10;
     assert_ok!(PooledStaking::request_delegate(
         origin_of(BOB.into()),
         BOB.into(),
+        ActivePoolKind::AutoCompounding,
+        stake
+    ));
+    assert_ok!(PooledStaking::request_delegate(
+        origin_of(CHARLIE.into()),
+        CHARLIE.into(),
         ActivePoolKind::AutoCompounding,
         stake
     ));
@@ -50,15 +60,13 @@ fn init_test_setup() {
         TanssiCollatorAssignment::collator_container_chain()
             .container_chains
             .iter()
-            .find(|(_, collators)| collators.contains(&BOB.into()))
-            .is_some(),
+            .any(|(_, collators)| collators.contains(&BOB.into())),
         true
     );
     assert_eq!(
         <SortedEligibleCandidates<Runtime>>::get()
             .iter()
-            .find(|c| c.candidate == BOB.into())
-            .is_some(),
+            .any(|c| c.candidate == BOB.into()),
         true
     );
     // Enable offline marking.
@@ -80,13 +88,13 @@ fn set_collator_offline_using_set_offline_removes_it_from_assigned_collators_and
             // BOB gets 10k extra tokens for his mapping deposit
             (AccountId::from(ALICE), 100_000 * UNIT),
             (AccountId::from(BOB), 210_000 * UNIT),
-            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 210_000 * UNIT),
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
         .with_collators(vec![
             (AccountId::from(ALICE), 100 * UNIT),
             (AccountId::from(BOB), 210 * UNIT),
-            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(CHARLIE), 210 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_empty_parachains(vec![3001u32, 3002u32])
@@ -105,14 +113,14 @@ fn set_collator_offline_using_set_offline_removes_it_from_assigned_collators_and
                 TanssiCollatorAssignment::collator_container_chain()
                     .container_chains
                     .iter()
-                    .find(|(_, collators)| collators.contains(&BOB.into())),
-                None
+                    .any(|(_, collators)| collators.contains(&BOB.into())),
+                false
             );
             assert_eq!(
                 <SortedEligibleCandidates<Runtime>>::get()
                     .iter()
-                    .find(|c| c.candidate == BOB.into()),
-                None
+                    .any(|c| c.candidate == BOB.into()),
+                false
             );
         });
 }
@@ -131,13 +139,13 @@ fn set_collator_online_using_adds_it_to_assigned_collators_and_sorted_eligible_c
             // BOB gets 10k extra tokens for his mapping deposit
             (AccountId::from(ALICE), 100_000 * UNIT),
             (AccountId::from(BOB), 210_000 * UNIT),
-            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 210_000 * UNIT),
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
         .with_collators(vec![
             (AccountId::from(ALICE), 100 * UNIT),
             (AccountId::from(BOB), 210 * UNIT),
-            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(CHARLIE), 210 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
         ])
         .with_empty_parachains(vec![3001u32, 3002u32])
@@ -160,15 +168,13 @@ fn set_collator_online_using_adds_it_to_assigned_collators_and_sorted_eligible_c
                 TanssiCollatorAssignment::collator_container_chain()
                     .container_chains
                     .iter()
-                    .find(|(_, collators)| collators.contains(&BOB.into()))
-                    .is_some(),
+                    .any(|(_, collators)| collators.contains(&BOB.into())),
                 true
             );
             assert_eq!(
                 <SortedEligibleCandidates<Runtime>>::get()
                     .iter()
-                    .find(|c| c.candidate == BOB.into())
-                    .is_some(),
+                    .any(|c| c.candidate == BOB.into()),
                 true
             );
         });
