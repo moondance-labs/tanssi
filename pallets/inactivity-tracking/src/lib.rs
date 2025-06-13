@@ -71,6 +71,7 @@ pub mod pallet {
         PartialEq,
         Eq,
         Encode,
+        DecodeWithMemTracking,
         Decode,
         TypeInfo,
         Serialize,

@@ -153,6 +153,7 @@ impl ExtBuilder {
 
         pallet_balances::GenesisConfig::<Test> {
             balances: self.balances,
+            ..Default::default()
         }
         .assimilate_storage(&mut t)
         .unwrap();

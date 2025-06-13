@@ -361,6 +361,7 @@ pub fn new_test_ext_with_balance(balance: Balance) -> sp_io::TestExternalities {
 
     pallet_balances::GenesisConfig::<Test> {
         balances: vec![(ALICE, balance), (BOB, balance)],
+        ..Default::default()
     }
     .assimilate_storage(&mut t)
     .unwrap();

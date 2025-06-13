@@ -16,7 +16,7 @@
 
 use {
     snowbridge_beacon_primitives::{types::deneb, ExecutionProof, VersionedExecutionPayloadHeader},
-    snowbridge_core::inbound::Proof,
+    snowbridge_verification_primitives::Proof,
 };
 
 pub fn mock_snowbridge_message_proof() -> Proof {

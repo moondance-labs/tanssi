@@ -691,6 +691,14 @@ declare module "@polkadot/api-base/types/errors" {
              **/
             CallbackFailed: AugmentedError<ApiType>;
             /**
+             * The asset cannot be destroyed because some accounts for this asset contain freezes.
+             **/
+            ContainsFreezes: AugmentedError<ApiType>;
+            /**
+             * The asset cannot be destroyed because some accounts for this asset contain holds.
+             **/
+            ContainsHolds: AugmentedError<ApiType>;
+            /**
              * The origin account is frozen.
              **/
             Frozen: AugmentedError<ApiType>;
@@ -1153,7 +1161,7 @@ declare module "@polkadot/api-base/types/errors" {
              **/
             NoApprovalsNeeded: AugmentedError<ApiType>;
             /**
-             * Multisig operation not found when attempting to cancel.
+             * Multisig operation not found in storage.
              **/
             NotFound: AugmentedError<ApiType>;
             /**
@@ -1161,7 +1169,8 @@ declare module "@polkadot/api-base/types/errors" {
              **/
             NoTimepoint: AugmentedError<ApiType>;
             /**
-             * Only the account that originally created the multisig is able to cancel it.
+             * Only the account that originally created the multisig is able to cancel it or update
+             * its deposits.
              **/
             NotOwner: AugmentedError<ApiType>;
             /**
@@ -1194,6 +1203,10 @@ declare module "@polkadot/api-base/types/errors" {
             [key: string]: AugmentedError<ApiType>;
         };
         onDemandAssignmentProvider: {
+            /**
+             * The account doesn't have enough credits to purchase on-demand coretime.
+             **/
+            InsufficientCredits: AugmentedError<ApiType>;
             /**
              * The order queue is full, `place_order` will not continue.
              **/
@@ -1478,6 +1491,10 @@ declare module "@polkadot/api-base/types/errors" {
              * There are more cores than supported by the runtime.
              **/
             TooManyCores: AugmentedError<ApiType>;
+            /**
+             * A DMP message couldn't be sent because the destination is unreachable.
+             **/
+            Unroutable: AugmentedError<ApiType>;
             /**
              * Generic error
              **/
@@ -1969,6 +1986,10 @@ declare module "@polkadot/api-base/types/errors" {
              **/
             AccountNotSovereign: AugmentedError<ApiType>;
             /**
+             * The alias to remove authorization for was not found.
+             **/
+            AliasNotFound: AugmentedError<ApiType>;
+            /**
              * The location is invalid since it already has a subscription from us.
              **/
             AlreadySubscribed: AugmentedError<ApiType>;
@@ -1997,6 +2018,10 @@ declare module "@polkadot/api-base/types/errors" {
              * The assets to be sent are empty.
              **/
             Empty: AugmentedError<ApiType>;
+            /**
+             * Expiry block number is in the past.
+             **/
+            ExpiresInPast: AugmentedError<ApiType>;
             /**
              * The operation required fees to be paid which the initiator could not meet.
              **/
@@ -2046,6 +2071,10 @@ declare module "@polkadot/api-base/types/errors" {
              * Too many assets have been attempted for transfer.
              **/
             TooManyAssets: AugmentedError<ApiType>;
+            /**
+             * Too many locations authorized to alias origin.
+             **/
+            TooManyAuthorizedAliases: AugmentedError<ApiType>;
             /**
              * The asset owner has too many locks on the asset.
              **/

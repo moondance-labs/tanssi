@@ -142,6 +142,7 @@ pub mod pallet {
     impl<T: Config> Pallet<T> {
         #[pallet::call_index(0)]
         #[pallet::weight((T::WeightInfo::set_latest_author_data(T::MaxContainerChains::get()), DispatchClass::Mandatory))]
+        #[allow(clippy::useless_conversion)]
         pub fn set_latest_author_data(
             origin: OriginFor<T>,
             data: InherentDataOf<T>,
