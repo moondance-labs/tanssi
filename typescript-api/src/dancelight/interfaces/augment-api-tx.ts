@@ -4627,6 +4627,10 @@ declare module "@polkadot/api-base/types/submittable" {
                 ) => SubmittableExtrinsic<ApiType>,
                 [Vec<ITuple<[AccountId32, AccountId32]>>]
             >;
+            enableOfflineMarking: AugmentedSubmittable<
+                (value: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [bool]
+            >;
             /**
              * Execute pending operations can incur in claim manual rewards per operation, we simply add the worst case
              **/
@@ -4642,6 +4646,10 @@ declare module "@polkadot/api-base/types/submittable" {
                           )[]
                 ) => SubmittableExtrinsic<ApiType>,
                 [Vec<PalletPooledStakingPendingOperationQuery>]
+            >;
+            notifyInactiveCollator: AugmentedSubmittable<
+                (collator: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [AccountId32]
             >;
             rebalanceHold: AugmentedSubmittable<
                 (
@@ -4687,6 +4695,8 @@ declare module "@polkadot/api-base/types/submittable" {
                 ) => SubmittableExtrinsic<ApiType>,
                 [AccountId32, PalletPooledStakingPoolsActivePoolKind, PalletPooledStakingSharesOrStake]
             >;
+            setOffline: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
+            setOnline: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
             swapPool: AugmentedSubmittable<
                 (
                     candidate: AccountId32 | string | Uint8Array,

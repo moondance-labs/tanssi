@@ -1673,6 +1673,15 @@ declare module "@polkadot/api-base/types/storage" {
             > &
                 QueryableStorageEntry<ApiType, [u32]>;
             /**
+             * Storage map indicating the offline status of a collator
+             **/
+            offlineCollators: AugmentedQuery<
+                ApiType,
+                (arg: AccountId32 | string | Uint8Array) => Observable<bool>,
+                [AccountId32]
+            > &
+                QueryableStorageEntry<ApiType, [AccountId32]>;
+            /**
              * Generic query
              **/
             [key: string]: QueryableStorageEntry<ApiType>;
@@ -2464,6 +2473,11 @@ declare module "@polkadot/api-base/types/storage" {
                 [AccountId32, AccountId32]
             > &
                 QueryableStorageEntry<ApiType, [AccountId32, AccountId32]>;
+            /**
+             * Switch to enable/disable marking offline feature.
+             **/
+            enableMarkingOffline: AugmentedQuery<ApiType, () => Observable<bool>, []> &
+                QueryableStorageEntry<ApiType, []>;
             /**
              * Pauses the ability to modify pools through extrinsics.
              *

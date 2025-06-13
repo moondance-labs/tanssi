@@ -1,0 +1,30 @@
+[package]
+name = "tp-invulnerables-filter-common"
+authors = { workspace = true }
+description = "Common invulnerables filter types used by all runtimes supporting pallet-invulnerables"
+edition = "2021"
+license = "GPL-3.0-only"
+version = "0.1.0"
+
+[lints]
+workspace = true
+
+[dependencies]
+pallet-invulnerables = { workspace = true }
+primitives = { workspace = true }
+sp-std = { workspace = true }
+tp-traits = { workspace = true }
+
+[features]
+default = [ "std" ]
+std = [
+	"pallet-invulnerables/std",
+	"primitives/std",
+	"sp-std/std",
+	"tp-traits/std",
+]
+runtime-benchmarks = [
+	"pallet-invulnerables/runtime-benchmarks",
+	"primitives/runtime-benchmarks",
+	"tp-traits/runtime-benchmarks",
+]
