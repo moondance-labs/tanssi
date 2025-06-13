@@ -24,7 +24,7 @@ use {
         ForeignAssetsCreator, ParaId, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin,
         TransactionByteFee, Treasury, WeightToFee, XcmPallet,
     },
-    crate::governance::StakingAdmin,
+    crate::{governance::StakingAdmin, EthereumSystem},
     dancelight_runtime_constants::{
         currency::CENTS,
         snowbridge::{EthereumLocation, EthereumNetwork},
@@ -40,9 +40,13 @@ use {
         xcm_sender::{ChildParachainRouter, ExponentialPrice},
         ToAuthor,
     },
+    snowbridge_core::ChannelId,
     sp_core::ConstU32,
     sp_runtime::traits::TryConvertInto,
-    tp_bridge::EthereumLocationsConverterFor,
+    tp_bridge::{
+        snowbridge_outbound_token_transfer::{EthereumBlobExporter, SnowbrigeTokenTransferRouter},
+        EthereumLocationsConverterFor,
+    },
     tp_xcm_commons::{EthereumAssetReserve, NativeAssetReserve},
     xcm::{
         latest::prelude::{AssetId as XcmAssetId, *},
@@ -147,10 +151,12 @@ pub type PriceForChildParachainDelivery =
 
 /// The XCM router. When we want to send an XCM message, we use this type. It amalgamates all of our
 /// individual routers.
-pub type XcmRouter = WithUniqueTopic<
-    // Only one router so far - use DMP to communicate with child parachains.
+pub type XcmRouter = WithUniqueTopic<(
+    // Use DMP to communicate with child parachains.
     ChildParachainRouter<Runtime, XcmPallet, PriceForChildParachainDelivery>,
->;
+    // Send Ethereum-native tokens back to Ethereum.
+    SnowbrigeTokenTransferRouter<SnowbridgeExporter, UniversalLocation>,
+)>;
 
 parameter_types! {
     pub Star: AssetFilter = Wild(AllOf { fun: WildFungible, id: XcmAssetId(TokenLocation::get()) });
@@ -376,3 +382,19 @@ impl pallet_foreign_asset_creator::Config for Runtime {
     type OnForeignAssetCreated = ();
     type OnForeignAssetDestroyed = ();
 }
+
+parameter_types! {
+    pub SnowbridgeChannelId: Option<ChannelId> =
+        pallet_ethereum_token_transfers::CurrentChannelInfo::<Runtime>::get()
+            .map(|x| x.channel_id);
+}
+
+/// Exports message to the Ethereum Gateway contract.
+pub type SnowbridgeExporter = EthereumBlobExporter<
+    UniversalLocation,
+    EthereumNetwork,
+    snowbridge_pallet_outbound_queue::Pallet<Runtime>,
+    snowbridge_core::AgentIdOf,
+    EthereumSystem,
+    SnowbridgeChannelId,
+>;
