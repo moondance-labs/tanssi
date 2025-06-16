@@ -50,7 +50,6 @@ pub mod pallet {
 
     use {
         frame_support::{
-            dispatch::DispatchResultWithPostInfo,
             pallet_prelude::*,
             traits::{EnsureOrigin, ValidatorRegistration},
             BoundedVec, DefaultNoBound,
@@ -165,10 +164,7 @@ pub mod pallet {
 			T::MaxInvulnerables::get().saturating_sub(1),
 		))]
         #[allow(clippy::useless_conversion)]
-        pub fn add_invulnerable(
-            origin: OriginFor<T>,
-            who: T::AccountId,
-        ) -> DispatchResultWithPostInfo {
+        pub fn add_invulnerable(origin: OriginFor<T>, who: T::AccountId) -> DispatchResult {
             T::UpdateOrigin::ensure_origin(origin)?;
             // don't let one unprepared collator ruin things for everyone.
             let maybe_collator_id = T::CollatorIdOf::convert(who.clone())
@@ -188,14 +184,7 @@ pub mod pallet {
 
             Self::deposit_event(Event::InvulnerableAdded { account_id: who });
 
-            let weight_used = T::WeightInfo::add_invulnerable(
-                Invulnerables::<T>::decode_len()
-                    .unwrap_or_default()
-                    .try_into()
-                    .unwrap_or(T::MaxInvulnerables::get().saturating_sub(1)),
-            );
-
-            Ok(Some(weight_used).into())
+            Ok(())
         }
 
         /// Remove an account `who` from the list of `Invulnerables` collators.

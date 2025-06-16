@@ -107,7 +107,7 @@ dancebox-runtime = { path = "chains/orchestrator-paras/runtime/dancebox", defaul
 flashbox-runtime = { path = "chains/orchestrator-paras/runtime/flashbox", default-features = false }
 
 tanssi-relay-encoder = { path = "chains/orchestrator-paras/runtime/relay-encoder", default-features = false }
-tanssi-runtime-common = { path = "chains/orchestrator-paras/runtime/common", default-features = false }
+tanssi-runtime-common = { path = "chains/runtime-common", default-features = false }
 
 dancelight-runtime = { path = "chains/orchestrator-relays/runtime/dancelight", default-features = false }
 dancelight-runtime-constants = { path = "chains/orchestrator-relays/runtime/dancelight/constants", default-features = false }
