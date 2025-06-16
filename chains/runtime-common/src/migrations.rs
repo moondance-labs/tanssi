@@ -1413,6 +1413,8 @@ where
         //let migrate_pallet_xcm_v5 = MigrateToLatestXcmVersion::<Runtime>(Default::default());
         //let para_shared_v1_migration = MigrateParaSharedToV1::<Runtime>(Default::default());
         //let para_scheduler_v3_migration = MigrateParaSchedulerToV3::<Runtime>(Default::default());
+        let migrate_pallet_session_v0_to_v1 =
+            MigratePalletSessionV0toV1::<Runtime>(Default::default());
         let migrate_snowbridge_fee_per_gas_migration_v0_to_v1 =
             MigrateSnowbridgeFeePerGasMigrationV0ToV1::<Runtime>(Default::default());
 
@@ -1433,6 +1435,7 @@ where
             // Box::new(para_shared_v1_migration),
             // Applied in runtime 1200
             //Box::new(para_scheduler_v3_migration),
+            Box::new(migrate_pallet_session_v0_to_v1),
             Box::new(migrate_snowbridge_fee_per_gas_migration_v0_to_v1),
         ]
     }
