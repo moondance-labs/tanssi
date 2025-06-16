@@ -539,18 +539,138 @@ impl snowbridge_pallet_inbound_queue::Config for Runtime {
     type MaxMessageSize = ConstU32<2048>;
     type AssetTransactor = <xcm_config::XcmConfig as xcm_executor::Config>::AssetTransactor;
     #[cfg(not(feature = "runtime-benchmarks"))]
-    type MessageProcessor = (
-        SymbioticMessageProcessor<Self>,
-        NativeTokenTransferMessageProcessor<Self>,
-        EthTokensLocalProcessor<
-            Self,
-            xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
-            <xcm_config::XcmConfig as xcm_executor::Config>::Weigher,
-            dancelight_runtime_constants::snowbridge::EthereumLocation,
-            dancelight_runtime_constants::snowbridge::EthereumNetwork,
-        >,
-    );
+    type MessageProcessor = DancelightMessageProcessor<Self>;
     type RewardProcessor = RewardThroughFeesAccount<Self>;
     #[cfg(feature = "runtime-benchmarks")]
     type MessageProcessor = (benchmark_helper::DoNothingMessageProcessor,);
+}
+
+// Ensure that the message is intended for the current channel, para_id and agent_id
+fn check_channel_id_and_agent_id<T>(channel: &Channel, envelope: &Envelope) -> bool
+where
+    T: snowbridge_pallet_inbound_queue::Config + pallet_ethereum_token_transfers::Config,
+{
+    if let Some(channel_info) =
+        pallet_ethereum_token_transfers::CurrentChannelInfo::<Runtime>::get()
+    {
+        if envelope.channel_id == channel_info.channel_id
+            && channel.para_id == channel_info.para_id
+            && channel.agent_id == channel_info.agent_id
+        {
+            // Check it is from the right gateway
+            // TODO: this redundant because it is already checked in snowbridge_pallet_inbound_queue submit
+            if envelope.gateway == T::GatewayAddress::get() {
+                return true;
+            }
+        }
+
+        log::warn!(
+            "Unexpected channel id: {:?} != {:?}",
+            (envelope.channel_id, channel.para_id, channel.agent_id),
+            (
+                channel_info.channel_id,
+                channel_info.para_id,
+                channel_info.agent_id
+            )
+        );
+    } else {
+        log::warn!("CurrentChannelInfo not set in storage");
+    }
+
+    false
+}
+
+pub struct DancelightMessageProcessor<T>(PhantomData<T>);
+
+impl<T> MessageProcessor for DancelightMessageProcessor<T>
+where
+    T: snowbridge_pallet_inbound_queue::Config
+        + pallet_ethereum_token_transfers::Config
+        + pallet_foreign_asset_creator::Config
+        + pallet_external_validators::Config,
+    T::AccountId: From<[u8; 32]>,
+    xcm_executor::XcmExecutor<xcm_config::XcmConfig>: ExecuteXcm<T::RuntimeCall>,
+    <xcm_config::XcmConfig as xcm_executor::Config>::Weigher: WeightBounds<T::RuntimeCall>,
+{
+    fn can_process_message(_channel: &Channel, _envelope: &Envelope) -> bool {
+        true
+    }
+
+    fn process_message(channel: Channel, envelope: Envelope) -> DispatchResult {
+        // TODO: refactor this function into something like this
+        /*
+        check_validations()?;
+
+        match channel_id_or_something {
+            0 => SymbioticMessageProcessor
+            1 => NativeTokenTransferMessageProcessor
+            2 => EthTokensLocalProcessor
+            _ => error()
+        }
+         */
+
+        // SymbioticMessageProcessor
+        let decode_result = tp_bridge::symbiotic_message_processor::Payload::<T>::decode_all(
+            &mut envelope.payload.as_slice(),
+        );
+        if let Ok(payload) = decode_result {
+            if payload.magic_bytes == tp_bridge::symbiotic_message_processor::MAGIC_BYTES {
+                return SymbioticMessageProcessor::<T>::process_message(channel, envelope);
+            } else {
+                log::warn!("SymbioticMessageProcessor: magic number mismatch, will try next processor: {:?}", payload.magic_bytes)
+            }
+        }
+
+        // Ensure that the message is intended for the current channel, para_id and agent_id
+        if check_channel_id_and_agent_id::<T>(&channel, &envelope) {
+            // NativeTokenTransferMessageProcessor
+            // Try decode the message and check the token id is the expected one
+            match VersionedXcmMessage::decode_all(&mut envelope.payload.as_slice()) {
+                Ok(VersionedXcmMessage::V1(MessageV1 {
+                    command: Command::SendNativeToken { token_id, .. },
+                    ..
+                })) => {
+                    let token_location = T::TokenLocationReanchored::get();
+
+                    if let Some(expected_token_id) = EthereumSystem::convert_back(&token_location) {
+                        if token_id == expected_token_id {
+                            return NativeTokenTransferMessageProcessor::<T>::process_message(
+                                channel, envelope,
+                            );
+                        }
+                    }
+                }
+                _ => (),
+            }
+
+            // EthTokensLocalProcessor
+            if let Some(eth_transfer_data) =
+                EthTokensLocalProcessor::<
+                    T,
+                    xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
+                    <xcm_config::XcmConfig as xcm_executor::Config>::Weigher,
+                    dancelight_runtime_constants::snowbridge::EthereumLocation,
+                    dancelight_runtime_constants::snowbridge::EthereumNetwork,
+                >::decode_message_for_eth_transfer(envelope.payload.as_slice())
+            {
+                // Check if the token location is a foreign asset included in ForeignAssetCreator
+                if pallet_foreign_asset_creator::ForeignAssetToAssetId::<Runtime>::get(
+                    eth_transfer_data.token_location,
+                )
+                .is_some()
+                {
+                    return EthTokensLocalProcessor::<
+                        T,
+                        xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
+                        <xcm_config::XcmConfig as xcm_executor::Config>::Weigher,
+                        dancelight_runtime_constants::snowbridge::EthereumLocation,
+                        dancelight_runtime_constants::snowbridge::EthereumNetwork,
+                    >::process_message(channel, envelope);
+                }
+            }
+        }
+
+        // No processor took up this message
+        return Err(DispatchError::Other("No handler for message found"));
+    }
 }
