@@ -470,6 +470,8 @@ jobs:
               with:
                   name: binaries
                   path: target/release
+            - name: Make binaries executable
+              uses: ./.github/workflow-templates/make-binaries-executable
             - name: "Setup Node"
               uses: actions/setup-node@v4
               with:
@@ -481,7 +483,6 @@ jobs:
 
             - name: "Run Dev tests"
               run: |
-                  chmod uog+x target/release/tanssi-node
                   cd test
                   pnpm moonwall test dev_tanssi
 
@@ -502,6 +503,8 @@ jobs:
               with:
                   name: binaries
                   path: target/release
+            - name: Make binaries executable
+              uses: ./.github/workflow-templates/make-binaries-executable
             - name: "Setup Node"
               uses: actions/setup-node@v4
               with:
@@ -513,7 +516,6 @@ jobs:
 
             - name: "Run Flashbox tests"
               run: |
-                  chmod uog+x target/release/tanssi-node
                   cd test
                   pnpm moonwall test dev_flashbox
 
@@ -539,13 +541,14 @@ jobs:
               with:
                   name: binaries
                   path: target/release
+            - name: Make binaries executable
+              uses: ./.github/workflow-templates/make-binaries-executable
 
             - name: Generate Typescript API Interfaces
               uses: ./.github/workflow-templates/typescript-create-api-interfaces
 
             - name: "Run Frontier tests"
               run: |
-                  chmod uog+x target/release/container-chain-frontier-node
                   cd test
                   pnpm moonwall test dev_frontier_template
 
@@ -571,13 +574,14 @@ jobs:
               with:
                   name: binaries
                   path: target/release
+            - name: Make binaries executable
+              uses: ./.github/workflow-templates/make-binaries-executable
 
             - name: Generate Typescript API Interfaces
               uses: ./.github/workflow-templates/typescript-create-api-interfaces
 
             - name: "Run Simple Template tests"
               run: |
-                  chmod uog+x target/release/container-chain-simple-node
                   cd test
                   pnpm moonwall test dev_simple_template
 
@@ -603,9 +607,10 @@ jobs:
               with:
                   name: binaries
                   path: target/release
+            - name: Make binaries executable
+              uses: ./.github/workflow-templates/make-binaries-executable
             - name: "Install and run upgrade test"
               run: |
-                  chmod uog+x target/release/tanssi-node
                   pnpm install
                   cd test
                   pnpm moonwall test dev_dancebox_specs
@@ -627,6 +632,8 @@ jobs:
               with:
                   name: binaries
                   path: target/release
+            - name: Make binaries executable
+              uses: ./.github/workflow-templates/make-binaries-executable
             - name: "Setup Node"
               uses: actions/setup-node@v4
               with:
@@ -638,18 +645,10 @@ jobs:
 
             - name: "Run Dev tests (Dancelight)"
               run: |
-                  chmod uog+x target/release/tanssi-node
-                  chmod uog+x target/release/tanssi-relay
-                  chmod uog+x target/release/tanssi-relay-execute-worker
-                  chmod uog+x target/release/tanssi-relay-prepare-worker
                   cd test
                   pnpm moonwall test dev_tanssi_relay_dancelight
             - name: "Run Dev tests (Starlight)"
               run: |
-                  chmod uog+x target/release/tanssi-node
-                  chmod uog+x target/release/tanssi-relay
-                  chmod uog+x target/release/tanssi-relay-execute-worker
-                  chmod uog+x target/release/tanssi-relay-prepare-worker
                   cd test
                   pnpm moonwall test dev_tanssi_relay_starlight
 
@@ -731,12 +730,10 @@ jobs:
               with:
                   name: binaries
                   path: target/release
+            - name: Make binaries executable
+              uses: ./.github/workflow-templates/make-binaries-executable
             - name: "Install and run upgrade test"
               run: |
-                  chmod uog+x target/release/tanssi-node
-                  chmod uog+x target/release/tanssi-relay
-                  chmod uog+x target/release/tanssi-relay-execute-worker
-                  chmod uog+x target/release/tanssi-relay-prepare-worker
                   cd test
                   pnpm install
                   pnpm moonwall test chopsticks_${{ matrix.chains.chain }}_upgrade
@@ -877,13 +874,10 @@ jobs:
               with:
                   name: runtimes
                   path: target/release/wbuild/${{ matrix.chains.runtime }}-runtime/
+            - name: Make binaries executable
+              uses: ./.github/workflow-templates/make-binaries-executable
             - name: "Install and run upgrade test"
               run: |
-                  chmod uog+x target/release/container-chain-simple-node
-                  chmod uog+x target/release/tanssi-node
-                  chmod uog+x target/release/tanssi-relay
-                  chmod uog+x target/release/tanssi-relay-execute-worker
-                  chmod uog+x target/release/tanssi-relay-prepare-worker
                   cd test
                   pnpm install
                   pnpm moonwall test zombie_${{ matrix.chains.chain }}_upgrade
