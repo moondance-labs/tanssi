@@ -184,14 +184,16 @@ pub type AssetTransactors = (CurrencyTransactor, ForeignFungiblesTransactor);
 pub type XcmWeigher =
     WeightInfoBounds<XcmGenericWeights<RuntimeCall>, RuntimeCall, MaxInstructions>;
 
+pub type UmpRouter = cumulus_primitives_utility::ParentAsUmp<ParachainSystem, PolkadotXcm, PriceForParentDelivery>;
+
 /// The means for routing XCM messages which are not for local execution into the right message
 /// queues.
 pub type XcmRouter = (
     // Two routers - use UMP to communicate with the relay chain:
-    cumulus_primitives_utility::ParentAsUmp<ParachainSystem, PolkadotXcm, PriceForParentDelivery>,
+    UmpRouter,
     // ..and XCMP to communicate with the sibling chains.
     XcmpQueue,
-    SovereignPaidRemoteExporter<XcmpQueue, UniversalLocation>,
+    SovereignPaidRemoteExporter<UmpRouter, UniversalLocation>,
 );
 
 pub struct XcmConfig;
