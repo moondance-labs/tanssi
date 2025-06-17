@@ -124,6 +124,12 @@ where
             return Err(SendError::NotApplicable);
         }
 
+        // TODO: Support source being a parachain.
+        if !matches!(local_sub, Junctions::Here) {
+            log::trace!(target: "xcm::ethereum_blob_exporter", "skipped due to unmatched sub network {local_sub:?}.");
+            return Err(SendError::NotApplicable);
+        }
+
         let source_location = Location::new(1, local_sub.clone());
 
         let agent_id = match AgentHashedDescription::convert_location(&source_location) {
@@ -509,7 +515,7 @@ where
         // TODO: Better value?
         // This channel value is ignored anyway (like in original snowbridge code).
         // Should we not ignore it and actually use this value instead?
-        let channel = 0; 
+        let channel = 0;
 
         // This `clone` ensures that `dest` is not consumed in any case.
         let dest = dest.clone().ok_or(MissingArgument)?;
