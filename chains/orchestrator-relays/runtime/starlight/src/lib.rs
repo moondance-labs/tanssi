@@ -1732,7 +1732,8 @@ impl pallet_services_payment::Config for Runtime {
     type FreeBlockProductionCredits = FreeBlockProductionCredits;
     /// The maximum number of session credits that can be accumulated
     type FreeCollatorAssignmentCredits = FreeCollatorAssignmentCredits;
-    type ManagerOrigin = EnsureRoot<AccountId>;
+    type ManagerOrigin =
+        EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;
     type WeightInfo = weights::pallet_services_payment::SubstrateWeight<Runtime>;
 }
 
