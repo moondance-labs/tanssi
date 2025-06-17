@@ -154,13 +154,13 @@ if $DOWNLOAD_FRONTIER_NODE; then
     docker run --rm \
         --entrypoint tar \
         "$FRONTIER_IMAGE" \
-        -C /container-chain-evm-template -cf - container-chain-frontier-node \
+        -C /container-chain-template-evm -cf - container-chain-frontier-node \
       | tar -C tmp -xf -
   else
     docker run --rm \
         --entrypoint tar \
         "$FRONTIER_IMAGE" \
-        -C /container-chain-evm-template -cf - container-chain-template-frontier-node \
+        -C /container-chain-template-evm -cf - container-chain-template-frontier-node \
       | tar -C tmp -xf -
   fi
   chmod +x tmp/container-chain-frontier-node
@@ -175,13 +175,13 @@ if $DOWNLOAD_SIMPLE_NODE; then
     docker run --rm \
         --entrypoint tar \
         "$SIMPLE_IMAGE" \
-        -C /container-chain-simple-template -cf - container-chain-simple-node \
+        -C /container-chain-template-simple -cf - container-chain-simple-node \
       | tar -C tmp -xf -
   else
     docker run --rm \
         --entrypoint tar \
         "$SIMPLE_IMAGE" \
-        -C /container-chain-simple-template -cf - container-chain-template-simple-node \
+        -C /container-chain-template-simple -cf - container-chain-template-simple-node \
       | tar -C tmp -xf -
   fi
   chmod +x tmp/container-chain-simple-node
