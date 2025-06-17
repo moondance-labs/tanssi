@@ -180,7 +180,7 @@ where
         //let migrate_precompile_xcm_code =
         //    MigratePrecompileXcmDummyCode::<Runtime>(Default::default());
 
-        let migrate_pallet_xcm_v5 = MigrateToLatestXcmVersion::<Runtime>(Default::default());
+        //let migrate_pallet_xcm_v5 = MigrateToLatestXcmVersion::<Runtime>(Default::default());
         vec![
             // Applied in runtime 400
             // Box::new(migrate_precompiles),
@@ -192,7 +192,8 @@ where
             // Box::new(migrate_pallet_xcm_v4),
             // Box::new(migrate_precompile_proxy_code),
             // Box::new(migrate_precompile_xcm_code),
-            Box::new(migrate_pallet_xcm_v5),
+            // Applied in runtime 1200
+            //Box::new(migrate_pallet_xcm_v5),
         ]
     }
 }

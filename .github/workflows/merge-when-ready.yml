@@ -2,6 +2,9 @@ name: Merge on ready
 on:
   pull_request:
     types: [labeled, unlabeled, opened, synchronize]
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
     enforce-ready-to-merge-label:
         runs-on: ubuntu-latest
@@ -58,15 +61,10 @@ jobs:
               with:
                   name: binaries
                   path: target/release
-            - name: "Make binaries executable"
-              shell: bash
-              run: |
-                  chmod uog+x target/release/tanssi-node
-                  chmod uog+x target/release/tanssi-relay
-                  chmod uog+x target/release/tanssi-relay-prepare-worker
-                  chmod uog+x target/release/tanssi-relay-execute-worker
-                  chmod uog+x target/release/container-chain-simple-node
-                  chmod uog+x target/release/container-chain-frontier-node
+
+            - name: Make binaries executable
+              uses: ./.github/workflow-templates/make-binaries-executable
+
             - name: Run Zombienet Test ${{ matrix.test_name }}
               uses: ./.github/workflow-templates/zombienet-tests
               with:
@@ -82,15 +80,9 @@ jobs:
               with:
                   name: binaries
                   path: target/release
-            - name: "Make binaries executable"
-              shell: bash
-              run: |
-                  chmod uog+x target/release/tanssi-node
-                  chmod uog+x target/release/tanssi-relay
-                  chmod uog+x target/release/tanssi-relay-prepare-worker
-                  chmod uog+x target/release/tanssi-relay-execute-worker
-                  chmod uog+x target/release/container-chain-simple-node
-                  chmod uog+x target/release/container-chain-frontier-node
+
+            - name: Make binaries executable
+              uses: ./.github/workflow-templates/make-binaries-executable
 
             - name: Run Zombienet Test
               id: e2e-test
@@ -137,16 +129,47 @@ jobs:
               with:
                   name: binaries-benchmark
                   path: target/release
-            - name: "Make binaries executable"
-              shell: bash
-              run: |
-                  chmod uog+x target/release/tanssi-node
-                  chmod uog+x target/release/tanssi-relay
-                  chmod uog+x target/release/tanssi-relay-prepare-worker
-                  chmod uog+x target/release/tanssi-relay-execute-worker
-                  chmod uog+x target/release/container-chain-simple-node
-                  chmod uog+x target/release/container-chain-frontier-node
+
+            - name: Make binaries executable
+              uses: ./.github/workflow-templates/make-binaries-executable
+
             - name: "Benchmark test ${{ matrix.binary }}"
               shell: bash
               run: |
                 BINARY=./target/release/${{ matrix.chains.binary }} CHAIN=${{ matrix.chains.chain }} TEMPLATE_PATH=./benchmarking/frame-weight-runtime-template.hbs tools/benchmarking.sh "*" "*" --check
+
+    # Check that the smoke test suite works.
+    # This is not to test that our networks are good, but that the test suite itself is working.
+    # So it only runs the most trivial test for one network.
+    # No need to test more networks as that only increases the changes of a test failure because of RPC timeout.
+    # This usually breaks when updating any javascript dependency.
+    smoke-tests-test:
+        needs: ["enforce-ready-to-merge-label"]
+        runs-on: self-hosted
+        strategy:
+            fail-fast: false
+            matrix:
+                test_name:
+                    - stagelight_dancelight_smoke S01
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Pnpm
+              uses: pnpm/action-setup@v4.0.0
+              with:
+                version: 9
+
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                node-version: 22.x
+                cache: "pnpm"
+
+            - name: Run Test ${{ matrix.test_name }}
+              shell: bash
+              run: |
+                pnpm install
+
+                cd test
+                pnpm moonwall test ${{ matrix.test_name }}
