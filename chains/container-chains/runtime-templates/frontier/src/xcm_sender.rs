@@ -23,6 +23,7 @@ use {
     SendError::*,
 };
 
+// We check if the destination is ETH
 fn is_ethereum_location(loc: &Location) -> bool {
     matches!(
         loc,
@@ -59,12 +60,11 @@ impl<Router: SendXcm, UniversalLocation: Get<InteriorLocation>> SendXcm
         msg: &mut Option<Xcm<()>>,
     ) -> SendResult<Router::Ticket> {
         let d = dest.as_ref().ok_or(MissingArgument)?;
+        let xcm = msg.take().ok_or(MissingArgument)?;
         // Check if the destination is an Ethereum location
         if !is_ethereum_location(&d.clone()) {
             return Err(Unroutable);
         }
-
-        let xcm = msg.take().ok_or(MissingArgument)?;
 
         let export_instruction = ExportMessage {
             network: crate::EthereumNetwork::get(),
@@ -72,69 +72,52 @@ impl<Router: SendXcm, UniversalLocation: Get<InteriorLocation>> SendXcm
             xcm: xcm.clone(),
         };
 
-        // Get the asset to transfer to Ethereum
-        let withdrawn_assets = xcm
-            .0
-            .iter()
-            .find_map(|instr| {
-                if let WithdrawAsset(assets) = instr {
-                    Some(assets)
-                } else {
-                    None
-                }
-            })
-            .ok_or(Transport("No WithdrawAsset in XCM"))?;
-
-        let assets_vec = withdrawn_assets.clone().into_inner();
-
-        let asset = assets_vec
-            .into_iter()
-            .find_map(|asset| {
-                if let Fungible(_) = asset.fun {
-                    Some(asset)
-                } else {
-                    None
-                }
-            })
-            .ok_or(Transport("No fungible asset found"))?;
-
-        let tanssi_location: Location = Location {
-            parents: 1,
-            interior: Here,
-        };
-
-        // Check if Tanssi registered, to be able to pay fee
-        let tanssi_asset_id =
-            pallet_foreign_asset_creator::ForeignAssetToAssetId::<crate::Runtime>::get(
-                tanssi_location,
-            )
-            .ok_or(Transport("Tanssi token not registered"))?;
-
-        // Hardcoding Tanssi fee for now
-        let tanssi_fee = 100_000_000_000u128;
-        // Calculate fee in native tokens with conversion rate
-        let container_fee =
-            calculate_container_fee_from_tanssi_amount(tanssi_fee, tanssi_asset_id)?;
-
+        // // Get the asset to transfer to Ethereum
+        // let withdrawn_assets = xcm
+        //     .0
+        //     .iter()
+        //     .find_map(|instr| {
+        //         if let WithdrawAsset(assets) = instr {
+        //             Some(assets)
+        //         } else {
+        //             None
+        //         }
+        //     })
+        //     .ok_or(Transport("No WithdrawAsset in XCM"))?;
+        //
+        // let assets_vec = withdrawn_assets.clone().into_inner();
+        //
+        // let asset = assets_vec
+        //     .into_iter()
+        //     .find_map(|asset| {
+        //         if let Fungible(_) = asset.fun {
+        //             Some(asset)
+        //         } else {
+        //             None
+        //         }
+        //     })
+        //     .ok_or(Transport("No fungible asset found"))?;
+        //
+        // let tanssi_location: Location = Location {
+        //     parents: 1,
+        //     interior: Here,
+        // };
+        //
+        // // Check if Tanssi registered, to be able to pay fee
+        // let tanssi_asset_id =
+        //     pallet_foreign_asset_creator::ForeignAssetToAssetId::<crate::Runtime>::get(
+        //         tanssi_location,
+        //     )
+        //     .ok_or(Transport("Tanssi token not registered"))?;
+        //
+        // // Hardcoding Tanssi fee for now
+        // let tanssi_fee = 100_000_000_000u128;
+        // // Calculate fee in native tokens with conversion rate
+        // let container_fee =
+        //     calculate_container_fee_from_tanssi_amount(tanssi_fee, tanssi_asset_id)?;
+        //
         // Prepare the message to send
-        let message = Xcm(vec![
-            WithdrawAsset(asset.clone().into()),
-            BuyExecution {
-                fees: container_fee.clone(),
-                weight_limit: Unlimited,
-            },
-            DepositAsset {
-                assets: asset.clone().into(),
-                beneficiary: Location {
-                    parents: 0,
-                    interior: Junctions::X1(alloc::sync::Arc::new([Junction::AccountKey20 {
-                        network: None,
-                        key: crate::EthereumSovereignAccount::get().into(),
-                    }])),
-                },
-            },
-            export_instruction,
-        ]);
+        let message = Xcm(vec![export_instruction]);
 
         let tanssi_location = Location {
             parents: 1,
@@ -159,9 +142,7 @@ impl<Router: SendXcm, UniversalLocation: Get<InteriorLocation>> SendXcm
 impl<Router: SendXcm, UniversalLocation: Get<InteriorLocation>> InspectMessageQueues
     for SovereignPaidRemoteExporter<Router, UniversalLocation>
 {
-    fn clear_messages() {
-        todo!()
-    }
+    fn clear_messages() {}
 
     fn get_messages() -> vec::Vec<(VersionedLocation, vec::Vec<VersionedXcm<()>>)> {
         todo!()

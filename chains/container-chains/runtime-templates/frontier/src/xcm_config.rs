@@ -49,6 +49,7 @@ use {
     sp_core::{ConstU32, H160},
     sp_runtime::Perbill,
     sp_std::vec::Vec,
+    tp_bridge::EthereumLocationsConverterFor,
     xcm::latest::prelude::*,
     xcm_builder::{
         AccountKey20Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
@@ -135,6 +136,9 @@ pub type LocationToAccountId = (
     AccountKey20Aliases<RelayNetwork, AccountId>,
     // Generate remote accounts according to polkadot standards
     xcm_builder::HashedDescription<AccountId, Descriptor>,
+    // Ethereum contract sovereign account.
+    // (Used to convert ethereum contract locations to sovereign account)
+    EthereumLocationsConverterFor<AccountId>,
 );
 
 /// Local origins on this chain are allowed to dispatch XCM sends/executions.
