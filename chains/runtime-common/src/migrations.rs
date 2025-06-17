@@ -1222,8 +1222,8 @@ where
         //    DataPreserversAssignmentsMigration::<Runtime>(Default::default());
         //let migrate_registrar_reserves = RegistrarReserveToHoldMigration::<Runtime>(Default::default());
         //let migrate_config_max_parachain_percentage = MigrateConfigurationAddParachainPercentage::<Runtime>(Default::default());
-        let migrate_config_full_rotation_mode = MigrateConfigurationAddFullRotationMode::<Runtime>(Default::default());
-        let migrate_stream_payment_new_config_items = MigrateStreamPaymentNewConfigFields::<Runtime>(Default::default());
+        //let migrate_config_full_rotation_mode = MigrateConfigurationAddFullRotationMode::<Runtime>(Default::default());
+        //let migrate_stream_payment_new_config_items = MigrateStreamPaymentNewConfigFields::<Runtime>(Default::default());
 
         vec![
             // Applied in runtime 400
@@ -1244,8 +1244,10 @@ where
             //Box::new(migrate_registrar_reserves),
             // Applied in runtime 900
             //Box::new(migrate_config_max_parachain_percentage),
-            Box::new(migrate_config_full_rotation_mode),
-            Box::new(migrate_stream_payment_new_config_items),
+            // Applied in runtime 1100
+            //Box::new(migrate_config_full_rotation_mode),
+            // Applied in runtime 1200
+            //Box::new(migrate_stream_payment_new_config_items),
         ]
     }
 }
@@ -1300,9 +1302,9 @@ where
         //let foreign_asset_creator_migration =
         //    ForeignAssetCreatorMigration::<Runtime>(Default::default());
         //let migrate_registrar_reserves = RegistrarReserveToHoldMigration::<Runtime>(Default::default());
-        let migrate_config_full_rotation_mode = MigrateConfigurationAddFullRotationMode::<Runtime>(Default::default());
-        let migrate_stream_payment_new_config_items = MigrateStreamPaymentNewConfigFields::<Runtime>(Default::default());
-        let migrate_pallet_xcm_v5 = MigrateToLatestXcmVersion::<Runtime>(Default::default());
+        //let migrate_config_full_rotation_mode = MigrateConfigurationAddFullRotationMode::<Runtime>(Default::default());
+        //let migrate_stream_payment_new_config_items = MigrateStreamPaymentNewConfigFields::<Runtime>(Default::default());
+        //let migrate_pallet_xcm_v5 = MigrateToLatestXcmVersion::<Runtime>(Default::default());
 
         vec![
             // Applied in runtime 200
@@ -1341,9 +1343,12 @@ where
             //Box::new(migrate_registrar_reserves),
             // Applied in runtime 900
             //Box::new(migrate_config_max_parachain_percentage),
-            Box::new(migrate_config_full_rotation_mode),
-            Box::new(migrate_stream_payment_new_config_items),
-            Box::new(migrate_pallet_xcm_v5),
+            // Applied in runtime 1100
+            //Box::new(migrate_config_full_rotation_mode),
+            // Applied in runtime 1200
+            //Box::new(migrate_stream_payment_new_config_items),
+            // Applied in runtime 1200
+            //Box::new(migrate_pallet_xcm_v5),
         ]
     }
 }
@@ -1365,31 +1370,39 @@ where
     Runtime: pallet_xcm::Config,
 {
     fn get_migrations() -> Vec<Box<dyn Migration>> {
-        let migrate_config_full_rotation_mode =
-            MigrateConfigurationAddFullRotationMode::<Runtime>(Default::default());
+        /*let migrate_config_full_rotation_mode =
+        MigrateConfigurationAddFullRotationMode::<Runtime>(Default::default());*/
 
-        let external_validator_slashes_bonded_eras_timestamp =
-            BondedErasTimestampMigration::<Runtime>(Default::default());
-        //let snowbridge_ethereum_system_xcm_v5 =
-        //    SnowbridgeEthereumSystemXcmV5::<Runtime>(Default::default());
-        let migrate_pallet_xcm_v5 = MigrateToLatestXcmVersion::<Runtime>(Default::default());
-        let para_shared_v1_migration = MigrateParaSharedToV1::<Runtime>(Default::default());
-        let para_scheduler_v3_migration = MigrateParaSchedulerToV3::<Runtime>(Default::default());
+        /*let external_validator_slashes_bonded_eras_timestamp =
+        BondedErasTimestampMigration::<Runtime>(Default::default());*/
+        /*let snowbridge_ethereum_system_xcm_v5 =
+        SnowbridgeEthereumSystemXcmV5::<Runtime>(Default::default());*/
+        //let migrate_pallet_xcm_v5 = MigrateToLatestXcmVersion::<Runtime>(Default::default());
+        //let para_shared_v1_migration = MigrateParaSharedToV1::<Runtime>(Default::default());
+        //let para_scheduler_v3_migration = MigrateParaSchedulerToV3::<Runtime>(Default::default());
+
         let eth_system_genesis_hashes = MigrateEthSystemGenesisHashes::<
             Runtime,
             snowbridge_system_migration::DancelightLocation,
         >(Default::default());
+
         vec![
             // Applied in runtime 1000
             //Box::new(migrate_mmr_leaf_pallet),
             // Applied in runtime 900
             //Box::new(migrate_external_validators),
-            Box::new(migrate_config_full_rotation_mode),
-            Box::new(external_validator_slashes_bonded_eras_timestamp),
+            // Applied in runtime 1100
+            //Box::new(migrate_config_full_rotation_mode),
+            // Applied in runtime  1100
+            //Box::new(external_validator_slashes_bonded_eras_timestamp),
+            // Applied in runtime 1200
             //Box::new(snowbridge_ethereum_system_xcm_v5),
-            Box::new(migrate_pallet_xcm_v5),
-            Box::new(para_shared_v1_migration),
-            Box::new(para_scheduler_v3_migration),
+            // Applied in runtime 1200
+            //Box::new(migrate_pallet_xcm_v5),
+            // Apllied in runtime 1200
+            // Box::new(para_shared_v1_migration),
+            // Applied in runtime 1200
+            //Box::new(para_scheduler_v3_migration),
             Box::new(eth_system_genesis_hashes),
         ]
     }

@@ -137,3 +137,39 @@ jobs:
               shell: bash
               run: |
                 BINARY=./target/release/${{ matrix.chains.binary }} CHAIN=${{ matrix.chains.chain }} TEMPLATE_PATH=./benchmarking/frame-weight-runtime-template.hbs tools/benchmarking.sh "*" "*" --check
+
+    # Check that the smoke test suite works.
+    # This is not to test that our networks are good, but that the test suite itself is working.
+    # So it only runs the most trivial test for one network.
+    # No need to test more networks as that only increases the changes of a test failure because of RPC timeout.
+    # This usually breaks when updating any javascript dependency.
+    smoke-tests-test:
+        needs: ["enforce-ready-to-merge-label"]
+        runs-on: self-hosted
+        strategy:
+            fail-fast: false
+            matrix:
+                test_name:
+                    - stagelight_dancelight_smoke S01
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Pnpm
+              uses: pnpm/action-setup@v4.0.0
+              with:
+                version: 9
+
+            - name: Setup Node
+              uses: actions/setup-node@v4
+              with:
+                node-version: 22.x
+                cache: "pnpm"
+
+            - name: Run Test ${{ matrix.test_name }}
+              shell: bash
+              run: |
+                pnpm install
+
+                cd test
+                pnpm moonwall test ${{ matrix.test_name }}
