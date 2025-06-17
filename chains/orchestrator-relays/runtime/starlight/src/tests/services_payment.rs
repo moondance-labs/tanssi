@@ -19,7 +19,8 @@
 use {
     crate::{tests::common::*, ContainerRegistrar, Paras, Registrar, ServicesPayment},
     cumulus_primitives_core::{relay_chain::HeadData, ParaId},
-    frame_support::assert_ok,
+    frame_support::{assert_noop, assert_ok, pallet_prelude::DispatchResultWithPostInfo},
+    sp_runtime::DispatchError,
     sp_std::vec,
 };
 
@@ -149,4 +150,63 @@ fn test_can_buy_credits_before_registering_para_and_receive_free_credits() {
                     .unwrap_or_default();
             assert_eq!(credits, crate::FreeBlockProductionCredits::get());
         });
+}
+
+fn services_payment_restricted_call(
+    origin: RuntimeOrigin,
+    check: impl FnOnce(DispatchResultWithPostInfo),
+) {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            assert_ok!(Registrar::reserve(origin_of(ALICE.into())));
+            assert_ok!(ContainerRegistrar::register(
+                origin_of(ALICE.into()),
+                2000.into(),
+                get_genesis_data_with_validation_code().0,
+                Some(HeadData(vec![1u8, 2u8, 3u8]))
+            ));
+
+            check(ServicesPayment::set_refund_address(
+                origin,
+                2000.into(),
+                None,
+            ));
+        });
+}
+
+#[test]
+fn root_can_call_services_payment() {
+    services_payment_restricted_call(root_origin(), |res| {
+        assert_ok!(res);
+    });
+}
+
+#[test]
+fn manager_can_call_services_payment() {
+    services_payment_restricted_call(origin_of(ALICE.into()), |res| {
+        assert_ok!(res);
+    });
+}
+
+#[test]
+fn non_manager_can_call_services_payment() {
+    services_payment_restricted_call(origin_of(BOB.into()), |res| {
+        assert_noop!(res, DispatchError::BadOrigin);
+    });
 }
