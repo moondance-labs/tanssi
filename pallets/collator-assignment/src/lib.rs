@@ -769,13 +769,13 @@ where
     }
 }
 
-/// Relaychain randomness.
+/// Solochain randomness.
 ///
 /// Uses current block randomness. This randomness exists in `on_initialize` so we don't need to
 /// `prepare_randomness` in the previous block.
-pub struct RelaychainRandomness<T>(PhantomData<T>);
+pub struct SolochainRandomness<T>(PhantomData<T>);
 
-impl<BlockNumber, T> CollatorAssignmentRandomness<BlockNumber> for RelaychainRandomness<T>
+impl<BlockNumber, T> CollatorAssignmentRandomness<BlockNumber> for SolochainRandomness<T>
 where
     T: Get<[u8; 32]>,
 {

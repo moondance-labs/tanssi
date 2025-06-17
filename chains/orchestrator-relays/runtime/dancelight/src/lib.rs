@@ -3755,7 +3755,7 @@ impl pallet_collator_assignment::Config for Runtime {
     type ShouldRotateAllCollators =
         RotateCollatorsEveryNSessions<ConfigurationCollatorRotationSessionPeriod>;
     type Randomness =
-        pallet_collator_assignment::RelaychainRandomness<BabeGetCollatorAssignmentRandomness>;
+        pallet_collator_assignment::SolochainRandomness<BabeGetCollatorAssignmentRandomness>;
     type RemoveInvulnerables = ();
     type ParaIdAssignmentHooks = ParaIdAssignmentHooksImpl;
     type CollatorAssignmentTip = ServicesPayment;
