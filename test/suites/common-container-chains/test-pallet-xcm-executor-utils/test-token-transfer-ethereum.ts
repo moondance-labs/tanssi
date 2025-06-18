@@ -9,18 +9,12 @@ describeSuite({
   title: "XCM transfer to Ethereum",
   foundationMethods: "dev",
   testCases: ({ context, it }) => {
-    let containerChainPolkadotJs: ApiPromise;
-    let alice: KeyringPair;
-    let aliceAccount32: KeyringPair;
-    let chain: string;
+    let polkadotJs: ApiPromise;
+    let aliceOrAlith: KeyringPair;
 
     beforeAll(async () => {
-      containerChainPolkadotJs = context.polkadotJs();
-      chain = containerChainPolkadotJs.consts.system.version.specName.toString();
-      aliceAccount32 = new Keyring({ type: "sr25519" }).addFromUri("//Alice", {
-        name: "Alice default",
-      });
-      alice = chain === "frontier-template" ? alith : aliceAccount32;
+      polkadotJs = context.polkadotJs();
+      aliceOrAlith = context.isEthereumChain ? alith : context.keyring.alice;
     });
 
     it({
@@ -30,12 +24,11 @@ describeSuite({
         const ethereumNetwork = { Ethereum: { chainId: TESTNET_ETHEREUM_NETWORK_ID } };
         // Random ETH destination that we send asset to
         const destinationAddress = "0x1234567890abcdef1234567890abcdef12345678";
-        const holdingAccount = SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS;
         const tokenToTransfer = 123_321_000_000_000_000n;
 
         // Check balance before transfer
         const balanceBefore = (
-          await containerChainPolkadotJs.query.system.account(holdingAccount)
+          await polkadotJs.query.system.account(SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS)
         ).data.free.toBigInt();
 
         const versionedBeneficiary = {
@@ -52,7 +45,7 @@ describeSuite({
           },
         };
 
-        const metadata = await containerChainPolkadotJs.rpc.state.getMetadata();
+        const metadata = await polkadotJs.rpc.state.getMetadata();
         const balancesPalletIndex = metadata.asLatest.pallets
           .find(({ name }) => name.toString() === "Balances")
           .index.toNumber();
@@ -85,7 +78,7 @@ describeSuite({
           },
         };
 
-        const tx = containerChainPolkadotJs.tx.polkadotXcm.transferAssets(
+        const tx = polkadotJs.tx.polkadotXcm.transferAssets(
           dest,
           versionedBeneficiary,
           versionedAssets,
@@ -93,12 +86,12 @@ describeSuite({
           "Unlimited"
         );
 
-        await tx.signAndSend(alice);
+        await tx.signAndSend(aliceOrAlith);
 
         await context.createBlock();
 
         const balanceAfter = (
-          await containerChainPolkadotJs.query.system.account(holdingAccount)
+          await polkadotJs.query.system.account(SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS)
         ).data.free.toBigInt();
 
         expect(balanceAfter - balanceBefore).toEqual(tokenToTransfer);
