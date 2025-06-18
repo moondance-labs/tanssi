@@ -8,7 +8,9 @@ import { ETHEREUM_MAINNET_SOVEREIGN_ACCOUNT_ADDRESS, SEPOLIA_SOVEREIGN_ACCOUNT_A
 
 const SS58_FORMAT = 42;
 
-const BLOCKS_AMOUNT_TO_CHECK = 100;
+let BLOCKS_AMOUNT_TO_CHECK = 100;
+// For debug purposes only, specify block here to check it
+const BLOCK_NUMBER_TO_DEBUG = undefined;
 
 describeSuite({
     id: "SMOK15",
@@ -44,8 +46,12 @@ describeSuite({
             test: async () => {
                 // Go through the last BLOCKS_AMOUNT_TO_CHECK blocks and check if the sovereign account is collecting
                 // the amount for each native token transfer event.
+                let currentBlock = (await api.rpc.chain.getBlock()).block.header.number.toNumber();
 
-                const currentBlock = (await api.rpc.chain.getBlock()).block.header.number.toNumber();
+                if (BLOCK_NUMBER_TO_DEBUG !== undefined) {
+                    BLOCKS_AMOUNT_TO_CHECK = 1;
+                    currentBlock = BLOCK_NUMBER_TO_DEBUG + 1;
+                }
 
                 for (let i = 1; i <= BLOCKS_AMOUNT_TO_CHECK; i++) {
                     const blockNumber = currentBlock - i;
