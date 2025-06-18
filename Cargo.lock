@@ -2428,6 +2428,7 @@ dependencies = [
  "staging-xcm-executor",
  "substrate-wasm-builder",
  "tanssi-runtime-common",
+ "tp-bridge",
  "xcm-primitives",
  "xcm-runtime-apis",
 ]
