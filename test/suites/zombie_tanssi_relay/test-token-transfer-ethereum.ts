@@ -2,7 +2,11 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type KeyringPair, alith } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 
-import { signAndSendAndInclude, TESTNET_ETHEREUM_NETWORK_ID } from "utils";
+import {
+  SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS,
+  signAndSendAndInclude,
+  TESTNET_ETHEREUM_NETWORK_ID,
+} from "utils";
 
 describeSuite({
   id: "ZOMBIETANSS02",
@@ -30,7 +34,7 @@ describeSuite({
         const ethereumNetwork = { Ethereum: { chainId: TESTNET_ETHEREUM_NETWORK_ID } };
         // Random ETH destination that we send asset to
         const destinationAddress = "0x1234567890abcdef1234567890abcdef12345678";
-        const holdingAccount = "0x506172656E740000000000000000000000000000";
+        const holdingAccount = SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS;
         const tokenToTransfer = 123_321_000_000_000_000n;
 
         // Check balance before transfer
