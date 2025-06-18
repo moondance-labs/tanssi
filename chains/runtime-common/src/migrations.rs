@@ -1495,7 +1495,6 @@ where
             Runtime,
             snowbridge_system_migration::StarlightLocation,
         >(Default::default());
-
         vec![
             Box::new(migrate_pallet_session_v0_to_v1),
             Box::new(migrate_snowbridge_fee_per_gas_migration_v0_to_v1),
