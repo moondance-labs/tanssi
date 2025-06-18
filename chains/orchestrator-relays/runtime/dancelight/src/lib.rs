@@ -1691,7 +1691,8 @@ impl pallet_services_payment::Config for Runtime {
     type FreeBlockProductionCredits = FreeBlockProductionCredits;
     /// The maximum number of session credits that can be accumulated
     type FreeCollatorAssignmentCredits = FreeCollatorAssignmentCredits;
-    type ManagerOrigin = EnsureRoot<AccountId>;
+    type ManagerOrigin =
+        EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;
     type WeightInfo = weights::pallet_services_payment::SubstrateWeight<Runtime>;
 }
 
@@ -1861,6 +1862,10 @@ impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
     }
 }
 
+parameter_types! {
+    pub const MaxCandidatesBufferSize: u32 = 100;
+}
+
 impl pallet_pooled_staking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
@@ -1878,14 +1883,19 @@ impl pallet_pooled_staking::Config for Runtime {
     type WeightInfo = weights::pallet_pooled_staking::SubstrateWeight<Runtime>;
 }
 
+parameter_types! {
+    pub const MaxInactiveSessions: u32 = 5;
+}
 impl pallet_inactivity_tracking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type CollatorId = AccountId;
-    type MaxInactiveSessions = ConstU32<5>;
-    type MaxCollatorsPerSession = ConstU32<100>;
+    type MaxInactiveSessions = MaxInactiveSessions;
+    type MaxCollatorsPerSession = MaxCandidatesBufferSize;
+    type MaxContainerChains = MaxLengthParaIds;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type CurrentCollatorsFetcher = TanssiCollatorAssignment;
     type GetSelfChainBlockAuthor = ();
+    type ParaFilter = tp_parathread_filter_common::ExcludeAllParathreadsFilter<Runtime>;
     type WeightInfo = weights::pallet_inactivity_tracking::SubstrateWeight<Runtime>;
 }
 

@@ -28,7 +28,7 @@
         "nodes": [
             {
                 "name": "alice",
-                "ws_port": "9947",
+                "rpc_port": "9947",
                 "validator": true
             },
             {
@@ -55,7 +55,7 @@
                     "validator": false,
                     "command": "../target/release/container-chain-simple-node",
                     "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
-                    "ws_port": 9949,
+                    "rpc_port": 9949,
                     "p2p_port": 33049,
                     "prometheus_port": 33102
                 },
