@@ -34,7 +34,7 @@ use {
     tp_traits::{
         AuthorNotingHook, AuthorNotingInfo, ForSession, GetContainerChainsWithCollators,
         GetSessionIndex, InvulnerablesHelper, MaybeSelfChainBlockAuthor,
-        NodeActivityTrackingHelper, ParaId, ParathreadHelper,
+        NodeActivityTrackingHelper, ParaId, ParathreadHelper, PendingCollatorAssignmentsHelper,
     },
 };
 
@@ -128,7 +128,8 @@ pub mod pallet {
         type CurrentSessionIndex: GetSessionIndex<SessionIndex>;
 
         /// Helper that fetches a list of collators eligible to produce blocks for the current session
-        type CurrentCollatorsFetcher: GetContainerChainsWithCollators<Self::CollatorId>;
+        type CurrentCollatorsFetcher: GetContainerChainsWithCollators<Self::CollatorId>
+            + PendingCollatorAssignmentsHelper<Self::CollatorId>;
 
         /// Helper that returns the block author for the orchestrator chain (if it exists)
         type GetSelfChainBlockAuthor: MaybeSelfChainBlockAuthor<Self::CollatorId>;
@@ -480,6 +481,9 @@ impl<T: Config> NodeActivityTrackingHelper<T::CollatorId> for Pallet<T> {
             Error::<T>::MarkingInvulnerableOfflineInvalid
         );
         <OfflineCollators<T>>::insert(node.clone(), true);
+        // To prevent the collator from being assigned to any container chain in the next session
+        // we need to remove it from the pending collator assignment
+        T::CurrentCollatorsFetcher::remove_offline_collator_from_pending_assigment(&node.clone());
         Self::deposit_event(Event::<T>::CollatorStatusUpdated {
             collator: node.clone(),
             is_offline: true,

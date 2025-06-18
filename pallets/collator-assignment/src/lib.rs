@@ -56,7 +56,8 @@ use {
     tp_traits::{
         CollatorAssignmentTip, ForSession, FullRotationModes, GetContainerChainAuthor,
         GetContainerChainsWithCollators, GetHostConfiguration, GetSessionContainerChains, ParaId,
-        ParaIdAssignmentHooks, RemoveInvulnerables, ShouldRotateAllCollators, Slot,
+        ParaIdAssignmentHooks, PendingCollatorAssignmentsHelper, RemoveInvulnerables,
+        ShouldRotateAllCollators, Slot,
     },
 };
 pub use {dp_collator_assignment::AssignedCollators, pallet::*};
@@ -676,6 +677,24 @@ pub mod pallet {
                     collators.container_chains = container_chains.iter().cloned().collect();
                     PendingCollatorContainerChain::<T>::put(Some(collators));
                 }
+            }
+        }
+    }
+
+    impl<T: Config> PendingCollatorAssignmentsHelper<T::AccountId> for Pallet<T> {
+        fn remove_offline_collator_from_pending_assigment(collator: &T::AccountId) {
+            // If there is no pending assignment, we do nothing
+            if let Some(collator_assignment) = PendingCollatorContainerChain::<T>::get() {
+                // Removing the collator from the pending assignment
+                let mut collator_assignment = collator_assignment;
+                collator_assignment
+                    .orchestrator_chain
+                    .retain(|c| c != collator);
+                for (_para_id, collators) in &mut collator_assignment.container_chains {
+                    collators.retain(|c| c != collator);
+                }
+                // Store the updated assignment
+                PendingCollatorContainerChain::<T>::put(Some(collator_assignment));
             }
         }
     }

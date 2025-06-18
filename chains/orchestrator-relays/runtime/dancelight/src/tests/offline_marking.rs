@@ -101,10 +101,33 @@ fn set_collator_offline_using_set_offline_removes_it_from_assigned_collators_and
         .build()
         .execute_with(|| {
             init_test_setup();
+            let pending_assignment_before_offline_marking =
+                TanssiCollatorAssignment::pending_collator_container_chain();
+            assert_eq!(pending_assignment_before_offline_marking.is_some(), true);
+            assert_eq!(
+                pending_assignment_before_offline_marking
+                    .unwrap()
+                    .container_chains
+                    .iter()
+                    .any(|(_, collators)| collators.contains(&BOB.into())),
+                true
+            );
             assert_eq!(InactivityTracking::is_node_offline(&BOB.into()), false);
             assert_ok!(PooledStaking::set_offline(origin_of(BOB.into())));
             assert_eq!(InactivityTracking::is_node_offline(&BOB.into()), true);
-            run_to_session(2);
+            // Verify that after being set offline, BOB isn't part of any pending collator assignment:
+            let pending_assignment_after_offline_marking =
+                TanssiCollatorAssignment::pending_collator_container_chain();
+            assert_eq!(pending_assignment_after_offline_marking.is_some(), true);
+            assert_eq!(
+                pending_assignment_after_offline_marking
+                    .unwrap()
+                    .container_chains
+                    .iter()
+                    .any(|(_, collators)| collators.contains(&BOB.into())),
+                false
+            );
+            run_to_session(1);
             run_block();
             // Verify that after being set offline, BOB is no longer:
             // - assigned to any container chain
@@ -154,12 +177,41 @@ fn set_collator_online_using_adds_it_to_assigned_collators_and_sorted_eligible_c
             init_test_setup();
             assert_eq!(InactivityTracking::is_node_offline(&BOB.into()), false);
             assert_ok!(PooledStaking::set_offline(origin_of(BOB.into())));
-            run_to_session(2);
+            run_to_session(1);
             run_block();
             assert_eq!(InactivityTracking::is_node_offline(&BOB.into()), true);
             assert_ok!(PooledStaking::set_online(origin_of(BOB.into())));
             assert_eq!(InactivityTracking::is_node_offline(&BOB.into()), false);
-            run_to_session(4);
+            // Since BOB is set online but not included in the current pending assignment,
+            // we need to wait at least 2 session before it can be assigned to a container chain.
+            let initial_pending_assignment_after_online_marking =
+                TanssiCollatorAssignment::pending_collator_container_chain();
+            assert_eq!(
+                initial_pending_assignment_after_online_marking.is_some(),
+                true
+            );
+            assert_eq!(
+                initial_pending_assignment_after_online_marking
+                    .unwrap()
+                    .container_chains
+                    .iter()
+                    .any(|(_, collators)| collators.contains(&BOB.into())),
+                false
+            );
+            run_to_session(2);
+            run_block();
+            let pending_assignment_after_online_marking =
+                TanssiCollatorAssignment::pending_collator_container_chain();
+            assert_eq!(pending_assignment_after_online_marking.is_some(), true);
+            assert_eq!(
+                pending_assignment_after_online_marking
+                    .unwrap()
+                    .container_chains
+                    .iter()
+                    .any(|(_, collators)| collators.contains(&BOB.into())),
+                true
+            );
+            run_to_session(3);
             run_block();
             // Verify that after being set online, BOB is:
             // - assigned to any container chain

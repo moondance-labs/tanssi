@@ -661,3 +661,9 @@ impl<AccountId> NodeActivityTrackingHelper<AccountId> for () {
 pub trait ParathreadHelper {
     fn get_parathreads_for_session() -> BTreeSet<ParaId>;
 }
+
+// A trait to help remove offline collators from the pending assignment
+pub trait PendingCollatorAssignmentsHelper<AccountId> {
+    /// Remove a collator from the current pending collator assignment.
+    fn remove_offline_collator_from_pending_assigment(collator: &AccountId);
+}
