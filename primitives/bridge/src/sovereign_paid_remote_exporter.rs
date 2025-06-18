@@ -15,43 +15,48 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    crate::alloc::vec,
     core::marker::PhantomData,
-    frame_support::traits::{tokens::ConversionFromAssetBalance, Get},
-    xcm::{latest::Location, prelude::*},
+    frame_support::traits::Get,
+    sp_std::vec,
+    xcm::{
+        latest::{Location, NetworkId},
+        prelude::*,
+    },
     xcm_builder::InspectMessageQueues,
     SendError::*,
 };
 
 // We check if the destination is ETH
-fn is_ethereum_location(loc: &Location) -> bool {
+fn is_ethereum_location(loc: &Location, ethereum_network: NetworkId) -> bool {
     matches!(
         loc,
         Location {
             parents: 2,
             interior: Junctions::X1(juncs)
-        } if juncs[0] == GlobalConsensus(crate::EthereumNetwork::get())
+        } if juncs[0] == GlobalConsensus(ethereum_network)
     )
 }
 
-fn calculate_container_fee_from_tanssi_amount(
-    tanssi_fee: u128,
-    tanssi_asset_id: crate::xcm_config::AssetId,
-) -> Result<Asset, SendError> {
-    let native_fee = crate::AssetRate::from_asset_balance(tanssi_fee, tanssi_asset_id)
-        .map_err(|_| Transport("Rate for Tanssi token not found or invalid"))?;
+// fn calculate_container_fee_from_tanssi_amount(
+//     tanssi_fee: u128,
+//     tanssi_asset_id: crate::xcm_config::AssetId,
+// ) -> Result<Asset, SendError> {
+//     let native_fee = crate::AssetRate::from_asset_balance(tanssi_fee, tanssi_asset_id)
+//         .map_err(|_| Transport("Rate for Tanssi token not found or invalid"))?;
+//
+//     Ok(Asset {
+//         id: AssetId(Location::here()),
+//         fun: Fungible(native_fee),
+//     })
+// }
 
-    Ok(Asset {
-        id: AssetId(Location::here()),
-        fun: Fungible(native_fee),
-    })
-}
-
-pub struct SovereignPaidRemoteExporter<Router, UniversalLocation>(
-    PhantomData<(Router, UniversalLocation)>,
+pub struct SovereignPaidRemoteExporter<Router, UniversalLocation, EthereumNetwork>(
+    PhantomData<(Router, UniversalLocation, EthereumNetwork)>,
 );
-impl<Router: SendXcm, UniversalLocation: Get<InteriorLocation>> SendXcm
-    for SovereignPaidRemoteExporter<Router, UniversalLocation>
+impl<Router: SendXcm, UniversalLocation: Get<InteriorLocation>, EthereumNetwork> SendXcm
+    for SovereignPaidRemoteExporter<Router, UniversalLocation, EthereumNetwork>
+where
+    EthereumNetwork: Get<NetworkId>,
 {
     type Ticket = Router::Ticket;
 
@@ -62,12 +67,12 @@ impl<Router: SendXcm, UniversalLocation: Get<InteriorLocation>> SendXcm
         let d = dest.as_ref().ok_or(MissingArgument)?;
         let xcm = msg.take().ok_or(MissingArgument)?;
         // Check if the destination is an Ethereum location
-        if !is_ethereum_location(&d.clone()) {
+        if !is_ethereum_location(&d.clone(), EthereumNetwork::get()) {
             return Err(Unroutable);
         }
 
         let export_instruction = ExportMessage {
-            network: crate::EthereumNetwork::get(),
+            network: EthereumNetwork::get(),
             destination: Here,
             xcm: xcm.clone(),
         };
@@ -139,12 +144,13 @@ impl<Router: SendXcm, UniversalLocation: Get<InteriorLocation>> SendXcm
     }
 }
 
-impl<Router: SendXcm, UniversalLocation: Get<InteriorLocation>> InspectMessageQueues
-    for SovereignPaidRemoteExporter<Router, UniversalLocation>
+impl<Router: SendXcm, UniversalLocation: Get<InteriorLocation>, EthereumNetwork>
+    InspectMessageQueues
+    for SovereignPaidRemoteExporter<Router, UniversalLocation, EthereumNetwork>
 {
     fn clear_messages() {}
 
     fn get_messages() -> vec::Vec<(VersionedLocation, vec::Vec<VersionedXcm<()>>)> {
-        todo!()
+        vec::Vec::new()
     }
 }

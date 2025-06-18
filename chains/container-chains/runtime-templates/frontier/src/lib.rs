@@ -36,8 +36,6 @@ mod precompiles;
 pub mod weights;
 pub mod xcm_config;
 
-mod xcm_sender;
-
 use {
     crate::precompiles::TemplatePrecompiles,
     cumulus_primitives_core::AggregateMessageOrigin,
