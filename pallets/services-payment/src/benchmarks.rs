@@ -33,6 +33,12 @@ use {
     tp_traits::{AuthorNotingHook, CollatorAssignmentHook},
 };
 
+// !!! (Applicable for Dancelight/Starlight only)
+// The specified ParaId needs to be larger than LOWEST_PUBLIC_ID value in Polkadot SDK.
+// Currently, this value is 2000. We should also avoid setting the value to one of
+// the container chains reserved by root
+const BASE_PARA_ID: u32 = 2010;
+
 // Build genesis storage according to the mock runtime.
 #[cfg(test)]
 pub fn new_test_ext() -> sp_io::TestExternalities {
@@ -86,7 +92,7 @@ mod benchmarks {
 
     #[benchmark]
     fn set_block_production_credits() {
-        let para_id = 1001u32.into();
+        let para_id = BASE_PARA_ID.into();
         let credits = T::FreeBlockProductionCredits::get();
 
         assert_ok!(Pallet::<T>::set_block_production_credits(
@@ -113,7 +119,7 @@ mod benchmarks {
 
     #[benchmark]
     fn set_given_free_credits() {
-        let para_id = 1001u32.into();
+        let para_id = BASE_PARA_ID.into();
 
         // Before call: no given free credits
         assert!(crate::GivenFreeCredits::<T>::get(para_id).is_none());
@@ -127,7 +133,7 @@ mod benchmarks {
 
     #[benchmark]
     fn set_refund_address() {
-        let para_id = 1001u32.into();
+        let para_id = BASE_PARA_ID.into();
 
         let origin = T::ManagerOrigin::try_successful_origin(&para_id)
             .expect("failed to create ManagerOrigin");
@@ -146,7 +152,7 @@ mod benchmarks {
 
     #[benchmark]
     fn set_max_core_price() {
-        let para_id = 1001u32.into();
+        let para_id = BASE_PARA_ID.into();
 
         let origin = T::ManagerOrigin::try_successful_origin(&para_id)
             .expect("failed to create ManagerOrigin");
@@ -167,7 +173,7 @@ mod benchmarks {
     fn on_container_authors_noted(n: Linear<1, 50>) {
         let mut infos = vec![];
         for i in 0..n {
-            let para_id = 1000u32 + i;
+            let para_id = BASE_PARA_ID + i;
             let block_cost = T::ProvideBlockProductionCost::block_cost(&para_id.into()).0;
             let credits: BalanceOf<T> = 1000u32.into();
             let balance_to_purchase = block_cost.saturating_mul(credits);
@@ -193,7 +199,7 @@ mod benchmarks {
 
     #[benchmark]
     fn on_collators_assigned() {
-        let para_id = 1001u32;
+        let para_id = BASE_PARA_ID;
         let collator_assignment_cost =
             T::ProvideCollatorAssignmentCost::collator_assignment_cost(&para_id.into()).0;
         let max_credit_stored = T::FreeCollatorAssignmentCredits::get();
@@ -224,7 +230,7 @@ mod benchmarks {
 
     #[benchmark]
     fn set_max_tip() {
-        let para_id = 1001u32.into();
+        let para_id = BASE_PARA_ID.into();
 
         assert!(crate::MaxTip::<T>::get(para_id).is_none());
 
