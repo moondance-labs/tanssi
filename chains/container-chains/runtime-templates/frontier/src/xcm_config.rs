@@ -15,7 +15,6 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    super::xcm_sender::SovereignPaidRemoteExporter,
     super::{
         currency::MICROUNIT,
         precompiles::FOREIGN_ASSET_PRECOMPILE_ADDRESS_PREFIX,
@@ -49,7 +48,9 @@ use {
     sp_core::{ConstU32, H160},
     sp_runtime::Perbill,
     sp_std::vec::Vec,
-    tp_bridge::EthereumLocationsConverterFor,
+    tp_bridge::{
+        sovereign_paid_remote_exporter::SovereignPaidRemoteExporter, EthereumLocationsConverterFor,
+    },
     xcm::latest::prelude::*,
     xcm_builder::{
         AccountKey20Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
@@ -184,7 +185,8 @@ pub type AssetTransactors = (CurrencyTransactor, ForeignFungiblesTransactor);
 pub type XcmWeigher =
     WeightInfoBounds<XcmGenericWeights<RuntimeCall>, RuntimeCall, MaxInstructions>;
 
-pub type UmpRouter = cumulus_primitives_utility::ParentAsUmp<ParachainSystem, PolkadotXcm, PriceForParentDelivery>;
+pub type UmpRouter =
+    cumulus_primitives_utility::ParentAsUmp<ParachainSystem, PolkadotXcm, PriceForParentDelivery>;
 
 /// The means for routing XCM messages which are not for local execution into the right message
 /// queues.
@@ -193,7 +195,7 @@ pub type XcmRouter = (
     UmpRouter,
     // ..and XCMP to communicate with the sibling chains.
     XcmpQueue,
-    SovereignPaidRemoteExporter<UmpRouter, UniversalLocation>,
+    SovereignPaidRemoteExporter<UmpRouter, UniversalLocation, crate::EthereumNetwork>,
 );
 
 pub struct XcmConfig;
