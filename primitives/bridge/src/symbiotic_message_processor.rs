@@ -69,10 +69,21 @@ where
 {
     fn can_process_message(_channel: &Channel, envelope: &Envelope) -> bool {
         let decode_result = Payload::<T>::decode_all(&mut envelope.payload.as_slice());
-        if let Ok(payload) = decode_result {
-            payload.magic_bytes == MAGIC_BYTES
-        } else {
-            false
+        match decode_result {
+            Ok(payload) => {
+                if payload.magic_bytes == MAGIC_BYTES {
+                    true
+                } else {
+                    log::debug!("SymbioticMessageProcessor: magic number mismatch, will try next processor: {:?}", payload.magic_bytes);
+                    false
+                }
+            }
+            Err(e) => {
+                // Message cannot be decoded as `Payload`.
+                // This is expected if the message is intended for a different processor.
+                log::trace!("SymbioticMessageProcessor: failed to decode payload. This is expected if the message is not for this processor. Error: {:?}", e);
+                false
+            }
         }
     }
 
