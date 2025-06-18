@@ -2,16 +2,12 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type KeyringPair, alith } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 
-import {
-  SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS,
-  signAndSendAndInclude,
-  TESTNET_ETHEREUM_NETWORK_ID,
-} from "utils";
+import { SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS, TESTNET_ETHEREUM_NETWORK_ID } from "utils";
 
 describeSuite({
-  id: "ZOMBIETANSS02",
+  id: "COM0103",
   title: "XCM transfer to Ethereum",
-  foundationMethods: "zombie",
+  foundationMethods: "dev",
   testCases: ({ context, it }) => {
     let containerChainPolkadotJs: ApiPromise;
     let alice: KeyringPair;
@@ -19,7 +15,7 @@ describeSuite({
     let chain: string;
 
     beforeAll(async () => {
-      containerChainPolkadotJs = context.polkadotJs("Container2001");
+      containerChainPolkadotJs = context.polkadotJs();
       chain = containerChainPolkadotJs.consts.system.version.specName.toString();
       aliceAccount32 = new Keyring({ type: "sr25519" }).addFromUri("//Alice", {
         name: "Alice default",
@@ -89,7 +85,7 @@ describeSuite({
           },
         };
 
-        const txRoot = containerChainPolkadotJs.tx.polkadotXcm.transferAssets(
+        const tx = containerChainPolkadotJs.tx.polkadotXcm.transferAssets(
           dest,
           versionedBeneficiary,
           versionedAssets,
@@ -97,7 +93,9 @@ describeSuite({
           "Unlimited"
         );
 
-        await signAndSendAndInclude(txRoot, alice);
+        await tx.signAndSend(alice);
+
+        await context.createBlock();
 
         const balanceAfter = (
           await containerChainPolkadotJs.query.system.account(holdingAccount)
