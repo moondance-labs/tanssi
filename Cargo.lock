@@ -3772,6 +3772,7 @@ name = "dancelight-runtime-constants"
 version = "0.1.0"
 dependencies = [
  "frame-support",
+ "hex-literal 0.3.4",
  "polkadot-primitives",
  "polkadot-runtime-common",
  "smallvec",
@@ -18742,6 +18743,7 @@ name = "starlight-runtime-constants"
 version = "0.1.0"
 dependencies = [
  "frame-support",
+ "hex-literal 0.3.4",
  "polkadot-primitives",
  "polkadot-runtime-common",
  "smallvec",

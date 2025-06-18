@@ -693,3 +693,15 @@ export async function chopsticksWaitTillIncluded(
         tries++;
     }
 }
+
+export async function getLastSessionEndBlock(api: ApiPromise, lastSessionIndex: number): Promise<number> {
+    let blockNumber = (await api.rpc.chain.getBlock()).block.header.number.toNumber();
+    let currentSessionIndex = (await api.query.session.currentIndex()).toNumber();
+    while (currentSessionIndex > lastSessionIndex) {
+        blockNumber -= 1;
+        const blockHash = await api.rpc.chain.getBlockHash(blockNumber);
+        const apiAtBlock = await api.at(blockHash);
+        currentSessionIndex = (await apiAtBlock.query.session.currentIndex()).toNumber();
+    }
+    return blockNumber;
+}
