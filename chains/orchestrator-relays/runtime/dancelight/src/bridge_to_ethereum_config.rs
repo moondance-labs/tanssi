@@ -175,14 +175,25 @@ where
                 || channel.para_id != channel_info.para_id
                 || channel.agent_id != channel_info.agent_id
             {
+                log::debug!(
+                    "Unexpected channel id: {:?} != {:?}",
+                    (envelope.channel_id, channel.para_id, channel.agent_id),
+                    (
+                        channel_info.channel_id,
+                        channel_info.para_id,
+                        channel_info.agent_id
+                    )
+                );
                 return false;
             }
         } else {
+            log::warn!("CurrentChannelInfo not set in storage");
             return false;
         }
 
         // Check it is from the right gateway
         if envelope.gateway != T::GatewayAddress::get() {
+            log::warn!("Wrong gateway address: {:?}", envelope.gateway);
             return false;
         }
 
@@ -195,18 +206,44 @@ where
                 let token_location = T::TokenLocationReanchored::get();
 
                 if let Some(expected_token_id) = EthereumSystem::convert_back(&token_location) {
-                    return token_id == expected_token_id;
+                    if token_id == expected_token_id {
+                        return true;
+                    } else {
+                        // TODO: ensure this does not warn on container token transfers or other message types, if yes change to debug
+                        log::warn!(
+                            "NativeTokenTransferMessageProcessor: unexpected token_id: {:?}",
+                            token_id
+                        );
+                        return false;
+                    }
+                } else {
+                    log::warn!("NativeTokenTransferMessageProcessor: token id not found for location: {:?}", token_location);
+
+                    return false;
                 }
-                return false;
             }
-            _ => false,
+            Ok(msg) => {
+                log::trace!(
+                    "NativeTokenTransferMessageProcessor: unexpected message: {:?}",
+                    msg
+                );
+                false
+            }
+            Err(e) => {
+                log::trace!("NativeTokenTransferMessageProcessor: failed to decode message. This is expected if the message is not for this processor. Error: {:?}", e);
+                false
+            }
         }
     }
 
     fn process_message(_channel: Channel, envelope: Envelope) -> DispatchResult {
         // - Decode payload as SendNativeToken
         let message = VersionedXcmMessage::decode_all(&mut envelope.payload.as_slice())
-            .map_err(|_| DispatchError::Other("unable to parse the envelope payload"))?;
+            .map_err(|e| {
+                log::trace!("NativeTokenTransferMessageProcessor: failed to decode message. This is expected if the message is not for this processor. Error: {:?}", e);
+
+                DispatchError::Other("unable to parse the envelope payload")
+            })?;
 
         log::trace!("NativeTokenTransferMessageProcessor: {:?}", message);
 
@@ -235,7 +272,13 @@ where
 
                 Ok(())
             }
-            _ => return Err(DispatchError::Other("unexpected message")),
+            msg => {
+                log::trace!(
+                    "NativeTokenTransferMessageProcessor: unexpected message: {:?}",
+                    msg
+                );
+                Err(DispatchError::Other("unexpected message"))
+            }
         }
     }
 }
@@ -272,14 +315,25 @@ where
                 || channel.para_id != channel_info.para_id
                 || channel.agent_id != channel_info.agent_id
             {
+                log::debug!(
+                    "Unexpected channel id: {:?} != {:?}",
+                    (envelope.channel_id, channel.para_id, channel.agent_id),
+                    (
+                        channel_info.channel_id,
+                        channel_info.para_id,
+                        channel_info.agent_id
+                    )
+                );
                 return false;
             }
         } else {
+            log::warn!("CurrentChannelInfo not set in storage");
             return false;
         }
 
         // Check it is from the right gateway
         if envelope.gateway != T::GatewayAddress::get() {
+            log::warn!("Wrong gateway address: {:?}", envelope.gateway);
             return false;
         }
 
@@ -287,10 +341,17 @@ where
             Self::decode_message_for_eth_transfer(envelope.payload.as_slice())
         {
             // Check if the token location is a foreign asset included in ForeignAssetCreator
-            return pallet_foreign_asset_creator::ForeignAssetToAssetId::<Runtime>::get(
-                eth_transfer_data.token_location,
-            )
-            .is_some();
+            let asset_id_exists =
+                pallet_foreign_asset_creator::ForeignAssetToAssetId::<Runtime>::get(
+                    eth_transfer_data.token_location,
+                )
+                .is_some();
+
+            if !asset_id_exists {
+                log::warn!("EthTokensLocalProcessor: in ForeignAssetToAssetId map");
+            }
+
+            return asset_id_exists;
         }
 
         return false;
@@ -307,10 +368,14 @@ where
                 Self::process_xcm_local_native_eth_transfer(eth_transfer_data)
             }
             // TODO: Add support for container transfers here
-            _ => {
+            destination => {
+                log::warn!(
+                    "EthTokensLocalProcessor: invalid destination: {:?}",
+                    destination
+                );
                 return Err(DispatchError::Other(
                     "container transfers not supported yet",
-                ))
+                ));
             }
         }
     }
@@ -365,13 +430,20 @@ where
                     }
                 };
 
-                return Some(EthTransferData {
+                Some(EthTransferData {
                     token_location,
                     destination,
                     amount,
-                });
+                })
             }
-            _ => None,
+            Ok(msg) => {
+                log::trace!("EthTokensLocalProcessor: unexpected message: {:?}", msg);
+                None
+            }
+            Err(e) => {
+                log::trace!("EthTokensLocalProcessor: failed to decode message. This is expected if the message is not for this processor. Error: {:?}", e);
+                None
+            }
         }
     }
 
@@ -385,7 +457,13 @@ where
 
         let destination_account = match eth_transfer_data.destination {
             Destination::AccountId32 { id } => id,
-            _ => return Err(DispatchError::Other("invalid destination")),
+            destination => {
+                log::warn!(
+                    "EthTokensLocalProcessor: invalid destination: {:?}",
+                    destination
+                );
+                return Err(DispatchError::Other("invalid destination"));
+            }
         };
 
         let mut xcm = Xcm::<T::RuntimeCall>(vec![
@@ -501,7 +579,7 @@ impl<T> RewardProcessor<T> for RewardThroughFeesAccount<T>
 where
     T: snowbridge_pallet_inbound_queue::Config + pallet_ethereum_token_transfers::Config,
     T::AccountId: From<sp_runtime::AccountId32>,
-    <T::Token as Inspect<T::AccountId>>::Balance: core::fmt::Display,
+    <T::Token as Inspect<T::AccountId>>::Balance: core::fmt::Debug,
 {
     fn process_reward(who: T::AccountId, _channel: Channel, message: Message) -> DispatchResult {
         let reward_amount = snowbridge_pallet_inbound_queue::Pallet::<T>::calculate_delivery_cost(
@@ -515,7 +593,7 @@ where
                 .min(reward_amount);
         if amount != reward_amount {
             log::warn!(
-                "RewardThroughFeesAccount: fees account running low on funds {}: {}",
+                "RewardThroughFeesAccount: fees account running low on funds {:?}: {:?}",
                 fees_account,
                 amount
             );
