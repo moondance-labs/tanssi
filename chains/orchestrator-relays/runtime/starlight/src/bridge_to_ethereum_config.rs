@@ -168,14 +168,25 @@ where
                 || channel.para_id != channel_info.para_id
                 || channel.agent_id != channel_info.agent_id
             {
+                log::debug!(
+                    "Unexpected channel id: {:?} != {:?}",
+                    (envelope.channel_id, channel.para_id, channel.agent_id),
+                    (
+                        channel_info.channel_id,
+                        channel_info.para_id,
+                        channel_info.agent_id
+                    )
+                );
                 return false;
             }
         } else {
+            log::warn!("CurrentChannelInfo not set in storage");
             return false;
         }
 
         // Check it is from the right gateway
         if envelope.gateway != T::GatewayAddress::get() {
+            log::warn!("Wrong gateway address: {:?}", envelope.gateway);
             return false;
         }
 
@@ -188,18 +199,45 @@ where
                 let token_location = T::TokenLocationReanchored::get();
 
                 if let Some(expected_token_id) = EthereumSystem::convert_back(&token_location) {
-                    return token_id == expected_token_id;
+                    if token_id == expected_token_id {
+                        return true;
+                    } else {
+                        // TODO: ensure this does not warn on container token transfers or other message types, if yes change to debug
+                        log::warn!(
+                            "NativeTokenTransferMessageProcessor: unexpected token_id: {:?}",
+                            token_id
+                        );
+                        return false;
+                    }
+                } else {
+                    log::warn!("NativeTokenTransferMessageProcessor: token id not found for location: {:?}", token_location);
+                    return false;
                 }
-                return false;
             }
-            _ => false,
+            Ok(msg) => {
+                log::trace!(
+                    "NativeTokenTransferMessageProcessor: unexpected message: {:?}",
+                    msg
+                );
+                false
+            }
+            Err(e) => {
+                log::trace!("NativeTokenTransferMessageProcessor: failed to decode message. This is expected if the message is not for this processor. Error: {:?}", e);
+                false
+            }
         }
     }
 
     fn process_message(_channel: Channel, envelope: Envelope) -> DispatchResult {
         // - Decode payload as SendNativeToken
         let message = VersionedXcmMessage::decode_all(&mut envelope.payload.as_slice())
-            .map_err(|_| DispatchError::Other("unable to parse the envelope payload"))?;
+        .map_err(|e| {
+            log::trace!("NativeTokenTransferMessageProcessor: failed to decode message. This is expected if the message is not for this processor. Error: {:?}", e);
+
+            DispatchError::Other("unable to parse the envelope payload")
+        })?;
+
+        log::trace!("NativeTokenTransferMessageProcessor: {:?}", message);
 
         match message {
             VersionedXcmMessage::V1(MessageV1 {
@@ -217,16 +255,24 @@ where
                 // - Transfer the amounts of tokens from Ethereum sov account to the destination
                 let sovereign_account = T::EthereumSovereignAccount::get();
 
-                T::Currency::transfer(
+                if let Err(e) = T::Currency::transfer(
                     &sovereign_account,
                     &destination_account.into(),
                     amount.into(),
                     Preservation::Preserve,
-                )?;
+                ) {
+                    log::error!("NativeTokenProcessor: Error transferring tokens: {:?}", e);
+                }
 
                 Ok(())
             }
-            _ => return Err(DispatchError::Other("unexpected message")),
+            msg => {
+                log::trace!(
+                    "NativeTokenTransferMessageProcessor: unexpected message: {:?}",
+                    msg
+                );
+                Ok(())
+            }
         }
     }
 }
