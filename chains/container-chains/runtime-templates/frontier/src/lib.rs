@@ -97,8 +97,7 @@ use {
     sp_std::prelude::*,
     sp_version::RuntimeVersion,
     tp_bridge::ConvertLocation,
-    xcm::v5::Location,
-    xcm::v5::NetworkId,
+    xcm::v5::{Location, NetworkId},
     xcm::{IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation, VersionedXcm},
     xcm_runtime_apis::{
         dry_run::{CallDryRunEffects, Error as XcmDryRunApiError, XcmDryRunEffects},
