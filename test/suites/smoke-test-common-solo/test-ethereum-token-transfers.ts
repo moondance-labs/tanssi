@@ -2,6 +2,7 @@ import "@tanssi/api-augment/dancelight";
 
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
+import type { EthereumTokenTransfersNativeTokenTransferred } from "@polkadot/types/lookup";
 import { hexToU8a } from "@polkadot/util";
 import { encodeAddress } from "@polkadot/util-crypto";
 import { ETHEREUM_MAINNET_SOVEREIGN_ACCOUNT_ADDRESS, SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS } from "utils";
@@ -42,7 +43,7 @@ describeSuite({
 
         it({
             id: "C02",
-            title: "Sovereign account collects amount when native token is transferred",
+            title: "Sovereign account collects funds when native token is transferred",
             test: async () => {
                 // Go through the last BLOCKS_AMOUNT_TO_CHECK blocks and check if the sovereign account is collecting
                 // the amount for each native token transfer event.
@@ -58,7 +59,8 @@ describeSuite({
                     process.stdout.write(`\rProcessing block [${blockNumber}]: ${i}/${BLOCKS_AMOUNT_TO_CHECK}`);
 
                     const blockHash = await api.rpc.chain.getBlockHash(blockNumber);
-                    const events = await api.query.system.events.at(blockHash);
+                    const apiAtBlock = await api.at(blockHash);
+                    const events = await apiAtBlock.query.system.events();
 
                     const tokenTransferEvents = events.filter(({ event }) =>
                         api.events.ethereumTokenTransfers.NativeTokenTransferred.is(event)
@@ -71,7 +73,7 @@ describeSuite({
 
                     // Check sovereign is collecting the amount for each native token transfer event
                     for (const { event } of tokenTransferEvents) {
-                        const nativeTokenTransferEvent = event.data;
+                        const nativeTokenTransferEvent = event.data as EthereumTokenTransfersNativeTokenTransferred;
 
                         const recipientReceived = balanceTransferEvents.some(({ event }) => {
                             const [from, to, amount] = event.data;
@@ -90,5 +92,59 @@ describeSuite({
                 }
             },
         });
+
+        it({
+            id: "C03",
+            title: "Sovereign account releases funds when token is received via ethereuminboundqueue.submit",
+            test: async () => {
+                let currentBlock = (await api.rpc.chain.getBlock()).block.header.number.toNumber();
+
+                if (BLOCK_NUMBER_TO_DEBUG !== undefined) {
+                    BLOCKS_AMOUNT_TO_CHECK = 1;
+                    currentBlock = BLOCK_NUMBER_TO_DEBUG + 1;
+                }
+        
+                for (let i = 1; i <= BLOCKS_AMOUNT_TO_CHECK; i++) {
+                    const blockNumber = currentBlock - i;
+                    process.stdout.write(`\rProcessing block [${blockNumber}]: ${i}/${BLOCKS_AMOUNT_TO_CHECK}`);
+        
+                    const blockHash = await api.rpc.chain.getBlockHash(blockNumber);
+                    const block = await api.rpc.chain.getBlock(blockHash);
+                    const events = await api.query.system.events.at(blockHash);
+                    const extrinsics = block.block.extrinsics;
+        
+                    extrinsics.forEach((extrinsic, index) => {
+                        const { method, section } = extrinsic.method;
+        
+                        if (section === "ethereumInboundQueue" && method === "submit") {
+                            const relatedEvents = events.filter(
+                                (e) => e.phase.isApplyExtrinsic && e.phase.asApplyExtrinsic.eq(index)
+                            );
+        
+                            // TODO: find a way to get the destination account and the expected amount parsing the
+                            // extrinsic event_log.data
+                            const matchedTransfer = relatedEvents.some(({ event }) => {
+                                const { section, method, data } = event;
+        
+                                if (section !== "balances" || method !== "Transfer") {
+                                    return false;
+                                }
+        
+                                const [from] = data;
+        
+                                return (
+                                    from.toString() === sovereignAccount
+                                );
+                            });
+        
+                            expect(
+                                matchedTransfer,
+                                `Expected sovereign to release funds in block ${blockNumber}`
+                            ).toBe(true);
+                        }
+                    });
+                }
+            },
+        });        
     },
 });
