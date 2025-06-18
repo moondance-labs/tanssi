@@ -40,6 +40,9 @@ xcm-primitives = { workspace = true }
 # Dancekit
 pallet-xcm-executor-utils = { workspace = true }
 
+# Bridges
+tp-bridge = { workspace = true }
+
 # Substrate
 frame-executive = { workspace = true }
 frame-support = { workspace = true }
@@ -117,6 +120,7 @@ std = [
 	"cumulus-pallet-parachain-system/std",
 	"cumulus-pallet-session-benchmarking/std",
 	"cumulus-pallet-xcm/std",
+	"tp-bridge/std",
 	"cumulus-pallet-xcmp-queue/std",
 	"cumulus-primitives-core/std",
 	"cumulus-primitives-storage-weight-reclaim/std",
@@ -229,6 +233,7 @@ runtime-benchmarks = [
 	"polkadot-runtime-common/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"tanssi-runtime-common/runtime-benchmarks",
+	"tp-bridge/runtime-benchmarks",
 	"xcm-builder/runtime-benchmarks",
 	"xcm-executor/runtime-benchmarks",
 	"xcm-primitives/runtime-benchmarks",
