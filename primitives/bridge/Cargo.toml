@@ -33,7 +33,6 @@ sp-std = { workspace = true }
 xcm = { workspace = true }
 xcm-builder = { workspace = true }
 xcm-executor = { workspace = true }
-xcm-builder = { workspace = true }
 
 # Cumulus
 cumulus-primitives-core = { workspace = true }
@@ -53,7 +52,6 @@ std = [
 	"log/std",
 	"pallet-external-validators/std",
 	"parity-scale-codec/std",
-	"xcm-builder/std",
 	"scale-info/std",
 	"serde/std",
 	"snowbridge-beacon-primitives/std",
@@ -74,7 +72,6 @@ runtime-benchmarks = [
 	"frame-system/runtime-benchmarks",
 	"pallet-external-validators/runtime-benchmarks",
 	"snowbridge-core/runtime-benchmarks",
-	"xcm-builder/runtime-benchmarks",
 	"snowbridge-pallet-outbound-queue/runtime-benchmarks",
 	"snowbridge-pallet-system/runtime-benchmarks",
 	"snowbridge-router-primitives/runtime-benchmarks",
