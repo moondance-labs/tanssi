@@ -70,6 +70,7 @@ pub use benchmarks::*;
 
 mod custom_do_process_message;
 mod custom_send_message;
+pub mod sovereign_paid_remote_exporter;
 
 #[derive(Clone, Encode, Decode, RuntimeDebug, TypeInfo, PartialEq)]
 pub struct SlashData {

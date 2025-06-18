@@ -20436,6 +20436,7 @@ dependencies = [
  "sp-runtime",
  "sp-std",
  "staging-xcm",
+ "staging-xcm-builder",
  "staging-xcm-executor",
 ]
 
