@@ -5,13 +5,55 @@ import type { ApiPromise } from "@polkadot/api";
 import type { EthereumTokenTransfersNativeTokenTransferred } from "@polkadot/types/lookup";
 import { hexToU8a } from "@polkadot/util";
 import { encodeAddress } from "@polkadot/util-crypto";
+import { Interface } from "ethers";
 import { ETHEREUM_MAINNET_SOVEREIGN_ACCOUNT_ADDRESS, SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS } from "utils";
 
 const SS58_FORMAT = 42;
 
-let BLOCKS_AMOUNT_TO_CHECK = 100;
+let BLOCKS_AMOUNT_TO_CHECK = 1;
 // For debug purposes only, specify block here to check it
-const BLOCK_NUMBER_TO_DEBUG = undefined;
+const BLOCK_NUMBER_TO_DEBUG = 1623043;
+
+const customTypes = {
+    VersionedXcmMessage: {
+        _enum: {
+            V1: "MessageV1",
+        },
+    },
+    MessageV1: {
+        chain_id: "u64",
+        command: "Command",
+    },
+    Command: {
+        _enum: {
+            RegisterToken: "RegisterToken",
+            SendToken: "SendToken",
+            SendNativeToken: "SendNativeToken",
+        },
+    },
+    RegisterToken: {
+        token: "H160",
+        fee: "u128",
+    },
+    SendToken: {
+        token: "H160",
+        destination: "Destination",
+        amount: "u128",
+        fee: "u128",
+    },
+    SendNativeToken: {
+        token_id: "TokenId",
+        destination: "Destination",
+        amount: "u128",
+        fee: "u128",
+    },
+    Destination: {
+        _enum: {
+            AccountId32: "AccountId",
+        },
+    },
+    TokenId: "H256",
+};
 
 describeSuite({
     id: "SMOK15",
@@ -23,6 +65,9 @@ describeSuite({
 
         beforeAll(async () => {
             api = context.polkadotJs();
+
+            api.registry.register(customTypes);
+
             const runtimeName = api.runtimeVersion.specName.toString();
             const isStarlight = runtimeName === "starlight";
             sovereignAccount = isStarlight
@@ -103,48 +148,67 @@ describeSuite({
                     BLOCKS_AMOUNT_TO_CHECK = 1;
                     currentBlock = BLOCK_NUMBER_TO_DEBUG + 1;
                 }
-        
+
+                let foundSubmit = false;
+
                 for (let i = 1; i <= BLOCKS_AMOUNT_TO_CHECK; i++) {
                     const blockNumber = currentBlock - i;
-                    process.stdout.write(`\rProcessing block [${blockNumber}]: ${i}/${BLOCKS_AMOUNT_TO_CHECK}`);
-        
+                    process.stdout.write(`\rProcessing block [${blockNumber}]  ${i}/${BLOCKS_AMOUNT_TO_CHECK}`);
+
                     const blockHash = await api.rpc.chain.getBlockHash(blockNumber);
                     const block = await api.rpc.chain.getBlock(blockHash);
                     const events = await api.query.system.events.at(blockHash);
                     const extrinsics = block.block.extrinsics;
-        
-                    extrinsics.forEach((extrinsic, index) => {
-                        const { method, section } = extrinsic.method;
-        
+
+                    for (const [index, extrinsic] of extrinsics.entries()) {
+                        const { section, method } = extrinsic.method;
+
                         if (section === "ethereumInboundQueue" && method === "submit") {
+                            foundSubmit = true;
+
+                            const message = extrinsic.args[0];
+                            const { eventLog } = message.toJSON();
+
+                            const decodedEvent = iface.decodeEventLog(
+                                "OutboundMessageAccepted",
+                                eventLog.data,
+                                eventLog.topics
+                            );
+
+                            const versioned = api.registry.createType("VersionedXcmMessage", decodedEvent.payload);
+                            const { destination, amount } = versioned.toJSON().v1.command.sendNativeToken;
+
                             const relatedEvents = events.filter(
                                 (e) => e.phase.isApplyExtrinsic && e.phase.asApplyExtrinsic.eq(index)
                             );
-        
-                            // TODO: find a way to get the destination account and the expected amount parsing the
-                            // extrinsic event_log.data
-                            const matchedTransfer = relatedEvents.some(({ event }) => {
+
+                            const matched = relatedEvents.some(({ event }) => {
                                 const { section, method, data } = event;
-        
-                                if (section !== "balances" || method !== "Transfer") {
-                                    return false;
-                                }
-        
-                                const [from] = data;
-        
+                                if (section !== "balances" || method !== "Transfer") return false;
+
+                                const [from, to, value] = data;
+
                                 return (
-                                    from.toString() === sovereignAccount
+                                    from.toString() === sovereignAccount &&
+                                    to.toString() === destination.accountId32 &&
+                                    value.toString() === amount.toString()
                                 );
                             });
-        
+
                             expect(
-                                matchedTransfer,
-                                `Expected sovereign to release funds in block ${blockNumber}`
+                                matched,
+                                `Expected Transfer of ${amount.toString()} from sovereign to ${destination.accountId32} in block ${blockNumber}`
                             ).toBe(true);
                         }
-                    });
+                    }
                 }
+
+                expect(foundSubmit, "No ethereumInboundQueue.submit extrinsic found in scanned blocks").toBe(true);
             },
-        });        
+        });
     },
 });
+
+const iface = new Interface([
+    "event OutboundMessageAccepted(bytes32 indexed channel_id, uint64 nonce, bytes32 indexed message_id, bytes payload)",
+]);
