@@ -320,14 +320,25 @@ where
                 || channel.para_id != channel_info.para_id
                 || channel.agent_id != channel_info.agent_id
             {
+                log::debug!(
+                    "Unexpected channel id: {:?} != {:?}",
+                    (envelope.channel_id, channel.para_id, channel.agent_id),
+                    (
+                        channel_info.channel_id,
+                        channel_info.para_id,
+                        channel_info.agent_id
+                    )
+                );
                 return false;
             }
         } else {
+            log::warn!("CurrentChannelInfo not set in storage");
             return false;
         }
 
         // Check it is from the right gateway
         if envelope.gateway != T::GatewayAddress::get() {
+            log::warn!("Wrong gateway address: {:?}", envelope.gateway);
             return false;
         }
 
@@ -335,10 +346,17 @@ where
             Self::decode_message_for_eth_transfer(envelope.payload.as_slice())
         {
             // Check if the token location is a foreign asset included in ForeignAssetCreator
-            return pallet_foreign_asset_creator::ForeignAssetToAssetId::<Runtime>::get(
-                eth_transfer_data.token_location,
-            )
-            .is_some();
+            let asset_id_exists =
+                pallet_foreign_asset_creator::ForeignAssetToAssetId::<Runtime>::get(
+                    eth_transfer_data.token_location,
+                )
+                .is_some();
+
+            if !asset_id_exists {
+                log::warn!("EthTokensLocalProcessor: in ForeignAssetToAssetId map");
+            }
+
+            return asset_id_exists;
         }
 
         return false;
@@ -348,21 +366,28 @@ where
         let eth_transfer_data = Self::decode_message_for_eth_transfer(envelope.payload.as_slice())
             .ok_or_else(|| DispatchError::Other("unexpected message"))?;
 
+        log::trace!("EthTokensLocalProcessor: {:?}", eth_transfer_data);
+
         match eth_transfer_data.destination {
             Destination::AccountId32 { id: _ } => {
                 Self::process_xcm_local_native_eth_transfer(eth_transfer_data)
             }
             // TODO: Add support for container transfers here
-            _ => {
+            destination => {
+                log::warn!(
+                    "EthTokensLocalProcessor: invalid destination: {:?}",
+                    destination
+                );
                 return Err(DispatchError::Other(
                     "container transfers not supported yet",
-                ))
+                ));
             }
         }
     }
 }
 
 /// Information needed to process an eth transfer message or check its validity.
+#[derive(Debug)]
 pub struct EthTransferData {
     token_location: Location,
     destination: Destination,
@@ -410,13 +435,20 @@ where
                     }
                 };
 
-                return Some(EthTransferData {
+                Some(EthTransferData {
                     token_location,
                     destination,
                     amount,
-                });
+                })
             }
-            _ => None,
+            Ok(msg) => {
+                log::trace!("EthTokensLocalProcessor: unexpected message: {:?}", msg);
+                None
+            }
+            Err(e) => {
+                log::trace!("EthTokensLocalProcessor: failed to decode message. This is expected if the message is not for this processor. Error: {:?}", e);
+                None
+            }
         }
     }
 
@@ -430,7 +462,13 @@ where
 
         let destination_account = match eth_transfer_data.destination {
             Destination::AccountId32 { id } => id,
-            _ => return Err(DispatchError::Other("invalid destination")),
+            destination => {
+                log::warn!(
+                    "EthTokensLocalProcessor: invalid destination: {:?}",
+                    destination
+                );
+                return Err(DispatchError::Other("invalid destination"));
+            }
         };
 
         let mut xcm = Xcm::<T::RuntimeCall>(vec![
