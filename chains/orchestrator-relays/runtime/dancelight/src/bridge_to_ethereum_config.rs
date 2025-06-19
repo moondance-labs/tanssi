@@ -239,11 +239,11 @@ where
     fn process_message(_channel: Channel, envelope: Envelope) -> DispatchResult {
         // - Decode payload as SendNativeToken
         let message = VersionedXcmMessage::decode_all(&mut envelope.payload.as_slice())
-            .map_err(|e| {
-                log::trace!("NativeTokenTransferMessageProcessor: failed to decode message. This is expected if the message is not for this processor. Error: {:?}", e);
+        .map_err(|e| {
+            log::trace!("NativeTokenTransferMessageProcessor: failed to decode message. This is expected if the message is not for this processor. Error: {:?}", e);
 
-                DispatchError::Other("unable to parse the envelope payload")
-            })?;
+            DispatchError::Other("unable to parse the envelope payload")
+        })?;
 
         log::trace!("NativeTokenTransferMessageProcessor: {:?}", message);
 
@@ -263,21 +263,26 @@ where
                 // - Transfer the amounts of tokens from Ethereum sov account to the destination
                 let sovereign_account = T::EthereumSovereignAccount::get();
 
-                T::Currency::transfer(
+                if let Err(e) = T::Currency::transfer(
                     &sovereign_account,
                     &destination_account.into(),
                     amount.into(),
                     Preservation::Preserve,
-                )?;
+                ) {
+                    log::warn!(
+                        "NativeTokenTransferMessageProcessor: Error transferring tokens: {:?}",
+                        e
+                    );
+                }
 
                 Ok(())
             }
             msg => {
-                log::trace!(
+                log::warn!(
                     "NativeTokenTransferMessageProcessor: unexpected message: {:?}",
                     msg
                 );
-                Err(DispatchError::Other("unexpected message"))
+                Ok(())
             }
         }
     }
@@ -591,6 +596,7 @@ where
         let amount =
             T::Token::reducible_balance(&fees_account, Preservation::Preserve, Fortitude::Polite)
                 .min(reward_amount);
+
         if amount != reward_amount {
             log::warn!(
                 "RewardThroughFeesAccount: fees account running low on funds {:?}: {:?}",
@@ -598,6 +604,7 @@ where
                 amount
             );
         }
+
         if !amount.is_zero() {
             T::Token::transfer(&fees_account, &who, amount, Preservation::Preserve)?;
         }
