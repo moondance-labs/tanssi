@@ -269,7 +269,7 @@ where
                     amount.into(),
                     Preservation::Preserve,
                 ) {
-                    log::trace!(
+                    log::warn!(
                         "NativeTokenTransferMessageProcessor: Error transferring tokens: {:?}",
                         e
                     );
@@ -278,7 +278,7 @@ where
                 Ok(())
             }
             msg => {
-                log::trace!(
+                log::warn!(
                     "NativeTokenTransferMessageProcessor: unexpected message: {:?}",
                     msg
                 );

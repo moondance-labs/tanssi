@@ -261,13 +261,13 @@ where
                     amount.into(),
                     Preservation::Preserve,
                 ) {
-                    log::error!("NativeTokenProcessor: Error transferring tokens: {:?}", e);
+                    log::warn!("NativeTokenProcessor: Error transferring tokens: {:?}", e);
                 }
 
                 Ok(())
             }
             msg => {
-                log::trace!(
+                log::warn!(
                     "NativeTokenTransferMessageProcessor: unexpected message: {:?}",
                     msg
                 );
