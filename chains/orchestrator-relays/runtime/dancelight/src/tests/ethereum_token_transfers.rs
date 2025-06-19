@@ -49,6 +49,15 @@ use {
     },
 };
 
+macro_rules! filter_events {
+    ($pat:pat) => {
+        System::events().iter().filter(|r| match r.event {
+            $pat => true,
+            _ => false,
+        })
+    };
+}
+
 #[test]
 fn test_set_token_transfer_channel_reflects_changes_in_ethereum_system() {
     ExtBuilder::default()
@@ -205,18 +214,12 @@ fn test_transfer_native_token() {
                 recipient
             ));
 
-            let outbound_msg_queue_event = System::events()
-                .iter()
-                .filter(|r| match r.event {
-                    RuntimeEvent::EthereumOutboundQueue(
-                        snowbridge_pallet_outbound_queue::Event::MessageQueued { .. },
-                    ) => true,
-                    _ => false,
-                })
-                .count();
-
             assert_eq!(
-                outbound_msg_queue_event, 1,
+                filter_events!(RuntimeEvent::EthereumOutboundQueue(
+                    snowbridge_pallet_outbound_queue::Event::MessageQueued { .. },
+                ))
+                .count(),
+                1,
                 "MessageQueued event should be emitted!"
             );
 
@@ -1431,6 +1434,15 @@ fn send_eth_native_token_works() {
             // Check some fees have been payed
             let balance_after = Balances::balance(&AccountId::from(BOB));
             assert!(balance_before - balance_after > 0);
+
+            assert_eq!(
+                filter_events!(RuntimeEvent::EthereumOutboundQueue(
+                    snowbridge_pallet_outbound_queue::Event::MessageQueued { .. },
+                ))
+                .count(),
+                1,
+                "MessageQueued event should be emitted!"
+            );
         })
 }
 
@@ -1507,6 +1519,15 @@ fn cant_send_eth_unknown_token() {
                     error: [24, 0, 0, 0],
                     message: Some("LocalExecutionIncomplete")
                 })
+            );
+
+            assert_eq!(
+                filter_events!(RuntimeEvent::EthereumOutboundQueue(
+                    snowbridge_pallet_outbound_queue::Event::MessageQueued { .. },
+                ))
+                .count(),
+                0,
+                "MessageQueued event should NOT be emitted!"
             );
         })
 }
@@ -1598,6 +1619,15 @@ fn cant_send_eth_native_token_more_than_owned() {
                     error: [24, 0, 0, 0],
                     message: Some("LocalExecutionIncomplete")
                 })
+            );
+
+            assert_eq!(
+                filter_events!(RuntimeEvent::EthereumOutboundQueue(
+                    snowbridge_pallet_outbound_queue::Event::MessageQueued { .. },
+                ))
+                .count(),
+                0,
+                "MessageQueued event should NOT be emitted!"
             );
         })
 }
