@@ -20,7 +20,7 @@ use {
     crate::{
         bridge_to_ethereum_config::{EthereumGatewayAddress, NativeTokenTransferMessageProcessor},
         tests::common::*,
-        Balances, DispatchError, EthereumInboundQueue, EthereumLocation, EthereumSovereignAccount,
+        Balances, EthereumInboundQueue, EthereumLocation, EthereumSovereignAccount,
         EthereumSystem, EthereumTokenTransfers, ForeignAssets, ForeignAssetsCreator, RuntimeEvent,
         SnowbridgeFeesAccount, TokenLocationReanchored, XcmPallet,
     },
@@ -41,7 +41,7 @@ use {
         Command, Destination, MessageProcessor, MessageV1, VersionedXcmMessage,
     },
     sp_core::{H160, H256},
-    sp_runtime::{traits::MaybeEquivalence, FixedU128, ModuleError, TokenError},
+    sp_runtime::{traits::MaybeEquivalence, FixedU128, TokenError},
     sp_std::vec,
     xcm::{
         latest::{prelude::*, Junctions::*, Location},
@@ -1514,11 +1514,7 @@ fn cant_send_eth_unknown_token() {
                     0u32,
                     Unlimited,
                 ),
-                DispatchError::Module(ModuleError {
-                    index: 90,
-                    error: [24, 0, 0, 0],
-                    message: Some("LocalExecutionIncomplete")
-                })
+                pallet_xcm::Error::<Runtime>::LocalExecutionIncomplete
             );
 
             assert_eq!(
@@ -1614,11 +1610,7 @@ fn cant_send_eth_native_token_more_than_owned() {
                     0u32,
                     Unlimited,
                 ),
-                DispatchError::Module(ModuleError {
-                    index: 90,
-                    error: [24, 0, 0, 0],
-                    message: Some("LocalExecutionIncomplete")
-                })
+                pallet_xcm::Error::<Runtime>::LocalExecutionIncomplete
             );
 
             assert_eq!(
@@ -1715,11 +1707,7 @@ fn cant_send_eth_native_token_without_channel_setup() {
                     0u32,
                     Unlimited,
                 ),
-                DispatchError::Module(ModuleError {
-                    index: 90,
-                    error: [1, 0, 0, 0],
-                    message: Some("SendFailure")
-                })
+                pallet_xcm::Error::<Runtime>::SendFailure
             );
 
             assert_eq!(
@@ -1806,21 +1794,17 @@ fn cant_send_tokens_of_unknown_remote_network() {
             let eth_asset = AssetId(erc20_asset_location.clone())
                 .into_asset(Fungibility::Fungible(amount_to_transfer));
 
-            let balance_before = Balances::balance(&AccountId::from(BOB));
-
-            assert_noop!(XcmPallet::transfer_assets(
-                RuntimeOrigin::signed(AccountId::from(BOB)),
-                Box::new(EthereumLocation::get().into()),
-                Box::new(beneficiary_location.into()),
-                Box::new(vec![eth_asset].into()),
-                0u32,
-                Unlimited,
-            ), 
-                DispatchError::Module(ModuleError {
-                    index: 90,
-                    error: [21, 0, 0, 0],
-                    message: Some("InvalidAssetUnknownReserve")
-                }));
+            assert_noop!(
+                XcmPallet::transfer_assets(
+                    RuntimeOrigin::signed(AccountId::from(BOB)),
+                    Box::new(EthereumLocation::get().into()),
+                    Box::new(beneficiary_location.into()),
+                    Box::new(vec![eth_asset].into()),
+                    0u32,
+                    Unlimited,
+                ),
+                pallet_xcm::Error::<Runtime>::InvalidAssetUnknownReserve
+            );
 
             assert_eq!(
                 filter_events!(RuntimeEvent::EthereumOutboundQueue(
