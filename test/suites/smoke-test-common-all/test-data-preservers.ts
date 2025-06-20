@@ -26,11 +26,20 @@ describeSuite({
                 const byteFee = 100n * 1_000_000n * 100n; // 10_000_000_000
                 const baseFee = 100n * 1_000_000_000n * 100n; // 10_000_000_000_000
 
+                // New deposit has been decreased to 100 times, but we need to check both
+                const oldToNewRatio = 100n;
+
                 const calculatedFee = (encodedLength: number) => baseFee + byteFee * BigInt(encodedLength);
 
                 const failures = registeredProfiles.filter(({ deposit, profile }) => {
-                    const fee = calculatedFee(profile.encodedLength);
-                    return deposit.toBigInt() !== fee && deposit.toBigInt() !== 0n;
+                    const feeOld = calculatedFee(profile.encodedLength);
+                    const feeNew = feeOld / oldToNewRatio;
+
+                    return (
+                      deposit.toBigInt() !== feeOld &&
+                      deposit.toBigInt() !== feeNew &&
+                      deposit.toBigInt() !== 0n
+                    );
                 });
 
                 for (const { deposit, account } of failures) {
