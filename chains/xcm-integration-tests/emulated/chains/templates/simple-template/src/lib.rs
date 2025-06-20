@@ -21,8 +21,11 @@ use {
         ParachainSystem, PolkadotXcm, System, XcmpQueue,
     },
     emulated_integration_tests_common::{
-        impl_assert_events_helpers_for_parachain, xcm_emulator::decl_test_parachains,
+        impl_assert_events_helpers_for_parachain, xcm_emulator::decl_test_parachains
     },
+    frame_support::{parameter_types, traits::{OnInitialize, OnFinalize}},
+    tanssi_emulated_integration_tests_common::TestDigestProvider,
+    xcm_emulator::Parachain,
 };
 
 decl_test_parachains! {
@@ -35,6 +38,7 @@ decl_test_parachains! {
             LocationToAccountId: xcm_config::LocationToAccountId,
             ParachainInfo: ParachainInfo,
             MessageOrigin: cumulus_primitives_core::AggregateMessageOrigin,
+            DigestProvider: TestDigestProvider<container_chain_template_simple_runtime::Runtime, Self::Network>,
         },
         pallets = {
             System: System,

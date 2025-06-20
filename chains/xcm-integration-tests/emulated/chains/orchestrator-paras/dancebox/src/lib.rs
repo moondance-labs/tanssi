@@ -17,11 +17,14 @@
 pub use sp_core::Get;
 use {
     emulated_integration_tests_common::{
-        impl_assert_events_helpers_for_parachain, xcm_emulator::decl_test_parachains,
+        impl_assert_events_helpers_for_parachain, xcm_emulator::decl_test_parachains
     },
+    frame_support::{parameter_types, traits::{OnInitialize, OnFinalize}},
+    tanssi_emulated_integration_tests_common::TestDigestProvider,
     parity_scale_codec::Encode,
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_runtime::generic::DigestItem,
+    xcm_emulator::Parachain,
 };
 
 mod genesis;
@@ -39,6 +42,7 @@ decl_test_parachains! {
             LocationToAccountId: dancebox_runtime::xcm_config::LocationToAccountId,
             ParachainInfo: dancebox_runtime::ParachainInfo,
             MessageOrigin: cumulus_primitives_core::AggregateMessageOrigin,
+            DigestProvider: TestDigestProvider<dancebox_runtime::Runtime, Self::Network>,
         },
         pallets = {
             System: dancebox_runtime::System,

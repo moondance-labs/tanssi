@@ -21,10 +21,17 @@ use {
     },
     frame_support::traits::OnIdle,
     frame_system::Pallet as SystemPallet,
+    frame_system::pallet_prelude::BlockNumberFor,
+    parity_scale_codec::Encode,
     sc_consensus_grandpa::AuthorityId as GrandpaId,
+    sp_consensus_aura::AURA_ENGINE_ID,
+    sp_runtime::generic::DigestItem,
     sp_core::{crypto::get_public_from_string_or_panic, sr25519},
+    sp_runtime::traits::Convert,
+    sp_runtime::Digest,
+    sp_std::marker::PhantomData,
     sp_weights::Weight,
-    xcm_emulator::{Parachain, RelayChain},
+    xcm_emulator::{Parachain, RelayChain, Chain, Network, HeaderT},
 };
 
 pub mod accounts;
@@ -71,4 +78,22 @@ pub fn get_authority_keys_from_seed_no_beefy(
         get_public_from_string_or_panic::<AssignmentId>(seed),
         get_public_from_string_or_panic::<AuthorityDiscoveryId>(seed),
     )
+}
+
+pub struct TestDigestProvider<R: frame_system::Config, N: Network>(PhantomData<(R, N)>);
+
+impl<R: frame_system::Config, N: Network> Convert<BlockNumberFor<R>, Digest> for TestDigestProvider<R, N>
+where u64: From<<<<R as frame_system::Config>::Block as cumulus_primitives_core::BlockT>::Header as HeaderT>::Number> {
+    fn convert(_block_number: BlockNumberFor<R>) -> Digest {
+        let relay_block = N::relay_block_number();
+        
+        let slot = u64::from(relay_block.into());
+
+        let new_slot_digest: Digest = Digest {
+            logs: vec![
+                DigestItem::PreRuntime(AURA_ENGINE_ID, slot.encode()),
+            ],
+        };
+        new_slot_digest
+    }
 }

@@ -18,5 +18,6 @@ emulated-integration-tests-common = { workspace = true }
 frame-support = { workspace = true }
 hex-literal = { workspace = true }
 sp-core = { workspace = true }
+tanssi-emulated-integration-tests-common = { workspace = true }
 xcm = { workspace = true }
 xcm-emulator = { workspace = true }

@@ -22,9 +22,11 @@ use {
         ForeignAssetsCreator, ParachainInfo, ParachainSystem, PolkadotXcm, System, XcmpQueue,
     },
     emulated_integration_tests_common::{
-        impl_assert_events_helpers_for_parachain, xcm_emulator::decl_test_parachains,
+        impl_assert_events_helpers_for_parachain, xcm_emulator::decl_test_parachains
     },
-    frame_support::parameter_types,
+    tanssi_emulated_integration_tests_common::TestDigestProvider,
+    frame_support::{parameter_types, traits::{OnInitialize, OnFinalize}},
+    xcm_emulator::Parachain,
 };
 
 decl_test_parachains! {
@@ -38,6 +40,7 @@ decl_test_parachains! {
             LocationToAccountId: LocationToAccountId,
             ParachainInfo: ParachainInfo,
             MessageOrigin: cumulus_primitives_core::AggregateMessageOrigin,
+            DigestProvider: TestDigestProvider<container_chain_template_frontier_runtime::Runtime, Self::Network>,
         },
         pallets = {
             System: System,
