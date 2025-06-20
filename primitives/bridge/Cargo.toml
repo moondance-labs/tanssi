@@ -31,6 +31,7 @@ sp-core = { workspace = true }
 sp-runtime = { workspace = true }
 sp-std = { workspace = true }
 xcm = { workspace = true }
+xcm-builder = { workspace = true }
 xcm-executor = { workspace = true }
 
 # Cumulus
@@ -61,6 +62,7 @@ std = [
 	"sp-core/std",
 	"sp-runtime/std",
 	"sp-std/std",
+	"xcm-builder/std",
 	"xcm-executor/std",
 	"xcm/std",
 ]
@@ -74,5 +76,6 @@ runtime-benchmarks = [
 	"snowbridge-pallet-system/runtime-benchmarks",
 	"snowbridge-router-primitives/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
+	"xcm-builder/runtime-benchmarks",
 	"xcm-executor/runtime-benchmarks",
 ]
