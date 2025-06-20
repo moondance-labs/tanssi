@@ -24,7 +24,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use {
-    frame_support::{dispatch::DispatchResult, pallet_prelude::Weight},
+    frame_support::{dispatch::DispatchResult, ensure, pallet_prelude::Weight},
     parity_scale_codec::{Decode, Encode},
     scale_info::TypeInfo,
     serde::{Deserialize, Serialize},
@@ -33,8 +33,8 @@ use {
     sp_staking::SessionIndex,
     tp_traits::{
         AuthorNotingHook, AuthorNotingInfo, ForSession, GetContainerChainsWithCollators,
-        GetSessionIndex, MaybeSelfChainBlockAuthor, NodeActivityTrackingHelper, ParaId,
-        ParathreadHelper,
+        GetSessionIndex, InvulnerablesHelper, MaybeSelfChainBlockAuthor,
+        NodeActivityTrackingHelper, ParaId, ParathreadHelper, PendingCollatorAssignmentsHelper,
     },
 };
 
@@ -128,13 +128,17 @@ pub mod pallet {
         type CurrentSessionIndex: GetSessionIndex<SessionIndex>;
 
         /// Helper that fetches a list of collators eligible to produce blocks for the current session
-        type CurrentCollatorsFetcher: GetContainerChainsWithCollators<Self::CollatorId>;
+        type CurrentCollatorsFetcher: GetContainerChainsWithCollators<Self::CollatorId>
+            + PendingCollatorAssignmentsHelper<Self::CollatorId>;
 
         /// Helper that returns the block author for the orchestrator chain (if it exists)
         type GetSelfChainBlockAuthor: MaybeSelfChainBlockAuthor<Self::CollatorId>;
 
         /// Helper that checks if a ParaId is a parathread
         type ParaFilter: ParathreadHelper;
+
+        /// Helper for dealing with invulnerables.
+        type InvulnerablesFilter: InvulnerablesHelper<Self::CollatorId>;
 
         /// The weight information of this pallet.
         type WeightInfo: weights::WeightInfo;
@@ -165,11 +169,21 @@ pub mod pallet {
     pub type ActiveContainerChainsForCurrentSession<T: Config> =
         StorageValue<_, BoundedBTreeSet<ParaId, T::MaxContainerChains>, ValueQuery>;
 
+    /// Storage map indicating the offline status of a collator
+    #[pallet::storage]
+    pub type OfflineCollators<T: Config> =
+        StorageMap<_, Blake2_128Concat, T::CollatorId, bool, ValueQuery>;
+
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
         /// Event emitted when the activity tracking status is updated
         ActivityTrackingStatusSet { status: ActivityTrackingStatus },
+        /// Collator online status updated
+        CollatorStatusUpdated {
+            collator: T::CollatorId,
+            is_offline: bool,
+        },
     }
 
     #[pallet::error]
@@ -184,6 +198,12 @@ pub mod pallet {
         ActivityTrackingStatusAlreadyEnabled,
         /// Error returned when the activity tracking status is attempted to be disabled when it is already disabled
         ActivityTrackingStatusAlreadyDisabled,
+        /// Error returned when the collator status is attempted to be set to offline when it is already offline
+        CollatorNotOnline,
+        /// Error returned when the collator status is attempted to be set to online when it is already online
+        CollatorNotOffline,
+        /// Error returned when the collator attempted to be set offline is invulnerable
+        MarkingInvulnerableOfflineInvalid,
     }
 
     #[pallet::call]
@@ -446,6 +466,61 @@ impl<T: Config> NodeActivityTrackingHelper<T::CollatorId> for Pallet<T> {
             }
         }
         true
+    }
+    fn is_node_offline(node: &T::CollatorId) -> bool {
+        <OfflineCollators<T>>::get(node)
+    }
+
+    fn set_offline(node: &T::CollatorId) -> DispatchResult {
+        ensure!(
+            !<OfflineCollators<T>>::get(node),
+            Error::<T>::CollatorNotOnline
+        );
+        ensure!(
+            !T::InvulnerablesFilter::is_invulnerable(node),
+            Error::<T>::MarkingInvulnerableOfflineInvalid
+        );
+        <OfflineCollators<T>>::insert(node.clone(), true);
+        // To prevent the collator from being assigned to any container chain in the next session
+        // we need to remove it from the pending collator assignment
+        T::CurrentCollatorsFetcher::remove_offline_collator_from_pending_assigment(&node.clone());
+        Self::deposit_event(Event::<T>::CollatorStatusUpdated {
+            collator: node.clone(),
+            is_offline: true,
+        });
+        Ok(())
+    }
+
+    fn set_online(node: &T::CollatorId) -> DispatchResult {
+        ensure!(
+            <OfflineCollators<T>>::get(node),
+            Error::<T>::CollatorNotOffline
+        );
+        <OfflineCollators<T>>::insert(node.clone(), false);
+        Self::deposit_event(Event::<T>::CollatorStatusUpdated {
+            collator: node.clone(),
+            is_offline: false,
+        });
+        Ok(())
+    }
+    #[cfg(feature = "runtime-benchmarks")]
+    fn make_node_inactive(node: &T::CollatorId) {
+        // First we need to make sure that there are enough session
+        // so the node can be marked
+        let max_inactive_sessions = T::MaxInactiveSessions::get();
+        if T::CurrentSessionIndex::session_index() < max_inactive_sessions {
+            T::CurrentSessionIndex::skip_to_session(max_inactive_sessions)
+        }
+
+        // Now we can insert the node as inactive for all sessions in the current inactivity window
+        let mut inactive_nodes_set: BoundedBTreeSet<
+            <T as Config>::CollatorId,
+            <T as Config>::MaxCollatorsPerSession,
+        > = BoundedBTreeSet::new();
+        inactive_nodes_set.try_insert(node.clone());
+        for session_index in 0..max_inactive_sessions {
+            <InactiveCollators<T>>::insert(session_index, inactive_nodes_set.clone());
+        }
     }
 }
 

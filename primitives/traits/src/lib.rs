@@ -615,12 +615,55 @@ pub trait ExternalIndexProvider {
     fn get_external_index() -> u64;
 }
 
-// A trait to verify if a node has been inactive during the last minimum activity
+// A trait to check invulnerables
+pub trait InvulnerablesHelper<AccountId> {
+    /// Checks if the given `AccountId` is invulnerable.
+    fn is_invulnerable(account_id: &AccountId) -> bool;
+}
+
+// A trait to verify the inactivity status of nodes
+// and handle the offline status of nodes
 pub trait NodeActivityTrackingHelper<AccountId> {
+    /// Check if a node is inactive.
     fn is_node_inactive(node: &AccountId) -> bool;
+    /// Check if a node is offline.
+    fn is_node_offline(node: &AccountId) -> bool;
+    /// Marks offline node as online
+    fn set_online(node: &AccountId) -> DispatchResult;
+    /// Marks online node as offline
+    fn set_offline(node: &AccountId) -> DispatchResult;
+    /// Marks node as inactive for the current activity window so it could be notified as inactive
+    #[cfg(feature = "runtime-benchmarks")]
+    fn make_node_inactive(node: &AccountId);
+}
+
+impl<AccountId> NodeActivityTrackingHelper<AccountId> for () {
+    fn is_node_inactive(_node: &AccountId) -> bool {
+        false
+    }
+
+    fn is_node_offline(_node: &AccountId) -> bool {
+        false
+    }
+
+    fn set_online(_node: &AccountId) -> DispatchResult {
+        Ok(())
+    }
+
+    fn set_offline(_node: &AccountId) -> DispatchResult {
+        Ok(())
+    }
+    #[cfg(feature = "runtime-benchmarks")]
+    fn make_node_inactive(_node: &AccountId) {}
 }
 
 // A trait to help verify if a ParaId is a chain or parathread
 pub trait ParathreadHelper {
     fn get_parathreads_for_session() -> BTreeSet<ParaId>;
+}
+
+// A trait to help remove offline collators from the pending assignment
+pub trait PendingCollatorAssignmentsHelper<AccountId> {
+    /// Remove a collator from the current pending collator assignment.
+    fn remove_offline_collator_from_pending_assigment(collator: &AccountId);
 }

@@ -25,7 +25,7 @@ use {
         BuildStorage, RuntimeAppPublic,
     },
     sp_staking::SessionIndex,
-    sp_std::collections::btree_set::BTreeSet,
+    sp_std::{collections::btree_set::BTreeSet, marker::PhantomData},
     tp_traits::{ForSession, ParaId},
 };
 
@@ -188,12 +188,23 @@ impl tp_traits::GetContainerChainsWithCollators<AccountId> for MockContainerChai
     }
 }
 
+impl tp_traits::PendingCollatorAssignmentsHelper<AccountId> for MockContainerChainsInfoFetcher {
+    fn remove_offline_collator_from_pending_assigment(_collator: &AccountId) {}
+}
+
 pub struct MockParathreadHelper;
 impl tp_traits::ParathreadHelper for MockParathreadHelper {
     fn get_parathreads_for_session() -> BTreeSet<ParaId> {
         let mut paras_for_session = BTreeSet::new();
         paras_for_session.insert(CONTAINER_CHAIN_ID_3);
         paras_for_session
+    }
+}
+pub struct MockInvulnerableCheckHandler<AccountId>(PhantomData<AccountId>);
+
+impl tp_traits::InvulnerablesHelper<AccountId> for MockInvulnerableCheckHandler<AccountId> {
+    fn is_invulnerable(account: &AccountId) -> bool {
+        *account == COLLATOR_2
     }
 }
 
@@ -207,6 +218,7 @@ impl pallet_inactivity_tracking::Config for Test {
     type CurrentCollatorsFetcher = MockContainerChainsInfoFetcher;
     type GetSelfChainBlockAuthor = ();
     type ParaFilter = MockParathreadHelper;
+    type InvulnerablesFilter = MockInvulnerableCheckHandler<AccountId>;
     type WeightInfo = ();
 }
 
