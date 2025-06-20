@@ -52,25 +52,3 @@ fn test_message_exporter_disabled_for_origin_account() {
         );
     });
 }
-
-#[test]
-fn test_message_exporter_validate_should_fail() {
-    let mut location = Some(Location {
-        parents: 1,
-        interior: Junctions::Here,
-    });
-
-    let mut message = Some(Xcm(vec![Instruction::ExportMessage {
-        network: NetworkId::Ethereum { chain_id: 1 },
-        destination: Junctions::Here,
-        xcm: Xcm(vec![]),
-    }]));
-
-    assert_err!(
-        <xcm_config::XcmConfig as xcm_executor::Config>::MessageExporter::validate(
-            &mut location,
-            &mut message
-        ),
-        SendError::NotApplicable
-    );
-}

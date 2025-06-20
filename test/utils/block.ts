@@ -323,7 +323,7 @@ export async function signAndSendAndInclude(tx, account, timeout: number | null 
                     });
                 }
             }).catch((error) => {
-                reject(error);
+                reject(error.toHuman());
             });
         });
     };
@@ -348,7 +348,7 @@ export async function signAndSendAndInclude(tx, account, timeout: number | null 
             })
             .catch((error) => {
                 clearTimeout(timer);
-                reject(error);
+                reject(error.toHuman());
             });
     });
 }
