@@ -9,15 +9,24 @@ describeSuite({
     foundationMethods: "read_only",
     testCases: ({ it, context }) => {
         let api: ApiPromise;
+        let runtimeVersion: number;
 
         beforeAll(() => {
             api = context.polkadotJs();
+            runtimeVersion = api.runtimeVersion.specVersion.toNumber();
         });
 
         it({
             id: "C01",
             title: "Randomness storage is empty because on-finalize cleans it, unless on session change boundaries",
             test: async () => {
+                // After runtime upgrade, randomness in storage is always empty, this test can be removed
+                if (runtimeVersion >= 1400) {
+                    const randomness = await api.query.tanssiCollatorAssignment.randomness();
+                    expect(randomness.isEmpty).to.be.true;
+                    return;
+                }
+
                 const randomness = await api.query.tanssiCollatorAssignment.randomness();
 
                 // take the most recent
@@ -48,9 +57,13 @@ describeSuite({
                 const blockToCheck = blockBabeEpochStart - 1;
                 const apiBeforeNewSession = await api.at(await api.rpc.chain.getBlockHash(blockToCheck));
 
-                // Just before, the randomness was not empty
-                const randomnessBeforeSession = await apiBeforeNewSession.query.tanssiCollatorAssignment.randomness();
-                expect(randomnessBeforeSession.isEmpty).to.not.be.true;
+                // After runtime upgrade, randomness in storage is always empty
+                if (runtimeVersion < 1400) {
+                    // Just before, the randomness was not empty
+                    const randomnessBeforeSession =
+                        await apiBeforeNewSession.query.tanssiCollatorAssignment.randomness();
+                    expect(randomnessBeforeSession.isEmpty).to.not.be.true;
+                }
 
                 // After, the randomness gets cleaned
                 const randomnessAfterSession = await apiAtNewSession.query.tanssiCollatorAssignment.randomness();

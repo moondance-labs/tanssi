@@ -784,7 +784,7 @@ impl pallet_collator_assignment::Config for Runtime {
     type SessionIndex = u32;
     type SelfParaId = ParachainInfo;
     type ShouldRotateAllCollators = NeverRotateCollators;
-    type GetRandomnessForNextBlock = ();
+    type Randomness = ();
     type RemoveInvulnerables = RemoveInvulnerablesImpl;
     type ParaIdAssignmentHooks = ParaIdAssignmentHooksImpl;
     type CollatorAssignmentTip = ServicesPayment;
