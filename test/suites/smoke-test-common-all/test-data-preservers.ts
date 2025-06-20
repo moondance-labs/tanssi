@@ -35,11 +35,7 @@ describeSuite({
                     const feeOld = calculatedFee(profile.encodedLength);
                     const feeNew = feeOld / oldToNewRatio;
 
-                    return (
-                      deposit.toBigInt() !== feeOld &&
-                      deposit.toBigInt() !== feeNew &&
-                      deposit.toBigInt() !== 0n
-                    );
+                    return deposit.toBigInt() !== feeOld && deposit.toBigInt() !== feeNew && deposit.toBigInt() !== 0n;
                 });
 
                 for (const { deposit, account } of failures) {
