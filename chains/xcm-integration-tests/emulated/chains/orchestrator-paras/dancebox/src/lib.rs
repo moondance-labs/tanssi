@@ -22,6 +22,7 @@ use {
     parity_scale_codec::Encode,
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_runtime::generic::DigestItem,
+    tanssi_emulated_integration_tests_common::TestDigestProvider,
 };
 
 mod genesis;
@@ -39,6 +40,7 @@ decl_test_parachains! {
             LocationToAccountId: dancebox_runtime::xcm_config::LocationToAccountId,
             ParachainInfo: dancebox_runtime::ParachainInfo,
             MessageOrigin: cumulus_primitives_core::AggregateMessageOrigin,
+            DigestProvider: TestDigestProvider<dancebox_runtime::Runtime, Self::Network>,
         },
         pallets = {
             System: dancebox_runtime::System,
