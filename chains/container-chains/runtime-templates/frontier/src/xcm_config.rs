@@ -229,6 +229,7 @@ impl xcm_executor::Config for XcmConfig {
     type HrmpChannelAcceptedHandler = ();
     type HrmpChannelClosingHandler = ();
     type XcmRecorder = ();
+    type XcmEventEmitter = (); // TODO: revisit this
 }
 
 impl pallet_xcm::Config for Runtime {
@@ -256,6 +257,7 @@ impl pallet_xcm::Config for Runtime {
     // TODO pallet-xcm weights
     type WeightInfo = weights::pallet_xcm::SubstrateWeight<Runtime>;
     type AdminOrigin = EnsureRoot<AccountId>;
+    type AuthorizedAliasConsideration = (); // TODO: revisit this
 }
 
 pub type PriceForSiblingParachainDelivery =
@@ -386,6 +388,7 @@ impl pallet_assets::Config<ForeignAssetsInstance> for Runtime {
     type CallbackHandle = ();
     type AssetAccountDeposit = ForeignAssetsAssetAccountDeposit;
     type RemoveItemsLimit = frame_support::traits::ConstU32<1000>;
+    type Holder = (); // TODO: revisit this
     #[cfg(feature = "runtime-benchmarks")]
     type BenchmarkHelper = ForeignAssetBenchmarkHelper;
 }

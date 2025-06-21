@@ -81,7 +81,7 @@ pub struct ContainerChainRunCmd {
     /// configuration of the relay-chain.
     ///
     /// It will be removed once <https://github.com/paritytech/polkadot-sdk/issues/6020> is fixed.
-    #[arg(long)]
+    #[arg(id = "tanssi_experimental_max_pov_percentage")]
     pub experimental_max_pov_percentage: Option<u32>,
 }
 

@@ -3,8 +3,8 @@ import "@tanssi/api-augment";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type KeyringPair, extractWeight, filterAndApply } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
-import { extractFeeAuthor, filterRewardFromOrchestrator } from "utils";
 import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_BALANCES, checkCallIsFiltered } from "helpers";
+import { extractFeeAuthor, filterRewardFromOrchestrator } from "utils";
 
 describeSuite({
     id: "C0101",
@@ -18,6 +18,7 @@ describeSuite({
         let isStarlight: boolean;
         let specVersion: number;
         let shouldSkipBalances: boolean;
+        let isPara: boolean;
 
         // Difference between the refTime estimated using paymentInfo and the actual refTime reported inside a block
         // https://github.com/paritytech/substrate/blob/5e49f6e44820affccaf517fd22af564f4b495d40/frame/support/src/weights/extrinsic_weights.rs#L56
@@ -29,6 +30,10 @@ describeSuite({
             polkadotJs = context.polkadotJs();
             baseWeight = extractWeight(polkadotJs.consts.system.blockWeights.perClass.normal.baseExtrinsic).toBigInt();
             const runtimeName = polkadotJs.runtimeVersion.specName.toString();
+            isPara =
+                runtimeName === "frontier-template" ||
+                runtimeName === "container-chain-template" ||
+                runtimeName.includes("box");
             isRelay = runtimeName.includes("light");
             isStarlight = runtimeName === "starlight";
             specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
@@ -63,12 +68,28 @@ describeSuite({
                 // "base weight"
                 const estimatedPlusBaseWeight = {
                     refTime: info.weight.refTime.toBigInt() + baseWeight,
-                    proofSize: info.weight.proofSize.toBigInt(),
+                    proofSize: info.weight.proofSize.toBigInt(), // TODO: fix me
                 };
-                expect(estimatedPlusBaseWeight).to.deep.equal({
-                    refTime: info2.weight.refTime.toBigInt(),
-                    proofSize: info2.weight.proofSize.toBigInt(),
-                });
+
+                if (isPara) {
+                    const maxBlockProofSize = polkadotJs.consts.system.blockWeights.maxBlock.proofSize.toBigInt();
+
+                    expect(estimatedPlusBaseWeight.refTime).to.equal(info2.weight.refTime.toBigInt());
+
+                    // Due to Storage weight reclaim, the on chain proof size is not the same as the estimated proof size
+                    // using the paymentInfo runtime-api.
+                    // The estimated should be greater than the on chain one.
+                    expect(estimatedPlusBaseWeight.proofSize).toBeGreaterThan(info2.weight.proofSize.toBigInt());
+
+                    // We check that the actual proof size is inside a ~5000 bytes range
+                    expect(info2.weight.proofSize.toBigInt()).toBeGreaterThan(0n);
+                    expect(info2.weight.proofSize.toBigInt()).toBeLessThanOrEqual(maxBlockProofSize / 1000n);
+                } else {
+                    expect(estimatedPlusBaseWeight).to.deep.equal({
+                        refTime: info2.weight.refTime.toBigInt(),
+                        proofSize: info2.weight.proofSize.toBigInt(),
+                    });
+                }
 
                 // queryWeightToFee expects the "base weight" to be included in the input, so info2.weight provides
                 // the correct estimation, but tx.paymentInfo().weight does not
@@ -326,7 +347,11 @@ function getDispatchInfo({ event: { data, method } }) {
 }
 
 function extractInfoForFee(events): any {
-    return filterAndApply(events, "system", ["ExtrinsicFailed", "ExtrinsicSuccess"], getDispatchInfo).filter((x) => {
-        return x.class.toString() === "Normal" && x.paysFee.toString() === "Yes";
-    })[0];
+    const event = filterAndApply(events, "system", ["ExtrinsicFailed", "ExtrinsicSuccess"], getDispatchInfo).filter(
+        (x) => {
+            return x.class.toString() === "Normal" && x.paysFee.toString() === "Yes";
+        }
+    );
+    expect(event.length === 1);
+    return event[0];
 }

@@ -23,7 +23,7 @@ use frame_support::traits::{
 };
 use frame_support::{Deserialize, Serialize};
 use pallet_stream_payment::HoldReason;
-use parity_scale_codec::MaxEncodedLen;
+use parity_scale_codec::{DecodeWithMemTracking, MaxEncodedLen};
 use primitives::{AccountId, Balance, BlockNumber};
 use sp_runtime::traits::{Block, Header};
 use tp_traits::{apply, derive_storage_traits};
@@ -38,7 +38,7 @@ tp_traits::alias!(
 pub type StreamId = u64;
 
 #[apply(derive_storage_traits)]
-#[derive(Copy, Serialize, Deserialize, MaxEncodedLen)]
+#[derive(Copy, Serialize, Deserialize, MaxEncodedLen, DecodeWithMemTracking)]
 pub enum AssetId {
     Native,
     // TODO: Support more assets like foreign assets
@@ -136,7 +136,7 @@ impl<Runtime: RuntimeConfigs> pallet_stream_payment::AssetsManager<AccountId, As
 }
 
 #[apply(derive_storage_traits)]
-#[derive(Copy, Serialize, Deserialize, MaxEncodedLen)]
+#[derive(Copy, Serialize, Deserialize, MaxEncodedLen, DecodeWithMemTracking)]
 pub enum TimeUnit {
     BlockNumber,
     Timestamp,
