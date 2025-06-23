@@ -1,10 +1,10 @@
 import "@tanssi/api-augment";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
-import { type ApiPromise } from "@polkadot/api";
-import { jumpToSession, mockAndInsertHeadData } from "utils";
+import type { ApiPromise } from "@polkadot/api";
+import { jumpToSession } from "utils";
 import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_INACTIVITY_TRACKING } from "helpers";
-import { AccountId32 } from "@polkadot/types/interfaces";
+import type { AccountId32 } from "@polkadot/types/interfaces";
 import { numberToHex } from "@polkadot/util";
 
 describeSuite({
@@ -22,8 +22,13 @@ describeSuite({
 
         async function isAddressInAssignedCollators(address: string) {
             const assignedCollatorsRecords = await polkadotJs.query.collatorAssignment.collatorContainerChain();
-            for (let [_containerChain, collators] of assignedCollatorsRecords.containerChains.entries()) {
-                for (let collator of collators) {
+            for (const collator of assignedCollatorsRecords.orchestratorChain.entries()) {
+                if (collator.toString() === address) {
+                    return true;
+                }
+            }
+            for (const [_containerChain, collators] of assignedCollatorsRecords.containerChains.entries()) {
+                for (const collator of collators) {
                     if (collator.toString() === address) {
                         return true;
                     }
@@ -101,7 +106,7 @@ describeSuite({
                     bob.address
                 );
                 if (bobOfflineStatusBeforeMarking.isTrue) {
-                    console.log(`BOB is marked as offline before the test starts.`);
+                    console.log("BOB is marked as offline before the test starts.");
                     expect(true).to.be.false; // Fail the test if BOB is not offline
                 }
 
@@ -111,7 +116,7 @@ describeSuite({
                     bob.address
                 );
                 if (bobOfflineStatusAfterMarking.isFalse) {
-                    console.log(`BOB is not marked as offline.`);
+                    console.log("BOB is not marked as offline.");
                     expect(false).to.be.true; // Fail the test if BOB is not offline
                 }
                 const currentSession = (await polkadotJs.query.session.currentIndex()).toNumber();
