@@ -20,7 +20,7 @@ use {
     crate::{
         tests::common::*, BabeCurrentBlockRandomnessGetter, Balances, CollatorConfiguration,
         Configuration, ContainerRegistrar, GetCoreAllocationConfigurationImpl, Paras, Registrar,
-        ServicesPayment, TanssiAuthorityMapping, TanssiInvulnerables,
+        RuntimeEvent, ServicesPayment, TanssiAuthorityMapping, TanssiInvulnerables,
     },
     cumulus_primitives_core::{
         relay_chain::{HeadData, SchedulerParams},
@@ -84,16 +84,33 @@ fn test_collator_assignment_rotation() {
             );
             assert!(TanssiCollatorAssignment::pending_collator_container_chain().is_some());
 
-            // Check that the randomness in CollatorAssignment is set
-            // in the block before the session change
-            run_to_block(session_to_block(rotation_period) - 1);
-            end_block();
+            // Check that the randomness in CollatorAssignment is set by looking at the event
+            run_to_block(session_to_block(rotation_period));
+
+            // Expected randomness depends on block number, uses BabeCurrentBlockRandomnessGetter
             let expected_randomness: [u8; 32] =
                 BabeCurrentBlockRandomnessGetter::get_block_randomness_mixed(b"CollatorAssignment")
                     .unwrap()
                     .into();
-            assert_eq!(TanssiCollatorAssignment::randomness(), expected_randomness);
-            start_block();
+            let events = System::events()
+                .into_iter()
+                .map(|r| r.event)
+                .filter_map(|e| {
+                    if let RuntimeEvent::TanssiCollatorAssignment(
+                        pallet_collator_assignment::Event::<Runtime>::NewPendingAssignment {
+                            random_seed,
+                            ..
+                        },
+                    ) = e
+                    {
+                        Some(random_seed)
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<_>>();
+            assert_eq!(events.len(), 1);
+            assert_eq!(events[0], expected_randomness);
 
             // Assignment changed
             assert_ne!(
