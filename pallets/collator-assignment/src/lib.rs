@@ -104,7 +104,7 @@ pub mod pallet {
         type ContainerChains: GetSessionContainerChains<Self::SessionIndex>;
         type SelfParaId: Get<ParaId>;
         type ShouldRotateAllCollators: ShouldRotateAllCollators<Self::SessionIndex>;
-        type GetRandomnessForNextBlock: GetRandomnessForNextBlock<BlockNumberFor<Self>>;
+        type Randomness: CollatorAssignmentRandomness<BlockNumberFor<Self>>;
         type RemoveInvulnerables: RemoveInvulnerables<Self::AccountId>;
         type ParaIdAssignmentHooks: ParaIdAssignmentHooks<BalanceOf<Self>, Self::AccountId>;
         type Currency: Currency<Self::AccountId>;
@@ -557,7 +557,7 @@ pub mod pallet {
             session_index: &T::SessionIndex,
             collators: Vec<T::AccountId>,
         ) -> SessionChangeOutcome<T> {
-            let random_seed = Randomness::<T>::take();
+            let random_seed = T::Randomness::take_randomness();
             let num_collators = collators.len();
             let assigned_collators = Self::assign_collators(session_index, random_seed, collators);
             let num_total_registered_paras = assigned_collators.num_total_registered_paras;
@@ -576,10 +576,6 @@ pub mod pallet {
 
         pub fn pending_collator_container_chain() -> Option<AssignedCollators<T::AccountId>> {
             PendingCollatorContainerChain::<T>::get()
-        }
-
-        pub fn randomness() -> [u8; 32] {
-            Randomness::<T>::get()
         }
     }
 
@@ -615,19 +611,14 @@ pub mod pallet {
             let mut weight = Weight::zero();
 
             // Account reads and writes for on_finalize
-            if T::GetRandomnessForNextBlock::should_end_session(n.saturating_add(One::one())) {
-                weight.saturating_accrue(T::DbWeight::get().reads_writes(1, 1));
-            }
+            weight.saturating_accrue(T::Randomness::prepare_randomness_weight(n));
 
             weight
         }
 
         fn on_finalize(n: BlockNumberFor<T>) {
             // If the next block is a session change, read randomness and store in pallet storage
-            if T::GetRandomnessForNextBlock::should_end_session(n.saturating_add(One::one())) {
-                let random_seed = T::GetRandomnessForNextBlock::get_randomness();
-                Randomness::<T>::put(random_seed);
-            }
+            T::Randomness::prepare_randomness(n);
         }
     }
 
@@ -722,6 +713,9 @@ where
     }
 }
 
+/// Only works on parachains because in relaychains it is not possible to know for sure if the next
+/// block will be in the same session as the current one, as it depends on slots and validators can
+/// skip slots.
 pub trait GetRandomnessForNextBlock<BlockNumber> {
     fn should_end_session(block_number: BlockNumber) -> bool;
     fn get_randomness() -> [u8; 32];
@@ -734,5 +728,90 @@ impl<BlockNumber> GetRandomnessForNextBlock<BlockNumber> for () {
 
     fn get_randomness() -> [u8; 32] {
         [0; 32]
+    }
+}
+
+pub trait CollatorAssignmentRandomness<BlockNumber> {
+    /// Called in on_initialize, returns weight needed by prepare_randomness call.
+    fn prepare_randomness_weight(n: BlockNumber) -> Weight;
+    /// Called in on_finalize.
+    /// Prepares randomness for the next block if the next block is a new session start.
+    fn prepare_randomness(n: BlockNumber);
+    /// Called once at the start of each session in on_initialize of pallet_initializer
+    fn take_randomness() -> [u8; 32];
+}
+
+impl<BlockNumber> CollatorAssignmentRandomness<BlockNumber> for () {
+    fn prepare_randomness_weight(_n: BlockNumber) -> Weight {
+        Weight::zero()
+    }
+    fn prepare_randomness(_n: BlockNumber) {}
+    fn take_randomness() -> [u8; 32] {
+        [0; 32]
+    }
+}
+
+/// Parachain randomness impl.
+///
+/// Reads relay chain randomness in the last block of the session and stores it in pallet storage.
+/// When new session starts, takes that value from storage removing it.
+/// Relay randomness cannot be accessed in `on_initialize`, so `prepare_randomness` is executed in
+/// `on_finalize`, with `prepare_randomness_weight` reserving the weight needed.
+pub struct ParachainRandomness<T, Runtime>(PhantomData<(T, Runtime)>);
+
+impl<BlockNumber, T, Runtime> CollatorAssignmentRandomness<BlockNumber>
+    for ParachainRandomness<T, Runtime>
+where
+    BlockNumber: Saturating + One,
+    T: GetRandomnessForNextBlock<BlockNumber>,
+    Runtime: frame_system::Config + crate::Config,
+{
+    fn prepare_randomness_weight(n: BlockNumber) -> Weight {
+        let mut weight = Weight::zero();
+
+        if T::should_end_session(n.saturating_add(One::one())) {
+            weight.saturating_accrue(Runtime::DbWeight::get().reads_writes(1, 1));
+        }
+
+        weight
+    }
+
+    fn prepare_randomness(n: BlockNumber) {
+        if T::should_end_session(n.saturating_add(One::one())) {
+            let random_seed = T::get_randomness();
+            Randomness::<Runtime>::put(random_seed);
+        }
+    }
+
+    fn take_randomness() -> [u8; 32] {
+        Randomness::<Runtime>::take()
+    }
+}
+
+/// Solochain randomness.
+///
+/// Uses current block randomness. This randomness exists in `on_initialize` so we don't need to
+/// `prepare_randomness` in the previous block.
+pub struct SolochainRandomness<T>(PhantomData<T>);
+
+impl<BlockNumber, T> CollatorAssignmentRandomness<BlockNumber> for SolochainRandomness<T>
+where
+    T: Get<[u8; 32]>,
+{
+    fn prepare_randomness_weight(_n: BlockNumber) -> Weight {
+        Weight::zero()
+    }
+
+    fn prepare_randomness(_n: BlockNumber) {}
+
+    fn take_randomness() -> [u8; 32] {
+        #[cfg(feature = "runtime-benchmarks")]
+        if let Some(x) =
+            frame_support::storage::unhashed::take(b"__bench_collator_assignment_randomness")
+        {
+            return x;
+        }
+
+        T::get()
     }
 }

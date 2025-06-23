@@ -3773,6 +3773,7 @@ name = "dancelight-runtime-constants"
 version = "0.1.0"
 dependencies = [
  "frame-support",
+ "hex-literal 0.3.4",
  "polkadot-primitives",
  "polkadot-runtime-common",
  "smallvec",
@@ -18743,6 +18744,7 @@ name = "starlight-runtime-constants"
 version = "0.1.0"
 dependencies = [
  "frame-support",
+ "hex-literal 0.3.4",
  "polkadot-primitives",
  "polkadot-runtime-common",
  "smallvec",
@@ -20421,6 +20423,7 @@ dependencies = [
  "frame-system",
  "hex-literal 0.3.4",
  "impl-trait-for-tuples",
+ "log",
  "macro_rules_attribute",
  "pallet-external-validators",
  "parity-scale-codec",
