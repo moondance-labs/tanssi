@@ -151,7 +151,7 @@ describeSuite({
 
                 for (let i = 1; i <= BLOCKS_AMOUNT_TO_CHECK; i++) {
                     const blockNumber = currentBlock - i;
-                    process.stdout.write(`\rProcessing block [${blockNumber}]  ${i}/${BLOCKS_AMOUNT_TO_CHECK}`);
+                    process.stdout.write(`\rProcessing block [${blockNumber}]: ${i}/${BLOCKS_AMOUNT_TO_CHECK}`);
 
                     const blockHash = await api.rpc.chain.getBlockHash(blockNumber);
                     const block = await api.rpc.chain.getBlock(blockHash);
@@ -162,7 +162,6 @@ describeSuite({
                         const { section, method } = extrinsic.method;
 
                         if (section === "ethereumInboundQueue" && method === "submit") {
-
                             const message = extrinsic.args[0];
                             const { eventLog } = message.toJSON();
 
