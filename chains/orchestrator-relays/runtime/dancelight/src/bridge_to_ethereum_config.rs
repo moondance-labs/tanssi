@@ -348,7 +348,7 @@ where
             // Check if the token location is a foreign asset included in ForeignAssetCreator
             let asset_id_exists =
                 pallet_foreign_asset_creator::ForeignAssetToAssetId::<Runtime>::get(
-                    eth_transfer_data.token_location,
+                    &eth_transfer_data.token_location,
                 )
                 .is_some();
 
