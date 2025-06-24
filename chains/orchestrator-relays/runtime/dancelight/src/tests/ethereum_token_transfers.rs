@@ -589,7 +589,7 @@ fn fail_receiving_native_tokens_with_foreign_account_id_20() {
                 payload: payload.encode(),
             };
 
-            let message = Message {
+            let message = EventProof {
                 event_log: Log {
                     address:
                         <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
@@ -678,7 +678,7 @@ fn fail_receiving_native_tokens_with_foreign_account_id_32() {
                 payload: payload.encode(),
             };
 
-            let message = Message {
+            let message = EventProof {
                 event_log: Log {
                     address:
                         <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
@@ -770,7 +770,7 @@ fn fail_receiving_native_tokens_with_destination_below_existential_deposit() {
                 payload: payload.encode(),
             };
 
-            let message = Message {
+            let message = EventProof {
                 event_log: Log {
                     address:
                         <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
