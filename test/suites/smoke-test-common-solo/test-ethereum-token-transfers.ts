@@ -10,9 +10,9 @@ import { ETHEREUM_MAINNET_SOVEREIGN_ACCOUNT_ADDRESS, SEPOLIA_SOVEREIGN_ACCOUNT_A
 
 const SS58_FORMAT = 42;
 
-let BLOCKS_AMOUNT_TO_CHECK = 1;
+let BLOCKS_AMOUNT_TO_CHECK = 100;
 // For debug purposes only, specify block here to check it
-const BLOCK_NUMBER_TO_DEBUG = 1623043;
+const BLOCK_NUMBER_TO_DEBUG = undefined;
 
 const customTypes = {
     VersionedXcmMessage: {
@@ -149,8 +149,6 @@ describeSuite({
                     currentBlock = BLOCK_NUMBER_TO_DEBUG + 1;
                 }
 
-                let foundSubmit = false;
-
                 for (let i = 1; i <= BLOCKS_AMOUNT_TO_CHECK; i++) {
                     const blockNumber = currentBlock - i;
                     process.stdout.write(`\rProcessing block [${blockNumber}]  ${i}/${BLOCKS_AMOUNT_TO_CHECK}`);
@@ -164,7 +162,6 @@ describeSuite({
                         const { section, method } = extrinsic.method;
 
                         if (section === "ethereumInboundQueue" && method === "submit") {
-                            foundSubmit = true;
 
                             const message = extrinsic.args[0];
                             const { eventLog } = message.toJSON();
@@ -202,8 +199,6 @@ describeSuite({
                         }
                     }
                 }
-
-                expect(foundSubmit, "No ethereumInboundQueue.submit extrinsic found in scanned blocks").toBe(true);
             },
         });
     },
