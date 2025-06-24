@@ -353,7 +353,7 @@ where
                 .is_some();
 
             if !asset_id_exists {
-                log::warn!("EthTokensLocalProcessor: in ForeignAssetToAssetId map");
+                log::warn!("EthTokensLocalProcessor: location not found in ForeignAssetToAssetId map: {:?}", eth_transfer_data.token_location);
             }
 
             return asset_id_exists;
