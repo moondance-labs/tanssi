@@ -16,15 +16,21 @@
 
 use {
     super::*,
-    sp_std::marker::PhantomData,
-    snowbridge_router_primitives::inbound::{envelope::Envelope, MessageProcessor, MessageV1, Command as SnowbridgeCommand},
-    sp_runtime::DispatchError,
     parity_scale_codec::DecodeAll,
+    snowbridge_router_primitives::inbound::{
+        envelope::Envelope, Command as SnowbridgeCommand, MessageProcessor, MessageV1,
+    },
+    sp_runtime::DispatchError,
+    sp_std::marker::PhantomData,
 };
 
-pub struct GenericTokenMessageProcessor<T, NativeTokenProcessor, ForeignTokenProcessor>(PhantomData<(T, NativeTokenProcessor, ForeignTokenProcessor)>);
+/// Generic token message processor to handle both native and foreign token commands, as well as token registration.
+pub struct GenericTokenMessageProcessor<T, NativeTokenProcessor, ForeignTokenProcessor>(
+    PhantomData<(T, NativeTokenProcessor, ForeignTokenProcessor)>,
+);
 
-impl<T, NativeTokenProcessor, ForeignTokenProcessor> MessageProcessor for GenericTokenMessageProcessor<T, NativeTokenProcessor, ForeignTokenProcessor>
+impl<T, NativeTokenProcessor, ForeignTokenProcessor> MessageProcessor
+    for GenericTokenMessageProcessor<T, NativeTokenProcessor, ForeignTokenProcessor>
 where
     T: frame_system::Config,
     NativeTokenProcessor: MessageProcessor,
@@ -35,23 +41,20 @@ where
             Ok(VersionedXcmMessage::V1(MessageV1 {
                 command: SnowbridgeCommand::SendNativeToken { .. },
                 ..
-            })) => {
-                NativeTokenProcessor::can_process_message(channel, envelope)
-            }
+            })) => NativeTokenProcessor::can_process_message(channel, envelope),
             Ok(VersionedXcmMessage::V1(MessageV1 {
                 command: SnowbridgeCommand::SendToken { .. },
                 ..
-            })) => {
-                ForeignTokenProcessor::can_process_message(channel, envelope)
-            }
+            })) => ForeignTokenProcessor::can_process_message(channel, envelope),
             Ok(VersionedXcmMessage::V1(MessageV1 {
                 command: SnowbridgeCommand::RegisterToken { .. },
                 ..
-            })) => {
-                true
-            }
+            })) => true,
             Err(e) => {
-                log::trace!("GenericMessageProcessor: failed to decode message. Error: {:?}", e);
+                log::trace!(
+                    "GenericTokenMessageProcessor: failed to decode message. Error: {:?}",
+                    e
+                );
                 false
             }
         }
@@ -62,25 +65,35 @@ where
             Ok(VersionedXcmMessage::V1(MessageV1 {
                 command: SnowbridgeCommand::SendNativeToken { .. },
                 ..
-            })) => {
-                NativeTokenProcessor::process_message(channel, envelope)
-            }
+            })) => NativeTokenProcessor::process_message(channel, envelope),
             Ok(VersionedXcmMessage::V1(MessageV1 {
                 command: SnowbridgeCommand::SendToken { .. },
                 ..
-            })) => {
-                ForeignTokenProcessor::process_message(channel, envelope)
-            }
+            })) => ForeignTokenProcessor::process_message(channel, envelope),
             Ok(VersionedXcmMessage::V1(MessageV1 {
                 command: SnowbridgeCommand::RegisterToken { .. },
                 ..
-            })) => {
-                Ok(())
-            }
+            })) => Ok(()),
             Err(e) => {
-                log::trace!("GenericMessageProcessor: failed to process message. Error: {:?}", e);
+                log::trace!(
+                    "GenericTokenMessageProcessor: failed to process message. Error: {:?}",
+                    e
+                );
                 Ok(())
             }
         }
+    }
+}
+
+/// Dummy processor to avoid erroring while receiving a specific command (such as SendToken)
+pub struct DummyTokenProcessor;
+
+impl MessageProcessor for DummyTokenProcessor {
+    fn can_process_message(_channel: &Channel, _envelope: &Envelope) -> bool {
+        true
+    }
+
+    fn process_message(_channel: Channel, _envelope: Envelope) -> Result<(), DispatchError> {
+        Ok(())
     }
 }

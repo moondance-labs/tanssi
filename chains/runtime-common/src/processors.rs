@@ -15,11 +15,13 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    snowbridge_core::Channel,
-    snowbridge_router_primitives::inbound::{envelope::Envelope, MessageProcessor, MessageV1, Command, VersionedXcmMessage, Destination},
-    sp_runtime::{DispatchError, DispatchResult, traits::MaybeEquivalence},
+    frame_support::traits::{fungible::Mutate, tokens::Preservation, Get},
     parity_scale_codec::DecodeAll,
-    frame_support::traits::{Get, tokens::Preservation, fungible::Mutate},
+    snowbridge_core::Channel,
+    snowbridge_router_primitives::inbound::{
+        envelope::Envelope, Command, Destination, MessageProcessor, MessageV1, VersionedXcmMessage,
+    },
+    sp_runtime::{traits::MaybeEquivalence, DispatchError, DispatchResult},
 };
 
 /// `NativeTokenTransferMessageProcessor` is responsible for receiving and processing the Tanssi
@@ -28,13 +30,14 @@ use {
 pub struct NativeTokenTransferMessageProcessor<T>(sp_std::marker::PhantomData<T>);
 impl<T> MessageProcessor for NativeTokenTransferMessageProcessor<T>
 where
-    T: snowbridge_pallet_inbound_queue::Config + pallet_ethereum_token_transfers::Config + snowbridge_pallet_system::Config,
+    T: snowbridge_pallet_inbound_queue::Config
+        + pallet_ethereum_token_transfers::Config
+        + snowbridge_pallet_system::Config,
     T::AccountId: From<[u8; 32]>,
 {
     fn can_process_message(channel: &Channel, envelope: &Envelope) -> bool {
         // Ensure that the message is intended for the current channel, para_id and agent_id
-        if let Some(channel_info) =
-            pallet_ethereum_token_transfers::CurrentChannelInfo::<T>::get()
+        if let Some(channel_info) = pallet_ethereum_token_transfers::CurrentChannelInfo::<T>::get()
         {
             if envelope.channel_id != channel_info.channel_id
                 || channel.para_id != channel_info.para_id
@@ -70,7 +73,9 @@ where
             })) => {
                 let token_location = T::TokenLocationReanchored::get();
 
-                if let Some(expected_token_id) = snowbridge_pallet_system::Pallet::<T>::convert_back(&token_location) {
+                if let Some(expected_token_id) =
+                    snowbridge_pallet_system::Pallet::<T>::convert_back(&token_location)
+                {
                     if token_id == expected_token_id {
                         return true;
                     } else {

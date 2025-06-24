@@ -47,7 +47,10 @@ use {
     sp_core::{ConstU32, ConstU8, Get, H160, H256},
     sp_runtime::{traits::Zero, DispatchResult},
     tanssi_runtime_common::processors::NativeTokenTransferMessageProcessor,
-    tp_bridge::{DoNothingConvertMessage, DoNothingRouter, EthereumSystemHandler, generic_token_message_processor::GenericTokenMessageProcessor},
+    tp_bridge::{
+        generic_token_message_processor::{DummyTokenProcessor, GenericTokenMessageProcessor},
+        DoNothingConvertMessage, DoNothingRouter, EthereumSystemHandler,
+    },
 };
 
 // Ethereum Bridge
@@ -265,7 +268,7 @@ impl snowbridge_pallet_inbound_queue::Config for Runtime {
     #[cfg(not(feature = "runtime-benchmarks"))]
     type MessageProcessor = (
         SymbioticMessageProcessor<Self>,
-        GenericTokenMessageProcessor<Self, NativeTokensProcessor, ()>,
+        GenericTokenMessageProcessor<Self, NativeTokensProcessor, DummyTokenProcessor>,
     );
     type RewardProcessor = RewardThroughFeesAccount<Self>;
     #[cfg(feature = "runtime-benchmarks")]

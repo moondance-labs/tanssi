@@ -52,7 +52,10 @@ use {
     sp_runtime::{traits::Zero, DispatchError, DispatchResult},
     sp_std::{marker::PhantomData, vec},
     tanssi_runtime_common::processors::NativeTokenTransferMessageProcessor,
-    tp_bridge::{DoNothingConvertMessage, DoNothingRouter, EthereumSystemHandler, generic_token_message_processor::GenericTokenMessageProcessor},
+    tp_bridge::{
+        generic_token_message_processor::GenericTokenMessageProcessor, DoNothingConvertMessage,
+        DoNothingRouter, EthereumSystemHandler,
+    },
     xcm::latest::{
         prelude::*, Asset as XcmAsset, AssetId as XcmAssetId, Assets as XcmAssets, ExecuteXcm,
         Fungibility, Junctions::*,
