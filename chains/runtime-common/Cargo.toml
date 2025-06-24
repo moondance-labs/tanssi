@@ -21,7 +21,7 @@ scale-info = { workspace = true, features = [ "derive" ] }
 # Own
 pallet-configuration = { workspace = true }
 pallet-data-preservers = { workspace = true }
-pallet-ethereum-token-transfers = { workspace= true }
+pallet-ethereum-token-transfers = { workspace = true }
 pallet-external-validator-slashes = { workspace = true }
 pallet-external-validators = { workspace = true }
 pallet-foreign-asset-creator = { workspace = true }
