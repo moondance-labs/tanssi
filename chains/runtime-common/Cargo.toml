@@ -144,6 +144,7 @@ try-runtime = [
 	"pallet-beefy-mmr/try-runtime",
 	"pallet-configuration/try-runtime",
 	"pallet-data-preservers/try-runtime",
+	"pallet-ethereum-token-transfers/try-runtime",
 	"pallet-external-validator-slashes/try-runtime",
 	"pallet-external-validators/try-runtime",
 	"pallet-foreign-asset-creator/try-runtime",
@@ -157,6 +158,7 @@ try-runtime = [
 	"pallet-treasury/try-runtime",
 	"pallet-xcm/try-runtime",
 	"runtime-parachains/try-runtime",
+	"snowbridge-pallet-inbound-queue/try-runtime",
 	"snowbridge-pallet-system/try-runtime",
 	"sp-runtime/try-runtime",
 ]
