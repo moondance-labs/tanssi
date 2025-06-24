@@ -25,6 +25,7 @@ mod benchmarks;
 mod tests;
 
 pub mod symbiotic_message_processor;
+pub mod generic_token_message_processor;
 
 use {
     core::marker::PhantomData,

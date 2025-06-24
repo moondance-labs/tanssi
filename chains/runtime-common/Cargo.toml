@@ -21,6 +21,7 @@ scale-info = { workspace = true, features = [ "derive" ] }
 # Own
 pallet-configuration = { workspace = true }
 pallet-data-preservers = { workspace = true }
+pallet-ethereum-token-transfers = { workspace= true }
 pallet-external-validator-slashes = { workspace = true }
 pallet-external-validators = { workspace = true }
 pallet-foreign-asset-creator = { workspace = true }
@@ -50,7 +51,9 @@ cumulus-pallet-xcmp-queue = { workspace = true }
 # Polkadot
 pallet-xcm = { workspace = true }
 snowbridge-core = { workspace = true }
+snowbridge-pallet-inbound-queue = { workspace = true }
 snowbridge-pallet-system = { workspace = true }
+snowbridge-router-primitives = { workspace = true }
 sp-core = { workspace = true }
 sp-runtime = { workspace = true }
 sp-staking = { workspace = true }
@@ -75,6 +78,7 @@ std = [
 	"pallet-beefy-mmr/std",
 	"pallet-configuration/std",
 	"pallet-data-preservers/std",
+	"pallet-ethereum-token-transfers/std",
 	"pallet-external-validator-slashes/std",
 	"pallet-external-validators/std",
 	"pallet-foreign-asset-creator/std",
@@ -91,7 +95,9 @@ std = [
 	"runtime-parachains/std",
 	"scale-info/std",
 	"snowbridge-core/std",
+	"snowbridge-pallet-inbound-queue/std",
 	"snowbridge-pallet-system/std",
+	"snowbridge-router-primitives/std",
 	"sp-core/std",
 	"sp-runtime/std",
 	"sp-staking/std",
@@ -108,6 +114,7 @@ runtime-benchmarks = [
 	"pallet-beefy-mmr/runtime-benchmarks",
 	"pallet-configuration/runtime-benchmarks",
 	"pallet-data-preservers/runtime-benchmarks",
+	"pallet-ethereum-token-transfers/runtime-benchmarks",
 	"pallet-external-validator-slashes/runtime-benchmarks",
 	"pallet-external-validators/runtime-benchmarks",
 	"pallet-foreign-asset-creator/runtime-benchmarks",
@@ -121,7 +128,9 @@ runtime-benchmarks = [
 	"pallet-xcm/runtime-benchmarks",
 	"runtime-parachains/runtime-benchmarks",
 	"snowbridge-core/runtime-benchmarks",
+	"snowbridge-pallet-inbound-queue/runtime-benchmarks",
 	"snowbridge-pallet-system/runtime-benchmarks",
+	"snowbridge-router-primitives/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"sp-staking/runtime-benchmarks",
 ]

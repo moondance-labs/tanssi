@@ -18,7 +18,7 @@
 
 use {
     crate::{
-        bridge_to_ethereum_config::{EthereumGatewayAddress, NativeTokenTransferMessageProcessor},
+        bridge_to_ethereum_config::EthereumGatewayAddress,
         tests::common::*,
         Balances, EthereumInboundQueue, EthereumSovereignAccount, EthereumSystem,
         EthereumTokenTransfers, RuntimeEvent, SnowbridgeFeesAccount, TokenLocationReanchored,
@@ -37,6 +37,7 @@ use {
     },
     sp_core::{H160, H256},
     sp_runtime::{traits::MaybeEquivalence, FixedU128, TokenError},
+    tanssi_runtime_common::processors::NativeTokenTransferMessageProcessor,
     sp_std::vec,
     xcm::{latest::Location, VersionedLocation},
 };
