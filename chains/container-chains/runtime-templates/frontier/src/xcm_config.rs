@@ -57,7 +57,7 @@ use {
         AllowTopLevelPaidExecutionFrom, ConvertedConcreteId, EnsureXcmOrigin, FungibleAdapter,
         IsConcrete, ParentIsPreset, RelayChainAsNative, SiblingParachainAsNative,
         SiblingParachainConvertsVia, SignedAccountKey20AsNative, SovereignSignedViaLocation,
-        TakeWeightCredit, UsingComponents, WeightInfoBounds, WithComputedOrigin,
+        TakeWeightCredit, UsingComponents, WeightInfoBounds, WithComputedOrigin, WithUniqueTopic,
     },
     xcm_executor::XcmExecutor,
     xcm_primitives::AccountIdAssetIdConversion,
@@ -190,13 +190,13 @@ pub type UmpRouter =
 
 /// The means for routing XCM messages which are not for local execution into the right message
 /// queues.
-pub type XcmRouter = (
+pub type XcmRouter = WithUniqueTopic<(
     // Two routers - use UMP to communicate with the relay chain:
     UmpRouter,
     // ..and XCMP to communicate with the sibling chains.
     XcmpQueue,
     SovereignPaidRemoteExporter<UmpRouter, UniversalLocation, crate::EthereumNetwork>,
-);
+)>;
 
 pub struct XcmConfig;
 impl xcm_executor::Config for XcmConfig {

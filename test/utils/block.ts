@@ -705,3 +705,43 @@ export async function getLastSessionEndBlock(api: ApiPromise, lastSessionIndex: 
     }
     return blockNumber;
 }
+
+/*
+ *   Poll system events from the API and trying to find specific section/method event, until timeout is reached.
+ */
+export const waitEventUntilTimeout = async (
+    polkadotJs: ApiPromise,
+    eventSectionMethod: string,
+    timeoutMs = 15000,
+    blockTimeMs = 6000
+): Promise<void> => {
+    const start = performance.now();
+
+    const timeoutAt = Date.now() + timeoutMs;
+
+    console.log("Waiting for event:", eventSectionMethod, "for", timeoutMs / 1000, "seconds");
+
+    while (Date.now() < timeoutAt) {
+        const header = await polkadotJs.rpc.chain.getHeader();
+        const blockHash = await polkadotJs.rpc.chain.getBlockHash(header.number.toNumber());
+        const events = await polkadotJs.query.system.events();
+
+        for (const { event } of events) {
+            if (`${event.section}.${event.method}` === eventSectionMethod) {
+                const end = performance.now();
+                console.log(
+                    `Event "${eventSectionMethod}" found in block #${header.number} with hash: ${blockHash}. Took: ${((end - start) / 1000).toFixed(2)} sec`
+                );
+                return;
+            }
+        }
+
+        console.log(
+            `Not found event: ${eventSectionMethod} in block #${header.number.toNumber()} with hash: ${blockHash.toHex()}`
+        );
+
+        await new Promise((resolve) => setTimeout(resolve, blockTimeMs));
+    }
+
+    throw new Error(`Event "${eventSectionMethod}" not found within ${timeoutMs / 1000}s`);
+};

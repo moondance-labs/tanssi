@@ -23,6 +23,7 @@ use {
     frame_support::weights::Weight,
     pallet_xcm_benchmarks_fungible::WeightInfo as XcmBalancesWeight,
     pallet_xcm_benchmarks_generic::WeightInfo as XcmGeneric,
+    parity_scale_codec::Encode,
     sp_std::prelude::*,
     xcm::{
         latest::{prelude::*, AssetTransferFilter, Weight as XCMWeight},
@@ -258,8 +259,9 @@ where
     fn universal_origin(_: &Junction) -> Weight {
         Weight::MAX
     }
-    fn export_message(_: &NetworkId, _: &Junctions, _: &Xcm<()>) -> Weight {
-        Weight::MAX
+    fn export_message(_: &NetworkId, _: &Junctions, inner: &Xcm<()>) -> Weight {
+        let inner_encoded_len = inner.encode().len() as u32;
+        XcmGeneric::<Runtime>::export_message(inner_encoded_len)
     }
     fn lock_asset(_: &Asset, _: &Location) -> Weight {
         Weight::MAX

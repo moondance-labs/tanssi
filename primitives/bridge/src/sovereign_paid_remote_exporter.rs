@@ -58,6 +58,15 @@ where
             return Err(Unroutable);
         }
 
+        // `xcm` should already end with `SetTopic` - if it does, then extract and derive into
+        // an onward topic ID.
+        let maybe_forward_id = match xcm.last() {
+            Some(SetTopic(t)) => Some(*t),
+            _ => None,
+        };
+
+        let fees_mode_instruction = SetFeesMode { jit_withdraw: true };
+
         let export_instruction = ExportMessage {
             network: EthereumNetwork::get(),
             destination: Here,
@@ -65,12 +74,16 @@ where
         };
 
         // Prepare the message to send
-        let message = Xcm(vec![export_instruction]);
+        let mut message = Xcm(vec![fees_mode_instruction, export_instruction]);
 
         let tanssi_location = Location {
             parents: 1,
             interior: Here,
         };
+
+        if let Some(forward_id) = maybe_forward_id {
+            message.0.push(SetTopic(forward_id));
+        }
 
         let (v, cost) =
             validate_send::<Router>(tanssi_location.into(), message).inspect_err(|err| {
