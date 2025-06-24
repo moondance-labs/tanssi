@@ -961,7 +961,8 @@ impl pallet_collator_assignment::Config for Runtime {
     type SelfParaId = ParachainInfo;
     type ShouldRotateAllCollators =
         RotateCollatorsEveryNSessions<ConfigurationCollatorRotationSessionPeriod>;
-    type GetRandomnessForNextBlock = BabeGetRandomnessForNextBlock;
+    type Randomness =
+        pallet_collator_assignment::ParachainRandomness<BabeGetRandomnessForNextBlock, Runtime>;
     type RemoveInvulnerables = RemoveInvulnerablesImpl;
     type ParaIdAssignmentHooks = ParaIdAssignmentHooksImpl;
     type CollatorAssignmentTip = ServicesPayment;

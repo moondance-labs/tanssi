@@ -31,7 +31,7 @@ use {
 pub const MAGIC_BYTES: [u8; 4] = [112, 21, 0, 56];
 
 /// Payload is the whole data we expect to receive from the relayer
-#[derive(Encode, Decode)]
+#[derive(Encode, Decode, DebugNoBound)]
 pub struct Payload<T>
 where
     T: pallet_external_validators::Config,
@@ -41,7 +41,7 @@ where
 }
 
 /// Actual message inside the payload
-#[derive(Encode, Decode)]
+#[derive(Encode, Decode, DebugNoBound)]
 pub enum Message<T>
 where
     T: pallet_external_validators::Config,
@@ -50,7 +50,7 @@ where
 }
 
 /// Command to be executed by this message processor
-#[derive(Encode, Decode)]
+#[derive(Encode, Decode, DebugNoBound)]
 pub enum InboundCommand<T>
 where
     T: pallet_external_validators::Config,
@@ -69,10 +69,21 @@ where
 {
     fn can_process_message(_channel: &Channel, envelope: &Envelope) -> bool {
         let decode_result = Payload::<T>::decode_all(&mut envelope.payload.as_slice());
-        if let Ok(payload) = decode_result {
-            payload.magic_bytes == MAGIC_BYTES
-        } else {
-            false
+        match decode_result {
+            Ok(payload) => {
+                if payload.magic_bytes == MAGIC_BYTES {
+                    true
+                } else {
+                    log::debug!("SymbioticMessageProcessor: magic number mismatch, will try next processor: {:?}", payload.magic_bytes);
+                    false
+                }
+            }
+            Err(e) => {
+                // Message cannot be decoded as `Payload`.
+                // This is expected if the message is intended for a different processor.
+                log::trace!("SymbioticMessageProcessor: failed to decode payload. This is expected if the message is not for this processor. Error: {:?}", e);
+                false
+            }
         }
     }
 
@@ -83,6 +94,8 @@ where
         } else {
             return Err(DispatchError::Other("unable to parse the envelope payload"));
         };
+
+        log::trace!("SymbioticMessageProcessor: {:?}", message);
 
         match message {
             Message::V1(InboundCommand::ReceiveValidators {
