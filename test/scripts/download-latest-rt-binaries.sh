@@ -39,7 +39,6 @@ for bin in "$@"; do
     container-chain-frontier-node) DOWNLOAD_FRONTIER_NODE=true ;; 
     container-chain-simple-node) DOWNLOAD_SIMPLE_NODE=true ;; 
     tanssi-relay) DOWNLOAD_RELAY=true ;; 
-    undefined) echo "bug in moonwall passing undefined as an arg" ;;
     *) echo "Unknown binary: $bin" >&2; exit 1 ;;
   esac
 done
