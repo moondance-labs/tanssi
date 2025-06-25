@@ -21,7 +21,10 @@ pub const SLOTS_PER_EPOCH: u32 = snowbridge_pallet_ethereum_client::config::SLOT
 use crate::EthereumBeaconClient;
 
 #[cfg(not(feature = "runtime-benchmarks"))]
-use tp_bridge::symbiotic_message_processor::SymbioticMessageProcessor;
+use tp_bridge::{
+    generic_token_message_processor::{GenericTokenMessageProcessor, NoOpProcessor},
+    symbiotic_message_processor::SymbioticMessageProcessor,
+};
 
 use {
     crate::{
@@ -47,10 +50,7 @@ use {
     sp_core::{ConstU32, ConstU8, Get, H160, H256},
     sp_runtime::{traits::Zero, DispatchResult},
     tanssi_runtime_common::processors::NativeTokenTransferMessageProcessor,
-    tp_bridge::{
-        generic_token_message_processor::{GenericTokenMessageProcessor, NoOpProcessor},
-        DoNothingConvertMessage, DoNothingRouter, EthereumSystemHandler,
-    },
+    tp_bridge::{DoNothingConvertMessage, DoNothingRouter, EthereumSystemHandler},
 };
 
 // Ethereum Bridge
