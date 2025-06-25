@@ -24,6 +24,7 @@ mod benchmarks;
 #[cfg(test)]
 mod tests;
 
+pub mod generic_token_message_processor;
 pub mod symbiotic_message_processor;
 
 use {
