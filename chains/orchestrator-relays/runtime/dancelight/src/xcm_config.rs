@@ -184,7 +184,6 @@ parameter_types! {
     pub const RelayNetwork: NetworkId = NetworkId::ByGenesis(WESTEND_GENESIS_HASH);
     pub const MaxInstructions: u32 = 100;
     pub const MaxAssetsIntoHolding: u32 = 64;
-    pub RelayTreasuryLocation: Location = (Parent, PalletInstance(dancelight_runtime_constants::TREASURY_PALLET_ID)).into();
 }
 
 pub struct OnlyParachains;
@@ -206,15 +205,14 @@ pub type Barrier = TrailingSetTopicAsId<
     DenyThenTry<
         DenyReserveTransferToRelayChain,
         (
-            // Allow local users to buy weight credit.
+            // Weight that is paid for may be consumed.
             TakeWeightCredit,
             // Expected responses are OK.
             AllowKnownQueryResponses<XcmPallet>,
             barriers::AllowExportMessageFromContainerChainBarrier,
             WithComputedOrigin<
                 (
-                    // If the message is one that immediately attempts to pay for execution, then
-                    // allow it.
+                    // If the message is one that immediately attempts to pay for execution, then allow it.
                     AllowTopLevelPaidExecutionFrom<Everything>,
                     // Messages coming from system parachains need not pay for execution.
                     AllowExplicitUnpaidExecutionFrom<IsChildSystemParachain<ParaId>>,
