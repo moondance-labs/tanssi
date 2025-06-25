@@ -28,7 +28,7 @@ md_toc --in-place github --header-levels 2 docs/bridge/messages.md
 
 # Bridge architecture recap
 
-List repos here
+Relevant repositories:
 
 * [tanssi](https://github.com/moondance-labs/tanssi)
   * Custom messages (starlight processor)
@@ -38,15 +38,30 @@ List repos here
   * Some custom cherry-picks to make snowbridge more generic
 * [tanssi-bridge-relayer](https://github.com/moondance-labs/tanssi-bridge-relayer)
   * Solidity part of the custom starlight messages (overriden_contracts)
-  * Relayers (go). Little changes from upstream, they never decode the messages. Only relay them.
+  * Relayers (go). Slight changes from upstream to support relaying messages to a solochain.
+  * Relayers never decode the messages. Only relay them.
 * [tanssi-symbiotic](https://github.com/moondance-labs/tanssi-symbiotic)
-  * (?) integration with symbiotic for tanssi
+  * Integration with symbiotic for tanssi. Handles validators, rewards and slashes.
 * [snowbridge](https://github.com/moondance-labs/snowbridge/tree/tanssi-relay-v1.0.40)
-  * (?) another relayer? whats the difference with tanssi-bridge-relayer
+  * Relayers (go). Unlike `tanssi-bridge-relayer`, these are not modified
 
-TODO: maybe explain how to find the actual commit that is deployed for each repo
+Where to find the commit of a deployed version?
 
-TODO: brief description of how a message gets relayed
+<https://github.com/moondance-labs/tanssi/releases>
+
+<https://github.com/moondance-labs/tanssi-symbiotic/blob/staging/CHANGELOG.md>
+
+There are consensus relayers and message relayers. If a message is not being delivered, either of them could be stuck.
+
+Starlight -> Ethereum
+
+* BEEFY relayer
+
+Ethereum -> Starlight
+
+* Eth beacon chain relayer
+
+All relayers are permissionless and verified on-chain.
 
 # Ethereum -> Starlight (starlight processor)
 
@@ -276,7 +291,10 @@ function sendToken(
 
 SendTokenToAssetHubAddress32, SendTokenToAddress32, SendTokenToAddress20
 
-TODO
+Mentions of "AssetHub" refer to "Starlight", because they are simply messages with no destination paraId,
+so they are handled by starlight directly.
+
+Currently (runtime-1321) token transfers are disabled on the starlight side, some message processors are not implemented yet.
 
 # Starlight -> Ethereum
 
