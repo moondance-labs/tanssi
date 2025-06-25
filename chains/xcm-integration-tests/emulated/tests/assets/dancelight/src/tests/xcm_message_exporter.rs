@@ -16,13 +16,12 @@
 
 use {
     dancelight_emulated_chain::DancelightRelayPallet,
-    dancelight_runtime::xcm_config,
     dancelight_system_emulated_network::DancelightRelay as Dancelight,
-    frame_support::{assert_err, weights::Weight},
+    frame_support::weights::Weight,
     pallet_xcm::Error,
     primitives::AccountId,
     sp_runtime::DispatchError,
-    xcm::{latest::prelude::*, v5::Location, VersionedXcm},
+    xcm::{latest::prelude::*, VersionedXcm},
     xcm_emulator::{Chain, TestExt},
 };
 
