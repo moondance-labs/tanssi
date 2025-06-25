@@ -33,7 +33,7 @@ use {
     },
     frame_support::{
         parameter_types,
-        traits::{Contains, Equals, Everything, Nothing, ProcessMessageError},
+        traits::{Contains, Equals, Everything, Nothing},
         weights::Weight,
     },
     frame_system::EnsureRoot,
@@ -45,6 +45,7 @@ use {
     sp_core::ConstU32,
     sp_runtime::traits::TryConvertInto,
     tp_bridge::{
+        barriers,
         container_token_to_ethereum_message_exporter::EthereumBlobExporter as ContainerEthereumBlobExporter,
         snowbridge_outbound_token_transfer::{EthereumBlobExporter, SnowbrigeTokenTransferRouter},
         EthereumLocationsConverterFor,
@@ -55,20 +56,17 @@ use {
         opaque::latest::WESTEND_GENESIS_HASH,
     },
     xcm_builder::{
-        AccountId32Aliases, AllowExplicitUnpaidExecutionFrom, AllowHrmpNotificationsFromRelayChain,
-        AllowKnownQueryResponses, AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom,
-        ChildParachainAsNative, ChildParachainConvertsVia, ConvertedConcreteId,
-        DenyReserveTransferToRelayChain, DenyThenTry, DescribeAllTerminal, DescribeFamily,
-        FixedWeightBounds, FrameTransactionalProcessor, FungibleAdapter, FungiblesAdapter,
-        HashedDescription, IsConcrete, MintLocation, NoChecking, OriginToPluralityVoice,
+        AccountId32Aliases, AllowExplicitUnpaidExecutionFrom, AllowKnownQueryResponses,
+        AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom, ChildParachainAsNative,
+        ChildParachainConvertsVia, ConvertedConcreteId, DenyReserveTransferToRelayChain,
+        DenyThenTry, DescribeAllTerminal, DescribeFamily, FixedWeightBounds,
+        FrameTransactionalProcessor, FungibleAdapter, FungiblesAdapter, HashedDescription,
+        IsChildSystemParachain, IsConcrete, MintLocation, NoChecking, OriginToPluralityVoice,
         SendXcmFeeToAccount, SignedAccountId32AsNative, SignedToAccountId32,
         SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId, UsingComponents,
         WeightInfoBounds, WithComputedOrigin, WithUniqueTopic, XcmFeeManagerFromComponents,
     },
-    xcm_executor::{
-        traits::{Properties, ShouldExecute},
-        XcmExecutor,
-    },
+    xcm_executor::XcmExecutor,
 };
 
 parameter_types! {
@@ -210,28 +208,6 @@ impl Contains<Location> for ParentOrParentsPlurality {
     }
 }
 
-pub struct MockedAllowBarrier;
-impl ShouldExecute for MockedAllowBarrier {
-    fn should_execute<RuntimeCall>(
-        _origin: &Location,
-        _instructions: &mut [Instruction<RuntimeCall>],
-        max_weight: Weight,
-        properties: &mut Properties,
-    ) -> Result<(), ProcessMessageError> {
-        log::trace!(
-            target: "xcm::barriers",
-            "TakeWeightCredit origin: {:?}, instructions: {:?}, max_weight: {:?}, properties: {:?}",
-            _origin, _instructions, max_weight, properties,
-        );
-
-        log::trace!(
-            target: "xcm::barriers",
-            "Trying mocked barrier",
-        );
-        Ok(())
-    }
-}
-
 /// The barriers one of which must be passed for an XCM message to be executed.
 pub type Barrier = TrailingSetTopicAsId<
     DenyThenTry<
@@ -241,23 +217,16 @@ pub type Barrier = TrailingSetTopicAsId<
             TakeWeightCredit,
             // Expected responses are OK.
             AllowKnownQueryResponses<XcmPallet>,
-            // Try mock barrier. TODO: Fix later
-            MockedAllowBarrier,
+            barriers::AllowExportMessageFromContainerChainBarrier,
             WithComputedOrigin<
                 (
                     // If the message is one that immediately attempts to pay for execution, then
                     // allow it.
                     AllowTopLevelPaidExecutionFrom<Everything>,
-                    // Parent, its pluralities (i.e. governance bodies) and relay treasury pallet
-                    // get free execution.
-                    AllowExplicitUnpaidExecutionFrom<(
-                        ParentOrParentsPlurality,
-                        Equals<RelayTreasuryLocation>,
-                    )>,
+                    // Messages coming from system parachains need not pay for execution.
+                    AllowExplicitUnpaidExecutionFrom<IsChildSystemParachain<ParaId>>,
                     // Subscriptions for version tracking are OK.
                     AllowSubscriptionsFrom<OnlyParachains>,
-                    // HRMP notifications from the relay chain are OK.
-                    AllowHrmpNotificationsFromRelayChain,
                 ),
                 UniversalLocation,
                 ConstU32<8>,
