@@ -755,8 +755,7 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::swap_pool())]
         pub fn set_online(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
             let collator = ensure_signed(origin)?;
-            T::ActivityTrackingHelper::set_online(&collator)?;
-            Calls::<T>::update_candidate_position(&[collator])
+            T::ActivityTrackingHelper::set_online(&collator)
         }
 
         #[pallet::call_index(10)]
@@ -807,8 +806,7 @@ pub mod pallet {
                 Error::<T>::CollatorDoesNotExist
             );
 
-            T::ActivityTrackingHelper::set_offline(&collator)?;
-            Calls::<T>::update_candidate_position(&[collator])
+            T::ActivityTrackingHelper::set_offline(&collator)
         }
     }
 
@@ -818,6 +816,13 @@ pub mod pallet {
             rewards: CreditOf<T>,
         ) -> DispatchResultWithPostInfo {
             pools::distribute_rewards::<T>(&candidate, rewards)
+        }
+    }
+    impl<T: Config> tp_traits::NotifyCollatorOnlineStatusChange<Candidate<T>> for Pallet<T> {
+        fn update_staking_on_online_status_change(
+            collator: &Candidate<T>,
+        ) -> DispatchResultWithPostInfo {
+            Calls::<T>::update_candidate_position(&[collator.clone()])
         }
     }
 }

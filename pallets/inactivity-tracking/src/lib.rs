@@ -22,9 +22,11 @@
 //! The tracking functionality can be enabled or disabled with root privileges.
 //! By default, the tracking is enabled.
 #![cfg_attr(not(feature = "std"), no_std)]
-
 use {
-    frame_support::{dispatch::DispatchResult, ensure, pallet_prelude::Weight},
+    frame_support::{
+        dispatch::DispatchResult, dispatch::DispatchResultWithPostInfo, ensure,
+        pallet_prelude::Weight,
+    },
     parity_scale_codec::{Decode, Encode},
     scale_info::TypeInfo,
     serde::{Deserialize, Serialize},
@@ -34,7 +36,8 @@ use {
     tp_traits::{
         AuthorNotingHook, AuthorNotingInfo, ForSession, GetContainerChainsWithCollators,
         GetSessionIndex, InvulnerablesHelper, MaybeSelfChainBlockAuthor,
-        NodeActivityTrackingHelper, ParaId, ParathreadHelper, PendingCollatorAssignmentsHelper,
+        NodeActivityTrackingHelper, NotifyCollatorOnlineStatusChange, ParaId, ParathreadHelper,
+        PendingCollatorAssignmentHelper,
     },
 };
 
@@ -129,7 +132,7 @@ pub mod pallet {
 
         /// Helper that fetches a list of collators eligible to produce blocks for the current session
         type CurrentCollatorsFetcher: GetContainerChainsWithCollators<Self::CollatorId>
-            + PendingCollatorAssignmentsHelper<Self::CollatorId>;
+            + PendingCollatorAssignmentHelper<Self::CollatorId>;
 
         /// Helper that returns the block author for the orchestrator chain (if it exists)
         type GetSelfChainBlockAuthor: MaybeSelfChainBlockAuthor<Self::CollatorId>;
@@ -139,6 +142,9 @@ pub mod pallet {
 
         /// Helper for dealing with invulnerables.
         type InvulnerablesFilter: InvulnerablesHelper<Self::CollatorId>;
+
+        /// Helper for dealing with collator's stake
+        type CollatorStakeHelper: NotifyCollatorOnlineStatusChange<Self::CollatorId>;
 
         /// The weight information of this pallet.
         type WeightInfo: weights::WeightInfo;
@@ -471,7 +477,7 @@ impl<T: Config> NodeActivityTrackingHelper<T::CollatorId> for Pallet<T> {
         <OfflineCollators<T>>::get(node)
     }
 
-    fn set_offline(node: &T::CollatorId) -> DispatchResult {
+    fn set_offline(node: &T::CollatorId) -> DispatchResultWithPostInfo {
         ensure!(
             !<OfflineCollators<T>>::get(node),
             Error::<T>::CollatorNotOnline
@@ -481,27 +487,29 @@ impl<T: Config> NodeActivityTrackingHelper<T::CollatorId> for Pallet<T> {
             Error::<T>::MarkingInvulnerableOfflineInvalid
         );
         <OfflineCollators<T>>::insert(node.clone(), true);
+        T::CollatorStakeHelper::update_staking_on_online_status_change(node)?;
         // To prevent the collator from being assigned to any container chain in the next session
         // we need to remove it from the pending collator assignment
-        T::CurrentCollatorsFetcher::remove_offline_collator_from_pending_assigment(&node.clone());
+        T::CurrentCollatorsFetcher::remove_offline_collator_from_pending_assignment(&node.clone());
         Self::deposit_event(Event::<T>::CollatorStatusUpdated {
             collator: node.clone(),
             is_offline: true,
         });
-        Ok(())
+        Ok(().into())
     }
 
-    fn set_online(node: &T::CollatorId) -> DispatchResult {
+    fn set_online(node: &T::CollatorId) -> DispatchResultWithPostInfo {
         ensure!(
             <OfflineCollators<T>>::get(node),
             Error::<T>::CollatorNotOffline
         );
         <OfflineCollators<T>>::insert(node.clone(), false);
+        T::CollatorStakeHelper::update_staking_on_online_status_change(node)?;
         Self::deposit_event(Event::<T>::CollatorStatusUpdated {
             collator: node.clone(),
             is_offline: false,
         });
-        Ok(())
+        Ok(().into())
     }
     #[cfg(feature = "runtime-benchmarks")]
     fn make_node_inactive(node: &T::CollatorId) {

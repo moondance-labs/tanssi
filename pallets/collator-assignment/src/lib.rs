@@ -56,7 +56,7 @@ use {
     tp_traits::{
         CollatorAssignmentTip, ForSession, FullRotationModes, GetContainerChainAuthor,
         GetContainerChainsWithCollators, GetHostConfiguration, GetSessionContainerChains, ParaId,
-        ParaIdAssignmentHooks, PendingCollatorAssignmentsHelper, RemoveInvulnerables,
+        ParaIdAssignmentHooks, PendingCollatorAssignmentHelper, RemoveInvulnerables,
         ShouldRotateAllCollators, Slot,
     },
 };
@@ -672,8 +672,8 @@ pub mod pallet {
         }
     }
 
-    impl<T: Config> PendingCollatorAssignmentsHelper<T::AccountId> for Pallet<T> {
-        fn remove_offline_collator_from_pending_assigment(collator: &T::AccountId) {
+    impl<T: Config> PendingCollatorAssignmentHelper<T::AccountId> for Pallet<T> {
+        fn remove_offline_collator_from_pending_assignment(collator: &T::AccountId) {
             // If there is no pending assignment, we do nothing
             if let Some(collator_assignment) = PendingCollatorContainerChain::<T>::get() {
                 // Removing the collator from the pending assignment

@@ -1898,6 +1898,7 @@ impl pallet_inactivity_tracking::Config for Runtime {
     type GetSelfChainBlockAuthor = ();
     type ParaFilter = tp_parathread_filter_common::ExcludeAllParathreadsFilter<Runtime>;
     type InvulnerablesFilter = tp_invulnerables_filter_common::InvulnerablesFilter<Runtime>;
+    type CollatorStakeHelper = PooledStaking;
     type WeightInfo = weights::pallet_inactivity_tracking::SubstrateWeight<Runtime>;
 }
 

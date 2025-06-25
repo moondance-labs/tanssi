@@ -15,6 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use std::marker::PhantomData;
+use frame_support::dispatch::DispatchResultWithPostInfo;
 use {
     crate::{
         self as pallet_pooled_staking,
@@ -24,7 +25,6 @@ use {
         Candidate, Delegator, PendingOperationKey, PendingOperationKeyOf,
     },
     frame_support::{
-        dispatch::DispatchResult,
         parameter_types,
         traits::{
             tokens::fungible::{Inspect, InspectHold},
@@ -174,11 +174,11 @@ impl tp_traits::NodeActivityTrackingHelper<AccountId> for MockActivityTrackingHe
         *node == ACCOUNT_CANDIDATE_3
     }
 
-    fn set_online(_node: &AccountId) -> DispatchResult {
-        Ok(())
+    fn set_online(_node: &AccountId) -> DispatchResultWithPostInfo {
+        Ok(().into())
     }
-    fn set_offline(_node: &AccountId) -> DispatchResult {
-        Ok(())
+    fn set_offline(_node: &AccountId) -> DispatchResultWithPostInfo {
+        Ok(().into())
     }
     #[cfg(feature = "runtime-benchmarks")]
     fn make_node_inactive(_node: &AccountId) {}

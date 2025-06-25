@@ -6,6 +6,7 @@
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
+use frame_support::dispatch::DispatchResultWithPostInfo;
 // Tanssi is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -188,8 +189,8 @@ impl tp_traits::GetContainerChainsWithCollators<AccountId> for MockContainerChai
     }
 }
 
-impl tp_traits::PendingCollatorAssignmentsHelper<AccountId> for MockContainerChainsInfoFetcher {
-    fn remove_offline_collator_from_pending_assigment(_collator: &AccountId) {}
+impl tp_traits::PendingCollatorAssignmentHelper<AccountId> for MockContainerChainsInfoFetcher {
+    fn remove_offline_collator_from_pending_assignment(_collator: &AccountId) {}
 }
 
 pub struct MockParathreadHelper;
@@ -208,6 +209,13 @@ impl tp_traits::InvulnerablesHelper<AccountId> for MockInvulnerableCheckHandler<
     }
 }
 
+pub struct MockCollatorStakeHelper<AccountId>(PhantomData<AccountId>);
+impl tp_traits::NotifyCollatorOnlineStatusChange<AccountId> for MockCollatorStakeHelper<AccountId> {
+    fn update_staking_on_online_status_change(_collator: &AccountId) -> DispatchResultWithPostInfo {
+        Ok(().into())
+    }
+}
+
 impl pallet_inactivity_tracking::Config for Test {
     type RuntimeEvent = RuntimeEvent;
     type CollatorId = AccountId;
@@ -219,6 +227,7 @@ impl pallet_inactivity_tracking::Config for Test {
     type GetSelfChainBlockAuthor = ();
     type ParaFilter = MockParathreadHelper;
     type InvulnerablesFilter = MockInvulnerableCheckHandler<AccountId>;
+    type CollatorStakeHelper = MockCollatorStakeHelper<AccountId>;
     type WeightInfo = ();
 }
 

@@ -629,9 +629,9 @@ pub trait NodeActivityTrackingHelper<AccountId> {
     /// Check if a node is offline.
     fn is_node_offline(node: &AccountId) -> bool;
     /// Marks offline node as online
-    fn set_online(node: &AccountId) -> DispatchResult;
+    fn set_online(node: &AccountId) -> DispatchResultWithPostInfo;
     /// Marks online node as offline
-    fn set_offline(node: &AccountId) -> DispatchResult;
+    fn set_offline(node: &AccountId) -> DispatchResultWithPostInfo;
     /// Marks node as inactive for the current activity window so it could be notified as inactive
     #[cfg(feature = "runtime-benchmarks")]
     fn make_node_inactive(node: &AccountId);
@@ -646,12 +646,12 @@ impl<AccountId> NodeActivityTrackingHelper<AccountId> for () {
         false
     }
 
-    fn set_online(_node: &AccountId) -> DispatchResult {
-        Ok(())
+    fn set_online(_node: &AccountId) -> DispatchResultWithPostInfo {
+        Ok(().into())
     }
 
-    fn set_offline(_node: &AccountId) -> DispatchResult {
-        Ok(())
+    fn set_offline(_node: &AccountId) -> DispatchResultWithPostInfo {
+        Ok(().into())
     }
     #[cfg(feature = "runtime-benchmarks")]
     fn make_node_inactive(_node: &AccountId) {}
@@ -663,7 +663,13 @@ pub trait ParathreadHelper {
 }
 
 // A trait to help remove offline collators from the pending assignment
-pub trait PendingCollatorAssignmentsHelper<AccountId> {
+pub trait PendingCollatorAssignmentHelper<AccountId> {
     /// Remove a collator from the current pending collator assignment.
-    fn remove_offline_collator_from_pending_assigment(collator: &AccountId);
+    fn remove_offline_collator_from_pending_assignment(collator: &AccountId);
+}
+
+// A trait to update the collators rewards when a collator's online status changes.
+pub trait NotifyCollatorOnlineStatusChange<AccountId> {
+    /// Updates stake when node's online status change.
+    fn update_staking_on_online_status_change(collator: &AccountId) -> DispatchResultWithPostInfo;
 }
