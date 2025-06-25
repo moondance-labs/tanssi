@@ -85,10 +85,10 @@ where
     }
 }
 
-/// Dummy processor to avoid erroring while receiving a specific command (such as SendToken)
-pub struct DummyTokenProcessor;
+/// Empty processor to avoid erroring while receiving a specific command (such as SendToken)
+pub struct NoOpProcessor;
 
-impl MessageProcessor for DummyTokenProcessor {
+impl MessageProcessor for NoOpProcessor {
     fn can_process_message(_channel: &Channel, _envelope: &Envelope) -> bool {
         true
     }

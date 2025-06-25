@@ -48,7 +48,7 @@ use {
     sp_runtime::{traits::Zero, DispatchResult},
     tanssi_runtime_common::processors::NativeTokenTransferMessageProcessor,
     tp_bridge::{
-        generic_token_message_processor::{DummyTokenProcessor, GenericTokenMessageProcessor},
+        generic_token_message_processor::{GenericTokenMessageProcessor, NoOpProcessor},
         DoNothingConvertMessage, DoNothingRouter, EthereumSystemHandler,
     },
 };
@@ -268,7 +268,7 @@ impl snowbridge_pallet_inbound_queue::Config for Runtime {
     #[cfg(not(feature = "runtime-benchmarks"))]
     type MessageProcessor = (
         SymbioticMessageProcessor<Self>,
-        GenericTokenMessageProcessor<Self, NativeTokensProcessor, DummyTokenProcessor>,
+        GenericTokenMessageProcessor<Self, NativeTokensProcessor, NoOpProcessor>,
     );
     type RewardProcessor = RewardThroughFeesAccount<Self>;
     #[cfg(feature = "runtime-benchmarks")]
