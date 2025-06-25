@@ -176,6 +176,10 @@ pub mod pallet {
     pub type ActiveContainerChainsForCurrentSession<T: Config> =
         StorageValue<_, BoundedBTreeSet<ParaId, T::MaxContainerChains>, ValueQuery>;
 
+    /// Switch to enable/disable offline marking.
+    #[pallet::storage]
+    pub type EnableMarkingOffline<T: Config> = StorageValue<_, bool, ValueQuery>;
+
     /// Storage map indicating the offline status of a collator
     #[pallet::storage]
     pub type OfflineCollators<T: Config> =
@@ -205,6 +209,8 @@ pub mod pallet {
         ActivityTrackingStatusAlreadyEnabled,
         /// Error returned when the activity tracking status is attempted to be disabled when it is already disabled
         ActivityTrackingStatusAlreadyDisabled,
+        /// Error returned when the collator status is attempted to be set to offline when offline marking is disabled
+        MarkingOfflineNotEnabled,
         /// Error returned when the collator status is attempted to be set to offline when it is already offline
         CollatorNotOnline,
         /// Error returned when the collator status is attempted to be set to online when it is already online
@@ -247,6 +253,14 @@ pub mod pallet {
                 current_session_index,
                 enable_inactivity_tracking,
             );
+            Ok(())
+        }
+
+        #[pallet::call_index(1)]
+        #[pallet::weight(T::WeightInfo::set_inactivity_tracking_status())]
+        pub fn enable_offline_marking(origin: OriginFor<T>, value: bool) -> DispatchResult {
+            ensure_root(origin)?;
+            <EnableMarkingOffline<T>>::set(value);
             Ok(())
         }
     }
@@ -479,6 +493,10 @@ impl<T: Config> NodeActivityTrackingHelper<T::CollatorId> for Pallet<T> {
     }
 
     fn set_offline(node: &T::CollatorId) -> DispatchResultWithPostInfo {
+        ensure!(
+            <EnableMarkingOffline<T>>::get(),
+            Error::<T>::MarkingOfflineNotEnabled
+        );
         ensure!(
             !<OfflineCollators<T>>::get(node),
             Error::<T>::CollatorNotOnline

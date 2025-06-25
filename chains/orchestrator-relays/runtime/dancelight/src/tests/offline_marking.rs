@@ -70,7 +70,10 @@ fn init_test_setup() {
         true
     );
     // Enable offline marking.
-    assert_ok!(PooledStaking::enable_offline_marking(root_origin(), true));
+    assert_ok!(InactivityTracking::enable_offline_marking(
+        root_origin(),
+        true
+    ));
 }
 
 #[test]

@@ -71,7 +71,7 @@ describeSuite({
             await context.createBlock([await removeBobFromInvulnerablesTx.signAsync(alice)]);
 
             // Ensure that offline marking is enabled
-            const tx = polkadotJs.tx.sudo.sudo(polkadotJs.tx.pooledStaking.enableOfflineMarking(true));
+            const tx = polkadotJs.tx.sudo.sudo(polkadotJs.tx.inactivityTracking.enableOfflineMarking(true));
             await context.createBlock([await tx.signAsync(alice)]);
 
             // Making sure that Bob is a non-invulnerable collator assigned to a container chain and eligible for collating

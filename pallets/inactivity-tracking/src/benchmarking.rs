@@ -30,6 +30,14 @@ mod benchmarks {
         Ok(())
     }
 
+    #[benchmark]
+    fn enable_offline_marking() -> Result<(), BenchmarkError> {
+        #[extrinsic_call]
+        _(RawOrigin::Root, true);
+
+        Ok(())
+    }
+
     impl_benchmark_test_suite!(
         InactivityTracking,
         crate::mock::ExtBuilder.build(),

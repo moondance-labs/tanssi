@@ -390,10 +390,6 @@ pub mod pallet {
     #[pallet::storage]
     pub type PausePoolsExtrinsics<T: Config> = StorageValue<_, bool, ValueQuery>;
 
-    /// Switch to enable/disable marking offline feature.
-    #[pallet::storage]
-    pub type EnableMarkingOffline<T: Config> = StorageValue<_, bool, ValueQuery>;
-
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
@@ -528,7 +524,6 @@ pub mod pallet {
         CandidateTransferingOwnSharesForbidden,
         RequestCannotBeExecuted(u16),
         SwapResultsInZeroShares,
-        MarkingOfflineNotEnabled,
         CollatorDoesNotExist,
         CollatorCannotBeNotifiedAsInactive,
         PoolsExtrinsicsArePaused,
@@ -736,14 +731,6 @@ pub mod pallet {
             Calls::<T>::swap_pool(candidate, delegator, source_pool, amount)
         }
 
-        #[pallet::call_index(7)]
-        #[pallet::weight(T::WeightInfo::swap_pool())]
-        pub fn enable_offline_marking(origin: OriginFor<T>, value: bool) -> DispatchResult {
-            ensure_root(origin)?;
-            <EnableMarkingOffline<T>>::set(value);
-            Ok(())
-        }
-
         #[pallet::call_index(8)]
         #[pallet::weight(T::WeightInfo::swap_pool())]
         pub fn set_offline(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
@@ -795,10 +782,6 @@ pub mod pallet {
         }
 
         pub fn set_offline_inner(collator: Candidate<T>) -> DispatchResultWithPostInfo {
-            ensure!(
-                <EnableMarkingOffline<T>>::get(),
-                Error::<T>::MarkingOfflineNotEnabled
-            );
             ensure!(
                 <SortedEligibleCandidates<T>>::get()
                     .into_iter()
