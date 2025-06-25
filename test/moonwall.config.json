@@ -612,7 +612,7 @@
             "name": "zombie_simple_template_upgrade",
             "testFileDir": ["suites/zombie_simple_template_upgrade"],
             "runScripts": [
-                "download-latest-rt-binaries.sh container-chain-simple-node",
+                "download-latest-rt-binaries.sh tanssi-node container-chain-simple-node",
                 "build-spec-single-container.sh tmp container-chain-simple-node flashbox-local",
                 "downloadPolkadot.ts",
                 "compile-wasm.ts compile -b tmp/tanssi-node -o wasm -c specs/single-container-tanssi-1000.json",
@@ -676,7 +676,7 @@
             "name": "zombie_simple_template_upgrade_with_latest_releases",
             "testFileDir": ["suites/zombie_simple_template_upgrade"],
             "runScripts": [
-                "download-latest-rt-binaries.sh container-chain-simple-node",
+                "download-latest-rt-binaries.sh tanssi-node container-chain-simple-node",
                 "build-spec-single-container.sh tmp container-chain-simple-node flashbox-local",
                 "downloadPolkadot.ts",
                 "download-latest-rt-binaries.sh --latest-client tanssi-node container-chain-simple-node",
@@ -748,7 +748,7 @@
             "name": "zombie_frontier_template_upgrade",
             "testFileDir": ["suites/zombie_simple_template_upgrade"],
             "runScripts": [
-                "download-latest-rt-binaries.sh container-chain-frontier-node",
+                "download-latest-rt-binaries.sh tanssi-node container-chain-frontier-node",
                 "build-spec-single-container.sh tmp container-chain-frontier-node flashbox-local",
                 "downloadPolkadot.ts",
                 "compile-wasm.ts compile -b tmp/tanssi-node -o wasm -c specs/single-container-tanssi-1000.json",
@@ -788,7 +788,7 @@
             "name": "zombie_frontier_template_upgrade_with_latest_releases",
             "testFileDir": ["suites/zombie_simple_template_upgrade"],
             "runScripts": [
-                "download-latest-rt-binaries.sh container-chain-frontier-node",
+                "download-latest-rt-binaries.sh tanssi-node container-chain-frontier-node",
                 "build-spec-single-container.sh tmp container-chain-frontier-node flashbox-local",
                 "downloadPolkadot.ts",
                 "download-latest-rt-binaries.sh --latest-client tanssi-node container-chain-frontier-node",
