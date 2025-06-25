@@ -1500,8 +1500,8 @@ where
     }
 }
 
-pub struct CandidateHasRegisteredKeys;
-impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
+pub struct CandidateIsOnlineAndHasRegisteredKeys;
+impl IsCandidateEligible<AccountId> for CandidateIsOnlineAndHasRegisteredKeys {
     fn is_candidate_eligible(a: &AccountId) -> bool {
         <Session as ValidatorRegistration<AccountId>>::is_registered(a)
             && !InactivityTracking::is_node_offline(a)
@@ -1540,7 +1540,7 @@ impl pallet_pooled_staking::Config for Runtime {
     type JoiningRequestTimer = SessionTimer<StakingSessionDelay>;
     type LeavingRequestTimer = SessionTimer<StakingSessionDelay>;
     type EligibleCandidatesBufferSize = MaxCandidatesBufferSize;
-    type EligibleCandidatesFilter = CandidateHasRegisteredKeys;
+    type EligibleCandidatesFilter = CandidateIsOnlineAndHasRegisteredKeys;
     type ActivityTrackingHelper = InactivityTracking;
     type WeightInfo = weights::pallet_pooled_staking::SubstrateWeight<Runtime>;
 }
