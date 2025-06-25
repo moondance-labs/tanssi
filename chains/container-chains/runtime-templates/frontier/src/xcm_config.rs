@@ -192,7 +192,7 @@ pub type UmpRouter =
 /// queues.
 pub type XcmRouter = WithUniqueTopic<(
     // Two routers - use UMP to communicate with the relay chain:
-    UmpRouter,
+    cumulus_primitives_utility::ParentAsUmp<ParachainSystem, PolkadotXcm, PriceForParentDelivery>,
     // ..and XCMP to communicate with the sibling chains.
     XcmpQueue,
     SovereignPaidRemoteExporter<UmpRouter, UniversalLocation, crate::EthereumNetwork>,

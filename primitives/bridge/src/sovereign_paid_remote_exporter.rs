@@ -55,7 +55,7 @@ where
         let xcm = msg.take().ok_or(MissingArgument)?;
         // Check if the destination is an Ethereum location
         if !is_ethereum_location(&d.clone(), EthereumNetwork::get()) {
-            return Err(Unroutable);
+            return Err(NotApplicable);
         }
 
         // `xcm` should already end with `SetTopic` - if it does, then extract and derive into

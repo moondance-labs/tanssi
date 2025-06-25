@@ -49,7 +49,7 @@ use {
         IsConcrete, ParentIsPreset, RelayChainAsNative, SiblingParachainAsNative,
         SiblingParachainConvertsVia, SignedAccountId32AsNative, SignedToAccountId32,
         SovereignSignedViaLocation, TakeWeightCredit, UsingComponents, WeightInfoBounds,
-        WithComputedOrigin,
+        WithComputedOrigin, WithUniqueTopic,
     },
     xcm_executor::XcmExecutor,
 };
@@ -176,13 +176,13 @@ pub type XcmWeigher =
     WeightInfoBounds<XcmGenericWeights<RuntimeCall>, RuntimeCall, MaxInstructions>;
 /// The means for routing XCM messages which are not for local execution into the right message
 /// queues.
-pub type XcmRouter = (
+pub type XcmRouter = WithUniqueTopic<(
     // Two routers - use UMP to communicate with the relay chain:
-    UmpRouter,
+    cumulus_primitives_utility::ParentAsUmp<ParachainSystem, PolkadotXcm, PriceForParentDelivery>,
     // ..and XCMP to communicate with the sibling chains.
     XcmpQueue,
     SovereignPaidRemoteExporter<UmpRouter, UniversalLocation, crate::EthereumNetwork>,
-);
+)>;
 
 pub struct XcmConfig;
 impl xcm_executor::Config for XcmConfig {
