@@ -114,12 +114,7 @@ describeSuite({
                 const channelNonceBefore = await relayChainPolkadotJs.query.ethereumOutboundQueue.nonce(newChannelId);
 
                 await containerChainPolkadotJs.tx.polkadotXcm
-                    .transferAssets(dest, versionedBeneficiary, versionedAssets, 0, {
-                        Limited: {
-                            refTime: "398885887999",
-                            proofSize: "3689348814741860598",
-                        },
-                    })
+                    .transferAssets(dest, versionedBeneficiary, versionedAssets, 0, "Unlimited")
                     .signAndSend(alice);
 
                 await waitEventUntilTimeout(relayChainPolkadotJs, "ethereumOutboundQueue.MessageAccepted", 42000);
