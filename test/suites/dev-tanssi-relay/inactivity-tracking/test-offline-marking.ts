@@ -8,8 +8,8 @@ import type { AccountId32 } from "@polkadot/types/interfaces";
 import { numberToHex } from "@polkadot/util";
 
 describeSuite({
-    id: "DEVT1807",
-    title: "Offline marking extriniscs test suite",
+    id: "DEVT2002",
+    title: "Dancelight: Offline marking extrinsics test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
@@ -105,7 +105,7 @@ describeSuite({
                     console.log("BOB is marked as offline before the test starts.");
                     expect(true).to.be.false; // Fail the test if BOB is not offline
                 }
-                const setBobOfflineTx = polkadotJs.tx.pooledStaking.setOffline();
+                const setBobOfflineTx = polkadotJs.tx.inactivityTracking.setOffline();
                 await context.createBlock([await setBobOfflineTx.signAsync(bob)]);
                 const startSessionIndex = await polkadotJs.query.session.currentIndex();
                 expect(startSessionIndex.toNumber()).to.be.equal(2);

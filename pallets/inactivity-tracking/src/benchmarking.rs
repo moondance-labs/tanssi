@@ -43,6 +43,16 @@ mod benchmarks {
 
         Ok(())
     }
+    #[benchmark]
+    fn set_offline() -> Result<(), BenchmarkError> {
+        const USER_SEED: u32 = 1;
+        let caller: T::AccountId = account("caller", 2, USER_SEED);
+
+        #[extrinsic_call]
+        _(RawOrigin::Signed(caller.clone()));
+
+        Ok(())
+    }
 
     #[benchmark]
     fn set_online() -> Result<(), BenchmarkError> {
@@ -50,7 +60,7 @@ mod benchmarks {
         let caller: T::AccountId = account("caller", 2, USER_SEED);
 
         InactivityTracking::<T>::enable_offline_marking(RawOrigin::Root.into(), true)?;
-        InactivityTracking::<T>::set_offline(&caller)?;
+        InactivityTracking::<T>::set_offline(RawOrigin::Signed(caller.clone()).into())?;
 
         #[extrinsic_call]
         _(RawOrigin::Signed(caller));

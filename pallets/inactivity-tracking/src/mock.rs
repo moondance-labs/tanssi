@@ -211,6 +211,12 @@ impl tp_traits::InvulnerablesHelper<AccountId> for MockInvulnerableCheckHandler<
 
 pub struct MockCollatorStakeHelper<AccountId>(PhantomData<AccountId>);
 impl tp_traits::NotifyCollatorOnlineStatusChange<AccountId> for MockCollatorStakeHelper<AccountId> {
+    fn is_collator_in_sorted_eligible_candidates(collator: &AccountId) -> bool {
+        if (collator == &COLLATOR_1) || (collator == &COLLATOR_2) {
+            return true;
+        }
+        false
+    }
     fn update_staking_on_online_status_change(_collator: &AccountId) -> DispatchResultWithPostInfo {
         Ok(().into())
     }

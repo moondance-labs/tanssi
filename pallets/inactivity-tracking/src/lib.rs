@@ -205,6 +205,8 @@ pub mod pallet {
         ActivityTrackingStatusAlreadyDisabled,
         /// Error returned when the collator status is attempted to be set to offline when offline marking is disabled
         MarkingOfflineNotEnabled,
+        /// Error returned when the collator is not part of the sorted eligible candidates list
+        CollatorNotInSortedEligibleCandidates,
         /// Error returned when the collator status is attempted to be set to offline when it is already offline
         CollatorNotOnline,
         /// Error returned when the collator status is attempted to be set to online when it is already online
@@ -256,6 +258,13 @@ pub mod pallet {
             ensure_root(origin)?;
             <EnableMarkingOffline<T>>::set(value);
             Ok(())
+        }
+
+        #[pallet::call_index(2)]
+        #[pallet::weight(T::WeightInfo::enable_offline_marking())]
+        pub fn set_offline(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
+            let collator = ensure_signed(origin)?;
+            Self::mark_collator_offline(&collator)
         }
 
         #[pallet::call_index(3)]
@@ -469,6 +478,36 @@ pub mod pallet {
             );
             total_weight
         }
+
+        /// Internal function to mark a collator as offline.
+        pub fn mark_collator_offline(collator: &Collator<T>) -> DispatchResultWithPostInfo {
+            ensure!(
+                <EnableMarkingOffline<T>>::get(),
+                Error::<T>::MarkingOfflineNotEnabled
+            );
+            ensure!(
+                T::CollatorStakeHelper::is_collator_in_sorted_eligible_candidates(collator),
+                Error::<T>::CollatorNotInSortedEligibleCandidates
+            );
+            ensure!(
+                !<OfflineCollators<T>>::get(collator.clone()),
+                Error::<T>::CollatorNotOnline
+            );
+            ensure!(
+                !T::InvulnerablesFilter::is_invulnerable(collator),
+                Error::<T>::MarkingInvulnerableOfflineInvalid
+            );
+            <OfflineCollators<T>>::insert(collator.clone(), true);
+            T::CollatorStakeHelper::update_staking_on_online_status_change(collator)?;
+            // To prevent the collator from being assigned to any container chain in the next session
+            // we need to remove it from the pending collator assignment
+            T::CurrentCollatorsFetcher::remove_offline_collator_from_pending_assignment(collator);
+            Self::deposit_event(Event::<T>::CollatorStatusUpdated {
+                collator: collator.clone(),
+                is_offline: true,
+            });
+            Ok(().into())
+        }
     }
 }
 
@@ -504,28 +543,7 @@ impl<T: Config> NodeActivityTrackingHelper<Collator<T>> for Pallet<T> {
     }
 
     fn set_offline(node: &Collator<T>) -> DispatchResultWithPostInfo {
-        ensure!(
-            <EnableMarkingOffline<T>>::get(),
-            Error::<T>::MarkingOfflineNotEnabled
-        );
-        ensure!(
-            !<OfflineCollators<T>>::get(node),
-            Error::<T>::CollatorNotOnline
-        );
-        ensure!(
-            !T::InvulnerablesFilter::is_invulnerable(node),
-            Error::<T>::MarkingInvulnerableOfflineInvalid
-        );
-        <OfflineCollators<T>>::insert(node.clone(), true);
-        T::CollatorStakeHelper::update_staking_on_online_status_change(node)?;
-        // To prevent the collator from being assigned to any container chain in the next session
-        // we need to remove it from the pending collator assignment
-        T::CurrentCollatorsFetcher::remove_offline_collator_from_pending_assignment(&node.clone());
-        Self::deposit_event(Event::<T>::CollatorStatusUpdated {
-            collator: node.clone(),
-            is_offline: true,
-        });
-        Ok(().into())
+        Self::mark_collator_offline(node)
     }
 
     #[cfg(feature = "runtime-benchmarks")]

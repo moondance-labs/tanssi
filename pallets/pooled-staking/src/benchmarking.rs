@@ -609,26 +609,6 @@ mod benchmarks {
     }
 
     #[benchmark]
-    fn set_offline() -> Result<(), BenchmarkError> {
-        const USER_SEED: u32 = 1;
-        let source_stake = min_candidate_stk::<T>() * 10u32.into();
-        let (caller, _deposit_amount) =
-            create_funded_user::<T>("caller", USER_SEED, source_stake * 2u32.into());
-        T::EligibleCandidatesFilter::make_candidate_eligible(&caller, true);
-        PooledStaking::<T>::request_delegate(
-            RawOrigin::Signed(caller.clone()).into(),
-            caller.clone(),
-            ActivePoolKind::AutoCompounding,
-            source_stake,
-        )?;
-        T::JoiningRequestTimer::skip_to_elapsed();
-        #[extrinsic_call]
-        _(RawOrigin::Signed(caller.clone()));
-
-        Ok(())
-    }
-
-    #[benchmark]
     fn notify_inactive_collator() -> Result<(), BenchmarkError> {
         const USER_SEED: u32 = 1;
         let source_stake = min_candidate_stk::<T>() * 10u32.into();

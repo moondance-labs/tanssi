@@ -105,7 +105,7 @@ fn set_collator_offline_using_set_offline_removes_it_from_assigned_collators_and
                 true
             );
             assert_eq!(InactivityTracking::is_node_offline(&BOB.into()), false);
-            assert_ok!(PooledStaking::set_offline(origin_of(BOB.into())));
+            assert_ok!(InactivityTracking::set_offline(origin_of(BOB.into())));
             assert_eq!(InactivityTracking::is_node_offline(&BOB.into()), true);
             //Verify that after being set offline, BOB isn't part of any pending collator assignment:
             let pending_assignment_after_offline_marking =
@@ -170,7 +170,7 @@ fn set_collator_online_using_adds_it_to_assigned_collators_and_sorted_eligible_c
         .execute_with(|| {
             init_test_setup();
             assert_eq!(InactivityTracking::is_node_offline(&BOB.into()), false);
-            assert_ok!(PooledStaking::set_offline(origin_of(BOB.into())));
+            assert_ok!(InactivityTracking::set_offline(origin_of(BOB.into())));
             run_to_session(1);
             run_block();
             assert_eq!(InactivityTracking::is_node_offline(&BOB.into()), true);

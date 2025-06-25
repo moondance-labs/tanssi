@@ -662,6 +662,8 @@ pub trait PendingCollatorAssignmentHelper<AccountId> {
 
 // A trait to update the collators rewards when a collator's online status changes.
 pub trait NotifyCollatorOnlineStatusChange<AccountId> {
+    /// Check if the collator is in SortedEligibleCandidates list.
+    fn is_collator_in_sorted_eligible_candidates(collator: &AccountId) -> bool;
     /// Updates stake when node's online status change.
     fn update_staking_on_online_status_change(collator: &AccountId) -> DispatchResultWithPostInfo;
 }

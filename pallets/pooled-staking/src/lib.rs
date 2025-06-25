@@ -733,13 +733,6 @@ pub mod pallet {
 
         #[pallet::call_index(7)]
         #[pallet::weight(T::WeightInfo::swap_pool())]
-        pub fn set_offline(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
-            let collator = ensure_signed(origin)?;
-            Self::set_offline_inner(collator)
-        }
-
-        #[pallet::call_index(8)]
-        #[pallet::weight(T::WeightInfo::swap_pool())]
         pub fn notify_inactive_collator(
             origin: OriginFor<T>,
             collator: Candidate<T>,
@@ -749,7 +742,7 @@ pub mod pallet {
                 T::ActivityTrackingHelper::is_node_inactive(&collator),
                 Error::<T>::CollatorCannotBeNotifiedAsInactive
             );
-            Self::set_offline_inner(collator)
+            T::ActivityTrackingHelper::set_offline(&collator)
         }
     }
 
@@ -773,17 +766,6 @@ pub mod pallet {
             .ok()
             .map(|x| x.0)
         }
-
-        pub fn set_offline_inner(collator: Candidate<T>) -> DispatchResultWithPostInfo {
-            ensure!(
-                <SortedEligibleCandidates<T>>::get()
-                    .into_iter()
-                    .any(|c| c.candidate == collator.clone()),
-                Error::<T>::CollatorDoesNotExist
-            );
-
-            T::ActivityTrackingHelper::set_offline(&collator)
-        }
     }
 
     impl<T: Config> tp_traits::DistributeRewards<Candidate<T>, CreditOf<T>> for Pallet<T> {
@@ -795,6 +777,11 @@ pub mod pallet {
         }
     }
     impl<T: Config> tp_traits::NotifyCollatorOnlineStatusChange<Candidate<T>> for Pallet<T> {
+        fn is_collator_in_sorted_eligible_candidates(collator: &Candidate<T>) -> bool {
+            <SortedEligibleCandidates<T>>::get()
+                .into_iter()
+                .any(|c| c.candidate == collator.clone())
+        }
         fn update_staking_on_online_status_change(
             collator: &Candidate<T>,
         ) -> DispatchResultWithPostInfo {

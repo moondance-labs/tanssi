@@ -8,8 +8,8 @@ import type { AccountId32 } from "@polkadot/types/interfaces";
 import { numberToHex } from "@polkadot/util";
 
 describeSuite({
-    id: "DEV0807",
-    title: "Offline marking extriniscs test suite",
+    id: "DEV1002",
+    title: "Dancebox: Offline marking extrinsics test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
@@ -110,7 +110,7 @@ describeSuite({
                     expect(true).to.be.false; // Fail the test if BOB is not offline
                 }
 
-                const setBobOfflineTx = polkadotJs.tx.pooledStaking.setOffline();
+                const setBobOfflineTx = polkadotJs.tx.inactivityTracking.setOffline();
                 await context.createBlock([await setBobOfflineTx.signAsync(bob)]);
                 const bobOfflineStatusAfterMarking = await polkadotJs.query.inactivityTracking.offlineCollators(
                     bob.address
