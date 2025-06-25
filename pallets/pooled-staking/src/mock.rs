@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use std::marker::PhantomData;
 use frame_support::dispatch::DispatchResultWithPostInfo;
+use std::marker::PhantomData;
 use {
     crate::{
         self as pallet_pooled_staking,

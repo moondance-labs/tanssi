@@ -51,6 +51,7 @@ mod tests;
 mod benchmarking;
 
 pub mod weights;
+
 pub use weights::WeightInfo;
 
 #[cfg(feature = "runtime-benchmarks")]
