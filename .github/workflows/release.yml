@@ -882,8 +882,6 @@ jobs:
               with:
                   name: runtimes
                   path: target/release/wbuild/${{ matrix.chains.runtime }}-runtime/
-            - name: Make binaries executable
-              uses: ./.github/workflow-templates/make-binaries-executable
             - name: "Install and run upgrade test"
               run: |
                   cd test
