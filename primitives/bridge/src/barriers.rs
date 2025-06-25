@@ -41,6 +41,11 @@ impl ShouldExecute for AllowExportMessageFromContainerChainBarrier {
             _ => false,
         };
 
+        // Check if fees mode is set to JIT withdraw
+        let has_set_fees_mode_jit_true = instructions
+            .iter()
+            .any(|instr| matches!(instr, Instruction::SetFeesMode { jit_withdraw: true }));
+
         // Check if ExportMessage exists and destination - ETH
         let has_export_with_eth_beneficiary = instructions.iter().any(|instr| {
             if let Instruction::ExportMessage { xcm, .. } = instr {
@@ -64,7 +69,7 @@ impl ShouldExecute for AllowExportMessageFromContainerChainBarrier {
             }
         });
 
-        if !(is_from_parachain && has_export_with_eth_beneficiary) {
+        if !(is_from_parachain && has_export_with_eth_beneficiary && has_set_fees_mode_jit_true) {
             return Err(ProcessMessageError::Unsupported);
         }
 
