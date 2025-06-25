@@ -17,7 +17,7 @@ use {
     super::*,
     crate::{candidate::EligibleCandidate, Error, Pallet, SortedEligibleCandidates},
     frame_support::{assert_noop, assert_ok},
-    sp_runtime::{BoundedVec, DispatchError::BadOrigin},
+    sp_runtime::BoundedVec,
 };
 
 #[test]
@@ -44,15 +44,6 @@ fn set_offline_works() {
 
         assert_ok!(Pallet::<Runtime>::set_offline(RuntimeOrigin::signed(
             ACCOUNT_CANDIDATE_2
-        )));
-    });
-}
-
-#[test]
-fn set_online_works() {
-    ExtBuilder::default().build().execute_with(|| {
-        assert_ok!(Pallet::<Runtime>::set_online(RuntimeOrigin::signed(
-            ACCOUNT_CANDIDATE_3
         )));
     });
 }

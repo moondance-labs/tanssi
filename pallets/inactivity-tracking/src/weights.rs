@@ -55,6 +55,7 @@ use sp_std::marker::PhantomData;
 pub trait WeightInfo {
 	fn set_inactivity_tracking_status() -> Weight;
 	fn enable_offline_marking() -> Weight;
+	fn set_online() -> Weight;
 }
 
 /// Weights for pallet_inactivity_tracking using the Substrate node and recommended hardware.
@@ -70,8 +71,8 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `354`
 		//  Estimated: `1839`
-		// Minimum execution time: 14_000_000 picoseconds.
-		Weight::from_parts(14_000_000, 1839)
+		// Minimum execution time: 13_000_000 picoseconds.
+		Weight::from_parts(13_000_000, 1839)
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
@@ -81,9 +82,24 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 3_000_000 picoseconds.
-		Weight::from_parts(3_000_000, 0)
+		// Minimum execution time: 2_000_000 picoseconds.
+		Weight::from_parts(2_000_000, 0)
 			.saturating_add(T::DbWeight::get().writes(1_u64))
+	}
+	/// Storage: `InactivityTracking::OfflineCollators` (r:1 w:1)
+	/// Proof: `InactivityTracking::OfflineCollators` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
+	/// Storage: `PooledStaking::Pools` (r:4 w:1)
+	/// Proof: `PooledStaking::Pools` (`max_values`: None, `max_size`: Some(113), added: 2588, mode: `MaxEncodedLen`)
+	/// Storage: `PooledStaking::SortedEligibleCandidates` (r:1 w:1)
+	/// Proof: `PooledStaking::SortedEligibleCandidates` (`max_values`: Some(1), `max_size`: Some(4802), added: 5297, mode: `MaxEncodedLen`)
+	fn set_online() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `382`
+		//  Estimated: `11342`
+		// Minimum execution time: 35_000_000 picoseconds.
+		Weight::from_parts(35_000_000, 11342)
+			.saturating_add(T::DbWeight::get().reads(6_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 }
 
@@ -99,8 +115,8 @@ impl WeightInfo for () {
 		// Proof Size summary in bytes:
 		//  Measured:  `354`
 		//  Estimated: `1839`
-		// Minimum execution time: 14_000_000 picoseconds.
-		Weight::from_parts(14_000_000, 1839)
+		// Minimum execution time: 13_000_000 picoseconds.
+		Weight::from_parts(13_000_000, 1839)
 			.saturating_add(RocksDbWeight::get().reads(2_u64))
 			.saturating_add(RocksDbWeight::get().writes(2_u64))
 	}
@@ -110,8 +126,23 @@ impl WeightInfo for () {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 3_000_000 picoseconds.
-		Weight::from_parts(3_000_000, 0)
+		// Minimum execution time: 2_000_000 picoseconds.
+		Weight::from_parts(2_000_000, 0)
 			.saturating_add(RocksDbWeight::get().writes(1_u64))
+	}
+	/// Storage: `InactivityTracking::OfflineCollators` (r:1 w:1)
+	/// Proof: `InactivityTracking::OfflineCollators` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
+	/// Storage: `PooledStaking::Pools` (r:4 w:1)
+	/// Proof: `PooledStaking::Pools` (`max_values`: None, `max_size`: Some(113), added: 2588, mode: `MaxEncodedLen`)
+	/// Storage: `PooledStaking::SortedEligibleCandidates` (r:1 w:1)
+	/// Proof: `PooledStaking::SortedEligibleCandidates` (`max_values`: Some(1), `max_size`: Some(4802), added: 5297, mode: `MaxEncodedLen`)
+	fn set_online() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `382`
+		//  Estimated: `11342`
+		// Minimum execution time: 35_000_000 picoseconds.
+		Weight::from_parts(35_000_000, 11342)
+			.saturating_add(RocksDbWeight::get().reads(6_u64))
+			.saturating_add(RocksDbWeight::get().writes(3_u64))
 	}
 }

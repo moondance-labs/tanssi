@@ -11,12 +11,18 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 
+use frame_support::traits::fungible::Balanced;
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 #[allow(unused)]
 use crate::Pallet as InactivityTracking;
 
-use {super::*, frame_benchmarking::v2::*, frame_support::dispatch::RawOrigin};
+use {
+    super::*,
+    frame_benchmarking::{account, v2::*},
+    frame_support::dispatch::RawOrigin,
+};
+
 #[benchmarks]
 mod benchmarks {
     use super::*;
@@ -34,6 +40,20 @@ mod benchmarks {
     fn enable_offline_marking() -> Result<(), BenchmarkError> {
         #[extrinsic_call]
         _(RawOrigin::Root, true);
+
+        Ok(())
+    }
+
+    #[benchmark]
+    fn set_online() -> Result<(), BenchmarkError> {
+        const USER_SEED: u32 = 1;
+        let caller: T::AccountId = account("caller", 2, USER_SEED);
+
+        InactivityTracking::<T>::enable_offline_marking(RawOrigin::Root.into(), true)?;
+        InactivityTracking::<T>::set_offline(&caller)?;
+
+        #[extrinsic_call]
+        _(RawOrigin::Signed(caller));
 
         Ok(())
     }

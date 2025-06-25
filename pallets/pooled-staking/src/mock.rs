@@ -173,10 +173,6 @@ impl tp_traits::NodeActivityTrackingHelper<AccountId> for MockActivityTrackingHe
     fn is_node_offline(node: &AccountId) -> bool {
         *node == ACCOUNT_CANDIDATE_3
     }
-
-    fn set_online(_node: &AccountId) -> DispatchResultWithPostInfo {
-        Ok(().into())
-    }
     fn set_offline(_node: &AccountId) -> DispatchResultWithPostInfo {
         Ok(().into())
     }

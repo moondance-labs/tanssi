@@ -218,7 +218,6 @@ impl tp_traits::NotifyCollatorOnlineStatusChange<AccountId> for MockCollatorStak
 
 impl pallet_inactivity_tracking::Config for Test {
     type RuntimeEvent = RuntimeEvent;
-    type CollatorId = AccountId;
     type MaxInactiveSessions = ConstU32<2>;
     type MaxCollatorsPerSession = ConstU32<5>;
     type MaxContainerChains = ConstU32<3>;

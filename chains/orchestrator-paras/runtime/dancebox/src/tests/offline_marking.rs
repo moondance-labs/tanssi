@@ -174,7 +174,7 @@ fn set_collator_online_using_adds_it_to_assigned_collators_and_sorted_eligible_c
             run_to_session(1);
             run_block();
             assert_eq!(InactivityTracking::is_node_offline(&BOB.into()), true);
-            assert_ok!(PooledStaking::set_online(origin_of(BOB.into())));
+            assert_ok!(InactivityTracking::set_online(origin_of(BOB.into())));
             assert_eq!(InactivityTracking::is_node_offline(&BOB.into()), false);
             // Since BOB is set online but not included in the current pending assignment,
             // we need to wait at least 2 session before he can be assigned to a container chain.

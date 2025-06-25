@@ -731,21 +731,14 @@ pub mod pallet {
             Calls::<T>::swap_pool(candidate, delegator, source_pool, amount)
         }
 
-        #[pallet::call_index(8)]
+        #[pallet::call_index(7)]
         #[pallet::weight(T::WeightInfo::swap_pool())]
         pub fn set_offline(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
             let collator = ensure_signed(origin)?;
             Self::set_offline_inner(collator)
         }
 
-        #[pallet::call_index(9)]
-        #[pallet::weight(T::WeightInfo::swap_pool())]
-        pub fn set_online(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
-            let collator = ensure_signed(origin)?;
-            T::ActivityTrackingHelper::set_online(&collator)
-        }
-
-        #[pallet::call_index(10)]
+        #[pallet::call_index(8)]
         #[pallet::weight(T::WeightInfo::swap_pool())]
         pub fn notify_inactive_collator(
             origin: OriginFor<T>,
