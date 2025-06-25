@@ -201,13 +201,6 @@ impl Contains<Location> for LocalPlurality {
     }
 }
 
-pub struct ParentOrParentsPlurality;
-impl Contains<Location> for ParentOrParentsPlurality {
-    fn contains(location: &Location) -> bool {
-        matches!(location.unpack(), (1, []) | (1, [Plurality { .. }]))
-    }
-}
-
 /// The barriers one of which must be passed for an XCM message to be executed.
 pub type Barrier = TrailingSetTopicAsId<
     DenyThenTry<
