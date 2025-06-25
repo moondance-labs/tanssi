@@ -85,12 +85,11 @@ where
             message.0.push(SetTopic(forward_id));
         }
 
-        let (v, cost) =
-            validate_send::<Router>(tanssi_location.into(), message).inspect_err(|err| {
-                if let NotApplicable = err {
-                    *msg = Some(xcm);
-                }
-            })?;
+        let (v, cost) = validate_send::<Router>(tanssi_location, message).inspect_err(|err| {
+            if let NotApplicable = err {
+                *msg = Some(xcm);
+            }
+        })?;
 
         Ok((v, cost))
     }
