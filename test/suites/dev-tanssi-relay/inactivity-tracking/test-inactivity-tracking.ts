@@ -6,7 +6,7 @@ import { jumpToSession, mockAndInsertHeadData } from "utils";
 import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_INACTIVITY_TRACKING } from "helpers";
 
 describeSuite({
-    id: "DEVT2001",
+    id: "DEVT2201",
     title: "Dancelight: Inactivity tracking test suite",
     foundationMethods: "dev",
     testCases: ({ it, context }) => {

@@ -45,6 +45,8 @@ use {
     sp_core::ConstU32,
     sp_runtime::traits::TryConvertInto,
     tp_bridge::{
+        barriers,
+        container_token_to_ethereum_message_exporter::EthereumBlobExporter as ContainerEthereumBlobExporter,
         snowbridge_outbound_token_transfer::{EthereumBlobExporter, SnowbrigeTokenTransferRouter},
         EthereumLocationsConverterFor,
     },
@@ -56,13 +58,13 @@ use {
     xcm_builder::{
         AccountId32Aliases, AllowExplicitUnpaidExecutionFrom, AllowKnownQueryResponses,
         AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom, ChildParachainAsNative,
-        ChildParachainConvertsVia, ConvertedConcreteId, DescribeAllTerminal, DescribeFamily,
-        FixedWeightBounds, FrameTransactionalProcessor, FungibleAdapter, FungiblesAdapter,
-        HashedDescription, IsChildSystemParachain, IsConcrete, MintLocation, NoChecking,
-        OriginToPluralityVoice, SendXcmFeeToAccount, SignedAccountId32AsNative,
-        SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId,
-        UsingComponents, WeightInfoBounds, WithComputedOrigin, WithUniqueTopic,
-        XcmFeeManagerFromComponents,
+        ChildParachainConvertsVia, ConvertedConcreteId, DenyReserveTransferToRelayChain,
+        DenyThenTry, DescribeAllTerminal, DescribeFamily, FixedWeightBounds,
+        FrameTransactionalProcessor, FungibleAdapter, FungiblesAdapter, HashedDescription,
+        IsChildSystemParachain, IsConcrete, MintLocation, NoChecking, OriginToPluralityVoice,
+        SendXcmFeeToAccount, SignedAccountId32AsNative, SignedToAccountId32,
+        SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId, UsingComponents,
+        WeightInfoBounds, WithComputedOrigin, WithUniqueTopic, XcmFeeManagerFromComponents,
     },
     xcm_executor::XcmExecutor,
 };
@@ -199,24 +201,30 @@ impl Contains<Location> for LocalPlurality {
 }
 
 /// The barriers one of which must be passed for an XCM message to be executed.
-pub type Barrier = TrailingSetTopicAsId<(
-    // Weight that is paid for may be consumed.
-    TakeWeightCredit,
-    // Expected responses are OK.
-    AllowKnownQueryResponses<XcmPallet>,
-    WithComputedOrigin<
+pub type Barrier = TrailingSetTopicAsId<
+    DenyThenTry<
+        DenyReserveTransferToRelayChain,
         (
-            // If the message is one that immediately attempts to pay for execution, then allow it.
-            AllowTopLevelPaidExecutionFrom<Everything>,
-            // Messages coming from system parachains need not pay for execution.
-            AllowExplicitUnpaidExecutionFrom<IsChildSystemParachain<ParaId>>,
-            // Subscriptions for version tracking are OK.
-            AllowSubscriptionsFrom<OnlyParachains>,
+            // Weight that is paid for may be consumed.
+            TakeWeightCredit,
+            // Expected responses are OK.
+            AllowKnownQueryResponses<XcmPallet>,
+            barriers::AllowExportMessageFromContainerChainBarrier,
+            WithComputedOrigin<
+                (
+                    // If the message is one that immediately attempts to pay for execution, then allow it.
+                    AllowTopLevelPaidExecutionFrom<Everything>,
+                    // Messages coming from system parachains need not pay for execution.
+                    AllowExplicitUnpaidExecutionFrom<IsChildSystemParachain<ParaId>>,
+                    // Subscriptions for version tracking are OK.
+                    AllowSubscriptionsFrom<OnlyParachains>,
+                ),
+                UniversalLocation,
+                ConstU32<8>,
+            >,
         ),
-        UniversalLocation,
-        ConstU32<8>,
     >,
-)>;
+>;
 
 /// Locations that will not be charged fees in the executor, neither for execution nor delivery.
 /// We only waive fees for system functions, which these locations represent.
@@ -251,7 +259,7 @@ impl xcm_executor::Config for XcmConfig {
         WaivedLocations,
         SendXcmFeeToAccount<Self::AssetTransactor, TreasuryAccount>,
     >;
-    type MessageExporter = ();
+    type MessageExporter = ContainerToSnowbridgeMessageExporter;
     type UniversalAliases = Nothing;
     type CallDispatcher = RuntimeCall;
     type SafeCallFilter = Everything;
@@ -392,6 +400,16 @@ parameter_types! {
 
 /// Exports message to the Ethereum Gateway contract.
 pub type SnowbridgeExporter = EthereumBlobExporter<
+    UniversalLocation,
+    EthereumNetwork,
+    snowbridge_pallet_outbound_queue::Pallet<Runtime>,
+    snowbridge_core::AgentIdOf,
+    EthereumSystem,
+    SnowbridgeChannelId,
+>;
+
+/// Exports message to the Ethereum Gateway contract.
+pub type ContainerToSnowbridgeMessageExporter = ContainerEthereumBlobExporter<
     UniversalLocation,
     EthereumNetwork,
     snowbridge_pallet_outbound_queue::Pallet<Runtime>,
