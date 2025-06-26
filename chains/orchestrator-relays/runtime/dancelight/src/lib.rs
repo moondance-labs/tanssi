@@ -43,7 +43,7 @@ use {
     },
     frame_system::{pallet_prelude::BlockNumberFor, EnsureNever},
     nimbus_primitives::NimbusId,
-    pallet_collator_assignment::{GetRandomnessForNextBlock, RotateCollatorsEveryNSessions},
+    pallet_collator_assignment::RotateCollatorsEveryNSessions,
     pallet_initializer as tanssi_initializer,
     pallet_invulnerables::InvulnerableRewardDistribution,
     pallet_registrar::Error as ContainerRegistrarError,
@@ -1691,7 +1691,8 @@ impl pallet_services_payment::Config for Runtime {
     type FreeBlockProductionCredits = FreeBlockProductionCredits;
     /// The maximum number of session credits that can be accumulated
     type FreeCollatorAssignmentCredits = FreeCollatorAssignmentCredits;
-    type ManagerOrigin = EnsureRoot<AccountId>;
+    type ManagerOrigin =
+        EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;
     type WeightInfo = weights::pallet_services_payment::SubstrateWeight<Runtime>;
 }
 
@@ -1861,6 +1862,10 @@ impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
     }
 }
 
+parameter_types! {
+    pub const MaxCandidatesBufferSize: u32 = 100;
+}
+
 impl pallet_pooled_staking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
@@ -1878,14 +1883,19 @@ impl pallet_pooled_staking::Config for Runtime {
     type WeightInfo = weights::pallet_pooled_staking::SubstrateWeight<Runtime>;
 }
 
+parameter_types! {
+    pub const MaxInactiveSessions: u32 = 5;
+}
 impl pallet_inactivity_tracking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type CollatorId = AccountId;
-    type MaxInactiveSessions = ConstU32<5>;
-    type MaxCollatorsPerSession = ConstU32<100>;
+    type MaxInactiveSessions = MaxInactiveSessions;
+    type MaxCollatorsPerSession = MaxCandidatesBufferSize;
+    type MaxContainerChains = MaxLengthParaIds;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type CurrentCollatorsFetcher = TanssiCollatorAssignment;
     type GetSelfChainBlockAuthor = ();
+    type ParaFilter = tp_parathread_filter_common::ExcludeAllParathreadsFilter<Runtime>;
     type WeightInfo = weights::pallet_inactivity_tracking::SubstrateWeight<Runtime>;
 }
 
@@ -3513,22 +3523,9 @@ impl Get<u32> for ConfigurationCollatorRotationSessionPeriod {
     }
 }
 
-// CollatorAssignment expects to set up the rotation's randomness seed on the
-// on_finalize hook of the block prior to the actual session change.
-// So should_end_session should be true on the last block of the current session
-pub struct BabeGetRandomnessForNextBlock;
-impl GetRandomnessForNextBlock<u32> for BabeGetRandomnessForNextBlock {
-    fn should_end_session(n: u32) -> bool {
-        // Check if next slot there is a session change
-        n != 1 && {
-            let diff = Babe::current_slot()
-                .saturating_add(1u64)
-                .saturating_sub(Babe::current_epoch_start());
-            *diff >= Babe::current_epoch().duration
-        }
-    }
-
-    fn get_randomness() -> [u8; 32] {
+pub struct BabeGetCollatorAssignmentRandomness;
+impl Get<[u8; 32]> for BabeGetCollatorAssignmentRandomness {
+    fn get() -> [u8; 32] {
         let block_number = System::block_number();
         let random_seed = if block_number != 0 {
             if let Some(random_hash) = {
@@ -3758,7 +3755,8 @@ impl pallet_collator_assignment::Config for Runtime {
     type SelfParaId = MockParaId;
     type ShouldRotateAllCollators =
         RotateCollatorsEveryNSessions<ConfigurationCollatorRotationSessionPeriod>;
-    type GetRandomnessForNextBlock = BabeGetRandomnessForNextBlock;
+    type Randomness =
+        pallet_collator_assignment::SolochainRandomness<BabeGetCollatorAssignmentRandomness>;
     type RemoveInvulnerables = ();
     type ParaIdAssignmentHooks = ParaIdAssignmentHooksImpl;
     type CollatorAssignmentTip = ServicesPayment;

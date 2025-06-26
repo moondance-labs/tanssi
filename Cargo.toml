@@ -107,7 +107,7 @@ dancebox-runtime = { path = "chains/orchestrator-paras/runtime/dancebox", defaul
 flashbox-runtime = { path = "chains/orchestrator-paras/runtime/flashbox", default-features = false }
 
 tanssi-relay-encoder = { path = "chains/orchestrator-paras/runtime/relay-encoder", default-features = false }
-tanssi-runtime-common = { path = "chains/orchestrator-paras/runtime/common", default-features = false }
+tanssi-runtime-common = { path = "chains/runtime-common", default-features = false }
 
 dancelight-runtime = { path = "chains/orchestrator-relays/runtime/dancelight", default-features = false }
 dancelight-runtime-constants = { path = "chains/orchestrator-relays/runtime/dancelight/constants", default-features = false }
@@ -146,6 +146,7 @@ tp-author-noting-inherent = { path = "primitives/author-noting-inherent", defaul
 tp-bridge = { path = "primitives/bridge", default-features = false }
 tp-data-preservers-common = { path = "primitives/data-preservers-common", default-features = false }
 tp-maths = { path = "primitives/maths", default-features = false }
+tp-parathread-filter-common = { path = "primitives/parathread-filter-common", default-features = false }
 tp-stream-payment-common = { path = "primitives/stream-payment-common", default-features = false }
 tp-traits = { path = "primitives/traits", default-features = false }
 tp-xcm-commons = { path = "primitives/xcm-commons", default-features = false }
