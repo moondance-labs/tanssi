@@ -1,4 +1,4 @@
-endpoint: wss://replace.me
+endpoint: wss://tanssi.tanssi-mainnet.network
 block: ${env.TANSSI_BLOCK_NUMBER}
 mock-signature-host: true
 db: ./tmp/db_mba.sqlite
