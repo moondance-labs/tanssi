@@ -20,6 +20,7 @@ use pallet_balances::NegativeImbalance;
 #[cfg(feature = "runtime-benchmarks")]
 pub mod benchmarking;
 pub mod migrations;
+pub mod processors;
 
 pub struct DealWithFees<R>(sp_std::marker::PhantomData<R>);
 impl<R> OnUnbalanced<Credit<R::AccountId, pallet_balances::Pallet<R>>> for DealWithFees<R>
