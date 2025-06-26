@@ -9,7 +9,7 @@
 #
 set -euo pipefail
 # Always run the commands from the "test" dir
-cd $(dirname $0)/..
+cd "$(dirname "$0")/.."
 
 if [[ $# -lt 1 ]]; then
   cat <<EOF
@@ -66,16 +66,34 @@ fi
 
 # Helper: get the short SHA8 for a given tag
 get_sha8() {
-  local tag=$1
-  local resp=$(curl -s -H "Accept: application/vnd.github.v3+json" \
+  local tag ret resp type url tagresp
+
+  tag=$1
+
+  # Fetch the ref object
+  resp=$(curl -s -H "Accept: application/vnd.github.v3+json" \
     "https://api.github.com/repos/moondance-labs/tanssi/git/refs/tags/$tag")
-  local type=$(jq -r '.object.type' <<<"$resp")
+  ret=$?
+  (( ret == 0 )) || return "$ret"
+
+  # Determine if it’s a lightweight or annotated tag
+  type=$(jq -r '.object.type' <<<"$resp")
+  ret=$?
+  (( ret == 0 )) || return "$ret"
 
   if [[ $type == "commit" ]]; then
+    # Lightweight tag: object.sha is the commit
     jq -r '.object.sha' <<<"$resp" | cut -c1-8
   else
-    local url=$(jq -r '.object.url' <<<"$resp")
-    local tagresp=$(curl -s -H "Accept: application/vnd.github.v3+json" "$url")
+    # Annotated tag: need to follow the tag object
+    url=$(jq -r '.object.url' <<<"$resp")
+    ret=$?
+    (( ret == 0 )) || return "$ret"
+
+    tagresp=$(curl -s -H "Accept: application/vnd.github.v3+json" "$url")
+    ret=$?
+    (( ret == 0 )) || return "$ret"
+
     jq -r '.object.sha' <<<"$tagresp" | cut -c1-8
   fi
 }
