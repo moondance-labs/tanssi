@@ -57,6 +57,7 @@ pub trait WeightInfo {
 	fn enable_offline_marking() -> Weight;
 	fn set_offline() -> Weight;
 	fn set_online() -> Weight;
+	fn notify_inactive_collator() -> Weight;
 }
 
 /// Weights for pallet_inactivity_tracking using the Substrate node and recommended hardware.
@@ -72,8 +73,8 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `354`
 		//  Estimated: `1839`
-		// Minimum execution time: 12_000_000 picoseconds.
-		Weight::from_parts(12_000_000, 1839)
+		// Minimum execution time: 13_000_000 picoseconds.
+		Weight::from_parts(13_000_000, 1839)
 			.saturating_add(T::DbWeight::get().reads(2_u64))
 			.saturating_add(T::DbWeight::get().writes(2_u64))
 	}
@@ -83,8 +84,8 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 3_000_000 picoseconds.
-		Weight::from_parts(3_000_000, 0)
+		// Minimum execution time: 2_000_000 picoseconds.
+		Weight::from_parts(2_000_000, 0)
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 	/// Storage: `InactivityTracking::EnableMarkingOffline` (r:1 w:0)
@@ -122,9 +123,38 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		// Proof Size summary in bytes:
 		//  Measured:  `1064`
 		//  Estimated: `16518`
-		// Minimum execution time: 48_000_000 picoseconds.
-		Weight::from_parts(48_000_000, 16518)
+		// Minimum execution time: 47_000_000 picoseconds.
+		Weight::from_parts(47_000_000, 16518)
 			.saturating_add(T::DbWeight::get().reads(9_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
+	}
+	/// Storage: `Session::CurrentIndex` (r:1 w:0)
+	/// Proof: `Session::CurrentIndex` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `InactivityTracking::CurrentActivityTrackingStatus` (r:1 w:0)
+	/// Proof: `InactivityTracking::CurrentActivityTrackingStatus` (`max_values`: Some(1), `max_size`: Some(9), added: 504, mode: `MaxEncodedLen`)
+	/// Storage: `InactivityTracking::InactiveCollators` (r:5 w:0)
+	/// Proof: `InactivityTracking::InactiveCollators` (`max_values`: None, `max_size`: Some(3214), added: 5689, mode: `MaxEncodedLen`)
+	/// Storage: `InactivityTracking::EnableMarkingOffline` (r:1 w:0)
+	/// Proof: `InactivityTracking::EnableMarkingOffline` (`max_values`: Some(1), `max_size`: Some(1), added: 496, mode: `MaxEncodedLen`)
+	/// Storage: `PooledStaking::SortedEligibleCandidates` (r:1 w:1)
+	/// Proof: `PooledStaking::SortedEligibleCandidates` (`max_values`: Some(1), `max_size`: Some(4802), added: 5297, mode: `MaxEncodedLen`)
+	/// Storage: `InactivityTracking::OfflineCollators` (r:1 w:1)
+	/// Proof: `InactivityTracking::OfflineCollators` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
+	/// Storage: `Invulnerables::Invulnerables` (r:1 w:0)
+	/// Proof: `Invulnerables::Invulnerables` (`max_values`: Some(1), `max_size`: Some(3202), added: 3697, mode: `MaxEncodedLen`)
+	/// Storage: `PooledStaking::Pools` (r:6 w:1)
+	/// Proof: `PooledStaking::Pools` (`max_values`: None, `max_size`: Some(113), added: 2588, mode: `MaxEncodedLen`)
+	/// Storage: `Session::NextKeys` (r:1 w:0)
+	/// Proof: `Session::NextKeys` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `CollatorAssignment::PendingCollatorContainerChain` (r:1 w:0)
+	/// Proof: `CollatorAssignment::PendingCollatorContainerChain` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	fn notify_inactive_collator() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `1624`
+		//  Estimated: `29435`
+		// Minimum execution time: 69_000_000 picoseconds.
+		Weight::from_parts(69_000_000, 29435)
+			.saturating_add(T::DbWeight::get().reads(19_u64))
 			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 }
@@ -141,8 +171,8 @@ impl WeightInfo for () {
 		// Proof Size summary in bytes:
 		//  Measured:  `354`
 		//  Estimated: `1839`
-		// Minimum execution time: 12_000_000 picoseconds.
-		Weight::from_parts(12_000_000, 1839)
+		// Minimum execution time: 13_000_000 picoseconds.
+		Weight::from_parts(13_000_000, 1839)
 			.saturating_add(RocksDbWeight::get().reads(2_u64))
 			.saturating_add(RocksDbWeight::get().writes(2_u64))
 	}
@@ -152,8 +182,8 @@ impl WeightInfo for () {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 3_000_000 picoseconds.
-		Weight::from_parts(3_000_000, 0)
+		// Minimum execution time: 2_000_000 picoseconds.
+		Weight::from_parts(2_000_000, 0)
 			.saturating_add(RocksDbWeight::get().writes(1_u64))
 	}
 	/// Storage: `InactivityTracking::EnableMarkingOffline` (r:1 w:0)
@@ -191,9 +221,38 @@ impl WeightInfo for () {
 		// Proof Size summary in bytes:
 		//  Measured:  `1064`
 		//  Estimated: `16518`
-		// Minimum execution time: 48_000_000 picoseconds.
-		Weight::from_parts(48_000_000, 16518)
+		// Minimum execution time: 47_000_000 picoseconds.
+		Weight::from_parts(47_000_000, 16518)
 			.saturating_add(RocksDbWeight::get().reads(9_u64))
+			.saturating_add(RocksDbWeight::get().writes(3_u64))
+	}
+	/// Storage: `Session::CurrentIndex` (r:1 w:0)
+	/// Proof: `Session::CurrentIndex` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	/// Storage: `InactivityTracking::CurrentActivityTrackingStatus` (r:1 w:0)
+	/// Proof: `InactivityTracking::CurrentActivityTrackingStatus` (`max_values`: Some(1), `max_size`: Some(9), added: 504, mode: `MaxEncodedLen`)
+	/// Storage: `InactivityTracking::InactiveCollators` (r:5 w:0)
+	/// Proof: `InactivityTracking::InactiveCollators` (`max_values`: None, `max_size`: Some(3214), added: 5689, mode: `MaxEncodedLen`)
+	/// Storage: `InactivityTracking::EnableMarkingOffline` (r:1 w:0)
+	/// Proof: `InactivityTracking::EnableMarkingOffline` (`max_values`: Some(1), `max_size`: Some(1), added: 496, mode: `MaxEncodedLen`)
+	/// Storage: `PooledStaking::SortedEligibleCandidates` (r:1 w:1)
+	/// Proof: `PooledStaking::SortedEligibleCandidates` (`max_values`: Some(1), `max_size`: Some(4802), added: 5297, mode: `MaxEncodedLen`)
+	/// Storage: `InactivityTracking::OfflineCollators` (r:1 w:1)
+	/// Proof: `InactivityTracking::OfflineCollators` (`max_values`: None, `max_size`: Some(49), added: 2524, mode: `MaxEncodedLen`)
+	/// Storage: `Invulnerables::Invulnerables` (r:1 w:0)
+	/// Proof: `Invulnerables::Invulnerables` (`max_values`: Some(1), `max_size`: Some(3202), added: 3697, mode: `MaxEncodedLen`)
+	/// Storage: `PooledStaking::Pools` (r:6 w:1)
+	/// Proof: `PooledStaking::Pools` (`max_values`: None, `max_size`: Some(113), added: 2588, mode: `MaxEncodedLen`)
+	/// Storage: `Session::NextKeys` (r:1 w:0)
+	/// Proof: `Session::NextKeys` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `CollatorAssignment::PendingCollatorContainerChain` (r:1 w:0)
+	/// Proof: `CollatorAssignment::PendingCollatorContainerChain` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
+	fn notify_inactive_collator() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `1624`
+		//  Estimated: `29435`
+		// Minimum execution time: 69_000_000 picoseconds.
+		Weight::from_parts(69_000_000, 29435)
+			.saturating_add(RocksDbWeight::get().reads(19_u64))
 			.saturating_add(RocksDbWeight::get().writes(3_u64))
 	}
 }

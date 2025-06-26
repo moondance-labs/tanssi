@@ -20,8 +20,6 @@ mod manual_rewards;
 mod rebalance;
 mod rewards;
 
-mod offline_marking;
-
 use {
     crate::{
         assert_eq_events, assert_fields_eq,

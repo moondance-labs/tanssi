@@ -635,20 +635,6 @@ pub trait NodeActivityTrackingHelper<AccountId> {
     fn make_node_inactive(node: &AccountId);
 }
 
-impl<AccountId> NodeActivityTrackingHelper<AccountId> for () {
-    fn is_node_inactive(_node: &AccountId) -> bool {
-        false
-    }
-    fn is_node_offline(_node: &AccountId) -> bool {
-        false
-    }
-    fn set_offline(_node: &AccountId) -> DispatchResultWithPostInfo {
-        Ok(().into())
-    }
-    #[cfg(feature = "runtime-benchmarks")]
-    fn make_node_inactive(_node: &AccountId) {}
-}
-
 // A trait to help verify if a ParaId is a chain or parathread
 pub trait ParathreadHelper {
     fn get_parathreads_for_session() -> BTreeSet<ParaId>;

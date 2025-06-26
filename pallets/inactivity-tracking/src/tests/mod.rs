@@ -26,3 +26,16 @@ use {
 };
 mod inactivity_tracking;
 mod offline_marking;
+fn get_max_inactive_sessions() -> u32 {
+    <Test as Config>::MaxInactiveSessions::get()
+}
+
+fn get_collator_set(
+    collators: Vec<AccountId>,
+) -> BoundedBTreeSet<AccountId, <Test as Config>::MaxCollatorsPerSession> {
+    let mut collator_set = BoundedBTreeSet::new();
+    for collator in collators {
+        let _ = collator_set.try_insert(collator);
+    }
+    collator_set
+}

@@ -213,6 +213,8 @@ pub mod pallet {
         CollatorNotOffline,
         /// Error returned when the collator attempted to be set offline is invulnerable
         MarkingInvulnerableOfflineInvalid,
+        /// Error returned when the collator attempted to be set offline is not inactive
+        CollatorCannotBeNotifiedAsInactive,
     }
 
     #[pallet::call]
@@ -282,6 +284,20 @@ pub mod pallet {
                 is_offline: false,
             });
             Ok(().into())
+        }
+
+        #[pallet::call_index(4)]
+        #[pallet::weight(T::WeightInfo::notify_inactive_collator())]
+        pub fn notify_inactive_collator(
+            origin: OriginFor<T>,
+            collator: Collator<T>,
+        ) -> DispatchResultWithPostInfo {
+            ensure_signed(origin)?;
+            ensure!(
+                Self::is_node_inactive(&collator),
+                Error::<T>::CollatorCannotBeNotifiedAsInactive
+            );
+            Self::mark_collator_offline(&collator)
         }
     }
 

@@ -11,7 +11,6 @@
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 
-use frame_support::traits::fungible::Balanced;
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 #[allow(unused)]
@@ -66,6 +65,21 @@ mod benchmarks {
 
         #[extrinsic_call]
         _(RawOrigin::Signed(caller));
+
+        Ok(())
+    }
+
+    #[benchmark]
+    fn notify_inactive_collator() -> Result<(), BenchmarkError> {
+        const USER_SEED: u32 = 1;
+        let caller: T::AccountId = account("caller", 2, USER_SEED);
+        let collator: T::AccountId = account("collator", 3, USER_SEED);
+        T::CollatorStakeHelper::make_collator_eligible_candidate(&collator);
+        InactivityTracking::<T>::enable_offline_marking(RawOrigin::Root.into(), true)?;
+        InactivityTracking::<T>::make_node_inactive(&collator);
+
+        #[extrinsic_call]
+        _(RawOrigin::Signed(caller), collator);
 
         Ok(())
     }

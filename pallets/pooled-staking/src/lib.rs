@@ -60,6 +60,8 @@ pub use {
     pools::{ActivePoolKind, CandidateSummary, DelegatorCandidateSummary, PoolKind},
 };
 
+#[cfg(feature = "runtime-benchmarks")]
+use frame_support::traits::fungible::Mutate;
 #[pallet]
 pub mod pallet {
     use {
@@ -73,7 +75,7 @@ pub mod pallet {
         frame_support::{
             pallet_prelude::*,
             storage::types::{StorageDoubleMap, StorageValue, ValueQuery},
-            traits::{fungible, fungible::Mutate, tokens::Balance, IsType , },
+            traits::{fungible, tokens::Balance, IsType},
             Blake2_128Concat,
         },
         frame_system::pallet_prelude::*,
@@ -84,7 +86,6 @@ pub mod pallet {
         sp_runtime::{BoundedVec, Perbill},
         sp_std::vec::Vec,
         tp_maths::MulDiv,
-        tp_traits::NodeActivityTrackingHelper,
     };
 
     /// A reason for this pallet placing a hold on funds.
@@ -318,10 +319,6 @@ pub mod pallet {
         type EligibleCandidatesBufferSize: Get<u32>;
         /// Additional filter for candidates to be eligible.
         type EligibleCandidatesFilter: IsCandidateEligible<Self::AccountId>;
-
-        /// Helper for collator activity tracking
-        type ActivityTrackingHelper: NodeActivityTrackingHelper<Self::AccountId>;
-
         type WeightInfo: WeightInfo;
     }
 
@@ -524,8 +521,6 @@ pub mod pallet {
         CandidateTransferingOwnSharesForbidden,
         RequestCannotBeExecuted(u16),
         SwapResultsInZeroShares,
-        CollatorDoesNotExist,
-        CollatorCannotBeNotifiedAsInactive,
         PoolsExtrinsicsArePaused,
     }
 
@@ -729,20 +724,6 @@ pub mod pallet {
             let delegator = ensure_signed(origin)?;
 
             Calls::<T>::swap_pool(candidate, delegator, source_pool, amount)
-        }
-
-        #[pallet::call_index(7)]
-        #[pallet::weight(T::WeightInfo::swap_pool())]
-        pub fn notify_inactive_collator(
-            origin: OriginFor<T>,
-            collator: Candidate<T>,
-        ) -> DispatchResultWithPostInfo {
-            ensure_signed(origin)?;
-            ensure!(
-                T::ActivityTrackingHelper::is_node_inactive(&collator),
-                Error::<T>::CollatorCannotBeNotifiedAsInactive
-            );
-            T::ActivityTrackingHelper::set_offline(&collator)
         }
     }
 

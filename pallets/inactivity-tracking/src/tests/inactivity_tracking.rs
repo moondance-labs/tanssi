@@ -61,16 +61,6 @@ fn get_overflowing_active_chains_vec(block: u32) -> Vec<AuthorNotingInfo<Account
     overflowing_active_chains
 }
 
-fn get_collator_set(
-    collators: Vec<AccountId>,
-) -> BoundedBTreeSet<AccountId, <Test as Config>::MaxCollatorsPerSession> {
-    let mut collator_set = BoundedBTreeSet::new();
-    for collator in collators {
-        let _ = collator_set.try_insert(collator);
-    }
-    collator_set
-}
-
 fn get_active_chains_set(
     chains: Vec<tp_traits::ParaId>,
 ) -> BoundedBTreeSet<tp_traits::ParaId, <Test as Config>::MaxContainerChains> {
@@ -79,10 +69,6 @@ fn get_active_chains_set(
         let _ = chain_set.try_insert(chain);
     }
     chain_set
-}
-
-fn get_max_inactive_sessions() -> u32 {
-    <Test as Config>::MaxInactiveSessions::get()
 }
 
 #[test]

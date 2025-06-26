@@ -220,6 +220,8 @@ impl tp_traits::NotifyCollatorOnlineStatusChange<AccountId> for MockCollatorStak
     fn update_staking_on_online_status_change(_collator: &AccountId) -> DispatchResultWithPostInfo {
         Ok(().into())
     }
+    #[cfg(feature = "runtime-benchmarks")]
+    fn make_collator_eligible_candidate(collator: &Candidate<T>) {}
 }
 
 impl pallet_inactivity_tracking::Config for Test {
