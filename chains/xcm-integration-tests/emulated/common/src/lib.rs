@@ -20,18 +20,18 @@ use {
         AccountId, AssignmentId, AuthorityDiscoveryId, ValidatorId,
     },
     frame_support::traits::OnIdle,
-    frame_system::Pallet as SystemPallet,
     frame_system::pallet_prelude::BlockNumberFor,
+    frame_system::Pallet as SystemPallet,
     parity_scale_codec::Encode,
     sc_consensus_grandpa::AuthorityId as GrandpaId,
     sp_consensus_aura::AURA_ENGINE_ID,
-    sp_runtime::generic::DigestItem,
     sp_core::{crypto::get_public_from_string_or_panic, sr25519},
+    sp_runtime::generic::DigestItem,
     sp_runtime::traits::Convert,
     sp_runtime::Digest,
     sp_std::marker::PhantomData,
     sp_weights::Weight,
-    xcm_emulator::{Parachain, RelayChain, Network, HeaderT},
+    xcm_emulator::{HeaderT, Network, Parachain, RelayChain},
 };
 
 pub mod accounts;
