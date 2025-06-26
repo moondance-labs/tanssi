@@ -679,7 +679,7 @@
                 "download-latest-rt-binaries.sh tanssi-node container-chain-simple-node",
                 "build-spec-single-container.sh tmp container-chain-simple-node flashbox-local",
                 "downloadPolkadot.ts",
-                "download-latest-rt-binaries.sh --latest-client tanssi-node container-chain-simple-node",
+                "download-latest-rt-binaries.sh --output-to-target-release --latest-client tanssi-node container-chain-simple-node",
                 "compile-wasm.ts compile -b tmp/tanssi-node -o wasm -c specs/single-container-tanssi-1000.json",
                 "compile-wasm.ts compile -b tmp/container-chain-simple-node -o wasm -c specs/single-container-template-container-2000.json"
             ],
@@ -791,7 +791,7 @@
                 "download-latest-rt-binaries.sh tanssi-node container-chain-frontier-node",
                 "build-spec-single-container.sh tmp container-chain-frontier-node flashbox-local",
                 "downloadPolkadot.ts",
-                "download-latest-rt-binaries.sh --latest-client tanssi-node container-chain-frontier-node",
+                "download-latest-rt-binaries.sh --output-to-target-release --latest-client tanssi-node container-chain-frontier-node",
                 "compile-wasm.ts compile -b tmp/tanssi-node -o wasm -c specs/single-container-tanssi-1000.json",
                 "compile-wasm.ts compile -b tmp/container-chain-frontier-node -o wasm -c specs/single-container-template-container-2000.json"
             ],

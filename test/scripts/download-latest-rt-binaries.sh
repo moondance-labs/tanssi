@@ -30,11 +30,14 @@ DOWNLOAD_SIMPLE_NODE=false
 DOWNLOAD_RELAY=false
 USE_LATEST_CLIENT_VERSION=false
 USE_LATEST_RUNTIME_VERSION=false
+OUTPUT_TO_TARGET_RELEASE=false
 
 for bin in "$@"; do
   case "$bin" in
     --latest-client) USE_LATEST_CLIENT_VERSION=true ;;
     --latest-runtime) USE_LATEST_RUNTIME_VERSION=true ;;
+    # TODO: implementing --output-path $path was too hard
+    --output-to-target-release) OUTPUT_TO_TARGET_RELEASE=true ;;
     tanssi-node) DOWNLOAD_TANSSI_NODE=true ;; 
     container-chain-frontier-node) DOWNLOAD_FRONTIER_NODE=true ;; 
     container-chain-simple-node) DOWNLOAD_SIMPLE_NODE=true ;; 
@@ -54,6 +57,11 @@ fi
 if [ "$USE_LATEST_CLIENT_VERSION" = true ] && [ "$USE_LATEST_RUNTIME_VERSION" = true ]; then
   echo "Error: cannot use both --latest-client and --latest-runtime" >&2
   exit 1
+fi
+
+OUTPUT_PATH="tmp"
+if [ "$OUTPUT_TO_TARGET_RELEASE" = true ]; then
+  OUTPUT_PATH="../target/release"
 fi
 
 # Helper: get the short SHA8 for a given tag
@@ -92,6 +100,11 @@ if $DOWNLOAD_TANSSI_NODE || $DOWNLOAD_FRONTIER_NODE || $DOWNLOAD_SIMPLE_NODE; th
   [[ -n $NONSTARL_TAG ]]
   NONSTARL_SHA=$(get_sha8 "$NONSTARL_TAG")
   runtime_ver=${NONSTARL_TAG//[!0-9]/}
+  if [ "$USE_LATEST_CLIENT_VERSION" = true ]; then
+      # If we are asked to use the latest client version it is hard to find the actual runtime
+      # version, but at least we know it is >= 900
+      runtime_ver="900"
+  fi
   if (( runtime_ver >= 900 )); then
     TANSSI_IMAGE="moondancelabs/tanssi:sha-${NONSTARL_SHA}-fast-runtime"
   else
@@ -130,8 +143,8 @@ fi
 
 # Define Docker images
 
-# Ensure tmp exists
-mkdir -p tmp
+# Ensure output path exists
+mkdir -p $OUTPUT_PATH
 
 # Download requested binaries
 if $DOWNLOAD_TANSSI_NODE; then
@@ -140,51 +153,61 @@ if $DOWNLOAD_TANSSI_NODE; then
       --entrypoint tar \
       "$TANSSI_IMAGE" \
       -C /tanssi -cf - tanssi-node \
-    | tar -C tmp -xf -
-  chmod +x tmp/tanssi-node
-  echo "→ tmp/tanssi-node"
+    | tar -C $OUTPUT_PATH -xf -
+  chmod +x $OUTPUT_PATH/tanssi-node
+  echo "→ $OUTPUT_PATH/tanssi-node"
 fi
 
 if $DOWNLOAD_FRONTIER_NODE; then
   echo "Fetching container-chain-frontier-node from $FRONTIER_IMAGE..."
   # extract numeric version for path logic
   runtime_ver=${NONSTARL_TAG//[!0-9]/}
+  if [ "$USE_LATEST_CLIENT_VERSION" = true ]; then
+      # If we are asked to use the latest client version it is hard to find the actual runtime
+      # version, but at least we know it is >= 900
+      runtime_ver="900"
+  fi
   if (( runtime_ver >= 700 )); then
     docker run --rm \
         --entrypoint tar \
         "$FRONTIER_IMAGE" \
         -C /container-chain-template-evm -cf - container-chain-frontier-node \
-      | tar -C tmp -xf -
+      | tar -C $OUTPUT_PATH -xf -
   else
     docker run --rm \
         --entrypoint tar \
         "$FRONTIER_IMAGE" \
         -C /container-chain-template-evm -cf - container-chain-template-frontier-node \
-      | tar -C tmp -xf -
+      | tar -C $OUTPUT_PATH -xf -
   fi
-  chmod +x tmp/container-chain-frontier-node
-  echo "→ tmp/container-chain-frontier-node"
+  chmod +x $OUTPUT_PATH/container-chain-frontier-node
+  echo "→ $OUTPUT_PATH/container-chain-frontier-node"
 fi
 
 if $DOWNLOAD_SIMPLE_NODE; then
   echo "Fetching container-chain-simple-node from $SIMPLE_IMAGE..."
   # extract numeric version for path logic
   runtime_ver=${NONSTARL_TAG//[!0-9]/}
+  if [ "$USE_LATEST_CLIENT_VERSION" = true ]; then
+      # If we are asked to use the latest client version it is hard to find the actual runtime
+      # version, but at least we know it is >= 900
+      runtime_ver="900"
+  fi
   if (( runtime_ver >= 700 )); then
     docker run --rm \
         --entrypoint tar \
         "$SIMPLE_IMAGE" \
         -C /container-chain-template-simple -cf - container-chain-simple-node \
-      | tar -C tmp -xf -
+      | tar -C $OUTPUT_PATH -xf -
   else
     docker run --rm \
         --entrypoint tar \
         "$SIMPLE_IMAGE" \
         -C /container-chain-template-simple -cf - container-chain-template-simple-node \
-      | tar -C tmp -xf -
+      | tar -C $OUTPUT_PATH -xf -
   fi
-  chmod +x tmp/container-chain-simple-node
-  echo "→ tmp/container-chain-simple-node"
+  chmod +x $OUTPUT_PATH/container-chain-simple-node
+  echo "→ $OUTPUT_PATH/container-chain-simple-node"
 fi
 
 if $DOWNLOAD_RELAY; then
@@ -196,17 +219,17 @@ if $DOWNLOAD_RELAY; then
       tanssi-relay \
       tanssi-relay-execute-worker \
       tanssi-relay-prepare-worker \
-  | tar -C tmp -xf -
+  | tar -C $OUTPUT_PATH -xf -
 
   chmod +x \
-    tmp/tanssi-relay \
-    tmp/tanssi-relay-execute-worker \
-    tmp/tanssi-relay-prepare-worker
+    $OUTPUT_PATH/tanssi-relay \
+    $OUTPUT_PATH/tanssi-relay-execute-worker \
+    $OUTPUT_PATH/tanssi-relay-prepare-worker
 
-  echo "→ tmp/tanssi-relay"
-  echo "→ tmp/tanssi-relay-execute-worker"
-  echo "→ tmp/tanssi-relay-prepare-worker"
+  echo "→ $OUTPUT_PATH/tanssi-relay"
+  echo "→ $OUTPUT_PATH/tanssi-relay-execute-worker"
+  echo "→ $OUTPUT_PATH/tanssi-relay-prepare-worker"
 fi
 
-echo "All requested binaries downloaded to tmp/"
+echo "All requested binaries downloaded to $OUTPUT_PATH/"
 
