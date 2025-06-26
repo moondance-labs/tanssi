@@ -564,8 +564,8 @@ impl<T: Config> NodeActivityTrackingHelper<Collator<T>> for Pallet<T> {
 
     #[cfg(feature = "runtime-benchmarks")]
     fn make_node_inactive(node: &Collator<T>) {
-        // First we need to make sure that there are enough session
-        // so the node can be marked
+        // First we need to make sure that eniugh sessions had pass
+        // so the node can be marked as inactive
         let max_inactive_sessions = T::MaxInactiveSessions::get();
         if T::CurrentSessionIndex::session_index() < max_inactive_sessions {
             T::CurrentSessionIndex::skip_to_session(max_inactive_sessions)

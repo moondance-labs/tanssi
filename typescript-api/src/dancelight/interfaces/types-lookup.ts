@@ -2845,16 +2845,6 @@ declare module "@polkadot/types/lookup" {
             readonly sourcePool: PalletPooledStakingPoolsActivePoolKind;
             readonly amount: PalletPooledStakingSharesOrStake;
         } & Struct;
-        readonly isEnableOfflineMarking: boolean;
-        readonly asEnableOfflineMarking: {
-            readonly value: bool;
-        } & Struct;
-        readonly isSetOffline: boolean;
-        readonly isSetOnline: boolean;
-        readonly isNotifyInactiveCollator: boolean;
-        readonly asNotifyInactiveCollator: {
-            readonly collator: AccountId32;
-        } & Struct;
         readonly type:
             | "RebalanceHold"
             | "RequestDelegate"
@@ -2862,11 +2852,7 @@ declare module "@polkadot/types/lookup" {
             | "RequestUndelegate"
             | "ClaimManualRewards"
             | "UpdateCandidatePosition"
-            | "SwapPool"
-            | "EnableOfflineMarking"
-            | "SetOffline"
-            | "SetOnline"
-            | "NotifyInactiveCollator";
+            | "SwapPool";
     }
 
     /** @name PalletPooledStakingPoolsPoolKind (244) */
@@ -2919,7 +2905,22 @@ declare module "@polkadot/types/lookup" {
         readonly asSetInactivityTrackingStatus: {
             readonly enableInactivityTracking: bool;
         } & Struct;
-        readonly type: "SetInactivityTrackingStatus";
+        readonly isEnableOfflineMarking: boolean;
+        readonly asEnableOfflineMarking: {
+            readonly value: bool;
+        } & Struct;
+        readonly isSetOffline: boolean;
+        readonly isSetOnline: boolean;
+        readonly isNotifyInactiveCollator: boolean;
+        readonly asNotifyInactiveCollator: {
+            readonly collator: AccountId32;
+        } & Struct;
+        readonly type:
+            | "SetInactivityTrackingStatus"
+            | "EnableOfflineMarking"
+            | "SetOffline"
+            | "SetOnline"
+            | "NotifyInactiveCollator";
     }
 
     /** @name PalletTreasuryCall (252) */
@@ -8403,9 +8404,6 @@ declare module "@polkadot/types/lookup" {
         readonly isRequestCannotBeExecuted: boolean;
         readonly asRequestCannotBeExecuted: u16;
         readonly isSwapResultsInZeroShares: boolean;
-        readonly isMarkingOfflineNotEnabled: boolean;
-        readonly isCollatorDoesNotExist: boolean;
-        readonly isCollatorCannotBeNotifiedAsInactive: boolean;
         readonly isPoolsExtrinsicsArePaused: boolean;
         readonly type:
             | "InvalidPalletSetting"
@@ -8422,9 +8420,6 @@ declare module "@polkadot/types/lookup" {
             | "CandidateTransferingOwnSharesForbidden"
             | "RequestCannotBeExecuted"
             | "SwapResultsInZeroShares"
-            | "MarkingOfflineNotEnabled"
-            | "CollatorDoesNotExist"
-            | "CollatorCannotBeNotifiedAsInactive"
             | "PoolsExtrinsicsArePaused";
     }
 
@@ -8435,18 +8430,24 @@ declare module "@polkadot/types/lookup" {
         readonly isActivityTrackingStatusUpdateSuspended: boolean;
         readonly isActivityTrackingStatusAlreadyEnabled: boolean;
         readonly isActivityTrackingStatusAlreadyDisabled: boolean;
+        readonly isMarkingOfflineNotEnabled: boolean;
+        readonly isCollatorNotInSortedEligibleCandidates: boolean;
         readonly isCollatorNotOnline: boolean;
         readonly isCollatorNotOffline: boolean;
         readonly isMarkingInvulnerableOfflineInvalid: boolean;
+        readonly isCollatorCannotBeNotifiedAsInactive: boolean;
         readonly type:
             | "MaxCollatorsPerSessionReached"
             | "MaxContainerChainsReached"
             | "ActivityTrackingStatusUpdateSuspended"
             | "ActivityTrackingStatusAlreadyEnabled"
             | "ActivityTrackingStatusAlreadyDisabled"
+            | "MarkingOfflineNotEnabled"
+            | "CollatorNotInSortedEligibleCandidates"
             | "CollatorNotOnline"
             | "CollatorNotOffline"
-            | "MarkingInvulnerableOfflineInvalid";
+            | "MarkingInvulnerableOfflineInvalid"
+            | "CollatorCannotBeNotifiedAsInactive";
     }
 
     /** @name PalletTreasuryProposal (709) */

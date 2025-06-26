@@ -2462,14 +2462,6 @@ export default {
                 sourcePool: "PalletPooledStakingPoolsActivePoolKind",
                 amount: "PalletPooledStakingSharesOrStake",
             },
-            enable_offline_marking: {
-                value: "bool",
-            },
-            set_offline: "Null",
-            set_online: "Null",
-            notify_inactive_collator: {
-                collator: "AccountId32",
-            },
         },
     },
     /**
@@ -2520,6 +2512,14 @@ export default {
         _enum: {
             set_inactivity_tracking_status: {
                 enableInactivityTracking: "bool",
+            },
+            enable_offline_marking: {
+                value: "bool",
+            },
+            set_offline: "Null",
+            set_online: "Null",
+            notify_inactive_collator: {
+                collator: "AccountId32",
             },
         },
     },
@@ -7252,9 +7252,6 @@ export default {
             CandidateTransferingOwnSharesForbidden: "Null",
             RequestCannotBeExecuted: "u16",
             SwapResultsInZeroShares: "Null",
-            MarkingOfflineNotEnabled: "Null",
-            CollatorDoesNotExist: "Null",
-            CollatorCannotBeNotifiedAsInactive: "Null",
             PoolsExtrinsicsArePaused: "Null",
         },
     },
@@ -7268,9 +7265,12 @@ export default {
             "ActivityTrackingStatusUpdateSuspended",
             "ActivityTrackingStatusAlreadyEnabled",
             "ActivityTrackingStatusAlreadyDisabled",
+            "MarkingOfflineNotEnabled",
+            "CollatorNotInSortedEligibleCandidates",
             "CollatorNotOnline",
             "CollatorNotOffline",
             "MarkingInvulnerableOfflineInvalid",
+            "CollatorCannotBeNotifiedAsInactive",
         ],
     },
     /**
