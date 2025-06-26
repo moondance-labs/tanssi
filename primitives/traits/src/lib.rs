@@ -628,8 +628,9 @@ pub trait NodeActivityTrackingHelper<AccountId> {
     fn is_node_inactive(node: &AccountId) -> bool;
     /// Check if a node is offline.
     fn is_node_offline(node: &AccountId) -> bool;
-    /// Marks online node as offline
-    fn set_offline(node: &AccountId) -> DispatchResultWithPostInfo;
+    #[cfg(feature = "runtime-benchmarks")]
+    /// Marks online node as online
+    fn make_node_online(node: &AccountId);
     /// Marks node as inactive for the current activity window so it could be notified as inactive
     #[cfg(feature = "runtime-benchmarks")]
     fn make_node_inactive(node: &AccountId);

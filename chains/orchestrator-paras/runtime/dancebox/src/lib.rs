@@ -1521,6 +1521,10 @@ impl IsCandidateEligible<AccountId> for CandidateIsOnlineAndHasRegisteredKeys {
         } else {
             let _ = Session::purge_keys(RuntimeOrigin::signed(a.clone()));
         }
+
+        if InactivityTracking::is_node_offline(a) {
+            InactivityTracking::make_node_online(a);
+        }
     }
 }
 

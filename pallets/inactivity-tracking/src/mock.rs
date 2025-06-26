@@ -221,7 +221,7 @@ impl tp_traits::NotifyCollatorOnlineStatusChange<AccountId> for MockCollatorStak
         Ok(().into())
     }
     #[cfg(feature = "runtime-benchmarks")]
-    fn make_collator_eligible_candidate(collator: &Candidate<T>) {}
+    fn make_collator_eligible_candidate(_collator: &AccountId) {}
 }
 
 impl pallet_inactivity_tracking::Config for Test {

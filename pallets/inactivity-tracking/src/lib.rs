@@ -273,17 +273,7 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::set_online())]
         pub fn set_online(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
             let collator = ensure_signed(origin)?;
-            ensure!(
-                <OfflineCollators<T>>::get(&collator),
-                Error::<T>::CollatorNotOffline
-            );
-            <OfflineCollators<T>>::insert(collator.clone(), false);
-            T::CollatorStakeHelper::update_staking_on_online_status_change(&collator)?;
-            Self::deposit_event(Event::<T>::CollatorStatusUpdated {
-                collator,
-                is_offline: false,
-            });
-            Ok(().into())
+            Self::mark_collator_online(&collator)
         }
 
         #[pallet::call_index(4)]
@@ -524,6 +514,20 @@ pub mod pallet {
             });
             Ok(().into())
         }
+
+        pub fn mark_collator_online(collator: &Collator<T>) -> DispatchResultWithPostInfo {
+            ensure!(
+                <OfflineCollators<T>>::get(&collator),
+                Error::<T>::CollatorNotOffline
+            );
+            <OfflineCollators<T>>::insert(collator.clone(), false);
+            T::CollatorStakeHelper::update_staking_on_online_status_change(&collator)?;
+            Self::deposit_event(Event::<T>::CollatorStatusUpdated {
+                collator: collator.clone(),
+                is_offline: false,
+            });
+            Ok(().into())
+        }
     }
 }
 
@@ -558,8 +562,9 @@ impl<T: Config> NodeActivityTrackingHelper<Collator<T>> for Pallet<T> {
         <OfflineCollators<T>>::get(node)
     }
 
-    fn set_offline(node: &Collator<T>) -> DispatchResultWithPostInfo {
-        Self::mark_collator_offline(node)
+    #[cfg(feature = "runtime-benchmarks")]
+    fn make_node_online(node: &Collator<T>) {
+        let _ = Self::mark_collator_online(node);
     }
 
     #[cfg(feature = "runtime-benchmarks")]

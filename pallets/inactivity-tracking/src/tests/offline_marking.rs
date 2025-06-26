@@ -23,7 +23,7 @@ fn make_collator_inactive(collator: AccountId) {
 }
 #[test]
 fn enabling_and_disabling_offline_marking_works() {
-    ExtBuilder::default().build().execute_with(|| {
+    ExtBuilder.build().execute_with(|| {
         assert_eq!(EnableMarkingOffline::<Test>::get(), false);
         assert_ok!(Pallet::<Test>::enable_offline_marking(
             RuntimeOrigin::root(),
@@ -40,7 +40,7 @@ fn enabling_and_disabling_offline_marking_works() {
 
 #[test]
 fn enabling_and_disabling_offline_marking_fails_for_non_root() {
-    ExtBuilder::default().build().execute_with(|| {
+    ExtBuilder.build().execute_with(|| {
         assert_noop!(
             Pallet::<Test>::enable_offline_marking(RuntimeOrigin::signed(COLLATOR_1), true),
             BadOrigin
@@ -70,7 +70,7 @@ fn set_offline_works() {
 }
 #[test]
 fn set_offline_fails_if_offline_marking_is_not_enabled() {
-    ExtBuilder::default().build().execute_with(|| {
+    ExtBuilder.build().execute_with(|| {
         assert_noop!(
             Pallet::<Test>::set_offline(RuntimeOrigin::signed(COLLATOR_1)),
             Error::<Test>::MarkingOfflineNotEnabled
@@ -79,7 +79,7 @@ fn set_offline_fails_if_offline_marking_is_not_enabled() {
 }
 #[test]
 fn set_offline_fails_if_collator_is_not_in_eligible_candidates() {
-    ExtBuilder::default().build().execute_with(|| {
+    ExtBuilder.build().execute_with(|| {
         assert_ok!(Pallet::<Test>::enable_offline_marking(
             RuntimeOrigin::root(),
             true
@@ -153,7 +153,7 @@ fn set_online_fails_for_online_collators() {
 
 #[test]
 fn notify_inactive_collator_works() {
-    ExtBuilder::default().build().execute_with(|| {
+    ExtBuilder.build().execute_with(|| {
         make_collator_inactive(COLLATOR_1);
         assert_ok!(Pallet::<Test>::enable_offline_marking(
             RuntimeOrigin::root(),
@@ -177,7 +177,7 @@ fn notify_inactive_collator_works() {
 
 #[test]
 fn notify_inactive_collator_fails_if_collator_is_active() {
-    ExtBuilder::default().build().execute_with(|| {
+    ExtBuilder.build().execute_with(|| {
         assert_ok!(Pallet::<Test>::enable_offline_marking(
             RuntimeOrigin::root(),
             true
@@ -191,7 +191,7 @@ fn notify_inactive_collator_fails_if_collator_is_active() {
 
 #[test]
 fn notify_inactive_collator_fails_if_offline_marking_is_not_enabled() {
-    ExtBuilder::default().build().execute_with(|| {
+    ExtBuilder.build().execute_with(|| {
         make_collator_inactive(COLLATOR_1);
         assert_noop!(
             Pallet::<Test>::notify_inactive_collator(RuntimeOrigin::signed(COLLATOR_3), COLLATOR_1),
@@ -202,7 +202,7 @@ fn notify_inactive_collator_fails_if_offline_marking_is_not_enabled() {
 
 #[test]
 fn notify_inactive_collator_fails_for_collator_not_in_sorted_eligible_collators() {
-    ExtBuilder::default().build().execute_with(|| {
+    ExtBuilder.build().execute_with(|| {
         make_collator_inactive(COLLATOR_3);
         assert_ok!(Pallet::<Test>::enable_offline_marking(
             RuntimeOrigin::root(),
@@ -217,7 +217,7 @@ fn notify_inactive_collator_fails_for_collator_not_in_sorted_eligible_collators(
 
 #[test]
 fn notify_inactive_collator_fails_for_offline_collators() {
-    ExtBuilder::default().build().execute_with(|| {
+    ExtBuilder.build().execute_with(|| {
         make_collator_inactive(COLLATOR_1);
         assert_ok!(Pallet::<Test>::enable_offline_marking(
             RuntimeOrigin::root(),
@@ -234,7 +234,7 @@ fn notify_inactive_collator_fails_for_offline_collators() {
 
 #[test]
 fn notify_inactive_collator_fails_if_collator_is_invulnerable() {
-    ExtBuilder::default().build().execute_with(|| {
+    ExtBuilder.build().execute_with(|| {
         make_collator_inactive(COLLATOR_2);
         assert_ok!(Pallet::<Test>::enable_offline_marking(
             RuntimeOrigin::root(),
