@@ -23,6 +23,10 @@ use crate::EthereumBeaconClient;
 use {
     tanssi_runtime_common::relay::NativeTokenTransferMessageProcessor,
     tp_bridge::symbiotic_message_processor::SymbioticMessageProcessor,
+    tp_bridge::{
+        generic_token_message_processor::{GenericTokenMessageProcessor, NoOpProcessor},
+        symbiotic_message_processor::SymbioticMessageProcessor,
+    },
 };
 
 use {
@@ -205,6 +209,9 @@ mod test_helpers {
     }
 }
 
+#[cfg(not(feature = "runtime-benchmarks"))]
+pub type NativeTokensProcessor = NativeTokenTransferMessageProcessor<Runtime>;
+
 impl snowbridge_pallet_inbound_queue::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     #[cfg(all(not(test), not(feature = "testing-helpers")))]
@@ -230,7 +237,7 @@ impl snowbridge_pallet_inbound_queue::Config for Runtime {
     #[cfg(not(feature = "runtime-benchmarks"))]
     type MessageProcessor = (
         SymbioticMessageProcessor<Self>,
-        NativeTokenTransferMessageProcessor<Self>,
+        GenericTokenMessageProcessor<Self, NativeTokensProcessor, NoOpProcessor>,
     );
     type RewardProcessor = RewardThroughFeesAccount<Self>;
     #[cfg(feature = "runtime-benchmarks")]
