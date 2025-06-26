@@ -73,7 +73,7 @@ pub mod pallet {
         frame_support::{
             pallet_prelude::*,
             storage::types::{StorageDoubleMap, StorageValue, ValueQuery},
-            traits::{fungible, tokens::Balance, IsType},
+            traits::{fungible, fungible::Mutate, tokens::Balance, IsType , },
             Blake2_128Concat,
         },
         frame_system::pallet_prelude::*,
@@ -786,6 +786,20 @@ pub mod pallet {
             collator: &Candidate<T>,
         ) -> DispatchResultWithPostInfo {
             Calls::<T>::update_candidate_position(&[collator.clone()])
+        }
+
+        #[cfg(feature = "runtime-benchmarks")]
+        fn make_collator_eligible_candidate(collator: &Candidate<T>) {
+            let minimum_stake = T::MinimumSelfDelegation::get();
+            T::Currency::set_balance(collator, minimum_stake + minimum_stake);
+            T::EligibleCandidatesFilter::make_candidate_eligible(collator, true);
+            Calls::<T>::request_delegate(
+                collator.clone(),
+                collator.clone(),
+                ActivePoolKind::AutoCompounding,
+                minimum_stake,
+            );
+            T::JoiningRequestTimer::skip_to_elapsed();
         }
     }
 }

@@ -666,4 +666,7 @@ pub trait NotifyCollatorOnlineStatusChange<AccountId> {
     fn is_collator_in_sorted_eligible_candidates(collator: &AccountId) -> bool;
     /// Updates stake when node's online status change.
     fn update_staking_on_online_status_change(collator: &AccountId) -> DispatchResultWithPostInfo;
+    /// Benchmarking helper function that makes collator part of the SortedEligibleCollators list.
+    #[cfg(feature = "runtime-benchmarks")]
+    fn make_collator_eligible_candidate(node: &AccountId);
 }

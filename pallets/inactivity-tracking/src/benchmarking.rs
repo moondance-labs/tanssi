@@ -47,9 +47,11 @@ mod benchmarks {
     fn set_offline() -> Result<(), BenchmarkError> {
         const USER_SEED: u32 = 1;
         let caller: T::AccountId = account("caller", 2, USER_SEED);
+        T::CollatorStakeHelper::make_collator_eligible_candidate(&caller);
+        InactivityTracking::<T>::enable_offline_marking(RawOrigin::Root.into(), true)?;
 
         #[extrinsic_call]
-        _(RawOrigin::Signed(caller.clone()));
+        _(RawOrigin::Signed(caller));
 
         Ok(())
     }
@@ -58,7 +60,7 @@ mod benchmarks {
     fn set_online() -> Result<(), BenchmarkError> {
         const USER_SEED: u32 = 1;
         let caller: T::AccountId = account("caller", 2, USER_SEED);
-
+        T::CollatorStakeHelper::make_collator_eligible_candidate(&caller);
         InactivityTracking::<T>::enable_offline_marking(RawOrigin::Root.into(), true)?;
         InactivityTracking::<T>::set_offline(RawOrigin::Signed(caller.clone()).into())?;
 

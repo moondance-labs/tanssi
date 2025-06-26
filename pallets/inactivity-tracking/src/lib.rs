@@ -261,7 +261,7 @@ pub mod pallet {
         }
 
         #[pallet::call_index(2)]
-        #[pallet::weight(T::WeightInfo::enable_offline_marking())]
+        #[pallet::weight(T::WeightInfo::set_offline())]
         pub fn set_offline(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
             let collator = ensure_signed(origin)?;
             Self::mark_collator_offline(&collator)
