@@ -54,6 +54,7 @@ const customTypes = {
     },
     TokenId: "H256",
 };
+//https://github.com/moondance-labs/tanssi-bridge-relayer/blob/247bc96365c5f8a9cdbcf3fae09a8ede79ac4c91/overridden_contracts/src/libraries/OSubstrateTypes.sol#L41
 const MAGIC_BYTES = "0x70150038";
 
 describeSuite({
