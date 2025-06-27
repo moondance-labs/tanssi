@@ -14,12 +14,15 @@ type BlockFilteredRecord = {
     blockNum: number;
     extrinsics: GenericExtrinsic<AnyTuple>[];
     events: FrameSystemEventRecord[];
-    session;
-    pendingOperations;
+    session: Number;
+    pendingOperations: Map<string, string[]>;
 };
 
+// FOR ALL RUNTIMES
+// Delay that has to elapse to be able to execute a pending request
+const MINIMUM_EXECUTE_REQUEST_DELAY = 2;
 describeSuite({
-    id: "SMOK15",
+    id: "SMOK222",
     title: `Pending Operations in the last ${hours} should be correctly executed`,
     foundationMethods: "read_only",
     testCases: ({ it, context, log }) => {
@@ -110,7 +113,7 @@ describeSuite({
                                 (op) => JSON.stringify(op) === JSON.stringify(operation.operation)
                             );
 
-                            if (filtered.length > 0 && time > session.toNumber() - 2) {
+                            if (filtered.length > 0 && time > session.toNumber() - MINIMUM_EXECUTE_REQUEST_DELAY) {
                                 return false;
                             }
                         }
