@@ -91,7 +91,10 @@ use {
         marker::PhantomData,
         prelude::*,
     },
-    tanssi_runtime_common::{relay::BabeSlotBeacon, SessionTimer},
+    tanssi_runtime_common::{
+        relay::{BabeGetCollatorAssignmentRandomness, BabeSlotBeacon},
+        SessionTimer,
+    },
     tp_bridge::ConvertLocation,
     tp_traits::{
         prod_or_fast_parameter_types, EraIndex, GetHostConfiguration, GetSessionContainerChains,
@@ -3453,33 +3456,6 @@ impl Get<u32> for ConfigurationCollatorRotationSessionPeriod {
     }
 }
 
-pub struct BabeGetCollatorAssignmentRandomness;
-impl Get<[u8; 32]> for BabeGetCollatorAssignmentRandomness {
-    fn get() -> [u8; 32] {
-        let block_number = System::block_number();
-        let random_seed = if block_number != 0 {
-            if let Some(random_hash) = {
-                BabeCurrentBlockRandomnessGetter::get_block_randomness_mixed(b"CollatorAssignment")
-            } {
-                // Return random_hash as a [u8; 32] instead of a Hash
-                let mut buf = [0u8; 32];
-                let len = sp_std::cmp::min(32, random_hash.as_ref().len());
-                buf[..len].copy_from_slice(&random_hash.as_ref()[..len]);
-
-                buf
-            } else {
-                // If there is no randomness return [0; 32]
-                [0; 32]
-            }
-        } else {
-            // In block 0 (genesis) there is no randomness
-            [0; 32]
-        };
-
-        random_seed
-    }
-}
-
 // Randomness trait
 impl frame_support::traits::Randomness<Hash, BlockNumber> for BabeCurrentBlockRandomnessGetter {
     fn random(subject: &[u8]) -> (Hash, BlockNumber) {
@@ -3685,8 +3661,9 @@ impl pallet_collator_assignment::Config for Runtime {
     type SelfParaId = MockParaId;
     type ShouldRotateAllCollators =
         RotateCollatorsEveryNSessions<ConfigurationCollatorRotationSessionPeriod>;
-    type Randomness =
-        pallet_collator_assignment::SolochainRandomness<BabeGetCollatorAssignmentRandomness>;
+    type Randomness = pallet_collator_assignment::SolochainRandomness<
+        BabeGetCollatorAssignmentRandomness<Runtime>,
+    >;
     type RemoveInvulnerables = ();
     type ParaIdAssignmentHooks = ParaIdAssignmentHooksImpl;
     type CollatorAssignmentTip = ServicesPayment;

@@ -22,8 +22,9 @@
 
 extern crate alloc;
 
-use frame_support::storage::{with_storage_layer, with_transaction};
-// Fix compile error in impl_runtime_weights! macro
+#[cfg(any(feature = "std", test))]
+use sp_version::NativeVersion;
+
 use {
     authority_discovery_primitives::AuthorityId as AuthorityDiscoveryId,
     beefy_primitives::{
@@ -32,6 +33,19 @@ use {
     },
     cumulus_primitives_core::relay_chain::{HeadData, ValidationCode},
     dp_container_chain_genesis_data::ContainerChainGenesisDataItem,
+    frame_support::storage::{with_storage_layer, with_transaction},
+    frame_support::{
+        construct_runtime, derive_impl,
+        genesis_builder_helper::{build_state, get_preset},
+        parameter_types,
+        traits::{
+            fungible::{Balanced, Credit, HoldConsideration},
+            EitherOf, EitherOfDiverse, EnsureOriginWithArg, InstanceFilter, KeyOwnerProofSystem,
+            LinearStoragePrice, PrivilegeCmp, ProcessMessage, ProcessMessageError,
+        },
+        weights::{ConstantMultiplier, WeightMeter, WeightToFee as _},
+        PalletId,
+    },
     frame_support::{
         dispatch::DispatchResult,
         dynamic_params::{dynamic_pallet_params, dynamic_params},
@@ -41,14 +55,19 @@ use {
             ConstBool, Contains, EverythingBut,
         },
     },
+    frame_system::EnsureRoot,
     frame_system::{pallet_prelude::BlockNumberFor, EnsureNever},
     nimbus_primitives::NimbusId,
     pallet_collator_assignment::RotateCollatorsEveryNSessions,
+    pallet_grandpa::{fg_primitives, AuthorityId as GrandpaId},
+    pallet_identity::legacy::IdentityInfo,
     pallet_initializer as tanssi_initializer,
     pallet_invulnerables::InvulnerableRewardDistribution,
     pallet_registrar::Error as ContainerRegistrarError,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     pallet_services_payment::{ProvideBlockProductionCost, ProvideCollatorAssignmentCost},
+    pallet_session::historical as session_historical,
+    pallet_transaction_payment::{FeeDetails, FungibleAdapter, RuntimeDispatchInfo},
     parachains_scheduler::common::Assignment,
     parity_scale_codec::{Decode, Encode, MaxEncodedLen},
     primitives::{
@@ -83,61 +102,42 @@ use {
     },
     snowbridge_pallet_outbound_queue::MerkleProof,
     sp_core::{storage::well_known_keys as StorageWellKnownKeys, Get},
+    sp_core::{OpaqueMetadata, H256},
     sp_genesis_builder::PresetId,
+    sp_runtime::{
+        generic, impl_opaque_keys,
+        traits::{
+            AccountIdConversion, BlakeTwo256, Block as BlockT, ConstU32, Convert, IdentityLookup,
+            Keccak256, OpaqueKeys, SaturatedConversion, Verify, Zero,
+        },
+        transaction_validity::{TransactionPriority, TransactionSource, TransactionValidity},
+        ApplyExtrinsicResult, Cow, FixedU128, KeyTypeId, Perbill, Percent, Permill, RuntimeDebug,
+    },
     sp_runtime::{traits::ConvertInto, AccountId32},
+    sp_staking::SessionIndex,
     sp_std::{
         cmp::Ordering,
         collections::{btree_map::BTreeMap, btree_set::BTreeSet, vec_deque::VecDeque},
         marker::PhantomData,
         prelude::*,
     },
-    tanssi_runtime_common::{relay::BabeSlotBeacon, SessionTimer},
+    sp_version::RuntimeVersion,
+    tanssi_runtime_common::{
+        relay::{BabeGetCollatorAssignmentRandomness, BabeSlotBeacon},
+        SessionTimer,
+    },
     tp_bridge::ConvertLocation,
     tp_traits::{
         prod_or_fast_parameter_types, EraIndex, GetHostConfiguration, GetSessionContainerChains,
         ParaIdAssignmentHooks, RegistrarHandler, Slot, SlotFrequency,
     },
-    xcm_runtime_apis::{
-        dry_run::{CallDryRunEffects, Error as XcmDryRunApiError, XcmDryRunEffects},
-        fees::Error as XcmPaymentApiError,
-    },
-};
-
-#[cfg(any(feature = "std", test))]
-use sp_version::NativeVersion;
-use {
-    frame_support::{
-        construct_runtime, derive_impl,
-        genesis_builder_helper::{build_state, get_preset},
-        parameter_types,
-        traits::{
-            fungible::{Balanced, Credit, HoldConsideration},
-            EitherOf, EitherOfDiverse, EnsureOriginWithArg, InstanceFilter, KeyOwnerProofSystem,
-            LinearStoragePrice, PrivilegeCmp, ProcessMessage, ProcessMessageError,
-        },
-        weights::{ConstantMultiplier, WeightMeter, WeightToFee as _},
-        PalletId,
-    },
-    frame_system::EnsureRoot,
-    pallet_grandpa::{fg_primitives, AuthorityId as GrandpaId},
-    pallet_identity::legacy::IdentityInfo,
-    pallet_session::historical as session_historical,
-    pallet_transaction_payment::{FeeDetails, FungibleAdapter, RuntimeDispatchInfo},
-    sp_core::{OpaqueMetadata, H256},
-    sp_runtime::{
-        generic, impl_opaque_keys,
-        traits::{
-            AccountIdConversion, BlakeTwo256, Block as BlockT, ConstU32, Convert, Hash as HashT,
-            IdentityLookup, Keccak256, OpaqueKeys, SaturatedConversion, Verify, Zero,
-        },
-        transaction_validity::{TransactionPriority, TransactionSource, TransactionValidity},
-        ApplyExtrinsicResult, Cow, FixedU128, KeyTypeId, Perbill, Percent, Permill, RuntimeDebug,
-    },
-    sp_staking::SessionIndex,
-    sp_version::RuntimeVersion,
     xcm::{
         latest::prelude::*, IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation,
         VersionedXcm,
+    },
+    xcm_runtime_apis::{
+        dry_run::{CallDryRunEffects, Error as XcmDryRunApiError, XcmDryRunEffects},
+        fees::Error as XcmPaymentApiError,
     },
 };
 
@@ -3436,72 +3436,12 @@ impl tanssi_initializer::Config for Runtime {
     type SessionHandler = OwnApplySession;
 }
 
-pub struct BabeCurrentBlockRandomnessGetter;
-impl BabeCurrentBlockRandomnessGetter {
-    fn get_block_randomness() -> Option<[u8; 32]> {
-        // In a relay context we get block randomness from Babe's AuthorVrfRandomness
-        Babe::author_vrf_randomness()
-    }
-
-    fn get_block_randomness_mixed(subject: &[u8]) -> Option<Hash> {
-        Self::get_block_randomness()
-            .map(|random_hash| mix_randomness::<Runtime>(random_hash, subject))
-    }
-}
-
-/// Combines the vrf output of the previous block with the provided subject.
-/// This ensures that the randomness will be different on different pallets, as long as the subject is different.
-pub fn mix_randomness<T: frame_system::Config>(vrf_output: [u8; 32], subject: &[u8]) -> T::Hash {
-    let mut digest = Vec::new();
-    digest.extend_from_slice(vrf_output.as_ref());
-    digest.extend_from_slice(subject);
-
-    T::Hashing::hash(digest.as_slice())
-}
-
 /// Read full_rotation_period from pallet_configuration
 pub struct ConfigurationCollatorRotationSessionPeriod;
 
 impl Get<u32> for ConfigurationCollatorRotationSessionPeriod {
     fn get() -> u32 {
         CollatorConfiguration::config().full_rotation_period
-    }
-}
-
-pub struct BabeGetCollatorAssignmentRandomness;
-impl Get<[u8; 32]> for BabeGetCollatorAssignmentRandomness {
-    fn get() -> [u8; 32] {
-        let block_number = System::block_number();
-        let random_seed = if block_number != 0 {
-            if let Some(random_hash) = {
-                BabeCurrentBlockRandomnessGetter::get_block_randomness_mixed(b"CollatorAssignment")
-            } {
-                // Return random_hash as a [u8; 32] instead of a Hash
-                let mut buf = [0u8; 32];
-                let len = sp_std::cmp::min(32, random_hash.as_ref().len());
-                buf[..len].copy_from_slice(&random_hash.as_ref()[..len]);
-
-                buf
-            } else {
-                // If there is no randomness return [0; 32]
-                [0; 32]
-            }
-        } else {
-            // In block 0 (genesis) there is no randomness
-            [0; 32]
-        };
-
-        random_seed
-    }
-}
-
-// Randomness trait
-impl frame_support::traits::Randomness<Hash, BlockNumber> for BabeCurrentBlockRandomnessGetter {
-    fn random(subject: &[u8]) -> (Hash, BlockNumber) {
-        let block_number = frame_system::Pallet::<Runtime>::block_number();
-        let randomness = Self::get_block_randomness_mixed(subject).unwrap_or_default();
-
-        (randomness, block_number)
     }
 }
 
@@ -3700,8 +3640,9 @@ impl pallet_collator_assignment::Config for Runtime {
     type SelfParaId = MockParaId;
     type ShouldRotateAllCollators =
         RotateCollatorsEveryNSessions<ConfigurationCollatorRotationSessionPeriod>;
-    type Randomness =
-        pallet_collator_assignment::SolochainRandomness<BabeGetCollatorAssignmentRandomness>;
+    type Randomness = pallet_collator_assignment::SolochainRandomness<
+        BabeGetCollatorAssignmentRandomness<Runtime>,
+    >;
     type RemoveInvulnerables = ();
     type ParaIdAssignmentHooks = ParaIdAssignmentHooksImpl;
     type CollatorAssignmentTip = ServicesPayment;

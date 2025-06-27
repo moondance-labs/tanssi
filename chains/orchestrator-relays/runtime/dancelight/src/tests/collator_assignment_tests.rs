@@ -18,9 +18,9 @@
 
 use {
     crate::{
-        tests::common::*, BabeCurrentBlockRandomnessGetter, Balances, CollatorConfiguration,
-        Configuration, ContainerRegistrar, GetCoreAllocationConfigurationImpl, Paras, Registrar,
-        RuntimeEvent, ServicesPayment, TanssiAuthorityMapping, TanssiInvulnerables,
+        tests::common::*, Balances, CollatorConfiguration, Configuration, ContainerRegistrar,
+        GetCoreAllocationConfigurationImpl, Paras, Registrar, RuntimeEvent, ServicesPayment,
+        TanssiAuthorityMapping, TanssiInvulnerables,
     },
     cumulus_primitives_core::{
         relay_chain::{HeadData, SchedulerParams},
@@ -33,6 +33,7 @@ use {
     sp_core::Get,
     sp_runtime::{traits::BlakeTwo256, DigestItem},
     sp_std::vec,
+    tanssi_runtime_common::relay::BabeAuthorVrfBlockRandomness,
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
 };
 
@@ -87,11 +88,13 @@ fn test_collator_assignment_rotation() {
             // Check that the randomness in CollatorAssignment is set by looking at the event
             run_to_block(session_to_block(rotation_period));
 
-            // Expected randomness depends on block number, uses BabeCurrentBlockRandomnessGetter
+            // Expected randomness depends on block number, uses BabeAuthorVrfBlockRandomness
             let expected_randomness: [u8; 32] =
-                BabeCurrentBlockRandomnessGetter::get_block_randomness_mixed(b"CollatorAssignment")
-                    .unwrap()
-                    .into();
+                BabeAuthorVrfBlockRandomness::<Runtime>::get_block_randomness_mixed(
+                    b"CollatorAssignment",
+                )
+                .unwrap()
+                .into();
             let events = System::events()
                 .into_iter()
                 .map(|r| r.event)

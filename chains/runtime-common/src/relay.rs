@@ -15,6 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 //! Shared code between relay runtimes.
+use core::marker::PhantomData;
 use frame_support::{
     pallet_prelude::Zero,
     traits::{
@@ -22,6 +23,7 @@ use frame_support::{
         tokens::{Fortitude, Preservation},
     },
 };
+use frame_system::pallet_prelude::BlockNumberFor;
 use parity_scale_codec::{DecodeAll, Encode};
 use snowbridge_core::{inbound::Message, Channel};
 use snowbridge_pallet_inbound_queue::RewardProcessor;
@@ -29,12 +31,15 @@ use snowbridge_router_primitives::inbound::{
     envelope::Envelope, Command, Destination, MessageProcessor, MessageV1, VersionedXcmMessage,
 };
 use sp_core::Get;
-use sp_runtime::{traits::MaybeEquivalence, DispatchError, DispatchResult};
+use sp_runtime::{
+    traits::{Hash as _, MaybeEquivalence},
+    DispatchError, DispatchResult,
+};
 
 /// `NativeTokenTransferMessageProcessor` is responsible for receiving and processing the Tanssi
 /// native token sent from Ethereum. If the message is valid, it performs the token transfer
 /// from the Ethereum sovereign account to the specified destination account.
-pub struct NativeTokenTransferMessageProcessor<T>(sp_std::marker::PhantomData<T>);
+pub struct NativeTokenTransferMessageProcessor<T>(PhantomData<T>);
 impl<T> MessageProcessor for NativeTokenTransferMessageProcessor<T>
 where
     T: snowbridge_pallet_inbound_queue::Config
@@ -167,7 +172,7 @@ where
 
 /// Rewards the relayer that processed a native token transfer message
 /// using the FeesAccount configured in pallet_ethereum_token_transfers
-pub struct RewardThroughFeesAccount<T>(sp_std::marker::PhantomData<T>);
+pub struct RewardThroughFeesAccount<T>(PhantomData<T>);
 
 impl<T> RewardProcessor<T> for RewardThroughFeesAccount<T>
 where
@@ -202,7 +207,7 @@ where
     }
 }
 
-pub struct BabeSlotBeacon<T>(core::marker::PhantomData<T>);
+pub struct BabeSlotBeacon<T>(PhantomData<T>);
 impl<T: pallet_babe::Config> sp_runtime::traits::BlockNumberProvider for BabeSlotBeacon<T> {
     type BlockNumber = u32;
 
@@ -211,5 +216,68 @@ impl<T: pallet_babe::Config> sp_runtime::traits::BlockNumberProvider for BabeSlo
         // also it gets converted to u64 in pallet_author_noting, so let's do something to remove
         // this intermediate u32 conversion, such as using a different trait
         u64::from(pallet_babe::CurrentSlot::<T>::get()) as u32
+    }
+}
+
+/// Combines the vrf output of the previous block with the provided subject.
+/// This ensures that the randomness will be different on different pallets, as long as the subject is different.
+pub fn mix_randomness<T: frame_system::Config>(vrf_output: [u8; 32], subject: &[u8]) -> T::Hash {
+    let mut digest = Vec::new();
+    digest.extend_from_slice(vrf_output.as_ref());
+    digest.extend_from_slice(subject);
+
+    T::Hashing::hash(digest.as_slice())
+}
+
+pub struct BabeAuthorVrfBlockRandomness<T>(PhantomData<T>);
+impl<T: pallet_babe::Config + frame_system::Config> BabeAuthorVrfBlockRandomness<T> {
+    pub fn get_block_randomness() -> Option<[u8; 32]> {
+        // In a relay context we get block randomness from Babe's AuthorVrfRandomness
+        pallet_babe::Pallet::<T>::author_vrf_randomness()
+    }
+
+    pub fn get_block_randomness_mixed(subject: &[u8]) -> Option<T::Hash> {
+        Self::get_block_randomness().map(|random_hash| mix_randomness::<T>(random_hash, subject))
+    }
+}
+
+impl<T: pallet_babe::Config + frame_system::Config>
+    frame_support::traits::Randomness<T::Hash, BlockNumberFor<T>>
+    for BabeAuthorVrfBlockRandomness<T>
+{
+    fn random(subject: &[u8]) -> (T::Hash, BlockNumberFor<T>) {
+        let block_number = frame_system::Pallet::<T>::block_number();
+        let randomness = Self::get_block_randomness_mixed(subject).unwrap_or_default();
+
+        (randomness, block_number)
+    }
+}
+
+pub struct BabeGetCollatorAssignmentRandomness<T>(PhantomData<T>);
+impl<T: pallet_babe::Config + frame_system::Config> Get<[u8; 32]>
+    for BabeGetCollatorAssignmentRandomness<T>
+{
+    fn get() -> [u8; 32] {
+        let block_number = frame_system::Pallet::<T>::block_number();
+        let random_seed = if !block_number.is_zero() {
+            if let Some(random_hash) = {
+                BabeAuthorVrfBlockRandomness::<T>::get_block_randomness_mixed(b"CollatorAssignment")
+            } {
+                // Return random_hash as a [u8; 32] instead of a Hash
+                let mut buf = [0u8; 32];
+                let len = sp_std::cmp::min(32, random_hash.as_ref().len());
+                buf[..len].copy_from_slice(&random_hash.as_ref()[..len]);
+
+                buf
+            } else {
+                // If there is no randomness return [0; 32]
+                [0; 32]
+            }
+        } else {
+            // In block 0 (genesis) there is no randomness
+            [0; 32]
+        };
+
+        random_seed
     }
 }
