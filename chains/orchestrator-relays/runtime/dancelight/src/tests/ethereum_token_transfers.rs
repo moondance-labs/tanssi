@@ -569,7 +569,7 @@ fn no_error_when_receiving_register_token_command() {
                 payload: payload.encode(),
             };
 
-            let message = Message {
+            let message = EventProof {
                 event_log: Log {
                     address:
                         <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
