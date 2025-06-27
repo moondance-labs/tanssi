@@ -141,7 +141,7 @@ describeSuite({
         it({
             id: "C03",
             title: "Sovereign account releases funds when token is received via ethereuminboundqueue.submit",
-            test: async () => {
+            test: async ({ skip }) => {
                 let currentBlock = (await api.rpc.chain.getBlock()).block.header.number.toNumber();
 
                 if (BLOCK_NUMBER_TO_DEBUG !== undefined) {
@@ -185,7 +185,7 @@ describeSuite({
                                 const currentNonce = await (await api.at(blockHash)).query.ethereumInboundQueue.nonce(
                                     channelId
                                 );
-                                expect(currentNonce).to.be.equal(previousNonce + 1);
+                                expect(currentNonce.toBigInt()).to.be.equal(previousNonce.toBigInt() + 1n);
                                 skip();
                             }
                             const { destination, amount } = versioned.toJSON().v1.command.sendNativeToken;
