@@ -42,7 +42,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22.x
-          cache: "pnpm"
 
       - name: Get test names
         id: get_tests
