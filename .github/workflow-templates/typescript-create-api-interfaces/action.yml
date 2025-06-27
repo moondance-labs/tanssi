@@ -6,8 +6,6 @@ runs:
     - name: Generate Local interfaces for Typescript APi
       shell: bash
       run: |
-        chmod uog+x target/release/tanssi-node
-        chmod uog+x target/release/tanssi-relay
         cd typescript-api
         pnpm install --frozen-lockfile
         pnpm create-local-interfaces

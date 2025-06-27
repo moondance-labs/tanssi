@@ -6,7 +6,7 @@ set -e
 # Always run the commands from the "test" dir
 cd $(dirname $0)/..
 
-if [[ -z "${1}" || ${1} == "undefined" ]]; then
+if [[ -z "${1}" ]]; then
     BINARY_FOLDER="../target/release"
 else
     BINARY_FOLDER="${1}"
