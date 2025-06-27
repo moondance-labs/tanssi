@@ -7,6 +7,10 @@ import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_INACTIVITY_TRACKING } from "helpers"
 import type { AccountId32 } from "@polkadot/types/interfaces";
 import { numberToHex } from "@polkadot/util";
 
+// ALICE -
+// BOB -
+// CHARLIE -
+// DAVE -
 describeSuite({
     id: "DEVT2002",
     title: "Dancelight: Offline marking extrinsics test suite",
@@ -105,10 +109,12 @@ describeSuite({
                     console.log("BOB is marked as offline before the test starts.");
                     expect(true).to.be.false; // Fail the test if BOB is not offline
                 }
+                const currentSession = (await polkadotJs.query.session.currentIndex()).toNumber();
                 const setBobOfflineTx = polkadotJs.tx.inactivityTracking.setOffline();
                 await context.createBlock([await setBobOfflineTx.signAsync(bob)]);
-                const startSessionIndex = await polkadotJs.query.session.currentIndex();
-                expect(startSessionIndex.toNumber()).to.be.equal(2);
+                const pendingAssignedCollators =
+                    await polkadotJs.query.tanssiCollatorAssignment.pendingCollatorContainerChain();
+                expect(pendingAssignedCollators.isSome).to.be.false;
                 const bobOfflineStatusAfterMarking = await polkadotJs.query.inactivityTracking.offlineCollators(
                     bob.address
                 );
@@ -116,7 +122,9 @@ describeSuite({
                     console.log("BOB is not marked as offline.");
                     expect(false).to.be.true; // Fail the test if BOB is not offline
                 }
-                await jumpToSession(context, startSessionIndex.toNumber() + 2);
+                await jumpToSession(context, currentSession + 1);
+
+                await context.createBlock();
 
                 // Check that BOB is:
                 // - not part of the sorted eligible candidates list

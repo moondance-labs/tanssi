@@ -674,7 +674,8 @@ pub mod pallet {
 
     impl<T: Config> PendingCollatorAssignmentHelper<T::AccountId> for Pallet<T> {
         fn remove_offline_collator_from_pending_assignment(collator: &T::AccountId) {
-            // If there is no pending assignment, we do nothing
+            // If there is a  pending assignment, we remove the collator from it
+            // Otherwise, we remove the collator from the current assignment
             if let Some(collator_assignment) = PendingCollatorContainerChain::<T>::get() {
                 // Removing the collator from the pending assignment
                 let mut collator_assignment = collator_assignment;
@@ -686,6 +687,16 @@ pub mod pallet {
                 }
                 // Store the updated assignment
                 PendingCollatorContainerChain::<T>::put(Some(collator_assignment));
+            } else {
+                let mut current_assignment = CollatorContainerChain::<T>::get();
+                current_assignment
+                    .orchestrator_chain
+                    .retain(|c| c != collator);
+                for (_para_id, collators) in &mut current_assignment.container_chains {
+                    collators.retain(|c| c != collator);
+                }
+                // Store the updated assignment
+                CollatorContainerChain::<T>::put(current_assignment);
             }
         }
     }

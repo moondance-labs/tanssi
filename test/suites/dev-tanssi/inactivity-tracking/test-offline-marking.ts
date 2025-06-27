@@ -109,9 +109,12 @@ describeSuite({
                     console.log("BOB is marked as offline before the test starts.");
                     expect(true).to.be.false; // Fail the test if BOB is not offline
                 }
-
+                const currentSession = (await polkadotJs.query.session.currentIndex()).toNumber();
                 const setBobOfflineTx = polkadotJs.tx.inactivityTracking.setOffline();
                 await context.createBlock([await setBobOfflineTx.signAsync(bob)]);
+                const pendingAssignedCollators =
+                    await polkadotJs.query.tanssiCollatorAssignment.pendingCollatorContainerChain();
+                expect(pendingAssignedCollators.isSome).to.be.false;
                 const bobOfflineStatusAfterMarking = await polkadotJs.query.inactivityTracking.offlineCollators(
                     bob.address
                 );
@@ -119,8 +122,8 @@ describeSuite({
                     console.log("BOB is not marked as offline.");
                     expect(false).to.be.true; // Fail the test if BOB is not offline
                 }
-                const currentSession = (await polkadotJs.query.session.currentIndex()).toNumber();
-                await jumpToSession(context, currentSession + 2);
+
+                await jumpToSession(context, currentSession + 1);
 
                 // Check that BOB is:
                 // - not part of the sorted eligible candidates list
