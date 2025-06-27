@@ -19692,6 +19692,7 @@ dependencies = [
  "frame-try-runtime",
  "hex-literal 0.3.4",
  "log",
+ "pallet-babe",
  "pallet-balances",
  "pallet-beefy-mmr",
  "pallet-configuration",

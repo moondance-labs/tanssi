@@ -149,7 +149,7 @@ pallet-services-payment = { workspace = true }
 pallet-services-payment-runtime-api = { workspace = true }
 pallet-stream-payment = { workspace = true }
 pallet-stream-payment-runtime-api = { workspace = true }
-tanssi-runtime-common = { workspace = true }
+tanssi-runtime-common = { workspace = true, features = [ "relay" ] }
 
 # Moonkit
 pallet-maintenance-mode = { workspace = true, features = [ "xcm-support" ] }
