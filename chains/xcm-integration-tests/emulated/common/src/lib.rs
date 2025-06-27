@@ -86,7 +86,6 @@ impl<R: frame_system::Config, N: Network> Convert<BlockNumberFor<R>, Digest> for
 where u64: From<<<<R as frame_system::Config>::Block as cumulus_primitives_core::BlockT>::Header as HeaderT>::Number> {
     fn convert(_block_number: BlockNumberFor<R>) -> Digest {
         let relay_block = N::relay_block_number();
-        
         let slot = u64::from(relay_block.into());
 
         let new_slot_digest: Digest = Digest {
