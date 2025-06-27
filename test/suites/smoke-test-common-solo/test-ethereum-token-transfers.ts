@@ -12,7 +12,7 @@ const SS58_FORMAT = 42;
 
 let BLOCKS_AMOUNT_TO_CHECK = 100;
 // For debug purposes only, specify block here to check it
-const BLOCK_NUMBER_TO_DEBUG = 1746748;
+const BLOCK_NUMBER_TO_DEBUG = undefined;
 
 const customTypes = {
     VersionedXcmMessage: {
