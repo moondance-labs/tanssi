@@ -168,12 +168,6 @@ pub type UncheckedExtrinsic =
 /// Extrinsic type that has already been checked.
 pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, RuntimeCall, TxExtension>;
 
-/// The runtime migrations per release.
-pub mod migrations {
-    /// Unreleased migrations. Add new ones here:
-    pub type Unreleased = ();
-}
-
 /// Executive: handles dispatch to the various modules.
 pub type Executive = frame_executive::Executive<
     Runtime,
@@ -181,7 +175,6 @@ pub type Executive = frame_executive::Executive<
     frame_system::ChainContext<Runtime>,
     Runtime,
     AllPalletsWithSystem,
-    migrations::Unreleased,
 >;
 
 /// DANCE, the native token, uses 12 decimals of precision.
