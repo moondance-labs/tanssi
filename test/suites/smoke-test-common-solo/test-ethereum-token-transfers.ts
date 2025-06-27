@@ -142,7 +142,6 @@ describeSuite({
             id: "C03",
             title: "Sovereign account releases funds when token is received via ethereuminboundqueue.submit",
             test: async () => {
-                console.log("ahada");
                 let currentBlock = (await api.rpc.chain.getBlock()).block.header.number.toNumber();
 
                 if (BLOCK_NUMBER_TO_DEBUG !== undefined) {
@@ -172,20 +171,20 @@ describeSuite({
                                 eventLog.topics
                             );
 
+                            let versioned;
                             try {
-                                const versioned = api.registry.createType("VersionedXcmMessage", decodedEvent.payload);
+                                versioned = api.registry.createType("VersionedXcmMessage", decodedEvent.payload);
                             } catch (error) {
                                 // There was an error decoding as versionedXcmMessage, probably because the message
                                 // was a validator update. in any case we will check that the nonce has increased
                                 // This message is received in the primary channel
-                                const channelId = 0x0000000000000000000000000000000000000000000000000000000000000001;
-                                const previousNonce = await api.query.ethereumInboundQueue
-                                    .nonce(channelId)
-                                    .at(block.block.header.parentHash);
-                                const currentNonce = await api.query.ethereumInboundQueue
-                                    .nonce(channelId)
-                                    .at(blockHash);
-                                console.log("here");
+                                const channelId = "0x0000000000000000000000000000000000000000000000000000000000000001";
+                                const previousNonce = await (
+                                    await api.at(block.block.header.parentHash)
+                                ).query.ethereumInboundQueue.nonce(channelId);
+                                const currentNonce = await (await api.at(blockHash)).query.ethereumInboundQueue.nonce(
+                                    channelId
+                                );
                                 expect(currentNonce).to.be.equal(previousNonce + 1);
                                 skip();
                             }
