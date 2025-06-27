@@ -83,7 +83,7 @@ fn receive_msg_from_eth_validators_are_updated() {
             payload: payload.encode(),
         };
 
-        let message = Message {
+        let message = EventProof {
             event_log: Log {
                 // gateway address
                 address: <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(

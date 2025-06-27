@@ -17,7 +17,7 @@
 use {
     clap::{Parser, Subcommand},
     serde::{Deserialize, Deserializer},
-    snowbridge_outbound_queue_merkle_tree::merkle_proof,
+    snowbridge_merkle_tree::merkle_proof,
     sp_runtime::{traits::Keccak256, AccountId32},
     std::{
         collections::BTreeMap,

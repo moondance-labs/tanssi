@@ -195,6 +195,7 @@ impl pallet_session::Config for Test {
     type SessionHandler = TestSessionHandler;
     type Keys = MockSessionKeys;
     type WeightInfo = ();
+    type DisablingStrategy = (); // TODO: revisit this later
 }
 
 // Pallet to provide some mock data, used to test
@@ -294,9 +295,12 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
         keys,
         ..Default::default()
     };
-    pallet_balances::GenesisConfig::<Test> { balances }
-        .assimilate_storage(&mut t)
-        .unwrap();
+    pallet_balances::GenesisConfig::<Test> {
+        balances,
+        ..Default::default()
+    }
+    .assimilate_storage(&mut t)
+    .unwrap();
     pallet_external_validators::GenesisConfig::<Test> {
         skip_external_validators: false,
         whitelisted_validators,

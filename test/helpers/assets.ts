@@ -7,14 +7,8 @@ export const DUMMY_REVERT_BYTECODE = "0x60006000fd";
 export const RELAY_SOURCE_LOCATION = { Xcm: { parents: 1, interior: "Here" } };
 export const RELAY_SOURCE_LOCATION2 = { Xcm: { parents: 2, interior: "Here" } };
 export const RELAY_V3_SOURCE_LOCATION = { V3: { parents: 1, interior: "Here" } } as any;
-export const PARA_1000_SOURCE_LOCATION = {
-    Xcm: { parents: 1, interior: { X1: { Parachain: 1000 } } },
-};
 export const PARA_2000_SOURCE_LOCATION = {
     Xcm: { parents: 1, interior: { X1: { Parachain: 2000 } } },
-};
-export const PARA_1001_SOURCE_LOCATION = {
-    Xcm: { parents: 1, interior: { X1: { Parachain: 1001 } } },
 };
 
 export interface AssetMetadata {
