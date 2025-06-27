@@ -19,13 +19,26 @@ use {
     emulated_integration_tests_common::{
         impl_assert_events_helpers_for_parachain, xcm_emulator::decl_test_parachains,
     },
+    frame_support::sp_runtime::DispatchResult,
     parity_scale_codec::Encode,
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_runtime::generic::DigestItem,
     tanssi_emulated_integration_tests_common::TestDigestProvider,
+    xcm_emulator::AdditionalInherentCode,
+    xcm_emulator::OnInitialize,
+    xcm_emulator::Parachain,
 };
 
 mod genesis;
+
+pub struct OrchestratorAdditionalInherentCode;
+impl AdditionalInherentCode for OrchestratorAdditionalInherentCode {
+    fn on_new_block() -> DispatchResult {
+        pallet_author_noting::DidSetContainerAuthorData::<dancebox_runtime::Runtime>::put(true);
+        pallet_author_inherent::InherentIncluded::<dancebox_runtime::Runtime>::put(true);
+        Ok(())
+    }
+}
 
 decl_test_parachains! {
     // Parachains
@@ -41,6 +54,7 @@ decl_test_parachains! {
             ParachainInfo: dancebox_runtime::ParachainInfo,
             MessageOrigin: cumulus_primitives_core::AggregateMessageOrigin,
             DigestProvider: TestDigestProvider<dancebox_runtime::Runtime, Self::Network>,
+            AdditionalInherentCode: OrchestratorAdditionalInherentCode,
         },
         pallets = {
             System: dancebox_runtime::System,

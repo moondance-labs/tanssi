@@ -16,8 +16,16 @@ container-chain-template-frontier-runtime = { workspace = true, features = [ "st
 cumulus-primitives-core = { workspace = true }
 emulated-integration-tests-common = { workspace = true }
 frame-support = { workspace = true }
+frame-system = { workspace = true }
 hex-literal = { workspace = true }
+nimbus-primitives = { workspace = true, features = [ "std" ] }
+pallet-author-inherent = { workspace = true }
+pallet-author-noting = { workspace = true }
+pallet-cc-authorities-noting = { workspace = true }
 sp-core = { workspace = true }
+sp-runtime = { workspace = true }
+sp-trie = { workspace = true }
 tanssi-emulated-integration-tests-common = { workspace = true }
+tp-author-noting-inherent = { workspace = true }
 xcm = { workspace = true }
 xcm-emulator = { workspace = true }
