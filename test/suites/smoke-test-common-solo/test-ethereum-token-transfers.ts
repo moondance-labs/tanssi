@@ -173,7 +173,6 @@ describeSuite({
                                 eventLog.topics
                             );
 
-                            let versioned;
                             if (decodedEvent.payload.startsWith(MAGIC_BYTES)) {
                                 // There was an error decoding as versionedXcmMessage, probably because the message
                                 // was a validator update. in any case we will check that the nonce has increased
@@ -187,9 +186,9 @@ describeSuite({
                                 );
                                 expect(currentNonce.toBigInt()).to.be.equal(previousNonce.toBigInt() + 1n);
                                 skip();
-                            } else {
-                                versioned = api.registry.createType("VersionedXcmMessage", decodedEvent.payload);
                             }
+
+                            const versioned = api.registry.createType("VersionedXcmMessage", decodedEvent.payload);
 
                             const { destination, amount } = versioned.toJSON().v1.command.sendNativeToken;
 
