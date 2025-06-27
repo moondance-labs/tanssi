@@ -22,63 +22,71 @@ type BlockFilteredRecord = {
 // Delay that has to elapse to be able to execute a pending request
 const MINIMUM_EXECUTE_REQUEST_DELAY = 2;
 describeSuite({
-    id: "SMOK222",
+    id: "S09",
     title: `Pending Operations in the last ${hours} should be correctly executed`,
     foundationMethods: "read_only",
     testCases: ({ it, context, log }) => {
         let api: ApiPromise;
         let blockData: BlockFilteredRecord[];
+        let runtimeName: string;
 
         beforeAll(async () => {
             api = context.polkadotJs();
             const blockNumArray = await getBlockArray(api, timePeriod);
-            log(`Collecting ${hours} hours worth of blocks`);
+            runtimeName = api.runtimeVersion.specName.toString();
 
-            const getBlockData = async (blockNum: number) => {
-                const blockHash = await api.rpc.chain.getBlockHash(blockNum);
-                const blockHashBefore = await api.rpc.chain.getBlockHash(blockNum - 1);
+            if (runtimeName !== "flashbox") {
+                log(`Collecting ${hours} hours worth of blocks`);
 
-                const signedBlock = await api.rpc.chain.getBlock(blockHash);
-                const apiAt = await api.at(blockHash);
-                const apiAtBefore = await api.at(blockHashBefore);
+                const getBlockData = async (blockNum: number) => {
+                    const blockHash = await api.rpc.chain.getBlockHash(blockNum);
+                    const blockHashBefore = await api.rpc.chain.getBlockHash(blockNum - 1);
 
-                // For all extrinsics that are pending operation executions, we fetch the delegators
-                // pending operations in the previous block
-                const operatorPendingOps = {};
-                for (var extrinsic of signedBlock.block.extrinsics) {
-                    const isValidExtrinsic =
-                        extrinsic.method.section.toString() === "pooledStaking" &&
-                        extrinsic.method.method.toString() === "executePendingOperations";
-                    if (isValidExtrinsic) {
-                        const injectedOps = extrinsic.args[0].toHuman();
-                        for (let i = 0; i < injectedOps.length; i++) {
-                            const operation = injectedOps[i];
-                            const pendingOps = (
-                                await apiAtBefore.query.pooledStaking.pendingOperations.entries(operation.delegator)
-                            ).map(([key, _]) => key.toHuman());
+                    const signedBlock = await api.rpc.chain.getBlock(blockHash);
+                    const apiAt = await api.at(blockHash);
+                    const apiAtBefore = await api.at(blockHashBefore);
 
-                            operatorPendingOps[operation.delegator] = pendingOps;
+                    // For all extrinsics that are pending operation executions, we fetch the delegators
+                    // pending operations in the previous block
+                    const operatorPendingOps = {};
+                    for (var extrinsic of signedBlock.block.extrinsics) {
+                        const isValidExtrinsic =
+                            extrinsic.method.section.toString() === "pooledStaking" &&
+                            extrinsic.method.method.toString() === "executePendingOperations";
+                        if (isValidExtrinsic) {
+                            const injectedOps = extrinsic.args[0].toHuman();
+                            for (let i = 0; i < injectedOps.length; i++) {
+                                const operation = injectedOps[i];
+                                const pendingOps = (
+                                    await apiAtBefore.query.pooledStaking.pendingOperations.entries(operation.delegator)
+                                ).map(([key, _]) => key.toHuman());
+
+                                operatorPendingOps[operation.delegator] = pendingOps;
+                            }
                         }
                     }
-                }
 
-                // We record the session too as we need to compare it against the session at which the request was injected
-                return {
-                    blockNum: blockNum,
-                    extrinsics: signedBlock.block.extrinsics,
-                    events: await apiAt.query.system.events(),
-                    session: await apiAt.query.session.currentIndex(),
-                    pendingOperations: operatorPendingOps,
+                    // We record the session too as we need to compare it against the session at which the request was injected
+                    return {
+                        blockNum: blockNum,
+                        extrinsics: signedBlock.block.extrinsics,
+                        events: await apiAt.query.system.events(),
+                        session: await apiAt.query.session.currentIndex(),
+                        pendingOperations: operatorPendingOps,
+                    };
                 };
-            };
-            const limiter = new Bottleneck({ maxConcurrent: 5, minTime: 100 });
-            blockData = await Promise.all(blockNumArray.map((num) => limiter.schedule(() => getBlockData(num))));
+                const limiter = new Bottleneck({ maxConcurrent: 5, minTime: 100 });
+                blockData = await Promise.all(blockNumArray.map((num) => limiter.schedule(() => getBlockData(num))));
+            }
         }, timeout);
 
         it({
             id: "C01",
             title: "If someone executes a pending request, it should have been generated at least 2 sessions ago",
-            test: async () => {
+            test: async ({ skip }) => {
+                if (runtimeName === "flashbox") {
+                    skip();
+                }
                 const filteredEvents = blockData
                     .map(({ blockNum, events, session, pendingOperations }) => {
                         const matchedEvents = events
