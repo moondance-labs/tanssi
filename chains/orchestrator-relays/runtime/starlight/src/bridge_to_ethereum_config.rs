@@ -45,9 +45,6 @@ use {
     parity_scale_codec::Encode,
     snowbridge_beacon_primitives::ForkVersions,
     snowbridge_core::{gwei, meth, Channel, PricingParameters, Rewards},
-    snowbridge_inbound_queue_primitives::v1::{
-        Command, Destination, Envelope, MessageProcessor, MessageV1, VersionedXcmMessage,
-    },
     snowbridge_inbound_queue_primitives::EventProof,
     snowbridge_pallet_inbound_queue::RewardProcessor,
     snowbridge_pallet_outbound_queue::OnNewCommitment,

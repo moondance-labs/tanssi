@@ -53,7 +53,7 @@ pallet-xcm = { workspace = true }
 snowbridge-core = { workspace = true }
 snowbridge-pallet-inbound-queue = { workspace = true }
 snowbridge-pallet-system = { workspace = true }
-snowbridge-router-primitives = { workspace = true }
+snowbridge-inbound-queue-primitives = { workspace = true }
 sp-core = { workspace = true }
 sp-runtime = { workspace = true }
 sp-staking = { workspace = true }
@@ -97,7 +97,6 @@ std = [
 	"snowbridge-core/std",
 	"snowbridge-pallet-inbound-queue/std",
 	"snowbridge-pallet-system/std",
-	"snowbridge-router-primitives/std",
 	"sp-core/std",
 	"sp-runtime/std",
 	"sp-staking/std",
@@ -130,7 +129,6 @@ runtime-benchmarks = [
 	"snowbridge-core/runtime-benchmarks",
 	"snowbridge-pallet-inbound-queue/runtime-benchmarks",
 	"snowbridge-pallet-system/runtime-benchmarks",
-	"snowbridge-router-primitives/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"sp-staking/runtime-benchmarks",
 	"xcm/runtime-benchmarks",
