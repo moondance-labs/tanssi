@@ -60,6 +60,8 @@ pub use {
     pools::{ActivePoolKind, CandidateSummary, DelegatorCandidateSummary, PoolKind},
 };
 
+#[cfg(feature = "runtime-benchmarks")]
+use frame_support::traits::fungible::Mutate;
 #[pallet]
 pub mod pallet {
     use {
@@ -97,6 +99,8 @@ pub mod pallet {
     pub type CreditOf<T> =
         fungible::Credit<<T as frame_system::Config>::AccountId, <T as Config>::Currency>;
     pub type Delegator<T> = <T as frame_system::Config>::AccountId;
+
+    pub type SessionIndex = u32;
 
     /// Key used by the `Pools` StorageDoubleMap, avoiding lots of maps.
     /// StorageDoubleMap first key is the account id of the candidate.
@@ -315,7 +319,6 @@ pub mod pallet {
         type EligibleCandidatesBufferSize: Get<u32>;
         /// Additional filter for candidates to be eligible.
         type EligibleCandidatesFilter: IsCandidateEligible<Self::AccountId>;
-
         type WeightInfo: WeightInfo;
     }
 
@@ -752,6 +755,32 @@ pub mod pallet {
             rewards: CreditOf<T>,
         ) -> DispatchResultWithPostInfo {
             pools::distribute_rewards::<T>(&candidate, rewards)
+        }
+    }
+    impl<T: Config> tp_traits::NotifyCollatorOnlineStatusChange<Candidate<T>> for Pallet<T> {
+        fn is_collator_in_sorted_eligible_candidates(collator: &Candidate<T>) -> bool {
+            <SortedEligibleCandidates<T>>::get()
+                .into_iter()
+                .any(|c| c.candidate == collator.clone())
+        }
+        fn update_staking_on_online_status_change(
+            collator: &Candidate<T>,
+        ) -> DispatchResultWithPostInfo {
+            Calls::<T>::update_candidate_position(&[collator.clone()])
+        }
+
+        #[cfg(feature = "runtime-benchmarks")]
+        fn make_collator_eligible_candidate(collator: &Candidate<T>) {
+            let minimum_stake = T::MinimumSelfDelegation::get();
+            T::Currency::set_balance(collator, minimum_stake + minimum_stake);
+            T::EligibleCandidatesFilter::make_candidate_eligible(collator, true);
+            Calls::<T>::request_delegate(
+                collator.clone(),
+                collator.clone(),
+                ActivePoolKind::AutoCompounding,
+                minimum_stake,
+            );
+            T::JoiningRequestTimer::skip_to_elapsed();
         }
     }
 }

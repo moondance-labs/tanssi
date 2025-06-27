@@ -3973,10 +3973,20 @@ declare module "@polkadot/api-base/types/submittable" {
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
         inactivityTracking: {
+            enableOfflineMarking: AugmentedSubmittable<
+                (value: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [bool]
+            >;
+            notifyInactiveCollator: AugmentedSubmittable<
+                (collator: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [AccountId32]
+            >;
             setInactivityTrackingStatus: AugmentedSubmittable<
                 (enableInactivityTracking: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>,
                 [bool]
             >;
+            setOffline: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
+            setOnline: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
             /**
              * Generic tx
              **/

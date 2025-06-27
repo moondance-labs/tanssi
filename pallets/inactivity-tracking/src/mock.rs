@@ -6,6 +6,7 @@
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
+use frame_support::dispatch::DispatchResultWithPostInfo;
 // Tanssi is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -25,7 +26,7 @@ use {
         BuildStorage, RuntimeAppPublic,
     },
     sp_staking::SessionIndex,
-    sp_std::collections::btree_set::BTreeSet,
+    sp_std::{collections::btree_set::BTreeSet, marker::PhantomData},
     tp_traits::{ForSession, ParaId},
 };
 
@@ -188,6 +189,10 @@ impl tp_traits::GetContainerChainsWithCollators<AccountId> for MockContainerChai
     }
 }
 
+impl tp_traits::PendingCollatorAssignmentHelper<AccountId> for MockContainerChainsInfoFetcher {
+    fn remove_offline_collator_from_pending_assignment(_collator: &AccountId) {}
+}
+
 pub struct MockParathreadHelper;
 impl tp_traits::ParathreadHelper for MockParathreadHelper {
     fn get_parathreads_for_session() -> BTreeSet<ParaId> {
@@ -196,10 +201,31 @@ impl tp_traits::ParathreadHelper for MockParathreadHelper {
         paras_for_session
     }
 }
+pub struct MockInvulnerableCheckHandler<AccountId>(PhantomData<AccountId>);
+
+impl tp_traits::InvulnerablesHelper<AccountId> for MockInvulnerableCheckHandler<AccountId> {
+    fn is_invulnerable(account: &AccountId) -> bool {
+        *account == COLLATOR_2
+    }
+}
+
+pub struct MockCollatorStakeHelper<AccountId>(PhantomData<AccountId>);
+impl tp_traits::NotifyCollatorOnlineStatusChange<AccountId> for MockCollatorStakeHelper<AccountId> {
+    fn is_collator_in_sorted_eligible_candidates(collator: &AccountId) -> bool {
+        if (collator == &COLLATOR_1) || (collator == &COLLATOR_2) {
+            return true;
+        }
+        false
+    }
+    fn update_staking_on_online_status_change(_collator: &AccountId) -> DispatchResultWithPostInfo {
+        Ok(().into())
+    }
+    #[cfg(feature = "runtime-benchmarks")]
+    fn make_collator_eligible_candidate(_collator: &AccountId) {}
+}
 
 impl pallet_inactivity_tracking::Config for Test {
     type RuntimeEvent = RuntimeEvent;
-    type CollatorId = AccountId;
     type MaxInactiveSessions = ConstU32<2>;
     type MaxCollatorsPerSession = ConstU32<5>;
     type MaxContainerChains = ConstU32<3>;
@@ -207,6 +233,8 @@ impl pallet_inactivity_tracking::Config for Test {
     type CurrentCollatorsFetcher = MockContainerChainsInfoFetcher;
     type GetSelfChainBlockAuthor = ();
     type ParaFilter = MockParathreadHelper;
+    type InvulnerablesFilter = MockInvulnerableCheckHandler<AccountId>;
+    type CollatorStakeHelper = MockCollatorStakeHelper<AccountId>;
     type WeightInfo = ();
 }
 
