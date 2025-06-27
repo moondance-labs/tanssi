@@ -12,7 +12,7 @@ const SS58_FORMAT = 42;
 
 let BLOCKS_AMOUNT_TO_CHECK = 100;
 // For debug purposes only, specify block here to check it
-const BLOCK_NUMBER_TO_DEBUG = undefined;
+const BLOCK_NUMBER_TO_DEBUG = 1746748;
 
 const customTypes = {
     VersionedXcmMessage: {
@@ -54,6 +54,7 @@ const customTypes = {
     },
     TokenId: "H256",
 };
+const MAGIC_BYTES = "0x70150038";
 
 describeSuite({
     id: "SMOK15",
@@ -172,9 +173,7 @@ describeSuite({
                             );
 
                             let versioned;
-                            try {
-                                versioned = api.registry.createType("VersionedXcmMessage", decodedEvent.payload);
-                            } catch (error) {
+                            if (decodedEvent.payload.startsWith(MAGIC_BYTES)) {
                                 // There was an error decoding as versionedXcmMessage, probably because the message
                                 // was a validator update. in any case we will check that the nonce has increased
                                 // This message is received in the primary channel
@@ -187,7 +186,10 @@ describeSuite({
                                 );
                                 expect(currentNonce.toBigInt()).to.be.equal(previousNonce.toBigInt() + 1n);
                                 skip();
+                            } else {
+                                versioned = api.registry.createType("VersionedXcmMessage", decodedEvent.payload);
                             }
+
                             const { destination, amount } = versioned.toJSON().v1.command.sendNativeToken;
 
                             const relatedEvents = events.filter(
