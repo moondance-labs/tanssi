@@ -113,7 +113,7 @@ describeSuite({
                 const setBobOfflineTx = polkadotJs.tx.inactivityTracking.setOffline();
                 await context.createBlock([await setBobOfflineTx.signAsync(bob)]);
                 const pendingAssignedCollators =
-                    await polkadotJs.query.tanssiCollatorAssignment.pendingCollatorContainerChain();
+                    await polkadotJs.query.collatorAssignment.pendingCollatorContainerChain();
                 expect(pendingAssignedCollators.isSome).to.be.false;
                 const bobOfflineStatusAfterMarking = await polkadotJs.query.inactivityTracking.offlineCollators(
                     bob.address
