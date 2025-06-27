@@ -54,6 +54,8 @@ const customTypes = {
     },
     TokenId: "H256",
 };
+//https://github.com/moondance-labs/tanssi-bridge-relayer/blob/247bc96365c5f8a9cdbcf3fae09a8ede79ac4c91/overridden_contracts/src/libraries/OSubstrateTypes.sol#L41
+const MAGIC_BYTES = "0x70150038";
 
 describeSuite({
     id: "SMOK15",
@@ -141,7 +143,7 @@ describeSuite({
         it({
             id: "C03",
             title: "Sovereign account releases funds when token is received via ethereuminboundqueue.submit",
-            test: async () => {
+            test: async ({ skip }) => {
                 let currentBlock = (await api.rpc.chain.getBlock()).block.header.number.toNumber();
 
                 if (BLOCK_NUMBER_TO_DEBUG !== undefined) {
@@ -171,7 +173,23 @@ describeSuite({
                                 eventLog.topics
                             );
 
+                            if (decodedEvent.payload.startsWith(MAGIC_BYTES)) {
+                                // There was an error decoding as versionedXcmMessage, probably because the message
+                                // was a validator update. in any case we will check that the nonce has increased
+                                // This message is received in the primary channel
+                                const channelId = "0x0000000000000000000000000000000000000000000000000000000000000001";
+                                const previousNonce = await (
+                                    await api.at(block.block.header.parentHash)
+                                ).query.ethereumInboundQueue.nonce(channelId);
+                                const currentNonce = await (await api.at(blockHash)).query.ethereumInboundQueue.nonce(
+                                    channelId
+                                );
+                                expect(currentNonce.toBigInt()).to.be.equal(previousNonce.toBigInt() + 1n);
+                                skip();
+                            }
+
                             const versioned = api.registry.createType("VersionedXcmMessage", decodedEvent.payload);
+
                             const { destination, amount } = versioned.toJSON().v1.command.sendNativeToken;
 
                             const relatedEvents = events.filter(
