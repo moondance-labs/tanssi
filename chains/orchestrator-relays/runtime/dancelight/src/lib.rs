@@ -84,16 +84,14 @@ use {
     snowbridge_pallet_outbound_queue::MerkleProof,
     sp_core::{storage::well_known_keys as StorageWellKnownKeys, Get},
     sp_genesis_builder::PresetId,
-    sp_runtime::{
-        traits::{BlockNumberProvider, ConvertInto},
-        AccountId32,
-    },
+    sp_runtime::{traits::ConvertInto, AccountId32},
     sp_std::{
         cmp::Ordering,
         collections::{btree_map::BTreeMap, btree_set::BTreeSet, vec_deque::VecDeque},
         marker::PhantomData,
         prelude::*,
     },
+    tanssi_runtime_common::{relay::BabeSlotBeacon, SessionTimer},
     tp_bridge::ConvertLocation,
     tp_traits::{
         prod_or_fast_parameter_types, EraIndex, GetHostConfiguration, GetSessionContainerChains,
@@ -1396,10 +1394,7 @@ impl pallet_beefy_mmr::Config for Runtime {
 
 impl paras_sudo_wrapper::Config for Runtime {}
 
-use {
-    pallet_pooled_staking::traits::{IsCandidateEligible, Timer},
-    pallet_staking::SessionInterface,
-};
+use {pallet_pooled_staking::traits::IsCandidateEligible, pallet_staking::SessionInterface};
 
 pub struct DancelightSessionInterface;
 impl SessionInterface<AccountId> for DancelightSessionInterface {
@@ -1793,43 +1788,6 @@ parameter_types! {
     pub const StakingSessionDelay: u32 = 2;
 }
 
-pub struct SessionTimer<Delay>(PhantomData<Delay>);
-
-impl<Delay> Timer for SessionTimer<Delay>
-where
-    Delay: Get<u32>,
-{
-    type Instant = u32;
-
-    fn now() -> Self::Instant {
-        Session::current_index()
-    }
-
-    fn is_elapsed(instant: &Self::Instant) -> bool {
-        let delay = Delay::get();
-        let Some(end) = instant.checked_add(delay) else {
-            return false;
-        };
-        end <= Self::now()
-    }
-
-    #[cfg(feature = "runtime-benchmarks")]
-    fn elapsed_instant() -> Self::Instant {
-        let delay = Delay::get();
-        Self::now()
-            .checked_add(delay)
-            .expect("overflow when computing valid elapsed instant")
-    }
-
-    #[cfg(feature = "runtime-benchmarks")]
-    fn skip_to_elapsed() {
-        let session_to_reach = Self::elapsed_instant();
-        while Self::now() < session_to_reach {
-            Session::rotate_session();
-        }
-    }
-}
-
 pub struct CandidateHasRegisteredKeys;
 impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
     fn is_candidate_eligible(a: &AccountId) -> bool {
@@ -1876,8 +1834,8 @@ impl pallet_pooled_staking::Config for Runtime {
     type MinimumSelfDelegation = MinimumSelfDelegation;
     type RuntimeHoldReason = RuntimeHoldReason;
     type RewardsCollatorCommission = RewardsCollatorCommission;
-    type JoiningRequestTimer = SessionTimer<StakingSessionDelay>;
-    type LeavingRequestTimer = SessionTimer<StakingSessionDelay>;
+    type JoiningRequestTimer = SessionTimer<Runtime, StakingSessionDelay>;
+    type LeavingRequestTimer = SessionTimer<Runtime, StakingSessionDelay>;
     type EligibleCandidatesBufferSize = ConstU32<100>;
     type EligibleCandidatesFilter = CandidateHasRegisteredKeys;
     type WeightInfo = weights::pallet_pooled_staking::SubstrateWeight<Runtime>;
@@ -2289,23 +2247,10 @@ impl pallet_registrar::RegistrarHooks for DancelightRegistrarHooks {
     }
 }
 
-pub struct BabeSlotBeacon;
-
-impl BlockNumberProvider for BabeSlotBeacon {
-    type BlockNumber = u32;
-
-    fn current_block_number() -> Self::BlockNumber {
-        // TODO: nimbus_primitives::SlotBeacon requires u32, but this is a u64 in pallet_babe, and
-        // also it gets converted to u64 in pallet_author_noting, so let's do something to remove
-        // this intermediate u32 conversion, such as using a different trait
-        u64::from(pallet_babe::CurrentSlot::<Runtime>::get()) as u32
-    }
-}
-
 impl pallet_author_noting::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type ContainerChains = TanssiCollatorAssignment;
-    type SlotBeacon = BabeSlotBeacon;
+    type SlotBeacon = BabeSlotBeacon<Runtime>;
     type ContainerChainAuthor = TanssiCollatorAssignment;
     type AuthorNotingHook = (InflationRewards, ServicesPayment, InactivityTracking);
     type RelayOrPara = pallet_author_noting::RelayMode;

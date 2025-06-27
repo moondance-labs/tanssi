@@ -800,7 +800,6 @@ where
     }
 }
 
-
 pub struct MigrateMMRLeafPallet<T>(pub PhantomData<T>);
 
 impl<T: frame_system::Config> Migration for MigrateMMRLeafPallet<T> {
@@ -1258,7 +1257,7 @@ where
 pub use relay::*;
 #[cfg(feature = "relay")]
 mod relay {
-    use super::*;   
+    use super::*;
 
     pub struct ExternalValidatorsInitialMigration<Runtime>(pub PhantomData<Runtime>);
 

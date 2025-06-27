@@ -28,13 +28,6 @@ pub mod xcm_config;
 
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
-use {
-    frame_support::{
-        storage::{with_storage_layer, with_transaction},
-        traits::{ExistenceRequirement, WithdrawReasons},
-    },
-    polkadot_runtime_common::SlowAdjustingFeeUpdate,
-};
 
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
@@ -83,7 +76,7 @@ use {
     nimbus_primitives::{NimbusId, SlotBeacon},
     pallet_collator_assignment::{GetRandomnessForNextBlock, RotateCollatorsEveryNSessions},
     pallet_invulnerables::InvulnerableRewardDistribution,
-    pallet_pooled_staking::traits::{IsCandidateEligible, Timer},
+    pallet_pooled_staking::traits::IsCandidateEligible,
     pallet_registrar::RegistrarHooks,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     pallet_services_payment::{
@@ -115,6 +108,7 @@ use {
         prelude::*,
     },
     sp_version::RuntimeVersion,
+    tanssi_runtime_common::SessionTimer,
     tp_stream_payment_common::StreamId,
     tp_traits::{
         apply, derive_storage_traits, GetContainerChainAuthor, GetHostConfiguration,
@@ -131,6 +125,13 @@ use {
 pub use {
     dp_core::{AccountId, Address, Balance, BlockNumber, Hash, Header, Index, Signature},
     sp_runtime::{MultiAddress, Perbill, Permill},
+};
+use {
+    frame_support::{
+        storage::{with_storage_layer, with_transaction},
+        traits::{ExistenceRequirement, WithdrawReasons},
+    },
+    polkadot_runtime_common::SlowAdjustingFeeUpdate,
 };
 
 /// Block type as expected by this runtime.
@@ -1463,43 +1464,6 @@ parameter_types! {
     pub const StakingSessionDelay: u32 = 2;
 }
 
-pub struct SessionTimer<Delay>(PhantomData<Delay>);
-
-impl<Delay> Timer for SessionTimer<Delay>
-where
-    Delay: Get<u32>,
-{
-    type Instant = u32;
-
-    fn now() -> Self::Instant {
-        Session::current_index()
-    }
-
-    fn is_elapsed(instant: &Self::Instant) -> bool {
-        let delay = Delay::get();
-        let Some(end) = instant.checked_add(delay) else {
-            return false;
-        };
-        end <= Self::now()
-    }
-
-    #[cfg(feature = "runtime-benchmarks")]
-    fn elapsed_instant() -> Self::Instant {
-        let delay = Delay::get();
-        Self::now()
-            .checked_add(delay)
-            .expect("overflow when computing valid elapsed instant")
-    }
-
-    #[cfg(feature = "runtime-benchmarks")]
-    fn skip_to_elapsed() {
-        let session_to_reach = Self::elapsed_instant();
-        while Self::now() < session_to_reach {
-            Session::rotate_session();
-        }
-    }
-}
-
 pub struct CandidateHasRegisteredKeys;
 impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
     fn is_candidate_eligible(a: &AccountId) -> bool {
@@ -1537,8 +1501,8 @@ impl pallet_pooled_staking::Config for Runtime {
     type MinimumSelfDelegation = MinimumSelfDelegation;
     type RuntimeHoldReason = RuntimeHoldReason;
     type RewardsCollatorCommission = RewardsCollatorCommission;
-    type JoiningRequestTimer = SessionTimer<StakingSessionDelay>;
-    type LeavingRequestTimer = SessionTimer<StakingSessionDelay>;
+    type JoiningRequestTimer = SessionTimer<Runtime, StakingSessionDelay>;
+    type LeavingRequestTimer = SessionTimer<Runtime, StakingSessionDelay>;
     type EligibleCandidatesBufferSize = MaxCandidatesBufferSize;
     type EligibleCandidatesFilter = CandidateHasRegisteredKeys;
     type WeightInfo = weights::pallet_pooled_staking::SubstrateWeight<Runtime>;

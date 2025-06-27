@@ -21,6 +21,7 @@ scale-info = { workspace = true, features = [ "derive" ] }
 # Own
 pallet-configuration = { workspace = true }
 pallet-data-preservers = { workspace = true }
+pallet-foreign-asset-creator = { workspace = true }
 pallet-invulnerables = { workspace = true }
 pallet-pooled-staking = { workspace = true, features = [ "migrations" ] }
 pallet-registrar = { workspace = true }
@@ -28,7 +29,6 @@ pallet-services-payment = { workspace = true }
 pallet-session = { workspace = true }
 pallet-stream-payment = { workspace = true, features = [ "migrations" ] }
 pallet-treasury = { workspace = true }
-pallet-foreign-asset-creator = { workspace = true }
 
 # Moonkit
 pallet-migrations = { workspace = true }
@@ -58,6 +58,7 @@ xcm = { workspace = true }
 cumulus-primitives-core = { workspace = true }
 
 # Relay specific dependencies
+pallet-babe = { workspace = true, optional = true }
 pallet-ethereum-token-transfers = { workspace = true, optional = true }
 pallet-external-validator-slashes = { workspace = true, optional = true }
 pallet-external-validators = { workspace = true, optional = true }
@@ -106,6 +107,7 @@ std = [
 	"xcm/std",
 ]
 relay = [
+	"pallet-babe",
 	"pallet-ethereum-token-transfers",
 	"pallet-external-validator-slashes",
 	"pallet-external-validators",

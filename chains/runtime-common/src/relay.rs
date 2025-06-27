@@ -201,3 +201,15 @@ where
         Ok(())
     }
 }
+
+pub struct BabeSlotBeacon<T>(core::marker::PhantomData<T>);
+impl<T: pallet_babe::Config> sp_runtime::traits::BlockNumberProvider for BabeSlotBeacon<T> {
+    type BlockNumber = u32;
+
+    fn current_block_number() -> Self::BlockNumber {
+        // TODO: nimbus_primitives::SlotBeacon requires u32, but this is a u64 in pallet_babe, and
+        // also it gets converted to u64 in pallet_author_noting, so let's do something to remove
+        // this intermediate u32 conversion, such as using a different trait
+        u64::from(pallet_babe::CurrentSlot::<T>::get()) as u32
+    }
+}

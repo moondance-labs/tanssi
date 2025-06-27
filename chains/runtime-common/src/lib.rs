@@ -15,8 +15,6 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use frame_support::traits::{fungible::Credit, tokens::imbalance::ResolveTo, OnUnbalanced};
-use pallet_balances::NegativeImbalance;
 #[cfg(feature = "runtime-benchmarks")]
 pub mod benchmarking;
 
@@ -24,6 +22,11 @@ pub mod migrations;
 
 #[cfg(feature = "relay")]
 pub mod relay;
+
+use core::marker::PhantomData;
+use frame_support::traits::{fungible::Credit, tokens::imbalance::ResolveTo, OnUnbalanced};
+use pallet_balances::NegativeImbalance;
+use sp_core::Get;
 
 pub struct DealWithFees<R>(sp_std::marker::PhantomData<R>);
 impl<R> OnUnbalanced<Credit<R::AccountId, pallet_balances::Pallet<R>>> for DealWithFees<R>
@@ -48,5 +51,43 @@ where
     fn on_nonzero_unbalanced(amount: Credit<R::AccountId, pallet_balances::Pallet<R>>) {
         // 100% goes to the treasury
         ResolveTo::<pallet_treasury::TreasuryAccountId<R>, pallet_balances::Pallet<R>>::on_unbalanced(amount);
+    }
+}
+
+pub struct SessionTimer<Runtime, Delay>(PhantomData<(Runtime, Delay)>);
+
+impl<Runtime, Delay> pallet_pooled_staking::traits::Timer for SessionTimer<Runtime, Delay>
+where
+    Delay: Get<u32>,
+    Runtime: pallet_session::Config,
+{
+    type Instant = u32;
+
+    fn now() -> Self::Instant {
+        pallet_session::Pallet::<Runtime>::current_index()
+    }
+
+    fn is_elapsed(instant: &Self::Instant) -> bool {
+        let delay = Delay::get();
+        let Some(end) = instant.checked_add(delay) else {
+            return false;
+        };
+        end <= Self::now()
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn elapsed_instant() -> Self::Instant {
+        let delay = Delay::get();
+        Self::now()
+            .checked_add(delay)
+            .expect("overflow when computing valid elapsed instant")
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn skip_to_elapsed() {
+        let session_to_reach = Self::elapsed_instant();
+        while Self::now() < session_to_reach {
+            pallet_session::Pallet::<Runtime>::rotate_session();
+        }
     }
 }
