@@ -26,6 +26,7 @@ mod tests;
 
 pub mod barriers;
 pub mod container_token_to_ethereum_message_exporter;
+pub mod generic_token_message_processor;
 pub mod snowbridge_outbound_token_transfer;
 pub mod symbiotic_message_processor;
 
@@ -225,6 +226,7 @@ impl<T: snowbridge_pallet_outbound_queue::Config> ValidateMessage for MessageVal
     type Ticket = Ticket<T>;
 
     fn validate(message: &Message) -> Result<(Self::Ticket, Fee<u64>), SendError> {
+        log::trace!("MessageValidator: {:?}", message);
         // The inner payload should not be too large
         let payload = message.command.abi_encode();
         ensure!(
