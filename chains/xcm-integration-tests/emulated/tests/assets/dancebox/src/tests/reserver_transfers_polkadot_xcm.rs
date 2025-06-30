@@ -611,6 +611,7 @@ fn transfer_assets_container_token_tanssi() {
 fn transfer_asset_relay_token_across_tanssi_container() {
     Westend::execute_with(|| {
         Dmp::make_parachain_reachable(Dancebox::para_id());
+        Dmp::make_parachain_reachable(SimpleTemplate::para_id());
     });
 
     // XcmPallet reserve transfer arguments

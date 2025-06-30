@@ -95,7 +95,7 @@ fn transact_sudo_from_relay_hits_barrier_dancebox_without_buy_exec() {
 
     // Receive XCM message in Assets Parachain
     Dancebox::execute_with(|| {
-        Dancebox::assert_dmp_queue_error();
+        Dancebox::assert_dmp_queue_incomplete(None);
     });
 }
 
