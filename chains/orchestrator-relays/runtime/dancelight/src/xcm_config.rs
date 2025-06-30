@@ -58,13 +58,13 @@ use {
     xcm_builder::{
         AccountId32Aliases, AllowExplicitUnpaidExecutionFrom, AllowKnownQueryResponses,
         AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom, ChildParachainAsNative,
-        ChildParachainConvertsVia, ConvertedConcreteId, DenyReserveTransferToRelayChain,
-        DenyThenTry, DescribeAllTerminal, DescribeFamily, FixedWeightBounds,
-        FrameTransactionalProcessor, FungibleAdapter, FungiblesAdapter, HashedDescription,
-        IsChildSystemParachain, IsConcrete, MintLocation, NoChecking, OriginToPluralityVoice,
-        SendXcmFeeToAccount, SignedAccountId32AsNative, SignedToAccountId32,
-        SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId, UsingComponents,
-        WeightInfoBounds, WithComputedOrigin, WithUniqueTopic, XcmFeeManagerFromComponents,
+        ChildParachainConvertsVia, ConvertedConcreteId, DescribeAllTerminal, DescribeFamily,
+        FixedWeightBounds, FrameTransactionalProcessor, FungibleAdapter, FungiblesAdapter,
+        HashedDescription, IsChildSystemParachain, IsConcrete, MintLocation, NoChecking,
+        OriginToPluralityVoice, SendXcmFeeToAccount, SignedAccountId32AsNative,
+        SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId,
+        UsingComponents, WeightInfoBounds, WithComputedOrigin, WithUniqueTopic,
+        XcmFeeManagerFromComponents,
     },
     xcm_executor::XcmExecutor,
 };
@@ -201,30 +201,25 @@ impl Contains<Location> for LocalPlurality {
 }
 
 /// The barriers one of which must be passed for an XCM message to be executed.
-pub type Barrier = TrailingSetTopicAsId<
-    DenyThenTry<
-        DenyReserveTransferToRelayChain,
+pub type Barrier = TrailingSetTopicAsId<(
+    // Weight that is paid for may be consumed.
+    TakeWeightCredit,
+    // Expected responses are OK.
+    AllowKnownQueryResponses<XcmPallet>,
+    barriers::AllowExportMessageFromContainerChainBarrier,
+    WithComputedOrigin<
         (
-            // Weight that is paid for may be consumed.
-            TakeWeightCredit,
-            // Expected responses are OK.
-            AllowKnownQueryResponses<XcmPallet>,
-            barriers::AllowExportMessageFromContainerChainBarrier,
-            WithComputedOrigin<
-                (
-                    // If the message is one that immediately attempts to pay for execution, then allow it.
-                    AllowTopLevelPaidExecutionFrom<Everything>,
-                    // Messages coming from system parachains need not pay for execution.
-                    AllowExplicitUnpaidExecutionFrom<IsChildSystemParachain<ParaId>>,
-                    // Subscriptions for version tracking are OK.
-                    AllowSubscriptionsFrom<OnlyParachains>,
-                ),
-                UniversalLocation,
-                ConstU32<8>,
-            >,
+            // If the message is one that immediately attempts to pay for execution, then allow it.
+            AllowTopLevelPaidExecutionFrom<Everything>,
+            // Messages coming from system parachains need not pay for execution.
+            AllowExplicitUnpaidExecutionFrom<IsChildSystemParachain<ParaId>>,
+            // Subscriptions for version tracking are OK.
+            AllowSubscriptionsFrom<OnlyParachains>,
         ),
+        UniversalLocation,
+        ConstU32<8>,
     >,
->;
+)>;
 
 /// Locations that will not be charged fees in the executor, neither for execution nor delivery.
 /// We only waive fees for system functions, which these locations represent.
