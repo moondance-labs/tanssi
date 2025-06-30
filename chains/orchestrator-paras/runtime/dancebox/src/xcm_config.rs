@@ -35,7 +35,7 @@ use {
     cumulus_primitives_core::{AggregateMessageOrigin, ParaId},
     frame_support::{
         parameter_types,
-        traits::{Everything, Nothing, PalletInfoAccess, TransformOrigin},
+        traits::{Equals, Everything, Nothing, PalletInfoAccess, TransformOrigin},
         weights::Weight,
     },
     frame_system::{pallet_prelude::BlockNumberFor, EnsureRoot},
@@ -62,7 +62,7 @@ use {
         FungiblesAdapter, IsConcrete, NoChecking, ParentIsPreset, RelayChainAsNative,
         SiblingParachainAsNative, SiblingParachainConvertsVia, SignedAccountId32AsNative,
         SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId,
-        UsingComponents, WeightInfoBounds, WithComputedOrigin,
+        UsingComponents, WeightInfoBounds, WithComputedOrigin, XcmFeeManagerFromComponents,
     },
     xcm_executor::{traits::JustTry, XcmExecutor},
 };
@@ -99,6 +99,7 @@ parameter_types! {
     [GlobalConsensus(RelayNetwork::get()), Parachain(ParachainInfo::parachain_id().into())].into();
 
     pub const BaseDeliveryFee: u128 = 100 * MICRODANCE;
+    pub RootLocation: Location = Location::here();
 }
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -224,7 +225,7 @@ impl xcm_executor::Config for XcmConfig {
     type MaxAssetsIntoHolding = MaxAssetsIntoHolding;
     type AssetLocker = ();
     type AssetExchanger = ();
-    type FeeManager = ();
+    type FeeManager = XcmFeeManagerFromComponents<Equals<RootLocation>, ()>;
     type MessageExporter = ();
     type UniversalAliases = Nothing;
     type CallDispatcher = RuntimeCall;
