@@ -516,16 +516,14 @@ where
     ) -> SendResult<Self::Ticket> {
         let universal_source = UniversalLocation::get();
 
-        // TODO: Better value?
-        // This channel value is ignored anyway (like in original snowbridge code).
-        // Should we not ignore it and actually use this value instead?
-        let channel = 0;
-
         // This `clone` ensures that `dest` is not consumed in any case.
         let dest = dest.clone().ok_or(MissingArgument)?;
         let (remote_network, remote_location) =
             ensure_is_remote(universal_source.clone(), dest).map_err(|_| NotApplicable)?;
         let xcm = msg.take().ok_or(MissingArgument)?;
+
+        // Channel ID is ignored by the bridge which use a different type
+        let channel = 0;
 
         // validate export message
         validate_export::<Bridges>(
