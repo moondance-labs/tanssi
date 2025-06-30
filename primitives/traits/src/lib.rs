@@ -647,13 +647,16 @@ pub trait PendingCollatorAssignmentHelper<AccountId> {
     fn remove_offline_collator_from_pending_assignment(collator: &AccountId);
 }
 
-// A trait to update the collators rewards when a collator's online status changes.
-pub trait NotifyCollatorOnlineStatusChange<AccountId> {
-    /// Check if the collator is in SortedEligibleCandidates list.
-    fn is_collator_in_sorted_eligible_candidates(collator: &AccountId) -> bool;
-    /// Updates stake when node's online status change.
-    fn update_staking_on_online_status_change(collator: &AccountId) -> DispatchResultWithPostInfo;
+// A trait to help updating the collators rewards when a collator's online status changes.
+pub trait StakingCandidateHelper<AccountId> {
+    /// Check if the candidate is in SortedEligibleCandidates list.
+    fn is_candidate_selected(candidate: &AccountId) -> bool;
+    /// Updates stake when candidate's online status change.
+    fn on_online_status_change(
+        candidate: &AccountId,
+        is_online: bool,
+    ) -> DispatchResultWithPostInfo;
     /// Benchmarking helper function that makes collator part of the SortedEligibleCollators list.
     #[cfg(feature = "runtime-benchmarks")]
-    fn make_collator_eligible_candidate(node: &AccountId);
+    fn make_collator_eligible_candidate(collator: &AccountId);
 }

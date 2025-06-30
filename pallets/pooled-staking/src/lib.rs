@@ -757,16 +757,17 @@ pub mod pallet {
             pools::distribute_rewards::<T>(&candidate, rewards)
         }
     }
-    impl<T: Config> tp_traits::NotifyCollatorOnlineStatusChange<Candidate<T>> for Pallet<T> {
-        fn is_collator_in_sorted_eligible_candidates(collator: &Candidate<T>) -> bool {
+    impl<T: Config> tp_traits::StakingCandidateHelper<Candidate<T>> for Pallet<T> {
+        fn is_candidate_selected(candidate: &Candidate<T>) -> bool {
             <SortedEligibleCandidates<T>>::get()
                 .into_iter()
-                .any(|c| c.candidate == collator.clone())
+                .any(|c| &c.candidate == candidate)
         }
-        fn update_staking_on_online_status_change(
-            collator: &Candidate<T>,
+        fn on_online_status_change(
+            candidate: &Candidate<T>,
+            _is_online: bool,
         ) -> DispatchResultWithPostInfo {
-            Calls::<T>::update_candidate_position(&[collator.clone()])
+            Calls::<T>::update_candidate_position(&[candidate.clone()])
         }
 
         #[cfg(feature = "runtime-benchmarks")]

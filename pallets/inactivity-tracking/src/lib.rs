@@ -36,8 +36,8 @@ use {
     tp_traits::{
         AuthorNotingHook, AuthorNotingInfo, ForSession, GetContainerChainsWithCollators,
         GetSessionIndex, InvulnerablesHelper, MaybeSelfChainBlockAuthor,
-        NodeActivityTrackingHelper, NotifyCollatorOnlineStatusChange, ParaId, ParathreadHelper,
-        PendingCollatorAssignmentHelper,
+        NodeActivityTrackingHelper, ParaId, ParathreadHelper, PendingCollatorAssignmentHelper,
+        StakingCandidateHelper,
     },
 };
 
@@ -139,7 +139,7 @@ pub mod pallet {
         type InvulnerablesFilter: InvulnerablesHelper<Collator<Self>>;
 
         /// Helper for dealing with collator's stake
-        type CollatorStakeHelper: NotifyCollatorOnlineStatusChange<Collator<Self>>;
+        type CollatorStakeHelper: StakingCandidateHelper<Collator<Self>>;
 
         /// The weight information of this pallet.
         type WeightInfo: weights::WeightInfo;
@@ -206,7 +206,7 @@ pub mod pallet {
         /// Error returned when the collator status is attempted to be set to offline when offline marking is disabled
         MarkingOfflineNotEnabled,
         /// Error returned when the collator is not part of the sorted eligible candidates list
-        CollatorNotInSortedEligibleCandidates,
+        CollatorNotEligibleCandidate,
         /// Error returned when the collator status is attempted to be set to offline when it is already offline
         CollatorNotOnline,
         /// Error returned when the collator status is attempted to be set to online when it is already online
@@ -492,8 +492,8 @@ pub mod pallet {
                 Error::<T>::MarkingOfflineNotEnabled
             );
             ensure!(
-                T::CollatorStakeHelper::is_collator_in_sorted_eligible_candidates(collator),
-                Error::<T>::CollatorNotInSortedEligibleCandidates
+                T::CollatorStakeHelper::is_candidate_selected(collator),
+                Error::<T>::CollatorNotEligibleCandidate
             );
             ensure!(
                 !<OfflineCollators<T>>::get(collator.clone()),
@@ -504,7 +504,7 @@ pub mod pallet {
                 Error::<T>::MarkingInvulnerableOfflineInvalid
             );
             <OfflineCollators<T>>::insert(collator.clone(), true);
-            T::CollatorStakeHelper::update_staking_on_online_status_change(collator)?;
+            T::CollatorStakeHelper::on_online_status_change(collator, false)?;
             // To prevent the collator from being assigned to any container chain in the next session
             // we need to remove it from the pending collator assignment
             T::CurrentCollatorsFetcher::remove_offline_collator_from_pending_assignment(collator);
@@ -521,7 +521,7 @@ pub mod pallet {
                 Error::<T>::CollatorNotOffline
             );
             <OfflineCollators<T>>::insert(collator.clone(), false);
-            T::CollatorStakeHelper::update_staking_on_online_status_change(&collator)?;
+            T::CollatorStakeHelper::on_online_status_change(&collator, true)?;
             Self::deposit_event(Event::<T>::CollatorStatusUpdated {
                 collator: collator.clone(),
                 is_offline: false,

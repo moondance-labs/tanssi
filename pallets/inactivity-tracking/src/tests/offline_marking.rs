@@ -86,7 +86,7 @@ fn set_offline_fails_if_collator_is_not_in_eligible_candidates() {
         ));
         assert_noop!(
             Pallet::<Test>::set_offline(RuntimeOrigin::signed(COLLATOR_3)),
-            Error::<Test>::CollatorNotInSortedEligibleCandidates
+            Error::<Test>::CollatorNotEligibleCandidate
         );
     });
 }
@@ -210,7 +210,7 @@ fn notify_inactive_collator_fails_for_collator_not_in_sorted_eligible_collators(
         ));
         assert_noop!(
             Pallet::<Test>::notify_inactive_collator(RuntimeOrigin::signed(COLLATOR_2), COLLATOR_3),
-            Error::<Test>::CollatorNotInSortedEligibleCandidates
+            Error::<Test>::CollatorNotEligibleCandidate
         );
     });
 }
