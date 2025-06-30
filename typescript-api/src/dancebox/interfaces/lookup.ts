@@ -5125,7 +5125,7 @@ export default {
             "ActivityTrackingStatusAlreadyEnabled",
             "ActivityTrackingStatusAlreadyDisabled",
             "MarkingOfflineNotEnabled",
-            "CollatorNotInSortedEligibleCandidates",
+            "CollatorNotEligibleCandidate",
             "CollatorNotOnline",
             "CollatorNotOffline",
             "MarkingInvulnerableOfflineInvalid",

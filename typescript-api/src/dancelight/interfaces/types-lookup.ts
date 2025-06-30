@@ -8431,7 +8431,7 @@ declare module "@polkadot/types/lookup" {
         readonly isActivityTrackingStatusAlreadyEnabled: boolean;
         readonly isActivityTrackingStatusAlreadyDisabled: boolean;
         readonly isMarkingOfflineNotEnabled: boolean;
-        readonly isCollatorNotInSortedEligibleCandidates: boolean;
+        readonly isCollatorNotEligibleCandidate: boolean;
         readonly isCollatorNotOnline: boolean;
         readonly isCollatorNotOffline: boolean;
         readonly isMarkingInvulnerableOfflineInvalid: boolean;
@@ -8443,7 +8443,7 @@ declare module "@polkadot/types/lookup" {
             | "ActivityTrackingStatusAlreadyEnabled"
             | "ActivityTrackingStatusAlreadyDisabled"
             | "MarkingOfflineNotEnabled"
-            | "CollatorNotInSortedEligibleCandidates"
+            | "CollatorNotEligibleCandidate"
             | "CollatorNotOnline"
             | "CollatorNotOffline"
             | "MarkingInvulnerableOfflineInvalid"

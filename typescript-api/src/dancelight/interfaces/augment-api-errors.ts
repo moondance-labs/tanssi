@@ -1031,7 +1031,7 @@ declare module "@polkadot/api-base/types/errors" {
             /**
              * Error returned when the collator is not part of the sorted eligible candidates list
              **/
-            CollatorNotInSortedEligibleCandidates: AugmentedError<ApiType>;
+            CollatorNotEligibleCandidate: AugmentedError<ApiType>;
             /**
              * Error returned when the collator status is attempted to be set to online when it is already online
              **/
