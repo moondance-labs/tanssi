@@ -23,6 +23,7 @@ use {
     parity_scale_codec::Encode,
     simple_template_emulated_chain::SimpleTemplateParaPallet,
     westend_emulated_chain::WestendRelayPallet,
+    westend_system_emulated_network::westend_emulated_chain::westend_runtime::Dmp,
     westend_system_emulated_network::{
         DanceboxPara as Dancebox, FrontierTemplatePara as FrontierTemplate,
         SimpleTemplatePara as SimpleTemplate, WestendRelay as Westend,
@@ -40,6 +41,10 @@ use {
 
 #[test]
 fn transact_sudo_from_relay_hits_barrier_dancebox_without_buy_exec() {
+    Westend::execute_with(|| {
+        Dmp::make_parachain_reachable(Dancebox::para_id());
+    });
+
     let call = <Dancebox as Chain>::RuntimeCall::Configuration(pallet_configuration::Call::<
         <Dancebox as Chain>::Runtime,
     >::set_max_collators {
@@ -96,6 +101,10 @@ fn transact_sudo_from_relay_hits_barrier_dancebox_without_buy_exec() {
 
 #[test]
 fn transact_sudo_from_relay_does_not_have_sudo_power() {
+    Westend::execute_with(|| {
+        Dmp::make_parachain_reachable(Dancebox::para_id());
+    });
+
     let call = <Dancebox as Chain>::RuntimeCall::Configuration(pallet_configuration::Call::<
         <Dancebox as Chain>::Runtime,
     >::set_max_collators {
@@ -159,6 +168,10 @@ fn transact_sudo_from_relay_does_not_have_sudo_power() {
 
 #[test]
 fn transact_sudo_from_relay_has_signed_origin_powers() {
+    Westend::execute_with(|| {
+        Dmp::make_parachain_reachable(Dancebox::para_id());
+    });
+
     let call = <Dancebox as Chain>::RuntimeCall::System(frame_system::Call::<
         <Dancebox as Chain>::Runtime,
     >::remark_with_event {
