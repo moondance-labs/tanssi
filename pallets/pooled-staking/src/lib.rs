@@ -772,6 +772,7 @@ pub mod pallet {
 
         #[cfg(feature = "runtime-benchmarks")]
         fn make_collator_eligible_candidate(collator: &Candidate<T>) {
+            use sp_std::vec;
             let minimum_stake = T::MinimumSelfDelegation::get();
             T::Currency::set_balance(collator, minimum_stake + minimum_stake);
             T::EligibleCandidatesFilter::make_candidate_eligible(collator, true);
@@ -781,7 +782,15 @@ pub mod pallet {
                 ActivePoolKind::AutoCompounding,
                 minimum_stake,
             );
+            let timer = T::JoiningRequestTimer::now();
             T::JoiningRequestTimer::skip_to_elapsed();
+            Calls::<T>::execute_pending_operations(vec![PendingOperationQuery {
+                delegator: collator.clone(),
+                operation: PendingOperationKey::JoiningAutoCompounding {
+                    candidate: collator.clone(),
+                    at: timer.clone(),
+                },
+            }]);
         }
     }
 }

@@ -517,11 +517,11 @@ pub mod pallet {
 
         pub fn mark_collator_online(collator: &Collator<T>) -> DispatchResultWithPostInfo {
             ensure!(
-                <OfflineCollators<T>>::get(&collator),
+                <OfflineCollators<T>>::get(collator),
                 Error::<T>::CollatorNotOffline
             );
             <OfflineCollators<T>>::insert(collator.clone(), false);
-            T::CollatorStakeHelper::on_online_status_change(&collator, true)?;
+            T::CollatorStakeHelper::on_online_status_change(collator, true)?;
             Self::deposit_event(Event::<T>::CollatorStatusUpdated {
                 collator: collator.clone(),
                 is_offline: false,
