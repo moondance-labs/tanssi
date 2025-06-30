@@ -26,7 +26,7 @@ use {
     cumulus_primitives_core::{AggregateMessageOrigin, ParaId},
     frame_support::{
         parameter_types,
-        traits::{Everything, Nothing, PalletInfoAccess, TransformOrigin},
+        traits::{Equals, Everything, Nothing, PalletInfoAccess, TransformOrigin},
         weights::Weight,
     },
     frame_system::EnsureRoot,
@@ -46,7 +46,7 @@ use {
         IsConcrete, ParentIsPreset, RelayChainAsNative, SiblingParachainAsNative,
         SiblingParachainConvertsVia, SignedAccountId32AsNative, SignedToAccountId32,
         SovereignSignedViaLocation, TakeWeightCredit, UsingComponents, WeightInfoBounds,
-        WithComputedOrigin,
+        WithComputedOrigin, XcmFeeManagerFromComponents,
     },
     xcm_executor::XcmExecutor,
 };
@@ -82,6 +82,8 @@ parameter_types! {
     pub UniversalLocation: InteriorLocation = [GlobalConsensus(RelayNetwork::get()), Parachain(ParachainInfo::parachain_id().into())].into();
 
     pub const BaseDeliveryFee: u128 = 100 * MICROUNIT;
+
+    pub RootLocation: Location = Location::here();
 }
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -204,7 +206,7 @@ impl xcm_executor::Config for XcmConfig {
     type MaxAssetsIntoHolding = MaxAssetsIntoHolding;
     type AssetLocker = ();
     type AssetExchanger = ();
-    type FeeManager = ();
+    type FeeManager = XcmFeeManagerFromComponents<Equals<RootLocation>, ()>;
     type MessageExporter = ();
     type UniversalAliases = Nothing;
     type CallDispatcher = RuntimeCall;
