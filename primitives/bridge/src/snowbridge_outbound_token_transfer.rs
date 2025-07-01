@@ -27,7 +27,7 @@ use snowbridge_core::{
     AgentId, ChannelId, TokenId, TokenIdOf,
 };
 use sp_core::{H160, H256};
-use sp_runtime::traits::MaybeEquivalence;
+use sp_runtime::traits::{MaybeEquivalence, TryConvert};
 use sp_std::{iter::Peekable, prelude::*};
 use xcm::prelude::*;
 use xcm::{
@@ -41,7 +41,7 @@ pub struct EthereumBlobExporter<
     UniversalLocation,
     EthereumNetwork,
     OutboundQueue,
-    AgentHashedDescription,
+    ConvertChannelToAgentId,
     ConvertAssetId,
     BridgeChannelId,
 >(
@@ -49,7 +49,7 @@ pub struct EthereumBlobExporter<
         UniversalLocation,
         EthereumNetwork,
         OutboundQueue,
-        AgentHashedDescription,
+        ConvertChannelToAgentId,
         ConvertAssetId,
         BridgeChannelId,
     )>,
@@ -59,7 +59,7 @@ impl<
         UniversalLocation,
         EthereumNetwork,
         OutboundQueue,
-        AgentHashedDescription,
+        ConvertChannelToAgentId,
         ConvertAssetId,
         BridgeChannelId,
     > ExportXcm
@@ -67,7 +67,7 @@ impl<
         UniversalLocation,
         EthereumNetwork,
         OutboundQueue,
-        AgentHashedDescription,
+        ConvertChannelToAgentId,
         ConvertAssetId,
         BridgeChannelId,
     >
@@ -75,7 +75,7 @@ where
     UniversalLocation: Get<InteriorLocation>,
     EthereumNetwork: Get<NetworkId>,
     OutboundQueue: SendMessage<Balance = u128>,
-    AgentHashedDescription: ConvertLocation<H256>,
+    ConvertChannelToAgentId: TryConvert<ChannelId, AgentId>,
     ConvertAssetId: MaybeEquivalence<TokenId, Location>,
     BridgeChannelId: Get<Option<ChannelId>>,
 {
@@ -130,14 +130,14 @@ where
             return Err(SendError::NotApplicable);
         }
 
-        let source_location = Location::new(1, local_sub.clone());
+        let channel_id = BridgeChannelId::get().ok_or_else(|| {
+            log::error!(target: "xcm::ethereum_blob_exporter", "channel id cannot be fetched");
+            SendError::Unroutable
+        })?;
 
-        let agent_id = match AgentHashedDescription::convert_location(&source_location) {
-            Some(id) => id,
-            None => {
-                log::error!(target: "xcm::ethereum_blob_exporter", "unroutable due to not being able to create agent id. '{source_location:?}'");
-                return Err(SendError::NotApplicable);
-            }
+        let Ok(agent_id) = ConvertChannelToAgentId::try_convert(channel_id) else {
+            log::error!(target: "xcm::ethereum_blob_exporter", "unroutable due to not being able to fetch agent id for channel id '{channel_id:?}'");
+            return Err(SendError::Unroutable);
         };
 
         let message = message.take().ok_or_else(|| {
@@ -150,12 +150,7 @@ where
         let (command, message_id) = converter.convert().map_err(|err|{
 			log::error!(target: "xcm::ethereum_blob_exporter", "unroutable due to pattern matching error '{err:?}'.");
 			SendError::Unroutable
-		})?;
-
-        let channel_id = BridgeChannelId::get().ok_or_else(|| {
-            log::error!(target: "xcm::ethereum_blob_exporter", "channel id cannot be fetched");
-            SendError::Unroutable
-        })?;
+		})?;        
 
         let outbound_message = Message {
             id: Some(message_id.into()),
@@ -552,5 +547,16 @@ impl<Bridge, UniversalLocation> InspectMessageQueues
     fn clear_messages() {}
     fn get_messages() -> Vec<(VersionedLocation, Vec<VersionedXcm<()>>)> {
         Vec::new()
+    }
+}
+
+pub struct SnowbridgeChannelToAgentId<T>(PhantomData<T>);
+impl<T: snowbridge_pallet_system::Config> TryConvert<ChannelId, AgentId> for SnowbridgeChannelToAgentId<T> {
+    fn try_convert(channel_id: ChannelId) -> Result<AgentId, ChannelId> {
+        let Some(channel) = snowbridge_pallet_system::Channels::<T>::get(&channel_id) else {
+            return Err(channel_id);
+        };
+
+        Ok(channel.agent_id)
     }
 }
