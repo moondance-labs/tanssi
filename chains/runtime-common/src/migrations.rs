@@ -587,7 +587,7 @@ where
     >: frame_support::traits::OnRuntimeUpgrade,
 {
     fn friendly_name(&self) -> &str {
-        "MM_MigratePalletSession"
+        "MM_MigratePalletSessionV0ToV1"
     }
 
     fn migrate(&self, _available_weight: Weight) -> Weight {
