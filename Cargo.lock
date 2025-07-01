@@ -3746,6 +3746,8 @@ dependencies = [
  "dancelight-runtime",
  "dancelight-runtime-constants",
  "emulated-integration-tests-common",
+ "polkadot-parachain-primitives",
+ "polkadot-runtime-parachains",
  "sp-core",
  "staging-xcm",
  "tanssi-emulated-integration-tests-common",
@@ -18526,6 +18528,8 @@ name = "starlight-emulated-chain"
 version = "0.0.0"
 dependencies = [
  "emulated-integration-tests-common",
+ "polkadot-parachain-primitives",
+ "polkadot-runtime-parachains",
  "sp-core",
  "staging-xcm",
  "starlight-runtime",
@@ -21474,6 +21478,7 @@ dependencies = [
  "cumulus-primitives-core",
  "emulated-integration-tests-common",
  "pallet-staking",
+ "polkadot-parachain-primitives",
  "polkadot-runtime-common",
  "polkadot-runtime-parachains",
  "sc-consensus-grandpa",
