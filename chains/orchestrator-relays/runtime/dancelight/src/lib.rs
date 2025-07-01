@@ -2667,8 +2667,6 @@ sp_api::impl_runtime_apis! {
         }
 
         fn para_backing_state(para_id: ParaId) -> Option<primitives::vstaging::async_backing::BackingState> {
-            // TODO: the alternative is to use backing_constraints and candidates_pending_availability
-            // but backing_constraints is private.
             #[allow(deprecated)]
             parachains_runtime_api_impl::backing_state::<Runtime>(para_id)
         }
