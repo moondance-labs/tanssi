@@ -184,6 +184,12 @@ pub struct RunCmd {
     // Enable the development service
     #[arg(long)]
     pub dev_service: bool,
+
+    /// How long finalized data should be kept in the availability store (in hours).
+    /// Only used for testnets. If not specified, set to 1 hour. Always set to 25 hours for live
+    /// networks.
+    #[arg(long)]
+    pub keep_finalized_for: Option<u32>,
 }
 
 #[allow(missing_docs)]
