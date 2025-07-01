@@ -229,8 +229,6 @@ fn xcm_core_buyer_enough_balance() {
 
     let query_id = do_test(balance_before, None, false);
 
-    println!("Refund: {} Parathread tank in relay: {}", parathread_tank_in_relay, BUY_EXECUTION_REFUND);
-
     // Receive XCM message in Relay Chain
     Rococo::execute_with(|| {
         type RuntimeEvent = <Rococo as Chain>::RuntimeEvent;
