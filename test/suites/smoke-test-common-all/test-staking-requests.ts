@@ -50,7 +50,7 @@ describeSuite({
                     // For all extrinsics that are pending operation executions, we fetch the delegators
                     // pending operations in the previous block
                     const operatorPendingOps = {};
-                    for (let extrinsic of signedBlock.block.extrinsics) {
+                    for (const extrinsic of signedBlock.block.extrinsics) {
                         const isValidExtrinsic =
                             extrinsic.method.section.toString() === "pooledStaking" &&
                             extrinsic.method.method.toString() === "executePendingOperations";
@@ -102,7 +102,7 @@ describeSuite({
 
                 // This function evaluates whether there exists at least one pending op that has been executed
                 const isValidPolledStakingOp = (blockNum: number, index: number, session, pendingOperations) => {
-                    const extrinsic = blockData.find((a) => a.blockNum === blockNum)!.extrinsics[index];
+                    const extrinsic = blockData.find((a) => a.blockNum === blockNum)?.extrinsics[index];
                     const isValidExtrinsic =
                         extrinsic.method.section.toString() === "pooledStaking" &&
                         extrinsic.method.method.toString() === "executePendingOperations";
@@ -146,14 +146,13 @@ describeSuite({
                     })
                     .filter((a) => a.matchedEvents.length > 0);
 
-                failures.forEach(({ blockNum, matchedEvents }) => {
-                    matchedEvents.forEach((a: any) => {
+                for (const failure of failures) {
+                    for (const matchedEvent of failures.matchedEvents) {
                         log(
-                            `Pooled Staking at block #${blockNum} extrinsic #${a.phase.asApplyExtrinsic.toNumber()}` +
-                                ": executed before elapsed time"
+                            `Pooled Staking at block #${failure.blockNum} extrinsic #${matchedEvent.phase.asApplyExtrinsic.toNumber()}:·executed before elapsed time`
                         );
-                    });
-                });
+                    }
+                }
 
                 expect(
                     failures.length,
