@@ -26,7 +26,7 @@ use {
     cumulus_primitives_core::{AggregateMessageOrigin, ParaId},
     frame_support::{
         parameter_types,
-        traits::{Equals, Everything, Nothing, PalletInfoAccess, TransformOrigin},
+        traits::{Disabled, Equals, Everything, Nothing, PalletInfoAccess, TransformOrigin},
         weights::Weight,
     },
     frame_system::EnsureRoot,
@@ -245,7 +245,7 @@ impl pallet_xcm::Config for Runtime {
     // TODO pallet-xcm weights
     type WeightInfo = weights::pallet_xcm::SubstrateWeight<Runtime>;
     type AdminOrigin = EnsureRoot<AccountId>;
-    type AuthorizedAliasConsideration = (); // TODO: revisit this
+    type AuthorizedAliasConsideration = Disabled;
 }
 
 pub type PriceForSiblingParachainDelivery =

@@ -33,7 +33,7 @@ use {
     },
     frame_support::{
         parameter_types,
-        traits::{Contains, Equals, Everything, Nothing},
+        traits::{Contains, Disabled, Equals, Everything, Nothing},
         weights::Weight,
     },
     frame_system::EnsureRoot,
@@ -318,7 +318,7 @@ impl pallet_xcm::Config for Runtime {
     type RemoteLockConsumerIdentifier = ();
     type WeightInfo = weights::pallet_xcm::SubstrateWeight<Runtime>;
     type AdminOrigin = EnsureRoot<AccountId>;
-    type AuthorizedAliasConsideration = (); // TODO: revisit this
+    type AuthorizedAliasConsideration = Disabled;
 }
 
 parameter_types! {
