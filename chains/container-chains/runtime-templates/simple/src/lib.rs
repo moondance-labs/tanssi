@@ -973,7 +973,7 @@ impl_runtime_apis! {
             Vec<frame_benchmarking::BenchmarkList>,
             Vec<frame_support::traits::StorageInfo>,
         ) {
-            use frame_benchmarking::{Benchmarking, BenchmarkList};
+            use frame_benchmarking::{BenchmarkList};
             use frame_support::traits::StorageInfoTrait;
             use pallet_xcm::benchmarking::Pallet as PalletXcmExtrinsicsBenchmark;
 
@@ -984,10 +984,11 @@ impl_runtime_apis! {
             (list, storage_info)
         }
 
+        #[allow(non_local_definitions)]
         fn dispatch_benchmark(
             config: frame_benchmarking::BenchmarkConfig,
         ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, alloc::string::String> {
-            use frame_benchmarking::{BenchmarkBatch, Benchmarking, BenchmarkError};
+            use frame_benchmarking::{BenchmarkBatch, BenchmarkError};
             use sp_core::storage::TrackedStorageKey;
             use xcm::latest::prelude::*;
             impl frame_system_benchmarking::Config for Runtime {

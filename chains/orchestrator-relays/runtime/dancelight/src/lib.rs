@@ -3131,7 +3131,7 @@ sp_api::impl_runtime_apis! {
             Vec<frame_benchmarking::BenchmarkList>,
             Vec<frame_support::traits::StorageInfo>,
         ) {
-            use frame_benchmarking::{Benchmarking, BenchmarkList};
+            use frame_benchmarking::{BenchmarkList};
             use frame_support::traits::StorageInfoTrait;
 
             use frame_system_benchmarking::Pallet as SystemBench;
@@ -3146,6 +3146,7 @@ sp_api::impl_runtime_apis! {
             (list, storage_info)
         }
 
+        #[allow(non_local_definitions)]
         fn dispatch_benchmark(
             config: frame_benchmarking::BenchmarkConfig,
         ) -> Result<
@@ -3153,7 +3154,7 @@ sp_api::impl_runtime_apis! {
             alloc::string::String,
         > {
             use frame_support::traits::WhitelistedStorageKeys;
-            use frame_benchmarking::{Benchmarking, BenchmarkBatch, BenchmarkError};
+            use frame_benchmarking::{BenchmarkBatch, BenchmarkError};
             use frame_system_benchmarking::Pallet as SystemBench;
             use frame_benchmarking::baseline::Pallet as Baseline;
             use pallet_xcm::benchmarking::Pallet as PalletXcmExtrinsicsBenchmark;
