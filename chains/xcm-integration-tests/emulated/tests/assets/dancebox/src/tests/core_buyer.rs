@@ -108,7 +108,7 @@ fn xcm_core_buyer_only_enough_balance_for_buy_execution() {
                 ) => {
                     account: *account == parathread_tank_in_relay,
                 },
-                RuntimeEvent::MessageQueue(pallet_message_queue::Event::Processed { success: false, .. }) => {},
+                RuntimeEvent::MessageQueue(pallet_message_queue::Event::Processed { success: true, .. }) => {},
             ]
         );
         assert_relay_order_event_not_emitted();
@@ -192,9 +192,7 @@ fn xcm_core_buyer_enough_balance_except_for_existential_deposit() {
                     spot_price: *spot_price == spot_price2,
                     ordered_by: *ordered_by == parathread_tank_in_relay,
                 },
-                // TODO: this now emits "success: false" even though the on demand order was placed, will
-                // that break pallet_xcm_core_buyer?
-                RuntimeEvent::MessageQueue(pallet_message_queue::Event::Processed { success: false, .. }) => {},
+                RuntimeEvent::MessageQueue(pallet_message_queue::Event::Processed { success: true, .. }) => {},
             ]
         );
         assert_eq!(balance_after, 0);
