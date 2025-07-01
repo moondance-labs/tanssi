@@ -50,7 +50,7 @@ describeSuite({
                     // For all extrinsics that are pending operation executions, we fetch the delegators
                     // pending operations in the previous block
                     const operatorPendingOps = {};
-                    for (var extrinsic of signedBlock.block.extrinsics) {
+                    for (let extrinsic of signedBlock.block.extrinsics) {
                         const isValidExtrinsic =
                             extrinsic.method.section.toString() === "pooledStaking" &&
                             extrinsic.method.method.toString() === "executePendingOperations";
