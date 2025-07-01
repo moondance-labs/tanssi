@@ -779,7 +779,8 @@ pub mod pallet {
                 collator.clone(),
                 ActivePoolKind::AutoCompounding,
                 minimum_stake,
-            );
+            )
+            .expect("request_delegate should not fail in benchmarks");
             let timer = T::JoiningRequestTimer::now();
             T::JoiningRequestTimer::skip_to_elapsed();
             Calls::<T>::execute_pending_operations(vec![PendingOperationQuery {
@@ -788,7 +789,8 @@ pub mod pallet {
                     candidate: collator.clone(),
                     at: timer.clone(),
                 },
-            }]);
+            }])
+            .expect("execute_pending_operations should not fail in benchmarks");
         }
     }
 }
