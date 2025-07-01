@@ -19,7 +19,11 @@ use {
         AssignmentId, AuthorityDiscoveryId, BlockNumber, ValidatorId,
     },
     emulated_integration_tests_common::build_genesis_storage,
-    runtime_parachains::configuration::HostConfiguration,
+    polkadot_parachain_primitives::primitives::ValidationCode,
+    runtime_parachains::{
+        configuration::HostConfiguration,
+        paras::{ParaGenesisArgs, ParaKind},
+    },
     sc_consensus_grandpa::AuthorityId as GrandpaId,
     sp_consensus_babe::AuthorityId as BabeId,
     sp_consensus_beefy::{ecdsa_crypto::AuthorityId as BeefyId, test_utils::Keyring},
@@ -121,6 +125,35 @@ pub fn genesis() -> Storage {
         },
         configuration: westend_runtime::ConfigurationConfig {
             config: get_host_config(),
+        },
+        paras: westend_runtime::ParasConfig {
+            _config: Default::default(),
+            paras: vec![
+                (
+                    2000.into(),
+                    ParaGenesisArgs {
+                        genesis_head: Default::default(),
+                        validation_code: ValidationCode(vec![1, 1, 2, 3, 4]),
+                        para_kind: ParaKind::Parachain,
+                    },
+                ),
+                (
+                    2001.into(),
+                    ParaGenesisArgs {
+                        genesis_head: Default::default(),
+                        validation_code: ValidationCode(vec![1, 1, 2, 3, 4]),
+                        para_kind: ParaKind::Parachain,
+                    },
+                ),
+                (
+                    2002.into(),
+                    ParaGenesisArgs {
+                        genesis_head: Default::default(),
+                        validation_code: ValidationCode(vec![1, 1, 2, 3, 4]),
+                        para_kind: ParaKind::Parachain,
+                    },
+                ),
+            ],
         },
         ..Default::default()
     };
