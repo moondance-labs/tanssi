@@ -29,10 +29,10 @@ const ROCOCO_ED: u128 = rococo_runtime_constants::currency::EXISTENTIAL_DEPOSIT;
 const BUY_EXECUTION_COST: u128 = dancebox_runtime::xcm_config::XCM_BUY_EXECUTION_COST_ROCOCO;
 // Difference between BUY_EXECUTION_COST and the actual cost that depends on the weight of the XCM
 // message, gets refunded on successful execution of core buying extrinsic.
-const BUY_EXECUTION_REFUND: u128 = 24506230;
+const BUY_EXECUTION_REFUND: u128 = 19533231;
 // Difference between BUY_EXECUTION_COST and the actual cost that depends on the weight of the XCM
 // message, gets refunded on un-successful execution of core buying extrinsic.
-const BUY_EXECUTION_REFUND_ON_FAILURE: u128 = 22172920;
+const BUY_EXECUTION_REFUND_ON_FAILURE: u128 = 17199921;
 
 #[test]
 fn constants() {
@@ -228,6 +228,8 @@ fn xcm_core_buyer_enough_balance() {
     let balance_before = ROCOCO_ED + BUY_EXECUTION_COST + spot_price + 1;
 
     let query_id = do_test(balance_before, None, false);
+
+    println!("Refund: {} Parathread tank in relay: {}", parathread_tank_in_relay, BUY_EXECUTION_REFUND);
 
     // Receive XCM message in Relay Chain
     Rococo::execute_with(|| {
