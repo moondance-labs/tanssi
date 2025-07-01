@@ -2,8 +2,9 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { getBlockArray } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 import type { GenericExtrinsic } from "@polkadot/types";
-import type { FrameSystemEventRecord } from "@polkadot/types/lookup";
+import type { FrameSystemEventRecord, FrameSupportDispatchDispatchInfo } from "@polkadot/types/lookup";
 import type { AnyTuple } from "@polkadot/types/types";
+
 import Bottleneck from "bottleneck";
 
 const timePeriod = process.env.TIME_PERIOD ? Number(process.env.TIME_PERIOD) : 1 * 60 * 60 * 1000;
@@ -14,7 +15,7 @@ type BlockFilteredRecord = {
     blockNum: number;
     extrinsics: GenericExtrinsic<AnyTuple>[];
     events: FrameSystemEventRecord[];
-    session: Number;
+    session: number;
     pendingOperations: Map<string, string[]>;
 };
 
@@ -92,7 +93,7 @@ describeSuite({
                         const matchedEvents = events
                             .filter(({ event }) => api.events.system.ExtrinsicSuccess.is(event))
                             .filter(({ event }) => {
-                                const info = event.data[0] as DispatchInfo;
+                                const info = event.data[0] as FrameSupportDispatchDispatchInfo;
                                 return info.class.isNormal && info.paysFee.isYes;
                             });
                         return { blockNum, matchedEvents, session, pendingOperations };
@@ -100,7 +101,7 @@ describeSuite({
                     .filter(({ matchedEvents }) => matchedEvents.length > 0);
 
                 // This function evaluates whether there exists at least one pending op that has been executed
-                const isValidPolledStakingOp = async (blockNum: number, index: number, session, pendingOperations) => {
+                const isValidPolledStakingOp = (blockNum: number, index: number, session, pendingOperations) => {
                     const extrinsic = blockData.find((a) => a.blockNum === blockNum)!.extrinsics[index];
                     const isValidExtrinsic =
                         extrinsic.method.section.toString() === "pooledStaking" &&
@@ -156,7 +157,7 @@ describeSuite({
 
                 expect(
                     failures.length,
-                    `Please investigate blocks ${failures.map((a) => a.blockNum).join(`, `)}; pays_fee:yes  `
+                    `Please investigate blocks ${failures.map((a) => a.blockNum).join(", ")}; pays_fee:yes  `
                 ).to.equal(0);
             },
         });
