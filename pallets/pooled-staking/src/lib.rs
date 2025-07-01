@@ -100,8 +100,6 @@ pub mod pallet {
         fungible::Credit<<T as frame_system::Config>::AccountId, <T as Config>::Currency>;
     pub type Delegator<T> = <T as frame_system::Config>::AccountId;
 
-    pub type SessionIndex = u32;
-
     /// Key used by the `Pools` StorageDoubleMap, avoiding lots of maps.
     /// StorageDoubleMap first key is the account id of the candidate.
     #[derive(
