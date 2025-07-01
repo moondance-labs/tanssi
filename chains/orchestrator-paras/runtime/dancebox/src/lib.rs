@@ -404,7 +404,7 @@ impl frame_system::Config for Runtime {
 }
 
 impl cumulus_pallet_weight_reclaim::Config for Runtime {
-    type WeightInfo = ();
+    type WeightInfo = weights::cumulus_pallet_weight_reclaim::SubstrateWeight<Runtime>;
 }
 
 impl pallet_timestamp::Config for Runtime {
@@ -1798,6 +1798,7 @@ construct_runtime!(
 
         // More system support stuff
         RelayStorageRoots: pallet_relay_storage_roots = 60,
+        WeightReclaim: cumulus_pallet_weight_reclaim = 61,
 
         RootTesting: pallet_root_testing = 100,
         AsyncBacking: pallet_async_backing::{Pallet, Storage} = 110,
@@ -1845,6 +1846,7 @@ mod benches {
         [pallet_message_queue, MessageQueue]
         [pallet_xcm_core_buyer, XcmCoreBuyer]
         [pallet_relay_storage_roots, RelayStorageRoots]
+        [cumulus_pallet_weight_reclaim, WeightReclaim]
     );
 }
 

@@ -772,7 +772,7 @@ impl pallet_ocw_testing::Config for Runtime {
 }
 
 impl cumulus_pallet_weight_reclaim::Config for Runtime {
-    type WeightInfo = ();
+    type WeightInfo = weights::cumulus_pallet_weight_reclaim::SubstrateWeight<Runtime>;
 }
 
 impl_tanssi_pallets_config!(Runtime);
@@ -815,6 +815,8 @@ construct_runtime!(
         AssetRate: pallet_asset_rate::{Pallet, Call, Storage, Event<T>} = 77,
         XcmExecutorUtils: pallet_xcm_executor_utils::{Pallet, Call, Storage, Event<T>} = 78,
 
+        WeightReclaim: cumulus_pallet_weight_reclaim = 80,
+
         RootTesting: pallet_root_testing = 100,
         AsyncBacking: pallet_async_backing::{Pallet, Storage} = 110,
 
@@ -847,6 +849,7 @@ mod benches {
         [pallet_foreign_asset_creator, ForeignAssetsCreator]
         [pallet_asset_rate, AssetRate]
         [pallet_xcm_executor_utils, XcmExecutorUtils]
+        [cumulus_pallet_weight_reclaim, WeightReclaim]
     );
 }
 
