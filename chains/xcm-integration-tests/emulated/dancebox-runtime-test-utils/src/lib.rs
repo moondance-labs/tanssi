@@ -28,7 +28,6 @@ use {
     parity_scale_codec::{Decode, Encode, MaxEncodedLen},
     polkadot_parachain_primitives::primitives::HeadData,
     sp_consensus_aura::AURA_ENGINE_ID,
-    sp_consensus_slots::Slot,
     sp_core::Get,
     sp_runtime::{traits::Dispatchable, Digest, DigestItem},
     sp_std::collections::btree_map::BTreeMap,
