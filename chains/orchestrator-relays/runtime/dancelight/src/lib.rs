@@ -2352,7 +2352,6 @@ mod benches {
 
         // Substrate
         [pallet_balances, Balances]
-        [frame_benchmarking::baseline, Baseline::<Runtime>]
         [pallet_conviction_voting, ConvictionVoting]
         [pallet_identity, Identity]
         [pallet_message_queue, MessageQueue]
@@ -3131,10 +3130,7 @@ sp_api::impl_runtime_apis! {
         ) {
             use frame_benchmarking::{BenchmarkList};
             use frame_support::traits::StorageInfoTrait;
-
             use frame_system_benchmarking::Pallet as SystemBench;
-            use frame_benchmarking::baseline::Pallet as Baseline;
-
             use pallet_xcm::benchmarking::Pallet as PalletXcmExtrinsicsBenchmark;
 
             let mut list = Vec::<BenchmarkList>::new();
@@ -3154,7 +3150,6 @@ sp_api::impl_runtime_apis! {
             use frame_support::traits::WhitelistedStorageKeys;
             use frame_benchmarking::{BenchmarkBatch, BenchmarkError};
             use frame_system_benchmarking::Pallet as SystemBench;
-            use frame_benchmarking::baseline::Pallet as Baseline;
             use pallet_xcm::benchmarking::Pallet as PalletXcmExtrinsicsBenchmark;
             use sp_storage::TrackedStorageKey;
             use xcm::latest::prelude::*;
@@ -3172,7 +3167,6 @@ sp_api::impl_runtime_apis! {
             }
 
             impl frame_system_benchmarking::Config for Runtime {}
-            impl frame_benchmarking::baseline::Config for Runtime {}
             impl pallet_xcm::benchmarking::Config for Runtime {
                 type DeliveryHelper = (
                     runtime_common::xcm_sender::ToParachainDeliveryHelper<
