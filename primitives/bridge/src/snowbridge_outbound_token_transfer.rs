@@ -23,7 +23,7 @@ use core::slice::Iter;
 use frame_support::{ensure, traits::Get};
 use parity_scale_codec::{Decode, Encode};
 use snowbridge_core::{
-    outbound::{AgentExecuteCommand, Command, Message, SendMessage},
+    outbound::{Command, Message, SendMessage},
     AgentId, ChannelId, TokenId, TokenIdOf,
 };
 use sp_core::{H160, H256};
@@ -150,7 +150,7 @@ where
         let (command, message_id) = converter.convert().map_err(|err|{
 			log::error!(target: "xcm::ethereum_blob_exporter", "unroutable due to pattern matching error '{err:?}'.");
 			SendError::Unroutable
-		})?;        
+		})?;
 
         let outbound_message = Message {
             id: Some(message_id.into()),
@@ -310,7 +310,7 @@ where
         ensure!(reserve_assets.len() == 1, TooManyAssets);
         let reserve_asset = reserve_assets.get(0).ok_or(AssetResolutionFailed)?;
 
-        // Fees are collected on the origin chain (container chain), up front and directly from the user, to cover the
+        // Fees are collected on Tanssi, up front and directly from the user, to cover the
         // complete cost of the transfer. Any additional fees provided in the XCM program are
         // refunded to the beneficiary. We only validate the fee here if its provided to make sure
         // the XCM program is well formed. Another way to think about this from an XCM perspective
@@ -344,13 +344,11 @@ where
         let topic_id = match_expression!(self.next()?, SetTopic(id), id).ok_or(SetTopicExpected)?;
 
         Ok((
-            Command::AgentExecute {
+            Command::TransferNativeToken {
                 agent_id: self.agent_id,
-                command: AgentExecuteCommand::TransferToken {
-                    token,
-                    recipient,
-                    amount,
-                },
+                token,
+                recipient,
+                amount,
             },
             *topic_id,
         ))
@@ -551,7 +549,9 @@ impl<Bridge, UniversalLocation> InspectMessageQueues
 }
 
 pub struct SnowbridgeChannelToAgentId<T>(PhantomData<T>);
-impl<T: snowbridge_pallet_system::Config> TryConvert<ChannelId, AgentId> for SnowbridgeChannelToAgentId<T> {
+impl<T: snowbridge_pallet_system::Config> TryConvert<ChannelId, AgentId>
+    for SnowbridgeChannelToAgentId<T>
+{
     fn try_convert(channel_id: ChannelId) -> Result<AgentId, ChannelId> {
         let Some(channel) = snowbridge_pallet_system::Channels::<T>::get(&channel_id) else {
             return Err(channel_id);

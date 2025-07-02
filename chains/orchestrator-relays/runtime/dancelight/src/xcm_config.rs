@@ -45,7 +45,9 @@ use {
     sp_core::ConstU32,
     sp_runtime::traits::TryConvertInto,
     tp_bridge::{
-        snowbridge_outbound_token_transfer::{EthereumBlobExporter, SnowbrigeTokenTransferRouter, SnowbridgeChannelToAgentId},
+        snowbridge_outbound_token_transfer::{
+            EthereumBlobExporter, SnowbridgeChannelToAgentId, SnowbrigeTokenTransferRouter,
+        },
         EthereumLocationsConverterFor,
     },
     tp_xcm_commons::{EthereumAssetReserve, NativeAssetReserve},
