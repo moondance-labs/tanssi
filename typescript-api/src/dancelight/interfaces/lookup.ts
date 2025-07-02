@@ -8492,25 +8492,29 @@ export default {
         consumers: "Vec<(Null,u128)>",
     },
     /**
-     * Lookup932: pallet_xcm::AuthorizedAliasesEntry<Ticket, pallet_xcm::pallet::MaxAuthorizedAliases>
+     * Lookup932: pallet_xcm::AuthorizedAliasesEntry<frame_support::traits::storage::Disabled, pallet_xcm::pallet::MaxAuthorizedAliases>
      **/
     PalletXcmAuthorizedAliasesEntry: {
         aliasers: "Vec<XcmRuntimeApisAuthorizedAliasesOriginAliaser>",
-        ticket: "Null",
+        ticket: "FrameSupportStorageDisabled",
     },
     /**
-     * Lookup933: pallet_xcm::pallet::MaxAuthorizedAliases
+     * Lookup933: frame_support::traits::storage::Disabled
+     **/
+    FrameSupportStorageDisabled: "Null",
+    /**
+     * Lookup934: pallet_xcm::pallet::MaxAuthorizedAliases
      **/
     PalletXcmMaxAuthorizedAliases: "Null",
     /**
-     * Lookup935: xcm_runtime_apis::authorized_aliases::OriginAliaser
+     * Lookup936: xcm_runtime_apis::authorized_aliases::OriginAliaser
      **/
     XcmRuntimeApisAuthorizedAliasesOriginAliaser: {
         location: "XcmVersionedLocation",
         expiry: "Option<u64>",
     },
     /**
-     * Lookup937: pallet_xcm::pallet::Error<T>
+     * Lookup938: pallet_xcm::pallet::Error<T>
      **/
     PalletXcmError: {
         _enum: [
@@ -8545,7 +8549,7 @@ export default {
         ],
     },
     /**
-     * Lookup938: pallet_stream_payment::pallet::Stream<sp_core::crypto::AccountId32, tp_stream_payment_common::TimeUnit, tp_stream_payment_common::AssetId, Balance>
+     * Lookup939: pallet_stream_payment::pallet::Stream<sp_core::crypto::AccountId32, tp_stream_payment_common::TimeUnit, tp_stream_payment_common::AssetId, Balance>
      **/
     PalletStreamPaymentStream: {
         source: "AccountId32",
@@ -8558,7 +8562,7 @@ export default {
         openingDeposit: "u128",
     },
     /**
-     * Lookup940: pallet_stream_payment::pallet::ChangeRequest<tp_stream_payment_common::TimeUnit, tp_stream_payment_common::AssetId, Balance>
+     * Lookup941: pallet_stream_payment::pallet::ChangeRequest<tp_stream_payment_common::TimeUnit, tp_stream_payment_common::AssetId, Balance>
      **/
     PalletStreamPaymentChangeRequest: {
         requester: "PalletStreamPaymentParty",
@@ -8567,7 +8571,7 @@ export default {
         depositChange: "Option<PalletStreamPaymentDepositChange>",
     },
     /**
-     * Lookup942: pallet_stream_payment::pallet::Error<T>
+     * Lookup943: pallet_stream_payment::pallet::Error<T>
      **/
     PalletStreamPaymentError: {
         _enum: [
@@ -8595,19 +8599,19 @@ export default {
         ],
     },
     /**
-     * Lookup943: pallet_migrations::pallet::Error<T>
+     * Lookup944: pallet_migrations::pallet::Error<T>
      **/
     PalletMigrationsError: {
         _enum: ["PreimageMissing", "WrongUpperBound", "PreimageIsTooBig", "PreimageAlreadyExists"],
     },
     /**
-     * Lookup945: pallet_maintenance_mode::pallet::Error<T>
+     * Lookup946: pallet_maintenance_mode::pallet::Error<T>
      **/
     PalletMaintenanceModeError: {
         _enum: ["AlreadyInMaintenanceMode", "NotInMaintenanceMode"],
     },
     /**
-     * Lookup948: pallet_beefy::pallet::Error<T>
+     * Lookup949: pallet_beefy::pallet::Error<T>
      **/
     PalletBeefyError: {
         _enum: [
@@ -8621,7 +8625,7 @@ export default {
         ],
     },
     /**
-     * Lookup949: sp_consensus_beefy::mmr::BeefyAuthoritySet<primitive_types::H256>
+     * Lookup950: sp_consensus_beefy::mmr::BeefyAuthoritySet<primitive_types::H256>
      **/
     SpConsensusBeefyMmrBeefyAuthoritySet: {
         id: "u64",
@@ -8629,28 +8633,28 @@ export default {
         keysetCommitment: "H256",
     },
     /**
-     * Lookup950: snowbridge_beacon_primitives::types::CompactBeaconState
+     * Lookup951: snowbridge_beacon_primitives::types::CompactBeaconState
      **/
     SnowbridgeBeaconPrimitivesCompactBeaconState: {
         slot: "Compact<u64>",
         blockRootsRoot: "H256",
     },
     /**
-     * Lookup951: snowbridge_beacon_primitives::types::SyncCommitteePrepared
+     * Lookup952: snowbridge_beacon_primitives::types::SyncCommitteePrepared
      **/
     SnowbridgeBeaconPrimitivesSyncCommitteePrepared: {
         root: "H256",
-        pubkeys: "[Lookup953;512]",
+        pubkeys: "[Lookup954;512]",
         aggregatePubkey: "SnowbridgeMilagroBlsKeysPublicKey",
     },
     /**
-     * Lookup953: snowbridge_milagro_bls::keys::PublicKey
+     * Lookup954: snowbridge_milagro_bls::keys::PublicKey
      **/
     SnowbridgeMilagroBlsKeysPublicKey: {
         point: "SnowbridgeAmclBls381Ecp",
     },
     /**
-     * Lookup954: snowbridge_amcl::bls381::ecp::ECP
+     * Lookup955: snowbridge_amcl::bls381::ecp::ECP
      **/
     SnowbridgeAmclBls381Ecp: {
         x: "SnowbridgeAmclBls381Fp",
@@ -8658,20 +8662,20 @@ export default {
         z: "SnowbridgeAmclBls381Fp",
     },
     /**
-     * Lookup955: snowbridge_amcl::bls381::fp::FP
+     * Lookup956: snowbridge_amcl::bls381::fp::FP
      **/
     SnowbridgeAmclBls381Fp: {
         x: "SnowbridgeAmclBls381Big",
         xes: "i32",
     },
     /**
-     * Lookup956: snowbridge_amcl::bls381::big::Big
+     * Lookup957: snowbridge_amcl::bls381::big::Big
      **/
     SnowbridgeAmclBls381Big: {
         w: "[i32;14]",
     },
     /**
-     * Lookup959: snowbridge_beacon_primitives::types::ForkVersions
+     * Lookup960: snowbridge_beacon_primitives::types::ForkVersions
      **/
     SnowbridgeBeaconPrimitivesForkVersions: {
         genesis: "SnowbridgeBeaconPrimitivesFork",
@@ -8682,14 +8686,14 @@ export default {
         electra: "SnowbridgeBeaconPrimitivesFork",
     },
     /**
-     * Lookup960: snowbridge_beacon_primitives::types::Fork
+     * Lookup961: snowbridge_beacon_primitives::types::Fork
      **/
     SnowbridgeBeaconPrimitivesFork: {
         version: "[u8;4]",
         epoch: "u64",
     },
     /**
-     * Lookup961: snowbridge_pallet_ethereum_client::pallet::Error<T>
+     * Lookup962: snowbridge_pallet_ethereum_client::pallet::Error<T>
      **/
     SnowbridgePalletEthereumClientError: {
         _enum: {
@@ -8721,13 +8725,13 @@ export default {
         },
     },
     /**
-     * Lookup962: snowbridge_beacon_primitives::bls::BlsError
+     * Lookup963: snowbridge_beacon_primitives::bls::BlsError
      **/
     SnowbridgeBeaconPrimitivesBlsBlsError: {
         _enum: ["InvalidSignature", "InvalidPublicKey", "InvalidAggregatePublicKeys", "SignatureVerificationFailed"],
     },
     /**
-     * Lookup963: polkadot_runtime_common::paras_sudo_wrapper::pallet::Error<T>
+     * Lookup964: polkadot_runtime_common::paras_sudo_wrapper::pallet::Error<T>
      **/
     PolkadotRuntimeCommonParasSudoWrapperPalletError: {
         _enum: [
@@ -8744,53 +8748,53 @@ export default {
         ],
     },
     /**
-     * Lookup964: pallet_sudo::pallet::Error<T>
+     * Lookup965: pallet_sudo::pallet::Error<T>
      **/
     PalletSudoError: {
         _enum: ["RequireSudo"],
     },
     /**
-     * Lookup967: frame_system::extensions::check_non_zero_sender::CheckNonZeroSender<T>
+     * Lookup968: frame_system::extensions::check_non_zero_sender::CheckNonZeroSender<T>
      **/
     FrameSystemExtensionsCheckNonZeroSender: "Null",
     /**
-     * Lookup968: frame_system::extensions::check_spec_version::CheckSpecVersion<T>
+     * Lookup969: frame_system::extensions::check_spec_version::CheckSpecVersion<T>
      **/
     FrameSystemExtensionsCheckSpecVersion: "Null",
     /**
-     * Lookup969: frame_system::extensions::check_tx_version::CheckTxVersion<T>
+     * Lookup970: frame_system::extensions::check_tx_version::CheckTxVersion<T>
      **/
     FrameSystemExtensionsCheckTxVersion: "Null",
     /**
-     * Lookup970: frame_system::extensions::check_genesis::CheckGenesis<T>
+     * Lookup971: frame_system::extensions::check_genesis::CheckGenesis<T>
      **/
     FrameSystemExtensionsCheckGenesis: "Null",
     /**
-     * Lookup973: frame_system::extensions::check_nonce::CheckNonce<T>
+     * Lookup974: frame_system::extensions::check_nonce::CheckNonce<T>
      **/
     FrameSystemExtensionsCheckNonce: "Compact<u32>",
     /**
-     * Lookup974: frame_system::extensions::check_weight::CheckWeight<T>
+     * Lookup975: frame_system::extensions::check_weight::CheckWeight<T>
      **/
     FrameSystemExtensionsCheckWeight: "Null",
     /**
-     * Lookup975: pallet_transaction_payment::ChargeTransactionPayment<T>
+     * Lookup976: pallet_transaction_payment::ChargeTransactionPayment<T>
      **/
     PalletTransactionPaymentChargeTransactionPayment: "Compact<u128>",
     /**
-     * Lookup976: frame_metadata_hash_extension::CheckMetadataHash<T>
+     * Lookup977: frame_metadata_hash_extension::CheckMetadataHash<T>
      **/
     FrameMetadataHashExtensionCheckMetadataHash: {
         mode: "FrameMetadataHashExtensionMode",
     },
     /**
-     * Lookup977: frame_metadata_hash_extension::Mode
+     * Lookup978: frame_metadata_hash_extension::Mode
      **/
     FrameMetadataHashExtensionMode: {
         _enum: ["Disabled", "Enabled"],
     },
     /**
-     * Lookup978: dancelight_runtime::Runtime
+     * Lookup979: dancelight_runtime::Runtime
      **/
     DancelightRuntimeRuntime: "Null",
 };

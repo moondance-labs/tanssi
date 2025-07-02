@@ -49,6 +49,7 @@ import type {
     FrameSupportDispatchRawOrigin,
     FrameSupportMessagesProcessMessageError,
     FrameSupportPalletId,
+    FrameSupportStorageDisabled,
     FrameSupportTokensMiscBalanceStatus,
     FrameSupportTokensMiscIdAmountRuntimeFreezeReason,
     FrameSupportTokensMiscIdAmountRuntimeHoldReason,
@@ -382,6 +383,7 @@ declare module "@polkadot/types/types/registry" {
         FrameSupportDispatchRawOrigin: FrameSupportDispatchRawOrigin;
         FrameSupportMessagesProcessMessageError: FrameSupportMessagesProcessMessageError;
         FrameSupportPalletId: FrameSupportPalletId;
+        FrameSupportStorageDisabled: FrameSupportStorageDisabled;
         FrameSupportTokensMiscBalanceStatus: FrameSupportTokensMiscBalanceStatus;
         FrameSupportTokensMiscIdAmountRuntimeFreezeReason: FrameSupportTokensMiscIdAmountRuntimeFreezeReason;
         FrameSupportTokensMiscIdAmountRuntimeHoldReason: FrameSupportTokensMiscIdAmountRuntimeHoldReason;

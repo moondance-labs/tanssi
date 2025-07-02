@@ -47,6 +47,7 @@ import type {
     FrameSupportPalletId,
     FrameSupportPreimagesBounded,
     FrameSupportScheduleDispatchTime,
+    FrameSupportStorageDisabled,
     FrameSupportTokensMiscBalanceStatus,
     FrameSupportTokensMiscIdAmount,
     FrameSystemAccountInfo,
@@ -596,6 +597,7 @@ declare module "@polkadot/types/types/registry" {
         FrameSupportPalletId: FrameSupportPalletId;
         FrameSupportPreimagesBounded: FrameSupportPreimagesBounded;
         FrameSupportScheduleDispatchTime: FrameSupportScheduleDispatchTime;
+        FrameSupportStorageDisabled: FrameSupportStorageDisabled;
         FrameSupportTokensMiscBalanceStatus: FrameSupportTokensMiscBalanceStatus;
         FrameSupportTokensMiscIdAmount: FrameSupportTokensMiscIdAmount;
         FrameSystemAccountInfo: FrameSystemAccountInfo;
