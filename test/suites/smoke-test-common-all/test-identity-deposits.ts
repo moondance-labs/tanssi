@@ -222,5 +222,56 @@ describeSuite({
                 }
             },
         });
+
+        it({
+            id: "C04",
+            title: "Check if all the identities have reserved deposits",
+            test: async () => {
+                const limit = 1000;
+                let last_key = "";
+                let count = 0;
+
+                const identityPerAccount: Map<string, { deposit: bigint }> = new Map();
+                for (;;) {
+                    const query = await api.query.identity.identityOf.entriesPaged({
+                        args: [],
+                        pageSize: limit,
+                        startKey: last_key,
+                    });
+
+                    if (query.length === 0) {
+                        break;
+                    }
+                    count += query.length;
+
+                    for (const [storageKey, optIdentity] of query) {
+                        last_key = storageKey.toString();
+
+                        if (optIdentity.isSome) {
+                            const identity = optIdentity.unwrap() as unknown as { deposit: u128 };
+                            const accountId = storageKey.args[0].toString();
+
+                            identityPerAccount.set(accountId, {
+                                deposit: identity.deposit.toBigInt(),
+                            });
+                        }
+                    }
+
+                    if (count % (10 * limit) === 0) {
+                        log(`Retrieved ${count} subs of identity`);
+                    }
+                }
+
+                for (const accountId of identityPerAccount.keys()) {
+                    const accountData = await api.query.system.account(accountId);
+                    const reserved = accountData.data.reserved.toBigInt();
+
+                    expect(
+                        reserved,
+                        `Reserved balance: ${reserved} for account ${accountId} should be more or equal to deposit: ${identityPerAccount.get(accountId).deposit}`
+                    ).toBeGreaterThanOrEqual(identityPerAccount.get(accountId).deposit);
+                }
+            },
+        });
     },
 });
