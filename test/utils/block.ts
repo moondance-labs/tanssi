@@ -736,6 +736,7 @@ export const getBlocksDataForPeriodMs = async (api: ApiPromise, timePeriodMs: nu
     return blocksData;
 };
 
+// TODO: Add cache for key: blockNum::chain
 export const getBlockData = async (api: ApiPromise, blockNum: number) => {
     const blockHash = await api.rpc.chain.getBlockHash(blockNum);
     const apiAt = await api.at(blockHash);

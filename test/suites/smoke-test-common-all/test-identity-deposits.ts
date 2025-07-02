@@ -6,7 +6,7 @@ import { filterAndApply } from "@moonwall/util";
 
 import type { EventRecord } from "@polkadot/types/interfaces";
 import { type BlockData, getBlocksDataForPeriodMs } from "../../utils";
-import { calculateIdentityDeposit } from "../../utils/identity.ts";
+import { calculateIdentityDeposit, calculateSubIdentityDeposit } from "../../utils/identity.ts";
 import type { u128 } from "@polkadot/types-codec";
 
 const timePeriod = process.env.TIME_PERIOD ? Number(process.env.TIME_PERIOD) : 1 * 60 * 60 * 1000;
@@ -146,6 +146,77 @@ describeSuite({
                                 actuallyUnreserved,
                                 `Block #${blockToCheck.blockNum}. Expecting actuallyUnreserved: ${expectedAmount} to equal expectedAmount: ${expectedAmount}`
                             ).toEqual(expectedAmount);
+                        }
+                    }
+                }
+            },
+        });
+
+        it({
+            id: "C03",
+            title: "Set SubIdentity transaction holds the deposit",
+            test: async () => {
+                for (const blockToCheck of blocksData) {
+                    for (const [index, extrinsic] of blockToCheck.extrinsics.entries()) {
+                        // Skip unsigned extrinsics, since no commission is paid
+                        if (!extrinsic.isSigned) {
+                            continue;
+                        }
+
+                        const events = blockToCheck.extrinsicIndexToEventsMap.get(`${index}`) || [];
+
+                        // Get all fee paid events for the current extrinsic
+                        const subIdentitySetEvents = filterAndApply(
+                            events,
+                            "identity",
+                            ["SubIdentitiesSet"],
+                            ({ event }: EventRecord) => event.data.toHuman() as unknown as { main: string }
+                        );
+
+                        if (!subIdentitySetEvents.length) {
+                            continue;
+                        }
+
+                        for (const subIdentitySetEvent of subIdentitySetEvents) {
+                            log(`Found "SubIdentitiesSet" event for block: ${blockToCheck.blockNum}. Checking...`);
+
+                            const prevBlockHash = await api.rpc.chain.getBlockHash(blockToCheck.blockNum - 1);
+                            const prevApiAtBlock = await api.at(prevBlockHash);
+                            const apiAtBlock = await api.at(blockToCheck.blockHash);
+
+                            const prevSubs = await prevApiAtBlock.query.identity.subsOf(subIdentitySetEvent.main);
+                            const subs = await apiAtBlock.query.identity.subsOf(subIdentitySetEvent.main);
+
+                            const diff = subs.toJSON()[1].length - prevSubs.toJSON()[1].length;
+                            const diffAbs = Math.abs(diff);
+
+                            const expectedAmount = calculateSubIdentityDeposit(api, diffAbs);
+
+                            if (diff > 0) {
+                                const reserved = filterAndApply(
+                                    events,
+                                    "balances",
+                                    ["Reserved"],
+                                    ({ event }: EventRecord) => event.data as unknown as unknown as { amount: u128 }
+                                );
+
+                                expect(
+                                    expectedAmount,
+                                    `Block #${blockToCheck.blockNum}. Expecting expectedAmount: ${expectedAmount} to equal reserved: ${reserved}`
+                                ).toEqual(expectedAmount);
+                            } else {
+                                const unreserved = filterAndApply(
+                                    events,
+                                    "balances",
+                                    ["Unreserved"],
+                                    ({ event }: EventRecord) => event.data as unknown as unknown as { amount: u128 }
+                                );
+
+                                expect(
+                                    expectedAmount,
+                                    `Block #${blockToCheck.blockNum}. Expecting expectedAmount: ${expectedAmount} to equal unreserved: ${unreserved}`
+                                ).toEqual(expectedAmount);
+                            }
                         }
                     }
                 }
