@@ -9,7 +9,7 @@ import { totalForProxies } from "../../utils/proxies.ts";
 import { type BlockData, getBlocksDataForPeriodMs } from "../../utils";
 import type { u128 } from "@polkadot/types-codec";
 
-const timePeriod = process.env.TIME_PERIOD ? Number(process.env.TIME_PERIOD) : 1 * 60 * 30 * 1000;
+const timePeriod = process.env.TIME_PERIOD ? Number(process.env.TIME_PERIOD) : 1 * 60 * 60 * 1000;
 const timeout = Math.max(Math.floor(timePeriod / 12), 5000);
 
 describeSuite({
@@ -62,7 +62,7 @@ describeSuite({
                             const proxiesLength = proxies.toJSON()[0].length;
                             const alreadyInProxyReserve = proxies[1].toBigInt();
 
-                            const expectedAmount = totalForProxies(proxiesLength + 1);
+                            const expectedAmount = totalForProxies(api, proxiesLength + 1);
 
                             const reserved = filterAndApply(
                                 events,
@@ -119,7 +119,7 @@ describeSuite({
                             const proxiesLength = proxies.toJSON()[0].length;
                             const alreadyInProxyReserve = proxies[1].toBigInt();
 
-                            const expectedAmount = totalForProxies(proxiesLength - 1);
+                            const expectedAmount = totalForProxies(api, proxiesLength - 1);
 
                             const unreserved = filterAndApply(
                                 events,
