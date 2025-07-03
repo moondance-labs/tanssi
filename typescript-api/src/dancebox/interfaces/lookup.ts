@@ -985,6 +985,10 @@ export default {
             ActivityTrackingStatusSet: {
                 status: "PalletInactivityTrackingActivityTrackingStatus",
             },
+            CollatorStatusUpdated: {
+                collator: "AccountId32",
+                isOffline: "bool",
+            },
         },
     },
     /**
@@ -3567,6 +3571,14 @@ export default {
             set_inactivity_tracking_status: {
                 enableInactivityTracking: "bool",
             },
+            enable_offline_marking: {
+                value: "bool",
+            },
+            set_offline: "Null",
+            set_online: "Null",
+            notify_inactive_collator: {
+                collator: "AccountId32",
+            },
         },
     },
     /**
@@ -5112,6 +5124,12 @@ export default {
             "ActivityTrackingStatusUpdateSuspended",
             "ActivityTrackingStatusAlreadyEnabled",
             "ActivityTrackingStatusAlreadyDisabled",
+            "MarkingOfflineNotEnabled",
+            "CollatorNotEligibleCandidate",
+            "CollatorNotOnline",
+            "CollatorNotOffline",
+            "MarkingInvulnerableOfflineInvalid",
+            "CollatorCannotBeNotifiedAsInactive",
         ],
     },
     /**
