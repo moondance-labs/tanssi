@@ -961,6 +961,59 @@
             ]
         },
         {
+            "name": "zombie_keystore",
+            "timeout": 600000,
+            "testFileDir": ["suites/zombie_keystore"],
+            "runScripts": [
+                "build-spec-dancelight.sh",
+                "compile-wasm.ts compile -b ../target/release/tanssi-relay -o wasm -c specs/tanssi-relay.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/single-container-template-container-2000.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-frontier-node -o wasm -c specs/single-container-template-container-2001.json"
+            ],
+            "foundation": {
+                "type": "zombie",
+                "zombieSpec": {
+                    "configPath": "./configs/zombie_keystore.json",
+                    "skipBlockCheck": ["Container2002"]
+                }
+            },
+            "vitestArgs": {
+                "bail": 1
+            },
+            "connections": [
+                {
+                    "name": "Tanssi-relay",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9947"]
+                },
+                {
+                    "name": "Container2000",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9949"]
+                },
+                {
+                    "name": "Container2001",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9950"]
+                },
+                {
+                    "name": "Container2002",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9951"]
+                },
+                {
+                    "name": "ethers",
+                    "type": "ethers",
+                    "endpoints": ["ws://127.0.0.1:9950"]
+                },
+                {
+                    "name": "w3",
+                    "type": "web3",
+                    "endpoints": ["ws://127.0.0.1:9950"]
+                }
+            ]
+        },
+        {
             "name": "zombie_data_preservers",
             "testFileDir": ["suites/zombie_data_preservers"],
             "runScripts": [

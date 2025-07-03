@@ -732,6 +732,10 @@ pub async fn start_solochain_node(
     let config_dir = build_solochain_config_dir(base_path);
     let keystore = keystore_config(container_chain_cli.keystore_params(), &config_dir)
         .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
+    
+    if keystore.path() != polkadot_config.keystore.path() {
+        panic!("keystore path mismatch. must be the same for relay chain and for collator")
+    }
 
     // Instead of putting keystore in
     // Collator1000-01/data/chains/simple_container_2000/keystore
