@@ -104,7 +104,7 @@ jobs:
             path: binaries
     benchmark-tests:
         needs: ["enforce-ready-to-merge-label", "build-benchmark"]
-        runs-on: self-hosted
+        runs-on: ubuntu-latest
         strategy:
             fail-fast: false
             matrix:
