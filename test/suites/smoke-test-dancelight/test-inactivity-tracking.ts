@@ -5,7 +5,7 @@ import { getLastSessionEndBlock } from "utils/block";
 import type { ApiPromise } from "@polkadot/api";
 
 describeSuite({
-    id: "SMOK14",
+    id: "SMOKD01",
     title: "Inactivity tracking suit that only runs on Dancelight chains",
     foundationMethods: "read_only",
     testCases: ({ it, context, log }) => {
