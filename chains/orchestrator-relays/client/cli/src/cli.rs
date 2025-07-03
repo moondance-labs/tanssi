@@ -162,7 +162,6 @@ pub struct RunCmd {
     /// pool for tasks with the priority below critical.
     ///
     ///  **Dangerous!** Do not touch unless explicitly advised to.
-
     #[arg(long)]
     pub prepare_workers_soft_max_num: Option<usize>,
     /// Override the absolute number of pvf workers that can be spawned in the pvf prepare pool.
