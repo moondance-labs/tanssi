@@ -41,7 +41,6 @@ sp-std = { workspace = true }
 nimbus-primitives = { workspace = true }
 
 [dev-dependencies]
-bounded-collections = { workspace = true }
 num-traits = { workspace = true }
 pallet-balances = { workspace = true, features = [ "std" ] }
 similar-asserts = { workspace = true }
@@ -50,7 +49,6 @@ sp-io = { workspace = true, features = [ "std" ] }
 [features]
 default = [ "std" ]
 std = [
-	"bounded-collections/std",
 	"dp-core/std",
 	"frame-benchmarking/std",
 	"frame-support/std",
