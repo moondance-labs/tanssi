@@ -86,12 +86,10 @@ function bench {
     echo "${1}"
     if [[ ${1} == "*" ]] ; then
         # Load all pallet names in an array.
-        # TODO: Fix before merge - Adding the function to replace " :: " to "::" for now, because the pallet returns it in the incorrect format
         ALL_PALLETS=($(
         $BINARY benchmark pallet --list --chain="${CHAIN}" |\
             tail -n+2 |\
             cut -d',' -f1 |\
-            sed 's/ *:: */::/g' |\
             sort |\
             uniq
         ))
