@@ -2375,7 +2375,7 @@ mod benches {
         [pallet_services_payment, ServicesPayment]
         [pallet_mmr, Mmr]
         [pallet_beefy_mmr, BeefyMmrLeaf]
-        [pallet_multiblock_migrations, MultiBlockMigrations]
+        [frame_benchmarking::baseline, Baseline::<Runtime>]
         [pallet_session, cumulus_pallet_session_benchmarking::Pallet::<Runtime>]
 
         // Tanssi
@@ -3132,6 +3132,8 @@ sp_api::impl_runtime_apis! {
             use frame_support::traits::StorageInfoTrait;
             use frame_system_benchmarking::Pallet as SystemBench;
             use pallet_xcm::benchmarking::Pallet as PalletXcmExtrinsicsBenchmark;
+            use frame_benchmarking::baseline::Pallet as Baseline;
+
 
             let mut list = Vec::<BenchmarkList>::new();
             list_benchmarks!(list, extra);
@@ -3151,6 +3153,7 @@ sp_api::impl_runtime_apis! {
             use frame_benchmarking::{BenchmarkBatch, BenchmarkError};
             use frame_system_benchmarking::Pallet as SystemBench;
             use pallet_xcm::benchmarking::Pallet as PalletXcmExtrinsicsBenchmark;
+            use frame_benchmarking::baseline::Pallet as Baseline;
             use sp_storage::TrackedStorageKey;
             use xcm::latest::prelude::*;
             use xcm_config::{
@@ -3167,6 +3170,7 @@ sp_api::impl_runtime_apis! {
             }
 
             impl frame_system_benchmarking::Config for Runtime {}
+            impl frame_benchmarking::baseline::Config for Runtime {}
             impl pallet_xcm::benchmarking::Config for Runtime {
                 type DeliveryHelper = (
                     runtime_common::xcm_sender::ToParachainDeliveryHelper<
