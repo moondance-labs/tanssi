@@ -140,12 +140,16 @@ describeSuite({
                             };
                             const expectedAmount = calculateIdentityDeposit(api, prevUnwrappedIdentity.info);
 
+                            // If we clear identity, we remove all subs
+                            const prevSubs = await prevApiAtBlock.query.identity.subsOf(identityClearedEvent.who);
+                            const subsDeposit = calculateSubIdentityDeposit(api, prevSubs.toJSON()[1].length);
+
                             expect(unreserved.length).toBeGreaterThan(0);
                             const actuallyUnreserved = unreserved[0]?.amount.toBigInt();
                             expect(
                                 actuallyUnreserved,
-                                `Block #${blockToCheck.blockNum}. Expecting actuallyUnreserved: ${expectedAmount} to equal expectedAmount: ${expectedAmount}`
-                            ).toEqual(expectedAmount);
+                                `Block #${blockToCheck.blockNum}. Expecting actuallyUnreserved: ${actuallyUnreserved} to equal expectedAmount: ${expectedAmount + subsDeposit}`
+                            ).toEqual(expectedAmount + subsDeposit);
                         }
                     }
                 }
@@ -199,11 +203,12 @@ describeSuite({
                                     ["Reserved"],
                                     ({ event }: EventRecord) => event.data as unknown as unknown as { amount: u128 }
                                 );
+                                const reservedBI = reserved[0]?.amount.toBigInt() || 0n;
 
                                 expect(
                                     expectedAmount,
-                                    `Block #${blockToCheck.blockNum}. Expecting expectedAmount: ${expectedAmount} to equal reserved: ${reserved}`
-                                ).toEqual(expectedAmount);
+                                    `Block #${blockToCheck.blockNum}. Expecting expectedAmount: ${expectedAmount} to equal reserved: ${reservedBI}`
+                                ).toEqual(reservedBI);
                             } else {
                                 const unreserved = filterAndApply(
                                     events,
@@ -211,11 +216,12 @@ describeSuite({
                                     ["Unreserved"],
                                     ({ event }: EventRecord) => event.data as unknown as unknown as { amount: u128 }
                                 );
+                                const reservedBI = unreserved[0]?.amount.toBigInt() || 0n;
 
                                 expect(
                                     expectedAmount,
-                                    `Block #${blockToCheck.blockNum}. Expecting expectedAmount: ${expectedAmount} to equal unreserved: ${unreserved}`
-                                ).toEqual(expectedAmount);
+                                    `Block #${blockToCheck.blockNum}. Expecting expectedAmount: ${expectedAmount} to equal unreserved: ${reservedBI}`
+                                ).toEqual(reservedBI);
                             }
                         }
                     }
