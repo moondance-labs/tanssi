@@ -26,7 +26,7 @@ use snowbridge_core::{
     outbound::{Command, Message, SendMessage},
     AgentId, ChannelId, TokenId, TokenIdOf,
 };
-use sp_core::{H160, H256};
+use sp_core::H160;
 use sp_runtime::traits::{MaybeEquivalence, TryConvert};
 use sp_std::{iter::Peekable, prelude::*};
 use xcm::prelude::*;
