@@ -135,12 +135,16 @@ describeSuite({
                             };
                             const expectedAmount = calculateIdentityDeposit(api, prevUnwrappedIdentity.info);
 
+                            // If we clear identity, we remove all subs
+                            const prevSubs = await prevApiAtBlock.query.identity.subsOf(identityClearedEvent.who);
+                            const subsDeposit = calculateSubIdentityDeposit(api, prevSubs.toJSON()[1].length);
+
                             expect(unreserved.length).toBeGreaterThan(0);
                             const actuallyUnreserved = toBigInt(unreserved[0].amount);
                             expect(
                                 actuallyUnreserved,
-                                `Block #${blockToCheck.blockNum}. Expecting actuallyUnreserved: ${actuallyUnreserved} to equal expectedAmount: ${expectedAmount}`
-                            ).toEqual(expectedAmount);
+                                `Block #${blockToCheck.blockNum}. Expecting actuallyUnreserved: ${actuallyUnreserved} to equal expectedAmount: ${expectedAmount + subsDeposit}`
+                            ).toEqual(expectedAmount + subsDeposit);
                         }
                     }
                 }
@@ -196,6 +200,7 @@ describeSuite({
                                     .map((event) => event.event.data as unknown as { amount: string });
 
                                 const reservedBI = toBigInt(reserved[0].amount);
+                                const reservedBI = reserved[0]?.amount.toBigInt() || 0n;
 
                                 expect(
                                     expectedAmount,
