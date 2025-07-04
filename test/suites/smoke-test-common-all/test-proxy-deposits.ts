@@ -2,12 +2,9 @@ import "@tanssi/api-augment";
 
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
-import { filterAndApply } from "@moonwall/util";
 
-import type { EventRecord } from "@polkadot/types/interfaces";
 import { totalForProxies } from "../../utils/proxies.ts";
-import { type BlockData, getBlocksDataForPeriodMs } from "../../utils";
-import type { u128 } from "@polkadot/types-codec";
+import { type BlockData, getBlocksDataForPeriodMs, toBigInt } from "../../utils";
 
 const timePeriod = process.env.TIME_PERIOD ? Number(process.env.TIME_PERIOD) : 1 * 60 * 60 * 1000;
 const timeout = Math.max(Math.floor(timePeriod / 12), 5000);
@@ -40,12 +37,9 @@ describeSuite({
                         const events = blockToCheck.extrinsicIndexToEventsMap.get(`${index}`) || [];
 
                         // Get all fee paid events for the current extrinsic
-                        const proxyAddedEvents = filterAndApply(
-                            events,
-                            "proxy",
-                            ["ProxyAdded"],
-                            ({ event }: EventRecord) => event.data.toHuman() as unknown as { delegator: string }
-                        );
+                        const proxyAddedEvents = events
+                            .filter((event) => event.event.method === "ProxyAdded" && event.event.section === "proxy")
+                            .map((event) => event.event.data as unknown as { delegator: string });
 
                         if (!proxyAddedEvents.length) {
                             continue;
@@ -64,15 +58,14 @@ describeSuite({
 
                             const expectedAmount = totalForProxies(api, proxiesLength + 1);
 
-                            const reserved = filterAndApply(
-                                events,
-                                "balances",
-                                ["Reserved"],
-                                ({ event }: EventRecord) => event.data as unknown as { amount: u128 }
-                            );
+                            const reserved = events
+                                .filter(
+                                    (event) => event.event.method === "Reserved" && event.event.section === "balances"
+                                )
+                                .map((event) => event.event.data as unknown as { amount: string });
 
                             expect(reserved.length).toBeGreaterThan(0);
-                            const actuallyReserved = reserved[0].amount.toBigInt();
+                            const actuallyReserved = toBigInt(reserved[0].amount);
                             expect(
                                 actuallyReserved,
                                 `Block #${blockToCheck.blockNum}. Expecting actuallyReserved: ${actuallyReserved} to equal expectedAmount - alreadyInProxyReserve: ${expectedAmount - alreadyInProxyReserve}`
@@ -97,12 +90,9 @@ describeSuite({
                         const events = blockToCheck.extrinsicIndexToEventsMap.get(`${index}`) || [];
 
                         // Get all fee paid events for the current extrinsic
-                        const proxyRemovedEvents = filterAndApply(
-                            events,
-                            "proxy",
-                            ["ProxyRemoved"],
-                            ({ event }: EventRecord) => event.data.toHuman() as unknown as { delegator: string }
-                        );
+                        const proxyRemovedEvents = events
+                            .filter((event) => event.event.method === "ProxyRemoved" && event.event.section === "proxy")
+                            .map((event) => event.event.data as unknown as { delegator: string });
 
                         if (!proxyRemovedEvents.length) {
                             continue;
@@ -121,15 +111,14 @@ describeSuite({
 
                             const expectedAmount = totalForProxies(api, proxiesLength - 1);
 
-                            const unreserved = filterAndApply(
-                                events,
-                                "balances",
-                                ["Unreserved"],
-                                ({ event }: EventRecord) => event.data as unknown as { amount: u128 }
-                            );
+                            const unreserved = events
+                                .filter(
+                                    (event) => event.event.method === "Unreserved" && event.event.section === "balances"
+                                )
+                                .map((event) => event.event.data as unknown as { amount: string });
 
                             expect(unreserved.length).toBeGreaterThan(0);
-                            const actuallyUnreserved = unreserved[0].amount.toBigInt();
+                            const actuallyUnreserved = toBigInt(unreserved[0].amount);
                             expect(
                                 actuallyUnreserved,
                                 `Block #${blockToCheck.blockNum}. Expecting actuallyUnreserved: ${actuallyUnreserved} to equal alreadyInProxyReserve - expectedAmount: ${alreadyInProxyReserve - expectedAmount}`

@@ -16,9 +16,8 @@ import type {
     Slot,
 } from "@polkadot/types/interfaces";
 import { stringToHex } from "@polkadot/util";
-import type { FrameSystemEventRecord } from "@polkadot/types/lookup";
 import Bottleneck from "bottleneck";
-import type { GenericExtrinsic } from "@polkadot/types/extrinsic/Extrinsic";
+import { globalStorageGet, globalStorageHas, globalStorageSet } from "./global-storage.ts";
 
 export async function jumpSessions(context: DevModeContext, count: number): Promise<string | null> {
     const session = (await context.polkadotJs().query.session.currentIndex()).addn(count.valueOf()).toNumber();
@@ -709,15 +708,33 @@ export async function getLastSessionEndBlock(api: ApiPromise, lastSessionIndex: 
     return blockNumber;
 }
 
+export type EventType = {
+    phase: "Initialization" | "Finalization" | { ApplyExtrinsic: string };
+    event: { method: string; section: string; index: "string"; data: unknown };
+    topics: string[];
+};
+
+export type ExtrinsicType = {
+    isSigned: boolean;
+    method: { method: string; section: string; args: unknown };
+};
+
 export type BlockData = {
     blockNum: number;
-    blockHash: BlockHash;
-    events: FrameSystemEventRecord[];
-    extrinsics: GenericExtrinsic[];
-    extrinsicIndexToEventsMap: Map<string, FrameSystemEventRecord[]>;
+    blockHash: string;
+    events: EventType[];
+    extrinsics: ExtrinsicType[];
+    extrinsicIndexToEventsMap: Map<string, EventType[]>;
 };
 
 export const getBlocksDataForPeriodMs = async (api: ApiPromise, timePeriodMs: number): Promise<BlockData[]> => {
+    const runtimeName = api.runtimeVersion.specName.toString();
+    const key = `blocks_data_key::${runtimeName}::${timePeriodMs}`;
+
+    if (globalStorageHas(key)) {
+        return globalStorageGet<BlockData[]>(key);
+    }
+
     const blockNumbersArray = await getBlockArray(api, timePeriodMs);
 
     const limiter = new Bottleneck({ maxConcurrent: 5, minTime: 100 });
@@ -732,26 +749,28 @@ export const getBlocksDataForPeriodMs = async (api: ApiPromise, timePeriodMs: nu
     const end = performance.now();
 
     console.log(`Blocks data fetching took: ${(end - start).toFixed(2)} ms. Fetched: ${blocksData.length} blocks.`);
+    globalStorageSet(key, blocksData);
 
     return blocksData;
 };
 
-// TODO: Add cache for key: blockNum::chain
-export const getBlockData = async (api: ApiPromise, blockNum: number) => {
-    const blockHash = await api.rpc.chain.getBlockHash(blockNum);
+export const getBlockData = async (api: ApiPromise, blockNum: number): Promise<BlockData> => {
+    const blockHash = (await api.rpc.chain.getBlockHash(blockNum)) as unknown as string;
     const apiAt = await api.at(blockHash);
-    const events = await apiAt.query.system.events();
+    const events = (await apiAt.query.system.events()).map((event) => event.toHuman() as unknown as EventType);
     const block = await api.rpc.chain.getBlock(blockHash);
-    const extrinsics = block.block.extrinsics;
+    const extrinsics = block.block.extrinsics.map((extrinsic) => extrinsic.toHuman() as unknown as ExtrinsicType);
 
-    const extrinsicIndexToEventsMap = new Map<string, FrameSystemEventRecord[]>();
+    const extrinsicIndexToEventsMap = new Map<string, EventType[]>();
 
     for (const eventRecord of events) {
-        if (!eventRecord.phase.isApplyExtrinsic) {
+        const phase = eventRecord.phase;
+
+        if (typeof phase !== "object" || phase.ApplyExtrinsic === undefined) {
             continue;
         }
 
-        const extrinsicIndex = eventRecord.phase.asApplyExtrinsic.toString();
+        const extrinsicIndex = phase.ApplyExtrinsic;
         if (!extrinsicIndexToEventsMap.has(extrinsicIndex)) {
             extrinsicIndexToEventsMap.set(extrinsicIndex, []);
         }
