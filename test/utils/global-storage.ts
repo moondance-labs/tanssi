@@ -71,5 +71,6 @@ function loadAndDeserialize(): Map<string, StorageEntryType> {
 
     // Sicne we serialize the data, we are safe
     // https://www.npmjs.com/package/serialize-javascript#deserializing
+    // biome-ignore lint/security/noGlobalEval: this usage is safe in our context
     return eval(`(${serialized})`);
 }
