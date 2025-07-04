@@ -3,7 +3,7 @@ import "@tanssi/api-augment";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
 
-import { type BlockData, getBlocksDataForPeriodMs, toBigInt } from "../../utils";
+import { type BlockData, getBlocksDataForPeriodMs } from "../../utils";
 import { calculateIdentityDeposit, calculateSubIdentityDeposit } from "../../utils/identity.ts";
 import type { u128 } from "@polkadot/types-codec";
 
@@ -66,7 +66,7 @@ describeSuite({
                                 .filter(
                                     (event) => event.event.method === "Reserved" && event.event.section === "balances"
                                 )
-                                .map((event) => event.event.data as unknown as { amount: string });
+                                .map((event) => event.event.data as unknown as { amount: u128 });
 
                             // If the identity was not set before, we expect the deposit to be equal 0
                             const prevDeposit = prevIdentity.isNone
@@ -78,7 +78,7 @@ describeSuite({
                                       }
                                   ).deposit.toBigInt();
 
-                            const actuallyReserved = reserved[0] ? toBigInt(reserved[0].amount) : 0n; // In case we update the identity info, we don't pay
+                            const actuallyReserved = reserved[0] ? reserved[0].amount.toBigInt() : 0n; // In case we update the identity info, we don't pay
                             expect(
                                 actuallyReserved + prevDeposit,
                                 `Block #${blockToCheck.blockNum}. Expecting actuallyReserved + identityDeposit: ${actuallyReserved + prevDeposit} to equal expectedAmount: ${expectedAmount}`
@@ -127,7 +127,7 @@ describeSuite({
                                 .filter(
                                     (event) => event.event.method === "Unreserved" && event.event.section === "balances"
                                 )
-                                .map((event) => event.event.data as unknown as { amount: string });
+                                .map((event) => event.event.data as unknown as { amount: u128 });
 
                             const prevUnwrappedIdentity = prevIdentity.unwrap() as unknown as {
                                 info: unknown;
@@ -140,7 +140,7 @@ describeSuite({
                             const subsDeposit = calculateSubIdentityDeposit(api, prevSubs.toJSON()[1].length);
 
                             expect(unreserved.length).toBeGreaterThan(0);
-                            const actuallyUnreserved = toBigInt(unreserved[0].amount);
+                            const actuallyUnreserved = unreserved[0].amount.toBigInt();
                             expect(
                                 actuallyUnreserved,
                                 `Block #${blockToCheck.blockNum}. Expecting actuallyUnreserved: ${actuallyUnreserved} to equal expectedAmount: ${expectedAmount + subsDeposit}`
@@ -197,9 +197,9 @@ describeSuite({
                                         (event) =>
                                             event.event.method === "Reserved" && event.event.section === "balances"
                                     )
-                                    .map((event) => event.event.data as unknown as { amount: string });
+                                    .map((event) => event.event.data as unknown as { amount: u128 });
 
-                                const reservedBI = toBigInt(reserved[0].amount) || 0n;
+                                const reservedBI = reserved[0].amount.toBigInt() || 0n;
 
                                 expect(
                                     expectedAmount,
@@ -211,9 +211,9 @@ describeSuite({
                                         (event) =>
                                             event.event.method === "Unreserved" && event.event.section === "balances"
                                     )
-                                    .map((event) => event.event.data as unknown as { amount: string });
+                                    .map((event) => event.event.data as unknown as { amount: u128 });
 
-                                const unreservedBI = toBigInt(unreserved[0].amount);
+                                const unreservedBI = unreserved[0].amount.toBigInt();
 
                                 expect(
                                     expectedAmount,

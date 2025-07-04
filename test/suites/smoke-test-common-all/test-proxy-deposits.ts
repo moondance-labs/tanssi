@@ -4,7 +4,8 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
 
 import { totalForProxies } from "../../utils/proxies.ts";
-import { type BlockData, getBlocksDataForPeriodMs, toBigInt } from "../../utils";
+import { type BlockData, getBlocksDataForPeriodMs } from "../../utils";
+import type { u128 } from "@polkadot/types-codec";
 
 const timePeriod = process.env.TIME_PERIOD ? Number(process.env.TIME_PERIOD) : 1 * 60 * 60 * 1000;
 const timeout = Math.max(Math.floor(timePeriod / 12), 5000);
@@ -62,10 +63,10 @@ describeSuite({
                                 .filter(
                                     (event) => event.event.method === "Reserved" && event.event.section === "balances"
                                 )
-                                .map((event) => event.event.data as unknown as { amount: string });
+                                .map((event) => event.event.data as unknown as { amount: u128 });
 
                             expect(reserved.length).toBeGreaterThan(0);
-                            const actuallyReserved = toBigInt(reserved[0].amount);
+                            const actuallyReserved = reserved[0].amount.toBigInt();
                             expect(
                                 actuallyReserved,
                                 `Block #${blockToCheck.blockNum}. Expecting actuallyReserved: ${actuallyReserved} to equal expectedAmount - alreadyInProxyReserve: ${expectedAmount - alreadyInProxyReserve}`
@@ -115,10 +116,10 @@ describeSuite({
                                 .filter(
                                     (event) => event.event.method === "Unreserved" && event.event.section === "balances"
                                 )
-                                .map((event) => event.event.data as unknown as { amount: string });
+                                .map((event) => event.event.data as unknown as { amount: u128 });
 
                             expect(unreserved.length).toBeGreaterThan(0);
-                            const actuallyUnreserved = toBigInt(unreserved[0].amount);
+                            const actuallyUnreserved = unreserved[0].amount.toBigInt();
                             expect(
                                 actuallyUnreserved,
                                 `Block #${blockToCheck.blockNum}. Expecting actuallyUnreserved: ${actuallyUnreserved} to equal alreadyInProxyReserve - expectedAmount: ${alreadyInProxyReserve - expectedAmount}`
