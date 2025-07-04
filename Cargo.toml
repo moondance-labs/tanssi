@@ -552,9 +552,6 @@ polkadot-node-core-pvf-prepare-worker  = { git = "https://github.com/moondance-l
 
 substrate-rpc-client = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2503", default-features = false }
 
-[patch.crates-io]
-bounded-collections = { git = "https://github.com/dimartiro/parity-common", branch = "0.2.4" }
-
 [profile.production]
 codegen-units = 1
 inherits = "release"

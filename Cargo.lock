@@ -22525,8 +22525,3 @@ dependencies = [
  "cc",
  "pkg-config",
 ]
-
-[[patch.unused]]
-name = "bounded-collections"
-version = "0.2.4"
-source = "git+https://github.com/dimartiro/parity-common?branch=0.2.4#545124873a6f5ea64d0c441554d0ae7220fa7d83"
