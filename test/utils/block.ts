@@ -2,7 +2,7 @@ import { type DevModeContext, type ZombieContext, expect, type ChopsticksContext
 import { filterAndApply, getBlockArray, type KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 import type { SubmittableExtrinsic } from "@polkadot/api/types";
-import { TypeRegistry } from "@polkadot/types";
+import { type GenericExtrinsic, TypeRegistry } from "@polkadot/types";
 import type { Vec, bool, u8, u32, u128 } from "@polkadot/types-codec";
 import type {
     AccountId32,
@@ -15,9 +15,10 @@ import type {
     ParaId,
     Slot,
 } from "@polkadot/types/interfaces";
-import { stringToHex } from "@polkadot/util";
+import { hexToU8a, stringToHex, u8aToHex } from "@polkadot/util";
 import Bottleneck from "bottleneck";
 import { globalStorageGet, globalStorageHas, globalStorageSet } from "./global-storage.ts";
+import type { FrameSystemEventRecord } from "@polkadot/types/lookup";
 
 export async function jumpSessions(context: DevModeContext, count: number): Promise<string | null> {
     const session = (await context.polkadotJs().query.session.currentIndex()).addn(count.valueOf()).toNumber();
@@ -721,10 +722,10 @@ export type ExtrinsicType = {
 
 export type BlockData = {
     blockNum: number;
-    blockHash: string;
-    events: EventType[];
-    extrinsics: ExtrinsicType[];
-    extrinsicIndexToEventsMap: Map<string, EventType[]>;
+    blockHash: BlockHash;
+    events: FrameSystemEventRecord[];
+    extrinsics: GenericExtrinsic[];
+    extrinsicIndexToEventsMap: Map<string, FrameSystemEventRecord[]>;
 };
 
 export const getBlocksDataForPeriodMs = async (api: ApiPromise, timePeriodMs: number): Promise<BlockData[]> => {
@@ -732,7 +733,11 @@ export const getBlocksDataForPeriodMs = async (api: ApiPromise, timePeriodMs: nu
     const key = `blocks_data_key::${runtimeName}::${timePeriodMs}`;
 
     if (globalStorageHas(key)) {
-        return globalStorageGet<BlockData[]>(key);
+        const start = performance.now();
+        const data = await deserialize(api, globalStorageGet(key));
+        const end = performance.now();
+        console.log(`Deserialized blocks data in ${(end - start).toFixed(2)} ms.`);
+        return data;
     }
 
     const blockNumbersArray = await getBlockArray(api, timePeriodMs);
@@ -749,28 +754,82 @@ export const getBlocksDataForPeriodMs = async (api: ApiPromise, timePeriodMs: nu
     const end = performance.now();
 
     console.log(`Blocks data fetching took: ${(end - start).toFixed(2)} ms. Fetched: ${blocksData.length} blocks.`);
-    globalStorageSet(key, blocksData);
+    globalStorageSet(key, serialize(blocksData));
 
     return blocksData;
 };
 
-export const getBlockData = async (api: ApiPromise, blockNum: number): Promise<BlockData> => {
-    const blockHash = (await api.rpc.chain.getBlockHash(blockNum)) as unknown as string;
-    const apiAt = await api.at(blockHash);
-    const events = (await apiAt.query.system.events()).map((event) => event.toHuman() as unknown as EventType);
-    const block = await api.rpc.chain.getBlock(blockHash);
-    const extrinsics = block.block.extrinsics.map((extrinsic) => extrinsic.toHuman() as unknown as ExtrinsicType);
+export function serialize(blocksData: BlockData[]): string {
+    const plainData = blocksData.map((block) => ({
+        blockNum: block.blockNum,
+        blockHash: u8aToHex(block.blockHash.toU8a()),
+        events: block.events.map((e) => u8aToHex(e.toU8a())),
+        extrinsics: block.extrinsics.map((e) => u8aToHex(e.toU8a())),
+        extrinsicIndexToEventsMap: Array.from(block.extrinsicIndexToEventsMap.entries()).map(([k, arr]) => [
+            k,
+            arr.map((e) => u8aToHex(e.toU8a())),
+        ]),
+    }));
 
-    const extrinsicIndexToEventsMap = new Map<string, EventType[]>();
+    return JSON.stringify(plainData);
+}
+
+export async function deserialize(api: ApiPromise, serialized: string): Promise<BlockData[]> {
+    const parsed = JSON.parse(serialized);
+    const result: BlockData[] = [];
+
+    for (const block of parsed) {
+        const blockNum = block.blockNum;
+        const blockHash = await api.createType("BlockHash", hexToU8a(block.blockHash));
+
+        const events: any[] = [];
+        for (const hex of block.events) {
+            events.push(await api.createType("FrameSystemEventRecord", hexToU8a(hex)));
+        }
+
+        const extrinsics: any[] = [];
+        for (const hex of block.extrinsics) {
+            extrinsics.push(await api.createType("GenericExtrinsic", hexToU8a(hex)));
+        }
+
+        const extrinsicIndexToEventsMap = new Map<string, FrameSystemEventRecord[]>();
+        for (const [k, arr] of block.extrinsicIndexToEventsMap as [string, string[]][]) {
+            const eventRecords: any[] = [];
+            for (const hex of arr) {
+                eventRecords.push(await api.createType("FrameSystemEventRecord", hexToU8a(hex)));
+            }
+            extrinsicIndexToEventsMap.set(k, eventRecords);
+        }
+
+        result.push({
+            blockNum,
+            blockHash,
+            events,
+            extrinsics,
+            extrinsicIndexToEventsMap,
+        });
+    }
+
+    return result;
+}
+
+export const getBlockData = async (api: ApiPromise, blockNum: number): Promise<BlockData> => {
+    const blockHash = await api.rpc.chain.getBlockHash(blockNum);
+    const apiAt = await api.at(blockHash);
+    const events = await apiAt.query.system.events();
+    const block = await api.rpc.chain.getBlock(blockHash);
+    const extrinsics = block.block.extrinsics;
+
+    const extrinsicIndexToEventsMap = new Map<string, FrameSystemEventRecord[]>();
 
     for (const eventRecord of events) {
         const phase = eventRecord.phase;
 
-        if (typeof phase !== "object" || phase.ApplyExtrinsic === undefined) {
+        if (!phase.isApplyExtrinsic) {
             continue;
         }
 
-        const extrinsicIndex = phase.ApplyExtrinsic;
+        const extrinsicIndex = eventRecord.phase.asApplyExtrinsic.toString();
         if (!extrinsicIndexToEventsMap.has(extrinsicIndex)) {
             extrinsicIndexToEventsMap.set(extrinsicIndex, []);
         }

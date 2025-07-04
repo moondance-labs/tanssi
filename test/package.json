@@ -76,8 +76,6 @@
         "ethers": "^6.13.4",
         "json-bigint": "1.0.0",
         "pnpm": "9.13.0",
-        "serialize-javascript": "^6.0.2",
-        "@types/serialize-javascript": "^5.0.4",
         "solc": "0.8.21",
         "toml": "^3.0.0",
         "tsx": "*",

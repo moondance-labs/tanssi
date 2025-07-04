@@ -6,13 +6,12 @@
  */
 
 import fs from "node:fs";
-import serializeJavascript from "serialize-javascript";
 
-export type StorageEntryType = { value: unknown; createdAt: number; ttlMs: number };
+export type StorageEntryType = { value: string; createdAt: number; ttlMs: number };
 const STORAGE_PATH = "tmp/test_runtime_global_storage_v1.json";
 
 // Before get(), always call has(), it will invalidate the cache by ttl
-export const globalStorageGet = <T>(key: string): T => {
+export const globalStorageGet = (key: string): string => {
     const globalData = loadAndDeserialize();
 
     console.debug("Getting the key", key);
@@ -22,10 +21,11 @@ export const globalStorageGet = <T>(key: string): T => {
         throw new Error(`Key "${key}" not found in global storage`);
     }
 
-    return value.value as T;
+    return value.value;
 };
 
-export const globalStorageSet = (key: string, value: unknown, ttlMs = 15 * 60 * 1000) => {
+// value should be serialized string
+export const globalStorageSet = (key: string, value: string, ttlMs = 15 * 60 * 1000) => {
     console.debug("Setting the key/value:", key);
 
     const globalData = loadAndDeserialize();
@@ -59,7 +59,7 @@ export const globalStorageHas = (key: string) => {
 };
 
 function serializeAndPersist(data: Map<string, StorageEntryType>): void {
-    const serialized = serializeJavascript(data);
+    const serialized = JSON.stringify(Array.from(data.entries()));
     fs.writeFileSync(STORAGE_PATH, serialized, "utf-8");
 }
 
@@ -68,9 +68,7 @@ function loadAndDeserialize(): Map<string, StorageEntryType> {
         return new Map();
     }
     const serialized = fs.readFileSync(STORAGE_PATH, "utf-8");
+    const entries: [string, StorageEntryType][] = JSON.parse(serialized);
 
-    // Since we serialize the data, we are safe
-    // https://www.npmjs.com/package/serialize-javascript#deserializing
-    // biome-ignore lint/security/noGlobalEval: this usage is safe in our context
-    return eval(`(${serialized})`);
+    return new Map(entries);
 }

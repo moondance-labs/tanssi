@@ -62,6 +62,3 @@ export async function hasEnoughCredits(
     }
     return true;
 }
-
-// Converts serialized amount like "1,000,000" to bigint
-export const toBigInt = (amount: string): bigint => BigInt(amount.replace(/,/g, ""));

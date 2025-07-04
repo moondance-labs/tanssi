@@ -207,9 +207,6 @@ importers:
       '@types/ps-node':
         specifier: 0.1.3
         version: 0.1.3
-      '@types/serialize-javascript':
-        specifier: ^5.0.4
-        version: 5.0.4
       '@types/yargs':
         specifier: ^17.0.33
         version: 17.0.33
@@ -237,9 +234,6 @@ importers:
       pnpm:
         specifier: 9.13.0
         version: 9.13.0
-      serialize-javascript:
-        specifier: ^6.0.2
-        version: 6.0.2
       solc:
         specifier: 0.8.21
         version: 0.8.21(debug@4.3.7)
@@ -2321,9 +2315,6 @@ packages:
 
   '@types/readable-stream@2.3.15':
     resolution: {integrity: sha512-oM5JSKQCcICF1wvGgmecmHldZ48OZamtMxcGGVICOJA8o8cahXC1zEVAif8iwoc5j8etxFaRFnf095+CDsuoFQ==}
-
-  '@types/serialize-javascript@5.0.4':
-    resolution: {integrity: sha512-Z2R7UKFuNWCP8eoa2o9e5rkD3hmWxx/1L0CYz0k2BZzGh0PhEVMp9kfGiqEml/0IglwNERXZ2hwNzIrSz/KHTA==}
 
   '@types/tar@6.1.13':
     resolution: {integrity: sha512-IznnlmU5f4WcGTh2ltRu/Ijpmk8wiWXfF0VA4s+HPjHZgvFggk1YaIkbo5krX/zUCzWF8N/l4+W/LNxnvAJ8nw==}
@@ -8133,8 +8124,6 @@ snapshots:
     dependencies:
       '@types/node': 22.12.0
       safe-buffer: 5.1.2
-
-  '@types/serialize-javascript@5.0.4': {}
 
   '@types/tar@6.1.13':
     dependencies:
