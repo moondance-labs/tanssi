@@ -199,8 +199,7 @@ describeSuite({
                                     )
                                     .map((event) => event.event.data as unknown as { amount: string });
 
-                                const reservedBI = toBigInt(reserved[0].amount);
-                                const reservedBI = reserved[0]?.amount.toBigInt() || 0n;
+                                const reservedBI = toBigInt(reserved[0].amount) || 0n;
 
                                 expect(
                                     expectedAmount,
