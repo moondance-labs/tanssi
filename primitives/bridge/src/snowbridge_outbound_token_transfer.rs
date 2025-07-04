@@ -23,11 +23,11 @@ use core::slice::Iter;
 use frame_support::{ensure, traits::Get};
 use parity_scale_codec::{Decode, Encode};
 use snowbridge_core::{
-    outbound::{AgentExecuteCommand, Command, Message, SendMessage},
+    outbound::{Command, Message, SendMessage},
     AgentId, ChannelId, TokenId, TokenIdOf,
 };
 use sp_core::{H160, H256};
-use sp_runtime::traits::MaybeEquivalence;
+use sp_runtime::traits::{MaybeEquivalence, TryConvert};
 use sp_std::{iter::Peekable, prelude::*};
 use xcm::prelude::*;
 use xcm::{
@@ -41,7 +41,7 @@ pub struct EthereumBlobExporter<
     UniversalLocation,
     EthereumNetwork,
     OutboundQueue,
-    AgentHashedDescription,
+    ConvertChannelToAgentId,
     ConvertAssetId,
     BridgeChannelId,
 >(
@@ -49,7 +49,7 @@ pub struct EthereumBlobExporter<
         UniversalLocation,
         EthereumNetwork,
         OutboundQueue,
-        AgentHashedDescription,
+        ConvertChannelToAgentId,
         ConvertAssetId,
         BridgeChannelId,
     )>,
@@ -59,7 +59,7 @@ impl<
         UniversalLocation,
         EthereumNetwork,
         OutboundQueue,
-        AgentHashedDescription,
+        ConvertChannelToAgentId,
         ConvertAssetId,
         BridgeChannelId,
     > ExportXcm
@@ -67,7 +67,7 @@ impl<
         UniversalLocation,
         EthereumNetwork,
         OutboundQueue,
-        AgentHashedDescription,
+        ConvertChannelToAgentId,
         ConvertAssetId,
         BridgeChannelId,
     >
@@ -75,7 +75,7 @@ where
     UniversalLocation: Get<InteriorLocation>,
     EthereumNetwork: Get<NetworkId>,
     OutboundQueue: SendMessage<Balance = u128>,
-    AgentHashedDescription: ConvertLocation<H256>,
+    ConvertChannelToAgentId: TryConvert<ChannelId, AgentId>,
     ConvertAssetId: MaybeEquivalence<TokenId, Location>,
     BridgeChannelId: Get<Option<ChannelId>>,
 {
@@ -130,14 +130,14 @@ where
             return Err(SendError::NotApplicable);
         }
 
-        let source_location = Location::new(1, local_sub.clone());
+        let channel_id = BridgeChannelId::get().ok_or_else(|| {
+            log::error!(target: "xcm::ethereum_blob_exporter", "channel id cannot be fetched");
+            SendError::Unroutable
+        })?;
 
-        let agent_id = match AgentHashedDescription::convert_location(&source_location) {
-            Some(id) => id,
-            None => {
-                log::error!(target: "xcm::ethereum_blob_exporter", "unroutable due to not being able to create agent id. '{source_location:?}'");
-                return Err(SendError::NotApplicable);
-            }
+        let Ok(agent_id) = ConvertChannelToAgentId::try_convert(channel_id) else {
+            log::error!(target: "xcm::ethereum_blob_exporter", "unroutable due to not being able to fetch agent id for channel id '{channel_id:?}'");
+            return Err(SendError::Unroutable);
         };
 
         let message = message.take().ok_or_else(|| {
@@ -151,11 +151,6 @@ where
 			log::error!(target: "xcm::ethereum_blob_exporter", "unroutable due to pattern matching error '{err:?}'.");
 			SendError::Unroutable
 		})?;
-
-        let channel_id = BridgeChannelId::get().ok_or_else(|| {
-            log::error!(target: "xcm::ethereum_blob_exporter", "channel id cannot be fetched");
-            SendError::Unroutable
-        })?;
 
         let outbound_message = Message {
             id: Some(message_id.into()),
@@ -315,7 +310,7 @@ where
         ensure!(reserve_assets.len() == 1, TooManyAssets);
         let reserve_asset = reserve_assets.get(0).ok_or(AssetResolutionFailed)?;
 
-        // Fees are collected on the origin chain (container chain), up front and directly from the user, to cover the
+        // Fees are collected on Tanssi, up front and directly from the user, to cover the
         // complete cost of the transfer. Any additional fees provided in the XCM program are
         // refunded to the beneficiary. We only validate the fee here if its provided to make sure
         // the XCM program is well formed. Another way to think about this from an XCM perspective
@@ -349,13 +344,11 @@ where
         let topic_id = match_expression!(self.next()?, SetTopic(id), id).ok_or(SetTopicExpected)?;
 
         Ok((
-            Command::AgentExecute {
+            Command::TransferNativeToken {
                 agent_id: self.agent_id,
-                command: AgentExecuteCommand::TransferToken {
-                    token,
-                    recipient,
-                    amount,
-                },
+                token,
+                recipient,
+                amount,
             },
             *topic_id,
         ))
@@ -516,16 +509,14 @@ where
     ) -> SendResult<Self::Ticket> {
         let universal_source = UniversalLocation::get();
 
-        // TODO: Better value?
-        // This channel value is ignored anyway (like in original snowbridge code).
-        // Should we not ignore it and actually use this value instead?
-        let channel = 0;
-
         // This `clone` ensures that `dest` is not consumed in any case.
         let dest = dest.clone().ok_or(MissingArgument)?;
         let (remote_network, remote_location) =
             ensure_is_remote(universal_source.clone(), dest).map_err(|_| NotApplicable)?;
         let xcm = msg.take().ok_or(MissingArgument)?;
+
+        // Channel ID is ignored by the bridge which use a different type
+        let channel = 0;
 
         // validate export message
         validate_export::<Bridges>(
@@ -554,5 +545,18 @@ impl<Bridge, UniversalLocation> InspectMessageQueues
     fn clear_messages() {}
     fn get_messages() -> Vec<(VersionedLocation, Vec<VersionedXcm<()>>)> {
         Vec::new()
+    }
+}
+
+pub struct SnowbridgeChannelToAgentId<T>(PhantomData<T>);
+impl<T: snowbridge_pallet_system::Config> TryConvert<ChannelId, AgentId>
+    for SnowbridgeChannelToAgentId<T>
+{
+    fn try_convert(channel_id: ChannelId) -> Result<AgentId, ChannelId> {
+        let Some(channel) = snowbridge_pallet_system::Channels::<T>::get(&channel_id) else {
+            return Err(channel_id);
+        };
+
+        Ok(channel.agent_id)
     }
 }
