@@ -553,6 +553,66 @@ where
         Ok(())
     }
 }
+
+pub struct MigrateSnowbridgeFeePerGasMigrationV0ToV1<T>(PhantomData<T>);
+impl<T> Migration for MigrateSnowbridgeFeePerGasMigrationV0ToV1<T>
+where
+    T: snowbridge_pallet_system::Config,
+{
+    fn friendly_name(&self) -> &str {
+        "MM_MigrateSnowbridgeFeePerGasMigrationV0ToV1"
+    }
+
+    fn migrate(&self, _available_weight: Weight) -> Weight {
+        snowbridge_pallet_system::migration::FeePerGasMigrationV0ToV1::<T>::on_runtime_upgrade()
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        snowbridge_pallet_system::migration::FeePerGasMigrationV0ToV1::<T>::pre_upgrade()
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(&self, state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        snowbridge_pallet_system::migration::FeePerGasMigrationV0ToV1::<T>::post_upgrade(state)
+    }
+}
+
+pub struct MigratePalletSessionV0toV1<T>(PhantomData<T>);
+impl<T: frame_system::Config + pallet_session::Config> Migration for MigratePalletSessionV0toV1<T>
+where
+    pallet_session::migrations::v1::MigrateV0ToV1<
+        T,
+        pallet_session::migrations::v1::InitOffenceSeverity<T>,
+    >: frame_support::traits::OnRuntimeUpgrade,
+{
+    fn friendly_name(&self) -> &str {
+        "MM_MigratePalletSessionV0ToV1"
+    }
+
+    fn migrate(&self, _available_weight: Weight) -> Weight {
+        pallet_session::migrations::v1::MigrateV0ToV1::<
+            T,
+            pallet_session::migrations::v1::InitOffenceSeverity<T>,
+        >::on_runtime_upgrade()
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        pallet_session::migrations::v1::MigrateV0ToV1::<
+            T,
+            pallet_session::migrations::v1::InitOffenceSeverity<T>,
+        >::pre_upgrade()
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(&self, state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        pallet_session::migrations::v1::MigrateV0ToV1::<
+            T,
+            pallet_session::migrations::v1::InitOffenceSeverity<T>,
+        >::post_upgrade(state)
+    }
+}
 pub struct MigrateToLatestXcmVersion<Runtime>(PhantomData<Runtime>);
 impl<Runtime> Migration for MigrateToLatestXcmVersion<Runtime>
 where
@@ -1197,6 +1257,7 @@ where
     Runtime: pallet_balances::Config,
     Runtime: pallet_configuration::Config,
     Runtime: pallet_registrar::Config,
+    Runtime: pallet_session::Config,
     Runtime: pallet_services_payment::Config,
     Runtime: pallet_data_preservers::Config,
     Runtime: pallet_stream_payment::Config,
@@ -1224,6 +1285,7 @@ where
         //let migrate_config_max_parachain_percentage = MigrateConfigurationAddParachainPercentage::<Runtime>(Default::default());
         //let migrate_config_full_rotation_mode = MigrateConfigurationAddFullRotationMode::<Runtime>(Default::default());
         //let migrate_stream_payment_new_config_items = MigrateStreamPaymentNewConfigFields::<Runtime>(Default::default());
+        let migrate_pallet_session_v0_to_v1 = MigratePalletSessionV0toV1::<Runtime>(Default::default());
 
         vec![
             // Applied in runtime 400
@@ -1248,6 +1310,7 @@ where
             //Box::new(migrate_config_full_rotation_mode),
             // Applied in runtime 1200
             //Box::new(migrate_stream_payment_new_config_items),
+            Box::new(migrate_pallet_session_v0_to_v1),
         ]
     }
 }
@@ -1257,6 +1320,7 @@ pub struct DanceboxMigrations<Runtime>(PhantomData<Runtime>);
 impl<Runtime> GetMigrations for DanceboxMigrations<Runtime>
 where
     Runtime: pallet_pooled_staking::Config,
+    Runtime: pallet_session::Config,
     Runtime: pallet_registrar::Config,
     Runtime: pallet_balances::Config,
     Runtime: pallet_configuration::Config,
@@ -1305,6 +1369,7 @@ where
         //let migrate_config_full_rotation_mode = MigrateConfigurationAddFullRotationMode::<Runtime>(Default::default());
         //let migrate_stream_payment_new_config_items = MigrateStreamPaymentNewConfigFields::<Runtime>(Default::default());
         //let migrate_pallet_xcm_v5 = MigrateToLatestXcmVersion::<Runtime>(Default::default());
+        let migrate_pallet_session_v0_to_v1 = MigratePalletSessionV0toV1::<Runtime>(Default::default());
 
         vec![
             // Applied in runtime 200
@@ -1349,6 +1414,7 @@ where
             //Box::new(migrate_stream_payment_new_config_items),
             // Applied in runtime 1200
             //Box::new(migrate_pallet_xcm_v5),
+            Box::new(migrate_pallet_session_v0_to_v1),
         ]
     }
 }
@@ -1372,7 +1438,6 @@ where
     fn get_migrations() -> Vec<Box<dyn Migration>> {
         /*let migrate_config_full_rotation_mode =
         MigrateConfigurationAddFullRotationMode::<Runtime>(Default::default());*/
-
         /*let external_validator_slashes_bonded_eras_timestamp =
         BondedErasTimestampMigration::<Runtime>(Default::default());*/
         /*let snowbridge_ethereum_system_xcm_v5 =
@@ -1380,7 +1445,10 @@ where
         //let migrate_pallet_xcm_v5 = MigrateToLatestXcmVersion::<Runtime>(Default::default());
         //let para_shared_v1_migration = MigrateParaSharedToV1::<Runtime>(Default::default());
         //let para_scheduler_v3_migration = MigrateParaSchedulerToV3::<Runtime>(Default::default());
-
+        let migrate_pallet_session_v0_to_v1 =
+            MigratePalletSessionV0toV1::<Runtime>(Default::default());
+        let migrate_snowbridge_fee_per_gas_migration_v0_to_v1 =
+            MigrateSnowbridgeFeePerGasMigrationV0ToV1::<Runtime>(Default::default());
         let eth_system_genesis_hashes = MigrateEthSystemGenesisHashes::<
             Runtime,
             snowbridge_system_migration::DancelightLocation,
@@ -1403,6 +1471,8 @@ where
             // Box::new(para_shared_v1_migration),
             // Applied in runtime 1200
             //Box::new(para_scheduler_v3_migration),
+            Box::new(migrate_pallet_session_v0_to_v1),
+            Box::new(migrate_snowbridge_fee_per_gas_migration_v0_to_v1),
             Box::new(eth_system_genesis_hashes),
         ]
     }
@@ -1413,13 +1483,22 @@ pub struct StarlightMigrations<Runtime>(PhantomData<Runtime>);
 impl<Runtime> GetMigrations for StarlightMigrations<Runtime>
 where
     Runtime: frame_system::Config,
+    Runtime: pallet_session::Config,
     Runtime: snowbridge_pallet_system::Config,
 {
     fn get_migrations() -> Vec<Box<dyn Migration>> {
+        let migrate_pallet_session_v0_to_v1 =
+            MigratePalletSessionV0toV1::<Runtime>(Default::default());
+        let migrate_snowbridge_fee_per_gas_migration_v0_to_v1 =
+            MigrateSnowbridgeFeePerGasMigrationV0ToV1::<Runtime>(Default::default());
         let eth_system_genesis_hashes = MigrateEthSystemGenesisHashes::<
             Runtime,
             snowbridge_system_migration::StarlightLocation,
         >(Default::default());
-        vec![Box::new(eth_system_genesis_hashes)]
+        vec![
+            Box::new(migrate_pallet_session_v0_to_v1),
+            Box::new(migrate_snowbridge_fee_per_gas_migration_v0_to_v1),
+            Box::new(eth_system_genesis_hashes),
+        ]
     }
 }

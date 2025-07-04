@@ -17,6 +17,7 @@
 //! A list of the different weight modules for our runtime.
 
 pub mod cumulus_pallet_parachain_system;
+pub mod cumulus_pallet_weight_reclaim;
 pub mod frame_system;
 pub mod frame_system_extensions;
 pub mod pallet_author_inherent;

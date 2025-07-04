@@ -15,8 +15,8 @@ import type {
     CumulusPalletParachainSystemUnincludedSegmentHrmpChannelUpdate,
     CumulusPalletParachainSystemUnincludedSegmentSegmentTracker,
     CumulusPalletParachainSystemUnincludedSegmentUsedBandwidth,
+    CumulusPalletWeightReclaimStorageWeightReclaim,
     CumulusPrimitivesParachainInherentParachainInherentData,
-    CumulusPrimitivesStorageWeightReclaimStorageWeightReclaim,
     DpCollatorAssignmentAssignedCollatorsAccountId32,
     DpCollatorAssignmentAssignedCollatorsPublic,
     DpContainerChainGenesisDataContainerChainGenesisData,
@@ -118,6 +118,7 @@ import type {
     PalletMultisigTimepoint,
     PalletProxyAnnouncement,
     PalletProxyCall,
+    PalletProxyDepositKind,
     PalletProxyError,
     PalletProxyEvent,
     PalletProxyProxyDefinition,
@@ -175,7 +176,6 @@ import type {
     PolkadotPrimitivesV8UpgradeRestriction,
     SpArithmeticArithmeticError,
     SpCoreCryptoKeyTypeId,
-    SpCoreVoid,
     SpRuntimeDigest,
     SpRuntimeDigestDigestItem,
     SpRuntimeDispatchError,
@@ -213,8 +213,8 @@ declare module "@polkadot/types/types/registry" {
         CumulusPalletParachainSystemUnincludedSegmentHrmpChannelUpdate: CumulusPalletParachainSystemUnincludedSegmentHrmpChannelUpdate;
         CumulusPalletParachainSystemUnincludedSegmentSegmentTracker: CumulusPalletParachainSystemUnincludedSegmentSegmentTracker;
         CumulusPalletParachainSystemUnincludedSegmentUsedBandwidth: CumulusPalletParachainSystemUnincludedSegmentUsedBandwidth;
+        CumulusPalletWeightReclaimStorageWeightReclaim: CumulusPalletWeightReclaimStorageWeightReclaim;
         CumulusPrimitivesParachainInherentParachainInherentData: CumulusPrimitivesParachainInherentParachainInherentData;
-        CumulusPrimitivesStorageWeightReclaimStorageWeightReclaim: CumulusPrimitivesStorageWeightReclaimStorageWeightReclaim;
         DpCollatorAssignmentAssignedCollatorsAccountId32: DpCollatorAssignmentAssignedCollatorsAccountId32;
         DpCollatorAssignmentAssignedCollatorsPublic: DpCollatorAssignmentAssignedCollatorsPublic;
         DpContainerChainGenesisDataContainerChainGenesisData: DpContainerChainGenesisDataContainerChainGenesisData;
@@ -316,6 +316,7 @@ declare module "@polkadot/types/types/registry" {
         PalletMultisigTimepoint: PalletMultisigTimepoint;
         PalletProxyAnnouncement: PalletProxyAnnouncement;
         PalletProxyCall: PalletProxyCall;
+        PalletProxyDepositKind: PalletProxyDepositKind;
         PalletProxyError: PalletProxyError;
         PalletProxyEvent: PalletProxyEvent;
         PalletProxyProxyDefinition: PalletProxyProxyDefinition;
@@ -373,7 +374,6 @@ declare module "@polkadot/types/types/registry" {
         PolkadotPrimitivesV8UpgradeRestriction: PolkadotPrimitivesV8UpgradeRestriction;
         SpArithmeticArithmeticError: SpArithmeticArithmeticError;
         SpCoreCryptoKeyTypeId: SpCoreCryptoKeyTypeId;
-        SpCoreVoid: SpCoreVoid;
         SpRuntimeDigest: SpRuntimeDigest;
         SpRuntimeDigestDigestItem: SpRuntimeDigestDigestItem;
         SpRuntimeDispatchError: SpRuntimeDispatchError;

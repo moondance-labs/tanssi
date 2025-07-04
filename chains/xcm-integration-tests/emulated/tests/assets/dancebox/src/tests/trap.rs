@@ -20,6 +20,7 @@ use {
         weights::{Weight, WeightToFee},
     },
     westend_emulated_chain::WestendRelayPallet,
+    westend_system_emulated_network::westend_emulated_chain::westend_runtime::Dmp,
     westend_system_emulated_network::{DanceboxPara as Dancebox, WestendRelay as Westend},
     xcm::{latest::prelude::*, VersionedLocation, VersionedXcm},
     xcm_emulator::{
@@ -29,6 +30,10 @@ use {
 
 #[test]
 fn trapping_asserts_works_with_polkadot_xcm() {
+    Westend::execute_with(|| {
+        Dmp::make_parachain_reachable(Dancebox::para_id());
+    });
+
     // XcmPallet send arguments
     let sudo_origin = <Westend as Chain>::RuntimeOrigin::root();
     let dancebox_para_destination: VersionedLocation =

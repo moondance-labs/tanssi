@@ -26,6 +26,7 @@ use {
         EthereumEmptyReceiver, EthereumSender, FrontierTemplateParaPallet,
     },
     westend_emulated_chain::WestendRelayPallet,
+    westend_system_emulated_network::westend_emulated_chain::westend_runtime::Dmp,
     westend_system_emulated_network::{
         DanceboxEmptyReceiver, DanceboxPara as Dancebox, DanceboxSender,
         FrontierTemplatePara as FrontierTemplate, WestendRelay as Westend, WestendSender,
@@ -35,12 +36,16 @@ use {
         opaque::latest::WESTEND_GENESIS_HASH,
         VersionedLocation, VersionedXcm,
     },
-    xcm_emulator::{assert_expected_events, bx, Chain, TestExt},
+    xcm_emulator::{assert_expected_events, bx, Chain, Parachain, TestExt},
     xcm_executor::traits::ConvertLocation,
 };
 
 #[test]
 fn using_signed_based_sovereign_works_in_tanssi() {
+    Westend::execute_with(|| {
+        Dmp::make_parachain_reachable(Dancebox::para_id());
+    });
+
     // XcmPallet send arguments
     let root_origin = <Westend as Chain>::RuntimeOrigin::root();
     let dancebox_dest: VersionedLocation = Location {

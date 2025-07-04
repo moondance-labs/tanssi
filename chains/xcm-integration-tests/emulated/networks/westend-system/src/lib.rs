@@ -27,6 +27,7 @@ use {
     xcm_emulator::{decl_test_networks, Chain},
 };
 
+pub use westend_emulated_chain;
 decl_test_networks! {
     pub struct WestendMockNet {
         relay_chain = Westend,

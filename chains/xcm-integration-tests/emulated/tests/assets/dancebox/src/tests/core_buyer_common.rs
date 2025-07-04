@@ -45,10 +45,10 @@ pub const ROCOCO_ED: u128 = rococo_runtime_constants::currency::EXISTENTIAL_DEPO
 pub const BUY_EXECUTION_COST: u128 = dancebox_runtime::xcm_config::XCM_BUY_EXECUTION_COST_ROCOCO;
 // Difference between BUY_EXECUTION_COST and the actual cost that depends on the weight of the XCM
 // message, gets refunded on successful execution of core buying extrinsic.
-pub const BUY_EXECUTION_REFUND: u128 = 24506230;
+pub const BUY_EXECUTION_REFUND: u128 = 19533231;
 // Difference between BUY_EXECUTION_COST and the actual cost that depends on the weight of the XCM
 // message, gets refunded on un-successful execution of core buying extrinsic.
-pub const BUY_EXECUTION_REFUND_ON_FAILURE: u128 = 22172920;
+pub const BUY_EXECUTION_REFUND_ON_FAILURE: u128 = 17199921;
 
 pub const PLACE_ORDER_WEIGHT_AT_MOST: Weight = Weight::from_parts(1_000_000_000, 100_000);
 

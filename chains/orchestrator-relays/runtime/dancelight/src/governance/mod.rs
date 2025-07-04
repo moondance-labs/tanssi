@@ -49,6 +49,8 @@ impl pallet_conviction_voting::Config for Runtime {
     type MaxTurnout =
         frame_support::traits::tokens::currency::ActiveIssuanceOf<Balances, Self::AccountId>;
     type Polls = Referenda;
+    type BlockNumberProvider = frame_system::Pallet<Runtime>;
+    type VotingHooks = ();
 }
 
 parameter_types! {
@@ -92,4 +94,5 @@ impl pallet_referenda::Config for Runtime {
     type AlarmInterval = AlarmInterval;
     type Tracks = TracksInfo;
     type Preimages = Preimage;
+    type BlockNumberProvider = frame_system::Pallet<Runtime>;
 }

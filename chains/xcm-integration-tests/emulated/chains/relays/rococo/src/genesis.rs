@@ -70,6 +70,7 @@ pub fn genesis() -> Storage {
                 .cloned()
                 .map(|k| (k, ENDOWMENT))
                 .collect(),
+            ..Default::default()
         },
         session: rococo_runtime::SessionConfig {
             keys: validators::initial_authorities()
@@ -101,14 +102,40 @@ pub fn genesis() -> Storage {
         },
         paras: rococo_runtime::ParasConfig {
             _config: Default::default(),
-            paras: vec![(
-                3333.into(),
-                ParaGenesisArgs {
-                    genesis_head: Default::default(),
-                    validation_code: ValidationCode(vec![1, 1, 2, 3, 4]),
-                    para_kind: ParaKind::Parathread,
-                },
-            )],
+            paras: vec![
+                (
+                    3333.into(),
+                    ParaGenesisArgs {
+                        genesis_head: Default::default(),
+                        validation_code: ValidationCode(vec![1, 1, 2, 3, 4]),
+                        para_kind: ParaKind::Parathread,
+                    },
+                ),
+                (
+                    2000.into(),
+                    ParaGenesisArgs {
+                        genesis_head: Default::default(),
+                        validation_code: ValidationCode(vec![1, 1, 2, 3, 4]),
+                        para_kind: ParaKind::Parachain,
+                    },
+                ),
+                (
+                    2001.into(),
+                    ParaGenesisArgs {
+                        genesis_head: Default::default(),
+                        validation_code: ValidationCode(vec![1, 1, 2, 3, 4]),
+                        para_kind: ParaKind::Parachain,
+                    },
+                ),
+                (
+                    2002.into(),
+                    ParaGenesisArgs {
+                        genesis_head: Default::default(),
+                        validation_code: ValidationCode(vec![1, 1, 2, 3, 4]),
+                        para_kind: ParaKind::Parachain,
+                    },
+                ),
+            ],
         },
         ..Default::default()
     };

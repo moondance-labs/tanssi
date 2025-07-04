@@ -23,7 +23,25 @@ use {
     emulated_integration_tests_common::{
         impl_assert_events_helpers_for_parachain, xcm_emulator::decl_test_parachains,
     },
+    frame_support::sp_runtime::DispatchResult,
+    tanssi_emulated_integration_tests_common::TestDigestProvider,
+    xcm_emulator::AdditionalInherentCode,
+    xcm_emulator::OnInitialize,
+    xcm_emulator::Parachain,
 };
+
+pub struct TemplateAdditionalInherentCode;
+impl AdditionalInherentCode for TemplateAdditionalInherentCode {
+    fn on_new_block() -> DispatchResult {
+        pallet_cc_authorities_noting::DidSetOrchestratorAuthorityData::<
+            container_chain_template_simple_runtime::Runtime,
+        >::put(true);
+        pallet_author_inherent::InherentIncluded::<
+        container_chain_template_simple_runtime::Runtime,
+        >::put(true);
+        Ok(())
+    }
+}
 
 decl_test_parachains! {
     pub struct SimpleTemplate {
@@ -35,6 +53,8 @@ decl_test_parachains! {
             LocationToAccountId: xcm_config::LocationToAccountId,
             ParachainInfo: ParachainInfo,
             MessageOrigin: cumulus_primitives_core::AggregateMessageOrigin,
+            DigestProvider: TestDigestProvider<container_chain_template_simple_runtime::Runtime, Self::Network>,
+            AdditionalInherentCode: TemplateAdditionalInherentCode,
         },
         pallets = {
             System: System,
