@@ -2,10 +2,8 @@ import "@tanssi/api-augment";
 
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
-import { filterAndApply } from "@moonwall/util";
 
-import type { EventRecord } from "@polkadot/types/interfaces";
-import { type BlockData, getBlocksDataForPeriodMs } from "../../utils";
+import { type BlockData, getBlocksDataForPeriodMs, toBigInt } from "../../utils";
 import { calculateIdentityDeposit, calculateSubIdentityDeposit } from "../../utils/identity.ts";
 import type { u128 } from "@polkadot/types-codec";
 
@@ -40,12 +38,11 @@ describeSuite({
                         const events = blockToCheck.extrinsicIndexToEventsMap.get(`${index}`) || [];
 
                         // Get all fee paid events for the current extrinsic
-                        const identitySetEvents = filterAndApply(
-                            events,
-                            "identity",
-                            ["IdentitySet"],
-                            ({ event }: EventRecord) => event.data.toHuman() as unknown as { who: string }
-                        );
+                        const identitySetEvents = events
+                            .filter(
+                                (event) => event.event.method === "IdentitySet" && event.event.section === "identity"
+                            )
+                            .map((event) => event.event.data as unknown as { who: string });
 
                         if (!identitySetEvents.length) {
                             continue;
@@ -65,12 +62,11 @@ describeSuite({
 
                             const expectedAmount = calculateIdentityDeposit(api, registration.info);
 
-                            const reserved = filterAndApply(
-                                events,
-                                "balances",
-                                ["Reserved"],
-                                ({ event }: EventRecord) => event.data as unknown as unknown as { amount: u128 }
-                            );
+                            const reserved = events
+                                .filter(
+                                    (event) => event.event.method === "Reserved" && event.event.section === "balances"
+                                )
+                                .map((event) => event.event.data as unknown as { amount: string });
 
                             // If the identity was not set before, we expect the deposit to be equal 0
                             const prevDeposit = prevIdentity.isNone
@@ -82,7 +78,7 @@ describeSuite({
                                       }
                                   ).deposit.toBigInt();
 
-                            const actuallyReserved = reserved[0]?.amount.toBigInt() || 0n; // In case we update the identity info, we don't pay
+                            const actuallyReserved = reserved[0] ? toBigInt(reserved[0].amount) : 0n; // In case we update the identity info, we don't pay
                             expect(
                                 actuallyReserved + prevDeposit,
                                 `Block #${blockToCheck.blockNum}. Expecting actuallyReserved + identityDeposit: ${actuallyReserved + prevDeposit} to equal expectedAmount: ${expectedAmount}`
@@ -107,12 +103,12 @@ describeSuite({
                         const events = blockToCheck.extrinsicIndexToEventsMap.get(`${index}`) || [];
 
                         // Get all fee paid events for the current extrinsic
-                        const identityClearedEvents = filterAndApply(
-                            events,
-                            "identity",
-                            ["IdentityCleared"],
-                            ({ event }: EventRecord) => event.data.toHuman() as unknown as { who: string }
-                        );
+                        const identityClearedEvents = events
+                            .filter(
+                                (event) =>
+                                    event.event.method === "IdentityCleared" && event.event.section === "identity"
+                            )
+                            .map((event) => event.event.data as unknown as { who: string });
 
                         if (!identityClearedEvents.length) {
                             continue;
@@ -127,12 +123,11 @@ describeSuite({
                             const prevIdentity = await prevApiAtBlock.query.identity.identityOf(
                                 identityClearedEvent.who
                             );
-                            const unreserved = filterAndApply(
-                                events,
-                                "balances",
-                                ["Unreserved"],
-                                ({ event }: EventRecord) => event.data as unknown as unknown as { amount: u128 }
-                            );
+                            const unreserved = events
+                                .filter(
+                                    (event) => event.event.method === "Unreserved" && event.event.section === "balances"
+                                )
+                                .map((event) => event.event.data as unknown as { amount: string });
 
                             const prevUnwrappedIdentity = prevIdentity.unwrap() as unknown as {
                                 info: unknown;
@@ -141,10 +136,10 @@ describeSuite({
                             const expectedAmount = calculateIdentityDeposit(api, prevUnwrappedIdentity.info);
 
                             expect(unreserved.length).toBeGreaterThan(0);
-                            const actuallyUnreserved = unreserved[0]?.amount.toBigInt();
+                            const actuallyUnreserved = toBigInt(unreserved[0].amount);
                             expect(
                                 actuallyUnreserved,
-                                `Block #${blockToCheck.blockNum}. Expecting actuallyUnreserved: ${expectedAmount} to equal expectedAmount: ${expectedAmount}`
+                                `Block #${blockToCheck.blockNum}. Expecting actuallyUnreserved: ${actuallyUnreserved} to equal expectedAmount: ${expectedAmount}`
                             ).toEqual(expectedAmount);
                         }
                     }
@@ -166,12 +161,12 @@ describeSuite({
                         const events = blockToCheck.extrinsicIndexToEventsMap.get(`${index}`) || [];
 
                         // Get all fee paid events for the current extrinsic
-                        const subIdentitySetEvents = filterAndApply(
-                            events,
-                            "identity",
-                            ["SubIdentitiesSet"],
-                            ({ event }: EventRecord) => event.data.toHuman() as unknown as { main: string }
-                        );
+                        const subIdentitySetEvents = events
+                            .filter(
+                                (event) =>
+                                    event.event.method === "SubIdentitiesSet" && event.event.section === "identity"
+                            )
+                            .map((event) => event.event.data as unknown as { main: string });
 
                         if (!subIdentitySetEvents.length) {
                             continue;
@@ -193,29 +188,33 @@ describeSuite({
                             const expectedAmount = calculateSubIdentityDeposit(api, diffAbs);
 
                             if (diff > 0) {
-                                const reserved = filterAndApply(
-                                    events,
-                                    "balances",
-                                    ["Reserved"],
-                                    ({ event }: EventRecord) => event.data as unknown as unknown as { amount: u128 }
-                                );
+                                const reserved = events
+                                    .filter(
+                                        (event) =>
+                                            event.event.method === "Reserved" && event.event.section === "balances"
+                                    )
+                                    .map((event) => event.event.data as unknown as { amount: string });
+
+                                const reservedBI = toBigInt(reserved[0].amount);
 
                                 expect(
                                     expectedAmount,
-                                    `Block #${blockToCheck.blockNum}. Expecting expectedAmount: ${expectedAmount} to equal reserved: ${reserved}`
-                                ).toEqual(expectedAmount);
+                                    `Block #${blockToCheck.blockNum}. Expecting expectedAmount: ${expectedAmount} to equal reserved: ${reservedBI}`
+                                ).toEqual(reservedBI);
                             } else {
-                                const unreserved = filterAndApply(
-                                    events,
-                                    "balances",
-                                    ["Unreserved"],
-                                    ({ event }: EventRecord) => event.data as unknown as unknown as { amount: u128 }
-                                );
+                                const unreserved = events
+                                    .filter(
+                                        (event) =>
+                                            event.event.method === "Unreserved" && event.event.section === "balances"
+                                    )
+                                    .map((event) => event.event.data as unknown as { amount: string });
+
+                                const unreservedBI = toBigInt(unreserved[0].amount);
 
                                 expect(
                                     expectedAmount,
-                                    `Block #${blockToCheck.blockNum}. Expecting expectedAmount: ${expectedAmount} to equal unreserved: ${unreserved}`
-                                ).toEqual(expectedAmount);
+                                    `Block #${blockToCheck.blockNum}. Expecting expectedAmount: ${expectedAmount} to equal unreserved: ${unreservedBI}`
+                                ).toEqual(unreservedBI);
                             }
                         }
                     }
