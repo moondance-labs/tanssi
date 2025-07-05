@@ -1074,7 +1074,7 @@
         },
         {
             "name": "dancelight_smoke",
-            "testFileDir": ["suites/smoke-test-common-solo", "suites/smoke-test-common-all"],
+            "testFileDir": ["suites/smoke-test-common-solo", "suites/smoke-test-common-all", "suites/smoke-test-dancelight"],
             "foundation": {
                 "type": "read_only"
             },
