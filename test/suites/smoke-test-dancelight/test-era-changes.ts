@@ -51,7 +51,7 @@ describeSuite({
                 const boundedErasErrorRecords = [];
                 for (let i = 0; i < boundedEras.length; i++) {
                     const eraIndex: number = boundedEras[i][0].toNumber();
-                    if (eraIndex < currentEraIndex - bondingDuration) {
+                    if (eraIndex <= currentEraIndex - bondingDuration) {
                         boundedErasErrorRecords.push(boundedEras[i]);
                     }
                 }
@@ -62,33 +62,58 @@ describeSuite({
 
                 // Verify that ValidatorSlashInEra are pruned correctly
                 const validatorSlashInEra =
-                    await apiAtCurrentEraStart.query.externalValidatorSlashes.validatorSlashInEra.entries();
+                    await apiAtCurrentEraStart.query.externalValidatorSlashes.validatorSlashInEra.keys();
                 const validatorSlashInEraErrorRecords = [];
                 for (let i = 0; i < validatorSlashInEra.length; i++) {
-                    const validatorSlashEra = validatorSlashInEra[i][0].args[0].toNumber();
-                    if (validatorSlashEra < currentEraIndex - bondingDuration) {
+                    const validatorSlashEra = validatorSlashInEra[i].args[0].toNumber();
+                    if (validatorSlashEra <= currentEraIndex - bondingDuration) {
                         validatorSlashInEraErrorRecords.push(validatorSlashInEra[i]);
                     }
                 }
                 expect(validatorSlashInEraErrorRecords.length).to.be.equal(
                     0,
-                    `Found ValidatorSlashInEra records outside of bonding duration: ${validatorSlashInEraErrorRecords.join("; ")}`
+                    `Found ValidatorSlashInEra records outside of bonding duration: ${validatorSlashInEraErrorRecords.join("\n")}`
                 );
 
                 // Verify that Slashes are pruned correctly
-                const slashes = await apiAtCurrentEraStart.query.externalValidatorSlashes.slashes.entries();
+                const slashes = await apiAtCurrentEraStart.query.externalValidatorSlashes.slashes.keys();
                 const slashesErrorRecords: number[] = [];
                 for (let i = 0; i < slashes.length; i++) {
-                    const slashesEra = slashes[i][0].args[0].toNumber();
-                    if (slashesEra < currentEraIndex - bondingDuration) {
+                    const slashesEra = slashes[i].args[0].toNumber();
+                    if (slashesEra <= currentEraIndex - bondingDuration) {
                         slashesErrorRecords.push(slashesEra);
                     }
                 }
                 expect(slashesErrorRecords.length).to.be.equal(
                     0,
-                    `Found Slashes records outside of bonding duration: ${slashesErrorRecords.join("; ")}`
+                    `Found Slashes records outside of bonding duration: ${slashesErrorRecords.join("\n")}`
                 );
             },
         });
+
+        it({
+            id: "C03",
+            title: "Era rewards are updated as expected",
+            test: async () => {
+                const rewardsHistoryDepth = api.consts.externalValidatorsRewards.historyDepth.toNumber();
+                const apiAtCurrentEraStart = await api.at(await api.rpc.chain.getBlockHash(currentEraStartBlock));
+
+                const currentEraRewards = await apiAtCurrentEraStart.query.externalValidatorsRewards.rewardPointsForEra.keys();
+                const currentEraRewardsErrorRecords = [];
+
+                for (let i = 0; i < currentEraRewards.length; i++) {
+                    const eraIndex = currentEraRewards[i].args[0].toNumber();
+                    if (eraIndex <= currentEraIndex - rewardsHistoryDepth) {
+                        currentEraRewardsErrorRecords.push(currentEraRewards[i]);
+                    }
+                }
+
+                expect(currentEraRewardsErrorRecords.length).to.be.equal(
+                    0,
+                    `Found RewardPointsForEra records outside of history depth: ${currentEraRewardsErrorRecords.join("\n")}`
+                );
+            },
+        });
+
     },
 });
