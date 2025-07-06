@@ -600,7 +600,7 @@ impl pallet_session::Config for Runtime {
     type SessionHandler = <SessionKeys as sp_runtime::traits::OpaqueKeys>::KeyTypeIdProviders;
     type Keys = SessionKeys;
     type WeightInfo = weights::pallet_session::SubstrateWeight<Runtime>;
-    type DisablingStrategy = (); // TODO: revisit this
+    type DisablingStrategy = ();
 }
 
 pub struct RemoveInvulnerablesImpl;

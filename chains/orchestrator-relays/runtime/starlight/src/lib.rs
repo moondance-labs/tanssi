@@ -612,7 +612,7 @@ impl pallet_session::Config for Runtime {
     type SessionHandler = <SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
     type Keys = SessionKeys;
     type WeightInfo = weights::pallet_session::SubstrateWeight<Runtime>;
-    type DisablingStrategy = (); //TODO: revisit this
+    type DisablingStrategy = ();
 }
 
 pub struct FullIdentificationOf;

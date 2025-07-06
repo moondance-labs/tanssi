@@ -164,7 +164,7 @@ impl pallet_session::Config for Test {
     type ValidatorIdOf = ConvertInto;
     type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
     type WeightInfo = ();
-    type DisablingStrategy = (); // TODO: revisit this later
+    type DisablingStrategy = ();
 }
 
 sp_runtime::impl_opaque_keys! {

@@ -174,7 +174,7 @@ impl pallet_session::Config for Test {
     type SessionHandler = TestSessionHandler;
     type Keys = MockSessionKeys;
     type WeightInfo = ();
-    type DisablingStrategy = (); // TODO: revisit this later
+    type DisablingStrategy = ();
 }
 
 pub fn new_test_ext() -> sp_io::TestExternalities {
