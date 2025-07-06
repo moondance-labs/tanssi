@@ -1553,6 +1553,48 @@ declare module "@polkadot/api-base/types/submittable" {
         };
         ethereumSystem: {
             /**
+             * Sends a message to the Gateway contract to transfer ether from an agent to `recipient`.
+             *
+             * Privileged. Can only be called by root.
+             *
+             * Fee required: No
+             *
+             * - `origin`: Must be root
+             * - `location`: Location used to resolve the agent
+             * - `recipient`: Recipient of funds
+             * - `amount`: Amount to transfer
+             **/
+            forceTransferNativeFromAgent: AugmentedSubmittable<
+                (
+                    location: XcmVersionedLocation | { V3: any } | { V4: any } | { V5: any } | string | Uint8Array,
+                    recipient: H160 | string | Uint8Array,
+                    amount: u128 | AnyNumber | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [XcmVersionedLocation, H160, u128]
+            >;
+            /**
+             * Sends a message to the Gateway contract to update an arbitrary channel
+             *
+             * Fee required: No
+             *
+             * - `origin`: Must be root
+             * - `channel_id`: ID of channel
+             * - `mode`: Initial operating mode of the channel
+             * - `outbound_fee`: Fee charged to users for sending outbound messages to Polkadot
+             **/
+            forceUpdateChannel: AugmentedSubmittable<
+                (
+                    channelId: SnowbridgeCoreChannelId | string | Uint8Array,
+                    mode:
+                        | SnowbridgeOutboundQueuePrimitivesOperatingMode
+                        | "Normal"
+                        | "RejectingOutboundMessages"
+                        | number
+                        | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [SnowbridgeCoreChannelId, SnowbridgeOutboundQueuePrimitivesOperatingMode]
+            >;
+            /**
              * Registers a Polkadot-native token as a wrapped ERC20 token on Ethereum.
              * Privileged. Can only be called by root.
              *

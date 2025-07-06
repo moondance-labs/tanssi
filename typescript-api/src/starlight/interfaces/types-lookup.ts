@@ -2616,6 +2616,17 @@ declare module "@polkadot/types/lookup" {
         readonly asSetPricingParameters: {
             readonly params: SnowbridgeCorePricingPricingParameters;
         } & Struct;
+        readonly isForceUpdateChannel: boolean;
+        readonly asForceUpdateChannel: {
+            readonly channelId: SnowbridgeCoreChannelId;
+            readonly mode: SnowbridgeOutboundQueuePrimitivesOperatingMode;
+        } & Struct;
+        readonly isForceTransferNativeFromAgent: boolean;
+        readonly asForceTransferNativeFromAgent: {
+            readonly location: XcmVersionedLocation;
+            readonly recipient: H160;
+            readonly amount: u128;
+        } & Struct;
         readonly isSetTokenTransferFees: boolean;
         readonly asSetTokenTransferFees: {
             readonly createAssetXcm: u128;
@@ -2631,6 +2642,8 @@ declare module "@polkadot/types/lookup" {
             | "Upgrade"
             | "SetOperatingMode"
             | "SetPricingParameters"
+            | "ForceUpdateChannel"
+            | "ForceTransferNativeFromAgent"
             | "SetTokenTransferFees"
             | "RegisterToken";
     }

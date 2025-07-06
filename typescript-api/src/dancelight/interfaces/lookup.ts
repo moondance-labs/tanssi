@@ -2264,9 +2264,16 @@ export default {
             __Unused3: "Null",
             __Unused4: "Null",
             __Unused5: "Null",
-            __Unused6: "Null",
+            force_update_channel: {
+                channelId: "SnowbridgeCoreChannelId",
+                mode: "SnowbridgeOutboundQueuePrimitivesOperatingMode",
+            },
             __Unused7: "Null",
-            __Unused8: "Null",
+            force_transfer_native_from_agent: {
+                location: "XcmVersionedLocation",
+                recipient: "H160",
+                amount: "u128",
+            },
             set_token_transfer_fees: {
                 createAssetXcm: "u128",
                 transferAssetXcm: "u128",
