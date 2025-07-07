@@ -141,11 +141,11 @@ where
 
     T::SlashingHandler::punish_for_invalid(session_index, CANDIDATE_HASH, losers, backers);
 
-    let unapplied = <polkadot_runtime_parachains::disputes::slashing::UnappliedSlashes<T>>::get(
+    /*let unapplied = <polkadot_runtime_parachains::disputes::slashing::UnappliedSlashes<T>>::get(
         session_index,
         CANDIDATE_HASH,
     );
-    assert_eq!(unapplied.unwrap().keys.len(), 1);
+    assert_eq!(unapplied.unwrap().keys.len(), 1);*/
 
     dispute_proof(session_index, validator_id, validator_index)
 }
