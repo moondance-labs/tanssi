@@ -98,7 +98,8 @@ describeSuite({
                 const rewardsHistoryDepth = api.consts.externalValidatorsRewards.historyDepth.toNumber();
                 const apiAtCurrentEraStart = await api.at(await api.rpc.chain.getBlockHash(currentEraStartBlock));
 
-                const currentEraRewards = await apiAtCurrentEraStart.query.externalValidatorsRewards.rewardPointsForEra.keys();
+                const currentEraRewards =
+                    await apiAtCurrentEraStart.query.externalValidatorsRewards.rewardPointsForEra.keys();
                 const currentEraRewardsErrorRecords = [];
 
                 for (let i = 0; i < currentEraRewards.length; i++) {
@@ -114,6 +115,5 @@ describeSuite({
                 );
             },
         });
-
     },
 });
