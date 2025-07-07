@@ -23,7 +23,7 @@ describeSuite({
 
         it({
             id: "C01",
-            title: "Era changes are happening as expected and information is correct",
+            title: "Era changes are happening as expected",
             test: async () => {
                 const sessionsPerEra = api.consts.externalValidators.sessionsPerEra.toNumber();
                 const apiAtCurrentEraStart = await api.at(await api.rpc.chain.getBlockHash(currentEraStartBlock));
@@ -41,7 +41,7 @@ describeSuite({
 
         it({
             id: "C02",
-            title: "Era slashes are pruned as expected",
+            title: "Era slashes records are pruned as expected",
             test: async () => {
                 const bondingDuration = api.consts.externalValidatorSlashes.bondingDuration.toNumber();
                 const apiAtCurrentEraStart = await api.at(await api.rpc.chain.getBlockHash(currentEraStartBlock));
@@ -93,7 +93,7 @@ describeSuite({
 
         it({
             id: "C03",
-            title: "Era rewards are updated as expected",
+            title: "Era rewards records are pruned as expected",
             test: async () => {
                 const rewardsHistoryDepth = api.consts.externalValidatorsRewards.historyDepth.toNumber();
                 const apiAtCurrentEraStart = await api.at(await api.rpc.chain.getBlockHash(currentEraStartBlock));
