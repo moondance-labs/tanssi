@@ -16,7 +16,7 @@ workspace = true
 cumulus-primitives-core = { workspace = true }
 dp-chain-state-snapshot = { workspace = true }
 dp-container-chain-genesis-data = { workspace = true }
-dp-core = { workspace = true  }
+dp-core = { workspace = true }
 frame-benchmarking = { workspace = true, optional = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
@@ -46,6 +46,7 @@ std = [
 	"cumulus-test-relay-sproof-builder/std",
 	"dp-chain-state-snapshot/std",
 	"dp-container-chain-genesis-data/std",
+	"dp-core/std",
 	"frame-benchmarking/std",
 	"frame-support/std",
 	"frame-system/std",
