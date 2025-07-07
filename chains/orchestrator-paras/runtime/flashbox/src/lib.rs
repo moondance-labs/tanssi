@@ -602,7 +602,6 @@ impl RemoveInvulnerables<CollatorId> for RemoveInvulnerablesImpl {
         if num_invulnerables == 0 {
             return vec![];
         }
-        // TODO: check if this works on session changes
         let all_invulnerables = pallet_invulnerables::Invulnerables::<Runtime>::get();
         if all_invulnerables.is_empty() {
             return vec![];
@@ -1282,7 +1281,6 @@ parameter_types! {
     // initial_supply * (1.05) = initial_supply * (1+x)^5_259_600
     // we should solve for x = (1.05)^(1/5_259_600) -1 -> 0.000000009 per block or 9/1_000_000_000
     // 1% in the case of dev mode
-    // TODO: check if we can put the prod inflation for tests too
     // TODO: better calculus for going from annual to block inflation (if it can be done)
     pub const InflationRate: Perbill = prod_or_fast!(Perbill::from_parts(9), Perbill::from_percent(1));
 

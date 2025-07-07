@@ -417,7 +417,7 @@ where
                                 .unwrap();
 
                             // if we dont do this we have a backed candidate every 2 blocks
-                            // TODO: figure out why
+                            // we want
                             persisted_validation_data.relay_parent_storage_root =
                                 parent_header.state_root;
 

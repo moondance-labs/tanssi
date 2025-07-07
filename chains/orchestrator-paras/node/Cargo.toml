@@ -34,6 +34,7 @@ tokio-util = { workspace = true }
 ccp-authorities-noting-inherent = { workspace = true, features = [ "std" ] }
 dancebox-runtime = { workspace = true, features = [ "std" ] }
 dp-container-chain-genesis-data = { workspace = true, features = [ "json", "std" ] }
+dp-core = { workspace = true, features = [ "std" ]  }
 dp-slot-duration-runtime-api = { workspace = true }
 flashbox-runtime = { workspace = true, features = [ "std" ] }
 manual-container-chains-exclusion-rpc = { workspace = true }

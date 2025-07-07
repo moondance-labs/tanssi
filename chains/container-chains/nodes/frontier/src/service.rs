@@ -340,9 +340,6 @@ pub async fn start_dev_node(
     para_id: ParaId,
     hwbench: Option<sc_sysinfo::HwBench>,
 ) -> Result<TaskManager, sc_service::error::Error> {
-    // TODO: Not present before, is this wanted and was forgotten?
-    // let parachain_config = prepare_node_config(parachain_config);
-
     // Create a `NodeBuilder` which helps setup parachain nodes common systems.
     let node_builder = NodeConfig::new_builder(&parachain_config, hwbench)?;
 
@@ -468,7 +465,6 @@ pub async fn start_dev_node(
                         current_para_block_head: None,
                         relay_offset: 1000,
                         relay_blocks_per_para_block: 2,
-                        // TODO: Recheck
                         para_blocks_per_relay_epoch: 10,
                         relay_randomness_config: (),
                         xcm_config: MockXcmConfig::new(

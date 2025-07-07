@@ -141,9 +141,8 @@ where
 
     T::SlashingHandler::punish_for_invalid(session_index, CANDIDATE_HASH, losers, backers);
 
-    // // TODO: Storage is pub(crate) so cannot be accessed here
-    // let unapplied = <UnappliedSlashes<T>>::get(session_index, CANDIDATE_HASH);
-    // assert_eq!(unapplied.unwrap().keys.len(), 1);
+    let unapplied = <UnappliedSlashes<T>>::get(session_index, CANDIDATE_HASH);
+    assert_eq!(unapplied.unwrap().keys.len(), 1);
 
     dispute_proof(session_index, validator_id, validator_index)
 }

@@ -204,7 +204,6 @@ impl xcm_executor::Config for XcmConfig {
     type Barrier = XcmBarrier;
     type Weigher = XcmWeigher;
     // Local token trader only
-    // TODO: update once we have a way to do fees
     type Trader = (
         UsingComponents<WeightToFee, SelfReserve, AccountId, Balances, ()>,
         cumulus_primitives_utility::TakeFirstAssetTrader<
@@ -259,7 +258,6 @@ impl pallet_xcm::Config for Runtime {
     type MaxLockers = ConstU32<8>;
     type MaxRemoteLockConsumers = ConstU32<0>;
     type RemoteLockConsumerIdentifier = ();
-    // TODO pallet-xcm weights
     type WeightInfo = weights::pallet_xcm::SubstrateWeight<Runtime>;
     type AdminOrigin = EnsureRoot<AccountId>;
 }
