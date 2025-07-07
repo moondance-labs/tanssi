@@ -18,7 +18,7 @@ import {
 } from "utils";
 
 import { keccak256 } from "viem";
-import { TESTNET_ETHEREUM_NETWORK_ID } from "utils/constants";
+import { ETHEREUM_TESTNET_NETWORK, FOREIGN_ASSET_ID } from "utils/constants";
 
 // Change this if we change the storage parameter in runtime
 const GATEWAY_STORAGE_KEY = "0xaed97c7854d601808b98ae43079dafb3";
@@ -79,7 +79,6 @@ describeSuite({
         let operatorRewardDetails: any;
 
         let tokenId: any;
-        let wETHAssetId: number;
         let wETHBalanceFromEthereum: bigint;
 
         let ethInfo: any;
@@ -242,19 +241,16 @@ describeSuite({
                 ).stdout
             );
 
-            const ethereumNetwork = { Ethereum: { chainId: TESTNET_ETHEREUM_NETWORK_ID } };
-
-            wETHAssetId = 42;
             const wETHTokenLocation = relayApi.createType<MultiLocation>("MultiLocation", {
                 parents: 1,
                 interior: {
                     X2: [
                         {
-                            GlobalConsensus: ethereumNetwork,
+                            GlobalConsensus: ETHEREUM_TESTNET_NETWORK,
                         },
                         {
                             AccountKey20: {
-                                network: ethereumNetwork,
+                                network: ETHEREUM_TESTNET_NETWORK,
                                 key: hexToU8a(wETHAddress),
                             },
                         },
@@ -286,7 +282,7 @@ describeSuite({
                         relayApi.tx.ethereumSystem.registerToken(versionedNativeTokenLocation, metadata),
                         relayApi.tx.foreignAssetsCreator.createForeignAsset(
                             wETHTokenLocation,
-                            wETHAssetId,
+                            FOREIGN_ASSET_ID,
                             alice.address,
                             true,
                             1
@@ -860,12 +856,11 @@ describeSuite({
 
                 // Ensure the WETH token has been received on the Starlight side
                 const randomWETHBalanceAfter = await relayApi.query.foreignAssets.account(
-                    wETHAssetId,
+                    FOREIGN_ASSET_ID,
                     randomAccount.address
                 );
 
-                expect(randomWETHBalanceAfter.toJSON()).to.not.be.null;
-                expect(BigInt(randomWETHBalanceAfter.toJSON().balance)).to.be.eq(wETHBalanceFromEthereum);
+                expect(randomWETHBalanceAfter.unwrap().balance.toBigInt()).to.be.eq(wETHBalanceFromEthereum);
             },
         });
 
