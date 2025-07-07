@@ -41,17 +41,15 @@ pub struct EthereumBlobExporter<
     UniversalLocation,
     EthereumNetwork,
     OutboundQueue,
-    ConvertChannelToAgentId,
     ConvertAssetId,
-    BridgeChannelId,
+    BridgeChannelInfo,
 >(
     PhantomData<(
         UniversalLocation,
         EthereumNetwork,
         OutboundQueue,
-        ConvertChannelToAgentId,
         ConvertAssetId,
-        BridgeChannelId,
+        BridgeChannelInfo,
     )>,
 );
 
@@ -59,25 +57,22 @@ impl<
         UniversalLocation,
         EthereumNetwork,
         OutboundQueue,
-        ConvertChannelToAgentId,
         ConvertAssetId,
-        BridgeChannelId,
+        BridgeChannelInfo,
     > ExportXcm
     for EthereumBlobExporter<
         UniversalLocation,
         EthereumNetwork,
         OutboundQueue,
-        ConvertChannelToAgentId,
         ConvertAssetId,
-        BridgeChannelId,
+        BridgeChannelInfo,
     >
 where
     UniversalLocation: Get<InteriorLocation>,
     EthereumNetwork: Get<NetworkId>,
     OutboundQueue: SendMessage<Balance = u128>,
-    ConvertChannelToAgentId: TryConvert<ChannelId, AgentId>,
     ConvertAssetId: MaybeEquivalence<TokenId, Location>,
-    BridgeChannelId: Get<Option<ChannelId>>,
+    BridgeChannelInfo: Get<Option<(ChannelId, AgentId)>>,
 {
     type Ticket = (Vec<u8>, XcmHash);
 
@@ -130,15 +125,10 @@ where
             return Err(SendError::NotApplicable);
         }
 
-        let channel_id = BridgeChannelId::get().ok_or_else(|| {
-            log::error!(target: "xcm::ethereum_blob_exporter", "channel id cannot be fetched");
+        let (channel_id, agent_id) = BridgeChannelInfo::get().ok_or_else(|| {
+            log::error!(target: "xcm::ethereum_blob_exporter", "channel id and agent id cannot be fetched");
             SendError::Unroutable
         })?;
-
-        let Ok(agent_id) = ConvertChannelToAgentId::try_convert(channel_id) else {
-            log::error!(target: "xcm::ethereum_blob_exporter", "unroutable due to not being able to fetch agent id for channel id '{channel_id:?}'");
-            return Err(SendError::Unroutable);
-        };
 
         let message = message.take().ok_or_else(|| {
             log::error!(target: "xcm::ethereum_blob_exporter", "xcm message not provided.");

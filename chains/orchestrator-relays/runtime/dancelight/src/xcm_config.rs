@@ -41,7 +41,7 @@ use {
         xcm_sender::{ChildParachainRouter, ExponentialPrice},
         ToAuthor,
     },
-    snowbridge_core::ChannelId,
+    snowbridge_core::{ChannelId, AgentId},
     sp_core::ConstU32,
     sp_runtime::traits::TryConvertInto,
     tp_bridge::{
@@ -387,9 +387,9 @@ impl pallet_foreign_asset_creator::Config for Runtime {
 }
 
 parameter_types! {
-    pub SnowbridgeChannelId: Option<ChannelId> =
+    pub SnowbridgeChannelInfo: Option<(ChannelId, AgentId)> =
         pallet_ethereum_token_transfers::CurrentChannelInfo::<Runtime>::get()
-            .map(|x| x.channel_id);
+            .map(|x| (x.channel_id, x.agent_id));
 }
 
 /// Exports message to the Ethereum Gateway contract.
@@ -397,7 +397,6 @@ pub type SnowbridgeExporter = EthereumBlobExporter<
     UniversalLocation,
     EthereumNetwork,
     snowbridge_pallet_outbound_queue::Pallet<Runtime>,
-    SnowbridgeChannelToAgentId<Runtime>,
     EthereumSystem,
-    SnowbridgeChannelId,
+    SnowbridgeChannelInfo,
 >;
