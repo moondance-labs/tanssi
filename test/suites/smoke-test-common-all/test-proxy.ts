@@ -11,8 +11,8 @@ describeSuite({
     title: "Verify account proxies created",
     foundationMethods: "read_only",
     testCases: ({ context, it, log }) => {
-        const proxiesPerAccount: { [account: string]: PalletProxyProxyDefinition[] } = {};
-        const proxyAccList: string[] = [];
+        const proxiesPerAccount: Map<string, { deposit: bigint; definitions: PalletProxyProxyDefinition[] }> =
+            new Map();
         let atBlockNumber = 0;
         let apiAt: ApiDecoration<"promise">;
         let paraApi: ApiPromise;
@@ -45,10 +45,11 @@ describeSuite({
 
                 // TEMPLATE: convert the data into the format you want (usually a dictionary per account)
                 for (const proxyData of query) {
-                    const accountId = `0x${proxyData[0].toHex().slice(-40)}`;
                     last_key = proxyData[0].toString();
-                    proxiesPerAccount[accountId] = proxyData[1][0].toArray();
-                    proxyAccList.push(accountId);
+                    proxiesPerAccount.set(proxyData[0].args[0].toString(), {
+                        definitions: proxyData[1][0].toArray(),
+                        deposit: proxyData[1][1].toBigInt(),
+                    });
                 }
 
                 // log logs to make sure it keeps progressing
@@ -70,8 +71,8 @@ describeSuite({
                 const maxProxies = paraApi.consts.proxy.maxProxies.toNumber();
                 const failedProxies: { accountId: string; proxiesCount: number }[] = [];
 
-                for (const accountId of Object.keys(proxiesPerAccount)) {
-                    const proxiesCount = proxiesPerAccount[accountId].length;
+                for (const accountId of proxiesPerAccount.keys()) {
+                    const proxiesCount = proxiesPerAccount.get(accountId).definitions.length;
                     if (proxiesCount > maxProxies) {
                         failedProxies.push({ accountId, proxiesCount });
                     }
@@ -92,7 +93,7 @@ describeSuite({
 
                 expect(failedProxies.length, "Failed max proxies").to.equal(0);
 
-                log(`Verified ${Object.keys(proxiesPerAccount).length} total accounts (at #${atBlockNumber})`);
+                log(`Verified ${proxiesPerAccount.size} total accounts (at #${atBlockNumber})`);
             },
         });
 
@@ -116,6 +117,29 @@ describeSuite({
                 }
 
                 log("Verified maximum allowed proxies constant");
+            },
+        });
+
+        it({
+            id: "C300",
+            title: "check that the account has at least the deposit needed to cover proxy",
+            test: async () => {
+                for (const accountId of proxiesPerAccount.keys()) {
+                    const accountData = await apiAt.query.system.account(accountId);
+                    const reserved = accountData.data.reserved.toBigInt();
+
+                    if (reserved === 0n && accountData.nonce.toBigInt() === 0n) {
+                        log(
+                            `Account ${accountId} has no reserved balance and no nonce, looks like this is a pure proxy. Skipping it. `
+                        );
+                        continue;
+                    }
+
+                    expect(
+                        reserved,
+                        `Reserved balance: ${reserved} for account ${accountId} should be more or equal to deposit: ${proxiesPerAccount.get(accountId).deposit}`
+                    ).toBeGreaterThanOrEqual(proxiesPerAccount.get(accountId).deposit);
+                }
             },
         });
     },
