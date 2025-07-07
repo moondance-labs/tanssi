@@ -387,6 +387,7 @@ where
         // TODO: This function will be used only when we start receiving tokens from containers.
         // The whole struct is copied from Snowbridge and modified for our needs, and thus function
         // will be modified in a latter PR.
+        todo!("make_mint_foreign_token_command");
 
         use XcmConverterError::*;
 
