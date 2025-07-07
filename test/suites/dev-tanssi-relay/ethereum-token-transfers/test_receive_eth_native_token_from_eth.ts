@@ -7,8 +7,8 @@ import {
     generateEventLog,
     generateUpdate,
     FOREIGN_ASSET_ID,
-    ETHEREUM_MAINNET_NETWORK,
-    ETHEREUM_TESTNET_NETWORK,
+    ETHEREUM_NETWORK_MAINNET,
+    ETHEREUM_NETWORK_TESTNET,
 } from "utils";
 import {
     STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_ETH_TOKEN_TRANSFERS,
@@ -112,7 +112,7 @@ describeSuite({
                     .signAsync(alice);
                 await context.createBlock([tx1], { allowFailures: false });
 
-                const ethereumNetwork = isStarlight ? ETHEREUM_MAINNET_NETWORK : ETHEREUM_TESTNET_NETWORK;
+                const ethereumNetwork = isStarlight ? ETHEREUM_NETWORK_MAINNET : ETHEREUM_NETWORK_TESTNET;
 
                 // Create token on ForeignAssetsCreator to be validated when receiving the tokens.
                 const ethTokenLocation = {

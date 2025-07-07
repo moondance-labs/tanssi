@@ -18,7 +18,7 @@ import {
 } from "utils";
 
 import { keccak256 } from "viem";
-import { ETHEREUM_TESTNET_NETWORK, FOREIGN_ASSET_ID } from "utils/constants";
+import { ETHEREUM_NETWORK_TESTNET, FOREIGN_ASSET_ID } from "utils/constants";
 
 // Change this if we change the storage parameter in runtime
 const GATEWAY_STORAGE_KEY = "0xaed97c7854d601808b98ae43079dafb3";
@@ -246,11 +246,11 @@ describeSuite({
                 interior: {
                     X2: [
                         {
-                            GlobalConsensus: ETHEREUM_TESTNET_NETWORK,
+                            GlobalConsensus: ETHEREUM_NETWORK_TESTNET,
                         },
                         {
                             AccountKey20: {
-                                network: ETHEREUM_TESTNET_NETWORK,
+                                network: ETHEREUM_NETWORK_TESTNET,
                                 key: hexToU8a(wETHAddress),
                             },
                         },

@@ -11,8 +11,8 @@ export const STATEMINT_LOCATION_EXAMPLE = {
         X3: [{ Parachain: 1000 }, { PalletInstance: 50 }, { GeneralIndex: 0n }],
     },
 };
-export const ETHEREUM_MAINNET_NETWORK = { Ethereum: { chainId: 1 } };
-export const ETHEREUM_TESTNET_NETWORK = { Ethereum: { chainId: 11155111 } };
+export const ETHEREUM_NETWORK_MAINNET = { Ethereum: { chainId: 1 } };
+export const ETHEREUM_NETWORK_TESTNET = { Ethereum: { chainId: 11155111 } };
 export const FOREIGN_ASSET_ID = 42;
 
 export const PRIMARY_GOVERNANCE_CHANNEL_ID = "0x0000000000000000000000000000000000000000000000000000000000000001";
