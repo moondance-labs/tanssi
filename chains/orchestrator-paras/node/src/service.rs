@@ -17,9 +17,7 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
 use {
-    crate::command::solochain::{
-        build_solochain_config_dir, copy_zombienet_keystore, dummy_config, keystore_config,
-    },
+    crate::command::solochain::{copy_zombienet_keystore, dummy_config},
     core::marker::PhantomData,
     cumulus_client_cli::CollatorOptions,
     cumulus_client_collator::service::CollatorService,
@@ -722,27 +720,31 @@ pub async fn start_solochain_node(
     let chain_type = polkadot_config.chain_spec.chain_type().clone();
     let relay_chain = polkadot_config.chain_spec.id().to_string();
 
-    let base_path = container_chain_cli
+    // We use the relaychain keystore config for collators
+    // Ensure that the user did not provide any custom keystore path for collators
+    if container_chain_cli
         .base
         .base
-        .shared_params
-        .base_path
-        .as_ref()
-        .expect("base_path is always set");
-    let config_dir = build_solochain_config_dir(base_path);
-    let keystore = keystore_config(container_chain_cli.keystore_params(), &config_dir)
-        .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
+        .keystore_params
+        .keystore_path
+        .is_some()
+    {
+        panic!(
+            "--keystore-path not allowed here, must be set in relaychain args, after the first --"
+        )
+    }
+    let keystore = &polkadot_config.keystore;
 
     // Instead of putting keystore in
     // Collator1000-01/data/chains/simple_container_2000/keystore
     // We put it in
-    // Collator1000-01/data/config/keystore
+    // Collator1000-01/relay-data/chains/dancelight_local_testnet/keystore
     // And same for "network" folder
     // But zombienet will put the keys in the old path, so we need to manually copy it if we
     // are running under zombienet
-    copy_zombienet_keystore(&keystore)?;
+    copy_zombienet_keystore(keystore, container_chain_cli.base_path())?;
 
-    let keystore_container = KeystoreContainer::new(&keystore)?;
+    let keystore_container = KeystoreContainer::new(keystore)?;
 
     // No metrics so no prometheus registry
     let prometheus_registry = None;

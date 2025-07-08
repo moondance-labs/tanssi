@@ -342,36 +342,15 @@ pub fn dummy_config(tokio_handle: tokio::runtime::Handle, base_path: BasePath) -
     }
 }
 
-/// Returns the default path for configuration directory based on the chain_spec
-pub(crate) fn build_solochain_config_dir(base_path: &PathBuf) -> PathBuf {
-    // base_path:  Collator1000-01/data/containers
-    // config_dir: Collator1000-01/data/config
-    let mut base_path = base_path.clone();
-    base_path.pop();
-
-    base_path.join("config")
-}
-
-pub fn keystore_config(
-    keystore_params: Option<&sc_cli::KeystoreParams>,
-    config_dir: &PathBuf,
-) -> sc_cli::Result<KeystoreConfig> {
-    keystore_params
-        .map(|x| x.keystore_config(config_dir))
-        .unwrap_or_else(|| Ok(KeystoreConfig::InMemory))
-}
-
-/// Get the zombienet keystore path from the solochain collator keystore.
-fn zombienet_keystore_path(keystore: &KeystoreConfig) -> PathBuf {
-    let keystore_path = keystore.path().unwrap();
-    let mut zombienet_path = keystore_path.to_owned();
-    // Collator1000-01/data/config/keystore/
+/// Get the zombienet keystore path from the container base path.
+fn zombienet_keystore_path(container_base_path: &Path) -> PathBuf {
+    // container base path:
+    // Collator-01/data/containers
+    let mut zombienet_path = container_base_path.to_owned();
     zombienet_path.pop();
-    // Collator1000-01/data/config/
-    zombienet_path.pop();
-    // Collator1000-01/data/
+    // Collator-01/data/
     zombienet_path.push("chains/simple_container_2000/keystore/");
-    // Collator1000-01/data/chains/simple_container_2000/keystore/
+    // Collator-01/data/chains/simple_container_2000/keystore/
 
     zombienet_path
 }
@@ -379,9 +358,26 @@ fn zombienet_keystore_path(keystore: &KeystoreConfig) -> PathBuf {
 /// When running under zombienet, collator keys are injected in a different folder from what we
 /// expect. This function will check if the zombienet folder exists, and if so, copy all the keys
 /// from there into the expected folder.
-pub fn copy_zombienet_keystore(keystore: &KeystoreConfig) -> std::io::Result<()> {
-    let keystore_path = keystore.path().unwrap();
-    let zombienet_path = zombienet_keystore_path(keystore);
+pub fn copy_zombienet_keystore(
+    keystore: &KeystoreConfig,
+    container_base_path: sc_cli::Result<Option<BasePath>>,
+) -> std::io::Result<()> {
+    let container_base_path = match container_base_path {
+        Ok(Some(base_path)) => base_path,
+        _ => {
+            // If base_path is not explicitly set, we are not running under zombienet, so there is nothing to do
+            return Ok(());
+        }
+    };
+    let keystore_path = keystore.path();
+    let keystore_path = match keystore_path {
+        Some(x) => x,
+        None => {
+            // In-memory keystore, zombienet does not use it by default so ignore it
+            return Ok(());
+        }
+    };
+    let zombienet_path = zombienet_keystore_path(container_base_path.path());
 
     if zombienet_path.exists() {
         // Copy to keystore folder
@@ -405,6 +401,12 @@ fn copy_dir_all(
 ) -> std::io::Result<()> {
     use std::fs;
     fs::create_dir_all(&dst)?;
+    // no-op if src and dst are the same dir
+    let src_root = src.as_ref().canonicalize()?;
+    let dst_root = dst.as_ref().canonicalize()?;
+    if src_root == dst_root {
+        return Ok(());
+    }
     for entry in fs::read_dir(src)? {
         let entry = entry?;
         let ty = entry.file_type()?;
