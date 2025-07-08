@@ -238,7 +238,7 @@ declare module "@polkadot/api-base/types/calls" {
              **/
             [key: string]: DecoratedCallBase<ApiType>;
         };
-        /** 0x91b1c8b16328eb92/1 */
+        /** 0x91b1c8b16328eb92/2 */
         dryRunApi: {
             /**
              * Dry run call
@@ -247,7 +247,8 @@ declare module "@polkadot/api-base/types/calls" {
                 ApiType,
                 (
                     origin: OriginCaller | { System: any } | string | Uint8Array,
-                    call: RuntimeCall | IMethod | string | Uint8Array
+                    call: RuntimeCall | IMethod | string | Uint8Array,
+                    resultXcmsVersion: u32 | AnyNumber | Uint8Array
                 ) => Observable<Result<CallDryRunEffects, XcmDryRunApiError>>
             >;
             /**
@@ -263,6 +264,7 @@ declare module "@polkadot/api-base/types/calls" {
                         | { V2: any }
                         | { V3: any }
                         | { V4: any }
+                        | { v5: any }
                         | string
                         | Uint8Array,
                     xcm:
@@ -272,6 +274,7 @@ declare module "@polkadot/api-base/types/calls" {
                         | { V2: any }
                         | { V3: any }
                         | { V4: any }
+                        | { V5: any }
                         | string
                         | Uint8Array
                 ) => Observable<Result<XcmDryRunEffects, XcmDryRunApiError>>

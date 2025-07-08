@@ -245,18 +245,13 @@ async fn start_node_impl(
         let filter_pool = filter_pool.clone();
         let backend = node_builder.backend.clone();
         let max_past_logs = rpc_config.max_past_logs;
+        let max_block_range = rpc_config.max_block_range;
         let overrides = overrides;
         let fee_history_cache = fee_history_cache.clone();
         let block_data_cache = block_data_cache;
         let frontier_backend = frontier_backend.clone();
 
         Box::new(move |subscription_task_executor| {
-            let graph_pool = pool.0.as_any()
-                .downcast_ref::<sc_transaction_pool::BasicPool<
-                    sc_transaction_pool::FullChainApi<ParachainClient, Block>
-                    , Block
-                >>().expect("Frontier container chain template supports only single state transaction pool! Use --pool-type=single-state");
-
             let deps = crate::rpc::FullDeps {
                 backend: backend.clone(),
                 client: client.clone(),
@@ -265,9 +260,10 @@ async fn start_node_impl(
                     fc_db::Backend::KeyValue(b) => b.clone(),
                     fc_db::Backend::Sql(b) => b.clone(),
                 },
-                graph: graph_pool.pool().clone(),
+                graph: pool.clone(),
                 pool: pool.clone(),
                 max_past_logs,
+                max_block_range,
                 fee_history_limit,
                 fee_history_cache: fee_history_cache.clone(),
                 network: Arc::new(network.clone()),
@@ -295,8 +291,6 @@ async fn start_node_impl(
         relay_chain_interface.clone(),
         relay_chain_slot_duration,
     )?;
-
-    node_builder.network.start_network.start_network();
 
     Ok((node_builder.task_manager, node_builder.client))
 }
@@ -338,9 +332,6 @@ pub async fn start_dev_node(
     para_id: ParaId,
     hwbench: Option<sc_sysinfo::HwBench>,
 ) -> Result<TaskManager, sc_service::error::Error> {
-    // TODO: Not present before, is this wanted and was forgotten?
-    // let parachain_config = prepare_node_config(parachain_config);
-
     // Create a `NodeBuilder` which helps setup parachain nodes common systems.
     let node_builder = NodeConfig::new_builder(&parachain_config, hwbench)?;
 
@@ -466,7 +457,6 @@ pub async fn start_dev_node(
                         current_para_block_head: None,
                         relay_offset: 1000,
                         relay_blocks_per_para_block: 2,
-                        // TODO: Recheck
                         para_blocks_per_relay_epoch: 10,
                         relay_randomness_config: (),
                         xcm_config: MockXcmConfig::new(
@@ -525,15 +515,11 @@ pub async fn start_dev_node(
         let frontier_backend = frontier_backend.clone();
         let backend = node_builder.backend.clone();
         let max_past_logs = rpc_config.max_past_logs;
+        let max_block_range = rpc_config.max_block_range;
         let overrides = overrides;
         let block_data_cache = block_data_cache;
 
         Box::new(move |subscription_task_executor| {
-            let graph_pool= pool.0.as_any()
-                .downcast_ref::<sc_transaction_pool::BasicPool<
-                    sc_transaction_pool::FullChainApi<ParachainClient, Block>
-                    , Block
-                >>().expect("Frontier container chain template supports only single state transaction pool! Use --pool-type=single-state");
             let deps = crate::rpc::FullDeps {
                 backend: backend.clone(),
                 client: client.clone(),
@@ -542,9 +528,10 @@ pub async fn start_dev_node(
                     fc_db::Backend::KeyValue(b) => b.clone(),
                     fc_db::Backend::Sql(b) => b.clone(),
                 },
-                graph: graph_pool.pool().clone(),
+                graph: pool.clone(),
                 pool: pool.clone(),
                 max_past_logs,
+                max_block_range,
                 fee_history_limit,
                 fee_history_cache: fee_history_cache.clone(),
                 network: network.clone(),
@@ -568,6 +555,5 @@ pub async fn start_dev_node(
 
     log::info!("Development Service Ready");
 
-    node_builder.network.start_network.start_network();
     Ok(node_builder.task_manager)
 }

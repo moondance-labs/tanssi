@@ -46,6 +46,7 @@ use {
     cumulus_primitives_core::relay_chain::HeadData,
     dp_chain_state_snapshot::GenericStateProof,
     dp_container_chain_genesis_data::ContainerChainGenesisData,
+    dp_core::{well_known_keys::REGISTRAR_PARAS_INDEX, ParaInfo},
     frame_support::{
         pallet_prelude::*,
         traits::{
@@ -1520,23 +1521,4 @@ where
 
         Ok(frame_system::RawOrigin::Signed(manager).into())
     }
-}
-
-// TODO: import this from dancekit
-pub const REGISTRAR_PARAS_INDEX: &[u8] =
-    &hex_literal::hex!["3fba98689ebed1138735e0e7a5a790abcd710b30bd2eab0352ddcc26417aa194"];
-
-// Need to copy ParaInfo from
-// polkadot-sdk/polkadot/runtime/common/src/paras_registrar/mod.rs
-// Because its fields are not public...
-// TODO: import this from dancekit
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Default, TypeInfo)]
-pub struct ParaInfo<Account, Balance> {
-    /// The account that has placed a deposit for registering this para.
-    manager: Account,
-    /// The amount reserved by the `manager` account for the registration.
-    deposit: Balance,
-    /// Whether the para registration should be locked from being controlled by the manager.
-    /// None means the lock had not been explicitly set, and should be treated as false.
-    locked: Option<bool>,
 }

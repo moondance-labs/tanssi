@@ -49,6 +49,7 @@ pallet-xcm-core-buyer = { workspace = true }
 pallet-xcm-core-buyer-runtime-api = { workspace = true }
 tanssi-relay-encoder = { workspace = true }
 tanssi-runtime-common = { workspace = true }
+tp-parathread-filter-common = { workspace = true }
 tp-xcm-commons = { workspace = true }
 tp-xcm-core-buyer = { workspace = true }
 
@@ -64,6 +65,7 @@ xcm-primitives = { workspace = true }
 
 # Substrate
 frame-executive = { workspace = true }
+frame-metadata-hash-extension = { workspace = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
 frame-system-rpc-runtime-api = { workspace = true }
@@ -120,10 +122,10 @@ xcm-runtime-apis = { workspace = true }
 # Cumulus
 cumulus-pallet-parachain-system = { workspace = true }
 cumulus-pallet-session-benchmarking = { workspace = true }
+cumulus-pallet-weight-reclaim = { workspace = true }
 cumulus-pallet-xcm = { workspace = true }
 cumulus-pallet-xcmp-queue = { workspace = true }
 cumulus-primitives-core = { workspace = true }
-cumulus-primitives-storage-weight-reclaim = { workspace = true }
 cumulus-primitives-timestamp = { workspace = true }
 cumulus-primitives-utility = { workspace = true }
 pallet-invulnerables = { workspace = true }
@@ -172,11 +174,11 @@ std = [
 	"container-chain-template-simple-runtime/std",
 	"cumulus-pallet-parachain-system/std",
 	"cumulus-pallet-session-benchmarking/std",
+	"cumulus-pallet-weight-reclaim/std",
 	"cumulus-pallet-xcm/std",
 	"cumulus-pallet-xcmp-queue/std",
 	"cumulus-primitives-core/std",
 	"cumulus-primitives-parachain-inherent/std",
-	"cumulus-primitives-storage-weight-reclaim/std",
 	"cumulus-primitives-timestamp/std",
 	"cumulus-primitives-utility/std",
 	"cumulus-test-relay-sproof-builder/std",
@@ -185,6 +187,7 @@ std = [
 	"dp-slot-duration-runtime-api/std",
 	"frame-benchmarking?/std",
 	"frame-executive/std",
+	"frame-metadata-hash-extension/std",
 	"frame-support/std",
 	"frame-system-benchmarking?/std",
 	"frame-system-rpc-runtime-api/std",
@@ -277,6 +280,7 @@ std = [
 	"test-relay-sproof-builder/std",
 	"tp-author-noting-inherent/std",
 	"tp-data-preservers-common/std",
+	"tp-parathread-filter-common/std",
 	"tp-stream-payment-common/std",
 	"tp-traits/std",
 	"tp-xcm-commons/std",
@@ -299,6 +303,7 @@ runtime-benchmarks = [
 	"container-chain-template-simple-runtime/runtime-benchmarks",
 	"cumulus-pallet-parachain-system/runtime-benchmarks",
 	"cumulus-pallet-session-benchmarking/runtime-benchmarks",
+	"cumulus-pallet-weight-reclaim/runtime-benchmarks",
 	"cumulus-pallet-xcmp-queue/runtime-benchmarks",
 	"cumulus-primitives-core/runtime-benchmarks",
 	"cumulus-primitives-utility/runtime-benchmarks",
@@ -352,6 +357,7 @@ runtime-benchmarks = [
 	"sp-runtime/runtime-benchmarks",
 	"tanssi-runtime-common/runtime-benchmarks",
 	"tp-data-preservers-common/runtime-benchmarks",
+	"tp-parathread-filter-common/runtime-benchmarks",
 	"tp-stream-payment-common/runtime-benchmarks",
 	"tp-traits/runtime-benchmarks",
 	"tp-xcm-core-buyer/runtime-benchmarks",
@@ -360,12 +366,14 @@ runtime-benchmarks = [
 	"xcm-executor/runtime-benchmarks",
 	"xcm-primitives/runtime-benchmarks",
 	"xcm-runtime-apis/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
 ]
 
 try-runtime = [
 	"container-chain-template-frontier-runtime/try-runtime",
 	"container-chain-template-simple-runtime/try-runtime",
 	"cumulus-pallet-parachain-system/try-runtime",
+	"cumulus-pallet-weight-reclaim/try-runtime",
 	"cumulus-pallet-xcm/try-runtime",
 	"cumulus-pallet-xcmp-queue/try-runtime",
 	"frame-executive/try-runtime",
@@ -423,3 +431,5 @@ try-runtime = [
 ]
 
 fast-runtime = []
+
+metadata-hash = [ "substrate-wasm-builder/metadata-hash" ]

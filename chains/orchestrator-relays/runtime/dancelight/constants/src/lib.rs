@@ -18,6 +18,9 @@
 
 pub mod weights;
 
+pub const DANCELIGHT_GENESIS_HASH: [u8; 32] =
+    hex_literal::hex!["983a1a72503d6cc3636776747ec627172b51272bf45e50a355348facb67a820a"];
+
 /// Money matters.
 pub mod currency {
     use primitives::Balance;
@@ -26,7 +29,7 @@ pub mod currency {
     pub const EXISTENTIAL_DEPOSIT: Balance = 1 * CENTS;
 
     // Provide a common factor between runtimes based on a supply of 10_000_000 tokens.
-    pub const SUPPLY_FACTOR: Balance = 100;
+    pub const SUPPLY_FACTOR: Balance = 1;
 
     pub const UNITS: Balance = 1_000_000_000_000;
     pub const CENTS: Balance = UNITS / 30_000;

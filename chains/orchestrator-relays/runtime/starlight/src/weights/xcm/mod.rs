@@ -280,12 +280,11 @@ where
 
     fn initiate_transfer(
         _dest: &Location,
-        _remote_fees: &Option<AssetTransferFilter>,
+        remote_fees: &Option<AssetTransferFilter>,
         _preserve_origin: &bool,
-        _assets: &Vec<AssetTransferFilter>,
+        assets: &BoundedVec<AssetTransferFilter, MaxAssetTransferFilters>,
         _xcm: &Xcm<()>,
     ) -> Weight {
-        /*
         let mut weight = if let Some(remote_fees) = remote_fees {
             let fees = remote_fees.inner();
             fees.weigh_assets(XcmBalancesWeight::<Runtime>::initiate_transfer())
@@ -298,8 +297,6 @@ where
             weight = weight.saturating_add(extra);
         }
         weight
-        */
-        Weight::MAX
     }
 
     fn execute_with_origin(

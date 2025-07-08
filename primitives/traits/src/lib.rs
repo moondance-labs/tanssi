@@ -35,7 +35,10 @@ use {
     core::marker::PhantomData,
     frame_support::{
         dispatch::DispatchErrorWithPostInfo,
-        pallet_prelude::{Decode, DispatchResultWithPostInfo, Encode, Get, MaxEncodedLen, Weight},
+        pallet_prelude::{
+            Decode, DecodeWithMemTracking, DispatchResultWithPostInfo, Encode, Get, MaxEncodedLen,
+            Weight,
+        },
         BoundedVec,
     },
     scale_info::TypeInfo,
@@ -173,6 +176,7 @@ pub trait GetContainerChainsWithCollators<AccountId> {
     Debug,
     Encode,
     Decode,
+    DecodeWithMemTracking,
     scale_info::TypeInfo,
     PartialEq,
     Eq,
@@ -224,6 +228,7 @@ impl Default for SlotFrequency {
     Debug,
     Encode,
     Decode,
+    DecodeWithMemTracking,
     scale_info::TypeInfo,
     PartialEq,
     Eq,
@@ -556,6 +561,7 @@ impl OnEraEnd for Tuple {
     Default,
     Encode,
     Decode,
+    DecodeWithMemTracking,
     scale_info::TypeInfo,
     PartialEq,
     Eq,
@@ -584,6 +590,7 @@ pub enum FullRotationMode {
     Debug,
     Default,
     Encode,
+    DecodeWithMemTracking,
     Decode,
     scale_info::TypeInfo,
     PartialEq,
@@ -618,4 +625,9 @@ pub trait ExternalIndexProvider {
 // A trait to verify if a node has been inactive during the last minimum activity
 pub trait NodeActivityTrackingHelper<AccountId> {
     fn is_node_inactive(node: &AccountId) -> bool;
+}
+
+// A trait to help verify if a ParaId is a chain or parathread
+pub trait ParathreadHelper {
+    fn get_parathreads_for_session() -> BTreeSet<ParaId>;
 }

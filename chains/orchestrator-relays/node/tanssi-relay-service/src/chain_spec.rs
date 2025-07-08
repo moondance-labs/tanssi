@@ -96,6 +96,12 @@ pub fn dancelight_config() -> Result<DancelightChainSpec, String> {
     )
 }
 
+pub fn tanssi_config() -> Result<StarlightChainSpec, String> {
+    StarlightChainSpec::from_json_bytes(
+        &include_bytes!("../chain-specs/starlight-raw-specs.json")[..],
+    )
+}
+
 /// Dancelight staging testnet config.
 #[cfg(feature = "dancelight-native")]
 pub fn dancelight_staging_testnet_config() -> Result<DancelightChainSpec, String> {
@@ -220,7 +226,7 @@ pub fn starlight_development_config(
 ) -> Result<StarlightChainSpec, String> {
     // Give your base currency a unit name and decimal places
     let mut properties = sc_chain_spec::Properties::new();
-    properties.insert("tokenSymbol".into(), "STAR".into());
+    properties.insert("tokenSymbol".into(), "TANSSI".into());
     properties.insert("tokenDecimals".into(), 12.into());
     properties.insert("ss58Format".into(), 42.into());
     properties.insert("isEthereum".into(), false.into());

@@ -43,6 +43,10 @@ import type {
     FrameSystemLastRuntimeUpgradeInfo,
     FrameSystemPhase,
     NimbusPrimitivesNimbusCryptoPublic,
+    PalletAssetsApproval,
+    PalletAssetsAssetAccount,
+    PalletAssetsAssetDetails,
+    PalletAssetsAssetMetadata,
     PalletBalancesAccountData,
     PalletBalancesBalanceLock,
     PalletBalancesReserveData,
@@ -85,6 +89,7 @@ import type {
     PalletTransactionPaymentReleases,
     PalletTreasuryProposal,
     PalletTreasurySpendStatus,
+    PalletXcmAuthorizedAliasesEntry,
     PalletXcmQueryStatus,
     PalletXcmRemoteLockedFungibleRecord,
     PalletXcmVersionMigrationStage,
@@ -136,7 +141,6 @@ import type {
     SpWeightsWeightV2Weight,
     StagingXcmV5Instruction,
     StagingXcmV5Location,
-    StagingXcmV5Xcm,
     TpBridgeChannelInfo,
     TpTraitsActiveEraInfo,
     TpTraitsContainerChainBlockInfo,
@@ -1193,6 +1197,100 @@ declare module "@polkadot/api-base/types/storage" {
              **/
             [key: string]: QueryableStorageEntry<ApiType>;
         };
+        foreignAssets: {
+            /**
+             * The holdings of a specific account for a specific asset.
+             **/
+            account: AugmentedQuery<
+                ApiType,
+                (
+                    arg1: u16 | AnyNumber | Uint8Array,
+                    arg2: AccountId32 | string | Uint8Array
+                ) => Observable<Option<PalletAssetsAssetAccount>>,
+                [u16, AccountId32]
+            > &
+                QueryableStorageEntry<ApiType, [u16, AccountId32]>;
+            /**
+             * Approved balance transfers. First balance is the amount approved for transfer. Second
+             * is the amount of `T::Currency` reserved for storing this.
+             * First key is the asset ID, second key is the owner and third key is the delegate.
+             **/
+            approvals: AugmentedQuery<
+                ApiType,
+                (
+                    arg1: u16 | AnyNumber | Uint8Array,
+                    arg2: AccountId32 | string | Uint8Array,
+                    arg3: AccountId32 | string | Uint8Array
+                ) => Observable<Option<PalletAssetsApproval>>,
+                [u16, AccountId32, AccountId32]
+            > &
+                QueryableStorageEntry<ApiType, [u16, AccountId32, AccountId32]>;
+            /**
+             * Details of an asset.
+             **/
+            asset: AugmentedQuery<
+                ApiType,
+                (arg: u16 | AnyNumber | Uint8Array) => Observable<Option<PalletAssetsAssetDetails>>,
+                [u16]
+            > &
+                QueryableStorageEntry<ApiType, [u16]>;
+            /**
+             * Metadata of an asset.
+             **/
+            metadata: AugmentedQuery<
+                ApiType,
+                (arg: u16 | AnyNumber | Uint8Array) => Observable<PalletAssetsAssetMetadata>,
+                [u16]
+            > &
+                QueryableStorageEntry<ApiType, [u16]>;
+            /**
+             * The asset ID enforced for the next asset creation, if any present. Otherwise, this storage
+             * item has no effect.
+             *
+             * This can be useful for setting up constraints for IDs of the new assets. For example, by
+             * providing an initial [`NextAssetId`] and using the [`crate::AutoIncAssetId`] callback, an
+             * auto-increment model can be applied to all new asset IDs.
+             *
+             * The initial next asset ID can be set using the [`GenesisConfig`] or the
+             * [SetNextAssetId](`migration::next_asset_id::SetNextAssetId`) migration.
+             **/
+            nextAssetId: AugmentedQuery<ApiType, () => Observable<Option<u16>>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * Generic query
+             **/
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
+        foreignAssetsCreator: {
+            /**
+             * Mapping from an asset id to a Foreign asset type.
+             * This is mostly used when receiving transaction specifying an asset directly,
+             * like transferring an asset from this chain to another.
+             **/
+            assetIdToForeignAsset: AugmentedQuery<
+                ApiType,
+                (arg: u16 | AnyNumber | Uint8Array) => Observable<Option<StagingXcmV5Location>>,
+                [u16]
+            > &
+                QueryableStorageEntry<ApiType, [u16]>;
+            /**
+             * Reverse mapping of AssetIdToForeignAsset. Mapping from a foreign asset to an asset id.
+             * This is mostly used when receiving a multilocation XCM message to retrieve
+             * the corresponding asset in which tokens should me minted.
+             **/
+            foreignAssetToAssetId: AugmentedQuery<
+                ApiType,
+                (
+                    arg: StagingXcmV5Location | { parents?: any; interior?: any } | string | Uint8Array
+                ) => Observable<Option<u16>>,
+                [StagingXcmV5Location]
+            > &
+                QueryableStorageEntry<ApiType, [StagingXcmV5Location]>;
+            /**
+             * Generic query
+             **/
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
         grandpa: {
             /**
              * The current list of authorities.
@@ -1553,6 +1651,11 @@ declare module "@polkadot/api-base/types/storage" {
             activeCollatorsForCurrentSession: AugmentedQuery<ApiType, () => Observable<BTreeSet<AccountId32>>, []> &
                 QueryableStorageEntry<ApiType, []>;
             /**
+             * A list of active container chains for a session. Repopulated at the start of every session
+             **/
+            activeContainerChainsForCurrentSession: AugmentedQuery<ApiType, () => Observable<BTreeSet<u32>>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
              * Switch to enable/disable activity tracking
              **/
             currentActivityTrackingStatus: AugmentedQuery<
@@ -1618,6 +1721,16 @@ declare module "@polkadot/api-base/types/storage" {
              **/
             hasInitialized: AugmentedQuery<ApiType, () => Observable<Option<Null>>, []> &
                 QueryableStorageEntry<ApiType, []>;
+            /**
+             * Generic query
+             **/
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
+        maintenanceMode: {
+            /**
+             * Whether the site is in maintenance mode
+             **/
+            maintenanceMode: AugmentedQuery<ApiType, () => Observable<bool>, []> & QueryableStorageEntry<ApiType, []>;
             /**
              * Generic query
              **/
@@ -1789,6 +1902,15 @@ declare module "@polkadot/api-base/types/storage" {
                 [u32]
             > &
                 QueryableStorageEntry<ApiType, [u32]>;
+            /**
+             * Keeps track of credits owned by each account.
+             **/
+            credits: AugmentedQuery<
+                ApiType,
+                (arg: AccountId32 | string | Uint8Array) => Observable<u128>,
+                [AccountId32]
+            > &
+                QueryableStorageEntry<ApiType, [AccountId32]>;
             /**
              * Priority queue for all orders which don't yet (or not any more) have any core affinity.
              **/
@@ -2581,6 +2703,9 @@ declare module "@polkadot/api-base/types/storage" {
                 [u32]
             > &
                 QueryableStorageEntry<ApiType, [u32]>;
+            /**
+             * Block number at which the agenda began incomplete execution.
+             **/
             incompleteSince: AugmentedQuery<ApiType, () => Observable<Option<u32>>, []> &
                 QueryableStorageEntry<ApiType, []>;
             /**
@@ -2673,7 +2798,7 @@ declare module "@polkadot/api-base/types/storage" {
              * disabled using binary search. It gets cleared when `on_session_ending` returns
              * a new set of identities.
              **/
-            disabledValidators: AugmentedQuery<ApiType, () => Observable<Vec<u32>>, []> &
+            disabledValidators: AugmentedQuery<ApiType, () => Observable<Vec<ITuple<[u32, Perbill]>>>, []> &
                 QueryableStorageEntry<ApiType, []>;
             /**
              * The owner of a key. The key is the `KeyTypeId` + the encoded key.
@@ -2870,6 +2995,17 @@ declare module "@polkadot/api-base/types/storage" {
              **/
             extrinsicData: AugmentedQuery<ApiType, (arg: u32 | AnyNumber | Uint8Array) => Observable<Bytes>, [u32]> &
                 QueryableStorageEntry<ApiType, [u32]>;
+            /**
+             * The weight reclaimed for the extrinsic.
+             *
+             * This information is available until the end of the extrinsic execution.
+             * More precisely this information is removed in `note_applied_extrinsic`.
+             *
+             * Logic doing some post dispatch weight reduction must update this storage to avoid duplicate
+             * reduction.
+             **/
+            extrinsicWeightReclaimed: AugmentedQuery<ApiType, () => Observable<SpWeightsWeightV2Weight>, []> &
+                QueryableStorageEntry<ApiType, []>;
             /**
              * Whether all inherents have been applied.
              **/
@@ -3083,6 +3219,19 @@ declare module "@polkadot/api-base/types/storage" {
              **/
             assetTraps: AugmentedQuery<ApiType, (arg: H256 | string | Uint8Array) => Observable<u32>, [H256]> &
                 QueryableStorageEntry<ApiType, [H256]>;
+            /**
+             * Map of authorized aliasers of local origins. Each local location can authorize a list of
+             * other locations to alias into it. Each aliaser is only valid until its inner `expiry`
+             * block number.
+             **/
+            authorizedAliases: AugmentedQuery<
+                ApiType,
+                (
+                    arg: XcmVersionedLocation | { V3: any } | { V4: any } | { V5: any } | string | Uint8Array
+                ) => Observable<Option<PalletXcmAuthorizedAliasesEntry>>,
+                [XcmVersionedLocation]
+            > &
+                QueryableStorageEntry<ApiType, [XcmVersionedLocation]>;
             /**
              * The current migration's stage, if any.
              **/

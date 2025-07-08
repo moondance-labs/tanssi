@@ -1,5 +1,5 @@
 import { type DevModeContext, type ZombieContext, expect, type ChopsticksContext } from "@moonwall/cli";
-import { filterAndApply, type KeyringPair } from "@moonwall/util";
+import { filterAndApply, getBlockArray, type KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 import type { SubmittableExtrinsic } from "@polkadot/api/types";
 import { TypeRegistry } from "@polkadot/types";
@@ -16,6 +16,9 @@ import type {
     Slot,
 } from "@polkadot/types/interfaces";
 import { stringToHex } from "@polkadot/util";
+import type { FrameSystemEventRecord } from "@polkadot/types/lookup";
+import Bottleneck from "bottleneck";
+import type { GenericExtrinsic } from "@polkadot/types/extrinsic/Extrinsic";
 
 export async function jumpSessions(context: DevModeContext, count: number): Promise<string | null> {
     const session = (await context.polkadotJs().query.session.currentIndex()).addn(count.valueOf()).toNumber();
@@ -188,6 +191,18 @@ export function fetchRandomnessEvent(events: EventRecord[]) {
     const filtered = filterAndApply(
         events,
         "collatorAssignment",
+        ["NewPendingAssignment"],
+        ({ event }: EventRecord) =>
+            event.data as unknown as { randomSeed: Vec<u8>; fullRotation: bool; targetSession: u32 }
+    );
+
+    return filtered[0];
+}
+
+export function fetchRandomnessEventTanssiSolo(events: EventRecord[]) {
+    const filtered = filterAndApply(
+        events,
+        "tanssiCollatorAssignment",
         ["NewPendingAssignment"],
         ({ event }: EventRecord) =>
             event.data as unknown as { randomSeed: Vec<u8>; fullRotation: bool; targetSession: u32 }
@@ -525,6 +540,10 @@ export const getPastEraStartBlock = async (currentApi: ApiPromise, block: number
         expect.fail("No external validators found");
     }
 
+    if (currentEra.unwrap().index.toNumber() === 0) {
+        throw new Error("There is no past era start block, current era is 0");
+    }
+
     let epochStartBlock = (await apiAtCheckpointForEra.query.babe.epochStart())[1].toNumber();
 
     let apiAtPreviousEpochBlock = await currentApi.at(await currentApi.rpc.chain.getBlockHash(epochStartBlock - 1));
@@ -677,3 +696,77 @@ export async function chopsticksWaitTillIncluded(
         tries++;
     }
 }
+
+export async function getLastSessionEndBlock(api: ApiPromise, lastSessionIndex: number): Promise<number> {
+    let blockNumber = (await api.rpc.chain.getBlock()).block.header.number.toNumber();
+    let currentSessionIndex = (await api.query.session.currentIndex()).toNumber();
+    while (currentSessionIndex > lastSessionIndex) {
+        blockNumber -= 1;
+        const blockHash = await api.rpc.chain.getBlockHash(blockNumber);
+        const apiAtBlock = await api.at(blockHash);
+        currentSessionIndex = (await apiAtBlock.query.session.currentIndex()).toNumber();
+    }
+    return blockNumber;
+}
+
+export type BlockData = {
+    blockNum: number;
+    blockHash: BlockHash;
+    events: FrameSystemEventRecord[];
+    extrinsics: GenericExtrinsic[];
+    extrinsicIndexToEventsMap: Map<string, FrameSystemEventRecord[]>;
+};
+
+export const getBlocksDataForPeriodMs = async (api: ApiPromise, timePeriodMs: number): Promise<BlockData[]> => {
+    const blockNumbersArray = await getBlockArray(api, timePeriodMs);
+
+    const limiter = new Bottleneck({ maxConcurrent: 5, minTime: 100 });
+
+    console.log(
+        `About to start blocks data fetching (#${blockNumbersArray[0]} ... #${blockNumbersArray[blockNumbersArray.length - 1]}). Total: ${blockNumbersArray.length}`
+    );
+    const start = performance.now();
+    const blocksData: BlockData[] = await Promise.all(
+        blockNumbersArray.map((num) => limiter.schedule(() => getBlockData(api, num)))
+    );
+    const end = performance.now();
+
+    console.log(`Blocks data fetching took: ${(end - start).toFixed(2)} ms. Fetched: ${blocksData.length} blocks.`);
+
+    return blocksData;
+};
+
+// TODO: Add cache for key: blockNum::chain
+export const getBlockData = async (api: ApiPromise, blockNum: number) => {
+    const blockHash = await api.rpc.chain.getBlockHash(blockNum);
+    const apiAt = await api.at(blockHash);
+    const events = await apiAt.query.system.events();
+    const block = await api.rpc.chain.getBlock(blockHash);
+    const extrinsics = block.block.extrinsics;
+
+    const extrinsicIndexToEventsMap = new Map<string, FrameSystemEventRecord[]>();
+
+    for (const eventRecord of events) {
+        if (!eventRecord.phase.isApplyExtrinsic) {
+            continue;
+        }
+
+        const extrinsicIndex = eventRecord.phase.asApplyExtrinsic.toString();
+        if (!extrinsicIndexToEventsMap.has(extrinsicIndex)) {
+            extrinsicIndexToEventsMap.set(extrinsicIndex, []);
+        }
+
+        const events = extrinsicIndexToEventsMap.get(extrinsicIndex);
+        events.push(eventRecord);
+
+        extrinsicIndexToEventsMap.set(extrinsicIndex, events);
+    }
+
+    return {
+        blockNum,
+        blockHash,
+        events,
+        extrinsics,
+        extrinsicIndexToEventsMap,
+    };
+};

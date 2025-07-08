@@ -62,12 +62,9 @@ use {
         parameter_types,
         traits::{
             fungible::{Balanced, Credit, Inspect},
-            tokens::{
-                imbalance::ResolveTo, ConversionToAssetBalance, PayFromAccount,
-                UnityAssetBalanceConversion,
-            },
+            tokens::{ConversionToAssetBalance, PayFromAccount, UnityAssetBalanceConversion},
             ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Contains, EitherOfDiverse,
-            Imbalance, InsideBoth, InstanceFilter, OnUnbalanced, ValidatorRegistration,
+            InsideBoth, InstanceFilter, OnUnbalanced, ValidatorRegistration,
         },
         weights::{
             constants::{
@@ -84,7 +81,6 @@ use {
         EnsureRoot, EnsureSigned,
     },
     nimbus_primitives::{NimbusId, SlotBeacon},
-    pallet_balances::NegativeImbalance,
     pallet_collator_assignment::{GetRandomnessForNextBlock, RotateCollatorsEveryNSessions},
     pallet_invulnerables::InvulnerableRewardDistribution,
     pallet_pooled_staking::traits::{IsCandidateEligible, Timer},
@@ -97,6 +93,7 @@ use {
     pallet_stream_payment_runtime_api::{StreamPaymentApiError, StreamPaymentApiStatus},
     pallet_transaction_payment::FungibleAdapter,
     pallet_xcm_core_buyer::BuyingError,
+    parity_scale_codec::DecodeWithMemTracking,
     polkadot_runtime_common::BlockHashCount,
     scale_info::prelude::format,
     smallvec::smallvec,
@@ -126,6 +123,7 @@ use {
         RelayStorageRootProvider, RemoveInvulnerables, SlotFrequency,
     },
     tp_xcm_core_buyer::BuyCoreCollatorProof,
+    xcm::Version as XcmVersion,
     xcm::{IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation, VersionedXcm},
     xcm_runtime_apis::{
         dry_run::{CallDryRunEffects, Error as XcmDryRunApiError, XcmDryRunEffects},
@@ -148,17 +146,20 @@ pub type BlockId = generic::BlockId<Block>;
 pub type CollatorId = AccountId;
 
 /// The `TxExtension` to the basic transaction logic.
-pub type TxExtension = (
-    frame_system::CheckNonZeroSender<Runtime>,
-    frame_system::CheckSpecVersion<Runtime>,
-    frame_system::CheckTxVersion<Runtime>,
-    frame_system::CheckGenesis<Runtime>,
-    frame_system::CheckEra<Runtime>,
-    frame_system::CheckNonce<Runtime>,
-    frame_system::CheckWeight<Runtime>,
-    pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
-    cumulus_primitives_storage_weight_reclaim::StorageWeightReclaim<Runtime>,
-);
+pub type TxExtension = cumulus_pallet_weight_reclaim::StorageWeightReclaim<
+    Runtime,
+    (
+        frame_system::CheckNonZeroSender<Runtime>,
+        frame_system::CheckSpecVersion<Runtime>,
+        frame_system::CheckTxVersion<Runtime>,
+        frame_system::CheckGenesis<Runtime>,
+        frame_system::CheckEra<Runtime>,
+        frame_system::CheckNonce<Runtime>,
+        frame_system::CheckWeight<Runtime>,
+        pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
+        frame_metadata_hash_extension::CheckMetadataHash<Runtime>,
+    ),
+>;
 
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic =
@@ -260,7 +261,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: Cow::Borrowed("dancebox"),
     impl_name: Cow::Borrowed("dancebox"),
     authoring_version: 1,
-    spec_version: 1300,
+    spec_version: 1400,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -402,6 +403,10 @@ impl frame_system::Config for Runtime {
     type ExtensionsWeightInfo = weights::frame_system_extensions::SubstrateWeight<Runtime>;
 }
 
+impl cumulus_pallet_weight_reclaim::Config for Runtime {
+    type WeightInfo = weights::cumulus_pallet_weight_reclaim::SubstrateWeight<Runtime>;
+}
+
 impl pallet_timestamp::Config for Runtime {
     /// A timestamp: milliseconds since the unix epoch.
     type Moment = u64;
@@ -468,53 +473,14 @@ impl pallet_balances::Config for Runtime {
     type WeightInfo = weights::pallet_balances::SubstrateWeight<Runtime>;
 }
 
-pub struct DealWithFees<R>(sp_std::marker::PhantomData<R>);
-impl<R> OnUnbalanced<Credit<R::AccountId, pallet_balances::Pallet<R>>> for DealWithFees<R>
-where
-    R: pallet_balances::Config + pallet_treasury::Config + frame_system::Config,
-    pallet_treasury::NegativeImbalanceOf<R>: From<NegativeImbalance<R>>,
-{
-    // this seems to be called for substrate-based transactions
-    fn on_unbalanceds(
-        mut fees_then_tips: impl Iterator<Item = Credit<R::AccountId, pallet_balances::Pallet<R>>>,
-    ) {
-        if let Some(fees) = fees_then_tips.next() {
-            // 80% is burned, 20% goes to the treasury
-            // Same policy applies for tips as well
-            let burn_percentage = 80;
-            let treasury_percentage = 20;
-
-            let (_, to_treasury) = fees.ration(burn_percentage, treasury_percentage);
-            ResolveTo::<pallet_treasury::TreasuryAccountId<R>, pallet_balances::Pallet<R>>::on_unbalanced(to_treasury);
-            // Balances pallet automatically burns dropped Negative Imbalances by decreasing total_supply accordingly
-            // handle tip if there is one
-            if let Some(tip) = fees_then_tips.next() {
-                let (_, to_treasury) = tip.ration(burn_percentage, treasury_percentage);
-                ResolveTo::<pallet_treasury::TreasuryAccountId<R>, pallet_balances::Pallet<R>>::on_unbalanced(to_treasury);
-            }
-        }
-    }
-
-    // this is called from pallet_evm for Ethereum-based transactions
-    // (technically, it calls on_unbalanced, which calls this when non-zero)
-    fn on_nonzero_unbalanced(amount: Credit<R::AccountId, pallet_balances::Pallet<R>>) {
-        // 80% is burned, 20% goes to the treasury
-        let burn_percentage = 80;
-        let treasury_percentage = 20;
-
-        let (_, to_treasury) = amount.ration(burn_percentage, treasury_percentage);
-        ResolveTo::<pallet_treasury::TreasuryAccountId<R>, pallet_balances::Pallet<R>>::on_unbalanced(to_treasury);
-    }
-}
-
 parameter_types! {
     pub const TransactionByteFee: Balance = 1;
 }
 
 impl pallet_transaction_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    // This will burn 80% from fees & tips and deposit the remainder into the treasury
-    type OnChargeTransaction = FungibleAdapter<Balances, DealWithFees<Runtime>>;
+    type OnChargeTransaction =
+        FungibleAdapter<Balances, tanssi_runtime_common::DealWithFees<Runtime>>;
     type OperationalFeeMultiplier = ConstU8<5>;
     type WeightToFee = WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
@@ -523,8 +489,8 @@ impl pallet_transaction_payment::Config for Runtime {
 }
 
 parameter_types! {
-    pub const ReservedXcmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
-    pub const ReservedDmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT.saturating_div(4);
+    pub ReservedXcmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT / 4;
+    pub ReservedDmpWeight: Weight = MAXIMUM_BLOCK_WEIGHT / 4;
     pub const RelayOrigin: AggregateMessageOrigin = AggregateMessageOrigin::Parent;
 }
 
@@ -606,8 +572,6 @@ impl BabeCurrentBlockRandomnessGetter {
 
     /// Return the block randomness from the relay mixed with the provided subject.
     /// This ensures that the randomness will be different on different pallets, as long as the subject is different.
-    // TODO: audit usage of randomness API
-    // https://github.com/paritytech/polkadot/issues/2601
     fn get_block_randomness_mixed(subject: &[u8]) -> Option<Hash> {
         Self::get_block_randomness()
             .map(|random_hash| mix_randomness::<Runtime>(random_hash, subject))
@@ -759,6 +723,7 @@ impl pallet_session::Config for Runtime {
     type SessionHandler = <SessionKeys as sp_runtime::traits::OpaqueKeys>::KeyTypeIdProviders;
     type Keys = SessionKeys;
     type WeightInfo = weights::pallet_session::SubstrateWeight<Runtime>;
+    type DisablingStrategy = ();
 }
 
 /// Read full_rotation_period from pallet_configuration
@@ -812,7 +777,6 @@ impl RemoveInvulnerables<CollatorId> for RemoveInvulnerablesImpl {
         if num_invulnerables == 0 {
             return vec![];
         }
-        // TODO: check if this works on session changes
         let all_invulnerables = pallet_invulnerables::Invulnerables::<Runtime>::get();
         if all_invulnerables.is_empty() {
             return vec![];
@@ -987,7 +951,8 @@ impl pallet_collator_assignment::Config for Runtime {
     type SelfParaId = ParachainInfo;
     type ShouldRotateAllCollators =
         RotateCollatorsEveryNSessions<ConfigurationCollatorRotationSessionPeriod>;
-    type GetRandomnessForNextBlock = BabeGetRandomnessForNextBlock;
+    type Randomness =
+        pallet_collator_assignment::ParachainRandomness<BabeGetRandomnessForNextBlock, Runtime>;
     type RemoveInvulnerables = RemoveInvulnerablesImpl;
     type ParaIdAssignmentHooks = ParaIdAssignmentHooksImpl;
     type CollatorAssignmentTip = ServicesPayment;
@@ -1299,7 +1264,7 @@ impl pallet_utility::Config for Runtime {
 
 /// The type used to represent the kinds of proxying allowed.
 #[apply(derive_storage_traits)]
-#[derive(Copy, Ord, PartialOrd, MaxEncodedLen)]
+#[derive(Copy, Ord, PartialOrd, MaxEncodedLen, DecodeWithMemTracking)]
 #[allow(clippy::unnecessary_cast)]
 pub enum ProxyType {
     /// All calls can be proxied. This is the trivial/most permissive filter.
@@ -1410,6 +1375,7 @@ impl pallet_proxy::Config for Runtime {
     // - 4 bytes BlockNumber (u32)
     type AnnouncementDepositFactor = ConstU128<{ currency::deposit(0, 68) }>;
     type WeightInfo = weights::pallet_proxy::SubstrateWeight<Runtime>;
+    type BlockNumberProvider = System;
 }
 
 pub struct XcmExecutionManager;
@@ -1435,17 +1401,14 @@ parameter_types! {
 impl pallet_multiblock_migrations::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     #[cfg(not(feature = "runtime-benchmarks"))]
-    type Migrations = (
-        pallet_identity::migration::v2::LazyMigrationV1ToV2<Runtime>,
-        pallet_pooled_staking::migrations::MigrationGenerateSummaries<Runtime>,
-    );
+    type Migrations = ();
     // Benchmarks need mocked migrations to guarantee that they succeed.
     #[cfg(feature = "runtime-benchmarks")]
     type Migrations = pallet_multiblock_migrations::mock_helpers::MockedMigrations;
     type CursorMaxLen = ConstU32<65_536>;
     type IdentifierMaxLen = ConstU32<256>;
     type MigrationStatusHandler = ();
-    type FailedMigrationHandler = frame_support::migrations::FreezeChainOnFailedMigration;
+    type FailedMigrationHandler = MaintenanceMode;
     type MaxServiceWeight = MbmServiceWeight;
     type WeightInfo = weights::pallet_multiblock_migrations::SubstrateWeight<Runtime>;
 }
@@ -1478,7 +1441,7 @@ impl Contains<RuntimeCall> for NormalFilter {
 impl pallet_maintenance_mode::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type NormalCallFilter = NormalFilter;
-    type MaintenanceCallFilter = MaintenanceFilter;
+    type MaintenanceCallFilter = InsideBoth<MaintenanceFilter, NormalFilter>;
     type MaintenanceOrigin = EnsureRoot<AccountId>;
     type XcmExecutionManager = XcmExecutionManager;
 }
@@ -1567,6 +1530,10 @@ impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
     }
 }
 
+parameter_types! {
+    pub const MaxCandidatesBufferSize: u32 = 100;
+}
+
 impl pallet_pooled_staking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
@@ -1579,7 +1546,7 @@ impl pallet_pooled_staking::Config for Runtime {
     type RewardsCollatorCommission = RewardsCollatorCommission;
     type JoiningRequestTimer = SessionTimer<StakingSessionDelay>;
     type LeavingRequestTimer = SessionTimer<StakingSessionDelay>;
-    type EligibleCandidatesBufferSize = ConstU32<100>;
+    type EligibleCandidatesBufferSize = MaxCandidatesBufferSize;
     type EligibleCandidatesFilter = CandidateHasRegisteredKeys;
     type WeightInfo = weights::pallet_pooled_staking::SubstrateWeight<Runtime>;
 }
@@ -1591,7 +1558,6 @@ parameter_types! {
     // initial_supply * (1.05) = initial_supply * (1+x)^5_259_600
     // we should solve for x = (1.05)^(1/5_259_600) -1 -> 0.000000009 per block or 9/1_000_000_000
     // 1% in the case of dev mode
-    // TODO: check if we can put the prod inflation for tests too
     // TODO: better calculus for going from annual to block inflation (if it can be done)
     pub const InflationRate: Perbill = prod_or_fast!(Perbill::from_parts(9), Perbill::from_percent(1));
 
@@ -1749,16 +1715,21 @@ impl pallet_multisig::Config for Runtime {
     type DepositFactor = DepositFactor;
     type MaxSignatories = MaxSignatories;
     type WeightInfo = weights::pallet_multisig::SubstrateWeight<Runtime>;
+    type BlockNumberProvider = System;
 }
-
+parameter_types! {
+    pub const MaxInactiveSessions: u32 = 5;
+}
 impl pallet_inactivity_tracking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type CollatorId = CollatorId;
-    type MaxInactiveSessions = ConstU32<5>;
-    type MaxCollatorsPerSession = ConstU32<100>;
+    type MaxInactiveSessions = MaxInactiveSessions;
+    type MaxCollatorsPerSession = MaxCandidatesBufferSize;
+    type MaxContainerChains = MaxLengthParaIds;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type CurrentCollatorsFetcher = CollatorAssignment;
     type GetSelfChainBlockAuthor = GetSelfChainBlockAuthor;
+    type ParaFilter = tp_parathread_filter_common::ExcludeAllParathreadsFilter<Runtime>;
     type WeightInfo = weights::pallet_inactivity_tracking::SubstrateWeight<Runtime>;
 }
 
@@ -1823,6 +1794,7 @@ construct_runtime!(
 
         // More system support stuff
         RelayStorageRoots: pallet_relay_storage_roots = 60,
+        WeightReclaim: cumulus_pallet_weight_reclaim = 61,
 
         RootTesting: pallet_root_testing = 100,
         AsyncBacking: pallet_async_backing::{Pallet, Storage} = 110,
@@ -1870,6 +1842,7 @@ mod benches {
         [pallet_message_queue, MessageQueue]
         [pallet_xcm_core_buyer, XcmCoreBuyer]
         [pallet_relay_storage_roots, RelayStorageRoots]
+        [cumulus_pallet_weight_reclaim, WeightReclaim]
     );
 }
 
@@ -2044,7 +2017,7 @@ impl_runtime_apis! {
             Vec<frame_support::traits::StorageInfo>,
         ) {
             use cumulus_pallet_session_benchmarking::Pallet as SessionBench;
-            use frame_benchmarking::{Benchmarking, BenchmarkList};
+            use frame_benchmarking::{BenchmarkList};
             use frame_support::traits::StorageInfoTrait;
             use pallet_xcm::benchmarking::Pallet as PalletXcmExtrinsicsBenchmark;
 
@@ -2055,10 +2028,11 @@ impl_runtime_apis! {
             (list, storage_info)
         }
 
+        #[allow(non_local_definitions)]
         fn dispatch_benchmark(
             config: frame_benchmarking::BenchmarkConfig,
         ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, alloc::string::String> {
-            use frame_benchmarking::{BenchmarkBatch, Benchmarking, BenchmarkError};
+            use frame_benchmarking::{BenchmarkBatch, BenchmarkError};
             use sp_core::storage::TrackedStorageKey;
             use cumulus_pallet_session_benchmarking::Pallet as SessionBench;
             impl cumulus_pallet_session_benchmarking::Config for Runtime {}
@@ -2680,8 +2654,8 @@ impl_runtime_apis! {
     }
 
     impl xcm_runtime_apis::dry_run::DryRunApi<Block, RuntimeCall, RuntimeEvent, OriginCaller> for Runtime {
-        fn dry_run_call(origin: OriginCaller, call: RuntimeCall) -> Result<CallDryRunEffects<RuntimeEvent>, XcmDryRunApiError> {
-            PolkadotXcm::dry_run_call::<Runtime, xcm_config::XcmRouter, OriginCaller, RuntimeCall>(origin, call)
+        fn dry_run_call(origin: OriginCaller, call: RuntimeCall, result_xcms_version: XcmVersion) -> Result<CallDryRunEffects<RuntimeEvent>, XcmDryRunApiError> {
+            PolkadotXcm::dry_run_call::<Runtime, xcm_config::XcmRouter, OriginCaller, RuntimeCall>(origin, call, result_xcms_version)
         }
 
         fn dry_run_xcm(origin_location: VersionedLocation, xcm: VersionedXcm<RuntimeCall>) -> Result<XcmDryRunEffects<RuntimeEvent>, XcmDryRunApiError> {

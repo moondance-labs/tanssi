@@ -24,6 +24,7 @@ use {
     simple_template_emulated_chain::SimpleTemplateParaPallet,
     sp_runtime::FixedU128,
     westend_emulated_chain::WestendRelayPallet,
+    westend_system_emulated_network::westend_emulated_chain::westend_runtime::Dmp,
     westend_system_emulated_network::{
         DanceboxPara as Dancebox, DanceboxSender, SimpleTemplateEmptyReceiver,
         SimpleTemplatePara as SimpleTemplate, SimpleTemplateSender, WestendRelay as Westend,
@@ -33,7 +34,7 @@ use {
         latest::prelude::{Junctions::*, *},
         VersionedLocation,
     },
-    xcm_emulator::{assert_expected_events, bx, Chain, TestExt},
+    xcm_emulator::{assert_expected_events, bx, Chain, Parachain, TestExt},
 };
 
 #[allow(unused_assignments)]
@@ -149,6 +150,10 @@ fn transfer_assets_single_asset_fee_and_asset_reserves() {
 #[allow(unused_assignments)]
 #[test]
 fn transfer_assets_relay_tanssi() {
+    Westend::execute_with(|| {
+        Dmp::make_parachain_reachable(Dancebox::para_id());
+    });
+
     // XcmPallet reserve transfer arguments
     let alice_dancebox_origin = <Dancebox as Chain>::RuntimeOrigin::signed(DanceboxSender::get());
     let alice_relay_origin = <Westend as Chain>::RuntimeOrigin::signed(WestendSender::get());
@@ -604,6 +609,11 @@ fn transfer_assets_container_token_tanssi() {
 #[allow(unused_assignments)]
 #[test]
 fn transfer_asset_relay_token_across_tanssi_container() {
+    Westend::execute_with(|| {
+        Dmp::make_parachain_reachable(Dancebox::para_id());
+        Dmp::make_parachain_reachable(SimpleTemplate::para_id());
+    });
+
     // XcmPallet reserve transfer arguments
     let alice_dancebox_origin = <Dancebox as Chain>::RuntimeOrigin::signed(DanceboxSender::get());
     let alice_relay_origin = <Westend as Chain>::RuntimeOrigin::signed(WestendSender::get());

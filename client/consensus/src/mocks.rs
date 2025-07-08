@@ -217,6 +217,10 @@ impl RelayChainInterface for RelayChain {
         unimplemented!("Not needed for test")
     }
 
+    async fn scheduling_lookahead(&self, _relay_parent: PHash) -> RelayChainResult<u32> {
+        unimplemented!("Not needed for test")
+    }
+
     async fn retrieve_dmq_contents(
         &self,
         _: ParaId,
@@ -730,7 +734,6 @@ impl Proposer<TestBlock> for DummyProposer {
             tracing::info!(target: crate::LOG_TARGET, "block  {:?}", b.block.header.number);
             // For block number 1 we can use the default proof,
             // otherwise other tests fail
-            // TODO: investigate why
             let proof = b.proof.expect("proof should exist");
             Proposal {
                 block: b.block,

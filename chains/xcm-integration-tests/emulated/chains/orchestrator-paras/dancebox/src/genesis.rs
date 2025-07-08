@@ -70,6 +70,7 @@ pub fn genesis() -> Storage {
                     100_000 * dancebox_runtime::UNIT,
                 ),
             ],
+            ..Default::default()
         },
         configuration: dancebox_runtime::ConfigurationConfig {
             config: HostConfiguration {

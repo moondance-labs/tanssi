@@ -17,7 +17,6 @@
 use {
     sc_network::NetworkService,
     sc_network_sync::SyncingService,
-    sc_transaction_pool::{ChainApi, Pool},
     sp_core::H256,
     sp_runtime::traits::Block as BlockT,
     std::{collections::BTreeMap, sync::Arc},
@@ -31,13 +30,13 @@ pub use {
 };
 
 /// Extra dependencies for Ethereum compatibility.
-pub struct EthDeps<C, P, A: ChainApi, CT, B: BlockT> {
+pub struct EthDeps<C, P, CT, B: BlockT> {
     /// The client instance to use.
     pub client: Arc<C>,
     /// Transaction pool instance.
     pub pool: Arc<P>,
     /// Graph pool instance.
-    pub graph: Arc<Pool<A>>,
+    pub graph: Arc<P>,
     /// Ethereum transaction converter.
     pub converter: Option<CT>,
     /// The Node authority flag
@@ -58,6 +57,8 @@ pub struct EthDeps<C, P, A: ChainApi, CT, B: BlockT> {
     pub filter_pool: Option<FilterPool>,
     /// Maximum number of logs in a query.
     pub max_past_logs: u32,
+    /// Maximum block range in a query.
+    pub max_block_range: u32,
     /// Fee history cache.
     pub fee_history_cache: FeeHistoryCache,
     /// Maximum fee history cache size.
@@ -69,7 +70,7 @@ pub struct EthDeps<C, P, A: ChainApi, CT, B: BlockT> {
     pub forced_parent_hashes: Option<BTreeMap<H256, H256>>,
 }
 
-impl<C, P, A: ChainApi, CT: Clone, B: BlockT> Clone for EthDeps<C, P, A, CT, B> {
+impl<C, P, CT: Clone, B: BlockT> Clone for EthDeps<C, P, CT, B> {
     fn clone(&self) -> Self {
         Self {
             client: self.client.clone(),
@@ -85,6 +86,7 @@ impl<C, P, A: ChainApi, CT: Clone, B: BlockT> Clone for EthDeps<C, P, A, CT, B> 
             block_data_cache: self.block_data_cache.clone(),
             filter_pool: self.filter_pool.clone(),
             max_past_logs: self.max_past_logs,
+            max_block_range: self.max_block_range,
             fee_history_cache: self.fee_history_cache.clone(),
             fee_history_cache_limit: self.fee_history_cache_limit,
             execute_gas_limit_multiplier: self.execute_gas_limit_multiplier,

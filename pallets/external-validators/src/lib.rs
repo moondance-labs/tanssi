@@ -36,7 +36,7 @@ pub use pallet::*;
 use {
     frame_support::pallet_prelude::Weight,
     log::log,
-    parity_scale_codec::{Decode, Encode, MaxEncodedLen},
+    parity_scale_codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen},
     scale_info::TypeInfo,
     sp_runtime::{traits::Get, RuntimeDebug},
     sp_staking::SessionIndex,
@@ -66,7 +66,6 @@ pub mod pallet {
     use {
         super::*,
         frame_support::{
-            dispatch::DispatchResultWithPostInfo,
             pallet_prelude::*,
             traits::{EnsureOrigin, UnixTime, ValidatorRegistration},
             BoundedVec, DefaultNoBound,
@@ -301,10 +300,8 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::add_whitelisted(
 			T::MaxWhitelistedValidators::get().saturating_sub(1),
 		))]
-        pub fn add_whitelisted(
-            origin: OriginFor<T>,
-            who: T::AccountId,
-        ) -> DispatchResultWithPostInfo {
+        #[allow(clippy::useless_conversion)]
+        pub fn add_whitelisted(origin: OriginFor<T>, who: T::AccountId) -> DispatchResult {
             T::UpdateOrigin::ensure_origin(origin)?;
             // don't let one unprepared validator ruin things for everyone.
             let maybe_validator_id = T::ValidatorIdOf::convert(who.clone())
@@ -324,14 +321,7 @@ pub mod pallet {
 
             Self::deposit_event(Event::WhitelistedValidatorAdded { account_id: who });
 
-            let weight_used = <T as Config>::WeightInfo::add_whitelisted(
-                WhitelistedValidators::<T>::decode_len()
-                    .unwrap_or_default()
-                    .try_into()
-                    .unwrap_or(T::MaxWhitelistedValidators::get().saturating_sub(1)),
-            );
-
-            Ok(Some(weight_used).into())
+            Ok(())
         }
 
         /// Remove an account `who` from the list of `WhitelistedValidators` collators.
@@ -701,7 +691,17 @@ impl<T: Config> InvulnerablesProvider<T::ValidatorId> for Pallet<T> {
 
 /// Mode of era-forcing.
 #[derive(
-    Copy, Clone, PartialEq, Eq, Default, Encode, Decode, RuntimeDebug, TypeInfo, MaxEncodedLen,
+    Copy,
+    Clone,
+    PartialEq,
+    Eq,
+    Default,
+    Encode,
+    Decode,
+    DecodeWithMemTracking,
+    RuntimeDebug,
+    TypeInfo,
+    MaxEncodedLen,
 )]
 pub enum Forcing {
     /// Not forcing anything - just let whatever happen.

@@ -13,7 +13,7 @@ import type {
     FrameSupportPalletId,
     FrameSystemLimitsBlockLength,
     FrameSystemLimitsBlockWeights,
-    PalletReferendaTrackInfo,
+    PalletReferendaTrackDetails,
     SnowbridgeBeaconPrimitivesForkVersions,
     SpVersionRuntimeVersion,
     SpWeightsRuntimeDbWeight,
@@ -308,14 +308,54 @@ declare module "@polkadot/api-base/types/consts" {
              **/
             submissionDeposit: u128 & AugmentedConst<ApiType>;
             /**
-             * Information concerning the different referendum tracks.
+             * A list of tracks.
+             *
+             * Note: if the tracks are dynamic, the value in the static metadata might be inaccurate.
              **/
-            tracks: Vec<ITuple<[u16, PalletReferendaTrackInfo]>> & AugmentedConst<ApiType>;
+            tracks: Vec<ITuple<[u16, PalletReferendaTrackDetails]>> & AugmentedConst<ApiType>;
             /**
              * The number of blocks after submission that a referendum must begin being decided by.
              * Once this passes, then anyone may cancel the referendum.
              **/
             undecidingTimeout: u32 & AugmentedConst<ApiType>;
+            /**
+             * Generic const
+             **/
+            [key: string]: Codec;
+        };
+        foreignAssets: {
+            /**
+             * The amount of funds that must be reserved when creating a new approval.
+             **/
+            approvalDeposit: u128 & AugmentedConst<ApiType>;
+            /**
+             * The amount of funds that must be reserved for a non-provider asset account to be
+             * maintained.
+             **/
+            assetAccountDeposit: u128 & AugmentedConst<ApiType>;
+            /**
+             * The basic amount of funds that must be reserved for an asset.
+             **/
+            assetDeposit: u128 & AugmentedConst<ApiType>;
+            /**
+             * The basic amount of funds that must be reserved when adding metadata to your asset.
+             **/
+            metadataDepositBase: u128 & AugmentedConst<ApiType>;
+            /**
+             * The additional funds that must be reserved for the number of bytes you store in your
+             * metadata.
+             **/
+            metadataDepositPerByte: u128 & AugmentedConst<ApiType>;
+            /**
+             * Max number of items to destroy per `destroy_accounts` and `destroy_approvals` call.
+             *
+             * Must be configured to result in a weight that makes each call fit in a block.
+             **/
+            removeItemsLimit: u32 & AugmentedConst<ApiType>;
+            /**
+             * The maximum length of a name or symbol stored on-chain.
+             **/
+            stringLimit: u32 & AugmentedConst<ApiType>;
             /**
              * Generic const
              **/
@@ -397,9 +437,13 @@ declare module "@polkadot/api-base/types/consts" {
         };
         inactivityTracking: {
             /**
-             * The maximum amount of collators that can stored for a session
+             * The maximum amount of collators that can be stored for a session
              **/
             maxCollatorsPerSession: u32 & AugmentedConst<ApiType>;
+            /**
+             * The maximum amount of container chains that can be stored
+             **/
+            maxContainerChains: u32 & AugmentedConst<ApiType>;
             /**
              * The maximum number of sessions for which a collator can be inactive
              * before being moved to the offline queue
@@ -635,9 +679,11 @@ declare module "@polkadot/api-base/types/consts" {
              **/
             submissionDeposit: u128 & AugmentedConst<ApiType>;
             /**
-             * Information concerning the different referendum tracks.
+             * A list of tracks.
+             *
+             * Note: if the tracks are dynamic, the value in the static metadata might be inaccurate.
              **/
-            tracks: Vec<ITuple<[u16, PalletReferendaTrackInfo]>> & AugmentedConst<ApiType>;
+            tracks: Vec<ITuple<[u16, PalletReferendaTrackDetails]>> & AugmentedConst<ApiType>;
             /**
              * The number of blocks after submission that a referendum must begin being decided by.
              * Once this passes, then anyone may cancel the referendum.
@@ -820,6 +866,10 @@ declare module "@polkadot/api-base/types/consts" {
              * The period during which an approved treasury spend has to be claimed.
              **/
             payoutPeriod: u32 & AugmentedConst<ApiType>;
+            /**
+             * Gets this pallet's derived pot account.
+             **/
+            potAccount: AccountId32 & AugmentedConst<ApiType>;
             /**
              * Period between successive spends.
              **/

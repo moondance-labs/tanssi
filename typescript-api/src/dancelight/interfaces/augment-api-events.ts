@@ -39,6 +39,7 @@ import type {
     PalletInactivityTrackingActivityTrackingStatus,
     PalletMultisigTimepoint,
     PalletPooledStakingPoolsActivePoolKind,
+    PalletProxyDepositKind,
     PalletRankedCollectiveTally,
     PalletRankedCollectiveVoteRecord,
     PalletStreamPaymentDepositChange,
@@ -50,8 +51,8 @@ import type {
     PolkadotRuntimeParachainsDisputesDisputeResult,
     SnowbridgeCoreChannelId,
     SnowbridgeCoreOperatingModeBasicOperatingMode,
-    SnowbridgeCoreOutboundV1OperatingMode,
     SnowbridgeCorePricingPricingParameters,
+    SnowbridgeOutboundQueuePrimitivesOperatingMode,
     SpConsensusGrandpaAppPublic,
     SpRuntimeDispatchError,
     SpRuntimeDispatchErrorWithPostInfo,
@@ -64,6 +65,7 @@ import type {
     TpBridgeChannelInfo,
     TpBridgeCommand,
     TpTraitsFullRotationModes,
+    XcmV3TraitsSendError,
     XcmV5TraitsError,
     XcmVersionedAssets,
     XcmVersionedLocation,
@@ -274,7 +276,7 @@ declare module "@polkadot/api-base/types/events" {
              **/
             Undelegated: AugmentedEvent<ApiType, [AccountId32]>;
             /**
-             * An account that has voted
+             * An account has voted
              **/
             Voted: AugmentedEvent<
                 ApiType,
@@ -282,13 +284,17 @@ declare module "@polkadot/api-base/types/events" {
                 { who: AccountId32; vote: PalletConvictionVotingVoteAccountVote }
             >;
             /**
-             * A vote that been removed
+             * A vote has been removed
              **/
             VoteRemoved: AugmentedEvent<
                 ApiType,
                 [who: AccountId32, vote: PalletConvictionVotingVoteAccountVote],
                 { who: AccountId32; vote: PalletConvictionVotingVoteAccountVote }
             >;
+            /**
+             * The lockup period of a conviction vote expired, and the funds have been unlocked.
+             **/
+            VoteUnlocked: AugmentedEvent<ApiType, [who: AccountId32, class_: u16], { who: AccountId32; class: u16 }>;
             /**
              * Generic event
              **/
@@ -421,8 +427,8 @@ declare module "@polkadot/api-base/types/events" {
              **/
             SetOperatingMode: AugmentedEvent<
                 ApiType,
-                [mode: SnowbridgeCoreOutboundV1OperatingMode],
-                { mode: SnowbridgeCoreOutboundV1OperatingMode }
+                [mode: SnowbridgeOutboundQueuePrimitivesOperatingMode],
+                { mode: SnowbridgeOutboundQueuePrimitivesOperatingMode }
             >;
             /**
              * A SetTokenTransferFees message was sent to the Gateway
@@ -445,8 +451,8 @@ declare module "@polkadot/api-base/types/events" {
              **/
             UpdateChannel: AugmentedEvent<
                 ApiType,
-                [channelId: SnowbridgeCoreChannelId, mode: SnowbridgeCoreOutboundV1OperatingMode],
-                { channelId: SnowbridgeCoreChannelId; mode: SnowbridgeCoreOutboundV1OperatingMode }
+                [channelId: SnowbridgeCoreChannelId, mode: SnowbridgeOutboundQueuePrimitivesOperatingMode],
+                { channelId: SnowbridgeCoreChannelId; mode: SnowbridgeOutboundQueuePrimitivesOperatingMode }
             >;
             /**
              * An Upgrade message was sent to the Gateway
@@ -716,6 +722,223 @@ declare module "@polkadot/api-base/types/events" {
                 ApiType,
                 [index: u32, tally: PalletRankedCollectiveTally],
                 { index: u32; tally: PalletRankedCollectiveTally }
+            >;
+            /**
+             * Generic event
+             **/
+            [key: string]: AugmentedEvent<ApiType>;
+        };
+        foreignAssets: {
+            /**
+             * Accounts were destroyed for given asset.
+             **/
+            AccountsDestroyed: AugmentedEvent<
+                ApiType,
+                [assetId: u16, accountsDestroyed: u32, accountsRemaining: u32],
+                { assetId: u16; accountsDestroyed: u32; accountsRemaining: u32 }
+            >;
+            /**
+             * An approval for account `delegate` was cancelled by `owner`.
+             **/
+            ApprovalCancelled: AugmentedEvent<
+                ApiType,
+                [assetId: u16, owner: AccountId32, delegate: AccountId32],
+                { assetId: u16; owner: AccountId32; delegate: AccountId32 }
+            >;
+            /**
+             * Approvals were destroyed for given asset.
+             **/
+            ApprovalsDestroyed: AugmentedEvent<
+                ApiType,
+                [assetId: u16, approvalsDestroyed: u32, approvalsRemaining: u32],
+                { assetId: u16; approvalsDestroyed: u32; approvalsRemaining: u32 }
+            >;
+            /**
+             * (Additional) funds have been approved for transfer to a destination account.
+             **/
+            ApprovedTransfer: AugmentedEvent<
+                ApiType,
+                [assetId: u16, source: AccountId32, delegate: AccountId32, amount: u128],
+                { assetId: u16; source: AccountId32; delegate: AccountId32; amount: u128 }
+            >;
+            /**
+             * Some asset `asset_id` was frozen.
+             **/
+            AssetFrozen: AugmentedEvent<ApiType, [assetId: u16], { assetId: u16 }>;
+            /**
+             * The min_balance of an asset has been updated by the asset owner.
+             **/
+            AssetMinBalanceChanged: AugmentedEvent<
+                ApiType,
+                [assetId: u16, newMinBalance: u128],
+                { assetId: u16; newMinBalance: u128 }
+            >;
+            /**
+             * An asset has had its attributes changed by the `Force` origin.
+             **/
+            AssetStatusChanged: AugmentedEvent<ApiType, [assetId: u16], { assetId: u16 }>;
+            /**
+             * Some asset `asset_id` was thawed.
+             **/
+            AssetThawed: AugmentedEvent<ApiType, [assetId: u16], { assetId: u16 }>;
+            /**
+             * Some account `who` was blocked.
+             **/
+            Blocked: AugmentedEvent<ApiType, [assetId: u16, who: AccountId32], { assetId: u16; who: AccountId32 }>;
+            /**
+             * Some assets were destroyed.
+             **/
+            Burned: AugmentedEvent<
+                ApiType,
+                [assetId: u16, owner: AccountId32, balance: u128],
+                { assetId: u16; owner: AccountId32; balance: u128 }
+            >;
+            /**
+             * Some asset class was created.
+             **/
+            Created: AugmentedEvent<
+                ApiType,
+                [assetId: u16, creator: AccountId32, owner: AccountId32],
+                { assetId: u16; creator: AccountId32; owner: AccountId32 }
+            >;
+            /**
+             * Some assets were deposited (e.g. for transaction fees).
+             **/
+            Deposited: AugmentedEvent<
+                ApiType,
+                [assetId: u16, who: AccountId32, amount: u128],
+                { assetId: u16; who: AccountId32; amount: u128 }
+            >;
+            /**
+             * An asset class was destroyed.
+             **/
+            Destroyed: AugmentedEvent<ApiType, [assetId: u16], { assetId: u16 }>;
+            /**
+             * An asset class is in the process of being destroyed.
+             **/
+            DestructionStarted: AugmentedEvent<ApiType, [assetId: u16], { assetId: u16 }>;
+            /**
+             * Some asset class was force-created.
+             **/
+            ForceCreated: AugmentedEvent<
+                ApiType,
+                [assetId: u16, owner: AccountId32],
+                { assetId: u16; owner: AccountId32 }
+            >;
+            /**
+             * Some account `who` was frozen.
+             **/
+            Frozen: AugmentedEvent<ApiType, [assetId: u16, who: AccountId32], { assetId: u16; who: AccountId32 }>;
+            /**
+             * Some assets were issued.
+             **/
+            Issued: AugmentedEvent<
+                ApiType,
+                [assetId: u16, owner: AccountId32, amount: u128],
+                { assetId: u16; owner: AccountId32; amount: u128 }
+            >;
+            /**
+             * Metadata has been cleared for an asset.
+             **/
+            MetadataCleared: AugmentedEvent<ApiType, [assetId: u16], { assetId: u16 }>;
+            /**
+             * New metadata has been set for an asset.
+             **/
+            MetadataSet: AugmentedEvent<
+                ApiType,
+                [assetId: u16, name: Bytes, symbol_: Bytes, decimals: u8, isFrozen: bool],
+                { assetId: u16; name: Bytes; symbol: Bytes; decimals: u8; isFrozen: bool }
+            >;
+            /**
+             * The owner changed.
+             **/
+            OwnerChanged: AugmentedEvent<
+                ApiType,
+                [assetId: u16, owner: AccountId32],
+                { assetId: u16; owner: AccountId32 }
+            >;
+            /**
+             * The management team changed.
+             **/
+            TeamChanged: AugmentedEvent<
+                ApiType,
+                [assetId: u16, issuer: AccountId32, admin: AccountId32, freezer: AccountId32],
+                { assetId: u16; issuer: AccountId32; admin: AccountId32; freezer: AccountId32 }
+            >;
+            /**
+             * Some account `who` was thawed.
+             **/
+            Thawed: AugmentedEvent<ApiType, [assetId: u16, who: AccountId32], { assetId: u16; who: AccountId32 }>;
+            /**
+             * Some account `who` was created with a deposit from `depositor`.
+             **/
+            Touched: AugmentedEvent<
+                ApiType,
+                [assetId: u16, who: AccountId32, depositor: AccountId32],
+                { assetId: u16; who: AccountId32; depositor: AccountId32 }
+            >;
+            /**
+             * Some assets were transferred.
+             **/
+            Transferred: AugmentedEvent<
+                ApiType,
+                [assetId: u16, from: AccountId32, to: AccountId32, amount: u128],
+                { assetId: u16; from: AccountId32; to: AccountId32; amount: u128 }
+            >;
+            /**
+             * An `amount` was transferred in its entirety from `owner` to `destination` by
+             * the approved `delegate`.
+             **/
+            TransferredApproved: AugmentedEvent<
+                ApiType,
+                [assetId: u16, owner: AccountId32, delegate: AccountId32, destination: AccountId32, amount: u128],
+                { assetId: u16; owner: AccountId32; delegate: AccountId32; destination: AccountId32; amount: u128 }
+            >;
+            /**
+             * Some assets were withdrawn from the account (e.g. for transaction fees).
+             **/
+            Withdrawn: AugmentedEvent<
+                ApiType,
+                [assetId: u16, who: AccountId32, amount: u128],
+                { assetId: u16; who: AccountId32; amount: u128 }
+            >;
+            /**
+             * Generic event
+             **/
+            [key: string]: AugmentedEvent<ApiType>;
+        };
+        foreignAssetsCreator: {
+            /**
+             * New asset with the asset manager is registered
+             **/
+            ForeignAssetCreated: AugmentedEvent<
+                ApiType,
+                [assetId: u16, foreignAsset: StagingXcmV5Location],
+                { assetId: u16; foreignAsset: StagingXcmV5Location }
+            >;
+            /**
+             * Removed all information related to an assetId and destroyed asset
+             **/
+            ForeignAssetDestroyed: AugmentedEvent<
+                ApiType,
+                [assetId: u16, foreignAsset: StagingXcmV5Location],
+                { assetId: u16; foreignAsset: StagingXcmV5Location }
+            >;
+            /**
+             * Removed all information related to an assetId
+             **/
+            ForeignAssetRemoved: AugmentedEvent<
+                ApiType,
+                [assetId: u16, foreignAsset: StagingXcmV5Location],
+                { assetId: u16; foreignAsset: StagingXcmV5Location }
+            >;
+            /**
+             * Changed the xcm type mapping for a given asset id
+             **/
+            ForeignAssetTypeChanged: AugmentedEvent<
+                ApiType,
+                [assetId: u16, newForeignAsset: StagingXcmV5Location],
+                { assetId: u16; newForeignAsset: StagingXcmV5Location }
             >;
             /**
              * Generic event
@@ -994,6 +1217,36 @@ declare module "@polkadot/api-base/types/events" {
              **/
             [key: string]: AugmentedEvent<ApiType>;
         };
+        maintenanceMode: {
+            /**
+             * The chain was put into Maintenance Mode
+             **/
+            EnteredMaintenanceMode: AugmentedEvent<ApiType, []>;
+            /**
+             * The call to resume on_idle XCM execution failed with inner error
+             **/
+            FailedToResumeIdleXcmExecution: AugmentedEvent<
+                ApiType,
+                [error: SpRuntimeDispatchError],
+                { error: SpRuntimeDispatchError }
+            >;
+            /**
+             * The call to suspend on_idle XCM execution failed with inner error
+             **/
+            FailedToSuspendIdleXcmExecution: AugmentedEvent<
+                ApiType,
+                [error: SpRuntimeDispatchError],
+                { error: SpRuntimeDispatchError }
+            >;
+            /**
+             * The chain returned to its normal operating state
+             **/
+            NormalOperationResumed: AugmentedEvent<ApiType, []>;
+            /**
+             * Generic event
+             **/
+            [key: string]: AugmentedEvent<ApiType>;
+        };
         messageQueue: {
             /**
              * Message placed in overweight queue.
@@ -1144,6 +1397,14 @@ declare module "@polkadot/api-base/types/events" {
         };
         multisig: {
             /**
+             * The deposit for a multisig operation has been updated/poked.
+             **/
+            DepositPoked: AugmentedEvent<
+                ApiType,
+                [who: AccountId32, callHash: U8aFixed, oldDeposit: u128, newDeposit: u128],
+                { who: AccountId32; callHash: U8aFixed; oldDeposit: u128; newDeposit: u128 }
+            >;
+            /**
              * A multisig operation has been approved by someone.
              **/
             MultisigApproval: AugmentedEvent<
@@ -1220,6 +1481,14 @@ declare module "@polkadot/api-base/types/events" {
             [key: string]: AugmentedEvent<ApiType>;
         };
         onDemandAssignmentProvider: {
+            /**
+             * An account was given credits.
+             **/
+            AccountCredited: AugmentedEvent<
+                ApiType,
+                [who: AccountId32, amount: u128],
+                { who: AccountId32; amount: u128 }
+            >;
             /**
              * An order was placed at some spot price amount by orderer ordered_by
              **/
@@ -1568,6 +1837,14 @@ declare module "@polkadot/api-base/types/events" {
                 { real: AccountId32; proxy: AccountId32; callHash: H256 }
             >;
             /**
+             * A deposit stored for proxies or announcements was poked / updated.
+             **/
+            DepositPoked: AugmentedEvent<
+                ApiType,
+                [who: AccountId32, kind: PalletProxyDepositKind, oldDeposit: u128, newDeposit: u128],
+                { who: AccountId32; kind: PalletProxyDepositKind; oldDeposit: u128; newDeposit: u128 }
+            >;
+            /**
              * A proxy was added.
              **/
             ProxyAdded: AugmentedEvent<
@@ -1739,6 +2016,10 @@ declare module "@polkadot/api-base/types/events" {
         };
         scheduler: {
             /**
+             * Agenda is incomplete from `when`.
+             **/
+            AgendaIncomplete: AugmentedEvent<ApiType, [when: u32], { when: u32 }>;
+            /**
              * The call for the provided hash was not found so the task has been aborted.
              **/
             CallUnavailable: AugmentedEvent<
@@ -1861,6 +2142,14 @@ declare module "@polkadot/api-base/types/events" {
              **/
             NewSession: AugmentedEvent<ApiType, [sessionIndex: u32], { sessionIndex: u32 }>;
             /**
+             * Validator has been disabled.
+             **/
+            ValidatorDisabled: AugmentedEvent<ApiType, [validator: AccountId32], { validator: AccountId32 }>;
+            /**
+             * Validator has been re-enabled.
+             **/
+            ValidatorReenabled: AugmentedEvent<ApiType, [validator: AccountId32], { validator: AccountId32 }>;
+            /**
              * Generic event
              **/
             [key: string]: AugmentedEvent<ApiType>;
@@ -1973,6 +2262,14 @@ declare module "@polkadot/api-base/types/events" {
              * A new account was created.
              **/
             NewAccount: AugmentedEvent<ApiType, [account: AccountId32], { account: AccountId32 }>;
+            /**
+             * An invalid authorized upgrade was rejected while trying to apply it.
+             **/
+            RejectedInvalidAuthorizedUpgrade: AugmentedEvent<
+                ApiType,
+                [codeHash: H256, error: SpRuntimeDispatchError],
+                { codeHash: H256; error: SpRuntimeDispatchError }
+            >;
             /**
              * On on-chain remark happened.
              **/
@@ -2138,6 +2435,18 @@ declare module "@polkadot/api-base/types/events" {
                 { result: Result<Null, SpRuntimeDispatchError> }
             >;
             /**
+             * The fallback call was dispatched.
+             **/
+            IfElseFallbackCalled: AugmentedEvent<
+                ApiType,
+                [mainError: SpRuntimeDispatchError],
+                { mainError: SpRuntimeDispatchError }
+            >;
+            /**
+             * Main call was dispatched.
+             **/
+            IfElseMainSuccess: AugmentedEvent<ApiType, []>;
+            /**
              * A single item within a Batch of dispatches has completed with no error.
              **/
             ItemCompleted: AugmentedEvent<ApiType, []>;
@@ -2170,6 +2479,31 @@ declare module "@polkadot/api-base/types/events" {
             [key: string]: AugmentedEvent<ApiType>;
         };
         xcmPallet: {
+            /**
+             * `target` removed alias authorization for `aliaser`.
+             **/
+            AliasAuthorizationRemoved: AugmentedEvent<
+                ApiType,
+                [aliaser: StagingXcmV5Location, target: StagingXcmV5Location],
+                { aliaser: StagingXcmV5Location; target: StagingXcmV5Location }
+            >;
+            /**
+             * An `aliaser` location was authorized by `target` to alias it, authorization valid until
+             * `expiry` block number.
+             **/
+            AliasAuthorized: AugmentedEvent<
+                ApiType,
+                [aliaser: StagingXcmV5Location, target: StagingXcmV5Location, expiry: Option<u64>],
+                { aliaser: StagingXcmV5Location; target: StagingXcmV5Location; expiry: Option<u64> }
+            >;
+            /**
+             * `target` removed all alias authorizations.
+             **/
+            AliasesAuthorizationsRemoved: AugmentedEvent<
+                ApiType,
+                [target: StagingXcmV5Location],
+                { target: StagingXcmV5Location }
+            >;
             /**
              * Some assets have been claimed from an asset trap
              **/
@@ -2329,6 +2663,14 @@ declare module "@polkadot/api-base/types/events" {
                 { location: StagingXcmV5Location; queryId: u64; error: XcmV5TraitsError }
             >;
             /**
+             * An XCM message failed to process.
+             **/
+            ProcessXcmError: AugmentedEvent<
+                ApiType,
+                [origin: StagingXcmV5Location, error: XcmV5TraitsError, messageId: U8aFixed],
+                { origin: StagingXcmV5Location; error: XcmV5TraitsError; messageId: U8aFixed }
+            >;
+            /**
              * Query response has been received and is ready for taking with `take_response`. There is
              * no registered notification call.
              **/
@@ -2342,7 +2684,25 @@ declare module "@polkadot/api-base/types/events" {
              **/
             ResponseTaken: AugmentedEvent<ApiType, [queryId: u64], { queryId: u64 }>;
             /**
-             * A XCM message was sent.
+             * An XCM message failed to send.
+             **/
+            SendFailed: AugmentedEvent<
+                ApiType,
+                [
+                    origin: StagingXcmV5Location,
+                    destination: StagingXcmV5Location,
+                    error: XcmV3TraitsSendError,
+                    messageId: U8aFixed,
+                ],
+                {
+                    origin: StagingXcmV5Location;
+                    destination: StagingXcmV5Location;
+                    error: XcmV3TraitsSendError;
+                    messageId: U8aFixed;
+                }
+            >;
+            /**
+             * An XCM message was sent.
              **/
             Sent: AugmentedEvent<
                 ApiType,

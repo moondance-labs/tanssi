@@ -32,6 +32,7 @@ use {
         traits::{ExistenceRequirement, WithdrawReasons},
     },
     pallet_services_payment::ProvideCollatorAssignmentCost,
+    parity_scale_codec::DecodeWithMemTracking,
     polkadot_runtime_common::SlowAdjustingFeeUpdate,
 };
 
@@ -55,9 +56,9 @@ use {
         parameter_types,
         traits::{
             fungible::{Balanced, Credit, Inspect},
-            tokens::{imbalance::ResolveTo, PayFromAccount, UnityAssetBalanceConversion},
+            tokens::{PayFromAccount, UnityAssetBalanceConversion},
             ConstBool, ConstU128, ConstU32, ConstU64, ConstU8, Contains, EitherOfDiverse,
-            EverythingBut, Imbalance, InsideBoth, InstanceFilter, OnUnbalanced,
+            EverythingBut, InsideBoth, InstanceFilter, OnUnbalanced,
         },
         weights::{
             constants::{
@@ -74,7 +75,6 @@ use {
         EnsureNever, EnsureRoot,
     },
     nimbus_primitives::{NimbusId, SlotBeacon},
-    pallet_balances::NegativeImbalance,
     pallet_invulnerables::InvulnerableRewardDistribution,
     pallet_registrar::RegistrarHooks,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
@@ -126,17 +126,20 @@ pub type BlockId = generic::BlockId<Block>;
 pub type CollatorId = AccountId;
 
 /// The `TxExtension` to the basic transaction logic.
-pub type TxExtension = (
-    frame_system::CheckNonZeroSender<Runtime>,
-    frame_system::CheckSpecVersion<Runtime>,
-    frame_system::CheckTxVersion<Runtime>,
-    frame_system::CheckGenesis<Runtime>,
-    frame_system::CheckEra<Runtime>,
-    frame_system::CheckNonce<Runtime>,
-    frame_system::CheckWeight<Runtime>,
-    pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
-    cumulus_primitives_storage_weight_reclaim::StorageWeightReclaim<Runtime>,
-);
+pub type TxExtension = cumulus_pallet_weight_reclaim::StorageWeightReclaim<
+    Runtime,
+    (
+        frame_system::CheckNonZeroSender<Runtime>,
+        frame_system::CheckSpecVersion<Runtime>,
+        frame_system::CheckTxVersion<Runtime>,
+        frame_system::CheckGenesis<Runtime>,
+        frame_system::CheckEra<Runtime>,
+        frame_system::CheckNonce<Runtime>,
+        frame_system::CheckWeight<Runtime>,
+        pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
+        frame_metadata_hash_extension::CheckMetadataHash<Runtime>,
+    ),
+>;
 
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic =
@@ -145,6 +148,12 @@ pub type UncheckedExtrinsic =
 /// Extrinsic type that has already been checked.
 pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, RuntimeCall, TxExtension>;
 
+/// The runtime migrations per release.
+pub mod migrations {
+    /// Unreleased migrations. Add new ones here:
+    pub type Unreleased = ();
+}
+
 /// Executive: handles dispatch to the various modules.
 pub type Executive = frame_executive::Executive<
     Runtime,
@@ -152,6 +161,7 @@ pub type Executive = frame_executive::Executive<
     frame_system::ChainContext<Runtime>,
     Runtime,
     AllPalletsWithSystem,
+    migrations::Unreleased,
 >;
 
 /// DANCE, the native token, uses 12 decimals of precision.
@@ -231,7 +241,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: Cow::Borrowed("flashbox"),
     impl_name: Cow::Borrowed("flashbox"),
     authoring_version: 1,
-    spec_version: 1300,
+    spec_version: 1400,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -440,54 +450,14 @@ impl pallet_balances::Config for Runtime {
     type WeightInfo = weights::pallet_balances::SubstrateWeight<Runtime>;
 }
 
-pub struct DealWithFees<R>(sp_std::marker::PhantomData<R>);
-impl<R> OnUnbalanced<Credit<R::AccountId, pallet_balances::Pallet<R>>> for DealWithFees<R>
-where
-    R: pallet_balances::Config + pallet_treasury::Config + frame_system::Config,
-    pallet_treasury::NegativeImbalanceOf<R>: From<NegativeImbalance<R>>,
-{
-    // this seems to be called for substrate-based transactions
-    fn on_unbalanceds(
-        mut fees_then_tips: impl Iterator<Item = Credit<R::AccountId, pallet_balances::Pallet<R>>>,
-    ) {
-        if let Some(fees) = fees_then_tips.next() {
-            // 80% is burned, 20% goes to the treasury
-            // Same policy applies for tips as well
-            let burn_percentage = 80;
-            let treasury_percentage = 20;
-
-            let (_, to_treasury) = fees.ration(burn_percentage, treasury_percentage);
-            ResolveTo::<pallet_treasury::TreasuryAccountId<R>, pallet_balances::Pallet<R>>::on_unbalanced(to_treasury);
-            // Balances pallet automatically burns dropped Negative Imbalances by decreasing total_supply accordingly
-            // We need to convert the new Credit type to a negative imbalance
-            // handle tip if there is one
-            if let Some(tip) = fees_then_tips.next() {
-                let (_, to_treasury) = tip.ration(burn_percentage, treasury_percentage);
-                ResolveTo::<pallet_treasury::TreasuryAccountId<R>, pallet_balances::Pallet<R>>::on_unbalanced(to_treasury);
-            }
-        }
-    }
-
-    // this is called from pallet_evm for Ethereum-based transactions
-    // (technically, it calls on_unbalanced, which calls this when non-zero)
-    fn on_nonzero_unbalanced(amount: Credit<R::AccountId, pallet_balances::Pallet<R>>) {
-        // 80% is burned, 20% goes to the treasury
-        let burn_percentage = 80;
-        let treasury_percentage = 20;
-
-        let (_, to_treasury) = amount.ration(burn_percentage, treasury_percentage);
-        ResolveTo::<pallet_treasury::TreasuryAccountId<R>, pallet_balances::Pallet<R>>::on_unbalanced(to_treasury);
-    }
-}
-
 parameter_types! {
     pub const TransactionByteFee: Balance = 1;
 }
 
 impl pallet_transaction_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    // This will burn the fees
-    type OnChargeTransaction = FungibleAdapter<Balances, DealWithFees<Runtime>>;
+    type OnChargeTransaction =
+        FungibleAdapter<Balances, tanssi_runtime_common::DealWithFees<Runtime>>;
     type OperationalFeeMultiplier = ConstU8<5>;
     type WeightToFee = WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
@@ -630,6 +600,7 @@ impl pallet_session::Config for Runtime {
     type SessionHandler = <SessionKeys as sp_runtime::traits::OpaqueKeys>::KeyTypeIdProviders;
     type Keys = SessionKeys;
     type WeightInfo = weights::pallet_session::SubstrateWeight<Runtime>;
+    type DisablingStrategy = ();
 }
 
 pub struct RemoveInvulnerablesImpl;
@@ -642,7 +613,6 @@ impl RemoveInvulnerables<CollatorId> for RemoveInvulnerablesImpl {
         if num_invulnerables == 0 {
             return vec![];
         }
-        // TODO: check if this works on session changes
         let all_invulnerables = pallet_invulnerables::Invulnerables::<Runtime>::get();
         if all_invulnerables.is_empty() {
             return vec![];
@@ -824,7 +794,7 @@ impl pallet_collator_assignment::Config for Runtime {
     type SessionIndex = u32;
     type SelfParaId = ParachainInfo;
     type ShouldRotateAllCollators = NeverRotateCollators;
-    type GetRandomnessForNextBlock = ();
+    type Randomness = ();
     type RemoveInvulnerables = RemoveInvulnerablesImpl;
     type ParaIdAssignmentHooks = ParaIdAssignmentHooksImpl;
     type CollatorAssignmentTip = ServicesPayment;
@@ -1124,7 +1094,7 @@ impl pallet_utility::Config for Runtime {
 
 /// The type used to represent the kinds of proxies allowed.
 #[apply(derive_storage_traits)]
-#[derive(Copy, Ord, PartialOrd, MaxEncodedLen)]
+#[derive(Copy, Ord, PartialOrd, MaxEncodedLen, DecodeWithMemTracking)]
 #[allow(clippy::unnecessary_cast)]
 pub enum ProxyType {
     /// All calls can be proxied. This is the trivial/most permissive filter.
@@ -1228,6 +1198,7 @@ impl pallet_proxy::Config for Runtime {
     // - 4 bytes BlockNumber (u32)
     type AnnouncementDepositFactor = ConstU128<{ currency::deposit(0, 68) }>;
     type WeightInfo = weights::pallet_proxy::SubstrateWeight<Runtime>;
+    type BlockNumberProvider = System;
 }
 
 impl pallet_migrations::Config for Runtime {
@@ -1243,14 +1214,14 @@ parameter_types! {
 impl pallet_multiblock_migrations::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     #[cfg(not(feature = "runtime-benchmarks"))]
-    type Migrations = pallet_identity::migration::v2::LazyMigrationV1ToV2<Runtime>;
+    type Migrations = ();
     // Benchmarks need mocked migrations to guarantee that they succeed.
     #[cfg(feature = "runtime-benchmarks")]
     type Migrations = pallet_multiblock_migrations::mock_helpers::MockedMigrations;
     type CursorMaxLen = ConstU32<65_536>;
     type IdentifierMaxLen = ConstU32<256>;
     type MigrationStatusHandler = ();
-    type FailedMigrationHandler = frame_support::migrations::FreezeChainOnFailedMigration;
+    type FailedMigrationHandler = MaintenanceMode;
     type MaxServiceWeight = MbmServiceWeight;
     type WeightInfo = weights::pallet_multiblock_migrations::SubstrateWeight<Runtime>;
 }
@@ -1281,10 +1252,12 @@ impl Contains<RuntimeCall> for IsRegisterParathreads {
     }
 }
 
+type NormalFilter = EverythingBut<IsRegisterParathreads>;
+
 impl pallet_maintenance_mode::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type NormalCallFilter = EverythingBut<IsRegisterParathreads>;
-    type MaintenanceCallFilter = MaintenanceFilter;
+    type NormalCallFilter = NormalFilter;
+    type MaintenanceCallFilter = InsideBoth<MaintenanceFilter, NormalFilter>;
     type MaintenanceOrigin = EnsureRoot<AccountId>;
     type XcmExecutionManager = ();
 }
@@ -1320,7 +1293,6 @@ parameter_types! {
     // initial_supply * (1.05) = initial_supply * (1+x)^5_259_600
     // we should solve for x = (1.05)^(1/5_259_600) -1 -> 0.000000009 per block or 9/1_000_000_000
     // 1% in the case of dev mode
-    // TODO: check if we can put the prod inflation for tests too
     // TODO: better calculus for going from annual to block inflation (if it can be done)
     pub const InflationRate: Perbill = prod_or_fast!(Perbill::from_parts(9), Perbill::from_percent(1));
 
@@ -1476,6 +1448,11 @@ impl pallet_multisig::Config for Runtime {
     type DepositFactor = DepositFactor;
     type MaxSignatories = MaxSignatories;
     type WeightInfo = weights::pallet_multisig::SubstrateWeight<Runtime>;
+    type BlockNumberProvider = System;
+}
+
+impl cumulus_pallet_weight_reclaim::Config for Runtime {
+    type WeightInfo = weights::cumulus_pallet_weight_reclaim::SubstrateWeight<Runtime>;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -1527,6 +1504,7 @@ construct_runtime!(
 
         // More system support stuff
         RelayStorageRoots: pallet_relay_storage_roots = 60,
+        WeightReclaim: cumulus_pallet_weight_reclaim = 61,
 
         RootTesting: pallet_root_testing = 100,
         AsyncBacking: pallet_async_backing::{Pallet, Storage} = 110,
@@ -1561,6 +1539,7 @@ mod benches {
         [pallet_author_inherent, AuthorInherent]
         [pallet_treasury, Treasury]
         [pallet_relay_storage_roots, RelayStorageRoots]
+        [cumulus_pallet_weight_reclaim, WeightReclaim]
     );
 }
 
@@ -1700,7 +1679,7 @@ impl_runtime_apis! {
             Vec<frame_support::traits::StorageInfo>,
         ) {
             use cumulus_pallet_session_benchmarking::Pallet as SessionBench;
-            use frame_benchmarking::{Benchmarking, BenchmarkList};
+            use frame_benchmarking::{BenchmarkList};
             use frame_support::traits::StorageInfoTrait;
 
             let mut list = Vec::<BenchmarkList>::new();
@@ -1710,10 +1689,11 @@ impl_runtime_apis! {
             (list, storage_info)
         }
 
+        #[allow(non_local_definitions)]
         fn dispatch_benchmark(
             config: frame_benchmarking::BenchmarkConfig,
         ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, alloc::string::String> {
-            use frame_benchmarking::{BenchmarkBatch, Benchmarking, BenchmarkError};
+            use frame_benchmarking::{BenchmarkBatch, BenchmarkError};
             use sp_core::storage::TrackedStorageKey;
 
             impl frame_system_benchmarking::Config for Runtime {

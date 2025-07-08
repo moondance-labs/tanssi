@@ -4,7 +4,13 @@ import { type DevModeContext, beforeAll, describeSuite, expect } from "@moonwall
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import { hexToU8a, u8aToHex } from "@polkadot/util";
 import { encodeAddress, xxhashAsU8a } from "@polkadot/util-crypto";
-import { generateEventLog, generateUpdate, SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS, type MultiLocation } from "utils";
+import {
+    generateEventLog,
+    generateUpdate,
+    SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS,
+    type MultiLocation,
+    ETHEREUM_MAINNET_SOVEREIGN_ACCOUNT_ADDRESS,
+} from "utils";
 import { expectEventCount } from "../../../helpers/events";
 import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_ETH_TOKEN_TRANSFERS, checkCallIsFiltered } from "helpers";
 import type { KeyringPair } from "@moonwall/util";
@@ -20,6 +26,7 @@ describeSuite({
         let isStarlight: boolean;
         let specVersion: number;
         let shouldSkipStarlightETT: boolean;
+        let sovereignAccount: string;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
@@ -31,6 +38,9 @@ describeSuite({
             specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
             shouldSkipStarlightETT =
                 isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_ETH_TOKEN_TRANSFERS.includes(specVersion);
+            sovereignAccount = isStarlight
+                ? ETHEREUM_MAINNET_SOVEREIGN_ACCOUNT_ADDRESS
+                : SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS;
         });
 
         it({
@@ -164,10 +174,25 @@ describeSuite({
 
                 // Ethereum sovereign account: send some balance to it
                 signedTx = await polkadotJs.tx.balances
-                    .transferKeepAlive(SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS, 100_000_000_000_000_000n)
+                    .transferKeepAlive(sovereignAccount, 100_000_000_000_000_000n)
                     .signAsync(alice);
 
                 await context.createBlock([signedTx], { allowFailures: false });
+
+                const payload = isStarlight
+                    ? new Uint8Array([
+                          0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 96, 221, 164, 214, 91, 215, 91, 206, 187, 74, 14, 168, 59, 236,
+                          214, 221, 17, 57, 162, 150, 244, 57, 226, 245, 246, 91, 55, 235, 123, 117, 15, 216, 0, 5, 5,
+                          5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 16,
+                          39, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 232, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                          0,
+                      ])
+                    : new Uint8Array([
+                          0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 233, 81, 66, 213, 172, 163, 41, 144, 104, 163, 217, 180, 166,
+                          89, 249, 88, 149, 89, 56, 45, 10, 19, 10, 29, 124, 237, 198, 125, 108, 61, 64, 29, 0, 5, 5, 5,
+                          5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 16, 39,
+                          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 232, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                      ]);
 
                 // Hard-coding payload as we do not have scale encoding-decoding
                 const log = await generateEventLog(
@@ -180,12 +205,7 @@ describeSuite({
                         Buffer.from("0000000000000000000000000000000000000000000000000000000000000000", "hex")
                     ),
                     1,
-                    new Uint8Array([
-                        0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 188, 212, 40, 44, 160, 195, 12, 189, 156, 87, 139, 92, 121, 14,
-                        136, 200, 3, 216, 12, 217, 204, 145, 242, 134, 134, 242, 74, 194, 90, 97, 224, 110, 0, 5, 5, 5,
-                        5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 16, 39,
-                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 232, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    ])
+                    payload
                 );
                 const { checkpointUpdate, messageExtrinsics } = await generateUpdate(polkadotJs, [log]);
 
@@ -234,7 +254,7 @@ describeSuite({
                 // Sovereign balance before
                 const {
                     data: { free: sovereignBalanceBefore },
-                } = await context.polkadotJs().query.system.account(SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS);
+                } = await context.polkadotJs().query.system.account(sovereignAccount);
 
                 // Bob balance before
                 const {
@@ -247,7 +267,7 @@ describeSuite({
                 // Check balances were updated correctly.
                 const {
                     data: { free: sovereignBalanceAfter },
-                } = await context.polkadotJs().query.system.account(SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS);
+                } = await context.polkadotJs().query.system.account(sovereignAccount);
 
                 const {
                     data: { free: bobBalanceAfter },

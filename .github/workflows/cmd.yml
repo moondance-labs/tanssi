@@ -4,6 +4,10 @@ on:
   issue_comment:
     types: [ created ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: write
   issues: write
@@ -68,16 +72,12 @@ jobs:
           ref: refs/pull/${{ github.event.issue.number }}/head
 
       - name: Install GitHub CLI
-        run: |
-          mkdir -p ~/bin
-          curl -L -o ~/bin/gh.tar.gz https://github.com/cli/cli/releases/download/v2.69.0/gh_2.69.0_linux_amd64.tar.gz
-          tar -xzf ~/bin/gh.tar.gz -C ~/bin --strip-components=1
-          ~/bin/bin/gh --version
+        uses: ./.github/workflow-templates/gh-cli
 
       - name: Cargo build
         uses: ./.github/workflow-templates/cargo-build
         with:
-          features: "fast-runtime"
+          features: "fast-runtime,metadata-hash"
 
       - name: Pnpm
         uses: pnpm/action-setup@v4.1.0
@@ -90,14 +90,8 @@ jobs:
           node-version: 22.x
           cache: "pnpm"
 
-      # TODO: Extract to workflow template and re-use in other workflows (separate PR)
-      - name: "Generate Local interfaces"
-        run: |
-          chmod uog+x target/release/tanssi-node
-          chmod uog+x target/release/tanssi-relay
-          cd typescript-api
-          pnpm install --frozen-lockfile
-          pnpm create-local-interfaces
+      - name: Generate Typescript API Interfaces
+        uses: ./.github/workflow-templates/typescript-create-api-interfaces
 
       - name: Configure Git
         run: |

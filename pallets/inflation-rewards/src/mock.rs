@@ -234,9 +234,12 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 
     let balances = vec![(0, 10_000)];
 
-    pallet_balances::GenesisConfig::<Test> { balances }
-        .assimilate_storage(&mut t)
-        .unwrap();
+    pallet_balances::GenesisConfig::<Test> {
+        balances,
+        ..Default::default()
+    }
+    .assimilate_storage(&mut t)
+    .unwrap();
 
     t.into()
 }

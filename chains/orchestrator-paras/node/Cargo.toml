@@ -5,7 +5,7 @@ build = "build.rs"
 description = "Tanssi node implementation"
 edition = "2021"
 license = "GPL-3.0-only"
-version = "0.13.0"
+version = "0.14.0"
 
 [lints]
 workspace = true
@@ -34,6 +34,7 @@ tokio-util = { workspace = true }
 ccp-authorities-noting-inherent = { workspace = true, features = [ "std" ] }
 dancebox-runtime = { workspace = true, features = [ "std" ] }
 dp-container-chain-genesis-data = { workspace = true, features = [ "json", "std" ] }
+dp-core = { workspace = true, features = [ "std" ] }
 dp-slot-duration-runtime-api = { workspace = true }
 flashbox-runtime = { workspace = true, features = [ "std" ] }
 manual-container-chains-exclusion-rpc = { workspace = true }
@@ -161,3 +162,4 @@ try-runtime = [
 ]
 
 fast-runtime = [ "dancebox-runtime/fast-runtime", "flashbox-runtime/fast-runtime" ]
+metadata-hash = [ "dancebox-runtime/metadata-hash", "flashbox-runtime/metadata-hash" ]

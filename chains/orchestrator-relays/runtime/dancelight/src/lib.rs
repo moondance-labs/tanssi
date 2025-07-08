@@ -43,14 +43,14 @@ use {
     },
     frame_system::{pallet_prelude::BlockNumberFor, EnsureNever},
     nimbus_primitives::NimbusId,
-    pallet_collator_assignment::{GetRandomnessForNextBlock, RotateCollatorsEveryNSessions},
+    pallet_collator_assignment::RotateCollatorsEveryNSessions,
     pallet_initializer as tanssi_initializer,
     pallet_invulnerables::InvulnerableRewardDistribution,
     pallet_registrar::Error as ContainerRegistrarError,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     pallet_services_payment::{ProvideBlockProductionCost, ProvideCollatorAssignmentCost},
     parachains_scheduler::common::Assignment,
-    parity_scale_codec::{Decode, Encode, MaxEncodedLen},
+    parity_scale_codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen},
     primitives::{
         slashing, vstaging::CandidateEvent, vstaging::CommittedCandidateReceiptV2,
         vstaging::CoreState, vstaging::ScrapedOnChainVotes, ApprovalVotingParams, BlockNumber,
@@ -60,8 +60,8 @@ use {
         ValidationCodeHash, ValidatorId, ValidatorIndex, PARACHAIN_KEY_TYPE_ID,
     },
     runtime_common::{
-        self as polkadot_runtime_common, impl_runtime_weights, impls::ToAuthor, paras_registrar,
-        paras_sudo_wrapper, traits::Registrar as RegistrarInterface, BlockHashCount, BlockLength,
+        self as polkadot_runtime_common, impl_runtime_weights, paras_registrar, paras_sudo_wrapper,
+        traits::Registrar as RegistrarInterface, BlockHashCount, BlockLength,
         SlowAdjustingFeeUpdate,
     },
     runtime_parachains::{
@@ -77,17 +77,17 @@ use {
         shared as parachains_shared,
     },
     scale_info::TypeInfo,
-    snowbridge_core::{
-        outbound::{Command, Fee},
-        ChannelId, PricingParameters,
-    },
-    snowbridge_pallet_outbound_queue::MerkleProof,
+    snowbridge_core::{ChannelId, PricingParameters},
+    snowbridge_merkle_tree::MerkleProof,
+    snowbridge_outbound_queue_primitives::v1::Command,
+    snowbridge_outbound_queue_primitives::v1::Fee,
     sp_core::{storage::well_known_keys as StorageWellKnownKeys, Get},
     sp_genesis_builder::PresetId,
     sp_runtime::{
         traits::{BlockNumberProvider, ConvertInto},
         AccountId32,
     },
+    sp_staking::offence::OffenceSeverity,
     sp_std::{
         cmp::Ordering,
         collections::{btree_map::BTreeMap, btree_set::BTreeSet, vec_deque::VecDeque},
@@ -99,6 +99,7 @@ use {
         prod_or_fast_parameter_types, EraIndex, GetHostConfiguration, GetSessionContainerChains,
         ParaIdAssignmentHooks, RegistrarHandler, Slot, SlotFrequency,
     },
+    xcm::Version as XcmVersion,
     xcm_runtime_apis::{
         dry_run::{CallDryRunEffects, Error as XcmDryRunApiError, XcmDryRunEffects},
         fees::Error as XcmPaymentApiError,
@@ -150,7 +151,11 @@ pub use {
 };
 
 #[cfg(feature = "runtime-benchmarks")]
-use snowbridge_core::{AgentId, TokenId};
+use {
+    dancelight_runtime_constants::snowbridge::EthereumNetwork,
+    snowbridge_core::{AgentId, TokenId},
+    xcm::latest::Junctions::*,
+};
 
 /// Constant values used within the runtime.
 use dancelight_runtime_constants::{currency::*, fee::*, snowbridge::EthereumLocation, time::*};
@@ -191,7 +196,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: Cow::Borrowed("dancelight"),
     impl_name: Cow::Borrowed("tanssi-dancelight-v2.0"),
     authoring_version: 0,
-    spec_version: 1300,
+    spec_version: 1400,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 26,
@@ -218,7 +223,17 @@ pub fn native_version() -> NativeVersion {
 ///
 /// Can be extended to serve further use-cases besides just UMP. Is stored in storage, so any change
 /// to existing values will require a migration.
-#[derive(Encode, Decode, Clone, MaxEncodedLen, Eq, PartialEq, RuntimeDebug, TypeInfo)]
+#[derive(
+    Encode,
+    Decode,
+    Clone,
+    MaxEncodedLen,
+    Eq,
+    PartialEq,
+    RuntimeDebug,
+    TypeInfo,
+    DecodeWithMemTracking,
+)]
 pub enum AggregateMessageOrigin {
     /// Inbound upward message.
     #[codec(index = 0)]
@@ -324,7 +339,7 @@ parameter_types! {
 
 #[derive_impl(frame_system::config_preludes::RelayChainDefaultConfig)]
 impl frame_system::Config for Runtime {
-    type BaseCallFilter = EverythingBut<(IsRelayRegister, IsParathreadRegistrar)>;
+    type BaseCallFilter = MaintenanceMode;
     type BlockWeights = BlockWeights;
     type BlockLength = BlockLength;
     type DbWeight = RocksDbWeight;
@@ -432,6 +447,7 @@ impl pallet_scheduler::Config for Runtime {
     type WeightInfo = weights::pallet_scheduler::SubstrateWeight<Runtime>;
     type OriginPrivilegeCmp = OriginPrivilegeCmp;
     type Preimages = Preimage;
+    type BlockNumberProvider = System;
 }
 
 parameter_types! {
@@ -507,7 +523,8 @@ parameter_types! {
 
 impl pallet_transaction_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type OnChargeTransaction = FungibleAdapter<Balances, ToAuthor<Runtime>>;
+    type OnChargeTransaction =
+        FungibleAdapter<Balances, tanssi_runtime_common::DealWithFees<Runtime>>;
     type OperationalFeeMultiplier = OperationalFeeMultiplier;
     type WeightToFee = WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
@@ -572,11 +589,8 @@ impl pallet_session::Config for Runtime {
     type SessionManager = pallet_session::historical::NoteHistoricalRoot<Self, ExternalValidators>;
     type SessionHandler = <SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
     type Keys = SessionKeys;
-    // TODO: Current benchmarking code for pallet_session requires that the runtime
-    // uses pallet_staking, which we don't use. We need to make a PR to Substrate to
-    // allow decoupling the benchmark from other pallets.
-    // See https://github.com/paritytech/polkadot-sdk/blob/0845044454c005b577eab7afaea18583bd7e3dd3/substrate/frame/session/benchmarking/src/inner.rs#L38
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_session::SubstrateWeight<Runtime>;
+    type DisablingStrategy = ();
 }
 
 pub struct FullIdentificationOf;
@@ -601,7 +615,6 @@ parameter_types! {
     pub const ProposalBondMaximum: Balance = 1 * GRAND;
     // We allow it to be 1 minute in fast mode to be able to test it
     pub const SpendPeriod: BlockNumber = runtime_common::prod_or_fast!(6 * DAYS, 1 * MINUTES);
-    pub const Burn: Permill = Permill::from_perthousand(2);
     pub const TreasuryPalletId: PalletId = PalletId(*b"py/trsry");
     pub const PayoutSpendPeriod: BlockNumber = 30 * DAYS;
     // The asset's interior location for the paying account. This is the Treasury
@@ -626,6 +639,7 @@ pub struct TreasuryBenchmarkHelper<T>(PhantomData<T>);
 
 #[cfg(feature = "runtime-benchmarks")]
 use frame_support::traits::Currency;
+use frame_support::traits::InsideBoth;
 #[cfg(feature = "runtime-benchmarks")]
 use pallet_treasury::ArgumentsFactory;
 use {
@@ -659,7 +673,7 @@ impl pallet_treasury::Config for Runtime {
     type RejectOrigin = EitherOfDiverse<EnsureRoot<AccountId>, Treasurer>;
     type RuntimeEvent = RuntimeEvent;
     type SpendPeriod = SpendPeriod;
-    type Burn = Burn;
+    type Burn = ();
     type BurnDestination = ();
     type MaxApprovals = MaxApprovals;
     type WeightInfo = weights::pallet_treasury::SubstrateWeight<Runtime>;
@@ -836,6 +850,7 @@ impl pallet_multisig::Config for Runtime {
     type DepositFactor = DepositFactor;
     type MaxSignatories = MaxSignatories;
     type WeightInfo = weights::pallet_multisig::SubstrateWeight<Runtime>;
+    type BlockNumberProvider = System;
 }
 
 parameter_types! {
@@ -861,6 +876,7 @@ parameter_types! {
     Decode,
     RuntimeDebug,
     MaxEncodedLen,
+    DecodeWithMemTracking,
     TypeInfo,
 )]
 pub enum ProxyType {
@@ -875,6 +891,7 @@ pub enum ProxyType {
     SudoValidatorManagement,
     SessionKeyManagement,
     Staking,
+    Balances,
 }
 impl Default for ProxyType {
     fn default() -> Self {
@@ -964,6 +981,9 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
             ProxyType::Staking => {
                 matches!(c, RuntimeCall::Session(..) | RuntimeCall::PooledStaking(..))
             }
+            ProxyType::Balances => {
+                matches!(c, RuntimeCall::Balances(..))
+            }
         }
     }
     fn is_superset(&self, o: &Self) -> bool {
@@ -990,6 +1010,7 @@ impl pallet_proxy::Config for Runtime {
     type CallHasher = BlakeTwo256;
     type AnnouncementDepositBase = AnnouncementDepositBase;
     type AnnouncementDepositFactor = AnnouncementDepositFactor;
+    type BlockNumberProvider = System;
 }
 
 impl parachains_origin::Config for Runtime {}
@@ -1093,7 +1114,7 @@ impl pallet_message_queue::Config for Runtime {
     type MessageProcessor =
         pallet_message_queue::mock_helpers::NoopMessageProcessor<AggregateMessageOrigin>;
     type QueueChangeHandler = ParaInclusion;
-    type QueuePausedQuery = ();
+    type QueuePausedQuery = MaintenanceMode;
     type WeightInfo = weights::pallet_message_queue::SubstrateWeight<Runtime>;
 }
 
@@ -1276,7 +1297,7 @@ impl parachains_slashing::Config for Runtime {
         Offences,
         ReportLongevity,
     >;
-    type WeightInfo = parachains_slashing::TestWeightInfo;
+    type WeightInfo = weights::runtime_parachains_disputes_slashing::SubstrateWeight<Runtime>;
     type BenchmarkingConfig = parachains_slashing::BenchConfig<200>;
 }
 
@@ -1398,16 +1419,16 @@ use {
 
 pub struct DancelightSessionInterface;
 impl SessionInterface<AccountId> for DancelightSessionInterface {
-    fn disable_validator(validator_index: u32) -> bool {
-        Session::disable_index(validator_index)
-    }
-
     fn validators() -> Vec<AccountId> {
         Session::validators()
     }
 
     fn prune_historical_up_to(up_to: SessionIndex) {
         Historical::prune_up_to(up_to);
+    }
+
+    fn report_offence(validator: AccountId, severity: OffenceSeverity) {
+        Session::report_offence(validator, severity);
     }
 }
 
@@ -1595,19 +1616,55 @@ parameter_types! {
 impl pallet_multiblock_migrations::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     #[cfg(not(feature = "runtime-benchmarks"))]
-    type Migrations = (
-        pallet_identity::migration::v2::LazyMigrationV1ToV2<Runtime>,
-        pallet_pooled_staking::migrations::MigrationGenerateSummaries<Runtime>,
-    );
+    type Migrations = ();
     // Benchmarks need mocked migrations to guarantee that they succeed.
     #[cfg(feature = "runtime-benchmarks")]
     type Migrations = pallet_multiblock_migrations::mock_helpers::MockedMigrations;
     type CursorMaxLen = ConstU32<65_536>;
     type IdentifierMaxLen = ConstU32<256>;
     type MigrationStatusHandler = ();
-    type FailedMigrationHandler = frame_support::migrations::FreezeChainOnFailedMigration;
+    type FailedMigrationHandler = MaintenanceMode;
     type MaxServiceWeight = MbmServiceWeight;
     type WeightInfo = weights::pallet_multiblock_migrations::SubstrateWeight<Runtime>;
+}
+
+/// Maintenance mode Call filter
+pub struct MaintenanceFilter;
+impl Contains<RuntimeCall> for MaintenanceFilter {
+    fn contains(c: &RuntimeCall) -> bool {
+        !matches!(
+            c,
+            RuntimeCall::Balances(..)
+                | RuntimeCall::Registrar(..)
+                | RuntimeCall::Session(..)
+                | RuntimeCall::System(..)
+                | RuntimeCall::PooledStaking(..)
+                | RuntimeCall::Utility(..)
+                | RuntimeCall::Identity(..)
+                | RuntimeCall::XcmPallet(..)
+                | RuntimeCall::EthereumBeaconClient(..)
+                | RuntimeCall::EthereumSystem(..)
+                | RuntimeCall::EthereumTokenTransfers(..)
+                | RuntimeCall::OnDemandAssignmentProvider(..)
+                | RuntimeCall::ContainerRegistrar(..)
+                | RuntimeCall::ServicesPayment(..)
+                | RuntimeCall::DataPreservers(..)
+                | RuntimeCall::Hrmp(..)
+                | RuntimeCall::AssetRate(..)
+                | RuntimeCall::StreamPayment(..)
+        )
+    }
+}
+
+/// Normal Call Filter
+type NormalFilter = EverythingBut<(IsRelayRegister, IsParathreadRegistrar)>;
+
+impl pallet_maintenance_mode::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type NormalCallFilter = NormalFilter;
+    type MaintenanceCallFilter = InsideBoth<MaintenanceFilter, NormalFilter>;
+    type MaintenanceOrigin = EnsureRoot<AccountId>;
+    type XcmExecutionManager = ();
 }
 
 pub const FIXED_BLOCK_PRODUCTION_COST: u128 = 1 * MICROUNITS;
@@ -1650,7 +1707,8 @@ impl pallet_services_payment::Config for Runtime {
     type FreeBlockProductionCredits = FreeBlockProductionCredits;
     /// The maximum number of session credits that can be accumulated
     type FreeCollatorAssignmentCredits = FreeCollatorAssignmentCredits;
-    type ManagerOrigin = EnsureRoot<AccountId>;
+    type ManagerOrigin =
+        EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;
     type WeightInfo = weights::pallet_services_payment::SubstrateWeight<Runtime>;
 }
 
@@ -1820,6 +1878,10 @@ impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
     }
 }
 
+parameter_types! {
+    pub const MaxCandidatesBufferSize: u32 = 100;
+}
+
 impl pallet_pooled_staking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
@@ -1837,14 +1899,19 @@ impl pallet_pooled_staking::Config for Runtime {
     type WeightInfo = weights::pallet_pooled_staking::SubstrateWeight<Runtime>;
 }
 
+parameter_types! {
+    pub const MaxInactiveSessions: u32 = 5;
+}
 impl pallet_inactivity_tracking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type CollatorId = AccountId;
-    type MaxInactiveSessions = ConstU32<5>;
-    type MaxCollatorsPerSession = ConstU32<100>;
+    type MaxInactiveSessions = MaxInactiveSessions;
+    type MaxCollatorsPerSession = MaxCandidatesBufferSize;
+    type MaxContainerChains = MaxLengthParaIds;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type CurrentCollatorsFetcher = TanssiCollatorAssignment;
     type GetSelfChainBlockAuthor = ();
+    type ParaFilter = tp_parathread_filter_common::ExcludeAllParathreadsFilter<Runtime>;
     type WeightInfo = weights::pallet_inactivity_tracking::SubstrateWeight<Runtime>;
 }
 
@@ -1955,6 +2022,10 @@ construct_runtime! {
         // Asset rate.
         AssetRate: pallet_asset_rate = 86,
 
+        // Foreign assets.
+        ForeignAssets: pallet_assets::<Instance1> = 87,
+        ForeignAssetsCreator: pallet_foreign_asset_creator = 88,
+
         // Pallet for sending XCM.
         XcmPallet: pallet_xcm = 90,
 
@@ -1963,6 +2034,7 @@ construct_runtime! {
         // Migration stuff
         Migrations: pallet_migrations = 120,
         MultiBlockMigrations: pallet_multiblock_migrations = 121,
+        MaintenanceMode: pallet_maintenance_mode = 122,
 
         // BEEFY Bridges support.
         Beefy: pallet_beefy = 240,
@@ -2276,9 +2348,10 @@ mod benches {
         [runtime_parachains::paras_inherent, ParaInherent]
         [runtime_parachains::paras, Paras]
         [runtime_parachains::assigner_on_demand, OnDemandAssignmentProvider]
+        [runtime_parachains::disputes::slashing, pallet_alt_benchmarks::bench_parachains_slashing::Pallet::<Runtime>]
+
         // Substrate
         [pallet_balances, Balances]
-        [frame_benchmarking::baseline, Baseline::<Runtime>]
         [pallet_conviction_voting, ConvictionVoting]
         [pallet_identity, Identity]
         [pallet_message_queue, MessageQueue]
@@ -2302,7 +2375,8 @@ mod benches {
         [pallet_services_payment, ServicesPayment]
         [pallet_mmr, Mmr]
         [pallet_beefy_mmr, BeefyMmrLeaf]
-        [pallet_multiblock_migrations, MultiBlockMigrations]
+        [frame_benchmarking::baseline, Baseline::<Runtime>]
+        [pallet_session, cumulus_pallet_session_benchmarking::Pallet::<Runtime>]
 
         // Tanssi
         [pallet_author_noting, AuthorNoting]
@@ -2317,6 +2391,10 @@ mod benches {
         [pallet_inactivity_tracking, InactivityTracking]
         [pallet_configuration, CollatorConfiguration]
         [pallet_stream_payment, StreamPayment]
+
+        // Foreign Assets
+        [pallet_foreign_asset_creator, ForeignAssetsCreator]
+        [pallet_assets, ForeignAssets]
 
         // XCM
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
@@ -2347,8 +2425,8 @@ sp_api::impl_runtime_apis! {
     }
 
     impl xcm_runtime_apis::dry_run::DryRunApi<Block, RuntimeCall, RuntimeEvent, OriginCaller> for Runtime {
-        fn dry_run_call(origin: OriginCaller, call: RuntimeCall) -> Result<CallDryRunEffects<RuntimeEvent>, XcmDryRunApiError> {
-            XcmPallet::dry_run_call::<Runtime, xcm_config::XcmRouter, OriginCaller, RuntimeCall>(origin, call)
+        fn dry_run_call(origin: OriginCaller, call: RuntimeCall, result_xcms_version: XcmVersion) -> Result<CallDryRunEffects<RuntimeEvent>, XcmDryRunApiError> {
+            XcmPallet::dry_run_call::<Runtime, xcm_config::XcmRouter, OriginCaller, RuntimeCall>(origin, call, result_xcms_version)
         }
 
         fn dry_run_xcm(origin_location: VersionedLocation, xcm: VersionedXcm<RuntimeCall>) -> Result<XcmDryRunEffects<RuntimeEvent>, XcmDryRunApiError> {
@@ -2588,10 +2666,12 @@ sp_api::impl_runtime_apis! {
         }
 
         fn para_backing_state(para_id: ParaId) -> Option<primitives::vstaging::async_backing::BackingState> {
+            #[allow(deprecated)]
             parachains_runtime_api_impl::backing_state::<Runtime>(para_id)
         }
 
         fn async_backing_params() -> primitives::AsyncBackingParams {
+            #[allow(deprecated)]
             parachains_runtime_api_impl::async_backing_params::<Runtime>()
         }
 
@@ -3048,13 +3128,12 @@ sp_api::impl_runtime_apis! {
             Vec<frame_benchmarking::BenchmarkList>,
             Vec<frame_support::traits::StorageInfo>,
         ) {
-            use frame_benchmarking::{Benchmarking, BenchmarkList};
+            use frame_benchmarking::{BenchmarkList};
             use frame_support::traits::StorageInfoTrait;
-
             use frame_system_benchmarking::Pallet as SystemBench;
+            use pallet_xcm::benchmarking::Pallet as PalletXcmExtrinsicsBenchmark;
             use frame_benchmarking::baseline::Pallet as Baseline;
 
-            use pallet_xcm::benchmarking::Pallet as PalletXcmExtrinsicsBenchmark;
 
             let mut list = Vec::<BenchmarkList>::new();
             list_benchmarks!(list, extra);
@@ -3063,6 +3142,7 @@ sp_api::impl_runtime_apis! {
             (list, storage_info)
         }
 
+        #[allow(non_local_definitions)]
         fn dispatch_benchmark(
             config: frame_benchmarking::BenchmarkConfig,
         ) -> Result<
@@ -3070,10 +3150,10 @@ sp_api::impl_runtime_apis! {
             alloc::string::String,
         > {
             use frame_support::traits::WhitelistedStorageKeys;
-            use frame_benchmarking::{Benchmarking, BenchmarkBatch, BenchmarkError};
+            use frame_benchmarking::{BenchmarkBatch, BenchmarkError};
             use frame_system_benchmarking::Pallet as SystemBench;
-            use frame_benchmarking::baseline::Pallet as Baseline;
             use pallet_xcm::benchmarking::Pallet as PalletXcmExtrinsicsBenchmark;
+            use frame_benchmarking::baseline::Pallet as Baseline;
             use sp_storage::TrackedStorageKey;
             use xcm::latest::prelude::*;
             use xcm_config::{
@@ -3098,14 +3178,14 @@ sp_api::impl_runtime_apis! {
                         ExistentialDepositAsset,
                         xcm_config::PriceForChildParachainDelivery,
                         AssetHubParaId,
-                        (),
+                        Dmp,
                     >,
                     runtime_common::xcm_sender::ToParachainDeliveryHelper<
                         XcmConfig,
                         ExistentialDepositAsset,
                         xcm_config::PriceForChildParachainDelivery,
                         RandomParaId,
-                        (),
+                        Dmp,
                     >
                 );
 
@@ -3164,7 +3244,7 @@ sp_api::impl_runtime_apis! {
                     ExistentialDepositAsset,
                     xcm_config::PriceForChildParachainDelivery,
                     AssetHubParaId,
-                    (),
+                    Dmp,
                 >;
                 fn valid_destination() -> Result<Location, BenchmarkError> {
                     Ok(AssetHub::get())
@@ -3178,12 +3258,27 @@ sp_api::impl_runtime_apis! {
                 }
             }
 
+            parameter_types! {
+                pub TrustedReserve: Option<(Location, Asset)> = Some(
+                    (
+                        EthereumLocation::get(),
+                        Asset {
+                            id: AssetId(Location {
+                                parents: 1,
+                                interior: X1([GlobalConsensus(EthereumNetwork::get())].into()),
+                            }),
+                            fun: Fungible(ExistentialDeposit::get() * 100),
+                        },
+                    )
+                );
+            }
+
             impl pallet_xcm_benchmarks::fungible::Config for Runtime {
                 type TransactAsset = Balances;
 
                 type CheckedAccount = LocalCheckAccount;
                 type TrustedTeleporter = ();
-                type TrustedReserve = ();
+                type TrustedReserve = TrustedReserve;
 
                 fn get_asset() -> Asset {
                     Asset {
@@ -3249,6 +3344,30 @@ sp_api::impl_runtime_apis! {
                     Err(BenchmarkError::Skip)
                 }
             }
+
+            pub struct SessionBenchValidators;
+            impl pallet_alt_benchmarks::bench_parachains_slashing::Validators<AccountId> for SessionBenchValidators {
+                /// Sets the validators to properly run a benchmark. Should take care of everything that
+                /// will make pallet_session use those validators, such as them having a balance.
+                fn set_validators(validators: &[AccountId]) {
+                    use frame_support::traits::fungible::Mutate;
+                    use tp_traits::ExternalIndexProvider;
+
+                    ExternalValidators::set_external_validators_inner(
+                        validators.to_vec(),
+                        ExternalValidators::get_external_index()
+                    ).expect("to set validators");
+
+                    for v in validators {
+                        Balances::set_balance(v, EXISTENTIAL_DEPOSIT);
+                    }
+                }
+            }
+            impl pallet_alt_benchmarks::bench_parachains_slashing::Config for Runtime {
+                type Validators = SessionBenchValidators;
+            }
+
+            impl cumulus_pallet_session_benchmarking::Config for Runtime { }
 
             let mut whitelist: Vec<TrackedStorageKey> = AllPalletsWithSystem::whitelisted_storage_keys();
             let treasury_key = frame_system::Account::<Runtime>::hashed_key_for(Treasury::account_id());
@@ -3421,22 +3540,9 @@ impl Get<u32> for ConfigurationCollatorRotationSessionPeriod {
     }
 }
 
-// CollatorAssignment expects to set up the rotation's randomness seed on the
-// on_finalize hook of the block prior to the actual session change.
-// So should_end_session should be true on the last block of the current session
-pub struct BabeGetRandomnessForNextBlock;
-impl GetRandomnessForNextBlock<u32> for BabeGetRandomnessForNextBlock {
-    fn should_end_session(n: u32) -> bool {
-        // Check if next slot there is a session change
-        n != 1 && {
-            let diff = Babe::current_slot()
-                .saturating_add(1u64)
-                .saturating_sub(Babe::current_epoch_start());
-            *diff >= Babe::current_epoch().duration
-        }
-    }
-
-    fn get_randomness() -> [u8; 32] {
+pub struct BabeGetCollatorAssignmentRandomness;
+impl Get<[u8; 32]> for BabeGetCollatorAssignmentRandomness {
+    fn get() -> [u8; 32] {
         let block_number = System::block_number();
         let random_seed = if block_number != 0 {
             if let Some(random_hash) = {
@@ -3621,30 +3727,19 @@ impl<AC> ParaIdAssignmentHooks<BalanceOf<Runtime>, AC> for ParaIdAssignmentHooks
 fn host_config_at_session(
     session_index_to_consider: SessionIndex,
 ) -> HostConfiguration<BlockNumber> {
-    let active_config = runtime_parachains::configuration::ActiveConfig::<Runtime>::get();
-
-    let mut pending_configs = runtime_parachains::configuration::PendingConfigs::<Runtime>::get();
+    let pending_configs = runtime_parachains::configuration::PendingConfigs::<Runtime>::get();
 
     // We are not making any assumptions about number of configurations existing in pending config
     // storage item.
-    // First remove any pending configs greater than session index in consideration
-    pending_configs = pending_configs
+    pending_configs
         .into_iter()
+        // First remove any pending configs greater than session index in consideration
         .filter(|element| element.0 <= session_index_to_consider)
-        .collect::<Vec<_>>();
-    // Reverse sorting by the session index
-    pending_configs.sort_by(|a, b| b.0.cmp(&a.0));
-
-    if pending_configs.is_empty() {
-        active_config
-    } else {
-        // We will take first pending config which should be as close to the session index as possible
-        pending_configs
-            .first()
-            .expect("already checked for emptiness above")
-            .1
-            .clone()
-    }
+        // Take the config for the highest (most recent) session
+        .max_by_key(|(session, _config)| *session)
+        .map(|(_session, config)| config)
+        // If pending configs is empty after filter, read active config
+        .unwrap_or_else(|| runtime_parachains::configuration::ActiveConfig::<Runtime>::get())
 }
 
 pub struct GetCoreAllocationConfigurationImpl;
@@ -3677,7 +3772,8 @@ impl pallet_collator_assignment::Config for Runtime {
     type SelfParaId = MockParaId;
     type ShouldRotateAllCollators =
         RotateCollatorsEveryNSessions<ConfigurationCollatorRotationSessionPeriod>;
-    type GetRandomnessForNextBlock = BabeGetRandomnessForNextBlock;
+    type Randomness =
+        pallet_collator_assignment::SolochainRandomness<BabeGetCollatorAssignmentRandomness>;
     type RemoveInvulnerables = ();
     type ParaIdAssignmentHooks = ParaIdAssignmentHooksImpl;
     type CollatorAssignmentTip = ServicesPayment;

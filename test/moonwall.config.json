@@ -594,7 +594,7 @@
             "name": "zombie_dancebox_upgrade",
             "testFileDir": ["suites/zombie_dancebox_upgrade"],
             "runScripts": [
-                "download-latest-rt-binaries.sh",
+                "download-latest-rt-binaries.sh tanssi-node",
                 "build-spec-dancebox.sh",
                 "downloadPolkadot.ts"
             ],
@@ -612,7 +612,7 @@
             "name": "zombie_simple_template_upgrade",
             "testFileDir": ["suites/zombie_simple_template_upgrade"],
             "runScripts": [
-                "download-latest-rt-binaries.sh",
+                "download-latest-rt-binaries.sh tanssi-node container-chain-simple-node",
                 "build-spec-single-container.sh tmp container-chain-simple-node flashbox-local",
                 "downloadPolkadot.ts",
                 "compile-wasm.ts compile -b tmp/tanssi-node -o wasm -c specs/single-container-tanssi-1000.json",
@@ -651,7 +651,7 @@
         {
             "name": "zombie_dancelight_upgrade",
             "testFileDir": ["suites/zombie_dancelight_upgrade"],
-            "runScripts": ["download-latest-rt-binaries-starlight.sh", "build-spec-dancelight-single.sh tmp"],
+            "runScripts": ["download-latest-rt-binaries.sh tanssi-relay", "build-spec-dancelight-single.sh tmp"],
             "timeout": 900000,
             "foundation": {
                 "rtUpgradePath": "../target/release/wbuild/dancelight-runtime/dancelight_runtime.compact.compressed.wasm",
@@ -676,10 +676,10 @@
             "name": "zombie_simple_template_upgrade_with_latest_releases",
             "testFileDir": ["suites/zombie_simple_template_upgrade"],
             "runScripts": [
-                "download-latest-rt-binaries.sh",
+                "download-latest-rt-binaries.sh tanssi-node container-chain-simple-node",
                 "build-spec-single-container.sh tmp container-chain-simple-node flashbox-local",
                 "downloadPolkadot.ts",
-                "download-latest-binaries.sh ../target/release",
+                "download-latest-rt-binaries.sh --output-to-target-release --latest-client tanssi-node container-chain-simple-node",
                 "compile-wasm.ts compile -b tmp/tanssi-node -o wasm -c specs/single-container-tanssi-1000.json",
                 "compile-wasm.ts compile -b tmp/container-chain-simple-node -o wasm -c specs/single-container-template-container-2000.json"
             ],
@@ -748,7 +748,7 @@
             "name": "zombie_frontier_template_upgrade",
             "testFileDir": ["suites/zombie_simple_template_upgrade"],
             "runScripts": [
-                "download-latest-rt-binaries.sh",
+                "download-latest-rt-binaries.sh tanssi-node container-chain-frontier-node",
                 "build-spec-single-container.sh tmp container-chain-frontier-node flashbox-local",
                 "downloadPolkadot.ts",
                 "compile-wasm.ts compile -b tmp/tanssi-node -o wasm -c specs/single-container-tanssi-1000.json",
@@ -788,10 +788,10 @@
             "name": "zombie_frontier_template_upgrade_with_latest_releases",
             "testFileDir": ["suites/zombie_simple_template_upgrade"],
             "runScripts": [
-                "download-latest-rt-binaries.sh",
+                "download-latest-rt-binaries.sh tanssi-node container-chain-frontier-node",
                 "build-spec-single-container.sh tmp container-chain-frontier-node flashbox-local",
                 "downloadPolkadot.ts",
-                "download-latest-binaries.sh ../target/release",
+                "download-latest-rt-binaries.sh --output-to-target-release --latest-client tanssi-node container-chain-frontier-node",
                 "compile-wasm.ts compile -b tmp/tanssi-node -o wasm -c specs/single-container-tanssi-1000.json",
                 "compile-wasm.ts compile -b tmp/container-chain-frontier-node -o wasm -c specs/single-container-template-container-2000.json"
             ],
@@ -822,6 +822,59 @@
                     "name": "parachain",
                     "type": "polkadotJs",
                     "endpoints": ["ws://127.0.0.1:9949"]
+                }
+            ]
+        },
+        {
+            "name": "zombie_tanssi_relay_starlight",
+            "timeout": 600000,
+            "testFileDir": ["suites/zombie_tanssi_relay_starlight"],
+            "runScripts": [
+                "build-spec-starlight.sh",
+                "compile-wasm.ts compile -b ../target/release/tanssi-relay -o wasm -c specs/tanssi-relay-starlight.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/single-container-template-container-2000.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-frontier-node -o wasm -c specs/single-container-template-container-2001.json"
+            ],
+            "foundation": {
+                "type": "zombie",
+                "zombieSpec": {
+                    "configPath": "./configs/zombie_tanssi_relay_starlight.json",
+                    "skipBlockCheck": ["Container2002"]
+                }
+            },
+            "vitestArgs": {
+                "bail": 1
+            },
+            "connections": [
+                {
+                    "name": "Tanssi-relay",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9947"]
+                },
+                {
+                    "name": "Container2000",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9949"]
+                },
+                {
+                    "name": "Container2001",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9950"]
+                },
+                {
+                    "name": "Container2002",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9951"]
+                },
+                {
+                    "name": "ethers",
+                    "type": "ethers",
+                    "endpoints": ["ws://127.0.0.1:9950"]
+                },
+                {
+                    "name": "w3",
+                    "type": "web3",
+                    "endpoints": ["ws://127.0.0.1:9950"]
                 }
             ]
         },
@@ -1006,7 +1059,7 @@
         },
         {
             "name": "stagelight_dancelight_smoke",
-            "testFileDir": ["suites/smoke-test-dancelight", "suites/smoke-test-common-all"],
+            "testFileDir": ["suites/smoke-test-common-solo", "suites/smoke-test-common-all"],
             "foundation": {
                 "type": "read_only"
             },
@@ -1021,7 +1074,7 @@
         },
         {
             "name": "dancelight_smoke",
-            "testFileDir": ["suites/smoke-test-dancelight", "suites/smoke-test-common-all"],
+            "testFileDir": ["suites/smoke-test-common-solo", "suites/smoke-test-common-all"],
             "foundation": {
                 "type": "read_only"
             },
@@ -1031,6 +1084,36 @@
                     "name": "para",
                     "type": "polkadotJs",
                     "endpoints": ["wss://dancelight.tanssi-api.network"]
+                }
+            ]
+        },
+        {
+            "name": "moonlight_smoke",
+            "testFileDir": ["suites/smoke-test-common-solo", "suites/smoke-test-common-all"],
+            "foundation": {
+                "type": "read_only"
+            },
+            "reporters": ["basic","html"],
+            "connections": [
+                {
+                    "name": "para",
+                    "type": "polkadotJs",
+                    "endpoints": ["wss://moonlight.tanssi-dev.network"]
+                }
+            ]
+        },
+        {
+            "name": "tanssi_smoke",
+            "testFileDir": ["suites/smoke-test-common-solo", "suites/smoke-test-common-all"],
+            "foundation": {
+                "type": "read_only"
+            },
+            "reporters": ["basic","html"],
+            "connections": [
+                {
+                    "name": "para",
+                    "type": "polkadotJs",
+                    "endpoints": ["wss://tanssi.tanssi-mainnet.network"]
                 }
             ]
         },
@@ -1047,6 +1130,32 @@
                         "configPath": "./configs/stagenet-dancebox.yml",
                         "address": "127.0.0.1",
                         "buildBlockMode": "manual"                    }
+                ]
+            },
+            "vitestArgs": {
+                "bail": 1
+            },
+            "connections": [
+                {
+                    "name": "db",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:8000"]
+                }
+            ]
+        },
+        {
+            "name": "chopsticks_tanssi_upgrade",
+            "testFileDir": ["suites/rt-upgrade-chopsticks-orchestrator"],
+            "foundation": {
+                "type": "chopsticks",
+                "rtUpgradePath": "../target/release/wbuild/starlight-runtime/starlight_runtime.compact.compressed.wasm",
+                "launchSpec": [
+                    {
+                        "name": "db",
+                        "type": "relaychain",
+                        "configPath": "./configs/tanssi.yml",
+                        "address": "127.0.0.1"
+                    }
                 ]
             },
             "vitestArgs": {
@@ -1121,7 +1230,7 @@
                 "launchSpec": [
                     {
                         "name": "db",
-                        "type": "parachain",
+                        "type": "relaychain",
                         "configPath": "./configs/stagelight.yml",
                         "address": "127.0.0.1"
                     }
@@ -1147,8 +1256,34 @@
                 "launchSpec": [
                     {
                         "name": "db",
-                        "type": "parachain",
+                        "type": "relaychain",
                         "configPath": "./configs/dancelight.yml",
+                        "address": "127.0.0.1"
+                    }
+                ]
+            },
+            "vitestArgs": {
+                "bail": 1
+            },
+            "connections": [
+                {
+                    "name": "db",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:8000"]
+                }
+            ]
+        },
+        {
+            "name": "chopsticks_moonlight_upgrade",
+            "testFileDir": ["suites/rt-upgrade-chopsticks-orchestrator"],
+            "foundation": {
+                "type": "chopsticks",
+                "rtUpgradePath": "../target/release/wbuild/starlight-runtime/starlight_runtime.compact.compressed.wasm",
+                "launchSpec": [
+                    {
+                        "name": "db",
+                        "type": "relaychain",
+                        "configPath": "./configs/moonlight.yml",
                         "address": "127.0.0.1"
                     }
                 ]

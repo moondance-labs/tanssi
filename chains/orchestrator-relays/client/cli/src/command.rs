@@ -178,6 +178,7 @@ where
                     prepare_workers_hard_max_num: cli.run.prepare_workers_hard_max_num,
                     prepare_workers_soft_max_num: cli.run.prepare_workers_soft_max_num,
                     enable_approval_voting_parallel: cli.run.enable_approval_voting_parallel,
+                    keep_finalized_for: cli.run.keep_finalized_for,
                 },
             )
             .map(|full| full.task_manager)?
@@ -206,6 +207,7 @@ where
                     prepare_workers_hard_max_num: cli.run.prepare_workers_hard_max_num,
                     prepare_workers_soft_max_num: cli.run.prepare_workers_soft_max_num,
                     enable_approval_voting_parallel: cli.run.enable_approval_voting_parallel,
+                    keep_finalized_for: cli.run.keep_finalized_for,
                 },
             )
             .map(|full| full.task_manager)?
@@ -517,6 +519,8 @@ fn load_spec(
                 )?,
             )
         }
+        #[cfg(feature = "starlight-native")]
+        "tanssi" => Box::new(tanssi_relay_service::chain_spec::tanssi_config()?),
         #[cfg(feature = "starlight-native")]
         "starlight-dev" => {
             // Default invulnerables for dev mode, used in dev_tanssi_relay tests

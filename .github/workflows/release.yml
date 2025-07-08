@@ -7,6 +7,10 @@ on:
             - master
             - perm-*
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   CARGO_TERM_COLOR: always
 
@@ -18,8 +22,6 @@ jobs:
             git_ref: ${{ steps.check-git-ref.outputs.git_ref }}
             sha: ${{ steps.get-sha.outputs.sha }}
             sha8: ${{ steps.get-sha.outputs.sha8 }}
-            latest_rt: ${{ steps.get-sha.outputs.latest_rt }}
-            latest_rt_sha8: ${{ steps.get-sha.outputs.latest_rt_sha8 }}
         steps:
             - name: Check git ref
               id: check-git-ref
@@ -44,7 +46,13 @@ jobs:
             - name: Get Latest RT Release
               id: get-latest-rt
               run: |
-                LATEST_RUNTIME_RELEASE=$(curl -s https://api.github.com/repos/moondance-labs/tanssi/releases | jq -r '.[] | select(.name | test("runtime";"i")) | .tag_name' | head -n 1 | tr -d '[:blank:]') && [[ ! -z "${LATEST_RUNTIME_RELEASE}" ]]
+                RELEASES_JSON=$(curl -s https://api.github.com/repos/moondance-labs/tanssi/releases)
+                LATEST_RUNTIME_RELEASE=$(jq -r '.[]
+                  | select(
+                      .tag_name | test("runtime";"i")
+                    )
+                  | .tag_name' <<<"$RELEASES_JSON" | head -n1)
+                [[ -n $LATEST_RUNTIME_RELEASE ]]
                 echo $LATEST_RUNTIME_RELEASE
                 echo "latest_rt=$LATEST_RUNTIME_RELEASE" >> $GITHUB_OUTPUT
             - name: Get Sha
@@ -52,24 +60,6 @@ jobs:
               run: |
                   echo "sha=$(git log -1 --format='%H')" >> $GITHUB_OUTPUT
                   echo "sha8=$(git log -1 --format='%H' | cut -c1-8)" >> $GITHUB_OUTPUT
-
-                  ENDPOINT="https://api.github.com/repos/moondance-labs/tanssi/git/refs/tags/${{ steps.get-latest-rt.outputs.latest_rt }}"
-                  RESPONSE=$(curl -s -H "Accept: application/vnd.github.v3+json" $ENDPOINT)
-                  TYPE=$(echo $RESPONSE | jq -r '.object.type')
-
-                  if [[ $TYPE == "commit" ]]
-                  then
-                    LATEST_RT_SHA8=$(echo $RESPONSE | jq -r '.object.sha' | cut -c -8)
-                  elif [[ $TYPE == "tag" ]]
-                  then
-                    URL=$(echo $RESPONSE | jq -r '.object.url')
-                    TAG_RESPONSE=$(curl -s -H "Accept: application/vnd.github.v3+json" $URL)
-                    TAG_RESPONSE_CLEAN=$(echo $TAG_RESPONSE | tr -d '\000-\037')
-                    LATEST_RT_SHA8=$(echo $TAG_RESPONSE_CLEAN | jq -r '.object.sha' | cut -c -8)
-                  fi
-
-                  echo $LATEST_RT_SHA8
-                  echo "latest_rt_sha8=$LATEST_RT_SHA8" >> $GITHUB_OUTPUT
             - name: Check existing docker image
               id: check-docker-image
               run: |
@@ -80,9 +70,6 @@ jobs:
                   echo git_ref: ${{ steps.check-git-ref.outputs.git_ref }}
                   echo sha: ${{ steps.get-sha.outputs.sha }}
                   echo sha8: ${{ steps.get-sha.outputs.sha8 }}
-                  echo image_exists: ${{ steps.check-docker-image.outputs.image_exists }}
-                  echo latest_rt: ${{ steps.get-latest-rt.outputs.latest_rt }}
-                  echo latest_rt_sha8: ${{ steps.get-sha.outputs.latest_rt_sha8 }}
 
     check-copyright:
         runs-on: ubuntu-latest
@@ -241,7 +228,7 @@ jobs:
             - name: Cargo build
               uses: ./.github/workflow-templates/cargo-build
               with:
-                features: "fast-runtime"
+                features: "fast-runtime,metadata-hash"
             - name: Upload runtimes
               uses: actions/upload-artifact@v4
               with:
@@ -260,7 +247,7 @@ jobs:
         needs: ["set-tags", "build"]
         env:
           GH_TOKEN: ${{ github.token }}
-          RUNTIMES_AS_STRING: "dancebox_runtime,flashbox_runtime,dancelight_runtime,container_chain_template_simple_runtime,container_chain_template_frontier_runtime"
+          RUNTIMES_AS_STRING: "dancebox_runtime,flashbox_runtime,dancelight_runtime,starlight_runtime,container_chain_template_simple_runtime,container_chain_template_frontier_runtime"
         steps:
             - name: Checkout
               uses: actions/checkout@v4
@@ -271,12 +258,32 @@ jobs:
                   rustup override unset
                   rustup show
             - name: Download Twiggy
-              run: cargo install twiggy
+              run: cargo install twiggy --locked
             - name: Lookup for latest target branch build
               id: latest-target-build
               run: |
                   TARGET_BRANCH=${{ github.event.pull_request.base.ref }}
-                  LATEST_TARGET_BRANCH_BUILD=$(gh run -R moondance-labs/tanssi list -w CI --limit=100 --json databaseId,url,headBranch,event,status,conclusion,createdAt --jq ".[] | select(.headBranch == \"$TARGET_BRANCH\" and .event == \"push\" and .status == \"completed\" and .conclusion == \"success\") | .databaseId" | head -n 1)
+                  echo "Looking for successful CI build on branch: $TARGET_BRANCH"
+                  
+                  find_latest_build() {
+                    local branch=$1
+                    gh run -R moondance-labs/tanssi list -w CI --limit=100 \
+                      --json databaseId,url,headBranch,event,status,conclusion,createdAt \
+                      --jq ".[] | select(.headBranch == \"$branch\" and .event == \"push\" and .status == \"completed\" and .conclusion == \"success\") | .databaseId" \
+                      | head -n 1
+                  }
+                  
+                  if [ -z "$LATEST_TARGET_BRANCH_BUILD" ]; then
+                    echo "⚠️ No successful CI build found on branch '$TARGET_BRANCH', falling back to 'master'..."
+                    LATEST_TARGET_BRANCH_BUILD=$(find_latest_build "master")
+                  fi
+                  
+                  if [ -z "$LATEST_TARGET_BRANCH_BUILD" ]; then
+                    echo "❌ No successful CI build found on 'master' either. Cannot proceed."
+                    exit 1
+                  fi
+                  
+                  echo "✅ Found build ID: $LATEST_TARGET_BRANCH_BUILD"
                   echo "LATEST_TARGET_BRANCH_BUILD=$LATEST_TARGET_BRANCH_BUILD" >> $GITHUB_OUTPUT
             - name: "Download runtimes from target branch"
               uses: actions/download-artifact@v4
@@ -433,7 +440,7 @@ jobs:
         - name: Install nextest
           uses: taiki-e/install-action@nextest
         - name: Run Tests
-          run: cargo nextest run --release --no-fail-fast --workspace
+          run: cargo nextest run --release --no-fail-fast --workspace --features=fast-runtime
 
     check-api-augment:
         runs-on: ubuntu-latest
@@ -452,18 +459,17 @@ jobs:
               with:
                   name: binaries
                   path: target/release
+            - name: Make binaries executable
+              uses: ./.github/workflow-templates/make-binaries-executable
             - name: "Setup Node"
               uses: actions/setup-node@v4
               with:
                   node-version: 22.x
                   cache: "pnpm"
-            - name: "Generate Local interfaces"
-              run: |
-                  chmod uog+x target/release/tanssi-node
-                  chmod uog+x target/release/tanssi-relay
-                  cd typescript-api
-                  pnpm install
-                  pnpm create-local-interfaces
+
+            - name: Generate Typescript API Interfaces
+              uses: ./.github/workflow-templates/typescript-create-api-interfaces
+
             - name: Check for changes
               run: |
                   FAILURE_MESSAGE="There are uncommitted changes after running typegen script.\n Please make sure to run the command before pushing or hit the PR comment: /cmd generate-ts-api"
@@ -486,21 +492,19 @@ jobs:
               with:
                   name: binaries
                   path: target/release
+            - name: Make binaries executable
+              uses: ./.github/workflow-templates/make-binaries-executable
             - name: "Setup Node"
               uses: actions/setup-node@v4
               with:
                   node-version: 22.x
                   cache: "pnpm"
-            - name: "Generate typescript api"
-              run: |
-                  chmod uog+x target/release/tanssi-node
-                  chmod uog+x target/release/tanssi-relay
-                  cd typescript-api
-                  pnpm install
-                  pnpm create-local-interfaces
+
+            - name: Generate Typescript API Interfaces
+              uses: ./.github/workflow-templates/typescript-create-api-interfaces
+
             - name: "Run Dev tests"
               run: |
-                  chmod uog+x target/release/tanssi-node
                   cd test
                   pnpm moonwall test dev_tanssi
 
@@ -521,21 +525,19 @@ jobs:
               with:
                   name: binaries
                   path: target/release
+            - name: Make binaries executable
+              uses: ./.github/workflow-templates/make-binaries-executable
             - name: "Setup Node"
               uses: actions/setup-node@v4
               with:
                   node-version: 22.x
                   cache: "pnpm"
-            - name: "Generate typescript api"
-              run: |
-                  chmod uog+x target/release/tanssi-node
-                  chmod uog+x target/release/tanssi-relay
-                  cd typescript-api
-                  pnpm install
-                  pnpm create-local-interfaces
+
+            - name: Generate Typescript API Interfaces
+              uses: ./.github/workflow-templates/typescript-create-api-interfaces
+
             - name: "Run Flashbox tests"
               run: |
-                  chmod uog+x target/release/tanssi-node
                   cd test
                   pnpm moonwall test dev_flashbox
 
@@ -561,16 +563,14 @@ jobs:
               with:
                   name: binaries
                   path: target/release
-            - name: "Generate typescript api"
-              run: |
-                  chmod uog+x target/release/tanssi-node
-                  chmod uog+x target/release/tanssi-relay
-                  cd typescript-api
-                  pnpm install
-                  pnpm create-local-interfaces
+            - name: Make binaries executable
+              uses: ./.github/workflow-templates/make-binaries-executable
+
+            - name: Generate Typescript API Interfaces
+              uses: ./.github/workflow-templates/typescript-create-api-interfaces
+
             - name: "Run Frontier tests"
               run: |
-                  chmod uog+x target/release/container-chain-frontier-node
                   cd test
                   pnpm moonwall test dev_frontier_template
 
@@ -596,16 +596,14 @@ jobs:
               with:
                   name: binaries
                   path: target/release
-            - name: "Generate typescript api"
-              run: |
-                  chmod uog+x target/release/tanssi-node
-                  chmod uog+x target/release/tanssi-relay
-                  cd typescript-api
-                  pnpm install
-                  pnpm create-local-interfaces
+            - name: Make binaries executable
+              uses: ./.github/workflow-templates/make-binaries-executable
+
+            - name: Generate Typescript API Interfaces
+              uses: ./.github/workflow-templates/typescript-create-api-interfaces
+
             - name: "Run Simple Template tests"
               run: |
-                  chmod uog+x target/release/container-chain-simple-node
                   cd test
                   pnpm moonwall test dev_simple_template
 
@@ -631,9 +629,10 @@ jobs:
               with:
                   name: binaries
                   path: target/release
+            - name: Make binaries executable
+              uses: ./.github/workflow-templates/make-binaries-executable
             - name: "Install and run upgrade test"
               run: |
-                  chmod uog+x target/release/tanssi-node
                   pnpm install
                   cd test
                   pnpm moonwall test dev_dancebox_specs
@@ -655,32 +654,23 @@ jobs:
               with:
                   name: binaries
                   path: target/release
+            - name: Make binaries executable
+              uses: ./.github/workflow-templates/make-binaries-executable
             - name: "Setup Node"
               uses: actions/setup-node@v4
               with:
                   node-version: 22.x
                   cache: "pnpm"
-            - name: "Generate typescript api"
-              run: |
-                  chmod uog+x target/release/tanssi-node
-                  chmod uog+x target/release/tanssi-relay
-                  cd typescript-api
-                  pnpm install
-                  pnpm create-local-interfaces
+
+            - name: Generate Typescript API Interfaces
+              uses: ./.github/workflow-templates/typescript-create-api-interfaces
+
             - name: "Run Dev tests (Dancelight)"
               run: |
-                  chmod uog+x target/release/tanssi-node
-                  chmod uog+x target/release/tanssi-relay
-                  chmod uog+x target/release/tanssi-relay-execute-worker
-                  chmod uog+x target/release/tanssi-relay-prepare-worker
                   cd test
                   pnpm moonwall test dev_tanssi_relay_dancelight
             - name: "Run Dev tests (Starlight)"
               run: |
-                  chmod uog+x target/release/tanssi-node
-                  chmod uog+x target/release/tanssi-relay
-                  chmod uog+x target/release/tanssi-relay-execute-worker
-                  chmod uog+x target/release/tanssi-relay-prepare-worker
                   cd test
                   pnpm moonwall test dev_tanssi_relay_starlight
 
@@ -701,15 +691,10 @@ jobs:
               with:
                   name: binaries
                   path: target/release
-            - name: "Make binaries executable"
-              shell: bash
-              run: |
-                  chmod uog+x target/release/tanssi-node
-                  chmod uog+x target/release/tanssi-relay
-                  chmod uog+x target/release/tanssi-relay-prepare-worker
-                  chmod uog+x target/release/tanssi-relay-execute-worker
-                  chmod uog+x target/release/container-chain-simple-node
-                  chmod uog+x target/release/container-chain-frontier-node
+
+            - name: Make binaries executable
+              uses: ./.github/workflow-templates/make-binaries-executable
+
             - name: Run Zombienet Test ${{ matrix.test_name }}
               uses: ./.github/workflow-templates/zombienet-tests
               with:
@@ -735,6 +720,10 @@ jobs:
                       runtime: dancelight
                     - chain: dancelight
                       runtime: dancelight
+                    - chain: moonlight
+                      runtime: starlight
+                    - chain: tanssi
+                      runtime: starlight
         env:
           GH_WORKFLOW_MATRIX_CHAIN: ${{ matrix.chains.chain }}
           DEBUG_COLORS: 1
@@ -765,9 +754,10 @@ jobs:
               with:
                   name: binaries
                   path: target/release
+            - name: Make binaries executable
+              uses: ./.github/workflow-templates/make-binaries-executable
             - name: "Install and run upgrade test"
               run: |
-                  chmod uog+x target/release/*
                   cd test
                   pnpm install
                   pnpm moonwall test chopsticks_${{ matrix.chains.chain }}_upgrade
@@ -802,6 +792,8 @@ jobs:
               with:
                   name: binaries
                   path: target/release
+            - name: Make binaries executable
+              uses: ./.github/workflow-templates/make-binaries-executable
             - name: "Download branch built runtime"
               uses: actions/download-artifact@v4
               with:
@@ -860,6 +852,8 @@ jobs:
               with:
                   name: binaries
                   path: target/release
+            - name: Make binaries executable
+              uses: ./.github/workflow-templates/make-binaries-executable
             - name: "Download runtime"
               uses: actions/download-artifact@v4
               with:
@@ -903,6 +897,8 @@ jobs:
               with:
                   name: binaries
                   path: target/release
+            - name: Make binaries executable
+              uses: ./.github/workflow-templates/make-binaries-executable
             - name: "Download runtime"
               uses: actions/download-artifact@v4
               with:
@@ -910,10 +906,6 @@ jobs:
                   path: target/release/wbuild/${{ matrix.chains.runtime }}-runtime/
             - name: "Install and run upgrade test"
               run: |
-                  chmod uog+x target/release/container-chain-simple-node
-                  chmod uog+x target/release/tanssi-relay
-                  chmod uog+x target/release/tanssi-relay-execute-worker
-                  chmod uog+x target/release/tanssi-relay-prepare-worker
                   cd test
                   pnpm install
                   pnpm moonwall test zombie_${{ matrix.chains.chain }}_upgrade
@@ -935,7 +927,8 @@ jobs:
               uses: actions/checkout@v4
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
-            - uses: actions/download-artifact@v4
+            - name: "Download binaries"
+              uses: actions/download-artifact@v4
               with:
                   name: binaries
                   path: build

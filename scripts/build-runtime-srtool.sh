@@ -18,6 +18,16 @@ else
   PACKAGE=${GH_WORKFLOW_MATRIX_CHAIN}-runtime
 fi
 
+# Default mode is build
+MODE="${1:-build}"
+
+if [[ "$MODE" == "cleanup" ]]; then
+  echo "About to clean the srtools folder"
+  docker run --rm -v "${PWD}:/build" alpine \
+    sh -c "rm -rf /build/${RUNTIME_DIR}/target"
+  exit 0
+fi
+
 mkdir -p ${RUNTIME_DIR}/target
 chmod uog+rwX ${RUNTIME_DIR}/target
 
@@ -27,6 +37,7 @@ CMD="docker run \
   -e CARGO_NET_GIT_FETCH_WITH_CLI=true \
   -e PACKAGE=${PACKAGE} \
   -e RUNTIME_DIR=${RUNTIME_DIR} \
+  -e BUILD_OPTS=${RUNTIME_BUILD_OPTS} \
   -e PROFILE=production \
   -v ${PWD}:/build \
   ${GH_WORKFLOW_MATRIX_SRTOOL_IMAGE}:${GH_WORKFLOW_MATRIX_SRTOOL_IMAGE_TAG} \
