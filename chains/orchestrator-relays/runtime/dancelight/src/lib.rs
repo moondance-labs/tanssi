@@ -3281,9 +3281,40 @@ sp_api::impl_runtime_apis! {
                 type TrustedReserve = TrustedReserve;
 
                 fn get_asset() -> Asset {
+                    use frame_support::{assert_ok, traits::tokens::fungible::{Inspect, Mutate}};
+                    let (account, _) = pallet_xcm_benchmarks::account_and_location::<Runtime>(1);
+
+                    assert_ok!(<Balances as Mutate<_>>::mint_into(
+                        &account,
+                        <Balances as Inspect<_>>::minimum_balance(),
+                    ));
+
+                    let asset_id = 42u16;
+
+                    let asset_location = Location {
+                        parents: 1,
+                        interior: X2([
+                            GlobalConsensus(NetworkId::Ethereum { chain_id: 1 }),
+                            AccountKey20 {
+                                network: Some(NetworkId::Ethereum { chain_id: 1 }),
+                                key: [0; 20],
+                            },
+                        ]
+                        .into()),
+                    };
+
+                    assert_ok!(ForeignAssetsCreator::create_foreign_asset(
+                        RuntimeOrigin::root(),
+                        asset_location.clone(),
+                        asset_id,
+                        account.clone(),
+                        true,
+                        1u128,
+                    ));
+
                     Asset {
-                        id: AssetId(TokenLocation::get()),
-                        fun: Fungible(1 * UNITS),
+                        id: AssetId(asset_location),
+                        fun: Fungible(ExistentialDeposit::get() * 100),
                     }
                 }
             }
