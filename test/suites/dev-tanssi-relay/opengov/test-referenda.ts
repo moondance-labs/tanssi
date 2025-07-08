@@ -4,6 +4,20 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import type { KeyringPair } from "@polkadot/keyring/types";
 import { isDancelightRuntime, isStarlightRuntime } from "../../../utils/runtime.ts";
+import { BN } from "@polkadot/util";
+
+export type ExtrinsicFailedEventDataType = {
+    dispatchError: {
+        Module: {
+            index: string;
+            error: string;
+        };
+    };
+};
+
+export type SubmittedEventDataType = {
+    index: number;
+};
 
 describeSuite({
     id: "DEVT23",
@@ -35,7 +49,7 @@ describeSuite({
             title: "Referenda for root is executed",
             test: async ({ skip }) => {
                 // Skip if the runtime is Starlight, as OpenGov is not supported
-                if (isStarlightRuntime(api)) {
+                if (!isDancelightRuntime(api)) {
                     skip();
                 }
 
@@ -46,7 +60,7 @@ describeSuite({
 
                 const sudoTx = api.tx.sudo.sudoAs(bob.address, api.tx.proxy.addProxy(delegate, proxyType, delay));
 
-                // Step 1: Bob creates preimage
+                // Step 1: Let's create preimage
                 const notePreimageTx = api.tx.preimage.notePreimage(sudoTx.method.toHex());
                 const preimageBlock = await context.createBlock(notePreimageTx.signAsync(alice));
                 expect(preimageBlock.result?.successful).to.be.true;
@@ -64,9 +78,10 @@ describeSuite({
                 expect(submitBlock.result?.successful).to.be.true;
 
                 // Step 3: Extract referendum index
-                const proposalIndex = submitBlock.result.events
-                    .find((e) => e.event.method === "Submitted")
-                    .event.toHuman().data.index;
+                const proposalIndex = (
+                    submitBlock.result.events.find((e) => e.event.method === "Submitted").event.toHuman()
+                        .data as unknown as SubmittedEventDataType
+                ).index;
                 expect(proposalIndex).to.not.be.undefined;
 
                 // Step 4: Place decision deposit
@@ -130,13 +145,13 @@ describeSuite({
             title: "Not enough support, referenda rejected",
             test: async ({ skip }) => {
                 // Skip if the runtime is Starlight, as OpenGov is not supported
-                if (isStarlightRuntime(api)) {
+                if (!isDancelightRuntime(api)) {
                     skip();
                 }
 
                 const tx = api.tx.system.remark("0x00");
 
-                // Step 1: Bob creates preimage
+                // Step 1: Let's create preimage
                 const notePreimageTx = api.tx.preimage.notePreimage(tx.method.toHex());
                 const preimageBlock = await context.createBlock(notePreimageTx.signAsync(alice));
                 expect(preimageBlock.result?.successful).to.be.true;
@@ -154,9 +169,10 @@ describeSuite({
                 expect(submitBlock.result?.successful).to.be.true;
 
                 // Step 3: Extract referendum index
-                const proposalIndex = submitBlock.result.events
-                    .find((e) => e.event.method === "Submitted")
-                    .event.toHuman().data.index;
+                const proposalIndex = (
+                    submitBlock.result.events.find((e) => e.event.method === "Submitted").event.toHuman()
+                        .data as unknown as SubmittedEventDataType
+                ).index;
                 expect(proposalIndex).to.not.be.undefined;
 
                 // Step 4: Place decision deposit
@@ -211,7 +227,7 @@ describeSuite({
             id: "E03",
             title: "Referenda is disabled for Starlight",
             test: async ({ skip }) => {
-                if (isDancelightRuntime(api)) {
+                if (!isStarlightRuntime(api)) {
                     skip();
                 }
 
@@ -237,6 +253,55 @@ describeSuite({
 
                 const submitBlock = await context.createBlock(submitTx.signAsync(bob), { allowFailures: true });
                 expect(submitBlock.result?.successful).to.be.false;
+            },
+        });
+
+        it({
+            id: "E04",
+            title: "Only Root track is enabled",
+            test: async ({ skip }) => {
+                if (!isDancelightRuntime(api)) {
+                    skip();
+                }
+
+                const tx = api.tx.system.remark("0x0001");
+
+                // Step 1: Let's create preimage
+                const notePreimageTx = api.tx.preimage.notePreimage(tx.method.toHex());
+                const preimageBlock = await context.createBlock(notePreimageTx.signAsync(eve));
+                expect(preimageBlock.result?.successful).to.be.true;
+
+                // Step 2: Alice submits referenda for not existing track
+                const submitTx = api.tx.referenda.submit(
+                    {
+                        Origins: "WhitelistedCaller",
+                    },
+                    { Lookup: { Hash: tx.method.hash.toHex(), len: tx.method.encodedLength } },
+                    { After: "1" }
+                );
+
+                const submitBlock = await context.createBlock(submitTx.signAsync(alice));
+                expect(submitBlock.result?.successful).to.be.false;
+
+                const metadata = await api.rpc.state.getMetadata();
+                const referendaPalletIndex = metadata.asLatest.pallets
+                    .find(({ name }) => name.toString() === "Referenda")
+                    .index.toString();
+
+                const errorData = submitBlock.result.events
+                    .find((e) => e.event.method === "ExtrinsicFailed")
+                    .event.toHuman().data as unknown as ExtrinsicFailedEventDataType;
+                expect(errorData.dispatchError.Module.index).toEqual(referendaPalletIndex);
+
+                const errorBytes = Uint8Array.from(Buffer.from(errorData.dispatchError.Module.error.slice(2), "hex"));
+                const errorIndex = errorBytes[0];
+
+                const errorMeta = api.registry.findMetaError({
+                    index: new BN(errorData.dispatchError.Module.index),
+                    error: new BN(errorIndex),
+                });
+
+                expect(errorMeta.method).toEqual("NoTrack");
             },
         });
     },
