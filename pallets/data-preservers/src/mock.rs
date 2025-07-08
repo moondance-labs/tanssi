@@ -175,7 +175,7 @@ where
     Result<RawOrigin<T::AccountId>, O>: From<O>,
     u64: From<T::AccountId>,
     T::AccountId: From<u64>,
-    O: Clone,
+    O: Clone + frame_support::traits::OriginTrait<AccountId = T::AccountId>,
 {
     type Success = Either<T::AccountId, <RootOrigin as EnsureOriginWithArg<O, ParaId>>::Success>;
 
@@ -241,7 +241,7 @@ where
     Result<RawOrigin<T::AccountId>, O>: From<O>,
     u64: From<T::AccountId>,
     T::AccountId: From<u64>,
-    O: Clone,
+    O: Clone + frame_support::traits::OriginTrait<AccountId = T::AccountId>,
 {
     type Success = T::AccountId;
 
@@ -306,6 +306,7 @@ where
     Clone,
     TypeInfo,
     MaxEncodedLen,
+    DecodeWithMemTracking,
 )]
 pub enum ProviderRequest {
     Free,
@@ -316,7 +317,17 @@ pub enum ProviderRequest {
 }
 
 #[derive(
-    Serialize, Deserialize, RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo,
+    Serialize,
+    Deserialize,
+    RuntimeDebug,
+    PartialEq,
+    Eq,
+    Encode,
+    Decode,
+    DecodeWithMemTracking,
+    Copy,
+    Clone,
+    TypeInfo,
 )]
 pub enum AssignerParameter {
     Free,
@@ -338,6 +349,7 @@ pub enum AssignerParameter {
     Clone,
     TypeInfo,
     MaxEncodedLen,
+    DecodeWithMemTracking,
 )]
 pub enum AssignmentWitness {
     Free,
@@ -468,6 +480,7 @@ impl ExtBuilder {
 
         pallet_balances::GenesisConfig::<Test> {
             balances: self.balances,
+            ..Default::default()
         }
         .assimilate_storage(&mut t)
         .unwrap();

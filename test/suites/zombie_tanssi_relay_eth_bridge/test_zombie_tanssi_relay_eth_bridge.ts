@@ -3,7 +3,6 @@ import "@tanssi/api-augment/dancelight";
 import { afterAll, beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type KeyringPair, generateKeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
-import type { MultiLocation } from "@polkadot/types/interfaces/xcm/types";
 import { u8aToHex, hexToU8a } from "@polkadot/util";
 import { decodeAddress } from "@polkadot/util-crypto";
 import { ethers } from "ethers";
@@ -241,7 +240,7 @@ describeSuite({
                 ).stdout
             );
 
-            const wETHTokenLocation = relayApi.createType<MultiLocation>("MultiLocation", {
+            const wETHTokenLocation = {
                 parents: 1,
                 interior: {
                     X2: [
@@ -256,12 +255,12 @@ describeSuite({
                         },
                     ],
                 },
-            });
+            };
 
-            const tokenLocation = relayApi.createType<MultiLocation>("MultiLocation", {
+            const tokenLocation = {
                 parents: 0,
                 interior: "Here",
-            });
+            };
             const versionedNativeTokenLocation = {
                 V3: tokenLocation,
             };

@@ -413,8 +413,6 @@ async fn start_node_impl(
         collate_on_tanssi = Arc::new(start_collation);
     }
 
-    node_builder.network.start_network.start_network();
-
     let sync_keystore = node_builder.keystore_container.keystore();
 
     if let Some((container_chain_cli, tokio_handle)) = container_chain_config {
@@ -1138,9 +1136,6 @@ pub fn start_dev_node(
     let node_builder = node_builder.spawn_common_tasks(parachain_config, rpc_builder)?;
 
     log::info!("Development Service Ready");
-
-    // We start the networking part.
-    node_builder.network.start_network.start_network();
 
     Ok(node_builder.task_manager)
 }

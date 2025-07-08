@@ -89,6 +89,7 @@ import type {
     PalletTransactionPaymentReleases,
     PalletTreasuryProposal,
     PalletTreasurySpendStatus,
+    PalletXcmAuthorizedAliasesEntry,
     PalletXcmQueryStatus,
     PalletXcmRemoteLockedFungibleRecord,
     PalletXcmVersionMigrationStage,
@@ -1902,6 +1903,15 @@ declare module "@polkadot/api-base/types/storage" {
             > &
                 QueryableStorageEntry<ApiType, [u32]>;
             /**
+             * Keeps track of credits owned by each account.
+             **/
+            credits: AugmentedQuery<
+                ApiType,
+                (arg: AccountId32 | string | Uint8Array) => Observable<u128>,
+                [AccountId32]
+            > &
+                QueryableStorageEntry<ApiType, [AccountId32]>;
+            /**
              * Priority queue for all orders which don't yet (or not any more) have any core affinity.
              **/
             freeEntries: AugmentedQuery<
@@ -2693,6 +2703,9 @@ declare module "@polkadot/api-base/types/storage" {
                 [u32]
             > &
                 QueryableStorageEntry<ApiType, [u32]>;
+            /**
+             * Block number at which the agenda began incomplete execution.
+             **/
             incompleteSince: AugmentedQuery<ApiType, () => Observable<Option<u32>>, []> &
                 QueryableStorageEntry<ApiType, []>;
             /**
@@ -2785,7 +2798,7 @@ declare module "@polkadot/api-base/types/storage" {
              * disabled using binary search. It gets cleared when `on_session_ending` returns
              * a new set of identities.
              **/
-            disabledValidators: AugmentedQuery<ApiType, () => Observable<Vec<u32>>, []> &
+            disabledValidators: AugmentedQuery<ApiType, () => Observable<Vec<ITuple<[u32, Perbill]>>>, []> &
                 QueryableStorageEntry<ApiType, []>;
             /**
              * The owner of a key. The key is the `KeyTypeId` + the encoded key.
@@ -2982,6 +2995,17 @@ declare module "@polkadot/api-base/types/storage" {
              **/
             extrinsicData: AugmentedQuery<ApiType, (arg: u32 | AnyNumber | Uint8Array) => Observable<Bytes>, [u32]> &
                 QueryableStorageEntry<ApiType, [u32]>;
+            /**
+             * The weight reclaimed for the extrinsic.
+             *
+             * This information is available until the end of the extrinsic execution.
+             * More precisely this information is removed in `note_applied_extrinsic`.
+             *
+             * Logic doing some post dispatch weight reduction must update this storage to avoid duplicate
+             * reduction.
+             **/
+            extrinsicWeightReclaimed: AugmentedQuery<ApiType, () => Observable<SpWeightsWeightV2Weight>, []> &
+                QueryableStorageEntry<ApiType, []>;
             /**
              * Whether all inherents have been applied.
              **/
@@ -3195,6 +3219,19 @@ declare module "@polkadot/api-base/types/storage" {
              **/
             assetTraps: AugmentedQuery<ApiType, (arg: H256 | string | Uint8Array) => Observable<u32>, [H256]> &
                 QueryableStorageEntry<ApiType, [H256]>;
+            /**
+             * Map of authorized aliasers of local origins. Each local location can authorize a list of
+             * other locations to alias into it. Each aliaser is only valid until its inner `expiry`
+             * block number.
+             **/
+            authorizedAliases: AugmentedQuery<
+                ApiType,
+                (
+                    arg: XcmVersionedLocation | { V3: any } | { V4: any } | { V5: any } | string | Uint8Array
+                ) => Observable<Option<PalletXcmAuthorizedAliasesEntry>>,
+                [XcmVersionedLocation]
+            > &
+                QueryableStorageEntry<ApiType, [XcmVersionedLocation]>;
             /**
              * The current migration's stage, if any.
              **/
