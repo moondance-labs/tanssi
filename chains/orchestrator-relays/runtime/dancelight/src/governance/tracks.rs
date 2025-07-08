@@ -24,9 +24,8 @@ const fn percent(x: i32) -> sp_arithmetic::FixedI64 {
 use pallet_referenda::Curve;
 const APP_ROOT: Curve = Curve::make_reciprocal(4, 28, percent(80), percent(50), percent(100));
 const SUP_ROOT: Curve = Curve::make_linear(28, 28, percent(20), percent(50));
-
-const TRACKS_DATA: [pallet_referenda::Track<u16, Balance, BlockNumber>; 15] = [
-    pallet_referenda::Track {
+const TRACKS_DATA: [pallet_referenda::Track<u16, Balance, BlockNumber>; 15] =
+    [pallet_referenda::Track {
         id: 0,
         info: pallet_referenda::TrackInfo {
             name: s("root"),
@@ -39,8 +38,7 @@ const TRACKS_DATA: [pallet_referenda::Track<u16, Balance, BlockNumber>; 15] = [
             min_approval: APP_ROOT,
             min_support: SUP_ROOT,
         },
-    },
-];
+    }];
 
 pub struct TracksInfo;
 impl pallet_referenda::TracksInfo<Balance, BlockNumber> for TracksInfo {
