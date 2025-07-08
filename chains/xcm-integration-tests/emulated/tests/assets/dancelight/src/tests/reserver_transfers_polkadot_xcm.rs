@@ -15,6 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
+    dancelight_emulated_chain::dancelight_runtime::Dmp,
     dancelight_emulated_chain::DancelightRelayPallet,
     dancelight_system_emulated_network::{
         DancelightRelay as Dancelight, DancelightSender, SimpleTemplateEmptyReceiver,
@@ -30,12 +31,16 @@ use {
         latest::prelude::{Junctions::*, *},
         VersionedLocation,
     },
-    xcm_emulator::{assert_expected_events, bx, Chain, TestExt},
+    xcm_emulator::{assert_expected_events, bx, Chain, Parachain, TestExt},
 };
 
 #[allow(unused_assignments)]
 #[test]
 fn transfer_assets_from_dancelight_to_one_of_its_parachains() {
+    Dancelight::execute_with(|| {
+        Dmp::make_parachain_reachable(SimpleTemplate::para_id());
+    });
+
     // Dancelight origin (sender)
     let dancelight_alice_origin =
         <Dancelight as Chain>::RuntimeOrigin::signed(DancelightSender::get());

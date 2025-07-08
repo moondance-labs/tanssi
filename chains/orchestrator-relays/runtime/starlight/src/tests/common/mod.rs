@@ -53,7 +53,7 @@ use {
         paras_inherent as parachains_paras_inherent,
     },
     snowbridge_beacon_primitives::{types::deneb, ExecutionProof, VersionedExecutionPayloadHeader},
-    snowbridge_core::inbound::Proof,
+    snowbridge_verification_primitives::Proof,
     sp_core::Pair,
     sp_core::Public,
     sp_keystore::{KeystoreExt, KeystorePtr},
@@ -521,6 +521,7 @@ impl ExtBuilder {
 
         pallet_balances::GenesisConfig::<Runtime> {
             balances: self.balances,
+            ..Default::default()
         }
         .assimilate_storage(&mut t)
         .unwrap();
@@ -1298,7 +1299,8 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
                         let core_idx = runtime_parachains::configuration::ActiveConfig::<T>::get()
                             .node_features
                             .get(FeatureIndex::ElasticScalingMVP as usize)
-                            .and_then(|the_bit| if *the_bit { Some(core_idx) } else { None });
+                            .and_then(|the_bit| if *the_bit { Some(core_idx) } else { None })
+                            .expect("ElasticScalingMVP feature index should be present");
 
                         assert_eq!(group_validators.len(), 1);
 

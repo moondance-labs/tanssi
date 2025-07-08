@@ -36,7 +36,7 @@ pub use pallet::*;
 use {
     frame_support::pallet_prelude::Weight,
     log::log,
-    parity_scale_codec::{Decode, Encode, MaxEncodedLen},
+    parity_scale_codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen},
     scale_info::TypeInfo,
     sp_runtime::{traits::Get, RuntimeDebug},
     sp_staking::SessionIndex,
@@ -300,6 +300,7 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::add_whitelisted(
 			T::MaxWhitelistedValidators::get().saturating_sub(1),
 		))]
+        #[allow(clippy::useless_conversion)]
         pub fn add_whitelisted(origin: OriginFor<T>, who: T::AccountId) -> DispatchResult {
             T::UpdateOrigin::ensure_origin(origin)?;
             // don't let one unprepared validator ruin things for everyone.
@@ -690,7 +691,17 @@ impl<T: Config> InvulnerablesProvider<T::ValidatorId> for Pallet<T> {
 
 /// Mode of era-forcing.
 #[derive(
-    Copy, Clone, PartialEq, Eq, Default, Encode, Decode, RuntimeDebug, TypeInfo, MaxEncodedLen,
+    Copy,
+    Clone,
+    PartialEq,
+    Eq,
+    Default,
+    Encode,
+    Decode,
+    DecodeWithMemTracking,
+    RuntimeDebug,
+    TypeInfo,
+    MaxEncodedLen,
 )]
 pub enum Forcing {
     /// Not forcing anything - just let whatever happen.

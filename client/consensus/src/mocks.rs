@@ -217,6 +217,10 @@ impl RelayChainInterface for RelayChain {
         unimplemented!("Not needed for test")
     }
 
+    async fn scheduling_lookahead(&self, _relay_parent: PHash) -> RelayChainResult<u32> {
+        unimplemented!("Not needed for test")
+    }
+
     async fn retrieve_dmq_contents(
         &self,
         _: ParaId,

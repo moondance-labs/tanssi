@@ -76,7 +76,7 @@ use {
         IdentityAddressMapping, OnChargeEVMTransaction as OnChargeEVMTransactionT, Runner,
     },
     pallet_transaction_payment::FungibleAdapter,
-    parity_scale_codec::{Decode, Encode},
+    parity_scale_codec::{Decode, DecodeWithMemTracking, Encode},
     polkadot_runtime_common::SlowAdjustingFeeUpdate,
     scale_info::TypeInfo,
     smallvec::smallvec,
@@ -96,6 +96,7 @@ use {
     },
     sp_std::prelude::*,
     sp_version::RuntimeVersion,
+    xcm::Version as XcmVersion,
     xcm::{IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation, VersionedXcm},
     xcm_runtime_apis::{
         dry_run::{CallDryRunEffects, Error as XcmDryRunApiError, XcmDryRunEffects},
@@ -146,19 +147,19 @@ pub type SignedBlock = generic::SignedBlock<Block>;
 /// BlockId type as expected by this runtime.
 pub type BlockId = generic::BlockId<Block>;
 
-/// The `TxExtension` to the basic transaction logic.
-pub type TxExtension = (
-    frame_system::CheckNonZeroSender<Runtime>,
-    frame_system::CheckSpecVersion<Runtime>,
-    frame_system::CheckTxVersion<Runtime>,
-    frame_system::CheckGenesis<Runtime>,
-    frame_system::CheckEra<Runtime>,
-    frame_system::CheckNonce<Runtime>,
-    frame_system::CheckWeight<Runtime>,
-    pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
-    cumulus_primitives_storage_weight_reclaim::StorageWeightReclaim<Runtime>,
-);
-
+pub type TxExtension = cumulus_pallet_weight_reclaim::StorageWeightReclaim<
+    Runtime,
+    (
+        frame_system::CheckNonZeroSender<Runtime>,
+        frame_system::CheckSpecVersion<Runtime>,
+        frame_system::CheckTxVersion<Runtime>,
+        frame_system::CheckGenesis<Runtime>,
+        frame_system::CheckEra<Runtime>,
+        frame_system::CheckNonce<Runtime>,
+        frame_system::CheckWeight<Runtime>,
+        pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
+    ),
+>;
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic =
     fp_self_contained::UncheckedExtrinsic<Address, RuntimeCall, Signature, TxExtension>;
@@ -585,7 +586,18 @@ impl pallet_utility::Config for Runtime {
 
 /// The type used to represent the kinds of proxying allowed.
 #[derive(
-    Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Encode, Decode, Debug, MaxEncodedLen, TypeInfo,
+    Copy,
+    Clone,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    Encode,
+    Decode,
+    DecodeWithMemTracking,
+    Debug,
+    MaxEncodedLen,
+    TypeInfo,
 )]
 #[allow(clippy::unnecessary_cast)]
 pub enum ProxyType {
@@ -695,6 +707,7 @@ impl pallet_proxy::Config for Runtime {
     // - 4 bytes BlockNumber (u32)
     type AnnouncementDepositFactor = ConstU128<{ currency::deposit(0, 56) }>;
     type WeightInfo = weights::pallet_proxy::SubstrateWeight<Runtime>;
+    type BlockNumberProvider = System;
 }
 
 pub struct XcmExecutionManager;
@@ -705,6 +718,10 @@ impl xcm_primitives::PauseXcmExecution for XcmExecutionManager {
     fn resume_xcm_execution() -> DispatchResult {
         XcmpQueue::resume_xcm_execution(RuntimeOrigin::root())
     }
+}
+
+impl cumulus_pallet_weight_reclaim::Config for Runtime {
+    type WeightInfo = weights::cumulus_pallet_weight_reclaim::SubstrateWeight<Runtime>;
 }
 
 impl pallet_migrations::Config for Runtime {
@@ -807,7 +824,9 @@ impl Default for RuntimeParameters {
     }
 }
 
-#[derive(Clone, PartialEq, Encode, Decode, TypeInfo, Eq, MaxEncodedLen, Debug)]
+#[derive(
+    Clone, PartialEq, Encode, Decode, DecodeWithMemTracking, TypeInfo, Eq, MaxEncodedLen, Debug,
+)]
 pub enum DeployFilter {
     All,
     Whitelisted(BoundedVec<H160, ConstU32<100>>),
@@ -881,9 +900,9 @@ impl pallet_evm::Config for Runtime {
     type CallOrigin = EnsureAddressRoot<AccountId>;
     type WithdrawOrigin = EnsureAddressNever<AccountId>;
     type AddressMapping = IdentityAddressMapping;
-    type CreateOrigin =
+    type CreateOriginFilter =
         AddressFilter<Runtime, dynamic_params::contract_deploy_filter::AllowedAddressesToCreate>;
-    type CreateInnerOrigin = AddressFilter<
+    type CreateInnerOriginFilter = AddressFilter<
         Runtime,
         dynamic_params::contract_deploy_filter::AllowedAddressesToCreateInner,
     >;
@@ -980,6 +999,7 @@ impl pallet_multisig::Config for Runtime {
     type DepositFactor = DepositFactor;
     type MaxSignatories = MaxSignatories;
     type WeightInfo = weights::pallet_multisig::SubstrateWeight<Runtime>;
+    type BlockNumberProvider = System;
 }
 
 impl_tanssi_pallets_config!(Runtime);
@@ -1029,6 +1049,8 @@ construct_runtime!(
         AssetRate: pallet_asset_rate::{Pallet, Call, Storage, Event<T>} = 77,
         XcmExecutorUtils: pallet_xcm_executor_utils::{Pallet, Call, Storage, Event<T>} = 78,
 
+        WeightReclaim: cumulus_pallet_weight_reclaim = 80,
+
         RootTesting: pallet_root_testing = 100,
         AsyncBacking: pallet_async_backing::{Pallet, Storage} = 110,
     }
@@ -1060,6 +1082,7 @@ mod benches {
         [pallet_foreign_asset_creator, ForeignAssetsCreator]
         [pallet_asset_rate, AssetRate]
         [pallet_xcm_executor_utils, XcmExecutorUtils]
+        [cumulus_pallet_weight_reclaim, WeightReclaim]
     );
 }
 
@@ -1156,7 +1179,7 @@ impl_runtime_apis! {
                         None => 0,
                         Some((_, _, ref signed_extra)) => {
                             // Yuck, this depends on the index of charge transaction in Signed Extra
-                            let charge_transaction = &signed_extra.7;
+                            let charge_transaction = &signed_extra.0.7;
                             charge_transaction.tip()
                         }
                     };
@@ -1235,7 +1258,7 @@ impl_runtime_apis! {
             Vec<frame_benchmarking::BenchmarkList>,
             Vec<frame_support::traits::StorageInfo>,
         ) {
-            use frame_benchmarking::{Benchmarking, BenchmarkList};
+            use frame_benchmarking::{BenchmarkList};
             use frame_support::traits::StorageInfoTrait;
             use pallet_xcm::benchmarking::Pallet as PalletXcmExtrinsicsBenchmark;
 
@@ -1246,10 +1269,11 @@ impl_runtime_apis! {
             (list, storage_info)
         }
 
+        #[allow(non_local_definitions)]
         fn dispatch_benchmark(
             config: frame_benchmarking::BenchmarkConfig,
         ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, alloc::string::String> {
-            use frame_benchmarking::{BenchmarkBatch, Benchmarking, BenchmarkError};
+            use frame_benchmarking::{BenchmarkBatch, BenchmarkError};
             use sp_core::storage::TrackedStorageKey;
             use xcm::latest::prelude::*;
             impl frame_system_benchmarking::Config for Runtime {
@@ -1554,41 +1578,22 @@ impl_runtime_apis! {
             let is_transactional = false;
             let validate = true;
 
-            // Estimated encoded transaction size must be based on the heaviest transaction
-            // type (EIP1559Transaction) to be compatible with all transaction types.
-            // TODO: remove, since we will get rid of base_cost
-            let mut estimated_transaction_len = data.len() +
-                // pallet ethereum index: 1
-                // transact call index: 1
-                // Transaction enum variant: 1
-                // chain_id 8 bytes
-                // nonce: 32
-                // max_priority_fee_per_gas: 32
-                // max_fee_per_gas: 32
-                // gas_limit: 32
-                // action: 21 (enum varianrt + call address)
-                // value: 32
-                // access_list: 1 (empty vec size)
-                // 65 bytes signature
-                258;
-
-            if let Some(ref list) = access_list {
-                estimated_transaction_len += list.encoded_size();
-            }
+            let transaction_data = pallet_ethereum::TransactionData::new(
+                pallet_ethereum::TransactionAction::Call(to),
+                                data.clone(),
+                                nonce.unwrap_or_default(),
+                                gas_limit,
+                                None,
+                                max_fee_per_gas.or(Some(U256::default())),
+                                max_priority_fee_per_gas.or(Some(U256::default())),
+                                value,
+                                Some(<Runtime as pallet_evm::Config>::ChainId::get()),
+                                access_list.clone().unwrap_or_default(),
+                            );
 
             let gas_limit = gas_limit.min(u64::MAX.into()).low_u64();
-            let without_base_extrinsic_weight = true;
 
-            let (weight_limit, proof_size_base_cost) = match
-                <Runtime as pallet_evm::Config>::GasWeightMapping::gas_to_weight(
-                    gas_limit,
-                    without_base_extrinsic_weight
-                ) {
-                    weight_limit if weight_limit.proof_size() > 0 => {
-                        (Some(weight_limit), Some(estimated_transaction_len as u64))
-                    }
-                    _ => (None, None),
-                };
+            let (weight_limit, proof_size_base_cost) = pallet_ethereum::Pallet::<Runtime>::transaction_weight(&transaction_data);
 
             <Runtime as pallet_evm::Config>::Runner::call(
                 from,
@@ -1629,39 +1634,23 @@ impl_runtime_apis! {
             let is_transactional = false;
             let validate = true;
 
-            let mut estimated_transaction_len = data.len() +
-                        // from: 20
-                        // value: 32
-                        // gas_limit: 32
-                        // nonce: 32
-                        // 1 byte transaction action variant
-                        // chain id 8 bytes
-                        // 65 bytes signature
-                        190;
-
-            if max_fee_per_gas.is_some() {
-                estimated_transaction_len += 32;
-            }
-            if max_priority_fee_per_gas.is_some() {
-                estimated_transaction_len += 32;
-            }
-            if let Some(ref list) = access_list {
-                estimated_transaction_len += list.encoded_size();
-            }
+            let transaction_data = pallet_ethereum::TransactionData::new(
+                pallet_ethereum::TransactionAction::Create,
+                data.clone(),
+                nonce.unwrap_or_default(),
+                gas_limit,
+                None,
+                max_fee_per_gas.or(Some(U256::default())),
+                max_priority_fee_per_gas.or(Some(U256::default())),
+                value,
+                Some(<Runtime as pallet_evm::Config>::ChainId::get()),
+                access_list.clone().unwrap_or_default(),
+            );
 
             let gas_limit = gas_limit.min(u64::MAX.into()).low_u64();
-            let without_base_extrinsic_weight = true;
 
-            let (weight_limit, proof_size_base_cost) = match
-                <Runtime as pallet_evm::Config>::GasWeightMapping::gas_to_weight(
-                    gas_limit,
-                    without_base_extrinsic_weight
-                ) {
-                    weight_limit if weight_limit.proof_size() > 0 => {
-                        (Some(weight_limit), Some(estimated_transaction_len as u64))
-                    }
-                    _ => (None, None),
-                };
+            let (weight_limit, proof_size_base_cost) = pallet_ethereum::Pallet::<Runtime>::transaction_weight(&transaction_data);
+
 
             <Runtime as pallet_evm::Config>::Runner::create(
                 from,
@@ -1835,8 +1824,8 @@ impl_runtime_apis! {
     }
 
     impl xcm_runtime_apis::dry_run::DryRunApi<Block, RuntimeCall, RuntimeEvent, OriginCaller> for Runtime {
-        fn dry_run_call(origin: OriginCaller, call: RuntimeCall) -> Result<CallDryRunEffects<RuntimeEvent>, XcmDryRunApiError> {
-            PolkadotXcm::dry_run_call::<Runtime, xcm_config::XcmRouter, OriginCaller, RuntimeCall>(origin, call)
+        fn dry_run_call(origin: OriginCaller, call: RuntimeCall, result_xcms_version: XcmVersion) -> Result<CallDryRunEffects<RuntimeEvent>, XcmDryRunApiError> {
+            PolkadotXcm::dry_run_call::<Runtime, xcm_config::XcmRouter, OriginCaller, RuntimeCall>(origin, call, result_xcms_version)
         }
 
         fn dry_run_xcm(origin_location: VersionedLocation, xcm: VersionedXcm<RuntimeCall>) -> Result<XcmDryRunEffects<RuntimeEvent>, XcmDryRunApiError> {

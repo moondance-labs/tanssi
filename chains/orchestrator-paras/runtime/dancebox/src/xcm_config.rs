@@ -35,7 +35,7 @@ use {
     cumulus_primitives_core::{AggregateMessageOrigin, ParaId},
     frame_support::{
         parameter_types,
-        traits::{Everything, Nothing, PalletInfoAccess, TransformOrigin},
+        traits::{Disabled, Equals, Everything, Nothing, PalletInfoAccess, TransformOrigin},
         weights::Weight,
     },
     frame_system::{pallet_prelude::BlockNumberFor, EnsureRoot},
@@ -46,7 +46,7 @@ use {
         ParaIdIntoAccountTruncating, XCMNotifier,
     },
     parachains_common::message_queue::{NarrowOriginToSibling, ParaIdToSibling},
-    parity_scale_codec::{Decode, Encode},
+    parity_scale_codec::{Decode, DecodeWithMemTracking, Encode},
     polkadot_runtime_common::xcm_sender::ExponentialPrice,
     scale_info::TypeInfo,
     sp_consensus_slots::Slot,
@@ -62,7 +62,7 @@ use {
         FungiblesAdapter, IsConcrete, NoChecking, ParentIsPreset, RelayChainAsNative,
         SiblingParachainAsNative, SiblingParachainConvertsVia, SignedAccountId32AsNative,
         SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId,
-        UsingComponents, WeightInfoBounds, WithComputedOrigin,
+        UsingComponents, WeightInfoBounds, WithComputedOrigin, XcmFeeManagerFromComponents,
     },
     xcm_executor::{traits::JustTry, XcmExecutor},
 };
@@ -99,6 +99,7 @@ parameter_types! {
     [GlobalConsensus(RelayNetwork::get()), Parachain(ParachainInfo::parachain_id().into())].into();
 
     pub const BaseDeliveryFee: u128 = 100 * MICRODANCE;
+    pub RootLocation: Location = Location::here();
 }
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -223,7 +224,7 @@ impl xcm_executor::Config for XcmConfig {
     type MaxAssetsIntoHolding = MaxAssetsIntoHolding;
     type AssetLocker = ();
     type AssetExchanger = ();
-    type FeeManager = ();
+    type FeeManager = XcmFeeManagerFromComponents<Equals<RootLocation>, ()>;
     type MessageExporter = ();
     type UniversalAliases = Nothing;
     type CallDispatcher = RuntimeCall;
@@ -234,6 +235,7 @@ impl xcm_executor::Config for XcmConfig {
     type HrmpChannelAcceptedHandler = ();
     type HrmpChannelClosingHandler = ();
     type XcmRecorder = ();
+    type XcmEventEmitter = PolkadotXcm;
 }
 
 impl pallet_xcm::Config for Runtime {
@@ -260,6 +262,7 @@ impl pallet_xcm::Config for Runtime {
     type RemoteLockConsumerIdentifier = ();
     type WeightInfo = weights::pallet_xcm::SubstrateWeight<Runtime>;
     type AdminOrigin = EnsureRoot<AccountId>;
+    type AuthorizedAliasConsideration = Disabled;
 }
 
 pub type PriceForSiblingParachainDelivery =
@@ -338,6 +341,7 @@ impl pallet_assets::Config<ForeignAssetsInstance> for Runtime {
     type CallbackHandle = ();
     type AssetAccountDeposit = ForeignAssetsAssetAccountDeposit;
     type RemoveItemsLimit = frame_support::traits::ConstU32<1000>;
+    type Holder = ();
     #[cfg(feature = "runtime-benchmarks")]
     type BenchmarkHelper = ForeignAssetBenchmarkHelper;
 }
@@ -522,7 +526,18 @@ impl CheckCollatorValidity<AccountId, NimbusId> for CheckCollatorValidityImpl {
 
 /// Relay chains supported by pallet_xcm_core_buyer, each relay chain has different
 /// pallet indices for pallet_on_demand_assignment_provider
-#[derive(Debug, Default, Clone, PartialEq, Eq, Encode, Decode, TypeInfo, MaxEncodedLen)]
+#[derive(
+    Debug,
+    Default,
+    Clone,
+    PartialEq,
+    Eq,
+    Encode,
+    Decode,
+    TypeInfo,
+    MaxEncodedLen,
+    DecodeWithMemTracking,
+)]
 pub enum RelayChain {
     #[default]
     Westend,

@@ -127,11 +127,7 @@ impl OrchestratorChainRpcClient {
         Decode::decode(&mut &*res.0).map_err(Into::into)
     }
 
-    async fn request<'a, R>(
-        &self,
-        method: &'a str,
-        params: ArrayParams,
-    ) -> OrchestratorChainResult<R>
+    async fn request<R>(&self, method: &str, params: ArrayParams) -> OrchestratorChainResult<R>
     where
         R: DeserializeOwned + std::fmt::Debug,
     {
@@ -155,9 +151,9 @@ impl OrchestratorChainRpcClient {
 
     /// Send a request to the RPC worker and awaits for a response. The worker is responsible
     /// for retrying requests if connection dies.
-    async fn request_tracing<'a, R, OR>(
+    async fn request_tracing<R, OR>(
         &self,
-        method: &'a str,
+        method: &str,
         params: ArrayParams,
         trace_error: OR,
     ) -> OrchestratorChainResult<R>

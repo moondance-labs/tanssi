@@ -37,7 +37,6 @@ tp-author-noting-inherent = { workspace = true }
 tp-traits = { workspace = true }
 
 [dev-dependencies]
-bounded-collections = { workspace = true }
 hex-literal = { workspace = true }
 polkadot-parachain-primitives = { workspace = true }
 polkadot-primitives = { workspace = true }
@@ -50,7 +49,6 @@ test-relay-sproof-builder = { workspace = true }
 [features]
 default = [ "std" ]
 std = [
-	"bounded-collections/std",
 	"cumulus-pallet-parachain-system/std",
 	"cumulus-primitives-core/std",
 	"cumulus-primitives-core/std",

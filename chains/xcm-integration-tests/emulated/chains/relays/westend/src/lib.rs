@@ -15,6 +15,8 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 pub mod genesis;
+use cumulus_primitives_core::relay_chain::runtime_api::runtime_decl_for_parachain_host::ParachainHostV13;
+pub use westend_runtime;
 use xcm_emulator::decl_test_relay_chains;
 
 decl_test_relay_chains! {

@@ -28,7 +28,6 @@ use {
     parity_scale_codec::{Decode, Encode, MaxEncodedLen},
     polkadot_parachain_primitives::primitives::HeadData,
     sp_consensus_aura::AURA_ENGINE_ID,
-    sp_consensus_slots::Slot,
     sp_core::Get,
     sp_runtime::{traits::Dispatchable, Digest, DigestItem},
     sp_std::collections::btree_map::BTreeMap,
@@ -202,11 +201,6 @@ pub fn start_block() -> RunSummary {
     let current_issuance = Balances::total_issuance();
     InflationRewards::on_initialize(System::block_number());
     let new_issuance = Balances::total_issuance();
-
-    frame_support::storage::unhashed::put(
-        &frame_support::storage::storage_prefix(b"AsyncBacking", b"SlotInfo"),
-        &(Slot::from(slot), 1),
-    );
 
     pallet_author_inherent::Pallet::<Runtime>::kick_off_authorship_validation(None.into())
         .expect("author inherent to dispatch correctly");
