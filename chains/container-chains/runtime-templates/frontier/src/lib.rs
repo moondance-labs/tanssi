@@ -1184,13 +1184,9 @@ impl_runtime_apis! {
                         }
                     };
 
-                    // TODO: call_weight or call_weight+extension_weight
-                    // In stable2412, polkadot has added extension weight, which is an extra weight
-                    // for some transaction validations such as nonce, age, signature, etc.
-                    // Currently we ignore that in the frontier template
                     let effective_gas =
                         <Runtime as pallet_evm::Config>::GasWeightMapping::weight_to_gas(
-                            dispatch_info.call_weight
+                            dispatch_info.total_weight()
                         );
                     let tip_per_gas = tip.checked_div(u128::from(effective_gas)).unwrap_or(0);
 

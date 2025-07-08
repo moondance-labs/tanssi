@@ -1087,7 +1087,6 @@ pub fn start_dev_node(
                         current_para_block_head: None,
                         relay_offset: 1000,
                         relay_blocks_per_para_block: 2,
-                        // TODO: Recheck
                         para_blocks_per_relay_epoch: 10,
                         relay_randomness_config: (),
                         xcm_config: MockXcmConfig::new(

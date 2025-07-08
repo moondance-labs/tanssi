@@ -242,7 +242,6 @@ impl pallet_xcm::Config for Runtime {
     type MaxLockers = ConstU32<8>;
     type MaxRemoteLockConsumers = ConstU32<0>;
     type RemoteLockConsumerIdentifier = ();
-    // TODO pallet-xcm weights
     type WeightInfo = weights::pallet_xcm::SubstrateWeight<Runtime>;
     type AdminOrigin = EnsureRoot<AccountId>;
     type AuthorizedAliasConsideration = Disabled;
@@ -293,7 +292,6 @@ impl pallet_message_queue::Config for Runtime {
     type QueueChangeHandler = NarrowOriginToSibling<XcmpQueue>;
     // NarrowOriginToSibling calls XcmpQueue's is_pause if Origin is sibling. Allows all other origins
     type QueuePausedQuery = (MaintenanceMode, NarrowOriginToSibling<XcmpQueue>);
-    // TODO verify values
     type HeapSize = sp_core::ConstU32<{ 64 * 1024 }>;
     type MaxStale = sp_core::ConstU32<8>;
     type ServiceWeight = MessageQueueServiceWeight;

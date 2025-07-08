@@ -602,8 +602,6 @@ impl ExtBuilder {
         .assimilate_storage(&mut t)
         .unwrap();
 
-        // TODO: add here pallet_services_payment::GenesisConfig
-
         pallet_configuration::GenesisConfig::<Runtime> {
             config: self.config,
             ..Default::default()

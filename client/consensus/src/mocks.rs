@@ -734,7 +734,6 @@ impl Proposer<TestBlock> for DummyProposer {
             tracing::info!(target: crate::LOG_TARGET, "block  {:?}", b.block.header.number);
             // For block number 1 we can use the default proof,
             // otherwise other tests fail
-            // TODO: investigate why
             let proof = b.proof.expect("proof should exist");
             Proposal {
                 block: b.block,
