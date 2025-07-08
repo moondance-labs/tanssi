@@ -3,7 +3,6 @@ import "@tanssi/api-augment/dancelight";
 import { afterAll, beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type KeyringPair, generateKeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
-import type { MultiLocation } from "@polkadot/types/interfaces/xcm/types";
 import { u8aToHex, hexToU8a } from "@polkadot/util";
 import { decodeAddress } from "@polkadot/util-crypto";
 import { ethers } from "ethers";
