@@ -54,8 +54,8 @@ describeSuite({
                 // Step 2: Alice (root) submits referenda to root track (track 0)
                 const submitTx = api.tx.referenda.submit(
                     {
-                        System: "Root",
-                    } as any,
+                        system: "Root",
+                    },
                     { Lookup: { Hash: sudoTx.method.hash.toHex(), len: sudoTx.method.encodedLength } },
                     { After: "1" }
                 );
@@ -66,7 +66,7 @@ describeSuite({
                 // Step 3: Extract referendum index
                 const proposalIndex = submitBlock.result.events
                     .find((e) => e.event.method === "Submitted")
-                    ?.event.toJSON().data[1];
+                    .event.toHuman().data.index;
                 expect(proposalIndex).to.not.be.undefined;
 
                 // Step 4: Place decision deposit
@@ -96,7 +96,7 @@ describeSuite({
                 ];
 
                 // Step 5: Wait for referendum to be executed
-                for (let i = 0; i < 150; i++) {
+                for (let i = 0; i < 450; i++) {
                     await context.createBlock();
 
                     const events = await api.query.system.events();
@@ -119,7 +119,7 @@ describeSuite({
 
                 // Step 6: Confirm proxy actually added
                 const proxyInfo = await api.query.proxy.proxies(bob.address);
-                const [delegates] = proxyInfo.toJSON() as any;
+                const [delegates] = proxyInfo.toJSON() as { delegate: string }[][];
                 const added = delegates.find((d: any) => d.delegate === delegate);
                 expect(added).to.exist;
             },
@@ -127,34 +127,83 @@ describeSuite({
 
         it({
             id: "E02",
-            title: "Non-root can't submit referenda",
+            title: "Not enough support, referenda rejected",
             test: async ({ skip }) => {
                 // Skip if the runtime is Starlight, as OpenGov is not supported
                 if (isStarlightRuntime(api)) {
                     skip();
                 }
 
-                const delegate = alice.address;
-                const proxyType = "Any";
-                const delay = 0;
+                const tx = api.tx.system.remark("0x00");
 
-                const tx = api.tx.proxy.addProxy(delegate, proxyType, delay);
-
+                // Step 1: Bob creates preimage
                 const notePreimageTx = api.tx.preimage.notePreimage(tx.method.toHex());
                 const preimageBlock = await context.createBlock(notePreimageTx.signAsync(alice));
-                expect(preimageBlock.result?.successful).to.be.false;
+                expect(preimageBlock.result?.successful).to.be.true;
 
+                // Step 2: Alice (root) submits referenda to root track (track 0)
                 const submitTx = api.tx.referenda.submit(
                     {
-                        System: "Root",
-                    } as any,
+                        system: "Root",
+                    },
                     { Lookup: { Hash: tx.method.hash.toHex(), len: tx.method.encodedLength } },
                     { After: "1" }
                 );
 
-                const submitBlock = await context.createBlock(submitTx.signAsync(bob), { allowFailures: false });
-                console.log("submitBlock.result", submitBlock.result);
-                expect(submitBlock.result?.successful).to.be.false;
+                const submitBlock = await context.createBlock(submitTx.signAsync(alice));
+                expect(submitBlock.result?.successful).to.be.true;
+
+                // Step 3: Extract referendum index
+                const proposalIndex = submitBlock.result.events
+                    .find((e) => e.event.method === "Submitted")
+                    .event.toHuman().data.index;
+                expect(proposalIndex).to.not.be.undefined;
+
+                // Step 4: Place decision deposit
+                const depositSubmit = await context.createBlock(
+                    api.tx.referenda.placeDecisionDeposit(proposalIndex).signAsync(ferdie)
+                );
+                expect(depositSubmit.result?.successful).to.be.true;
+
+                // Step 5: Voting
+                for (const voter of [alice]) {
+                    const voteSubmit = await context.createBlock(
+                        api.tx.convictionVoting
+                            .vote(proposalIndex, {
+                                Standard: { vote: { aye: false, conviction: "None" }, balance: 900000 },
+                            })
+                            .signAsync(voter)
+                    );
+                    expect(voteSubmit.result?.successful).to.be.true;
+                }
+
+                const expectedEvents = [
+                    { section: "referenda", method: "DecisionStarted" },
+                    { section: "referenda", method: "Rejected" },
+                ];
+
+                // Step 5: Wait for referendum to be executed
+                for (let i = 0; i < 450; i++) {
+                    await context.createBlock();
+
+                    const events = await api.query.system.events();
+
+                    const execEvent = events.find(
+                        (e) =>
+                            e.event.section === expectedEvents[0].section && e.event.method === expectedEvents[0].method
+                    );
+
+                    if (execEvent) {
+                        expectedEvents.shift();
+                    }
+
+                    if (expectedEvents.length === 0) {
+                        break;
+                    }
+                }
+
+                // Check if all the events happened in the specified order.
+                expect(expectedEvents.length).toEqual(0);
             },
         });
 
@@ -180,14 +229,13 @@ describeSuite({
 
                 const submitTx = api.tx.referenda.submit(
                     {
-                        System: "Root",
-                    } as any,
+                        system: "Root",
+                    },
                     { Lookup: { Hash: tx.method.hash.toHex(), len: tx.method.encodedLength } },
                     { After: "1" }
                 );
 
                 const submitBlock = await context.createBlock(submitTx.signAsync(bob), { allowFailures: true });
-                console.log("submitBlock.result", submitBlock.result);
                 expect(submitBlock.result?.successful).to.be.false;
             },
         });
