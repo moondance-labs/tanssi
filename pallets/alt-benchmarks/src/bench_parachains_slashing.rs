@@ -141,6 +141,7 @@ where
 
     T::SlashingHandler::punish_for_invalid(session_index, CANDIDATE_HASH, losers, backers);
 
+    // TODO: uncomment if parity ever makes the storage public
     /*let unapplied = <polkadot_runtime_parachains::disputes::slashing::UnappliedSlashes<T>>::get(
         session_index,
         CANDIDATE_HASH,
