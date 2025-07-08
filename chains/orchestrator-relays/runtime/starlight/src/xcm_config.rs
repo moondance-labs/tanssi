@@ -20,9 +20,9 @@ use {
     super::{
         parachains_origin,
         weights::{self, xcm::XcmWeight},
-        AccountId, AllPalletsWithSystem, Balance, Balances, Dmp, Fellows, ForeignAssets, ParaId,
-        Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin, TransactionByteFee, Treasury,
-        WeightToFee, XcmPallet,
+        AccountId, AllPalletsWithSystem, Balance, Balances, Dmp, Fellows, ForeignAssets,
+        ForeignAssetsCreator, ParaId, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin,
+        TransactionByteFee, Treasury, WeightToFee, XcmPallet,
     },
     crate::governance::StakingAdmin,
     frame_support::{
@@ -36,9 +36,15 @@ use {
         ToAuthor,
     },
     sp_core::ConstU32,
-    starlight_runtime_constants::{currency::CENTS, system_parachain::*, TANSSI_GENESIS_HASH},
+    sp_runtime::traits::TryConvertInto,
+    starlight_runtime_constants::{
+        currency::CENTS,
+        snowbridge::{EthereumLocation, EthereumNetwork},
+        system_parachain::*,
+        TANSSI_GENESIS_HASH,
+    },
     tp_bridge::EthereumLocationsConverterFor,
-    tp_xcm_commons::NativeAssetReserve,
+    tp_xcm_commons::{EthereumAssetReserve, NativeAssetReserve},
     xcm::{
         latest::prelude::{AssetId as XcmAssetId, *},
         opaque::latest::WESTEND_GENESIS_HASH,
@@ -46,12 +52,13 @@ use {
     xcm_builder::{
         AccountId32Aliases, AllowExplicitUnpaidExecutionFrom, AllowKnownQueryResponses,
         AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom, ChildParachainAsNative,
-        ChildParachainConvertsVia, DescribeAllTerminal, DescribeFamily, FixedWeightBounds,
-        FrameTransactionalProcessor, FungibleAdapter, HashedDescription, IsChildSystemParachain,
-        IsConcrete, MintLocation, OriginToPluralityVoice, SendXcmFeeToAccount,
-        SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation,
-        TakeWeightCredit, TrailingSetTopicAsId, UsingComponents, WeightInfoBounds,
-        WithComputedOrigin, WithUniqueTopic, XcmFeeManagerFromComponents,
+        ChildParachainConvertsVia, ConvertedConcreteId, DescribeAllTerminal, DescribeFamily,
+        FixedWeightBounds, FrameTransactionalProcessor, FungibleAdapter, FungiblesAdapter,
+        HashedDescription, IsChildSystemParachain, IsConcrete, MintLocation, NoChecking,
+        OriginToPluralityVoice, SendXcmFeeToAccount, SignedAccountId32AsNative,
+        SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId,
+        UsingComponents, WeightInfoBounds, WithComputedOrigin, WithUniqueTopic,
+        XcmFeeManagerFromComponents,
     },
     xcm_executor::XcmExecutor,
 };
@@ -99,6 +106,22 @@ pub type LocalAssetTransactor = FungibleAdapter<
     AccountId,
     // We track our teleports in/out to keep total issuance correct.
     LocalCheckAccount,
+>;
+
+/// Means for transacting foreign assets from different global consensus.
+pub type ForeignFungiblesTransactor = FungiblesAdapter<
+    // Use this fungibles implementation:
+    ForeignAssets,
+    // Use this currency when it is a fungible asset matching the given location or name:
+    (ConvertedConcreteId<AssetId, Balance, ForeignAssetsCreator, TryConvertInto>,),
+    // Convert an XCM Location into a local account id:
+    LocationConverter,
+    // Our chain's account ID type (we can't get away without mentioning it explicitly):
+    AccountId,
+    // We dont need to check teleports here.
+    NoChecking,
+    // The account to use for tracking teleports.
+    CheckingAccount,
 >;
 
 /// The means that we convert an the XCM message origin location into a local dispatch origin.
@@ -198,9 +221,12 @@ pub struct XcmConfig;
 impl xcm_executor::Config for XcmConfig {
     type RuntimeCall = RuntimeCall;
     type XcmSender = XcmRouter;
-    type AssetTransactor = LocalAssetTransactor;
+    type AssetTransactor = (LocalAssetTransactor, ForeignFungiblesTransactor);
     type OriginConverter = LocalOriginConverter;
-    type IsReserve = NativeAssetReserve;
+    type IsReserve = (
+        NativeAssetReserve,
+        EthereumAssetReserve<EthereumLocation, EthereumNetwork>,
+    );
     type IsTeleporter = ();
     type UniversalLocation = UniversalLocation;
     type Barrier = Barrier;

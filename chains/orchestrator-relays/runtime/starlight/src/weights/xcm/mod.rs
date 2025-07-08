@@ -108,8 +108,8 @@ where
     fn reserve_asset_deposited(assets: &Assets) -> XCMWeight {
         assets.weigh_assets(XcmBalancesWeight::<Runtime>::reserve_asset_deposited())
     }
-    fn receive_teleported_asset(assets: &Assets) -> XCMWeight {
-        assets.weigh_assets(XcmBalancesWeight::<Runtime>::receive_teleported_asset())
+    fn receive_teleported_asset(_assets: &Assets) -> XCMWeight {
+        XCMWeight::MAX
     }
     fn query_response(
         _query_id: &u64,
