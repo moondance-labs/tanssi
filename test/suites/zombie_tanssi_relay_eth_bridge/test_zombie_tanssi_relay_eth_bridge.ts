@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type KeyringPair, generateKeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import type { MultiLocation } from "@polkadot/types/interfaces/xcm/types";
-import { u8aToHex } from "@polkadot/util";
+import { u8aToHex, hexToU8a } from "@polkadot/util";
 import { decodeAddress } from "@polkadot/util-crypto";
 import { ethers } from "ethers";
 import { type ChildProcessWithoutNullStreams, exec, spawn } from "node:child_process";
@@ -18,6 +18,7 @@ import {
 } from "utils";
 
 import { keccak256 } from "viem";
+import { ETHEREUM_NETWORK_TESTNET, FOREIGN_ASSET_ID } from "utils/constants";
 
 // Change this if we change the storage parameter in runtime
 const GATEWAY_STORAGE_KEY = "0xaed97c7854d601808b98ae43079dafb3";
@@ -68,6 +69,8 @@ describeSuite({
         let middlewareContract: ethers.Contract;
         let gatewayContract: ethers.Contract;
         let tokenContract: ethers.Contract;
+        let wETHContract: ethers.Contract;
+        let wETHAddress: string;
         let gatewayProxyAddress: string;
         let middlewareAddress: string;
         let operatorRewardAddress: string;
@@ -76,6 +79,7 @@ describeSuite({
         let operatorRewardDetails: any;
 
         let tokenId: any;
+        let wETHBalanceFromEthereum: bigint;
 
         let ethInfo: any;
 
@@ -153,6 +157,9 @@ describeSuite({
             console.log("Gateway contract proxy address is:", ethInfo.snowbridge_info.contracts.GatewayProxy.address);
             gatewayProxyAddress = ethInfo.snowbridge_info.contracts.GatewayProxy.address;
 
+            console.log("WETH9 contract address is:", ethInfo.snowbridge_info.contracts.WETH9.address);
+            wETHAddress = ethInfo.snowbridge_info.contracts.WETH9.address;
+
             console.log("Symbiotic middleware address is: ", ethInfo.symbiotic_info.contracts.MiddlewareProxy.address);
             const middlewareCallerDetails = ethInfo.symbiotic_info.contracts.Middleware;
             const middlewareReaderDetails = ethInfo.symbiotic_info.contracts.OBaseMiddlewareReader;
@@ -199,8 +206,29 @@ describeSuite({
                 ethInfo.snowbridge_info.contracts.Gateway.abi,
                 ethereumWallet
             );
+
+            wETHContract = new ethers.Contract(
+                wETHAddress,
+                ethInfo.snowbridge_info.contracts.WETH9.abi,
+                ethereumWallet
+            );
+
             const setMiddlewareTx = await gatewayContract.setMiddleware(middlewareAddress);
             await setMiddlewareTx.wait();
+
+            const registerTokenFee = await gatewayContract.quoteRegisterTokenFee();
+            const registerWETHTx = await gatewayContract.registerToken(wETHAddress, { value: registerTokenFee * 10n });
+            await registerWETHTx.wait();
+
+            const isWETHTokenRegistered = await gatewayContract.isTokenRegistered(wETHAddress);
+            expect(isWETHTokenRegistered).to.be.true;
+
+            const depositWETHTx = await wETHContract.deposit({ value: 10000000000000000000n });
+            await depositWETHTx.wait();
+
+            wETHBalanceFromEthereum = 300000000000000n;
+            const approveWETHTx = await wETHContract.approve(gatewayProxyAddress, wETHBalanceFromEthereum);
+            await approveWETHTx.wait();
 
             const initialBeaconUpdate = JSON.parse(
                 (
@@ -212,6 +240,23 @@ describeSuite({
                     })
                 ).stdout
             );
+
+            const wETHTokenLocation = relayApi.createType<MultiLocation>("MultiLocation", {
+                parents: 1,
+                interior: {
+                    X2: [
+                        {
+                            GlobalConsensus: ETHEREUM_NETWORK_TESTNET,
+                        },
+                        {
+                            AccountKey20: {
+                                network: ETHEREUM_NETWORK_TESTNET,
+                                key: hexToU8a(wETHAddress),
+                            },
+                        },
+                    ],
+                },
+            });
 
             const tokenLocation = relayApi.createType<MultiLocation>("MultiLocation", {
                 parents: 0,
@@ -235,6 +280,13 @@ describeSuite({
                     relayApi.tx.utility.batch([
                         relayApi.tx.ethereumBeaconClient.forceCheckpoint(initialBeaconUpdate),
                         relayApi.tx.ethereumSystem.registerToken(versionedNativeTokenLocation, metadata),
+                        relayApi.tx.foreignAssetsCreator.createForeignAsset(
+                            wETHTokenLocation,
+                            FOREIGN_ASSET_ID,
+                            alice.address,
+                            true,
+                            1
+                        ),
                     ])
                 ),
                 alice
@@ -722,7 +774,7 @@ describeSuite({
                 const executionRelayBefore = (await relayApi.query.system.account(executionRelay.address)).data.free;
                 expect(randomBalanceBefore.toBigInt()).to.be.eq(0n);
 
-                // Send the token from Ethereum
+                // Send the native TANSSI token from Ethereum
                 const tx = await gatewayContract.sendToken(
                     tokenAddress,
                     ASSET_HUB_PARA_ID,
@@ -738,6 +790,24 @@ describeSuite({
                 );
 
                 await tx.wait();
+
+                // Send the WETH token as well
+                const neededFeeWETH = await gatewayContract.quoteSendTokenFee(wETHAddress, ASSET_HUB_PARA_ID, fee);
+                const sendWETHTokenTx = await gatewayContract.sendToken(
+                    wETHAddress,
+                    ASSET_HUB_PARA_ID,
+                    {
+                        kind: 1,
+                        data: u8aToHex(randomAccount.addressRaw),
+                    },
+                    fee,
+                    wETHBalanceFromEthereum,
+                    {
+                        value: neededFeeWETH * 10n,
+                    }
+                );
+
+                await sendWETHTokenTx.wait();
 
                 const ownerBalanceAfter = await tokenContract.balanceOf(recipient);
 
@@ -756,7 +826,7 @@ describeSuite({
                     async () => {
                         try {
                             const nonceAfter = await relayApi.query.ethereumInboundQueue.nonce(assetHubChannelId);
-                            expect(nonceAfter.toNumber()).to.not.deep.eq(nonceInChannelBefore.toNumber());
+                            expect(nonceAfter.toNumber()).to.be.eq(nonceInChannelBefore.toNumber() + 2);
                         } catch (error) {
                             return false;
                         }
@@ -783,6 +853,14 @@ describeSuite({
                 // Ensure the token has been received on the Starlight side
                 const randomBalanceAfter = (await relayApi.query.system.account(randomAccount.address)).data.free;
                 expect(randomBalanceAfter.toBigInt()).to.be.eq(randomBalanceBefore.toBigInt() + amountBackFromETH);
+
+                // Ensure the WETH token has been received on the Starlight side
+                const randomWETHBalanceAfter = await relayApi.query.foreignAssets.account(
+                    FOREIGN_ASSET_ID,
+                    randomAccount.address
+                );
+
+                expect(randomWETHBalanceAfter.unwrap().balance.toBigInt()).to.be.eq(wETHBalanceFromEthereum);
             },
         });
 
