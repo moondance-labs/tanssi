@@ -54,42 +54,7 @@ use sp_std::marker::PhantomData;
 /// Weights for runtime_parachains::disputes::slashing using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> runtime_parachains::disputes::slashing::WeightInfo for SubstrateWeight<T> {
-	/// Storage: `Session::CurrentIndex` (r:1 w:0)
-	/// Proof: `Session::CurrentIndex` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
-	/// Storage: `Historical::HistoricalSessions` (r:1 w:0)
-	/// Proof: `Historical::HistoricalSessions` (`max_values`: None, `max_size`: Some(48), added: 2523, mode: `MaxEncodedLen`)
-	/// Storage: `ParasSlashing::UnappliedSlashes` (r:1 w:1)
-	/// Proof: `ParasSlashing::UnappliedSlashes` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `Offences::ConcurrentReportsIndex` (r:1 w:1)
-	/// Proof: `Offences::ConcurrentReportsIndex` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `Offences::Reports` (r:1 w:1)
-	/// Proof: `Offences::Reports` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `ExternalValidatorSlashes::SlashingMode` (r:1 w:0)
-	/// Proof: `ExternalValidatorSlashes::SlashingMode` (`max_values`: Some(1), `max_size`: Some(1), added: 496, mode: `MaxEncodedLen`)
-	/// Storage: `ExternalValidators::ActiveEra` (r:1 w:0)
-	/// Proof: `ExternalValidators::ActiveEra` (`max_values`: Some(1), `max_size`: Some(13), added: 508, mode: `MaxEncodedLen`)
-	/// Storage: `ExternalValidators::ErasStartSessionIndex` (r:1 w:0)
-	/// Proof: `ExternalValidators::ErasStartSessionIndex` (`max_values`: None, `max_size`: Some(16), added: 2491, mode: `MaxEncodedLen`)
-	/// Storage: `ExternalValidators::CurrentExternalIndex` (r:1 w:0)
-	/// Proof: `ExternalValidators::CurrentExternalIndex` (`max_values`: Some(1), `max_size`: Some(8), added: 503, mode: `MaxEncodedLen`)
-	/// Storage: `ExternalValidators::WhitelistedValidators` (r:1 w:0)
-	/// Proof: `ExternalValidators::WhitelistedValidators` (`max_values`: Some(1), `max_size`: Some(3202), added: 3697, mode: `MaxEncodedLen`)
-	/// Storage: `ExternalValidatorSlashes::NextSlashId` (r:1 w:1)
-	/// Proof: `ExternalValidatorSlashes::NextSlashId` (`max_values`: Some(1), `max_size`: Some(4), added: 499, mode: `MaxEncodedLen`)
-	/// Storage: `ExternalValidatorSlashes::ValidatorSlashInEra` (r:1 w:1)
-	/// Proof: `ExternalValidatorSlashes::ValidatorSlashInEra` (`max_values`: None, `max_size`: Some(56), added: 2531, mode: `MaxEncodedLen`)
-	/// Storage: `ExternalValidatorSlashes::Slashes` (r:1 w:1)
-	/// Proof: `ExternalValidatorSlashes::Slashes` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// The range of component `n` is `[4, 100]`.
-	fn report_dispute_lost(n: u32, ) -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `1083`
-		//  Estimated: `4687`
-		// Minimum execution time: 102_085_000 picoseconds.
-		Weight::from_parts(117_383_246, 4687)
-			// Standard Error: 4_446
-			.saturating_add(Weight::from_parts(115_258, 0).saturating_mul(n.into()))
-			.saturating_add(T::DbWeight::get().reads(13_u64))
-			.saturating_add(T::DbWeight::get().writes(6_u64))
+	fn report_dispute_lost_unsigned(_n: u32, ) -> Weight {
+		Default::default()
 	}
 }

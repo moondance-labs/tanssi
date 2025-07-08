@@ -17,9 +17,10 @@
 //! Generate mocked values of relay chain storage, for dev tests
 
 use {
+    dp_core::{well_known_keys::REGISTRAR_PARAS_INDEX, ParaInfo},
     frame_support::Hashable,
     sp_core::{ed25519, Pair},
-    tc_consensus::{Decode, Encode, ParaId},
+    tc_consensus::{Encode, ParaId},
 };
 
 pub fn get_mocked_registrar_paras(para_id: ParaId) -> (Vec<u8>, Vec<u8>) {
@@ -38,25 +39,6 @@ pub fn get_mocked_registrar_paras(para_id: ParaId) -> (Vec<u8>, Vec<u8>) {
     };
 
     (registrar_paras_key, para_info.encode())
-}
-
-// TODO: import this from dancekit
-pub const REGISTRAR_PARAS_INDEX: &[u8] =
-    &hex_literal::hex!["3fba98689ebed1138735e0e7a5a790abcd710b30bd2eab0352ddcc26417aa194"];
-
-// Need to copy ParaInfo from
-// polkadot-sdk/polkadot/runtime/common/src/paras_registrar/mod.rs
-// Because its fields are not public...
-// TODO: import this from dancekit
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Default)]
-pub struct ParaInfo<Account, Balance> {
-    /// The account that has placed a deposit for registering this para.
-    manager: Account,
-    /// The amount reserved by the `manager` account for the registration.
-    deposit: Balance,
-    /// Whether the para registration should be locked from being controlled by the manager.
-    /// None means the lock had not been explicitly set, and should be treated as false.
-    locked: Option<bool>,
 }
 
 pub fn get_ed25519_pairs(num: u32) -> Vec<ed25519::Pair> {

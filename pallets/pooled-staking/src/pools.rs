@@ -641,7 +641,17 @@ const MASK_LEAVING: u8 = 1u8 << 3;
 /// Enum of all available pools.
 /// Must match with the names of the pool structs generated with `impl_pool!`.
 #[derive(
-    RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo, Serialize, Deserialize,
+    RuntimeDebug,
+    PartialEq,
+    Eq,
+    Encode,
+    Decode,
+    DecodeWithMemTracking,
+    Copy,
+    Clone,
+    TypeInfo,
+    Serialize,
+    Deserialize,
 )]
 pub enum PoolKind {
     Joining,
@@ -653,7 +663,17 @@ pub enum PoolKind {
 /// Restricted list of pools that represent active delegation. Those can be targetted by joining
 /// requests.
 #[derive(
-    RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo, Serialize, Deserialize,
+    RuntimeDebug,
+    PartialEq,
+    Eq,
+    Encode,
+    Decode,
+    DecodeWithMemTracking,
+    Copy,
+    Clone,
+    TypeInfo,
+    Serialize,
+    Deserialize,
 )]
 pub enum ActivePoolKind {
     AutoCompounding,

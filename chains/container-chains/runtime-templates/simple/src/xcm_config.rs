@@ -26,7 +26,7 @@ use {
     cumulus_primitives_core::{AggregateMessageOrigin, ParaId},
     frame_support::{
         parameter_types,
-        traits::{Everything, Nothing, PalletInfoAccess, TransformOrigin},
+        traits::{Disabled, Equals, Everything, Nothing, PalletInfoAccess, TransformOrigin},
         weights::Weight,
     },
     frame_system::EnsureRoot,
@@ -46,7 +46,7 @@ use {
         IsConcrete, ParentIsPreset, RelayChainAsNative, SiblingParachainAsNative,
         SiblingParachainConvertsVia, SignedAccountId32AsNative, SignedToAccountId32,
         SovereignSignedViaLocation, TakeWeightCredit, UsingComponents, WeightInfoBounds,
-        WithComputedOrigin,
+        WithComputedOrigin, XcmFeeManagerFromComponents,
     },
     xcm_executor::XcmExecutor,
 };
@@ -82,6 +82,8 @@ parameter_types! {
     pub UniversalLocation: InteriorLocation = [GlobalConsensus(RelayNetwork::get()), Parachain(ParachainInfo::parachain_id().into())].into();
 
     pub const BaseDeliveryFee: u128 = 100 * MICROUNIT;
+
+    pub RootLocation: Location = Location::here();
 }
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -204,7 +206,7 @@ impl xcm_executor::Config for XcmConfig {
     type MaxAssetsIntoHolding = MaxAssetsIntoHolding;
     type AssetLocker = ();
     type AssetExchanger = ();
-    type FeeManager = ();
+    type FeeManager = XcmFeeManagerFromComponents<Equals<RootLocation>, ()>;
     type MessageExporter = ();
     type UniversalAliases = Nothing;
     type CallDispatcher = RuntimeCall;
@@ -215,6 +217,7 @@ impl xcm_executor::Config for XcmConfig {
     type HrmpChannelAcceptedHandler = ();
     type HrmpChannelClosingHandler = ();
     type XcmRecorder = ();
+    type XcmEventEmitter = PolkadotXcm;
 }
 
 impl pallet_xcm::Config for Runtime {
@@ -239,9 +242,9 @@ impl pallet_xcm::Config for Runtime {
     type MaxLockers = ConstU32<8>;
     type MaxRemoteLockConsumers = ConstU32<0>;
     type RemoteLockConsumerIdentifier = ();
-    // TODO pallet-xcm weights
     type WeightInfo = weights::pallet_xcm::SubstrateWeight<Runtime>;
     type AdminOrigin = EnsureRoot<AccountId>;
+    type AuthorizedAliasConsideration = Disabled;
 }
 
 pub type PriceForSiblingParachainDelivery =
@@ -289,7 +292,6 @@ impl pallet_message_queue::Config for Runtime {
     type QueueChangeHandler = NarrowOriginToSibling<XcmpQueue>;
     // NarrowOriginToSibling calls XcmpQueue's is_pause if Origin is sibling. Allows all other origins
     type QueuePausedQuery = (MaintenanceMode, NarrowOriginToSibling<XcmpQueue>);
-    // TODO verify values
     type HeapSize = sp_core::ConstU32<{ 64 * 1024 }>;
     type MaxStale = sp_core::ConstU32<8>;
     type ServiceWeight = MessageQueueServiceWeight;
@@ -346,6 +348,7 @@ impl pallet_assets::Config<ForeignAssetsInstance> for Runtime {
     type CallbackHandle = ();
     type AssetAccountDeposit = ForeignAssetsAssetAccountDeposit;
     type RemoveItemsLimit = frame_support::traits::ConstU32<1000>;
+    type Holder = ();
     #[cfg(feature = "runtime-benchmarks")]
     type BenchmarkHelper = ForeignAssetBenchmarkHelper;
 }

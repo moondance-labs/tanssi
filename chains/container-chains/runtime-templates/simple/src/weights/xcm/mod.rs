@@ -243,7 +243,7 @@ where
         _dest: &Location,
         _remote_fees: &Option<AssetTransferFilter>,
         _preserve_origin: &bool,
-        _assets: &Vec<AssetTransferFilter>,
+        _assets: &BoundedVec<AssetTransferFilter, MaxAssetTransferFilters>,
         _xcm: &Xcm<()>,
     ) -> Weight {
         Weight::MAX

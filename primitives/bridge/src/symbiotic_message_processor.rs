@@ -18,7 +18,7 @@ use {
     frame_support::pallet_prelude::*,
     parity_scale_codec::DecodeAll,
     snowbridge_core::{Channel, PRIMARY_GOVERNANCE_CHANNEL},
-    snowbridge_router_primitives::inbound::{envelope::Envelope, MessageProcessor},
+    snowbridge_inbound_queue_primitives::v1::{Envelope, MessageProcessor},
     sp_runtime::DispatchError,
     sp_std::vec::Vec,
 };

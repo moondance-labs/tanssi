@@ -17,7 +17,7 @@
 //! Track configurations for governance.
 
 use super::*;
-
+use sp_runtime::str_array as s;
 const fn percent(x: i32) -> sp_arithmetic::FixedI64 {
     sp_arithmetic::FixedI64::from_rational(x as u128, 100)
 }
@@ -25,27 +25,31 @@ use pallet_referenda::Curve;
 const APP_ROOT: Curve = Curve::make_reciprocal(4, 28, percent(80), percent(50), percent(100));
 const SUP_ROOT: Curve = Curve::make_linear(28, 28, percent(20), percent(50));
 
-const TRACKS_DATA: [(u16, pallet_referenda::TrackInfo<Balance, BlockNumber>); 1] = [(
-    0,
-    pallet_referenda::TrackInfo {
-        name: "root",
-        max_deciding: 1,
-        decision_deposit: 100 * GRAND,
-        prepare_period: 8 * MINUTES,
-        decision_period: 20 * MINUTES,
-        confirm_period: 12 * MINUTES,
-        min_enactment_period: 5 * MINUTES,
-        min_approval: APP_ROOT,
-        min_support: SUP_ROOT,
+const TRACKS_DATA: [pallet_referenda::Track<u16, Balance, BlockNumber>; 15] = [
+    pallet_referenda::Track {
+        id: 0,
+        info: pallet_referenda::TrackInfo {
+            name: s("root"),
+            max_deciding: 1,
+            decision_deposit: 100 * GRAND,
+            prepare_period: 8 * MINUTES,
+            decision_period: 20 * MINUTES,
+            confirm_period: 12 * MINUTES,
+            min_enactment_period: 5 * MINUTES,
+            min_approval: APP_ROOT,
+            min_support: SUP_ROOT,
+        },
     },
-)];
+];
 
 pub struct TracksInfo;
 impl pallet_referenda::TracksInfo<Balance, BlockNumber> for TracksInfo {
     type Id = u16;
     type RuntimeOrigin = <RuntimeOrigin as frame_support::traits::OriginTrait>::PalletsOrigin;
-    fn tracks() -> &'static [(Self::Id, pallet_referenda::TrackInfo<Balance, BlockNumber>)] {
-        &TRACKS_DATA[..]
+    fn tracks(
+    ) -> impl Iterator<Item = Cow<'static, pallet_referenda::Track<Self::Id, Balance, BlockNumber>>>
+    {
+        TRACKS_DATA.iter().map(Cow::Borrowed)
     }
     fn track_for(id: &Self::RuntimeOrigin) -> Result<Self::Id, ()> {
         if let Ok(system_origin) = frame_system::RawOrigin::try_from(id.clone()) {
@@ -58,4 +62,3 @@ impl pallet_referenda::TracksInfo<Balance, BlockNumber> for TracksInfo {
         }
     }
 }
-pallet_referenda::impl_tracksinfo_get!(TracksInfo, Balance, BlockNumber);

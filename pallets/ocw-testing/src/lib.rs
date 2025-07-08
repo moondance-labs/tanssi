@@ -98,6 +98,7 @@ pub mod pallet {
         /// the off-chain worker on and off to avoid enabling it by default in production
         #[pallet::call_index(0)]
         #[pallet::weight(T::DbWeight::get().write)]
+        #[allow(clippy::useless_conversion)]
         pub fn set_offchain_worker(
             origin: OriginFor<T>,
             is_testing_enabled: bool,
@@ -113,6 +114,7 @@ pub mod pallet {
         /// Can be triggered only by an offchain worker
         #[pallet::call_index(1)]
         #[pallet::weight(T::DbWeight::get().write)]
+        #[allow(clippy::useless_conversion)]
         pub fn submit_event_unsigned(
             origin: OriginFor<T>,
             _block_number: BlockNumberFor<T>,
