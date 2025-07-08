@@ -241,7 +241,7 @@ describeSuite({
                 ).stdout
             );
 
-            const wETHTokenLocation = relayApi.createType<MultiLocation>("MultiLocation", {
+            const wETHTokenLocation = {
                 parents: 1,
                 interior: {
                     X2: [
@@ -256,12 +256,12 @@ describeSuite({
                         },
                     ],
                 },
-            });
+            };
 
-            const tokenLocation = relayApi.createType<MultiLocation>("MultiLocation", {
+            const tokenLocation = {
                 parents: 0,
                 interior: "Here",
-            });
+            };
             const versionedNativeTokenLocation = {
                 V3: tokenLocation,
             };
