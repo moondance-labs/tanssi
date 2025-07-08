@@ -54,6 +54,9 @@ use sp_std::marker::PhantomData;
 /// Weights for runtime_parachains::assigner_on_demand using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> runtime_parachains::on_demand::WeightInfo for SubstrateWeight<T> {
+	fn place_order_with_credits(_s: u32) -> Weight {
+		Default::default()
+	}
 	/// Storage: `OnDemandAssignmentProvider::QueueStatus` (r:1 w:1)
 	/// Proof: `OnDemandAssignmentProvider::QueueStatus` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
 	/// Storage: `System::Account` (r:1 w:1)

@@ -17,8 +17,8 @@
 use {
     super::*,
     parity_scale_codec::DecodeAll,
-    snowbridge_router_primitives::inbound::{
-        envelope::Envelope, Command as SnowbridgeCommand, MessageProcessor, MessageV1,
+    snowbridge_inbound_queue_primitives::v1::{
+        Command as SnowbridgeCommand, Envelope, MessageProcessor, MessageV1, VersionedXcmMessage,
     },
     sp_runtime::DispatchError,
     sp_std::marker::PhantomData,

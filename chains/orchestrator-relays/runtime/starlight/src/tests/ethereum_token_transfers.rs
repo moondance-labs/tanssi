@@ -26,14 +26,12 @@ use {
     frame_support::{assert_noop, assert_ok},
     hex_literal::hex,
     parity_scale_codec::Encode,
-    snowbridge_core::{
-        inbound::{Log, Message},
-        AgentId, Channel, ChannelId, ParaId,
+    snowbridge_core::{AgentId, Channel, ChannelId, ParaId},
+    snowbridge_inbound_queue_primitives::v1::{
+        Command, Destination, Envelope, MessageProcessor, MessageV1, OutboundMessageAccepted,
+        VersionedXcmMessage,
     },
-    snowbridge_router_primitives::inbound::{
-        envelope::{Envelope, OutboundMessageAccepted},
-        Command, Destination, MessageProcessor, MessageV1, VersionedXcmMessage,
-    },
+    snowbridge_verification_primitives::{EventProof, Log},
     sp_core::{H160, H256},
     sp_runtime::{traits::MaybeEquivalence, FixedU128, TokenError},
     sp_std::vec,
@@ -472,7 +470,7 @@ fn receive_native_tokens_from_eth_happy_path() {
                 payload: payload.encode(),
             };
 
-            let message = Message {
+            let message = EventProof {
                 event_log: Log {
                     address:
                         <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
@@ -566,7 +564,7 @@ fn no_error_when_receiving_register_token_command() {
                 payload: payload.encode(),
             };
 
-            let message = Message {
+            let message = EventProof {
                 event_log: Log {
                     address:
                         <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
@@ -631,7 +629,7 @@ fn no_error_when_receiving_send_token_command() {
                 payload: payload.encode(),
             };
 
-            let message = Message {
+            let message = EventProof {
                 event_log: Log {
                     address:
                         <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
@@ -713,7 +711,7 @@ fn fail_receiving_native_tokens_with_foreign_account_id_20() {
                 payload: payload.encode(),
             };
 
-            let message = Message {
+            let message = EventProof {
                 event_log: Log {
                     address:
                         <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
@@ -802,7 +800,7 @@ fn fail_receiving_native_tokens_with_foreign_account_id_32() {
                 payload: payload.encode(),
             };
 
-            let message = Message {
+            let message = EventProof {
                 event_log: Log {
                     address:
                         <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
@@ -894,7 +892,7 @@ fn fail_receiving_native_tokens_with_destination_below_existential_deposit() {
                 payload: payload.encode(),
             };
 
-            let message = Message {
+            let message = EventProof {
                 event_log: Log {
                     address:
                         <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),

@@ -49,7 +49,7 @@ describeSuite({
 
                 const destMultilocation: MultiLocation = {
                     parents: 0,
-                    interior: { X1: { Parachain: 1001 } },
+                    interior: { X1: { Parachain: 2000 } },
                 };
 
                 const dest = {
@@ -65,7 +65,7 @@ describeSuite({
 
                 await context.createBlock(await txRoot.signAsync(alice), { allowFailures: false });
 
-                const fee = await getLastSentDmpMessageFee(context, baseDelivery, txByteFee, 1001);
+                const fee = await getLastSentDmpMessageFee(context, baseDelivery, txByteFee, 2000);
                 const paid = await extractPaidDeliveryFeesDancelight(context);
                 // Test ranges, as we can have rounding errors for Perbill manipulation
                 expect(paid).toBeGreaterThanOrEqual(fee - 1n);

@@ -15,6 +15,7 @@ workspace = true
 cumulus-primitives-core = { workspace = true }
 emulated-integration-tests-common = { workspace = true }
 pallet-staking = { workspace = true }
+polkadot-parachain-primitives = { workspace = true }
 runtime-common = { workspace = true }
 runtime-parachains = { workspace = true }
 sc-consensus-grandpa = { workspace = true }
@@ -31,6 +32,7 @@ xcm-emulator = { workspace = true }
 runtime-benchmarks = [
 	"cumulus-primitives-core/runtime-benchmarks",
 	"pallet-staking/runtime-benchmarks",
+	"polkadot-parachain-primitives/runtime-benchmarks",
 	"runtime-common/runtime-benchmarks",
 	"runtime-parachains/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",

@@ -18,6 +18,7 @@
 
 use {
     frame_support::traits::{MapSuccess, TryMapSuccess},
+    sp_runtime::str_array as s,
     sp_runtime::traits::{CheckedReduceBy, ConstU16, Replace, ReplaceWithDefault},
 };
 
@@ -36,12 +37,14 @@ pub struct TracksInfo;
 impl pallet_referenda::TracksInfo<Balance, BlockNumber> for TracksInfo {
     type Id = u16;
     type RuntimeOrigin = <RuntimeOrigin as frame_support::traits::OriginTrait>::PalletsOrigin;
-    fn tracks() -> &'static [(Self::Id, pallet_referenda::TrackInfo<Balance, BlockNumber>)] {
-        static DATA: [(u16, pallet_referenda::TrackInfo<Balance, BlockNumber>); 10] = [
-            (
-                0u16,
-                pallet_referenda::TrackInfo {
-                    name: "candidates",
+    fn tracks(
+    ) -> impl Iterator<Item = Cow<'static, pallet_referenda::Track<Self::Id, Balance, BlockNumber>>>
+    {
+        static DATA: [pallet_referenda::Track<u16, Balance, BlockNumber>; 10] = [
+            pallet_referenda::Track {
+                id: 0,
+                info: pallet_referenda::TrackInfo {
+                    name: s("candidates"),
                     max_deciding: 10,
                     decision_deposit: 100 * 3 * CENTS,
                     prepare_period: 30 * MINUTES,
@@ -59,11 +62,11 @@ impl pallet_referenda::TracksInfo<Balance, BlockNumber> for TracksInfo {
                         ceil: Perbill::from_percent(50),
                     },
                 },
-            ),
-            (
-                1u16,
-                pallet_referenda::TrackInfo {
-                    name: "members",
+            },
+            pallet_referenda::Track {
+                id: 1,
+                info: pallet_referenda::TrackInfo {
+                    name: s("members"),
                     max_deciding: 10,
                     decision_deposit: 10 * 3 * CENTS,
                     prepare_period: 30 * MINUTES,
@@ -81,11 +84,11 @@ impl pallet_referenda::TracksInfo<Balance, BlockNumber> for TracksInfo {
                         ceil: Perbill::from_percent(50),
                     },
                 },
-            ),
-            (
-                2u16,
-                pallet_referenda::TrackInfo {
-                    name: "proficients",
+            },
+            pallet_referenda::Track {
+                id: 2,
+                info: pallet_referenda::TrackInfo {
+                    name: s("proficients"),
                     max_deciding: 10,
                     decision_deposit: 10 * 3 * CENTS,
                     prepare_period: 30 * MINUTES,
@@ -103,11 +106,11 @@ impl pallet_referenda::TracksInfo<Balance, BlockNumber> for TracksInfo {
                         ceil: Perbill::from_percent(50),
                     },
                 },
-            ),
-            (
-                3u16,
-                pallet_referenda::TrackInfo {
-                    name: "fellows",
+            },
+            pallet_referenda::Track {
+                id: 3,
+                info: pallet_referenda::TrackInfo {
+                    name: s("fellows"),
                     max_deciding: 10,
                     decision_deposit: 10 * 3 * CENTS,
                     prepare_period: 30 * MINUTES,
@@ -125,11 +128,11 @@ impl pallet_referenda::TracksInfo<Balance, BlockNumber> for TracksInfo {
                         ceil: Perbill::from_percent(50),
                     },
                 },
-            ),
-            (
-                4u16,
-                pallet_referenda::TrackInfo {
-                    name: "senior fellows",
+            },
+            pallet_referenda::Track {
+                id: 4,
+                info: pallet_referenda::TrackInfo {
+                    name: s("senior fellows"),
                     max_deciding: 10,
                     decision_deposit: 10 * 3 * CENTS,
                     prepare_period: 30 * MINUTES,
@@ -147,11 +150,11 @@ impl pallet_referenda::TracksInfo<Balance, BlockNumber> for TracksInfo {
                         ceil: Perbill::from_percent(50),
                     },
                 },
-            ),
-            (
-                5u16,
-                pallet_referenda::TrackInfo {
-                    name: "experts",
+            },
+            pallet_referenda::Track {
+                id: 5,
+                info: pallet_referenda::TrackInfo {
+                    name: s("experts"),
                     max_deciding: 10,
                     decision_deposit: 1 * 3 * CENTS,
                     prepare_period: 30 * MINUTES,
@@ -169,11 +172,11 @@ impl pallet_referenda::TracksInfo<Balance, BlockNumber> for TracksInfo {
                         ceil: Perbill::from_percent(50),
                     },
                 },
-            ),
-            (
-                6u16,
-                pallet_referenda::TrackInfo {
-                    name: "senior experts",
+            },
+            pallet_referenda::Track {
+                id: 6,
+                info: pallet_referenda::TrackInfo {
+                    name: s("senior experts"),
                     max_deciding: 10,
                     decision_deposit: 1 * 3 * CENTS,
                     prepare_period: 30 * MINUTES,
@@ -191,11 +194,11 @@ impl pallet_referenda::TracksInfo<Balance, BlockNumber> for TracksInfo {
                         ceil: Perbill::from_percent(50),
                     },
                 },
-            ),
-            (
-                7u16,
-                pallet_referenda::TrackInfo {
-                    name: "masters",
+            },
+            pallet_referenda::Track {
+                id: 7,
+                info: pallet_referenda::TrackInfo {
+                    name: s("masters"),
                     max_deciding: 10,
                     decision_deposit: 1 * 3 * CENTS,
                     prepare_period: 30 * MINUTES,
@@ -213,11 +216,11 @@ impl pallet_referenda::TracksInfo<Balance, BlockNumber> for TracksInfo {
                         ceil: Perbill::from_percent(50),
                     },
                 },
-            ),
-            (
-                8u16,
-                pallet_referenda::TrackInfo {
-                    name: "senior masters",
+            },
+            pallet_referenda::Track {
+                id: 8,
+                info: pallet_referenda::TrackInfo {
+                    name: s("senior masters"),
                     max_deciding: 10,
                     decision_deposit: 1 * 3 * CENTS,
                     prepare_period: 30 * MINUTES,
@@ -235,11 +238,11 @@ impl pallet_referenda::TracksInfo<Balance, BlockNumber> for TracksInfo {
                         ceil: Perbill::from_percent(50),
                     },
                 },
-            ),
-            (
-                9u16,
-                pallet_referenda::TrackInfo {
-                    name: "grand masters",
+            },
+            pallet_referenda::Track {
+                id: 9,
+                info: pallet_referenda::TrackInfo {
+                    name: s("grand masters"),
                     max_deciding: 10,
                     decision_deposit: 1 * 3 * CENTS,
                     prepare_period: 30 * MINUTES,
@@ -257,9 +260,9 @@ impl pallet_referenda::TracksInfo<Balance, BlockNumber> for TracksInfo {
                         ceil: Perbill::from_percent(50),
                     },
                 },
-            ),
+            },
         ];
-        &DATA[..]
+        DATA.iter().map(Cow::Borrowed)
     }
     fn track_for(id: &Self::RuntimeOrigin) -> Result<Self::Id, ()> {
         use super::origins::Origin;
@@ -289,7 +292,6 @@ impl pallet_referenda::TracksInfo<Balance, BlockNumber> for TracksInfo {
         }
     }
 }
-pallet_referenda::impl_tracksinfo_get!(TracksInfo, Balance, BlockNumber);
 
 pub type FellowshipReferendaInstance = pallet_referenda::Instance2;
 
@@ -312,6 +314,7 @@ impl pallet_referenda::Config<FellowshipReferendaInstance> for Runtime {
     type AlarmInterval = AlarmInterval;
     type Tracks = TracksInfo;
     type Preimages = Preimage;
+    type BlockNumberProvider = System;
 }
 
 pub type FellowshipCollectiveInstance = pallet_ranked_collective::Instance1;

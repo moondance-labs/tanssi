@@ -54,6 +54,12 @@ use sp_std::marker::PhantomData;
 /// Weights for pallet_utility using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
 impl<T: frame_system::Config> pallet_utility::WeightInfo for SubstrateWeight<T> {
+	fn dispatch_as_fallible() -> sp_runtime::Weight {
+		Default::default()
+	}
+	fn if_else() -> sp_runtime::Weight {
+		Default::default()
+	}
 	/// The range of component `c` is `[0, 1000]`.
 	fn batch(c: u32, ) -> Weight {
 		// Proof Size summary in bytes:

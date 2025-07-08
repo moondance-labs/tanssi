@@ -24,16 +24,14 @@
 pub use sc_rpc::SubscriptionTaskExecutor;
 
 use {
-    container_chain_template_frontier_runtime::{
-        opaque::Block, AccountId, Hash, Index, RuntimeApi,
-    },
+    container_chain_template_frontier_runtime::{opaque::Block, AccountId, Hash, Index},
     core::marker::PhantomData,
     cumulus_client_parachain_inherent::ParachainInherentData,
-    cumulus_client_service::ParachainHostFunctions,
     cumulus_primitives_core::{ParaId, PersistedValidationData},
     cumulus_test_relay_sproof_builder::RelayStateSproofBuilder,
-    fc_rpc::{EthTask, TxPool},
-    fc_rpc_core::TxPoolApiServer,
+    fc_rpc::{
+        EthApiServer, EthFilterApiServer, EthPubSubApiServer, EthTask, TxPool, TxPoolApiServer,
+    },
     fc_storage::StorageOverride,
     fp_rpc::EthereumRuntimeRPCApi,
     frame_support::CloneNoBound,
@@ -46,10 +44,8 @@ use {
         AuxStore, BlockOf, StorageProvider,
     },
     sc_consensus_manual_seal::rpc::{EngineCommand, ManualSeal, ManualSealApiServer},
-    sc_executor::WasmExecutor,
     sc_network_sync::SyncingService,
-    sc_service::{TFullClient, TaskManager},
-    sc_transaction_pool::{ChainApi, Pool},
+    sc_service::TaskManager,
     sc_transaction_pool_api::TransactionPool,
     sp_api::{CallApiAt, ProvideRuntimeApi},
     sp_block_builder::BlockBuilder,
@@ -66,12 +62,6 @@ use {
     },
     tc_service_container_chain::service::{ContainerChainClient, MinimalContainerRuntimeApi},
 };
-
-type ParachainExecutor = WasmExecutor<ParachainHostFunctions>;
-type ParachainClient = TFullClient<Block, RuntimeApi, ParachainExecutor>;
-
-type FullPool<Client> =
-    sc_transaction_pool::BasicPool<sc_transaction_pool::FullChainApi<Client, Block>, Block>;
 
 pub struct DefaultEthConfig<C, BE>(std::marker::PhantomData<(C, BE)>);
 
@@ -90,13 +80,13 @@ pub use eth::*;
 mod finality;
 
 /// Full client dependencies.
-pub struct FullDeps<C, P, A: ChainApi, BE> {
+pub struct FullDeps<C, P, BE> {
     /// The client instance to use.
     pub client: Arc<C>,
     /// Transaction pool instance.
     pub pool: Arc<P>,
     /// Graph pool instance.
-    pub graph: Arc<Pool<A>>,
+    pub graph: Arc<P>,
     /// Network service
     pub network: Arc<dyn sc_network::service::traits::NetworkService>,
     /// Chain syncing service
@@ -130,8 +120,8 @@ pub struct FullDeps<C, P, A: ChainApi, BE> {
 }
 
 /// Instantiate all Full RPC extensions.
-pub fn create_full<C, P, BE, A>(
-    deps: FullDeps<C, P, A, BE>,
+pub fn create_full<C, P, BE>(
+    deps: FullDeps<C, P, BE>,
     subscription_task_executor: SubscriptionTaskExecutor,
     pubsub_notification_sinks: Arc<
         fc_mapping_sync::EthereumBlockNotificationSinks<
@@ -148,15 +138,11 @@ where
     C: HeaderBackend<Block> + HeaderMetadata<Block, Error = BlockChainError> + 'static,
     C: CallApiAt<Block>,
     C: Send + Sync + 'static,
-    A: ChainApi<Block = Block> + 'static,
     C::Api: RuntimeApiCollection,
-    P: TransactionPool<Block = Block> + 'static,
+    P: TransactionPool<Block = Block, Hash = <Block as BlockT>::Hash> + 'static,
 {
     use {
-        fc_rpc::{
-            Eth, EthApiServer, EthFilter, EthFilterApiServer, EthPubSub, EthPubSubApiServer, Net,
-            NetApiServer, Web3, Web3ApiServer,
-        },
+        fc_rpc::{Eth, EthFilter, EthPubSub, Net, NetApiServer, Web3, Web3ApiServer},
         finality::{FrontierFinality, FrontierFinalityApiServer},
         substrate_frame_rpc_system::{System, SystemApiServer},
     };
@@ -200,7 +186,7 @@ where
     let authorities = vec![tc_consensus::get_aura_id_from_seed("alice")];
     let authorities_for_cdp = authorities.clone();
 
-    let pending_create_inherent_data_providers = move |_, _| {
+    let pending_create_inherent_data_providers = move |_, ()| {
         let authorities_for_cidp = authorities.clone();
 
         async move {
@@ -254,7 +240,7 @@ where
     ));
 
     io.merge(
-        Eth::<_, _, _, _, _, _, _, DefaultEthConfig<C, BE>>::new(
+        Eth::<_, _, _, _, _, _, DefaultEthConfig<C, BE>>::new(
             Arc::clone(&client),
             Arc::clone(&pool),
             Arc::clone(&graph),
@@ -275,7 +261,7 @@ where
         .into_rpc(),
     )?;
 
-    let tx_pool = TxPool::new(client.clone(), graph.clone());
+    let tx_pool: TxPool<Block, _, _> = TxPool::new(client.clone(), graph.clone());
     if let Some(filter_pool) = filter_pool {
         io.merge(
             EthFilter::new(
@@ -558,10 +544,6 @@ const _: () = {
             ));
 
             Ok(Box::new(move |subscription_task_executor| {
-                let graph_pool = transaction_pool.0
-                        .as_any()
-                        .downcast_ref::<FullPool<ParachainClient>>()
-                        .expect("Frontier container chain template supports only single state transaction pool! Use --pool-type=single-state");
                 let deps = crate::rpc::FullDeps {
                     backend: backend.clone(),
                     client: client.clone(),
@@ -570,7 +552,7 @@ const _: () = {
                         fc_db::Backend::KeyValue(b) => b.clone(),
                         fc_db::Backend::Sql(b) => b.clone(),
                     },
-                    graph: graph_pool.pool().clone(),
+                    graph: transaction_pool.clone(),
                     pool: transaction_pool.clone(),
                     max_past_logs,
                     max_block_range,
