@@ -23,7 +23,7 @@ const fn percent(x: i32) -> sp_arithmetic::FixedI64 {
 }
 use pallet_referenda::Curve;
 const APP_ROOT: Curve = Curve::make_reciprocal(4, 28, percent(80), percent(50), percent(100));
-const SUP_ROOT: Curve = Curve::make_linear(28, 28, percent(0), percent(50));
+const SUP_ROOT: Curve = Curve::make_linear(28, 28, percent(20), percent(50));
 
 const TRACKS_DATA: [(u16, pallet_referenda::TrackInfo<Balance, BlockNumber>); 1] = [(
     0,
