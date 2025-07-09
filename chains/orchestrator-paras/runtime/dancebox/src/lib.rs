@@ -119,8 +119,8 @@ use {
     tp_stream_payment_common::StreamId,
     tp_traits::{
         apply, derive_storage_traits, GetContainerChainAuthor, GetHostConfiguration,
-        GetSessionContainerChains, MaybeSelfChainBlockAuthor, ParaIdAssignmentHooks,
-        RelayStorageRootProvider, RemoveInvulnerables, SlotFrequency,
+        GetSessionContainerChains, MaybeSelfChainBlockAuthor, NodeActivityTrackingHelper,
+        ParaIdAssignmentHooks, RelayStorageRootProvider, RemoveInvulnerables, SlotFrequency,
     },
     tp_xcm_core_buyer::BuyCoreCollatorProof,
     xcm::Version as XcmVersion,
@@ -1507,10 +1507,11 @@ where
     }
 }
 
-pub struct CandidateHasRegisteredKeys;
-impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
+pub struct CandidateIsOnlineAndHasRegisteredKeys;
+impl IsCandidateEligible<AccountId> for CandidateIsOnlineAndHasRegisteredKeys {
     fn is_candidate_eligible(a: &AccountId) -> bool {
         <Session as ValidatorRegistration<AccountId>>::is_registered(a)
+            && !InactivityTracking::is_node_offline(a)
     }
     #[cfg(feature = "runtime-benchmarks")]
     fn make_candidate_eligible(a: &AccountId, eligible: bool) {
@@ -1527,13 +1528,16 @@ impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
         } else {
             let _ = Session::purge_keys(RuntimeOrigin::signed(a.clone()));
         }
+
+        if InactivityTracking::is_node_offline(a) {
+            InactivityTracking::make_node_online(a);
+        }
     }
 }
 
 parameter_types! {
     pub const MaxCandidatesBufferSize: u32 = 100;
 }
-
 impl pallet_pooled_staking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
@@ -1547,7 +1551,7 @@ impl pallet_pooled_staking::Config for Runtime {
     type JoiningRequestTimer = SessionTimer<StakingSessionDelay>;
     type LeavingRequestTimer = SessionTimer<StakingSessionDelay>;
     type EligibleCandidatesBufferSize = MaxCandidatesBufferSize;
-    type EligibleCandidatesFilter = CandidateHasRegisteredKeys;
+    type EligibleCandidatesFilter = CandidateIsOnlineAndHasRegisteredKeys;
     type WeightInfo = weights::pallet_pooled_staking::SubstrateWeight<Runtime>;
 }
 
@@ -1722,7 +1726,6 @@ parameter_types! {
 }
 impl pallet_inactivity_tracking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type CollatorId = CollatorId;
     type MaxInactiveSessions = MaxInactiveSessions;
     type MaxCollatorsPerSession = MaxCandidatesBufferSize;
     type MaxContainerChains = MaxLengthParaIds;
@@ -1730,6 +1733,8 @@ impl pallet_inactivity_tracking::Config for Runtime {
     type CurrentCollatorsFetcher = CollatorAssignment;
     type GetSelfChainBlockAuthor = GetSelfChainBlockAuthor;
     type ParaFilter = tp_parathread_filter_common::ExcludeAllParathreadsFilter<Runtime>;
+    type InvulnerablesFilter = tp_invulnerables_filter_common::InvulnerablesFilter<Runtime>;
+    type CollatorStakeHelper = PooledStaking;
     type WeightInfo = weights::pallet_inactivity_tracking::SubstrateWeight<Runtime>;
 }
 
