@@ -32,6 +32,8 @@ jobs:
 
   setup-scripts:
     runs-on: ubuntu-latest
+    outputs:
+      rust_version: ${{ steps.get-version.outputs.rust_version }}
     steps:
       - uses: actions/checkout@v4
       - name: Upload scripts
