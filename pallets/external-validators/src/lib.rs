@@ -40,7 +40,7 @@ use {
     scale_info::TypeInfo,
     sp_runtime::{traits::Get, RuntimeDebug},
     sp_staking::SessionIndex,
-    sp_std::{collections::btree_set::BTreeSet, vec::Vec, cmp::Ordering},
+    sp_std::{cmp::Ordering, collections::btree_set::BTreeSet, vec::Vec},
     tp_traits::{
         ActiveEraInfo, EraIndex, EraIndexProvider, ExternalIndexProvider, InvulnerablesProvider,
         OnEraEnd, OnEraStart, ValidatorProvider,

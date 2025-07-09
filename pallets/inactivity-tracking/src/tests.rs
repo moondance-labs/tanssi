@@ -725,19 +725,11 @@ fn active_chains_noting_for_current_session_works_when_activity_tracking_is_disa
 #[test]
 fn inactive_chain_collators_are_correctly_processed_when_activity_tracking_is_enabled() {
     ExtBuilder.build().execute_with(|| {
-        assert!(
-            ActiveContainerChainsForCurrentSession::<Test>::get().is_empty()
-        );
-        assert!(
-            ActiveCollatorsForCurrentSession::<Test>::get().is_empty()
-        );
+        assert!(ActiveContainerChainsForCurrentSession::<Test>::get().is_empty());
+        assert!(ActiveCollatorsForCurrentSession::<Test>::get().is_empty());
         roll_to(SESSION_BLOCK_LENGTH - 1);
-        assert!(
-            ActiveContainerChainsForCurrentSession::<Test>::get().is_empty()
-        );
-        assert!(
-            ActiveCollatorsForCurrentSession::<Test>::get().is_empty()
-        );
+        assert!(ActiveContainerChainsForCurrentSession::<Test>::get().is_empty());
+        assert!(ActiveCollatorsForCurrentSession::<Test>::get().is_empty());
         roll_to(SESSION_BLOCK_LENGTH);
         assert!(InactiveCollators::<Test>::get(0).is_empty());
     });
@@ -875,9 +867,7 @@ fn chain_inactivity_tracking_correctly_processes_parathreads() {
             ActiveContainerChainsForCurrentSession::<Test>::get(),
             current_session_active_chain_record
         );
-        assert!(
-            ActiveCollatorsForCurrentSession::<Test>::get().is_empty()
-        );
+        assert!(ActiveCollatorsForCurrentSession::<Test>::get().is_empty());
         roll_to(SESSION_BLOCK_LENGTH);
         assert!(InactiveCollators::<Test>::get(0).is_empty());
     });

@@ -469,9 +469,6 @@ fn validate_relay_chain_url(arg: &str) -> Result<Url, String> {
 }
 
 /// Returns the value of `base_path` or the default_path if it is None
-pub(crate) fn base_path_or_default(
-    base_path: Option<BasePath>,
-    executable_name: &str,
-) -> BasePath {
+pub(crate) fn base_path_or_default(base_path: Option<BasePath>, executable_name: &str) -> BasePath {
     base_path.unwrap_or_else(|| BasePath::from_project("", "", executable_name))
 }

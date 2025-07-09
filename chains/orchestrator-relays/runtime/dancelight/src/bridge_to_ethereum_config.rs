@@ -226,11 +226,9 @@ where
                 Self::process_xcm_local_native_eth_transfer(eth_transfer_data)
             }
             // TODO: Add support for container transfers here
-            _ => {
-                Err(DispatchError::Other(
-                    "container transfers not supported yet",
-                ))
-            }
+            _ => Err(DispatchError::Other(
+                "container transfers not supported yet",
+            )),
         }
     }
 }

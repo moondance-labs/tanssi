@@ -450,10 +450,14 @@ fn test_slashes_are_sent_to_ethereum() {
 
             let outbound_msg_queue_event = System::events()
                 .iter()
-                .filter(|r| matches!(r.event,
-                    RuntimeEvent::EthereumOutboundQueue(
-                        snowbridge_pallet_outbound_queue::Event::MessageQueued { .. },
-                    )))
+                .filter(|r| {
+                    matches!(
+                        r.event,
+                        RuntimeEvent::EthereumOutboundQueue(
+                            snowbridge_pallet_outbound_queue::Event::MessageQueued { .. },
+                        )
+                    )
+                })
                 .count();
 
             // We have two reasons for sending messages:
@@ -471,11 +475,14 @@ fn test_slashes_are_sent_to_ethereum() {
 
             let outbound_msg_queue_event = System::events()
                 .iter()
-                .filter(|r| matches!(r.event,
-                    RuntimeEvent::EthereumOutboundQueue(
-                        snowbridge_pallet_outbound_queue::Event::MessageQueued { .. },
+                .filter(|r| {
+                    matches!(
+                        r.event,
+                        RuntimeEvent::EthereumOutboundQueue(
+                            snowbridge_pallet_outbound_queue::Event::MessageQueued { .. },
+                        )
                     )
-                ))
+                })
                 .count();
 
             let mut slashes_command_found: Option<Command> = None;

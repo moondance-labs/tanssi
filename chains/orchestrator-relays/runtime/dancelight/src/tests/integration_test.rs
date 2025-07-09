@@ -662,11 +662,14 @@ fn test_register_eth_foreign_asset() {
 
             let foreign_asset_created_event = System::events()
                 .iter()
-                .filter(|r| matches!(r.event,
-                    RuntimeEvent::ForeignAssetsCreator(
-                        pallet_foreign_asset_creator::Event::ForeignAssetCreated { .. },
+                .filter(|r| {
+                    matches!(
+                        r.event,
+                        RuntimeEvent::ForeignAssetsCreator(
+                            pallet_foreign_asset_creator::Event::ForeignAssetCreated { .. },
+                        )
                     )
-                ))
+                })
                 .count();
 
             assert_eq!(

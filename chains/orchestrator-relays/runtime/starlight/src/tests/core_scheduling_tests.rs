@@ -872,7 +872,6 @@ pub struct CoreAffinityCount {
 
 /// Get affinity for a given parathread
 pub fn affinity_key_for_parathread(para_id: u32) -> Vec<u8> {
-    
     storage_map_final_key::<frame_support::Twox64Concat>(
         "OnDemandAssignmentProvider",
         "ParaIdAffinity",

@@ -753,10 +753,12 @@ where
     ) -> Option<UncheckedExtrinsic> {
         use sp_runtime::traits::StaticLookup;
         // take the biggest period possible.
-        let period = u64::from(BlockHashCount::get()
-            .checked_next_power_of_two()
-            .map(|c| c / 2)
-            .unwrap_or(2));
+        let period = u64::from(
+            BlockHashCount::get()
+                .checked_next_power_of_two()
+                .map(|c| c / 2)
+                .unwrap_or(2),
+        );
 
         let current_block = System::block_number()
             .saturated_into::<u64>()
@@ -1207,7 +1209,8 @@ impl parachains_scheduler::common::AssignmentProvider<BlockNumberFor<Runtime>>
             if !assigned_collators
                 .container_chains
                 .get(&assignment.para_id())
-                .unwrap_or(&vec![]).is_empty()
+                .unwrap_or(&vec![])
+                .is_empty()
             {
                 Some(assignment)
             } else {

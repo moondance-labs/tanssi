@@ -931,8 +931,7 @@ pub fn junk_collator() -> CollatorId {
 
 /// Creates a dummy collator signature suitable to be used in a V1 candidate descriptor.
 pub fn junk_collator_signature() -> CollatorSignature {
-    CollatorSignature::from_slice((0..64).collect::<Vec<_>>().as_slice())
-        .expect("64 bytes; qed")
+    CollatorSignature::from_slice((0..64).collect::<Vec<_>>().as_slice()).expect("64 bytes; qed")
 }
 
 #[allow(dead_code)]
@@ -1404,8 +1403,6 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
             })
             .collect();
 
-        
-
         ParachainsInherentData {
             bitfields,
             backed_candidates,
@@ -1587,7 +1584,6 @@ pub fn generate_babe_equivocation_proof(
 /// Helper function to generate a crypto pair from seed
 pub fn get_pair_from_seed<TPublic: Public>(seed: &str) -> TPublic::Pair {
     let secret_uri = format!("//{}", seed);
-    
 
     TPublic::Pair::from_string(&secret_uri, None).expect("static values are valid; qed")
 }

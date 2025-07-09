@@ -2247,7 +2247,7 @@ impl_runtime_apis! {
                             initial_asset_amount - asset_amount,
                         );
                     });
-                    
+
                     #[allow(clippy::cast_sign_loss)]
                     Some((assets, fee_index as u32, dest, verify))
                 }

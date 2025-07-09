@@ -431,10 +431,7 @@ where
             return consumed_weight;
         }
 
-        let active_era = {
-            
-            T::EraIndexProvider::active_era().index
-        };
+        let active_era = { T::EraIndexProvider::active_era().index };
         let active_era_start_session_index = T::EraIndexProvider::era_to_session_start(active_era)
             .unwrap_or_else(|| {
                 frame_support::print("Error: start_session_index must be set for current_era");

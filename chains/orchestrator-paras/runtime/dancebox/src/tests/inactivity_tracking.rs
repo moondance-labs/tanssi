@@ -254,47 +254,31 @@ fn inactivity_tracking_correctly_updates_storages_on_container_chains_author_not
 
             run_to_session(max_inactive_sessions - 1);
             run_block();
-            assert!(
-                !InactivityTracking::is_node_inactive(
-                    &cumulus_primitives_core::relay_chain::AccountId::from(ALICE)
-                )
-            );
-            assert!(
-                !InactivityTracking::is_node_inactive(
-                    &cumulus_primitives_core::relay_chain::AccountId::from(BOB)
-                )
-            );
-            assert!(
-                !InactivityTracking::is_node_inactive(
-                    &cumulus_primitives_core::relay_chain::AccountId::from(CHARLIE)
-                )
-            );
-            assert!(
-                !InactivityTracking::is_node_inactive(
-                    &cumulus_primitives_core::relay_chain::AccountId::from(DAVE)
-                )
-            );
+            assert!(!InactivityTracking::is_node_inactive(
+                &cumulus_primitives_core::relay_chain::AccountId::from(ALICE)
+            ));
+            assert!(!InactivityTracking::is_node_inactive(
+                &cumulus_primitives_core::relay_chain::AccountId::from(BOB)
+            ));
+            assert!(!InactivityTracking::is_node_inactive(
+                &cumulus_primitives_core::relay_chain::AccountId::from(CHARLIE)
+            ));
+            assert!(!InactivityTracking::is_node_inactive(
+                &cumulus_primitives_core::relay_chain::AccountId::from(DAVE)
+            ));
             run_to_session(max_inactive_sessions);
-            assert!(
-                !InactivityTracking::is_node_inactive(
-                    &cumulus_primitives_core::relay_chain::AccountId::from(ALICE)
-                )
-            );
-            assert!(
-                !InactivityTracking::is_node_inactive(
-                    &cumulus_primitives_core::relay_chain::AccountId::from(BOB)
-                )
-            );
-            assert!(
-                !InactivityTracking::is_node_inactive(
-                    &cumulus_primitives_core::relay_chain::AccountId::from(CHARLIE)
-                )
-            );
-            assert!(
-                !InactivityTracking::is_node_inactive(
-                    &cumulus_primitives_core::relay_chain::AccountId::from(DAVE)
-                )
-            );
+            assert!(!InactivityTracking::is_node_inactive(
+                &cumulus_primitives_core::relay_chain::AccountId::from(ALICE)
+            ));
+            assert!(!InactivityTracking::is_node_inactive(
+                &cumulus_primitives_core::relay_chain::AccountId::from(BOB)
+            ));
+            assert!(!InactivityTracking::is_node_inactive(
+                &cumulus_primitives_core::relay_chain::AccountId::from(CHARLIE)
+            ));
+            assert!(!InactivityTracking::is_node_inactive(
+                &cumulus_primitives_core::relay_chain::AccountId::from(DAVE)
+            ));
             assert!(!<InactiveCollators<Runtime>>::get(0).is_empty());
 
             run_to_session(max_inactive_sessions + 1);

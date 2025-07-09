@@ -739,10 +739,14 @@ fn external_validators_rewards_sends_message_on_era_end() {
 
             let outbound_msg_queue_event = System::events()
                 .iter()
-                .filter(|r| matches!(r.event,
-                    RuntimeEvent::EthereumOutboundQueue(
-                        snowbridge_pallet_outbound_queue::Event::MessageQueued { .. },
-                    )))
+                .filter(|r| {
+                    matches!(
+                        r.event,
+                        RuntimeEvent::EthereumOutboundQueue(
+                            snowbridge_pallet_outbound_queue::Event::MessageQueued { .. },
+                        )
+                    )
+                })
                 .count();
 
             assert_eq!(

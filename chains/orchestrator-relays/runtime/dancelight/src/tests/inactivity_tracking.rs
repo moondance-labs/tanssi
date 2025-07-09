@@ -180,32 +180,28 @@ fn inactivity_tracking_correctly_updates_storages() {
                 <Runtime as pallet_inactivity_tracking::Config>::MaxInactiveSessions::get();
             run_to_session(max_inactive_sessions - 1);
             run_block();
-            assert!(
-                !InactivityTracking::is_node_inactive(&AccountId::from(ALICE))
-            );
-            assert!(
-                !InactivityTracking::is_node_inactive(&AccountId::from(BOB))
-            );
-            assert!(
-                !InactivityTracking::is_node_inactive(&AccountId::from(CHARLIE))
-            );
-            assert!(
-                !InactivityTracking::is_node_inactive(&AccountId::from(DAVE))
-            );
+            assert!(!InactivityTracking::is_node_inactive(&AccountId::from(
+                ALICE
+            )));
+            assert!(!InactivityTracking::is_node_inactive(&AccountId::from(BOB)));
+            assert!(!InactivityTracking::is_node_inactive(&AccountId::from(
+                CHARLIE
+            )));
+            assert!(!InactivityTracking::is_node_inactive(&AccountId::from(
+                DAVE
+            )));
 
             run_to_session(max_inactive_sessions);
-            assert!(
-                !InactivityTracking::is_node_inactive(&AccountId::from(ALICE))
-            );
-            assert!(
-                !InactivityTracking::is_node_inactive(&AccountId::from(BOB))
-            );
-            assert!(
-                !InactivityTracking::is_node_inactive(&AccountId::from(CHARLIE))
-            );
-            assert!(
-                !InactivityTracking::is_node_inactive(&AccountId::from(DAVE))
-            );
+            assert!(!InactivityTracking::is_node_inactive(&AccountId::from(
+                ALICE
+            )));
+            assert!(!InactivityTracking::is_node_inactive(&AccountId::from(BOB)));
+            assert!(!InactivityTracking::is_node_inactive(&AccountId::from(
+                CHARLIE
+            )));
+            assert!(!InactivityTracking::is_node_inactive(&AccountId::from(
+                DAVE
+            )));
             assert!(!<InactiveCollators<Runtime>>::get(0).is_empty());
 
             run_to_session(max_inactive_sessions + 1);
