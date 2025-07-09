@@ -26,16 +26,39 @@ describeSuite({
             title: "Era changes are happening as expected",
             test: async () => {
                 const sessionsPerEra = api.consts.externalValidators.sessionsPerEra.toNumber();
+                const currentBlockNumber = await api.query.system.number();
+                const currentEraIndex = (await api.query.externalValidators.activeEra()).unwrap().index.toNumber();
+                const currentSessionIndex = (await api.query.session.currentIndex()).toNumber();
+
                 const apiAtCurrentEraStart = await api.at(await api.rpc.chain.getBlockHash(currentEraStartBlock));
                 const currentEraStartSessionIndex = (
                     await apiAtCurrentEraStart.query.session.currentIndex()
                 ).toNumber();
+                const newEraEvents = (await apiAtCurrentEraStart.query.system.events()).filter(
+                    (eventRecord) => eventRecord.event.method === "NewEra"
+                );
                 const apiAtPreviousEraStart = await api.at(await api.rpc.chain.getBlockHash(pastEraStartBlock));
                 const previousEraStartSessionIndex = (
                     await apiAtPreviousEraStart.query.session.currentIndex()
                 ).toNumber();
 
-                expect(previousEraStartSessionIndex + sessionsPerEra).toEqual(currentEraStartSessionIndex);
+                expect(newEraEvents.length).to.be.greaterThan(
+                    0,
+                    `No NewEra event found at the start of era ${currentEraIndex}`
+                );
+                expect(newEraEvents[0].event.data[0].toHuman()).to.be.equal(
+                    currentEraIndex.toString(),
+                    `NewEra event data does not match current era index ${currentEraIndex} at the start of the era.`
+                );
+                expect(previousEraStartSessionIndex + sessionsPerEra).to.be.equal(
+                    currentEraStartSessionIndex,
+                    `Error at block number ${currentBlockNumber}: Era change between era ${currentEraIndex - 1} and ${currentEraIndex} happened in ${previousEraStartSessionIndex + sessionsPerEra} sessions instead of ${sessionsPerEra} sessions.`
+                );
+                expect(currentSessionIndex).to.be.within(
+                    currentEraIndex * sessionsPerEra,
+                    (currentEraIndex + 1) * sessionsPerEra,
+                    `Error at block number ${currentBlockNumber}: Current session index ${currentSessionIndex} is not within the expected range for era ${currentEraIndex}.`
+                );
             },
         });
 
@@ -57,7 +80,7 @@ describeSuite({
                 }
                 expect(boundedErasErrorRecords.length).to.be.equal(
                     0,
-                    `Found BoundedEras records outside of bonding duration: ${boundedErasErrorRecords.join("; ")}`
+                    `Found BoundedEras records outside of bonding duration: ${boundedErasErrorRecords.join("\n")}`
                 );
 
                 // Verify that ValidatorSlashInEra are pruned correctly
