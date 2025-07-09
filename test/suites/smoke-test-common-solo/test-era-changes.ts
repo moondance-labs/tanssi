@@ -5,7 +5,7 @@ import type { ApiPromise } from "@polkadot/api";
 import { getCurrentEraStartBlock, getPastEraStartBlock } from "utils/block";
 
 describeSuite({
-    id: "SMOKD02",
+    id: "SMOK16",
     title: "Era changes suit that only runs on Dancelight chains",
     foundationMethods: "read_only",
     testCases: ({ it, context, log }) => {
@@ -74,7 +74,7 @@ describeSuite({
                 const boundedErasErrorRecords = [];
                 for (let i = 0; i < boundedEras.length; i++) {
                     const eraIndex: number = boundedEras[i][0].toNumber();
-                    if (eraIndex <= currentEraIndex - bondingDuration) {
+                    if (eraIndex < currentEraIndex - bondingDuration) {
                         boundedErasErrorRecords.push(boundedEras[i]);
                     }
                 }
@@ -89,7 +89,7 @@ describeSuite({
                 const validatorSlashInEraErrorRecords = [];
                 for (let i = 0; i < validatorSlashInEra.length; i++) {
                     const validatorSlashEra = validatorSlashInEra[i].args[0].toNumber();
-                    if (validatorSlashEra <= currentEraIndex - bondingDuration) {
+                    if (validatorSlashEra < currentEraIndex - bondingDuration) {
                         validatorSlashInEraErrorRecords.push(validatorSlashInEra[i]);
                     }
                 }
@@ -103,7 +103,7 @@ describeSuite({
                 const slashesErrorRecords: number[] = [];
                 for (let i = 0; i < slashes.length; i++) {
                     const slashesEra = slashes[i].args[0].toNumber();
-                    if (slashesEra <= currentEraIndex - bondingDuration) {
+                    if (slashesEra < currentEraIndex - bondingDuration) {
                         slashesErrorRecords.push(slashesEra);
                     }
                 }
