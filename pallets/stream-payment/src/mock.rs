@@ -26,7 +26,7 @@ use {
             Everything, OnFinalize, OnInitialize,
         },
     },
-    parity_scale_codec::{Decode, Encode, MaxEncodedLen},
+    parity_scale_codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen},
     scale_info::TypeInfo,
     sp_core::{ConstU32, ConstU64, RuntimeDebug, H256},
     sp_runtime::{
@@ -114,7 +114,18 @@ impl pallet_balances::Config for Runtime {
     type WeightInfo = ();
 }
 
-#[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo, MaxEncodedLen)]
+#[derive(
+    RuntimeDebug,
+    PartialEq,
+    Eq,
+    Encode,
+    Decode,
+    DecodeWithMemTracking,
+    Copy,
+    Clone,
+    TypeInfo,
+    MaxEncodedLen,
+)]
 pub enum StreamPaymentAssetId {
     Native,
     Dummy,
@@ -208,7 +219,18 @@ impl pallet_stream_payment::AssetsManager<AccountId, StreamPaymentAssetId, Balan
     }
 }
 
-#[derive(RuntimeDebug, PartialEq, Eq, Encode, Decode, Copy, Clone, TypeInfo, MaxEncodedLen)]
+#[derive(
+    RuntimeDebug,
+    PartialEq,
+    Eq,
+    Encode,
+    Decode,
+    Copy,
+    Clone,
+    TypeInfo,
+    MaxEncodedLen,
+    DecodeWithMemTracking,
+)]
 pub enum TimeUnit {
     BlockNumber,
     Timestamp,
@@ -290,6 +312,7 @@ impl ExtBuilder {
 
         pallet_balances::GenesisConfig::<Runtime> {
             balances: self.balances,
+            ..Default::default()
         }
         .assimilate_storage(&mut t)
         .expect("Pallet balances storage can be assimilated");

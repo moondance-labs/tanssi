@@ -294,7 +294,6 @@ pub fn start_node_impl_container<
             );
         }
 
-        node_builder.network.start_network.start_network();
         Ok((
             node_builder.task_manager,
             node_builder.client,

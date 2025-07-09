@@ -229,6 +229,7 @@ runtime-benchmarks = [
 	"starlight-runtime-constants?/runtime-benchmarks",
 	"starlight-runtime?/runtime-benchmarks",
 	"xcm-runtime-apis/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
 ]
 try-runtime = [
 	"dancelight-runtime?/try-runtime",

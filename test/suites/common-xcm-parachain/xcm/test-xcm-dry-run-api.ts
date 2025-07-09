@@ -157,9 +157,11 @@ describeSuite({
                     "Unlimited"
                 );
 
+                const XCM_VERSION = 3;
                 const dryRunCall = await polkadotJs.call.dryRunApi.dryRunCall(
                     { System: { signed: alice.address } },
-                    tx
+                    tx,
+                    XCM_VERSION
                 );
 
                 expect(dryRunCall.isOk).to.be.true;

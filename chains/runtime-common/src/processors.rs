@@ -18,8 +18,8 @@ use {
     frame_support::traits::{fungible::Mutate, tokens::Preservation, Get},
     parity_scale_codec::DecodeAll,
     snowbridge_core::Channel,
-    snowbridge_router_primitives::inbound::{
-        envelope::Envelope, Command, Destination, MessageProcessor, MessageV1, VersionedXcmMessage,
+    snowbridge_inbound_queue_primitives::v1::{
+        Command, Destination, Envelope, MessageProcessor, MessageV1, VersionedXcmMessage,
     },
     sp_runtime::{traits::MaybeEquivalence, DispatchError, DispatchResult},
 };
