@@ -72,57 +72,9 @@ impl<T: frame_system::Config> snowbridge_pallet_system::WeightInfo for Substrate
 		// Proof Size summary in bytes:
 		//  Measured:  `355`
 		//  Estimated: `3601`
-		// Minimum execution time: 57_862_000 picoseconds.
-		Weight::from_parts(59_727_000, 3601)
+		// Minimum execution time: 55_979_000 picoseconds.
+		Weight::from_parts(58_723_000, 3601)
 			.saturating_add(T::DbWeight::get().reads(4_u64))
-			.saturating_add(T::DbWeight::get().writes(5_u64))
-	}
-	/// Storage: `EthereumSystem::Channels` (r:2 w:0)
-	/// Proof: `EthereumSystem::Channels` (`max_values`: None, `max_size`: Some(76), added: 2551, mode: `MaxEncodedLen`)
-	/// Storage: `EthereumSystem::PricingParameters` (r:1 w:0)
-	/// Proof: `EthereumSystem::PricingParameters` (`max_values`: Some(1), `max_size`: Some(112), added: 607, mode: `MaxEncodedLen`)
-	/// Storage: `MessageQueue::BookStateFor` (r:2 w:2)
-	/// Proof: `MessageQueue::BookStateFor` (`max_values`: None, `max_size`: Some(136), added: 2611, mode: `MaxEncodedLen`)
-	/// Storage: `MessageQueue::ServiceHead` (r:1 w:0)
-	/// Proof: `MessageQueue::ServiceHead` (`max_values`: Some(1), `max_size`: Some(33), added: 528, mode: `MaxEncodedLen`)
-	/// Storage: UNKNOWN KEY `0x3a72656c61795f64697370617463685f71756575655f72656d61696e696e675f` (r:0 w:1)
-	/// Proof: UNKNOWN KEY `0x3a72656c61795f64697370617463685f71756575655f72656d61696e696e675f` (r:0 w:1)
-	/// Storage: `MessageQueue::Pages` (r:0 w:1)
-	/// Proof: `MessageQueue::Pages` (`max_values`: None, `max_size`: Some(32845), added: 35320, mode: `MaxEncodedLen`)
-	/// Storage: UNKNOWN KEY `0xf5207f03cfdce586301014700e2c2593fad157e461d71fd4c1f936839a5f1f3e` (r:0 w:1)
-	/// Proof: UNKNOWN KEY `0xf5207f03cfdce586301014700e2c2593fad157e461d71fd4c1f936839a5f1f3e` (r:0 w:1)
-	fn force_update_channel() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `685`
-		//  Estimated: `6212`
-		// Minimum execution time: 65_807_000 picoseconds.
-		Weight::from_parts(67_760_000, 6212)
-			.saturating_add(T::DbWeight::get().reads(6_u64))
-			.saturating_add(T::DbWeight::get().writes(5_u64))
-	}
-	/// Storage: `EthereumSystem::Agents` (r:1 w:0)
-	/// Proof: `EthereumSystem::Agents` (`max_values`: None, `max_size`: Some(40), added: 2515, mode: `MaxEncodedLen`)
-	/// Storage: `EthereumSystem::Channels` (r:1 w:0)
-	/// Proof: `EthereumSystem::Channels` (`max_values`: None, `max_size`: Some(76), added: 2551, mode: `MaxEncodedLen`)
-	/// Storage: `EthereumSystem::PricingParameters` (r:1 w:0)
-	/// Proof: `EthereumSystem::PricingParameters` (`max_values`: Some(1), `max_size`: Some(112), added: 607, mode: `MaxEncodedLen`)
-	/// Storage: `MessageQueue::BookStateFor` (r:2 w:2)
-	/// Proof: `MessageQueue::BookStateFor` (`max_values`: None, `max_size`: Some(136), added: 2611, mode: `MaxEncodedLen`)
-	/// Storage: `MessageQueue::ServiceHead` (r:1 w:0)
-	/// Proof: `MessageQueue::ServiceHead` (`max_values`: Some(1), `max_size`: Some(33), added: 528, mode: `MaxEncodedLen`)
-	/// Storage: UNKNOWN KEY `0x3a72656c61795f64697370617463685f71756575655f72656d61696e696e675f` (r:0 w:1)
-	/// Proof: UNKNOWN KEY `0x3a72656c61795f64697370617463685f71756575655f72656d61696e696e675f` (r:0 w:1)
-	/// Storage: `MessageQueue::Pages` (r:0 w:1)
-	/// Proof: `MessageQueue::Pages` (`max_values`: None, `max_size`: Some(32845), added: 35320, mode: `MaxEncodedLen`)
-	/// Storage: UNKNOWN KEY `0xf5207f03cfdce586301014700e2c2593fad157e461d71fd4c1f936839a5f1f3e` (r:0 w:1)
-	/// Proof: UNKNOWN KEY `0xf5207f03cfdce586301014700e2c2593fad157e461d71fd4c1f936839a5f1f3e` (r:0 w:1)
-	fn force_transfer_native_from_agent() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `710`
-		//  Estimated: `6212`
-		// Minimum execution time: 73_393_000 picoseconds.
-		Weight::from_parts(75_399_000, 6212)
-			.saturating_add(T::DbWeight::get().reads(6_u64))
 			.saturating_add(T::DbWeight::get().writes(5_u64))
 	}
 	/// Storage: `EthereumSystem::Channels` (r:1 w:0)
@@ -143,8 +95,8 @@ impl<T: frame_system::Config> snowbridge_pallet_system::WeightInfo for Substrate
 		// Proof Size summary in bytes:
 		//  Measured:  `355`
 		//  Estimated: `3601`
-		// Minimum execution time: 47_844_000 picoseconds.
-		Weight::from_parts(48_934_000, 3601)
+		// Minimum execution time: 46_067_000 picoseconds.
+		Weight::from_parts(47_226_000, 3601)
 			.saturating_add(T::DbWeight::get().reads(4_u64))
 			.saturating_add(T::DbWeight::get().writes(5_u64))
 	}
@@ -166,10 +118,58 @@ impl<T: frame_system::Config> snowbridge_pallet_system::WeightInfo for Substrate
 		// Proof Size summary in bytes:
 		//  Measured:  `355`
 		//  Estimated: `3601`
-		// Minimum execution time: 53_697_000 picoseconds.
-		Weight::from_parts(55_159_000, 3601)
+		// Minimum execution time: 51_164_000 picoseconds.
+		Weight::from_parts(52_594_000, 3601)
 			.saturating_add(T::DbWeight::get().reads(3_u64))
 			.saturating_add(T::DbWeight::get().writes(6_u64))
+	}
+	/// Storage: `EthereumSystem::Channels` (r:2 w:0)
+	/// Proof: `EthereumSystem::Channels` (`max_values`: None, `max_size`: Some(76), added: 2551, mode: `MaxEncodedLen`)
+	/// Storage: `EthereumSystem::PricingParameters` (r:1 w:0)
+	/// Proof: `EthereumSystem::PricingParameters` (`max_values`: Some(1), `max_size`: Some(112), added: 607, mode: `MaxEncodedLen`)
+	/// Storage: `MessageQueue::BookStateFor` (r:1 w:1)
+	/// Proof: `MessageQueue::BookStateFor` (`max_values`: None, `max_size`: Some(136), added: 2611, mode: `MaxEncodedLen`)
+	/// Storage: `MessageQueue::ServiceHead` (r:1 w:1)
+	/// Proof: `MessageQueue::ServiceHead` (`max_values`: Some(1), `max_size`: Some(33), added: 528, mode: `MaxEncodedLen`)
+	/// Storage: UNKNOWN KEY `0x3a72656c61795f64697370617463685f71756575655f72656d61696e696e675f` (r:0 w:1)
+	/// Proof: UNKNOWN KEY `0x3a72656c61795f64697370617463685f71756575655f72656d61696e696e675f` (r:0 w:1)
+	/// Storage: `MessageQueue::Pages` (r:0 w:1)
+	/// Proof: `MessageQueue::Pages` (`max_values`: None, `max_size`: Some(32845), added: 35320, mode: `MaxEncodedLen`)
+	/// Storage: UNKNOWN KEY `0xf5207f03cfdce586301014700e2c2593fad157e461d71fd4c1f936839a5f1f3e` (r:0 w:1)
+	/// Proof: UNKNOWN KEY `0xf5207f03cfdce586301014700e2c2593fad157e461d71fd4c1f936839a5f1f3e` (r:0 w:1)
+	fn force_update_channel() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `432`
+		//  Estimated: `6092`
+		// Minimum execution time: 53_126_000 picoseconds.
+		Weight::from_parts(54_653_000, 6092)
+			.saturating_add(T::DbWeight::get().reads(5_u64))
+			.saturating_add(T::DbWeight::get().writes(5_u64))
+	}
+	/// Storage: `EthereumSystem::Agents` (r:1 w:0)
+	/// Proof: `EthereumSystem::Agents` (`max_values`: None, `max_size`: Some(40), added: 2515, mode: `MaxEncodedLen`)
+	/// Storage: `EthereumSystem::Channels` (r:1 w:0)
+	/// Proof: `EthereumSystem::Channels` (`max_values`: None, `max_size`: Some(76), added: 2551, mode: `MaxEncodedLen`)
+	/// Storage: `EthereumSystem::PricingParameters` (r:1 w:0)
+	/// Proof: `EthereumSystem::PricingParameters` (`max_values`: Some(1), `max_size`: Some(112), added: 607, mode: `MaxEncodedLen`)
+	/// Storage: `MessageQueue::BookStateFor` (r:1 w:1)
+	/// Proof: `MessageQueue::BookStateFor` (`max_values`: None, `max_size`: Some(136), added: 2611, mode: `MaxEncodedLen`)
+	/// Storage: `MessageQueue::ServiceHead` (r:1 w:1)
+	/// Proof: `MessageQueue::ServiceHead` (`max_values`: Some(1), `max_size`: Some(33), added: 528, mode: `MaxEncodedLen`)
+	/// Storage: UNKNOWN KEY `0x3a72656c61795f64697370617463685f71756575655f72656d61696e696e675f` (r:0 w:1)
+	/// Proof: UNKNOWN KEY `0x3a72656c61795f64697370617463685f71756575655f72656d61696e696e675f` (r:0 w:1)
+	/// Storage: `MessageQueue::Pages` (r:0 w:1)
+	/// Proof: `MessageQueue::Pages` (`max_values`: None, `max_size`: Some(32845), added: 35320, mode: `MaxEncodedLen`)
+	/// Storage: UNKNOWN KEY `0xf5207f03cfdce586301014700e2c2593fad157e461d71fd4c1f936839a5f1f3e` (r:0 w:1)
+	/// Proof: UNKNOWN KEY `0xf5207f03cfdce586301014700e2c2593fad157e461d71fd4c1f936839a5f1f3e` (r:0 w:1)
+	fn force_transfer_native_from_agent() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `457`
+		//  Estimated: `3601`
+		// Minimum execution time: 59_817_000 picoseconds.
+		Weight::from_parts(62_555_000, 3601)
+			.saturating_add(T::DbWeight::get().reads(5_u64))
+			.saturating_add(T::DbWeight::get().writes(5_u64))
 	}
 	/// Storage: `EthereumSystem::Channels` (r:1 w:0)
 	/// Proof: `EthereumSystem::Channels` (`max_values`: None, `max_size`: Some(76), added: 2551, mode: `MaxEncodedLen`)
@@ -189,8 +189,8 @@ impl<T: frame_system::Config> snowbridge_pallet_system::WeightInfo for Substrate
 		// Proof Size summary in bytes:
 		//  Measured:  `355`
 		//  Estimated: `3601`
-		// Minimum execution time: 50_874_000 picoseconds.
-		Weight::from_parts(52_048_000, 3601)
+		// Minimum execution time: 48_832_000 picoseconds.
+		Weight::from_parts(50_523_000, 3601)
 			.saturating_add(T::DbWeight::get().reads(4_u64))
 			.saturating_add(T::DbWeight::get().writes(5_u64))
 	}
@@ -218,8 +218,8 @@ impl<T: frame_system::Config> snowbridge_pallet_system::WeightInfo for Substrate
 		// Proof Size summary in bytes:
 		//  Measured:  `497`
 		//  Estimated: `4115`
-		// Minimum execution time: 70_070_000 picoseconds.
-		Weight::from_parts(72_527_000, 4115)
+		// Minimum execution time: 67_202_000 picoseconds.
+		Weight::from_parts(69_792_000, 4115)
 			.saturating_add(T::DbWeight::get().reads(6_u64))
 			.saturating_add(T::DbWeight::get().writes(7_u64))
 	}
