@@ -32,6 +32,8 @@ jobs:
 
   setup-scripts:
     runs-on: ubuntu-latest
+    outputs:
+      rust_version: ${{ steps.get-version.outputs.rust_version }}
     steps:
       - uses: actions/checkout@v4
       - name: Upload scripts
@@ -44,6 +46,13 @@ jobs:
         with:
           name: original-tools
           path: tools
+
+      - name: Get rust version from rust-toolchain file
+        id: get-version
+        run: |
+          RUST_VERSION=$(grep '^channel' rust-toolchain | cut -d '"' -f2)
+          echo "Rust version is $RUST_VERSION"
+          echo "rust_version=$RUST_VERSION" >> "$GITHUB_OUTPUT"
   
   matrix_prep:
     runs-on: ubuntu-latest
@@ -93,12 +102,12 @@ jobs:
         srtool_image:
           - paritytech/srtool
         srtool_image_tag:
-          - 1.81.0
+          - ${{ needs.setup-scripts.outputs.rust_version }}
         # Change this once https://github.com/paritytech/srtool/pull/81 gets merged
         srtool_build_base_dockerhub:
           - moondancelabs/srtool
         srtool_build_source_image_tag:
-          - temp-1.81
+          - temp-${{ needs.setup-scripts.outputs.rust_version }}
 
     steps:
       - uses: actions/checkout@v4
