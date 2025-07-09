@@ -122,7 +122,7 @@ impl<T: frame_system::Config> runtime_parachains::inclusion::WeightInfo for Subs
 		//  Measured:  `1222 + c * (15992 ±0) + h * (92 ±0) + u * (32955 ±0)`
 		//  Estimated: `26163213704008592 + c * (16000 ±271) + h * (7630 ±350) + u * (20830 ±349)`
 		// Minimum execution time: 444_737_000 picoseconds.
-		Weight::from_parts(49_736_766, 26163213704008592)
+		Weight::from_parts(49_736_766, 36310)
 			// Standard Error: 628_881
 			.saturating_add(Weight::from_parts(155_513_423, 0).saturating_mul(u.into()))
 			// Standard Error: 628_881
