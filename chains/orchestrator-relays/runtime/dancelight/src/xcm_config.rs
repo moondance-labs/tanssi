@@ -41,7 +41,7 @@ use {
         xcm_sender::{ChildParachainRouter, ExponentialPrice},
         ToAuthor,
     },
-    snowbridge_core::{ChannelId, AgentId},
+    snowbridge_core::{AgentId, ChannelId},
     sp_core::ConstU32,
     sp_runtime::traits::TryConvertInto,
     tp_bridge::{
