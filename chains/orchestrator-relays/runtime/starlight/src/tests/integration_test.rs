@@ -489,7 +489,7 @@ fn test_data_preserver_with_stream_payment() {
             assert!(
                 pallet_data_preservers::Assignments::<Runtime>::get(para_id).contains(&profile_id)
             );
-            let profile = pallet_data_preservers::Profiles::<Runtime>::get(&profile_id)
+            let profile = pallet_data_preservers::Profiles::<Runtime>::get(profile_id)
                 .expect("profile to exists");
             let (assigned_para_id, witness) = profile.assignment.expect("profile to be assigned");
             assert_eq!(assigned_para_id, para_id);

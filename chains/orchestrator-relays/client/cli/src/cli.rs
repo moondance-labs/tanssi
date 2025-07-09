@@ -25,6 +25,7 @@ use {
 };
 
 #[allow(missing_docs)]
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Parser)]
 pub enum Subcommand {
     /// Build a chain specification.

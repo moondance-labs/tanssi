@@ -40,7 +40,7 @@ use {
     scale_info::TypeInfo,
     sp_runtime::{traits::Get, RuntimeDebug},
     sp_staking::SessionIndex,
-    sp_std::{collections::btree_set::BTreeSet, vec::Vec},
+    sp_std::{collections::btree_set::BTreeSet, vec::Vec, cmp::Ordering},
     tp_traits::{
         ActiveEraInfo, EraIndex, EraIndexProvider, ExternalIndexProvider, InvulnerablesProvider,
         OnEraEnd, OnEraStart, ValidatorProvider,
@@ -480,12 +480,13 @@ pub mod pallet {
             if let Some(next_active_era_start_session_index) =
                 Self::eras_start_session_index(next_active_era)
             {
-                if next_active_era_start_session_index == start_session {
-                    Self::start_era(start_session);
-                } else if next_active_era_start_session_index < start_session {
-                    // This arm should never happen, but better handle it than to stall the pallet.
-                    frame_support::print("Warning: A session appears to have been skipped.");
-                    Self::start_era(start_session);
+                match next_active_era_start_session_index.cmp(&start_session) {
+                    Ordering::Equal => Self::start_era(start_session),
+                    Ordering::Less => {
+                        frame_support::print("Warning: A session appears to have been skipped.");
+                        Self::start_era(start_session);
+                    }
+                    Ordering::Greater => {}
                 }
             }
         }
@@ -550,7 +551,7 @@ pub mod pallet {
                 *s = Some(s.map(|s| s.saturating_add(1)).unwrap_or(0));
                 s.unwrap()
             });
-            ErasStartSessionIndex::<T>::insert(&new_planned_era, &start_session_index);
+            ErasStartSessionIndex::<T>::insert(new_planned_era, start_session_index);
 
             // Clean old era information.
             if let Some(old_era) =

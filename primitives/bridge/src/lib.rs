@@ -149,7 +149,7 @@ impl Command {
                 let era_index_token = Token::Uint(U256::from(*era_index));
                 let mut slashes_tokens_vec: Vec<Token> = vec![];
 
-                for slash in slashes.into_iter() {
+                for slash in slashes.iter() {
                     let account_token = Token::FixedBytes(slash.encoded_validator_id.clone());
                     let slash_fraction_token = Token::Uint(U256::from(slash.slash_fraction));
                     let external_idx = Token::Uint(U256::from(slash.external_idx));
@@ -412,11 +412,11 @@ where
 {
     fn create_channel(channel_id: ChannelId, agent_id: AgentId, para_id: ParaId) -> ChannelInfo {
         if let Some(channel) = snowbridge_pallet_system::Channels::<Runtime>::get(channel_id) {
-            return ChannelInfo {
+            ChannelInfo {
                 channel_id,
                 para_id: channel.para_id,
                 agent_id: channel.agent_id,
-            };
+            }
         } else {
             if !snowbridge_pallet_system::Agents::<Runtime>::contains_key(agent_id) {
                 snowbridge_pallet_system::Agents::<Runtime>::insert(agent_id, ());
@@ -425,11 +425,11 @@ where
             let channel = Channel { agent_id, para_id };
             snowbridge_pallet_system::Channels::<Runtime>::insert(channel_id, channel);
 
-            return ChannelInfo {
+            ChannelInfo {
                 channel_id,
                 para_id,
                 agent_id,
-            };
+            }
         }
     }
 }
@@ -446,8 +446,8 @@ where
     Runtime: snowbridge_pallet_system::Config,
 {
     fn set_up_token(location: Location, token_id: snowbridge_core::TokenId) {
-        snowbridge_pallet_system::ForeignToNativeId::<Runtime>::insert(&token_id, &location);
-        snowbridge_pallet_system::NativeToForeignId::<Runtime>::insert(&location, &token_id);
+        snowbridge_pallet_system::ForeignToNativeId::<Runtime>::insert(token_id, &location);
+        snowbridge_pallet_system::NativeToForeignId::<Runtime>::insert(&location, token_id);
     }
 
     fn set_up_channel(channel_id: ChannelId, para_id: ParaId, agent_id: AgentId) {

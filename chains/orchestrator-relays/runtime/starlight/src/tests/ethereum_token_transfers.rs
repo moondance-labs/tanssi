@@ -197,12 +197,10 @@ fn test_transfer_native_token() {
 
             let outbound_msg_queue_event = System::events()
                 .iter()
-                .filter(|r| match r.event {
+                .filter(|r| matches!(r.event,
                     RuntimeEvent::EthereumOutboundQueue(
                         snowbridge_pallet_outbound_queue::Event::MessageQueued { .. },
-                    ) => true,
-                    _ => false,
-                })
+                    )))
                 .count();
 
             assert_eq!(

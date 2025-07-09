@@ -739,12 +739,10 @@ fn external_validators_rewards_sends_message_on_era_end() {
 
             let outbound_msg_queue_event = System::events()
                 .iter()
-                .filter(|r| match r.event {
+                .filter(|r| matches!(r.event,
                     RuntimeEvent::EthereumOutboundQueue(
                         snowbridge_pallet_outbound_queue::Event::MessageQueued { .. },
-                    ) => true,
-                    _ => false,
-                })
+                    )))
                 .count();
 
             assert_eq!(
@@ -1171,7 +1169,7 @@ fn external_validators_rewards_test_command_integrity() {
             let blocks_per_session: u128 = Babe::current_epoch().duration.into();
             let points_per_block = 20;
             let expected_total_points =
-                (sessions_per_era as u128) * blocks_per_session * points_per_block;
+                u128::from(sessions_per_era) * blocks_per_session * points_per_block;
 
             let expected_rewards_command = Command::ReportRewards {
                 external_idx: 1u64,

@@ -872,12 +872,12 @@ pub struct CoreAffinityCount {
 
 /// Get affinity for a given parathread
 pub fn affinity_key_for_parathread(para_id: u32) -> Vec<u8> {
-    let key = storage_map_final_key::<frame_support::Twox64Concat>(
+    
+    storage_map_final_key::<frame_support::Twox64Concat>(
         "OnDemandAssignmentProvider",
         "ParaIdAffinity",
         &cumulus_primitives_core::ParaId::from(para_id).encode(),
-    );
-    key
+    )
 }
 
 /// Get claim queue assignments

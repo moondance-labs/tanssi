@@ -96,9 +96,9 @@ fn test_on_era_end() {
                 start: None,
             })
         });
-        let points = vec![10u32, 30u32, 50u32];
+        let points = [10u32, 30u32, 50u32];
         let total_points: u32 = points.iter().cloned().sum();
-        let accounts = vec![1u64, 3u64, 5u64];
+        let accounts = [1u64, 3u64, 5u64];
         let accounts_points: Vec<(u64, crate::RewardPoints)> = accounts
             .iter()
             .cloned()
@@ -113,7 +113,7 @@ fn test_on_era_end() {
         let expected_command = Command::ReportRewards {
             external_idx: 31000u64,
             era_index: 1u32,
-            total_points: total_points as u128,
+            total_points: u128::from(total_points),
             tokens_inflated:
                 <Test as pallet_external_validators_rewards::Config>::EraInflationProvider::get(), // test inflation value used in mock
             rewards_merkle_root: rewards_utils.unwrap().rewards_merkle_root,
@@ -140,9 +140,9 @@ fn test_on_era_end_without_proper_token() {
             })
         });
         Mock::set_location(Location::parent());
-        let points = vec![10u32, 30u32, 50u32];
+        let points = [10u32, 30u32, 50u32];
         let total_points: u32 = points.iter().cloned().sum();
-        let accounts = vec![1u64, 3u64, 5u64];
+        let accounts = [1u64, 3u64, 5u64];
         let accounts_points: Vec<(u64, crate::RewardPoints)> = accounts
             .iter()
             .cloned()
@@ -157,7 +157,7 @@ fn test_on_era_end_without_proper_token() {
         let expected_command = Command::ReportRewards {
             external_idx: 31000u64,
             era_index: 1u32,
-            total_points: total_points as u128,
+            total_points: u128::from(total_points),
             tokens_inflated:
                 <Test as pallet_external_validators_rewards::Config>::EraInflationProvider::get(), // test inflation value used in mock
             rewards_merkle_root: rewards_utils.unwrap().rewards_merkle_root,
@@ -191,9 +191,9 @@ fn test_on_era_end_with_zero_inflation() {
             });
             mock.era_inflation = Some(0);
         });
-        let points = vec![10u32, 30u32, 50u32];
+        let points = [10u32, 30u32, 50u32];
         let total_points: u32 = points.iter().cloned().sum();
-        let accounts = vec![1u64, 3u64, 5u64];
+        let accounts = [1u64, 3u64, 5u64];
         let accounts_points: Vec<(u64, crate::RewardPoints)> = accounts
             .iter()
             .cloned()
@@ -207,7 +207,7 @@ fn test_on_era_end_with_zero_inflation() {
         let expected_command = Command::ReportRewards {
             external_idx: 31000u64,
             era_index: 1u32,
-            total_points: total_points as u128,
+            total_points: u128::from(total_points),
             tokens_inflated:
                 <Test as pallet_external_validators_rewards::Config>::EraInflationProvider::get(), // test inflation value used in mock
             rewards_merkle_root: rewards_utils.unwrap().rewards_merkle_root,
@@ -240,9 +240,9 @@ fn test_on_era_end_with_zero_points() {
                 start: None,
             });
         });
-        let points = vec![0u32, 0u32, 0u32];
+        let points = [0u32, 0u32, 0u32];
         let total_points: u32 = points.iter().cloned().sum();
-        let accounts = vec![1u64, 3u64, 5u64];
+        let accounts = [1u64, 3u64, 5u64];
         let accounts_points: Vec<(u64, crate::RewardPoints)> = accounts
             .iter()
             .cloned()
@@ -256,7 +256,7 @@ fn test_on_era_end_with_zero_points() {
         let expected_command = Command::ReportRewards {
             external_idx: 31000u64,
             era_index: 1u32,
-            total_points: total_points as u128,
+            total_points: u128::from(total_points),
             tokens_inflated:
                 <Test as pallet_external_validators_rewards::Config>::EraInflationProvider::get(), // test inflation value used in mock
             rewards_merkle_root: rewards_utils.unwrap().rewards_merkle_root,

@@ -929,12 +929,12 @@ pub fn mock_validation_code() -> ValidationCode {
 
 /// Create a dummy collator id suitable to be used in a V1 candidate descriptor.
 pub fn junk_collator() -> CollatorId {
-    CollatorId::from_slice(&mut (0..32).collect::<Vec<_>>().as_slice()).expect("32 bytes; qed")
+    CollatorId::from_slice((0..32).collect::<Vec<_>>().as_slice()).expect("32 bytes; qed")
 }
 
 /// Creates a dummy collator signature suitable to be used in a V1 candidate descriptor.
 pub fn junk_collator_signature() -> CollatorSignature {
-    CollatorSignature::from_slice(&mut (0..64).collect::<Vec<_>>().as_slice())
+    CollatorSignature::from_slice((0..64).collect::<Vec<_>>().as_slice())
         .expect("64 bytes; qed")
 }
 
@@ -1149,11 +1149,10 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
     /// Create backed candidates for `cores_with_backed_candidates`. You need these cores to be
     /// scheduled _within_ paras inherent, which requires marking the available bitfields as fully
     /// available.
-    /// - `cores_with_backed_candidates` Mapping of `para_id` seed to number of
-    /// validity votes.
-    /// Important! this uses a BtreeMap, which means that elements will use increasing core orders
-    /// example: if we have parachains 1000, 1001, and 1002, they will use respectively cores
-    /// 0 1 and 2. There is no way in which we force 1002 to use core 0 in this setup
+    /// - `cores_with_backed_candidates` Mapping of `para_id` seed to number of validity votes.
+    ///   Important! this uses a BtreeMap, which means that elements will use increasing core orders
+    ///   Example: if we have parachains 1000, 1001, and 1002, they will use respectively cores
+    ///   0, 1 and 2. There is no way in which we force 1002 to use core 0 in this setup
     fn create_backed_candidates(
         &self,
         paras_with_backed_candidates: &BTreeMap<u32, u32>,
@@ -1408,14 +1407,14 @@ impl<T: runtime_parachains::paras_inherent::Config> ParasInherentTestBuilder<T> 
             })
             .collect();
 
-        let data = ParachainsInherentData {
+        
+
+        ParachainsInherentData {
             bitfields,
             backed_candidates,
             disputes: vec![],
             parent_header: Self::header(Self::block_number()),
-        };
-
-        data
+        }
     }
 
     pub(crate) fn block_number() -> BlockNumberFor<T> {
@@ -1591,9 +1590,9 @@ pub fn generate_babe_equivocation_proof(
 /// Helper function to generate a crypto pair from seed
 pub fn get_pair_from_seed<TPublic: Public>(seed: &str) -> TPublic::Pair {
     let secret_uri = format!("//{}", seed);
-    let pair = TPublic::Pair::from_string(&secret_uri, None).expect("static values are valid; qed");
+    
 
-    pair
+    TPublic::Pair::from_string(&secret_uri, None).expect("static values are valid; qed")
 }
 
 pub fn mock_snowbridge_message_proof() -> Proof {

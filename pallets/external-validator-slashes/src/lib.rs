@@ -257,7 +257,7 @@ pub mod pallet {
                 Error::<T>::NotSortedAndUnique
             );
             // fetch slashes for the era in which we want to defer
-            let mut era_slashes = Slashes::<T>::get(&era);
+            let mut era_slashes = Slashes::<T>::get(era);
 
             let last_item = slash_indices[slash_indices.len().saturating_sub(1)];
             ensure!(
@@ -270,7 +270,7 @@ pub mod pallet {
                 era_slashes.remove(index as usize);
             }
             // insert back slashes
-            Slashes::<T>::insert(&era, &era_slashes);
+            Slashes::<T>::insert(era, &era_slashes);
             Ok(())
         }
 
@@ -313,7 +313,7 @@ pub mod pallet {
                     .saturating_add(One::one())
             };
 
-            Slashes::<T>::mutate(&era_to_consider, |era_slashes| {
+            Slashes::<T>::mutate(era_to_consider, |era_slashes| {
                 era_slashes.push(slash);
             });
 
@@ -432,8 +432,8 @@ where
         }
 
         let active_era = {
-            let active_era = T::EraIndexProvider::active_era().index;
-            active_era
+            
+            T::EraIndexProvider::active_era().index
         };
         let active_era_start_session_index = T::EraIndexProvider::era_to_session_start(active_era)
             .unwrap_or_else(|| {
@@ -569,14 +569,14 @@ impl<T: Config> OnEraStart for Pallet<T> {
                 // Kill slashing metadata.
                 for (pruned_era, _, _) in bonded.drain(..n_to_prune) {
                     let removal_result =
-                        ValidatorSlashInEra::<T>::clear_prefix(&pruned_era, REMOVE_LIMIT, None);
+                        ValidatorSlashInEra::<T>::clear_prefix(pruned_era, REMOVE_LIMIT, None);
                     if removal_result.maybe_cursor.is_some() {
                         log::error!(
                             "Not all validator slashes were remove for era {:?}",
                             pruned_era
                         );
                     }
-                    Slashes::<T>::remove(&pruned_era);
+                    Slashes::<T>::remove(pruned_era);
                 }
 
                 if let Some(&(_, first_session, _)) = bonded.first() {
@@ -591,7 +591,7 @@ impl<T: Config> OnEraStart for Pallet<T> {
 
 impl<T: Config> Pallet<T> {
     fn add_era_slashes_to_queue(active_era: EraIndex) {
-        let mut slashes: VecDeque<_> = Slashes::<T>::get(&active_era).into();
+        let mut slashes: VecDeque<_> = Slashes::<T>::get(active_era).into();
 
         UnreportedSlashesQueue::<T>::mutate(|queue| queue.append(&mut slashes));
     }
@@ -703,12 +703,12 @@ pub(crate) fn compute_slash<T: Config>(
     slash_defer_duration: EraIndex,
     external_idx: u64,
 ) -> Option<Slash<T::AccountId, T::SlashId>> {
-    let prior_slash_p = ValidatorSlashInEra::<T>::get(&slash_era, &stash).unwrap_or(Zero::zero());
+    let prior_slash_p = ValidatorSlashInEra::<T>::get(slash_era, &stash).unwrap_or(Zero::zero());
 
     // compare slash proportions rather than slash values to avoid issues due to rounding
     // error.
     if slash_fraction.deconstruct() > prior_slash_p.deconstruct() {
-        ValidatorSlashInEra::<T>::insert(&slash_era, &stash, &slash_fraction);
+        ValidatorSlashInEra::<T>::insert(slash_era, &stash, slash_fraction);
     } else {
         // we slash based on the max in era - this new event is not the max,
         // so neither the validator or any nominators will need an update.

@@ -651,7 +651,7 @@ parameter_types! {
     pub const MaxAuthorities: u32 = 100_000;
     pub const MaxKeys: u32 = 10_000;
     pub const MaxPeerInHeartbeats: u32 = 10_000;
-    pub const MaxBalance: Balance = Balance::max_value();
+    pub const MaxBalance: Balance = Balance::MAX;
     pub TreasuryAccount: AccountId = Treasury::account_id();
     pub SnowbridgeFeesAccount: AccountId = PalletId(*b"sb/feeac").into_account_truncating();
 }
@@ -753,10 +753,10 @@ where
     ) -> Option<UncheckedExtrinsic> {
         use sp_runtime::traits::StaticLookup;
         // take the biggest period possible.
-        let period = BlockHashCount::get()
+        let period = u64::from(BlockHashCount::get()
             .checked_next_power_of_two()
             .map(|c| c / 2)
-            .unwrap_or(2) as u64;
+            .unwrap_or(2));
 
         let current_block = System::block_number()
             .saturated_into::<u64>()
@@ -1063,7 +1063,7 @@ impl parachains_inclusion::Config for Runtime {
 }
 
 parameter_types! {
-    pub const ParasUnsignedPriority: TransactionPriority = TransactionPriority::max_value();
+    pub const ParasUnsignedPriority: TransactionPriority = TransactionPriority::MAX;
 }
 
 impl parachains_paras::Config for Runtime {
@@ -1179,7 +1179,7 @@ impl parachains_scheduler::common::AssignmentProvider<BlockNumberFor<Runtime>>
             .container_chains
             .iter()
             .filter_map(|(&para_id, collators)| {
-                if Paras::is_parachain(para_id) && collators.len() > 0 {
+                if Paras::is_parachain(para_id) && !collators.is_empty() {
                     Some(para_id)
                 } else {
                     None
@@ -1204,12 +1204,10 @@ impl parachains_scheduler::common::AssignmentProvider<BlockNumberFor<Runtime>>
                 )?;
 
             // Let's check that we have collators before allowing an assignment
-            if assigned_collators
+            if !assigned_collators
                 .container_chains
                 .get(&assignment.para_id())
-                .unwrap_or(&vec![])
-                .len()
-                > 0
+                .unwrap_or(&vec![]).is_empty()
             {
                 Some(assignment)
             } else {
@@ -1510,8 +1508,8 @@ pub struct RewardsBenchHelper;
 #[cfg(feature = "runtime-benchmarks")]
 impl tp_bridge::TokenChannelSetterBenchmarkHelperTrait for RewardsBenchHelper {
     fn set_up_token(location: Location, token_id: TokenId) {
-        snowbridge_pallet_system::ForeignToNativeId::<Runtime>::insert(&token_id, &location);
-        snowbridge_pallet_system::NativeToForeignId::<Runtime>::insert(&location, &token_id);
+        snowbridge_pallet_system::ForeignToNativeId::<Runtime>::insert(token_id, &location);
+        snowbridge_pallet_system::NativeToForeignId::<Runtime>::insert(&location, token_id);
     }
 
     fn set_up_channel(_channel_id: ChannelId, _para_id: ParaId, _agent_id: AgentId) {}
@@ -3718,7 +3716,7 @@ fn host_config_at_session(
         .max_by_key(|(session, _config)| *session)
         .map(|(_session, config)| config)
         // If pending configs is empty after filter, read active config
-        .unwrap_or_else(|| runtime_parachains::configuration::ActiveConfig::<Runtime>::get())
+        .unwrap_or_else(runtime_parachains::configuration::ActiveConfig::<Runtime>::get)
 }
 
 pub struct GetCoreAllocationConfigurationImpl;
