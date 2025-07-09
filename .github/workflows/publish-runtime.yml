@@ -93,12 +93,12 @@ jobs:
         srtool_image:
           - paritytech/srtool
         srtool_image_tag:
-          - 1.81.0
+          - 1.84.1
         # Change this once https://github.com/paritytech/srtool/pull/81 gets merged
         srtool_build_base_dockerhub:
           - moondancelabs/srtool
         srtool_build_source_image_tag:
-          - temp-1.81
+          - temp-1.84.1
 
     steps:
       - uses: actions/checkout@v4
