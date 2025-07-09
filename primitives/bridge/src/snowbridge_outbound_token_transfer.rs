@@ -53,13 +53,7 @@ pub struct EthereumBlobExporter<
     )>,
 );
 
-impl<
-        UniversalLocation,
-        EthereumNetwork,
-        OutboundQueue,
-        ConvertAssetId,
-        BridgeChannelInfo,
-    > ExportXcm
+impl<UniversalLocation, EthereumNetwork, OutboundQueue, ConvertAssetId, BridgeChannelInfo> ExportXcm
     for EthereumBlobExporter<
         UniversalLocation,
         EthereumNetwork,
@@ -179,7 +173,7 @@ where
 
 /// Errors that can be thrown to the pattern matching step.
 #[derive(PartialEq, Debug)]
-enum XcmConverterError {
+pub enum XcmConverterError {
     UnexpectedEndOfXcm,
     EndOfXcmMessageExpected,
     WithdrawAssetExpected,
@@ -206,7 +200,7 @@ macro_rules! match_expression {
 	};
 }
 
-struct XcmConverter<'a, ConvertAssetId, Call> {
+pub struct XcmConverter<'a, ConvertAssetId, Call> {
     iter: Peekable<Iter<'a, Instruction<Call>>>,
     ethereum_network: NetworkId,
     agent_id: AgentId,
@@ -216,7 +210,7 @@ impl<'a, ConvertAssetId, Call> XcmConverter<'a, ConvertAssetId, Call>
 where
     ConvertAssetId: MaybeEquivalence<TokenId, Location>,
 {
-    fn new(message: &'a Xcm<Call>, ethereum_network: NetworkId, agent_id: AgentId) -> Self {
+    pub fn new(message: &'a Xcm<Call>, ethereum_network: NetworkId, agent_id: AgentId) -> Self {
         Self {
             iter: message.inner().iter().peekable(),
             ethereum_network,
@@ -225,7 +219,7 @@ where
         }
     }
 
-    fn convert(&mut self) -> Result<(Command, [u8; 32]), XcmConverterError> {
+    pub fn convert(&mut self) -> Result<(Command, [u8; 32]), XcmConverterError> {
         let result = match self.peek() {
             Ok(ReserveAssetDeposited { .. }) => self.make_mint_foreign_token_command(),
             // Get withdraw/deposit and make native tokens create message.
@@ -242,7 +236,7 @@ where
         Ok(result)
     }
 
-    fn make_unlock_native_token_command(
+    pub fn make_unlock_native_token_command(
         &mut self,
     ) -> Result<(Command, [u8; 32]), XcmConverterError> {
         use XcmConverterError::*;
