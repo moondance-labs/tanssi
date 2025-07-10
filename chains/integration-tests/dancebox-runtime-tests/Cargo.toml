@@ -1,0 +1,68 @@
+[package]
+name = "dancebox-runtime-tests"
+description = "Dancelight runtime tests"
+edition = "2021"
+license = "GPL-3.0-only"
+publish = false
+version = "0.0.0"
+[package.authors]
+workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+cumulus-pallet-parachain-system = { workspace = true }
+cumulus-primitives-core = { workspace = true }
+cumulus-primitives-parachain-inherent = { workspace = true }
+cumulus-test-relay-sproof-builder = { workspace = true }
+dancebox-runtime = { workspace = true, features = [ "std" ] }
+dancebox-runtime-test-utils = { workspace = true }
+dp-consensus = { workspace = true }
+dp-core = { workspace = true }
+frame-support = { workspace = true }
+frame-system = { workspace = true }
+hex-literal = { workspace = true }
+nimbus-primitives = { workspace = true }
+pallet-asset-rate = { workspace = true }
+pallet-assets = { workspace = true }
+pallet-async-backing = { workspace = true }
+pallet-author-inherent = { workspace = true }
+pallet-author-noting = { workspace = true }
+pallet-author-noting-runtime-api = { workspace = true }
+pallet-authority-mapping = { workspace = true }
+pallet-balances = { workspace = true }
+pallet-collator-assignment = { workspace = true }
+pallet-collator-assignment-runtime-api = { workspace = true }
+pallet-configuration = { workspace = true }
+pallet-data-preservers = { workspace = true }
+pallet-inactivity-tracking = { workspace = true }
+pallet-invulnerables = { workspace = true }
+pallet-migrations = { workspace = true }
+pallet-pooled-staking = { workspace = true }
+pallet-registrar = { workspace = true }
+pallet-registrar-runtime-api = { workspace = true }
+pallet-services-payment = { workspace = true }
+pallet-session = { workspace = true }
+pallet-stream-payment = { workspace = true }
+pallet-sudo = { workspace = true }
+pallet-utility = { workspace = true }
+pallet-xcm = { workspace = true }
+parachain-info = { workspace = true }
+parity-scale-codec = { workspace = true, features = [ "derive" ] }
+polkadot-parachain-primitives = { workspace = true }
+rococo-runtime-constants = { workspace = true }
+scale-info = { workspace = true, features = [ "derive" ] }
+sp-consensus-aura = { workspace = true }
+sp-consensus-slots = { workspace = true }
+sp-core = { workspace = true }
+sp-io = { workspace = true }
+sp-runtime = { workspace = true }
+sp-std = { workspace = true }
+tanssi-runtime-common = { workspace = true }
+test-relay-sproof-builder = { workspace = true }
+tp-author-noting-inherent = { workspace = true }
+tp-data-preservers-common = { workspace = true }
+tp-stream-payment-common = { workspace = true }
+tp-traits = { workspace = true }
+xcm = { workspace = true }
