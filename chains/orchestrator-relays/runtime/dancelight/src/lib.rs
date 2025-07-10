@@ -190,6 +190,16 @@ impl_runtime_weights!(dancelight_runtime_constants);
 #[cfg(feature = "std")]
 include!(concat!(env!("OUT_DIR"), "/wasm_binary.rs"));
 
+#[cfg(all(
+    target_arch = "wasm32",
+    target_vendor = "unknown",
+    target_os = "unknown",
+))]
+compile_error!("Compile error using arch = wasm32-unknown-unknwon");
+
+#[cfg(all(target_arch = "wasm32", target_os = "none",))]
+compile_error!("Compile error using arch = wasm32v1-none");
+
 /// Runtime version (Dancelight).
 #[sp_version::runtime_version]
 pub const VERSION: RuntimeVersion = RuntimeVersion {
