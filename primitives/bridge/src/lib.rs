@@ -24,6 +24,8 @@ mod benchmarks;
 #[cfg(test)]
 mod tests;
 
+pub mod barriers;
+pub mod container_token_to_ethereum_message_exporter;
 pub mod generic_token_message_processor;
 pub mod snowbridge_outbound_token_transfer;
 pub mod symbiotic_message_processor;
@@ -70,6 +72,7 @@ pub use benchmarks::*;
 
 mod custom_do_process_message;
 mod custom_send_message;
+pub mod sovereign_paid_remote_exporter;
 
 #[derive(Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo, PartialEq)]
 pub struct SlashData {
@@ -371,6 +374,9 @@ where
     fn convert_location(location: &Location) -> Option<AccountId> {
         match location.unpack() {
             (1, [GlobalConsensus(Ethereum { chain_id })]) => {
+                Some(Self::from_chain_id(chain_id).into())
+            }
+            (2, [GlobalConsensus(Ethereum { chain_id })]) => {
                 Some(Self::from_chain_id(chain_id).into())
             }
             (1, [GlobalConsensus(Ethereum { chain_id }), AccountKey20 { network: _, key }]) => {

@@ -24,7 +24,7 @@ use frame_support::{ensure, traits::Get};
 use parity_scale_codec::{Decode, Encode};
 use snowbridge_core::{AgentId, ChannelId, TokenId, TokenIdOf};
 use snowbridge_outbound_queue_primitives::v1::message::{Command, Message, SendMessage};
-use sp_core::{H160, H256};
+use sp_core::H160;
 use sp_runtime::traits::{MaybeEquivalence, TryConvert};
 use sp_std::{iter::Peekable, prelude::*};
 use xcm::prelude::*;
