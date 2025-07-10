@@ -46,7 +46,7 @@ use {
     sp_runtime::traits::TryConvertInto,
     tp_bridge::{
         snowbridge_outbound_token_transfer::{
-            EthereumBlobExporter, SnowbridgeChannelToAgentId, SnowbrigeTokenTransferRouter,
+            EthereumBlobExporter, SnowbrigeTokenTransferRouter,
         },
         EthereumLocationsConverterFor,
     },
