@@ -83,10 +83,7 @@ describeSuite({
                         // if currently assigned, then 2
                         let sessionRequirements: bigint;
 
-                        if (
-                            currentAuthorityAssignment[container.toString()] === null ||
-                            currentAuthorityAssignment[container.toString()].length === 0
-                        ) {
+                        if (currentAuthorityAssignment[container.toString()]?.length === 0) {
                             sessionRequirements = 1n;
                         } else {
                             sessionRequirements = 2n;

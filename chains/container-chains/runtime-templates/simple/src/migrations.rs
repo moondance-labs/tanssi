@@ -81,7 +81,7 @@ where
         // let migrate_pallet_xcm_v4 = MigrateToLatestXcmVersion::<Runtime>(Default::default());
         //let foreign_asset_creator_migration =
         //    ForeignAssetCreatorMigration::<Runtime>(Default::default());
-        let migrate_pallet_xcm_v5 = MigrateToLatestXcmVersion::<Runtime>(Default::default());
+        //let migrate_pallet_xcm_v5 = MigrateToLatestXcmVersion::<Runtime>(Default::default());
         vec![
             // Box::new(migrate_polkadot_xcm_v1),
             // Box::new(migrate_xcmp_queue_v2),
@@ -90,7 +90,8 @@ where
             //Box::new(migrate_xcm_executor_utils_v4),
             // Box::new(migrate_pallet_xcm_v4),
             //Box::new(foreign_asset_creator_migration),
-            Box::new(migrate_pallet_xcm_v5),
+            // Applied in runtime 1200
+            //Box::new(migrate_pallet_xcm_v5),
         ]
     }
 }

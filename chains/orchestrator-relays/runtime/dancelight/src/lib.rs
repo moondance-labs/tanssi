@@ -43,14 +43,14 @@ use {
     },
     frame_system::{pallet_prelude::BlockNumberFor, EnsureNever},
     nimbus_primitives::NimbusId,
-    pallet_collator_assignment::{GetRandomnessForNextBlock, RotateCollatorsEveryNSessions},
+    pallet_collator_assignment::RotateCollatorsEveryNSessions,
     pallet_initializer as tanssi_initializer,
     pallet_invulnerables::InvulnerableRewardDistribution,
     pallet_registrar::Error as ContainerRegistrarError,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     pallet_services_payment::{ProvideBlockProductionCost, ProvideCollatorAssignmentCost},
     parachains_scheduler::common::Assignment,
-    parity_scale_codec::{Decode, Encode, MaxEncodedLen},
+    parity_scale_codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen},
     primitives::{
         slashing, vstaging::CandidateEvent, vstaging::CommittedCandidateReceiptV2,
         vstaging::CoreState, vstaging::ScrapedOnChainVotes, ApprovalVotingParams, BlockNumber,
@@ -77,17 +77,17 @@ use {
         shared as parachains_shared,
     },
     scale_info::TypeInfo,
-    snowbridge_core::{
-        outbound::{Command, Fee},
-        ChannelId, PricingParameters,
-    },
-    snowbridge_pallet_outbound_queue::MerkleProof,
+    snowbridge_core::{ChannelId, PricingParameters},
+    snowbridge_merkle_tree::MerkleProof,
+    snowbridge_outbound_queue_primitives::v1::Command,
+    snowbridge_outbound_queue_primitives::v1::Fee,
     sp_core::{storage::well_known_keys as StorageWellKnownKeys, Get},
     sp_genesis_builder::PresetId,
     sp_runtime::{
         traits::{BlockNumberProvider, ConvertInto},
         AccountId32,
     },
+    sp_staking::offence::OffenceSeverity,
     sp_std::{
         cmp::Ordering,
         collections::{btree_map::BTreeMap, btree_set::BTreeSet, vec_deque::VecDeque},
@@ -99,6 +99,7 @@ use {
         prod_or_fast_parameter_types, EraIndex, GetHostConfiguration, GetSessionContainerChains,
         ParaIdAssignmentHooks, RegistrarHandler, Slot, SlotFrequency,
     },
+    xcm::Version as XcmVersion,
     xcm_runtime_apis::{
         dry_run::{CallDryRunEffects, Error as XcmDryRunApiError, XcmDryRunEffects},
         fees::Error as XcmPaymentApiError,
@@ -222,7 +223,17 @@ pub fn native_version() -> NativeVersion {
 ///
 /// Can be extended to serve further use-cases besides just UMP. Is stored in storage, so any change
 /// to existing values will require a migration.
-#[derive(Encode, Decode, Clone, MaxEncodedLen, Eq, PartialEq, RuntimeDebug, TypeInfo)]
+#[derive(
+    Encode,
+    Decode,
+    Clone,
+    MaxEncodedLen,
+    Eq,
+    PartialEq,
+    RuntimeDebug,
+    TypeInfo,
+    DecodeWithMemTracking,
+)]
 pub enum AggregateMessageOrigin {
     /// Inbound upward message.
     #[codec(index = 0)]
@@ -436,6 +447,7 @@ impl pallet_scheduler::Config for Runtime {
     type WeightInfo = weights::pallet_scheduler::SubstrateWeight<Runtime>;
     type OriginPrivilegeCmp = OriginPrivilegeCmp;
     type Preimages = Preimage;
+    type BlockNumberProvider = System;
 }
 
 parameter_types! {
@@ -578,6 +590,7 @@ impl pallet_session::Config for Runtime {
     type SessionHandler = <SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
     type Keys = SessionKeys;
     type WeightInfo = weights::pallet_session::SubstrateWeight<Runtime>;
+    type DisablingStrategy = ();
 }
 
 pub struct FullIdentificationOf;
@@ -837,6 +850,7 @@ impl pallet_multisig::Config for Runtime {
     type DepositFactor = DepositFactor;
     type MaxSignatories = MaxSignatories;
     type WeightInfo = weights::pallet_multisig::SubstrateWeight<Runtime>;
+    type BlockNumberProvider = System;
 }
 
 parameter_types! {
@@ -862,6 +876,7 @@ parameter_types! {
     Decode,
     RuntimeDebug,
     MaxEncodedLen,
+    DecodeWithMemTracking,
     TypeInfo,
 )]
 pub enum ProxyType {
@@ -995,6 +1010,7 @@ impl pallet_proxy::Config for Runtime {
     type CallHasher = BlakeTwo256;
     type AnnouncementDepositBase = AnnouncementDepositBase;
     type AnnouncementDepositFactor = AnnouncementDepositFactor;
+    type BlockNumberProvider = System;
 }
 
 impl parachains_origin::Config for Runtime {}
@@ -1403,16 +1419,16 @@ use {
 
 pub struct DancelightSessionInterface;
 impl SessionInterface<AccountId> for DancelightSessionInterface {
-    fn disable_validator(validator_index: u32) -> bool {
-        Session::disable_index(validator_index)
-    }
-
     fn validators() -> Vec<AccountId> {
         Session::validators()
     }
 
     fn prune_historical_up_to(up_to: SessionIndex) {
         Historical::prune_up_to(up_to);
+    }
+
+    fn report_offence(validator: AccountId, severity: OffenceSeverity) {
+        Session::report_offence(validator, severity);
     }
 }
 
@@ -1691,7 +1707,8 @@ impl pallet_services_payment::Config for Runtime {
     type FreeBlockProductionCredits = FreeBlockProductionCredits;
     /// The maximum number of session credits that can be accumulated
     type FreeCollatorAssignmentCredits = FreeCollatorAssignmentCredits;
-    type ManagerOrigin = EnsureRoot<AccountId>;
+    type ManagerOrigin =
+        EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;
     type WeightInfo = weights::pallet_services_payment::SubstrateWeight<Runtime>;
 }
 
@@ -1861,6 +1878,10 @@ impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
     }
 }
 
+parameter_types! {
+    pub const MaxCandidatesBufferSize: u32 = 100;
+}
+
 impl pallet_pooled_staking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
@@ -1878,14 +1899,19 @@ impl pallet_pooled_staking::Config for Runtime {
     type WeightInfo = weights::pallet_pooled_staking::SubstrateWeight<Runtime>;
 }
 
+parameter_types! {
+    pub const MaxInactiveSessions: u32 = 5;
+}
 impl pallet_inactivity_tracking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type CollatorId = AccountId;
-    type MaxInactiveSessions = ConstU32<5>;
-    type MaxCollatorsPerSession = ConstU32<100>;
+    type MaxInactiveSessions = MaxInactiveSessions;
+    type MaxCollatorsPerSession = MaxCandidatesBufferSize;
+    type MaxContainerChains = MaxLengthParaIds;
     type CurrentSessionIndex = CurrentSessionIndexGetter;
     type CurrentCollatorsFetcher = TanssiCollatorAssignment;
     type GetSelfChainBlockAuthor = ();
+    type ParaFilter = tp_parathread_filter_common::ExcludeAllParathreadsFilter<Runtime>;
     type WeightInfo = weights::pallet_inactivity_tracking::SubstrateWeight<Runtime>;
 }
 
@@ -2326,7 +2352,6 @@ mod benches {
 
         // Substrate
         [pallet_balances, Balances]
-        [frame_benchmarking::baseline, Baseline::<Runtime>]
         [pallet_conviction_voting, ConvictionVoting]
         [pallet_identity, Identity]
         [pallet_message_queue, MessageQueue]
@@ -2350,7 +2375,7 @@ mod benches {
         [pallet_services_payment, ServicesPayment]
         [pallet_mmr, Mmr]
         [pallet_beefy_mmr, BeefyMmrLeaf]
-        [pallet_multiblock_migrations, MultiBlockMigrations]
+        [frame_benchmarking::baseline, Baseline::<Runtime>]
         [pallet_session, cumulus_pallet_session_benchmarking::Pallet::<Runtime>]
 
         // Tanssi
@@ -2400,8 +2425,8 @@ sp_api::impl_runtime_apis! {
     }
 
     impl xcm_runtime_apis::dry_run::DryRunApi<Block, RuntimeCall, RuntimeEvent, OriginCaller> for Runtime {
-        fn dry_run_call(origin: OriginCaller, call: RuntimeCall) -> Result<CallDryRunEffects<RuntimeEvent>, XcmDryRunApiError> {
-            XcmPallet::dry_run_call::<Runtime, xcm_config::XcmRouter, OriginCaller, RuntimeCall>(origin, call)
+        fn dry_run_call(origin: OriginCaller, call: RuntimeCall, result_xcms_version: XcmVersion) -> Result<CallDryRunEffects<RuntimeEvent>, XcmDryRunApiError> {
+            XcmPallet::dry_run_call::<Runtime, xcm_config::XcmRouter, OriginCaller, RuntimeCall>(origin, call, result_xcms_version)
         }
 
         fn dry_run_xcm(origin_location: VersionedLocation, xcm: VersionedXcm<RuntimeCall>) -> Result<XcmDryRunEffects<RuntimeEvent>, XcmDryRunApiError> {
@@ -2641,10 +2666,12 @@ sp_api::impl_runtime_apis! {
         }
 
         fn para_backing_state(para_id: ParaId) -> Option<primitives::vstaging::async_backing::BackingState> {
+            #[allow(deprecated)]
             parachains_runtime_api_impl::backing_state::<Runtime>(para_id)
         }
 
         fn async_backing_params() -> primitives::AsyncBackingParams {
+            #[allow(deprecated)]
             parachains_runtime_api_impl::async_backing_params::<Runtime>()
         }
 
@@ -3101,13 +3128,12 @@ sp_api::impl_runtime_apis! {
             Vec<frame_benchmarking::BenchmarkList>,
             Vec<frame_support::traits::StorageInfo>,
         ) {
-            use frame_benchmarking::{Benchmarking, BenchmarkList};
+            use frame_benchmarking::{BenchmarkList};
             use frame_support::traits::StorageInfoTrait;
-
             use frame_system_benchmarking::Pallet as SystemBench;
+            use pallet_xcm::benchmarking::Pallet as PalletXcmExtrinsicsBenchmark;
             use frame_benchmarking::baseline::Pallet as Baseline;
 
-            use pallet_xcm::benchmarking::Pallet as PalletXcmExtrinsicsBenchmark;
 
             let mut list = Vec::<BenchmarkList>::new();
             list_benchmarks!(list, extra);
@@ -3116,6 +3142,7 @@ sp_api::impl_runtime_apis! {
             (list, storage_info)
         }
 
+        #[allow(non_local_definitions)]
         fn dispatch_benchmark(
             config: frame_benchmarking::BenchmarkConfig,
         ) -> Result<
@@ -3123,10 +3150,10 @@ sp_api::impl_runtime_apis! {
             alloc::string::String,
         > {
             use frame_support::traits::WhitelistedStorageKeys;
-            use frame_benchmarking::{Benchmarking, BenchmarkBatch, BenchmarkError};
+            use frame_benchmarking::{BenchmarkBatch, BenchmarkError};
             use frame_system_benchmarking::Pallet as SystemBench;
-            use frame_benchmarking::baseline::Pallet as Baseline;
             use pallet_xcm::benchmarking::Pallet as PalletXcmExtrinsicsBenchmark;
+            use frame_benchmarking::baseline::Pallet as Baseline;
             use sp_storage::TrackedStorageKey;
             use xcm::latest::prelude::*;
             use xcm_config::{
@@ -3151,14 +3178,14 @@ sp_api::impl_runtime_apis! {
                         ExistentialDepositAsset,
                         xcm_config::PriceForChildParachainDelivery,
                         AssetHubParaId,
-                        (),
+                        Dmp,
                     >,
                     runtime_common::xcm_sender::ToParachainDeliveryHelper<
                         XcmConfig,
                         ExistentialDepositAsset,
                         xcm_config::PriceForChildParachainDelivery,
                         RandomParaId,
-                        (),
+                        Dmp,
                     >
                 );
 
@@ -3217,7 +3244,7 @@ sp_api::impl_runtime_apis! {
                     ExistentialDepositAsset,
                     xcm_config::PriceForChildParachainDelivery,
                     AssetHubParaId,
-                    (),
+                    Dmp,
                 >;
                 fn valid_destination() -> Result<Location, BenchmarkError> {
                     Ok(AssetHub::get())
@@ -3513,22 +3540,9 @@ impl Get<u32> for ConfigurationCollatorRotationSessionPeriod {
     }
 }
 
-// CollatorAssignment expects to set up the rotation's randomness seed on the
-// on_finalize hook of the block prior to the actual session change.
-// So should_end_session should be true on the last block of the current session
-pub struct BabeGetRandomnessForNextBlock;
-impl GetRandomnessForNextBlock<u32> for BabeGetRandomnessForNextBlock {
-    fn should_end_session(n: u32) -> bool {
-        // Check if next slot there is a session change
-        n != 1 && {
-            let diff = Babe::current_slot()
-                .saturating_add(1u64)
-                .saturating_sub(Babe::current_epoch_start());
-            *diff >= Babe::current_epoch().duration
-        }
-    }
-
-    fn get_randomness() -> [u8; 32] {
+pub struct BabeGetCollatorAssignmentRandomness;
+impl Get<[u8; 32]> for BabeGetCollatorAssignmentRandomness {
+    fn get() -> [u8; 32] {
         let block_number = System::block_number();
         let random_seed = if block_number != 0 {
             if let Some(random_hash) = {
@@ -3758,7 +3772,8 @@ impl pallet_collator_assignment::Config for Runtime {
     type SelfParaId = MockParaId;
     type ShouldRotateAllCollators =
         RotateCollatorsEveryNSessions<ConfigurationCollatorRotationSessionPeriod>;
-    type GetRandomnessForNextBlock = BabeGetRandomnessForNextBlock;
+    type Randomness =
+        pallet_collator_assignment::SolochainRandomness<BabeGetCollatorAssignmentRandomness>;
     type RemoveInvulnerables = ();
     type ParaIdAssignmentHooks = ParaIdAssignmentHooksImpl;
     type CollatorAssignmentTip = ServicesPayment;

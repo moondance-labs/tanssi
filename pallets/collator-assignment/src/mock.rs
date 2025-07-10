@@ -17,7 +17,8 @@
 use {
     crate::{
         self as pallet_collator_assignment, pallet::CollatorContainerChain,
-        CoreAllocationConfiguration, GetRandomnessForNextBlock, RotateCollatorsEveryNSessions,
+        CoreAllocationConfiguration, GetRandomnessForNextBlock, ParachainRandomness,
+        RotateCollatorsEveryNSessions,
     },
     dp_collator_assignment::AssignedCollators,
     frame_support::{
@@ -344,7 +345,7 @@ impl pallet_collator_assignment::Config for Test {
     type SelfParaId = ParachainId;
     type ShouldRotateAllCollators =
         RotateCollatorsEveryNSessions<MockCollatorRotationSessionPeriod>;
-    type GetRandomnessForNextBlock = MockGetRandomnessForNextBlock;
+    type Randomness = ParachainRandomness<MockGetRandomnessForNextBlock, Test>;
     type RemoveInvulnerables = RemoveAccountIdsAbove100;
     type ParaIdAssignmentHooks = MockParaIdAssignmentHooksImpl;
     type CollatorAssignmentTip = MockCollatorAssignmentTip;

@@ -6,19 +6,19 @@ set -e
 # Always run the commands from the "test" dir
 cd $(dirname $0)/..
 
-if [[ -z "${1}" || ${1} == "undefined" ]]; then
+if [[ -z "${1}" ]]; then
     BINARY_FOLDER="../target/release"
 else
     BINARY_FOLDER="${1}"
 fi
 
-if [[ -z "${2}" || ${2} == "undefined" ]]; then
+if [[ -z "${2}" ]]; then
     CONTAINER_BINARY="container-chain-simple-node"
 else
     CONTAINER_BINARY="${2}"
 fi
 
-if [[ -z "${3}" || ${3} == "undefined" ]]; then
+if [[ -z "${3}" ]]; then
     TANSSI_CHAIN="dancebox-local"
 else
     TANSSI_CHAIN="${3}"

@@ -16,8 +16,10 @@
 #![cfg(test)]
 use {
     crate::tests::common::*,
-    frame_support::{traits::Get, BoundedBTreeSet},
-    pallet_inactivity_tracking::pallet::{ActiveCollatorsForCurrentSession, InactiveCollators},
+    frame_support::BoundedBTreeSet,
+    pallet_inactivity_tracking::pallet::{
+        ActiveCollatorsForCurrentSession, ActiveContainerChainsForCurrentSession, InactiveCollators,
+    },
     parity_scale_codec::Encode,
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_runtime::{traits::BlakeTwo256, DigestItem},
@@ -81,6 +83,19 @@ fn get_collators_set(
     collator_set
 }
 
+fn get_chains_set(
+    chains: Vec<ParaId>,
+) -> BoundedBTreeSet<ParaId, <Runtime as pallet_inactivity_tracking::Config>::MaxContainerChains> {
+    let mut chains_set: BoundedBTreeSet<
+        ParaId,
+        <Runtime as pallet_inactivity_tracking::Config>::MaxContainerChains,
+    > = BoundedBTreeSet::new();
+    for para_id in chains {
+        chains_set.try_insert(para_id).unwrap();
+    }
+    chains_set
+}
+
 #[test]
 fn inactivity_tracking_correctly_updates_storages() {
     ExtBuilder::default()
@@ -108,11 +123,19 @@ fn inactivity_tracking_correctly_updates_storages() {
                 <ActiveCollatorsForCurrentSession<Runtime>>::get(),
                 get_collators_set(vec![ALICE.into(), DAVE.into()])
             );
+            assert_eq!(
+                <ActiveContainerChainsForCurrentSession<Runtime>>::get(),
+                get_chains_set(vec![3000.into(), 3001.into()])
+            );
 
             run_block();
             assert_eq!(
                 <ActiveCollatorsForCurrentSession<Runtime>>::get(),
                 get_collators_set(vec![ALICE.into(), DAVE.into()])
+            );
+            assert_eq!(
+                <ActiveContainerChainsForCurrentSession<Runtime>>::get(),
+                get_chains_set(vec![3000.into(), 3001.into()])
             );
 
             run_to_session(1);
@@ -125,19 +148,33 @@ fn inactivity_tracking_correctly_updates_storages() {
                 <ActiveCollatorsForCurrentSession<Runtime>>::get(),
                 get_collators_set(vec![])
             );
+            assert_eq!(
+                <ActiveContainerChainsForCurrentSession<Runtime>>::get(),
+                get_chains_set(vec![])
+            );
 
             run_block();
             assert_eq!(
                 <ActiveCollatorsForCurrentSession<Runtime>>::get(),
                 get_collators_set(vec![])
             );
+            assert_eq!(
+                <ActiveContainerChainsForCurrentSession<Runtime>>::get(),
+                get_chains_set(vec![])
+            );
             run_to_session(2);
             run_block();
+
+            // Since chains 3000 and 3001 are inactive, all collators should be marked as active
             assert_eq!(
                 <InactiveCollators<Runtime>>::get(1),
-                get_collators_set(vec![ALICE.into(), BOB.into(), CHARLIE.into(), DAVE.into()])
+                get_collators_set(vec![])
             );
             assert_eq!(<ActiveCollatorsForCurrentSession<Runtime>>::get().len(), 0);
+            assert_eq!(
+                <ActiveContainerChainsForCurrentSession<Runtime>>::get(),
+                get_chains_set(vec![])
+            );
 
             let max_inactive_sessions =
                 <Runtime as pallet_inactivity_tracking::Config>::MaxInactiveSessions::get();
@@ -167,11 +204,11 @@ fn inactivity_tracking_correctly_updates_storages() {
             );
             assert_eq!(
                 InactivityTracking::is_node_inactive(&AccountId::from(BOB)),
-                true
+                false
             );
             assert_eq!(
                 InactivityTracking::is_node_inactive(&AccountId::from(CHARLIE)),
-                true
+                false
             );
             assert_eq!(
                 InactivityTracking::is_node_inactive(&AccountId::from(DAVE)),

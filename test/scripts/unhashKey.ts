@@ -4,6 +4,10 @@ unhash-key
 Given a raw storage key, try to find which pallet it belongs to, and which storage item.
 Only works for public storage items (exported with pub).
 
+Key args decoded using chopsticks decode-key from
+
+https://github.com/AcalaNetwork/chopsticks/blob/5fb31092a879c1a1ac712b7b24bd9fa91f0bee53/packages/chopsticks/src/plugins/decode-key/cli.ts#L18
+
 Usage:
 # List all pallet prefixes for a selected chain
 pnpm unhash-key
@@ -13,6 +17,9 @@ pnpm unhash-key 0x94eadf0156a8ad5156507773d0471e4a49f6c9aa90c04982c05388649310f2
 pnpm unhash-key --url 'wss://dancelight.tanssi-api.network' 0x94eadf0156a8ad5156507773d0471e4a49f6c9aa90c04982c05388649310f22f
  */
 
+import { decodeKey } from "@acala-network/chopsticks-core";
+import { setupContext } from "@acala-network/chopsticks/context";
+import type { HexString } from "@polkadot/util/types";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import { NETWORK_YARGS_OPTIONS, getApiFor } from "./utils/network";
@@ -121,6 +128,7 @@ yargs(hideBin(process.argv))
                 }
 
                 const mt = api.runtimeMetadata;
+
                 // Iterate over all pallets.
                 for (const module of mt.asLatest.pallets) {
                     if (module.storage.isNone) {
@@ -152,6 +160,22 @@ yargs(hideBin(process.argv))
                         if (!foundMatch) {
                             console.log("No matching storage found in this pallet.");
                         }
+                        // Try chopsticks mode only if pallet prefix matches, because this is slow to setup
+                        const context = await setupContext({
+                            endpoint,
+                            //block: "latest",
+                        });
+                        const { storage, decodedKey } = decodeKey(await context.chain.head.meta, argv.key as HexString);
+                        if (storage && decodedKey) {
+                            console.log("✅ Chopsticks decoded key args:");
+                            console.log(
+                                `${argv.key}: ${storage.section}.${storage.method}`,
+                                decodedKey.args.map((x) => JSON.stringify(x.toJSON())).join(", ")
+                            );
+                        } else {
+                            console.log("Chopsticks failed to decode key");
+                        }
+
                         // Stop checking pallets if key found.
                         if (found) {
                             break;

@@ -21,7 +21,8 @@ use xcm::latest::Junction::GlobalConsensus;
 use xcm::latest::Junctions::Here;
 use xcm::latest::Junctions::X1;
 use xcm::latest::NetworkId;
-use xcm::latest::{Location, Reanchorable, ROCOCO_GENESIS_HASH};
+use xcm::latest::{Location, Reanchorable};
+use xcm::v5::ROCOCO_GENESIS_HASH;
 use xcm_executor::traits::ConvertLocation;
 use {
     crate::{
@@ -34,9 +35,10 @@ use {
     parity_scale_codec::Encode,
     sp_arithmetic::Perbill,
     tanssi_runtime_common::migrations::{
-        BondedErasTimestampMigration, ExternalValidatorsInitialMigration, HostConfigurationV3,
-        MigrateConfigurationAddFullRotationMode, MigrateMMRLeafPallet,
-        SnowbridgeEthereumSystemXcmV5,
+        snowbridge_system_migration::StarlightLocation, BondedErasTimestampMigration,
+        ExternalValidatorsInitialMigration, HostConfigurationV3,
+        MigrateConfigurationAddFullRotationMode, MigrateEthSystemGenesisHashes,
+        MigrateMMRLeafPallet,
     },
     xcm::v3::Weight,
 };
@@ -274,17 +276,17 @@ fn test_add_timestamp_to_bonded_eras_migration() {
 }
 
 #[test]
-fn test_snowbridge_ethereum_system_xcm_v5_migration() {
+fn test_genesis_hashes_migration() {
     ExtBuilder::default().build().execute_with(|| {
-        // Raw values copied from stagelight runtime 1100
+        // Raw values copied from moonlight runtime 1321
         const FOREIGN_TO_NATIVE_ID_KEY: &[u8] =
-            &hex_literal::hex!("ccee781f0b9380204db9882d1b1c771d53e99bc228247291bd1d0d34fa7f53993faff06e7c800c84bd5d1f5ea566d14962e8f33b7fb0e7e2d2276564061a2f3c7bcb612e733b8bf5733ea16cee0ecba6");
+            &hex_literal::hex!("ccee781f0b9380204db9882d1b1c771d53e99bc228247291bd1d0d34fa7f53991550b71c8150857bbf873d7ce086b4d7bcd4282ca0c30cbd9c578b5c790e88c803d80cd9cc91f28686f24ac25a61e06e");
         const FOREIGN_TO_NATIVE_ID_VALUE: &[u8] =
-            &hex_literal::hex!("01010905");
+            &hex_literal::hex!("010109006408de7737c59c238890533af25896a2c20608d8b380bb01029acb392781063e");
         const NATIVE_TO_FOREIGN_ID_KEY: &[u8] =
-            &hex_literal::hex!("ccee781f0b9380204db9882d1b1c771ddec2be471806c468b349224cf542e742627f68650cbf12ff5b6ab3d5751bc1ea01010905");
+            &hex_literal::hex!("ccee781f0b9380204db9882d1b1c771ddec2be471806c468b349224cf542e742be02dd7069c50095d8caa8a61b7c3af5010109006408de7737c59c238890533af25896a2c20608d8b380bb01029acb392781063e");
         const NATIVE_TO_FOREIGN_ID_VALUE: &[u8] =
-            &hex_literal::hex!("62e8f33b7fb0e7e2d2276564061a2f3c7bcb612e733b8bf5733ea16cee0ecba6");
+            &hex_literal::hex!("bcd4282ca0c30cbd9c578b5c790e88c803d80cd9cc91f28686f24ac25a61e06e");
 
         // Write foreign assets to pallet storage
         frame_support::storage::unhashed::put_raw(
@@ -296,14 +298,12 @@ fn test_snowbridge_ethereum_system_xcm_v5_migration() {
             NATIVE_TO_FOREIGN_ID_VALUE,
         );
 
-        let migration = SnowbridgeEthereumSystemXcmV5::<Runtime>(Default::default());
-        migration.migrate(Default::default());
-
+        // Check storage before migration
         let f_n = snowbridge_pallet_system::ForeignToNativeId::<Runtime>::iter().collect::<Vec<_>>();
         let n_f = snowbridge_pallet_system::NativeToForeignId::<Runtime>::iter().collect::<Vec<_>>();
 
         assert_eq!(f_n, [(
-            hex_literal::hex!("62e8f33b7fb0e7e2d2276564061a2f3c7bcb612e733b8bf5733ea16cee0ecba6").into(),
+            hex_literal::hex!("bcd4282ca0c30cbd9c578b5c790e88c803d80cd9cc91f28686f24ac25a61e06e").into(),
             Location {
                 parents: 1,
                 interior: X1([GlobalConsensus(NetworkId::ByGenesis(ROCOCO_GENESIS_HASH))].into()),
@@ -314,7 +314,23 @@ fn test_snowbridge_ethereum_system_xcm_v5_migration() {
                 parents: 1,
                 interior: X1([GlobalConsensus(NetworkId::ByGenesis(ROCOCO_GENESIS_HASH))].into()),
             },
-            hex_literal::hex!("62e8f33b7fb0e7e2d2276564061a2f3c7bcb612e733b8bf5733ea16cee0ecba6").into(),
+            hex_literal::hex!("bcd4282ca0c30cbd9c578b5c790e88c803d80cd9cc91f28686f24ac25a61e06e").into(),
+        )]);
+
+        let migration = MigrateEthSystemGenesisHashes::<Runtime, StarlightLocation>(Default::default());
+        migration.migrate(Default::default());
+
+        // Check storage after migration
+        let f_n = snowbridge_pallet_system::ForeignToNativeId::<Runtime>::iter().collect::<Vec<_>>();
+        let n_f = snowbridge_pallet_system::NativeToForeignId::<Runtime>::iter().collect::<Vec<_>>();
+
+        assert_eq!(f_n, [(
+            hex_literal::hex!("bcd4282ca0c30cbd9c578b5c790e88c803d80cd9cc91f28686f24ac25a61e06e").into(),
+            StarlightLocation::get(),
+        )]);
+        assert_eq!(n_f, [(
+            StarlightLocation::get(),
+            hex_literal::hex!("bcd4282ca0c30cbd9c578b5c790e88c803d80cd9cc91f28686f24ac25a61e06e").into(),
         )]);
     });
 }
@@ -335,7 +351,7 @@ fn snowbridge_ethereum_system_token_id_does_not_change() {
 
     let ethereum_location = EthereumLocation::get();
     // reanchor to Ethereum context
-    // This means to add this junction: GlobalConsensus(NetworkId::ByGenesis(ROCOCO_GENESIS_HASH))
+    // This means to add this junction: GlobalConsensus(NetworkId::ByGenesis(TANSSI_GENESIS_HASH))
     let location = location
         .clone()
         .reanchored(&ethereum_location, &UniversalLocation::get())
@@ -349,7 +365,7 @@ fn snowbridge_ethereum_system_token_id_does_not_change() {
     // So the exact token id from below is not important, as long as it does not change:
     assert_eq!(
         token_id,
-        hex_literal::hex!("bcd4282ca0c30cbd9c578b5c790e88c803d80cd9cc91f28686f24ac25a61e06e")
+        hex_literal::hex!("60dda4d65bd75bcebb4a0ea83becd6dd1139a296f439e2f5f65b37eb7b750fd8")
             .into()
     );
 }

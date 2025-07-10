@@ -27,7 +27,7 @@
         "nodes": [
             {
                 "name": "alice",
-                "ws_port": "9947",
+                "rpc_port": "9947",
                 "validator": true
             },
             {
@@ -60,7 +60,7 @@
                         "--wasmtime-precompiled=wasm",
                         "--pool-type=fork-aware"
                     ],
-                    "ws_port": 9948
+                    "rpc_port": 9948
                 },
                 {
                     "name": "Collator1000-01",
@@ -153,7 +153,7 @@
                     "validator": false,
                     "command": "../target/release/container-chain-simple-node",
                     "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
-                    "ws_port": 9949,
+                    "rpc_port": 9949,
                     "p2p_port": 33049
                 }
             ]
@@ -167,7 +167,7 @@
                     "validator": false,
                     "command": "../target/release/container-chain-frontier-node",
                     "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
-                    "ws_port": 9950,
+                    "rpc_port": 9950,
                     "p2p_port": 33050
                 }
             ]
@@ -181,7 +181,7 @@
                     "validator": false,
                     "command": "../target/release/container-chain-simple-node",
                     "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
-                    "ws_port": 9951,
+                    "rpc_port": 9951,
                     "p2p_port": 33051
                 }
             ]

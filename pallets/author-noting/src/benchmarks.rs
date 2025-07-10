@@ -20,7 +20,7 @@
 use {
     crate::{AuthorNotingInfo, Call, Config, HeadData, Pallet, ParaId, RelayOrPara},
     core::any::{Any, TypeId},
-    frame_benchmarking::{account, benchmarks},
+    frame_benchmarking::{account, v2::*},
     frame_support::{assert_ok, Hashable},
     frame_system::RawOrigin,
     parity_scale_codec::Encode,
@@ -55,13 +55,17 @@ mod test_sproof {
     }
 }
 
-benchmarks! {
-    set_latest_author_data {
-        // Depend on the number of parachains registered
-        let x in 1..100;
+#[benchmarks]
+mod benchmarks {
+    use super::*;
+
+    #[benchmark]
+    fn set_latest_author_data(x: Linear<1, 100>) -> Result<(), BenchmarkError> {
         let mut container_chains = vec![];
 
-        let data = if TypeId::of::<<<T as Config>::RelayOrPara as RelayOrPara>::InherentArg>() == TypeId::of::<tp_author_noting_inherent::OwnParachainInherentData>() {
+        let data = if TypeId::of::<<<T as Config>::RelayOrPara as RelayOrPara>::InherentArg>()
+            == TypeId::of::<tp_author_noting_inherent::OwnParachainInherentData>()
+        {
             // RELAY MODE
             let mut sproof_builder = test_sproof::ParaHeaderSproofBuilder::default();
 
@@ -75,15 +79,19 @@ benchmarks! {
                 // Mock assigned authors for this para id
                 // Use the max allowed value for num_each_container_chain
                 let num_each_container_chain = 2;
-                T::ContainerChainAuthor::set_authors_for_para_id(para_id, vec![author; num_each_container_chain]);
+                T::ContainerChainAuthor::set_authors_for_para_id(
+                    para_id,
+                    vec![author; num_each_container_chain],
+                );
                 sproof_builder.num_items += 1;
-
             }
             let (root, proof) = sproof_builder.into_state_root_and_proof();
-            T::RelayOrPara::set_current_relay_chain_state(cumulus_pallet_parachain_system::RelayChainState {
-                state_root: root,
-                number: 0,
-            });
+            T::RelayOrPara::set_current_relay_chain_state(
+                cumulus_pallet_parachain_system::RelayChainState {
+                    state_root: root,
+                    number: 0,
+                },
+            );
 
             let arg = tp_author_noting_inherent::OwnParachainInherentData {
                 relay_storage_proof: proof,
@@ -97,7 +105,9 @@ benchmarks! {
             }
 
             *(Box::new(arg) as Box<dyn Any>).downcast().unwrap()
-        } else if TypeId::of::<<<T as Config>::RelayOrPara as RelayOrPara>::InherentArg>() == TypeId::of::<()>() {
+        } else if TypeId::of::<<<T as Config>::RelayOrPara as RelayOrPara>::InherentArg>()
+            == TypeId::of::<()>()
+        {
             // PARA MODE
 
             // Must start at 1 in Para mode (why?)
@@ -109,12 +119,14 @@ benchmarks! {
                     state_root: Default::default(),
                     extrinsics_root: Default::default(),
                     digest: sp_runtime::generic::Digest {
-                        logs: vec![crate::DigestItem::PreRuntime(crate::AURA_ENGINE_ID, slot.encode())],
+                        logs: vec![crate::DigestItem::PreRuntime(
+                            crate::AURA_ENGINE_ID,
+                            slot.encode(),
+                        )],
                     },
                 };
                 let para_id: ParaId = para_id.into();
                 let bytes = para_id.twox_64_concat();
-
 
                 // Mock assigned authors for this para id
                 let author: T::AccountId = account("account id", 0u32, 0u32);
@@ -123,7 +135,10 @@ benchmarks! {
 
                 // Use the max allowed value for num_each_container_chain
                 let num_each_container_chain = 2;
-                T::ContainerChainAuthor::set_authors_for_para_id(para_id, vec![author.clone(); num_each_container_chain]);
+                T::ContainerChainAuthor::set_authors_for_para_id(
+                    para_id,
+                    vec![author.clone(); num_each_container_chain],
+                );
                 // CONCAT
                 let key = [crate::PARAS_HEADS_INDEX, bytes.as_slice()].concat();
 
@@ -138,40 +153,76 @@ benchmarks! {
             unreachable!("Unknown InherentArg")
         };
 
-        T::ContainerChains::set_container_chains_with_collators(ForSession::Current, &container_chains);
+        T::ContainerChains::set_container_chains_with_collators(
+            ForSession::Current,
+            &container_chains,
+        );
 
-    }: _(RawOrigin::None, data)
+        #[extrinsic_call]
+        _(RawOrigin::None, data);
 
-    set_author {
+        Ok(())
+    }
+
+    #[benchmark]
+    fn set_author() -> Result<(), BenchmarkError> {
         let para_id = 1000.into();
         let block_number = 1;
         let author: T::AccountId = account("account id", 0u32, 0u32);
-    }: _(RawOrigin::Root, para_id, block_number, author, u64::from(block_number).into())
 
-    kill_author_data {
+        #[extrinsic_call]
+        _(
+            RawOrigin::Root,
+            para_id,
+            block_number,
+            author,
+            u64::from(block_number).into(),
+        );
+
+        Ok(())
+    }
+
+    #[benchmark]
+    fn kill_author_data() -> Result<(), BenchmarkError> {
         let para_id = 1000.into();
         let block_number = 1;
         let author: T::AccountId = account("account id", 0u32, 0u32);
-        assert_ok!(Pallet::<T>::set_author(RawOrigin::Root.into(), para_id, block_number, author, u64::from(block_number).into()));
-    }: _(RawOrigin::Root, para_id)
+        assert_ok!(Pallet::<T>::set_author(
+            RawOrigin::Root.into(),
+            para_id,
+            block_number,
+            author,
+            u64::from(block_number).into()
+        ));
 
-    on_container_authors_noted {
-        // Depend on the number of parachains registered
-        let x in 1..50;
+        #[extrinsic_call]
+        _(RawOrigin::Root, para_id);
 
+        Ok(())
+    }
+
+    #[benchmark]
+    fn on_container_authors_noted(x: Linear<1, 50>) -> Result<(), BenchmarkError> {
         let mut infos = vec![];
         for i in 0..x {
             let para_id = (1000 + i).into();
             let block_number = 1;
             let author: T::AccountId = account("account id", 0u32, 0u32);
             T::AuthorNotingHook::prepare_worst_case_for_bench(&author, block_number, para_id);
-            infos.push(AuthorNotingInfo { author, block_number, para_id });
+            infos.push(AuthorNotingInfo {
+                author,
+                block_number,
+                para_id,
+            });
         }
-    }: { T::AuthorNotingHook::on_container_authors_noted(&infos)}
 
-    impl_benchmark_test_suite!(
-        Pallet,
-        crate::mock::new_test_ext(),
-        crate::mock::Test
-    );
+        #[block]
+        {
+            T::AuthorNotingHook::on_container_authors_noted(&infos);
+        }
+
+        Ok(())
+    }
+
+    impl_benchmark_test_suite!(Pallet, crate::mock::new_test_ext(), crate::mock::Test);
 }

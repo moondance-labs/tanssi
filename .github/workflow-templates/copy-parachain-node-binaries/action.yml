@@ -1,0 +1,26 @@
+name: Copy parachain node binaries
+
+inputs:
+  cpu:
+    required: true
+    type: string
+  profile:
+      required: false
+      type: string
+      default: "production"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Copy parachain node binaries
+      shell: bash
+      run: |
+        mkdir -p binaries
+        suffix=""
+        if [ "${{ inputs.cpu }}" != "" ]; then
+          suffix="-${{ inputs.cpu }}"
+        fi
+  
+        cp target/${{ inputs.profile }}/tanssi-node binaries/tanssi-node$suffix
+        cp target/${{ inputs.profile }}/container-chain-frontier-node binaries/container-chain-frontier-node$suffix
+        cp target/${{ inputs.profile }}/container-chain-simple-node binaries/container-chain-simple-node$suffix

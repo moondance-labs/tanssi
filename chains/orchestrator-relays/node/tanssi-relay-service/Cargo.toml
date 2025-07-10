@@ -154,6 +154,7 @@ cumulus-primitives-core = { workspace = true }
 
 # Own
 dp-container-chain-genesis-data = { workspace = true, features = [ "json", "std" ] }
+manual-container-chains-exclusion-rpc = { workspace = true }
 node-common = { workspace = true }
 
 [dev-dependencies]
@@ -228,6 +229,7 @@ runtime-benchmarks = [
 	"starlight-runtime-constants?/runtime-benchmarks",
 	"starlight-runtime?/runtime-benchmarks",
 	"xcm-runtime-apis/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
 ]
 try-runtime = [
 	"dancelight-runtime?/try-runtime",

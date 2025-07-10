@@ -117,15 +117,19 @@ jobs:
         with:
           name: runtimes
           path: runtimes
-      - name: Save tanssi and template binaries
-        run: |
-          mkdir -p binaries
-          cp $CARGO_TARGET_DIR/release/tanssi-node binaries/tanssi-node;
-          cp $CARGO_TARGET_DIR/release/tanssi-relay binaries/tanssi-relay;
-          cp $CARGO_TARGET_DIR/release/tanssi-relay-prepare-worker binaries/tanssi-relay-prepare-worker;
-          cp $CARGO_TARGET_DIR/release/tanssi-relay-execute-worker binaries/tanssi-relay-execute-worker;
-          cp $CARGO_TARGET_DIR/release/container-chain-frontier-node binaries/container-chain-frontier-node;
-          cp $CARGO_TARGET_DIR/release/container-chain-simple-node binaries/container-chain-simple-node;
+
+      - name: Copy parachain node binaries
+        uses: ./.github/workflow-templates/copy-parachain-node-binaries
+        with:
+          cpu: ""
+          profile: "release"
+
+      - name: Copy relaychain node binaries
+        uses: ./.github/workflow-templates/copy-relaychain-node-binaries
+        with:
+          cpu: ""
+          profile: "release"
+
       - name: Upload binary
         uses: actions/upload-artifact@v4
         with:
@@ -145,15 +149,10 @@ jobs:
         with:
           name: binaries
           path: target/release
-      - name: "Make binaries executable"
-        shell: bash
-        run: |
-          chmod uog+x target/release/tanssi-node
-          chmod uog+x target/release/tanssi-relay
-          chmod uog+x target/release/tanssi-relay-prepare-worker
-          chmod uog+x target/release/tanssi-relay-execute-worker
-          chmod uog+x target/release/container-chain-simple-node
-          chmod uog+x target/release/container-chain-frontier-node
+
+      - name: Make binaries executable
+        uses: ./.github/workflow-templates/make-binaries-executable
+
       - name: Run Zombienet Test ${{ matrix.test_name }}
         uses: ./.github/workflow-templates/zombienet-tests
         with:

@@ -26,7 +26,7 @@ use {
     crate::governance::StakingAdmin,
     frame_support::{
         parameter_types,
-        traits::{Contains, Equals, Everything, Nothing},
+        traits::{Contains, Disabled, Equals, Everything, Nothing},
         weights::Weight,
     },
     frame_system::EnsureRoot,
@@ -35,13 +35,10 @@ use {
         ToAuthor,
     },
     sp_core::ConstU32,
-    starlight_runtime_constants::{currency::CENTS, system_parachain::*},
+    starlight_runtime_constants::{currency::CENTS, system_parachain::*, TANSSI_GENESIS_HASH},
     tp_bridge::EthereumLocationsConverterFor,
     tp_xcm_commons::NativeAssetReserve,
-    xcm::{
-        latest::prelude::*,
-        opaque::latest::{ROCOCO_GENESIS_HASH, WESTEND_GENESIS_HASH},
-    },
+    xcm::{latest::prelude::*, opaque::latest::WESTEND_GENESIS_HASH},
     xcm_builder::{
         AccountId32Aliases, AllowExplicitUnpaidExecutionFrom, AllowKnownQueryResponses,
         AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom, ChildParachainAsNative,
@@ -58,7 +55,7 @@ use {
 parameter_types! {
     pub TokenLocation: Location = Here.into_location();
     pub RootLocation: Location = Location::here();
-    pub const ThisNetwork: NetworkId = NetworkId::ByGenesis(ROCOCO_GENESIS_HASH); // FIXME: Change to Starlight
+    pub const ThisNetwork: NetworkId = NetworkId::ByGenesis(TANSSI_GENESIS_HASH);
     pub UniversalLocation: InteriorLocation = ThisNetwork::get().into();
     pub CheckAccount: AccountId = XcmPallet::check_account();
     pub LocalCheckAccount: (AccountId, MintLocation) = (CheckAccount::get(), MintLocation::Local);
@@ -228,6 +225,7 @@ impl xcm_executor::Config for XcmConfig {
     type HrmpChannelAcceptedHandler = ();
     type HrmpChannelClosingHandler = ();
     type XcmRecorder = ();
+    type XcmEventEmitter = XcmPallet;
 }
 
 parameter_types! {
@@ -290,4 +288,5 @@ impl pallet_xcm::Config for Runtime {
     type RemoteLockConsumerIdentifier = ();
     type WeightInfo = weights::pallet_xcm::SubstrateWeight<Runtime>;
     type AdminOrigin = EnsureRoot<AccountId>;
+    type AuthorizedAliasConsideration = Disabled;
 }

@@ -5,7 +5,7 @@ import { filterAndApply } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 import type { Vec, bool, u32, u8 } from "@polkadot/types-codec";
 import type { EventRecord } from "@polkadot/types/interfaces";
-import { jumpBlocks, jumpSessions, jumpToSession } from "utils";
+import { jumpSessions, jumpToSession } from "utils";
 
 describeSuite({
     id: "DEVT0301",
@@ -67,13 +67,6 @@ describeSuite({
                         event.data as unknown as { randomSeed: Vec<u8>; fullRotation: bool; targetSession: u32 }
                 );
                 expect(filteredEvents[0].fullRotation.toJSON()).toBe(true);
-
-                // Check that the randomness is set in CollatorAssignment the
-                // block previous to the full rotation
-                const sessionDuration = await polkadotJs.consts.babe.epochDuration.toNumber();
-                await jumpBlocks(context, sessionDuration - 1);
-                const assignmentRandomness = await polkadotJs.query.tanssiCollatorAssignment.randomness();
-                expect(assignmentRandomness.isEmpty).toBe(false);
             },
         });
     },

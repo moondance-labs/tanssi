@@ -63,10 +63,18 @@ cargo test --release -p $1 $2
 args = ["Which crate to test", "Tests filter"]
 
 [[entries]]
-name = "[Tanssi] Cargo Test Crate (with fast-runtime & benchmarks)"
+name = "[Tanssi] Cargo Test Crate (fast-runtime)"
 only_in_dir = "**/tanssi"
 script = """
-cargo test --release -p $1 --features=fast-runtime,runtime-benchmarks $2
+cargo test --release -p $1 --features=fast-runtime $2
+"""
+args = ["Which crate to test", "Tests filter"]
+
+[[entries]]
+name = "[Tanssi] Cargo Test Crate (benchmarks)"
+only_in_dir = "**/tanssi"
+script = """
+cargo test --release -p $1 --features=runtime-benchmarks $2
 """
 args = ["Which crate to test", "Tests filter"]
 
@@ -162,12 +170,9 @@ pnpm lint:fix
 # Other
 
 [[entries]]
-name = "[Tanssi] Please make CI happy :)"
+name = "[Tanssi] Run all formatters and zepter"
 only_in_dir = "**/tanssi"
 script = """
-echo "\nℹ️ Running 'cargo fix'\n"
-SKIP_WASM_BUILD=1 cargo fix --all-targets --tests --locked --workspace --allow-dirty
-
 echo "\nℹ️ Running 'cargo fmt'\n"
 cargo fmt
 

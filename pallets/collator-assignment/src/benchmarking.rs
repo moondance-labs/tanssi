@@ -20,6 +20,7 @@
 use {
     super::*,
     crate::Pallet,
+    core::any::TypeId,
     frame_benchmarking::{account, impl_benchmark_test_suite, v2::*, BenchmarkError},
     frame_support::{
         pallet_prelude::*,
@@ -85,8 +86,21 @@ mod benchmarks {
 
         // Do not use [0; 32] because that seed will not shuffle the list of collators
         // We use a different random seed every time to make sure that the event is included
-        let random_seed = [x as u8; 32];
-        <Randomness<T>>::put(random_seed);
+        let mut random_seed = [x as u8; 32];
+
+        let is_flashbox = TypeId::of::<T::Randomness>() == TypeId::of::<()>();
+        if is_flashbox {
+            // No randomness for flashbox, so we cannot mock it, it will always be [0; 32]
+            random_seed = [0; 32];
+        } else {
+            // Mock randomness for dancebox
+            <Randomness<T>>::put(random_seed);
+            // Mock randomness for dancelight
+            frame_support::storage::unhashed::put(
+                b"__bench_collator_assignment_randomness",
+                &random_seed,
+            );
+        }
 
         #[block]
         {

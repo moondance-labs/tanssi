@@ -6,6 +6,10 @@ on:
     branches:
       - master
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   NODE_OPTIONS: "--max-old-space-size=12288"
   GRCOV_VERSION: 0.8.18
@@ -159,11 +163,28 @@ jobs:
             > coverage_report.md
 
             echo "coverage_date=\"$(date)\"" >> $GITHUB_OUTPUT
+            mv coverage_report.md coverage
           fi
 
           rm -rf proffiles/
       - name: Upload coverate to gha
         uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage
+
+
+  generate-coverage-link-and-comment:
+    runs-on:
+      labels: ubuntu-latest
+    needs: ["set-tags","build-and-coverage"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.set-tags.outputs.git_ref }}
+      - name: "Download coverage"
+        uses: actions/download-artifact@v4
         with:
           name: coverage
           path: coverage
@@ -187,7 +208,7 @@ jobs:
       - name: Create coverage report comment
         if: ${{ (needs.set-tags.outputs.coverage_report == 'true') && (github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push') }}
         run: |
-          mv coverage_report.md temp_coverage_report.md
+          mv coverage/coverage_report.md temp_coverage_report.md
           echo "## [Coverage Report](${{ vars.S3_BUCKET_URL }}/${{steps.S3.outputs.object_key}}/html/index.html)" > coverage_report.md
           echo "[(master)](${{ vars.S3_BUCKET_URL }}/tanssi-coverage/branches/master/html/index.html)" >> coverage_report.md
           cat temp_coverage_report.md >> coverage_report.md

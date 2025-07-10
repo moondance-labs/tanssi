@@ -1248,6 +1248,29 @@ declare module "@polkadot/api-base/types/submittable" {
                 [u16, Vec<AccountId32>, PalletMultisigTimepoint, U8aFixed]
             >;
             /**
+             * Poke the deposit reserved for an existing multisig operation.
+             *
+             * The dispatch origin for this call must be _Signed_ and must be the original depositor of
+             * the multisig operation.
+             *
+             * The transaction fee is waived if the deposit amount has changed.
+             *
+             * - `threshold`: The total number of approvals needed for this multisig.
+             * - `other_signatories`: The accounts (other than the sender) who are part of the
+             * multisig.
+             * - `call_hash`: The hash of the call this deposit is reserved for.
+             *
+             * Emits `DepositPoked` if successful.
+             **/
+            pokeDeposit: AugmentedSubmittable<
+                (
+                    threshold: u16 | AnyNumber | Uint8Array,
+                    otherSignatories: Vec<AccountId32> | (AccountId32 | string | Uint8Array)[],
+                    callHash: U8aFixed | string | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [u16, Vec<AccountId32>, U8aFixed]
+            >;
+            /**
              * Generic tx
              **/
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
@@ -1451,6 +1474,17 @@ declare module "@polkadot/api-base/types/submittable" {
                 ) => SubmittableExtrinsic<ApiType>,
                 [MultiAddress, FlashboxRuntimeProxyType, u16, Compact<u32>, Compact<u32>]
             >;
+            /**
+             * Poke / Adjust deposits made for proxies and announcements based on current values.
+             * This can be used by accounts to possibly lower their locked amount.
+             *
+             * The dispatch origin for this call must be _Signed_.
+             *
+             * The transaction fee is waived if the deposit amount has changed.
+             *
+             * Emits `DepositPoked` if successful.
+             **/
+            pokeDeposit: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
             /**
              * Dispatch the given `call` from an account that the sender is authorised for through
              * `add_proxy`.
@@ -2547,7 +2581,21 @@ declare module "@polkadot/api-base/types/submittable" {
              **/
             dispatchAs: AugmentedSubmittable<
                 (
-                    asOrigin: FlashboxRuntimeOriginCaller | { system: any } | { Void: any } | string | Uint8Array,
+                    asOrigin: FlashboxRuntimeOriginCaller | { system: any } | string | Uint8Array,
+                    call: Call | IMethod | string | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [FlashboxRuntimeOriginCaller, Call]
+            >;
+            /**
+             * Dispatches a function call with a provided origin.
+             *
+             * Almost the same as [`Pallet::dispatch_as`] but forwards any error of the inner call.
+             *
+             * The dispatch origin for this call must be _Root_.
+             **/
+            dispatchAsFallible: AugmentedSubmittable<
+                (
+                    asOrigin: FlashboxRuntimeOriginCaller | { system: any } | string | Uint8Array,
                     call: Call | IMethod | string | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
                 [FlashboxRuntimeOriginCaller, Call]
@@ -2570,6 +2618,38 @@ declare module "@polkadot/api-base/types/submittable" {
             forceBatch: AugmentedSubmittable<
                 (calls: Vec<Call> | (Call | IMethod | string | Uint8Array)[]) => SubmittableExtrinsic<ApiType>,
                 [Vec<Call>]
+            >;
+            /**
+             * Dispatch a fallback call in the event the main call fails to execute.
+             * May be called from any origin except `None`.
+             *
+             * This function first attempts to dispatch the `main` call.
+             * If the `main` call fails, the `fallback` is attemted.
+             * if the fallback is successfully dispatched, the weights of both calls
+             * are accumulated and an event containing the main call error is deposited.
+             *
+             * In the event of a fallback failure the whole call fails
+             * with the weights returned.
+             *
+             * - `main`: The main call to be dispatched. This is the primary action to execute.
+             * - `fallback`: The fallback call to be dispatched in case the `main` call fails.
+             *
+             * ## Dispatch Logic
+             * - If the origin is `root`, both the main and fallback calls are executed without
+             * applying any origin filters.
+             * - If the origin is not `root`, the origin filter is applied to both the `main` and
+             * `fallback` calls.
+             *
+             * ## Use Case
+             * - Some use cases might involve submitting a `batch` type call in either main, fallback
+             * or both.
+             **/
+            ifElse: AugmentedSubmittable<
+                (
+                    main: Call | IMethod | string | Uint8Array,
+                    fallback: Call | IMethod | string | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [Call, Call]
             >;
             /**
              * Dispatch a function call with a specified weight.

@@ -9,6 +9,7 @@ version = "0.1.0"
 workspace = true
 
 [dependencies]
+hex-literal = { workspace = true }
 smallvec = { workspace = true }
 
 frame-support = { workspace = true }
@@ -45,4 +46,5 @@ runtime-benchmarks = [
 	"sp-runtime/runtime-benchmarks",
 	"tp-traits/runtime-benchmarks",
 	"xcm-builder/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
 ]

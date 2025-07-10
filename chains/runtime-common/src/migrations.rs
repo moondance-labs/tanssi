@@ -41,6 +41,7 @@ use {
     frame_support::{
         migration::{clear_storage_prefix, move_pallet, storage_key_iter},
         pallet_prelude::GetStorageVersion,
+        parameter_types,
         traits::{
             fungible::MutateHold, OnRuntimeUpgrade, PalletInfoAccess, ReservableCurrency,
             StorageVersion,
@@ -552,6 +553,66 @@ where
         Ok(())
     }
 }
+
+pub struct MigrateSnowbridgeFeePerGasMigrationV0ToV1<T>(PhantomData<T>);
+impl<T> Migration for MigrateSnowbridgeFeePerGasMigrationV0ToV1<T>
+where
+    T: snowbridge_pallet_system::Config,
+{
+    fn friendly_name(&self) -> &str {
+        "MM_MigrateSnowbridgeFeePerGasMigrationV0ToV1"
+    }
+
+    fn migrate(&self, _available_weight: Weight) -> Weight {
+        snowbridge_pallet_system::migration::FeePerGasMigrationV0ToV1::<T>::on_runtime_upgrade()
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        snowbridge_pallet_system::migration::FeePerGasMigrationV0ToV1::<T>::pre_upgrade()
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(&self, state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        snowbridge_pallet_system::migration::FeePerGasMigrationV0ToV1::<T>::post_upgrade(state)
+    }
+}
+
+pub struct MigratePalletSessionV0toV1<T>(PhantomData<T>);
+impl<T: frame_system::Config + pallet_session::Config> Migration for MigratePalletSessionV0toV1<T>
+where
+    pallet_session::migrations::v1::MigrateV0ToV1<
+        T,
+        pallet_session::migrations::v1::InitOffenceSeverity<T>,
+    >: frame_support::traits::OnRuntimeUpgrade,
+{
+    fn friendly_name(&self) -> &str {
+        "MM_MigratePalletSessionV0ToV1"
+    }
+
+    fn migrate(&self, _available_weight: Weight) -> Weight {
+        pallet_session::migrations::v1::MigrateV0ToV1::<
+            T,
+            pallet_session::migrations::v1::InitOffenceSeverity<T>,
+        >::on_runtime_upgrade()
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        pallet_session::migrations::v1::MigrateV0ToV1::<
+            T,
+            pallet_session::migrations::v1::InitOffenceSeverity<T>,
+        >::pre_upgrade()
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(&self, state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        pallet_session::migrations::v1::MigrateV0ToV1::<
+            T,
+            pallet_session::migrations::v1::InitOffenceSeverity<T>,
+        >::post_upgrade(state)
+    }
+}
 pub struct MigrateToLatestXcmVersion<Runtime>(PhantomData<Runtime>);
 impl<Runtime> Migration for MigrateToLatestXcmVersion<Runtime>
 where
@@ -933,15 +994,33 @@ where
     }
 }
 
-// Copied from
-// cumulus/parachains/runtimes/bridge-hubs/bridge-hub-westend/src/bridge_to_ethereum_config.rs
-// Changed westend => rococo
 pub mod snowbridge_system_migration {
     use super::*;
     use alloc::vec::Vec;
     use frame_support::pallet_prelude::*;
     use snowbridge_core::TokenId;
-    use xcm;
+    use xcm::{
+        self,
+        v5::NetworkId::ByGenesis,
+        v5::{Junction::GlobalConsensus, ROCOCO_GENESIS_HASH},
+    };
+
+    pub const DANCELIGHT_GENESIS_HASH: [u8; 32] =
+        hex_literal::hex!["983a1a72503d6cc3636776747ec627172b51272bf45e50a355348facb67a820a"];
+
+    pub const TANSSI_GENESIS_HASH: [u8; 32] =
+        hex_literal::hex!["dd6d086f75ec041b66e20c4186d327b23c8af244c534a2418de6574e8c041a60"];
+
+    parameter_types! {
+        pub DancelightLocation: xcm::v5::Location = xcm::v5::Location::new(
+            1,
+            [GlobalConsensus(ByGenesis(DANCELIGHT_GENESIS_HASH))],
+        );
+        pub StarlightLocation: xcm::v5::Location = xcm::v5::Location::new(
+            1,
+            [GlobalConsensus(ByGenesis(TANSSI_GENESIS_HASH))],
+        );
+    }
 
     // Important: this cannot be called OldNativeToForeignId because that will be a different storage
     // item. Polkadot has a bug here.
@@ -949,34 +1028,46 @@ pub mod snowbridge_system_migration {
     pub type NativeToForeignId<T: snowbridge_pallet_system::Config> = StorageMap<
         snowbridge_pallet_system::Pallet<T>,
         Blake2_128Concat,
-        xcm::v4::Location,
+        xcm::v5::Location,
         TokenId,
         OptionQuery,
     >;
 
-    /// One shot migration for NetworkId::Westend to NetworkId::ByGenesis(WESTEND_GENESIS_HASH)
-    pub struct MigrationForXcmV5<T: snowbridge_pallet_system::Config>(core::marker::PhantomData<T>);
-    impl<T: snowbridge_pallet_system::Config> frame_support::traits::OnRuntimeUpgrade
-        for MigrationForXcmV5<T>
+    /// One shot migration to change the genesis hash of NetworkId::ByGenesis()
+    pub struct MigrationForGenesisHashes<T: snowbridge_pallet_system::Config, L: Get<xcm::v5::Location>>(
+        core::marker::PhantomData<(T, L)>,
+    );
+    impl<T: snowbridge_pallet_system::Config, L: Get<xcm::v5::Location>>
+        frame_support::traits::OnRuntimeUpgrade for MigrationForGenesisHashes<T, L>
     {
         fn on_runtime_upgrade() -> Weight {
             let mut weight = T::DbWeight::get().reads(1);
             let mut len_map1 = 0;
             let mut len_map2 = 0;
 
-            let translate_westend = |pre: xcm::v4::Location| -> Option<xcm::v5::Location> {
+            let translate_genesis_hashes = |pre: xcm::v5::Location| -> Option<xcm::v5::Location> {
                 weight.saturating_accrue(T::DbWeight::get().reads_writes(1, 1));
                 len_map1 += 1;
-                Some(xcm::v5::Location::try_from(pre).expect("valid location"))
+                let new_location: Option<xcm::v5::Location> = match pre.unpack() {
+                    (1, [GlobalConsensus(ByGenesis(ROCOCO_GENESIS_HASH))]) => Some(L::get()),
+                    _ => None,
+                };
+                Some(new_location.expect("valid location"))
             };
-            snowbridge_pallet_system::ForeignToNativeId::<T>::translate_values(translate_westend);
+            snowbridge_pallet_system::ForeignToNativeId::<T>::translate_values(
+                translate_genesis_hashes,
+            );
 
             let old_keys = NativeToForeignId::<T>::iter_keys().collect::<Vec<_>>();
 
             for old_key in old_keys {
                 if let Some(old_val) = NativeToForeignId::<T>::get(&old_key) {
+                    let new_location: Option<xcm::v5::Location> = match old_key.unpack() {
+                        (1, [GlobalConsensus(ByGenesis(ROCOCO_GENESIS_HASH))]) => Some(L::get()),
+                        _ => None,
+                    };
                     snowbridge_pallet_system::NativeToForeignId::<T>::insert(
-                        &xcm::v5::Location::try_from(old_key.clone()).expect("valid location"),
+                        &new_location.expect("valid location"),
                         old_val,
                     );
                 }
@@ -993,18 +1084,19 @@ pub mod snowbridge_system_migration {
     }
 }
 
-pub struct SnowbridgeEthereumSystemXcmV5<Runtime>(pub PhantomData<Runtime>);
+pub struct MigrateEthSystemGenesisHashes<Runtime, Location>(pub PhantomData<(Runtime, Location)>);
 
-impl<Runtime> Migration for SnowbridgeEthereumSystemXcmV5<Runtime>
+impl<Runtime, Location> Migration for MigrateEthSystemGenesisHashes<Runtime, Location>
 where
     Runtime: snowbridge_pallet_system::Config,
+    Location: Get<xcm::v5::Location>,
 {
     fn friendly_name(&self) -> &str {
-        "TM_SnowbridgeEthereumSystemXCMv5"
+        "TM_MigrateEthSystemGenesisHashes"
     }
 
     fn migrate(&self, _available_weight: Weight) -> Weight {
-        snowbridge_system_migration::MigrationForXcmV5::<Runtime>::on_runtime_upgrade()
+        snowbridge_system_migration::MigrationForGenesisHashes::<Runtime, Location>::on_runtime_upgrade()
     }
 
     #[cfg(feature = "try-runtime")]
@@ -1165,6 +1257,7 @@ where
     Runtime: pallet_balances::Config,
     Runtime: pallet_configuration::Config,
     Runtime: pallet_registrar::Config,
+    Runtime: pallet_session::Config,
     Runtime: pallet_services_payment::Config,
     Runtime: pallet_data_preservers::Config,
     Runtime: pallet_stream_payment::Config,
@@ -1190,8 +1283,9 @@ where
         //    DataPreserversAssignmentsMigration::<Runtime>(Default::default());
         //let migrate_registrar_reserves = RegistrarReserveToHoldMigration::<Runtime>(Default::default());
         //let migrate_config_max_parachain_percentage = MigrateConfigurationAddParachainPercentage::<Runtime>(Default::default());
-        let migrate_config_full_rotation_mode = MigrateConfigurationAddFullRotationMode::<Runtime>(Default::default());
-        let migrate_stream_payment_new_config_items = MigrateStreamPaymentNewConfigFields::<Runtime>(Default::default());
+        //let migrate_config_full_rotation_mode = MigrateConfigurationAddFullRotationMode::<Runtime>(Default::default());
+        //let migrate_stream_payment_new_config_items = MigrateStreamPaymentNewConfigFields::<Runtime>(Default::default());
+        let migrate_pallet_session_v0_to_v1 = MigratePalletSessionV0toV1::<Runtime>(Default::default());
 
         vec![
             // Applied in runtime 400
@@ -1212,8 +1306,11 @@ where
             //Box::new(migrate_registrar_reserves),
             // Applied in runtime 900
             //Box::new(migrate_config_max_parachain_percentage),
-            Box::new(migrate_config_full_rotation_mode),
-            Box::new(migrate_stream_payment_new_config_items),
+            // Applied in runtime 1100
+            //Box::new(migrate_config_full_rotation_mode),
+            // Applied in runtime 1200
+            //Box::new(migrate_stream_payment_new_config_items),
+            Box::new(migrate_pallet_session_v0_to_v1),
         ]
     }
 }
@@ -1223,6 +1320,7 @@ pub struct DanceboxMigrations<Runtime>(PhantomData<Runtime>);
 impl<Runtime> GetMigrations for DanceboxMigrations<Runtime>
 where
     Runtime: pallet_pooled_staking::Config,
+    Runtime: pallet_session::Config,
     Runtime: pallet_registrar::Config,
     Runtime: pallet_balances::Config,
     Runtime: pallet_configuration::Config,
@@ -1268,9 +1366,10 @@ where
         //let foreign_asset_creator_migration =
         //    ForeignAssetCreatorMigration::<Runtime>(Default::default());
         //let migrate_registrar_reserves = RegistrarReserveToHoldMigration::<Runtime>(Default::default());
-        let migrate_config_full_rotation_mode = MigrateConfigurationAddFullRotationMode::<Runtime>(Default::default());
-        let migrate_stream_payment_new_config_items = MigrateStreamPaymentNewConfigFields::<Runtime>(Default::default());
-        let migrate_pallet_xcm_v5 = MigrateToLatestXcmVersion::<Runtime>(Default::default());
+        //let migrate_config_full_rotation_mode = MigrateConfigurationAddFullRotationMode::<Runtime>(Default::default());
+        //let migrate_stream_payment_new_config_items = MigrateStreamPaymentNewConfigFields::<Runtime>(Default::default());
+        //let migrate_pallet_xcm_v5 = MigrateToLatestXcmVersion::<Runtime>(Default::default());
+        let migrate_pallet_session_v0_to_v1 = MigratePalletSessionV0toV1::<Runtime>(Default::default());
 
         vec![
             // Applied in runtime 200
@@ -1309,9 +1408,13 @@ where
             //Box::new(migrate_registrar_reserves),
             // Applied in runtime 900
             //Box::new(migrate_config_max_parachain_percentage),
-            Box::new(migrate_config_full_rotation_mode),
-            Box::new(migrate_stream_payment_new_config_items),
-            Box::new(migrate_pallet_xcm_v5),
+            // Applied in runtime 1100
+            //Box::new(migrate_config_full_rotation_mode),
+            // Applied in runtime 1200
+            //Box::new(migrate_stream_payment_new_config_items),
+            // Applied in runtime 1200
+            //Box::new(migrate_pallet_xcm_v5),
+            Box::new(migrate_pallet_session_v0_to_v1),
         ]
     }
 }
@@ -1333,27 +1436,44 @@ where
     Runtime: pallet_xcm::Config,
 {
     fn get_migrations() -> Vec<Box<dyn Migration>> {
-        let migrate_config_full_rotation_mode =
-            MigrateConfigurationAddFullRotationMode::<Runtime>(Default::default());
+        /*let migrate_config_full_rotation_mode =
+        MigrateConfigurationAddFullRotationMode::<Runtime>(Default::default());*/
+        /*let external_validator_slashes_bonded_eras_timestamp =
+        BondedErasTimestampMigration::<Runtime>(Default::default());*/
+        /*let snowbridge_ethereum_system_xcm_v5 =
+        SnowbridgeEthereumSystemXcmV5::<Runtime>(Default::default());*/
+        //let migrate_pallet_xcm_v5 = MigrateToLatestXcmVersion::<Runtime>(Default::default());
+        //let para_shared_v1_migration = MigrateParaSharedToV1::<Runtime>(Default::default());
+        //let para_scheduler_v3_migration = MigrateParaSchedulerToV3::<Runtime>(Default::default());
+        let migrate_pallet_session_v0_to_v1 =
+            MigratePalletSessionV0toV1::<Runtime>(Default::default());
+        let migrate_snowbridge_fee_per_gas_migration_v0_to_v1 =
+            MigrateSnowbridgeFeePerGasMigrationV0ToV1::<Runtime>(Default::default());
+        let eth_system_genesis_hashes = MigrateEthSystemGenesisHashes::<
+            Runtime,
+            snowbridge_system_migration::DancelightLocation,
+        >(Default::default());
 
-        let external_validator_slashes_bonded_eras_timestamp =
-            BondedErasTimestampMigration::<Runtime>(Default::default());
-        let snowbridge_ethereum_system_xcm_v5 =
-            SnowbridgeEthereumSystemXcmV5::<Runtime>(Default::default());
-        let migrate_pallet_xcm_v5 = MigrateToLatestXcmVersion::<Runtime>(Default::default());
-        let para_shared_v1_migration = MigrateParaSharedToV1::<Runtime>(Default::default());
-        let para_scheduler_v3_migration = MigrateParaSchedulerToV3::<Runtime>(Default::default());
         vec![
             // Applied in runtime 1000
             //Box::new(migrate_mmr_leaf_pallet),
             // Applied in runtime 900
             //Box::new(migrate_external_validators),
-            Box::new(migrate_config_full_rotation_mode),
-            Box::new(external_validator_slashes_bonded_eras_timestamp),
-            Box::new(snowbridge_ethereum_system_xcm_v5),
-            Box::new(migrate_pallet_xcm_v5),
-            Box::new(para_shared_v1_migration),
-            Box::new(para_scheduler_v3_migration),
+            // Applied in runtime 1100
+            //Box::new(migrate_config_full_rotation_mode),
+            // Applied in runtime  1100
+            //Box::new(external_validator_slashes_bonded_eras_timestamp),
+            // Applied in runtime 1200
+            //Box::new(snowbridge_ethereum_system_xcm_v5),
+            // Applied in runtime 1200
+            //Box::new(migrate_pallet_xcm_v5),
+            // Apllied in runtime 1200
+            // Box::new(para_shared_v1_migration),
+            // Applied in runtime 1200
+            //Box::new(para_scheduler_v3_migration),
+            Box::new(migrate_pallet_session_v0_to_v1),
+            Box::new(migrate_snowbridge_fee_per_gas_migration_v0_to_v1),
+            Box::new(eth_system_genesis_hashes),
         ]
     }
 }
@@ -1363,8 +1483,22 @@ pub struct StarlightMigrations<Runtime>(PhantomData<Runtime>);
 impl<Runtime> GetMigrations for StarlightMigrations<Runtime>
 where
     Runtime: frame_system::Config,
+    Runtime: pallet_session::Config,
+    Runtime: snowbridge_pallet_system::Config,
 {
     fn get_migrations() -> Vec<Box<dyn Migration>> {
-        vec![]
+        let migrate_pallet_session_v0_to_v1 =
+            MigratePalletSessionV0toV1::<Runtime>(Default::default());
+        let migrate_snowbridge_fee_per_gas_migration_v0_to_v1 =
+            MigrateSnowbridgeFeePerGasMigrationV0ToV1::<Runtime>(Default::default());
+        let eth_system_genesis_hashes = MigrateEthSystemGenesisHashes::<
+            Runtime,
+            snowbridge_system_migration::StarlightLocation,
+        >(Default::default());
+        vec![
+            Box::new(migrate_pallet_session_v0_to_v1),
+            Box::new(migrate_snowbridge_fee_per_gas_migration_v0_to_v1),
+            Box::new(eth_system_genesis_hashes),
+        ]
     }
 }
