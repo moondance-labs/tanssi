@@ -26,19 +26,17 @@ use {
     alloy_sol_types::SolEvent,
     dancelight_runtime_constants::snowbridge::EthereumNetwork,
     frame_support::{
-        assert_noop, assert_ok,
+        assert_err, assert_noop, assert_ok,
         traits::{fungible::Inspect, fungibles::Mutate},
     },
     hex_literal::hex,
     parity_scale_codec::Encode,
-    snowbridge_core::{
-        inbound::{Log, Message},
-        AgentId, Channel, ChannelId, ParaId,
+    snowbridge_core::{AgentId, Channel, ChannelId, ParaId},
+    snowbridge_inbound_queue_primitives::v1::{
+        Command, Destination, Envelope, MessageProcessor, MessageV1, OutboundMessageAccepted,
+        VersionedXcmMessage,
     },
-    snowbridge_router_primitives::inbound::{
-        envelope::{Envelope, OutboundMessageAccepted},
-        Command, Destination, MessageProcessor, MessageV1, VersionedXcmMessage,
-    },
+    snowbridge_inbound_queue_primitives::{EventProof, Log},
     sp_core::{H160, H256},
     sp_runtime::{traits::MaybeEquivalence, FixedU128, TokenError},
     sp_std::vec,
@@ -483,7 +481,7 @@ fn receive_native_tokens_from_eth_happy_path() {
                 payload: payload.encode(),
             };
 
-            let message = Message {
+            let message = EventProof {
                 event_log: Log {
                     address:
                         <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
@@ -577,7 +575,7 @@ fn no_error_when_receiving_register_token_command() {
                 payload: payload.encode(),
             };
 
-            let message = Message {
+            let message = EventProof {
                 event_log: Log {
                     address:
                         <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
@@ -658,7 +656,7 @@ fn fail_receiving_native_tokens_with_foreign_account_id_20() {
                 payload: payload.encode(),
             };
 
-            let message = Message {
+            let message = EventProof {
                 event_log: Log {
                     address:
                         <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
@@ -747,7 +745,7 @@ fn fail_receiving_native_tokens_with_foreign_account_id_32() {
                 payload: payload.encode(),
             };
 
-            let message = Message {
+            let message = EventProof {
                 event_log: Log {
                     address:
                         <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
@@ -839,7 +837,7 @@ fn fail_receiving_native_tokens_with_destination_below_existential_deposit() {
                 payload: payload.encode(),
             };
 
-            let message = Message {
+            let message = EventProof {
                 event_log: Log {
                     address:
                         <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
@@ -930,7 +928,7 @@ fn receive_eth_native_token_in_tanssi_zero_address() {
                 payload: payload.encode(),
             };
 
-            let message = Message {
+            let message = EventProof {
                 event_log: Log {
                     address:
                         <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
@@ -1044,7 +1042,7 @@ fn receive_erc20_tokens_in_tanssi_non_zero_address() {
                 payload: payload.encode(),
             };
 
-            let message = Message {
+            let message = EventProof {
                 event_log: Log {
                     address:
                         <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
@@ -1157,7 +1155,7 @@ fn receive_erc20_tokens_fails_if_not_registered_in_foreign_assets() {
                 payload: payload.encode(),
             };
 
-            let message = Message {
+            let message = EventProof {
                 event_log: Log {
                     address:
                         <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
@@ -1244,7 +1242,7 @@ fn receive_eth_native_token_fails_if_not_registered_in_foreign_assets() {
                 payload: payload.encode(),
             };
 
-            let message = Message {
+            let message = EventProof {
                 event_log: Log {
                     address:
                         <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
@@ -2138,6 +2136,106 @@ fn cant_send_tokens_of_unknown_remote_network() {
                     Unlimited,
                 ),
                 pallet_xcm::Error::<Runtime>::InvalidAssetUnknownReserve
+            );
+
+            assert_eq!(
+                filter_events!(RuntimeEvent::EthereumOutboundQueue(
+                    snowbridge_pallet_outbound_queue::Event::MessageQueued { .. },
+                ))
+                .count(),
+                0,
+                "MessageQueued event should NOT be emitted!"
+            );
+        })
+}
+
+#[test]
+fn test_unrelated_xcm_message() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (EthereumSovereignAccount::get(), 100_000 * UNIT),
+            (SnowbridgeFeesAccount::get(), 100_000 * UNIT),
+            (AccountId::from(ALICE), 100_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            // Setup bridge and token
+            let channel_id: ChannelId = ChannelId::new(hex!(
+                "00000000000000000000006e61746976655f746f6b656e5f7472616e73666572"
+            ));
+            let agent_id = AgentId::from_low_u64_be(10);
+            let para_id: ParaId = 2000u32.into();
+            let amount_to_transfer = 10_000u128;
+
+            assert_ok!(EthereumTokenTransfers::set_token_transfer_channel(
+                root_origin(),
+                channel_id,
+                agent_id,
+                para_id
+            ));
+
+            // Define a mock ERC20 token address
+            let token_address = H160(hex!("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"));
+
+            let erc20_asset_location = Location {
+                parents: 1,
+                interior: X2([
+                    GlobalConsensus(NetworkId::BitcoinCore),
+                    AccountKey20 {
+                        network: Some(EthereumNetwork::get()),
+                        key: token_address.into(),
+                    },
+                ]
+                .into()),
+            };
+
+            let asset_id = 42u16;
+
+            assert_ok!(ForeignAssetsCreator::create_foreign_asset(
+                root_origin(),
+                erc20_asset_location.clone(), // Use the ERC20 location
+                asset_id,
+                AccountId::from(ALICE),
+                true,
+                1
+            ));
+
+            // Give tokens to user as if tokens were bridged before + extra to check the correct
+            // amount is sent
+            ForeignAssets::mint_into(asset_id, &AccountId::from(BOB), amount_to_transfer + 10)
+                .expect("to mint amount");
+
+            // User tries to send tokens
+            let beneficiary_address = H160(hex!("0123456789abcdef0123456789abcdef01234567"));
+
+            // Beneficiary location
+            let mut beneficiary_location = Location {
+                parents: 1,
+                interior: X1([AccountKey20 {
+                    network: Some(EthereumNetwork::get()),
+                    key: beneficiary_address.into(),
+                }]
+                .into()),
+            };
+
+            beneficiary_location
+                .append_with(EthereumLocation::get())
+                .expect("to not overflow");
+
+            let eth_asset = AssetId(erc20_asset_location.clone())
+                .into_asset(Fungibility::Fungible(amount_to_transfer));
+
+            assert_err!(
+                XcmPallet::send_xcm(
+                    Junctions::from([Junction::AccountId32 {
+                        network: None,
+                        id: AccountId::from(BOB).into()
+                    }]),
+                    beneficiary_location,
+                    xcm::opaque::latest::Xcm(vec![xcm::opaque::latest::Instruction::ClearOrigin,]),
+                ),
+                SendError::Unroutable,
             );
 
             assert_eq!(

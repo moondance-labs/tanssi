@@ -242,6 +242,7 @@ fn testnet_genesis(
                         .map(|k| (k, flashbox_runtime::EXISTENTIAL_DEPOSIT)),
                 )
                 .collect(),
+            ..Default::default()
         },
         parachain_info: flashbox_runtime::ParachainInfoConfig {
             parachain_id: id,

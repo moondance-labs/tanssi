@@ -579,7 +579,6 @@ pub mod pallet {
     }
 
     impl<T: Config> GetContainerChainAuthor<T::AccountId> for Pallet<T> {
-        // TODO: pending collator container chain if the block is a session change!
         fn author_for_slot(slot: Slot, para_id: ParaId) -> Option<T::AccountId> {
             let assigned_collators = Pallet::<T>::collator_container_chain();
             let collators = if para_id == T::SelfParaId::get() {

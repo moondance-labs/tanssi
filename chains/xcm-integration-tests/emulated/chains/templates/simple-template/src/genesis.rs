@@ -35,6 +35,7 @@ pub fn genesis() -> sp_core::storage::Storage {
                 .cloned()
                 .map(|k| (k, ENDOWMENT))
                 .collect(),
+            ..Default::default()
         },
         parachain_info: ParachainInfoConfig {
             parachain_id: PARA_ID.into(),

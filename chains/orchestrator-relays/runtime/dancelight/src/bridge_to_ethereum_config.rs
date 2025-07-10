@@ -45,12 +45,13 @@ use {
     pallet_xcm::EnsureXcm,
     parity_scale_codec::DecodeAll,
     snowbridge_beacon_primitives::ForkVersions,
-    snowbridge_core::{gwei, inbound::Message, meth, Channel, PricingParameters, Rewards},
+    snowbridge_core::{gwei, meth, Channel, PricingParameters, Rewards},
+    snowbridge_inbound_queue_primitives::v1::{
+        Command, Destination, Envelope, MessageProcessor, MessageV1, VersionedXcmMessage,
+    },
+    snowbridge_inbound_queue_primitives::EventProof,
     snowbridge_pallet_inbound_queue::RewardProcessor,
     snowbridge_pallet_outbound_queue::OnNewCommitment,
-    snowbridge_router_primitives::inbound::{
-        envelope::Envelope, Command, Destination, MessageProcessor, MessageV1, VersionedXcmMessage,
-    },
     sp_core::{ConstU32, ConstU8, Get, H160, H256},
     sp_runtime::{traits::Zero, DispatchError, DispatchResult},
     sp_std::{marker::PhantomData, vec},
@@ -99,7 +100,7 @@ impl snowbridge_pallet_outbound_queue::Config for Runtime {
     type Decimals = ConstU8<12>;
     type MaxMessagePayloadSize = ConstU32<2048>;
     type MaxMessagesPerBlock = ConstU32<32>;
-    type GasMeter = snowbridge_core::outbound::ConstantGasMeter;
+    type GasMeter = snowbridge_outbound_queue_primitives::v1::ConstantGasMeter;
     type Balance = Balance;
     type WeightToFee = WeightToFee;
     type WeightInfo = crate::weights::snowbridge_pallet_outbound_queue::SubstrateWeight<Runtime>;
@@ -353,8 +354,8 @@ mod benchmark_helper {
         crate::{EthereumBeaconClient, Runtime, RuntimeOrigin},
         snowbridge_beacon_primitives::BeaconHeader,
         snowbridge_core::Channel,
+        snowbridge_inbound_queue_primitives::v1::{Envelope, MessageProcessor},
         snowbridge_pallet_system::Channels,
-        snowbridge_router_primitives::inbound::{envelope::Envelope, MessageProcessor},
         sp_core::H256,
         xcm::latest::Location,
     };
@@ -370,7 +371,7 @@ mod benchmark_helper {
     impl snowbridge_pallet_inbound_queue::BenchmarkHelper<Runtime> for EthSystemBenchHelper {
         fn initialize_storage(beacon_header: BeaconHeader, block_roots_root: H256) {
             let submit_message = snowbridge_pallet_inbound_queue_fixtures::register_token::make_register_token_message();
-            let envelope: Envelope = Envelope::try_from(&submit_message.message.event_log).unwrap();
+            let envelope: Envelope = Envelope::try_from(&submit_message.event.event_log).unwrap();
 
             Channels::<Runtime>::set(
                 envelope.channel_id,
@@ -399,7 +400,7 @@ mod benchmark_helper {
 
 #[cfg(any(test, feature = "testing-helpers"))]
 mod test_helpers {
-    use snowbridge_core::inbound::{Log, Proof, VerificationError, Verifier};
+    use snowbridge_inbound_queue_primitives::{Log, Proof, VerificationError, Verifier};
 
     pub struct MockVerifier;
 
@@ -420,7 +421,7 @@ where
     T::AccountId: From<sp_runtime::AccountId32>,
     <T::Token as Inspect<T::AccountId>>::Balance: core::fmt::Debug,
 {
-    fn process_reward(who: T::AccountId, _channel: Channel, message: Message) -> DispatchResult {
+    fn process_reward(who: T::AccountId, _channel: Channel, message: EventProof) -> DispatchResult {
         let reward_amount = snowbridge_pallet_inbound_queue::Pallet::<T>::calculate_delivery_cost(
             message.encode().len() as u32,
         );

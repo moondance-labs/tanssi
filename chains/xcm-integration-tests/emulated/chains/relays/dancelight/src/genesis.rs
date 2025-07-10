@@ -16,7 +16,10 @@
 
 use {
     dancelight_runtime_constants::currency::UNITS as DANCE,
-    emulated_integration_tests_common::build_genesis_storage, sp_core::storage::Storage,
+    emulated_integration_tests_common::build_genesis_storage,
+    polkadot_parachain_primitives::primitives::ValidationCode,
+    runtime_parachains::paras::{ParaGenesisArgs, ParaKind},
+    sp_core::storage::Storage,
 };
 const INITIAL_BALANCE: u128 = 1_000_000 * DANCE;
 
@@ -28,6 +31,7 @@ pub fn genesis() -> Storage {
                 .cloned()
                 .map(|k| (k, INITIAL_BALANCE))
                 .collect(),
+            ..Default::default()
         },
         babe: dancelight_runtime::BabeConfig {
             authorities: Default::default(),
@@ -37,6 +41,27 @@ pub fn genesis() -> Storage {
         configuration: dancelight_runtime::ConfigurationConfig {
             config:
                 dancelight_runtime::genesis_config_presets::default_parachains_host_configuration(),
+        },
+        paras: dancelight_runtime::ParasConfig {
+            _config: Default::default(),
+            paras: vec![
+                (
+                    2001.into(),
+                    ParaGenesisArgs {
+                        genesis_head: Default::default(),
+                        validation_code: ValidationCode(vec![1, 1, 2, 3, 4]),
+                        para_kind: ParaKind::Parachain,
+                    },
+                ),
+                (
+                    2002.into(),
+                    ParaGenesisArgs {
+                        genesis_head: Default::default(),
+                        validation_code: ValidationCode(vec![1, 1, 2, 3, 4]),
+                        para_kind: ParaKind::Parachain,
+                    },
+                ),
+            ],
         },
         ..Default::default()
     };
