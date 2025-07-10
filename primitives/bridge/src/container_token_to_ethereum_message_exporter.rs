@@ -18,10 +18,8 @@ use {
     core::{marker::PhantomData, slice::Iter},
     frame_support::{ensure, traits::Get},
     parity_scale_codec::{Decode, Encode},
-    snowbridge_core::{
-        outbound::{Command, Message, SendMessage},
-        ChannelId, TokenId, TokenIdOf,
-    },
+    snowbridge_core::{AgentId, ChannelId, TokenId, TokenIdOf},
+    snowbridge_outbound_queue_primitives::v1::message::{Command, Message, SendMessage},
     sp_core::{H160, H256},
     sp_runtime::traits::MaybeEquivalence,
     sp_std::{iter::Peekable, prelude::*},
@@ -36,7 +34,7 @@ pub struct EthereumBlobExporter<
     OutboundQueue,
     AgentHashedDescription,
     ConvertAssetId,
-    BridgeChannelId,
+    BridgeChannelInfo,
 >(
     PhantomData<(
         UniversalLocation,
@@ -44,7 +42,7 @@ pub struct EthereumBlobExporter<
         OutboundQueue,
         AgentHashedDescription,
         ConvertAssetId,
-        BridgeChannelId,
+        BridgeChannelInfo,
     )>,
 );
 
@@ -54,7 +52,7 @@ impl<
         OutboundQueue,
         AgentHashedDescription,
         ConvertAssetId,
-        BridgeChannelId,
+        BridgeChannelInfo,
     > ExportXcm
     for EthereumBlobExporter<
         UniversalLocation,
@@ -62,7 +60,7 @@ impl<
         OutboundQueue,
         AgentHashedDescription,
         ConvertAssetId,
-        BridgeChannelId,
+        BridgeChannelInfo,
     >
 where
     UniversalLocation: Get<InteriorLocation>,
@@ -70,7 +68,7 @@ where
     OutboundQueue: SendMessage<Balance = u128>,
     AgentHashedDescription: ConvertLocation<H256>,
     ConvertAssetId: MaybeEquivalence<TokenId, Location>,
-    BridgeChannelId: Get<Option<ChannelId>>,
+    BridgeChannelInfo: Get<Option<(ChannelId, AgentId)>>,
 {
     type Ticket = (Vec<u8>, XcmHash);
 
@@ -135,8 +133,8 @@ where
             Unroutable
         })?;
 
-        let channel_id = BridgeChannelId::get().ok_or_else(|| {
-            log::error!(target: "xcm::ethereum_blob_exporter", "channel id cannot be fetched");
+        let (channel_id, _) = BridgeChannelInfo::get().ok_or_else(|| {
+            log::error!(target: "xcm::ethereum_blob_exporter", "channel id and agent id cannot be fetched");
             Unroutable
         })?;
 

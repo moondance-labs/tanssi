@@ -47,9 +47,7 @@ use {
     tp_bridge::{
         barriers,
         container_token_to_ethereum_message_exporter::EthereumBlobExporter as ContainerEthereumBlobExporter,
-        snowbridge_outbound_token_transfer::{
-            EthereumBlobExporter, SnowbridgeChannelToAgentId, SnowbrigeTokenTransferRouter,
-        },
+        snowbridge_outbound_token_transfer::{EthereumBlobExporter, SnowbrigeTokenTransferRouter},
         EthereumLocationsConverterFor,
     },
     tp_xcm_commons::{EthereumAssetReserve, NativeAssetReserve},
@@ -414,5 +412,5 @@ pub type ContainerToSnowbridgeMessageExporter = ContainerEthereumBlobExporter<
     snowbridge_pallet_outbound_queue::Pallet<Runtime>,
     snowbridge_core::AgentIdOf,
     EthereumSystem,
-    SnowbridgeChannelId,
+    SnowbridgeChannelInfo,
 >;
