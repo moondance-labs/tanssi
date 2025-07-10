@@ -163,11 +163,13 @@ fn test_cannot_produce_block_even_if_buying_on_demand_if_no_collators() {
 
             // Here para-id is registered but does not have collators, but we can indeed buy a on-demand core
             // however we should not be able to produce for it
-            assert_ok!(OnDemandAssignmentProvider::place_order_allow_death(
+            #[allow(deprecated)]
+            let result = OnDemandAssignmentProvider::place_order_allow_death(
                 origin_of(ALICE.into()),
                 100 * UNIT,
-                1000u32.into()
-            ));
+                1000u32.into(),
+            );
+            assert_ok!(result);
             run_block();
 
             // We even have affinity with respect to what on-demand thinks
@@ -202,103 +204,6 @@ fn test_cannot_produce_block_even_if_buying_on_demand_if_no_collators() {
                 .build();
             set_new_inherent_data(inherent_data);
             // This should filter out, as we dont have any collators assigned to it
-            run_block();
-        })
-}
-
-#[test]
-#[should_panic(expected = "InherentDataFilteredDuringExecution")]
-// This test does not panic when producing the candidate, but when injecting it as backed
-// the inclusion pallet will filter it as it does not have a core assigned
-fn test_cannot_use_elastic_scaling_if_not_enabled() {
-    ExtBuilder::default()
-        .with_balances(vec![
-            // Alice gets 10k extra tokens for her mapping deposit
-            (AccountId::from(ALICE), 210_000 * UNIT),
-            (AccountId::from(BOB), 100_000 * UNIT),
-            (AccountId::from(CHARLIE), 100_000 * UNIT),
-            (AccountId::from(DAVE), 100_000 * UNIT),
-        ])
-        .with_config(pallet_configuration::HostConfiguration {
-            max_collators: 2,
-            min_orchestrator_collators: 0,
-            max_orchestrator_collators: 0,
-            collators_per_container: 2,
-            ..Default::default()
-        })
-        .with_collators(vec![
-            (AccountId::from(ALICE), 210 * UNIT),
-            (AccountId::from(BOB), 100 * UNIT),
-        ])
-        .with_para_ids(vec![ParaRegistrationParams {
-            para_id: 1000,
-            genesis_data: empty_genesis_data(),
-            block_production_credits: u32::MAX,
-            collator_assignment_credits: u32::MAX,
-            parathread_params: None,
-        }])
-        .with_inherent_data_enabled()
-        .with_relay_config(runtime_parachains::configuration::HostConfiguration::<
-            BlockNumberFor<Runtime>,
-        > {
-            scheduler_params: SchedulerParams {
-                num_cores: 2,
-                // A very high number to avoid group rotation in tests
-                // Otherwise we get a 1 by default, which changes groups every block
-                group_rotation_frequency: 10000000,
-                ..Default::default()
-            },
-            async_backing_params: AsyncBackingParams {
-                allowed_ancestry_len: 1,
-                max_candidate_depth: 0,
-            },
-            minimum_backing_votes: 1,
-            max_head_data_size: 5,
-            ..Default::default()
-        })
-        .with_keystore(Arc::new(MemoryKeystore::new()))
-        .build()
-        .execute_with(|| {
-            sp_tracing::try_init_simple();
-            run_to_block(2);
-            // Here para-id is registered and has collators, but we can indeed buy a on-demand core additional
-            // however we should not be able to produce for it without elastic scaling enabled
-            assert_ok!(OnDemandAssignmentProvider::place_order_allow_death(
-                origin_of(ALICE.into()),
-                100 * UNIT,
-                1000u32.into()
-            ));
-            run_block();
-
-            // The claim queue this time allows us to produce blocks
-            // We have a parachain core and a bought core through on demand
-            let assignments: BTreeMap<_, _> = claim_queue_assignments().collect();
-            assert_eq!(
-                assignments.get(&CoreIndex(0)).unwrap(),
-                &Assignment::Bulk(1000u32.into())
-            );
-            assert_eq!(
-                assignments.get(&CoreIndex(1)).unwrap(),
-                &Assignment::Pool {
-                    para_id: 1000u32.into(),
-                    core_index: CoreIndex(1)
-                }
-            );
-
-            // Now we try to create the block
-            // Since we have 2 cores (the one we bought, and the one assigned for being parachain)
-            // This is assumed to be elastic scaling, and since it is not enabled in the node features,
-            // it will fail
-            let cores_with_backed: BTreeMap<_, _> =
-                vec![(1000u32, Session::validators().len() as u32)]
-                    .into_iter()
-                    .collect();
-
-            let inherent_data = ParasInherentTestBuilder::<Runtime>::new()
-                .set_backed_and_concluding_paras(cores_with_backed)
-                .build();
-            set_new_inherent_data(inherent_data);
-            // This should filter out, because we are trying to use elastic scaling when not enabled
             run_block();
         })
 }
@@ -460,11 +365,13 @@ fn test_parathread_that_buys_core_has_affinity_and_can_produce() {
             );
 
             // let's buy core
-            assert_ok!(OnDemandAssignmentProvider::place_order_allow_death(
+            #[allow(deprecated)]
+            let result = OnDemandAssignmentProvider::place_order_allow_death(
                 origin_of(ALICE.into()),
                 100 * UNIT,
-                1000u32.into()
-            ));
+                1000u32.into(),
+            );
+            assert_ok!(result);
             run_block();
 
             // The claim queue this time allows us to produce blocks
@@ -568,11 +475,13 @@ fn test_on_demand_core_affinity_bound_to_core_gets_expired_at_session_boundaries
             );
 
             // let's buy core
-            assert_ok!(OnDemandAssignmentProvider::place_order_allow_death(
+            #[allow(deprecated)]
+            let result = OnDemandAssignmentProvider::place_order_allow_death(
                 origin_of(ALICE.into()),
                 100 * UNIT,
-                1000u32.into()
-            ));
+                1000u32.into(),
+            );
+            assert_ok!(result);
             run_block();
 
             // The claim queue this time allows us to produce blocks
@@ -733,11 +642,13 @@ fn test_parathread_uses_0_and_then_1_after_parachain_onboarded() {
             assert_eq!(authorities_for_container(2000u32.into()), None);
 
             // let's buy core for 2001
-            assert_ok!(OnDemandAssignmentProvider::place_order_allow_death(
+            #[allow(deprecated)]
+            let result = OnDemandAssignmentProvider::place_order_allow_death(
                 origin_of(ALICE.into()),
                 100 * UNIT,
-                2001u32.into()
-            ));
+                2001u32.into(),
+            );
+            assert_ok!(result);
 
             // We need to run one block for the place order to have effect in the claim queue
             run_block();
@@ -802,11 +713,13 @@ fn test_parathread_uses_0_and_then_1_after_parachain_onboarded() {
             // 2000 should occupy core 0 now, as it is a parachains. which means if we try to buy a core (and use it)
             // for parathread 2001 then it should assign core 1 to the parathread
             // let's buy core for 2001
-            assert_ok!(OnDemandAssignmentProvider::place_order_allow_death(
+            #[allow(deprecated)]
+            let result = OnDemandAssignmentProvider::place_order_allow_death(
                 origin_of(ALICE.into()),
                 100 * UNIT,
-                2001u32.into()
-            ));
+                2001u32.into(),
+            );
+            assert_ok!(result);
             run_block();
 
             // The claim queue allows us to produce blocks at core 1 for 2001

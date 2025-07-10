@@ -339,7 +339,15 @@ pub mod pallet {
     pub type CollatorSignatureNonce<T: Config> = StorageMap<_, Twox128, ParaId, u64, ValueQuery>;
 
     #[derive(
-        Encode, Decode, CloneNoBound, PartialEq, Eq, DebugNoBound, TypeInfo, MaxEncodedLen,
+        Encode,
+        Decode,
+        CloneNoBound,
+        PartialEq,
+        Eq,
+        DebugNoBound,
+        TypeInfo,
+        MaxEncodedLen,
+        DecodeWithMemTracking,
     )]
     #[scale_info(skip_type_params(T))]
     pub struct RelayXcmWeightConfigInner<T> {

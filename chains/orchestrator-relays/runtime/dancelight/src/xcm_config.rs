@@ -33,7 +33,7 @@ use {
     },
     frame_support::{
         parameter_types,
-        traits::{Contains, Equals, Everything, Nothing},
+        traits::{Contains, Disabled, Equals, Everything, Nothing},
         weights::Weight,
     },
     frame_system::EnsureRoot,
@@ -263,6 +263,7 @@ impl xcm_executor::Config for XcmConfig {
     type HrmpChannelAcceptedHandler = ();
     type HrmpChannelClosingHandler = ();
     type XcmRecorder = ();
+    type XcmEventEmitter = XcmPallet;
 }
 
 parameter_types! {
@@ -325,6 +326,7 @@ impl pallet_xcm::Config for Runtime {
     type RemoteLockConsumerIdentifier = ();
     type WeightInfo = weights::pallet_xcm::SubstrateWeight<Runtime>;
     type AdminOrigin = EnsureRoot<AccountId>;
+    type AuthorizedAliasConsideration = Disabled;
 }
 
 parameter_types! {
@@ -370,6 +372,7 @@ impl pallet_assets::Config<ForeignAssetsInstance> for Runtime {
     type CallbackHandle = ();
     type AssetAccountDeposit = ForeignAssetsAssetAccountDeposit;
     type RemoveItemsLimit = frame_support::traits::ConstU32<1000>;
+    type Holder = ();
     #[cfg(feature = "runtime-benchmarks")]
     type BenchmarkHelper = ForeignAssetBenchmarkHelper;
 }

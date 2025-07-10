@@ -61,7 +61,7 @@ impl<T: Config> ParaIdsFilter<T> {
 }
 
 #[apply(derive_storage_traits)]
-#[derive(MaxEncodedLen)]
+#[derive(MaxEncodedLen, DecodeWithMemTracking)]
 pub enum ProfileMode {
     Bootnode,
     Rpc { supports_ethereum_rpcs: bool },

@@ -22,7 +22,7 @@ use {
         weights::constants::RocksDbWeight,
     },
     frame_system as system,
-    snowbridge_core::outbound::{SendError, SendMessageFeeProvider},
+    snowbridge_outbound_queue_primitives::{SendError, SendMessageFeeProvider},
     sp_core::H256,
     sp_runtime::{
         testing::UintAuthorityId,
@@ -164,6 +164,7 @@ impl pallet_session::Config for Test {
     type ValidatorIdOf = ConvertInto;
     type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
     type WeightInfo = ();
+    type DisablingStrategy = ();
 }
 
 sp_runtime::impl_opaque_keys! {

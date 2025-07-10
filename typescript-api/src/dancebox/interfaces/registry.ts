@@ -15,6 +15,7 @@ import type {
     CumulusPalletParachainSystemUnincludedSegmentHrmpChannelUpdate,
     CumulusPalletParachainSystemUnincludedSegmentSegmentTracker,
     CumulusPalletParachainSystemUnincludedSegmentUsedBandwidth,
+    CumulusPalletWeightReclaimStorageWeightReclaim,
     CumulusPalletXcmEvent,
     CumulusPalletXcmOrigin,
     CumulusPalletXcmpQueueCall,
@@ -25,7 +26,6 @@ import type {
     CumulusPalletXcmpQueueQueueConfigData,
     CumulusPrimitivesCoreAggregateMessageOrigin,
     CumulusPrimitivesParachainInherentParachainInherentData,
-    CumulusPrimitivesStorageWeightReclaimStorageWeightReclaim,
     DanceboxRuntimeOriginCaller,
     DanceboxRuntimeProxyType,
     DanceboxRuntimeRuntime,
@@ -49,6 +49,7 @@ import type {
     FrameSupportDispatchRawOrigin,
     FrameSupportMessagesProcessMessageError,
     FrameSupportPalletId,
+    FrameSupportStorageDisabled,
     FrameSupportTokensMiscBalanceStatus,
     FrameSupportTokensMiscIdAmountRuntimeFreezeReason,
     FrameSupportTokensMiscIdAmountRuntimeHoldReason,
@@ -168,6 +169,7 @@ import type {
     PalletPooledStakingSharesOrStake,
     PalletProxyAnnouncement,
     PalletProxyCall,
+    PalletProxyDepositKind,
     PalletProxyError,
     PalletProxyEvent,
     PalletProxyProxyDefinition,
@@ -214,6 +216,7 @@ import type {
     PalletUtilityCall,
     PalletUtilityError,
     PalletUtilityEvent,
+    PalletXcmAuthorizedAliasesEntry,
     PalletXcmCall,
     PalletXcmCoreBuyerCall,
     PalletXcmCoreBuyerError,
@@ -222,6 +225,7 @@ import type {
     PalletXcmCoreBuyerRelayXcmWeightConfigInner,
     PalletXcmError,
     PalletXcmEvent,
+    PalletXcmMaxAuthorizedAliases,
     PalletXcmOrigin,
     PalletXcmQueryStatus,
     PalletXcmRemoteLockedFungibleRecord,
@@ -237,7 +241,6 @@ import type {
     PolkadotPrimitivesV8UpgradeRestriction,
     SpArithmeticArithmeticError,
     SpCoreCryptoKeyTypeId,
-    SpCoreVoid,
     SpRuntimeDigest,
     SpRuntimeDigestDigestItem,
     SpRuntimeDispatchError,
@@ -303,6 +306,7 @@ import type {
     TpTraitsSlotFrequency,
     TpXcmCoreBuyerBuyCoreCollatorProof,
     XcmDoubleEncoded,
+    XcmRuntimeApisAuthorizedAliasesOriginAliaser,
     XcmV3Instruction,
     XcmV3Junction,
     XcmV3JunctionBodyId,
@@ -323,6 +327,7 @@ import type {
     XcmV3QueryResponseInfo,
     XcmV3Response,
     XcmV3TraitsError,
+    XcmV3TraitsSendError,
     XcmV3WeightLimit,
     XcmV3Xcm,
     XcmV5TraitsError,
@@ -344,6 +349,7 @@ declare module "@polkadot/types/types/registry" {
         CumulusPalletParachainSystemUnincludedSegmentHrmpChannelUpdate: CumulusPalletParachainSystemUnincludedSegmentHrmpChannelUpdate;
         CumulusPalletParachainSystemUnincludedSegmentSegmentTracker: CumulusPalletParachainSystemUnincludedSegmentSegmentTracker;
         CumulusPalletParachainSystemUnincludedSegmentUsedBandwidth: CumulusPalletParachainSystemUnincludedSegmentUsedBandwidth;
+        CumulusPalletWeightReclaimStorageWeightReclaim: CumulusPalletWeightReclaimStorageWeightReclaim;
         CumulusPalletXcmEvent: CumulusPalletXcmEvent;
         CumulusPalletXcmOrigin: CumulusPalletXcmOrigin;
         CumulusPalletXcmpQueueCall: CumulusPalletXcmpQueueCall;
@@ -354,7 +360,6 @@ declare module "@polkadot/types/types/registry" {
         CumulusPalletXcmpQueueQueueConfigData: CumulusPalletXcmpQueueQueueConfigData;
         CumulusPrimitivesCoreAggregateMessageOrigin: CumulusPrimitivesCoreAggregateMessageOrigin;
         CumulusPrimitivesParachainInherentParachainInherentData: CumulusPrimitivesParachainInherentParachainInherentData;
-        CumulusPrimitivesStorageWeightReclaimStorageWeightReclaim: CumulusPrimitivesStorageWeightReclaimStorageWeightReclaim;
         DanceboxRuntimeOriginCaller: DanceboxRuntimeOriginCaller;
         DanceboxRuntimeProxyType: DanceboxRuntimeProxyType;
         DanceboxRuntimeRuntime: DanceboxRuntimeRuntime;
@@ -378,6 +383,7 @@ declare module "@polkadot/types/types/registry" {
         FrameSupportDispatchRawOrigin: FrameSupportDispatchRawOrigin;
         FrameSupportMessagesProcessMessageError: FrameSupportMessagesProcessMessageError;
         FrameSupportPalletId: FrameSupportPalletId;
+        FrameSupportStorageDisabled: FrameSupportStorageDisabled;
         FrameSupportTokensMiscBalanceStatus: FrameSupportTokensMiscBalanceStatus;
         FrameSupportTokensMiscIdAmountRuntimeFreezeReason: FrameSupportTokensMiscIdAmountRuntimeFreezeReason;
         FrameSupportTokensMiscIdAmountRuntimeHoldReason: FrameSupportTokensMiscIdAmountRuntimeHoldReason;
@@ -497,6 +503,7 @@ declare module "@polkadot/types/types/registry" {
         PalletPooledStakingSharesOrStake: PalletPooledStakingSharesOrStake;
         PalletProxyAnnouncement: PalletProxyAnnouncement;
         PalletProxyCall: PalletProxyCall;
+        PalletProxyDepositKind: PalletProxyDepositKind;
         PalletProxyError: PalletProxyError;
         PalletProxyEvent: PalletProxyEvent;
         PalletProxyProxyDefinition: PalletProxyProxyDefinition;
@@ -543,6 +550,7 @@ declare module "@polkadot/types/types/registry" {
         PalletUtilityCall: PalletUtilityCall;
         PalletUtilityError: PalletUtilityError;
         PalletUtilityEvent: PalletUtilityEvent;
+        PalletXcmAuthorizedAliasesEntry: PalletXcmAuthorizedAliasesEntry;
         PalletXcmCall: PalletXcmCall;
         PalletXcmCoreBuyerCall: PalletXcmCoreBuyerCall;
         PalletXcmCoreBuyerError: PalletXcmCoreBuyerError;
@@ -551,6 +559,7 @@ declare module "@polkadot/types/types/registry" {
         PalletXcmCoreBuyerRelayXcmWeightConfigInner: PalletXcmCoreBuyerRelayXcmWeightConfigInner;
         PalletXcmError: PalletXcmError;
         PalletXcmEvent: PalletXcmEvent;
+        PalletXcmMaxAuthorizedAliases: PalletXcmMaxAuthorizedAliases;
         PalletXcmOrigin: PalletXcmOrigin;
         PalletXcmQueryStatus: PalletXcmQueryStatus;
         PalletXcmRemoteLockedFungibleRecord: PalletXcmRemoteLockedFungibleRecord;
@@ -566,7 +575,6 @@ declare module "@polkadot/types/types/registry" {
         PolkadotPrimitivesV8UpgradeRestriction: PolkadotPrimitivesV8UpgradeRestriction;
         SpArithmeticArithmeticError: SpArithmeticArithmeticError;
         SpCoreCryptoKeyTypeId: SpCoreCryptoKeyTypeId;
-        SpCoreVoid: SpCoreVoid;
         SpRuntimeDigest: SpRuntimeDigest;
         SpRuntimeDigestDigestItem: SpRuntimeDigestDigestItem;
         SpRuntimeDispatchError: SpRuntimeDispatchError;
@@ -632,6 +640,7 @@ declare module "@polkadot/types/types/registry" {
         TpTraitsSlotFrequency: TpTraitsSlotFrequency;
         TpXcmCoreBuyerBuyCoreCollatorProof: TpXcmCoreBuyerBuyCoreCollatorProof;
         XcmDoubleEncoded: XcmDoubleEncoded;
+        XcmRuntimeApisAuthorizedAliasesOriginAliaser: XcmRuntimeApisAuthorizedAliasesOriginAliaser;
         XcmV3Instruction: XcmV3Instruction;
         XcmV3Junction: XcmV3Junction;
         XcmV3JunctionBodyId: XcmV3JunctionBodyId;
@@ -652,6 +661,7 @@ declare module "@polkadot/types/types/registry" {
         XcmV3QueryResponseInfo: XcmV3QueryResponseInfo;
         XcmV3Response: XcmV3Response;
         XcmV3TraitsError: XcmV3TraitsError;
+        XcmV3TraitsSendError: XcmV3TraitsSendError;
         XcmV3WeightLimit: XcmV3WeightLimit;
         XcmV3Xcm: XcmV3Xcm;
         XcmV5TraitsError: XcmV5TraitsError;

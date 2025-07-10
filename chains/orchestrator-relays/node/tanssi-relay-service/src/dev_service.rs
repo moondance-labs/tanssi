@@ -223,7 +223,11 @@ pub fn build_full<OverseerGenerator: OverseerGen>(
             capacity
         });
 
-    match config.network.network_backend {
+    match config
+        .network
+        .network_backend
+        .unwrap_or(sc_network::config::NetworkBackendType::Libp2p)
+    {
         sc_network::config::NetworkBackendType::Libp2p => {
             new_full::<_, sc_network::NetworkWorker<Block, Hash>>(sealing, config, params)
         }
@@ -417,7 +421,7 @@ where
                                 .unwrap();
 
                             // if we dont do this we have a backed candidate every 2 blocks
-                            // TODO: figure out why
+                            // we want
                             persisted_validation_data.relay_parent_storage_root =
                                 parent_header.state_root;
 
@@ -497,7 +501,7 @@ where
                                 candidate,
                                 validity_votes.clone(),
                                 bitvec::bitvec![u8, bitvec::order::Lsb0; 1; indices_associated_to_core.len()],
-                                Some(core),
+                                core,
                             ));
                         }
                     }
@@ -657,7 +661,7 @@ fn new_full<
 
     let (upward_mock_sender, upward_mock_receiver) = flume::bounded::<Vec<u8>>(100);
 
-    let (network, system_rpc_tx, tx_handler_controller, network_starter, sync_service) =
+    let (network, system_rpc_tx, tx_handler_controller, sync_service) =
         service::build_network(service::BuildNetworkParams {
             config: &config,
             net_config,
@@ -858,8 +862,6 @@ fn new_full<
         tx_handler_controller,
         telemetry: telemetry.as_mut(),
     })?;
-
-    network_starter.start_network();
 
     Ok(NewFull {
         task_manager,
