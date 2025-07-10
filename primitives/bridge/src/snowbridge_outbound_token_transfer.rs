@@ -22,10 +22,8 @@ use core::marker::PhantomData;
 use core::slice::Iter;
 use frame_support::{ensure, traits::Get};
 use parity_scale_codec::{Decode, Encode};
-use snowbridge_core::{
-    outbound::{Command, Message, SendMessage},
-    AgentId, ChannelId, TokenId, TokenIdOf,
-};
+use snowbridge_core::{AgentId, ChannelId, TokenId, TokenIdOf};
+use snowbridge_outbound_queue_primitives::v1::message::{Command, Message, SendMessage};
 use sp_core::{H160, H256};
 use sp_runtime::traits::{MaybeEquivalence, TryConvert};
 use sp_std::{iter::Peekable, prelude::*};
@@ -328,7 +326,7 @@ where
         let topic_id = match_expression!(self.next()?, SetTopic(id), id).ok_or(SetTopicExpected)?;
 
         Ok((
-            Command::TransferNativeToken {
+            Command::UnlockNativeToken {
                 agent_id: self.agent_id,
                 token,
                 recipient,
