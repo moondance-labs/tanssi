@@ -1,6 +1,5 @@
 name: Publish Binary Draft From Docker-built-image
 
-# The code (like generate-release-body) will be taken from the tag version, not master
 on:
   workflow_dispatch:
     inputs:
@@ -18,7 +17,6 @@ on:
         description: docker tag to use for fetching binaries
         required: true
 jobs:
-  ####### Building binaries #######
   setup-scripts:
     runs-on: ubuntu-latest
     steps:
