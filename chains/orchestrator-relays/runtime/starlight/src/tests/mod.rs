@@ -28,6 +28,7 @@ mod common;
 mod core_scheduling_tests;
 mod ethereum_token_transfers;
 mod external_validators_tests;
+mod inactivity_tracking;
 mod inbound_queue_tests;
 mod inflation_rates;
 mod inflation_rewards;

@@ -1904,6 +1904,10 @@ impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
     }
 }
 
+parameter_types! {
+    pub const MaxCandidatesBufferSize: u32 = 100;
+}
+
 impl pallet_pooled_staking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
@@ -1916,9 +1920,25 @@ impl pallet_pooled_staking::Config for Runtime {
     type RewardsCollatorCommission = RewardsCollatorCommission;
     type JoiningRequestTimer = SessionTimer<StakingSessionDelay>;
     type LeavingRequestTimer = SessionTimer<StakingSessionDelay>;
-    type EligibleCandidatesBufferSize = ConstU32<100>;
+    type EligibleCandidatesBufferSize = MaxCandidatesBufferSize;
     type EligibleCandidatesFilter = CandidateHasRegisteredKeys;
     type WeightInfo = weights::pallet_pooled_staking::SubstrateWeight<Runtime>;
+}
+
+parameter_types! {
+    pub const MaxInactiveSessions: u32 = 5;
+}
+impl pallet_inactivity_tracking::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type CollatorId = AccountId;
+    type MaxInactiveSessions = MaxInactiveSessions;
+    type MaxCollatorsPerSession = MaxCandidatesBufferSize;
+    type MaxContainerChains = MaxLengthParaIds;
+    type CurrentSessionIndex = CurrentSessionIndexGetter;
+    type CurrentCollatorsFetcher = TanssiCollatorAssignment;
+    type GetSelfChainBlockAuthor = ();
+    type ParaFilter = tp_parathread_filter_common::ExcludeAllParathreadsFilter<Runtime>;
+    type WeightInfo = weights::pallet_inactivity_tracking::SubstrateWeight<Runtime>;
 }
 
 construct_runtime! {
@@ -1974,6 +1994,9 @@ construct_runtime! {
         // InflationRewards must be after Session
         InflationRewards: pallet_inflation_rewards = 33,
         PooledStaking: pallet_pooled_staking = 34,
+
+        // Inactivity tracking
+        InactivityTracking: pallet_inactivity_tracking = 35,
 
         // Governance stuff; uncallable initially.
         Treasury: pallet_treasury = 40,
@@ -2317,7 +2340,7 @@ impl pallet_author_noting::Config for Runtime {
     type ContainerChains = TanssiCollatorAssignment;
     type SlotBeacon = BabeSlotBeacon;
     type ContainerChainAuthor = TanssiCollatorAssignment;
-    type AuthorNotingHook = (InflationRewards, ServicesPayment);
+    type AuthorNotingHook = (InflationRewards, ServicesPayment, InactivityTracking);
     type RelayOrPara = pallet_author_noting::RelayMode;
     type MaxContainerChains = MaxLengthParaIds;
     type WeightInfo = weights::pallet_author_noting::SubstrateWeight<Runtime>;
@@ -2383,6 +2406,7 @@ mod benches {
         [pallet_pooled_staking, PooledStaking]
         [pallet_configuration, CollatorConfiguration]
         [pallet_stream_payment, StreamPayment]
+        [pallet_inactivity_tracking, InactivityTracking]
 
         // XCM
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
@@ -3470,9 +3494,13 @@ impl tanssi_initializer::ApplyNewSession<Runtime> for OwnApplySession {
             &queued_id_to_nimbus_map,
             &assignments.next_assignment,
         );
+        // 6. InactivityTracking
+        InactivityTracking::process_ended_session();
     }
 
-    fn on_before_session_ending() {}
+    fn on_before_session_ending() {
+        InactivityTracking::on_before_session_ending();
+    }
 }
 parameter_types! {
     pub MockParaId :ParaId = 0u32.into();
