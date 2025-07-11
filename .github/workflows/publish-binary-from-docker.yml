@@ -88,6 +88,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           UPLOAD_URL: ${{ needs.publish-draft-release.outputs.asset_upload_url }}
         run: |
+          CLEAN_URL="${UPLOAD_URL%\{*}"  # Remove the {?name,label} part
           for file in build/*; do
             if [ -f "$file" ]; then
               filename=$(basename "$file")
@@ -97,6 +98,6 @@ jobs:
                 -H "Authorization: token $GITHUB_TOKEN" \
                 -H "Content-Type: application/octet-stream" \
                 --data-binary @"$file" \
-                "$UPLOAD_URL?name=$filename"
+                "$CLEAN_URL?name=$filename"
             fi
           done
