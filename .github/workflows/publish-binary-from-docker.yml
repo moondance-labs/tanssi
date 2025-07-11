@@ -80,8 +80,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          pattern: binaries-*
-          merge-multiple: true
+          name: binaries
           path: build
 
       - name: Upload all binaries from build/
