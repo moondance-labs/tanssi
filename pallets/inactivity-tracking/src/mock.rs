@@ -183,8 +183,8 @@ impl tp_traits::GetContainerChainsWithCollators<AccountId> for MockContainerChai
 
     #[cfg(feature = "runtime-benchmarks")]
     fn set_container_chains_with_collators(
-        for_session: ForSession,
-        container_chains: &[(ParaId, Vec<AccountId>)],
+        _for_session: ForSession,
+        _container_chains: &[(ParaId, Vec<AccountId>)],
     ) {
     }
 }
@@ -219,7 +219,7 @@ impl ExtBuilder {
         let mut t = frame_system::GenesisConfig::<Test>::default()
             .build_storage()
             .expect("Frame system builds valid default genesis config");
-        let balances = vec![(1, 100), (2, 100)];
+        let balances = [(1, 100), (2, 100)];
         let keys = balances
             .iter()
             .map(|&(i, _)| {

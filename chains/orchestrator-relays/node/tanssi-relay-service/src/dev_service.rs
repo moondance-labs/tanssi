@@ -357,7 +357,7 @@ where
                     availability_bitvec.clone(),
                     &signature_ctx,
                     ValidatorIndex(i as u32),
-                    &public,
+                    public,
                 )
                 .unwrap()
                 .unwrap()
@@ -406,7 +406,7 @@ where
                 // Iterate keys until we find an eligible one, or run out of candidates.
                 for type_public_pair in &available_keys {
                     if let Ok(validator) =
-                        polkadot_primitives::ValidatorId::from_slice(&type_public_pair)
+                        polkadot_primitives::ValidatorId::from_slice(type_public_pair)
                     {
                         // if we find the validator in keystore, we try to create a backed cand
                         if validator_keys_to_find == &validator {
@@ -510,7 +510,7 @@ where
         }
 
         Ok(ParachainsInherentData {
-            bitfields: bitfields,
+            bitfields,
             backed_candidates: backed_cand,
             disputes: Vec::new(),
             parent_header,

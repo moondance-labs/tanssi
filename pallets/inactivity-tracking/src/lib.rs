@@ -354,7 +354,7 @@ pub mod pallet {
                             // Collators assigned to inactive chain are added
                             // to the current active collators storage
                             for collator_id in collator_ids {
-                                if let Err(_) = active_collators.try_insert(collator_id.clone()) {
+                                if active_collators.try_insert(collator_id.clone()).is_err() {
                                     // If we reach MaxCollatorsPerSession limit there must be a bug in the pallet
                                     // so we disable the activity tracking
                                     Self::set_inactivity_tracking_status_inner(
@@ -377,7 +377,7 @@ pub mod pallet {
             let mut total_weight = T::DbWeight::get().reads_writes(1, 0);
             let _ = <ActiveCollatorsForCurrentSession<T>>::try_mutate(
                 |active_collators| -> DispatchResult {
-                    if let Err(_) = active_collators.try_insert(author.clone()) {
+                    if active_collators.try_insert(author.clone()).is_err() {
                         // If we reach MaxCollatorsPerSession limit there must be a bug in the pallet
                         // so we disable the activity tracking
                         Self::set_inactivity_tracking_status_inner(
@@ -401,7 +401,7 @@ pub mod pallet {
             let mut total_weight = T::DbWeight::get().reads_writes(1, 0);
             let _ = <ActiveContainerChainsForCurrentSession<T>>::try_mutate(
                 |active_chains| -> DispatchResult {
-                    if let Err(_) = active_chains.try_insert(chain_id) {
+                    if active_chains.try_insert(chain_id).is_err() {
                         // If we reach MaxContainerChains limit there must be a bug in the pallet
                         // so we disable the activity tracking
                         Self::set_inactivity_tracking_status_inner(

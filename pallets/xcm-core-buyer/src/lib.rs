@@ -601,7 +601,7 @@ pub mod pallet {
             if let Some(latest_author_info) = maybe_latest_author_info {
                 let current_slot = T::SlotBeacon::slot();
                 if !parathread_params.slot_frequency.should_parathread_buy_core(
-                    Slot::from(current_slot as u64),
+                    Slot::from(u64::from(current_slot)),
                     T::BuyCoreSlotDrift::get(),
                     latest_author_info.latest_slot_number,
                 ) {

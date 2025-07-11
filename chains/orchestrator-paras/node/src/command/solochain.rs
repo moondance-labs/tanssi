@@ -197,8 +197,8 @@ const RECOMMENDED_OPEN_FILE_DESCRIPTOR_LIMIT: u64 = 10_000;
 /// Equivalent to [CliConfiguration::init]
 fn init_cmd<T: CliConfiguration<DVC>, DVC: DefaultConfigurationValues>(
     this: &T,
-    support_url: &String,
-    impl_version: &String,
+    support_url: &str,
+    impl_version: &str,
 ) -> sc_cli::Result<()> {
     sp_panic_handler::set(support_url, impl_version);
 
@@ -342,10 +342,10 @@ pub fn dummy_config(tokio_handle: tokio::runtime::Handle, base_path: BasePath) -
 }
 
 /// Returns the default path for configuration directory based on the chain_spec
-pub(crate) fn build_solochain_config_dir(base_path: &PathBuf) -> PathBuf {
+pub(crate) fn build_solochain_config_dir(base_path: &Path) -> PathBuf {
     // base_path:  Collator1000-01/data/containers
     // config_dir: Collator1000-01/data/config
-    let mut base_path = base_path.clone();
+    let mut base_path = base_path.to_path_buf();
     base_path.pop();
 
     base_path.join("config")
@@ -353,7 +353,7 @@ pub(crate) fn build_solochain_config_dir(base_path: &PathBuf) -> PathBuf {
 
 pub fn keystore_config(
     keystore_params: Option<&sc_cli::KeystoreParams>,
-    config_dir: &PathBuf,
+    config_dir: &Path,
 ) -> sc_cli::Result<KeystoreConfig> {
     keystore_params
         .map(|x| x.keystore_config(config_dir))

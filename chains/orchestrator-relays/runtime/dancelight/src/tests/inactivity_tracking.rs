@@ -180,45 +180,33 @@ fn inactivity_tracking_correctly_updates_storages() {
                 <Runtime as pallet_inactivity_tracking::Config>::MaxInactiveSessions::get();
             run_to_session(max_inactive_sessions - 1);
             run_block();
-            assert_eq!(
-                InactivityTracking::is_node_inactive(&AccountId::from(ALICE)),
-                false
-            );
-            assert_eq!(
-                InactivityTracking::is_node_inactive(&AccountId::from(BOB)),
-                false
-            );
-            assert_eq!(
-                InactivityTracking::is_node_inactive(&AccountId::from(CHARLIE)),
-                false
-            );
-            assert_eq!(
-                InactivityTracking::is_node_inactive(&AccountId::from(DAVE)),
-                false
-            );
+            assert!(!InactivityTracking::is_node_inactive(&AccountId::from(
+                ALICE
+            )));
+            assert!(!InactivityTracking::is_node_inactive(&AccountId::from(BOB)));
+            assert!(!InactivityTracking::is_node_inactive(&AccountId::from(
+                CHARLIE
+            )));
+            assert!(!InactivityTracking::is_node_inactive(&AccountId::from(
+                DAVE
+            )));
 
             run_to_session(max_inactive_sessions);
-            assert_eq!(
-                InactivityTracking::is_node_inactive(&AccountId::from(ALICE)),
-                false
-            );
-            assert_eq!(
-                InactivityTracking::is_node_inactive(&AccountId::from(BOB)),
-                false
-            );
-            assert_eq!(
-                InactivityTracking::is_node_inactive(&AccountId::from(CHARLIE)),
-                false
-            );
-            assert_eq!(
-                InactivityTracking::is_node_inactive(&AccountId::from(DAVE)),
-                false
-            );
-            assert_eq!(<InactiveCollators<Runtime>>::get(0).is_empty(), false);
+            assert!(!InactivityTracking::is_node_inactive(&AccountId::from(
+                ALICE
+            )));
+            assert!(!InactivityTracking::is_node_inactive(&AccountId::from(BOB)));
+            assert!(!InactivityTracking::is_node_inactive(&AccountId::from(
+                CHARLIE
+            )));
+            assert!(!InactivityTracking::is_node_inactive(&AccountId::from(
+                DAVE
+            )));
+            assert!(!<InactiveCollators<Runtime>>::get(0).is_empty());
 
             run_to_session(max_inactive_sessions + 1);
             run_block();
 
-            assert_eq!(<InactiveCollators<Runtime>>::get(0).is_empty(), true);
+            assert!(<InactiveCollators<Runtime>>::get(0).is_empty());
         });
 }

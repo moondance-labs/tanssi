@@ -214,23 +214,21 @@ where
             .is_some();
         }
 
-        return false;
+        false
     }
 
     fn process_message(_channel: Channel, envelope: Envelope) -> DispatchResult {
         let eth_transfer_data = Self::decode_message_for_eth_transfer(envelope.payload.as_slice())
-            .ok_or_else(|| DispatchError::Other("unexpected message"))?;
+            .ok_or(DispatchError::Other("unexpected message"))?;
 
         match eth_transfer_data.destination {
             Destination::AccountId32 { id: _ } => {
                 Self::process_xcm_local_native_eth_transfer(eth_transfer_data)
             }
             // TODO: Add support for container transfers here
-            _ => {
-                return Err(DispatchError::Other(
-                    "container transfers not supported yet",
-                ))
-            }
+            _ => Err(DispatchError::Other(
+                "container transfers not supported yet",
+            )),
         }
     }
 }
@@ -283,11 +281,11 @@ where
                     }
                 };
 
-                return Some(EthTransferData {
+                Some(EthTransferData {
                     token_location,
                     destination,
                     amount,
-                });
+                })
             }
             _ => None,
         }
@@ -344,7 +342,7 @@ where
             DispatchError::Other("LocalExecutionIncomplete")
         })?;
 
-        return Ok(());
+        Ok(())
     }
 }
 
