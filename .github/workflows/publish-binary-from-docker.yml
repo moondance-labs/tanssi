@@ -17,7 +17,7 @@ on:
       docker_tag:
         description: docker tag to use for fetching binaries
         required: true
-
+  push:
 jobs:
   ####### Building binaries #######
   setup-scripts:
