@@ -32,9 +32,12 @@ use {
     parity_scale_codec::{Decode, Encode, MaxEncodedLen},
     polkadot_parachain_primitives::primitives::HeadData,
     sp_consensus_aura::AURA_ENGINE_ID,
+    sp_consensus_slots::Slot,
     sp_core::{Get, Pair},
     sp_runtime::{traits::Dispatchable, BuildStorage, Digest, DigestItem},
     sp_std::collections::btree_map::BTreeMap,
+    std::cell::Cell,
+    std::thread_local,
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
 };
 
@@ -60,6 +63,18 @@ pub fn session_to_block(n: u32) -> u32 {
 pub struct RunSummary {
     pub author_id: AccountId,
     pub inflation: Balance,
+}
+
+thread_local! {
+    static SHOULD_WRITE_SLOT_INFO: Cell<bool> = Cell::new(true);
+}
+
+pub fn set_should_write_slot_info(value: bool) {
+    SHOULD_WRITE_SLOT_INFO.with(|flag| flag.set(value));
+}
+
+fn should_write_slot_info() -> bool {
+    SHOULD_WRITE_SLOT_INFO.with(|flag| flag.get())
 }
 
 pub fn run_to_session(n: u32) {
@@ -208,6 +223,13 @@ pub fn start_block() -> RunSummary {
     let current_issuance = Balances::total_issuance();
     InflationRewards::on_initialize(System::block_number());
     let new_issuance = Balances::total_issuance();
+
+    if should_write_slot_info() {
+        frame_support::storage::unhashed::put(
+            &frame_support::storage::storage_prefix(b"AsyncBacking", b"SlotInfo"),
+            &(Slot::from(slot), 1),
+        );
+    }
 
     pallet_author_inherent::Pallet::<Runtime>::kick_off_authorship_validation(None.into())
         .expect("author inherent to dispatch correctly");

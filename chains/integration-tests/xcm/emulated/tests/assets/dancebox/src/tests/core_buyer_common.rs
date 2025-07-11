@@ -19,7 +19,8 @@ use {
     cumulus_primitives_core::Weight,
     dancebox_runtime::{Registrar, RuntimeOrigin, ServicesPayment, XcmCoreBuyer},
     dancebox_runtime_test_utils::{
-        empty_genesis_data, run_to_session, set_dummy_boot_node, start_block,
+        empty_genesis_data, run_to_session, set_dummy_boot_node, set_should_write_slot_info,
+        start_block,
     },
     frame_support::assert_ok,
     nimbus_primitives::NimbusId,
@@ -223,6 +224,7 @@ pub fn do_test(
 
         // TODO: xcm emulator breaks with the run_to_session function, but it works if we manually
         // call on_initialize here...
+        set_should_write_slot_info(false);
         start_block();
         run_to_session(2);
 
