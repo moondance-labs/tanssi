@@ -260,7 +260,7 @@ if $DOWNLOAD_FRONTIER_NODE; then
     fi
     docker run --rm \
     --entrypoint tar \
-    "$SIMPLE_IMAGE" \
+    "$FRONTIER_IMAGE" \
     -C /container-chain-template-evm  -cf - \
       "${BINARIES[@]}" | tar -C $OUTPUT_PATH -xf -
   else
