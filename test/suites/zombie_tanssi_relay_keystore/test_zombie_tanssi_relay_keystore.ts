@@ -1,12 +1,11 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { generateKeyringPair } from "@moonwall/util";
-import { ApiPromise, Keyring, WsProvider} from "@polkadot/api";
+import { ApiPromise, Keyring, WsProvider } from "@polkadot/api";
 import type { Signer } from "ethers";
-import fs from "node:fs/promises";
 import {
-    chainSpecToContainerChainGenesisData,
-    checkLogsNotExist, createCollatorKeyToNameMap,
-    getHeaderFromRelay, getKeyringNimbusIdHex,
+    checkLogsNotExist,
+    getHeaderFromRelay,
+    getKeyringNimbusIdHex,
     getTmpZombiePath,
     signAndSendAndInclude,
     waitSessions,
@@ -20,11 +19,7 @@ import {
  * @param account – the SS58 account you’re looking up
  * @returns the matching hex key, or undefined if not found
  */
-function findHexKeyForAccount(
-    assign: any,
-    keys: any,
-    account: string
-): string | undefined {
+function findHexKeyForAccount(assign: any, keys: any, account: string): string | undefined {
     // 1) check orchestratorChain
     const orchIndex = assign.orchestratorChain.indexOf(account);
     if (orchIndex !== -1) {
@@ -39,9 +34,7 @@ function findHexKeyForAccount(
             // guard: same chainId must exist in keys
             const keyList = keys.containerChains[chainId];
             if (!keyList) {
-                throw new Error(
-                    `No keys found for chain ${chainId} (found assignment but missing keys)`
-                );
+                throw new Error(`No keys found for chain ${chainId} (found assignment but missing keys)`);
             }
             return keyList[idx];
         }
@@ -265,7 +258,7 @@ describeSuite({
                 oldKeys = (await relayApi.query.tanssiAuthorityAssignment.collatorContainerChain(session)).toJSON();
                 oldAssignment = (await relayApi.query.tanssiCollatorAssignment.collatorContainerChain()).toJSON();
 
-                console.log("session", session.toJSON())
+                console.log("session", session.toJSON());
                 console.log("oldKeys", oldKeys);
                 console.log("oldAssignment", oldAssignment);
 
@@ -294,10 +287,12 @@ describeSuite({
             timeout: 60000,
             test: async () => {
                 const session = await relayApi.query.session.currentIndex();
-                const newKeys = (await relayApi.query.tanssiAuthorityAssignment.collatorContainerChain(session)).toJSON();
+                const newKeys = (
+                    await relayApi.query.tanssiAuthorityAssignment.collatorContainerChain(session)
+                ).toJSON();
                 const newAssignment = (await relayApi.query.tanssiCollatorAssignment.collatorContainerChain()).toJSON();
 
-                console.log("session", session.toJSON())
+                console.log("session", session.toJSON());
                 console.log("newKeys", newKeys);
                 console.log("newAssignment", newAssignment);
 
@@ -342,12 +337,7 @@ describeSuite({
             title: "Check collator logs to ensure common errors are fixed",
             timeout: 300000,
             test: async () => {
-                const logs = [
-                    "/Collator-01.log",
-                    "/Collator-02.log",
-                    "/Collator-03.log",
-                    "/Collator-04.log",
-                ];
+                const logs = ["/Collator-01.log", "/Collator-02.log", "/Collator-03.log", "/Collator-04.log"];
                 for (const log of logs) {
                     const logFilePath = getTmpZombiePath() + log;
                     await checkLogsNotExist(logFilePath, [
