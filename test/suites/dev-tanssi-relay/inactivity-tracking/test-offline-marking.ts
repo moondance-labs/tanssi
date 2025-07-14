@@ -122,7 +122,8 @@ describeSuite({
                     console.log("BOB is not marked as offline.");
                     expect(false).to.be.true; // Fail the test if BOB is not offline
                 }
-                await jumpToSession(context, currentSession + 1);
+                // Have to wait for 2 sessions after marking BOB offline so it is not selected for collating
+                await jumpToSession(context, currentSession + 2);
 
                 await context.createBlock();
 
