@@ -11,6 +11,17 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Restore cache
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/sccache
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.9
     - name: Setup Variables
