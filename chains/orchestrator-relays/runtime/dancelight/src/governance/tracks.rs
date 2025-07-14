@@ -30,7 +30,7 @@ const TRACKS_DATA: [pallet_referenda::Track<u16, Balance, BlockNumber>; 1] =
         info: pallet_referenda::TrackInfo {
             name: s("root"),
             max_deciding: 1,
-            decision_deposit: 200 * GRAND,
+            decision_deposit: 500 * GRAND,
             prepare_period: 8 * MINUTES,
             decision_period: 20 * MINUTES,
             confirm_period: 12 * MINUTES,
