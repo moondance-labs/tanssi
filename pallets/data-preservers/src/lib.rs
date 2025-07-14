@@ -251,6 +251,7 @@ pub mod pallet {
             profile.url.len() as u32,
             profile.para_ids.len() as u32,
         ))]
+        #[allow(clippy::useless_conversion)]
         pub fn create_profile(
             origin: OriginFor<T>,
             profile: Profile<T>,
@@ -268,6 +269,7 @@ pub mod pallet {
             profile.url.len() as u32,
             profile.para_ids.len() as u32,
         ))]
+        #[allow(clippy::useless_conversion)]
         pub fn update_profile(
             origin: OriginFor<T>,
             profile_id: T::ProfileId,
@@ -304,6 +306,7 @@ pub mod pallet {
 
         #[pallet::call_index(3)]
         #[pallet::weight(T::WeightInfo::delete_profile())]
+        #[allow(clippy::useless_conversion)]
         pub fn delete_profile(
             origin: OriginFor<T>,
             profile_id: T::ProfileId,
@@ -325,6 +328,7 @@ pub mod pallet {
             profile.url.len() as u32,
             profile.para_ids.len() as u32,
         ))]
+        #[allow(clippy::useless_conversion)]
         pub fn force_create_profile(
             origin: OriginFor<T>,
             profile: Profile<T>,
@@ -340,6 +344,7 @@ pub mod pallet {
             profile.url.len() as u32,
             profile.para_ids.len() as u32,
         ))]
+        #[allow(clippy::useless_conversion)]
         pub fn force_update_profile(
             origin: OriginFor<T>,
             profile_id: T::ProfileId,
@@ -363,6 +368,7 @@ pub mod pallet {
 
         #[pallet::call_index(6)]
         #[pallet::weight(T::WeightInfo::force_delete_profile())]
+        #[allow(clippy::useless_conversion)]
         pub fn force_delete_profile(
             origin: OriginFor<T>,
             profile_id: T::ProfileId,
@@ -374,6 +380,7 @@ pub mod pallet {
 
         #[pallet::call_index(7)]
         #[pallet::weight(T::WeightInfo::start_assignment())]
+        #[allow(clippy::useless_conversion)]
         pub fn start_assignment(
             origin: OriginFor<T>,
             profile_id: T::ProfileId,
@@ -394,6 +401,7 @@ pub mod pallet {
 
         #[pallet::call_index(8)]
         #[pallet::weight(T::WeightInfo::stop_assignment())]
+        #[allow(clippy::useless_conversion)]
         pub fn stop_assignment(
             origin: OriginFor<T>,
             profile_id: T::ProfileId,
@@ -450,6 +458,7 @@ pub mod pallet {
 
         #[pallet::call_index(9)]
         #[pallet::weight(T::WeightInfo::force_start_assignment())]
+        #[allow(clippy::useless_conversion)]
         pub fn force_start_assignment(
             origin: OriginFor<T>,
             profile_id: T::ProfileId,

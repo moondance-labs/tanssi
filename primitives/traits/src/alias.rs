@@ -18,6 +18,7 @@
 pub mod __reexports {
     pub use {
         frame_support::{CloneNoBound, EqNoBound, PartialEqNoBound, RuntimeDebugNoBound},
+        parity_scale_codec::DecodeWithMemTracking,
         scale_info::TypeInfo,
         sp_core::{Decode, Encode, RuntimeDebug},
     };
@@ -67,6 +68,7 @@ macro_rules! derive_scale_codec {
         #[derive(
             $crate::alias::__reexports::Encode,
             $crate::alias::__reexports::Decode,
+            $crate::alias::__reexports::DecodeWithMemTracking,
             $crate::alias::__reexports::TypeInfo,
         )]
         $($tt)*

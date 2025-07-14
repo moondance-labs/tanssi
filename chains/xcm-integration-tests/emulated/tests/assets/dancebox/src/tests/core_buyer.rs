@@ -29,10 +29,10 @@ const ROCOCO_ED: u128 = rococo_runtime_constants::currency::EXISTENTIAL_DEPOSIT;
 const BUY_EXECUTION_COST: u128 = dancebox_runtime::xcm_config::XCM_BUY_EXECUTION_COST_ROCOCO;
 // Difference between BUY_EXECUTION_COST and the actual cost that depends on the weight of the XCM
 // message, gets refunded on successful execution of core buying extrinsic.
-const BUY_EXECUTION_REFUND: u128 = 24506230;
+const BUY_EXECUTION_REFUND: u128 = 19533231;
 // Difference between BUY_EXECUTION_COST and the actual cost that depends on the weight of the XCM
 // message, gets refunded on un-successful execution of core buying extrinsic.
-const BUY_EXECUTION_REFUND_ON_FAILURE: u128 = 22172920;
+const BUY_EXECUTION_REFUND_ON_FAILURE: u128 = 17199921;
 
 #[test]
 fn constants() {
@@ -108,7 +108,7 @@ fn xcm_core_buyer_only_enough_balance_for_buy_execution() {
                 ) => {
                     account: *account == parathread_tank_in_relay,
                 },
-                RuntimeEvent::MessageQueue(pallet_message_queue::Event::Processed { success: false, .. }) => {},
+                RuntimeEvent::MessageQueue(pallet_message_queue::Event::Processed { success: true, .. }) => {},
             ]
         );
         assert_relay_order_event_not_emitted();
@@ -192,9 +192,7 @@ fn xcm_core_buyer_enough_balance_except_for_existential_deposit() {
                     spot_price: *spot_price == spot_price2,
                     ordered_by: *ordered_by == parathread_tank_in_relay,
                 },
-                // TODO: this now emits "success: false" even though the on demand order was placed, will
-                // that break pallet_xcm_core_buyer?
-                RuntimeEvent::MessageQueue(pallet_message_queue::Event::Processed { success: false, .. }) => {},
+                RuntimeEvent::MessageQueue(pallet_message_queue::Event::Processed { success: true, .. }) => {},
             ]
         );
         assert_eq!(balance_after, 0);

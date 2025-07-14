@@ -41,7 +41,7 @@ use {
     polkadot_primitives::ValidatorIndex,
     runtime_parachains::session_info,
     snowbridge_core::{ChannelId, TokenId},
-    snowbridge_outbound_queue_merkle_tree::{merkle_proof, merkle_root, verify_proof, MerkleProof},
+    snowbridge_merkle_tree::{merkle_proof, merkle_root, verify_proof, MerkleProof},
     sp_core::H256,
     sp_runtime::traits::{Hash, MaybeEquivalence, Zero},
     sp_staking::SessionIndex,
