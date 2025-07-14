@@ -201,7 +201,7 @@ override_relay_args() {
 
     # warn if nothing was removed
     if ! $matched; then
-      echo "    WARNING: no existing '$key' entries found" >&2
+      echo "    no existing '$key' entries found" >&2
     fi
 
     # append the new override
@@ -253,8 +253,7 @@ main() {
 
   debug_print
 
-  # we cannot use exec here because it kills this process and that makes zombienet believe that the node failed to start
-  "${TANSSI_ARGS[@]}" -- "${POLKADOT_ARGS[@]}"
+  exec "${TANSSI_ARGS[@]}" -- "${POLKADOT_ARGS[@]}"
 }
 
 main "$@"

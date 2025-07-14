@@ -358,6 +358,8 @@ export async function signAndSendAndInclude(tx, account, timeout: number | null 
 
 // Same as `signAndSendAndInclude` but support sending multiple transactions at once.
 // By default the nonce is read from the API, an optional nonce parameter can be passed to override this.
+// This can only be used if all the transactions are from the same account. To send multiple transactions from different
+// accounts, use Promise.all([signAndSendAndInclude()])
 export async function signAndSendAndIncludeMany(
     api,
     txs: SubmittableExtrinsic<"promise">[],

@@ -5,12 +5,51 @@ import type { Signer } from "ethers";
 import fs from "node:fs/promises";
 import {
     chainSpecToContainerChainGenesisData,
-    checkLogsNotExist,
-    getHeaderFromRelay,
+    checkLogsNotExist, createCollatorKeyToNameMap,
+    getHeaderFromRelay, getKeyringNimbusIdHex,
     getTmpZombiePath,
     signAndSendAndInclude,
     waitSessions,
 } from "utils";
+
+/**
+ * Find the hex key corresponding to a given SS58 account.
+ *
+ * @param keys    – object mapping chains to hex keys
+ * @param assign  – object mapping chains to SS58 accounts
+ * @param account – the SS58 account you’re looking up
+ * @returns the matching hex key, or undefined if not found
+ */
+function findHexKeyForAccount(
+    assign: any,
+    keys: any,
+    account: string
+): string | undefined {
+    // 1) check orchestratorChain
+    const orchIndex = assign.orchestratorChain.indexOf(account);
+    if (orchIndex !== -1) {
+        return keys.orchestratorChain[orchIndex];
+    }
+
+    // 2) check each containerChains group
+    for (const chainId of Object.keys(assign.containerChains)) {
+        const accounts = assign.containerChains[chainId];
+        const idx = accounts.indexOf(account);
+        if (idx !== -1) {
+            // guard: same chainId must exist in keys
+            const keyList = keys.containerChains[chainId];
+            if (!keyList) {
+                throw new Error(
+                    `No keys found for chain ${chainId} (found assignment but missing keys)`
+                );
+            }
+            return keyList[idx];
+        }
+    }
+
+    // 3) not found anywhere
+    return undefined;
+}
 
 describeSuite({
     id: "ZOMBIETANSS01",
@@ -24,6 +63,10 @@ describeSuite({
         let ethersSigner: Signer;
         let collator01RelayApi: ApiPromise;
         let collator02RelayApi: ApiPromise;
+        let newKeys1: Bytes;
+        let newKeys2: Bytes;
+        let oldAssignment: any;
+        let oldKeys: any;
 
         beforeAll(async () => {
             relayApi = context.polkadotJs("Tanssi-relay");
@@ -218,13 +261,21 @@ describeSuite({
                 const collator01 = keyring.addFromUri("//Collator-01", { name: "Collator-01 default" });
                 const collator02 = keyring.addFromUri("//Collator-02", { name: "Collator-02 default" });
 
-                // Add keys to pallet session. In dancebox they are already there in genesis.
-                // We need 4 collators because we have 2 chains with 2 collators per chain.
-                const newKeys1 = await collator01RelayApi.rpc.author.rotateKeys();
-                const newKeys2 = await collator02RelayApi.rpc.author.rotateKeys();
+                const session = await relayApi.query.session.currentIndex();
+                oldKeys = (await relayApi.query.tanssiAuthorityAssignment.collatorContainerChain(session)).toJSON();
+                oldAssignment = (await relayApi.query.tanssiCollatorAssignment.collatorContainerChain()).toJSON();
 
-                await signAndSendAndInclude(relayApi.tx.session.setKeys(newKeys1, []), collator01);
-                await signAndSendAndInclude(relayApi.tx.session.setKeys(newKeys2, []), collator02);
+                console.log("session", session.toJSON())
+                console.log("oldKeys", oldKeys);
+                console.log("oldAssignment", oldAssignment);
+
+                newKeys1 = await collator01RelayApi.rpc.author.rotateKeys();
+                newKeys2 = await collator02RelayApi.rpc.author.rotateKeys();
+
+                await Promise.all([
+                    signAndSendAndInclude(relayApi.tx.session.setKeys(newKeys1, []), collator01),
+                    signAndSendAndInclude(relayApi.tx.session.setKeys(newKeys2, []), collator02),
+                ]);
             },
         });
 
@@ -242,7 +293,47 @@ describeSuite({
             title: "Check that keys have changed and collators keep producing blocks",
             timeout: 60000,
             test: async () => {
+                const session = await relayApi.query.session.currentIndex();
+                const newKeys = (await relayApi.query.tanssiAuthorityAssignment.collatorContainerChain(session)).toJSON();
+                const newAssignment = (await relayApi.query.tanssiCollatorAssignment.collatorContainerChain()).toJSON();
 
+                console.log("session", session.toJSON())
+                console.log("newKeys", newKeys);
+                console.log("newAssignment", newAssignment);
+
+                // Since we disabled rotation, collator assignment did not change
+                expect(newAssignment).to.deep.equal(oldAssignment);
+                // But we changed collator keys, so some of them witll not be equal
+                expect(newKeys).to.not.deep.equal(oldKeys);
+
+                // Compare on chain key with response of rpc.rotateKeys
+                const hexAddress1 = getKeyringNimbusIdHex("Collator-01");
+                const collatorName1 = relayApi.createType("AccountId", hexAddress1).toString();
+                const key1 = findHexKeyForAccount(newAssignment, newKeys, collatorName1);
+                const decodedKeys1 = relayApi.createType("DancelightRuntimeSessionKeys", newKeys1);
+                expect(key1).to.equal(decodedKeys1.nimbus.toJSON());
+
+                const hexAddress2 = getKeyringNimbusIdHex("Collator-02");
+                const collatorName2 = relayApi.createType("AccountId", hexAddress2).toString();
+                const key2 = findHexKeyForAccount(newAssignment, newKeys, collatorName2);
+                const decodedKeys2 = relayApi.createType("DancelightRuntimeSessionKeys", newKeys2);
+                expect(key2).to.equal(decodedKeys2.nimbus.toJSON());
+            },
+        });
+
+        it({
+            id: "T15",
+            title: "Blocks are being produced on container 2000",
+            test: async () => {
+                await context.waitBlock(3, "Container2000");
+            },
+        });
+
+        it({
+            id: "T16",
+            title: "Blocks are being produced on container 2001",
+            test: async () => {
+                await context.waitBlock(3, "Container2001");
             },
         });
 
@@ -256,8 +347,6 @@ describeSuite({
                     "/Collator-02.log",
                     "/Collator-03.log",
                     "/Collator-04.log",
-                    "/Collator-05.log",
-                    "/Collator-06.log",
                 ];
                 for (const log of logs) {
                     const logFilePath = getTmpZombiePath() + log;
