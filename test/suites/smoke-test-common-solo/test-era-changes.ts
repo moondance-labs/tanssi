@@ -52,7 +52,7 @@ describeSuite({
                 );
                 expect(previousEraStartSessionIndex + sessionsPerEra).to.be.equal(
                     currentEraStartSessionIndex,
-                    `Error at block number ${currentBlockNumber}: Era change between era ${currentEraIndex - 1} and ${currentEraIndex} happened in ${previousEraStartSessionIndex + sessionsPerEra} sessions instead of ${sessionsPerEra} sessions.`
+                    `Error at block number ${currentBlockNumber}: Era change between era ${currentEraIndex - 1} and ${currentEraIndex} happened in ${currentEraStartSessionIndex - previousEraStartSessionIndex} sessions instead of ${sessionsPerEra} sessions.`
                 );
                 expect(currentSessionIndex).to.be.within(
                     currentEraIndex * sessionsPerEra,
