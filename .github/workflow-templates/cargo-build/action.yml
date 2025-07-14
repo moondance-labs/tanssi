@@ -27,7 +27,7 @@ runs:
         path: ~/.cache/sccache
         key: sccache-${{ runner.os }}-${{ hashFiles('**/Cargo.lock', '**/*.rs') }}
 
-# TODO: remove (trigger job)
+# TODO: remove (trigger job 1)
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.9
     - name: Setup Variables
