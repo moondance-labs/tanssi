@@ -189,10 +189,6 @@ impl tp_traits::GetContainerChainsWithCollators<AccountId> for MockContainerChai
     }
 }
 
-impl tp_traits::PendingCollatorAssignmentHelper<AccountId> for MockContainerChainsInfoFetcher {
-    fn remove_offline_collator_from_pending_assignment(_collator: &AccountId) {}
-}
-
 pub struct MockParathreadHelper;
 impl tp_traits::ParathreadHelper for MockParathreadHelper {
     fn get_parathreads_for_session() -> BTreeSet<ParaId> {

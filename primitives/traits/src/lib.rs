@@ -641,12 +641,6 @@ pub trait ParathreadHelper {
     fn get_parathreads_for_session() -> BTreeSet<ParaId>;
 }
 
-// A trait to help remove offline collators from the pending assignment
-pub trait PendingCollatorAssignmentHelper<AccountId> {
-    /// Remove a collator from the current pending collator assignment.
-    fn remove_offline_collator_from_pending_assignment(collator: &AccountId);
-}
-
 // A trait to help updating the collators rewards when a collator's online status changes.
 pub trait StakingCandidateHelper<AccountId> {
     /// Check if the candidate is in SortedEligibleCandidates list.
