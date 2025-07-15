@@ -2389,8 +2389,8 @@ fn test_root_can_send_raw_message() {
             // Define a mock ERC20 token address
             let token_address = H160(hex!("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"));
 
-            // Relative to ethereum consensus
-            let erc20_asset_location = Location {
+            // Relative to ethereum asset location (pallet_xcm::transfer_assets does the reanchor internally)
+            let erc20_asset_location_relative_to_eth = Location {
                 parents: 0,
                 interior: X1([
                     AccountKey20 {
@@ -2403,24 +2403,10 @@ fn test_root_can_send_raw_message() {
 
             let asset_id = 42u16;
 
-            assert_ok!(ForeignAssetsCreator::create_foreign_asset(
-                root_origin(),
-                erc20_asset_location.clone(), // Use the ERC20 location
-                asset_id,
-                AccountId::from(ALICE),
-                true,
-                1
-            ));
-
-            // Give tokens to user as if tokens were bridged before + extra to check the correct
-            // amount is sent
-            ForeignAssets::mint_into(asset_id, &AccountId::from(BOB), amount_to_transfer + 10)
-                .expect("to mint amount");
-
             // User tries to send tokens
             let beneficiary_address = H160(hex!("0123456789abcdef0123456789abcdef01234567"));
 
-            // Beneficiary location
+            // Beneficiary location relative to ethereum
             let mut beneficiary_location = Location {
                 parents: 0,
                 interior: X1([AccountKey20 {
@@ -2430,9 +2416,7 @@ fn test_root_can_send_raw_message() {
                     .into()),
             };
 
-            println!("Beneficiary location: {:?}", beneficiary_location);
-
-            let eth_asset = AssetId(erc20_asset_location.clone())
+            let eth_asset = AssetId(erc20_asset_location_relative_to_eth.clone())
                 .into_asset(Fungibility::Fungible(amount_to_transfer));
 
             let mut assets = Assets::new();
