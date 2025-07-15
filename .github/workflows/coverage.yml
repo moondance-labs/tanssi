@@ -16,11 +16,11 @@ env:
 
 jobs:
   ####### Check files and formatting #######
-  check-if-build-needed:
-    uses: ./.github/workflow-templates/changes-check
-    secrets: inherit
-    outputs:
-      no_build_required: ${{ steps.changes-check.outputs.no_build_required }}
+#  check-if-build-needed:
+#    uses: ./.github/workflow-templates/changes-check
+#    secrets: inherit
+#    outputs:
+#      no_build_required: ${{ steps.changes-check.outputs.no_build_required }}
 
   set-tags:
     runs-on: ubuntu-latest
