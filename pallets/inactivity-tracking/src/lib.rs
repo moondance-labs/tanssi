@@ -218,6 +218,7 @@ pub mod pallet {
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
+        /// Enables or disables inactivity tracking.
         #[pallet::call_index(0)]
         #[pallet::weight(T::WeightInfo::set_inactivity_tracking_status())]
         pub fn set_inactivity_tracking_status(
@@ -253,6 +254,7 @@ pub mod pallet {
             Ok(())
         }
 
+        /// Enables or disables the marking of collators as offline.
         #[pallet::call_index(1)]
         #[pallet::weight(T::WeightInfo::enable_offline_marking())]
         pub fn enable_offline_marking(origin: OriginFor<T>, value: bool) -> DispatchResult {
@@ -261,6 +263,7 @@ pub mod pallet {
             Ok(())
         }
 
+        /// Allows a collator to mark itself offline.
         #[pallet::call_index(2)]
         #[pallet::weight(T::WeightInfo::set_offline())]
         pub fn set_offline(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
@@ -268,6 +271,7 @@ pub mod pallet {
             Self::mark_collator_offline(&collator)
         }
 
+        /// Allows a collator to mark itself online.
         #[pallet::call_index(3)]
         #[pallet::weight(T::WeightInfo::set_online())]
         pub fn set_online(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
@@ -275,6 +279,7 @@ pub mod pallet {
             Self::mark_collator_online(&collator)
         }
 
+        /// Allows an account to notify inactive collator to be marked offline.
         #[pallet::call_index(4)]
         #[pallet::weight(T::WeightInfo::notify_inactive_collator())]
         pub fn notify_inactive_collator(
