@@ -18,9 +18,9 @@ runs:
       with:
         filters: |
           no_build_required:
-            - '*.yml'
+            - '**/*.yml'
           rest:
-            - '!*.yml'
+            - '!**/*.yml'
 
     - id: result
       shell: bash
