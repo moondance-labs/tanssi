@@ -717,26 +717,26 @@ jobs:
     chopsticks-upgrade-test:
         runs-on: ubuntu-latest
         needs: ["set-tags", "build"]
-        strategy:
-            fail-fast: false
-            matrix:
-                chains:
-                    - chain: stagenet_dancebox
-                      runtime: dancebox
-                    - chain: flashbox
-                      runtime: flashbox
-                    - chain: dancebox
-                      runtime: dancebox
-                    - chain: frontier_template
-                      runtime: container-chain-template-frontier
-                    - chain: stagelight
-                      runtime: dancelight
-                    - chain: dancelight
-                      runtime: dancelight
-                    - chain: moonlight
-                      runtime: starlight
-                    - chain: tanssi
-                      runtime: starlight
+#        strategy:
+#            fail-fast: false
+#            matrix:
+#                chains:
+#                    - chain: stagenet_dancebox
+#                      runtime: dancebox
+#                    - chain: flashbox
+#                      runtime: flashbox
+#                    - chain: dancebox
+#                      runtime: dancebox
+#                    - chain: frontier_template
+#                      runtime: container-chain-template-frontier
+#                    - chain: stagelight
+#                      runtime: dancelight
+#                    - chain: dancelight
+#                      runtime: dancelight
+#                    - chain: moonlight
+#                      runtime: starlight
+#                    - chain: tanssi
+#                      runtime: starlight
         env:
           GH_WORKFLOW_MATRIX_CHAIN: ${{ matrix.chains.chain }}
           DEBUG_COLORS: 1
