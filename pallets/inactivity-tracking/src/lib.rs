@@ -584,7 +584,7 @@ impl<T: Config> NodeActivityTrackingHelper<Collator<T>> for Pallet<T> {
             Collator<T>,
             <T as Config>::MaxCollatorsPerSession,
         > = BoundedBTreeSet::new();
-        inactive_nodes_set.try_insert(node.clone());
+        let _ = inactive_nodes_set.try_insert(node.clone());
         for session_index in 0..max_inactive_sessions {
             <InactiveCollators<T>>::insert(session_index, inactive_nodes_set.clone());
         }
