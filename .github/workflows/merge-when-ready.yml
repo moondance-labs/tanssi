@@ -14,9 +14,20 @@ jobs:
               REQUIRED_LABELS_ANY: "A8-mergeoncegreen"
               REQUIRED_LABELS_ALL: ""
               BANNED_LABELS: ""
-    
+
+    check-changes:
+      runs-on: ubuntu-latest
+      outputs:
+        no_build_required: ${{ steps.changes.outputs.no_build_required }}
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+        - id: changes
+          uses: ./.github/workflow-templates/changes-check
+
     build:
         runs-on: self-hosted
+        if: needs.check-changes.outputs.no_build_required != 'true'
         env:
           TMP_TARGET: "/tmp/target"
           CARGO_TARGET_DIR: "target"
