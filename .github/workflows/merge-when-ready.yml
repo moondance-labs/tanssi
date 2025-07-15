@@ -35,7 +35,7 @@ jobs:
           CARGO_INCREMENTAL: "0"
           SCCACHE_CACHE_SIZE: "100GB"
           SCCACHE_GHA_ENABLED: "true"
-        needs: ["enforce-ready-to-merge-label"]
+        needs: ["enforce-ready-to-merge-label", "check-changes"]
         steps:
             - name: Checkout
               uses: actions/checkout@v4
@@ -99,7 +99,7 @@ jobs:
               id: e2e-test
               uses: ./.github/workflow-templates/bridge-e2e
     build-benchmark:
-      needs: ["enforce-ready-to-merge-label"]
+      needs: ["enforce-ready-to-merge-label", "check-changes"]
       runs-on: self-hosted
       if: needs.check-changes.outputs.no_build_required != 'true'
       steps:
