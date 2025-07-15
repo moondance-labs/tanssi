@@ -50,7 +50,7 @@ use {
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     pallet_services_payment::{ProvideBlockProductionCost, ProvideCollatorAssignmentCost},
     parachains_scheduler::common::Assignment,
-    parity_scale_codec::{Decode, Encode, MaxEncodedLen},
+    parity_scale_codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen},
     primitives::{
         slashing, vstaging::CandidateEvent, vstaging::CommittedCandidateReceiptV2,
         vstaging::CoreState, vstaging::ScrapedOnChainVotes, ApprovalVotingParams, BlockNumber,
@@ -77,11 +77,10 @@ use {
         shared as parachains_shared,
     },
     scale_info::TypeInfo,
-    snowbridge_core::{
-        outbound::{Command, Fee},
-        ChannelId, PricingParameters,
-    },
-    snowbridge_pallet_outbound_queue::MerkleProof,
+    snowbridge_core::{ChannelId, PricingParameters},
+    snowbridge_merkle_tree::MerkleProof,
+    snowbridge_outbound_queue_primitives::v1::Command,
+    snowbridge_outbound_queue_primitives::v1::Fee,
     sp_core::{storage::well_known_keys as StorageWellKnownKeys, Get},
     sp_genesis_builder::PresetId,
     sp_runtime::{traits::ConvertInto, AccountId32},
@@ -100,6 +99,7 @@ use {
         prod_or_fast_parameter_types, EraIndex, GetHostConfiguration, GetSessionContainerChains,
         ParaIdAssignmentHooks, RegistrarHandler, Slot, SlotFrequency,
     },
+    xcm::Version as XcmVersion,
     xcm_runtime_apis::{
         dry_run::{CallDryRunEffects, Error as XcmDryRunApiError, XcmDryRunEffects},
         fees::Error as XcmPaymentApiError,
@@ -136,6 +136,7 @@ use {
         transaction_validity::{TransactionPriority, TransactionSource, TransactionValidity},
         ApplyExtrinsicResult, Cow, FixedU128, KeyTypeId, Perbill, Percent, Permill, RuntimeDebug,
     },
+    sp_staking::offence::OffenceSeverity,
     sp_staking::SessionIndex,
     sp_version::RuntimeVersion,
     xcm::{
@@ -219,7 +220,17 @@ pub fn native_version() -> NativeVersion {
 ///
 /// Can be extended to serve further use-cases besides just UMP. Is stored in storage, so any change
 /// to existing values will require a migration.
-#[derive(Encode, Decode, Clone, MaxEncodedLen, Eq, PartialEq, RuntimeDebug, TypeInfo)]
+#[derive(
+    Encode,
+    Decode,
+    Clone,
+    MaxEncodedLen,
+    Eq,
+    PartialEq,
+    RuntimeDebug,
+    TypeInfo,
+    DecodeWithMemTracking,
+)]
 pub enum AggregateMessageOrigin {
     /// Inbound upward message.
     #[codec(index = 0)]
@@ -459,6 +470,7 @@ impl pallet_scheduler::Config for Runtime {
     type WeightInfo = weights::pallet_scheduler::SubstrateWeight<Runtime>;
     type OriginPrivilegeCmp = OriginPrivilegeCmp;
     type Preimages = Preimage;
+    type BlockNumberProvider = System;
 }
 
 parameter_types! {
@@ -601,6 +613,7 @@ impl pallet_session::Config for Runtime {
     type SessionHandler = <SessionKeys as OpaqueKeys>::KeyTypeIdProviders;
     type Keys = SessionKeys;
     type WeightInfo = weights::pallet_session::SubstrateWeight<Runtime>;
+    type DisablingStrategy = ();
 }
 
 pub struct FullIdentificationOf;
@@ -859,6 +872,7 @@ impl pallet_multisig::Config for Runtime {
     type DepositFactor = DepositFactor;
     type MaxSignatories = MaxSignatories;
     type WeightInfo = weights::pallet_multisig::SubstrateWeight<Runtime>;
+    type BlockNumberProvider = System;
 }
 
 parameter_types! {
@@ -884,6 +898,7 @@ parameter_types! {
     Decode,
     RuntimeDebug,
     MaxEncodedLen,
+    DecodeWithMemTracking,
     TypeInfo,
 )]
 pub enum ProxyType {
@@ -1017,6 +1032,7 @@ impl pallet_proxy::Config for Runtime {
     type CallHasher = BlakeTwo256;
     type AnnouncementDepositBase = AnnouncementDepositBase;
     type AnnouncementDepositFactor = AnnouncementDepositFactor;
+    type BlockNumberProvider = System;
 }
 
 impl parachains_origin::Config for Runtime {}
@@ -1421,8 +1437,8 @@ use {pallet_pooled_staking::traits::IsCandidateEligible, pallet_staking::Session
 
 pub struct StarlightSessionInterface;
 impl SessionInterface<AccountId> for StarlightSessionInterface {
-    fn disable_validator(validator_index: u32) -> bool {
-        Session::disable_index(validator_index)
+    fn report_offence(validator: AccountId, severity: OffenceSeverity) {
+        Session::report_offence(validator, severity);
     }
 
     fn validators() -> Vec<AccountId> {
@@ -2027,12 +2043,6 @@ pub type TxExtension = (
 pub type UncheckedExtrinsic =
     generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, TxExtension>;
 
-/// The runtime migrations per release.
-pub mod migrations {
-    /// Unreleased migrations. Add new ones here:
-    pub type Unreleased = ();
-}
-
 /// Executive: handles dispatch to the various modules.
 pub type Executive = frame_executive::Executive<
     Runtime,
@@ -2040,7 +2050,6 @@ pub type Executive = frame_executive::Executive<
     frame_system::ChainContext<Runtime>,
     Runtime,
     AllPalletsWithSystem,
-    migrations::Unreleased,
 >;
 /// The payload being signed in transactions.
 pub type SignedPayload = generic::SignedPayload<RuntimeCall, TxExtension>;
@@ -2288,7 +2297,6 @@ mod benches {
         [pallet_conviction_voting, ConvictionVoting]
         [pallet_identity, Identity]
         [pallet_message_queue, MessageQueue]
-        [pallet_multiblock_migrations, MultiBlockMigrations]
         [pallet_multisig, Multisig]
         [pallet_parameters, Parameters]
         [pallet_preimage, Preimage]
@@ -2353,8 +2361,8 @@ sp_api::impl_runtime_apis! {
     }
 
     impl xcm_runtime_apis::dry_run::DryRunApi<Block, RuntimeCall, RuntimeEvent, OriginCaller> for Runtime {
-        fn dry_run_call(origin: OriginCaller, call: RuntimeCall) -> Result<CallDryRunEffects<RuntimeEvent>, XcmDryRunApiError> {
-            XcmPallet::dry_run_call::<Runtime, xcm_config::XcmRouter, OriginCaller, RuntimeCall>(origin, call)
+        fn dry_run_call(origin: OriginCaller, call: RuntimeCall, result_xcms_version: XcmVersion) -> Result<CallDryRunEffects<RuntimeEvent>, XcmDryRunApiError> {
+            XcmPallet::dry_run_call::<Runtime, xcm_config::XcmRouter, OriginCaller, RuntimeCall>(origin, call, result_xcms_version)
         }
 
         fn dry_run_xcm(origin_location: VersionedLocation, xcm: VersionedXcm<RuntimeCall>) -> Result<XcmDryRunEffects<RuntimeEvent>, XcmDryRunApiError> {
@@ -2594,10 +2602,14 @@ sp_api::impl_runtime_apis! {
         }
 
         fn para_backing_state(para_id: ParaId) -> Option<primitives::vstaging::async_backing::BackingState> {
+            // TODO: the alternative is to use backing_constraints and candidates_pending_availability
+            // but backing_constraints is private.
+            #[allow(deprecated)]
             parachains_runtime_api_impl::backing_state::<Runtime>(para_id)
         }
 
         fn async_backing_params() -> primitives::AsyncBackingParams {
+            #[allow(deprecated)]
             parachains_runtime_api_impl::async_backing_params::<Runtime>()
         }
 
@@ -3054,12 +3066,10 @@ sp_api::impl_runtime_apis! {
             Vec<frame_benchmarking::BenchmarkList>,
             Vec<frame_support::traits::StorageInfo>,
         ) {
-            use frame_benchmarking::{Benchmarking, BenchmarkList};
+            use frame_benchmarking::{BenchmarkList};
             use frame_support::traits::StorageInfoTrait;
-
             use frame_system_benchmarking::Pallet as SystemBench;
             use frame_benchmarking::baseline::Pallet as Baseline;
-
             use pallet_xcm::benchmarking::Pallet as PalletXcmExtrinsicsBenchmark;
 
             let mut list = Vec::<BenchmarkList>::new();
@@ -3069,6 +3079,7 @@ sp_api::impl_runtime_apis! {
             (list, storage_info)
         }
 
+        #[allow(non_local_definitions)]
         fn dispatch_benchmark(
             config: frame_benchmarking::BenchmarkConfig,
         ) -> Result<
@@ -3076,7 +3087,7 @@ sp_api::impl_runtime_apis! {
             alloc::string::String,
         > {
             use frame_support::traits::WhitelistedStorageKeys;
-            use frame_benchmarking::{Benchmarking, BenchmarkBatch, BenchmarkError};
+            use frame_benchmarking::{BenchmarkBatch, BenchmarkError};
             use frame_system_benchmarking::Pallet as SystemBench;
             use frame_benchmarking::baseline::Pallet as Baseline;
             use pallet_xcm::benchmarking::Pallet as PalletXcmExtrinsicsBenchmark;
@@ -3104,14 +3115,14 @@ sp_api::impl_runtime_apis! {
                         ExistentialDepositAsset,
                         xcm_config::PriceForChildParachainDelivery,
                         AssetHubParaId,
-                        (),
+                        Dmp,
                     >,
                     runtime_common::xcm_sender::ToParachainDeliveryHelper<
                         XcmConfig,
                         ExistentialDepositAsset,
                         xcm_config::PriceForChildParachainDelivery,
                         RandomParaId,
-                        (),
+                        Dmp,
                     >
                 );
 
@@ -3170,7 +3181,7 @@ sp_api::impl_runtime_apis! {
                     ExistentialDepositAsset,
                     xcm_config::PriceForChildParachainDelivery,
                     AssetHubParaId,
-                    (),
+                    Dmp,
                 >;
                 fn valid_destination() -> Result<Location, BenchmarkError> {
                     Ok(AssetHub::get())

@@ -23,11 +23,9 @@ use {
     frame_system::pallet_prelude::OriginFor,
     keyring::Sr25519Keyring,
     parity_scale_codec::Encode,
-    snowbridge_core::{
-        inbound::{Log, Message},
-        Channel, PRIMARY_GOVERNANCE_CHANNEL,
-    },
-    snowbridge_router_primitives::inbound::envelope::OutboundMessageAccepted,
+    snowbridge_core::{Channel, PRIMARY_GOVERNANCE_CHANNEL},
+    snowbridge_inbound_queue_primitives::v1::OutboundMessageAccepted,
+    snowbridge_verification_primitives::{EventProof, Log},
     sp_core::H256,
     sp_runtime::DispatchError,
     tp_bridge::symbiotic_message_processor::{
@@ -63,7 +61,7 @@ fn test_inbound_queue_message_passing() {
             payload: vec![],
         };
 
-        assert_eq!(EthereumInboundQueue::submit(OriginFor::<Runtime>::signed(AccountId::new([0; 32])), Message {
+        assert_eq!(EthereumInboundQueue::submit(OriginFor::<Runtime>::signed(AccountId::new([0; 32])), EventProof {
             event_log: Log {
                 address: <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
                 topics: event_with_empty_payload.encode_topics().into_iter().map(|word| H256::from(word.0.0)).collect(),
@@ -93,7 +91,7 @@ fn test_inbound_queue_message_passing() {
             payload: payload.encode(),
         };
 
-        assert_eq!(EthereumInboundQueue::submit(OriginFor::<Runtime>::signed(AccountId::new([0; 32])), Message {
+        assert_eq!(EthereumInboundQueue::submit(OriginFor::<Runtime>::signed(AccountId::new([0; 32])), EventProof {
             event_log: Log {
                 address: <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
                 topics: event_with_valid_payload.encode_topics().into_iter().map(|word| H256::from(word.0.0)).collect(),

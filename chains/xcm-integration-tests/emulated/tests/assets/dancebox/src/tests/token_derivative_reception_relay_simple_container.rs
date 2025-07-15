@@ -22,6 +22,7 @@ use {
     simple_template_emulated_chain::SimpleTemplateParaPallet,
     sp_runtime::FixedU128,
     westend_emulated_chain::WestendRelayPallet,
+    westend_system_emulated_network::westend_emulated_chain::westend_runtime::Dmp,
     westend_system_emulated_network::{
         SimpleTemplatePara as SimpleTemplate, SimpleTemplateReceiver, WestendRelay as Westend,
         WestendSender,
@@ -30,12 +31,16 @@ use {
         latest::prelude::{Junctions::*, *},
         VersionedLocation,
     },
-    xcm_emulator::{assert_expected_events, bx, Chain, TestExt},
+    xcm_emulator::{assert_expected_events, bx, Chain, Parachain, TestExt},
 };
 
 #[allow(unused_assignments)]
 #[test]
 fn receive_tokens_from_the_relay_to_simple_template() {
+    Westend::execute_with(|| {
+        Dmp::make_parachain_reachable(SimpleTemplate::para_id());
+    });
+
     // XcmPallet reserve transfer arguments
     let alice_origin = <Westend as Chain>::RuntimeOrigin::signed(WestendSender::get());
 
@@ -138,6 +143,10 @@ fn receive_tokens_from_the_relay_to_simple_template() {
 
 #[test]
 fn cannot_receive_tokens_from_the_relay_if_no_rate_is_assigned_simple_template() {
+    Westend::execute_with(|| {
+        Dmp::make_parachain_reachable(SimpleTemplate::para_id());
+    });
+
     // XcmPallet reserve transfer arguments
     let alice_origin = <Westend as Chain>::RuntimeOrigin::signed(WestendSender::get());
 
@@ -224,6 +233,10 @@ fn cannot_receive_tokens_from_the_relay_if_no_rate_is_assigned_simple_template()
 
 #[test]
 fn cannot_receive_tokens_from_the_relay_if_no_token_is_registered_simple_template() {
+    Westend::execute_with(|| {
+        Dmp::make_parachain_reachable(SimpleTemplate::para_id());
+    });
+
     // XcmPallet reserve transfer arguments
     let alice_origin = <Westend as Chain>::RuntimeOrigin::signed(WestendSender::get());
 

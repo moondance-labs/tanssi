@@ -20,7 +20,7 @@ use core::marker::PhantomData;
 use frame_support::dispatch::DispatchErrorWithPostInfo;
 use frame_support::traits::OriginTrait;
 use frame_support::{Deserialize, Serialize};
-use parity_scale_codec::MaxEncodedLen;
+use parity_scale_codec::{DecodeWithMemTracking, MaxEncodedLen};
 use primitives::{AccountId, Balance};
 use tp_stream_payment_common::StreamId;
 use tp_traits::{apply, derive_storage_traits};
@@ -47,21 +47,21 @@ tp_traits::alias!(
 );
 
 #[apply(derive_storage_traits)]
-#[derive(Copy, Serialize, Deserialize, MaxEncodedLen)]
+#[derive(Copy, Serialize, Deserialize, MaxEncodedLen, DecodeWithMemTracking)]
 pub enum ProviderRequest {
     Free,
     StreamPayment { config: StreamConfig },
 }
 
 #[apply(derive_storage_traits)]
-#[derive(Copy, Serialize, Deserialize)]
+#[derive(Copy, Serialize, Deserialize, DecodeWithMemTracking)]
 pub enum AssignerExtra {
     Free,
     StreamPayment { initial_deposit: Balance },
 }
 
 #[apply(derive_storage_traits)]
-#[derive(Copy, Serialize, Deserialize, MaxEncodedLen)]
+#[derive(Copy, Serialize, Deserialize, MaxEncodedLen, DecodeWithMemTracking)]
 pub enum AssignmentWitness {
     Free,
     StreamPayment { stream_id: StreamId },

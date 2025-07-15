@@ -21,7 +21,7 @@
 
 use {
     frame_support::{
-        pallet_prelude::{Decode, Encode, TypeInfo},
+        pallet_prelude::{Decode, DecodeWithMemTracking, Encode, TypeInfo},
         CloneNoBound, DebugNoBound,
     },
     sp_runtime::{app_crypto::AppCrypto, RuntimeAppPublic},
@@ -33,7 +33,9 @@ use {
 use sp_keystore::{Keystore, KeystorePtr};
 
 /// Proof that I am a collator, assigned to a para_id, and I can buy a core for that para_id
-#[derive(Encode, Decode, CloneNoBound, PartialEq, Eq, DebugNoBound, TypeInfo)]
+#[derive(
+    Encode, Decode, CloneNoBound, PartialEq, Eq, DebugNoBound, TypeInfo, DecodeWithMemTracking,
+)]
 pub struct BuyCoreCollatorProof<PublicKey>
 where
     PublicKey: RuntimeAppPublic + Clone + core::fmt::Debug,

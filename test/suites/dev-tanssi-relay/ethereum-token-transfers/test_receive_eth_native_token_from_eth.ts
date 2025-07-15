@@ -3,7 +3,13 @@ import "@tanssi/api-augment";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import { encodeAddress } from "@polkadot/util-crypto";
-import { generateEventLog, generateUpdate } from "utils";
+import {
+    generateEventLog,
+    generateUpdate,
+    FOREIGN_ASSET_ID,
+    ETHEREUM_NETWORK_MAINNET,
+    ETHEREUM_NETWORK_TESTNET,
+} from "utils";
 import {
     STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_ETH_TOKEN_TRANSFERS,
     STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_FOREIGN_ASSETS_CREATOR,
@@ -23,13 +29,11 @@ describeSuite({
         let specVersion: number;
         let shouldSkipStarlightETT: boolean;
         let shouldSkipStarlightForeignAssetsCreator: boolean;
-        let assetId: number;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             const keyring = new Keyring({ type: "sr25519" });
             alice = keyring.addFromUri("//Alice", { name: "Alice default" });
-            assetId = 42;
 
             const runtimeName = polkadotJs.runtimeVersion.specName.toString();
             isStarlight = runtimeName === "starlight";
@@ -108,9 +112,7 @@ describeSuite({
                     .signAsync(alice);
                 await context.createBlock([tx1], { allowFailures: false });
 
-                const ethereumNetwork = isStarlight
-                    ? { Ethereum: { chainId: 1 } }
-                    : { Ethereum: { chainId: 11155111 } };
+                const ethereumNetwork = isStarlight ? ETHEREUM_NETWORK_MAINNET : ETHEREUM_NETWORK_TESTNET;
 
                 // Create token on ForeignAssetsCreator to be validated when receiving the tokens.
                 const ethTokenLocation = {
@@ -129,7 +131,7 @@ describeSuite({
                     .sudo(
                         polkadotJs.tx.foreignAssetsCreator.createForeignAsset(
                             ethTokenLocation,
-                            assetId,
+                            FOREIGN_ASSET_ID,
                             alice.address,
                             true,
                             1
@@ -142,7 +144,7 @@ describeSuite({
                 // Check account balance before submitting the message
                 const assetAccountDetailsBefore = await context
                     .polkadotJs()
-                    .query.foreignAssets.account(assetId, tokenReceiver);
+                    .query.foreignAssets.account(FOREIGN_ASSET_ID, tokenReceiver);
                 expect(assetAccountDetailsBefore.toJSON()).to.be.null;
 
                 // Submit the message
@@ -152,7 +154,7 @@ describeSuite({
                 // Check the ETH token was received correctly
                 const assetAccountDetailsAfter = await context
                     .polkadotJs()
-                    .query.foreignAssets.account(assetId, tokenReceiver);
+                    .query.foreignAssets.account(FOREIGN_ASSET_ID, tokenReceiver);
                 expect(assetAccountDetailsAfter.toJSON()).to.not.be.null;
                 expect(BigInt(assetAccountDetailsAfter.toJSON().balance)).to.be.eq(transferAmount);
             },

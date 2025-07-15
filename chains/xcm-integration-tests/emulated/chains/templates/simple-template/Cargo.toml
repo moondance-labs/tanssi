@@ -15,7 +15,15 @@ workspace = true
 container-chain-template-simple-runtime  = { workspace = true }
 cumulus-primitives-core = { workspace = true }
 emulated-integration-tests-common = { workspace = true }
+frame-support = { workspace = true }
+frame-system = { workspace = true }
+nimbus-primitives = { workspace = true, features = [ "std" ] }
+pallet-author-inherent = { workspace = true }
+pallet-cc-authorities-noting = { workspace = true }
 sp-core = { workspace = true }
+sp-runtime = { workspace = true }
+sp-trie = { workspace = true }
 tanssi-emulated-integration-tests-common = { workspace = true }
+tp-author-noting-inherent = { workspace = true }
 xcm = { workspace = true }
 xcm-emulator = { workspace = true }
