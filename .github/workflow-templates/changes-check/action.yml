@@ -18,12 +18,8 @@ runs:
       with:
         filters: |
           no_build_required:
-            - 'smoke-test*/**'
-            - '*.md'
             - '*.yml'
           rest:
-            - '!smoke-test*/**'
-            - '!*.md'
             - '!*.yml'
 
     - id: result
