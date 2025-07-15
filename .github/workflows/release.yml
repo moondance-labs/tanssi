@@ -717,8 +717,7 @@ jobs:
     chopsticks-upgrade-test:
         runs-on:
             labels: ubuntu-latest
-        if: needs.check-changes.outputs.no_build_required != 'true'
-        needs: ["set-tags", "build", "check-changes"]
+        needs: ["set-tags", "build"]
         strategy:
             fail-fast: false
             matrix:

@@ -54,9 +54,8 @@ jobs:
                   name: binaries
                   path: binaries
     zombienet-tests-ready-to-merge:
-        needs: ["enforce-ready-to-merge-label", "build", "check-changes"]
+        needs: ["enforce-ready-to-merge-label", "build"]
         runs-on: self-hosted
-        if: needs.check-changes.outputs.no_build_required != 'true'
         strategy:
             fail-fast: false
             matrix:
