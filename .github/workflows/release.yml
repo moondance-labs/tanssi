@@ -15,6 +15,12 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+    check-if-build-needed:
+      uses: ./.github/workflow-templates/changes-check
+      secrets: inherit
+      outputs:
+        no_build_required: ${{ steps.changes-check.outputs.no_build_required }}
+
     set-tags:
         runs-on: ubuntu-latest
         outputs:
@@ -22,6 +28,7 @@ jobs:
             git_ref: ${{ steps.check-git-ref.outputs.git_ref }}
             sha: ${{ steps.get-sha.outputs.sha }}
             sha8: ${{ steps.get-sha.outputs.sha8 }}
+        if: needs.check-if-build-needed.outputs.no_build_required != 'true'
         steps:
             - name: Check git ref
               id: check-git-ref

@@ -1,0 +1,35 @@
+name: changes-check
+
+on:
+  workflow_call:
+    outputs:
+      no_build_required:
+        description: "Changed files that do not require a build"
+        value: ${{ jobs.filter.outputs.no_build_required }}
+
+jobs:
+  filter:
+    runs-on: ubuntu-latest
+    outputs:
+      no_build_required: ${{ steps.result.outputs.no_build_required }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            no_build_required:
+              - 'smoke-test*/**'
+              - '*.md'
+            rest:
+              - '!smoke-test*/**'
+              - '!*.md'
+
+      - id: result
+        run: |
+          if [[ "${{ steps.changes.outputs.no_build_required }}" == "true" && "${{ steps.changes.outputs.rest }}" != "true" ]]; then
+            echo "no_build_required=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "no_build_required=false" >> "$GITHUB_OUTPUT"
+          fi
