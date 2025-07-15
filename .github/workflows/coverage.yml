@@ -22,7 +22,7 @@ jobs:
       no_build_required: ${{ steps.changes.outputs.no_build_required }}
     steps:
       - id: changes
-        uses: ./.github/actions/changes-check
+        uses: ./.github/workflow-templates/changes-check
 
   set-tags:
     runs-on: ubuntu-latest
