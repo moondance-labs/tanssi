@@ -101,6 +101,7 @@ jobs:
     build-benchmark:
       needs: ["enforce-ready-to-merge-label"]
       runs-on: self-hosted
+      if: needs.check-changes.outputs.no_build_required != 'true'
       steps:
         - name: Checkout
           uses: actions/checkout@v4
