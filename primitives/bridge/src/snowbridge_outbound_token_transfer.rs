@@ -22,9 +22,9 @@ use core::marker::PhantomData;
 use core::slice::Iter;
 use frame_support::{ensure, traits::Get};
 use parity_scale_codec::{Decode, Encode};
-use snowbridge_core::{AgentId, ChannelId, TokenId, TokenIdOf};
+use snowbridge_core::{AgentId, ChannelId, TokenId};
 use snowbridge_outbound_queue_primitives::v1::message::{Command, Message, SendMessage};
-use sp_core::{H160, H256};
+use sp_core::H160;
 use sp_runtime::traits::{MaybeEquivalence, TryConvert};
 use sp_std::{iter::Peekable, prelude::*};
 use xcm::prelude::*;
@@ -33,7 +33,7 @@ use xcm::{
     VersionedLocation, VersionedXcm,
 };
 use xcm_builder::{ensure_is_remote, InspectMessageQueues};
-use xcm_executor::traits::{validate_export, ConvertLocation, ExportXcm};
+use xcm_executor::traits::{validate_export, ExportXcm};
 
 pub struct EthereumBlobExporter<
     UniversalLocation,
@@ -371,106 +371,106 @@ where
         // will be modified in a latter PR.
         todo!("make_mint_foreign_token_command");
 
-        use XcmConverterError::*;
+        // use XcmConverterError::*;
 
-        // Get the reserve assets.
-        let reserve_assets = match_expression!(
-            self.next()?,
-            ReserveAssetDeposited(reserve_assets),
-            reserve_assets
-        )
-        .ok_or(ReserveAssetDepositedExpected)?;
+        // // Get the reserve assets.
+        // let reserve_assets = match_expression!(
+        //     self.next()?,
+        //     ReserveAssetDeposited(reserve_assets),
+        //     reserve_assets
+        // )
+        // .ok_or(ReserveAssetDepositedExpected)?;
 
-        // Check if clear origin exists and skip over it.
-        if match_expression!(self.peek(), Ok(ClearOrigin), ()).is_some() {
-            let _ = self.next();
-        }
+        // // Check if clear origin exists and skip over it.
+        // if match_expression!(self.peek(), Ok(ClearOrigin), ()).is_some() {
+        //     let _ = self.next();
+        // }
 
-        // Get the fee asset item from BuyExecution or continue parsing.
-        let fee_asset = match_expression!(self.peek(), Ok(BuyExecution { fees, .. }), fees);
-        if fee_asset.is_some() {
-            let _ = self.next();
-        }
+        // // Get the fee asset item from BuyExecution or continue parsing.
+        // let fee_asset = match_expression!(self.peek(), Ok(BuyExecution { fees, .. }), fees);
+        // if fee_asset.is_some() {
+        //     let _ = self.next();
+        // }
 
-        let (deposit_assets, beneficiary) = match_expression!(
-            self.next()?,
-            DepositAsset {
-                assets,
-                beneficiary
-            },
-            (assets, beneficiary)
-        )
-        .ok_or(DepositAssetExpected)?;
+        // let (deposit_assets, beneficiary) = match_expression!(
+        //     self.next()?,
+        //     DepositAsset {
+        //         assets,
+        //         beneficiary
+        //     },
+        //     (assets, beneficiary)
+        // )
+        // .ok_or(DepositAssetExpected)?;
 
-        // assert that the beneficiary is AccountKey20.
-        let recipient = match_expression!(
-            beneficiary.unpack(),
-            (0, [AccountKey20 { network, key }])
-                if self.network_matches(network),
-            H160(*key)
-        )
-        .ok_or(BeneficiaryResolutionFailed)?;
+        // // assert that the beneficiary is AccountKey20.
+        // let recipient = match_expression!(
+        //     beneficiary.unpack(),
+        //     (0, [AccountKey20 { network, key }])
+        //         if self.network_matches(network),
+        //     H160(*key)
+        // )
+        // .ok_or(BeneficiaryResolutionFailed)?;
 
-        // Make sure there are reserved assets.
-        if reserve_assets.len() == 0 {
-            return Err(NoReserveAssets);
-        }
+        // // Make sure there are reserved assets.
+        // if reserve_assets.len() == 0 {
+        //     return Err(NoReserveAssets);
+        // }
 
-        // Check the the deposit asset filter matches what was reserved.
-        if reserve_assets
-            .inner()
-            .iter()
-            .any(|asset| !deposit_assets.matches(asset))
-        {
-            return Err(FilterDoesNotConsumeAllAssets);
-        }
+        // // Check the the deposit asset filter matches what was reserved.
+        // if reserve_assets
+        //     .inner()
+        //     .iter()
+        //     .any(|asset| !deposit_assets.matches(asset))
+        // {
+        //     return Err(FilterDoesNotConsumeAllAssets);
+        // }
 
-        // We only support a single asset at a time.
-        ensure!(reserve_assets.len() == 1, TooManyAssets);
-        let reserve_asset = reserve_assets.get(0).ok_or(AssetResolutionFailed)?;
+        // // We only support a single asset at a time.
+        // ensure!(reserve_assets.len() == 1, TooManyAssets);
+        // let reserve_asset = reserve_assets.get(0).ok_or(AssetResolutionFailed)?;
 
-        // Fees are collected on the origin chain (container chain), up front and directly from the
-        // user, to cover the complete cost of the transfer. Any additional fees provided in the XCM
-        // program are refunded to the beneficiary. We only validate the fee here if its provided to
-        // make sure the XCM program is well formed. Another way to think about this from an XCM
-        // perspective would be that the user offered to pay X amount in fees, but we charge 0 of
-        // that X amount (no fee) and refund X to the user.
-        if let Some(fee_asset) = fee_asset {
-            // The fee asset must be the same as the reserve asset.
-            if fee_asset.id != reserve_asset.id || fee_asset.fun > reserve_asset.fun {
-                return Err(InvalidFeeAsset);
-            }
-        }
+        // // Fees are collected on the origin chain (container chain), up front and directly from the
+        // // user, to cover the complete cost of the transfer. Any additional fees provided in the XCM
+        // // program are refunded to the beneficiary. We only validate the fee here if its provided to
+        // // make sure the XCM program is well formed. Another way to think about this from an XCM
+        // // perspective would be that the user offered to pay X amount in fees, but we charge 0 of
+        // // that X amount (no fee) and refund X to the user.
+        // if let Some(fee_asset) = fee_asset {
+        //     // The fee asset must be the same as the reserve asset.
+        //     if fee_asset.id != reserve_asset.id || fee_asset.fun > reserve_asset.fun {
+        //         return Err(InvalidFeeAsset);
+        //     }
+        // }
 
-        let (asset_id, amount) = match reserve_asset {
-            Asset {
-                id: AssetId(inner_location),
-                fun: Fungible(amount),
-            } => Some((inner_location.clone(), *amount)),
-            _ => None,
-        }
-        .ok_or(AssetResolutionFailed)?;
+        // let (asset_id, amount) = match reserve_asset {
+        //     Asset {
+        //         id: AssetId(inner_location),
+        //         fun: Fungible(amount),
+        //     } => Some((inner_location.clone(), *amount)),
+        //     _ => None,
+        // }
+        // .ok_or(AssetResolutionFailed)?;
 
-        // transfer amount must be greater than 0.
-        ensure!(amount > 0, ZeroAssetTransfer);
+        // // transfer amount must be greater than 0.
+        // ensure!(amount > 0, ZeroAssetTransfer);
 
-        let token_id = TokenIdOf::convert_location(&asset_id).ok_or(InvalidAsset)?;
+        // let token_id = TokenIdOf::convert_location(&asset_id).ok_or(InvalidAsset)?;
 
-        let expected_asset_id = ConvertAssetId::convert(&token_id).ok_or(InvalidAsset)?;
+        // let expected_asset_id = ConvertAssetId::convert(&token_id).ok_or(InvalidAsset)?;
 
-        ensure!(asset_id == expected_asset_id, InvalidAsset);
+        // ensure!(asset_id == expected_asset_id, InvalidAsset);
 
-        // Check if there is a SetTopic and skip over it if found.
-        let topic_id = match_expression!(self.next()?, SetTopic(id), id).ok_or(SetTopicExpected)?;
+        // // Check if there is a SetTopic and skip over it if found.
+        // let topic_id = match_expression!(self.next()?, SetTopic(id), id).ok_or(SetTopicExpected)?;
 
-        Ok((
-            Command::MintForeignToken {
-                token_id,
-                recipient,
-                amount,
-            },
-            *topic_id,
-        ))
+        // Ok((
+        //     Command::MintForeignToken {
+        //         token_id,
+        //         recipient,
+        //         amount,
+        //     },
+        //     *topic_id,
+        // ))
     }
 }
 

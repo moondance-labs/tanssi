@@ -105,7 +105,7 @@ mod xcm_converter {
     use super::*;
     use crate::snowbridge_outbound_token_transfer::XcmConverter;
     use cumulus_primitives_core::WeightLimit;
-    use snowbridge_core::outbound::Command;
+    use snowbridge_outbound_queue_primitives::v1::Command;
     use xcm::opaque::latest::{
         AssetFilter, AssetId, Fungibility, Instruction, Junction, NetworkId, WildAsset,
     };
@@ -162,7 +162,7 @@ mod xcm_converter {
         assert_eq!(
             command,
             (
-                Command::TransferNativeToken {
+                Command::UnlockNativeToken {
                     agent_id,
                     token: token_address.into(),
                     recipient: beneficiary_address.into(),

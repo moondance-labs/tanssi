@@ -2223,9 +2223,6 @@ fn test_unrelated_xcm_message() {
                 .append_with(EthereumLocation::get())
                 .expect("to not overflow");
 
-            let eth_asset = AssetId(erc20_asset_location.clone())
-                .into_asset(Fungibility::Fungible(amount_to_transfer));
-
             assert_err!(
                 XcmPallet::send_xcm(
                     Junctions::from([Junction::AccountId32 {
@@ -2233,7 +2230,7 @@ fn test_unrelated_xcm_message() {
                         id: AccountId::from(BOB).into()
                     }]),
                     beneficiary_location,
-                    xcm::opaque::latest::Xcm(vec![xcm::opaque::latest::Instruction::ClearOrigin,]),
+                    xcm::opaque::latest::Xcm(vec![xcm::opaque::latest::Instruction::ClearOrigin]),
                 ),
                 SendError::Unroutable,
             );
