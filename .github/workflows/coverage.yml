@@ -16,13 +16,13 @@ env:
 
 jobs:
   ####### Check files and formatting #######
-  check-changes:
-    runs-on: ubuntu-latest
-    outputs:
-      no_build_required: ${{ steps.changes.outputs.no_build_required }}
-    steps:
-      - id: changes
-        uses: ./.github/workflow-templates/changes-check
+#  check-changes:
+#    runs-on: ubuntu-latest
+#    outputs:
+#      no_build_required: ${{ steps.changes.outputs.no_build_required }}
+#    steps:
+#      - id: changes
+#        uses: ./.github/workflow-templates/changes-check
 
   set-tags:
     runs-on: ubuntu-latest
