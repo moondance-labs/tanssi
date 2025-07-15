@@ -18729,6 +18729,7 @@ dependencies = [
  "tp-author-noting-inherent",
  "tp-bridge",
  "tp-data-preservers-common",
+ "tp-invulnerables-filter-common",
  "tp-parathread-filter-common",
  "tp-stream-payment-common",
  "tp-traits",
