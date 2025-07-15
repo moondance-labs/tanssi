@@ -37,16 +37,70 @@ runs:
           curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
         fi
         rustup show
-    - name: Build Node
+        
+    - name: Define cache paths
+      id: cache-paths
       shell: bash
       run: |
-        env
+        paths=$(cat <<EOF
+        ./target/release/tanssi-relay
+        ./target/release/tanssi-relay-execute-worker
+        ./target/release/tanssi-relay-prepare-worker
+        ./target/release/tanssi-node
+        ./target/release/container-chain-frontier-node
+        ./target/release/container-chain-simple-node
+        ./target/release/wbuild/container-chain-template-simple-runtime/container_chain_template_simple_runtime.compact.compressed.wasm
+        ./target/release/wbuild/container-chain-template-frontier-runtime/container_chain_template_frontier_runtime.compact.compressed.wasm
+        ./target/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm
+        ./target/release/wbuild/flashbox-runtime/flashbox_runtime.compact.compressed.wasm
+        ./target/release/wbuild/dancelight-runtime/dancelight_runtime.compact.compressed.wasm
+        ./target/release/wbuild/starlight-runtime/starlight_runtime.compact.compressed.wasm
+        EOF
+        )
+        echo "paths<<EOF" >> $GITHUB_OUTPUT
+        echo "$paths" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: Compute build cache key
+      id: compute-cache-key
+      shell: bash
+      run: |
+        features_hash=$(echo "${{ inputs.features }}" | sha256sum | cut -d' ' -f1)
+        sources_hash=$(find . \
+          -path ./target -prune -o \
+          -path ./tmp -prune -o \
+          -path ./node_modules -prune -o \
+          -type f \( -name "*.rs" -o -name "*.toml" \) -print0 \
+          | sort -z | xargs -0 sha256sum | sha256sum | cut -d' ' -f1)
+        key="build-${features_hash}-${sources_hash}"
+        echo "Computed cache key: $key"
+        echo "key=$key" >> $GITHUB_OUTPUT
+
+    - name: Restore build cache
+      uses: actions/cache/restore@v4
+      id: cache-restore
+      with:
+        path: ${{ steps.cache-paths.outputs.paths }}
+        key: ${{ steps.compute-cache-key.outputs.key }}
+
+    - name: Build Node (if cache miss)
+      if: steps.cache-restore.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
         params=" --locked --release"
         if [ -n "${{ inputs.features }}" ]; then
           params="$params --features ${{ inputs.features }}"
         fi
         echo "cargo build $params"
         cargo build $params
+
+    - name: Save build cache
+      if: steps.cache-restore.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v4
+      with:
+        path: ${{ steps.cache-paths.outputs.paths }}
+        key: ${{ steps.compute-cache-key.outputs.key }}
+
     - name: Display binary comments
       shell: bash
       run: readelf -p .comment ./target/release/tanssi-node
