@@ -1,35 +1,34 @@
 name: changes-check
+description: |
+  Check if only non-build files changed (e.g. smoke tests or docs)
 
-on:
-  workflow_call:
-    outputs:
-      no_build_required:
-        description: "Changed files that do not require a build"
-        value: ${{ jobs.filter.outputs.no_build_required }}
+inputs: {}
+outputs:
+  no_build_required:
+    description: "Whether the changes do not require a build"
+    value: ${{ steps.result.outputs.no_build_required }}
 
-jobs:
-  filter:
-    runs-on: ubuntu-latest
-    outputs:
-      no_build_required: ${{ steps.result.outputs.no_build_required }}
-    steps:
-      - uses: actions/checkout@v4
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/checkout@v4
 
-      - uses: dorny/paths-filter@v3
-        id: changes
-        with:
-          filters: |
-            no_build_required:
-              - 'smoke-test*/**'
-              - '*.md'
-            rest:
-              - '!smoke-test*/**'
-              - '!*.md'
+    - uses: dorny/paths-filter@v3
+      id: changes
+      with:
+        filters: |
+          no_build_required:
+            - 'smoke-test*/**'
+            - '*.md'
+          rest:
+            - '!smoke-test*/**'
+            - '!*.md'
 
-      - id: result
-        run: |
-          if [[ "${{ steps.changes.outputs.no_build_required }}" == "true" && "${{ steps.changes.outputs.rest }}" != "true" ]]; then
-            echo "no_build_required=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "no_build_required=false" >> "$GITHUB_OUTPUT"
-          fi
+    - id: result
+      shell: bash
+      run: |
+        if [[ "${{ steps.changes.outputs.no_build_required }}" == "true" && "${{ steps.changes.outputs.rest }}" != "true" ]]; then
+          echo "no_build_required=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "no_build_required=false" >> "$GITHUB_OUTPUT"
+        fi

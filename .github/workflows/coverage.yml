@@ -16,11 +16,13 @@ env:
 
 jobs:
   ####### Check files and formatting #######
-#  check-if-build-needed:
-#    uses: ./.github/workflow-templates/changes-check
-#    secrets: inherit
-#    outputs:
-#      no_build_required: ${{ steps.changes-check.outputs.no_build_required }}
+  check-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      no_build_required: ${{ steps.changes.outputs.no_build_required }}
+    steps:
+      - id: changes
+        uses: ./.github/actions/changes-check
 
   set-tags:
     runs-on: ubuntu-latest
@@ -30,7 +32,7 @@ jobs:
       coverage_report: ${{ steps.check-git-ref.outputs.coverage_report }}
       git_branch: ${{ steps.check-git-ref.outputs.git_branch }}
       git_target_branch: ${{ steps.check-git-ref.outputs.git_target_branch }}
-#    if: needs.check-if-build-needed.outputs.no_build_required != 'true'
+#    if: needs.check-changes.outputs.no_build_required != 'true'
     steps:
       - name: Check git ref
         id: check-git-ref
