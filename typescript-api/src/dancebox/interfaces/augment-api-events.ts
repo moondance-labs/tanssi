@@ -641,6 +641,14 @@ declare module "@polkadot/api-base/types/events" {
                 { status: PalletInactivityTrackingActivityTrackingStatus }
             >;
             /**
+             * Collator online status updated
+             **/
+            CollatorStatusUpdated: AugmentedEvent<
+                ApiType,
+                [collator: AccountId32, isOffline: bool],
+                { collator: AccountId32; isOffline: bool }
+            >;
+            /**
              * Generic event
              **/
             [key: string]: AugmentedEvent<ApiType>;
