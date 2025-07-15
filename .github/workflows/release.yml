@@ -715,8 +715,7 @@ jobs:
                   test_name: ${{ matrix.test_name }}
 
     chopsticks-upgrade-test:
-        runs-on:
-            labels: ubuntu-latest
+        runs-on: ubuntu-latest
         needs: ["set-tags", "build"]
         strategy:
             fail-fast: false
