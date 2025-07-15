@@ -1,8 +1,3 @@
----
-title: Security Policy
-
----
-
 # Security Policy
 
 Tanssi is committed to building secure infrastructure for decentralized networks. We greatly appreciate contributions from the community that help identify and responsibly disclose vulnerabilities.
