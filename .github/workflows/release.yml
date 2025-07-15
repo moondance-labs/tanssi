@@ -28,7 +28,7 @@ jobs:
             git_ref: ${{ steps.check-git-ref.outputs.git_ref }}
             sha: ${{ steps.get-sha.outputs.sha }}
             sha8: ${{ steps.get-sha.outputs.sha8 }}
-        if: needs.check-if-build-needed.outputs.no_build_required != 'true'
+#        if: needs.check-if-build-needed.outputs.no_build_required != 'true'
         steps:
             - name: Check git ref
               id: check-git-ref

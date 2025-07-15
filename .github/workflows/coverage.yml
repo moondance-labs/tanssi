@@ -30,7 +30,7 @@ jobs:
       coverage_report: ${{ steps.check-git-ref.outputs.coverage_report }}
       git_branch: ${{ steps.check-git-ref.outputs.git_branch }}
       git_target_branch: ${{ steps.check-git-ref.outputs.git_target_branch }}
-    if: needs.check-if-build-needed.outputs.no_build_required != 'true'
+#    if: needs.check-if-build-needed.outputs.no_build_required != 'true'
     steps:
       - name: Check git ref
         id: check-git-ref
