@@ -2,7 +2,7 @@ import "@tanssi/api-augment/dancelight";
 
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
-import { getCurrentEraStartBlock, getPastEraStartBlock } from "utils/block";
+import { getCurrentEraStartBlock, getPastEraStartBlock, getBlockNumberAtWhichEraStarted } from "utils/block";
 
 describeSuite({
     id: "SMOK16",
@@ -13,6 +13,7 @@ describeSuite({
         let currentEraIndex: number;
         let currentEraStartBlock: number;
         let pastEraStartBlock: number;
+        let blockNumberAtWhichEraStarted: number;
 
         beforeAll(async () => {
             api = context.polkadotJs();
@@ -29,6 +30,11 @@ describeSuite({
                 const currentBlockNumber = await api.query.system.number();
                 const currentEraIndex = (await api.query.externalValidators.activeEra()).unwrap().index.toNumber();
                 const currentSessionIndex = (await api.query.session.currentIndex()).toNumber();
+
+                // Calculate the sessions offset from the first era start block
+                const blockNumberAtWhichEraStarted = await getBlockNumberAtWhichEraStarted(api);
+                const apiAtFirstEraStart = await api.at(await api.rpc.chain.getBlockHash(blockNumberAtWhichEraStarted));
+                const sessionsOffset = (await apiAtFirstEraStart.query.session.currentIndex()).toNumber();
 
                 const apiAtCurrentEraStart = await api.at(await api.rpc.chain.getBlockHash(currentEraStartBlock));
                 const currentEraStartSessionIndex = (
@@ -55,8 +61,8 @@ describeSuite({
                     `Error at block number ${currentBlockNumber}: Era change between era ${currentEraIndex - 1} and ${currentEraIndex} happened in ${currentEraStartSessionIndex - previousEraStartSessionIndex} sessions instead of ${sessionsPerEra} sessions.`
                 );
                 expect(currentSessionIndex).to.be.within(
-                    currentEraIndex * sessionsPerEra,
-                    (currentEraIndex + 1) * sessionsPerEra,
+                    sessionsOffset + currentEraIndex * sessionsPerEra,
+                    sessionsOffset + (currentEraIndex + 1) * sessionsPerEra,
                     `Error at block number ${currentBlockNumber}: Current session index ${currentSessionIndex} is not within the expected range for era ${currentEraIndex}.`
                 );
             },
