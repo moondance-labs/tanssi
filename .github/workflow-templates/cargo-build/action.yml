@@ -11,39 +11,6 @@ inputs:
 runs:
   using: "composite"
   steps:
-#    - name: Restore cargo registry cache
-#      uses: actions/cache@v4
-#      with:
-#        path: |
-#          ~/.cargo/bin/
-#          ~/.cargo/registry/index/
-#          ~/.cargo/registry/cache/
-#          ~/.cargo/git/db/
-#        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-
-#    - name: Restore sccache cache
-#      uses: actions/cache@v4
-#      with:
-#        path: ~/.cache/sccache
-#        key: sccache-${{ runner.os }}-${{ hashFiles('**/Cargo.lock', '**/*.rs') }}
-
-# TODO: remove (trigger job 2)
-    - name: Show Cargo and sccache cache sizes
-      shell: bash
-      run: |
-        echo "🧱 Cargo cache:"
-        du -sh ~/.cargo || echo "No cargo cache found"
-        echo "📦 Cargo registry index:"
-        du -sh ~/.cargo/registry/index || echo "No index"
-        echo "📦 Cargo registry cache:"
-        du -sh ~/.cargo/registry/cache || echo "No cache"
-        echo "🧰 Git dependencies:"
-        du -sh ~/.cargo/git || echo "No git cache"
-        echo "🎯 Target directory:"
-        du -sh target || echo "No target directory"
-        echo "🗃️ sccache:"
-        du -sh ~/.cache/sccache || echo "No sccache"
-
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.9
     - name: Setup Variables
@@ -115,7 +82,3 @@ runs:
       with:
         cpu: ""
         profile: "release"
-
-    - name: Show sccache stats
-      shell: bash
-      run: sccache --show-stats
