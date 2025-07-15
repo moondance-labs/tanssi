@@ -508,6 +508,7 @@ pub mod pallet {
                 Error::<T>::MarkingInvulnerableOfflineInvalid
             );
             <OfflineCollators<T>>::insert(collator.clone(), true);
+            // Updates the SortedEligibleCandidates list. Has to be called after the collator is marked offline.
             T::CollatorStakeHelper::on_online_status_change(collator, false)?;
             Self::deposit_event(Event::<T>::CollatorStatusUpdated {
                 collator: collator.clone(),
@@ -521,7 +522,8 @@ pub mod pallet {
                 <OfflineCollators<T>>::get(collator),
                 Error::<T>::CollatorNotOffline
             );
-            <OfflineCollators<T>>::insert(collator.clone(), false);
+            <OfflineCollators<T>>::remove(collator.clone());
+            // Updates the SortedEligibleCandidates list. Has to be called after the collator is marked online.
             T::CollatorStakeHelper::on_online_status_change(collator, true)?;
             Self::deposit_event(Event::<T>::CollatorStatusUpdated {
                 collator: collator.clone(),
