@@ -487,6 +487,7 @@ try-runtime = [
 	"pallet-external-validators/try-runtime",
 	"pallet-grandpa/try-runtime",
 	"pallet-identity/try-runtime",
+	"pallet-inactivity-tracking/try-runtime",
 	"pallet-inflation-rewards/try-runtime",
 	"pallet-initializer/try-runtime",
 	"pallet-invulnerables/try-runtime",
