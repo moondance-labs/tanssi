@@ -65,12 +65,12 @@ jobs:
       - name: create matrix
         id: prepare
         run: |
-          dancebox='{"runtime_name": "dancebox","runtime_path" : "./chains/orchestrator-paras/runtime/dancebox/src/lib.rs"}'
-          flashbox='{"runtime_name": "flashbox","runtime_path" : "./chains/orchestrator-paras/runtime/flashbox/src/lib.rs"}'
-          frontier_template='{"runtime_name": "frontier-template","runtime_path" : "./chains/container-chains/runtime-templates/frontier/src/lib.rs"}'
-          simple_template='{"runtime_name": "simple-template","runtime_path" : "./chains/container-chains/runtime-templates/simple/src/lib.rs"}'
-          dancelight='{"runtime_name": "dancelight","runtime_path" : "./chains/orchestrator-relays/runtime/dancelight/src/lib.rs"}'
-          starlight='{"runtime_name": "starlight","runtime_path" : "./chains/orchestrator-relays/runtime/starlight/src/lib.rs"}'
+          dancebox='{"runtime_name": "dancebox","runtime_path" : "./chains/orchestrator-paras/runtime/dancebox/src/lib.rs", "build_features": "metadata-hash"}'
+          flashbox='{"runtime_name": "flashbox","runtime_path" : "./chains/orchestrator-paras/runtime/flashbox/src/lib.rs", "build_features": "metadata-hash"}'
+          frontier_template='{"runtime_name": "frontier-template","runtime_path" : "./chains/container-chains/runtime-templates/frontier/src/lib.rs", "build_features": "metadata-hash"}'
+          simple_template='{"runtime_name": "simple-template","runtime_path" : "./chains/container-chains/runtime-templates/simple/src/lib.rs", "build_features": "metadata-hash"}'
+          dancelight='{"runtime_name": "dancelight","runtime_path" : "./chains/orchestrator-relays/runtime/dancelight/src/lib.rs", "build_features": "on-chain-release-build"}'
+          starlight='{"runtime_name": "starlight","runtime_path" : "./chains/orchestrator-relays/runtime/starlight/src/lib.rs", "build_features": "on-chain-release-build"}'
 
           if [[ ${{ github.event.inputs.chains }} = "orchestrator-para-only" ]]; then
             echo "matrix_tests=[$dancebox, $flashbox]" >> $GITHUB_OUTPUT
@@ -148,7 +148,7 @@ jobs:
           GH_WORKFLOW_MATRIX_CHAIN: ${{ matrix.chain.runtime_name }}
           GH_WORKFLOW_MATRIX_SRTOOL_IMAGE: ${{ matrix.srtool_image }}
           GH_WORKFLOW_MATRIX_SRTOOL_IMAGE_TAG: ${{ matrix.srtool_image_tag }}
-          RUNTIME_BUILD_OPTS: "--features=metadata-hash"
+          RUNTIME_BUILD_OPTS: "--features=${{ matrix.chain.build_features }}"
         run: |
           
           chmod u+x ./original-scripts/build-runtime-srtool.sh
