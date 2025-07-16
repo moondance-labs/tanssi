@@ -47,13 +47,31 @@ BRANCHES=(
   "perm-${CLIENT_VERSION}"
   "perm-runtime-${RUNTIME_VERSION}-starlight"
   "perm-runtime-${RUNTIME_VERSION}-templates"
+  "perm-runtime-${RUNTIME_VERSION}-para"
+)
+
+TAGS=(
+  "runtime-${RUNTIME_VERSION}-starlight"
+  "runtime-${RUNTIME_VERSION}-para"
+  "runtime-${RUNTIME_VERSION}-templates"
+  "${CLIENT_VERSION}"
+  "${CLIENT_VERSION}-para"
 )
 
 # Create and push each branch
 for BRANCH in "${BRANCHES[@]}"; do
+  git checkout "$FROM_BRANCH"
   git checkout -b "$BRANCH"
   git push -u origin "$BRANCH"
 done
 
-echo "✅ All branches created and pushed successfully:"
-printf "  - %s\n" "${BRANCHES[@]}"
+git checkout "$FROM_BRANCH"
+
+for TAG in "${TAGS[@]}"; do
+  git tag "$TAG"
+  git push origin "$TAG"
+done
+
+echo "✅ All branches and tags created and pushed successfully:"
+printf "  - Branch: %s\n" "${BRANCHES[@]}"
+printf "  - Tag:    %s\n" "${TAGS[@]}"
