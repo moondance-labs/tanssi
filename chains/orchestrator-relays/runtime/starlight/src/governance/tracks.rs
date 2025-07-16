@@ -18,9 +18,8 @@
 
 use super::*;
 
-const fn percent(x: i32) -> sp_arithmetic::FixedI64 {
-    #[allow(clippy::cast_sign_loss)]
-    sp_arithmetic::FixedI64::from_rational(x as u128, 100)
+const fn percent(x: u128) -> sp_arithmetic::FixedI64 {
+    sp_arithmetic::FixedI64::from_rational(x, 100)
 }
 use pallet_referenda::{Curve, Track};
 use sp_runtime::str_array as s;

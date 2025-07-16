@@ -2253,8 +2253,7 @@ impl_runtime_apis! {
                         );
                     });
 
-                    #[allow(clippy::cast_sign_loss)]
-                    Some((assets, fee_index as u32, dest, verify))
+                    Some((assets, fee_index, dest, verify))
                 }
             }
 
