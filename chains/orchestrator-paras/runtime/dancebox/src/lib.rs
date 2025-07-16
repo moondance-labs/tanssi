@@ -2252,7 +2252,6 @@ impl_runtime_apis! {
                             initial_asset_amount - asset_amount,
                         );
                     });
-
                     Some((assets, fee_index, dest, verify))
                 }
             }
