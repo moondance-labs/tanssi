@@ -41,6 +41,9 @@ use {
     parity_scale_codec::DecodeAll,
     snowbridge_beacon_primitives::ForkVersions,
     snowbridge_core::{gwei, meth, Channel, PricingParameters, Rewards},
+    snowbridge_inbound_queue_primitives::v1::{
+        Command, Destination, Envelope, MessageProcessor, MessageV1, VersionedXcmMessage,
+    },
     snowbridge_pallet_outbound_queue::OnNewCommitment,
     sp_core::{ConstU32, ConstU8, Get, H160, H256},
     sp_runtime::{DispatchError, DispatchResult},
@@ -52,7 +55,6 @@ use {
         Fungibility, Junctions::*,
     },
     xcm_executor::traits::WeightBounds,
-    snowbridge_inbound_queue_primitives::v1::{MessageProcessor, Envelope, Destination, VersionedXcmMessage, MessageV1, Command},
 };
 
 pub const SLOTS_PER_EPOCH: u32 = snowbridge_pallet_ethereum_client::config::SLOTS_PER_EPOCH as u32;

@@ -113,7 +113,7 @@ use {
         ApplyExtrinsicResult, Cow, FixedU128, KeyTypeId, Perbill, Percent, Permill, RuntimeDebug,
     },
     sp_runtime::{traits::ConvertInto, AccountId32},
-    sp_staking::{SessionIndex, offence::OffenceSeverity},
+    sp_staking::{offence::OffenceSeverity, SessionIndex},
     sp_std::{
         cmp::Ordering,
         collections::{btree_map::BTreeMap, btree_set::BTreeSet, vec_deque::VecDeque},
@@ -131,8 +131,8 @@ use {
         NodeActivityTrackingHelper, ParaIdAssignmentHooks, RegistrarHandler, Slot, SlotFrequency,
     },
     xcm::{
-        latest::prelude::*, IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation,
-        VersionedXcm, Version as XcmVersion,
+        latest::prelude::*, IntoVersion, Version as XcmVersion, VersionedAssetId, VersionedAssets,
+        VersionedLocation, VersionedXcm,
     },
     xcm_runtime_apis::{
         dry_run::{CallDryRunEffects, Error as XcmDryRunApiError, XcmDryRunEffects},

@@ -25,7 +25,7 @@ use frame_support::{
 };
 use frame_system::pallet_prelude::BlockNumberFor;
 use parity_scale_codec::{DecodeAll, Encode};
-use snowbridge_core::{Channel};
+use snowbridge_core::Channel;
 use snowbridge_pallet_inbound_queue::RewardProcessor;
 use sp_core::Get;
 use sp_runtime::{
@@ -33,10 +33,10 @@ use sp_runtime::{
     DispatchError, DispatchResult,
 };
 use {
-    snowbridge_inbound_queue_primitives::EventProof as Message,
     snowbridge_inbound_queue_primitives::v1::{
         Command, Destination, Envelope, MessageProcessor, MessageV1, VersionedXcmMessage,
     },
+    snowbridge_inbound_queue_primitives::EventProof as Message,
 };
 
 /// `NativeTokenTransferMessageProcessor` is responsible for receiving and processing the Tanssi
