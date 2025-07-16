@@ -22,7 +22,6 @@ use crate::EthereumBeaconClient;
 #[cfg(not(feature = "runtime-benchmarks"))]
 use {
     tanssi_runtime_common::relay::NativeTokenTransferMessageProcessor,
-    tp_bridge::symbiotic_message_processor::SymbioticMessageProcessor,
     tp_bridge::{
         generic_token_message_processor::{GenericTokenMessageProcessor, NoOpProcessor},
         symbiotic_message_processor::SymbioticMessageProcessor,
