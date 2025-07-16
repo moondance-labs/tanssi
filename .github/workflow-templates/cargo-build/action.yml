@@ -107,6 +107,7 @@ runs:
     - name: Display sccache stats
       shell: bash
       run: ${SCCACHE_PATH} --show-stats
+    # TODO: Remove binary verification
     - name: Verify binary version
       shell: bash
       run: |
