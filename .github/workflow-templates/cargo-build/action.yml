@@ -72,7 +72,7 @@ runs:
           -path ./node_modules -prune -o \
           -type f \( -name "*.rs" -o -name "*.toml" \) -print0 \
           | sort -z | xargs -0 sha256sum | sha256sum | cut -d' ' -f1)
-        key="build-key-${features_hash}-${sources_hash}"
+        key="cargo-build-key-${features_hash}-${sources_hash}"
         echo "Computed cache key: $key"
         echo "key=$key" >> $GITHUB_OUTPUT
 
