@@ -28,6 +28,7 @@ use parity_scale_codec::{DecodeAll, Encode};
 use snowbridge_core::Channel;
 use snowbridge_pallet_inbound_queue::RewardProcessor;
 use sp_core::Get;
+use sp_runtime::Vec;
 use sp_runtime::{
     traits::{Hash as _, MaybeEquivalence},
     DispatchError, DispatchResult,
