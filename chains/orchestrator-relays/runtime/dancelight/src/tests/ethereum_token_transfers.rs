@@ -2181,7 +2181,7 @@ fn test_unrelated_xcm_message() {
             let erc20_asset_location = Location {
                 parents: 1,
                 interior: X2([
-                    GlobalConsensus(NetworkId::BitcoinCore),
+                    GlobalConsensus(EthereumNetwork::get()),
                     AccountKey20 {
                         network: Some(EthereumNetwork::get()),
                         key: token_address.into(),
@@ -2279,7 +2279,7 @@ fn test_user_cannot_send_raw_message() {
             let erc20_asset_location = Location {
                 parents: 1,
                 interior: X2([
-                    GlobalConsensus(NetworkId::BitcoinCore),
+                    GlobalConsensus(EthereumNetwork::get()),
                     AccountKey20 {
                         network: Some(EthereumNetwork::get()),
                         key: token_address.into(),
