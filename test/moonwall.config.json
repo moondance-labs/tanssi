@@ -651,7 +651,7 @@
         {
             "name": "zombie_dancelight_upgrade",
             "testFileDir": ["suites/zombie_solochain_upgrade"],
-            "runScripts": ["download-latest-rt-binaries.sh tanssi-relay", "build-spec-light-single.sh --bin-dir tmp --runtime dancelight"],
+            "runScripts": ["download-latest-rt-binaries.sh tanssi-relay", "build-spec-light-single.sh --bin-dir=tmp --runtime=dancelight"],
             "timeout": 900000,
             "foundation": {
                 "rtUpgradePath": "../target/release/wbuild/dancelight-runtime/dancelight_runtime.compact.compressed.wasm",
@@ -675,7 +675,7 @@
         {
             "name": "zombie_starlight_upgrade",
             "testFileDir": ["suites/zombie_solochain_upgrade"],
-            "runScripts": ["download-latest-rt-binaries.sh tanssi-relay", "build-spec-light-single.sh --bin-dir tmp --runtime starlight"],
+            "runScripts": ["download-latest-rt-binaries.sh tanssi-relay", "build-spec-light-single.sh --bin-dir=tmp --runtime=starlight"],
             "timeout": 900000,
             "foundation": {
                 "rtUpgradePath": "../target/release/wbuild/starlight-runtime/starlight_runtime.compact.compressed.wasm",
