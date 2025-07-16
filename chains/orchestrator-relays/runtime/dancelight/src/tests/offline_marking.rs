@@ -52,20 +52,14 @@ fn init_test_setup() {
     //- a non-invulnerable collator
     //- assigned to a container chain
     //- part of the sorted eligible candidates list.
-    assert!(
-        !TanssiInvulnerables::invulnerables().contains(&BOB.into())
-    );
-    assert!(
-        TanssiCollatorAssignment::collator_container_chain()
-            .container_chains
-            .iter()
-            .any(|(_, collators)| collators.contains(&BOB.into()))
-    );
-    assert!(
-        <SortedEligibleCandidates<Runtime>>::get()
-            .iter()
-            .any(|c| c.candidate == BOB.into())
-    );
+    assert!(!TanssiInvulnerables::invulnerables().contains(&BOB.into()));
+    assert!(TanssiCollatorAssignment::collator_container_chain()
+        .container_chains
+        .iter()
+        .any(|(_, collators)| collators.contains(&BOB.into())));
+    assert!(<SortedEligibleCandidates<Runtime>>::get()
+        .iter()
+        .any(|c| c.candidate == BOB.into()));
     // Enable offline marking.
     assert_ok!(InactivityTracking::enable_offline_marking(
         root_origin(),
@@ -104,13 +98,11 @@ fn set_collator_offline_using_set_offline_removes_it_from_assigned_collators_and
             let pending_assignment_before_offline_marking =
                 TanssiCollatorAssignment::pending_collator_container_chain();
             assert!(pending_assignment_before_offline_marking.is_some());
-            assert!(
-                pending_assignment_before_offline_marking
-                    .unwrap()
-                    .container_chains
-                    .iter()
-                    .any(|(_, collators)| collators.contains(&BOB.into()))
-            );
+            assert!(pending_assignment_before_offline_marking
+                .unwrap()
+                .container_chains
+                .iter()
+                .any(|(_, collators)| collators.contains(&BOB.into())));
             assert!(!InactivityTracking::is_node_offline(&BOB.into()));
             assert_ok!(InactivityTracking::set_offline(origin_of(BOB.into())));
             assert!(InactivityTracking::is_node_offline(&BOB.into()));
@@ -121,17 +113,13 @@ fn set_collator_offline_using_set_offline_removes_it_from_assigned_collators_and
             // Verify that after being set offline, BOB is no longer:
             // - assigned to any container chain
             // - in the sorted eligible candidates list
-            assert!(
-                !TanssiCollatorAssignment::collator_container_chain()
-                    .container_chains
-                    .iter()
-                    .any(|(_, collators)| collators.contains(&BOB.into()))
-            );
-            assert!(
-                !<SortedEligibleCandidates<Runtime>>::get()
-                    .iter()
-                    .any(|c| c.candidate == BOB.into())
-            );
+            assert!(!TanssiCollatorAssignment::collator_container_chain()
+                .container_chains
+                .iter()
+                .any(|(_, collators)| collators.contains(&BOB.into())));
+            assert!(!<SortedEligibleCandidates<Runtime>>::get()
+                .iter()
+                .any(|c| c.candidate == BOB.into()));
         });
 }
 
@@ -181,28 +169,22 @@ fn set_collator_online_using_adds_it_to_assigned_collators_and_sorted_eligible_c
             let pending_assignment_after_online_marking =
                 TanssiCollatorAssignment::pending_collator_container_chain();
             assert!(pending_assignment_after_online_marking.is_some());
-            assert!(
-                pending_assignment_after_online_marking
-                    .unwrap()
-                    .container_chains
-                    .iter()
-                    .any(|(_, collators)| collators.contains(&BOB.into()))
-            );
+            assert!(pending_assignment_after_online_marking
+                .unwrap()
+                .container_chains
+                .iter()
+                .any(|(_, collators)| collators.contains(&BOB.into())));
             run_to_session(4);
             run_block();
             // Verify that after being set online, BOB is:
             // - assigned to any container chain
             // - in the sorted eligible candidates list
-            assert!(
-                TanssiCollatorAssignment::collator_container_chain()
-                    .container_chains
-                    .iter()
-                    .any(|(_, collators)| collators.contains(&BOB.into()))
-            );
-            assert!(
-                <SortedEligibleCandidates<Runtime>>::get()
-                    .iter()
-                    .any(|c| c.candidate == BOB.into())
-            );
+            assert!(TanssiCollatorAssignment::collator_container_chain()
+                .container_chains
+                .iter()
+                .any(|(_, collators)| collators.contains(&BOB.into())));
+            assert!(<SortedEligibleCandidates<Runtime>>::get()
+                .iter()
+                .any(|c| c.candidate == BOB.into()));
         });
 }
