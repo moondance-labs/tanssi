@@ -35,7 +35,6 @@ use {
         TokenLocationReanchored, TransactionByteFee, TreasuryAccount, WeightToFee, UNITS,
     },
     frame_support::{
-        dispatch::DispatchClass,
         traits::{
             fungible::{Inspect, Mutate},
             tokens::{Fortitude, Preservation},
