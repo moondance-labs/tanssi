@@ -31,9 +31,9 @@ async function main() {
 - [ ] Start the github action Publish Binary Draft with ${previousVersion} => ${newVersion}
 (master branch).
 - [ ] Review the generated Draft and clean a bit the messages if needed (keep it draft).
-- [ ] Start the internal optimized binary build by starting the github action Prepare Optimized Binary Draft with the commit of ${previousVersion} (mster branch)
+- [ ] Start the internal optimized binary build by starting the github action Prepare Optimized Binary Draft with the commit of ${newVersion} (master branch)
 - [ ] Update chain-networks stagenet-dancebox config.json to include sha-xxxxx built from the optimized binary and pushed to docker
-(matching your ${newVersion} tag) and increase the config version + 1.
+(matching your ${newVersion}-para tag) and increase the config version + 1.
 - [ ] Test the new client on stagenet-dancebox.
 - [ ] Publish the client release draft.
 - [ ] When everything is ok, publish the new docker image: start github action Publish Docker
@@ -44,7 +44,7 @@ with ${newVersion}.
 - [ ] Start the github action Publish Dancelight Binary Draft with ${previousVersion} => ${newVersion}
 (master branch).
 - [ ] Review the generated Draft and clean a bit the messages if needed (keep it draft).
-- [ ] Start the internal optimized binary build by starting the github action Prepare Optimized Dancelight Binary Draft with the commit of ${previousVersion} (mster branch)
+- [ ] Start the internal optimized binary build by starting the github action Prepare Optimized Dancelight Binary Draft with the commit of ${newVersion} (master branch)
 - [ ] Update chain-networks stagelight config.json to include sha-xxxxx built from the optimized binary and pushed to docker
 (matching your ${newVersion} tag) and increase the config version + 1.
 - [ ] Test the new client on stagelight.
@@ -69,7 +69,7 @@ with ${newVersion}.
 - [ ] Re-run all extrinsics/hooks benchmarks.
 
 ## Release
-- [ ] Tag master with ${newVersion} and push to github
+- [ ] If solo-chain, tag master with ${newVersion} and push to github. If parachain, tag master with ${newVersion}-para and push to github.
 ${chosenTemplate}
 
 ## Post Release
