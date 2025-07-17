@@ -43,11 +43,13 @@
             },
             {
                 "name": "charlie",
-                "validator": true
+                "validator": true,
+                "rpc_port": "1111"
             },
             {
                 "name": "dave",
-                "validator": true
+                "validator": true,
+                "rpc_port": "1112"
             }
         ]
     },
