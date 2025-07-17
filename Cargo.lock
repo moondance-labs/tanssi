@@ -2171,7 +2171,7 @@ checksum = "7c74b8349d32d297c9134b8c88677813a227df8f779daa29bfc29c183fe3dca6"
 
 [[package]]
 name = "container-chain-frontier-node"
-version = "0.14.0"
+version = "0.15.0"
 dependencies = [
  "async-io 1.13.0",
  "async-trait",
@@ -2269,7 +2269,7 @@ dependencies = [
 
 [[package]]
 name = "container-chain-simple-node"
-version = "0.14.0"
+version = "0.15.0"
 dependencies = [
  "async-io 1.13.0",
  "async-trait",
@@ -19419,7 +19419,7 @@ dependencies = [
 
 [[package]]
 name = "tanssi-node"
-version = "0.14.0"
+version = "0.15.0"
 dependencies = [
  "async-io 1.13.0",
  "async-trait",
@@ -19525,7 +19525,7 @@ dependencies = [
 
 [[package]]
 name = "tanssi-relay"
-version = "0.14.0"
+version = "0.15.0"
 dependencies = [
  "color-eyre",
  "polkadot-core-primitives",
@@ -19545,7 +19545,7 @@ dependencies = [
 
 [[package]]
 name = "tanssi-relay-cli"
-version = "0.14.0"
+version = "0.15.0"
 dependencies = [
  "clap",
  "frame-benchmarking-cli",
@@ -19586,7 +19586,7 @@ dependencies = [
 
 [[package]]
 name = "tanssi-relay-service"
-version = "0.14.0"
+version = "0.15.0"
 dependencies = [
  "assert_matches",
  "async-io 1.13.0",
@@ -19895,7 +19895,7 @@ dependencies = [
 
 [[package]]
 name = "tc-service-container-chain"
-version = "0.14.0"
+version = "0.15.0"
 dependencies = [
  "async-backing-primitives",
  "async-trait",
@@ -20484,6 +20484,7 @@ dependencies = [
  "sp-runtime",
  "sp-std",
  "staging-xcm",
+ "staging-xcm-builder",
  "staging-xcm-executor",
 ]
 
