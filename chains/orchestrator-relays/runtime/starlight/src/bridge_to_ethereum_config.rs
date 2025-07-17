@@ -35,6 +35,7 @@ use {
         TokenLocationReanchored, TransactionByteFee, TreasuryAccount, WeightToFee, UNITS,
     },
     frame_support::{
+        dispatch::DispatchClass,
         traits::{
             fungible::{Inspect, Mutate},
             tokens::{Fortitude, Preservation},
@@ -42,16 +43,26 @@ use {
         weights::ConstantMultiplier,
     },
     pallet_xcm::EnsureXcm,
+    parity_scale_codec::DecodeAll,
     parity_scale_codec::Encode,
     snowbridge_beacon_primitives::ForkVersions,
     snowbridge_core::{gwei, meth, Channel, PricingParameters, Rewards},
+    snowbridge_inbound_queue_primitives::v1::{
+        Command, Destination, Envelope, MessageProcessor, MessageV1, VersionedXcmMessage,
+    },
     snowbridge_inbound_queue_primitives::EventProof,
     snowbridge_pallet_inbound_queue::RewardProcessor,
     snowbridge_pallet_outbound_queue::OnNewCommitment,
     sp_core::{ConstU32, ConstU8, Get, H160, H256},
-    sp_runtime::{traits::Zero, DispatchResult},
+    sp_runtime::{traits::Zero, DispatchError, DispatchResult},
+    sp_std::{marker::PhantomData, vec},
     tanssi_runtime_common::processors::NativeTokenTransferMessageProcessor,
     tp_bridge::{DoNothingConvertMessage, DoNothingRouter, EthereumSystemHandler},
+    xcm::latest::{
+        prelude::*, Asset as XcmAsset, AssetId as XcmAssetId, Assets as XcmAssets, ExecuteXcm,
+        Fungibility, Junctions::*,
+    },
+    xcm_executor::traits::WeightBounds,
 };
 
 // Ethereum Bridge
@@ -151,15 +162,208 @@ impl pallet_ethereum_token_transfers::Config for Runtime {
     type WeightInfo = crate::weights::pallet_ethereum_token_transfers::SubstrateWeight<Runtime>;
 }
 
+/// `EthTokensLocalProcessor` is responsible for receiving and processing the ETH native
+/// token and ERC20s coming from Ethereum with Tanssi chain or container-chains as final destinations.
+/// TODO: add support for container transfers
+pub struct EthTokensLocalProcessor<T, XcmProcessor, XcmWeigher, EthereumLocation, EthereumNetwork>(
+    PhantomData<(
+        T,
+        XcmProcessor,
+        XcmWeigher,
+        EthereumLocation,
+        EthereumNetwork,
+    )>,
+);
+impl<T, XcmProcessor, XcmWeigher, EthereumLocation, EthereumNetwork> MessageProcessor
+    for EthTokensLocalProcessor<T, XcmProcessor, XcmWeigher, EthereumLocation, EthereumNetwork>
+where
+    T: snowbridge_pallet_inbound_queue::Config
+        + pallet_ethereum_token_transfers::Config
+        + pallet_foreign_asset_creator::Config,
+    XcmProcessor: ExecuteXcm<T::RuntimeCall>,
+    XcmWeigher: WeightBounds<T::RuntimeCall>,
+    EthereumLocation: Get<Location>,
+    EthereumNetwork: Get<NetworkId>,
+{
+    fn can_process_message(channel: &Channel, envelope: &Envelope) -> bool {
+        // Ensure that the message is intended for the current channel, para_id and agent_id
+        if let Some(channel_info) =
+            pallet_ethereum_token_transfers::CurrentChannelInfo::<Runtime>::get()
+        {
+            if envelope.channel_id != channel_info.channel_id
+                || channel.para_id != channel_info.para_id
+                || channel.agent_id != channel_info.agent_id
+            {
+                return false;
+            }
+        } else {
+            return false;
+        }
+
+        // Check it is from the right gateway
+        if envelope.gateway != T::GatewayAddress::get() {
+            return false;
+        }
+
+        if let Some(eth_transfer_data) =
+            Self::decode_message_for_eth_transfer(envelope.payload.as_slice())
+        {
+            // Check if the token location is a foreign asset included in ForeignAssetCreator
+            return pallet_foreign_asset_creator::ForeignAssetToAssetId::<Runtime>::get(
+                eth_transfer_data.token_location,
+            )
+            .is_some();
+        }
+
+        return false;
+    }
+
+    fn process_message(_channel: Channel, envelope: Envelope) -> DispatchResult {
+        let eth_transfer_data = Self::decode_message_for_eth_transfer(envelope.payload.as_slice())
+            .ok_or_else(|| DispatchError::Other("unexpected message"))?;
+
+        match eth_transfer_data.destination {
+            Destination::AccountId32 { id: _ } => {
+                Self::process_xcm_local_native_eth_transfer(eth_transfer_data)
+            }
+            // TODO: Add support for container transfers here
+            _ => {
+                return Err(DispatchError::Other(
+                    "container transfers not supported yet",
+                ))
+            }
+        }
+    }
+}
+
+/// Information needed to process an eth transfer message or check its validity.
+pub struct EthTransferData {
+    token_location: Location,
+    destination: Destination,
+    amount: u128,
+}
+
+impl<T, XcmProcessor, XcmWeigher, EthereumLocation, EthereumNetwork>
+    EthTokensLocalProcessor<T, XcmProcessor, XcmWeigher, EthereumLocation, EthereumNetwork>
+where
+    T: frame_system::Config,
+    XcmProcessor: ExecuteXcm<T::RuntimeCall>,
+    XcmWeigher: WeightBounds<T::RuntimeCall>,
+    EthereumLocation: Get<Location>,
+    EthereumNetwork: Get<NetworkId>,
+{
+    /// Retrieve the eth transfer data from the message payload.
+    fn decode_message_for_eth_transfer(mut payload: &[u8]) -> Option<EthTransferData> {
+        match VersionedXcmMessage::decode_all(&mut payload) {
+            Ok(VersionedXcmMessage::V1(MessageV1 {
+                command:
+                    Command::SendToken {
+                        token: token_address,
+                        destination,
+                        amount,
+                        fee: _,
+                    },
+                ..
+            })) => {
+                let token_location = if token_address == H160::zero() {
+                    Location {
+                        parents: 1,
+                        interior: X1([GlobalConsensus(EthereumNetwork::get())].into()),
+                    }
+                } else {
+                    Location {
+                        parents: 1,
+                        interior: X2([
+                            GlobalConsensus(EthereumNetwork::get()),
+                            AccountKey20 {
+                                network: Some(EthereumNetwork::get()),
+                                key: token_address.into(),
+                            },
+                        ]
+                        .into()),
+                    }
+                };
+
+                return Some(EthTransferData {
+                    token_location,
+                    destination,
+                    amount,
+                });
+            }
+            _ => None,
+        }
+    }
+
+    /// Process a native ETH transfer message to a local account in Tanssi chain.
+    fn process_xcm_local_native_eth_transfer(eth_transfer_data: EthTransferData) -> DispatchResult {
+        let assets_to_holding: XcmAssets = vec![XcmAsset {
+            id: XcmAssetId::from(eth_transfer_data.token_location),
+            fun: Fungibility::Fungible(eth_transfer_data.amount),
+        }]
+        .into();
+
+        let destination_account = match eth_transfer_data.destination {
+            Destination::AccountId32 { id } => id,
+            _ => return Err(DispatchError::Other("invalid destination")),
+        };
+
+        let mut xcm = Xcm::<T::RuntimeCall>(vec![
+            ReserveAssetDeposited(assets_to_holding),
+            DepositAsset {
+                assets: AllCounted(1).into(),
+                beneficiary: Location::new(
+                    0,
+                    [AccountId32 {
+                        network: None,
+                        id: destination_account,
+                    }],
+                ),
+            },
+        ]);
+
+        let ethereum_location = EthereumLocation::get();
+
+        let weight = XcmWeigher::weight(&mut xcm)
+            .map_err(|()| DispatchError::Other("UnweighableMessage"))?;
+        let mut message_id = xcm.using_encoded(sp_io::hashing::blake2_256);
+
+        let outcome = XcmProcessor::prepare_and_execute(
+            ethereum_location,
+            xcm,
+            &mut message_id,
+            weight,
+            weight,
+        );
+
+        frame_system::Pallet::<T>::register_extra_weight_unchecked(weight, DispatchClass::Normal);
+
+        outcome.ensure_complete().map_err(|error| {
+            log::error!(
+                "EthTokensLocalProcessor: XCM execution failed with error {:?}",
+                error
+            );
+            DispatchError::Other("LocalExecutionIncomplete")
+        })?;
+
+        return Ok(());
+    }
+}
+
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmark_helper {
     use {
-        crate::{EthereumBeaconClient, Runtime, RuntimeOrigin},
-        snowbridge_beacon_primitives::BeaconHeader,
+        crate::{
+            bridge_to_ethereum_config::EthTokensProcessor, AccountId, Balances,
+            EthereumBeaconClient, ForeignAssetsCreator, Runtime, RuntimeOrigin,
+            SnowbridgeFeesAccount, UNITS,
+        },
+        frame_support::traits::fungible::Mutate,
         snowbridge_core::Channel,
         snowbridge_inbound_queue_primitives::v1::{Envelope, MessageProcessor},
+        snowbridge_inbound_queue_primitives::EventFixture,
+        snowbridge_pallet_inbound_queue::Nonce,
         snowbridge_pallet_system::Channels,
-        sp_core::H256,
+        sp_runtime::DispatchResult,
         xcm::latest::Location,
     };
 
@@ -172,8 +376,9 @@ mod benchmark_helper {
     }
 
     impl snowbridge_pallet_inbound_queue::BenchmarkHelper<Runtime> for EthSystemBenchHelper {
-        fn initialize_storage(beacon_header: BeaconHeader, block_roots_root: H256) {
-            let submit_message = snowbridge_pallet_inbound_queue_fixtures::register_token::make_register_token_message();
+        fn initialize_storage() -> EventFixture {
+            let submit_message =
+                snowbridge_pallet_inbound_queue_fixtures::send_token::make_send_token_message();
             let envelope: Envelope = Envelope::try_from(&submit_message.event.event_log).unwrap();
 
             Channels::<Runtime>::set(
@@ -184,19 +389,46 @@ mod benchmark_helper {
                 }),
             );
 
-            EthereumBeaconClient::store_finalized_header(beacon_header, block_roots_root).unwrap();
+            Nonce::<Runtime>::insert(envelope.channel_id, 1);
+
+            let eth_transfer_data =
+                EthTokensProcessor::decode_message_for_eth_transfer(envelope.payload.as_slice())
+                    .unwrap();
+
+            ForeignAssetsCreator::create_foreign_asset(
+                RuntimeOrigin::root(),
+                eth_transfer_data.token_location,
+                42,
+                AccountId::new([0; 32]),
+                true,
+                1,
+            )
+            .expect("creating foreign asset");
+
+            EthereumBeaconClient::store_finalized_header(
+                submit_message.finalized_header,
+                submit_message.block_roots_root,
+            )
+            .expect("storing finalized header");
+
+            Balances::mint_into(&SnowbridgeFeesAccount::get(), 10 * UNITS)
+                .expect("minting fees_account balance");
+
+            submit_message
         }
     }
 
-    pub struct DoNothingMessageProcessor;
-
-    impl MessageProcessor for DoNothingMessageProcessor {
-        fn can_process_message(_: &Channel, _: &Envelope) -> bool {
+    pub struct WorstCaseMessageProcessor<P>(core::marker::PhantomData<P>);
+    impl<P> MessageProcessor for WorstCaseMessageProcessor<P>
+    where
+        P: MessageProcessor,
+    {
+        fn can_process_message(_channel: &Channel, _envelope: &Envelope) -> bool {
             true
         }
 
-        fn process_message(_: Channel, _: Envelope) -> Result<(), sp_runtime::DispatchError> {
-            Ok(())
+        fn process_message(channel: Channel, envelope: Envelope) -> DispatchResult {
+            P::process_message(channel, envelope)
         }
     }
 }
@@ -242,6 +474,14 @@ where
     }
 }
 
+pub type EthTokensProcessor = EthTokensLocalProcessor<
+    Runtime,
+    xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
+    <xcm_config::XcmConfig as xcm_executor::Config>::Weigher,
+    starlight_runtime_constants::snowbridge::EthereumLocation,
+    starlight_runtime_constants::snowbridge::EthereumNetwork,
+>;
+
 pub type NativeTokensProcessor = NativeTokenTransferMessageProcessor<Runtime>;
 
 impl snowbridge_pallet_inbound_queue::Config for Runtime {
@@ -269,9 +509,9 @@ impl snowbridge_pallet_inbound_queue::Config for Runtime {
     #[cfg(not(feature = "runtime-benchmarks"))]
     type MessageProcessor = (
         SymbioticMessageProcessor<Self>,
-        GenericTokenMessageProcessor<Self, NativeTokensProcessor, NoOpProcessor>,
+        GenericTokenMessageProcessor<Self, NativeTokensProcessor, EthTokensProcessor>,
     );
     type RewardProcessor = RewardThroughFeesAccount<Self>;
     #[cfg(feature = "runtime-benchmarks")]
-    type MessageProcessor = (benchmark_helper::DoNothingMessageProcessor,);
+    type MessageProcessor = (benchmark_helper::WorstCaseMessageProcessor<EthTokensProcessor>,);
 }
