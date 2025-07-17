@@ -236,6 +236,7 @@ where
 }
 
 /// Information needed to process an eth transfer message or check its validity.
+#[derive(Debug, Clone)]
 pub struct EthTransferData {
     token_location: Location,
     destination: Destination,
@@ -351,12 +352,20 @@ where
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmark_helper {
     use {
-        crate::{EthereumBeaconClient, Runtime, RuntimeOrigin},
-        snowbridge_beacon_primitives::BeaconHeader,
+        crate::{
+            bridge_to_ethereum_config::EthTokensProcessor, AccountId, Balances,
+            EthereumBeaconClient, ForeignAssetsCreator, Runtime, RuntimeOrigin,
+            SnowbridgeFeesAccount, UNITS,
+        },
+        frame_support::traits::fungible::Mutate,
         snowbridge_core::Channel,
-        snowbridge_inbound_queue_primitives::v1::{Envelope, MessageProcessor},
+        snowbridge_inbound_queue_primitives::{
+            v1::{Envelope, MessageProcessor},
+            EventFixture,
+        },
+        snowbridge_pallet_inbound_queue::Nonce,
         snowbridge_pallet_system::Channels,
-        sp_core::H256,
+        sp_runtime::DispatchResult,
         xcm::latest::Location,
     };
 
@@ -369,9 +378,12 @@ mod benchmark_helper {
     }
 
     impl snowbridge_pallet_inbound_queue::BenchmarkHelper<Runtime> for EthSystemBenchHelper {
-        fn initialize_storage(beacon_header: BeaconHeader, block_roots_root: H256) {
-            let submit_message = snowbridge_pallet_inbound_queue_fixtures::register_token::make_register_token_message();
+        fn initialize_storage() -> EventFixture {
+            let submit_message =
+                snowbridge_pallet_inbound_queue_fixtures::send_token::make_send_token_message();
             let envelope: Envelope = Envelope::try_from(&submit_message.event.event_log).unwrap();
+
+            log::info!("envelope gateway: {:?}", envelope.gateway);
 
             Channels::<Runtime>::set(
                 envelope.channel_id,
@@ -381,19 +393,46 @@ mod benchmark_helper {
                 }),
             );
 
-            EthereumBeaconClient::store_finalized_header(beacon_header, block_roots_root).unwrap();
+            Nonce::<Runtime>::insert(envelope.channel_id, 1);
+
+            let eth_transfer_data =
+                EthTokensProcessor::decode_message_for_eth_transfer(envelope.payload.as_slice())
+                    .unwrap();
+
+            ForeignAssetsCreator::create_foreign_asset(
+                RuntimeOrigin::root(),
+                eth_transfer_data.token_location,
+                42,
+                AccountId::new([0; 32]),
+                true,
+                1,
+            )
+            .expect("creating foreign asset");
+
+            EthereumBeaconClient::store_finalized_header(
+                submit_message.finalized_header,
+                submit_message.block_roots_root,
+            )
+            .expect("storing finalized header");
+
+            Balances::mint_into(&SnowbridgeFeesAccount::get(), 10 * UNITS)
+                .expect("minting fees_account balance");
+
+            submit_message
         }
     }
 
-    pub struct DoNothingMessageProcessor;
-
-    impl MessageProcessor for DoNothingMessageProcessor {
-        fn can_process_message(_: &Channel, _: &Envelope) -> bool {
+    pub struct WorstCaseMessageProcessor<P>(core::marker::PhantomData<P>);
+    impl<P> MessageProcessor for WorstCaseMessageProcessor<P>
+    where
+        P: MessageProcessor,
+    {
+        fn can_process_message(_channel: &Channel, _envelope: &Envelope) -> bool {
             true
         }
 
-        fn process_message(_: Channel, _: Envelope) -> Result<(), sp_runtime::DispatchError> {
-            Ok(())
+        fn process_message(channel: Channel, envelope: Envelope) -> DispatchResult {
+            P::process_message(channel, envelope)
         }
     }
 }
@@ -487,5 +526,5 @@ impl snowbridge_pallet_inbound_queue::Config for Runtime {
     );
     type RewardProcessor = RewardThroughFeesAccount<Self>;
     #[cfg(feature = "runtime-benchmarks")]
-    type MessageProcessor = (benchmark_helper::DoNothingMessageProcessor,);
+    type MessageProcessor = (benchmark_helper::WorstCaseMessageProcessor<EthTokensProcessor>,);
 }
