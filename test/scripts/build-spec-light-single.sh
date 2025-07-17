@@ -28,5 +28,5 @@ if [[ "$RUNTIME" != "dancelight" && "$RUNTIME" != "starlight" ]]; then
 fi
 
 mkdir -p specs
-$BINARY_FOLDER/tanssi-relay build-spec --chain "${RUNTIME}-local" > "specs/tanssi-relay-${RUNTIME}.json"
-echo "Spec for $RUNTIME saved to specs/tanssi-relay-${RUNTIME}.json"
+$BINARY_FOLDER/tanssi-relay build-spec --chain "${RUNTIME}-local" > "specs/tanssi-relay.json"
+echo "Spec for $RUNTIME saved to specs/tanssi-relay.json"
