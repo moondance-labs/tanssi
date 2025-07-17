@@ -29,7 +29,7 @@ struct InflationRates {
 /// Computes the following inflation rates:
 /// - Collators inflation rate (per block)
 /// - Validators inflation rate (per era)
-/// Era inflation is split between collators and validators using collators_fraction
+///   Era inflation is split between collators and validators using collators_fraction
 fn compute_inflation_rates(
     annual_inflation: f64,
     collators_fraction: f64,
@@ -37,16 +37,16 @@ fn compute_inflation_rates(
     blocks_per_era: u32,
 ) -> InflationRates {
     assert!(
-        collators_fraction >= 0.0 && collators_fraction <= 1.0,
+        (0.0..=1.0).contains(&collators_fraction),
         "collators_fraction must be between 0 and 1"
     );
     assert!(
-        annual_inflation >= 0.0 && annual_inflation <= 1.0,
+        (0.0..=1.0).contains(&annual_inflation),
         "annual_inflation is a % and should be between 0 (0%) and 1 (100%)"
     );
 
     // Compute era inflation based on annual inflation
-    let era_inflation = (1.0 + annual_inflation).powf(1.0 / (eras_per_year as f64)) - 1.0;
+    let era_inflation = (1.0 + annual_inflation).powf(1.0 / f64::from(eras_per_year)) - 1.0;
 
     // Compute collators and validators era inflation
     let collators_era_inflation = (1.0 + era_inflation).powf(collators_fraction) - 1.0;
@@ -54,7 +54,7 @@ fn compute_inflation_rates(
 
     // Compute collator block inflation
     let collators_block_inflation =
-        (1.0 + collators_era_inflation).powf(1.0 / (blocks_per_era as f64)) - 1.0;
+        (1.0 + collators_era_inflation).powf(1.0 / f64::from(blocks_per_era)) - 1.0;
 
     InflationRates {
         era_inflation,
@@ -89,12 +89,14 @@ fn formula_is_sound() {
 
         supply += val_inf * supply;
 
+        #[allow(clippy::cast_precision_loss)]
         let actual_era_inflation = supply as f64 / era_start_supply as f64 - 1.0;
 
         println!("Era {era}: Supply {supply}, Actual inf: {actual_era_inflation}");
         assert!((actual_era_inflation - rates.era_inflation).abs() < 0.00001);
     }
 
+    #[allow(clippy::cast_precision_loss)]
     let actual_annual_inflation = supply as f64 / initial_supply as f64 - 1.0;
     println!("Initial supply: {initial_supply}");
     println!("Final supply:   {supply}");
