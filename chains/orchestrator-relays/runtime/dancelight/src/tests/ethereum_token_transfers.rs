@@ -1761,7 +1761,7 @@ fn send_eth_native_token_works() {
             ));
 
             // Correct amount has been sent
-            assert_eq!(ForeignAssets::balance(asset_id, &AccountId::from(BOB)), 10);
+            assert_eq!(ForeignAssets::balance(asset_id, AccountId::from(BOB)), 10);
 
             // Check some fees have been payed
             let balance_after = Balances::balance(&AccountId::from(BOB));
