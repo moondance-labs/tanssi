@@ -42,7 +42,7 @@ use {
     pallet_author_noting_runtime_api::AuthorNotingApi,
     polkadot_primitives::CollatorPair,
     sc_cli::{Database, SyncMode},
-    sc_network::config::MultiaddrWithPeerId,
+    sc_network::config::{ed25519::SecretKey, MultiaddrWithPeerId},
     sc_service::SpawnTaskHandle,
     sc_transaction_pool::TransactionPoolHandle,
     sp_api::ProvideRuntimeApi,
@@ -284,6 +284,46 @@ async fn try_spawn<
             .prometheus_port = Some(random_ports[0]);
         container_chain_cli.base.base.network_params.port = Some(random_ports[1]);
         container_chain_cli.base.base.rpc_params.rpc_port = Some(random_ports[2]);
+
+        // Use a different network key for syncing the chain. This is to avoid full nodes banning collators
+        // by mistake, with error:
+        // Reason: Unsupported protocol. Banned, disconnecting.
+        //
+        // Store this new key in a new path to not conflict with the real network key.
+        // The same key is used for all container chains, that doesn't seem to cause problems.
+
+        // Collator-01/data/containers
+        let mut syncing_network_key_path = container_chain_cli
+            .base
+            .base
+            .shared_params
+            .base_path
+            .clone()
+            .expect("base path always set");
+        // Collator-01/data/containers/keystore/network_syncing/secret_ed25519
+        syncing_network_key_path.push("keystore/network_syncing/secret_ed25519");
+
+        // Clear network key_params. These will be used by the collating process, but not by the syncing process.
+        container_chain_cli
+            .base
+            .base
+            .network_params
+            .node_key_params
+            .node_key = None;
+        container_chain_cli
+            .base
+            .base
+            .network_params
+            .node_key_params
+            .node_key_file = Some(syncing_network_key_path);
+        // Generate a new network key if it has not been generated already.
+        // This is safe to enable if your node is not an authority. We use it only for syncing the network.
+        container_chain_cli
+            .base
+            .base
+            .network_params
+            .node_key_params
+            .unsafe_force_node_key_generation = true;
     }
 
     let validator = collation_params.is_some();
