@@ -178,6 +178,7 @@ mod benchmark_helper {
 
     impl snowbridge_pallet_inbound_queue::BenchmarkHelper<Runtime> for EthSystemBenchHelper {
         fn initialize_storage() -> EventFixture {
+            // In our case send token command is the worst case to benchmark, but this might change in the future
             let submit_message =
                 snowbridge_pallet_inbound_queue_fixtures::send_token::make_send_token_message();
             let envelope: Envelope = Envelope::try_from(&submit_message.event.event_log).unwrap();
