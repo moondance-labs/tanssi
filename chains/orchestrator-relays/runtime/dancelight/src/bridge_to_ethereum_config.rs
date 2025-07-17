@@ -332,8 +332,6 @@ where
             weight,
         );
 
-        frame_system::Pallet::<T>::register_extra_weight_unchecked(weight, DispatchClass::Normal);
-
         outcome.ensure_complete().map_err(|error| {
             log::error!(
                 "EthTokensLocalProcessor: XCM execution failed with error {:?}",
