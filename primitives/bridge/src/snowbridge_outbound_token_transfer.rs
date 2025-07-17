@@ -536,7 +536,7 @@ impl<T: snowbridge_pallet_system::Config> TryConvert<ChannelId, AgentId>
     for SnowbridgeChannelToAgentId<T>
 {
     fn try_convert(channel_id: ChannelId) -> Result<AgentId, ChannelId> {
-        let Some(channel) = snowbridge_pallet_system::Channels::<T>::get(&channel_id) else {
+        let Some(channel) = snowbridge_pallet_system::Channels::<T>::get(channel_id) else {
             return Err(channel_id);
         };
 
