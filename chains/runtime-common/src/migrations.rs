@@ -1067,7 +1067,7 @@ pub mod snowbridge_system_migration {
                         _ => None,
                     };
                     snowbridge_pallet_system::NativeToForeignId::<T>::insert(
-                        &new_location.expect("valid location"),
+                        new_location.expect("valid location"),
                         old_val,
                     );
                 }

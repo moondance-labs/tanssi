@@ -197,8 +197,8 @@ const RECOMMENDED_OPEN_FILE_DESCRIPTOR_LIMIT: u64 = 10_000;
 /// Equivalent to [CliConfiguration::init]
 fn init_cmd<T: CliConfiguration<DVC>, DVC: DefaultConfigurationValues>(
     this: &T,
-    support_url: &String,
-    impl_version: &String,
+    support_url: &str,
+    impl_version: &str,
 ) -> sc_cli::Result<()> {
     sp_panic_handler::set(support_url, impl_version);
 

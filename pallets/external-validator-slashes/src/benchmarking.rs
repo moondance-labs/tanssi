@@ -61,7 +61,7 @@ mod benchmarks {
 
         assert_eq!(
             Slashes::<T>::get(
-                &era.saturating_add(T::SlashDeferDuration::get())
+                era.saturating_add(T::SlashDeferDuration::get())
                     .saturating_add(One::one())
             )
             .len(),
@@ -79,7 +79,7 @@ mod benchmarks {
 
         assert_eq!(
             Slashes::<T>::get(
-                &era.saturating_add(T::SlashDeferDuration::get())
+                era.saturating_add(T::SlashDeferDuration::get())
                     .saturating_add(One::one())
             )
             .len(),
