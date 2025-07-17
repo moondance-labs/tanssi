@@ -236,7 +236,6 @@ where
 }
 
 /// Information needed to process an eth transfer message or check its validity.
-#[derive(Debug, Clone)]
 pub struct EthTransferData {
     token_location: Location,
     destination: Destination,
@@ -382,8 +381,6 @@ mod benchmark_helper {
             let submit_message =
                 snowbridge_pallet_inbound_queue_fixtures::send_token::make_send_token_message();
             let envelope: Envelope = Envelope::try_from(&submit_message.event.event_log).unwrap();
-
-            log::info!("envelope gateway: {:?}", envelope.gateway);
 
             Channels::<Runtime>::set(
                 envelope.channel_id,
