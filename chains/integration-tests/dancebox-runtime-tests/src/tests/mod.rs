@@ -16,3 +16,4 @@
 
 mod inactivity_tracking;
 mod integration_test;
+mod offline_marking;

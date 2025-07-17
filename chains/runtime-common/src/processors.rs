@@ -77,19 +77,19 @@ where
                     snowbridge_pallet_system::Pallet::<T>::convert_back(&token_location)
                 {
                     if token_id == expected_token_id {
-                        return true;
+                        true
                     } else {
                         // TODO: ensure this does not warn on container token transfers or other message types, if yes change to debug
                         log::warn!(
                             "NativeTokenTransferMessageProcessor: unexpected token_id: {:?}",
                             token_id
                         );
-                        return false;
+                        false
                     }
                 } else {
                     log::warn!("NativeTokenTransferMessageProcessor: token id not found for location: {:?}", token_location);
 
-                    return false;
+                    false
                 }
             }
             Ok(msg) => {
