@@ -179,6 +179,8 @@ pub enum CcSpawnMsg {
     },
 }
 
+use sc_service::config::NodeKeyConfig;
+use sc_network::config::ed25519::SecretKey;
 // Separate function to allow using `?` to return a result, and also to avoid using `self` in an
 // async function. Mutable state should be written by locking `state`.
 // TODO: `state` should be an async mutex
@@ -275,15 +277,19 @@ async fn try_spawn<
         collation_params = None;
 
         // Use random ports to avoid conflicts with the other running container chain
-        let random_ports = [23456, 23457, 23458];
+        let random_ports = [23456u16, 23457u16, 23458u16];
+
+        let add: u32 = container_chain_para_id.into();
+        let sk = SecretKey::generate().as_ref().to_vec();
 
         container_chain_cli
             .base
             .base
             .prometheus_params
-            .prometheus_port = Some(random_ports[0]);
-        container_chain_cli.base.base.network_params.port = Some(random_ports[1]);
-        container_chain_cli.base.base.rpc_params.rpc_port = Some(random_ports[2]);
+            .prometheus_port = None;
+        container_chain_cli.base.base.network_params.port = None;
+        container_chain_cli.base.base.rpc_params.rpc_port = Some(random_ports[2].wrapping_add(add.try_into().unwrap()));
+        container_chain_cli.base.base.network_params.node_key_params.node_key = Some(format!("{:x}", H256::from_slice(sk.as_ref())));
     }
 
     let validator = collation_params.is_some();
