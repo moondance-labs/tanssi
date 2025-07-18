@@ -52,13 +52,13 @@ pub struct EthereumBlobExporter<
 );
 
 impl<UniversalLocation, EthereumNetwork, OutboundQueue, ConvertAssetId, BridgeChannelInfo> ExportXcm
-for EthereumBlobExporter<
-    UniversalLocation,
-    EthereumNetwork,
-    OutboundQueue,
-    ConvertAssetId,
-    BridgeChannelInfo,
->
+    for EthereumBlobExporter<
+        UniversalLocation,
+        EthereumNetwork,
+        OutboundQueue,
+        ConvertAssetId,
+        BridgeChannelInfo,
+    >
 where
     UniversalLocation: Get<InteriorLocation>,
     EthereumNetwork: Get<NetworkId>,
@@ -263,7 +263,7 @@ where
             },
             (assets, beneficiary)
         )
-            .ok_or(DepositAssetExpected)?;
+        .ok_or(DepositAssetExpected)?;
 
         // assert that the beneficiary is AccountKey20.
         let recipient = match_expression!(
@@ -272,7 +272,7 @@ where
                 if self.network_matches(network),
             H160(*key)
         )
-            .ok_or(BeneficiaryResolutionFailed)?;
+        .ok_or(BeneficiaryResolutionFailed)?;
 
         // Make sure there are reserved assets.
         if reserve_assets.len() == 0 {
@@ -317,7 +317,7 @@ where
             },
             _ => None,
         }
-            .ok_or(AssetResolutionFailed)?;
+        .ok_or(AssetResolutionFailed)?;
 
         // transfer amount must be greater than 0.
         ensure!(amount > 0, ZeroAssetTransfer);
@@ -479,7 +479,7 @@ pub struct SnowbrigeTokenTransferRouter<Bridges, UniversalLocation>(
 );
 
 impl<Bridges, UniversalLocation> SendXcm
-for SnowbrigeTokenTransferRouter<Bridges, UniversalLocation>
+    for SnowbrigeTokenTransferRouter<Bridges, UniversalLocation>
 where
     Bridges: ExportXcm,
     UniversalLocation: Get<InteriorLocation>,
@@ -509,12 +509,12 @@ where
             remote_location,
             xcm.clone(),
         )
-            .inspect_err(|err| {
-                if let NotApplicable = err {
-                    // We need to make sure that msg is not consumed in case of `NotApplicable`.
-                    *msg = Some(xcm);
-                }
-            })
+        .inspect_err(|err| {
+            if let NotApplicable = err {
+                // We need to make sure that msg is not consumed in case of `NotApplicable`.
+                *msg = Some(xcm);
+            }
+        })
     }
 
     fn deliver(ticket: Self::Ticket) -> Result<XcmHash, SendError> {
@@ -523,7 +523,7 @@ where
 }
 
 impl<Bridge, UniversalLocation> InspectMessageQueues
-for SnowbrigeTokenTransferRouter<Bridge, UniversalLocation>
+    for SnowbrigeTokenTransferRouter<Bridge, UniversalLocation>
 {
     fn clear_messages() {}
     fn get_messages() -> Vec<(VersionedLocation, Vec<VersionedXcm<()>>)> {
@@ -533,7 +533,7 @@ for SnowbrigeTokenTransferRouter<Bridge, UniversalLocation>
 
 pub struct SnowbridgeChannelToAgentId<T>(PhantomData<T>);
 impl<T: snowbridge_pallet_system::Config> TryConvert<ChannelId, AgentId>
-for SnowbridgeChannelToAgentId<T>
+    for SnowbridgeChannelToAgentId<T>
 {
     fn try_convert(channel_id: ChannelId) -> Result<AgentId, ChannelId> {
         let Some(channel) = snowbridge_pallet_system::Channels::<T>::get(channel_id) else {
