@@ -329,6 +329,7 @@ where
         let topic_id = match_expression!(self.next()?, SetTopic(id), id).ok_or(SetTopicExpected)?;
 
         Ok((
+            // TODO: This should be changed to UnlockNativeToken once we migrate to Snowbridge V2.
             Command::AgentExecute {
                 agent_id: self.agent_id,
                 command: AgentExecuteCommand::TransferToken {
