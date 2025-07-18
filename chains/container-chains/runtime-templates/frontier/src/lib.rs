@@ -96,7 +96,6 @@ use {
     },
     sp_std::prelude::*,
     sp_version::RuntimeVersion,
-    tp_bridge::ConvertLocation,
     xcm::v5::{Location, NetworkId},
     xcm::Version as XcmVersion,
     xcm::{IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation, VersionedXcm},
@@ -318,13 +317,6 @@ parameter_types! {
         pub EthereumNetwork: NetworkId = NetworkId::Ethereum { chain_id: 11155111 };
         pub EthereumLocation: Location = Location::new(1, EthereumNetwork::get());
 
-}
-
-parameter_types! {
-    pub EthereumSovereignAccount: AccountId =
-        tp_bridge::EthereumLocationsConverterFor::<AccountId>::convert_location(
-            &EthereumLocation::get()
-        ).expect("to convert EthereumSovereignAccount");
 }
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
