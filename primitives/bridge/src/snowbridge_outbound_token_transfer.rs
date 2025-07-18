@@ -23,7 +23,10 @@ use core::slice::Iter;
 use frame_support::{ensure, traits::Get};
 use parity_scale_codec::{Decode, Encode};
 use snowbridge_core::{AgentId, ChannelId, TokenId};
-use snowbridge_outbound_queue_primitives::v1::message::{Command, Message, SendMessage};
+use snowbridge_outbound_queue_primitives::v1::{
+    message::{Command, Message, SendMessage},
+    AgentExecuteCommand,
+};
 use sp_core::H160;
 use sp_runtime::traits::{MaybeEquivalence, TryConvert};
 use sp_std::{iter::Peekable, prelude::*};
@@ -326,11 +329,14 @@ where
         let topic_id = match_expression!(self.next()?, SetTopic(id), id).ok_or(SetTopicExpected)?;
 
         Ok((
-            Command::UnlockNativeToken {
+            // TODO: This should be changed to UnlockNativeToken once we migrate to Snowbridge V2.
+            Command::AgentExecute {
                 agent_id: self.agent_id,
-                token,
-                recipient,
-                amount,
+                command: AgentExecuteCommand::TransferToken {
+                    token: token,
+                    recipient: recipient,
+                    amount,
+                },
             },
             *topic_id,
         ))
