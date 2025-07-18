@@ -29,7 +29,6 @@ use {
     },
     frame_system::RawOrigin,
     sp_runtime::Saturating,
-    sp_std::prelude::*,
     tp_traits::{AuthorNotingHook, CollatorAssignmentHook},
 };
 

@@ -27,7 +27,7 @@ use {
 /// `NativeTokenTransferMessageProcessor` is responsible for receiving and processing the Tanssi
 /// native token sent from Ethereum. If the message is valid, it performs the token transfer
 /// from the Ethereum sovereign account to the specified destination account.
-pub struct NativeTokenTransferMessageProcessor<T>(sp_std::marker::PhantomData<T>);
+pub struct NativeTokenTransferMessageProcessor<T>(core::marker::PhantomData<T>);
 impl<T> MessageProcessor for NativeTokenTransferMessageProcessor<T>
 where
     T: snowbridge_pallet_inbound_queue::Config

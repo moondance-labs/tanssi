@@ -22,7 +22,7 @@ pub mod benchmarking;
 pub mod migrations;
 pub mod processors;
 
-pub struct DealWithFees<R>(sp_std::marker::PhantomData<R>);
+pub struct DealWithFees<R>(core::marker::PhantomData<R>);
 impl<R> OnUnbalanced<Credit<R::AccountId, pallet_balances::Pallet<R>>> for DealWithFees<R>
 where
     R: pallet_balances::Config + pallet_treasury::Config + frame_system::Config,

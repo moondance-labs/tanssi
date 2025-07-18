@@ -32,7 +32,6 @@ use {
         },
     },
     frame_system::EventRecord,
-    sp_std::prelude::*,
 };
 
 /// Minimum collator candidate stake

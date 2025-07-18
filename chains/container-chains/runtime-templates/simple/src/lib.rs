@@ -79,7 +79,6 @@ use {
         transaction_validity::{TransactionSource, TransactionValidity},
         ApplyExtrinsicResult, Cow, MultiSignature, SaturatedConversion,
     },
-    sp_std::prelude::*,
     sp_version::RuntimeVersion,
     xcm::Version as XcmVersion,
     xcm::{IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation, VersionedXcm},
@@ -994,7 +993,7 @@ impl_runtime_apis! {
             use sp_core::storage::TrackedStorageKey;
             use xcm::latest::prelude::*;
             impl frame_system_benchmarking::Config for Runtime {
-                fn setup_set_code_requirements(code: &sp_std::vec::Vec<u8>) -> Result<(), BenchmarkError> {
+                fn setup_set_code_requirements(code: &alloc::vec::Vec<u8>) -> Result<(), BenchmarkError> {
                     ParachainSystem::initialize_for_set_code_benchmark(code.len() as u32);
                     Ok(())
                 }
@@ -1366,7 +1365,7 @@ impl cumulus_pallet_parachain_system::CheckInherents<Block> for CheckInherents {
         let inherent_data =
             cumulus_primitives_timestamp::InherentDataProvider::from_relay_chain_slot_and_duration(
                 relay_chain_slot,
-                sp_std::time::Duration::from_secs(6),
+                core::time::Duration::from_secs(6),
             )
             .create_inherent_data()
             .expect("Could not create the timestamp inherent data");

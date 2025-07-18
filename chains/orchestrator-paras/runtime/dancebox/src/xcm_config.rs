@@ -17,9 +17,9 @@
 #[cfg(feature = "runtime-benchmarks")]
 use crate::{CollatorAssignment, Session, System};
 #[cfg(feature = "runtime-benchmarks")]
-use pallet_session::ShouldEndSession;
+use alloc::{collections::btree_map::BTreeMap, vec};
 #[cfg(feature = "runtime-benchmarks")]
-use sp_std::{collections::btree_map::BTreeMap, vec};
+use pallet_session::ShouldEndSession;
 #[cfg(feature = "runtime-benchmarks")]
 use tp_traits::GetContainerChainAuthor;
 use xcm::latest::WESTEND_GENESIS_HASH;
@@ -32,6 +32,7 @@ use {
         RuntimeOrigin, TransactionByteFee, WeightToFee, XcmpQueue,
     },
     crate::{get_para_id_authorities, weights, AuthorNoting},
+    alloc::vec::Vec,
     cumulus_primitives_core::{AggregateMessageOrigin, ParaId},
     frame_support::{
         parameter_types,
@@ -52,7 +53,6 @@ use {
     sp_consensus_slots::Slot,
     sp_core::{ConstU32, MaxEncodedLen},
     sp_runtime::{transaction_validity::TransactionPriority, Perbill},
-    sp_std::vec::Vec,
     tp_traits::ParathreadParams,
     tp_xcm_commons::NativeAssetReserve,
     xcm::latest::prelude::*,

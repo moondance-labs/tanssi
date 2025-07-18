@@ -22,7 +22,6 @@ use {
     crate::Runtime,
     frame_support::weights::Weight,
     pallet_xcm_benchmarks_generic::WeightInfo as XcmGeneric,
-    sp_std::prelude::*,
     xcm::{
         latest::{prelude::*, Weight as XCMWeight},
         DoubleEncoded,

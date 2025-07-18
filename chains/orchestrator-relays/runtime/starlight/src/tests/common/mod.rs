@@ -21,6 +21,7 @@ use {
         Authorship, BlockProductionCost, CollatorAssignmentCost, ExternalValidatorSlashes,
         MessageQueue, RuntimeCall,
     },
+    alloc::collections::btree_map::BTreeMap,
     babe_primitives::{
         digests::{PreDigest, SecondaryPlainPreDigest},
         BABE_ENGINE_ID,
@@ -61,7 +62,6 @@ use {
         traits::{Dispatchable, Header, One, SaturatedConversion, Zero},
         BuildStorage, Digest, DigestItem,
     },
-    sp_std::collections::btree_map::BTreeMap,
     sp_storage::well_known_keys,
     std::collections::BTreeSet,
     test_relay_sproof_builder::ParaHeaderSproofBuilder,

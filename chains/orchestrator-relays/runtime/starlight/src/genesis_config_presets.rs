@@ -16,13 +16,13 @@
 
 //! Genesis configs presets for the Starlight runtime
 
-#[cfg(not(feature = "std"))]
-use sp_std::alloc::format;
 use {
     crate::{SessionKeys, BABE_GENESIS_EPOCH_CONFIG},
+    alloc::vec::Vec,
     authority_discovery_primitives::AuthorityId as AuthorityDiscoveryId,
     babe_primitives::AuthorityId as BabeId,
     beefy_primitives::ecdsa_crypto::AuthorityId as BeefyId,
+    core::cmp::max,
     cumulus_primitives_core::relay_chain::{
         SchedulerParams, ASSIGNMENT_KEY_TYPE_ID, PARACHAIN_KEY_TYPE_ID,
     },
@@ -39,7 +39,6 @@ use {
     },
     sp_keystore::{Keystore, KeystorePtr},
     sp_runtime::traits::AccountIdConversion,
-    sp_std::{cmp::max, vec::Vec},
     starlight_runtime_constants::currency::UNITS as STAR,
     tp_traits::ParaId,
 };
@@ -48,7 +47,7 @@ use keyring::Sr25519Keyring;
 
 // import macro, separate due to rustfmt thinking it's the module with the
 // same name ^^'
-use sp_std::vec;
+use alloc::vec;
 
 use sp_core::crypto::{get_public_from_string_or_panic, AccountId32};
 
@@ -723,7 +722,7 @@ pub fn starlight_local_testnet_genesis(
 }
 
 /// Provides the JSON representation of predefined genesis config for given `id`.
-pub fn get_preset(id: &sp_genesis_builder::PresetId) -> Option<sp_std::vec::Vec<u8>> {
+pub fn get_preset(id: &sp_genesis_builder::PresetId) -> Option<alloc::vec::Vec<u8>> {
     let patch = match id.as_ref() {
         "local_testnet" => starlight_local_testnet_genesis(vec![], vec![]),
         "development" => starlight_development_config_genesis(vec![], vec![]),

@@ -34,6 +34,8 @@ use {
         OutboundMessageCommitmentRecorder, Runtime, RuntimeEvent, SnowbridgeFeesAccount,
         TokenLocationReanchored, TransactionByteFee, TreasuryAccount, WeightToFee, UNITS,
     },
+    alloc::vec,
+    core::marker::PhantomData,
     frame_support::{
         dispatch::DispatchClass,
         traits::{
@@ -54,7 +56,6 @@ use {
     snowbridge_pallet_outbound_queue::OnNewCommitment,
     sp_core::{ConstU32, ConstU8, Get, H160, H256},
     sp_runtime::{traits::Zero, DispatchError, DispatchResult},
-    sp_std::{marker::PhantomData, vec},
     tanssi_runtime_common::processors::NativeTokenTransferMessageProcessor,
     tp_bridge::{DoNothingConvertMessage, DoNothingRouter, EthereumSystemHandler},
     xcm::latest::{
@@ -411,7 +412,7 @@ mod test_helpers {
 
 /// Rewards the relayer that processed a native token transfer message
 /// using the FeesAccount configured in pallet_ethereum_token_transfers
-pub struct RewardThroughFeesAccount<T>(sp_std::marker::PhantomData<T>);
+pub struct RewardThroughFeesAccount<T>(core::marker::PhantomData<T>);
 
 impl<T> RewardProcessor<T> for RewardThroughFeesAccount<T>
 where

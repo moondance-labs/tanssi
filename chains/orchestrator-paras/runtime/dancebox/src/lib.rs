@@ -46,6 +46,8 @@ pub mod weights;
 mod tests;
 
 use {
+    alloc::collections::{btree_map::BTreeMap, btree_set::BTreeSet},
+    core::marker::PhantomData,
     cumulus_pallet_parachain_system::{
         RelayChainStateProof, RelayNumberMonotonicallyIncreases, RelaychainDataProvider,
         RelaychainStateProvider,
@@ -109,11 +111,6 @@ use {
         },
         transaction_validity::{TransactionSource, TransactionValidity},
         AccountId32, ApplyExtrinsicResult, Cow,
-    },
-    sp_std::{
-        collections::{btree_map::BTreeMap, btree_set::BTreeSet},
-        marker::PhantomData,
-        prelude::*,
     },
     sp_version::RuntimeVersion,
     tp_stream_payment_common::StreamId,
@@ -750,7 +747,7 @@ impl GetRandomnessForNextBlock<u32> for BabeGetRandomnessForNextBlock {
             {
                 // Return random_hash as a [u8; 32] instead of a Hash
                 let mut buf = [0u8; 32];
-                let len = sp_std::cmp::min(32, random_hash.as_ref().len());
+                let len = core::cmp::min(32, random_hash.as_ref().len());
                 buf[..len].copy_from_slice(&random_hash.as_ref()[..len]);
 
                 buf
@@ -2043,7 +2040,7 @@ impl_runtime_apis! {
             impl cumulus_pallet_session_benchmarking::Config for Runtime {}
 
             impl frame_system_benchmarking::Config for Runtime {
-                fn setup_set_code_requirements(code: &sp_std::vec::Vec<u8>) -> Result<(), BenchmarkError> {
+                fn setup_set_code_requirements(code: &alloc::vec::Vec<u8>) -> Result<(), BenchmarkError> {
                     ParachainSystem::initialize_for_set_code_benchmark(code.len() as u32);
                     Ok(())
                 }
@@ -2699,7 +2696,7 @@ impl cumulus_pallet_parachain_system::CheckInherents<Block> for CheckInherents {
         let inherent_data =
             cumulus_primitives_timestamp::InherentDataProvider::from_relay_chain_slot_and_duration(
                 relay_chain_slot,
-                sp_std::time::Duration::from_secs(6),
+                core::time::Duration::from_secs(6),
             )
             .create_inherent_data()
             .expect("Could not create the timestamp inherent data");

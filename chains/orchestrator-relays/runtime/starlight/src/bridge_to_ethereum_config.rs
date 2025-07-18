@@ -216,7 +216,7 @@ mod test_helpers {
 
 /// Rewards the relayer that processed a native token transfer message
 /// using the FeesAccount configured in pallet_ethereum_token_transfers
-pub struct RewardThroughFeesAccount<T>(sp_std::marker::PhantomData<T>);
+pub struct RewardThroughFeesAccount<T>(core::marker::PhantomData<T>);
 
 impl<T> RewardProcessor<T> for RewardThroughFeesAccount<T>
 where

@@ -25,11 +25,13 @@ extern crate alloc;
 use frame_support::storage::{with_storage_layer, with_transaction};
 // Fix compile error in impl_runtime_weights! macro
 use {
+    alloc::collections::{btree_map::BTreeMap, btree_set::BTreeSet, vec_deque::VecDeque},
     authority_discovery_primitives::AuthorityId as AuthorityDiscoveryId,
     beefy_primitives::{
         ecdsa_crypto::{AuthorityId as BeefyId, Signature as BeefySignature},
         mmr::{BeefyDataProvider, MmrLeafVersion},
     },
+    core::{cmp::Ordering, marker::PhantomData},
     cumulus_primitives_core::relay_chain::{HeadData, ValidationCode},
     dp_container_chain_genesis_data::ContainerChainGenesisDataItem,
     frame_support::{
@@ -90,12 +92,6 @@ use {
         AccountId32,
     },
     sp_staking::offence::OffenceSeverity,
-    sp_std::{
-        cmp::Ordering,
-        collections::{btree_map::BTreeMap, btree_set::BTreeSet, vec_deque::VecDeque},
-        marker::PhantomData,
-        prelude::*,
-    },
     tp_bridge::ConvertLocation,
     tp_traits::{
         prod_or_fast_parameter_types, EraIndex, GetHostConfiguration, GetSessionContainerChains,
@@ -2494,7 +2490,7 @@ sp_api::impl_runtime_apis! {
             Runtime::metadata_at_version(version)
         }
 
-        fn metadata_versions() -> sp_std::vec::Vec<u32> {
+        fn metadata_versions() -> alloc::vec::Vec<u32> {
             Runtime::metadata_versions()
         }
     }
@@ -3570,7 +3566,7 @@ impl Get<[u8; 32]> for BabeGetCollatorAssignmentRandomness {
             } {
                 // Return random_hash as a [u8; 32] instead of a Hash
                 let mut buf = [0u8; 32];
-                let len = sp_std::cmp::min(32, random_hash.as_ref().len());
+                let len = core::cmp::min(32, random_hash.as_ref().len());
                 buf[..len].copy_from_slice(&random_hash.as_ref()[..len]);
 
                 buf

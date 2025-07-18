@@ -18,6 +18,7 @@
 // Rewrite of the following code which cause issues as Tanssi is not a parachain
 // https://github.com/moondance-labs/polkadot-sdk/blob/tanssi-polkadot-stable2412/bridges/snowbridge/primitives/router/src/outbound/mod.rs#L98
 
+use core::iter::Peekable;
 use core::marker::PhantomData;
 use core::slice::Iter;
 use frame_support::{ensure, traits::Get};
@@ -26,7 +27,6 @@ use snowbridge_core::{AgentId, ChannelId, TokenId};
 use snowbridge_outbound_queue_primitives::v1::message::{Command, Message, SendMessage};
 use sp_core::H160;
 use sp_runtime::traits::{MaybeEquivalence, TryConvert};
-use sp_std::{iter::Peekable, prelude::*};
 use xcm::prelude::*;
 use xcm::{
     latest::SendError::{MissingArgument, NotApplicable},

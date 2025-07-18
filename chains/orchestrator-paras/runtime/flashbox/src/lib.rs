@@ -46,6 +46,8 @@ pub mod weights;
 mod tests;
 
 use {
+    alloc::collections::{btree_map::BTreeMap, btree_set::BTreeSet},
+    core::marker::PhantomData,
     cumulus_pallet_parachain_system::RelayNumberMonotonicallyIncreases,
     cumulus_primitives_core::{relay_chain::SessionIndex, BodyId, ParaId},
     frame_support::{
@@ -96,11 +98,6 @@ use {
         },
         transaction_validity::{TransactionSource, TransactionValidity},
         AccountId32, ApplyExtrinsicResult, Cow,
-    },
-    sp_std::{
-        collections::{btree_map::BTreeMap, btree_set::BTreeSet},
-        marker::PhantomData,
-        prelude::*,
     },
     sp_version::RuntimeVersion,
     tp_stream_payment_common::StreamId,
@@ -1697,7 +1694,7 @@ impl_runtime_apis! {
             use sp_core::storage::TrackedStorageKey;
 
             impl frame_system_benchmarking::Config for Runtime {
-                fn setup_set_code_requirements(code: &sp_std::vec::Vec<u8>) -> Result<(), BenchmarkError> {
+                fn setup_set_code_requirements(code: &alloc::vec::Vec<u8>) -> Result<(), BenchmarkError> {
                     ParachainSystem::initialize_for_set_code_benchmark(code.len() as u32);
                     Ok(())
                 }
@@ -2059,7 +2056,7 @@ impl cumulus_pallet_parachain_system::CheckInherents<Block> for CheckInherents {
         let inherent_data =
             cumulus_primitives_timestamp::InherentDataProvider::from_relay_chain_slot_and_duration(
                 relay_chain_slot,
-                sp_std::time::Duration::from_secs(6),
+                core::time::Duration::from_secs(6),
             )
             .create_inherent_data()
             .expect("Could not create the timestamp inherent data");

@@ -30,7 +30,6 @@ use {
     pallet_session::{self as session, SessionManager},
     rand::{RngCore, SeedableRng},
     sp_runtime::{codec, traits::AtLeast32BitUnsigned},
-    sp_std::prelude::*,
     tp_traits::DistributeRewards,
 };
 const SEED: u32 = 0;
