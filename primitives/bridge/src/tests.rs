@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use snowbridge_outbound_queue_primitives::v1::AgentExecuteCommand;
 use {super::*, hex_literal::hex};
 
 #[test]
@@ -162,11 +163,13 @@ mod xcm_converter {
         assert_eq!(
             command,
             (
-                Command::UnlockNativeToken {
+                Command::AgentExecute {
                     agent_id,
-                    token: token_address.into(),
-                    recipient: beneficiary_address.into(),
-                    amount
+                    command: AgentExecuteCommand::TransferToken {
+                        token: token_address.into(),
+                        recipient: beneficiary_address.into(),
+                        amount,
+                    },
                 },
                 topic
             )
