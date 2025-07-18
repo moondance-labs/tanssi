@@ -12,7 +12,7 @@ const SS58_FORMAT = 42;
 
 let BLOCKS_AMOUNT_TO_CHECK = 100;
 // For debug purposes only, specify block here to check it
-const BLOCK_NUMBER_TO_DEBUG = undefined;
+const BLOCK_NUMBER_TO_DEBUG = 1940766;
 
 const customTypes = {
     VersionedXcmMessage: {
@@ -163,6 +163,8 @@ describeSuite({
                     for (const [index, extrinsic] of extrinsics.entries()) {
                         const { section, method } = extrinsic.method;
 
+                        console.log("section", section);
+
                         if (section === "ethereumInboundQueue" && method === "submit") {
                             const message = extrinsic.args[0];
                             const { eventLog } = message.toJSON();
@@ -188,7 +190,14 @@ describeSuite({
                                 skip();
                             }
 
-                            const versioned = api.registry.createType("VersionedXcmMessage", decodedEvent.payload);
+                            let versioned = null;
+                            try {
+                                versioned = api.registry.createType("VersionedXcmMessage", decodedEvent.payload);
+                            } catch (e) {
+                                throw new Error(
+                                    `Unrecognized event payload for "ethereumInboundQueue.submit" for block #${blockNumber}. Details: ${decodedEvent.payload}. Decoder is missing.`
+                                );
+                            }
 
                             const { destination, amount } = versioned.toJSON().v1.command.sendNativeToken;
 
