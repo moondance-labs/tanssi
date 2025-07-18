@@ -157,8 +157,8 @@ jobs:
             python3 .github/scripts/coverage-report.py \
               --base-covdir ./base_covdir \
               --incoming-covdir ./coverage/covdir \
-              --base-branch ${{ needs.set-tags.outputs.git_target_branch }} \
-              --incoming-branch ${{ needs.set-tags.outputs.git_branch }} \
+              --base-branch "${{ needs.set-tags.outputs.git_target_branch }}" \
+              --incoming-branch "${{ needs.set-tags.outputs.git_branch }}" \
               --base-html-url ${{ vars.S3_BUCKET_URL }}/${{ needs.set-tags.outputs.coverage_dir }} \
             > coverage_report.md
 
