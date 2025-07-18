@@ -1062,7 +1062,7 @@
                 {
                     "name": "para",
                     "type": "polkadotJs",
-                    "endpoints": ["wss://stagebox.tanssi-dev.network"]
+                    "endpoints": ["wss://services.tanssi-dev.network/stagebox"]
                 }
             ]
         },
@@ -1092,7 +1092,7 @@
                 {
                     "name": "para",
                     "type": "polkadotJs",
-                    "endpoints": ["wss://stagelight.tanssi-dev.network"]
+                    "endpoints": ["wss://services.tanssi-dev.network/stagelight"]
                 }
             ]
         },
@@ -1122,7 +1122,7 @@
                 {
                     "name": "para",
                     "type": "polkadotJs",
-                    "endpoints": ["wss://moonlight.tanssi-dev.network"]
+                    "endpoints": ["wss://services.tanssi-dev.network/moonlight"]
                 }
             ]
         },

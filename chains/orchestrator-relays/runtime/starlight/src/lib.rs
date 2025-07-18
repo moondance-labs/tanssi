@@ -85,15 +85,16 @@ use {
     snowbridge_outbound_queue_primitives::v1::Fee,
     sp_core::{storage::well_known_keys as StorageWellKnownKeys, Get},
     sp_genesis_builder::PresetId,
-    sp_runtime::{
-        traits::{BlockNumberProvider, ConvertInto},
-        AccountId32,
-    },
+    sp_runtime::{traits::ConvertInto, AccountId32},
     sp_std::{
         cmp::Ordering,
         collections::{btree_map::BTreeMap, btree_set::BTreeSet, vec_deque::VecDeque},
         marker::PhantomData,
         prelude::*,
+    },
+    tanssi_runtime_common::{
+        relay::{BabeGetCollatorAssignmentRandomness, BabeSlotBeacon},
+        SessionTimer,
     },
     tp_bridge::ConvertLocation,
     tp_traits::{
@@ -1435,10 +1436,7 @@ impl pallet_beefy_mmr::Config for Runtime {
 
 impl paras_sudo_wrapper::Config for Runtime {}
 
-use {
-    pallet_pooled_staking::traits::{IsCandidateEligible, Timer},
-    pallet_staking::SessionInterface,
-};
+use {pallet_pooled_staking::traits::IsCandidateEligible, pallet_staking::SessionInterface};
 
 pub struct StarlightSessionInterface;
 impl SessionInterface<AccountId> for StarlightSessionInterface {
@@ -1838,43 +1836,6 @@ parameter_types! {
     pub const StakingSessionDelay: u32 = 2;
 }
 
-pub struct SessionTimer<Delay>(PhantomData<Delay>);
-
-impl<Delay> Timer for SessionTimer<Delay>
-where
-    Delay: Get<u32>,
-{
-    type Instant = u32;
-
-    fn now() -> Self::Instant {
-        Session::current_index()
-    }
-
-    fn is_elapsed(instant: &Self::Instant) -> bool {
-        let delay = Delay::get();
-        let Some(end) = instant.checked_add(delay) else {
-            return false;
-        };
-        end <= Self::now()
-    }
-
-    #[cfg(feature = "runtime-benchmarks")]
-    fn elapsed_instant() -> Self::Instant {
-        let delay = Delay::get();
-        Self::now()
-            .checked_add(delay)
-            .expect("overflow when computing valid elapsed instant")
-    }
-
-    #[cfg(feature = "runtime-benchmarks")]
-    fn skip_to_elapsed() {
-        let session_to_reach = Self::elapsed_instant();
-        while Self::now() < session_to_reach {
-            Session::rotate_session();
-        }
-    }
-}
-
 pub struct CandidateHasRegisteredKeys;
 impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
     fn is_candidate_eligible(a: &AccountId) -> bool {
@@ -1917,8 +1878,8 @@ impl pallet_pooled_staking::Config for Runtime {
     type MinimumSelfDelegation = MinimumSelfDelegation;
     type RuntimeHoldReason = RuntimeHoldReason;
     type RewardsCollatorCommission = RewardsCollatorCommission;
-    type JoiningRequestTimer = SessionTimer<StakingSessionDelay>;
-    type LeavingRequestTimer = SessionTimer<StakingSessionDelay>;
+    type JoiningRequestTimer = SessionTimer<Runtime, StakingSessionDelay>;
+    type LeavingRequestTimer = SessionTimer<Runtime, StakingSessionDelay>;
     type EligibleCandidatesBufferSize = ConstU32<100>;
     type EligibleCandidatesFilter = CandidateHasRegisteredKeys;
     type WeightInfo = weights::pallet_pooled_staking::SubstrateWeight<Runtime>;
@@ -2302,23 +2263,10 @@ impl pallet_registrar::RegistrarHooks for StarlightRegistrarHooks {
     }
 }
 
-pub struct BabeSlotBeacon;
-
-impl BlockNumberProvider for BabeSlotBeacon {
-    type BlockNumber = u32;
-
-    fn current_block_number() -> Self::BlockNumber {
-        // TODO: nimbus_primitives::SlotBeacon requires u32, but this is a u64 in pallet_babe, and
-        // also it gets converted to u64 in pallet_author_noting, so let's do something to remove
-        // this intermediate u32 conversion, such as using a different trait
-        u64::from(pallet_babe::CurrentSlot::<Runtime>::get()) as u32
-    }
-}
-
 impl pallet_author_noting::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type ContainerChains = TanssiCollatorAssignment;
-    type SlotBeacon = BabeSlotBeacon;
+    type SlotBeacon = BabeSlotBeacon<Runtime>;
     type ContainerChainAuthor = TanssiCollatorAssignment;
     type AuthorNotingHook = (InflationRewards, ServicesPayment);
     type RelayOrPara = pallet_author_noting::RelayMode;
@@ -3533,33 +3481,6 @@ impl Get<u32> for ConfigurationCollatorRotationSessionPeriod {
     }
 }
 
-pub struct BabeGetCollatorAssignmentRandomness;
-impl Get<[u8; 32]> for BabeGetCollatorAssignmentRandomness {
-    fn get() -> [u8; 32] {
-        let block_number = System::block_number();
-        let random_seed = if block_number != 0 {
-            if let Some(random_hash) = {
-                BabeCurrentBlockRandomnessGetter::get_block_randomness_mixed(b"CollatorAssignment")
-            } {
-                // Return random_hash as a [u8; 32] instead of a Hash
-                let mut buf = [0u8; 32];
-                let len = sp_std::cmp::min(32, random_hash.as_ref().len());
-                buf[..len].copy_from_slice(&random_hash.as_ref()[..len]);
-
-                buf
-            } else {
-                // If there is no randomness return [0; 32]
-                [0; 32]
-            }
-        } else {
-            // In block 0 (genesis) there is no randomness
-            [0; 32]
-        };
-
-        random_seed
-    }
-}
-
 // Randomness trait
 impl frame_support::traits::Randomness<Hash, BlockNumber> for BabeCurrentBlockRandomnessGetter {
     fn random(subject: &[u8]) -> (Hash, BlockNumber) {
@@ -3765,8 +3686,9 @@ impl pallet_collator_assignment::Config for Runtime {
     type SelfParaId = MockParaId;
     type ShouldRotateAllCollators =
         RotateCollatorsEveryNSessions<ConfigurationCollatorRotationSessionPeriod>;
-    type Randomness =
-        pallet_collator_assignment::SolochainRandomness<BabeGetCollatorAssignmentRandomness>;
+    type Randomness = pallet_collator_assignment::SolochainRandomness<
+        BabeGetCollatorAssignmentRandomness<Runtime>,
+    >;
     type RemoveInvulnerables = ();
     type ParaIdAssignmentHooks = ParaIdAssignmentHooksImpl;
     type CollatorAssignmentTip = ServicesPayment;
