@@ -27,7 +27,7 @@ use {
     frame_support::assert_ok,
     frame_system::pallet_prelude::BlockNumberFor,
     primitives::{
-        node_features::FeatureIndex, runtime_api::runtime_decl_for_parachain_host::ParachainHostV11,
+        node_features::FeatureIndex, runtime_api::runtime_decl_for_parachain_host::ParachainHostV13,
     },
     runtime_parachains::scheduler::common::Assignment,
     sp_core::{Decode, Encode},
