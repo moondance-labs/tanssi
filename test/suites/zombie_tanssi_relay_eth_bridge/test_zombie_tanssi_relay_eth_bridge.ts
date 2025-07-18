@@ -71,6 +71,7 @@ describeSuite({
         let wETHContract: ethers.Contract;
         let wETHAddress: string;
         let gatewayProxyAddress: string;
+        let gatewayOwnerAddress: string;
         let middlewareAddress: string;
         let operatorRewardAddress: string;
         let operatorRewardContract: ethers.Contract;
@@ -79,6 +80,7 @@ describeSuite({
 
         let tokenId: any;
         let wETHBalanceFromEthereum: bigint;
+        let wETHTokenLocation: any;
 
         let ethInfo: any;
 
@@ -181,6 +183,7 @@ describeSuite({
 
             customHttpProvider = new ethers.WebSocketProvider(ethUrl);
             ethereumWallet = new ethers.Wallet(ethInfo.ethereum_key, customHttpProvider);
+            gatewayOwnerAddress = ethereumWallet.address.toLowerCase();
 
             // Setting up Middleware
             middlewareContract = new ethers.Contract(middlewareAddress, combinedMiddlewareAbi, ethereumWallet);
@@ -240,7 +243,7 @@ describeSuite({
                 ).stdout
             );
 
-            const wETHTokenLocation = {
+            wETHTokenLocation = {
                 parents: 1,
                 interior: {
                     X2: [
@@ -860,6 +863,65 @@ describeSuite({
                 );
 
                 expect(randomWETHBalanceAfter.unwrap().balance.toBigInt()).to.be.eq(wETHBalanceFromEthereum);
+
+                const ethLocation = {
+                    V4: {
+                        parents: 1,
+                        interior: {
+                            X1: [{
+                                GlobalConsensus: ETHEREUM_NETWORK_TESTNET,
+                            }],
+                        },
+                    },
+                };
+
+                const beneficiaryLocation = {
+                    V4: {
+                        parents: 0,
+                        interior: {
+                            X1: [{
+                                AccountKey20: {
+                                    network: ETHEREUM_NETWORK_TESTNET,
+                                    key: hexToU8a(gatewayOwnerAddress),
+                                },
+                            }],
+                        },
+                    },
+                };
+
+                const wETHBalanceToSend = wETHBalanceFromEthereum - 200000000000000n;
+                const assets = {
+                    V4: [
+                        {
+                            id: wETHTokenLocation,
+                            fun: {
+                                Fungible: wETHBalanceToSend,
+                            },
+                        },
+                    ],
+                };
+
+                const wETHBalanceBefore = await wETHContract.balanceOf(gatewayOwnerAddress);
+
+                await relayApi.tx.xcmPallet
+                    .transferAssets(ethLocation, beneficiaryLocation, assets, 0, "Unlimited")
+                    .signAsync(randomAccount);
+
+                let wETHTransferReceived = false;
+                let wETHTransferSuccess = false;
+
+                await gatewayContract.on("InboundMessageDispatched", async (_channelID, _nonce, _messageID, success) => {
+                    const balanceAfter = await wETHContract.balanceOf(gatewayOwnerAddress);
+                    expect(balanceAfter).to.be.eq(wETHBalanceBefore + wETHBalanceToSend);
+                    wETHTransferReceived = true;
+                    wETHTransferSuccess = success;
+                });
+
+                while (!wETHTransferReceived) {
+                    await sleep(1000);
+                }
+
+                expect(wETHTransferSuccess).to.be.true;
             },
         });
 
