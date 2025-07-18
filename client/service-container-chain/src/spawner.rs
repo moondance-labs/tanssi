@@ -42,7 +42,7 @@ use {
     pallet_author_noting_runtime_api::AuthorNotingApi,
     polkadot_primitives::CollatorPair,
     sc_cli::{Database, SyncMode},
-    sc_network::config::{ed25519::SecretKey, MultiaddrWithPeerId},
+    sc_network::config::MultiaddrWithPeerId,
     sc_service::SpawnTaskHandle,
     sc_transaction_pool::TransactionPoolHandle,
     sp_api::ProvideRuntimeApi,
