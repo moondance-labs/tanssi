@@ -357,7 +357,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: Cow::Borrowed("frontier-template"),
     impl_name: Cow::Borrowed("frontier-template"),
     authoring_version: 1,
-    spec_version: 1400,
+    spec_version: 1500,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -1483,7 +1483,7 @@ impl_runtime_apis! {
                             initial_asset_amount - asset_amount,
                         );
                     });
-                    Some((assets, fee_index as u32, dest, verify))
+                    Some((assets, fee_index, dest, verify))
                 }
             }
 

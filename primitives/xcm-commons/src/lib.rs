@@ -74,9 +74,6 @@ where
         if *origin != EthereumLocation::get() {
             return false;
         }
-        match (asset.id.0.parents, asset.id.0.first_interior()) {
-            (1, Some(GlobalConsensus(network))) if *network == EthereumNetwork::get() => true,
-            _ => false,
-        }
+        matches!((asset.id.0.parents, asset.id.0.first_interior()), (1, Some(GlobalConsensus(network))) if *network == EthereumNetwork::get())
     }
 }

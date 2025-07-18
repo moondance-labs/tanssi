@@ -8,6 +8,7 @@ import {
     STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_ETH_TOKEN_TRANSFERS,
     STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_FOREIGN_ASSETS_CREATOR,
     checkCallIsFiltered,
+    expectEventCount,
 } from "helpers";
 import type { KeyringPair } from "@moonwall/util";
 import { hexToU8a } from "@polkadot/util";
@@ -127,6 +128,81 @@ describeSuite({
                         .tx.foreignAssets.mint(assetId, alice.addressRaw, initialBalance)
                         .signAsync(alice)
                 );
+
+                // Transfer assets
+                const ethLocation = {
+                    V3: {
+                        parents: 1,
+                        interior: {
+                            X1: {
+                                GlobalConsensus: ethereumNetwork,
+                            },
+                        },
+                    },
+                };
+
+                const beneficiaryLocation = {
+                    V3: {
+                        parents: 0,
+                        interior: {
+                            X1: {
+                                AccountKey20: {
+                                    network: ethereumNetwork,
+                                    key: "0x1111111111111111111111111111111111111111",
+                                },
+                            },
+                        },
+                    },
+                };
+
+                const assets = {
+                    V3: [
+                        {
+                            id: {
+                                Concrete: ethTokenLocation,
+                            },
+                            fun: {
+                                Fungible: transferAmount,
+                            },
+                        },
+                    ],
+                };
+
+                const tx3 = await polkadotJs.tx.xcmPallet
+                    .transferAssets(ethLocation, beneficiaryLocation, assets, 0, "Unlimited")
+                    .signAsync(alice);
+
+                await context.createBlock([tx3], { allowFailures: false });
+
+                // Check events and digest were emitted correctly.
+                // Should have resulted in a new "other" digest log being included in the block
+                const baseHeader = await polkadotJs.rpc.chain.getHeader();
+                const allLogs = baseHeader.digest.logs.map((x) => x.toJSON());
+                const otherLogs = allLogs.filter((x) => x.other);
+                expect(otherLogs.length).to.be.equal(1);
+                const logHex = otherLogs[0].other;
+
+                await expectEventCount(polkadotJs, {
+                    MessagesCommitted: 1,
+                    MessageAccepted: 1,
+                    Processed: 1,
+                    MessageQueued: 1,
+                });
+
+                // Also a MessagesCommitted event with the same hash as the digest log
+                const events = await polkadotJs.query.system.events();
+                const ev1 = events.filter((a) => {
+                    return a.event.method === "MessagesCommitted";
+                });
+                expect(ev1.length).to.be.equal(1);
+                const ev1Data = ev1[0].event.data[0].toJSON();
+
+                // logHex == 0x00 + ev1Data
+                // Example:
+                // logHex: 0x0064cf0ef843ad5a26c2cc27cf345fe0fd8b72cd6297879caa626c4d72bbe4f9b0
+                // ev1Data:  0x64cf0ef843ad5a26c2cc27cf345fe0fd8b72cd6297879caa626c4d72bbe4f9b0
+                const prefixedEv1Data = `0x00${ev1Data.slice(2)}`;
+                expect(prefixedEv1Data).to.be.equal(logHex);
             },
         });
     },

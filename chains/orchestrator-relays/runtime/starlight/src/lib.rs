@@ -52,12 +52,12 @@ use {
     parachains_scheduler::common::Assignment,
     parity_scale_codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen},
     primitives::{
-        slashing, vstaging::CandidateEvent, vstaging::CommittedCandidateReceiptV2,
-        vstaging::CoreState, vstaging::ScrapedOnChainVotes, ApprovalVotingParams, BlockNumber,
-        CandidateHash, CoreIndex, DisputeState, ExecutorParams, GroupRotationInfo, Hash,
-        Id as ParaId, InboundDownwardMessage, InboundHrmpMessage, Moment, NodeFeatures, Nonce,
-        OccupiedCoreAssumption, PersistedValidationData, SessionInfo, Signature,
-        ValidationCodeHash, ValidatorId, ValidatorIndex, PARACHAIN_KEY_TYPE_ID,
+        slashing, vstaging::async_backing::Constraints, vstaging::CandidateEvent,
+        vstaging::CommittedCandidateReceiptV2, vstaging::CoreState, vstaging::ScrapedOnChainVotes,
+        ApprovalVotingParams, BlockNumber, CandidateHash, CoreIndex, DisputeState, ExecutorParams,
+        GroupRotationInfo, Hash, Id as ParaId, InboundDownwardMessage, InboundHrmpMessage, Moment,
+        NodeFeatures, Nonce, OccupiedCoreAssumption, PersistedValidationData, SessionInfo,
+        Signature, ValidationCodeHash, ValidatorId, ValidatorIndex, PARACHAIN_KEY_TYPE_ID,
     },
     runtime_common::{
         self as polkadot_runtime_common, impl_runtime_weights, paras_registrar, paras_sudo_wrapper,
@@ -72,7 +72,9 @@ use {
         initializer as parachains_initializer, on_demand as parachains_assigner_on_demand,
         origin as parachains_origin, paras as parachains_paras,
         paras_inherent as parachains_paras_inherent,
-        runtime_api_impl::v11 as parachains_runtime_api_impl,
+        runtime_api_impl::{
+            v11 as parachains_runtime_api_impl, vstaging as parachains_staging_runtime_api_impl,
+        },
         scheduler as parachains_scheduler, session_info as parachains_session_info,
         shared as parachains_shared,
     },
@@ -192,7 +194,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: Cow::Borrowed("starlight"),
     impl_name: Cow::Borrowed("tanssi-starlight-v2.0"),
     authoring_version: 0,
-    spec_version: 1400,
+    spec_version: 1500,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 26,
@@ -651,7 +653,7 @@ parameter_types! {
     pub const MaxAuthorities: u32 = 100_000;
     pub const MaxKeys: u32 = 10_000;
     pub const MaxPeerInHeartbeats: u32 = 10_000;
-    pub const MaxBalance: Balance = Balance::max_value();
+    pub const MaxBalance: Balance = Balance::MAX;
     pub TreasuryAccount: AccountId = Treasury::account_id();
     pub SnowbridgeFeesAccount: AccountId = PalletId(*b"sb/feeac").into_account_truncating();
 }
@@ -753,10 +755,12 @@ where
     ) -> Option<UncheckedExtrinsic> {
         use sp_runtime::traits::StaticLookup;
         // take the biggest period possible.
-        let period = BlockHashCount::get()
-            .checked_next_power_of_two()
-            .map(|c| c / 2)
-            .unwrap_or(2) as u64;
+        let period = u64::from(
+            BlockHashCount::get()
+                .checked_next_power_of_two()
+                .map(|c| c / 2)
+                .unwrap_or(2),
+        );
 
         let current_block = System::block_number()
             .saturated_into::<u64>()
@@ -1063,7 +1067,7 @@ impl parachains_inclusion::Config for Runtime {
 }
 
 parameter_types! {
-    pub const ParasUnsignedPriority: TransactionPriority = TransactionPriority::max_value();
+    pub const ParasUnsignedPriority: TransactionPriority = TransactionPriority::MAX;
 }
 
 impl parachains_paras::Config for Runtime {
@@ -1179,7 +1183,7 @@ impl parachains_scheduler::common::AssignmentProvider<BlockNumberFor<Runtime>>
             .container_chains
             .iter()
             .filter_map(|(&para_id, collators)| {
-                if Paras::is_parachain(para_id) && collators.len() > 0 {
+                if Paras::is_parachain(para_id) && !collators.is_empty() {
                     Some(para_id)
                 } else {
                     None
@@ -1204,12 +1208,11 @@ impl parachains_scheduler::common::AssignmentProvider<BlockNumberFor<Runtime>>
                 )?;
 
             // Let's check that we have collators before allowing an assignment
-            if assigned_collators
+            if !assigned_collators
                 .container_chains
                 .get(&assignment.para_id())
                 .unwrap_or(&vec![])
-                .len()
-                > 0
+                .is_empty()
             {
                 Some(assignment)
             } else {
@@ -1510,8 +1513,8 @@ pub struct RewardsBenchHelper;
 #[cfg(feature = "runtime-benchmarks")]
 impl tp_bridge::TokenChannelSetterBenchmarkHelperTrait for RewardsBenchHelper {
     fn set_up_token(location: Location, token_id: TokenId) {
-        snowbridge_pallet_system::ForeignToNativeId::<Runtime>::insert(&token_id, &location);
-        snowbridge_pallet_system::NativeToForeignId::<Runtime>::insert(&location, &token_id);
+        snowbridge_pallet_system::ForeignToNativeId::<Runtime>::insert(token_id, &location);
+        snowbridge_pallet_system::NativeToForeignId::<Runtime>::insert(&location, token_id);
     }
 
     fn set_up_channel(_channel_id: ChannelId, _para_id: ParaId, _agent_id: AgentId) {}
@@ -2516,7 +2519,7 @@ sp_api::impl_runtime_apis! {
         }
     }
 
-    #[api_version(11)]
+    #[api_version(13)]
     impl primitives::runtime_api::ParachainHost<Block> for Runtime {
         fn validators() -> Vec<ValidatorId> {
             parachains_runtime_api_impl::validators::<Runtime>()
@@ -2683,6 +2686,17 @@ sp_api::impl_runtime_apis! {
 
         fn candidates_pending_availability(para_id: ParaId) -> Vec<CommittedCandidateReceiptV2<Hash>> {
             parachains_runtime_api_impl::candidates_pending_availability::<Runtime>(para_id)
+        }
+        fn backing_constraints(para_id: ParaId) -> Option<Constraints> {
+            parachains_staging_runtime_api_impl::backing_constraints::<Runtime>(para_id)
+        }
+
+        fn scheduling_lookahead() -> u32 {
+            parachains_staging_runtime_api_impl::scheduling_lookahead::<Runtime>()
+        }
+
+        fn validation_code_bomb_limit() -> u32 {
+            parachains_staging_runtime_api_impl::validation_code_bomb_limit::<Runtime>()
         }
     }
 
@@ -3718,7 +3732,7 @@ fn host_config_at_session(
         .max_by_key(|(session, _config)| *session)
         .map(|(_session, config)| config)
         // If pending configs is empty after filter, read active config
-        .unwrap_or_else(|| runtime_parachains::configuration::ActiveConfig::<Runtime>::get())
+        .unwrap_or_else(runtime_parachains::configuration::ActiveConfig::<Runtime>::get)
 }
 
 pub struct GetCoreAllocationConfigurationImpl;

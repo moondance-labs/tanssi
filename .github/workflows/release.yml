@@ -874,6 +874,8 @@ jobs:
                 chains:
                     - chain: dancelight
                       runtime: dancelight
+                    - chain: starlight
+                      runtime: starlight
         steps:
             - name: Checkout
               uses: actions/checkout@v4

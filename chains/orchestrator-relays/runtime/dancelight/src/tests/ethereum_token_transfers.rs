@@ -43,9 +43,18 @@ use {
     tanssi_runtime_common::processors::NativeTokenTransferMessageProcessor,
     xcm::{
         latest::{prelude::*, Junctions::*, Location},
-        VersionedLocation,
+        VersionedLocation, VersionedXcm,
     },
 };
+
+macro_rules! filter_events {
+    ($pat:pat) => {
+        System::events().iter().filter(|r| match r.event {
+            $pat => true,
+            _ => false,
+        })
+    };
+}
 
 macro_rules! filter_events {
     ($pat:pat) => {
@@ -1761,7 +1770,7 @@ fn send_eth_native_token_works() {
             ));
 
             // Correct amount has been sent
-            assert_eq!(ForeignAssets::balance(asset_id, &AccountId::from(BOB)), 10);
+            assert_eq!(ForeignAssets::balance(asset_id, AccountId::from(BOB)), 10);
 
             // Check some fees have been payed
             let balance_after = Balances::balance(&AccountId::from(BOB));
@@ -2181,7 +2190,105 @@ fn test_unrelated_xcm_message() {
             let erc20_asset_location = Location {
                 parents: 1,
                 interior: X2([
-                    GlobalConsensus(NetworkId::BitcoinCore),
+                    GlobalConsensus(EthereumNetwork::get()),
+                    AccountKey20 {
+                        network: Some(EthereumNetwork::get()),
+                        key: token_address.into(),
+                    },
+                ]
+                .into()),
+            };
+
+            let asset_id = 42u16;
+
+            assert_ok!(ForeignAssetsCreator::create_foreign_asset(
+                root_origin(),
+                erc20_asset_location.clone(), // Use the ERC20 location
+                asset_id,
+                AccountId::from(ALICE),
+                true,
+                1
+            ));
+
+            // Give tokens to user as if tokens were bridged before + extra to check the correct
+            // amount is sent
+            ForeignAssets::mint_into(asset_id, &AccountId::from(BOB), amount_to_transfer + 10)
+                .expect("to mint amount");
+
+            // User tries to send tokens
+            let beneficiary_address = H160(hex!("0123456789abcdef0123456789abcdef01234567"));
+
+            // Beneficiary location
+            let mut beneficiary_location = Location {
+                parents: 1,
+                interior: X1([AccountKey20 {
+                    network: Some(EthereumNetwork::get()),
+                    key: beneficiary_address.into(),
+                }]
+                .into()),
+            };
+
+            beneficiary_location
+                .append_with(EthereumLocation::get())
+                .expect("to not overflow");
+
+            assert_err!(
+                XcmPallet::send_xcm(
+                    Junctions::from([Junction::AccountId32 {
+                        network: None,
+                        id: AccountId::from(BOB).into()
+                    }]),
+                    beneficiary_location,
+                    xcm::opaque::latest::Xcm(vec![xcm::opaque::latest::Instruction::ClearOrigin]),
+                ),
+                SendError::Unroutable,
+            );
+
+            assert_eq!(
+                filter_events!(RuntimeEvent::EthereumOutboundQueue(
+                    snowbridge_pallet_outbound_queue::Event::MessageQueued { .. },
+                ))
+                .count(),
+                0,
+                "MessageQueued event should NOT be emitted!"
+            );
+        })
+}
+
+#[test]
+fn test_user_cannot_send_raw_message() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (EthereumSovereignAccount::get(), 100_000 * UNIT),
+            (SnowbridgeFeesAccount::get(), 100_000 * UNIT),
+            (AccountId::from(ALICE), 100_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            // Setup bridge and token
+            let channel_id: ChannelId = ChannelId::new(hex!(
+                "00000000000000000000006e61746976655f746f6b656e5f7472616e73666572"
+            ));
+            let agent_id = AgentId::from_low_u64_be(10);
+            let para_id: ParaId = 2000u32.into();
+            let amount_to_transfer = 10_000u128;
+            let topic = hex!("deadbeafdeadbeafdeadbeafdeadbeafdeadbeafdeadbeafdeadbeafdeadbeaf");
+
+            assert_ok!(EthereumTokenTransfers::set_token_transfer_channel(
+                root_origin(),
+                channel_id,
+                agent_id,
+                para_id
+            ));
+
+            // Define a mock ERC20 token address
+            let token_address = H160(hex!("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"));
+
+            let erc20_asset_location = Location {
+                parents: 1,
+                interior: X2([
+                    GlobalConsensus(EthereumNetwork::get()),
                     AccountKey20 {
                         network: Some(EthereumNetwork::get()),
                         key: token_address.into(),
@@ -2226,16 +2333,25 @@ fn test_unrelated_xcm_message() {
             let eth_asset = AssetId(erc20_asset_location.clone())
                 .into_asset(Fungibility::Fungible(amount_to_transfer));
 
+            let mut assets = Assets::new();
+            assets.push(eth_asset);
+
+            let xcm_message = Xcm(vec![
+                Instruction::WithdrawAsset(assets),
+                Instruction::DepositAsset {
+                    assets: AssetFilter::Wild(WildAsset::All),
+                    beneficiary: beneficiary_location.clone(),
+                },
+                Instruction::SetTopic(topic),
+            ]);
+
             assert_err!(
-                XcmPallet::send_xcm(
-                    Junctions::from([Junction::AccountId32 {
-                        network: None,
-                        id: AccountId::from(BOB).into()
-                    }]),
-                    beneficiary_location,
-                    xcm::opaque::latest::Xcm(vec![xcm::opaque::latest::Instruction::ClearOrigin,]),
+                XcmPallet::send(
+                    RuntimeOrigin::signed(AccountId::from(BOB)),
+                    Box::new(beneficiary_location.into()),
+                    Box::new(VersionedXcm::V5(xcm_message)),
                 ),
-                SendError::Unroutable,
+                pallet_xcm::Error::<Runtime>::SendFailure,
             );
 
             assert_eq!(

@@ -46,7 +46,6 @@ use {
     sp_runtime::traits::TryConvertInto,
     tp_bridge::{
         barriers,
-        container_token_to_ethereum_message_exporter::EthereumBlobExporter as ContainerEthereumBlobExporter,
         snowbridge_outbound_token_transfer::{EthereumBlobExporter, SnowbrigeTokenTransferRouter},
         EthereumLocationsConverterFor,
     },
@@ -150,7 +149,7 @@ parameter_types! {
 }
 
 pub type PriceForChildParachainDelivery =
-    ExponentialPrice<FeeAssetId, BaseDeliveryFee, TransactionByteFee, Dmp>;
+ExponentialPrice<FeeAssetId, BaseDeliveryFee, TransactionByteFee, Dmp>;
 
 /// The XCM router. When we want to send an XCM message, we use this type. It amalgamates all of our
 /// individual routers.
@@ -241,7 +240,7 @@ impl xcm_executor::Config for XcmConfig {
     type Barrier = Barrier;
     type Weigher = XcmWeigher;
     type Trader =
-        UsingComponents<WeightToFee, TokenLocation, AccountId, Balances, ToAuthor<Runtime>>;
+    UsingComponents<WeightToFee, TokenLocation, AccountId, Balances, ToAuthor<Runtime>>;
     type ResponseHandler = XcmPallet;
     type AssetTrap = XcmPallet;
     type AssetLocker = ();
@@ -284,7 +283,7 @@ pub type LocalOriginToLocation = (
 
 /// Type to convert the `StakingAdmin` origin to a Plurality `Location` value.
 pub type StakingAdminToPlurality =
-    OriginToPluralityVoice<RuntimeOrigin, StakingAdmin, StakingAdminBodyId>;
+OriginToPluralityVoice<RuntimeOrigin, StakingAdmin, StakingAdminBodyId>;
 
 /// Type to convert the Fellows origin to a Plurality `Location` value.
 pub type FellowsToPlurality = OriginToPluralityVoice<RuntimeOrigin, Fellows, FellowsBodyId>;
