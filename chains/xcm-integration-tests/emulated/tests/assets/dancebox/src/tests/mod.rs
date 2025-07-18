@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
+mod container_chain_to_eth_transfer;
 mod core_buyer;
 mod core_buyer_common;
 mod delivery_fees;
