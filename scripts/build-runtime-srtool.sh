@@ -43,6 +43,8 @@ CMD="docker run \
   ${GH_WORKFLOW_MATRIX_SRTOOL_IMAGE}:${GH_WORKFLOW_MATRIX_SRTOOL_IMAGE_TAG} \
     build --app --json -cM"
 
+echo "About to execute $CMD"
+
 # Here we run the command and stream the output (JSON blob) to a variable
 stdbuf -oL $CMD | {
   while IFS= read -r line
