@@ -35,7 +35,7 @@ use {
     sp_core::{H160, H256},
     sp_runtime::{traits::MaybeEquivalence, FixedU128, TokenError},
     sp_std::vec,
-    tanssi_runtime_common::processors::NativeTokenTransferMessageProcessor,
+    tanssi_runtime_common::relay::NativeTokenTransferMessageProcessor,
     xcm::{latest::Location, VersionedLocation},
 };
 
