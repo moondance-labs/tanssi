@@ -22,6 +22,7 @@ use {
         GetCoreAllocationConfigurationImpl, Paras, Registrar, RuntimeEvent, ServicesPayment,
         TanssiAuthorityMapping, TanssiInvulnerables,
     },
+    alloc::vec,
     cumulus_primitives_core::{
         relay_chain::{HeadData, SchedulerParams},
         ParaId,
@@ -32,7 +33,6 @@ use {
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_core::Get,
     sp_runtime::{traits::BlakeTwo256, DigestItem},
-    sp_std::vec,
     tanssi_runtime_common::relay::BabeAuthorVrfBlockRandomness,
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
 };

@@ -28,7 +28,6 @@ scale-info = { workspace = true }
 serde = { workspace = true, features = [ "derive" ] }
 sp-core = { workspace = true }
 sp-runtime = { workspace = true }
-sp-std = { workspace = true }
 sp-trie = { workspace = true }
 tp-traits = { workspace = true }
 
@@ -59,7 +58,6 @@ std = [
 	"sp-core/std",
 	"sp-io/std",
 	"sp-runtime/std",
-	"sp-std/std",
 	"sp-trie/std",
 	"tp-traits/std",
 ]

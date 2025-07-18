@@ -18,12 +18,12 @@
 
 use {
     crate::tests::common::*,
+    alloc::vec,
     frame_support::{assert_noop, assert_ok, error::BadOrigin},
     pallet_author_noting_runtime_api::runtime_decl_for_author_noting_api::AuthorNotingApi,
     parity_scale_codec::Encode,
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_runtime::{generic::DigestItem, traits::BlakeTwo256},
-    sp_std::vec,
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
     tp_traits::{ContainerChainBlockInfo, ParaId},
 };

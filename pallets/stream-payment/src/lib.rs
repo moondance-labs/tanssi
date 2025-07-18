@@ -16,6 +16,7 @@
 
 #![doc = include_str!("../README.md")]
 #![cfg_attr(not(feature = "std"), no_std)]
+extern crate alloc;
 
 #[cfg(test)]
 mod mock;
@@ -33,7 +34,9 @@ pub mod weights;
 pub use weights::WeightInfo;
 
 use {
+    alloc::fmt::Debug,
     core::cmp::min,
+    core::marker::PhantomData,
     frame_support::{
         dispatch::DispatchErrorWithPostInfo,
         pallet,
@@ -53,7 +56,6 @@ use {
         traits::{AtLeast32BitUnsigned, CheckedAdd, CheckedSub, One, Saturating, Zero},
         ArithmeticError,
     },
-    sp_std::{fmt::Debug, marker::PhantomData},
 };
 
 pub use pallet::*;

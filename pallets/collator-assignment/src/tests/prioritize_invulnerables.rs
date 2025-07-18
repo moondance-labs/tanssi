@@ -19,7 +19,7 @@ use {
         assignment::{Assignment, ChainNumCollators},
         tests::Test,
     },
-    sp_std::collections::{btree_map::BTreeMap, btree_set::BTreeSet},
+    alloc::collections::{btree_map::BTreeMap, btree_set::BTreeSet},
 };
 
 #[test]

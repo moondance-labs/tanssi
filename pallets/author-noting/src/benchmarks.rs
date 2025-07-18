@@ -19,12 +19,12 @@
 //! Benchmarking
 use {
     crate::{AuthorNotingInfo, Call, Config, HeadData, Pallet, ParaId, RelayOrPara},
+    alloc::{boxed::Box, vec},
     core::any::{Any, TypeId},
     frame_benchmarking::{account, v2::*},
     frame_support::{assert_ok, Hashable},
     frame_system::RawOrigin,
     parity_scale_codec::Encode,
-    sp_std::{boxed::Box, vec},
     tp_traits::{
         AuthorNotingHook, ForSession, GetContainerChainAuthor, GetContainerChainsWithCollators,
     },

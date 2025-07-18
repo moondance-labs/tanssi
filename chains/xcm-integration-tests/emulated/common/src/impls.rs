@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-use {snowbridge_pallet_outbound_queue::CommittedMessage, sp_std::cell::RefCell};
+use {core::cell::RefCell, snowbridge_pallet_outbound_queue::CommittedMessage};
 
 pub fn eth_bridge_sent_msgs() -> Vec<CommittedMessage> {
     ETH_BRIDGE_SENT_MSGS.with(|q| (*q.borrow()).clone())

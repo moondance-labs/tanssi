@@ -22,6 +22,7 @@ use {
         benchmark_blob::benchmark_blob, Call, Config, DepositBalanceOf, EnsureSignedByManager,
         Pallet, RegistrarHooks,
     },
+    alloc::{vec, vec::Vec},
     dp_container_chain_genesis_data::{ContainerChainGenesisData, ContainerChainGenesisDataItem},
     frame_benchmarking::{account, v2::*},
     frame_support::{
@@ -34,7 +35,6 @@ use {
     },
     frame_system::RawOrigin,
     sp_core::Get,
-    sp_std::{vec, vec::Vec},
     tp_traits::{ParaId, RegistrarHandler, RelayStorageRootProvider, SlotFrequency},
 };
 

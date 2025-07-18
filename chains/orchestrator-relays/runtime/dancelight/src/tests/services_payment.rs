@@ -18,10 +18,10 @@
 
 use {
     crate::{tests::common::*, ContainerRegistrar, Paras, Registrar, ServicesPayment},
+    alloc::vec,
     cumulus_primitives_core::{relay_chain::HeadData, ParaId},
     frame_support::{assert_noop, assert_ok, pallet_prelude::DispatchResultWithPostInfo},
     sp_runtime::DispatchError,
-    sp_std::vec,
 };
 
 #[test]

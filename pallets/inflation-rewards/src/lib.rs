@@ -19,6 +19,7 @@
 //! This pallet handle native token inflation and rewards distribution.
 
 #![cfg_attr(not(feature = "std"), no_std)]
+extern crate alloc;
 
 pub use pallet::*;
 
@@ -326,7 +327,7 @@ impl<T: Config> AuthorNotingHook<T::AccountId> for Pallet<T> {
         .expect("to mint tokens");
 
         ChainsToReward::<T>::put(ChainsToRewardValue {
-            para_ids: sp_std::vec![para_id].try_into().expect("to be in bound"),
+            para_ids: alloc::vec![para_id].try_into().expect("to be in bound"),
             rewards_per_chain: BalanceOf::<T>::from(reward_amount),
         });
     }

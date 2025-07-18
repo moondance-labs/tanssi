@@ -36,6 +36,8 @@ use {
         OutboundMessageCommitmentRecorder, Runtime, RuntimeEvent, SnowbridgeFeesAccount,
         TokenLocationReanchored, TransactionByteFee, TreasuryAccount, WeightToFee, UNITS,
     },
+    alloc::vec,
+    core::marker::PhantomData,
     frame_support::{dispatch::DispatchClass, weights::ConstantMultiplier},
     pallet_xcm::EnsureXcm,
     parity_scale_codec::DecodeAll,
@@ -47,7 +49,6 @@ use {
     snowbridge_pallet_outbound_queue::OnNewCommitment,
     sp_core::{ConstU32, ConstU8, Get, H160, H256},
     sp_runtime::{DispatchError, DispatchResult},
-    sp_std::{marker::PhantomData, vec},
     tanssi_runtime_common::relay::RewardThroughFeesAccount,
     tp_bridge::{DoNothingConvertMessage, DoNothingRouter, EthereumSystemHandler},
     xcm::latest::{

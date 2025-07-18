@@ -20,6 +20,7 @@
 use {
     super::*,
     crate::Pallet,
+    alloc::collections::btree_map::BTreeMap,
     core::any::TypeId,
     frame_benchmarking::{account, impl_benchmark_test_suite, v2::*, BenchmarkError},
     frame_support::{
@@ -27,8 +28,6 @@ use {
         traits::{Currency, EnsureOrigin, Get},
     },
     frame_system::{EventRecord, RawOrigin},
-    sp_std::collections::btree_map::BTreeMap,
-    sp_std::prelude::*,
 };
 
 const SEED: u32 = 0;

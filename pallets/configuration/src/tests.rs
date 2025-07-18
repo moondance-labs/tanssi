@@ -16,8 +16,8 @@
 
 use {
     crate::{mock::*, Error, HostConfiguration, PendingConfigs},
+    alloc::vec,
     frame_support::{assert_noop, assert_ok, dispatch::GetDispatchInfo},
-    sp_std::vec,
 };
 
 #[test]

@@ -40,9 +40,11 @@
 //! are assigned to.
 
 #![cfg_attr(not(feature = "std"), no_std)]
+extern crate alloc;
 
 use {
     crate::assignment::{Assignment, ChainNumCollators},
+    alloc::{collections::btree_set::BTreeSet, fmt::Debug, vec},
     core::ops::Mul,
     frame_support::{pallet_prelude::*, traits::Currency},
     frame_system::pallet_prelude::BlockNumberFor,
@@ -52,7 +54,6 @@ use {
         traits::{AtLeast32BitUnsigned, One, Zero},
         Perbill, Saturating,
     },
-    sp_std::{collections::btree_set::BTreeSet, fmt::Debug, prelude::*, vec},
     tp_traits::{
         CollatorAssignmentTip, ForSession, FullRotationModes, GetContainerChainAuthor,
         GetContainerChainsWithCollators, GetHostConfiguration, GetSessionContainerChains, ParaId,

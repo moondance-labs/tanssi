@@ -18,11 +18,11 @@
 
 use {
     crate::{tests::common::*, AuthorNoting, RewardsPortion},
+    alloc::vec,
     cumulus_primitives_core::ParaId,
     parity_scale_codec::Encode,
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_runtime::{generic::DigestItem, traits::BlakeTwo256},
-    sp_std::vec,
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
     tp_traits::ContainerChainBlockInfo,
 };

@@ -18,6 +18,7 @@
 
 use {
     crate::{tests::common::*, Beefy, Historical},
+    alloc::vec,
     beefy_primitives::{
         check_double_voting_proof,
         ecdsa_crypto::{
@@ -34,7 +35,6 @@ use {
     parity_scale_codec::{Decode, Encode},
     sp_application_crypto::{AppCrypto, Pair, RuntimeAppPublic},
     sp_runtime::{traits::Keccak256, DigestItem},
-    sp_std::vec,
 };
 
 /// Create a new `VoteMessage` from commitment primitives and key pair.

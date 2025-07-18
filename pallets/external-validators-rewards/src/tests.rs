@@ -16,8 +16,8 @@
 
 use {
     crate::{self as pallet_external_validators_rewards, mock::*},
+    alloc::collections::btree_map::BTreeMap,
     sp_core::H256,
-    sp_std::collections::btree_map::BTreeMap,
     tp_bridge::Command,
     tp_traits::{ActiveEraInfo, OnEraEnd, OnEraStart},
     xcm::latest::prelude::*,

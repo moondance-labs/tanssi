@@ -23,6 +23,7 @@ use {
         PendingOperationKey, PendingOperationQuery, PendingOperationQueryOf, PendingOperations,
         Shares, SharesOrStake, Stake,
     },
+    alloc::vec::Vec,
     frame_support::{
         dispatch::DispatchErrorWithPostInfo,
         pallet_prelude::*,
@@ -32,7 +33,6 @@ use {
         },
     },
     sp_runtime::traits::{CheckedSub, Zero},
-    sp_std::vec::Vec,
     tp_maths::{ErrAdd, ErrSub},
 };
 

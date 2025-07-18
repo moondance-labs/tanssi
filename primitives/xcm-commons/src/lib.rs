@@ -61,7 +61,7 @@ impl frame_support::traits::ContainsPair<Asset, Location> for NativeAssetReserve
 
 /// Filter to ensure an ETH asset is coming from a trusted Ethereum location.
 pub struct EthereumAssetReserve<EthereumLocation, EthereumNetwork>(
-    sp_std::marker::PhantomData<(EthereumLocation, EthereumNetwork)>,
+    core::marker::PhantomData<(EthereumLocation, EthereumNetwork)>,
 );
 impl<EthereumLocation, EthereumNetwork> frame_support::traits::ContainsPair<Asset, Location>
     for EthereumAssetReserve<EthereumLocation, EthereumNetwork>

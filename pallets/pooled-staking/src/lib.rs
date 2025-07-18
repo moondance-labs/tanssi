@@ -32,6 +32,7 @@
 //! participate in other processes such as gouvernance.
 
 #![cfg_attr(not(feature = "std"), no_std)]
+extern crate alloc;
 
 mod calls;
 mod candidate;
@@ -70,6 +71,7 @@ pub mod pallet {
             traits::{IsCandidateEligible, Timer},
             weights::WeightInfo,
         },
+        alloc::vec::Vec,
         calls::Calls,
         core::marker::PhantomData,
         frame_support::{
@@ -84,7 +86,6 @@ pub mod pallet {
         serde::{Deserialize, Serialize},
         sp_core::Get,
         sp_runtime::{BoundedVec, Perbill},
-        sp_std::vec::Vec,
         tp_maths::MulDiv,
     };
 
@@ -559,8 +560,8 @@ pub mod pallet {
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         #[cfg(feature = "try-runtime")]
         fn try_state(_n: BlockNumberFor<T>) -> Result<(), sp_runtime::TryRuntimeError> {
+            use alloc::collections::btree_set::BTreeSet;
             use frame_support::storage_alias;
-            use sp_std::collections::btree_set::BTreeSet;
 
             let mut all_candidates = BTreeSet::new();
             for (candidate, _k2) in Pools::<T>::iter_keys() {
@@ -798,7 +799,7 @@ pub mod pallet {
 
         #[cfg(feature = "runtime-benchmarks")]
         fn make_collator_eligible_candidate(collator: &Candidate<T>) {
-            use sp_std::vec;
+            use alloc::vec;
             let minimum_stake = T::MinimumSelfDelegation::get();
             T::Currency::set_balance(collator, minimum_stake + minimum_stake);
             T::EligibleCandidatesFilter::make_candidate_eligible(collator, true);

@@ -22,6 +22,7 @@ use {
         AssignmentProcessor, Assignments, Call, Config, Pallet, ParaIdsFilter, Profile,
         ProfileMode, Profiles, RegisteredProfile,
     },
+    alloc::{collections::btree_set::BTreeSet, vec},
     frame_benchmarking::v2::*,
     frame_support::{
         traits::{
@@ -32,7 +33,6 @@ use {
     },
     frame_system::RawOrigin,
     sp_runtime::traits::Zero,
-    sp_std::{collections::btree_set::BTreeSet, vec},
     tp_traits::{ParaId, StorageDeposit},
 };
 

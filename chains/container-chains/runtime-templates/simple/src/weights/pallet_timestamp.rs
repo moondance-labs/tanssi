@@ -49,7 +49,7 @@
 #![allow(unused_imports)]
 
 use frame_support::{traits::Get, weights::{Weight, constants::RocksDbWeight}};
-use sp_std::marker::PhantomData;
+use core::marker::PhantomData;
 
 /// Weights for pallet_timestamp using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);

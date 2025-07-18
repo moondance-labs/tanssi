@@ -17,16 +17,17 @@
 //! # Nimbus Collator Assignment Pallet
 
 #![cfg_attr(not(feature = "std"), no_std)]
+extern crate alloc;
 
 pub use pallet::*;
 use {
+    alloc::{collections::btree_map::BTreeMap, vec},
     dp_collator_assignment::AssignedCollators,
     frame_support::pallet_prelude::*,
     sp_runtime::{
         traits::{AtLeast32BitUnsigned, One, Zero},
         Saturating,
     },
-    sp_std::{collections::btree_map::BTreeMap, prelude::*, vec},
 };
 
 #[cfg(test)]

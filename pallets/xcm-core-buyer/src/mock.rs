@@ -19,6 +19,7 @@ use {
         self as pallet_xcm_core_buyer, CheckCollatorValidity, GetPurchaseCoreCall,
         ParaIdIntoAccountTruncating, RelayXcmWeightConfigInner,
     },
+    alloc::collections::btree_map::BTreeMap,
     dp_core::ParaId,
     frame_support::{
         assert_ok,
@@ -37,7 +38,6 @@ use {
         traits::{BlakeTwo256, IdentityLookup},
         BuildStorage, RuntimeAppPublic,
     },
-    sp_std::collections::btree_map::BTreeMap,
     tp_traits::{
         ContainerChainBlockInfo, LatestAuthorInfoFetcher, ParathreadParams, SlotFrequency,
     },

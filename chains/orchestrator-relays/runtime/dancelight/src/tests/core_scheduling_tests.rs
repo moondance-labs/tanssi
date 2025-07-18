@@ -20,6 +20,7 @@ use {
     crate::{
         tests::common::*, ContainerRegistrar, OnDemandAssignmentProvider, Paras, Registrar, Session,
     },
+    alloc::{collections::btree_map::BTreeMap, vec},
     cumulus_primitives_core::relay_chain::{
         AsyncBackingParams, CoreIndex, HeadData, SchedulerParams,
     },
@@ -32,7 +33,6 @@ use {
     runtime_parachains::scheduler::common::Assignment,
     sp_core::{Decode, Encode},
     sp_keystore::testing::MemoryKeystore,
-    sp_std::{collections::btree_map::BTreeMap, vec},
     std::sync::Arc,
     tp_traits::SlotFrequency,
 };

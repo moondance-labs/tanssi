@@ -19,11 +19,11 @@ use {
         tests::common::*, BondingDuration, EthereumSystem, ExternalValidatorSlashes,
         ExternalValidators, Grandpa, Historical, RuntimeEvent, SessionsPerEra, SlashDeferDuration,
     },
+    alloc::vec,
     frame_support::{assert_noop, assert_ok, traits::KeyOwnerProofSystem},
     parity_scale_codec::Encode,
     sp_core::{Pair, H256},
     sp_runtime::Perbill,
-    sp_std::vec,
     tp_bridge::Command,
     xcm::{latest::prelude::*, VersionedLocation},
 };

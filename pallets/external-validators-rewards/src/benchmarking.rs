@@ -23,7 +23,6 @@ use crate::Pallet as ExternalValidatorsRewards;
 use {
     frame_benchmarking::{account, v2::*, BenchmarkError},
     frame_support::traits::{Currency, Get},
-    sp_std::prelude::*,
     tp_bridge::TokenChannelSetterBenchmarkHelperTrait,
     tp_traits::OnEraEnd,
 };

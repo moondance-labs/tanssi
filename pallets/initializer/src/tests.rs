@@ -14,10 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use {
-    super::*,
-    crate::mock::{new_test_ext, session_change_validators, Initializer},
-};
+use crate::mock::{new_test_ext, session_change_validators, Initializer};
 
 #[test]
 fn session_0_is_instantly_applied() {

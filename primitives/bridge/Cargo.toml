@@ -30,7 +30,6 @@ snowbridge-pallet-outbound-queue = { workspace = true }
 snowbridge-pallet-system = { workspace = true }
 sp-core = { workspace = true }
 sp-runtime = { workspace = true }
-sp-std = { workspace = true }
 xcm = { workspace = true }
 xcm-builder = { workspace = true }
 xcm-executor = { workspace = true }
@@ -63,7 +62,6 @@ std = [
 	"snowbridge-pallet-system/std",
 	"sp-core/std",
 	"sp-runtime/std",
-	"sp-std/std",
 	"xcm-builder/std",
 	"xcm-executor/std",
 	"xcm/std",

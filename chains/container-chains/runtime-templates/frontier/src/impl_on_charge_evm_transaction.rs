@@ -17,7 +17,7 @@
 #[macro_export]
 macro_rules! impl_on_charge_evm_transaction {
 	{} => {
-		pub struct OnChargeEVMTransaction<OU>(sp_std::marker::PhantomData<OU>);
+		pub struct OnChargeEVMTransaction<OU>(core::marker::PhantomData<OU>);
 		impl<T, OU> OnChargeEVMTransactionT<T> for OnChargeEVMTransaction<OU>
 		where
 			T: pallet_evm::Config,

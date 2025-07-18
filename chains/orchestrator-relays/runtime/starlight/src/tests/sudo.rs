@@ -18,8 +18,8 @@
 
 use {
     crate::{tests::common::*, Sudo},
+    alloc::vec,
     frame_support::{assert_noop, assert_ok},
-    sp_std::vec,
 };
 
 #[test]

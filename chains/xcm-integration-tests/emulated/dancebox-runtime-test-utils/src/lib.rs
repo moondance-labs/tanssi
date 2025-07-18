@@ -30,7 +30,7 @@ use {
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_core::Get,
     sp_runtime::{traits::Dispatchable, Digest, DigestItem},
-    sp_std::collections::btree_map::BTreeMap,
+    std::collections::btree_map::BTreeMap,
 };
 
 pub use dancebox_runtime::{

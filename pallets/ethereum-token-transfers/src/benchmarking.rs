@@ -24,7 +24,6 @@ use {
     frame_system::RawOrigin,
     snowbridge_core::{AgentId, ChannelId, ParaId},
     sp_core::H160,
-    sp_std::prelude::*,
 };
 
 pub(crate) fn ethereum_token_transfers_events<T: Config>() -> Vec<crate::Event<T>> {

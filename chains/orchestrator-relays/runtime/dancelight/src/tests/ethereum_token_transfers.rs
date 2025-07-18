@@ -23,6 +23,7 @@ use {
         EthereumTokenTransfers, ForeignAssets, ForeignAssetsCreator, RuntimeEvent,
         SnowbridgeFeesAccount, TokenLocationReanchored, XcmPallet,
     },
+    alloc::vec,
     alloy_sol_types::SolEvent,
     dancelight_runtime_constants::snowbridge::EthereumNetwork,
     frame_support::{
@@ -39,7 +40,6 @@ use {
     snowbridge_inbound_queue_primitives::{EventProof, Log},
     sp_core::{H160, H256},
     sp_runtime::{traits::MaybeEquivalence, FixedU128, TokenError},
-    sp_std::vec,
     tanssi_runtime_common::relay::NativeTokenTransferMessageProcessor,
     xcm::{
         latest::{prelude::*, Junctions::*, Location},

@@ -20,6 +20,7 @@ use {
     crate::{
         tests::common::*, ContainerRegistrar, Paras, Registrar, RuntimeCall, SlotFrequency, System,
     },
+    alloc::vec,
     cumulus_primitives_core::relay_chain::HeadData,
     frame_support::{assert_noop, assert_ok, BoundedVec},
     pallet_registrar::Event as ContainerRegistrarEvent,
@@ -29,7 +30,6 @@ use {
     runtime_common::paras_registrar,
     runtime_parachains::configuration as parachains_configuration,
     sp_runtime::traits::Dispatchable,
-    sp_std::vec,
     tp_traits::ParaId,
 };
 

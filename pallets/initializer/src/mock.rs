@@ -16,6 +16,7 @@
 
 use {
     crate as pallet_initializer,
+    core::cell::RefCell,
     frame_support::traits::{ConstU16, ConstU64},
     frame_system as system,
     sp_core::H256,
@@ -24,7 +25,6 @@ use {
         traits::{BlakeTwo256, IdentityLookup},
         BuildStorage,
     },
-    sp_std::cell::RefCell,
 };
 
 type Block = frame_system::mocking::MockBlock<Test>;

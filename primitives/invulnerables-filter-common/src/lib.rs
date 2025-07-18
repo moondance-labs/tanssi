@@ -15,7 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use {primitives::AccountId, sp_std::marker::PhantomData, tp_traits::InvulnerablesHelper};
+use {core::marker::PhantomData, primitives::AccountId, tp_traits::InvulnerablesHelper};
 
 // Common implementation of the InvulnerablesHelper trait for all chains supporting pallet_invulnerables.
 pub struct InvulnerablesFilter<Runtime>(PhantomData<Runtime>);

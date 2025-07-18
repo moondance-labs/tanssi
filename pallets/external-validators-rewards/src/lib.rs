@@ -18,6 +18,7 @@
 //! Storage will be cleared after a period of time.
 
 #![cfg_attr(not(feature = "std"), no_std)]
+extern crate alloc;
 
 #[cfg(test)]
 mod mock;
@@ -33,6 +34,7 @@ pub mod weights;
 pub use pallet::*;
 
 use {
+    alloc::{collections::btree_set::BTreeSet, vec::Vec},
     frame_support::traits::{
         fungible::{self, Mutate},
         Defensive, Get, ValidatorSet,
@@ -45,7 +47,6 @@ use {
     sp_core::H256,
     sp_runtime::traits::{Hash, MaybeEquivalence, Zero},
     sp_staking::SessionIndex,
-    sp_std::{collections::btree_set::BTreeSet, vec::Vec},
     tp_bridge::{Command, DeliverMessage, Message, TicketInfo, ValidateMessage},
     tp_traits::ExternalIndexProvider,
     xcm::prelude::*,
@@ -64,8 +65,8 @@ pub struct EraRewardsUtils {
 pub mod pallet {
     pub use crate::weights::WeightInfo;
     use {
-        super::*, frame_support::pallet_prelude::*, sp_runtime::Saturating,
-        sp_std::collections::btree_map::BTreeMap, tp_traits::EraIndexProvider,
+        super::*, alloc::collections::btree_map::BTreeMap, frame_support::pallet_prelude::*,
+        sp_runtime::Saturating, tp_traits::EraIndexProvider,
     };
 
     /// The current storage version.

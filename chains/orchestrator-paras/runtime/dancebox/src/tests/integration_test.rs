@@ -18,6 +18,7 @@
 
 use {
     crate::{tests::common::*, RewardsCollatorCommission, StreamPayment, TransactionPayment},
+    alloc::vec,
     cumulus_primitives_core::ParaId,
     dp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApiV1,
     dp_core::well_known_keys,
@@ -47,7 +48,6 @@ use {
         traits::{BadOrigin, BlakeTwo256, OpaqueKeys},
         DigestItem, FixedU128,
     },
-    sp_std::vec,
     tanssi_runtime_common::migrations::{
         HostConfigurationV3, MigrateConfigurationAddFullRotationMode,
         MigrateServicesPaymentAddCollatorAssignmentCredits, RegistrarPendingVerificationValueToMap,
@@ -5900,13 +5900,13 @@ fn test_migration_data_preservers_assignments() {
     ExtBuilder::default().build().execute_with(|| {
         use {
             crate::{MaxAssignmentsPerParaId, MaxNodeUrlLen},
+            alloc::collections::btree_set::BTreeSet,
             frame_support::{
                 migration::{have_storage_value, put_storage_value},
                 Blake2_128Concat, StorageHasher,
             },
             pallet_data_preservers::{ParaIdsFilter, Profile, ProfileMode, RegisteredProfile},
             sp_runtime::BoundedBTreeSet,
-            sp_std::collections::btree_set::BTreeSet,
             tanssi_runtime_common::migrations::DataPreserversAssignmentsMigration,
         };
 

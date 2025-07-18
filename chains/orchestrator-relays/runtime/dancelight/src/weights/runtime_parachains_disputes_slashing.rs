@@ -49,7 +49,7 @@
 #![allow(unused_imports)]
 
 use frame_support::{traits::Get, weights::{Weight, constants::RocksDbWeight}};
-use sp_std::marker::PhantomData;
+use core::marker::PhantomData;
 use runtime_parachains::initializer::ValidatorSetCount;
 
 /// Weights for runtime_parachains::disputes::slashing using the Substrate node and recommended hardware.

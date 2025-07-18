@@ -22,6 +22,7 @@ use {
         tests::common::*, Balances, CollatorConfiguration, ContainerRegistrar, DataPreservers,
         ForeignAssetsCreator, Registrar, RuntimeEvent, StreamPayment,
     },
+    alloc::vec,
     cumulus_primitives_core::{relay_chain::HeadData, ParaId},
     dancelight_runtime_constants::currency::EXISTENTIAL_DEPOSIT,
     frame_support::{assert_err, assert_noop, assert_ok, BoundedVec},
@@ -30,7 +31,6 @@ use {
         runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
     },
     pallet_stream_payment::StreamConfig,
-    sp_std::vec,
     tp_stream_payment_common::{
         AssetId as StreamPaymentAssetId, TimeUnit as StreamPaymentTimeUnit,
     },

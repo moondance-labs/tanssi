@@ -18,6 +18,7 @@ use dp_collator_assignment::AssignedCollators;
 
 use {
     crate::{self as pallet_authority_assignment},
+    alloc::collections::btree_map::BTreeMap,
     frame_support::traits::{ConstU16, ConstU64},
     frame_system as system,
     parity_scale_codec::{Decode, Encode},
@@ -26,7 +27,6 @@ use {
         traits::{BlakeTwo256, IdentityLookup},
         BuildStorage,
     },
-    sp_std::collections::btree_map::BTreeMap,
 };
 
 type Block = frame_system::mocking::MockBlock<Test>;
