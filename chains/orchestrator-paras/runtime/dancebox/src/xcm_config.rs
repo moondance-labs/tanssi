@@ -15,14 +15,13 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 #[cfg(feature = "runtime-benchmarks")]
-use crate::{CollatorAssignment, Session, System};
-#[cfg(feature = "runtime-benchmarks")]
-use alloc::{collections::btree_map::BTreeMap, vec};
-#[cfg(feature = "runtime-benchmarks")]
-use pallet_session::ShouldEndSession;
-#[cfg(feature = "runtime-benchmarks")]
-use tp_traits::GetContainerChainAuthor;
-use xcm::latest::WESTEND_GENESIS_HASH;
+use {
+    crate::{CollatorAssignment, Session, System},
+    alloc::{collections::btree_map::BTreeMap, vec},
+    pallet_session::ShouldEndSession,
+    tp_traits::GetContainerChainAuthor,
+};
+
 use {
     super::{
         currency::MICRODANCE, weights::xcm::XcmWeight as XcmGenericWeights, AccountId,
@@ -56,6 +55,7 @@ use {
     tp_traits::ParathreadParams,
     tp_xcm_commons::NativeAssetReserve,
     xcm::latest::prelude::*,
+    xcm::latest::WESTEND_GENESIS_HASH,
     xcm_builder::{
         AccountId32Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
         AllowTopLevelPaidExecutionFrom, ConvertedConcreteId, EnsureXcmOrigin, FungibleAdapter,
