@@ -8,8 +8,9 @@ import { decodeAddress } from "@polkadot/util-crypto";
 import { ethers } from "ethers";
 import { type ChildProcessWithoutNullStreams, exec, spawn } from "node:child_process";
 import {
-    ASSET_HUB_CHANNEL_ID,
-    ASSET_HUB_PARA_ID,
+    DANCELIGHT_ASSET_HUB_AGENT_ID,
+    DANCELIGHT_ASSET_HUB_CHANNEL_ID,
+    DANCELIGHT_ASSET_HUB_PARA_ID,
     SNOWBRIDGE_FEES_ACCOUNT,
     signAndSendAndInclude,
     sleep,
@@ -77,6 +78,8 @@ describeSuite({
         let operatorRewardContractImpl: ethers.Contract;
         let operatorRewardDetails: any;
 
+        let nativeETHAddress: string;
+        let nativeETHTokenId: number;
         let tokenId: any;
         let wETHBalanceFromEthereum: bigint;
 
@@ -215,6 +218,10 @@ describeSuite({
             const setMiddlewareTx = await gatewayContract.setMiddleware(middlewareAddress);
             await setMiddlewareTx.wait();
 
+            nativeETHAddress = "0x0000000000000000000000000000000000000000";
+            const isNativeETHTokenRegistered = await gatewayContract.isTokenRegistered(nativeETHAddress);
+            expect(isNativeETHTokenRegistered).to.be.true;
+
             const registerTokenFee = await gatewayContract.quoteRegisterTokenFee();
             const registerWETHTx = await gatewayContract.registerToken(wETHAddress, { value: registerTokenFee * 10n });
             await registerWETHTx.wait();
@@ -257,6 +264,18 @@ describeSuite({
                 },
             };
 
+            nativeETHTokenId = 43;
+            const nativeETHTokenLocation = {
+                parents: 1,
+                interior: {
+                    X1: [
+                        {
+                            GlobalConsensus: ETHEREUM_NETWORK_TESTNET,
+                        }
+                    ],
+                },
+            };
+
             const tokenLocation = {
                 parents: 0,
                 interior: "Here",
@@ -282,6 +301,13 @@ describeSuite({
                         relayApi.tx.foreignAssetsCreator.createForeignAsset(
                             wETHTokenLocation,
                             FOREIGN_ASSET_ID,
+                            alice.address,
+                            true,
+                            1
+                        ),
+                        relayApi.tx.foreignAssetsCreator.createForeignAsset(
+                            nativeETHTokenLocation,
+                            nativeETHTokenId,
                             alice.address,
                             true,
                             1
@@ -640,14 +666,11 @@ describeSuite({
                 await waitSessions(context, relayApi, 4, null, "Tanssi-relay");
 
                 // How to encode the channel id for it to be compliant with Solidity
-                const assetHubParaId = relayApi.createType("ParaId", ASSET_HUB_PARA_ID);
+                const assetHubParaId = relayApi.createType("ParaId", DANCELIGHT_ASSET_HUB_PARA_ID);
                 const assetHubChannelId = keccak256(
                     new Uint8Array([...new TextEncoder().encode("para"), ...assetHubParaId.toU8a().reverse()])
                 );
-                expect(assetHubChannelId).to.be.eq(ASSET_HUB_CHANNEL_ID);
-
-                // Get the channel info
-                const channelInfo = (await relayApi.query.ethereumSystem.channels(assetHubChannelId)).unwrap().toJSON();
+                expect(assetHubChannelId).to.be.eq(DANCELIGHT_ASSET_HUB_CHANNEL_ID);
 
                 const channelOperatingModeOf = await gatewayContract.channelOperatingModeOf(assetHubChannelId);
 
@@ -659,8 +682,8 @@ describeSuite({
                     .sudo(
                         relayApi.tx.ethereumTokenTransfers.setTokenTransferChannel(
                             assetHubChannelId,
-                            channelInfo.agentId.toString(),
-                            Number(channelInfo.paraId)
+                            DANCELIGHT_ASSET_HUB_AGENT_ID,
+                            Number(DANCELIGHT_ASSET_HUB_PARA_ID)
                         )
                     )
                     .signAndSend(alice);
@@ -766,7 +789,7 @@ describeSuite({
                 const ownerBalanceBefore = await tokenContract.balanceOf(recipient);
                 expect(ownerBalanceBefore).to.eq(amountFromStarlight);
 
-                const neededFeeWei = await gatewayContract.quoteSendTokenFee(tokenAddress, ASSET_HUB_PARA_ID, fee);
+                const neededFeeWei = await gatewayContract.quoteSendTokenFee(tokenAddress, DANCELIGHT_ASSET_HUB_PARA_ID, fee);
 
                 const randomAccount = generateKeyringPair("sr25519");
                 const randomBalanceBefore = (await relayApi.query.system.account(randomAccount.address)).data.free;
@@ -776,7 +799,7 @@ describeSuite({
                 // Send the native TANSSI token from Ethereum
                 const tx = await gatewayContract.sendToken(
                     tokenAddress,
-                    ASSET_HUB_PARA_ID,
+                    DANCELIGHT_ASSET_HUB_PARA_ID,
                     {
                         kind: 1,
                         data: u8aToHex(randomAccount.addressRaw),
@@ -791,10 +814,10 @@ describeSuite({
                 await tx.wait();
 
                 // Send the WETH token as well
-                const neededFeeWETH = await gatewayContract.quoteSendTokenFee(wETHAddress, ASSET_HUB_PARA_ID, fee);
+                const neededFeeWETH = await gatewayContract.quoteSendTokenFee(wETHAddress, DANCELIGHT_ASSET_HUB_PARA_ID, fee);
                 const sendWETHTokenTx = await gatewayContract.sendToken(
                     wETHAddress,
-                    ASSET_HUB_PARA_ID,
+                    DANCELIGHT_ASSET_HUB_PARA_ID,
                     {
                         kind: 1,
                         data: u8aToHex(randomAccount.addressRaw),
@@ -807,6 +830,28 @@ describeSuite({
                 );
 
                 await sendWETHTokenTx.wait();
+
+                console.log("Sending native ETH from Ethereum");
+
+                const nativeETHBalanceFromEthereum = 300000000000000n;
+                const neededFeeNativeETH = await gatewayContract.quoteSendTokenFee(nativeETHAddress, DANCELIGHT_ASSET_HUB_PARA_ID, fee);
+
+                // Send native ETH from Ethereum
+                const sendNativeETHTokenTx = await gatewayContract.sendToken(
+                    nativeETHAddress,
+                    DANCELIGHT_ASSET_HUB_PARA_ID,
+                    {
+                        kind: 1,
+                        data: u8aToHex(randomAccount.addressRaw),
+                    },
+                    fee,
+                    nativeETHBalanceFromEthereum,
+                    {
+                        value: neededFeeNativeETH * 10n + nativeETHBalanceFromEthereum,
+                    }
+                );
+
+                await sendNativeETHTokenTx.wait();
 
                 const ownerBalanceAfter = await tokenContract.balanceOf(recipient);
 
@@ -825,7 +870,7 @@ describeSuite({
                     async () => {
                         try {
                             const nonceAfter = await relayApi.query.ethereumInboundQueue.nonce(assetHubChannelId);
-                            expect(nonceAfter.toNumber()).to.be.eq(nonceInChannelBefore.toNumber() + 2);
+                            expect(nonceAfter.toNumber()).to.be.eq(nonceInChannelBefore.toNumber() + 3);
                         } catch (error) {
                             return false;
                         }
@@ -860,6 +905,14 @@ describeSuite({
                 );
 
                 expect(randomWETHBalanceAfter.unwrap().balance.toBigInt()).to.be.eq(wETHBalanceFromEthereum);
+
+                // Ensure the native ETH token has been received on the Starlight side
+                const randomNativeETHBalanceAfter = await relayApi.query.foreignAssets.account(
+                    nativeETHTokenId,
+                    randomAccount.address
+                );
+
+                expect(randomNativeETHBalanceAfter.unwrap().balance.toBigInt()).to.be.eq(nativeETHBalanceFromEthereum);
             },
         });
 
