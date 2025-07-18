@@ -46,6 +46,7 @@ use {
     sp_runtime::traits::TryConvertInto,
     tp_bridge::{
         barriers,
+        container_token_to_ethereum_message_exporter::EthereumBlobExporter as ContainerEthereumBlobExporter,
         snowbridge_outbound_token_transfer::{EthereumBlobExporter, SnowbrigeTokenTransferRouter},
         EthereumLocationsConverterFor,
     },
