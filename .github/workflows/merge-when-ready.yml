@@ -28,6 +28,8 @@ jobs:
         steps:
             - name: Checkout
               uses: actions/checkout@v4
+              with:
+                ref: ${{ github.event.pull_request.head.sha }}
             - name: Cargo build
               uses: ./.github/workflow-templates/cargo-build
               with:
