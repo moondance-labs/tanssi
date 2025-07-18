@@ -66,13 +66,8 @@ runs:
       shell: bash
       run: |
         features_hash=$(echo "${{ inputs.features }}" | sha256sum | cut -d' ' -f1)
-        sources_hash=$(find . \
-          -path ./target -prune -o \
-          -path ./tmp -prune -o \
-          -path ./node_modules -prune -o \
-          -type f \( -name "*.rs" -o -name "*.toml" \) -print0 \
-          | sort -z | xargs -0 sha256sum | sha256sum | cut -d' ' -f1)
-        key="cargo-build-key-${features_hash}-${sources_hash}"
+        commit_hash=$(git rev-parse HEAD)
+        key="cargo-build-key-${features_hash}-${commit_hash}"
         echo "Computed cache key: $key"
         echo "key=$key" >> $GITHUB_OUTPUT
 
@@ -107,7 +102,6 @@ runs:
     - name: Display sccache stats
       shell: bash
       run: ${SCCACHE_PATH} --show-stats
-    # TODO: Remove binary verification
     - name: Verify binary version
       shell: bash
       run: |
