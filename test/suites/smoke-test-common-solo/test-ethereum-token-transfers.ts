@@ -163,8 +163,6 @@ describeSuite({
                     for (const [index, extrinsic] of extrinsics.entries()) {
                         const { section, method } = extrinsic.method;
 
-                        console.log("section", section);
-
                         if (section === "ethereumInboundQueue" && method === "submit") {
                             const message = extrinsic.args[0];
                             const { eventLog } = message.toJSON();
