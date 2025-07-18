@@ -56,15 +56,6 @@ macro_rules! filter_events {
     };
 }
 
-macro_rules! filter_events {
-    ($pat:pat) => {
-        System::events().iter().filter(|r| match r.event {
-            $pat => true,
-            _ => false,
-        })
-    };
-}
-
 #[test]
 fn test_set_token_transfer_channel_reflects_changes_in_ethereum_system() {
     ExtBuilder::default()
