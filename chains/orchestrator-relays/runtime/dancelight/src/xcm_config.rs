@@ -45,6 +45,8 @@ use {
     sp_core::ConstU32,
     sp_runtime::traits::TryConvertInto,
     tp_bridge::{
+        barriers,
+        container_token_to_ethereum_message_exporter::EthereumBlobExporter as ContainerEthereumBlobExporter,
         snowbridge_outbound_token_transfer::{EthereumBlobExporter, SnowbrigeTokenTransferRouter},
         EthereumLocationsConverterFor,
     },
@@ -204,6 +206,7 @@ pub type Barrier = TrailingSetTopicAsId<(
     TakeWeightCredit,
     // Expected responses are OK.
     AllowKnownQueryResponses<XcmPallet>,
+    barriers::AllowExportMessageFromContainerChainBarrier,
     WithComputedOrigin<
         (
             // If the message is one that immediately attempts to pay for execution, then allow it.
@@ -251,7 +254,7 @@ impl xcm_executor::Config for XcmConfig {
         WaivedLocations,
         SendXcmFeeToAccount<Self::AssetTransactor, TreasuryAccount>,
     >;
-    type MessageExporter = ();
+    type MessageExporter = ContainerToSnowbridgeMessageExporter;
     type UniversalAliases = Nothing;
     type CallDispatcher = RuntimeCall;
     type SafeCallFilter = Everything;
@@ -398,6 +401,16 @@ pub type SnowbridgeExporter = EthereumBlobExporter<
     UniversalLocation,
     EthereumNetwork,
     snowbridge_pallet_outbound_queue::Pallet<Runtime>,
+    EthereumSystem,
+    SnowbridgeChannelInfo,
+>;
+
+/// Exports message to the Ethereum Gateway contract.
+pub type ContainerToSnowbridgeMessageExporter = ContainerEthereumBlobExporter<
+    UniversalLocation,
+    EthereumNetwork,
+    snowbridge_pallet_outbound_queue::Pallet<Runtime>,
+    snowbridge_core::AgentIdOf,
     EthereumSystem,
     SnowbridgeChannelInfo,
 >;
