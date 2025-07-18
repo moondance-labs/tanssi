@@ -27,7 +27,7 @@ use {
     frame_support::assert_ok,
     frame_system::pallet_prelude::BlockNumberFor,
     primitives::{
-        node_features::FeatureIndex, runtime_api::runtime_decl_for_parachain_host::ParachainHostV11,
+        node_features::FeatureIndex, runtime_api::runtime_decl_for_parachain_host::ParachainHostV13,
     },
     runtime_parachains::scheduler::common::Assignment,
     sp_core::{Decode, Encode},
@@ -872,12 +872,11 @@ pub struct CoreAffinityCount {
 
 /// Get affinity for a given parathread
 pub fn affinity_key_for_parathread(para_id: u32) -> Vec<u8> {
-    let key = storage_map_final_key::<frame_support::Twox64Concat>(
+    storage_map_final_key::<frame_support::Twox64Concat>(
         "OnDemandAssignmentProvider",
         "ParaIdAffinity",
         &cumulus_primitives_core::ParaId::from(para_id).encode(),
-    );
-    key
+    )
 }
 
 /// Get claim queue assignments

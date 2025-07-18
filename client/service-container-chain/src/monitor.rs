@@ -174,6 +174,7 @@ impl SpawnedContainersMonitor {
         self.list.drain(0..idx_new_first_element);
     }
 
+    #[allow(clippy::result_unit_err)]
     pub fn truncate_old_stopped_chains(&mut self, new_len: usize) -> Result<(), ()> {
         if self.list.len() <= new_len {
             return Ok(());
