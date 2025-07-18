@@ -333,8 +333,8 @@ where
             Command::AgentExecute {
                 agent_id: self.agent_id,
                 command: AgentExecuteCommand::TransferToken {
-                    token: token.into(),
-                    recipient: recipient.into(),
+                    token: token,
+                    recipient: recipient,
                     amount,
                 },
             },
