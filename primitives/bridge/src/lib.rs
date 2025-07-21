@@ -18,6 +18,7 @@
 //! with each other or with mocks.
 
 #![cfg_attr(not(feature = "std"), no_std)]
+extern crate alloc;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarks;
@@ -29,6 +30,7 @@ pub mod snowbridge_outbound_token_transfer;
 pub mod symbiotic_message_processor;
 
 use {
+    alloc::vec::Vec,
     core::marker::PhantomData,
     cumulus_primitives_core::{
         relay_chain::{AccountId, Balance},
@@ -52,12 +54,11 @@ use {
     snowbridge_pallet_outbound_queue::send_message_impl::Ticket,
     sp_core::{blake2_256, hashing, H256},
     sp_runtime::{app_crypto::sp_core, traits::Convert, RuntimeDebug},
-    sp_std::vec::Vec,
 };
 
-// Separate import as rustfmt wrongly change it to `sp_std::vec::self`, which is the module instead
+// Separate import as rustfmt wrongly change it to `alloc::vec::self`, which is the module instead
 // of the macro.
-use sp_std::vec;
+use alloc::vec;
 
 pub use {
     custom_do_process_message::{ConstantGasMeter, CustomProcessSnowbridgeMessage},
