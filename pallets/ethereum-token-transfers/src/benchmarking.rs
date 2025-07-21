@@ -19,6 +19,7 @@ use super::*;
 #[allow(unused)]
 use crate::Pallet as EthereumTokenTransfers;
 use {
+    alloc::vec::Vec,
     frame_benchmarking::{account, v2::*, BenchmarkError},
     frame_support::traits::Currency,
     frame_system::RawOrigin,

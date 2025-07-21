@@ -19,6 +19,7 @@ use crate::{
     DelegatorCandidateSummaries, DelegatorCandidateSummary, Pallet, PausePoolsExtrinsics, PoolKind,
     Pools, PoolsKey,
 };
+use alloc::vec::Vec;
 use core::marker::PhantomData;
 use frame_support::{
     migrations::{MigrationId, SteppedMigration, SteppedMigrationError},

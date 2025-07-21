@@ -22,6 +22,7 @@ use {
         AuthorNotingInfo, BalanceOf, BlockNumberFor, Call, Config, Pallet,
         ProvideBlockProductionCost, ProvideCollatorAssignmentCost,
     },
+    alloc::vec,
     frame_benchmarking::{account, v2::*},
     frame_support::{
         assert_ok,

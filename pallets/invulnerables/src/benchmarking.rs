@@ -21,6 +21,7 @@ use super::*;
 #[allow(unused)]
 use crate::Pallet as InvulnerablesPallet;
 use {
+    alloc::vec::Vec,
     frame_benchmarking::{account, v2::*, BenchmarkError},
     frame_support::{
         pallet_prelude::*,

@@ -994,6 +994,8 @@ impl_runtime_apis! {
             use frame_benchmarking::{BenchmarkBatch, BenchmarkError};
             use sp_core::storage::TrackedStorageKey;
             use xcm::latest::prelude::*;
+            use alloc::boxed::Box;
+
             impl frame_system_benchmarking::Config for Runtime {
                 fn setup_set_code_requirements(code: &alloc::vec::Vec<u8>) -> Result<(), BenchmarkError> {
                     ParachainSystem::initialize_for_set_code_benchmark(code.len() as u32);

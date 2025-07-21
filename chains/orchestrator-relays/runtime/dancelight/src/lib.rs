@@ -3122,6 +3122,7 @@ sp_api::impl_runtime_apis! {
             use xcm_config::{
                 AssetHub, LocalCheckAccount, LocationConverter, TokenLocation, XcmConfig,
             };
+            use alloc::boxed::Box;
 
             parameter_types! {
                 pub ExistentialDepositAsset: Option<Asset> = Some((
