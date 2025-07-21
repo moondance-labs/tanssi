@@ -18,7 +18,7 @@
 
 use {
     crate::{SessionKeys, BABE_GENESIS_EPOCH_CONFIG},
-    alloc::vec::Vec,
+    alloc::{format, vec, vec::Vec},
     authority_discovery_primitives::AuthorityId as AuthorityDiscoveryId,
     babe_primitives::AuthorityId as BabeId,
     beefy_primitives::ecdsa_crypto::AuthorityId as BeefyId,
@@ -28,13 +28,14 @@ use {
     },
     dp_container_chain_genesis_data::ContainerChainGenesisData,
     grandpa_primitives::AuthorityId as GrandpaId,
+    keyring::Sr25519Keyring,
     nimbus_primitives::NimbusId,
     pallet_configuration::HostConfiguration,
     primitives::{AccountId, AssignmentId, ValidatorId},
     scale_info::prelude::string::String,
     sp_arithmetic::{traits::Saturating, Perbill},
     sp_core::{
-        crypto::{key_types, KeyTypeId},
+        crypto::{get_public_from_string_or_panic, key_types, AccountId32, KeyTypeId},
         sr25519, ByteArray, Pair, Public,
     },
     sp_keystore::{Keystore, KeystorePtr},
@@ -42,14 +43,6 @@ use {
     starlight_runtime_constants::currency::UNITS as STAR,
     tp_traits::ParaId,
 };
-
-use keyring::Sr25519Keyring;
-
-// import macro, separate due to rustfmt thinking it's the module with the
-// same name ^^'
-use alloc::vec;
-
-use sp_core::crypto::{get_public_from_string_or_panic, AccountId32};
 
 pub fn insert_authority_keys_into_keystore(seed: &str, keystore: &KeystorePtr) {
     insert_into_keystore::<BabeId>(seed, keystore, key_types::BABE);

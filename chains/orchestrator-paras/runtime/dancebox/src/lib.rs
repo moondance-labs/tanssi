@@ -39,7 +39,12 @@ pub mod weights;
 mod tests;
 
 use {
-    alloc::collections::{btree_map::BTreeMap, btree_set::BTreeSet},
+    alloc::{
+        boxed::Box,
+        collections::{btree_map::BTreeMap, btree_set::BTreeSet},
+        vec,
+        vec::Vec,
+    },
     core::marker::PhantomData,
     cumulus_pallet_parachain_system::{
         RelayChainStateProof, RelayNumberMonotonicallyIncreases, RelaychainDataProvider,

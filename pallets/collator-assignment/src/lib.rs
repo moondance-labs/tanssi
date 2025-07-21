@@ -44,7 +44,7 @@ extern crate alloc;
 
 use {
     crate::assignment::{Assignment, ChainNumCollators},
-    alloc::{collections::btree_set::BTreeSet, fmt::Debug, vec},
+    alloc::{collections::btree_set::BTreeSet, fmt::Debug, vec, vec::Vec},
     core::ops::Mul,
     frame_support::{pallet_prelude::*, traits::Currency},
     frame_system::pallet_prelude::BlockNumberFor,

@@ -20,6 +20,7 @@ use frame_support::BoundedVec;
 use xcm::latest::AssetTransferFilter;
 use {
     crate::Runtime,
+    alloc::vec::Vec,
     frame_support::weights::Weight,
     pallet_xcm_benchmarks_generic::WeightInfo as XcmGeneric,
     xcm::{

@@ -26,7 +26,11 @@ extern crate alloc;
 use sp_version::NativeVersion;
 
 use {
-    alloc::collections::{btree_map::BTreeMap, btree_set::BTreeSet, vec_deque::VecDeque},
+    alloc::{
+        collections::{btree_map::BTreeMap, btree_set::BTreeSet, vec_deque::VecDeque},
+        vec,
+        vec::Vec,
+    },
     authority_discovery_primitives::AuthorityId as AuthorityDiscoveryId,
     beefy_primitives::{
         ecdsa_crypto::{AuthorityId as BeefyId, Signature as BeefySignature},

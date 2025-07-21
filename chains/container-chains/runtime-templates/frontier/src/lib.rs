@@ -38,6 +38,7 @@ pub mod xcm_config;
 
 use {
     crate::precompiles::TemplatePrecompiles,
+    alloc::{vec, vec::Vec},
     cumulus_primitives_core::AggregateMessageOrigin,
     dp_impl_tanssi_pallets_config::impl_tanssi_pallets_config,
     fp_account::EthereumSignature,

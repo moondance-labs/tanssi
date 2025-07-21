@@ -18,7 +18,7 @@
 
 use {
     crate::{SessionKeys, BABE_GENESIS_EPOCH_CONFIG},
-    alloc::vec::Vec,
+    alloc::{format, vec::Vec},
     authority_discovery_primitives::AuthorityId as AuthorityDiscoveryId,
     babe_primitives::AuthorityId as BabeId,
     beefy_primitives::ecdsa_crypto::AuthorityId as BeefyId,

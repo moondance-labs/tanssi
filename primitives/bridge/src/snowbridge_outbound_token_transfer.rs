@@ -18,6 +18,7 @@
 // Rewrite of the following code which cause issues as Tanssi is not a parachain
 // https://github.com/moondance-labs/polkadot-sdk/blob/tanssi-polkadot-stable2412/bridges/snowbridge/primitives/router/src/outbound/mod.rs#L98
 
+use alloc::vec::Vec;
 use core::iter::Peekable;
 use core::marker::PhantomData;
 use core::slice::Iter;

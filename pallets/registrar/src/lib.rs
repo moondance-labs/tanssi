@@ -44,7 +44,7 @@ pub use weights::WeightInfo;
 pub use pallet::*;
 
 use {
-    alloc::collections::btree_set::BTreeSet,
+    alloc::{collections::btree_set::BTreeSet, vec, vec::Vec},
     cumulus_primitives_core::relay_chain::HeadData,
     dp_chain_state_snapshot::GenericStateProof,
     dp_container_chain_genesis_data::ContainerChainGenesisData,

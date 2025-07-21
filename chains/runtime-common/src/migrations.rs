@@ -37,7 +37,7 @@
 extern crate alloc;
 
 use {
-    alloc::collections::btree_set::BTreeSet,
+    alloc::{boxed::Box, collections::btree_set::BTreeSet, vec, vec::Vec},
     core::marker::PhantomData,
     cumulus_primitives_core::ParaId,
     frame_support::{

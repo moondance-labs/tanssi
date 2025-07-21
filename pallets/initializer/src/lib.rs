@@ -22,6 +22,7 @@
 //! SessionHandler config trait
 
 #![cfg_attr(not(feature = "std"), no_std)]
+extern crate alloc;
 
 #[cfg(test)]
 mod mock;
@@ -31,6 +32,7 @@ mod tests;
 
 pub use pallet::*;
 use {
+    alloc::vec::Vec,
     frame_support::{pallet_prelude::*, traits::OneSessionHandler},
     scale_info::TypeInfo,
     sp_runtime::{traits::AtLeast32BitUnsigned, RuntimeAppPublic},

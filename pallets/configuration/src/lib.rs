@@ -44,6 +44,7 @@ mod benchmarks;
 
 pub use pallet::*;
 use {
+    alloc::{vec, vec::Vec},
     frame_support::pallet_prelude::*,
     frame_system::pallet_prelude::*,
     serde::{Deserialize, Serialize},

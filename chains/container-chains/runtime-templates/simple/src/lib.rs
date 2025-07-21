@@ -36,6 +36,8 @@ pub mod weights;
 
 pub use sp_runtime::{traits::ExtrinsicLike, MultiAddress, Perbill, Permill};
 use {
+    alloc::vec,
+    alloc::vec::Vec,
     cumulus_primitives_core::AggregateMessageOrigin,
     dp_impl_tanssi_pallets_config::impl_tanssi_pallets_config,
     frame_support::{

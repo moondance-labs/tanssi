@@ -25,7 +25,11 @@ extern crate alloc;
 use frame_support::storage::{with_storage_layer, with_transaction};
 // Fix compile error in impl_runtime_weights! macro
 use {
-    alloc::collections::{btree_map::BTreeMap, btree_set::BTreeSet, vec_deque::VecDeque},
+    alloc::{
+        collections::{btree_map::BTreeMap, btree_set::BTreeSet, vec_deque::VecDeque},
+        vec,
+        vec::Vec,
+    },
     authority_discovery_primitives::AuthorityId as AuthorityDiscoveryId,
     beefy_primitives::{
         ecdsa_crypto::{AuthorityId as BeefyId, Signature as BeefySignature},

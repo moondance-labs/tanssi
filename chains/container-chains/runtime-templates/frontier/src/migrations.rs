@@ -20,6 +20,7 @@
 //! the "Migration" trait declared in the pallet-migrations crate.
 
 use {
+    alloc::{boxed::Box, vec, vec::Vec},
     core::marker::PhantomData,
     frame_support::{
         pallet_prelude::GetStorageVersion,

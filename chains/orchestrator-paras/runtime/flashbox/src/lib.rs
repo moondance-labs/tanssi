@@ -46,7 +46,11 @@ pub mod weights;
 mod tests;
 
 use {
-    alloc::collections::{btree_map::BTreeMap, btree_set::BTreeSet},
+    alloc::{
+        collections::{btree_map::BTreeMap, btree_set::BTreeSet},
+        vec,
+        vec::Vec,
+    },
     core::marker::PhantomData,
     cumulus_pallet_parachain_system::RelayNumberMonotonicallyIncreases,
     cumulus_primitives_core::{relay_chain::SessionIndex, BodyId, ParaId},
