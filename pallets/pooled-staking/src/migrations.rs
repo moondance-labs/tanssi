@@ -19,7 +19,6 @@ use crate::{
     DelegatorCandidateSummaries, DelegatorCandidateSummary, Pallet, PausePoolsExtrinsics, PoolKind,
     Pools, PoolsKey,
 };
-use alloc::vec::Vec;
 use core::marker::PhantomData;
 use frame_support::{
     migrations::{MigrationId, SteppedMigration, SteppedMigrationError},
@@ -79,13 +78,13 @@ impl<T: Config> SteppedMigration for MigrationGenerateSummaries<T> {
     }
 
     #[cfg(feature = "try-runtime")]
-    fn pre_upgrade() -> Result<Vec<u8>, sp_runtime::TryRuntimeError> {
+    fn pre_upgrade() -> Result<alloc::vec::Vec<u8>, sp_runtime::TryRuntimeError> {
         // Can we test it somehow without performing the same process? (which would be useless)
         Ok(Default::default())
     }
 
     #[cfg(feature = "try-runtime")]
-    fn post_upgrade(_state: Vec<u8>) -> Result<(), sp_runtime::TryRuntimeError> {
+    fn post_upgrade(_state: alloc::vec::Vec<u8>) -> Result<(), sp_runtime::TryRuntimeError> {
         Ok(())
     }
 }
