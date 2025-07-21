@@ -244,8 +244,8 @@ describeSuite({
                 const keyring = new Keyring({ type: "sr25519" });
                 const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
                 // Register keys in pallet_session
-                // Use charlie rpc, not sure if charlie will be able to author, I hope not.
-                // If charlie starts producing all the blocks, just kill the process.
+                // Use charlie rpc to generate keys because it is the easiest way. We need to kill the charlie node later
+                // because charlie will be able to author blocks using all those keys, and we don't want that for this test.
                 async function createKeys(count) {
                     const txs = [];
                     const newValidators = [];
@@ -269,6 +269,7 @@ describeSuite({
                 }
                 const [txs, newValidators] = await createKeys(4);
 
+                // Kill charlie after creating all the keys
                 const pidCharlie = await findValidatorProcessPid("charlie");
                 expect(isProcessRunning(pidCharlie)).to.be.true;
                 killProcessByPid(pidCharlie);
@@ -310,13 +311,25 @@ describeSuite({
             test: async () => {
                 const validators = await relayApi.query.session.validators();
 
+                // We expect 6 validators here, the initial 2 that keep producing blocks (alice, bob), and the 4 new
+                // external validators that we just registered, which will not produce any blocks.
                 console.log("validators", validators.toJSON());
+                expect(validators.toJSON().length).to.equal(6);
             },
         });
 
         it({
             id: "T15",
-            title: "noteStalled",
+            title: "Wait 1 session so that finalized block gets stuck",
+            timeout: 300000,
+            test: async () => {
+                await waitSessions(context, relayApi, 1, null, "Tanssi-relay");
+            },
+        });
+
+        it({
+            id: "T16",
+            title: "Finalized block is now stuck",
             timeout: 300000,
             test: async () => {
                 const keyring = new Keyring({ type: "sr25519" });
@@ -327,7 +340,64 @@ describeSuite({
                 );
                 const lastFinalizedBlockNumber = lastFinalizedBlock.block.header.number.toNumber();
                 finalizedBlockStalled = lastFinalizedBlockNumber;
-                const tx = relayApi.tx.grandpa.noteStalled(2, lastFinalizedBlockNumber);
+                // Should be 61, if not wait 1 session more
+                //await waitSessions(context, relayApi, 1, null, "Tanssi-relay");
+                console.log("finalizedBlockStalled: ", finalizedBlockStalled);
+            },
+        });
+
+        it({
+            id: "T17",
+            title: "Remove faulty validators and force new era",
+            timeout: 300000,
+            test: async () => {
+                const keyring = new Keyring({ type: "sr25519" });
+                const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
+
+                const externalIndex = (await relayApi.query.externalValidators.externalIndex()).toNumber();
+                const tx1 = relayApi.tx.externalValidators.setExternalValidators([], externalIndex + 1);
+                const tx2 = relayApi.tx.externalValidators.forceEra("ForceNew");
+                // Do not use signAndSendAndInclude because that waits for the tx to be finalized, and this chain cannot
+                // finalize anything until we fix it
+                await relayApi.tx.sudo.sudo(relayApi.tx.utility.batchAll([tx1, tx2])).signAndSend(alice);
+            },
+        });
+
+        it({
+            id: "T18",
+            title: "Wait 2 sessions so that faulty validators are removed from grandpa.authorities",
+            timeout: 300000,
+            test: async () => {
+                await waitSessions(context, relayApi, 2, null, "Tanssi-relay");
+            },
+        });
+
+        it({
+            id: "T19",
+            title: "Check that faulty validators have been removed from grandpa.authorities",
+            timeout: 300000,
+            test: async () => {
+                const authorities = await relayApi.query.grandpa.authorities();
+                expect(authorities.toJSON().length).to.equal(2);
+            },
+        });
+
+        it({
+            id: "T20",
+            title: "noteStalled",
+            timeout: 300000,
+            test: async () => {
+                const keyring = new Keyring({ type: "sr25519" });
+                const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
+
+                // Sanity check: the finalized block is still stuck
+                const lastFinalizedBlock = await relayApi.rpc.chain.getBlock(
+                    await relayApi.rpc.chain.getFinalizedHead()
+                );
+                const lastFinalizedBlockNumber = lastFinalizedBlock.block.header.number.toNumber();
+                expect(lastFinalizedBlockNumber).to.equal(finalizedBlockStalled);
+
+                const tx = relayApi.tx.grandpa.noteStalled(2, finalizedBlockStalled);
                 // Do not use signAndSendAndInclude because that waits for the tx to be finalized, and this chain cannot
                 // finalize anything until we fix it
                 await relayApi.tx.sudo.sudo(tx).signAndSend(alice);
@@ -335,7 +405,7 @@ describeSuite({
         });
 
         it({
-            id: "T16",
+            id: "T21",
             title: "Wait 2 sessions",
             timeout: 300000,
             test: async () => {
@@ -344,7 +414,7 @@ describeSuite({
         });
 
         it({
-            id: "T17",
+            id: "T22",
             title: "Finalization has been fixed",
             timeout: 300000,
             test: async () => {
