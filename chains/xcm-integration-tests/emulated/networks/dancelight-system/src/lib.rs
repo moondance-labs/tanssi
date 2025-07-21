@@ -22,7 +22,6 @@ use {
     frontier_template_emulated_chain::FrontierTemplate,
     simple_template_emulated_chain::SimpleTemplate,
     sp_keyring::Sr25519Keyring,
-    tanssi_emulated_integration_tests_common,
     tanssi_emulated_integration_tests_common::accounts::{ALICE, BOB, RANDOM},
     xcm_emulator::{
         decl_test_networks, Bridge, BridgeLaneId, BridgeMessage, BridgeMessageDispatchError,

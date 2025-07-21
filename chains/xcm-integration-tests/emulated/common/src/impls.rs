@@ -22,5 +22,5 @@ pub fn eth_bridge_sent_msgs() -> Vec<CommittedMessage> {
 
 // Store messages sent to ethereum throught the bridge
 thread_local! {
-    pub static ETH_BRIDGE_SENT_MSGS: RefCell<Vec<CommittedMessage>> = RefCell::new(Vec::new());
+    pub static ETH_BRIDGE_SENT_MSGS: RefCell<Vec<CommittedMessage>> = const { RefCell::new(Vec::new()) };
 }

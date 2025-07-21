@@ -550,7 +550,7 @@ fn force_buy_two_messages_fails_after_receiving_order_success_response() {
             assert_eq!(in_flight_order, InFlightCoreBuyingOrder {
                 para_id,
                 query_id,
-                ttl: 2 + <Test as Config>::AdditionalTtlForInflightOrders::get() as u64 + <Test as Config>::CoreBuyingXCMQueryTtl::get() as u64,
+                ttl: 2 + u64::from(<Test as Config>::AdditionalTtlForInflightOrders::get()) + u64::from(<Test as Config>::CoreBuyingXCMQueryTtl::get()),
             });
 
             // QueryId -> ParaId mapping should exists
@@ -625,7 +625,7 @@ fn clean_up_in_flight_orders_extrinsic_works() {
             assert_eq!(in_flight_order, InFlightCoreBuyingOrder {
                 para_id,
                 query_id,
-                ttl: 2 + <Test as Config>::AdditionalTtlForInflightOrders::get() as u64 + <Test as Config>::CoreBuyingXCMQueryTtl::get() as u64,
+                ttl: 2 + u64::from(<Test as Config>::AdditionalTtlForInflightOrders::get()) + u64::from(<Test as Config>::CoreBuyingXCMQueryTtl::get()),
             });
 
             // QueryId -> ParaId mapping should exists
@@ -651,7 +651,7 @@ fn clean_up_in_flight_orders_extrinsic_works() {
             assert!(QueryIdToParaId::<Test>::get(query_id).is_some());
 
             // Cleaning up after ttl should work
-            run_to_block(3 + <Test as Config>::AdditionalTtlForInflightOrders::get() as u64 + <Test as Config>::CoreBuyingXCMQueryTtl::get() as u64 + 1);
+            run_to_block(3 + u64::from(<Test as Config>::AdditionalTtlForInflightOrders::get()) + u64::from(<Test as Config>::CoreBuyingXCMQueryTtl::get()) + 1);
             assert_ok!(XcmCoreBuyer::clean_up_expired_in_flight_orders(RuntimeOrigin::signed(AccountId::default()), vec![para_id]));
             let system_events = events();
             assert_eq!(system_events.len(), 1);
@@ -696,7 +696,7 @@ fn clean_up_pending_block_entries_extrinsic_works() {
             assert_eq!(in_flight_order, InFlightCoreBuyingOrder {
                 para_id,
                 query_id,
-                ttl: 2 + <Test as Config>::AdditionalTtlForInflightOrders::get() as u64 + <Test as Config>::CoreBuyingXCMQueryTtl::get() as u64,
+                ttl: 2 + u64::from(<Test as Config>::AdditionalTtlForInflightOrders::get()) + u64::from(<Test as Config>::CoreBuyingXCMQueryTtl::get()),
             });
 
             assert_ok!(XcmCoreBuyer::query_response(RuntimeOrigin::root(), query_id, Response::DispatchResult(MaybeErrorCode::Success)));
@@ -718,7 +718,7 @@ fn clean_up_pending_block_entries_extrinsic_works() {
             assert!(maybe_pending_block_ttl.is_some());
 
             // Cleaning up after ttl should work
-            run_to_block(3 + <Test as Config>::PendingBlocksTtl::get() as u64 + 1);
+            run_to_block(3 + u64::from(<Test as Config>::PendingBlocksTtl::get()) + 1);
             assert_ok!(XcmCoreBuyer::clean_up_expired_pending_blocks(RuntimeOrigin::signed(AccountId::default()), vec![para_id]));
             let system_events = events();
             assert_eq!(system_events.len(), 1);

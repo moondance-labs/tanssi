@@ -28,13 +28,6 @@ pub mod xcm_config;
 
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
-use {
-    frame_support::{
-        storage::{with_storage_layer, with_transaction},
-        traits::{ExistenceRequirement, WithdrawReasons},
-    },
-    polkadot_runtime_common::SlowAdjustingFeeUpdate,
-};
 
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
@@ -83,7 +76,7 @@ use {
     nimbus_primitives::{NimbusId, SlotBeacon},
     pallet_collator_assignment::{GetRandomnessForNextBlock, RotateCollatorsEveryNSessions},
     pallet_invulnerables::InvulnerableRewardDistribution,
-    pallet_pooled_staking::traits::{IsCandidateEligible, Timer},
+    pallet_pooled_staking::traits::IsCandidateEligible,
     pallet_registrar::RegistrarHooks,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     pallet_services_payment::{
@@ -116,11 +109,12 @@ use {
         prelude::*,
     },
     sp_version::RuntimeVersion,
+    tanssi_runtime_common::SessionTimer,
     tp_stream_payment_common::StreamId,
     tp_traits::{
         apply, derive_storage_traits, GetContainerChainAuthor, GetHostConfiguration,
-        GetSessionContainerChains, MaybeSelfChainBlockAuthor, ParaIdAssignmentHooks,
-        RelayStorageRootProvider, RemoveInvulnerables, SlotFrequency,
+        GetSessionContainerChains, MaybeSelfChainBlockAuthor, NodeActivityTrackingHelper,
+        ParaIdAssignmentHooks, RelayStorageRootProvider, RemoveInvulnerables, SlotFrequency,
     },
     tp_xcm_core_buyer::BuyCoreCollatorProof,
     xcm::Version as XcmVersion,
@@ -133,6 +127,13 @@ use {
 pub use {
     dp_core::{AccountId, Address, Balance, BlockNumber, Hash, Header, Index, Signature},
     sp_runtime::{MultiAddress, Perbill, Permill},
+};
+use {
+    frame_support::{
+        storage::{with_storage_layer, with_transaction},
+        traits::{ExistenceRequirement, WithdrawReasons},
+    },
+    polkadot_runtime_common::SlowAdjustingFeeUpdate,
 };
 
 /// Block type as expected by this runtime.
@@ -261,7 +262,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: Cow::Borrowed("dancebox"),
     impl_name: Cow::Borrowed("dancebox"),
     authoring_version: 1,
-    spec_version: 1400,
+    spec_version: 1500,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -1470,47 +1471,11 @@ parameter_types! {
     pub const StakingSessionDelay: u32 = 2;
 }
 
-pub struct SessionTimer<Delay>(PhantomData<Delay>);
-
-impl<Delay> Timer for SessionTimer<Delay>
-where
-    Delay: Get<u32>,
-{
-    type Instant = u32;
-
-    fn now() -> Self::Instant {
-        Session::current_index()
-    }
-
-    fn is_elapsed(instant: &Self::Instant) -> bool {
-        let delay = Delay::get();
-        let Some(end) = instant.checked_add(delay) else {
-            return false;
-        };
-        end <= Self::now()
-    }
-
-    #[cfg(feature = "runtime-benchmarks")]
-    fn elapsed_instant() -> Self::Instant {
-        let delay = Delay::get();
-        Self::now()
-            .checked_add(delay)
-            .expect("overflow when computing valid elapsed instant")
-    }
-
-    #[cfg(feature = "runtime-benchmarks")]
-    fn skip_to_elapsed() {
-        let session_to_reach = Self::elapsed_instant();
-        while Self::now() < session_to_reach {
-            Session::rotate_session();
-        }
-    }
-}
-
-pub struct CandidateHasRegisteredKeys;
-impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
+pub struct CandidateIsOnlineAndHasRegisteredKeys;
+impl IsCandidateEligible<AccountId> for CandidateIsOnlineAndHasRegisteredKeys {
     fn is_candidate_eligible(a: &AccountId) -> bool {
         <Session as ValidatorRegistration<AccountId>>::is_registered(a)
+            && !InactivityTracking::is_node_offline(a)
     }
     #[cfg(feature = "runtime-benchmarks")]
     fn make_candidate_eligible(a: &AccountId, eligible: bool) {
@@ -1527,13 +1492,16 @@ impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
         } else {
             let _ = Session::purge_keys(RuntimeOrigin::signed(a.clone()));
         }
+
+        if InactivityTracking::is_node_offline(a) {
+            InactivityTracking::make_node_online(a);
+        }
     }
 }
 
 parameter_types! {
     pub const MaxCandidatesBufferSize: u32 = 100;
 }
-
 impl pallet_pooled_staking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
@@ -1544,10 +1512,10 @@ impl pallet_pooled_staking::Config for Runtime {
     type MinimumSelfDelegation = MinimumSelfDelegation;
     type RuntimeHoldReason = RuntimeHoldReason;
     type RewardsCollatorCommission = RewardsCollatorCommission;
-    type JoiningRequestTimer = SessionTimer<StakingSessionDelay>;
-    type LeavingRequestTimer = SessionTimer<StakingSessionDelay>;
+    type JoiningRequestTimer = SessionTimer<Runtime, StakingSessionDelay>;
+    type LeavingRequestTimer = SessionTimer<Runtime, StakingSessionDelay>;
     type EligibleCandidatesBufferSize = MaxCandidatesBufferSize;
-    type EligibleCandidatesFilter = CandidateHasRegisteredKeys;
+    type EligibleCandidatesFilter = CandidateIsOnlineAndHasRegisteredKeys;
     type WeightInfo = weights::pallet_pooled_staking::SubstrateWeight<Runtime>;
 }
 
@@ -1666,7 +1634,7 @@ parameter_types! {
     pub const TreasuryId: PalletId = PalletId(*b"tns/tsry");
     pub const ProposalBond: Permill = Permill::from_percent(5);
     pub TreasuryAccount: AccountId = Treasury::account_id();
-    pub const MaxBalance: Balance = Balance::max_value();
+    pub const MaxBalance: Balance = Balance::MAX;
     // We allow it to be 1 minute in fast mode to be able to test it
     pub const SpendPeriod: BlockNumber = prod_or_fast!(6 * DAYS, 1 * MINUTES);
     pub const DataDepositPerByte: Balance = 1 * CENTS;
@@ -1722,7 +1690,6 @@ parameter_types! {
 }
 impl pallet_inactivity_tracking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type CollatorId = CollatorId;
     type MaxInactiveSessions = MaxInactiveSessions;
     type MaxCollatorsPerSession = MaxCandidatesBufferSize;
     type MaxContainerChains = MaxLengthParaIds;
@@ -1730,6 +1697,8 @@ impl pallet_inactivity_tracking::Config for Runtime {
     type CurrentCollatorsFetcher = CollatorAssignment;
     type GetSelfChainBlockAuthor = GetSelfChainBlockAuthor;
     type ParaFilter = tp_parathread_filter_common::ExcludeAllParathreadsFilter<Runtime>;
+    type InvulnerablesFilter = tp_invulnerables_filter_common::InvulnerablesFilter<Runtime>;
+    type CollatorStakeHelper = PooledStaking;
     type WeightInfo = weights::pallet_inactivity_tracking::SubstrateWeight<Runtime>;
 }
 
@@ -2247,7 +2216,7 @@ impl_runtime_apis! {
                             initial_asset_amount - asset_amount,
                         );
                     });
-                    Some((assets, fee_index as u32, dest, verify))
+                    Some((assets, fee_index, dest, verify))
                 }
             }
 

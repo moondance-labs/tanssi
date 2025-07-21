@@ -16,7 +16,12 @@
 #[allow(unused)]
 use crate::Pallet as InactivityTracking;
 
-use {super::*, frame_benchmarking::v2::*, frame_support::dispatch::RawOrigin};
+use {
+    super::*,
+    frame_benchmarking::{account, v2::*},
+    frame_support::dispatch::RawOrigin,
+};
+
 #[benchmarks]
 mod benchmarks {
     use super::*;
@@ -26,6 +31,55 @@ mod benchmarks {
         <T as crate::pallet::Config>::CurrentSessionIndex::skip_to_session(1);
         #[extrinsic_call]
         _(RawOrigin::Root, false);
+
+        Ok(())
+    }
+
+    #[benchmark]
+    fn enable_offline_marking() -> Result<(), BenchmarkError> {
+        #[extrinsic_call]
+        _(RawOrigin::Root, true);
+
+        Ok(())
+    }
+    #[benchmark]
+    fn set_offline() -> Result<(), BenchmarkError> {
+        const USER_SEED: u32 = 1;
+        let caller: T::AccountId = account("caller", 2, USER_SEED);
+        T::CollatorStakeHelper::make_collator_eligible_candidate(&caller);
+        InactivityTracking::<T>::enable_offline_marking(RawOrigin::Root.into(), true)?;
+
+        #[extrinsic_call]
+        _(RawOrigin::Signed(caller));
+
+        Ok(())
+    }
+
+    #[benchmark]
+    fn set_online() -> Result<(), BenchmarkError> {
+        const USER_SEED: u32 = 1;
+        let caller: T::AccountId = account("caller", 2, USER_SEED);
+        T::CollatorStakeHelper::make_collator_eligible_candidate(&caller);
+        InactivityTracking::<T>::enable_offline_marking(RawOrigin::Root.into(), true)?;
+        InactivityTracking::<T>::set_offline(RawOrigin::Signed(caller.clone()).into())?;
+
+        #[extrinsic_call]
+        _(RawOrigin::Signed(caller));
+
+        Ok(())
+    }
+
+    #[benchmark]
+    fn notify_inactive_collator() -> Result<(), BenchmarkError> {
+        const USER_SEED: u32 = 1;
+        let caller: T::AccountId = account("caller", 2, USER_SEED);
+        let collator: T::AccountId = account("collator", 3, USER_SEED);
+        T::CollatorStakeHelper::make_collator_eligible_candidate(&collator);
+        InactivityTracking::<T>::enable_offline_marking(RawOrigin::Root.into(), true)?;
+        InactivityTracking::<T>::make_node_inactive(&collator);
+
+        #[extrinsic_call]
+        _(RawOrigin::Signed(caller), collator);
 
         Ok(())
     }

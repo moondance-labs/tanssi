@@ -60,9 +60,7 @@ where
         );
 
         // Convert versioned message into latest supported message version
-        let queued_message: QueuedMessage = versioned_queued_message
-            .try_into()
-            .map_err(|_| Unsupported)?;
+        let queued_message: QueuedMessage = versioned_queued_message.into();
 
         // Obtain next nonce
         let nonce = <Nonce<T>>::try_mutate(

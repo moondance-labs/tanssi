@@ -168,8 +168,8 @@ pub mod pallet {
 
     impl<T: Config> Pallet<T> {
         pub(crate) fn enough_collators_for_all_chains(
-            bulk_paras: &Vec<ChainNumCollators>,
-            pool_paras: &Vec<ChainNumCollators>,
+            bulk_paras: &[ChainNumCollators],
+            pool_paras: &[ChainNumCollators],
             target_session_index: T::SessionIndex,
             number_of_collators: u32,
             collators_per_container: u32,
@@ -523,7 +523,7 @@ pub mod pallet {
             // Count number of assigned collators
             let mut num_collators = 0;
             num_collators.saturating_accrue(new_assigned.orchestrator_chain.len());
-            for (_para_id, collators) in &new_assigned.container_chains {
+            for collators in new_assigned.container_chains.values() {
                 num_collators.saturating_accrue(collators.len());
             }
 
@@ -626,9 +626,9 @@ pub mod pallet {
         ) -> Vec<(ParaId, Vec<T::AccountId>)> {
             // If next session has None then current session data will stay.
             let chains = (for_session == ForSession::Next)
-                .then(|| PendingCollatorContainerChain::<T>::get())
+                .then(PendingCollatorContainerChain::<T>::get)
                 .flatten()
-                .unwrap_or_else(|| CollatorContainerChain::<T>::get());
+                .unwrap_or_else(CollatorContainerChain::<T>::get);
 
             chains.container_chains.into_iter().collect()
         }

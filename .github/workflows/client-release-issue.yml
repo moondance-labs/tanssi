@@ -3,10 +3,10 @@ on:
   workflow_dispatch:
     inputs:
       from:
-        description: "Previous client version"
+        description: "Previous client version (ex. v0.1.0)"
         required: true
       to:
-        description: "Next client version"
+        description: "Next client version (ex. v0.2.0)"
         required: true
       binary-type:
         description: "Binary type"

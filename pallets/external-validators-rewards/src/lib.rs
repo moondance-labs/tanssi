@@ -166,7 +166,7 @@ pub mod pallet {
             era_index: EraIndex,
             maybe_account_id_check: Option<AccountId>,
         ) -> Option<EraRewardsUtils> {
-            let total_points: u128 = self.total as u128;
+            let total_points: u128 = u128::from(self.total);
             let mut leaves = Vec::with_capacity(self.individual.len());
             let mut leaf_index = None;
 
@@ -240,7 +240,7 @@ pub mod pallet {
             account_id: T::AccountId,
             era_index: EraIndex,
         ) -> Option<MerkleProof> {
-            let era_rewards = RewardPointsForEra::<T>::get(&era_index);
+            let era_rewards = RewardPointsForEra::<T>::get(era_index);
             let utils = era_rewards.generate_era_rewards_utils::<<T as Config>::Hashing>(
                 era_index,
                 Some(account_id),
@@ -284,7 +284,7 @@ pub mod pallet {
             let token_id = T::TokenIdFromLocation::convert_back(&token_location);
 
             if let Some(token_id) = token_id {
-                let era_rewards = RewardPointsForEra::<T>::get(&era_index);
+                let era_rewards = RewardPointsForEra::<T>::get(era_index);
                 if let Some(utils) = era_rewards
                     .generate_era_rewards_utils::<<T as Config>::Hashing>(era_index, None)
                 {
@@ -356,7 +356,6 @@ pub mod pallet {
                         "Outbound message not sent for era {:?}!",
                         era_index
                     );
-                    return;
                 }
             } else {
                 log::error!(target: "ext_validators_rewards", "no token id found for location {:?}", token_location);
@@ -379,7 +378,7 @@ where
         indices: impl IntoIterator<Item = ValidatorIndex>,
         points: u32,
     ) {
-        let validators = session_info::AccountKeys::<C>::get(&session_index);
+        let validators = session_info::AccountKeys::<C>::get(session_index);
         let validators = match validators
             .defensive_proof("account_keys are present for dispute_period sessions")
         {

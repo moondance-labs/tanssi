@@ -171,14 +171,14 @@ pub trait Pool<T: Config> {
         let new_pool_member = old_shares.0.is_zero();
         let mut new_delegator = false;
 
-        DelegatorCandidateSummaries::<T>::mutate(&delegator, &candidate, |summary| {
+        DelegatorCandidateSummaries::<T>::mutate(delegator, candidate, |summary| {
             if summary.is_empty() {
                 new_delegator = true;
             }
             summary.set_pool(Self::pool_kind(), true);
         });
 
-        CandidateSummaries::<T>::mutate(&candidate, |summary| {
+        CandidateSummaries::<T>::mutate(candidate, |summary| {
             if new_pool_member {
                 let count = summary.pool_delegators_mut(Self::pool_kind());
                 *count = count.saturating_add(1);
@@ -215,7 +215,7 @@ pub trait Pool<T: Config> {
         let rem_pool_member = new_shares.is_zero();
         let mut rem_delegator = false;
 
-        DelegatorCandidateSummaries::<T>::mutate_exists(&delegator, &candidate, |summary| {
+        DelegatorCandidateSummaries::<T>::mutate_exists(delegator, candidate, |summary| {
             let mut s = summary.unwrap_or_default();
 
             if rem_pool_member {
@@ -231,7 +231,7 @@ pub trait Pool<T: Config> {
             };
         });
 
-        CandidateSummaries::<T>::mutate_exists(&candidate, |summary| {
+        CandidateSummaries::<T>::mutate_exists(candidate, |summary| {
             let mut s = summary.unwrap_or_default();
 
             if rem_pool_member {
@@ -690,7 +690,7 @@ impl From<ActivePoolKind> for PoolKind {
 }
 
 impl PoolKind {
-    fn to_bitmask(&self) -> u8 {
+    fn to_bitmask(self) -> u8 {
         match self {
             Self::Joining => MASK_JOINING,
             Self::AutoCompounding => MASK_AUTO,
@@ -731,9 +731,9 @@ impl DelegatorCandidateSummary {
 
     fn set_bit(&mut self, mask: u8, value: bool) {
         if value {
-            self.0 = self.0 | mask
+            self.0 |= mask
         } else {
-            self.0 = self.0 & !mask
+            self.0 &= !mask
         }
     }
 

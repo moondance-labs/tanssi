@@ -50,7 +50,11 @@ fi
 update_cargo_toml() {
     local file=$1
     local new_version=$2
-    sed -i "s/^version = \".*\"$/version = \"$new_version\"/" "$file"
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        sed -i '' "s/^version = \".*\"$/version = \"$new_version\"/" "$file"
+    else
+        sed -i "s/^version = \".*\"$/version = \"$new_version\"/" "$file"
+    fi
     echo "Updated $file to version $new_version"
 }
 
@@ -58,7 +62,11 @@ update_cargo_toml() {
 update_lib_rs() {
     local file=$1
     local new_version=$2
-    sed -i "s/.*spec_version: .*,/    spec_version: $new_version,/" "$file"
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        sed -i '' "s/.*spec_version: .*,/    spec_version: $new_version,/" "$file"
+    else
+        sed -i "s/.*spec_version: .*,/    spec_version: $new_version,/" "$file"
+    fi
     echo "Updated $file to spec_version $new_version"
 }
 
@@ -77,6 +85,7 @@ update_lib_rs "chains/container-chains/runtime-templates/simple/src/lib.rs" "$RU
 update_lib_rs "chains/orchestrator-paras/runtime/dancebox/src/lib.rs" "$RUNTIME_VERSION"
 update_lib_rs "chains/orchestrator-paras/runtime/flashbox/src/lib.rs" "$RUNTIME_VERSION"
 update_lib_rs "chains/orchestrator-relays/runtime/dancelight/src/lib.rs" "$RUNTIME_VERSION"
+update_lib_rs "chains/orchestrator-relays/runtime/starlight/src/lib.rs" "$RUNTIME_VERSION"
 
 echo "All files updated successfully. Updating Cargo.lock"
 

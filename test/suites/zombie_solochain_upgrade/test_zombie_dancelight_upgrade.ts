@@ -20,7 +20,7 @@ describeSuite({
             relayApi = context.polkadotJs("parachain");
 
             const relayNetwork = relayApi.consts.system.version.specName.toString();
-            expect(relayNetwork, "Relay API incorrect").to.contain("dancelight");
+            expect(relayNetwork, "Relay API incorrect").to.match(/dancelight|starlight/);
 
             const currentBlock = (await relayApi.rpc.chain.getBlock()).block.header.number.toNumber();
             expect(currentBlock, "Parachain not producing blocks").to.be.greaterThan(0);
@@ -108,8 +108,10 @@ describeSuite({
             id: "T04",
             title: "Test pallet versions for missed migrations",
             test: async () => {
+                const runtime = relayApi.consts.system.version.specName.toString();
+
                 const command = "../target/release/tanssi-relay";
-                const args = ["build-spec", "--chain=dancelight-local", "--raw"];
+                const args = ["build-spec", `--chain=${runtime}-local`, "--raw"];
 
                 await testPalletVersions(relayApi, command, args);
             },

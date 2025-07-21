@@ -44,13 +44,10 @@ fn test_symbiotic_message_processor() {
             payload: vec![0, 1, 2],
         };
 
-        assert_eq!(
-            SymbioticMessageProcessor::<Runtime>::can_process_message(
-                &default_channel,
-                &envelope_with_invalid_payload
-            ),
-            false
-        );
+        assert!(!SymbioticMessageProcessor::<Runtime>::can_process_message(
+            &default_channel,
+            &envelope_with_invalid_payload
+        ));
         assert_eq!(
             SymbioticMessageProcessor::<Runtime>::process_message(
                 default_channel.clone(),
@@ -73,10 +70,10 @@ fn test_symbiotic_message_processor() {
             nonce: 0,
             payload: payload_with_incorrect_magic_bytes.encode(),
         };
-        assert_eq!(
-            SymbioticMessageProcessor::<Runtime>::can_process_message(&default_channel, &envelope),
-            false
-        );
+        assert!(!SymbioticMessageProcessor::<Runtime>::can_process_message(
+            &default_channel,
+            &envelope
+        ));
 
         // No external validators are set right now
         assert_eq!(
@@ -104,10 +101,10 @@ fn test_symbiotic_message_processor() {
             nonce: 0,
             payload: payload_with_correct_magic_bytes.encode(),
         };
-        assert_eq!(
-            SymbioticMessageProcessor::<Runtime>::can_process_message(&default_channel, &envelope),
-            true
-        );
+        assert!(SymbioticMessageProcessor::<Runtime>::can_process_message(
+            &default_channel,
+            &envelope
+        ));
         assert_eq!(
             SymbioticMessageProcessor::<Runtime>::process_message(
                 default_channel.clone(),
@@ -159,10 +156,10 @@ fn test_symbiotic_message_processor_rejects_invalid_channel_id() {
             nonce: 0,
             payload: payload_with_correct_magic_bytes.encode(),
         };
-        assert_eq!(
-            SymbioticMessageProcessor::<Runtime>::can_process_message(&default_channel, &envelope),
-            true
-        );
+        assert!(SymbioticMessageProcessor::<Runtime>::can_process_message(
+            &default_channel,
+            &envelope
+        ));
         assert_eq!(
             SymbioticMessageProcessor::<Runtime>::process_message(
                 default_channel.clone(),
@@ -200,9 +197,8 @@ fn test_symbiotic_message_processor_as_payload() {
             nonce: 0,
             payload: payload_encoded.to_vec(),
         };
-        assert_eq!(
-            SymbioticMessageProcessor::<Runtime>::can_process_message(&default_channel, &envelope),
-            true
+        assert!(
+            SymbioticMessageProcessor::<Runtime>::can_process_message(&default_channel, &envelope)
         );
         assert_eq!(
             SymbioticMessageProcessor::<Runtime>::process_message(
