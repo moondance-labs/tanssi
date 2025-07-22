@@ -22,15 +22,16 @@
 //! block proposals or blocks that have been proposed in the past-session
 
 #![cfg_attr(not(feature = "std"), no_std)]
+extern crate alloc;
 
 pub use pallet::*;
 use {
+    alloc::{collections::btree_map::BTreeMap, vec},
     frame_support::pallet_prelude::*,
     sp_runtime::{
         traits::{AtLeast32BitUnsigned, CheckedSub},
         RuntimeAppPublic,
     },
-    sp_std::{collections::btree_map::BTreeMap, vec},
 };
 
 #[cfg(test)]

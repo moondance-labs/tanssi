@@ -28,7 +28,7 @@ use frame_support::traits::{fungible::Credit, tokens::imbalance::ResolveTo, OnUn
 use pallet_balances::NegativeImbalance;
 use sp_core::Get;
 
-pub struct DealWithFees<R>(sp_std::marker::PhantomData<R>);
+pub struct DealWithFees<R>(core::marker::PhantomData<R>);
 impl<R> OnUnbalanced<Credit<R::AccountId, pallet_balances::Pallet<R>>> for DealWithFees<R>
 where
     R: pallet_balances::Config + pallet_treasury::Config + frame_system::Config,

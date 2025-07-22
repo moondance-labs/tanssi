@@ -15,6 +15,8 @@ use frame_support::dispatch::DispatchResultWithPostInfo;
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 use {
     crate as pallet_inactivity_tracking,
+    alloc::collections::btree_set::BTreeSet,
+    core::marker::PhantomData,
     frame_support::{
         parameter_types,
         traits::{ConstU32, ConstU64, Everything, OnFinalize, OnInitialize},
@@ -26,7 +28,6 @@ use {
         BuildStorage, RuntimeAppPublic,
     },
     sp_staking::SessionIndex,
-    sp_std::{collections::btree_set::BTreeSet, marker::PhantomData},
     tp_traits::{ForSession, ParaId},
 };
 

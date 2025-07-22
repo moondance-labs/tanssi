@@ -173,8 +173,8 @@ impl tp_traits::GetContainerChainsWithCollators<AccountId> for MockContainerChai
 
     fn get_all_collators_assigned_to_chains(
         _for_session: tp_traits::ForSession,
-    ) -> sp_std::collections::btree_set::BTreeSet<AccountId> {
-        sp_std::collections::btree_set::BTreeSet::new()
+    ) -> alloc::collections::btree_set::BTreeSet<AccountId> {
+        alloc::collections::btree_set::BTreeSet::new()
     }
 
     #[cfg(feature = "runtime-benchmarks")]

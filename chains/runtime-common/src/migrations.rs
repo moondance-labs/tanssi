@@ -37,6 +37,8 @@
 extern crate alloc;
 
 use {
+    alloc::{boxed::Box, collections::btree_set::BTreeSet, vec, vec::Vec},
+    core::marker::PhantomData,
     cumulus_primitives_core::ParaId,
     frame_support::{
         migration::{clear_storage_prefix, move_pallet, storage_key_iter},
@@ -55,7 +57,6 @@ use {
     pallet_registrar::HoldReason,
     sp_core::Get,
     sp_runtime::Perbill,
-    sp_std::{collections::btree_set::BTreeSet, marker::PhantomData, prelude::*},
 };
 
 #[cfg(feature = "try-runtime")]

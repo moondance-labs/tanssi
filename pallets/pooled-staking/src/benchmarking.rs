@@ -22,6 +22,7 @@ use {
         HoldReason, Pallet as PooledStaking,
         PendingOperationKey::{JoiningAutoCompounding, JoiningManualRewards},
     },
+    alloc::vec,
     frame_benchmarking::{account, v2::*, BenchmarkError},
     frame_support::{
         dispatch::RawOrigin,
@@ -32,7 +33,6 @@ use {
         },
     },
     frame_system::EventRecord,
-    sp_std::prelude::*,
 };
 
 /// Minimum collator candidate stake

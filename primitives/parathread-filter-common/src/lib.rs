@@ -14,8 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 #![cfg_attr(not(feature = "std"), no_std)]
+extern crate alloc;
+
 use {
-    sp_std::{collections::btree_set::BTreeSet, marker::PhantomData},
+    alloc::collections::btree_set::BTreeSet,
+    core::marker::PhantomData,
     tp_traits::{GetSessionContainerChains, ParaId, ParathreadHelper},
 };
 

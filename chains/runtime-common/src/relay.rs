@@ -269,7 +269,7 @@ impl<T: pallet_babe::Config + frame_system::Config> Get<[u8; 32]>
             } {
                 // Return random_hash as a [u8; 32] instead of a Hash
                 let mut buf = [0u8; 32];
-                let len = sp_std::cmp::min(32, random_hash.as_ref().len());
+                let len = core::cmp::min(32, random_hash.as_ref().len());
                 buf[..len].copy_from_slice(&random_hash.as_ref()[..len]);
 
                 buf
