@@ -32,9 +32,6 @@ use scale_info::TypeInfo;
 use sp_core::{ConstU32, Get, MaxEncodedLen, RuntimeDebug};
 use sp_runtime::Saturating;
 
-#[cfg(not(feature = "std"))]
-use sp_runtime::Vec;
-
 const LOG_TARGET: &str = "pallet_pooled_staking::migrations::stepped_generate_summaries";
 pub const PALLET_MIGRATIONS_ID: &[u8; 21] = b"pallet-pooled-staking";
 
@@ -81,13 +78,13 @@ impl<T: Config> SteppedMigration for MigrationGenerateSummaries<T> {
     }
 
     #[cfg(feature = "try-runtime")]
-    fn pre_upgrade() -> Result<Vec<u8>, sp_runtime::TryRuntimeError> {
+    fn pre_upgrade() -> Result<alloc::vec::Vec<u8>, sp_runtime::TryRuntimeError> {
         // Can we test it somehow without performing the same process? (which would be useless)
         Ok(Default::default())
     }
 
     #[cfg(feature = "try-runtime")]
-    fn post_upgrade(_state: Vec<u8>) -> Result<(), sp_runtime::TryRuntimeError> {
+    fn post_upgrade(_state: alloc::vec::Vec<u8>) -> Result<(), sp_runtime::TryRuntimeError> {
         Ok(())
     }
 }

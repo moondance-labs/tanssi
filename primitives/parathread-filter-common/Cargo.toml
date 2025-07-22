@@ -12,7 +12,6 @@ workspace = true
 [dependencies]
 pallet-registrar = { workspace = true }
 pallet-session = { workspace = true }
-sp-std = { workspace = true }
 tp-traits = { workspace = true }
 
 [features]
@@ -20,7 +19,6 @@ default = [ "std" ]
 std = [
 	"pallet-registrar/std",
 	"pallet-session/std",
-	"sp-std/std",
 	"tp-traits/std",
 ]
 runtime-benchmarks = [
