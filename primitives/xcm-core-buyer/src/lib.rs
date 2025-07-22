@@ -18,14 +18,15 @@
 //! as well as the client.
 
 #![cfg_attr(not(feature = "std"), no_std)]
+extern crate alloc;
 
 use {
+    alloc::vec::Vec,
     frame_support::{
         pallet_prelude::{Decode, DecodeWithMemTracking, Encode, TypeInfo},
         CloneNoBound, DebugNoBound,
     },
     sp_runtime::{app_crypto::AppCrypto, RuntimeAppPublic},
-    sp_std::vec::Vec,
     tp_traits::ParaId,
 };
 

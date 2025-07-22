@@ -34,5 +34,4 @@ sp-consensus-aura = { workspace = true }
 sp-consensus-slots = { workspace = true }
 sp-core = { workspace = true }
 sp-runtime = { workspace = true }
-sp-std = { workspace = true }
 tp-data-preservers-common = { workspace = true }

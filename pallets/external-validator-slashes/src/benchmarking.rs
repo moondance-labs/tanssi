@@ -26,7 +26,6 @@ use {
     frame_system::RawOrigin,
     pallet_session::{self as session},
     sp_runtime::traits::TrailingZeroInput,
-    sp_std::prelude::*,
 };
 
 const MAX_SLASHES: u32 = 1000;

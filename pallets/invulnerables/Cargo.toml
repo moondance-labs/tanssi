@@ -22,7 +22,6 @@ frame-support = { workspace = true }
 frame-system = { workspace = true }
 sp-runtime = { workspace = true }
 sp-staking = { workspace = true }
-sp-std = { workspace = true }
 tp-traits = { workspace = true }
 
 frame-benchmarking = { workspace = true }
@@ -50,7 +49,6 @@ std = [
 	"sp-io/std",
 	"sp-runtime/std",
 	"sp-staking/std",
-	"sp-std/std",
 	"tp-traits/std",
 ]
 runtime-benchmarks = [

@@ -22,6 +22,7 @@ use {
         EthereumInboundQueue, EthereumSovereignAccount, EthereumSystem, EthereumTokenTransfers,
         RuntimeEvent, SnowbridgeFeesAccount, TokenLocationReanchored,
     },
+    alloc::vec,
     alloy_sol_types::SolEvent,
     frame_support::{assert_noop, assert_ok},
     hex_literal::hex,
@@ -34,8 +35,7 @@ use {
     snowbridge_verification_primitives::{EventProof, Log},
     sp_core::{H160, H256},
     sp_runtime::{traits::MaybeEquivalence, FixedU128, TokenError},
-    sp_std::vec,
-    tanssi_runtime_common::processors::NativeTokenTransferMessageProcessor,
+    tanssi_runtime_common::relay::NativeTokenTransferMessageProcessor,
     xcm::{latest::Location, VersionedLocation},
 };
 

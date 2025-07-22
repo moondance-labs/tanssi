@@ -19,6 +19,8 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+extern crate alloc;
+
 pub mod alias;
 pub mod prod_or_fast;
 
@@ -31,7 +33,13 @@ pub use {
     dp_chain_state_snapshot::{GenericStateProof, ReadEntryErr},
     dp_container_chain_genesis_data::ContainerChainGenesisDataItem,
 };
+
 use {
+    alloc::{
+        collections::{btree_map::BTreeMap, btree_set::BTreeSet},
+        vec,
+        vec::Vec,
+    },
     core::marker::PhantomData,
     frame_support::{
         dispatch::DispatchErrorWithPostInfo,
@@ -49,15 +57,7 @@ use {
         traits::{CheckedAdd, CheckedMul},
         ArithmeticError, DispatchResult, Perbill, RuntimeDebug,
     },
-    sp_std::{
-        collections::{btree_map::BTreeMap, btree_set::BTreeSet},
-        vec::Vec,
-    },
 };
-
-// Separate import as rustfmt wrongly change it to `sp_std::vec::self`, which is the module instead
-// of the macro.
-use sp_std::vec;
 
 /// The collator-assignment hook to react to collators being assigned to container chains.
 pub trait CollatorAssignmentHook<Balance> {
