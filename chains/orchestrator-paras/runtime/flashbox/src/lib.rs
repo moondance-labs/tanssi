@@ -46,11 +46,7 @@ pub mod weights;
 mod tests;
 
 use {
-    alloc::{
-        collections::{btree_map::BTreeMap, btree_set::BTreeSet},
-        vec,
-        vec::Vec,
-    },
+    alloc::{collections::btree_set::BTreeSet, vec, vec::Vec},
     core::marker::PhantomData,
     cumulus_pallet_parachain_system::RelayNumberMonotonicallyIncreases,
     cumulus_primitives_core::{relay_chain::SessionIndex, BodyId, ParaId},
@@ -729,16 +725,12 @@ impl<AC> ParaIdAssignmentHooks<BalanceOf<Runtime>, AC> for ParaIdAssignmentHooks
 
     fn post_assignment(
         current_assigned: &BTreeSet<ParaId>,
-        new_assigned: &mut BTreeMap<ParaId, Vec<AC>>,
+        new_assigned: &mut BTreeSet<ParaId>,
         maybe_tip: &Option<BalanceOf<Runtime>>,
     ) -> Weight {
         let blocks_per_session = Period::get();
         let mut total_weight = Weight::zero();
-        new_assigned.retain(|&para_id, collators| {
-            // Short-circuit in case collators are empty
-            if collators.is_empty() {
-                return true;
-            }
+        new_assigned.retain(|&para_id| {
             with_storage_layer(|| {
                 Self::charge_para_ids_internal(
                     blocks_per_session,
@@ -1809,7 +1801,7 @@ impl_runtime_apis! {
             if para_id == self_para_id {
                 Some(assigned_collators.orchestrator_chain)
             } else {
-                assigned_collators.container_chains.get(&para_id).cloned()
+                assigned_collators.get_container_chain(&para_id).cloned()
             }
         }
 
@@ -1906,7 +1898,7 @@ impl_runtime_apis! {
             if para_id == self_para_id {
                 Some(assigned_authorities.orchestrator_chain)
             } else {
-                assigned_authorities.container_chains.get(&para_id).cloned()
+                assigned_authorities.get_container_chain(&para_id).cloned()
             }
         }
 

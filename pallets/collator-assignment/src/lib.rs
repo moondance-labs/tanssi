@@ -44,7 +44,10 @@ extern crate alloc;
 
 use {
     crate::assignment::{Assignment, ChainNumCollators},
-    alloc::{collections::btree_set::BTreeSet, fmt::Debug, vec, vec::Vec},
+    alloc::{
+        collections::btree_map::BTreeMap, collections::btree_set::BTreeSet, fmt::Debug, vec,
+        vec::Vec,
+    },
     core::ops::Mul,
     frame_support::{pallet_prelude::*, traits::Currency},
     frame_system::pallet_prelude::BlockNumberFor,
@@ -309,8 +312,7 @@ pub mod pallet {
 
             // We read current assigned collators
             let old_assigned = Self::read_assigned_collators();
-            let old_assigned_para_ids: BTreeSet<ParaId> =
-                old_assigned.container_chains.keys().cloned().collect();
+            let old_assigned_para_ids = old_assigned.container_para_ids();
 
             // Remove the containerChains that do not have enough credits for block production
             T::ParaIdAssignmentHooks::pre_assignment(
@@ -454,26 +456,37 @@ pub mod pallet {
                 }
             };
 
-            let mut assigned_containers = new_assigned.container_chains.clone();
-            assigned_containers.retain(|_, v| !v.is_empty());
+            let new_assigned_para_ids = new_assigned.container_para_ids();
 
             // On congestion, prioritized chains need to pay the minimum tip of the prioritized chains
             let maybe_tip: Option<BalanceOf<T>> = if !need_to_charge_tip {
                 None
             } else {
-                assigned_containers
-                    .into_keys()
+                new_assigned_para_ids
+                    .into_iter()
                     .filter_map(T::CollatorAssignmentTip::get_para_tip)
                     .min()
             };
 
-            // TODO: this probably is asking for a refactor
-            // only apply the onCollatorAssignedHook if sufficient collators
+            let mut new_assigned_para_ids = new_assigned.container_para_ids();
+
+            // Charge assignment cost + tip to all chains. This is expected to be transactional, so
+            // if any chain cannot afford the fee, it will not be charged, and it will be removed
+            // from the list of chains.
+            // pre_assignment hook does not take into account the tip, so there may be some container
+            // chains that cannot affort the priority tip. They will be removed here
             T::ParaIdAssignmentHooks::post_assignment(
                 &old_assigned_para_ids,
-                &mut new_assigned.container_chains,
+                &mut new_assigned_para_ids,
                 &maybe_tip,
             );
+
+            for removed_para_id in new_assigned
+                .container_para_ids()
+                .difference(&new_assigned_para_ids)
+            {
+                new_assigned.remove_container_chain(removed_para_id);
+            }
 
             Self::store_collator_fullness(
                 &new_assigned,
@@ -522,11 +535,7 @@ pub mod pallet {
             max_collators: u32,
         ) {
             // Count number of assigned collators
-            let mut num_collators = 0;
-            num_collators.saturating_accrue(new_assigned.orchestrator_chain.len());
-            for collators in new_assigned.container_chains.values() {
-                num_collators.saturating_accrue(collators.len());
-            }
+            let num_collators = new_assigned.count_collators();
 
             let mut num_collators = num_collators as u32;
             if num_collators > max_collators {
@@ -585,7 +594,7 @@ pub mod pallet {
             let collators = if para_id == T::SelfParaId::get() {
                 Some(&assigned_collators.orchestrator_chain)
             } else {
-                assigned_collators.container_chains.get(&para_id)
+                assigned_collators.get_container_chain(&para_id)
             }?;
 
             if collators.is_empty() {
@@ -624,18 +633,18 @@ pub mod pallet {
     impl<T: Config> GetContainerChainsWithCollators<T::AccountId> for Pallet<T> {
         fn container_chains_with_collators(
             for_session: ForSession,
-        ) -> Vec<(ParaId, Vec<T::AccountId>)> {
+        ) -> BTreeMap<ParaId, Vec<T::AccountId>> {
             // If next session has None then current session data will stay.
             let chains = (for_session == ForSession::Next)
                 .then(PendingCollatorContainerChain::<T>::get)
                 .flatten()
                 .unwrap_or_else(CollatorContainerChain::<T>::get);
 
-            chains.container_chains.into_iter().collect()
+            chains.into_container_chains_with_collators()
         }
 
         fn get_all_collators_assigned_to_chains(for_session: ForSession) -> BTreeSet<T::AccountId> {
-            let mut all_chains: Vec<T::AccountId> =
+            let mut all_chains: BTreeSet<T::AccountId> =
                 Self::container_chains_with_collators(for_session)
                     .iter()
                     .flat_map(|(_para_id, collators)| collators.iter())
@@ -647,7 +656,8 @@ pub mod pallet {
                     .iter()
                     .cloned(),
             );
-            all_chains.into_iter().collect()
+
+            all_chains
         }
 
         #[cfg(feature = "runtime-benchmarks")]

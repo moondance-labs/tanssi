@@ -157,7 +157,8 @@ pub enum ForSession {
 /// Get the current list of container chains parachain ids with its assigned collators.
 /// It can return a para id with an empty list of collators.
 pub trait GetContainerChainsWithCollators<AccountId> {
-    fn container_chains_with_collators(for_session: ForSession) -> Vec<(ParaId, Vec<AccountId>)>;
+    fn container_chains_with_collators(for_session: ForSession)
+        -> BTreeMap<ParaId, Vec<AccountId>>;
 
     fn get_all_collators_assigned_to_chains(for_session: ForSession) -> BTreeSet<AccountId>;
 
@@ -317,12 +318,13 @@ impl<AccountId: Clone> RemoveInvulnerables<AccountId> for () {
 /// Helper trait for pallet_collator_assignment to be able to not assign collators to container chains with no credits
 /// in pallet_services_payment
 pub trait ParaIdAssignmentHooks<B, AC> {
-    /// Remove para ids with not enough credits. The resulting order will affect priority: the first para id in the list
-    /// will be the first one to get collators.
+    /// Remove para ids with not enough credits. The resulting order will only affect priority if randomness
+    /// is disabled. Para ids are sorted by fee in `CollatorAssignment::order_paras`.
     fn pre_assignment(para_ids: &mut Vec<ParaId>, old_assigned: &BTreeSet<ParaId>);
+    /// Remove para ids with not enough balance to pay for the assignment.
     fn post_assignment(
         current_assigned: &BTreeSet<ParaId>,
-        new_assigned: &mut BTreeMap<ParaId, Vec<AC>>,
+        new_assigned: &mut BTreeSet<ParaId>,
         maybe_tip: &Option<B>,
     ) -> Weight;
 
@@ -336,7 +338,7 @@ impl<B, AC> ParaIdAssignmentHooks<B, AC> for () {
 
     fn post_assignment(
         _current_assigned: &BTreeSet<ParaId>,
-        _new_assigned: &mut BTreeMap<ParaId, Vec<AC>>,
+        _new_assigned: &mut BTreeSet<ParaId>,
         _maybe_tip: &Option<B>,
     ) -> Weight {
         Default::default()
