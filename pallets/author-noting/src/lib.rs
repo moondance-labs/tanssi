@@ -29,8 +29,11 @@
 //! to that containerChain, by simply assigning the slot position.
 
 #![cfg_attr(not(feature = "std"), no_std)]
+extern crate alloc;
 
 use {
+    alloc::borrow::Cow,
+    alloc::vec::Vec,
     cumulus_pallet_parachain_system::RelaychainStateProvider,
     cumulus_primitives_core::{
         relay_chain::{BlakeTwo256, BlockNumber, HeadData},
@@ -44,8 +47,6 @@ use {
     sp_consensus_aura::{inherents::InherentType, Slot, AURA_ENGINE_ID},
     sp_inherents::{InherentIdentifier, IsFatalError},
     sp_runtime::{traits::Header, DigestItem, DispatchResult},
-    sp_std::borrow::Cow,
-    sp_std::vec::Vec,
     tp_author_noting_inherent::INHERENT_IDENTIFIER,
     tp_traits::{
         AuthorNotingHook, AuthorNotingInfo, ContainerChainBlockInfo, ForSession, GenericStateProof,

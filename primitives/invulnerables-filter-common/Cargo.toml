@@ -12,7 +12,6 @@ workspace = true
 [dependencies]
 pallet-invulnerables = { workspace = true }
 primitives = { workspace = true }
-sp-std = { workspace = true }
 tp-traits = { workspace = true }
 
 [features]
@@ -20,7 +19,6 @@ default = [ "std" ]
 std = [
 	"pallet-invulnerables/std",
 	"primitives/std",
-	"sp-std/std",
 	"tp-traits/std",
 ]
 runtime-benchmarks = [
