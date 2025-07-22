@@ -550,10 +550,8 @@ fn inactivity_tracking_edge_case_parachain_and_parathread_with_one_active_collat
                 <Runtime as pallet_inactivity_tracking::Config>::CurrentCollatorsFetcher::container_chains_with_collators(
                     ForSession::Current
                 );
-            let collators_for_parathread= container_chains_with_collators
-                .iter().find(|(para_id, _)| para_id == &3001.into()).unwrap().clone().1;
-            let collators_for_parachain= container_chains_with_collators
-                .iter().find(|(para_id, _)| para_id == &3000.into()).unwrap().clone().1;
+            let collators_for_parathread = container_chains_with_collators[&ParaId::from(3001)].clone();
+            let collators_for_parachain = container_chains_with_collators[&ParaId::from(3000)].clone();
 
             assert_eq!(collators_for_parathread, vec![DAVE.into(), [8; 32].into()]);
             assert_eq!(collators_for_parachain, vec![BOB.into(), CHARLIE.into()]);
@@ -644,10 +642,8 @@ fn inactivity_tracking_edge_case_active_parachain_with_one_active_collator_and_i
                 <Runtime as pallet_inactivity_tracking::Config>::CurrentCollatorsFetcher::container_chains_with_collators(
                     ForSession::Current
                 );
-            let collators_for_parathread= container_chains_with_collators
-                .iter().find(|(para_id, _)| para_id == &3001.into()).unwrap().clone().1;
-            let collators_for_parachain= container_chains_with_collators
-                .iter().find(|(para_id, _)| para_id == &3000.into()).unwrap().clone().1;
+            let collators_for_parathread = container_chains_with_collators[&ParaId::from(3001)].clone();
+            let collators_for_parachain = container_chains_with_collators[&ParaId::from(3000)].clone();
             assert_eq!(collators_for_parathread, vec![DAVE.into(), [8; 32].into()]);
             assert_eq!(collators_for_parachain, vec![BOB.into(), CHARLIE.into()]);
             note_blocks_for_container_chain(3000.into(), 1, 2, 1);

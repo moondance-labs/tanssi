@@ -2328,11 +2328,7 @@ impl_runtime_apis! {
             let should_end_session = <Runtime as pallet_session::Config>::ShouldEndSession::should_end_session(parent_number + 1);
             let for_session = if should_end_session { ForSession::Next } else { ForSession::Current };
 
-            CollatorAssignment::container_chains_with_collators(for_session)
-                .into_iter()
-                .filter_map(
-                    |(para_id, collators)| (!collators.is_empty()).then_some(para_id)
-                ).collect()
+            CollatorAssignment::container_chains_with_collators(for_session).into_keys().collect()
         }
     }
 

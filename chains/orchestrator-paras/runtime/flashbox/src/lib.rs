@@ -1819,10 +1819,7 @@ impl_runtime_apis! {
             let for_session = if should_end_session { ForSession::Next } else { ForSession::Current };
 
             CollatorAssignment::container_chains_with_collators(for_session)
-                .into_iter()
-                .filter_map(
-                    |(para_id, collators)| (!collators.is_empty()).then_some(para_id)
-                ).collect()
+                .into_keys().collect()
         }
     }
 

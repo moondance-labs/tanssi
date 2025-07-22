@@ -167,14 +167,14 @@ pub struct MockContainerChainGetter;
 impl tp_traits::GetContainerChainsWithCollators<AccountId> for MockContainerChainGetter {
     fn container_chains_with_collators(
         _for_session: tp_traits::ForSession,
-    ) -> Vec<(ParaId, Vec<AccountId>)> {
+    ) -> BTreeMap<ParaId, Vec<AccountId>> {
         mock_data::Mock::<Test>::get().container_chains
     }
 
     fn get_all_collators_assigned_to_chains(
         _for_session: tp_traits::ForSession,
     ) -> alloc::collections::btree_set::BTreeSet<AccountId> {
-        alloc::collections::btree_set::BTreeSet::new()
+        todo!()
     }
 
     #[cfg(feature = "runtime-benchmarks")]
