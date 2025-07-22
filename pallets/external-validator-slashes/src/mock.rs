@@ -16,6 +16,7 @@
 
 use {
     crate as external_validator_slashes,
+    core::cell::RefCell,
     frame_support::{
         parameter_types,
         traits::{ConstU16, ConstU32, ConstU64, Get, Hooks},
@@ -30,7 +31,6 @@ use {
         BuildStorage,
     },
     sp_staking::SessionIndex,
-    sp_std::cell::RefCell,
     tp_traits::{ActiveEraInfo, EraIndex, EraIndexProvider, InvulnerablesProvider},
 };
 

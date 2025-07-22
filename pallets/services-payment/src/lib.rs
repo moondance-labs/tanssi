@@ -20,6 +20,7 @@
 //! containerChain.
 
 #![cfg_attr(not(feature = "std"), no_std)]
+extern crate alloc;
 
 #[cfg(feature = "runtime-benchmarks")]
 use tp_traits::BlockNumber;

@@ -20,13 +20,14 @@
 //! the "Migration" trait declared in the pallet-migrations crate.
 
 use {
+    alloc::{boxed::Box, vec, vec::Vec},
+    core::marker::PhantomData,
     frame_support::{
         pallet_prelude::GetStorageVersion,
         traits::{OnRuntimeUpgrade, PalletInfoAccess},
         weights::Weight,
     },
     pallet_migrations::{GetMigrations, Migration},
-    sp_std::{marker::PhantomData, prelude::*},
 };
 
 pub struct TemplateMigrations<Runtime, XcmpQueue, PolkadotXcm>(

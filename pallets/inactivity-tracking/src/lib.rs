@@ -22,6 +22,8 @@
 //! The tracking functionality can be enabled or disabled with root privileges.
 //! By default, the tracking is enabled.
 #![cfg_attr(not(feature = "std"), no_std)]
+extern crate alloc;
+
 use {
     frame_support::{
         dispatch::DispatchResult, dispatch::DispatchResultWithPostInfo, ensure,
@@ -62,10 +64,10 @@ pub mod pallet {
     use {
         super::*,
         crate::weights::WeightInfo,
+        alloc::collections::btree_set::BTreeSet,
         core::marker::PhantomData,
         frame_support::{pallet_prelude::*, storage::types::StorageMap},
         frame_system::pallet_prelude::*,
-        sp_std::collections::btree_set::BTreeSet,
     };
 
     pub type Collator<T> = <T as frame_system::Config>::AccountId;

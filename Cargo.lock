@@ -2439,7 +2439,6 @@ dependencies = [
  "sp-offchain",
  "sp-runtime",
  "sp-session",
- "sp-std",
  "sp-transaction-pool",
  "sp-trie",
  "sp-version",
@@ -2522,7 +2521,6 @@ dependencies = [
  "sp-offchain",
  "sp-runtime",
  "sp-session",
- "sp-std",
  "sp-transaction-pool",
  "sp-trie",
  "sp-version",
@@ -3685,7 +3683,6 @@ dependencies = [
  "sp-offchain",
  "sp-runtime",
  "sp-session",
- "sp-std",
  "sp-transaction-pool",
  "sp-trie",
  "sp-version",
@@ -3738,7 +3735,6 @@ dependencies = [
  "sp-consensus-slots",
  "sp-core",
  "sp-runtime",
- "sp-std",
  "tp-data-preservers-common",
 ]
 
@@ -3902,7 +3898,6 @@ dependencies = [
  "sp-runtime",
  "sp-session",
  "sp-staking",
- "sp-std",
  "sp-storage",
  "sp-tracing",
  "sp-transaction-pool",
@@ -5368,7 +5363,6 @@ dependencies = [
  "sp-offchain",
  "sp-runtime",
  "sp-session",
- "sp-std",
  "sp-transaction-pool",
  "sp-trie",
  "sp-version",
@@ -9598,7 +9592,6 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-state-machine",
- "sp-std",
  "sp-trie",
  "sp-version",
  "test-relay-sproof-builder",
@@ -9628,7 +9621,6 @@ dependencies = [
  "sp-core",
  "sp-io",
  "sp-runtime",
- "sp-std",
  "tp-traits",
 ]
 
@@ -9658,7 +9650,6 @@ dependencies = [
  "sp-core",
  "sp-io",
  "sp-runtime",
- "sp-std",
 ]
 
 [[package]]
@@ -9910,7 +9901,6 @@ dependencies = [
  "sp-core",
  "sp-io",
  "sp-runtime",
- "sp-std",
  "tp-traits",
  "tracing",
  "tracing-subscriber",
@@ -9975,7 +9965,6 @@ dependencies = [
  "sp-core",
  "sp-io",
  "sp-runtime",
- "sp-std",
  "tp-traits",
 ]
 
@@ -10014,7 +10003,6 @@ dependencies = [
  "sp-core",
  "sp-io",
  "sp-runtime",
- "sp-std",
  "tp-traits",
 ]
 
@@ -10159,7 +10147,6 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-staking",
- "sp-std",
  "staging-xcm",
  "tp-bridge",
  "tp-traits",
@@ -10406,7 +10393,6 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-staking",
- "sp-std",
  "tp-bridge",
  "tp-traits",
 ]
@@ -10429,7 +10415,6 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-staking",
- "sp-std",
  "tp-traits",
 ]
 
@@ -10456,7 +10441,6 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-staking",
- "sp-std",
  "staging-xcm",
  "tp-bridge",
  "tp-traits",
@@ -10581,7 +10565,6 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-staking",
- "sp-std",
  "tp-traits",
 ]
 
@@ -10619,7 +10602,6 @@ dependencies = [
  "sp-core",
  "sp-io",
  "sp-runtime",
- "sp-std",
  "tp-traits",
 ]
 
@@ -10635,7 +10617,6 @@ dependencies = [
  "sp-core",
  "sp-io",
  "sp-runtime",
- "sp-std",
 ]
 
 [[package]]
@@ -10655,7 +10636,6 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "sp-staking",
- "sp-std",
  "tp-traits",
 ]
 
@@ -10859,7 +10839,6 @@ dependencies = [
  "sp-core",
  "sp-io",
  "sp-runtime",
- "sp-std",
 ]
 
 [[package]]
@@ -10947,7 +10926,6 @@ dependencies = [
  "sp-core",
  "sp-io",
  "sp-runtime",
- "sp-std",
  "tp-maths",
  "tp-traits",
 ]
@@ -11050,7 +11028,6 @@ dependencies = [
  "sp-core",
  "sp-io",
  "sp-runtime",
- "sp-std",
  "sp-trie",
  "tp-traits",
 ]
@@ -11138,7 +11115,6 @@ dependencies = [
  "sp-core",
  "sp-io",
  "sp-runtime",
- "sp-std",
  "tp-traits",
 ]
 
@@ -11290,7 +11266,6 @@ dependencies = [
  "sp-core",
  "sp-io",
  "sp-runtime",
- "sp-std",
  "tap",
  "tp-maths",
  "tp-traits",
@@ -11594,7 +11569,6 @@ dependencies = [
  "sp-io",
  "sp-keystore",
  "sp-runtime",
- "sp-std",
  "staging-xcm",
  "tp-traits",
  "tp-xcm-core-buyer",
@@ -11612,7 +11586,6 @@ dependencies = [
  "sp-api",
  "sp-consensus-slots",
  "sp-runtime",
- "sp-std",
  "thiserror 1.0.69",
  "tp-xcm-core-buyer",
 ]
@@ -18711,7 +18684,6 @@ dependencies = [
  "sp-runtime",
  "sp-session",
  "sp-staking",
- "sp-std",
  "sp-storage",
  "sp-tracing",
  "sp-transaction-pool",
@@ -19413,7 +19385,6 @@ dependencies = [
  "sp-core",
  "sp-keyring",
  "sp-runtime",
- "sp-std",
  "sp-weights",
  "staging-xcm",
  "xcm-emulator",
@@ -19735,6 +19706,7 @@ dependencies = [
  "frame-try-runtime",
  "hex-literal 0.3.4",
  "log",
+ "pallet-babe",
  "pallet-balances",
  "pallet-beefy-mmr",
  "pallet-configuration",
@@ -19762,7 +19734,6 @@ dependencies = [
  "sp-core",
  "sp-runtime",
  "sp-staking",
- "sp-std",
  "staging-xcm",
 ]
 
@@ -20484,7 +20455,6 @@ dependencies = [
  "snowbridge-pallet-system",
  "sp-core",
  "sp-runtime",
- "sp-std",
  "staging-xcm",
  "staging-xcm-builder",
  "staging-xcm-executor",
@@ -20506,7 +20476,6 @@ dependencies = [
  "serde",
  "sp-core",
  "sp-runtime",
- "sp-std",
  "tp-stream-payment-common",
  "tp-traits",
 ]
@@ -20517,7 +20486,6 @@ version = "0.1.0"
 dependencies = [
  "pallet-invulnerables",
  "polkadot-primitives",
- "sp-std",
  "tp-traits",
 ]
 
@@ -20535,7 +20503,6 @@ version = "0.1.0"
 dependencies = [
  "pallet-registrar",
  "pallet-session",
- "sp-std",
  "tp-traits",
 ]
 
@@ -20554,7 +20521,6 @@ dependencies = [
  "serde",
  "sp-core",
  "sp-runtime",
- "sp-std",
  "tp-traits",
 ]
 
@@ -20573,7 +20539,6 @@ dependencies = [
  "serde",
  "sp-core",
  "sp-runtime",
- "sp-std",
 ]
 
 [[package]]
@@ -20582,7 +20547,6 @@ version = "0.1.0"
 dependencies = [
  "frame-support",
  "log",
- "sp-std",
  "staging-xcm",
 ]
 
@@ -20595,7 +20559,6 @@ dependencies = [
  "scale-info",
  "sp-keystore",
  "sp-runtime",
- "sp-std",
  "tp-traits",
 ]
 
