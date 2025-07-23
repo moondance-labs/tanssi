@@ -16,6 +16,7 @@
 
 use {
     crate as pallet_ethereum_token_transfers,
+    core::cell::RefCell,
     frame_support::{
         parameter_types,
         traits::{ConstU32, ConstU64},
@@ -30,7 +31,6 @@ use {
         traits::{BlakeTwo256, IdentityLookup, MaybeEquivalence},
         BuildStorage,
     },
-    sp_std::cell::RefCell,
     tp_bridge::{ChannelInfo, EthereumSystemChannelManager, TicketInfo},
     xcm::prelude::*,
 };

@@ -27,8 +27,10 @@
 //! Invulnerables are not slashed and no slashing information is stored for them
 
 #![cfg_attr(not(feature = "std"), no_std)]
+extern crate alloc;
 
 use {
+    alloc::{collections::vec_deque::VecDeque, vec, vec::Vec},
     frame_support::{pallet_prelude::*, traits::DefensiveSaturating},
     frame_system::pallet_prelude::*,
     log::log,
@@ -43,7 +45,6 @@ use {
         offence::{OffenceDetails, OnOffenceHandler},
         EraIndex, SessionIndex,
     },
-    sp_std::{collections::vec_deque::VecDeque, vec, vec::Vec},
     tp_traits::{
         apply, derive_storage_traits, EraIndexProvider, ExternalIndexProvider,
         InvulnerablesProvider, OnEraStart,
