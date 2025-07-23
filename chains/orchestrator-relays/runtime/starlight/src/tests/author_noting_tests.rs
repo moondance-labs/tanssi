@@ -54,8 +54,8 @@ fn test_author_noting_not_self_para() {
             // we assign Alice and Bob.
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32.into()],
-                vec![ALICE.into(), BOB.into()]
+                assignment.get_container_chain(&1001u32.into()).unwrap(),
+                &[ALICE.into(), BOB.into()]
             );
 
             let s = ParaHeaderSproofBuilderItem {
@@ -195,8 +195,8 @@ fn test_author_noting_runtime_api() {
             // we assign Alice and Bob.
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32.into()],
-                vec![ALICE.into(), BOB.into()]
+                assignment.get_container_chain(&1001u32.into()).unwrap(),
+                &[ALICE.into(), BOB.into()]
             );
 
             let s = ParaHeaderSproofBuilderItem {

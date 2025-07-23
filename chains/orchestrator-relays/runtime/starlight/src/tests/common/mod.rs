@@ -110,15 +110,13 @@ pub fn authorities_for_container(para_id: ParaId) -> Option<Vec<NimbusId>> {
 
     TanssiAuthorityAssignment::collator_container_chain(session_index)
         .expect("authorities should be set")
-        .container_chains
-        .get(&para_id)
+        .get_container_chain(&para_id)
         .cloned()
 }
 
 pub fn accounts_for_container(para_id: ParaId) -> Option<Vec<AccountId>> {
     TanssiCollatorAssignment::collator_container_chain()
-        .container_chains
-        .get(&para_id)
+        .get_container_chain(&para_id)
         .cloned()
 }
 
