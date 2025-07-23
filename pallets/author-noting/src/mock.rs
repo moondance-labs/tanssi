@@ -16,6 +16,7 @@
 
 use {
     crate::{self as author_noting_pallet, Config, ParaMode},
+    alloc::{collections::btree_map::BTreeMap, vec},
     cumulus_pallet_parachain_system::{RelayChainState, RelaychainStateProvider},
     cumulus_primitives_core::ParaId,
     frame_support::{
@@ -131,13 +132,13 @@ impl mock_data::Config for Test {}
     serde::Deserialize,
 )]
 pub struct Mocks {
-    pub container_chains: Vec<(ParaId, Vec<AccountId>)>,
+    pub container_chains: BTreeMap<ParaId, Vec<AccountId>>,
 }
 
 impl Default for Mocks {
     fn default() -> Self {
         Self {
-            container_chains: vec![(1001.into(), vec![1])],
+            container_chains: BTreeMap::from_iter([(1001.into(), vec![1])]),
         }
     }
 }

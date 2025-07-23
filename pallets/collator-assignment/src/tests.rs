@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use tp_traits::ParaId;
 use {
     crate::{mock::*, CollatorContainerChain, Event, PendingCollatorContainerChain},
     dp_collator_assignment::AssignedCollators,
@@ -27,6 +28,18 @@ mod keep_collator_subset;
 mod prioritize_invulnerables;
 mod select_chains;
 mod with_core_config;
+
+// Helper to construct `AssignedCollators` in tests
+fn create_assigned_collators(
+    orchestrator_chain: Vec<u64>,
+    container_chains: Vec<(u32, Vec<u64>)>,
+) -> AssignedCollators<u64> {
+    let mut m: BTreeMap<_, _> = container_chains.into_iter().collect();
+    m.insert(999, orchestrator_chain);
+    let m = m.into_iter().map(|(k, v)| (ParaId::from(k), v)).collect();
+
+    AssignedCollators::from_single_map(m, &ParaId::from(999))
+}
 
 #[test]
 fn assign_initial_collators() {
@@ -1227,17 +1240,17 @@ fn collator_assignment_includes_empty_chains() {
         run_to_block(11);
 
         let assigned_collators = CollatorContainerChain::<Test>::get();
-        let expected = AssignedCollators {
-            orchestrator_chain: vec![1, 2],
-            container_chains: BTreeMap::from_iter(vec![
-                (2000.into(), vec![]),
-                (2001.into(), vec![]),
-                (2002.into(), vec![]),
-                (3000.into(), vec![]),
-                (3001.into(), vec![]),
-                (3002.into(), vec![]),
-            ]),
-        };
+        let expected = create_assigned_collators(
+            vec![1, 2],
+            vec![
+                (2000, vec![]),
+                (2001, vec![]),
+                (2002, vec![]),
+                (3000, vec![]),
+                (3001, vec![]),
+                (3002, vec![]),
+            ],
+        );
         assert_eq!(assigned_collators, expected);
     });
 }
@@ -1261,10 +1274,8 @@ fn collator_assignment_remove_parachains_without_credits() {
         run_to_block(11);
 
         let assigned_collators = CollatorContainerChain::<Test>::get();
-        let expected = AssignedCollators {
-            orchestrator_chain: vec![1, 2, 3, 4, 5],
-            container_chains: BTreeMap::from_iter(vec![(2000.into(), vec![6, 7])]),
-        };
+        let expected =
+            create_assigned_collators(vec![1, 2, 3, 4, 5], vec![(2000, vec![6, 7])]);
         assert_eq!(assigned_collators, expected);
     });
 }
@@ -1288,10 +1299,8 @@ fn collator_assignment_remove_parathreads_without_credits() {
         run_to_block(11);
 
         let assigned_collators = CollatorContainerChain::<Test>::get();
-        let expected = AssignedCollators {
-            orchestrator_chain: vec![1, 2, 3, 4, 5],
-            container_chains: BTreeMap::from_iter(vec![(3000.into(), vec![6, 7])]),
-        };
+        let expected =
+            create_assigned_collators(vec![1, 2, 3, 4, 5], vec![(3000, vec![6, 7])]);
         assert_eq!(assigned_collators, expected);
     });
 }

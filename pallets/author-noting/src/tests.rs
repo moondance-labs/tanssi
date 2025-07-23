@@ -16,6 +16,7 @@
 
 use {
     crate::{mock::*, ContainerChainBlockInfo, Event},
+    alloc::collections::btree_map::BTreeMap,
     cumulus_primitives_core::ParaId,
     frame_support::{
         assert_ok,
@@ -181,7 +182,8 @@ fn test_author_id_insertion_many_paras() {
             // Writing to this pallet storage will only change the sproofs of the next block,
             // not the ones of the current block
             MockData::mutate(|m| {
-                m.container_chains = vec![(1001.into(), vec![1]), (1002.into(), vec![2])];
+                m.container_chains =
+                    BTreeMap::from_iter([(1001.into(), vec![1]), (1002.into(), vec![2])]);
             });
             assert_eq!(
                 AuthorNoting::latest_author(ParaId::from(1001)),

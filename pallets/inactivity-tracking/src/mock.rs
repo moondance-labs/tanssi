@@ -6,15 +6,18 @@
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
-use frame_support::dispatch::DispatchResultWithPostInfo;
 // Tanssi is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
+
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
+
 use {
+    frame_support::dispatch::DispatchResultWithPostInfo,
     crate as pallet_inactivity_tracking,
+    alloc::collections::btree_map::BTreeMap,
     alloc::collections::btree_set::BTreeSet,
     core::marker::PhantomData,
     frame_support::{
@@ -38,7 +41,7 @@ pub const COLLATOR_1: AccountId = 1;
 pub const COLLATOR_2: AccountId = 2;
 pub const COLLATOR_3: AccountId = 3;
 pub const CONTAINER_CHAIN_ID_1: ParaId = ParaId::new(3000);
-pub const CONTAINER_CHAIN_ID_2: ParaId = ParaId::new(3001);
+//pub const CONTAINER_CHAIN_ID_2: ParaId = ParaId::new(3001);
 pub const CONTAINER_CHAIN_ID_3: ParaId = ParaId::new(3002);
 pub const SESSION_BLOCK_LENGTH: u64 = 5;
 
@@ -167,20 +170,17 @@ impl tp_traits::GetSessionIndex<u32> for CurrentSessionIndexGetter {
 
 pub struct MockContainerChainsInfoFetcher;
 impl tp_traits::GetContainerChainsWithCollators<AccountId> for MockContainerChainsInfoFetcher {
-    fn container_chains_with_collators(_for_session: ForSession) -> Vec<(ParaId, Vec<AccountId>)> {
-        vec![
+    fn container_chains_with_collators(
+        _for_session: ForSession,
+    ) -> BTreeMap<ParaId, Vec<AccountId>> {
+        BTreeMap::from_iter([
             (CONTAINER_CHAIN_ID_1, vec![COLLATOR_1, COLLATOR_2]),
-            (CONTAINER_CHAIN_ID_2, vec![]),
             (CONTAINER_CHAIN_ID_3, vec![COLLATOR_3]),
-        ]
+        ])
     }
 
     fn get_all_collators_assigned_to_chains(_for_session: ForSession) -> BTreeSet<AccountId> {
-        let mut collators = BTreeSet::new();
-        collators.insert(COLLATOR_1);
-        collators.insert(COLLATOR_2);
-        collators.insert(COLLATOR_3);
-        collators
+        BTreeSet::from_iter([COLLATOR_1, COLLATOR_2, COLLATOR_3])
     }
 
     #[cfg(feature = "runtime-benchmarks")]

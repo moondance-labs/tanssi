@@ -157,7 +157,8 @@ pub mod pallet {
 
             let container_chains_to_check: Vec<_> =
                 T::ContainerChains::container_chains_with_collators(ForSession::Current)
-                    .into_keys().collect();
+                    .into_keys()
+                    .collect();
             let mut total_weight =
                 T::WeightInfo::set_latest_author_data(container_chains_to_check.len() as u32);
 

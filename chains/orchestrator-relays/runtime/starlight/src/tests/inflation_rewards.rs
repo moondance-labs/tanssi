@@ -60,8 +60,8 @@ fn test_reward_to_invulnerable() {
             // we assign Alice and Bob.
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32.into()],
-                vec![ALICE.into(), BOB.into()]
+                assignment.get_container_chain(&1001u32.into()).unwrap_or(&vec![]),
+                &[ALICE.into(), BOB.into()]
             );
 
             // Build the proof needed to call AuthorNoting's inherent.

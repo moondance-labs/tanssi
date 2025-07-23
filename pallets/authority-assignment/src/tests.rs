@@ -18,37 +18,36 @@ use {
     crate::{mock::*, CollatorContainerChain},
     dp_collator_assignment::AssignedCollators,
     std::collections::BTreeMap,
+    tp_traits::ParaId,
 };
 
 fn assigned_collators_at_session(session_index: u32) -> Option<BTreeMap<String, u32>> {
     let assigned_collators = CollatorContainerChain::<Test>::get(session_index)?;
+    let h = assigned_collators.invert_map(ParaId::from(999));
 
-    let mut h = BTreeMap::new();
+    Some(h.into_iter().map(|(k, v)| (k, u32::from(v))).collect())
+}
 
-    for (para_id, collators) in assigned_collators.container_chains.iter() {
-        for collator in collators.iter() {
-            h.insert(collator.clone(), u32::from(*para_id));
-        }
-    }
+// Helper to construct `AssignedCollators` in tests
+fn create_assigned_collators(
+    orchestrator_chain: Vec<u64>,
+    container_chains: Vec<(u32, Vec<u64>)>,
+) -> AssignedCollators<u64> {
+    let mut m: BTreeMap<_, _> = container_chains.into_iter().collect();
+    m.insert(999, orchestrator_chain);
+    let m = m.into_iter().map(|(k, v)| (ParaId::from(k), v)).collect();
 
-    for collator in assigned_collators.orchestrator_chain {
-        h.insert(collator, 999);
-    }
-
-    Some(h)
+    AssignedCollators::from_single_map(m, &ParaId::from(999))
 }
 
 #[test]
 fn assign_collators_genesis() {
     new_test_ext().execute_with(|| {
         MockData::mutate(|m| {
-            m.next_collator_assignment = AssignedCollators {
-                orchestrator_chain: vec![1, 2, 3, 4, 5],
-                container_chains: BTreeMap::from_iter(vec![
-                    (1001.into(), vec![6, 7]),
-                    (1002.into(), vec![8, 9]),
-                ]),
-            };
+            m.next_collator_assignment = create_assigned_collators(
+                vec![1, 2, 3, 4, 5],
+                vec![(1001, vec![6, 7]), (1002, vec![8, 9])],
+            );
 
             m.nimbus_map = BTreeMap::from_iter(
                 vec![
@@ -95,13 +94,10 @@ fn assign_collators_genesis() {
 fn assign_collators_session_one() {
     new_test_ext().execute_with(|| {
         MockData::mutate(|m| {
-            m.next_collator_assignment = AssignedCollators {
-                orchestrator_chain: vec![1, 2, 3, 4, 5],
-                container_chains: BTreeMap::from_iter(vec![
-                    (1001.into(), vec![6, 7]),
-                    (1002.into(), vec![8, 9]),
-                ]),
-            };
+            m.next_collator_assignment = create_assigned_collators(
+                vec![1, 2, 3, 4, 5],
+                vec![(1001, vec![6, 7]), (1002, vec![8, 9])],
+            );
 
             m.nimbus_map = BTreeMap::from_iter(
                 vec![
@@ -155,13 +151,10 @@ fn assign_collators_session_one() {
 fn assign_collators_change_nimbus_key() {
     new_test_ext().execute_with(|| {
         MockData::mutate(|m| {
-            m.next_collator_assignment = AssignedCollators {
-                orchestrator_chain: vec![1, 2, 3, 4, 5],
-                container_chains: BTreeMap::from_iter(vec![
-                    (1001.into(), vec![6, 7]),
-                    (1002.into(), vec![8, 9]),
-                ]),
-            };
+            m.next_collator_assignment = create_assigned_collators(
+                vec![1, 2, 3, 4, 5],
+                vec![(1001, vec![6, 7]), (1002, vec![8, 9])],
+            );
 
             m.nimbus_map = BTreeMap::from_iter(
                 vec![
@@ -237,13 +230,10 @@ fn assign_collators_change_nimbus_key() {
 fn assign_collators_remove_collator() {
     new_test_ext().execute_with(|| {
         MockData::mutate(|m| {
-            m.next_collator_assignment = AssignedCollators {
-                orchestrator_chain: vec![1, 2, 3, 4, 5],
-                container_chains: BTreeMap::from_iter(vec![
-                    (1001.into(), vec![6, 7]),
-                    (1002.into(), vec![8, 9]),
-                ]),
-            };
+            m.next_collator_assignment = create_assigned_collators(
+                vec![1, 2, 3, 4, 5],
+                vec![(1001, vec![6, 7]), (1002, vec![8, 9])],
+            );
 
             m.nimbus_map = BTreeMap::from_iter(
                 vec![
@@ -288,12 +278,14 @@ fn assign_collators_remove_collator() {
             // Remove key for collator 9
             m.nimbus_map.remove(&9);
             // And remove collator 9 from assignment
-            let collators_1002 = m
+            let mut collators_1002 = m
                 .next_collator_assignment
-                .container_chains
-                .get_mut(&1002.into())
-                .unwrap();
+                .get_container_chain(&1002.into())
+                .unwrap()
+                .clone();
             assert_eq!(collators_1002.pop(), Some(9));
+            m.next_collator_assignment
+                .insert_container_chain(1002.into(), collators_1002);
         });
 
         run_to_session(1);
@@ -325,13 +317,10 @@ fn assign_collators_remove_collator() {
 fn assign_collators_insert_collator() {
     new_test_ext().execute_with(|| {
         MockData::mutate(|m| {
-            m.next_collator_assignment = AssignedCollators {
-                orchestrator_chain: vec![1, 2, 3, 4, 5],
-                container_chains: BTreeMap::from_iter(vec![
-                    (1001.into(), vec![6, 7]),
-                    (1002.into(), vec![8, 9]),
-                ]),
-            };
+            m.next_collator_assignment = create_assigned_collators(
+                vec![1, 2, 3, 4, 5],
+                vec![(1001, vec![6, 7]), (1002, vec![8, 9])],
+            );
 
             m.nimbus_map = BTreeMap::from_iter(
                 vec![

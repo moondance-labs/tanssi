@@ -421,8 +421,8 @@ fn test_author_collation_aura_add_assigned_to_paras() {
             assert_eq!(authorities(), vec![alice_id, bob_id]);
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32.into()],
-                vec![CHARLIE.into(), DAVE.into()]
+                assignment.get_container_chain(&1001u32.into()).unwrap_or(&vec![]),
+                &[CHARLIE.into(), DAVE.into()]
             );
         });
 }
@@ -545,8 +545,8 @@ fn test_authors_paras_inserted_a_posteriori() {
             // Charlie and Dave should be assigned to para 1001
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32.into()],
-                vec![CHARLIE.into(), DAVE.into()]
+                assignment.get_container_chain(&1001u32.into()).unwrap_or(&vec![]),
+                &[CHARLIE.into(), DAVE.into()]
             );
         });
 }
@@ -616,8 +616,8 @@ fn test_authors_paras_inserted_a_posteriori_with_collators_already_assigned() {
             // Charlie and Dave are now assigned to para 1001
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32.into()],
-                vec![CHARLIE.into(), DAVE.into()]
+                assignment.get_container_chain(&1001u32.into()).unwrap_or(&vec![]),
+                &[CHARLIE.into(), DAVE.into()]
             );
             assert_eq!(
                 assignment.orchestrator_chain,
@@ -681,7 +681,7 @@ fn test_paras_registered_but_zero_credits() {
 
             // Nobody should be assigned to para 1001
             let assignment = CollatorAssignment::collator_container_chain();
-            assert_eq!(assignment.container_chains.get(&1001u32.into()), None);
+            assert_eq!(assignment.get_container_chain(&1001u32.into()), None);
         });
 }
 
