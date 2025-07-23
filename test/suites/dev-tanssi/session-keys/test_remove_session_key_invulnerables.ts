@@ -44,16 +44,16 @@ describeSuite({
                 // Bob is no longer an authority, but alice is
                 expect(authorities.toJSON().orchestratorChain).not.toContainEqual(bobKey);
                 expect(authorities.toJSON().orchestratorChain).toContainEqual(aliceKey);
-                expect(authorities.toJSON().containerChains["2000"]).not.toContainEqual(bobKey);
-                expect(authorities.toJSON().containerChains["2001"]).not.toContainEqual(bobKey);
+                expect(authorities.toJSON().containerChains["2000"] || []).not.toContainEqual(bobKey);
+                expect(authorities.toJSON().containerChains["2001"] || []).not.toContainEqual(bobKey);
 
                 // But not only authority assignment, collator assignment should also not have bob
                 const collators = await polkadotJs.query.collatorAssignment.collatorContainerChain();
                 // Bob is no longer an assigned collator, but alice is
                 expect(collators.toJSON().orchestratorChain).not.toContainEqual(bob.address);
                 expect(collators.toJSON().orchestratorChain).toContainEqual(alice.address);
-                expect(collators.toJSON().containerChains["2000"]).not.toContainEqual(bob.address);
-                expect(collators.toJSON().containerChains["2001"]).not.toContainEqual(bob.address);
+                expect(collators.toJSON().containerChains["2000"] || []).not.toContainEqual(bob.address);
+                expect(collators.toJSON().containerChains["2001"] || []).not.toContainEqual(bob.address);
             },
         });
     },

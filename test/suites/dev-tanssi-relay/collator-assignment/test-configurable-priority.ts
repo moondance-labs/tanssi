@@ -121,7 +121,7 @@ describeSuite({
             // @ts-expect-error Missing Orchestrator Pallets in api-augment
             expect(pendingParas.length).to.be.eq(1);
             const parasScheduled = pendingParas[0][1];
-            expect(parasScheduled.toJSON()).to.deep.equal([2000, 2001, 2004]);
+            expect(parasScheduled.toJSON()).to.deep.equal([2000, 2001, 2002, 2003, 2004]);
 
             await context.createBlock([await polkadotJs.tx.utility.batch(purchaseCreditTxs).signAsync(alice)]);
 

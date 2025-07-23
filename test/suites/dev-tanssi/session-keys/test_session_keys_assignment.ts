@@ -40,7 +40,6 @@ describeSuite({
                 expect(assignment0.orchestratorChain).to.deep.equal([u8aToHex(alice.publicKey)]);
                 expect(assignment0.containerChains).to.deep.equal({
                     2000: [u8aToHex(bob.publicKey), u8aToHex(charlie.publicKey)],
-                    2001: [],
                 });
 
                 // Session 1 is the same as session 0
@@ -107,7 +106,6 @@ describeSuite({
                 ]);
                 expect(assignment2.containerChains).to.deep.equal({
                     2000: [u8aToHex(bob.publicKey), u8aToHex(charlie.publicKey)],
-                    2001: [],
                 });
 
                 // Let's jump one more session
