@@ -918,21 +918,18 @@ describeSuite({
                 let wETHTransferReceived = false;
                 let wETHTransferSuccess = false;
 
-                await gatewayContract.on(
-                    "InboundMessageDispatched",
-                    async (_channelID, _nonce, _messageID, success) => {
-                        const balanceAfter = await wETHContract.balanceOf(gatewayOwnerAddress);
-                        expect(balanceAfter).to.be.eq(wETHBalanceBefore + wETHBalanceToSend);
-                        wETHTransferReceived = true;
-                        wETHTransferSuccess = success;
-                    }
-                );
+                await gatewayContract.on("InboundMessageDispatched", (_channelID, _nonce, _messageID, success) => {
+                    wETHTransferReceived = true;
+                    wETHTransferSuccess = success;
+                });
 
                 while (!wETHTransferReceived) {
                     await sleep(1000);
                 }
-
                 expect(wETHTransferSuccess).to.be.true;
+
+                const balanceAfter = await wETHContract.balanceOf(gatewayOwnerAddress);
+                expect(balanceAfter).to.be.eq(wETHBalanceBefore + wETHBalanceToSend);
             },
         });
 
