@@ -2796,10 +2796,7 @@ fn test_collator_assignment_parathreads_adjusted_on_vacant_parachain_core() {
                     .container_para_ids()
                     .into_iter()
                     .collect::<Vec<ParaId>>(),
-                vec![
-                    1001u32.into(),
-                    1002u32.into(),
-                ]
+                vec![1001u32.into(), 1002u32.into(),]
             );
         });
 }
@@ -2841,10 +2838,7 @@ fn test_collator_assignment_parachain_cannot_be_adjusted_on_vacant_parathread_co
                     .container_para_ids()
                     .into_iter()
                     .collect::<Vec<ParaId>>(),
-                vec![
-                    1001u32.into(),
-                    1002u32.into(),
-                ]
+                vec![1001u32.into(), 1002u32.into(),]
             );
 
             // Send funds to tank

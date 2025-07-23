@@ -3591,11 +3591,7 @@ fn test_max_collators_uses_pending_value() {
             // Final assignment: because max_collators = 2, there are only 2 collators, one in
             // orchestrator chain, and the other one idle
             let assignment = CollatorAssignment::collator_container_chain();
-            assert_eq!(
-                assignment
-                    .get_container_chain(&1001u32.into()),
-                None
-            );
+            assert_eq!(assignment.get_container_chain(&1001u32.into()), None);
             assert_eq!(assignment.orchestrator_chain.len(), 1);
         });
 }

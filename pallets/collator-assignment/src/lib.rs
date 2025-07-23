@@ -662,7 +662,8 @@ pub mod pallet {
                 ForSession::Current => {
                     let mut collators = CollatorContainerChain::<T>::get();
                     let mut new_collators = AssignedCollators::default();
-                    new_collators.orchestrator_chain = core::mem::take(&mut collators.orchestrator_chain);
+                    new_collators.orchestrator_chain =
+                        core::mem::take(&mut collators.orchestrator_chain);
                     for (para_id, collators) in container_chains {
                         new_collators.insert_container_chain(*para_id, collators.clone());
                     }
@@ -672,7 +673,8 @@ pub mod pallet {
                     let mut collators =
                         PendingCollatorContainerChain::<T>::get().unwrap_or_default();
                     let mut new_collators = AssignedCollators::default();
-                    new_collators.orchestrator_chain = core::mem::take(&mut collators.orchestrator_chain);
+                    new_collators.orchestrator_chain =
+                        core::mem::take(&mut collators.orchestrator_chain);
                     for (para_id, collators) in container_chains {
                         new_collators.insert_container_chain(*para_id, collators.clone());
                     }
