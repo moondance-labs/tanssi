@@ -45,7 +45,7 @@ describeSuite({
                 ).map(({ candidate }) => candidate.toString());
 
                 if (collators.length <= invulnerables.length) {
-                    // Less collators than invulnerables: all collators must be invulnerables
+                    // Less collators than invulnerables - all collators must be invulnerables
                     for (const collator of collators) {
                         expect(invulnerables.includes(collator), `Collator should be in invulnerable list: ${collator}`)
                             .to.be.true;
