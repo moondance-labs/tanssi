@@ -21,11 +21,8 @@ use {
         service::{self, NodeConfig},
     },
     container_chain_template_simple_runtime::Block,
-    cumulus_client_service::{
-        build_relay_chain_interface, storage_proof_size::HostFunctions as ReclaimHostFunctions,
-    },
+    cumulus_client_service::storage_proof_size::HostFunctions as ReclaimHostFunctions,
     cumulus_primitives_core::ParaId,
-    dc_orchestrator_chain_interface::OrchestratorChainInterface,
     frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE},
     log::{info, warn},
     node_common::{
@@ -33,17 +30,12 @@ use {
         service::NodeBuilderConfig as _,
     },
     parity_scale_codec::Encode,
-    polkadot_service::{IdentifyVariant as _, TaskManager},
+    polkadot_service::IdentifyVariant as _,
     sc_cli::{ChainSpec, Result, SubstrateCli},
-    sc_service::KeystoreContainer,
-    sc_telemetry::TelemetryWorker,
     sp_core::hexdisplay::HexDisplay,
     sp_runtime::traits::{AccountIdConversion, Block as BlockT, Get},
-    std::{marker::PhantomData, sync::Arc},
-    tc_service_container_chain::{
-        cli::ContainerChainCli,
-        spawner::{ContainerChainSpawnParams, ContainerChainSpawner},
-    },
+    std::marker::PhantomData,
+    tc_service_container_chain::{cli::ContainerChainCli, service::RpcProviderMode},
 };
 
 pub struct NodeName;
@@ -345,137 +337,36 @@ fn rpc_provider_mode(cli: Cli, profile_id: u64) -> Result<()> {
     let runner = cli.create_runner(&cli.run.normalize())?;
 
     runner.run_node_until_exit(|config| async move {
-        let orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>;
-        let mut task_manager;
+        let polkadot_cli = RelayChainCli::<NodeName>::new(
+            &config,
+            [RelayChainCli::<NodeName>::executable_name()]
+                .iter()
+                .chain(cli.relaychain_args().iter()),
+        );
 
-        if cli.orchestrator_endpoints.is_empty() {
-            todo!("Start in process node")
-        } else {
-            task_manager = TaskManager::new(config.tokio_handle.clone(), None)
-                .map_err(|e| sc_cli::Error::Application(Box::new(e)))?;
+        let container_chain_cli = ContainerChainCli::new(
+            &config,
+            [ContainerChainCli::executable_name()]
+                .iter()
+                .chain(cli.container_chain_args().iter()),
+        );
 
-            orchestrator_chain_interface =
-                tc_orchestrator_chain_rpc_interface::create_client_and_start_worker(
-                    cli.orchestrator_endpoints.clone(),
-                    &mut task_manager,
-                    None,
-                )
-                .await
-                .map(Arc::new)
-                .map_err(|e| sc_cli::Error::Application(Box::new(e)))?;
-        };
+        let generate_rpc_builder = tc_service_container_chain::rpc::GenerateSubstrateRpcBuilder::<
+            container_chain_template_simple_runtime::RuntimeApi,
+        >::new();
 
-        // Spawn assignment watcher
-        {
-            let container_chain_cli = ContainerChainCli::new(
-                &config,
-                [ContainerChainCli::executable_name()]
-                    .iter()
-                    .chain(cli.container_chain_args().iter()),
-            );
-
-            log::info!("Container chain CLI: {container_chain_cli:?}");
-
-            let para_id = node_common_chain_spec::Extensions::try_get(&*config.chain_spec)
-                .map(|e| e.para_id)
-                .ok_or("Could not find parachain ID in chain-spec.")?;
-
-            let para_id = ParaId::from(para_id);
-
-            // TODO: Once there is an embeded node this should use it.
-            let keystore_container = KeystoreContainer::new(&config.keystore)?;
-
-            let collator_options = cli.run.collator_options();
-
-            let polkadot_cli = RelayChainCli::<NodeName>::new(
-                &config,
-                [RelayChainCli::<NodeName>::executable_name()]
-                    .iter()
-                    .chain(cli.relaychain_args().iter()),
-            );
-
-            let tokio_handle = config.tokio_handle.clone();
-            let polkadot_config =
-                SubstrateCli::create_configuration(&polkadot_cli, &polkadot_cli, tokio_handle)
-                    .map_err(|err| format!("Relay chain argument error: {}", err))?;
-
-            let telemetry = config
-                .telemetry_endpoints
-                .clone()
-                .filter(|x| !x.is_empty())
-                .map(|endpoints| -> std::result::Result<_, sc_telemetry::Error> {
-                    let worker = TelemetryWorker::new(16)?;
-                    let telemetry = worker.handle().new_telemetry(endpoints);
-                    Ok((worker, telemetry))
-                })
-                .transpose()
-                .map_err(sc_service::Error::Telemetry)?;
-
-            let telemetry_worker_handle = telemetry.as_ref().map(|(worker, _)| worker.handle());
-
-            let (relay_chain_interface, _collation_pair) = build_relay_chain_interface(
-                polkadot_config,
-                &config,
-                telemetry_worker_handle,
-                &mut task_manager,
-                collator_options,
-                None,
-            )
-            .await
-            .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
-
-            let relay_chain = node_common_chain_spec::Extensions::try_get(&*config.chain_spec)
-                .map(|e| e.relay_chain.clone())
-                .ok_or("Could not find relay_chain extension in chain-spec.")?;
-
-            let container_chain_spawner = ContainerChainSpawner {
-                params: ContainerChainSpawnParams {
-                    orchestrator_chain_interface,
-                    container_chain_cli,
-                    tokio_handle: config.tokio_handle.clone(),
-                    chain_type: config.chain_spec.chain_type(),
-                    relay_chain,
-                    relay_chain_interface,
-                    sync_keystore: keystore_container.keystore(),
-                    orchestrator_para_id: para_id,
-                    collation_params: None,
-                    spawn_handle: task_manager.spawn_handle().clone(),
-                    data_preserver: true,
-                    generate_rpc_builder:
-                        tc_service_container_chain::rpc::GenerateSubstrateRpcBuilder::<
-                            container_chain_template_simple_runtime::RuntimeApi,
-                        >::new(),
-
-                    phantom: PhantomData,
-                },
-                state: Default::default(),
-                // db cleanup task disabled here because it uses collator assignment to decide
-                // which folders to keep and this is not a collator, this is an rpc node
-                db_folder_cleanup_done: true,
-                collate_on_tanssi: Arc::new(|| {
-                    panic!("Called collate_on_tanssi outside of Tanssi node")
-                }),
-                collation_cancellation_constructs: None,
-            };
-            let state = container_chain_spawner.state.clone();
-
-            task_manager.spawn_essential_handle().spawn(
-                "container-chain-assignment-watcher",
-                None,
-                tc_service_container_chain::data_preservers::task_watch_assignment(
-                    container_chain_spawner,
-                    profile_id,
-                ),
-            );
-
-            task_manager.spawn_essential_handle().spawn(
-                "container-chain-spawner-debug-state",
-                None,
-                tc_service_container_chain::monitor::monitor_task(state),
-            );
+        RpcProviderMode {
+            config,
+            provider_profile_id: profile_id,
+            orchestrator_endpoints: cli.orchestrator_endpoints,
+            collator_options: cli.run.collator_options(),
+            polkadot_cli,
+            container_chain_cli,
+            generate_rpc_builder,
+            phantom: PhantomData,
         }
-
-        Ok(task_manager)
+        .run()
+        .await
     })
 }
 

@@ -22,11 +22,8 @@ use {
     },
     container_chain_template_frontier_runtime::Block,
     core::marker::PhantomData,
-    cumulus_client_service::{
-        build_relay_chain_interface, storage_proof_size::HostFunctions as ReclaimHostFunctions,
-    },
+    cumulus_client_service::storage_proof_size::HostFunctions as ReclaimHostFunctions,
     cumulus_primitives_core::ParaId,
-    dc_orchestrator_chain_interface::OrchestratorChainInterface,
     frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE},
     log::{info, warn},
     node_common::{
@@ -36,15 +33,10 @@ use {
     parity_scale_codec::Encode,
     polkadot_cli::IdentifyVariant,
     sc_cli::{ChainSpec, Result, SubstrateCli},
-    sc_service::{DatabaseSource, KeystoreContainer, TaskManager},
-    sc_telemetry::TelemetryWorker,
+    sc_service::DatabaseSource,
     sp_core::hexdisplay::HexDisplay,
     sp_runtime::traits::{AccountIdConversion, Block as BlockT, Get},
-    std::sync::Arc,
-    tc_service_container_chain::{
-        cli::ContainerChainCli,
-        spawner::{ContainerChainSpawnParams, ContainerChainSpawner},
-    },
+    tc_service_container_chain::{cli::ContainerChainCli, service::RpcProviderMode},
 };
 
 pub struct NodeName;
@@ -373,163 +365,44 @@ fn rpc_provider_mode(cli: Cli, profile_id: u64) -> Result<()> {
     let runner = cli.create_runner(&cli.run.normalize())?;
 
     runner.run_node_until_exit(|config| async move {
-        let orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>;
-        let mut task_manager;
+        let polkadot_cli = RelayChainCli::<NodeName>::new(
+            &config,
+            [RelayChainCli::<NodeName>::executable_name()]
+                .iter()
+                .chain(cli.relaychain_args().iter()),
+        );
 
-        if cli.orchestrator_endpoints.is_empty() {
-            todo!("Start in process node")
-        } else {
-            task_manager = TaskManager::new(config.tokio_handle.clone(), None)
-                .map_err(|e| sc_cli::Error::Application(Box::new(e)))?;
+        let container_chain_cli = ContainerChainCli::new(
+            &config,
+            [ContainerChainCli::executable_name()]
+                .iter()
+                .chain(cli.container_chain_args().iter()),
+        );
 
-            orchestrator_chain_interface =
-                tc_orchestrator_chain_rpc_interface::create_client_and_start_worker(
-                    cli.orchestrator_endpoints.clone(),
-                    &mut task_manager,
-                    None,
-                )
-                .await
-                .map(Arc::new)
-                .map_err(|e| sc_cli::Error::Application(Box::new(e)))?;
+        let rpc_config = crate::cli::RpcConfig {
+            eth_log_block_cache: cli.run.eth_log_block_cache,
+            eth_statuses_cache: cli.run.eth_statuses_cache,
+            fee_history_limit: cli.run.fee_history_limit,
+            max_past_logs: cli.run.max_past_logs,
+            max_block_range: cli.run.max_block_range,
         };
 
-        // Spawn assignment watcher
-        {
-            let mut container_chain_cli = ContainerChainCli::new(
-                &config,
-                [ContainerChainCli::executable_name()]
-                    .iter()
-                    .chain(cli.container_chain_args().iter()),
-            );
+        let generate_rpc_builder = crate::rpc::GenerateFrontierRpcBuilder::<
+            container_chain_template_frontier_runtime::RuntimeApi,
+        >::new(rpc_config);
 
-            // If the container chain args have no --wasmtime-precompiled flag, use the same as the orchestrator
-            if container_chain_cli
-                .base
-                .base
-                .import_params
-                .wasmtime_precompiled
-                .is_none()
-            {
-                container_chain_cli
-                    .base
-                    .base
-                    .import_params
-                    .wasmtime_precompiled
-                    .clone_from(&config.executor.wasmtime_precompiled);
-            }
-
-            log::info!("Container chain CLI: {container_chain_cli:?}");
-
-            let para_id = node_common_chain_spec::Extensions::try_get(&*config.chain_spec)
-                .map(|e| e.para_id)
-                .ok_or("Could not find parachain ID in chain-spec.")?;
-
-            let para_id = ParaId::from(para_id);
-
-            // TODO: Once there is an embeded node this should use it.
-            let keystore_container = KeystoreContainer::new(&config.keystore)?;
-
-            let collator_options = cli.run.collator_options();
-
-            let polkadot_cli = RelayChainCli::<NodeName>::new(
-                &config,
-                [RelayChainCli::<NodeName>::executable_name()]
-                    .iter()
-                    .chain(cli.relaychain_args().iter()),
-            );
-
-            let tokio_handle = config.tokio_handle.clone();
-            let polkadot_config =
-                SubstrateCli::create_configuration(&polkadot_cli, &polkadot_cli, tokio_handle)
-                    .map_err(|err| format!("Relay chain argument error: {}", err))?;
-
-            let telemetry = config
-                .telemetry_endpoints
-                .clone()
-                .filter(|x| !x.is_empty())
-                .map(|endpoints| -> std::result::Result<_, sc_telemetry::Error> {
-                    let worker = TelemetryWorker::new(16)?;
-                    let telemetry = worker.handle().new_telemetry(endpoints);
-                    Ok((worker, telemetry))
-                })
-                .transpose()
-                .map_err(sc_service::Error::Telemetry)?;
-
-            let telemetry_worker_handle = telemetry.as_ref().map(|(worker, _)| worker.handle());
-
-            let (relay_chain_interface, _collation_pair) = build_relay_chain_interface(
-                polkadot_config,
-                &config,
-                telemetry_worker_handle,
-                &mut task_manager,
-                collator_options,
-                None,
-            )
-            .await
-            .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
-
-            let relay_chain = node_common_chain_spec::Extensions::try_get(&*config.chain_spec)
-                .map(|e| e.relay_chain.clone())
-                .ok_or("Could not find relay_chain extension in chain-spec.")?;
-
-            let rpc_config = crate::cli::RpcConfig {
-                eth_log_block_cache: cli.run.eth_log_block_cache,
-                eth_statuses_cache: cli.run.eth_statuses_cache,
-                fee_history_limit: cli.run.fee_history_limit,
-                max_past_logs: cli.run.max_past_logs,
-                max_block_range: cli.run.max_block_range,
-            };
-
-            let container_chain_spawner = ContainerChainSpawner {
-                params: ContainerChainSpawnParams {
-                    orchestrator_chain_interface,
-                    container_chain_cli,
-                    tokio_handle: config.tokio_handle.clone(),
-                    chain_type: config.chain_spec.chain_type(),
-                    relay_chain,
-                    relay_chain_interface,
-                    sync_keystore: keystore_container.keystore(),
-                    orchestrator_para_id: para_id,
-                    collation_params: None,
-                    spawn_handle: task_manager.spawn_handle().clone(),
-                    data_preserver: true,
-                    generate_rpc_builder: crate::rpc::GenerateFrontierRpcBuilder::<
-                        container_chain_template_frontier_runtime::RuntimeApi,
-                    > {
-                        rpc_config,
-                        phantom: PhantomData,
-                    },
-
-                    phantom: PhantomData,
-                },
-                state: Default::default(),
-                // db cleanup task disabled here because it uses collator assignment to decide
-                // which folders to keep and this is not a collator, this is an rpc node
-                db_folder_cleanup_done: true,
-                collate_on_tanssi: Arc::new(|| {
-                    panic!("Called collate_on_tanssi outside of Tanssi node")
-                }),
-                collation_cancellation_constructs: None,
-            };
-            let state = container_chain_spawner.state.clone();
-
-            task_manager.spawn_essential_handle().spawn(
-                "container-chain-assignment-watcher",
-                None,
-                tc_service_container_chain::data_preservers::task_watch_assignment(
-                    container_chain_spawner,
-                    profile_id,
-                ),
-            );
-
-            task_manager.spawn_essential_handle().spawn(
-                "container-chain-spawner-debug-state",
-                None,
-                tc_service_container_chain::monitor::monitor_task(state),
-            );
+        RpcProviderMode {
+            config,
+            provider_profile_id: profile_id,
+            orchestrator_endpoints: cli.orchestrator_endpoints,
+            collator_options: cli.run.collator_options(),
+            polkadot_cli,
+            container_chain_cli,
+            generate_rpc_builder,
+            phantom: PhantomData,
         }
-
-        Ok(task_manager)
+        .run()
+        .await
     })
 }
 

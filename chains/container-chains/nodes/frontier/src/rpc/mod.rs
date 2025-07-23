@@ -480,8 +480,17 @@ tp_traits::alias!(
 
 #[derive(CloneNoBound)]
 pub struct GenerateFrontierRpcBuilder<RuntimeApi> {
-    pub rpc_config: crate::cli::RpcConfig,
-    pub phantom: PhantomData<RuntimeApi>,
+    rpc_config: crate::cli::RpcConfig,
+    phantom: PhantomData<RuntimeApi>,
+}
+
+impl<RuntimeApi> GenerateFrontierRpcBuilder<RuntimeApi> {
+    pub fn new(rpc_config: crate::cli::RpcConfig) -> Self {
+        Self {
+            rpc_config,
+            phantom: PhantomData,
+        }
+    }
 }
 
 const _: () = {
