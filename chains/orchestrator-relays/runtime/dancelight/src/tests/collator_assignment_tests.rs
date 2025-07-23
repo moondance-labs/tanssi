@@ -2545,10 +2545,8 @@ fn test_collator_assignment_tip_priority_on_less_cores() {
             for parathread_id in &parathread_ids_without_tip {
                 assert_eq!(
                     TanssiCollatorAssignment::collator_container_chain()
-                        .get_container_chain(parathread_id)
-                        .unwrap()
-                        .len(),
-                    0
+                        .get_container_chain(parathread_id),
+                    None
                 );
             }
 
@@ -2563,10 +2561,8 @@ fn test_collator_assignment_tip_priority_on_less_cores() {
                 vec![
                     1001u32.into(),
                     1003u32.into(),
-                    1004u32.into(),
                     1005u32.into(),
                     1006u32.into(),
-                    1007u32.into()
                 ]
             );
         });
@@ -2864,12 +2860,7 @@ fn test_collator_assignment_parachain_cannot_be_adjusted_on_vacant_parathread_co
                     .container_para_ids()
                     .into_iter()
                     .collect::<Vec<ParaId>>(),
-                vec![
-                    1001u32.into(),
-                    1002u32.into(),
-                    1005u32.into(),
-                    1006u32.into()
-                ]
+                vec![1001u32.into(), 1005u32.into(),]
             );
         });
 }

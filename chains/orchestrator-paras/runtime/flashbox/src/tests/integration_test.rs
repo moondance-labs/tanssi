@@ -1218,7 +1218,7 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
                 Runtime::parachain_collators(100.into()),
                 Some(vec![ALICE.into(), CHARLIE.into()])
             );
-            assert_eq!(Runtime::parachain_collators(1001.into()), Some(vec![]));
+            assert_eq!(Runtime::parachain_collators(1001.into()), None);
             assert_eq!(
                 Runtime::current_collator_parachain_assignment(BOB.into()),
                 None
