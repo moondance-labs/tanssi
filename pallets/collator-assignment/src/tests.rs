@@ -1274,8 +1274,7 @@ fn collator_assignment_remove_parachains_without_credits() {
         run_to_block(11);
 
         let assigned_collators = CollatorContainerChain::<Test>::get();
-        let expected =
-            create_assigned_collators(vec![1, 2, 3, 4, 5], vec![(2000, vec![6, 7])]);
+        let expected = create_assigned_collators(vec![1, 2, 3, 4, 5], vec![(2000, vec![6, 7])]);
         assert_eq!(assigned_collators, expected);
     });
 }
@@ -1299,8 +1298,7 @@ fn collator_assignment_remove_parathreads_without_credits() {
         run_to_block(11);
 
         let assigned_collators = CollatorContainerChain::<Test>::get();
-        let expected =
-            create_assigned_collators(vec![1, 2, 3, 4, 5], vec![(3000, vec![6, 7])]);
+        let expected = create_assigned_collators(vec![1, 2, 3, 4, 5], vec![(3000, vec![6, 7])]);
         assert_eq!(assigned_collators, expected);
     });
 }

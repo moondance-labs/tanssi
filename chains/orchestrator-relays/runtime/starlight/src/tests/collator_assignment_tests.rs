@@ -346,7 +346,9 @@ fn test_session_keys_with_authority_assignment() {
             let key_mapping_session_0 =
                 TanssiAuthorityAssignment::collator_container_chain(0).unwrap();
             assert_eq!(
-                key_mapping_session_0.get_container_chain(&1000u32.into()).unwrap(),
+                key_mapping_session_0
+                    .get_container_chain(&1000u32.into())
+                    .unwrap(),
                 &[alice_keys.nimbus.clone(), bob_keys.nimbus.clone()],
             );
 
@@ -425,7 +427,9 @@ fn test_session_keys_with_authority_assignment() {
             let key_mapping_session_2 =
                 TanssiAuthorityAssignment::collator_container_chain(2).unwrap();
             assert_eq!(
-                key_mapping_session_2.get_container_chain(&1000u32.into()).unwrap(),
+                key_mapping_session_2
+                    .get_container_chain(&1000u32.into())
+                    .unwrap(),
                 &[alice_keys_2.nimbus.clone(), bob_keys_2.nimbus.clone()],
             );
             assert_eq!(
@@ -452,7 +456,9 @@ fn test_session_keys_with_authority_assignment() {
             let key_mapping_session_2 =
                 TanssiAuthorityAssignment::collator_container_chain(2).unwrap();
             assert_eq!(
-                key_mapping_session_2.get_container_chain(&1000u32.into()).unwrap(),
+                key_mapping_session_2
+                    .get_container_chain(&1000u32.into())
+                    .unwrap(),
                 &[alice_keys_2.nimbus.clone(), bob_keys_2.nimbus.clone()],
             );
             assert_eq!(
@@ -464,7 +470,9 @@ fn test_session_keys_with_authority_assignment() {
             let key_mapping_session_3 =
                 TanssiAuthorityAssignment::collator_container_chain(3).unwrap();
             assert_eq!(
-                key_mapping_session_3.get_container_chain(&1000u32.into()).unwrap(),
+                key_mapping_session_3
+                    .get_container_chain(&1000u32.into())
+                    .unwrap(),
                 &[alice_keys_2.nimbus.clone(), bob_keys_2.nimbus.clone()],
             );
             assert_eq!(
@@ -2003,8 +2011,9 @@ fn test_collator_assignment_tip_priority_on_congestion() {
             let max_tip = 1 * UNIT;
 
             assert_eq!(
-                TanssiCollatorAssignment::collator_container_chain().get_container_chain(
-                    &1003u32.into()).unwrap()
+                TanssiCollatorAssignment::collator_container_chain()
+                    .get_container_chain(&1003u32.into())
+                    .unwrap()
                     .len(),
                 0
             );
@@ -2025,8 +2034,9 @@ fn test_collator_assignment_tip_priority_on_congestion() {
 
             run_to_session(2);
             assert_eq!(
-                TanssiCollatorAssignment::collator_container_chain().get_container_chain(
-                    &para_id.into()).unwrap()
+                TanssiCollatorAssignment::collator_container_chain()
+                    .get_container_chain(&para_id.into())
+                    .unwrap()
                     .len(),
                 2,
             );
@@ -2116,8 +2126,9 @@ fn test_collator_assignment_tip_not_assigned_on_insufficient_balance() {
 
             run_to_session(1);
             assert_eq!(
-                TanssiCollatorAssignment::collator_container_chain().get_container_chain(
-                    &para_id.into()).unwrap()
+                TanssiCollatorAssignment::collator_container_chain()
+                    .get_container_chain(&para_id.into())
+                    .unwrap()
                     .len(),
                 0
             );
@@ -2179,13 +2190,25 @@ fn test_collator_assignment_tip_only_charge_willing_paras() {
 
             // 2 out of the 3 paras should have collators assigned, with one paying tip to get
             // prioritized, and the other selected at random that should not be charged any tips
-            assert_eq!(assignment.get_container_chain(&para_id_with_tip.into()).unwrap().len(), 2);
+            assert_eq!(
+                assignment
+                    .get_container_chain(&para_id_with_tip.into())
+                    .unwrap()
+                    .len(),
+                2
+            );
             assert_eq!(
                 Balances::usable_balance(ServicesPayment::parachain_tank(para_id_with_tip.into())),
                 tank_funds - max_tip * 2,
             );
 
-            assert_eq!(assignment.get_container_chain(&para_id_without_tip.into()).unwrap().len(), 2);
+            assert_eq!(
+                assignment
+                    .get_container_chain(&para_id_without_tip.into())
+                    .unwrap()
+                    .len(),
+                2
+            );
             assert_eq!(
                 Balances::usable_balance(ServicesPayment::parachain_tank(
                     para_id_without_tip.into()
@@ -2246,14 +2269,16 @@ fn test_collator_assignment_tip_withdraw_min_tip() {
             run_to_session(2);
 
             assert_eq!(
-                TanssiCollatorAssignment::collator_container_chain().get_container_chain(
-                    &para_id_1003.into()).unwrap()
+                TanssiCollatorAssignment::collator_container_chain()
+                    .get_container_chain(&para_id_1003.into())
+                    .unwrap()
                     .len(),
                 2
             );
             assert_eq!(
-                TanssiCollatorAssignment::collator_container_chain().get_container_chain(
-                    &para_id_1002.into()).unwrap()
+                TanssiCollatorAssignment::collator_container_chain()
+                    .get_container_chain(&para_id_1002.into())
+                    .unwrap()
                     .len(),
                 2
             );
@@ -2482,19 +2507,23 @@ fn test_collator_assignment_tip_priority_on_less_cores() {
             run_to_session(2);
 
             assert_eq!(
-                TanssiCollatorAssignment::collator_container_chain().get_container_chain(
-                    &parachain_id_offering_tip).unwrap()
+                TanssiCollatorAssignment::collator_container_chain()
+                    .get_container_chain(&parachain_id_offering_tip)
+                    .unwrap()
                     .len(),
                 2,
             );
 
             // The first parachain has collator even without tip as it is highest priority without tip
             assert_eq!(
-                TanssiCollatorAssignment::collator_container_chain().get_container_chain(
-                    parachain_ids_without_tip
-                        .first()
-                        .expect("at least one parachain id is without tip")).unwrap()
-                .len(),
+                TanssiCollatorAssignment::collator_container_chain()
+                    .get_container_chain(
+                        parachain_ids_without_tip
+                            .first()
+                            .expect("at least one parachain id is without tip")
+                    )
+                    .unwrap()
+                    .len(),
                 2
             );
 
@@ -2508,8 +2537,9 @@ fn test_collator_assignment_tip_priority_on_less_cores() {
 
             for parathread_id in &parathread_ids_offering_tip {
                 assert_eq!(
-                    TanssiCollatorAssignment::collator_container_chain().get_container_chain(
-                        parathread_id).unwrap()
+                    TanssiCollatorAssignment::collator_container_chain()
+                        .get_container_chain(parathread_id)
+                        .unwrap()
                         .len(),
                     1,
                 );
@@ -2517,8 +2547,9 @@ fn test_collator_assignment_tip_priority_on_less_cores() {
 
             for parathread_id in &parathread_ids_without_tip {
                 assert_eq!(
-                    TanssiCollatorAssignment::collator_container_chain().get_container_chain(
-                        parathread_id).unwrap()
+                    TanssiCollatorAssignment::collator_container_chain()
+                        .get_container_chain(parathread_id)
+                        .unwrap()
                         .len(),
                     0
                 );
@@ -2648,8 +2679,9 @@ fn test_collator_assignment_tip_priority_on_less_cores() {
 
             for parachain_id in &parachain_ids_offering_tip {
                 assert_eq!(
-                    TanssiCollatorAssignment::collator_container_chain().get_container_chain(
-                        parachain_id).unwrap()
+                    TanssiCollatorAssignment::collator_container_chain()
+                        .get_container_chain(parachain_id)
+                        .unwrap()
                         .len(),
                     2,
                 );
@@ -2666,26 +2698,31 @@ fn test_collator_assignment_tip_priority_on_less_cores() {
             }
 
             assert_eq!(
-                TanssiCollatorAssignment::collator_container_chain().get_container_chain(
-                    &parathread_id_offering_tip).unwrap()
+                TanssiCollatorAssignment::collator_container_chain()
+                    .get_container_chain(&parathread_id_offering_tip)
+                    .unwrap()
                     .len(),
                 1,
             );
 
             // The first parathread has collator even without tip as it is highest priority without tip and we have one collator remaining
             assert_eq!(
-                TanssiCollatorAssignment::collator_container_chain().get_container_chain(
-                    parathread_ids_without_tip
-                        .first()
-                        .expect("at least one parathread id is without tip")).unwrap()
-                .len(),
+                TanssiCollatorAssignment::collator_container_chain()
+                    .get_container_chain(
+                        parathread_ids_without_tip
+                            .first()
+                            .expect("at least one parathread id is without tip")
+                    )
+                    .unwrap()
+                    .len(),
                 1
             );
 
             for parathread_id in &mut parathread_ids_without_tip.iter().skip(1) {
                 assert_eq!(
-                    TanssiCollatorAssignment::collator_container_chain().get_container_chain(
-                        parathread_id).unwrap()
+                    TanssiCollatorAssignment::collator_container_chain()
+                        .get_container_chain(parathread_id)
+                        .unwrap()
                         .len(),
                     0
                 );

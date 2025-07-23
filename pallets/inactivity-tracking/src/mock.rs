@@ -15,11 +15,11 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    frame_support::dispatch::DispatchResultWithPostInfo,
     crate as pallet_inactivity_tracking,
     alloc::collections::btree_map::BTreeMap,
     alloc::collections::btree_set::BTreeSet,
     core::marker::PhantomData,
+    frame_support::dispatch::DispatchResultWithPostInfo,
     frame_support::{
         parameter_types,
         traits::{ConstU32, ConstU64, Everything, OnFinalize, OnInitialize},

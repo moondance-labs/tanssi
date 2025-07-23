@@ -421,7 +421,9 @@ fn test_author_collation_aura_add_assigned_to_paras() {
             assert_eq!(authorities(), vec![alice_id, bob_id]);
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.get_container_chain(&1001u32.into()).unwrap_or(&vec![]),
+                assignment
+                    .get_container_chain(&1001u32.into())
+                    .unwrap_or(&vec![]),
                 &[CHARLIE.into(), DAVE.into()]
             );
         });
@@ -545,7 +547,9 @@ fn test_authors_paras_inserted_a_posteriori() {
             // Charlie and Dave should be assigned to para 1001
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.get_container_chain(&1001u32.into()).unwrap_or(&vec![]),
+                assignment
+                    .get_container_chain(&1001u32.into())
+                    .unwrap_or(&vec![]),
                 &[CHARLIE.into(), DAVE.into()]
             );
         });
@@ -616,7 +620,9 @@ fn test_authors_paras_inserted_a_posteriori_with_collators_already_assigned() {
             // Charlie and Dave are now assigned to para 1001
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.get_container_chain(&1001u32.into()).unwrap_or(&vec![]),
+                assignment
+                    .get_container_chain(&1001u32.into())
+                    .unwrap_or(&vec![]),
                 &[CHARLIE.into(), DAVE.into()]
             );
             assert_eq!(
@@ -3548,7 +3554,13 @@ fn test_max_collators_uses_pending_value() {
 
             // Initial assignment: 1 collator in orchestrator chain and 2 collators in container 1001
             let assignment = CollatorAssignment::collator_container_chain();
-            assert_eq!(assignment.get_container_chain(&1001u32.into()).unwrap().len(), 2);
+            assert_eq!(
+                assignment
+                    .get_container_chain(&1001u32.into())
+                    .unwrap()
+                    .len(),
+                2
+            );
             assert_eq!(assignment.orchestrator_chain.len(), 1);
 
             assert_ok!(Configuration::set_max_collators(root_origin(), 2));
@@ -3562,17 +3574,30 @@ fn test_max_collators_uses_pending_value() {
 
                 let assignment = CollatorAssignment::collator_container_chain();
                 assert!(
-                    assignment.get_container_chain(&1001u32.into()).unwrap().len() <= 2,
+                    assignment
+                        .get_container_chain(&1001u32.into())
+                        .unwrap()
+                        .len()
+                        <= 2,
                     "session {}: {} collators assigned to container chain 1001",
                     session,
-                    assignment.get_container_chain(&1001u32.into()).unwrap().len()
+                    assignment
+                        .get_container_chain(&1001u32.into())
+                        .unwrap()
+                        .len()
                 );
             }
 
             // Final assignment: because max_collators = 2, there are only 2 collators, one in
             // orchestrator chain, and the other one idle
             let assignment = CollatorAssignment::collator_container_chain();
-            assert_eq!(assignment.get_container_chain(&1001u32.into()).unwrap().len(), 0);
+            assert_eq!(
+                assignment
+                    .get_container_chain(&1001u32.into())
+                    .unwrap()
+                    .len(),
+                0
+            );
             assert_eq!(assignment.orchestrator_chain.len(), 1);
         });
 }
@@ -3662,7 +3687,9 @@ fn test_collator_assignment_tip_priority_on_congestion() {
 
             run_to_session(2);
             assert_eq!(
-                CollatorAssignment::collator_container_chain().get_container_chain(&para_id.into()).unwrap()
+                CollatorAssignment::collator_container_chain()
+                    .get_container_chain(&para_id.into())
+                    .unwrap()
                     .len(),
                 2,
             );
@@ -3809,13 +3836,25 @@ fn test_collator_assignment_tip_only_charge_willing_paras() {
 
             // 2 out of the 3 paras should have collators assigned, with one paying tip to get
             // prioritized, and the other selected at random that should not be charged any tips
-            assert_eq!(assignment.get_container_chain(&para_id_with_tip.into()).unwrap().len(), 2);
+            assert_eq!(
+                assignment
+                    .get_container_chain(&para_id_with_tip.into())
+                    .unwrap()
+                    .len(),
+                2
+            );
             assert_eq!(
                 Balances::usable_balance(ServicesPayment::parachain_tank(para_id_with_tip.into())),
                 tank_funds - max_tip * 2,
             );
 
-            assert_eq!(assignment.get_container_chain(&para_id_without_tip.into()).unwrap().len(), 2);
+            assert_eq!(
+                assignment
+                    .get_container_chain(&para_id_without_tip.into())
+                    .unwrap()
+                    .len(),
+                2
+            );
             assert_eq!(
                 Balances::usable_balance(ServicesPayment::parachain_tank(
                     para_id_without_tip.into()
@@ -3880,14 +3919,16 @@ fn test_collator_assignment_tip_withdraw_min_tip() {
             run_to_session(2);
 
             assert_eq!(
-                CollatorAssignment::collator_container_chain().get_container_chain(
-                    &para_id_1003.into()).unwrap()
+                CollatorAssignment::collator_container_chain()
+                    .get_container_chain(&para_id_1003.into())
+                    .unwrap()
                     .len(),
                 2
             );
             assert_eq!(
-                CollatorAssignment::collator_container_chain().get_container_chain(
-                    &para_id_1002.into()).unwrap()
+                CollatorAssignment::collator_container_chain()
+                    .get_container_chain(&para_id_1002.into())
+                    .unwrap()
                     .len(),
                 2
             );

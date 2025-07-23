@@ -60,7 +60,9 @@ fn test_reward_to_invulnerable() {
             // we assign Alice and Bob.
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.get_container_chain(&1001u32.into()).unwrap_or(&vec![]),
+                assignment
+                    .get_container_chain(&1001u32.into())
+                    .unwrap_or(&vec![]),
                 &[ALICE.into(), BOB.into()]
             );
 
