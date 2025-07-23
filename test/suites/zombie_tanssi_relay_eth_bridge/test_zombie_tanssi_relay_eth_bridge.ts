@@ -8,6 +8,7 @@ import { decodeAddress } from "@polkadot/util-crypto";
 import { ethers } from "ethers";
 import { type ChildProcessWithoutNullStreams, exec, spawn } from "node:child_process";
 import {
+    ASSET_HUB_AGENT_ID,
     ASSET_HUB_CHANNEL_ID,
     ASSET_HUB_PARA_ID,
     SNOWBRIDGE_FEES_ACCOUNT,
@@ -649,9 +650,6 @@ describeSuite({
                 );
                 expect(assetHubChannelId).to.be.eq(ASSET_HUB_CHANNEL_ID);
 
-                // Get the channel info
-                const channelInfo = (await relayApi.query.ethereumSystem.channels(assetHubChannelId)).unwrap().toJSON();
-
                 const channelOperatingModeOf = await gatewayContract.channelOperatingModeOf(assetHubChannelId);
 
                 // Ensure channel is in Normal operations mode
@@ -662,8 +660,8 @@ describeSuite({
                     .sudo(
                         relayApi.tx.ethereumTokenTransfers.setTokenTransferChannel(
                             assetHubChannelId,
-                            channelInfo.agentId.toString(),
-                            Number(channelInfo.paraId)
+                            ASSET_HUB_AGENT_ID,
+                            Number(ASSET_HUB_PARA_ID)
                         )
                     )
                     .signAndSend(alice);
