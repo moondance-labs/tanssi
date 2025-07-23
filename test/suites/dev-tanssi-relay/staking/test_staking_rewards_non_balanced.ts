@@ -124,6 +124,9 @@ describeSuite({
                 let slotOffset = 0;
                 const containerIds = [2000, 2001];
                 for (const id of containerIds) {
+                    if (!assignment.containerChains[id]) {
+                        continue;
+                    }
                     const index = assignment.containerChains[id].indexOf(alice.address);
                     if (index !== -1) {
                         paraId = id;

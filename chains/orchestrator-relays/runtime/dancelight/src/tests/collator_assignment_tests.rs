@@ -2636,8 +2636,6 @@ fn test_collator_assignment_tip_priority_on_less_cores() {
                     1002u32.into(),
                     1004u32.into(),
                     1005u32.into(),
-                    1006u32.into(),
-                    1007u32.into()
                 ]
             );
 

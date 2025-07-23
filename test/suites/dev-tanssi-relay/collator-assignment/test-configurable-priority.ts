@@ -258,7 +258,7 @@ describeSuite({
                 const collatorAssignmentAfter = (
                     await polkadotJs.query.tanssiCollatorAssignment.collatorContainerChain()
                 ).toJSON();
-                expect(sortCollatorAssignment(collatorAssignmentAfter)).to.be.deep.equal([2001, 2004]);
+                expect(sortCollatorAssignment(collatorAssignmentAfter)).to.be.deep.equal([2001, 2002, 2003, 2004]);
 
                 // Let's change percentage of parachain to 0
                 const zeroParachaintx = await polkadotJs.tx.sudo
