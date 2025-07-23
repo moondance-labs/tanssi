@@ -928,6 +928,8 @@ describeSuite({
                 }
                 expect(wETHTransferSuccess).to.be.true;
 
+                await sleep(10000);
+
                 const balanceAfter = await wETHContract.balanceOf(gatewayOwnerAddress);
                 expect(balanceAfter).to.be.eq(wETHBalanceBefore + wETHBalanceToSend);
             },
