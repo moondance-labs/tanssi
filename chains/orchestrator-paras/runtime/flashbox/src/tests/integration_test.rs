@@ -1255,7 +1255,7 @@ fn test_consensus_runtime_api() {
                 Runtime::para_id_authorities(100.into()),
                 Some(vec![alice_id.clone(), bob_id.clone()])
             );
-            assert_eq!(Runtime::para_id_authorities(1001.into()), Some(vec![]));
+            assert_eq!(Runtime::para_id_authorities(1001.into()), None);
             assert_eq!(
                 Runtime::check_para_id_assignment(alice_id.clone()),
                 Some(100.into())
@@ -1343,7 +1343,7 @@ fn test_consensus_runtime_api_session_changes() {
                 Runtime::para_id_authorities(100.into()),
                 Some(vec![alice_id.clone(), bob_id.clone()])
             );
-            assert_eq!(Runtime::para_id_authorities(1001.into()), Some(vec![]));
+            assert_eq!(Runtime::para_id_authorities(1001.into()), None);
             assert_eq!(
                 Runtime::check_para_id_assignment(alice_id.clone()),
                 Some(100.into())
@@ -1388,7 +1388,7 @@ fn test_consensus_runtime_api_session_changes() {
                 Runtime::para_id_authorities(100.into()),
                 Some(vec![alice_id.clone(), bob_id.clone()])
             );
-            assert_eq!(Runtime::para_id_authorities(1001.into()), Some(vec![]));
+            assert_eq!(Runtime::para_id_authorities(1001.into()), None);
             assert_eq!(
                 Runtime::check_para_id_assignment(alice_id.clone()),
                 Some(100.into())
@@ -1452,7 +1452,7 @@ fn test_consensus_runtime_api_next_session() {
                 Runtime::para_id_authorities(100.into()),
                 Some(vec![alice_id.clone(), bob_id.clone()])
             );
-            assert_eq!(Runtime::para_id_authorities(1001.into()), Some(vec![]));
+            assert_eq!(Runtime::para_id_authorities(1001.into()), None);
             assert_eq!(
                 Runtime::check_para_id_assignment(alice_id.clone()),
                 Some(100.into())
@@ -1515,7 +1515,7 @@ fn test_consensus_runtime_api_next_session() {
                 Runtime::para_id_authorities(100.into()),
                 Some(vec![alice_id.clone(), bob_id.clone()])
             );
-            assert_eq!(Runtime::para_id_authorities(1001.into()), Some(vec![]));
+            assert_eq!(Runtime::para_id_authorities(1001.into()), None);
             assert_eq!(
                 Runtime::check_para_id_assignment(alice_id.clone()),
                 Some(100.into())

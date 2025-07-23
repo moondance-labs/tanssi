@@ -1078,7 +1078,7 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
                 Runtime::parachain_collators(100.into()),
                 Some(vec![ALICE.into(), BOB.into()])
             );
-            assert_eq!(Runtime::parachain_collators(1001.into()), Some(vec![]));
+            assert_eq!(Runtime::parachain_collators(1001.into()), None);
             assert_eq!(
                 Runtime::current_collator_parachain_assignment(ALICE.into()),
                 Some(100.into())
@@ -1133,7 +1133,7 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
                 Runtime::parachain_collators(100.into()),
                 Some(vec![ALICE.into(), BOB.into()])
             );
-            assert_eq!(Runtime::parachain_collators(1001.into()), Some(vec![]));
+            assert_eq!(Runtime::parachain_collators(1001.into()), None);
             assert_eq!(
                 Runtime::current_collator_parachain_assignment(CHARLIE.into()),
                 None
@@ -1199,7 +1199,7 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
                 Runtime::parachain_collators(100.into()),
                 Some(vec![ALICE.into(), CHARLIE.into()])
             );
-            assert_eq!(Runtime::parachain_collators(1001.into()), Some(vec![]));
+            assert_eq!(Runtime::parachain_collators(1001.into()), None);
             assert_eq!(
                 Runtime::current_collator_parachain_assignment(BOB.into()),
                 None
@@ -1236,7 +1236,7 @@ fn test_consensus_runtime_api() {
                 Runtime::para_id_authorities(100.into()),
                 Some(vec![alice_id.clone(), bob_id.clone()])
             );
-            assert_eq!(Runtime::para_id_authorities(1001.into()), Some(vec![]));
+            assert_eq!(Runtime::para_id_authorities(1001.into()), None);
             assert_eq!(
                 Runtime::check_para_id_assignment(alice_id.clone()),
                 Some(100.into())
@@ -1324,7 +1324,7 @@ fn test_consensus_runtime_api_session_changes() {
                 Runtime::para_id_authorities(100.into()),
                 Some(vec![alice_id.clone(), bob_id.clone()])
             );
-            assert_eq!(Runtime::para_id_authorities(1001.into()), Some(vec![]));
+            assert_eq!(Runtime::para_id_authorities(1001.into()), None);
             assert_eq!(
                 Runtime::check_para_id_assignment(alice_id.clone()),
                 Some(100.into())
@@ -1369,7 +1369,7 @@ fn test_consensus_runtime_api_session_changes() {
                 Runtime::para_id_authorities(100.into()),
                 Some(vec![alice_id.clone(), bob_id.clone()])
             );
-            assert_eq!(Runtime::para_id_authorities(1001.into()), Some(vec![]));
+            assert_eq!(Runtime::para_id_authorities(1001.into()), None);
             assert_eq!(
                 Runtime::check_para_id_assignment(alice_id.clone()),
                 Some(100.into())
@@ -1433,7 +1433,7 @@ fn test_consensus_runtime_api_next_session() {
                 Runtime::para_id_authorities(100.into()),
                 Some(vec![alice_id.clone(), bob_id.clone()])
             );
-            assert_eq!(Runtime::para_id_authorities(1001.into()), Some(vec![]));
+            assert_eq!(Runtime::para_id_authorities(1001.into()), None);
             assert_eq!(
                 Runtime::check_para_id_assignment(alice_id.clone()),
                 Some(100.into())
@@ -1496,7 +1496,7 @@ fn test_consensus_runtime_api_next_session() {
                 Runtime::para_id_authorities(100.into()),
                 Some(vec![alice_id.clone(), bob_id.clone()])
             );
-            assert_eq!(Runtime::para_id_authorities(1001.into()), Some(vec![]));
+            assert_eq!(Runtime::para_id_authorities(1001.into()), None);
             assert_eq!(
                 Runtime::check_para_id_assignment(alice_id.clone()),
                 Some(100.into())
@@ -5564,7 +5564,7 @@ fn test_max_collators_uses_pending_value() {
                 assert!(
                     assignment
                         .get_container_chain(&1001u32.into())
-                        .unwrap()
+                        .unwrap_or(&vec![])
                         .len()
                         <= 2,
                     "session {}: {} collators assigned to container chain 1001",
@@ -5579,13 +5579,7 @@ fn test_max_collators_uses_pending_value() {
             // Final assignment: because max_collators = 2, there are only 2 collators, one in
             // orchestrator chain, and the other one idle
             let assignment = CollatorAssignment::collator_container_chain();
-            assert_eq!(
-                assignment
-                    .get_container_chain(&1001u32.into())
-                    .unwrap()
-                    .len(),
-                0
-            );
+            assert_eq!(assignment.get_container_chain(&1001u32.into()), None);
             assert_eq!(assignment.orchestrator_chain.len(), 1);
         });
 }
@@ -5655,11 +5649,8 @@ fn test_collator_assignment_tip_priority_on_congestion() {
             let max_tip = 1 * UNIT;
 
             assert_eq!(
-                CollatorAssignment::collator_container_chain()
-                    .get_container_chain(&1003u32.into())
-                    .unwrap()
-                    .len(),
-                0
+                CollatorAssignment::collator_container_chain().get_container_chain(&1003u32.into()),
+                None
             );
 
             // Send funds to tank
@@ -5769,11 +5760,8 @@ fn test_collator_assignment_tip_not_assigned_on_insufficient_balance() {
 
             run_to_session(1);
             assert_eq!(
-                CollatorAssignment::collator_container_chain()
-                    .get_container_chain(&para_id.into())
-                    .unwrap()
-                    .len(),
-                0
+                CollatorAssignment::collator_container_chain().get_container_chain(&para_id.into()),
+                None
             );
         });
 }
