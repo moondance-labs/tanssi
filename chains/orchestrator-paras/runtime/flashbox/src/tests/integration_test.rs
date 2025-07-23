@@ -1097,7 +1097,7 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
                 Runtime::parachain_collators(100.into()),
                 Some(vec![ALICE.into(), BOB.into()])
             );
-            assert_eq!(Runtime::parachain_collators(1001.into()), Some(vec![]));
+            assert_eq!(Runtime::parachain_collators(1001.into()), None);
             assert_eq!(
                 Runtime::current_collator_parachain_assignment(ALICE.into()),
                 Some(100.into())
@@ -1152,7 +1152,7 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
                 Runtime::parachain_collators(100.into()),
                 Some(vec![ALICE.into(), BOB.into()])
             );
-            assert_eq!(Runtime::parachain_collators(1001.into()), Some(vec![]));
+            assert_eq!(Runtime::parachain_collators(1001.into()), None);
             assert_eq!(
                 Runtime::current_collator_parachain_assignment(CHARLIE.into()),
                 None
@@ -3576,7 +3576,7 @@ fn test_max_collators_uses_pending_value() {
                 assert!(
                     assignment
                         .get_container_chain(&1001u32.into())
-                        .unwrap()
+                        .unwrap_or(&vec![])
                         .len()
                         <= 2,
                     "session {}: {} collators assigned to container chain 1001",
@@ -3593,10 +3593,8 @@ fn test_max_collators_uses_pending_value() {
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
                 assignment
-                    .get_container_chain(&1001u32.into())
-                    .unwrap()
-                    .len(),
-                0
+                    .get_container_chain(&1001u32.into()),
+                None
             );
             assert_eq!(assignment.orchestrator_chain.len(), 1);
         });

@@ -103,9 +103,9 @@ fn set_collator_offline_using_set_offline_removes_it_from_assigned_collators_and
             // Verify that after being set offline, BOB is no longer:
             // - assigned to any container chain
             // - in the sorted eligible candidates list
-            assert!(!CollatorAssignment::collator_container_chain()
+            assert!(CollatorAssignment::collator_container_chain()
                 .container_para_id_of(&BOB.into())
-                .is_some());
+                .is_none());
             assert!(!<SortedEligibleCandidates<Runtime>>::get()
                 .iter()
                 .any(|c| c.candidate == BOB.into()));

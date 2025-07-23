@@ -77,10 +77,12 @@ mod benchmarks {
             .map(|para_id| (para_id.into(), invulnerables::<T>(10, SEED + 2 + para_id)))
             .collect();
 
-        let old_assigned = AssignedCollators {
-            orchestrator_chain: invulnerables::<T>(100, SEED + 1),
-            container_chains: BTreeMap::from_iter(old_container_chains),
-        };
+        let mut old_assigned = AssignedCollators::default();
+        old_assigned.orchestrator_chain = invulnerables::<T>(100, SEED + 1);
+
+        for (para_id, collators) in old_container_chains {
+            old_assigned.insert_container_chain(para_id, collators);
+        }
         <CollatorContainerChain<T>>::put(&old_assigned);
 
         // Do not use [0; 32] because that seed will not shuffle the list of collators
@@ -114,7 +116,7 @@ mod benchmarks {
         // New assignment is not empty
         // If more than one, at least one chain should have gotten collators
         if x > 1 {
-            assert_ne!(new_assigned.container_chains.len(), 0);
+            assert_ne!(new_assigned.container_para_ids().len(), 0);
         }
 
         // Worst case is `full_rotation: false` because it needs to check the previous assignment

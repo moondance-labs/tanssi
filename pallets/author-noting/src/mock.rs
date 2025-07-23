@@ -184,7 +184,7 @@ impl tp_traits::GetContainerChainsWithCollators<AccountId> for MockContainerChai
         container_chains: &[(ParaId, Vec<AccountId>)],
     ) {
         MockData::mutate(|m| {
-            m.container_chains = container_chains.to_vec();
+            m.container_chains = container_chains.iter().cloned().collect();
         });
     }
 }

@@ -608,7 +608,7 @@ pub mod pallet {
         #[cfg(feature = "runtime-benchmarks")]
         fn set_authors_for_para_id(para_id: ParaId, authors: Vec<T::AccountId>) {
             let mut assigned_collators = Pallet::<T>::collator_container_chain();
-            assigned_collators.container_chains.insert(para_id, authors);
+            assigned_collators.insert_container_chain(para_id, authors);
             CollatorContainerChain::<T>::put(assigned_collators);
         }
     }
@@ -661,14 +661,22 @@ pub mod pallet {
             match for_session {
                 ForSession::Current => {
                     let mut collators = CollatorContainerChain::<T>::get();
-                    collators.container_chains = container_chains.iter().cloned().collect();
-                    CollatorContainerChain::<T>::put(collators);
+                    let mut new_collators = AssignedCollators::default();
+                    new_collators.orchestrator_chain = core::mem::take(&mut collators.orchestrator_chain);
+                    for (para_id, collators) in container_chains {
+                        new_collators.insert_container_chain(*para_id, collators.clone());
+                    }
+                    CollatorContainerChain::<T>::put(new_collators);
                 }
                 ForSession::Next => {
                     let mut collators =
                         PendingCollatorContainerChain::<T>::get().unwrap_or_default();
-                    collators.container_chains = container_chains.iter().cloned().collect();
-                    PendingCollatorContainerChain::<T>::put(Some(collators));
+                    let mut new_collators = AssignedCollators::default();
+                    new_collators.orchestrator_chain = core::mem::take(&mut collators.orchestrator_chain);
+                    for (para_id, collators) in container_chains {
+                        new_collators.insert_container_chain(*para_id, collators.clone());
+                    }
+                    PendingCollatorContainerChain::<T>::put(Some(new_collators));
                 }
             }
         }

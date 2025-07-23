@@ -2015,10 +2015,8 @@ fn test_collator_assignment_tip_priority_on_congestion() {
 
             assert_eq!(
                 TanssiCollatorAssignment::collator_container_chain()
-                    .get_container_chain(&1003u32.into())
-                    .unwrap()
-                    .len(),
-                0
+                    .get_container_chain(&1003u32.into()),
+                None
             );
 
             // Send funds to tank
@@ -2130,10 +2128,8 @@ fn test_collator_assignment_tip_not_assigned_on_insufficient_balance() {
             run_to_session(1);
             assert_eq!(
                 TanssiCollatorAssignment::collator_container_chain()
-                    .get_container_chain(&para_id.into())
-                    .unwrap()
-                    .len(),
-                0
+                    .get_container_chain(&para_id.into()),
+                None
             );
         });
 }
@@ -2474,8 +2470,6 @@ fn test_collator_assignment_tip_priority_on_less_cores() {
                     1002u32.into(),
                     1004u32.into(),
                     1005u32.into(),
-                    1006u32.into(),
-                    1007u32.into()
                 ]
             );
 
@@ -2805,10 +2799,6 @@ fn test_collator_assignment_parathreads_adjusted_on_vacant_parachain_core() {
                 vec![
                     1001u32.into(),
                     1002u32.into(),
-                    1003u32.into(),
-                    1004u32.into(),
-                    1005u32.into(),
-                    1006u32.into()
                 ]
             );
         });
@@ -2854,8 +2844,6 @@ fn test_collator_assignment_parachain_cannot_be_adjusted_on_vacant_parathread_co
                 vec![
                     1001u32.into(),
                     1002u32.into(),
-                    1003u32.into(),
-                    1006u32.into()
                 ]
             );
 
