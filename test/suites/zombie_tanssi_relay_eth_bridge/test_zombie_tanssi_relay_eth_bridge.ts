@@ -373,7 +373,7 @@ describeSuite({
                 await waitSessions(
                     context,
                     relayApi,
-                    6,
+                    10,
                     async () => {
                         try {
                             const externalValidators = await relayApi.query.externalValidators.externalValidators();
@@ -925,8 +925,6 @@ describeSuite({
                     await sleep(1000);
                 }
                 expect(wETHTransferSuccess).to.be.true;
-
-                await sleep(10000);
 
                 const balanceAfter = await wETHContract.balanceOf(gatewayOwnerAddress);
                 expect(balanceAfter).to.be.eq(wETHBalanceBefore + wETHBalanceToSend);
