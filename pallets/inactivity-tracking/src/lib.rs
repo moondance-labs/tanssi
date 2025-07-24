@@ -448,6 +448,11 @@ pub mod pallet {
         /// Internal update the current session active collator records.
         /// This function is called when a container chain or orchestrator chain collator is noted.
         pub fn on_authors_noted(authors: impl IntoIterator<Item = T::AccountId>) -> Weight {
+            let authors: BTreeSet<_> = authors.into_iter().collect();
+            if authors.is_empty() {
+                return Weight::zero();
+            }
+
             let mut total_weight = T::DbWeight::get().reads(1);
 
             let result = <ActiveCollatorsForCurrentSession<T>>::try_mutate(|active_collators| {
@@ -483,6 +488,11 @@ pub mod pallet {
         /// Internal update the current session active chains records.
         /// This function is called when a container chain is noted.
         pub fn on_chains_noted(chains: impl IntoIterator<Item = ParaId>) -> Weight {
+            let chains: BTreeSet<_> = chains.into_iter().collect();
+            if chains.is_empty() {
+                return Weight::zero();
+            }
+
             let mut total_weight = T::DbWeight::get().reads(1);
 
             let result = <ActiveContainerChainsForCurrentSession<T>>::try_mutate(|active_chains| {
