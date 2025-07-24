@@ -51,14 +51,9 @@
 use frame_support::{traits::Get, weights::{Weight, constants::RocksDbWeight}};
 use sp_std::marker::PhantomData;
 
-/// Weight functions needed for snowbridge_pallet_inbound_queue.
-pub trait WeightInfo {
-	fn submit() -> Weight;
-}
-
 /// Weights for snowbridge_pallet_inbound_queue using the Substrate node and recommended hardware.
 pub struct SubstrateWeight<T>(PhantomData<T>);
-impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
+impl<T: frame_system::Config> snowbridge_pallet_inbound_queue::WeightInfo  for SubstrateWeight<T> {
 	/// Storage: `EthereumInboundQueue::OperatingMode` (r:1 w:0)
 	/// Proof: `EthereumInboundQueue::OperatingMode` (`max_values`: Some(1), `max_size`: Some(1), added: 496, mode: `MaxEncodedLen`)
 	/// Storage: `EthereumBeaconClient::LatestFinalizedBlockRoot` (r:1 w:0)
@@ -89,40 +84,5 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 		Weight::from_parts(125_000_000, 6196)
 			.saturating_add(T::DbWeight::get().reads(12_u64))
 			.saturating_add(T::DbWeight::get().writes(5_u64))
-	}
-}
-
-// For backwards compatibility and tests
-impl WeightInfo for () {
-	/// Storage: `EthereumInboundQueue::OperatingMode` (r:1 w:0)
-	/// Proof: `EthereumInboundQueue::OperatingMode` (`max_values`: Some(1), `max_size`: Some(1), added: 496, mode: `MaxEncodedLen`)
-	/// Storage: `EthereumBeaconClient::LatestFinalizedBlockRoot` (r:1 w:0)
-	/// Proof: `EthereumBeaconClient::LatestFinalizedBlockRoot` (`max_values`: Some(1), `max_size`: Some(32), added: 527, mode: `MaxEncodedLen`)
-	/// Storage: `EthereumBeaconClient::FinalizedBeaconState` (r:1 w:0)
-	/// Proof: `EthereumBeaconClient::FinalizedBeaconState` (`max_values`: None, `max_size`: Some(72), added: 2547, mode: `MaxEncodedLen`)
-	/// Storage: UNKNOWN KEY `0xaed97c7854d601808b98ae43079dafb3` (r:1 w:0)
-	/// Proof: UNKNOWN KEY `0xaed97c7854d601808b98ae43079dafb3` (r:1 w:0)
-	/// Storage: `EthereumSystem::Channels` (r:1 w:0)
-	/// Proof: `EthereumSystem::Channels` (`max_values`: None, `max_size`: Some(76), added: 2551, mode: `MaxEncodedLen`)
-	/// Storage: `EthereumInboundQueue::Nonce` (r:1 w:1)
-	/// Proof: `EthereumInboundQueue::Nonce` (`max_values`: None, `max_size`: Some(48), added: 2523, mode: `MaxEncodedLen`)
-	/// Storage: `EthereumSystem::PricingParameters` (r:1 w:0)
-	/// Proof: `EthereumSystem::PricingParameters` (`max_values`: Some(1), `max_size`: Some(112), added: 607, mode: `MaxEncodedLen`)
-	/// Storage: `System::Account` (r:2 w:2)
-	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
-	/// Storage: `ForeignAssetsCreator::ForeignAssetToAssetId` (r:1 w:0)
-	/// Proof: `ForeignAssetsCreator::ForeignAssetToAssetId` (`max_values`: None, `max_size`: None, mode: `Measured`)
-	/// Storage: `ForeignAssets::Asset` (r:1 w:1)
-	/// Proof: `ForeignAssets::Asset` (`max_values`: None, `max_size`: Some(208), added: 2683, mode: `MaxEncodedLen`)
-	/// Storage: `ForeignAssets::Account` (r:1 w:1)
-	/// Proof: `ForeignAssets::Account` (`max_values`: None, `max_size`: Some(132), added: 2607, mode: `MaxEncodedLen`)
-	fn submit() -> Weight {
-		// Proof Size summary in bytes:
-		//  Measured:  `1387`
-		//  Estimated: `6196`
-		// Minimum execution time: 123_000_000 picoseconds.
-		Weight::from_parts(125_000_000, 6196)
-			.saturating_add(RocksDbWeight::get().reads(12_u64))
-			.saturating_add(RocksDbWeight::get().writes(5_u64))
 	}
 }
