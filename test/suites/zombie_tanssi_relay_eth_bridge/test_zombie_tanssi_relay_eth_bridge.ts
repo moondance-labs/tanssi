@@ -8,6 +8,7 @@ import { decodeAddress } from "@polkadot/util-crypto";
 import { ethers } from "ethers";
 import { type ChildProcessWithoutNullStreams, exec, spawn } from "node:child_process";
 import {
+    ASSET_HUB_AGENT_ID,
     ASSET_HUB_CHANNEL_ID,
     ASSET_HUB_PARA_ID,
     SNOWBRIDGE_FEES_ACCOUNT,
@@ -372,7 +373,7 @@ describeSuite({
                 await waitSessions(
                     context,
                     relayApi,
-                    6,
+                    10,
                     async () => {
                         try {
                             const externalValidators = await relayApi.query.externalValidators.externalValidators();
@@ -649,9 +650,6 @@ describeSuite({
                 );
                 expect(assetHubChannelId).to.be.eq(ASSET_HUB_CHANNEL_ID);
 
-                // Get the channel info
-                const channelInfo = (await relayApi.query.ethereumSystem.channels(assetHubChannelId)).unwrap().toJSON();
-
                 const channelOperatingModeOf = await gatewayContract.channelOperatingModeOf(assetHubChannelId);
 
                 // Ensure channel is in Normal operations mode
@@ -662,8 +660,8 @@ describeSuite({
                     .sudo(
                         relayApi.tx.ethereumTokenTransfers.setTokenTransferChannel(
                             assetHubChannelId,
-                            channelInfo.agentId.toString(),
-                            Number(channelInfo.paraId)
+                            ASSET_HUB_AGENT_ID,
+                            Number(ASSET_HUB_PARA_ID)
                         )
                     )
                     .signAndSend(alice);
@@ -918,21 +916,18 @@ describeSuite({
                 let wETHTransferReceived = false;
                 let wETHTransferSuccess = false;
 
-                await gatewayContract.on(
-                    "InboundMessageDispatched",
-                    async (_channelID, _nonce, _messageID, success) => {
-                        const balanceAfter = await wETHContract.balanceOf(gatewayOwnerAddress);
-                        expect(balanceAfter).to.be.eq(wETHBalanceBefore + wETHBalanceToSend);
-                        wETHTransferReceived = true;
-                        wETHTransferSuccess = success;
-                    }
-                );
+                await gatewayContract.on("InboundMessageDispatched", (_channelID, _nonce, _messageID, success) => {
+                    wETHTransferReceived = true;
+                    wETHTransferSuccess = success;
+                });
 
                 while (!wETHTransferReceived) {
                     await sleep(1000);
                 }
-
                 expect(wETHTransferSuccess).to.be.true;
+
+                const balanceAfter = await wETHContract.balanceOf(gatewayOwnerAddress);
+                expect(balanceAfter).to.be.eq(wETHBalanceBefore + wETHBalanceToSend);
             },
         });
 

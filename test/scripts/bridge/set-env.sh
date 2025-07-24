@@ -18,13 +18,16 @@ export PATH="$output_bin_dir:$PATH"
 relayer_root_dir="$artifacts_dir/relayer"
 symbiotic_contracts_dir="$artifacts_dir/tanssi-symbiotic"
 web_dir="$relayer_root_dir/snowbridge/web"
-export contract_dir="$relayer_root_dir/snowbridge/contracts"
+export contract_dir="$symbiotic_contracts_dir/lib/tanssi-bridge-relayer/snowbridge/contracts"
 test_helpers_dir="$web_dir/packages/test-helpers"
 relay_bin="$relayer_root_dir/build/tanssi-bridge-relayer"
 
-RELAYER_COMMIT="05b5e6cf8fe836690cca4e88d2dff3307bf17fa4" # TODO: Change to tag when we do releases
-TANSSI_SYMBIOTIC_COMMIT="da63621d9fbef62f0718d148922896c7dbc58e1a" # TODO: Change to tag when we do release
-GETH_TAG="v1.15.3" # We will need to investigate if this is right
+# RELAYER NODE SHOULD BE COMPILED FROM HERE
+RELAYER_COMMIT="61773050e66a83139330a579a31b597b3a91faea" # TODO: Change to tag when we do releases
+
+# THIS IS WHERE CONTRACTS SHOULD BE DEPLOYED
+TANSSI_SYMBIOTIC_COMMIT="fc206197fac69e87b4cbb0f35e88b32fb0ec3dbd" # TODO: Change to tag when we do release
+GETH_TAG="v1.15.5" # We will need to investigate if this is right
 LODESTAR_TAG="v1.27.0"
 
 lodestar_dir=$artifacts_dir/lodestar
@@ -57,8 +60,8 @@ export BRIDGE_HUB_AGENT_ID="${BRIDGE_HUB_AGENT_ID:-0x03170a2e7597b7b7e3d84c05391
 relaychain_ws_url="${RELAYCHAIN_WS_URL:-ws://127.0.0.1:9944}"
 relaychain_sudo_seed="${RELAYCHAIN_SUDO_SEED:-//Alice}"
 
-export ASSET_HUB_PARAID="${ASSET_HUB_PARAID:-0}"
-export ASSET_HUB_AGENT_ID="${ASSET_HUB_AGENT_ID:-0x180bffca5d695ff9c422143d57db8ac7d32f92e6658684e489f947308cc143f5}"
+export ASSET_HUB_PARAID="${ASSET_HUB_PARAID:-1}"
+export ASSET_HUB_AGENT_ID="${ASSET_HUB_AGENT_ID:-0x9ba4d8cfc1cdf812338aa6457aa5510348526d933108b4106162474231b4cbe5}"
 
 # Token decimal of the relaychain(KSM|ROC:12,DOT:10)
 export FOREIGN_TOKEN_DECIMALS=12
@@ -97,7 +100,7 @@ export BRIDGE_HUB_INITIAL_DEPOSIT="${ETH_BRIDGE_HUB_INITIAL_DEPOSIT:-10000000000
 ## Message passing
 export PRIMARY_GOVERNANCE_CHANNEL_ID="0x0000000000000000000000000000000000000000000000000000000000000001"
 export SECONDARY_GOVERNANCE_CHANNEL_ID="0x0000000000000000000000000000000000000000000000000000000000000002"
-export ASSET_HUB_CHANNEL_ID="0xcdd46650b730ab688f476efce47941584cfb1d9abcef4b8bbb51734b4467a918"
+export ASSET_HUB_CHANNEL_ID="0x87c2676d3f8c7a46182b6a0793a8575bf4200c61469824052a7150c4de48f8d0"
 # Execution relay account (//ExecutionRelay 5CFNWKMFPsw5Cs2Teo6Pvg7rWyjKiFfqPZs8U4MZXzMYFwXL in testnet)
 execution_relayer_assethub_pub_key="${EXECUTION_RELAYER_PUB_KEY:-0x08228efd065c58a043da95c8bf177659fc587643e71e7ed1534666177730196f}"
 # Funded ethereum key
