@@ -8819,7 +8819,11 @@ export default {
         _enum: ["Disabled", "Enabled"],
     },
     /**
-     * Lookup979: dancelight_runtime::Runtime
+     * Lookup979: frame_system::extensions::weight_reclaim::WeightReclaim<T>
+     **/
+    FrameSystemExtensionsWeightReclaim: "Null",
+    /**
+     * Lookup980: dancelight_runtime::Runtime
      **/
     DancelightRuntimeRuntime: "Null",
 };

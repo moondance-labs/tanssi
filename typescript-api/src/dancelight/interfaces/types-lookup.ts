@@ -10270,6 +10270,9 @@ declare module "@polkadot/types/lookup" {
         readonly type: "Disabled" | "Enabled";
     }
 
-    /** @name DancelightRuntimeRuntime (979) */
+    /** @name FrameSystemExtensionsWeightReclaim (979) */
+    type FrameSystemExtensionsWeightReclaim = Null;
+
+    /** @name DancelightRuntimeRuntime (980) */
     type DancelightRuntimeRuntime = Null;
 } // declare module
