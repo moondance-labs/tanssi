@@ -652,7 +652,7 @@ where
                 .map_err(|e| sc_cli::Error::Application(Box::new(e)))?;
 
             orchestrator_chain_interface =
-                tc_orchestrator_chain_rpc_interface::create_client_and_start_worker(
+                tc_orchestrator_chain_interface_through_rpc::create_client_and_start_worker(
                     self.orchestrator_endpoints.clone(),
                     &mut task_manager,
                     None,

@@ -2261,7 +2261,7 @@ dependencies = [
  "substrate-frame-rpc-system",
  "substrate-prometheus-endpoint",
  "tc-consensus",
- "tc-orchestrator-chain-rpc-interface",
+ "tc-orchestrator-chain-interface-through-rpc",
  "tc-service-container-chain",
  "tp-traits",
  "url",
@@ -2344,7 +2344,7 @@ dependencies = [
  "substrate-frame-rpc-system",
  "substrate-prometheus-endpoint",
  "tc-consensus",
- "tc-orchestrator-chain-rpc-interface",
+ "tc-orchestrator-chain-interface-through-rpc",
  "tc-service-container-chain",
  "tokio",
  "url",
@@ -19834,7 +19834,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "tc-orchestrator-chain-rpc-interface"
+name = "tc-orchestrator-chain-interface-through-rpc"
 version = "0.1.0"
 dependencies = [
  "async-io 1.13.0",
@@ -19930,7 +19930,7 @@ dependencies = [
  "substrate-frame-rpc-system",
  "substrate-prometheus-endpoint",
  "tc-consensus",
- "tc-orchestrator-chain-rpc-interface",
+ "tc-orchestrator-chain-interface-through-rpc",
  "tokio",
  "tokio-stream",
  "tokio-util",
