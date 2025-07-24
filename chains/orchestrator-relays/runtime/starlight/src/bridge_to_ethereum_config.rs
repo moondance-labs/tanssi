@@ -22,7 +22,7 @@ use crate::EthereumBeaconClient;
 
 #[cfg(not(feature = "runtime-benchmarks"))]
 use tp_bridge::{
-    generic_token_message_processor::{GenericTokenMessageProcessor},
+    generic_token_message_processor::GenericTokenMessageProcessor,
     symbiotic_message_processor::SymbioticMessageProcessor,
 };
 
