@@ -35,6 +35,7 @@ const MAX_ASSETS: u64 = 1;
 
 pub enum AssetTypes {
     Balances,
+    Ethereum,
     Unknown,
 }
 
@@ -49,6 +50,20 @@ impl From<&Asset> for AssetTypes {
                     }),
                 ..
             } => AssetTypes::Balances,
+            Asset {
+                id:
+                    AssetId(Location {
+                        parents: 1,
+                        interior,
+                    }),
+                ..
+            } => {
+                if let Some(GlobalConsensus(Ethereum { .. })) = interior.first() {
+                    AssetTypes::Ethereum
+                } else {
+                    AssetTypes::Unknown
+                }
+            }
             _ => AssetTypes::Unknown,
         }
     }
@@ -67,6 +82,10 @@ impl WeighAssets for AssetFilter {
                 .map(From::from)
                 .map(|t| match t {
                     AssetTypes::Balances => balances_weight,
+                    AssetTypes::Ethereum => {
+                        log::info!("Ethereum asset, balances_weight: {}", balances_weight);
+                        balances_weight
+                    }
                     AssetTypes::Unknown => Weight::MAX,
                 })
                 .fold(Weight::zero(), |acc, x| acc.saturating_add(x)),
@@ -86,6 +105,7 @@ impl WeighAssets for Assets {
             .map(|m| <AssetTypes as From<&Asset>>::from(m))
             .map(|t| match t {
                 AssetTypes::Balances => balances_weight,
+                AssetTypes::Ethereum => balances_weight,
                 AssetTypes::Unknown => Weight::MAX,
             })
             .fold(Weight::zero(), |acc, x| acc.saturating_add(x))
@@ -106,6 +126,7 @@ where
         assets.weigh_assets(XcmBalancesWeight::<Runtime>::withdraw_asset())
     }
     fn reserve_asset_deposited(assets: &Assets) -> XCMWeight {
+        log::info!("reserve_asset_deposited");
         assets.weigh_assets(XcmBalancesWeight::<Runtime>::reserve_asset_deposited())
     }
     fn receive_teleported_asset(_assets: &Assets) -> XCMWeight {
@@ -158,6 +179,7 @@ where
         XcmGeneric::<Runtime>::report_error()
     }
     fn deposit_asset(assets: &AssetFilter, _dest: &Location) -> XCMWeight {
+        log::info!("deposit_asset");
         assets.weigh_assets(XcmBalancesWeight::<Runtime>::deposit_asset())
     }
     fn deposit_reserve_asset(assets: &AssetFilter, _dest: &Location, _xcm: &Xcm<()>) -> XCMWeight {
