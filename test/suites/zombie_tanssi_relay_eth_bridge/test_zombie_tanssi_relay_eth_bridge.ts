@@ -8,9 +8,9 @@ import { decodeAddress } from "@polkadot/util-crypto";
 import { ethers } from "ethers";
 import { type ChildProcessWithoutNullStreams, exec, spawn } from "node:child_process";
 import {
-    DANCELIGHT_ASSET_HUB_AGENT_ID,
-    DANCELIGHT_ASSET_HUB_CHANNEL_ID,
-    DANCELIGHT_ASSET_HUB_PARA_ID,
+    ASSET_HUB_AGENT_ID,
+    ASSET_HUB_CHANNEL_ID,
+    ASSET_HUB_PARA_ID,
     SNOWBRIDGE_FEES_ACCOUNT,
     signAndSendAndInclude,
     sleep,
@@ -398,7 +398,7 @@ describeSuite({
                 await waitSessions(
                     context,
                     relayApi,
-                    6,
+                    10,
                     async () => {
                         try {
                             const externalValidators = await relayApi.query.externalValidators.externalValidators();
@@ -669,11 +669,11 @@ describeSuite({
                 await waitSessions(context, relayApi, 4, null, "Tanssi-relay");
 
                 // How to encode the channel id for it to be compliant with Solidity
-                const assetHubParaId = relayApi.createType("ParaId", DANCELIGHT_ASSET_HUB_PARA_ID);
+                const assetHubParaId = relayApi.createType("ParaId", ASSET_HUB_PARA_ID);
                 const assetHubChannelId = keccak256(
                     new Uint8Array([...new TextEncoder().encode("para"), ...assetHubParaId.toU8a().reverse()])
                 );
-                expect(assetHubChannelId).to.be.eq(DANCELIGHT_ASSET_HUB_CHANNEL_ID);
+                expect(assetHubChannelId).to.be.eq(ASSET_HUB_CHANNEL_ID);
 
                 const channelOperatingModeOf = await gatewayContract.channelOperatingModeOf(assetHubChannelId);
 
@@ -685,8 +685,8 @@ describeSuite({
                     .sudo(
                         relayApi.tx.ethereumTokenTransfers.setTokenTransferChannel(
                             assetHubChannelId,
-                            DANCELIGHT_ASSET_HUB_AGENT_ID,
-                            Number(DANCELIGHT_ASSET_HUB_PARA_ID)
+                            ASSET_HUB_AGENT_ID,
+                            Number(ASSET_HUB_PARA_ID)
                         )
                     )
                     .signAndSend(alice);
@@ -802,7 +802,7 @@ describeSuite({
                 // Send the native TANSSI token from Ethereum
                 const tx = await gatewayContract.sendToken(
                     tokenAddress,
-                    DANCELIGHT_ASSET_HUB_PARA_ID,
+                    ASSET_HUB_PARA_ID,
                     {
                         kind: 1,
                         data: u8aToHex(randomAccount.addressRaw),
@@ -817,10 +817,10 @@ describeSuite({
                 await tx.wait();
 
                 // Send the WETH token as well
-                const neededFeeWETH = await gatewayContract.quoteSendTokenFee(wETHAddress, DANCELIGHT_ASSET_HUB_PARA_ID, fee);
+                const neededFeeWETH = await gatewayContract.quoteSendTokenFee(wETHAddress, ASSET_HUB_PARA_ID, fee);
                 const sendWETHTokenTx = await gatewayContract.sendToken(
                     wETHAddress,
-                    DANCELIGHT_ASSET_HUB_PARA_ID,
+                    ASSET_HUB_PARA_ID,
                     {
                         kind: 1,
                         data: u8aToHex(alice.addressRaw),
@@ -837,12 +837,12 @@ describeSuite({
                 console.log("Sending native ETH from Ethereum");
 
                 const nativeETHBalanceFromEthereum = 300000000000000n;
-                const neededFeeNativeETH = await gatewayContract.quoteSendTokenFee(nativeETHAddress, DANCELIGHT_ASSET_HUB_PARA_ID, fee);
+                const neededFeeNativeETH = await gatewayContract.quoteSendTokenFee(nativeETHAddress, ASSET_HUB_PARA_ID, fee);
 
                 // Send native ETH from Ethereum
                 const sendNativeETHTokenTx = await gatewayContract.sendToken(
                     nativeETHAddress,
-                    DANCELIGHT_ASSET_HUB_PARA_ID,
+                    ASSET_HUB_PARA_ID,
                     {
                         kind: 1,
                         data: u8aToHex(randomAccount.addressRaw),
@@ -963,21 +963,18 @@ describeSuite({
                 let wETHTransferReceived = false;
                 let wETHTransferSuccess = false;
 
-                await gatewayContract.on(
-                    "InboundMessageDispatched",
-                    async (_channelID, _nonce, _messageID, success) => {
-                        const balanceAfter = await wETHContract.balanceOf(gatewayOwnerAddress);
-                        expect(balanceAfter).to.be.eq(wETHBalanceBefore + wETHBalanceToSend);
-                        wETHTransferReceived = true;
-                        wETHTransferSuccess = success;
-                    }
-                );
+                await gatewayContract.on("InboundMessageDispatched", (_channelID, _nonce, _messageID, success) => {
+                    wETHTransferReceived = true;
+                    wETHTransferSuccess = success;
+                });
 
                 while (!wETHTransferReceived) {
                     await sleep(1000);
                 }
-
                 expect(wETHTransferSuccess).to.be.true;
+
+                const balanceAfter = await wETHContract.balanceOf(gatewayOwnerAddress);
+                expect(balanceAfter).to.be.eq(wETHBalanceBefore + wETHBalanceToSend);
             },
         });
 

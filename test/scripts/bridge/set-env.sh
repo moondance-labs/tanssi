@@ -18,12 +18,15 @@ export PATH="$output_bin_dir:$PATH"
 relayer_root_dir="$artifacts_dir/relayer"
 symbiotic_contracts_dir="$artifacts_dir/tanssi-symbiotic"
 web_dir="$relayer_root_dir/snowbridge/web"
-export contract_dir="$relayer_root_dir/snowbridge/contracts"
+export contract_dir="$symbiotic_contracts_dir/lib/tanssi-bridge-relayer/snowbridge/contracts"
 test_helpers_dir="$web_dir/packages/test-helpers"
 relay_bin="$relayer_root_dir/build/tanssi-bridge-relayer"
 
-RELAYER_COMMIT="7885754f19a4deababd24f92737fe94935e9af5a" # TODO: Change to tag when we do releases
-TANSSI_SYMBIOTIC_COMMIT="da63621d9fbef62f0718d148922896c7dbc58e1a" # TODO: Change to tag when we do release
+# RELAYER NODE SHOULD BE COMPILED FROM HERE
+RELAYER_COMMIT="61773050e66a83139330a579a31b597b3a91faea" # TODO: Change to tag when we do releases
+
+# THIS IS WHERE CONTRACTS SHOULD BE DEPLOYED
+TANSSI_SYMBIOTIC_COMMIT="fc206197fac69e87b4cbb0f35e88b32fb0ec3dbd" # TODO: Change to tag when we do release
 GETH_TAG="v1.15.5" # We will need to investigate if this is right
 LODESTAR_TAG="v1.27.0"
 
@@ -58,7 +61,7 @@ relaychain_ws_url="${RELAYCHAIN_WS_URL:-ws://127.0.0.1:9944}"
 relaychain_sudo_seed="${RELAYCHAIN_SUDO_SEED:-//Alice}"
 
 export ASSET_HUB_PARAID="${ASSET_HUB_PARAID:-1}"
-export ASSET_HUB_AGENT_ID="${ASSET_HUB_AGENT_ID:-0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6}"
+export ASSET_HUB_AGENT_ID="${ASSET_HUB_AGENT_ID:-0x9ba4d8cfc1cdf812338aa6457aa5510348526d933108b4106162474231b4cbe5}"
 
 # Token decimal of the relaychain(KSM|ROC:12,DOT:10)
 export FOREIGN_TOKEN_DECIMALS=12

@@ -22,13 +22,13 @@ use {
         tests::common::*, Balances, CollatorConfiguration, ContainerRegistrar, DataPreservers,
         Registrar, StreamPayment,
     },
+    alloc::vec,
     cumulus_primitives_core::{relay_chain::HeadData, ParaId},
     frame_support::{assert_err, assert_noop, assert_ok, BoundedVec},
     pallet_registrar_runtime_api::{
         runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
     },
     pallet_stream_payment::StreamConfig,
-    sp_std::vec,
     starlight_runtime_constants::currency::EXISTENTIAL_DEPOSIT,
     tp_stream_payment_common::{
         AssetId as StreamPaymentAssetId, TimeUnit as StreamPaymentTimeUnit,

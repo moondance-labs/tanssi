@@ -20,6 +20,8 @@ use {
         CoreAllocationConfiguration, GetRandomnessForNextBlock, ParachainRandomness,
         RotateCollatorsEveryNSessions,
     },
+    alloc::collections::{btree_map::BTreeMap, btree_set::BTreeSet},
+    core::ops::Range,
     dp_collator_assignment::AssignedCollators,
     frame_support::{
         parameter_types,
@@ -32,10 +34,6 @@ use {
     sp_runtime::{
         traits::{BlakeTwo256, IdentityLookup},
         BuildStorage, Perbill,
-    },
-    sp_std::{
-        collections::{btree_map::BTreeMap, btree_set::BTreeSet},
-        ops::Range,
     },
     tp_traits::{
         CollatorAssignmentTip, FullRotationModes, ParaId, ParaIdAssignmentHooks, ParathreadParams,

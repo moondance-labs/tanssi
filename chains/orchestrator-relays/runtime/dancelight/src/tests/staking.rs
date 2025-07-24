@@ -18,12 +18,12 @@
 
 use {
     crate::{tests::common::*, MinimumSelfDelegation, PooledStaking},
+    alloc::vec,
     frame_support::{assert_noop, assert_ok, error::BadOrigin},
     pallet_pooled_staking::{
         traits::IsCandidateEligible, ActivePoolKind, EligibleCandidate, PendingOperationKey,
         PendingOperationQuery, PoolKind, PoolsKey, SharesOrStake,
     },
-    sp_std::vec,
 };
 
 #[test]
