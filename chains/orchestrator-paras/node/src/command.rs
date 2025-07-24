@@ -176,10 +176,10 @@ impl SubstrateCli for RelayChainCli {
             )?)),
             // Default to starlight if this is a solochain node. Else default to polkadot default.
             "" if self.solochain => Ok(Box::new(GenericChainSpec::from_json_bytes(
-                &STARLIGHT_RAW_SPECS[..],
+                STARLIGHT_RAW_SPECS,
             )?)),
             "starlight" => Ok(Box::new(GenericChainSpec::from_json_bytes(
-                &STARLIGHT_RAW_SPECS[..],
+                STARLIGHT_RAW_SPECS,
             )?)),
             "dancelight" => Ok(Box::new(GenericChainSpec::from_json_bytes(
                 &include_bytes!("../../../../specs/solochain/dancelight-raw-specs.json")[..],
