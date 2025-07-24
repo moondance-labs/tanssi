@@ -197,8 +197,6 @@ pub mod pallet {
     pub enum Error<T> {
         /// The size of a collator set for a session has already reached MaxCollatorsPerSession value
         MaxCollatorsPerSessionReached,
-        /// The size of a chains set for a session has already reached MaxContainerChains value
-        MaxContainerChainsReached,
         /// Error returned when the activity tracking status is attempted to be updated before the end session
         ActivityTrackingStatusUpdateSuspended,
         /// Error returned when the activity tracking status is attempted to be enabled when it is already enabled
@@ -456,15 +454,19 @@ pub mod pallet {
             let mut total_weight = T::DbWeight::get().reads(1);
 
             let result = <ActiveCollatorsForCurrentSession<T>>::try_mutate(|active_collators| {
-                core::mem::take(active_collators)
-                    .into_inner()
-                    .into_iter()
-                    .chain(authors)
-                    .collect::<BTreeSet<_>>()
-                    .try_into()
-                    .map(|bounded_set| {
+                let mut temp_set: BTreeSet<Collator<T>> =
+                    core::mem::take(active_collators).into_inner();
+
+                temp_set.extend(authors);
+
+                match BoundedBTreeSet::<Collator<T>, T::MaxCollatorsPerSession>::try_from(temp_set)
+                {
+                    Ok(bounded_set) => {
                         *active_collators = bounded_set;
-                    })
+                        Ok(())
+                    }
+                    Err(_) => Err(()),
+                }
             });
 
             match result {
@@ -473,6 +475,9 @@ pub mod pallet {
                     total_weight
                 }
                 Err(_) => {
+                    log::error!(
+                        "Limit of active collators per session reached. Disabling activity tracking."
+                    );
                     // If we reach MaxCollatorsPerSession limit there must be a bug in the pallet
                     // so we disable the activity tracking
                     Self::set_inactivity_tracking_status_inner(
@@ -496,16 +501,17 @@ pub mod pallet {
             let mut total_weight = T::DbWeight::get().reads(1);
 
             let result = <ActiveContainerChainsForCurrentSession<T>>::try_mutate(|active_chains| {
-                core::mem::take(active_chains)
-                    .into_inner()
-                    .into_iter()
-                    .chain(chains)
-                    .collect::<BTreeSet<_>>()
-                    .try_into()
-                    .map(|bounded_set| {
+                let mut temp_set: BTreeSet<ParaId> = core::mem::take(active_chains).into_inner();
+
+                temp_set.extend(chains);
+
+                match BoundedBTreeSet::<ParaId, T::MaxContainerChains>::try_from(temp_set) {
+                    Ok(bounded_set) => {
                         *active_chains = bounded_set;
-                    })
-                    .map_err(|_| ())
+                        Ok(())
+                    }
+                    Err(_) => Err(()),
+                }
             });
 
             match result {
@@ -515,6 +521,9 @@ pub mod pallet {
                 Err(_) => {
                     // If we reach MaxContainerChains limit there must be a bug in the pallet
                     // so we disable the activity tracking
+                    log::error!(
+                        "Limit of active container chains reached. Disabling activity tracking."
+                    );
                     Self::set_inactivity_tracking_status_inner(
                         T::CurrentSessionIndex::session_index(),
                         false,
