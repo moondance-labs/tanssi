@@ -23,7 +23,7 @@ use crate::EthereumBeaconClient;
 use {
     tanssi_runtime_common::relay::NativeTokenTransferMessageProcessor,
     tp_bridge::{
-        generic_token_message_processor::{GenericTokenMessageProcessor, NoOpProcessor},
+        generic_token_message_processor::GenericTokenMessageProcessor,
         symbiotic_message_processor::SymbioticMessageProcessor,
     },
 };
@@ -42,8 +42,9 @@ use {
     snowbridge_core::{gwei, meth, PricingParameters, Rewards},
     snowbridge_pallet_outbound_queue::OnNewCommitment,
     sp_core::{ConstU32, ConstU8, H160, H256},
-    tanssi_runtime_common::relay::{RewardThroughFeesAccount},
-    tp_bridge::{DoNothingConvertMessage, DoNothingRouter,EthereumSystemHandler},
+    tanssi_runtime_common::relay::RewardThroughFeesAccount,
+    tp_bridge::generic_token_message_processor::NoOpProcessor,
+    tp_bridge::{DoNothingConvertMessage, DoNothingRouter, EthereumSystemHandler},
 };
 
 pub const SLOTS_PER_EPOCH: u32 = snowbridge_pallet_ethereum_client::config::SLOTS_PER_EPOCH as u32;
