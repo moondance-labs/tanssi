@@ -67,7 +67,7 @@ pub mod pallet {
     #[pallet::genesis_build]
     impl<T: Config> BuildGenesisConfig for GenesisConfig<T> {
         fn build(&self) {
-            <OffchainWorkerTestEnabled<T>>::put(&false);
+            <OffchainWorkerTestEnabled<T>>::put(false);
         }
     }
 

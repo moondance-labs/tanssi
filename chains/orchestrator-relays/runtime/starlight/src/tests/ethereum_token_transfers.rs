@@ -22,6 +22,7 @@ use {
         EthereumInboundQueue, EthereumSovereignAccount, EthereumSystem, EthereumTokenTransfers,
         RuntimeEvent, SnowbridgeFeesAccount, TokenLocationReanchored,
     },
+    alloc::vec,
     alloy_sol_types::SolEvent,
     frame_support::{assert_noop, assert_ok},
     hex_literal::hex,
@@ -34,8 +35,7 @@ use {
     snowbridge_verification_primitives::{EventProof, Log},
     sp_core::{H160, H256},
     sp_runtime::{traits::MaybeEquivalence, FixedU128, TokenError},
-    sp_std::vec,
-    tanssi_runtime_common::processors::NativeTokenTransferMessageProcessor,
+    tanssi_runtime_common::relay::NativeTokenTransferMessageProcessor,
     xcm::{latest::Location, VersionedLocation},
 };
 
@@ -197,11 +197,13 @@ fn test_transfer_native_token() {
 
             let outbound_msg_queue_event = System::events()
                 .iter()
-                .filter(|r| match r.event {
-                    RuntimeEvent::EthereumOutboundQueue(
-                        snowbridge_pallet_outbound_queue::Event::MessageQueued { .. },
-                    ) => true,
-                    _ => false,
+                .filter(|r| {
+                    matches!(
+                        r.event,
+                        RuntimeEvent::EthereumOutboundQueue(
+                            snowbridge_pallet_outbound_queue::Event::MessageQueued { .. },
+                        )
+                    )
                 })
                 .count();
 

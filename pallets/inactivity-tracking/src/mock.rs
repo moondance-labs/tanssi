@@ -15,6 +15,8 @@ use frame_support::dispatch::DispatchResultWithPostInfo;
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 use {
     crate as pallet_inactivity_tracking,
+    alloc::collections::btree_set::BTreeSet,
+    core::marker::PhantomData,
     frame_support::{
         parameter_types,
         traits::{ConstU32, ConstU64, Everything, OnFinalize, OnInitialize},
@@ -26,7 +28,6 @@ use {
         BuildStorage, RuntimeAppPublic,
     },
     sp_staking::SessionIndex,
-    sp_std::{collections::btree_set::BTreeSet, marker::PhantomData},
     tp_traits::{ForSession, ParaId},
 };
 
@@ -184,8 +185,8 @@ impl tp_traits::GetContainerChainsWithCollators<AccountId> for MockContainerChai
 
     #[cfg(feature = "runtime-benchmarks")]
     fn set_container_chains_with_collators(
-        for_session: ForSession,
-        container_chains: &[(ParaId, Vec<AccountId>)],
+        _for_session: ForSession,
+        _container_chains: &[(ParaId, Vec<AccountId>)],
     ) {
     }
 }
@@ -246,7 +247,7 @@ impl ExtBuilder {
         let mut t = frame_system::GenesisConfig::<Test>::default()
             .build_storage()
             .expect("Frame system builds valid default genesis config");
-        let balances = vec![(1, 100), (2, 100)];
+        let balances = [(1, 100), (2, 100)];
         let keys = balances
             .iter()
             .map(|&(i, _)| {

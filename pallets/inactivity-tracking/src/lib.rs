@@ -22,6 +22,8 @@
 //! The tracking functionality can be enabled or disabled with root privileges.
 //! By default, the tracking is enabled.
 #![cfg_attr(not(feature = "std"), no_std)]
+extern crate alloc;
+
 use {
     frame_support::{
         dispatch::DispatchResult, dispatch::DispatchResultWithPostInfo, ensure,
@@ -62,10 +64,10 @@ pub mod pallet {
     use {
         super::*,
         crate::weights::WeightInfo,
+        alloc::collections::btree_set::BTreeSet,
         core::marker::PhantomData,
         frame_support::{pallet_prelude::*, storage::types::StorageMap},
         frame_system::pallet_prelude::*,
-        sp_std::collections::btree_set::BTreeSet,
     };
 
     pub type Collator<T> = <T as frame_system::Config>::AccountId;
@@ -424,7 +426,7 @@ pub mod pallet {
                             // Collators assigned to inactive chain are added
                             // to the current active collators storage
                             for collator_id in collator_ids {
-                                if let Err(_) = active_collators.try_insert(collator_id.clone()) {
+                                if active_collators.try_insert(collator_id.clone()).is_err() {
                                     // If we reach MaxCollatorsPerSession limit there must be a bug in the pallet
                                     // so we disable the activity tracking
                                     Self::set_inactivity_tracking_status_inner(
@@ -447,7 +449,7 @@ pub mod pallet {
             let mut total_weight = T::DbWeight::get().reads_writes(1, 0);
             let _ = <ActiveCollatorsForCurrentSession<T>>::try_mutate(
                 |active_collators| -> DispatchResult {
-                    if let Err(_) = active_collators.try_insert(author.clone()) {
+                    if active_collators.try_insert(author.clone()).is_err() {
                         // If we reach MaxCollatorsPerSession limit there must be a bug in the pallet
                         // so we disable the activity tracking
                         Self::set_inactivity_tracking_status_inner(
@@ -471,7 +473,7 @@ pub mod pallet {
             let mut total_weight = T::DbWeight::get().reads_writes(1, 0);
             let _ = <ActiveContainerChainsForCurrentSession<T>>::try_mutate(
                 |active_chains| -> DispatchResult {
-                    if let Err(_) = active_chains.try_insert(chain_id) {
+                    if active_chains.try_insert(chain_id).is_err() {
                         // If we reach MaxContainerChains limit there must be a bug in the pallet
                         // so we disable the activity tracking
                         Self::set_inactivity_tracking_status_inner(

@@ -36,6 +36,8 @@ pub mod weights;
 
 pub use sp_runtime::{traits::ExtrinsicLike, MultiAddress, Perbill, Permill};
 use {
+    alloc::vec,
+    alloc::vec::Vec,
     cumulus_primitives_core::AggregateMessageOrigin,
     dp_impl_tanssi_pallets_config::impl_tanssi_pallets_config,
     frame_support::{
@@ -79,7 +81,6 @@ use {
         transaction_validity::{TransactionSource, TransactionValidity},
         ApplyExtrinsicResult, Cow, MultiSignature, SaturatedConversion,
     },
-    sp_std::prelude::*,
     sp_version::RuntimeVersion,
     xcm::Version as XcmVersion,
     xcm::{IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation, VersionedXcm},
@@ -229,7 +230,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: Cow::Borrowed("container-chain-template"),
     impl_name: Cow::Borrowed("container-chain-template"),
     authoring_version: 1,
-    spec_version: 1400,
+    spec_version: 1500,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -711,10 +712,12 @@ where
     ) -> Option<UncheckedExtrinsic> {
         use sp_runtime::traits::StaticLookup;
         // take the biggest period possible.
-        let period = BlockHashCount::get()
-            .checked_next_power_of_two()
-            .map(|c| c / 2)
-            .unwrap_or(2) as u64;
+        let period = u64::from(
+            BlockHashCount::get()
+                .checked_next_power_of_two()
+                .map(|c| c / 2)
+                .unwrap_or(2),
+        );
 
         let current_block = System::block_number()
             .saturated_into::<u64>()
@@ -991,8 +994,10 @@ impl_runtime_apis! {
             use frame_benchmarking::{BenchmarkBatch, BenchmarkError};
             use sp_core::storage::TrackedStorageKey;
             use xcm::latest::prelude::*;
+            use alloc::boxed::Box;
+
             impl frame_system_benchmarking::Config for Runtime {
-                fn setup_set_code_requirements(code: &sp_std::vec::Vec<u8>) -> Result<(), BenchmarkError> {
+                fn setup_set_code_requirements(code: &alloc::vec::Vec<u8>) -> Result<(), BenchmarkError> {
                     ParachainSystem::initialize_for_set_code_benchmark(code.len() as u32);
                     Ok(())
                 }
@@ -1174,7 +1179,7 @@ impl_runtime_apis! {
                             initial_asset_amount - asset_amount,
                         );
                     });
-                    Some((assets, fee_index as u32, dest, verify))
+                    Some((assets, fee_index, dest, verify))
                 }
             }
 
@@ -1364,7 +1369,7 @@ impl cumulus_pallet_parachain_system::CheckInherents<Block> for CheckInherents {
         let inherent_data =
             cumulus_primitives_timestamp::InherentDataProvider::from_relay_chain_slot_and_duration(
                 relay_chain_slot,
-                sp_std::time::Duration::from_secs(6),
+                core::time::Duration::from_secs(6),
             )
             .create_inherent_data()
             .expect("Could not create the timestamp inherent data");

@@ -22,6 +22,7 @@ use {
         tests::common::*, Balances, CollatorConfiguration, ContainerRegistrar, DataPreservers,
         ForeignAssetsCreator, Registrar, RuntimeEvent, StreamPayment,
     },
+    alloc::vec,
     cumulus_primitives_core::{relay_chain::HeadData, ParaId},
     dancelight_runtime_constants::currency::EXISTENTIAL_DEPOSIT,
     frame_support::{assert_err, assert_noop, assert_ok, BoundedVec},
@@ -30,7 +31,6 @@ use {
         runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
     },
     pallet_stream_payment::StreamConfig,
-    sp_std::vec,
     tp_stream_payment_common::{
         AssetId as StreamPaymentAssetId, TimeUnit as StreamPaymentTimeUnit,
     },
@@ -491,7 +491,7 @@ fn test_data_preserver_with_stream_payment() {
             assert!(
                 pallet_data_preservers::Assignments::<Runtime>::get(para_id).contains(&profile_id)
             );
-            let profile = pallet_data_preservers::Profiles::<Runtime>::get(&profile_id)
+            let profile = pallet_data_preservers::Profiles::<Runtime>::get(profile_id)
                 .expect("profile to exists");
             let (assigned_para_id, witness) = profile.assignment.expect("profile to be assigned");
             assert_eq!(assigned_para_id, para_id);
@@ -662,11 +662,13 @@ fn test_register_eth_foreign_asset() {
 
             let foreign_asset_created_event = System::events()
                 .iter()
-                .filter(|r| match r.event {
-                    RuntimeEvent::ForeignAssetsCreator(
-                        pallet_foreign_asset_creator::Event::ForeignAssetCreated { .. },
-                    ) => true,
-                    _ => false,
+                .filter(|r| {
+                    matches!(
+                        r.event,
+                        RuntimeEvent::ForeignAssetsCreator(
+                            pallet_foreign_asset_creator::Event::ForeignAssetCreated { .. },
+                        )
+                    )
                 })
                 .count();
 

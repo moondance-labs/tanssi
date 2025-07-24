@@ -16,7 +16,7 @@
 
 use {super::*, crate::EnableMarkingOffline};
 fn make_collator_inactive(collator: AccountId) {
-    roll_to(get_max_inactive_sessions() as u64 * 5u64);
+    roll_to(u64::from(get_max_inactive_sessions()) * 5u64);
     for session_index in 0..get_max_inactive_sessions() {
         InactiveCollators::<Test>::insert(session_index, get_collator_set(vec![collator]));
     }
@@ -24,17 +24,17 @@ fn make_collator_inactive(collator: AccountId) {
 #[test]
 fn enabling_and_disabling_offline_marking_works() {
     ExtBuilder.build().execute_with(|| {
-        assert_eq!(EnableMarkingOffline::<Test>::get(), false);
+        assert!(!EnableMarkingOffline::<Test>::get());
         assert_ok!(Pallet::<Test>::enable_offline_marking(
             RuntimeOrigin::root(),
             true
         ));
-        assert_eq!(EnableMarkingOffline::<Test>::get(), true);
+        assert!(EnableMarkingOffline::<Test>::get());
         assert_ok!(Pallet::<Test>::enable_offline_marking(
             RuntimeOrigin::root(),
             false
         ));
-        assert_eq!(EnableMarkingOffline::<Test>::get(), false);
+        assert!(!EnableMarkingOffline::<Test>::get());
     });
 }
 
@@ -50,7 +50,7 @@ fn enabling_and_disabling_offline_marking_fails_for_non_root() {
 #[test]
 fn set_offline_works() {
     ExtBuilder.build().execute_with(|| {
-        assert_eq!(OfflineCollators::<Test>::get(COLLATOR_1), false);
+        assert!(!OfflineCollators::<Test>::get(COLLATOR_1));
         assert_ok!(Pallet::<Test>::enable_offline_marking(
             RuntimeOrigin::root(),
             true
@@ -65,7 +65,7 @@ fn set_offline_works() {
             }
             .into(),
         );
-        assert_eq!(OfflineCollators::<Test>::get(COLLATOR_1), true);
+        assert!(OfflineCollators::<Test>::get(COLLATOR_1));
     });
 }
 #[test]
@@ -99,7 +99,7 @@ fn set_offline_fails_for_offline_collators() {
             true
         ));
         OfflineCollators::<Test>::insert(COLLATOR_1, true);
-        assert_eq!(OfflineCollators::<Test>::get(COLLATOR_1), true);
+        assert!(OfflineCollators::<Test>::get(COLLATOR_1));
         assert_noop!(
             Pallet::<Test>::set_offline(RuntimeOrigin::signed(COLLATOR_1)),
             Error::<Test>::CollatorNotOnline
@@ -125,7 +125,7 @@ fn set_offline_fails_if_collator_is_invulnerable() {
 fn set_online_works() {
     ExtBuilder.build().execute_with(|| {
         OfflineCollators::<Test>::insert(COLLATOR_1, true);
-        assert_eq!(OfflineCollators::<Test>::get(COLLATOR_1), true);
+        assert!(OfflineCollators::<Test>::get(COLLATOR_1));
         assert_ok!(Pallet::<Test>::set_online(RuntimeOrigin::signed(
             COLLATOR_1
         )));
@@ -136,14 +136,14 @@ fn set_online_works() {
             }
             .into(),
         );
-        assert_eq!(OfflineCollators::<Test>::get(COLLATOR_1), false);
+        assert!(!OfflineCollators::<Test>::get(COLLATOR_1));
     });
 }
 
 #[test]
 fn set_online_fails_for_online_collators() {
     ExtBuilder.build().execute_with(|| {
-        assert_eq!(OfflineCollators::<Test>::get(COLLATOR_1), false);
+        assert!(!OfflineCollators::<Test>::get(COLLATOR_1));
         assert_noop!(
             Pallet::<Test>::set_online(RuntimeOrigin::signed(COLLATOR_1)),
             Error::<Test>::CollatorNotOffline
@@ -159,7 +159,7 @@ fn notify_inactive_collator_works() {
             RuntimeOrigin::root(),
             true
         ));
-        assert_eq!(OfflineCollators::<Test>::get(COLLATOR_1), false);
+        assert!(!OfflineCollators::<Test>::get(COLLATOR_1));
         assert_ok!(Pallet::<Test>::notify_inactive_collator(
             RuntimeOrigin::signed(COLLATOR_3),
             COLLATOR_1
@@ -171,7 +171,7 @@ fn notify_inactive_collator_works() {
             }
             .into(),
         );
-        assert_eq!(OfflineCollators::<Test>::get(COLLATOR_1), true);
+        assert!(OfflineCollators::<Test>::get(COLLATOR_1));
     });
 }
 
@@ -224,7 +224,7 @@ fn notify_inactive_collator_fails_for_offline_collators() {
             true
         ));
         OfflineCollators::<Test>::insert(COLLATOR_1, true);
-        assert_eq!(OfflineCollators::<Test>::get(COLLATOR_1), true);
+        assert!(OfflineCollators::<Test>::get(COLLATOR_1));
         assert_noop!(
             Pallet::<Test>::notify_inactive_collator(RuntimeOrigin::signed(COLLATOR_3), COLLATOR_1),
             Error::<Test>::CollatorNotOnline

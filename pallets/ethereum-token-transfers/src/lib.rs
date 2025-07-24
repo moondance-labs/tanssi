@@ -41,6 +41,7 @@
 //! After that, the message is delivered to Ethereum through the T::OutboundQueue implementation.
 
 #![cfg_attr(not(feature = "std"), no_std)]
+extern crate alloc;
 
 #[cfg(test)]
 mod mock;
@@ -54,6 +55,7 @@ mod benchmarking;
 pub mod weights;
 
 use {
+    alloc::vec,
     frame_support::{
         pallet_prelude::*,
         traits::{
@@ -70,7 +72,6 @@ use {
     snowbridge_outbound_queue_primitives::SendError,
     sp_core::{H160, H256},
     sp_runtime::{traits::MaybeEquivalence, DispatchResult},
-    sp_std::vec,
     tp_bridge::{ChannelInfo, EthereumSystemChannelManager, TicketInfo},
     xcm::prelude::*,
 };

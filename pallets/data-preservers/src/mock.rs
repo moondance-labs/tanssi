@@ -16,6 +16,7 @@
 
 use {
     crate::{self as pallet_data_preservers},
+    alloc::collections::btree_map::BTreeMap,
     dp_core::ParaId,
     frame_support::{
         dispatch::DispatchErrorWithPostInfo,
@@ -30,7 +31,6 @@ use {
         traits::{BlakeTwo256, IdentityLookup},
         BuildStorage, Either,
     },
-    sp_std::collections::btree_map::BTreeMap,
 };
 
 type Block = frame_system::mocking::MockBlock<Test>;

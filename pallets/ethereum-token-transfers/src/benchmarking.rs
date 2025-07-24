@@ -19,12 +19,12 @@ use super::*;
 #[allow(unused)]
 use crate::Pallet as EthereumTokenTransfers;
 use {
+    alloc::vec::Vec,
     frame_benchmarking::{account, v2::*, BenchmarkError},
     frame_support::traits::Currency,
     frame_system::RawOrigin,
     snowbridge_core::{AgentId, ChannelId, ParaId},
     sp_core::H160,
-    sp_std::prelude::*,
 };
 
 pub(crate) fn ethereum_token_transfers_events<T: Config>() -> Vec<crate::Event<T>> {

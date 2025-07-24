@@ -65,19 +65,19 @@ pool_test!(
             .test();
 
             assert_eq!(
-                DelegatorCandidateSummaries::<Runtime>::iter_key_prefix(&ACCOUNT_DELEGATOR_1)
+                DelegatorCandidateSummaries::<Runtime>::iter_key_prefix(ACCOUNT_DELEGATOR_1)
                     .count(),
                 1
             );
             assert_eq!(
                 DelegatorCandidateSummaries::<Runtime>::get(
-                    &ACCOUNT_DELEGATOR_1,
-                    &ACCOUNT_CANDIDATE_1
+                    ACCOUNT_DELEGATOR_1,
+                    ACCOUNT_CANDIDATE_1
                 ),
                 DelegatorCandidateSummary::new().with_joining(true)
             );
             assert_eq!(
-                CandidateSummaries::<Runtime>::get(&ACCOUNT_CANDIDATE_1),
+                CandidateSummaries::<Runtime>::get(ACCOUNT_CANDIDATE_1),
                 CandidateSummary {
                     delegators: 1,
                     joining_delegators: 1,
@@ -155,19 +155,19 @@ pool_test!(
             .test::<P>();
 
             assert_eq!(
-                DelegatorCandidateSummaries::<Runtime>::iter_key_prefix(&ACCOUNT_DELEGATOR_1)
+                DelegatorCandidateSummaries::<Runtime>::iter_key_prefix(ACCOUNT_DELEGATOR_1)
                     .count(),
                 1
             );
             assert_eq!(
                 DelegatorCandidateSummaries::<Runtime>::get(
-                    &ACCOUNT_DELEGATOR_1,
-                    &ACCOUNT_CANDIDATE_1
+                    ACCOUNT_DELEGATOR_1,
+                    ACCOUNT_CANDIDATE_1
                 ),
                 DelegatorCandidateSummary::new().with_pool(P::pool_kind(), true)
             );
             assert_eq!(
-                CandidateSummaries::<Runtime>::get(&ACCOUNT_CANDIDATE_1),
+                CandidateSummaries::<Runtime>::get(ACCOUNT_CANDIDATE_1),
                 CandidateSummary {
                     delegators: 1,
                     ..default()
@@ -311,19 +311,19 @@ pool_test!(
             .test::<P>();
 
             assert_eq!(
-                DelegatorCandidateSummaries::<Runtime>::iter_key_prefix(&ACCOUNT_DELEGATOR_1)
+                DelegatorCandidateSummaries::<Runtime>::iter_key_prefix(ACCOUNT_DELEGATOR_1)
                     .count(),
                 1
             );
             assert_eq!(
                 DelegatorCandidateSummaries::<Runtime>::get(
-                    &ACCOUNT_DELEGATOR_1,
-                    &ACCOUNT_CANDIDATE_1
+                    ACCOUNT_DELEGATOR_1,
+                    ACCOUNT_CANDIDATE_1
                 ),
                 DelegatorCandidateSummary::new().with_pool(P::pool_kind(), true)
             );
             assert_eq!(
-                CandidateSummaries::<Runtime>::get(&ACCOUNT_CANDIDATE_1),
+                CandidateSummaries::<Runtime>::get(ACCOUNT_CANDIDATE_1),
                 CandidateSummary {
                     delegators: 1,
                     ..default()
@@ -342,12 +342,12 @@ pool_test!(
             .test::<P>();
 
             assert_eq!(
-                DelegatorCandidateSummaries::<Runtime>::iter_key_prefix(&ACCOUNT_DELEGATOR_1)
+                DelegatorCandidateSummaries::<Runtime>::iter_key_prefix(ACCOUNT_DELEGATOR_1)
                     .count(),
                 0
             );
             assert_eq!(
-                CandidateSummaries::<Runtime>::get(&ACCOUNT_CANDIDATE_1),
+                CandidateSummaries::<Runtime>::get(ACCOUNT_CANDIDATE_1),
                 CandidateSummary::default(),
             );
 
@@ -532,19 +532,19 @@ pool_test!(
             .test::<P>();
 
             assert_eq!(
-                DelegatorCandidateSummaries::<Runtime>::iter_key_prefix(&ACCOUNT_DELEGATOR_1)
+                DelegatorCandidateSummaries::<Runtime>::iter_key_prefix(ACCOUNT_DELEGATOR_1)
                     .count(),
                 1
             );
             assert_eq!(
                 DelegatorCandidateSummaries::<Runtime>::get(
-                    &ACCOUNT_DELEGATOR_1,
-                    &ACCOUNT_CANDIDATE_1
+                    ACCOUNT_DELEGATOR_1,
+                    ACCOUNT_CANDIDATE_1
                 ),
                 DelegatorCandidateSummary::new().with_pool(P::pool_kind(), true)
             );
             assert_eq!(
-                CandidateSummaries::<Runtime>::get(&ACCOUNT_CANDIDATE_1),
+                CandidateSummaries::<Runtime>::get(ACCOUNT_CANDIDATE_1),
                 CandidateSummary {
                     delegators: 1,
                     ..default()
@@ -564,21 +564,21 @@ pool_test!(
             .test::<P>();
 
             assert_eq!(
-                DelegatorCandidateSummaries::<Runtime>::iter_key_prefix(&ACCOUNT_DELEGATOR_1)
+                DelegatorCandidateSummaries::<Runtime>::iter_key_prefix(ACCOUNT_DELEGATOR_1)
                     .count(),
                 1
             );
             assert_eq!(
                 DelegatorCandidateSummaries::<Runtime>::get(
-                    &ACCOUNT_DELEGATOR_1,
-                    &ACCOUNT_CANDIDATE_1
+                    ACCOUNT_DELEGATOR_1,
+                    ACCOUNT_CANDIDATE_1
                 ),
                 DelegatorCandidateSummary::new()
                     .with_pool(P::pool_kind(), true)
                     .with_pool(P::OppositePool::pool_kind(), true)
             );
             assert_eq!(
-                CandidateSummaries::<Runtime>::get(&ACCOUNT_CANDIDATE_1),
+                CandidateSummaries::<Runtime>::get(ACCOUNT_CANDIDATE_1),
                 CandidateSummary {
                     delegators: 1,
                     ..default()
@@ -615,19 +615,19 @@ pool_test!(
             .test::<P>();
 
             assert_eq!(
-                DelegatorCandidateSummaries::<Runtime>::iter_key_prefix(&ACCOUNT_DELEGATOR_1)
+                DelegatorCandidateSummaries::<Runtime>::iter_key_prefix(ACCOUNT_DELEGATOR_1)
                     .count(),
                 1
             );
             assert_eq!(
                 DelegatorCandidateSummaries::<Runtime>::get(
-                    &ACCOUNT_DELEGATOR_1,
-                    &ACCOUNT_CANDIDATE_1
+                    ACCOUNT_DELEGATOR_1,
+                    ACCOUNT_CANDIDATE_1
                 ),
                 DelegatorCandidateSummary::new().with_pool(P::pool_kind(), true)
             );
             assert_eq!(
-                CandidateSummaries::<Runtime>::get(&ACCOUNT_CANDIDATE_1),
+                CandidateSummaries::<Runtime>::get(ACCOUNT_CANDIDATE_1),
                 CandidateSummary {
                     delegators: 1,
                     ..default()
@@ -647,19 +647,19 @@ pool_test!(
             .test::<P>();
 
             assert_eq!(
-                DelegatorCandidateSummaries::<Runtime>::iter_key_prefix(&ACCOUNT_DELEGATOR_1)
+                DelegatorCandidateSummaries::<Runtime>::iter_key_prefix(ACCOUNT_DELEGATOR_1)
                     .count(),
                 1
             );
             assert_eq!(
                 DelegatorCandidateSummaries::<Runtime>::get(
-                    &ACCOUNT_DELEGATOR_1,
-                    &ACCOUNT_CANDIDATE_1
+                    ACCOUNT_DELEGATOR_1,
+                    ACCOUNT_CANDIDATE_1
                 ),
                 DelegatorCandidateSummary::new().with_pool(P::OppositePool::pool_kind(), true)
             );
             assert_eq!(
-                CandidateSummaries::<Runtime>::get(&ACCOUNT_CANDIDATE_1),
+                CandidateSummaries::<Runtime>::get(ACCOUNT_CANDIDATE_1),
                 CandidateSummary {
                     delegators: 1,
                     ..default()
@@ -729,21 +729,21 @@ pool_test!(
             .test::<P::OppositePool>();
 
             assert_eq!(
-                DelegatorCandidateSummaries::<Runtime>::iter_key_prefix(&ACCOUNT_DELEGATOR_1)
+                DelegatorCandidateSummaries::<Runtime>::iter_key_prefix(ACCOUNT_DELEGATOR_1)
                     .count(),
                 1
             );
             assert_eq!(
                 DelegatorCandidateSummaries::<Runtime>::get(
-                    &ACCOUNT_DELEGATOR_1,
-                    &ACCOUNT_CANDIDATE_1
+                    ACCOUNT_DELEGATOR_1,
+                    ACCOUNT_CANDIDATE_1
                 ),
                 DelegatorCandidateSummary::new()
                     .with_pool(P::pool_kind(), true)
                     .with_pool(P::OppositePool::pool_kind(), true)
             );
             assert_eq!(
-                CandidateSummaries::<Runtime>::get(&ACCOUNT_CANDIDATE_1),
+                CandidateSummaries::<Runtime>::get(ACCOUNT_CANDIDATE_1),
                 CandidateSummary {
                     delegators: 1,
                     ..default()
@@ -787,8 +787,8 @@ pool_test!(
 
             assert_eq!(
                 DelegatorCandidateSummaries::<Runtime>::get(
-                    &ACCOUNT_DELEGATOR_1,
-                    &ACCOUNT_CANDIDATE_1
+                    ACCOUNT_DELEGATOR_1,
+                    ACCOUNT_CANDIDATE_1
                 ),
                 DelegatorCandidateSummary::new()
                     .with_pool(P::pool_kind(), true)
@@ -796,7 +796,7 @@ pool_test!(
                     .with_leaving(true) // leaving dust
             );
             assert_eq!(
-                CandidateSummaries::<Runtime>::get(&ACCOUNT_CANDIDATE_1),
+                CandidateSummaries::<Runtime>::get(ACCOUNT_CANDIDATE_1),
                 CandidateSummary {
                     delegators: 1,
                     leaving_delegators: 1,

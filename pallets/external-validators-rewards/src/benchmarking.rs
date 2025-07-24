@@ -23,7 +23,6 @@ use crate::Pallet as ExternalValidatorsRewards;
 use {
     frame_benchmarking::{account, v2::*, BenchmarkError},
     frame_support::traits::{Currency, Get},
-    sp_std::prelude::*,
     tp_bridge::TokenChannelSetterBenchmarkHelperTrait,
     tp_traits::OnEraEnd,
 };
@@ -54,8 +53,10 @@ mod benchmarks {
     fn on_era_end() -> Result<(), BenchmarkError> {
         frame_system::Pallet::<T>::set_block_number(0u32.into());
 
-        let mut era_reward_points = EraRewardPoints::default();
-        era_reward_points.total = T::BackingPoints::get() * 1000;
+        let mut era_reward_points = EraRewardPoints {
+            total: T::BackingPoints::get() * 1000,
+            ..Default::default()
+        };
 
         for i in 0..1000 {
             let account_id = create_funded_user::<T>("candidate", i, 100);
