@@ -451,11 +451,10 @@ pub mod pallet {
             let mut total_weight = T::DbWeight::get().reads(1);
 
             let result = <ActiveCollatorsForCurrentSession<T>>::try_mutate(|active_collators| {
-                let mut temp_set: BTreeSet<Collator<T>> = active_collators.clone().into();
+                let mut temp_set: BTreeSet<Collator<T>> =
+                    core::mem::take(active_collators).into_inner();
 
-                for author in authors {
-                    temp_set.insert(author);
-                }
+                temp_set.extend(authors);
 
                 match BoundedBTreeSet::<Collator<T>, T::MaxCollatorsPerSession>::try_from(temp_set)
                 {
@@ -491,11 +490,9 @@ pub mod pallet {
             let mut total_weight = T::DbWeight::get().reads(1);
 
             let result = <ActiveContainerChainsForCurrentSession<T>>::try_mutate(|active_chains| {
-                let mut temp_set: BTreeSet<ParaId> = active_chains.clone().into();
+                let mut temp_set: BTreeSet<ParaId> = core::mem::take(active_chains).into_inner();
 
-                for chain in chains {
-                    temp_set.insert(chain);
-                }
+                temp_set.extend(chains);
 
                 match BoundedBTreeSet::<ParaId, T::MaxContainerChains>::try_from(temp_set) {
                     Ok(bounded_set) => {
@@ -633,18 +630,14 @@ impl<T: Config> AuthorNotingHook<Collator<T>> for Pallet<T> {
             <CurrentActivityTrackingStatus<T>>::get()
         {
             if start <= T::CurrentSessionIndex::session_index() {
-                let mut authors = BTreeSet::new();
-                let mut chains = BTreeSet::new();
-
-                for AuthorNotingInfo {
-                    author,
-                    para_id,
-                    block_number: _,
-                } in info
-                {
-                    authors.insert(author.clone());
-                    chains.insert(*para_id);
-                }
+                let (authors, chains): (BTreeSet<_>, BTreeSet<_>) = info
+                    .iter()
+                    .map(
+                        |AuthorNotingInfo {
+                             author, para_id, ..
+                         }| (author.clone(), *para_id),
+                    )
+                    .unzip();
 
                 total_weight.saturating_accrue(Self::on_authors_noted(authors));
                 total_weight.saturating_accrue(Self::on_chains_noted(chains));
