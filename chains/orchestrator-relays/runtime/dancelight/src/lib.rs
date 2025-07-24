@@ -1155,15 +1155,9 @@ impl parachains_scheduler::common::AssignmentProvider<BlockNumberFor<Runtime>>
     fn pop_assignment_for_core(core_idx: CoreIndex) -> Option<Assignment> {
         let assigned_collators = TanssiCollatorAssignment::collator_container_chain();
         let assigned_paras: Vec<ParaId> = assigned_collators
-            .container_chains
-            .iter()
-            .filter_map(|(&para_id, collators)| {
-                if Paras::is_parachain(para_id) && !collators.is_empty() {
-                    Some(para_id)
-                } else {
-                    None
-                }
-            })
+            .container_para_ids()
+            .into_iter()
+            .filter(|x| Paras::is_parachain(*x))
             .collect();
         log::debug!("pop assigned collators {:?}", assigned_paras);
         log::debug!("looking for core idx {:?}", core_idx);
@@ -1184,8 +1178,7 @@ impl parachains_scheduler::common::AssignmentProvider<BlockNumberFor<Runtime>>
 
             // Let's check that we have collators before allowing an assignment
             if !assigned_collators
-                .container_chains
-                .get(&assignment.para_id())
+                .get_container_chain(&assignment.para_id())
                 .unwrap_or(&vec![])
                 .is_empty()
             {
@@ -3036,7 +3029,7 @@ sp_api::impl_runtime_apis! {
             let session_index = Session::current_index();
             let assigned_authorities = TanssiAuthorityAssignment::collator_container_chain(session_index)?;
 
-            assigned_authorities.container_chains.get(&para_id).cloned()
+            assigned_authorities.get_container_chain(&para_id).cloned()
         }
 
         /// Return the paraId assigned to a given authority
@@ -3577,16 +3570,12 @@ impl<AC> ParaIdAssignmentHooks<BalanceOf<Runtime>, AC> for ParaIdAssignmentHooks
 
     fn post_assignment(
         current_assigned: &BTreeSet<ParaId>,
-        new_assigned: &mut BTreeMap<ParaId, Vec<AC>>,
+        new_assigned: &mut BTreeSet<ParaId>,
         maybe_tip: &Option<BalanceOf<Runtime>>,
     ) -> Weight {
         let blocks_per_session = EpochDurationInBlocks::get();
         let mut total_weight = Weight::zero();
-        new_assigned.retain(|&para_id, collators| {
-            // Short-circuit in case collators are empty
-            if collators.is_empty() {
-                return true;
-            }
+        new_assigned.retain(|&para_id| {
             with_storage_layer(|| {
                 Self::charge_para_ids_internal(
                     blocks_per_session,

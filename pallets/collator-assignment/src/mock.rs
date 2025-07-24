@@ -415,10 +415,10 @@ impl<AC> ParaIdAssignmentHooks<u32, AC> for MockParaIdAssignmentHooksImpl {
 
     fn post_assignment(
         _current_assigned: &BTreeSet<ParaId>,
-        new_assigned: &mut BTreeMap<ParaId, Vec<AC>>,
+        new_assigned: &mut BTreeSet<ParaId>,
         _maybe_tip: &Option<u32>,
     ) -> Weight {
-        new_assigned.retain(|para_id, _| *para_id <= ParaId::from(5000));
+        new_assigned.retain(|para_id| *para_id <= ParaId::from(5000));
         Weight::zero()
     }
 
@@ -428,18 +428,17 @@ impl<AC> ParaIdAssignmentHooks<u32, AC> for MockParaIdAssignmentHooksImpl {
 
 /// Returns a map of collator to assigned para id
 pub fn assigned_collators() -> BTreeMap<u64, u32> {
-    let assigned_collators = CollatorContainerChain::<Test>::get();
-
+    let mut assigned_collators = CollatorContainerChain::<Test>::get();
     let mut h = BTreeMap::new();
 
-    for (para_id, collators) in assigned_collators.container_chains.iter() {
-        for collator in collators.iter() {
-            h.insert(*collator, u32::from(*para_id));
-        }
+    for collator in core::mem::take(&mut assigned_collators.orchestrator_chain) {
+        h.insert(collator, 1000);
     }
 
-    for collator in assigned_collators.orchestrator_chain {
-        h.insert(collator, 1000);
+    for (para_id, collators) in assigned_collators.into_container_chains_with_collators() {
+        for collator in collators.into_iter() {
+            h.insert(collator, u32::from(para_id));
+        }
     }
 
     h
@@ -532,12 +531,13 @@ pub fn extract_assignments_in_range(
     range: Range<u32>,
 ) -> BTreeMap<u32, BTreeSet<u64>> {
     assignment
-        .container_chains
-        .iter()
+        .clone()
+        .into_container_chains_with_collators()
+        .into_iter()
         .filter_map(|(chain_id, collators)| {
-            let id = u32::from(*chain_id);
+            let id = u32::from(chain_id);
             if range.contains(&id) {
-                Some((id, collators.iter().cloned().collect()))
+                Some((id, collators.into_iter().collect()))
             } else {
                 None
             }
