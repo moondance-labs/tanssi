@@ -9610,6 +9610,9 @@ declare module "@polkadot/types/lookup" {
         readonly type: "Disabled" | "Enabled";
     }
 
-    /** @name StarlightRuntimeRuntime (958) */
+    /** @name FrameSystemExtensionsWeightReclaim (958) */
+    type FrameSystemExtensionsWeightReclaim = Null;
+
+    /** @name StarlightRuntimeRuntime (959) */
     type StarlightRuntimeRuntime = Null;
 } // declare module
