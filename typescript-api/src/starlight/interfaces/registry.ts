@@ -48,6 +48,7 @@ import type {
     FrameSystemExtensionsCheckSpecVersion,
     FrameSystemExtensionsCheckTxVersion,
     FrameSystemExtensionsCheckWeight,
+    FrameSystemExtensionsWeightReclaim,
     FrameSystemLastRuntimeUpgradeInfo,
     FrameSystemLimitsBlockLength,
     FrameSystemLimitsBlockWeights,
@@ -585,6 +586,7 @@ declare module "@polkadot/types/types/registry" {
         FrameSystemExtensionsCheckSpecVersion: FrameSystemExtensionsCheckSpecVersion;
         FrameSystemExtensionsCheckTxVersion: FrameSystemExtensionsCheckTxVersion;
         FrameSystemExtensionsCheckWeight: FrameSystemExtensionsCheckWeight;
+        FrameSystemExtensionsWeightReclaim: FrameSystemExtensionsWeightReclaim;
         FrameSystemLastRuntimeUpgradeInfo: FrameSystemLastRuntimeUpgradeInfo;
         FrameSystemLimitsBlockLength: FrameSystemLimitsBlockLength;
         FrameSystemLimitsBlockWeights: FrameSystemLimitsBlockWeights;
