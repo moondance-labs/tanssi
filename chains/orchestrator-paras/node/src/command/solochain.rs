@@ -254,6 +254,7 @@ pub fn relay_chain_cli_new<'a>(
         base_path,
         chain_id: Some(config.relay_chain.clone()),
         base: clap::Parser::parse_from(relay_chain_args),
+        solochain: true,
     }
 }
 
