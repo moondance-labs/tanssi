@@ -63,7 +63,7 @@ else
         
         TMP_DIR=$(mktemp -d)
         
-        curl -L "$DOWNLOAD_URL" -o "$TMP_DIR/lodestar.tar.gz"
+        curl -sSLf "$DOWNLOAD_URL" -o "$TMP_DIR/lodestar.tar.gz"
         tar -xzf "$TMP_DIR/lodestar.tar.gz" -C "$TMP_DIR"
         
         cp "$TMP_DIR/lodestar" "$output_bin_dir/lodestar"

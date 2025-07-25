@@ -199,7 +199,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_version: 1500,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
-    transaction_version: 26,
+    transaction_version: 27,
     system_version: 1,
 };
 
@@ -784,6 +784,7 @@ where
             pallet_transaction_payment::ChargeTransactionPayment::<Runtime>::from(tip),
             //cumulus_primitives_storage_weight_reclaim::StorageWeightReclaim::<Runtime>::new(),
             frame_metadata_hash_extension::CheckMetadataHash::new(true),
+            frame_system::WeightReclaim::new(),
         );
         let raw_payload = SignedPayload::new(call, tx_ext)
             .map_err(|e| {
@@ -2041,6 +2042,7 @@ pub type TxExtension = (
     frame_system::CheckWeight<Runtime>,
     pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
     frame_metadata_hash_extension::CheckMetadataHash<Runtime>,
+    frame_system::WeightReclaim<Runtime>,
 );
 
 /// Unchecked extrinsic type as expected by this runtime.
