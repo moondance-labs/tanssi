@@ -296,7 +296,7 @@ describeSuite({
                                 relatedEvents,
                                 "foreignAssets",
                                 "Issued",
-                                ([_, owner, issuedAmount]) => 
+                                ([_, owner, issuedAmount]) =>
                                     owner.toString() === destination.accountId32.toString() &&
                                     issuedAmount.toString() === hexToBigInt(amount).toString()
                             );
