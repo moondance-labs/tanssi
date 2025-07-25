@@ -8322,7 +8322,11 @@ export default {
         _enum: ["Disabled", "Enabled"],
     },
     /**
-     * Lookup958: starlight_runtime::Runtime
+     * Lookup958: frame_system::extensions::weight_reclaim::WeightReclaim<T>
+     **/
+    FrameSystemExtensionsWeightReclaim: "Null",
+    /**
+     * Lookup959: starlight_runtime::Runtime
      **/
     StarlightRuntimeRuntime: "Null",
 };
