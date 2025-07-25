@@ -155,6 +155,7 @@ mod benchmark_helper {
             v1::{Envelope, MessageProcessor},
             EventFixture,
         },
+        snowbridge_pallet_inbound_queue::Nonce,
         snowbridge_pallet_system::Channels,
         sp_runtime::DispatchResult,
         xcm::latest::Location,
@@ -182,6 +183,8 @@ mod benchmark_helper {
                     para_id: Default::default(),
                 }),
             );
+
+            Nonce::<Runtime>::insert(envelope.channel_id, 1);
 
             EthereumBeaconClient::store_finalized_header(
                 submit_message.finalized_header,
