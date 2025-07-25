@@ -916,9 +916,11 @@ describeSuite({
                 let wETHTransferReceived = false;
                 let wETHTransferSuccess = false;
 
-                await gatewayContract.on("InboundMessageDispatched", (_channelID, _nonce, _messageID, success) => {
-                    wETHTransferReceived = true;
-                    wETHTransferSuccess = success;
+                await gatewayContract.on("InboundMessageDispatched", (channelID, _nonce, _messageID, success) => {
+                    if (channelID === assetHubChannelId) {
+                        wETHTransferReceived = true;
+                        wETHTransferSuccess = success;
+                    }
                 });
 
                 while (!wETHTransferReceived) {
