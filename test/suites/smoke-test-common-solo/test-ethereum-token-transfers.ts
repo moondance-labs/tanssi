@@ -206,18 +206,15 @@ describeSuite({
                                 (e) => e.phase.isApplyExtrinsic && e.phase.asApplyExtrinsic.eq(index)
                             );
 
-                            const matched = relatedEvents.some(({ event }) => {
-                                const { section, method, data } = event;
-                                if (section !== "balances" || method !== "Transfer") return false;
-
-                                const [from, to, value] = data;
-
-                                return (
+                            const matched = matchEvent(
+                                relatedEvents,
+                                "balances",
+                                "Transfer",
+                                ([from, to, value]) =>
                                     from.toString() === sovereignAccount &&
                                     to.toString() === destination.accountId32 &&
                                     value.toString() === amount.toString()
-                                );
-                            });
+                            );
 
                             expect(
                                 matched,
@@ -295,21 +292,18 @@ describeSuite({
                                 (e) => e.phase.isApplyExtrinsic && e.phase.asApplyExtrinsic.eq(index)
                             );
 
-                            const matched = relatedEvents.some(({ event }) => {
-                                const { section, method, data } = event;
-                                if (section !== "foreignAssets" || method !== "Issued") return false;
-
-                                const [_, owner, mintedAmount] = data;
-
-                                return (
-                                    owner.toString() === destination.accountId32 &&
-                                    mintedAmount.toString() === hexToBigInt(amount).toString()
-                                );
-                            });
+                            const matched = matchEvent(
+                                relatedEvents,
+                                "foreignAssets",
+                                "Issued",
+                                ([_, owner, issuedAmount]) => 
+                                    owner.toString() === destination.accountId32.toString() &&
+                                    issuedAmount.toString() === hexToBigInt(amount).toString()
+                            );
 
                             expect(
                                 matched,
-                                `Expected foreignAssets.Issued of ${amount.toString()} to ${destination.accountId32} in block ${blockNumber}`
+                                `Expected foreignAssets.Issued of ${hexToBigInt(amount).toString()} to ${destination.accountId32} in block ${blockNumber}`
                             ).toBe(true);
                         }
                     }
@@ -364,17 +358,14 @@ describeSuite({
                             for (const asset of assetsArray) {
                                 const amount = asset.fun.fungible;
 
-                                const matched = relatedEvents.some(({ event }) => {
-                                    const { section, method, data } = event;
-                                    if (section !== "foreignAssets" || method !== "Burned") return false;
-
-                                    const [_, owner, burnedAmount] = data;
-
-                                    return (
+                                const matched = matchEvent(
+                                    relatedEvents,
+                                    "foreignAssets",
+                                    "Burned",
+                                    ([_, owner, burnedAmount]) =>
                                         owner.toString() === signer.toString() &&
                                         burnedAmount.toString() === hexToBigInt(amount).toString()
-                                    );
-                                });
+                                );
 
                                 expect(
                                     matched,
@@ -388,6 +379,18 @@ describeSuite({
         });
     },
 });
+
+function matchEvent(
+    events: { event: { section: string; method: string; data: any[] } }[],
+    section: string,
+    method: string,
+    matchFn: (data: any[]) => boolean
+): boolean {
+    return events.some(({ event }) => {
+        if (event.section !== section || event.method !== method) return false;
+        return matchFn(event.data);
+    });
+}
 
 const iface = new Interface([
     "event OutboundMessageAccepted(bytes32 indexed channel_id, uint64 nonce, bytes32 indexed message_id, bytes payload)",
