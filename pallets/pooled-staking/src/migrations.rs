@@ -32,10 +32,7 @@ use scale_info::TypeInfo;
 use sp_core::{ConstU32, Get, MaxEncodedLen, RuntimeDebug};
 use sp_runtime::Saturating;
 
-#[cfg(not(feature = "std"))]
-use sp_runtime::Vec;
-
-const LOG_TARGET: &'static str = "pallet_pooled_staking::migrations::stepped_generate_summaries";
+const LOG_TARGET: &str = "pallet_pooled_staking::migrations::stepped_generate_summaries";
 pub const PALLET_MIGRATIONS_ID: &[u8; 21] = b"pallet-pooled-staking";
 
 pub struct MigrationGenerateSummaries<T: Config>(PhantomData<T>);
@@ -58,7 +55,7 @@ impl<T: Config> SteppedMigration for MigrationGenerateSummaries<T> {
         // Consumes in advance the cost of reading and writing the storage version.
         meter.consume(T::DbWeight::get().reads_writes(1, 1));
 
-        if Pallet::<T>::on_chain_storage_version() != Self::id().version_from as u16 {
+        if Pallet::<T>::on_chain_storage_version() != u16::from(Self::id().version_from) {
             return Ok(None);
         }
 
@@ -73,7 +70,7 @@ impl<T: Config> SteppedMigration for MigrationGenerateSummaries<T> {
         >(cursor, &mut meter2)?;
         if new_state.is_none() {
             // migration is finished, we update the on chain storage version
-            StorageVersion::new(Self::id().version_to as u16).put::<Pallet<T>>();
+            StorageVersion::new(u16::from(Self::id().version_to)).put::<Pallet<T>>();
         }
 
         meter.consume(meter2.consumed());
@@ -81,13 +78,13 @@ impl<T: Config> SteppedMigration for MigrationGenerateSummaries<T> {
     }
 
     #[cfg(feature = "try-runtime")]
-    fn pre_upgrade() -> Result<Vec<u8>, sp_runtime::TryRuntimeError> {
+    fn pre_upgrade() -> Result<alloc::vec::Vec<u8>, sp_runtime::TryRuntimeError> {
         // Can we test it somehow without performing the same process? (which would be useless)
         Ok(Default::default())
     }
 
     #[cfg(feature = "try-runtime")]
-    fn post_upgrade(_state: Vec<u8>) -> Result<(), sp_runtime::TryRuntimeError> {
+    fn post_upgrade(_state: alloc::vec::Vec<u8>) -> Result<(), sp_runtime::TryRuntimeError> {
         Ok(())
     }
 }

@@ -23,6 +23,7 @@ use {
         EthereumTokenTransfers, ForeignAssets, ForeignAssetsCreator, RuntimeEvent,
         SnowbridgeFeesAccount, TokenLocationReanchored, XcmPallet,
     },
+    alloc::vec,
     alloy_sol_types::SolEvent,
     dancelight_runtime_constants::snowbridge::EthereumNetwork,
     frame_support::{
@@ -39,8 +40,7 @@ use {
     snowbridge_inbound_queue_primitives::{EventProof, Log},
     sp_core::{H160, H256},
     sp_runtime::{traits::MaybeEquivalence, FixedU128, TokenError},
-    sp_std::vec,
-    tanssi_runtime_common::processors::NativeTokenTransferMessageProcessor,
+    tanssi_runtime_common::relay::NativeTokenTransferMessageProcessor,
     xcm::{
         latest::{prelude::*, Junctions::*, Location},
         VersionedLocation, VersionedXcm,
@@ -1761,7 +1761,7 @@ fn send_eth_native_token_works() {
             ));
 
             // Correct amount has been sent
-            assert_eq!(ForeignAssets::balance(asset_id, &AccountId::from(BOB)), 10);
+            assert_eq!(ForeignAssets::balance(asset_id, AccountId::from(BOB)), 10);
 
             // Check some fees have been payed
             let balance_after = Balances::balance(&AccountId::from(BOB));

@@ -19,9 +19,9 @@ use {
         assignment::{Assignment, AssignmentError},
         tests::Test,
     },
+    alloc::collections::btree_map::BTreeMap,
     rand::{seq::SliceRandom, SeedableRng},
     rand_chacha::ChaCha20Rng,
-    sp_std::collections::btree_map::BTreeMap,
 };
 
 fn no_shuffle() -> Option<fn(&mut Vec<u64>)> {

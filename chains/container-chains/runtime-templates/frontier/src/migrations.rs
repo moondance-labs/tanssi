@@ -20,6 +20,8 @@
 //! the "Migration" trait declared in the pallet-migrations crate.
 
 use {
+    alloc::{boxed::Box, vec, vec::Vec},
+    core::marker::PhantomData,
     frame_support::{
         pallet_prelude::GetStorageVersion,
         traits::{OnRuntimeUpgrade, PalletInfoAccess},
@@ -27,7 +29,6 @@ use {
     },
     pallet_migrations::{GetMigrations, Migration},
     sp_core::{Get, H160},
-    sp_std::{marker::PhantomData, prelude::*},
 };
 
 pub struct MigratePrecompileXcmDummyCode<T>(pub PhantomData<T>);

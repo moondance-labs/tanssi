@@ -18,15 +18,19 @@
 // Rewrite of the following code which cause issues as Tanssi is not a parachain
 // https://github.com/moondance-labs/polkadot-sdk/blob/tanssi-polkadot-stable2412/bridges/snowbridge/primitives/router/src/outbound/mod.rs#L98
 
+use alloc::vec::Vec;
+use core::iter::Peekable;
 use core::marker::PhantomData;
 use core::slice::Iter;
 use frame_support::{ensure, traits::Get};
 use parity_scale_codec::{Decode, Encode};
 use snowbridge_core::{AgentId, ChannelId, TokenId};
-use snowbridge_outbound_queue_primitives::v1::message::{Command, Message, SendMessage};
+use snowbridge_outbound_queue_primitives::v1::{
+    message::{Command, Message, SendMessage},
+    AgentExecuteCommand,
+};
 use sp_core::H160;
 use sp_runtime::traits::{MaybeEquivalence, TryConvert};
-use sp_std::{iter::Peekable, prelude::*};
 use xcm::prelude::*;
 use xcm::{
     latest::SendError::{MissingArgument, NotApplicable},
@@ -326,11 +330,14 @@ where
         let topic_id = match_expression!(self.next()?, SetTopic(id), id).ok_or(SetTopicExpected)?;
 
         Ok((
-            Command::UnlockNativeToken {
+            // TODO: This should be changed to UnlockNativeToken once we migrate to Snowbridge V2.
+            Command::AgentExecute {
                 agent_id: self.agent_id,
-                token,
-                recipient,
-                amount,
+                command: AgentExecuteCommand::TransferToken {
+                    token: token,
+                    recipient: recipient,
+                    amount,
+                },
             },
             *topic_id,
         ))
@@ -536,7 +543,7 @@ impl<T: snowbridge_pallet_system::Config> TryConvert<ChannelId, AgentId>
     for SnowbridgeChannelToAgentId<T>
 {
     fn try_convert(channel_id: ChannelId) -> Result<AgentId, ChannelId> {
-        let Some(channel) = snowbridge_pallet_system::Channels::<T>::get(&channel_id) else {
+        let Some(channel) = snowbridge_pallet_system::Channels::<T>::get(channel_id) else {
             return Err(channel_id);
         };
 

@@ -5,13 +5,13 @@ on:
   workflow_dispatch:
     inputs:
       from:
-        description: tag (ex. runtime-53) to retrieve commit diff from
+        description: tag (ex. runtime-53 or runtime-53-para or runtime-53-starlight or runtime-53-templates) to retrieve commit diff from
         required: true
       to:
-        description: tag (ex. runtime-155) to generate release note and srtool runtimes from
+        description: tag (ex. runtime-155 or runtime-155-para or runtime-155-starlight or runtime-155-templates) to generate release note and srtool runtimes from
         required: true
       chains:
-        description: the chains for which we should do the release (ex. dancebox)
+        description: the chains for which we should do the release
         required: false
         type: choice
         default: orchestrator-para-only

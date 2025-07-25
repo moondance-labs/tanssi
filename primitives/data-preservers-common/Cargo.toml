@@ -22,7 +22,6 @@ scale-info = { workspace = true }
 serde = { workspace = true }
 sp-core = { workspace = true }
 sp-runtime = { workspace = true }
-sp-std = { workspace = true }
 tp-stream-payment-common = { workspace = true }
 tp-traits = { workspace = true }
 
@@ -41,7 +40,6 @@ std = [
 	"serde/std",
 	"sp-core/std",
 	"sp-runtime/std",
-	"sp-std/std",
 	"tp-stream-payment-common/std",
 	"tp-traits/std",
 ]

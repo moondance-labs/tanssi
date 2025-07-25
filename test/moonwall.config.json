@@ -650,14 +650,38 @@
         },
         {
             "name": "zombie_dancelight_upgrade",
-            "testFileDir": ["suites/zombie_dancelight_upgrade"],
-            "runScripts": ["download-latest-rt-binaries.sh tanssi-relay", "build-spec-dancelight-single.sh tmp"],
+            "testFileDir": ["suites/zombie_solochain_upgrade"],
+            "runScripts": ["download-latest-rt-binaries.sh tanssi-relay", "build-spec-light-single.sh --bin-dir=tmp --runtime=dancelight"],
             "timeout": 900000,
             "foundation": {
                 "rtUpgradePath": "../target/release/wbuild/dancelight-runtime/dancelight_runtime.compact.compressed.wasm",
                 "type": "zombie",
                 "zombieSpec": {
-                    "configPath": "./configs/zombie_dancelight_upgrade.json",
+                    "configPath": "./configs/zombie_solochain_upgrade.json",
+                    "disableDefaultEthProviders": true
+                }
+            },
+            "vitestArgs": {
+                "bail": 1
+            },
+            "connections": [
+                {
+                    "name": "parachain",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9947"]
+                }
+            ]
+        },
+        {
+            "name": "zombie_starlight_upgrade",
+            "testFileDir": ["suites/zombie_solochain_upgrade"],
+            "runScripts": ["download-latest-rt-binaries.sh tanssi-relay", "build-spec-light-single.sh --bin-dir=tmp --runtime=starlight"],
+            "timeout": 900000,
+            "foundation": {
+                "rtUpgradePath": "../target/release/wbuild/starlight-runtime/starlight_runtime.compact.compressed.wasm",
+                "type": "zombie",
+                "zombieSpec": {
+                    "configPath": "./configs/zombie_solochain_upgrade.json",
                     "disableDefaultEthProviders": true
                 }
             },
@@ -932,6 +956,64 @@
             ]
         },
         {
+            "name": "zombie_tanssi_relay_finalization_recovery",
+            "timeout": 600000,
+            "testFileDir": ["suites/zombie_tanssi_relay_finalization_recovery"],
+            "runScripts": [
+                "build-spec-dancelight.sh",
+                "compile-wasm.ts compile -b ../target/release/tanssi-relay -o wasm -c specs/tanssi-relay.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/single-container-template-container-2000.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-frontier-node -o wasm -c specs/single-container-template-container-2001.json"
+            ],
+            "foundation": {
+                "type": "zombie",
+                "zombieSpec": {
+                    "configPath": "./configs/zombie_tanssi_relay_finalization_recovery.json",
+                    "skipBlockCheck": ["Container2002"]
+                }
+            },
+            "vitestArgs": {
+                "bail": 1
+            },
+            "connections": [
+                {
+                    "name": "Tanssi-relay",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9947"]
+                },
+                {
+                    "name": "Tanssi-charlie",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9948"]
+                },
+                {
+                    "name": "Container2000",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9949"]
+                },
+                {
+                    "name": "Container2001",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9950"]
+                },
+                {
+                    "name": "Container2002",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9951"]
+                },
+                {
+                    "name": "ethers",
+                    "type": "ethers",
+                    "endpoints": ["ws://127.0.0.1:9950"]
+                },
+                {
+                    "name": "w3",
+                    "type": "web3",
+                    "endpoints": ["ws://127.0.0.1:9950"]
+                }
+            ]
+        },
+        {
             "name": "zombie_tanssi_relay_eth_bridge",
             "timeout": 600000,
             "envVars": ["RUST_BACKTRACE=1"],
@@ -1038,7 +1120,7 @@
                 {
                     "name": "para",
                     "type": "polkadotJs",
-                    "endpoints": ["wss://stagebox.tanssi-dev.network"]
+                    "endpoints": ["wss://services.tanssi-dev.network/stagebox"]
                 }
             ]
         },
@@ -1068,7 +1150,7 @@
                 {
                     "name": "para",
                     "type": "polkadotJs",
-                    "endpoints": ["wss://stagelight.tanssi-dev.network"]
+                    "endpoints": ["wss://services.tanssi-dev.network/stagelight"]
                 }
             ]
         },
@@ -1098,7 +1180,7 @@
                 {
                     "name": "para",
                     "type": "polkadotJs",
-                    "endpoints": ["wss://moonlight.tanssi-dev.network"]
+                    "endpoints": ["wss://services.tanssi-dev.network/moonlight"]
                 }
             ]
         },

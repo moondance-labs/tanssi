@@ -17,6 +17,7 @@
 #![cfg(test)]
 use {
     crate::tests::common::*,
+    alloc::collections::btree_set::BTreeSet,
     frame_support::{assert_ok, BoundedBTreeSet},
     pallet_inactivity_tracking::pallet::{
         ActiveCollatorsForCurrentSession, ActiveContainerChainsForCurrentSession, InactiveCollators,
@@ -24,7 +25,6 @@ use {
     parity_scale_codec::Encode,
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_runtime::{traits::BlakeTwo256, DigestItem},
-    sp_std::collections::btree_set::BTreeSet,
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
     tp_traits::{
         ForSession, GetContainerChainsWithCollators, MaybeSelfChainBlockAuthor,
@@ -254,60 +254,36 @@ fn inactivity_tracking_correctly_updates_storages_on_container_chains_author_not
 
             run_to_session(max_inactive_sessions - 1);
             run_block();
-            assert_eq!(
-                InactivityTracking::is_node_inactive(
-                    &cumulus_primitives_core::relay_chain::AccountId::from(ALICE)
-                ),
-                false
-            );
-            assert_eq!(
-                InactivityTracking::is_node_inactive(
-                    &cumulus_primitives_core::relay_chain::AccountId::from(BOB)
-                ),
-                false
-            );
-            assert_eq!(
-                InactivityTracking::is_node_inactive(
-                    &cumulus_primitives_core::relay_chain::AccountId::from(CHARLIE)
-                ),
-                false
-            );
-            assert_eq!(
-                InactivityTracking::is_node_inactive(
-                    &cumulus_primitives_core::relay_chain::AccountId::from(DAVE)
-                ),
-                false
-            );
+            assert!(!InactivityTracking::is_node_inactive(
+                &cumulus_primitives_core::relay_chain::AccountId::from(ALICE)
+            ));
+            assert!(!InactivityTracking::is_node_inactive(
+                &cumulus_primitives_core::relay_chain::AccountId::from(BOB)
+            ));
+            assert!(!InactivityTracking::is_node_inactive(
+                &cumulus_primitives_core::relay_chain::AccountId::from(CHARLIE)
+            ));
+            assert!(!InactivityTracking::is_node_inactive(
+                &cumulus_primitives_core::relay_chain::AccountId::from(DAVE)
+            ));
             run_to_session(max_inactive_sessions);
-            assert_eq!(
-                InactivityTracking::is_node_inactive(
-                    &cumulus_primitives_core::relay_chain::AccountId::from(ALICE)
-                ),
-                false
-            );
-            assert_eq!(
-                InactivityTracking::is_node_inactive(
-                    &cumulus_primitives_core::relay_chain::AccountId::from(BOB)
-                ),
-                false
-            );
-            assert_eq!(
-                InactivityTracking::is_node_inactive(
-                    &cumulus_primitives_core::relay_chain::AccountId::from(CHARLIE)
-                ),
-                false
-            );
-            assert_eq!(
-                InactivityTracking::is_node_inactive(
-                    &cumulus_primitives_core::relay_chain::AccountId::from(DAVE)
-                ),
-                false
-            );
-            assert_eq!(<InactiveCollators<Runtime>>::get(0).is_empty(), false);
+            assert!(!InactivityTracking::is_node_inactive(
+                &cumulus_primitives_core::relay_chain::AccountId::from(ALICE)
+            ));
+            assert!(!InactivityTracking::is_node_inactive(
+                &cumulus_primitives_core::relay_chain::AccountId::from(BOB)
+            ));
+            assert!(!InactivityTracking::is_node_inactive(
+                &cumulus_primitives_core::relay_chain::AccountId::from(CHARLIE)
+            ));
+            assert!(!InactivityTracking::is_node_inactive(
+                &cumulus_primitives_core::relay_chain::AccountId::from(DAVE)
+            ));
+            assert!(!<InactiveCollators<Runtime>>::get(0).is_empty());
 
             run_to_session(max_inactive_sessions + 1);
             run_block();
-            assert_eq!(<InactiveCollators<Runtime>>::get(0).is_empty(), true);
+            assert!(<InactiveCollators<Runtime>>::get(0).is_empty());
         });
 }
 
