@@ -811,7 +811,6 @@ fn test_relay_registrar_reserve_is_allowed() {
             let total_byte_deposit = (deposit_per_byte
                 * parachains_configuration::ActiveConfig::<Runtime>::get().max_code_size as u128)
                 .saturating_add(deposit_per_byte * genesis_head.unwrap().0.len() as u128);
-            let info = paras_registrar::Paras::<Runtime>::get(2000u32).unwrap();
 
             // I am not able to match this exactly, I guess I am missing something. but for now I guess it's ok at least
             assert!(

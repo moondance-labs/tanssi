@@ -8,7 +8,7 @@ import { initializeCustomCreateBlock, jumpSessions } from "utils";
 import {
     STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_PROXY,
     checkCallIsFiltered,
-    STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_REGISTRAR,
+    STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_REGISTRAR_BESIDES_REGISTER
 } from "helpers";
 
 describeSuite({
@@ -65,7 +65,7 @@ describeSuite({
             specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
             shouldSkipStarlightProxy = isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_PROXY.includes(specVersion);
             shouldSkipStarlightRegistrar =
-                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_REGISTRAR.includes(specVersion);
+                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_REGISTRAR_BESIDES_REGISTER.includes(specVersion);
         });
 
         it({

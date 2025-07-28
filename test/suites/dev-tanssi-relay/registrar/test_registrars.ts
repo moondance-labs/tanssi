@@ -3,7 +3,7 @@ import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 import type { DpContainerChainGenesisDataContainerChainGenesisData } from "@polkadot/types/lookup";
 import { generateEmptyGenesisData, jumpSessions } from "utils";
-import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_REGISTRAR, checkCallIsFiltered } from "helpers";
+import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_REGISTRAR, STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_REGISTRAR_BESIDES_REGISTER, checkCallIsFiltered } from "helpers";
 
 describeSuite({
     id: "DEVT1601",
@@ -17,6 +17,7 @@ describeSuite({
         let isStarlight: boolean;
         let specVersion: number;
         let shouldSkipStarlightCR: boolean;
+        let shouldSkipStarlightCRBR: boolean;
 
         // let emptyGenesisData: any;
 
@@ -30,6 +31,8 @@ describeSuite({
             specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
             shouldSkipStarlightCR =
                 isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_REGISTRAR.includes(specVersion);
+            shouldSkipStarlightCRBR =
+                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_REGISTRAR_BESIDES_REGISTER.includes(specVersion);
             // emptyGenesisData = () => {
             //     const g = polkadotJs.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
             //         // Code key: 0x3a636f6465 or [58, 99, 111, 100, 101]
@@ -64,7 +67,7 @@ describeSuite({
             test: async () => {
                 await context.createBlock();
 
-                if (shouldSkipStarlightCR) {
+                if (shouldSkipStarlightCR && shouldSkipStarlightCRBR) {
                     console.log(`Skipping E01 test for Starlight version ${specVersion}`);
                     await checkCallIsFiltered(
                         context,
@@ -91,6 +94,11 @@ describeSuite({
 
                 await context.createBlock([registerTx], { allowFailures: false });
 
+                // After this, if one of them is disabled we should not be able to do anything else.
+                // shouldSkipStarlightCR only allows us to do registration
+                if (shouldSkipStarlightCRBR || shouldSkipStarlightCR) {
+                    return;
+                }
                 await jumpSessions(context, 1);
 
                 // Para should be onboarding now
@@ -158,7 +166,7 @@ describeSuite({
                     .register(2002, containerChainGenesisData, containerChainGenesisData.storage[0].value)
                     .signAsync(alice);
 
-                if (shouldSkipStarlightCR) {
+                if (shouldSkipStarlightCR && shouldSkipStarlightCR) {
                     console.log(`Skipping E02 test for Starlight version ${specVersion}`);
                     await checkCallIsFiltered(context, polkadotJs, await tx2);
                     return;
