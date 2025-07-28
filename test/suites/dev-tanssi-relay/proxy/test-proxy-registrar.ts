@@ -8,6 +8,7 @@ import { initializeCustomCreateBlock, jumpSessions } from "utils";
 import {
     STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_PROXY,
     checkCallIsFiltered,
+    STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_REGISTRAR,
     STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_REGISTRAR_BESIDES_REGISTER,
 } from "helpers";
 
@@ -29,6 +30,7 @@ describeSuite({
         let specVersion: number;
         let shouldSkipStarlightProxy: boolean;
         let shouldSkipStarlightRegistrar: boolean;
+        let shouldSkipStarlightRegistrarBR: boolean;
 
         beforeAll(() => {
             initializeCustomCreateBlock(context);
@@ -65,6 +67,9 @@ describeSuite({
             specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
             shouldSkipStarlightProxy = isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_PROXY.includes(specVersion);
             shouldSkipStarlightRegistrar =
+                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_REGISTRAR.includes(specVersion);
+
+            shouldSkipStarlightRegistrarBR =
                 isStarlight &&
                 STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_REGISTRAR_BESIDES_REGISTER.includes(specVersion);
         });
@@ -141,7 +146,7 @@ describeSuite({
                     return;
                 }
 
-                if (shouldSkipStarlightRegistrar) {
+                if (shouldSkipStarlightRegistrarBR) {
                     console.log(`Skipping E03 test for Starlight version ${specVersion}`);
                     await checkCallIsFiltered(
                         context,
@@ -151,6 +156,10 @@ describeSuite({
                     return;
                 }
 
+                // does not make sense to run the test anymore
+                if (shouldSkipStarlightRegistrar) {
+                    return;
+                }
                 // A regular user registers a new avs
 
                 const txReserve = polkadotJs.tx.registrar.reserve();
@@ -277,13 +286,18 @@ describeSuite({
                     await checkCallIsFiltered(context, polkadotJs, await txAddsCode.signAsync(charlie));
                     return;
                 }
-                if (shouldSkipStarlightRegistrar) {
+                if (shouldSkipStarlightRegistrarBR) {
                     console.log(`Skipping E04 test for Starlight version ${specVersion}`);
                     await checkCallIsFiltered(
                         context,
                         polkadotJs,
                         await polkadotJs.tx.registrar.reserve().signAsync(charlie)
                     );
+                    return;
+                }
+
+                // it does not make sense to run any more the test
+                if (shouldSkipStarlightRegistrar) {
                     return;
                 }
 

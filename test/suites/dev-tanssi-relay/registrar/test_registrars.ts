@@ -171,7 +171,7 @@ describeSuite({
                     .register(2002, containerChainGenesisData, containerChainGenesisData.storage[0].value)
                     .signAsync(alice);
 
-                if (shouldSkipStarlightCR && shouldSkipStarlightCR) {
+                if (shouldSkipStarlightCR && shouldSkipStarlightCRBR) {
                     console.log(`Skipping E02 test for Starlight version ${specVersion}`);
                     await checkCallIsFiltered(context, polkadotJs, await tx2);
                     return;
