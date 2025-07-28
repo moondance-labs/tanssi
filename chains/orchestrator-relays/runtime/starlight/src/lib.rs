@@ -351,11 +351,11 @@ impl Contains<RuntimeCall> for IsContainerChainRegistrationExtrinsics {
         match c {
             RuntimeCall::ContainerRegistrar(inner) => {
                 !matches!(inner, pallet_registrar::Call::register { .. })
-            },
+            }
             RuntimeCall::OnDemandAssignmentProvider(_) => true,
             RuntimeCall::Registrar(inner) => {
                 !matches!(inner, paras_registrar::Call::reserve { .. })
-            },
+            }
             _ => false,
         }
     }
