@@ -2,6 +2,7 @@ import "@tanssi/api-augment/dancelight";
 
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
+import { BN } from "@polkadot/util";
 
 const AMOUNT_RECENT_PROPOSALS_FOR_CHECKING = 10;
 
@@ -65,8 +66,16 @@ export async function checkDecisionDepositAtBlock(
     const optInfo = await apiAt.query.referenda.referendumInfoFor(referendaIndex);
     const info = optInfo.unwrap();
 
-    expect(!!info).toEqual(true);
+    const trackId = info.asOngoing.track.toString();
     expect(info.isOngoing).toEqual(true);
     expect(info.asOngoing.decisionDeposit.isSome).toEqual(true);
-    expect(info.asOngoing.track.toString()).toEqual("0");
+    expect(trackId).toEqual("0");
+
+    const trackInfo = apiAt.consts.referenda.tracks;
+    const trackInfoDetails = trackInfo.at(Number.parseInt(trackId)).toJSON()[1] as {
+        decisionDeposit: number;
+    };
+
+    const depositInfo = info.asOngoing.decisionDeposit.unwrap().toJSON() as { who: string; amount: number };
+    expect(new BN(depositInfo.amount.toString())).toEqual(new BN(trackInfoDetails.decisionDeposit.toString()));
 }
