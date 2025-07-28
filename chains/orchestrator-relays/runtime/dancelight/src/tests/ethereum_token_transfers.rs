@@ -2378,3 +2378,88 @@ fn create_payload_with_token_id(token_id: H256) -> Vec<u8> {
 
     message.encode()
 }
+
+#[test]
+fn test_root_can_send_raw_message() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (EthereumSovereignAccount::get(), 100_000 * UNIT),
+            (SnowbridgeFeesAccount::get(), 100_000 * UNIT),
+            (AccountId::from(ALICE), 100_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            // Setup bridge and token
+            let channel_id: ChannelId = ChannelId::new(hex!(
+                "00000000000000000000006e61746976655f746f6b656e5f7472616e73666572"
+            ));
+            let agent_id = AgentId::from_low_u64_be(10);
+            let para_id: ParaId = 2000u32.into();
+            let amount_to_transfer = 10_000u128;
+            let topic = hex!("deadbeafdeadbeafdeadbeafdeadbeafdeadbeafdeadbeafdeadbeafdeadbeaf");
+
+            assert_ok!(EthereumTokenTransfers::set_token_transfer_channel(
+                root_origin(),
+                channel_id,
+                agent_id,
+                para_id
+            ));
+
+            // Define a mock ERC20 token address
+            let token_address = H160(hex!("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"));
+
+            // Relative to ethereum asset location (pallet_xcm::transfer_assets does the reanchor internally)
+            let erc20_asset_location_relative_to_eth = Location {
+                parents: 0,
+                interior: X1([AccountKey20 {
+                    network: Some(EthereumNetwork::get()),
+                    key: token_address.into(),
+                }]
+                .into()),
+            };
+
+            // User tries to send tokens
+            let beneficiary_address = H160(hex!("0123456789abcdef0123456789abcdef01234567"));
+
+            // Beneficiary location relative to ethereum
+            let beneficiary_location = Location {
+                parents: 0,
+                interior: X1([AccountKey20 {
+                    network: Some(EthereumNetwork::get()),
+                    key: beneficiary_address.into(),
+                }]
+                .into()),
+            };
+
+            let eth_asset = AssetId(erc20_asset_location_relative_to_eth.clone())
+                .into_asset(Fungibility::Fungible(amount_to_transfer));
+
+            let mut assets = Assets::new();
+            assets.push(eth_asset);
+
+            let xcm_message = Xcm(vec![
+                Instruction::WithdrawAsset(assets),
+                Instruction::DepositAsset {
+                    assets: AssetFilter::Wild(WildAsset::All),
+                    beneficiary: beneficiary_location.clone(),
+                },
+                Instruction::SetTopic(topic),
+            ]);
+
+            assert_ok!(XcmPallet::send(
+                RuntimeOrigin::root(),
+                Box::new(EthereumLocation::get().into()),
+                Box::new(VersionedXcm::V5(xcm_message)),
+            ));
+
+            assert_eq!(
+                filter_events!(RuntimeEvent::EthereumOutboundQueue(
+                    snowbridge_pallet_outbound_queue::Event::MessageQueued { .. },
+                ))
+                .count(),
+                1,
+                "MessageQueued event should be emitted!"
+            );
+        })
+}
