@@ -792,13 +792,13 @@ fn test_relay_registrar_reserve_is_allowed() {
 
             assert_ok!(Registrar::reserve(origin_of(ALICE.into())));
 
-            let genesis_head = Some(HeadData(vec![1u8, 1u8, 1u8]));
+            let genesis_head = HeadData(vec![1u8, 1u8, 1u8]);
 
             assert_ok!(RuntimeCall::ContainerRegistrar(
                 pallet_registrar::Call::<Runtime>::register {
                     para_id: 2000.into(),
                     genesis_data: genesis_data_2000.clone(),
-                    head_data: genesis_head.clone()
+                    head_data: Some(genesis_head.clone())
                 }
             )
             .dispatch(<Runtime as frame_system::Config>::RuntimeOrigin::signed(
@@ -810,7 +810,7 @@ fn test_relay_registrar_reserve_is_allowed() {
             let deposit_per_byte = DataDepositPerByte::get();
             let total_byte_deposit = (deposit_per_byte
                 * parachains_configuration::ActiveConfig::<Runtime>::get().max_code_size as u128)
-                .saturating_add(deposit_per_byte * genesis_head.unwrap().0.len() as u128);
+                .saturating_add(deposit_per_byte * genesis_head.0.len() as u128);
 
             // I am not able to match this exactly, I guess I am missing something. but for now I guess it's ok at least
             assert!(
