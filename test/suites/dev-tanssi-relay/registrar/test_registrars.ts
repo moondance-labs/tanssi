@@ -3,7 +3,11 @@ import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 import type { DpContainerChainGenesisDataContainerChainGenesisData } from "@polkadot/types/lookup";
 import { generateEmptyGenesisData, jumpSessions } from "utils";
-import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_REGISTRAR, STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_REGISTRAR_BESIDES_REGISTER, checkCallIsFiltered } from "helpers";
+import {
+    STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_REGISTRAR,
+    STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_REGISTRAR_BESIDES_REGISTER,
+    checkCallIsFiltered,
+} from "helpers";
 
 describeSuite({
     id: "DEVT1601",
@@ -32,7 +36,8 @@ describeSuite({
             shouldSkipStarlightCR =
                 isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_REGISTRAR.includes(specVersion);
             shouldSkipStarlightCRBR =
-                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_REGISTRAR_BESIDES_REGISTER.includes(specVersion);
+                isStarlight &&
+                STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_REGISTRAR_BESIDES_REGISTER.includes(specVersion);
             // emptyGenesisData = () => {
             //     const g = polkadotJs.createType("DpContainerChainGenesisDataContainerChainGenesisData", {
             //         // Code key: 0x3a636f6465 or [58, 99, 111, 100, 101]

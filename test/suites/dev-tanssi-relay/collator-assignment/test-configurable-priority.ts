@@ -41,7 +41,8 @@ describeSuite({
                 isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_REGISTRAR.includes(specVersion);
 
             shouldSkipStarlightCRBR =
-                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_REGISTRAR_BESIDES_REGISTER.includes(specVersion);
+                isStarlight &&
+                STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_REGISTRAR_BESIDES_REGISTER.includes(specVersion);
 
             // If one on these features is enabled and the others aren't, the test should fail.
             // It will only succeed when the three features are enabled (or disabled) for the current starlight runtime version.
