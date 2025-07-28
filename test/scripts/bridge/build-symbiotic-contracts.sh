@@ -23,5 +23,6 @@ else
 fi
 
 pushd $symbiotic_contracts_dir
+export FOUNDRY_PROFILE=ci
 forge build
 popd
