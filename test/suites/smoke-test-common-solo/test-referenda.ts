@@ -28,8 +28,8 @@ describeSuite({
                 const referendumCount = (await api.query.referenda.referendumCount()).toNumber();
                 const startIndex = Math.max(0, referendumCount - AMOUNT_RECENT_PROPOSALS_FOR_CHECKING);
 
-                for (let i = startIndex; i < referendumCount; i++) {
-                    const infoOpt = await api.query.referenda.referendumInfoFor(i);
+                for (let proposalIndex = startIndex; proposalIndex < referendumCount; proposalIndex++) {
+                    const infoOpt = await api.query.referenda.referendumInfoFor(proposalIndex);
                     if (infoOpt.isSome) {
                         const info = infoOpt.unwrap();
                         if (info.isOngoing) {
@@ -38,8 +38,14 @@ describeSuite({
 
                             expect(
                                 unwrappedDecisionDeposit,
-                                `Expecting decision deposit is not null for proposal with index ${i}`
+                                `Expecting decision deposit is not null for proposal with index ${proposalIndex}`
                             ).not.toBeNull();
+                        } else if (info.isApproved) {
+                            const atBlock = info.asApproved[0].toNumber();
+                            await checkDecisionDepositAtBlock(api, proposalIndex, atBlock - 1);
+                        } else if (info.isRejected) {
+                            const atBlock = info.asRejected[0].toNumber();
+                            await checkDecisionDepositAtBlock(api, proposalIndex, atBlock - 1);
                         }
                     }
                 }
@@ -47,3 +53,20 @@ describeSuite({
         });
     },
 });
+
+export async function checkDecisionDepositAtBlock(
+    api: ApiPromise,
+    referendaIndex: number,
+    atBlock: number
+): Promise<void> {
+    const blockHash = await api.rpc.chain.getBlockHash(atBlock);
+    const apiAt = await api.at(blockHash);
+
+    const optInfo = await apiAt.query.referenda.referendumInfoFor(referendaIndex);
+    const info = optInfo.unwrap();
+
+    expect(!!info).toEqual(true);
+    expect(info.isOngoing).toEqual(true);
+    expect(info.asOngoing.decisionDeposit.isSome).toEqual(true);
+    expect(info.asOngoing.track.toString()).toEqual("0");
+}
