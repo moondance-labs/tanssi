@@ -178,7 +178,7 @@ impl SubstrateCli for RelayChainCli {
             "" if self.solochain => Ok(Box::new(GenericChainSpec::from_json_bytes(
                 STARLIGHT_RAW_SPECS,
             )?)),
-            "starlight" => Ok(Box::new(GenericChainSpec::from_json_bytes(
+            "starlight" | "tanssi" => Ok(Box::new(GenericChainSpec::from_json_bytes(
                 STARLIGHT_RAW_SPECS,
             )?)),
             "dancelight" => Ok(Box::new(GenericChainSpec::from_json_bytes(
