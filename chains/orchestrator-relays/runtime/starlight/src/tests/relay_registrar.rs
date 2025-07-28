@@ -649,7 +649,7 @@ fn test_register_parathread_not_allowed() {
 }
 
 #[test]
-fn test_relay_registrar_through_extrinsic_not_allowed() {
+fn test_relay_registrar_through_extrinsic_is_allowed() {
     ExtBuilder::default()
         .with_balances(vec![
             // Alice gets 10k extra tokens for her mapping deposit
@@ -671,7 +671,7 @@ fn test_relay_registrar_through_extrinsic_not_allowed() {
             let validation_code =
                 vec![1u8; cumulus_primitives_core::relay_chain::MIN_CODE_SIZE as usize];
 
-            assert_noop!(
+            assert_ok!(
                 RuntimeCall::Registrar(paras_registrar::Call::<Runtime>::register {
                     id: 3001.into(),
                     validation_code: cumulus_primitives_core::relay_chain::ValidationCode(
@@ -683,8 +683,7 @@ fn test_relay_registrar_through_extrinsic_not_allowed() {
                     <Runtime as frame_system::Config>::RuntimeOrigin::signed(AccountId::from(
                         ALICE
                     ))
-                ),
-                frame_system::Error::<Runtime>::CallFiltered
+                )
             );
         });
 }
