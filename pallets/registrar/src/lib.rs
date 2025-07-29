@@ -815,7 +815,7 @@ pub mod pallet {
 
                 let deposit = Self::get_genesis_cost(genesis_data.encoded_size());
                 let new_balance = T::Currency::minimum_balance()
-                    .saturating_mul(10_000_000u32.into())
+                    .saturating_mul(100_000_000u32.into())
                     .saturating_add(deposit);
                 let account = create_funded_user::<T>("caller", 1000, new_balance).0;
                 T::InnerRegistrar::prepare_chain_registration(*para_id, account.clone());
