@@ -10,6 +10,7 @@ import {
     signAndSendAndInclude,
     waitSessions,
 } from "utils";
+import fs from "node:fs";
 
 /**
  * Find the hex key corresponding to a given SS58 account.
@@ -114,6 +115,50 @@ describeSuite({
                 expect(relayNetwork, "Relay API incorrect").to.contain("dancelight");
                 const blockNum = (await relayApi.rpc.chain.getBlock()).block.header.number.toNumber();
                 expect(blockNum).to.be.greaterThan(0);
+            },
+        });
+
+        it({
+            id: "T02b",
+            title: "Collator-01 keystore path exists",
+            test: async () => {
+                const collator01CustomKeystorePath = `${getTmpZombiePath()}/Collator-01/relay-data/chains/dancelight_local_testnet/keystore/`;
+
+                // Check that the directory exists and is accessible
+                await fs.promises.access(collator01CustomKeystorePath, fs.constants.F_OK);
+
+                // Read all filenames in the directory
+                const filenames: string[] = await fs.promises.readdir(collator01CustomKeystorePath);
+
+                // Optionally, you can assert that there is at least one file
+                if (filenames.length === 0) {
+                    throw new Error(`Expected at least one file in ${collator01CustomKeystorePath}, but found none.`);
+                }
+
+                // Now `filenames` holds the list of file names in that directory
+                console.log("Keystore files:", filenames);
+            },
+        });
+
+        it({
+            id: "T02c",
+            title: "Collator-02 keystore path exists",
+            test: async () => {
+                const collator02CustomKeystorePath = `${getTmpZombiePath()}/Collator-02/relay-data/tmp_keystore_zombie_test/`;
+
+                // Check that the directory exists and is accessible
+                await fs.promises.access(collator02CustomKeystorePath, fs.constants.F_OK);
+
+                // Read all filenames in the directory
+                const filenames: string[] = await fs.promises.readdir(collator02CustomKeystorePath);
+
+                // Optionally, you can assert that there is at least one file
+                if (filenames.length === 0) {
+                    throw new Error(`Expected at least one file in ${collator02CustomKeystorePath}, but found none.`);
+                }
+
+                // Now `filenames` holds the list of file names in that directory
+                console.log("Keystore files:", filenames);
             },
         });
 
