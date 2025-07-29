@@ -16,7 +16,7 @@
 
 #![cfg(test)]
 
-use {crate::tests::common::*, frame_support::assert_ok, sp_std::vec};
+use {crate::tests::common::*, alloc::vec, frame_support::assert_ok};
 
 #[test]
 fn session_key_changes_are_reflected_after_two_sessions() {

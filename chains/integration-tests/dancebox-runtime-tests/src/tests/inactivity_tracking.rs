@@ -17,6 +17,7 @@
 #![cfg(test)]
 use {
     dancebox_runtime_test_utils::*,
+    alloc::collections::btree_set::BTreeSet,
     frame_support::{assert_ok, BoundedBTreeSet},
     pallet_inactivity_tracking::pallet::{
         ActiveCollatorsForCurrentSession, ActiveContainerChainsForCurrentSession, InactiveCollators,
@@ -24,7 +25,6 @@ use {
     parity_scale_codec::Encode,
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_runtime::{traits::BlakeTwo256, DigestItem},
-    sp_std::collections::btree_set::BTreeSet,
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
     tp_traits::{
         ForSession, GetContainerChainsWithCollators, MaybeSelfChainBlockAuthor,

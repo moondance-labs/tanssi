@@ -16,6 +16,7 @@
 
 use {
     babe_primitives::AuthorityId as BabeId,
+    core::marker::PhantomData,
     cumulus_primitives_core::relay_chain::{
         AccountId, AssignmentId, AuthorityDiscoveryId, ValidatorId,
     },
@@ -29,7 +30,6 @@ use {
     sp_runtime::generic::DigestItem,
     sp_runtime::traits::Convert,
     sp_runtime::Digest,
-    sp_std::marker::PhantomData,
     sp_weights::Weight,
     xcm_emulator::{HeaderT, Network, Parachain, RelayChain},
 };

@@ -16,14 +16,16 @@
 
 //! The bridge to ethereum config
 
-pub const SLOTS_PER_EPOCH: u32 = snowbridge_pallet_ethereum_client::config::SLOTS_PER_EPOCH as u32;
 #[cfg(all(not(test), not(feature = "testing-helpers")))]
 use crate::EthereumBeaconClient;
 
 #[cfg(not(feature = "runtime-benchmarks"))]
-use tp_bridge::{
-    generic_token_message_processor::{GenericTokenMessageProcessor, NoOpProcessor},
-    symbiotic_message_processor::SymbioticMessageProcessor,
+use {
+    tanssi_runtime_common::relay::NativeTokenTransferMessageProcessor,
+    tp_bridge::{
+        generic_token_message_processor::GenericTokenMessageProcessor,
+        symbiotic_message_processor::SymbioticMessageProcessor,
+    },
 };
 
 use {
@@ -34,25 +36,18 @@ use {
         OutboundMessageCommitmentRecorder, Runtime, RuntimeEvent, SnowbridgeFeesAccount,
         TokenLocationReanchored, TransactionByteFee, TreasuryAccount, WeightToFee, UNITS,
     },
-    frame_support::{
-        traits::{
-            fungible::{Inspect, Mutate},
-            tokens::{Fortitude, Preservation},
-        },
-        weights::ConstantMultiplier,
-    },
+    frame_support::weights::ConstantMultiplier,
     pallet_xcm::EnsureXcm,
-    parity_scale_codec::Encode,
     snowbridge_beacon_primitives::ForkVersions,
-    snowbridge_core::{gwei, meth, Channel, PricingParameters, Rewards},
-    snowbridge_inbound_queue_primitives::EventProof,
-    snowbridge_pallet_inbound_queue::RewardProcessor,
+    snowbridge_core::{gwei, meth, PricingParameters, Rewards},
     snowbridge_pallet_outbound_queue::OnNewCommitment,
-    sp_core::{ConstU32, ConstU8, Get, H160, H256},
-    sp_runtime::{traits::Zero, DispatchResult},
-    tanssi_runtime_common::processors::NativeTokenTransferMessageProcessor,
+    sp_core::{ConstU32, ConstU8, H160, H256},
+    tanssi_runtime_common::relay::RewardThroughFeesAccount,
+    tp_bridge::generic_token_message_processor::NoOpProcessor,
     tp_bridge::{DoNothingConvertMessage, DoNothingRouter, EthereumSystemHandler},
 };
+
+pub const SLOTS_PER_EPOCH: u32 = snowbridge_pallet_ethereum_client::config::SLOTS_PER_EPOCH as u32;
 
 // Ethereum Bridge
 parameter_types! {
@@ -155,11 +150,14 @@ impl pallet_ethereum_token_transfers::Config for Runtime {
 mod benchmark_helper {
     use {
         crate::{EthereumBeaconClient, Runtime, RuntimeOrigin},
-        snowbridge_beacon_primitives::BeaconHeader,
         snowbridge_core::Channel,
-        snowbridge_inbound_queue_primitives::v1::{Envelope, MessageProcessor},
+        snowbridge_inbound_queue_primitives::{
+            v1::{Envelope, MessageProcessor},
+            EventFixture,
+        },
+        snowbridge_pallet_inbound_queue::Nonce,
         snowbridge_pallet_system::Channels,
-        sp_core::H256,
+        sp_runtime::DispatchResult,
         xcm::latest::Location,
     };
 
@@ -172,8 +170,10 @@ mod benchmark_helper {
     }
 
     impl snowbridge_pallet_inbound_queue::BenchmarkHelper<Runtime> for EthSystemBenchHelper {
-        fn initialize_storage(beacon_header: BeaconHeader, block_roots_root: H256) {
-            let submit_message = snowbridge_pallet_inbound_queue_fixtures::register_token::make_register_token_message();
+        fn initialize_storage() -> EventFixture {
+            // In our case send token command is the worst case to benchmark, but this might change in the future
+            let submit_message =
+                snowbridge_pallet_inbound_queue_fixtures::send_token::make_send_token_message();
             let envelope: Envelope = Envelope::try_from(&submit_message.event.event_log).unwrap();
 
             Channels::<Runtime>::set(
@@ -184,19 +184,29 @@ mod benchmark_helper {
                 }),
             );
 
-            EthereumBeaconClient::store_finalized_header(beacon_header, block_roots_root).unwrap();
+            Nonce::<Runtime>::insert(envelope.channel_id, 1);
+
+            EthereumBeaconClient::store_finalized_header(
+                submit_message.finalized_header,
+                submit_message.block_roots_root,
+            )
+            .unwrap();
+
+            submit_message
         }
     }
 
-    pub struct DoNothingMessageProcessor;
-
-    impl MessageProcessor for DoNothingMessageProcessor {
-        fn can_process_message(_: &Channel, _: &Envelope) -> bool {
+    pub struct WorstCaseMessageProcessor<P>(core::marker::PhantomData<P>);
+    impl<P> MessageProcessor for WorstCaseMessageProcessor<P>
+    where
+        P: MessageProcessor,
+    {
+        fn can_process_message(_channel: &Channel, _envelope: &Envelope) -> bool {
             true
         }
 
-        fn process_message(_: Channel, _: Envelope) -> Result<(), sp_runtime::DispatchError> {
-            Ok(())
+        fn process_message(channel: Channel, envelope: Envelope) -> DispatchResult {
+            P::process_message(channel, envelope)
         }
     }
 }
@@ -214,34 +224,7 @@ mod test_helpers {
     }
 }
 
-/// Rewards the relayer that processed a native token transfer message
-/// using the FeesAccount configured in pallet_ethereum_token_transfers
-pub struct RewardThroughFeesAccount<T>(sp_std::marker::PhantomData<T>);
-
-impl<T> RewardProcessor<T> for RewardThroughFeesAccount<T>
-where
-    T: snowbridge_pallet_inbound_queue::Config + pallet_ethereum_token_transfers::Config,
-    T::AccountId: From<sp_runtime::AccountId32>,
-    <T::Token as Inspect<T::AccountId>>::Balance: From<u128>,
-{
-    fn process_reward(who: T::AccountId, _channel: Channel, message: EventProof) -> DispatchResult {
-        let reward_amount = snowbridge_pallet_inbound_queue::Pallet::<T>::calculate_delivery_cost(
-            message.encode().len() as u32,
-        );
-
-        let fees_account: T::AccountId = T::FeesAccount::get();
-
-        let amount =
-            T::Token::reducible_balance(&fees_account, Preservation::Preserve, Fortitude::Polite)
-                .min(reward_amount);
-        if !amount.is_zero() {
-            T::Token::transfer(&fees_account, &who, amount, Preservation::Preserve)?;
-        }
-
-        Ok(())
-    }
-}
-
+#[cfg(not(feature = "runtime-benchmarks"))]
 pub type NativeTokensProcessor = NativeTokenTransferMessageProcessor<Runtime>;
 
 impl snowbridge_pallet_inbound_queue::Config for Runtime {
@@ -273,5 +256,5 @@ impl snowbridge_pallet_inbound_queue::Config for Runtime {
     );
     type RewardProcessor = RewardThroughFeesAccount<Self>;
     #[cfg(feature = "runtime-benchmarks")]
-    type MessageProcessor = (benchmark_helper::DoNothingMessageProcessor,);
+    type MessageProcessor = (benchmark_helper::WorstCaseMessageProcessor<NoOpProcessor>,); // TODO: will be addressed later
 }

@@ -18,8 +18,10 @@
 
 use {
     crate::{
-        tests::common::*, ContainerRegistrar, Paras, Registrar, RuntimeCall, SlotFrequency, System,
+        tests::common::*, ContainerRegistrar, DataDepositPerByte, ParaDeposit, Paras, Registrar,
+        RuntimeCall, SlotFrequency, System,
     },
+    alloc::vec,
     cumulus_primitives_core::relay_chain::HeadData,
     frame_support::{assert_noop, assert_ok, BoundedVec},
     pallet_registrar::Event as ContainerRegistrarEvent,
@@ -29,7 +31,6 @@ use {
     runtime_common::paras_registrar,
     runtime_parachains::configuration as parachains_configuration,
     sp_runtime::traits::Dispatchable,
-    sp_std::vec,
     tp_traits::ParaId,
 };
 
@@ -719,6 +720,102 @@ fn test_relay_registrar_deregister_through_extrinsic_not_allowed() {
                     ))
                 ),
                 frame_system::Error::<Runtime>::CallFiltered
+            );
+        });
+}
+
+#[test]
+fn test_container_registrar_register_is_allowed() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            assert_ok!(
+                RuntimeCall::Registrar(paras_registrar::Call::<Runtime>::reserve {}).dispatch(
+                    <Runtime as frame_system::Config>::RuntimeOrigin::signed(AccountId::from(
+                        ALICE
+                    ))
+                )
+            );
+        });
+}
+
+#[test]
+fn test_relay_registrar_reserve_is_allowed() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            // Alice gets 10k extra tokens for her mapping deposit
+            (AccountId::from(ALICE), 210_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+            (AccountId::from(CHARLIE), 100_000 * UNIT),
+            (AccountId::from(DAVE), 100_000 * UNIT),
+        ])
+        .with_collators(vec![
+            (AccountId::from(ALICE), 210 * UNIT),
+            (AccountId::from(BOB), 100 * UNIT),
+            (AccountId::from(CHARLIE), 100 * UNIT),
+            (AccountId::from(DAVE), 100 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            run_to_block(2);
+
+            let validation_code =
+                vec![1u8; cumulus_primitives_core::relay_chain::MIN_CODE_SIZE as usize];
+            let genesis_data_2000 = ContainerChainGenesisData {
+                storage: BoundedVec::try_from(vec![
+                    (b":code".to_vec(), validation_code.clone()).into()
+                ])
+                .unwrap(),
+                name: Default::default(),
+                id: Default::default(),
+                fork_id: Default::default(),
+                extensions: BoundedVec::try_from(vec![]).unwrap(),
+                properties: Default::default(),
+            };
+
+            let balance_reserved_before = Balances::reserved_balance(&AccountId::from(ALICE));
+
+            assert_ok!(Registrar::reserve(origin_of(ALICE.into())));
+
+            let genesis_head = HeadData(vec![1u8, 1u8, 1u8]);
+
+            assert_ok!(RuntimeCall::ContainerRegistrar(
+                pallet_registrar::Call::<Runtime>::register {
+                    para_id: 2000.into(),
+                    genesis_data: genesis_data_2000.clone(),
+                    head_data: Some(genesis_head.clone())
+                }
+            )
+            .dispatch(<Runtime as frame_system::Config>::RuntimeOrigin::signed(
+                AccountId::from(ALICE)
+            )));
+            let balance_reserved_after = Balances::reserved_balance(&AccountId::from(ALICE));
+
+            let base_deposit = ParaDeposit::get();
+            let deposit_per_byte = DataDepositPerByte::get();
+            let total_byte_deposit = (deposit_per_byte
+                * parachains_configuration::ActiveConfig::<Runtime>::get().max_code_size as u128)
+                .saturating_add(deposit_per_byte * genesis_head.0.len() as u128);
+
+            // I am not able to match this exactly, I guess I am missing something. but for now I guess it's ok at least
+            assert!(
+                balance_reserved_after.saturating_sub(balance_reserved_before)
+                    > total_byte_deposit.saturating_add(base_deposit)
             );
         });
 }

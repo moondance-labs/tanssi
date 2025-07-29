@@ -19,6 +19,7 @@
 //! This pallet allows container chains to select data preservers.
 
 #![cfg_attr(not(feature = "std"), no_std)]
+extern crate alloc;
 
 mod types;
 
@@ -37,6 +38,7 @@ pub mod weights;
 pub use weights::WeightInfo;
 
 use {
+    alloc::vec::Vec,
     core::fmt::Debug,
     dp_core::ParaId,
     frame_support::{
@@ -55,7 +57,6 @@ use {
         traits::{CheckedAdd, CheckedSub, Get, One, Zero},
         ArithmeticError, Either,
     },
-    sp_std::vec::Vec,
     tp_traits::StorageDeposit,
 };
 

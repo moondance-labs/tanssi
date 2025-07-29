@@ -21,7 +21,7 @@ use {
     frame_support::{assert_noop, assert_ok},
     snowbridge_pallet_ethereum_client::{functions::*, mock_electra::*},
     sp_core::H256,
-    sp_std::vec,
+    alloc::vec,
 };
 #[test]
 fn test_ethereum_force_checkpoint() {

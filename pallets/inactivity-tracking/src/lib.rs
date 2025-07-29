@@ -22,7 +22,10 @@
 //! The tracking functionality can be enabled or disabled with root privileges.
 //! By default, the tracking is enabled.
 #![cfg_attr(not(feature = "std"), no_std)]
+extern crate alloc;
+
 use {
+    alloc::collections::btree_set::BTreeSet,
     frame_support::{
         dispatch::DispatchResult, dispatch::DispatchResultWithPostInfo, ensure,
         pallet_prelude::Weight,
@@ -62,10 +65,10 @@ pub mod pallet {
     use {
         super::*,
         crate::weights::WeightInfo,
+        alloc::collections::btree_set::BTreeSet,
         core::marker::PhantomData,
         frame_support::{pallet_prelude::*, storage::types::StorageMap},
         frame_system::pallet_prelude::*,
-        sp_std::collections::btree_set::BTreeSet,
     };
 
     pub type Collator<T> = <T as frame_system::Config>::AccountId;
@@ -194,8 +197,6 @@ pub mod pallet {
     pub enum Error<T> {
         /// The size of a collator set for a session has already reached MaxCollatorsPerSession value
         MaxCollatorsPerSessionReached,
-        /// The size of a chains set for a session has already reached MaxContainerChains value
-        MaxContainerChainsReached,
         /// Error returned when the activity tracking status is attempted to be updated before the end session
         ActivityTrackingStatusUpdateSuspended,
         /// Error returned when the activity tracking status is attempted to be enabled when it is already enabled
@@ -308,8 +309,9 @@ pub mod pallet {
                 {
                     total_weight.saturating_accrue(T::DbWeight::get().reads(1));
                     if start <= T::CurrentSessionIndex::session_index() {
+                        let authors: &[T::AccountId] = &[orchestrator_chain_author];
                         total_weight
-                            .saturating_accrue(Self::on_author_noted(orchestrator_chain_author));
+                            .saturating_accrue(Self::on_authors_noted(authors.iter().cloned()));
                     }
                 }
             }
@@ -443,49 +445,93 @@ pub mod pallet {
 
         /// Internal update the current session active collator records.
         /// This function is called when a container chain or orchestrator chain collator is noted.
-        pub fn on_author_noted(author: Collator<T>) -> Weight {
-            let mut total_weight = T::DbWeight::get().reads_writes(1, 0);
-            let _ = <ActiveCollatorsForCurrentSession<T>>::try_mutate(
-                |active_collators| -> DispatchResult {
-                    if active_collators.try_insert(author.clone()).is_err() {
-                        // If we reach MaxCollatorsPerSession limit there must be a bug in the pallet
-                        // so we disable the activity tracking
-                        Self::set_inactivity_tracking_status_inner(
-                            T::CurrentSessionIndex::session_index(),
-                            false,
-                        );
-                        total_weight.saturating_accrue(T::DbWeight::get().reads_writes(1, 2));
-                        return Err(Error::<T>::MaxCollatorsPerSessionReached.into());
-                    } else {
-                        total_weight.saturating_accrue(T::DbWeight::get().writes(1));
+        pub fn on_authors_noted(authors: impl IntoIterator<Item = T::AccountId>) -> Weight {
+            let authors: BTreeSet<_> = authors.into_iter().collect();
+            if authors.is_empty() {
+                return Weight::zero();
+            }
+
+            let mut total_weight = T::DbWeight::get().reads(1);
+
+            let result = <ActiveCollatorsForCurrentSession<T>>::try_mutate(|active_collators| {
+                let mut temp_set: BTreeSet<Collator<T>> =
+                    core::mem::take(active_collators).into_inner();
+
+                temp_set.extend(authors);
+
+                match BoundedBTreeSet::<Collator<T>, T::MaxCollatorsPerSession>::try_from(temp_set)
+                {
+                    Ok(bounded_set) => {
+                        *active_collators = bounded_set;
+                        Ok(())
                     }
-                    Ok(())
-                },
-            );
-            total_weight
+                    Err(_) => Err(()),
+                }
+            });
+
+            match result {
+                Ok(_) => {
+                    total_weight.saturating_accrue(T::DbWeight::get().writes(1));
+                    total_weight
+                }
+                Err(_) => {
+                    log::error!(
+                        "Limit of active collators per session reached. Disabling activity tracking."
+                    );
+                    // If we reach MaxCollatorsPerSession limit there must be a bug in the pallet
+                    // so we disable the activity tracking
+                    Self::set_inactivity_tracking_status_inner(
+                        T::CurrentSessionIndex::session_index(),
+                        false,
+                    );
+                    total_weight.saturating_accrue(T::DbWeight::get().writes(2));
+                    total_weight
+                }
+            }
         }
 
         /// Internal update the current session active chains records.
         /// This function is called when a container chain is noted.
-        pub fn on_chain_noted(chain_id: ParaId) -> Weight {
-            let mut total_weight = T::DbWeight::get().reads_writes(1, 0);
-            let _ = <ActiveContainerChainsForCurrentSession<T>>::try_mutate(
-                |active_chains| -> DispatchResult {
-                    if active_chains.try_insert(chain_id).is_err() {
-                        // If we reach MaxContainerChains limit there must be a bug in the pallet
-                        // so we disable the activity tracking
-                        Self::set_inactivity_tracking_status_inner(
-                            T::CurrentSessionIndex::session_index(),
-                            false,
-                        );
-                        total_weight.saturating_accrue(T::DbWeight::get().reads_writes(1, 2));
-                        return Err(Error::<T>::MaxContainerChainsReached.into());
-                    } else {
-                        total_weight += T::DbWeight::get().writes(1);
+        pub fn on_chains_noted(chains: impl IntoIterator<Item = ParaId>) -> Weight {
+            let chains: BTreeSet<_> = chains.into_iter().collect();
+            if chains.is_empty() {
+                return Weight::zero();
+            }
+
+            let mut total_weight = T::DbWeight::get().reads(1);
+
+            let result = <ActiveContainerChainsForCurrentSession<T>>::try_mutate(|active_chains| {
+                let mut temp_set: BTreeSet<ParaId> = core::mem::take(active_chains).into_inner();
+
+                temp_set.extend(chains);
+
+                match BoundedBTreeSet::<ParaId, T::MaxContainerChains>::try_from(temp_set) {
+                    Ok(bounded_set) => {
+                        *active_chains = bounded_set;
+                        Ok(())
                     }
-                    Ok(())
-                },
-            );
+                    Err(_) => Err(()),
+                }
+            });
+
+            match result {
+                Ok(_) => {
+                    total_weight.saturating_accrue(T::DbWeight::get().writes(1));
+                }
+                Err(_) => {
+                    // If we reach MaxContainerChains limit there must be a bug in the pallet
+                    // so we disable the activity tracking
+                    log::error!(
+                        "Limit of active container chains reached. Disabling activity tracking."
+                    );
+                    Self::set_inactivity_tracking_status_inner(
+                        T::CurrentSessionIndex::session_index(),
+                        false,
+                    );
+                    total_weight.saturating_accrue(T::DbWeight::get().writes(2));
+                }
+            }
+
             total_weight
         }
 
@@ -598,11 +644,17 @@ impl<T: Config> AuthorNotingHook<Collator<T>> for Pallet<T> {
             <CurrentActivityTrackingStatus<T>>::get()
         {
             if start <= T::CurrentSessionIndex::session_index() {
-                for author_info in info {
-                    total_weight
-                        .saturating_accrue(Self::on_author_noted(author_info.author.clone()));
-                    total_weight.saturating_accrue(Self::on_chain_noted(author_info.para_id));
-                }
+                let (authors, chains): (BTreeSet<_>, BTreeSet<_>) = info
+                    .iter()
+                    .map(
+                        |AuthorNotingInfo {
+                             author, para_id, ..
+                         }| (author.clone(), *para_id),
+                    )
+                    .unzip();
+
+                total_weight.saturating_accrue(Self::on_authors_noted(authors));
+                total_weight.saturating_accrue(Self::on_chains_noted(chains));
             }
         }
         total_weight
