@@ -349,12 +349,16 @@ impl Contains<RuntimeCall> for IsXcmExtrinsics {
 pub struct IsContainerChainRegistrationExtrinsics;
 impl Contains<RuntimeCall> for IsContainerChainRegistrationExtrinsics {
     fn contains(c: &RuntimeCall) -> bool {
-        matches!(
-            c,
-            RuntimeCall::ContainerRegistrar(_)
-                | RuntimeCall::OnDemandAssignmentProvider(_)
-                | RuntimeCall::Registrar(_)
-        )
+        match c {
+            RuntimeCall::ContainerRegistrar(inner) => {
+                !matches!(inner, pallet_registrar::Call::register { .. })
+            }
+            RuntimeCall::OnDemandAssignmentProvider(_) => true,
+            RuntimeCall::Registrar(inner) => {
+                !matches!(inner, paras_registrar::Call::reserve { .. })
+            }
+            _ => false,
+        }
     }
 }
 
@@ -1329,7 +1333,7 @@ impl parachains_slashing::Config for Runtime {
 }
 
 parameter_types! {
-    pub const ParaDeposit: Balance = 40 * UNITS;
+    pub const ParaDeposit: Balance = 500 * UNITS;
 }
 
 impl paras_registrar::Config for Runtime {
