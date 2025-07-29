@@ -63,7 +63,7 @@ function parseScriptFlags(argv: string[]): Flags {
   };
 }
 
-
+// Parse args into tanssi args or polkadot args by finding the first `--`
 function splitCommandSections(remainArgs: string[]): Sections {
   if (remainArgs.length === 0) {
     console.error('Error: missing command to execute');
@@ -104,6 +104,7 @@ function getArgValue(key: string, arr: string[]): string {
   throw new Error(`missing relay ${key}`);
 }
 
+// Compute a keystore path that depends on base path, for testing
 function computeRelayKeystorePath(polkadotArgs: string[]): string {
   const base = getArgValue('--base-path', polkadotArgs);
   return `${base}/tmp_keystore_zombie_test`;
@@ -146,6 +147,7 @@ function overrideArgs(
   }
 }
 
+// Override `--keystore-path` arg with new value
 function overrideKeystore(
     polkadotArgs: string[],
     keystorePath: string
