@@ -65,9 +65,11 @@ runs:
       id: compute-cache-key
       shell: bash
       run: |
-        features_hash=$(echo "${{ inputs.features }}" | sha256sum | cut -d' ' -f1)
+        features_flags="${{ inputs.features }}|${{ env.RUSTFLAGS }}"
+        echo "features_flags: $features_flags"
+        key_hash=$(echo "$features_flags" | sha256sum | cut -d' ' -f1)
         commit_hash=$(git rev-parse HEAD)
-        key="cargo-build-key-${features_hash}-${commit_hash}"
+        key="cargo-build-key-${key_hash}-${commit_hash}"
         echo "Computed cache key: $key"
         echo "key=$key" >> $GITHUB_OUTPUT
 
