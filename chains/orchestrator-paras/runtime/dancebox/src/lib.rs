@@ -39,6 +39,13 @@ pub mod weights;
 mod tests;
 
 use {
+    alloc::{
+        boxed::Box,
+        collections::{btree_map::BTreeMap, btree_set::BTreeSet},
+        vec,
+        vec::Vec,
+    },
+    core::marker::PhantomData,
     cumulus_pallet_parachain_system::{
         RelayChainStateProof, RelayNumberMonotonicallyIncreases, RelaychainDataProvider,
         RelaychainStateProvider,
@@ -102,11 +109,6 @@ use {
         },
         transaction_validity::{TransactionSource, TransactionValidity},
         AccountId32, ApplyExtrinsicResult, Cow,
-    },
-    sp_std::{
-        collections::{btree_map::BTreeMap, btree_set::BTreeSet},
-        marker::PhantomData,
-        prelude::*,
     },
     sp_version::RuntimeVersion,
     tanssi_runtime_common::SessionTimer,
@@ -751,7 +753,7 @@ impl GetRandomnessForNextBlock<u32> for BabeGetRandomnessForNextBlock {
             {
                 // Return random_hash as a [u8; 32] instead of a Hash
                 let mut buf = [0u8; 32];
-                let len = sp_std::cmp::min(32, random_hash.as_ref().len());
+                let len = core::cmp::min(32, random_hash.as_ref().len());
                 buf[..len].copy_from_slice(&random_hash.as_ref()[..len]);
 
                 buf
@@ -2007,7 +2009,7 @@ impl_runtime_apis! {
             impl cumulus_pallet_session_benchmarking::Config for Runtime {}
 
             impl frame_system_benchmarking::Config for Runtime {
-                fn setup_set_code_requirements(code: &sp_std::vec::Vec<u8>) -> Result<(), BenchmarkError> {
+                fn setup_set_code_requirements(code: &alloc::vec::Vec<u8>) -> Result<(), BenchmarkError> {
                     ParachainSystem::initialize_for_set_code_benchmark(code.len() as u32);
                     Ok(())
                 }
@@ -2043,8 +2045,41 @@ impl_runtime_apis! {
                 type TrustedReserve = TrustedReserve;
 
                 fn get_asset() -> Asset {
+                    use frame_support::{assert_ok, traits::tokens::fungible::{Inspect, Mutate}};
+                    use xcm::latest::prelude::Junctions::X2;
+
+                    let (account, _) = pallet_xcm_benchmarks::account_and_location::<Runtime>(1);
+
+                    assert_ok!(<Balances as Mutate<_>>::mint_into(
+                        &account,
+                        <Balances as Inspect<_>>::minimum_balance(),
+                    ));
+
+                    let asset_id = 42u16;
+
+                    let asset_location = Location {
+                        parents: 1,
+                        interior: X2([
+                            GlobalConsensus(NetworkId::Ethereum { chain_id: 1 }),
+                            AccountKey20 {
+                                network: Some(NetworkId::Ethereum { chain_id: 1 }),
+                                key: [0; 20],
+                            },
+                        ]
+                        .into()),
+                    };
+
+                    assert_ok!(ForeignAssetsCreator::create_foreign_asset(
+                        RuntimeOrigin::root(),
+                        asset_location.clone(),
+                        asset_id,
+                        account.clone(),
+                        true,
+                        1u128,
+                    ));
+
                     Asset {
-                        id: AssetId(SelfReserve::get()),
+                        id: AssetId(asset_location),
                         fun: Fungible(ExistentialDeposit::get() * 100),
                     }
                 }
@@ -2663,7 +2698,7 @@ impl cumulus_pallet_parachain_system::CheckInherents<Block> for CheckInherents {
         let inherent_data =
             cumulus_primitives_timestamp::InherentDataProvider::from_relay_chain_slot_and_duration(
                 relay_chain_slot,
-                sp_std::time::Duration::from_secs(6),
+                core::time::Duration::from_secs(6),
             )
             .create_inherent_data()
             .expect("Could not create the timestamp inherent data");

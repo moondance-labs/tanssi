@@ -26,11 +26,17 @@ extern crate alloc;
 use sp_version::NativeVersion;
 
 use {
+    alloc::{
+        collections::{btree_map::BTreeMap, btree_set::BTreeSet, vec_deque::VecDeque},
+        vec,
+        vec::Vec,
+    },
     authority_discovery_primitives::AuthorityId as AuthorityDiscoveryId,
     beefy_primitives::{
         ecdsa_crypto::{AuthorityId as BeefyId, Signature as BeefySignature},
         mmr::{BeefyDataProvider, MmrLeafVersion},
     },
+    core::{cmp::Ordering, marker::PhantomData},
     cumulus_primitives_core::relay_chain::{HeadData, ValidationCode},
     dp_container_chain_genesis_data::ContainerChainGenesisDataItem,
     frame_support::storage::{with_storage_layer, with_transaction},
@@ -116,12 +122,6 @@ use {
     },
     sp_runtime::{traits::ConvertInto, AccountId32},
     sp_staking::{offence::OffenceSeverity, SessionIndex},
-    sp_std::{
-        cmp::Ordering,
-        collections::{btree_map::BTreeMap, btree_set::BTreeSet, vec_deque::VecDeque},
-        marker::PhantomData,
-        prelude::*,
-    },
     sp_version::RuntimeVersion,
     tanssi_runtime_common::{
         relay::{BabeGetCollatorAssignmentRandomness, BabeSlotBeacon},
@@ -180,6 +180,7 @@ use {
 #[cfg(test)]
 mod tests;
 
+#[cfg(not(feature = "disable-genesis-builder"))]
 pub mod genesis_config_presets;
 
 impl_runtime_weights!(dancelight_runtime_constants);
@@ -197,7 +198,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_version: 1500,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
-    transaction_version: 26,
+    transaction_version: 27,
     system_version: 1,
 };
 
@@ -757,6 +758,7 @@ where
             pallet_transaction_payment::ChargeTransactionPayment::<Runtime>::from(tip),
             //cumulus_primitives_storage_weight_reclaim::StorageWeightReclaim::<Runtime>::new(),
             frame_metadata_hash_extension::CheckMetadataHash::new(true),
+            frame_system::WeightReclaim::new(),
         );
         let raw_payload = SignedPayload::new(call, tx_ext)
             .map_err(|e| {
@@ -2039,6 +2041,7 @@ pub type TxExtension = (
     frame_system::CheckWeight<Runtime>,
     pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
     frame_metadata_hash_extension::CheckMetadataHash<Runtime>,
+    frame_system::WeightReclaim<Runtime>,
 );
 
 /// Unchecked extrinsic type as expected by this runtime.
@@ -2437,7 +2440,7 @@ sp_api::impl_runtime_apis! {
             Runtime::metadata_at_version(version)
         }
 
-        fn metadata_versions() -> sp_std::vec::Vec<u32> {
+        fn metadata_versions() -> alloc::vec::Vec<u32> {
             Runtime::metadata_versions()
         }
     }
@@ -3122,6 +3125,7 @@ sp_api::impl_runtime_apis! {
             use xcm_config::{
                 AssetHub, LocalCheckAccount, LocationConverter, TokenLocation, XcmConfig,
             };
+            use alloc::boxed::Box;
 
             parameter_types! {
                 pub ExistentialDepositAsset: Option<Asset> = Some((
@@ -3244,9 +3248,40 @@ sp_api::impl_runtime_apis! {
                 type TrustedReserve = TrustedReserve;
 
                 fn get_asset() -> Asset {
+                    use frame_support::{assert_ok, traits::tokens::fungible::{Inspect, Mutate}};
+                    let (account, _) = pallet_xcm_benchmarks::account_and_location::<Runtime>(1);
+
+                    assert_ok!(<Balances as Mutate<_>>::mint_into(
+                        &account,
+                        <Balances as Inspect<_>>::minimum_balance(),
+                    ));
+
+                    let asset_id = 42u16;
+
+                    let asset_location = Location {
+                        parents: 1,
+                        interior: X2([
+                            GlobalConsensus(NetworkId::Ethereum { chain_id: 1 }),
+                            AccountKey20 {
+                                network: Some(NetworkId::Ethereum { chain_id: 1 }),
+                                key: [0; 20],
+                            },
+                        ]
+                        .into()),
+                    };
+
+                    assert_ok!(ForeignAssetsCreator::create_foreign_asset(
+                        RuntimeOrigin::root(),
+                        asset_location.clone(),
+                        asset_id,
+                        account.clone(),
+                        true,
+                        1u128,
+                    ));
+
                     Asset {
-                        id: AssetId(TokenLocation::get()),
-                        fun: Fungible(1 * UNITS),
+                        id: AssetId(asset_location),
+                        fun: Fungible(ExistentialDeposit::get() * 100),
                     }
                 }
             }
@@ -3345,6 +3380,7 @@ sp_api::impl_runtime_apis! {
         }
     }
 
+    #[cfg(not(feature = "disable-genesis-builder"))]
     impl sp_genesis_builder::GenesisBuilder<Block> for Runtime {
         fn build_state(config: Vec<u8>) -> sp_genesis_builder::Result {
             build_state::<RuntimeGenesisConfig>(config)

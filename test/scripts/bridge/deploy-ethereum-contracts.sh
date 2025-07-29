@@ -10,6 +10,8 @@ deploy_command() {
 
     OWNER_PRIVATE_KEY=$ethereum_key forge script \
     --rpc-url $eth_endpoint_http \
+    --sender 0x$ethereum_address \
+    --private-key $ethereum_key \
     --legacy \
     --broadcast \
     -vvv \
@@ -26,5 +28,5 @@ popd
 
 echo "Deploying symbiotic contracts"
 pushd "$symbiotic_contracts_dir"
-deploy_command demos/DeployTanssiEcosystemDemo.s.sol:DeployTanssiEcosystem
+deploy_command demos/DeployTanssiEcosystemDemo.s.sol
 popd

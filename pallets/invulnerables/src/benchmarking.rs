@@ -21,6 +21,7 @@ use super::*;
 #[allow(unused)]
 use crate::Pallet as InvulnerablesPallet;
 use {
+    alloc::vec::Vec,
     frame_benchmarking::{account, v2::*, BenchmarkError},
     frame_support::{
         pallet_prelude::*,
@@ -30,7 +31,6 @@ use {
     pallet_session::{self as session, SessionManager},
     rand::{RngCore, SeedableRng},
     sp_runtime::{codec, traits::AtLeast32BitUnsigned},
-    sp_std::prelude::*,
     tp_traits::DistributeRewards,
 };
 const SEED: u32 = 0;

@@ -24,6 +24,7 @@ use {
         RuntimeBlockWeights, RuntimeCall, RuntimeEvent, RuntimeOrigin, TransactionByteFee,
         WeightToFee, XcmpQueue,
     },
+    alloc::vec::Vec,
     ccp_xcm::SignedToAccountKey20,
     cumulus_primitives_core::{AggregateMessageOrigin, ParaId},
     frame_support::{
@@ -47,7 +48,6 @@ use {
     polkadot_runtime_common::xcm_sender::ExponentialPrice,
     sp_core::{ConstU32, H160},
     sp_runtime::Perbill,
-    sp_std::vec::Vec,
     tp_bridge::{
         sovereign_paid_remote_exporter::SovereignPaidRemoteExporter, EthereumLocationsConverterFor,
     },

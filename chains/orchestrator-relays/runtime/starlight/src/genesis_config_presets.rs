@@ -16,41 +16,33 @@
 
 //! Genesis configs presets for the Starlight runtime
 
-#[cfg(not(feature = "std"))]
-use sp_std::alloc::format;
 use {
     crate::{SessionKeys, BABE_GENESIS_EPOCH_CONFIG},
+    alloc::{format, vec, vec::Vec},
     authority_discovery_primitives::AuthorityId as AuthorityDiscoveryId,
     babe_primitives::AuthorityId as BabeId,
     beefy_primitives::ecdsa_crypto::AuthorityId as BeefyId,
+    core::cmp::max,
     cumulus_primitives_core::relay_chain::{
         SchedulerParams, ASSIGNMENT_KEY_TYPE_ID, PARACHAIN_KEY_TYPE_ID,
     },
     dp_container_chain_genesis_data::ContainerChainGenesisData,
     grandpa_primitives::AuthorityId as GrandpaId,
+    keyring::Sr25519Keyring,
     nimbus_primitives::NimbusId,
     pallet_configuration::HostConfiguration,
     primitives::{AccountId, AssignmentId, ValidatorId},
     scale_info::prelude::string::String,
     sp_arithmetic::{traits::Saturating, Perbill},
     sp_core::{
-        crypto::{key_types, KeyTypeId},
+        crypto::{get_public_from_string_or_panic, key_types, AccountId32, KeyTypeId},
         sr25519, ByteArray, Pair, Public,
     },
     sp_keystore::{Keystore, KeystorePtr},
     sp_runtime::traits::AccountIdConversion,
-    sp_std::{cmp::max, vec::Vec},
     starlight_runtime_constants::currency::UNITS as STAR,
     tp_traits::ParaId,
 };
-
-use keyring::Sr25519Keyring;
-
-// import macro, separate due to rustfmt thinking it's the module with the
-// same name ^^'
-use sp_std::vec;
-
-use sp_core::crypto::{get_public_from_string_or_panic, AccountId32};
 
 pub fn insert_authority_keys_into_keystore(seed: &str, keystore: &KeystorePtr) {
     insert_into_keystore::<BabeId>(seed, keystore, key_types::BABE);
@@ -723,7 +715,7 @@ pub fn starlight_local_testnet_genesis(
 }
 
 /// Provides the JSON representation of predefined genesis config for given `id`.
-pub fn get_preset(id: &sp_genesis_builder::PresetId) -> Option<sp_std::vec::Vec<u8>> {
+pub fn get_preset(id: &sp_genesis_builder::PresetId) -> Option<alloc::vec::Vec<u8>> {
     let patch = match id.as_ref() {
         "local_testnet" => starlight_local_testnet_genesis(vec![], vec![]),
         "development" => starlight_development_config_genesis(vec![], vec![]),

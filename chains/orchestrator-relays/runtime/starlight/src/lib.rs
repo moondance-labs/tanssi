@@ -25,11 +25,17 @@ extern crate alloc;
 use frame_support::storage::{with_storage_layer, with_transaction};
 // Fix compile error in impl_runtime_weights! macro
 use {
+    alloc::{
+        collections::{btree_map::BTreeMap, btree_set::BTreeSet, vec_deque::VecDeque},
+        vec,
+        vec::Vec,
+    },
     authority_discovery_primitives::AuthorityId as AuthorityDiscoveryId,
     beefy_primitives::{
         ecdsa_crypto::{AuthorityId as BeefyId, Signature as BeefySignature},
         mmr::{BeefyDataProvider, MmrLeafVersion},
     },
+    core::{cmp::Ordering, marker::PhantomData},
     cumulus_primitives_core::relay_chain::{HeadData, ValidationCode},
     dp_container_chain_genesis_data::ContainerChainGenesisDataItem,
     frame_support::{
@@ -86,12 +92,6 @@ use {
     sp_core::{storage::well_known_keys as StorageWellKnownKeys, Get},
     sp_genesis_builder::PresetId,
     sp_runtime::{traits::ConvertInto, AccountId32},
-    sp_std::{
-        cmp::Ordering,
-        collections::{btree_map::BTreeMap, btree_set::BTreeSet, vec_deque::VecDeque},
-        marker::PhantomData,
-        prelude::*,
-    },
     tanssi_runtime_common::{
         relay::{BabeGetCollatorAssignmentRandomness, BabeSlotBeacon},
         SessionTimer,
@@ -181,6 +181,7 @@ use {
 #[cfg(test)]
 mod tests;
 
+#[cfg(not(feature = "disable-genesis-builder"))]
 pub mod genesis_config_presets;
 
 impl_runtime_weights!(starlight_runtime_constants);
@@ -198,7 +199,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_version: 1500,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
-    transaction_version: 26,
+    transaction_version: 27,
     system_version: 1,
 };
 
@@ -348,12 +349,16 @@ impl Contains<RuntimeCall> for IsXcmExtrinsics {
 pub struct IsContainerChainRegistrationExtrinsics;
 impl Contains<RuntimeCall> for IsContainerChainRegistrationExtrinsics {
     fn contains(c: &RuntimeCall) -> bool {
-        matches!(
-            c,
-            RuntimeCall::ContainerRegistrar(_)
-                | RuntimeCall::OnDemandAssignmentProvider(_)
-                | RuntimeCall::Registrar(_)
-        )
+        match c {
+            RuntimeCall::ContainerRegistrar(inner) => {
+                !matches!(inner, pallet_registrar::Call::register { .. })
+            }
+            RuntimeCall::OnDemandAssignmentProvider(_) => true,
+            RuntimeCall::Registrar(inner) => {
+                !matches!(inner, paras_registrar::Call::reserve { .. })
+            }
+            _ => false,
+        }
     }
 }
 
@@ -783,6 +788,7 @@ where
             pallet_transaction_payment::ChargeTransactionPayment::<Runtime>::from(tip),
             //cumulus_primitives_storage_weight_reclaim::StorageWeightReclaim::<Runtime>::new(),
             frame_metadata_hash_extension::CheckMetadataHash::new(true),
+            frame_system::WeightReclaim::new(),
         );
         let raw_payload = SignedPayload::new(call, tx_ext)
             .map_err(|e| {
@@ -1327,7 +1333,7 @@ impl parachains_slashing::Config for Runtime {
 }
 
 parameter_types! {
-    pub const ParaDeposit: Balance = 40 * UNITS;
+    pub const ParaDeposit: Balance = 500 * UNITS;
 }
 
 impl paras_registrar::Config for Runtime {
@@ -2040,6 +2046,7 @@ pub type TxExtension = (
     frame_system::CheckWeight<Runtime>,
     pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
     frame_metadata_hash_extension::CheckMetadataHash<Runtime>,
+    frame_system::WeightReclaim<Runtime>,
 );
 
 /// Unchecked extrinsic type as expected by this runtime.
@@ -2425,7 +2432,7 @@ sp_api::impl_runtime_apis! {
             Runtime::metadata_at_version(version)
         }
 
-        fn metadata_versions() -> sp_std::vec::Vec<u32> {
+        fn metadata_versions() -> alloc::vec::Vec<u32> {
             Runtime::metadata_versions()
         }
     }
@@ -3110,6 +3117,7 @@ sp_api::impl_runtime_apis! {
             use xcm_config::{
                 AssetHub, LocalCheckAccount, LocationConverter, TokenLocation, XcmConfig,
             };
+            use alloc::boxed::Box;
 
             parameter_types! {
                 pub ExistentialDepositAsset: Option<Asset> = Some((
@@ -3326,6 +3334,7 @@ sp_api::impl_runtime_apis! {
         }
     }
 
+    #[cfg(not(feature = "disable-genesis-builder"))]
     impl sp_genesis_builder::GenesisBuilder<Block> for Runtime {
         fn build_state(config: Vec<u8>) -> sp_genesis_builder::Result {
             build_state::<RuntimeGenesisConfig>(config)
