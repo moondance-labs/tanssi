@@ -567,7 +567,7 @@ export const getEraIndexForBlock = async (api: ApiPromise, blockNumber: number):
 
 export const getBlockNumberAtWhichEraStarted = async (api: ApiPromise): Promise<number> => {
     const chain = (await api.rpc.system.chain()).toString();
-    const FIRST_BLOCK_WITH_ERA_PRESENT_FOR_STAGELIGHT: number = 734672;
+    const FIRST_BLOCK_WITH_ERA_PRESENT_FOR_STAGELIGHT: number = 735552;
     if (chain === "Stagelight") {
         return FIRST_BLOCK_WITH_ERA_PRESENT_FOR_STAGELIGHT;
     }
