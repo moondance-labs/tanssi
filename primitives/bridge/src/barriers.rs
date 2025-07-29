@@ -16,7 +16,6 @@
 
 use {
     frame_support::traits::ProcessMessageError,
-    sp_std::prelude::*,
     xcm::latest::Junction::Parachain,
     xcm::prelude::*,
     xcm_executor::traits::{Properties, ShouldExecute},

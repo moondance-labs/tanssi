@@ -25,7 +25,6 @@ use {
     pallet_xcm_benchmarks_fungible::WeightInfo as XcmBalancesWeight,
     pallet_xcm_benchmarks_generic::WeightInfo as XcmGeneric,
     parity_scale_codec::Encode,
-    sp_std::prelude::*,
     xcm::{
         latest::{prelude::*, AssetTransferFilter, Weight as XCMWeight},
         DoubleEncoded,

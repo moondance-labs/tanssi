@@ -15,9 +15,9 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
+    alloc::vec,
     core::marker::PhantomData,
     frame_support::traits::Get,
-    sp_std::vec,
     xcm::{
         latest::{Location, NetworkId},
         prelude::*,

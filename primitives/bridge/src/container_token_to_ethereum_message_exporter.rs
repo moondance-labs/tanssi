@@ -15,14 +15,14 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    core::{marker::PhantomData, slice::Iter},
+    alloc::vec::Vec,
+    core::{iter::Peekable, marker::PhantomData, slice::Iter},
     frame_support::{ensure, traits::Get},
     parity_scale_codec::{Decode, Encode},
     snowbridge_core::{AgentId, ChannelId, TokenId, TokenIdOf},
     snowbridge_outbound_queue_primitives::v1::message::{Command, Message, SendMessage},
     sp_core::{H160, H256},
     sp_runtime::traits::MaybeEquivalence,
-    sp_std::{iter::Peekable, prelude::*},
     xcm::latest::SendError::{MissingArgument, NotApplicable, Unroutable},
     xcm::prelude::*,
     xcm_executor::traits::{ConvertLocation, ExportXcm},
