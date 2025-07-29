@@ -15,7 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    alloc::collections::btree_map::BTreeMap,
+    core::cell::Cell,
     cumulus_primitives_core::{ParaId, PersistedValidationData},
     cumulus_primitives_parachain_inherent::ParachainInherentData,
     dancebox_runtime::{
@@ -26,7 +26,6 @@ use {
         assert_ok,
         traits::{OnFinalize, OnInitialize},
     },
-    core::cell::Cell,
     nimbus_primitives::{NimbusId, NIMBUS_ENGINE_ID},
     pallet_collator_assignment_runtime_api::runtime_decl_for_collator_assignment_api::CollatorAssignmentApi,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
@@ -37,6 +36,7 @@ use {
     sp_consensus_slots::Slot,
     sp_core::{Get, Pair},
     sp_runtime::{traits::Dispatchable, BuildStorage, Digest, DigestItem},
+    std::{collections::BTreeMap, thread_local},
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
 };
 
@@ -64,18 +64,16 @@ pub struct RunSummary {
     pub inflation: Balance,
 }
 
-static mut SHOULD_WRITE_SLOT_INFO: Cell<bool> = Cell::new(true);
-
-pub fn set_should_write_slot_info(value: bool) {
-    unsafe {
-        SHOULD_WRITE_SLOT_INFO.set(value);
-    }
+thread_local! {
+    static SHOULD_WRITE_SLOT_INFO: Cell<bool> = Cell::new(true);
 }
 
-pub fn should_write_slot_info() -> bool {
-    unsafe {
-        SHOULD_WRITE_SLOT_INFO.get()
-    }
+pub fn set_should_write_slot_info(value: bool) {
+    SHOULD_WRITE_SLOT_INFO.with(|flag| flag.set(value));
+}
+
+fn should_write_slot_info() -> bool {
+    SHOULD_WRITE_SLOT_INFO.with(|flag| flag.get())
 }
 
 pub fn run_to_session(n: u32) {

@@ -17,7 +17,6 @@
 #![cfg(test)]
 
 use {
-    alloc::vec,
     cumulus_primitives_core::ParaId,
     dancebox_runtime::{RewardsCollatorCommission, StreamPayment, TransactionPayment},
     dancebox_runtime_test_utils::*,
@@ -5916,13 +5915,13 @@ fn test_migration_data_preservers_assignments() {
     ExtBuilder::default().build().execute_with(|| {
         use {
             dancebox_runtime::{MaxAssignmentsPerParaId, MaxNodeUrlLen},
-            alloc::collections::btree_set::BTreeSet,
             frame_support::{
                 migration::{have_storage_value, put_storage_value},
                 Blake2_128Concat, StorageHasher,
             },
             pallet_data_preservers::{ParaIdsFilter, Profile, ProfileMode, RegisteredProfile},
             sp_runtime::BoundedBTreeSet,
+            std::collections::btree_set::BTreeSet,
             tanssi_runtime_common::migrations::DataPreserversAssignmentsMigration,
         };
 
