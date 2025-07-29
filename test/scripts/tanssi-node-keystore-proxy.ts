@@ -10,14 +10,17 @@
 
 import { spawn } from 'child_process';
 
-//─── globals ────────────────────────────────────────────────────────────────────
-let overridePolkadotArgs: string[] = [];
-let tanssiArgs: string[] = [];
-let polkadotArgs: string[] = [];
-let changeRelayKeystore = false;
-const relayChainId = 'dancelight_local_testnet';
+type Flags = {
+  overridePolkadotArgs: string[];
+  changeRelayKeystore: boolean;
+  remainArgs: string[];
+};
 
-//─── usage helper ────────────────────────────────────────────────────────────────
+type Sections = {
+  tanssiArgs: string[];
+  polkadotArgs: string[];
+};
+
 function printUsage(): never {
   console.error(`
 Usage: proxy [--set-relay-arg=<arg>] [--change-relay-keystore-path] \\
@@ -29,14 +32,16 @@ Usage: proxy [--set-relay-arg=<arg>] [--change-relay-keystore-path] \\
   process.exit(1);
 }
 
-//─── parse_script_flags ──────────────────────────────────────────────────────────
-function parseScriptFlags(args: string[]): string[] {
-  overridePolkadotArgs = [];
-  changeRelayKeystore = false;
+// Parse script args until the first '--'
+// These are the args for the script, before any tanssi-node args
+// Returns remaining args after the first '--' in `remainArgs`
+function parseScriptFlags(argv: string[]): Flags {
+  const overridePolkadotArgs: string[] = [];
+  let changeRelayKeystore = false;
+  let idx = 0;
 
-  let i = 0;
-  while (i < args.length && args[i] !== '--') {
-    const arg = args[i];
+  while (idx < argv.length && argv[idx] !== '--') {
+    const arg = argv[idx++];
     if (arg.startsWith('--set-relay-arg=')) {
       overridePolkadotArgs.push(arg.slice('--set-relay-arg='.length));
     } else if (arg === '--change-relay-keystore-path') {
@@ -45,149 +50,171 @@ function parseScriptFlags(args: string[]): string[] {
       console.error(`Error: unknown flag ${arg}`);
       printUsage();
     }
-    i++;
   }
 
-  if (i >= args.length || args[i] !== '--') {
+  if (idx >= argv.length || argv[idx] !== '--') {
     printUsage();
   }
-  // skip the `--`
-  return args.slice(i + 1);
+
+  return {
+    overridePolkadotArgs,
+    changeRelayKeystore,
+    remainArgs: argv.slice(idx + 1),
+  };
 }
 
-//─── split_command_sections ─────────────────────────────────────────────────────
-function splitCommandSections(args: string[]): void {
-  if (args.length === 0) {
+
+function splitCommandSections(remainArgs: string[]): Sections {
+  if (remainArgs.length === 0) {
     console.error('Error: missing command to execute');
     printUsage();
   }
 
-  tanssiArgs = [args[0]];
-  let idx = 1;
-  while (idx < args.length && args[idx] !== '--') {
-    tanssiArgs.push(args[idx]);
-    idx++;
-  }
-  // skip the `--` if present
-  if (idx < args.length && args[idx] === '--') idx++;
-  polkadotArgs = args.slice(idx);
+  const [cmd, ...rest] = remainArgs;
+  const tanssiArgs: string[] = [cmd];
+  let splitIndex = rest.indexOf('--');
+  if (splitIndex < 0) splitIndex = rest.length;
+
+  tanssiArgs.push(...rest.slice(0, splitIndex));
+  const polkadotArgs = rest.slice(splitIndex + (splitIndex < rest.length ? 1 : 0));
+
+  return { tanssiArgs, polkadotArgs };
 }
 
-//─── get_arg_value ───────────────────────────────────────────────────────────────
+/**
+ * Retrieves the value for a key in either "--key value" or "--key=value" form.
+ * @throws if the key (in either form) is not found.
+ */
 function getArgValue(key: string, arr: string[]): string {
   for (let i = 0; i < arr.length; i++) {
-    if (arr[i] === key && i + 1 < arr.length) {
-      return arr[i + 1];
+    const el = arr[i];
+    // form: --key value
+    if (el === key) {
+      if (i + 1 < arr.length) {
+        return arr[i + 1];
+      } else {
+        throw new Error(`missing value for relay ${key}`);
+      }
+    }
+    // form: --key=value
+    if (el.startsWith(`${key}=`)) {
+      return el.slice(key.length + 1);
     }
   }
   throw new Error(`missing relay ${key}`);
 }
 
-//─── compute_relay_keystore_path ─────────────────────────────────────────────────
-function computeRelayKeystorePath(): string {
+function computeRelayKeystorePath(polkadotArgs: string[]): string {
   const base = getArgValue('--base-path', polkadotArgs);
   return `${base}/tmp_keystore_zombie_test`;
 }
 
-//─── override_relay_args ─────────────────────────────────────────────────────────
-function overrideRelayArgs(arr: string[]): void {
-  if (overridePolkadotArgs.length === 0) {
-    console.error('override_relay_args: nothing to do');
-    return;
-  }
+// Override args in place.
+// For each override in the form `--key=value`, looks for the first existing occurrence
+// (either --key, and the value is the next element, or --key=value) and replaces it in‑place.
+//
+// If nothing was found, push the new `--key=value` at the end.
+function overrideArgs(
+    arr: string[],
+    overrides: readonly string[]
+) {
+  for (const entry of overrides) {
+    const [key] = entry.split("=", 1);
+    let replaced = false;
 
-  for (const overrideEntry of overridePolkadotArgs) {
-    console.error(`--> processing override: '${overrideEntry}'`);
-    const [key] = overrideEntry.split('=', 1);
-
-    const tmp: string[] = [];
-    let removed = false;
-
-    for (let i = 0; i < arr.length; ) {
+    for (let i = 0; i < arr.length; i++) {
       const elem = arr[i];
-      if (elem.startsWith(`${key}=`)) {
-        removed = true;
-        console.error(`    strip key=value form: '${elem}'`);
-        i++;
-      } else if (elem === key) {
-        removed = true;
-        const next = arr[i + 1] ?? '<MISSING>';
-        console.error(`    strip bare key+value: '${elem}' + '${next}'`);
-        i += 2;
-      } else {
-        tmp.push(elem);
-        i++;
+
+      if (elem === key) {
+        // bare key followed by its value → replace both with the single "key=val"
+        arr.splice(i, 2, entry);
+        replaced = true;
+        break;
+      }
+      else if (elem.startsWith(`${key}=`)) {
+        // inline "key=val" form → just overwrite
+        arr[i] = entry;
+        replaced = true;
+        break;
       }
     }
 
-    if (!removed) {
-      console.error(`    no existing '${key}' entries found`);
+    if (!replaced) {
+      // no existing arg → append at end
+      arr.push(entry);
     }
-    tmp.push(overrideEntry);
-    console.error(`    after append, tmp = [${tmp.join(' ')}]`);
-    // write back
-    arr.length = 0;
-    arr.push(...tmp);
-    console.error(`    arr now = [${arr.join(' ')}]`);
   }
 }
 
-//─── override_keystore ───────────────────────────────────────────────────────────
-function overrideKeystore(arr: string[], keystore: string): void {
-  const old = [...overridePolkadotArgs];
-  overridePolkadotArgs = [`--keystore-path=${keystore}`];
-  try {
-    overrideRelayArgs(arr);
-  } catch (e) {
-    console.error('Error: failed to apply keystore override');
-    overridePolkadotArgs = old;
-    process.exit(1);
-  }
-  overridePolkadotArgs = old;
+function overrideKeystore(
+    polkadotArgs: string[],
+    keystorePath: string
+) {
+  overrideArgs(polkadotArgs, [`--keystore-path=${keystorePath}`]);
 }
 
-//─── debug_print ─────────────────────────────────────────────────────────────────
-function debugPrint(): void {
+function debugPrint(state: {
+  overridePolkadotArgs: string[];
+  tanssiArgs: string[];
+  polkadotArgs: string[];
+  changeRelayKeystore: boolean;
+}) {
   console.error('DEBUG:');
-  console.error('  overridePolkadotArgs:', overridePolkadotArgs);
-  console.error('  tanssiArgs:       ', tanssiArgs);
-  console.error('  polkadotArgs:     ', polkadotArgs);
-  console.error('  changeRelayKeystore:', changeRelayKeystore);
+  console.error('  overridePolkadotArgs:', state.overridePolkadotArgs);
+  console.error('  tanssiArgs:       ', state.tanssiArgs);
+  console.error('  polkadotArgs:     ', state.polkadotArgs);
+  console.error('  changeRelayKeystore:', state.changeRelayKeystore);
   console.error('');
 }
 
-//─── main flow ─────────────────────────────────────────────────────────────────
 async function main() {
-  // 1) peel off our script-only flags
-  const remain = parseScriptFlags(process.argv.slice(2));
+  try {
+    // 1) parse script flags
+    const {
+      overridePolkadotArgs,
+      changeRelayKeystore,
+      remainArgs,
+    } = parseScriptFlags(process.argv.slice(2));
 
-  // 2) split into tanssi vs polkadot args
-  splitCommandSections(remain);
-  debugPrint();
+    // 2) split into sections
+    let { tanssiArgs, polkadotArgs } = splitCommandSections(remainArgs);
 
-  if (changeRelayKeystore) {
-    const path = computeRelayKeystorePath();
-    overrideKeystore(polkadotArgs, path);
-  }
+    debugPrint({ overridePolkadotArgs, tanssiArgs, polkadotArgs, changeRelayKeystore });
 
-  overrideRelayArgs(polkadotArgs);
-  debugPrint();
-
-  // 3) exec the command
-  const cmd = tanssiArgs[0];
-  const args = [...tanssiArgs.slice(1), '--', ...polkadotArgs];
-  const child = spawn(cmd, args, { stdio: 'inherit' });
-
-  child.on('exit', (code, signal) => {
-    if (signal) {
-      process.exit(1);
-    } else {
-      process.exit(code ?? 1);
+    // 3) optional keystore override
+    if (changeRelayKeystore) {
+      const ks = computeRelayKeystorePath(polkadotArgs);
+      overrideKeystore(polkadotArgs, ks);
     }
-  });
+
+    // 4) apply any remaining --set-relay-arg overrides
+    overrideArgs(polkadotArgs, overridePolkadotArgs);
+
+    debugPrint({ overridePolkadotArgs, tanssiArgs, polkadotArgs, changeRelayKeystore });
+
+    // 5) exec
+    const cmd = tanssiArgs[0];
+    const args = [...tanssiArgs.slice(1), '--', ...polkadotArgs];
+    const proc = spawn(cmd, args, { stdio: 'inherit' });
+    // Forward shutdown signals to child process.
+    // Fixes bug of tanssi-node processes being alive after running `pnpm moonwall test zombie_tanssi`
+    for (const signal of ["SIGINT", "SIGTERM"]) {
+      process.on(signal, () => {
+        console.log("zombienetRestart: got ", signal);
+        if (proc) {
+          proc.kill(signal as NodeJS.Signals);
+        }
+        process.exit();
+      });
+    }
+
+    proc.on('exit', (code, signal) => {
+      process.exit(signal ? 1 : code ?? 1);
+    });
+  } catch (err) {
+    console.error('Error:', (err as Error).message);
+    process.exit(1);
+  }
 }
 
-main().catch(err => {
-  console.error('Unexpected error:', err);
-  process.exit(1);
-});
+main();
