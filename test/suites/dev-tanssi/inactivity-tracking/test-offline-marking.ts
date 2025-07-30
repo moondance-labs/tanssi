@@ -3,7 +3,6 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 import { jumpToSession } from "utils";
-import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_INACTIVITY_TRACKING } from "helpers";
 import type { AccountId32 } from "@polkadot/types/interfaces";
 import { numberToHex } from "@polkadot/util";
 
