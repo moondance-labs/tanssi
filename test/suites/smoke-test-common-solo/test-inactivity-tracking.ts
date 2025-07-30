@@ -5,8 +5,8 @@ import { getLastSessionEndBlock } from "utils/block";
 import type { ApiPromise } from "@polkadot/api";
 
 describeSuite({
-    id: "SMOK17",
-    title: "Inactivity tracking suit",
+    id: "SMOK14",
+    title: "Inactivity tracking suit.",
     foundationMethods: "read_only",
     testCases: ({ it, context, log }) => {
         let api: ApiPromise;
