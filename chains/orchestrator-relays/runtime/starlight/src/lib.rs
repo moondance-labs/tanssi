@@ -181,6 +181,7 @@ use {
 #[cfg(test)]
 mod tests;
 
+#[cfg(not(feature = "disable-genesis-builder"))]
 pub mod genesis_config_presets;
 
 impl_runtime_weights!(starlight_runtime_constants);
@@ -348,12 +349,16 @@ impl Contains<RuntimeCall> for IsXcmExtrinsics {
 pub struct IsContainerChainRegistrationExtrinsics;
 impl Contains<RuntimeCall> for IsContainerChainRegistrationExtrinsics {
     fn contains(c: &RuntimeCall) -> bool {
-        matches!(
-            c,
-            RuntimeCall::ContainerRegistrar(_)
-                | RuntimeCall::OnDemandAssignmentProvider(_)
-                | RuntimeCall::Registrar(_)
-        )
+        match c {
+            RuntimeCall::ContainerRegistrar(inner) => {
+                !matches!(inner, pallet_registrar::Call::register { .. })
+            }
+            RuntimeCall::OnDemandAssignmentProvider(_) => true,
+            RuntimeCall::Registrar(inner) => {
+                !matches!(inner, paras_registrar::Call::reserve { .. })
+            }
+            _ => false,
+        }
     }
 }
 
@@ -1328,7 +1333,7 @@ impl parachains_slashing::Config for Runtime {
 }
 
 parameter_types! {
-    pub const ParaDeposit: Balance = 40 * UNITS;
+    pub const ParaDeposit: Balance = 500 * UNITS;
 }
 
 impl paras_registrar::Config for Runtime {
@@ -3359,6 +3364,7 @@ sp_api::impl_runtime_apis! {
         }
     }
 
+    #[cfg(not(feature = "disable-genesis-builder"))]
     impl sp_genesis_builder::GenesisBuilder<Block> for Runtime {
         fn build_state(config: Vec<u8>) -> sp_genesis_builder::Result {
             build_state::<RuntimeGenesisConfig>(config)
