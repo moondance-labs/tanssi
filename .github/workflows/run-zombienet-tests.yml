@@ -138,6 +138,8 @@ jobs:
   run-tests:
     runs-on: self-hosted
     needs: [ "get-tests", "build" ]
+    env:
+      CARGO_TARGET_DIR: "target"
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.get-tests.outputs.matrix) }}
