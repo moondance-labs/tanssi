@@ -5,16 +5,29 @@ import { getLastSessionEndBlock } from "utils/block";
 import type { ApiPromise } from "@polkadot/api";
 
 describeSuite({
-    id: "SMOKD01",
-    title: "Inactivity tracking suit that only runs on Dancelight chains",
+    id: "SMOK17",
+    title: "Inactivity tracking suit",
     foundationMethods: "read_only",
     testCases: ({ it, context, log }) => {
         let api: ApiPromise;
         let lastSessionIndex: number;
         let lastSessionEndBlock: number;
+        let isStarlightRuntime: boolean;
+        let runtimeName: string;
+        let specVersion: number;
+        let shouldSkipStarlightSmokeTest: boolean;
 
         beforeAll(async () => {
             api = context.polkadotJs();
+            // Check if the runtime is Starlight and set the spec version
+            runtimeName = api.runtimeVersion.specName.toString();
+            specVersion = api.consts.system.version.specVersion.toNumber();
+            isStarlightRuntime = runtimeName === "starlight";
+            shouldSkipStarlightSmokeTest = isStarlightRuntime && specVersion < 1500;
+            if (shouldSkipStarlightSmokeTest) {
+                return;
+            }
+
             lastSessionIndex = (await api.query.session.currentIndex()).toNumber() - 1;
             lastSessionEndBlock = await getLastSessionEndBlock(api, lastSessionIndex);
         });
@@ -23,6 +36,11 @@ describeSuite({
             id: "C01",
             title: "Collators marked as inactive have not produced any blocks in the last session",
             test: async () => {
+                if (shouldSkipStarlightSmokeTest) {
+                    console.log(`Skipping C01 test for Starlight runtime version ${specVersion}`);
+                    return;
+                }
+
                 const inactiveCollators = await api.query.inactivityTracking.inactiveCollators(lastSessionIndex);
 
                 if (inactiveCollators.size === 0) {
