@@ -17,7 +17,7 @@
 use {
     crate::{
         chain_spec,
-        cli::{Cli, FrontierSubcommand as Subcommand},
+        cli::{Cli, Subcommand, BaseSubcommand},
         service::{self, frontier_database_dir, NodeConfig},
     },
     container_chain_template_frontier_runtime::Block,
@@ -36,7 +36,10 @@ use {
     sc_service::DatabaseSource,
     sp_core::hexdisplay::HexDisplay,
     sp_runtime::traits::{AccountIdConversion, Block as BlockT, Get},
-    tc_service_container_chain::{cli::ContainerChainCli, service::RpcProviderMode},
+    tc_service_container_chain::{
+        cli::{ContainerChainCli},
+        service::RpcProviderMode,
+    },
 };
 
 pub struct NodeName;
@@ -111,8 +114,17 @@ macro_rules! construct_async_run {
 pub fn run() -> Result<()> {
     let cli = Cli::from_args();
 
-    match &cli.subcommand {
-        Some(Subcommand::BuildSpec(cmd)) => {
+    // Match rpc provider subcommand in wrapper
+    let subcommand = match &cli.subcommand {
+        Some(Subcommand::RpcProvider(cmd)) => {
+            return rpc_provider_mode(&cli, dbg!(cmd));
+        }
+        Some(Subcommand::Base(cmd)) => Some(cmd),
+        None => None,
+    };
+
+    match subcommand {
+        Some(BaseSubcommand::BuildSpec(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             runner.sync_run(|config| {
                 let chain_spec = if let Some(para_id) = cmd.extra.parachain_id {
@@ -133,34 +145,34 @@ pub fn run() -> Result<()> {
                 cmd.base.run(chain_spec, config.network)
             })
         }
-        Some(Subcommand::CheckBlock(cmd)) => {
+        Some(BaseSubcommand::CheckBlock(cmd)) => {
             construct_async_run!(|components, cli, cmd, config| {
                 let (_, import_queue) = service::import_queue(&config, &components);
                 Ok(cmd.run(components.client, import_queue))
             })
         }
-        Some(Subcommand::ExportBlocks(cmd)) => {
+        Some(BaseSubcommand::ExportBlocks(cmd)) => {
             construct_async_run!(|components, cli, cmd, config| {
                 Ok(cmd.run(components.client, config.database))
             })
         }
-        Some(Subcommand::ExportState(cmd)) => {
+        Some(BaseSubcommand::ExportState(cmd)) => {
             construct_async_run!(|components, cli, cmd, config| {
                 Ok(cmd.run(components.client, config.chain_spec))
             })
         }
-        Some(Subcommand::ImportBlocks(cmd)) => {
+        Some(BaseSubcommand::ImportBlocks(cmd)) => {
             construct_async_run!(|components, cli, cmd, config| {
                 let (_, import_queue) = service::import_queue(&config, &components);
                 Ok(cmd.run(components.client, import_queue))
             })
         }
-        Some(Subcommand::Revert(cmd)) => {
+        Some(BaseSubcommand::Revert(cmd)) => {
             construct_async_run!(|components, cli, cmd, config| {
                 Ok(cmd.run(components.client, components.backend, None))
             })
         }
-        Some(Subcommand::PurgeChain(cmd)) => {
+        Some(BaseSubcommand::PurgeChain(cmd)) => {
             let runner = cli.create_runner(cmd)?;
 
             runner.sync_run(|config| {
@@ -180,6 +192,9 @@ pub fn run() -> Result<()> {
 
                 cmd.base.run(frontier_database_config)?;
 
+                println!("relay args: {:?}", cli.relaychain_args());
+                panic!();
+
                 let polkadot_cli = RelayChainCli::<NodeName>::new(
                     &config,
                     [RelayChainCli::<NodeName>::executable_name()]
@@ -197,21 +212,21 @@ pub fn run() -> Result<()> {
                 cmd.run(config, polkadot_config)
             })
         }
-        Some(Subcommand::ExportGenesisHead(cmd)) => {
+        Some(BaseSubcommand::ExportGenesisHead(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             runner.sync_run(|config| {
                 let partials = NodeConfig::new_builder(&config, None)?;
                 cmd.run(partials.client)
             })
         }
-        Some(Subcommand::ExportGenesisWasm(cmd)) => {
+        Some(BaseSubcommand::ExportGenesisWasm(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             runner.sync_run(|_config| {
                 let spec = cli.load_spec(&cmd.shared_params.chain.clone().unwrap_or_default())?;
                 cmd.run(&*spec)
             })
         }
-        Some(Subcommand::Benchmark(cmd)) => {
+        Some(BaseSubcommand::Benchmark(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             // Switch on the concrete benchmark sub-command-
             match cmd {
@@ -254,7 +269,7 @@ pub fn run() -> Result<()> {
                 _ => Err("Benchmarking sub-command unsupported".into()),
             }
         }
-        Some(Subcommand::PrecompileWasm(cmd)) => {
+        Some(BaseSubcommand::PrecompileWasm(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             runner.async_run(|config| {
                 let partials = NodeConfig::new_builder(&config, None)?;
@@ -265,10 +280,6 @@ pub fn run() -> Result<()> {
             })
         }
         None => {
-            if let Some(profile_id) = cli.rpc_provider_profile_id {
-                return rpc_provider_mode(cli, profile_id);
-            }
-
             let runner = cli.create_runner(&cli.run.normalize())?;
             let collator_options = cli.run.collator_options();
 
@@ -290,11 +301,11 @@ pub fn run() -> Result<()> {
                 );
 
                 let rpc_config = crate::cli::RpcConfig {
-                    eth_log_block_cache: cli.run.eth_log_block_cache,
-                    eth_statuses_cache: cli.run.eth_statuses_cache,
-                    fee_history_limit: cli.run.fee_history_limit,
-                    max_past_logs: cli.run.max_past_logs,
-                    max_block_range: cli.run.max_block_range,
+                    eth_log_block_cache: cli.run.eth.eth_log_block_cache,
+                    eth_statuses_cache: cli.run.eth.eth_statuses_cache,
+                    fee_history_limit: cli.run.eth.fee_history_limit,
+                    max_past_logs: cli.run.eth.max_past_logs,
+                    max_block_range: cli.run.eth.max_block_range,
                 };
 
                 let extension = node_common_chain_spec::Extensions::try_get(&*config.chain_spec);
@@ -359,10 +370,11 @@ pub fn run() -> Result<()> {
     }
 }
 
-fn rpc_provider_mode(cli: Cli, profile_id: u64) -> Result<()> {
+fn rpc_provider_mode(cli: &Cli, cmd: &crate::cli::RpcProviderCmd) -> Result<()> {
+    todo!();
     log::info!("Starting in RPC provider mode!");
 
-    let runner = cli.create_runner(&cli.run.normalize())?;
+    let runner = cli.create_runner(&cmd.base.container_run.normalize())?;
 
     runner.run_node_until_exit(|config| async move {
         let polkadot_cli = RelayChainCli::<NodeName>::new(
@@ -372,6 +384,7 @@ fn rpc_provider_mode(cli: Cli, profile_id: u64) -> Result<()> {
                 .chain(cli.relaychain_args().iter()),
         );
 
+        // TODO: Wrong args
         let container_chain_cli = ContainerChainCli::new(
             &config,
             [ContainerChainCli::executable_name()]
@@ -380,11 +393,11 @@ fn rpc_provider_mode(cli: Cli, profile_id: u64) -> Result<()> {
         );
 
         let rpc_config = crate::cli::RpcConfig {
-            eth_log_block_cache: cli.run.eth_log_block_cache,
-            eth_statuses_cache: cli.run.eth_statuses_cache,
-            fee_history_limit: cli.run.fee_history_limit,
-            max_past_logs: cli.run.max_past_logs,
-            max_block_range: cli.run.max_block_range,
+            eth_log_block_cache: cmd.eth.eth_log_block_cache,
+            eth_statuses_cache: cmd.eth.eth_statuses_cache,
+            fee_history_limit: cmd.eth.fee_history_limit,
+            max_past_logs: cmd.eth.max_past_logs,
+            max_block_range: cmd.eth.max_block_range,
         };
 
         let generate_rpc_builder = crate::rpc::GenerateFrontierRpcBuilder::<
@@ -393,9 +406,9 @@ fn rpc_provider_mode(cli: Cli, profile_id: u64) -> Result<()> {
 
         RpcProviderMode {
             config,
-            provider_profile_id: profile_id,
-            orchestrator_endpoints: cli.orchestrator_endpoints,
-            collator_options: cli.run.collator_options(),
+            provider_profile_id: cmd.base.profile_id,
+            orchestrator_endpoints: cmd.base.orchestrator_endpoints.clone(),
+            collator_options: cmd.base.container_run.collator_options(),
             polkadot_cli,
             container_chain_cli,
             generate_rpc_builder,

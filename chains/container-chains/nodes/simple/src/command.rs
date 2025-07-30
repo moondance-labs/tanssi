@@ -17,7 +17,7 @@
 use {
     crate::{
         chain_spec,
-        cli::{Cli, SimpleSubcommand as Subcommand},
+        cli::{Cli, Subcommand, BaseSubcommand},
         service::{self, NodeConfig},
     },
     container_chain_template_simple_runtime::Block,
@@ -35,7 +35,7 @@ use {
     sp_core::hexdisplay::HexDisplay,
     sp_runtime::traits::{AccountIdConversion, Block as BlockT, Get},
     std::marker::PhantomData,
-    tc_service_container_chain::{cli::ContainerChainCli, service::RpcProviderMode},
+    tc_service_container_chain::{cli::{ContainerChainCli, RpcProviderCmd}, service::RpcProviderMode},
 };
 
 pub struct NodeName;
@@ -110,8 +110,17 @@ macro_rules! construct_async_run {
 pub fn run() -> Result<()> {
     let cli = Cli::from_args();
 
-    match &cli.subcommand {
-        Some(Subcommand::BuildSpec(cmd)) => {
+    // Match rpc provider subcommand in wrapper
+    let subcommand = match &cli.subcommand {
+        Some(Subcommand::RpcProvider(cmd)) => {
+            return rpc_provider_mode(&cli, dbg!(cmd));
+        }
+        Some(Subcommand::Base(cmd)) => Some(cmd),
+        None => None,
+    };
+
+    match subcommand {
+        Some(BaseSubcommand::BuildSpec(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             runner.sync_run(|config| {
                 let chain_spec = if let Some(para_id) = cmd.extra.parachain_id {
@@ -132,34 +141,34 @@ pub fn run() -> Result<()> {
                 cmd.base.run(chain_spec, config.network)
             })
         }
-        Some(Subcommand::CheckBlock(cmd)) => {
+        Some(BaseSubcommand::CheckBlock(cmd)) => {
             construct_async_run!(|components, cli, cmd, config| {
                 let (_, import_queue) = service::import_queue(&config, &components);
                 Ok(cmd.run(components.client, import_queue))
             })
         }
-        Some(Subcommand::ExportBlocks(cmd)) => {
+        Some(BaseSubcommand::ExportBlocks(cmd)) => {
             construct_async_run!(|components, cli, cmd, config| {
                 Ok(cmd.run(components.client, config.database))
             })
         }
-        Some(Subcommand::ExportState(cmd)) => {
+        Some(BaseSubcommand::ExportState(cmd)) => {
             construct_async_run!(|components, cli, cmd, config| {
                 Ok(cmd.run(components.client, config.chain_spec))
             })
         }
-        Some(Subcommand::ImportBlocks(cmd)) => {
+        Some(BaseSubcommand::ImportBlocks(cmd)) => {
             construct_async_run!(|components, cli, cmd, config| {
                 let (_, import_queue) = service::import_queue(&config, &components);
                 Ok(cmd.run(components.client, import_queue))
             })
         }
-        Some(Subcommand::Revert(cmd)) => {
+        Some(BaseSubcommand::Revert(cmd)) => {
             construct_async_run!(|components, cli, cmd, config| {
                 Ok(cmd.run(components.client, components.backend, None))
             })
         }
-        Some(Subcommand::PurgeChain(cmd)) => {
+        Some(BaseSubcommand::PurgeChain(cmd)) => {
             let runner = cli.create_runner(cmd)?;
 
             runner.sync_run(|config| {
@@ -180,21 +189,21 @@ pub fn run() -> Result<()> {
                 cmd.run(config, polkadot_config)
             })
         }
-        Some(Subcommand::ExportGenesisHead(cmd)) => {
+        Some(BaseSubcommand::ExportGenesisHead(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             runner.sync_run(|config| {
                 let partials = NodeConfig::new_builder(&config, None)?;
                 cmd.run(partials.client)
             })
         }
-        Some(Subcommand::ExportGenesisWasm(cmd)) => {
+        Some(BaseSubcommand::ExportGenesisWasm(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             runner.sync_run(|_config| {
                 let spec = cli.load_spec(&cmd.shared_params.chain.clone().unwrap_or_default())?;
                 cmd.run(&*spec)
             })
         }
-        Some(Subcommand::Benchmark(cmd)) => {
+        Some(BaseSubcommand::Benchmark(cmd)) => {
             let runner = cli.create_runner(cmd)?;
 
             // Switch on the concrete benchmark sub-command-
@@ -238,7 +247,7 @@ pub fn run() -> Result<()> {
                 _ => Err("Benchmarking sub-command unsupported".into()),
             }
         }
-        Some(Subcommand::PrecompileWasm(cmd)) => {
+        Some(BaseSubcommand::PrecompileWasm(cmd)) => {
             let runner = cli.create_runner(cmd)?;
             runner.async_run(|config| {
                 let partials = NodeConfig::new_builder(&config, None)?;
@@ -249,10 +258,6 @@ pub fn run() -> Result<()> {
             })
         }
         None => {
-            if let Some(profile_id) = cli.rpc_provider_profile_id {
-                return rpc_provider_mode(cli, profile_id);
-            }
-
             let runner = cli.create_runner(&cli.run.normalize())?;
             let collator_options = cli.run.collator_options();
 
@@ -331,7 +336,8 @@ pub fn run() -> Result<()> {
     }
 }
 
-fn rpc_provider_mode(cli: Cli, profile_id: u64) -> Result<()> {
+fn rpc_provider_mode(cli: &Cli, cmd: &RpcProviderCmd) -> Result<()> {
+    todo!();
     log::info!("Starting in RPC provider mode!");
 
     let runner = cli.create_runner(&cli.run.normalize())?;
@@ -357,9 +363,9 @@ fn rpc_provider_mode(cli: Cli, profile_id: u64) -> Result<()> {
 
         RpcProviderMode {
             config,
-            provider_profile_id: profile_id,
-            orchestrator_endpoints: cli.orchestrator_endpoints,
-            collator_options: cli.run.collator_options(),
+            provider_profile_id: cmd.profile_id,
+            orchestrator_endpoints: cmd.orchestrator_endpoints.clone(),
+            collator_options: cmd.container_run.collator_options(),
             polkadot_cli,
             container_chain_cli,
             generate_rpc_builder,
