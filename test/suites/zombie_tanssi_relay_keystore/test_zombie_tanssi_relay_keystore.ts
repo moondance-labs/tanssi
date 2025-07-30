@@ -45,6 +45,21 @@ function findHexKeyForAccount(assign: any, keys: any, account: string): string |
     return undefined;
 }
 
+async function countFilesInKeystore(path: string): Promise<number> {
+    // Check that the directory exists and is accessible
+    await fs.promises.access(path, fs.constants.F_OK);
+
+    // Read all filenames in the directory
+    const filenames: string[] = await fs.promises.readdir(path);
+
+    // Assert that there is at least one file
+    if (filenames.length === 0) {
+        throw new Error(`Expected at least one file in ${path}, but found none.`);
+    }
+
+    return filenames.length;
+}
+
 describeSuite({
     id: "ZOMBIETANSS01",
     title: "Zombie Tanssi Relay Test",
@@ -61,6 +76,10 @@ describeSuite({
         let newKeys2: Bytes;
         let oldAssignment: any;
         let oldKeys: any;
+        let collator01KeystorePath: string;
+        let collator02KeystorePath: string;
+        let collator01KeystoreLength: number;
+        let collator02KeystoreLength: number;
 
         beforeAll(async () => {
             relayApi = context.polkadotJs("Tanssi-relay");
@@ -91,6 +110,10 @@ describeSuite({
             collator01RelayApi = await ApiPromise.create({ provider: wsProvider1 });
             const wsProvider2 = new WsProvider("ws://127.0.0.1:9962");
             collator02RelayApi = await ApiPromise.create({ provider: wsProvider2 });
+
+            collator01KeystorePath = `${getTmpZombiePath()}/Collator-01/relay-data/chains/dancelight_local_testnet/keystore/`;
+            // Collator-02 keystore is in a different path because we have added a custom `--keystore-path` arg
+            collator02KeystorePath = `${getTmpZombiePath()}/Collator-02/relay-data/tmp_keystore_zombie_test/`;
         }, 120000);
 
         it({
@@ -122,21 +145,7 @@ describeSuite({
             id: "T02b",
             title: "Collator-01 keystore path exists",
             test: async () => {
-                const collator01CustomKeystorePath = `${getTmpZombiePath()}/Collator-01/relay-data/chains/dancelight_local_testnet/keystore/`;
-
-                // Check that the directory exists and is accessible
-                await fs.promises.access(collator01CustomKeystorePath, fs.constants.F_OK);
-
-                // Read all filenames in the directory
-                const filenames: string[] = await fs.promises.readdir(collator01CustomKeystorePath);
-
-                // Optionally, you can assert that there is at least one file
-                if (filenames.length === 0) {
-                    throw new Error(`Expected at least one file in ${collator01CustomKeystorePath}, but found none.`);
-                }
-
-                // Now `filenames` holds the list of file names in that directory
-                console.log("Keystore files:", filenames);
+                collator01KeystoreLength = await countFilesInKeystore(collator01KeystorePath);
             },
         });
 
@@ -144,21 +153,7 @@ describeSuite({
             id: "T02c",
             title: "Collator-02 keystore path exists",
             test: async () => {
-                const collator02CustomKeystorePath = `${getTmpZombiePath()}/Collator-02/relay-data/tmp_keystore_zombie_test/`;
-
-                // Check that the directory exists and is accessible
-                await fs.promises.access(collator02CustomKeystorePath, fs.constants.F_OK);
-
-                // Read all filenames in the directory
-                const filenames: string[] = await fs.promises.readdir(collator02CustomKeystorePath);
-
-                // Optionally, you can assert that there is at least one file
-                if (filenames.length === 0) {
-                    throw new Error(`Expected at least one file in ${collator02CustomKeystorePath}, but found none.`);
-                }
-
-                // Now `filenames` holds the list of file names in that directory
-                console.log("Keystore files:", filenames);
+                collator02KeystoreLength = await countFilesInKeystore(collator02KeystorePath);
             },
         });
 
@@ -309,6 +304,12 @@ describeSuite({
 
                 newKeys1 = await collator01RelayApi.rpc.author.rotateKeys();
                 newKeys2 = await collator02RelayApi.rpc.author.rotateKeys();
+
+                // New keys are added to the same keystore, so the total number of keys increases
+                const newCollator01KeystoreLength = await countFilesInKeystore(collator01KeystorePath);
+                expect(newCollator01KeystoreLength).toBeGreaterThan(collator01KeystoreLength);
+                const newCollator02KeystoreLength = await countFilesInKeystore(collator02KeystorePath);
+                expect(newCollator02KeystoreLength).toBeGreaterThan(collator02KeystoreLength);
 
                 await Promise.all([
                     signAndSendAndInclude(relayApi.tx.session.setKeys(newKeys1, []), collator01),
