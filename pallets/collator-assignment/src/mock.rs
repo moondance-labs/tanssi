@@ -25,7 +25,7 @@ use {
     dp_collator_assignment::AssignedCollators,
     frame_support::{
         parameter_types,
-        traits::{ConstBool, ConstU16, ConstU64, Hooks},
+        traits::{ConstBool, ConstU16, ConstU64},
         weights::Weight,
     },
     frame_system as system,
@@ -382,7 +382,10 @@ pub fn maybe_new_session(x: u64) {
 pub fn run_to_block(n: u64) {
     System::run_to_block_with::<AllPalletsWithSystem>(
         n,
-        frame_system::RunToBlockHooks::default().before_initialize(|bn| maybe_new_session(bn)),
+        frame_system::RunToBlockHooks::default().before_initialize(|bn| {
+            System::reset_events();
+            maybe_new_session(bn)
+        }),
     );
 }
 
