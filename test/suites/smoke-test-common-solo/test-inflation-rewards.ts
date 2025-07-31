@@ -6,9 +6,11 @@ import type { ApiDecoration } from "@polkadot/api/types";
 import {
     DANCELIGHT_BLOCK_INFLATION_PERBILL,
     DANCELIGHT_BOND,
+    DANCELIGHT_REWARDS_PORTION_PER_BILL_RATIO,
     fetchIssuance,
     fetchRewardAuthorContainers,
     STARLIGHT_BLOCK_INFLATION_PERBILL,
+    STARLIGHT_REWARDS_PORTION_PER_BILL_RATIO,
 } from "utils";
 import { isStarlightRuntime } from "../../utils/runtime.ts";
 
@@ -44,7 +46,11 @@ describeSuite({
                 const tolerancePerBill = 1n; // = 0.0000001%
                 const events = await apiAt.query.system.events();
                 const issuance = fetchIssuance(events).amount.toBigInt();
-                const chainRewards = isStarlightRuntime(api) ? (issuance * 4n) / 7n : (issuance * 7n) / 10n;
+                const chainRewards = isStarlightRuntime(api)
+                    ? (issuance * STARLIGHT_REWARDS_PORTION_PER_BILL_RATIO[0]) /
+                      STARLIGHT_REWARDS_PORTION_PER_BILL_RATIO[1]
+                    : (issuance * DANCELIGHT_REWARDS_PORTION_PER_BILL_RATIO[0]) /
+                      DANCELIGHT_REWARDS_PORTION_PER_BILL_RATIO[1];
                 const expectedChainReward = chainRewards / BigInt(numberOfChains);
                 const rewardEvents = fetchRewardAuthorContainers(events);
                 const toleranceDiff = (expectedChainReward * tolerancePerBill) / PER_BILL_RATIO;
