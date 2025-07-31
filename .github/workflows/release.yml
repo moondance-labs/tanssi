@@ -938,7 +938,7 @@ jobs:
             - name: Get westend api data
               run: |
                 cd test
-                ./tmp/polkadot --chain=westend-dev --rpc-port 34100 > binA.log 2>&1 &
+                ./tmp/polkadot --chain=westend-dev --rpc-port 34100 > westend.log 2>&1 &
                 echo $! > westend.pid
                 sleep 10  # Wait for node to be ready
                 pnpm get-api-info tmp/westend-api.json --url ws://127.0.0.1:34100
@@ -946,10 +946,10 @@ jobs:
 
             - name: Get dancelight api data
               run: |
-                ../target/release/tanssi-relay --chain=dancelight-dev --rpc-port 34100 > binA.log 2>&1 &
+                cd test
+                ../target/release/tanssi-relay --chain=dancelight-dev --rpc-port 34100 > dancelight.log 2>&1 &
                 echo $! > dancelight.pid
                 sleep 10  # Wait for node to be ready
-                cd test
                 pnpm get-api-info tmp/dancelight-api.json --url ws://127.0.0.1:34100
                 kill $(cat dancelight.pid)
 
