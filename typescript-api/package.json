@@ -33,7 +33,7 @@
         "generate:defs:flashbox": "pnpm tsx node_modules/@polkadot/typegen/scripts/polkadot-types-from-defs.mjs --package @tanssi/api-augment/tanssi/interfaces --input ./src/flashbox/interfaces --endpoint ./metadata-flashbox.json",
         "generate:defs:dancelight": "pnpm tsx node_modules/@polkadot/typegen/scripts/polkadot-types-from-defs.mjs --package @tanssi/api-augment/tanssi/interfaces --input ./src/dancelight/interfaces --endpoint ./metadata-dancelight.json",
         "generate:defs:starlight": "pnpm tsx node_modules/@polkadot/typegen/scripts/polkadot-types-from-defs.mjs --package @tanssi/api-augment/tanssi/interfaces --input ./src/starlight/interfaces --endpoint ./metadata-starlight.json",
-        "generate:meta": "pnpm run generate:meta:dancebox && pnpm run generate:meta:flashbox && pnpm run generate:meta:dancelight",
+        "generate:meta": "pnpm run generate:meta:dancebox && pnpm run generate:meta:flashbox && pnpm run generate:meta:dancelight && pnpm run generate:meta:starlight",
         "generate:meta:dancebox": "pnpm tsx node_modules/@polkadot/typegen/scripts/polkadot-types-from-chain.mjs --endpoint ./metadata-dancebox.json --package @tanssi/api-augment/tanssi/interfaces --output ./src/dancebox/interfaces",
         "generate:meta:dancelight": "pnpm tsx node_modules/@polkadot/typegen/scripts/polkadot-types-from-chain.mjs --endpoint ./metadata-dancelight.json --package @tanssi/api-augment/tanssi/interfaces --output ./src/dancelight/interfaces",
         "generate:meta:starlight": "pnpm tsx node_modules/@polkadot/typegen/scripts/polkadot-types-from-chain.mjs --endpoint ./metadata-starlight.json --package @tanssi/api-augment/tanssi/interfaces --output ./src/starlight/interfaces",
