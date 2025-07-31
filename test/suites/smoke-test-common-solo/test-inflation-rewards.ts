@@ -58,7 +58,7 @@ describeSuite({
 
                 for (const { accountId, balance } of failures) {
                     log(
-                        `${accountId.toHuman()} reward ${balance.toBigInt()} , not in the range of ${expectedChainReward}. Diff: ${expectedChainReward - balance.toBigInt()}`
+                        `${accountId.toHuman()} reward ${balance.toBigInt()} , not in the range of ${expectedChainReward}. Diff: ${expectedChainReward - balance.toBigInt()}. Tolerance value: ${toleranceDiff}`
                     );
                 }
 
