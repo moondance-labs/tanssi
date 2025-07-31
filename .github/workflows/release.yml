@@ -946,7 +946,6 @@ jobs:
 
             - name: Get dancelight api data
               run: |
-                cd test
                 ../target/release/tanssi-relay --chain=dancelight-dev --rpc-port 34100 > binA.log 2>&1 &
                 echo $! > dancelight.pid
                 sleep 10  # Wait for node to be ready
@@ -956,7 +955,7 @@ jobs:
 
             - name: Compare
               run: |
-                ./test/scripts/compare-apis.sh  test/tmp/westend-api.json test/tmp/dancelight-api.json
+                ./scripts/compare-apis.sh  tmp/westend-api.json tmp/dancelight-api.json
 
     confirm-required-jobs-passed-dependency-upgrade:
       runs-on: ubuntu-latest
