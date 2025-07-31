@@ -1,10 +1,9 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { generateKeyringPair } from "@moonwall/util";
 import { ApiPromise, Keyring, WsProvider } from "@polkadot/api";
-import type { Signer } from "ethers";
 import {
     checkLogsNotExist,
-    getHeaderFromRelay,
+    getCommonTests,
     getKeyringNimbusIdHex,
     getTmpZombiePath,
     signAndSendAndInclude,
@@ -45,7 +44,8 @@ function findHexKeyForAccount(assign: any, keys: any, account: string): string |
     return undefined;
 }
 
-async function countFilesInKeystore(path: string): Promise<number> {
+// probably should be moved to utils
+export async function countFilesInKeystore(path: string): Promise<number> {
     // Check that the directory exists and is accessible
     await fs.promises.access(path, fs.constants.F_OK);
 
@@ -69,7 +69,6 @@ describeSuite({
         let container2000Api: ApiPromise;
         let container2001Api: ApiPromise;
         let container2002Api: ApiPromise;
-        let ethersSigner: Signer;
         let collator01RelayApi: ApiPromise;
         let collator02RelayApi: ApiPromise;
         let newKeys1: Bytes;
@@ -116,159 +115,16 @@ describeSuite({
             collator02KeystorePath = `${getTmpZombiePath()}/Collator-02/relay-data/tmp_keystore_zombie_test/`;
         }, 120000);
 
-        it({
-            id: "T01",
-            title: "Test block numbers in relay are 0 yet",
-            test: async () => {
-                const header2000 = await getHeaderFromRelay(relayApi, 2000);
-                const header2001 = await getHeaderFromRelay(relayApi, 2001);
-                const header2002 = await getHeaderFromRelay(relayApi, 2002);
+        const commonTests = getCommonTests(
+            context,
+            relayApi,
+            [2000, 2001, 2002],
+            [container2000Api, container2001Api, container2002Api]
+        );
 
-                expect(header2000.number.toNumber()).to.be.equal(0);
-                expect(header2001.number.toNumber()).to.be.equal(0);
-                expect(header2002.number.toNumber()).to.be.equal(0);
-            },
-        });
-
-        it({
-            id: "T02",
-            title: "Blocks are being produced on tanssi-relay",
-            test: async () => {
-                const relayNetwork = relayApi.consts.system.version.specName.toString();
-                expect(relayNetwork, "Relay API incorrect").to.contain("dancelight");
-                const blockNum = (await relayApi.rpc.chain.getBlock()).block.header.number.toNumber();
-                expect(blockNum).to.be.greaterThan(0);
-            },
-        });
-
-        it({
-            id: "T02b",
-            title: "Collator-01 keystore path exists",
-            test: async () => {
-                collator01KeystoreLength = await countFilesInKeystore(collator01KeystorePath);
-            },
-        });
-
-        it({
-            id: "T02c",
-            title: "Collator-02 keystore path exists",
-            test: async () => {
-                collator02KeystoreLength = await countFilesInKeystore(collator02KeystorePath);
-            },
-        });
-
-        it({
-            id: "T03",
-            title: "Set config params",
-            test: async () => {
-                const keyring = new Keyring({ type: "sr25519" });
-                const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
-
-                // Disable rotation
-                const tx1 = relayApi.tx.collatorConfiguration.setFullRotationPeriod(0);
-                const fillAmount = 990_000_000; // equal to 99% Perbill
-                const tx2 = relayApi.tx.collatorConfiguration.setMaxParachainCoresPercentage(fillAmount);
-                const txBatch = relayApi.tx.utility.batchAll([tx1, tx2]);
-                await signAndSendAndInclude(relayApi.tx.sudo.sudo(txBatch), alice);
-            },
-        });
-
-        it({
-            id: "T04",
-            title: "Test assignation did not change",
-            test: async () => {
-                const currentSession = (await relayApi.query.session.currentIndex()).toNumber();
-                const allCollators = (
-                    await relayApi.query.tanssiAuthorityAssignment.collatorContainerChain(currentSession)
-                ).toJSON();
-                expect(allCollators.orchestratorChain.length).to.equal(0);
-                expect(allCollators.containerChains["2000"].length).to.equal(2);
-                expect(allCollators.containerChains["2001"].length).to.equal(2);
-            },
-        });
-
-        it({
-            id: "T05",
-            title: "Blocks are being produced on container 2000",
-            test: async () => {
-                const blockNum = (await container2000Api.rpc.chain.getBlock()).block.header.number.toNumber();
-                expect(blockNum).to.be.greaterThan(0);
-            },
-        });
-
-        it({
-            id: "T06",
-            title: "Blocks are being produced on container 2001",
-            test: async () => {
-                const blockNum = (await container2001Api.rpc.chain.getBlock()).block.header.number.toNumber();
-                expect(blockNum).to.be.greaterThan(0);
-                expect(await ethersSigner.provider.getBlockNumber(), "Safe tag is not present").to.be.greaterThan(0);
-            },
-        });
-
-        it({
-            id: "T07",
-            title: "Test container chain 2000 assignation is correct",
-            test: async () => {
-                const currentSession = (await relayApi.query.session.currentIndex()).toNumber();
-                const paraId = (await container2000Api.query.parachainInfo.parachainId()).toString();
-                const containerChainCollators = (
-                    await relayApi.query.tanssiAuthorityAssignment.collatorContainerChain(currentSession)
-                ).toJSON().containerChains[paraId];
-
-                const writtenCollators = (await container2000Api.query.authoritiesNoting.authorities()).toJSON();
-
-                expect(containerChainCollators).to.deep.equal(writtenCollators);
-            },
-        });
-
-        it({
-            id: "T08",
-            title: "Test container chain 2001 assignation is correct",
-            test: async () => {
-                const currentSession = (await relayApi.query.session.currentIndex()).toNumber();
-                const paraId = (await container2001Api.query.parachainInfo.parachainId()).toString();
-                const containerChainCollators = (
-                    await relayApi.query.tanssiAuthorityAssignment.collatorContainerChain(currentSession)
-                ).toJSON().containerChains[paraId];
-
-                const writtenCollators = (await container2001Api.query.authoritiesNoting.authorities()).toJSON();
-
-                expect(containerChainCollators).to.deep.equal(writtenCollators);
-            },
-        });
-
-        it({
-            id: "T09",
-            title: "Test author noting is correct for both containers",
-            timeout: 60000,
-            test: async () => {
-                const assignment = await relayApi.query.tanssiCollatorAssignment.collatorContainerChain();
-                const paraId2000 = await container2000Api.query.parachainInfo.parachainId();
-                const paraId2001 = await container2001Api.query.parachainInfo.parachainId();
-
-                const containerChainCollators2000 = assignment.containerChains.toJSON()[paraId2000.toString()];
-                const containerChainCollators2001 = assignment.containerChains.toJSON()[paraId2001.toString()];
-
-                await context.waitBlock(6, "Tanssi-relay");
-                const author2000 = await relayApi.query.authorNoting.latestAuthor(paraId2000);
-                const author2001 = await relayApi.query.authorNoting.latestAuthor(paraId2001);
-
-                expect(containerChainCollators2000.includes(author2000.toJSON().author)).to.be.true;
-                expect(containerChainCollators2001.includes(author2001.toJSON().author)).to.be.true;
-            },
-        });
-
-        it({
-            id: "T10",
-            title: "Test frontier template isEthereum",
-            test: async () => {
-                const genesisData2000 = await relayApi.query.containerRegistrar.paraGenesisData(2000);
-                expect(genesisData2000.toJSON().properties.isEthereum).to.be.false;
-                const genesisData2001 = await relayApi.query.containerRegistrar.paraGenesisData(2001);
-                expect(genesisData2001.toJSON().properties.isEthereum).to.be.true;
-            },
-        });
+        for (const test of commonTests) {
+            it(test);
+        }
 
         it({
             id: "T11",

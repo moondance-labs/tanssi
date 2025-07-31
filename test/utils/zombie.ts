@@ -1,9 +1,10 @@
 import { expect } from "vitest";
 import fs from "node:fs/promises";
-import type { ApiPromise } from "@polkadot/api";
+import { Keyring, type ApiPromise } from "@polkadot/api";
 import { exec } from "node:child_process";
-import { getAuthorFromDigestRange, sleep } from "utils";
+import { getAuthorFromDigestRange, getHeaderFromRelay, signAndSendAndInclude, sleep } from "utils";
 import type { PathLike } from "node:fs";
+import type { ZombieTestContext } from "@moonwall/types/dist/types/runner";
 
 // Read log file path and check that none of the specified logs are found.
 // Only supports single-line logs.
@@ -321,3 +322,136 @@ export async function directoryExists(directoryPath: PathLike) {
         return false;
     }
 }
+
+export const getCommonTests = (
+    context: ZombieTestContext,
+    relayApi: ApiPromise,
+    containerIds: number[],
+    containerApis: ApiPromise[]
+) => {
+    const ethersSigner = context.ethers();
+    const checkBlockProductionForContainerChains = (containerApis: ApiPromise[]) => {
+        const result = [];
+        for (const api of containerApis) {
+            result.push({
+                title: "Blocks are being produced on container 2001",
+                test: async () => {
+                    const blockNum = (await api.rpc.chain.getBlock()).block.header.number.toNumber();
+                    expect(blockNum).to.be.greaterThan(0);
+                    expect(await ethersSigner.provider.getBlockNumber(), "Safe tag is not present").to.be.greaterThan(
+                        0
+                    );
+                },
+            });
+        }
+
+        return result;
+    };
+
+    const checkChainAssignation = (containerApis: ApiPromise[]) => {
+        const result = [];
+        for (const api of containerApis) {
+            result.push({
+                title: "Test container chain 2000 assignation is correct",
+                test: async () => {
+                    const currentSession = (await relayApi.query.session.currentIndex()).toNumber();
+                    const paraId = (await api.query.parachainInfo.parachainId()).toString();
+                    const containerChainCollators = (
+                        await relayApi.query.tanssiAuthorityAssignment.collatorContainerChain(currentSession)
+                    ).toJSON().containerChains[paraId];
+
+                    const writtenCollators = (await api.query.authoritiesNoting.authorities()).toJSON();
+
+                    expect(containerChainCollators).to.deep.equal(writtenCollators);
+                },
+            });
+        }
+
+        return result;
+    };
+
+    return [
+        {
+            id: "T01",
+            title: "Test block numbers in relay are 0 yet",
+            test: async () => {
+                for (const containerId of containerIds) {
+                    const header = await getHeaderFromRelay(relayApi, containerId);
+                    expect(header.number.toNumber()).to.be.equal(0);
+                }
+            },
+        },
+        {
+            id: "T02",
+            title: "Blocks are being produced on tanssi-relay",
+            test: async () => {
+                const relayNetwork = relayApi.consts.system.version.specName.toString();
+                expect(relayNetwork, "Relay API incorrect").to.contain("dancelight");
+                const blockNum = (await relayApi.rpc.chain.getBlock()).block.header.number.toNumber();
+                expect(blockNum).to.be.greaterThan(0);
+            },
+        },
+        {
+            id: "T03",
+            title: "Set config params",
+            test: async () => {
+                const keyring = new Keyring({ type: "sr25519" });
+                const alice = keyring.addFromUri("//Alice", { name: "Alice default" });
+
+                // Disable rotation
+                const tx1 = relayApi.tx.collatorConfiguration.setFullRotationPeriod(0);
+                const fillAmount = 990_000_000; // equal to 99% Perbill
+                const tx2 = relayApi.tx.collatorConfiguration.setMaxParachainCoresPercentage(fillAmount);
+                const txBatch = relayApi.tx.utility.batchAll([tx1, tx2]);
+                await signAndSendAndInclude(relayApi.tx.sudo.sudo(txBatch), alice);
+            },
+        },
+        {
+            id: "T04",
+            title: "Test assignation did not change",
+            test: async () => {
+                const currentSession = (await relayApi.query.session.currentIndex()).toNumber();
+                const allCollators = (
+                    await relayApi.query.tanssiAuthorityAssignment.collatorContainerChain(currentSession)
+                ).toJSON();
+                expect(allCollators.orchestratorChain.length).to.equal(0);
+                expect(allCollators.containerChains["2000"].length).to.equal(2);
+                expect(allCollators.containerChains["2001"].length).to.equal(2);
+            },
+        },
+        ...checkBlockProductionForContainerChains(containerApis),
+        ...checkChainAssignation(containerApis),
+        {
+            id: "T09",
+            title: "Test author noting is correct for both containers",
+            timeout: 60000,
+            test: async () => {
+                const assignment = await relayApi.query.tanssiCollatorAssignment.collatorContainerChain();
+                const paraIds = [];
+                const paraCollators = [];
+                for (const containerApi of containerApis) {
+                    const paraId = await containerApi.query.parachainInfo.parachainId();
+                    paraIds.push(paraId);
+                    paraCollators.push(assignment.containerChains.toJSON()[paraId.toString()]);
+                }
+
+                await context.waitBlock(6, "Tanssi-relay");
+
+                for (const paraId of paraIds) {
+                    const author2000 = await relayApi.query.authorNoting.latestAuthor(paraId);
+                    expect(paraCollators.includes(author2000.toJSON().author)).to.be.true;
+                }
+            },
+        },
+        {
+            id: "T10",
+            title: "Test frontier template isEthereum",
+            test: async () => {
+                const genesisData2000 = await relayApi.query.containerRegistrar.paraGenesisData(2000);
+                expect(genesisData2000.toJSON().properties.isEthereum).to.be.false;
+                const genesisData2001 = await relayApi.query.containerRegistrar.paraGenesisData(2001);
+                expect(genesisData2001.toJSON().properties.isEthereum).to.be.true;
+            },
+        },
+    ];
+};
