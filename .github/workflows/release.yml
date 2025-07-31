@@ -931,7 +931,8 @@ jobs:
 
             - name: Download polkadot binary
               run: |
-                ./test/scripts/download-polkadot.sh
+                cd test
+                ./scripts/download-polkadot.sh
 
             - name: Get westend api data
               run: |
