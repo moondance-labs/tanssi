@@ -16,7 +16,7 @@
 
 use {
     crate::{mock::*, Config, *},
-    frame_support::{pallet_prelude::*, traits::fungible::Inspect},
+    frame_support::traits::fungible::Inspect,
     sp_runtime::Permill,
 };
 
@@ -33,14 +33,14 @@ fn test_increase_supply() {
     new_test_ext().execute_with(|| {
         let total_supply_0 = get_total_issuance();
 
-        <Pallet<Test> as Hooks<u64>>::on_initialize(1);
+        run_to_block(1);
         let total_supply_1 = get_total_issuance();
         assert_eq!(
             total_supply_1,
             total_supply_0 + (<Test as Config>::InflationRate::get() * total_supply_0),
         );
 
-        <Pallet<Test> as Hooks<u64>>::on_initialize(2);
+        run_to_block(2);
         let total_supply_2 = get_total_issuance();
         assert_eq!(
             total_supply_2,
@@ -55,7 +55,7 @@ fn test_undistributed_rewards() {
         let total_supply_0 = get_total_issuance();
         let initial_balance = get_balance(&OnUnbalancedInflationAccount::get());
 
-        <Pallet<Test> as Hooks<u64>>::on_initialize(1);
+        run_to_block(1);
         let total_supply_1 = get_total_issuance();
 
         let new_supply = total_supply_1 - total_supply_0;
@@ -75,7 +75,7 @@ fn test_reward_orchestrator_author() {
         let author_balance = get_balance(&author);
 
         let total_supply_0 = get_total_issuance();
-        <Pallet<Test> as Hooks<u64>>::on_initialize(1);
+        run_to_block(1);
         let total_supply_1 = get_total_issuance();
 
         let new_supply = total_supply_1 - total_supply_0;
@@ -101,7 +101,7 @@ fn test_reward_orchestrator_author_less_if_more_chains() {
         let author_balance = get_balance(&author);
 
         let total_supply_0 = get_total_issuance();
-        <Pallet<Test> as Hooks<u64>>::on_initialize(1);
+        run_to_block(1);
         let total_supply_1 = get_total_issuance();
 
         let new_supply = total_supply_1 - total_supply_0;
@@ -123,7 +123,7 @@ fn test_reward_container_chain_author() {
         let container_author_balance_2 = get_balance(&container_author_2);
 
         let total_supply_0 = get_total_issuance();
-        <Pallet<Test> as Hooks<u64>>::on_initialize(1);
+        run_to_block(1);
         let total_supply_1 = get_total_issuance();
 
         let new_supply_1 = total_supply_1 - total_supply_0;
@@ -145,7 +145,7 @@ fn test_reward_container_chain_author() {
             container_author_balance + (Permill::from_percent(35) * new_supply_1),
         );
 
-        <Pallet<Test> as Hooks<u64>>::on_initialize(2);
+        run_to_block(2);
         let total_supply_2 = get_total_issuance();
         let new_supply_2 = total_supply_2 - total_supply_1;
 
@@ -174,7 +174,7 @@ fn test_cannot_reward_twice_in_same_tanssi_block() {
         let container_author_balance = get_balance(&container_author);
 
         let total_supply_0 = get_total_issuance();
-        <Pallet<Test> as Hooks<u64>>::on_initialize(1);
+        run_to_block(1);
         let total_supply_1 = get_total_issuance();
 
         let new_supply_1 = total_supply_1 - total_supply_0;
@@ -213,7 +213,7 @@ fn test_non_claimed_rewards_go_to_on_unbalanced() {
         let container_author = 2;
         let container_author_balance = get_balance(&container_author);
 
-        <Pallet<Test> as Hooks<u64>>::on_initialize(1);
+        run_to_block(1);
         let on_unbalanced_account = get_balance(&OnUnbalancedInflationAccount::get());
 
         let total_supply_1 = get_total_issuance();
@@ -221,7 +221,7 @@ fn test_non_claimed_rewards_go_to_on_unbalanced() {
         // We initilize the next block without claiming rewards for the container
         // author should have not been rewarded and the onUNbalanced hook should kick in
         // we use block 2 because it has reminder
-        <Pallet<Test> as Hooks<u64>>::on_initialize(2);
+        run_to_block(2);
 
         let total_supply_2 = get_total_issuance();
 
