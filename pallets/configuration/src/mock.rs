@@ -115,8 +115,6 @@ pub fn new_test_ext_with_genesis(config: HostConfiguration) -> sp_io::TestExtern
 const SESSION_LEN: u64 = 5;
 
 pub fn maybe_new_session(x: u64) {
-    // TODO: polkadot has == 0 here, why == 1?
-    // And +1 to session_index below? And remove the +1 from run_to_session
     if x % SESSION_LEN == 1 {
         let session_index = (x / SESSION_LEN) as u32;
         Configuration::initializer_on_new_session(&session_index);
