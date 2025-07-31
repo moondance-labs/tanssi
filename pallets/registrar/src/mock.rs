@@ -18,7 +18,7 @@ use {
     crate::{self as pallet_registrar, ParathreadParamsTy, RegistrarHooks},
     dp_container_chain_genesis_data::ContainerChainGenesisData,
     frame_support::{
-        traits::{ConstU16, ConstU64, OnFinalize, OnInitialize},
+        traits::{ConstU16, ConstU64},
         weights::Weight,
     },
     parity_scale_codec::{Decode, Encode},
@@ -408,27 +408,20 @@ pub fn run_to_session(n: u32) {
     run_to_block(block_number + 1);
 }
 
-pub fn run_to_block(n: u64) {
-    let old_block_number = System::block_number();
-
-    for x in (old_block_number + 1)..=n {
-        System::reset_events();
-        System::set_block_number(x);
-
-        if x % SESSION_LEN == 1 {
-            let session_index = (x / SESSION_LEN) as u32;
-            ParaRegistrar::initializer_on_new_session(&session_index);
-            ParaRegistrar::on_initialize(session_index.into());
-        }
+pub fn maybe_new_session(x: u64) {
+    // TODO: polkadot has == 0 here, why == 1?
+    // And +1 to session_index below? And remove the +1 from run_to_session
+    if x % SESSION_LEN == 1 {
+        let session_index = (x / SESSION_LEN) as u32;
+        ParaRegistrar::initializer_on_new_session(&session_index);
     }
 }
 
-pub fn end_block() {
-    ParaRegistrar::on_finalize(System::block_number());
-}
-
-pub fn start_block() {
-    ParaRegistrar::on_finalize(System::block_number());
+pub fn run_to_block(n: u64) {
+    System::run_to_block_with::<AllPalletsWithSystem>(
+        n,
+        frame_system::RunToBlockHooks::default().before_initialize(|bn| maybe_new_session(bn)),
+    );
 }
 
 pub fn get_ed25519_pairs(num: u32) -> Vec<ed25519::Pair> {

@@ -15,7 +15,6 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use dp_collator_assignment::AssignedCollators;
-
 use {
     crate::{self as pallet_authority_assignment},
     alloc::collections::btree_map::BTreeMap,
@@ -145,23 +144,25 @@ pub fn run_to_session(n: u32) {
     run_to_block(block_number + 1);
 }
 
-pub fn run_to_block(n: u64) {
-    let old_block_number = System::block_number();
-
-    for x in (old_block_number + 1)..=n {
-        System::reset_events();
-        System::set_block_number(x);
-
-        if x % SESSION_LEN == 1 {
-            let session_index = (x / SESSION_LEN) as u32;
-            let mock_data = mock_data::Mock::<Test>::get();
-            let nimbus_map = &mock_data.nimbus_map;
-            let next_collator_assignment = &mock_data.next_collator_assignment;
-            AuthorityAssignment::initializer_on_new_session(
-                &session_index,
-                nimbus_map,
-                next_collator_assignment,
-            );
-        }
+pub fn maybe_new_session(x: u64) {
+    // TODO: polkadot has == 0 here, why == 1?
+    // And +1 to session_index below? And remove the +1 from run_to_session
+    if x % SESSION_LEN == 1 {
+        let session_index = (x / SESSION_LEN) as u32;
+        let mock_data = mock_data::Mock::<Test>::get();
+        let nimbus_map = &mock_data.nimbus_map;
+        let next_collator_assignment = &mock_data.next_collator_assignment;
+        AuthorityAssignment::initializer_on_new_session(
+            &session_index,
+            nimbus_map,
+            next_collator_assignment,
+        );
     }
+}
+
+pub fn run_to_block(n: u64) {
+    System::run_to_block_with::<AllPalletsWithSystem>(
+        n,
+        frame_system::RunToBlockHooks::default().before_initialize(|bn| maybe_new_session(bn)),
+    );
 }

@@ -112,17 +112,20 @@ pub fn new_test_ext_with_genesis(config: HostConfiguration) -> sp_io::TestExtern
     .into()
 }
 
-pub fn run_to_block(n: u64) {
-    let old_block_number = System::block_number();
-    let session_len = 5;
+const SESSION_LEN: u64 = 5;
 
-    for x in (old_block_number + 1)..=n {
-        System::reset_events();
-        System::set_block_number(x);
-
-        if x % session_len == 1 {
-            let session_index = (x / session_len) as u32;
-            Configuration::initializer_on_new_session(&session_index);
-        }
+pub fn maybe_new_session(x: u64) {
+    // TODO: polkadot has == 0 here, why == 1?
+    // And +1 to session_index below? And remove the +1 from run_to_session
+    if x % SESSION_LEN == 1 {
+        let session_index = (x / SESSION_LEN) as u32;
+        Configuration::initializer_on_new_session(&session_index);
     }
+}
+
+pub fn run_to_block(n: u64) {
+    System::run_to_block_with::<AllPalletsWithSystem>(
+        n,
+        frame_system::RunToBlockHooks::default().before_initialize(|bn| maybe_new_session(bn)),
+    );
 }
