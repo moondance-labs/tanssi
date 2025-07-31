@@ -75,7 +75,7 @@ impl pallet_configuration::GetSessionIndex<u32> for CurrentSessionIndexGetter {
     /// Returns current session index.
     fn session_index() -> u32 {
         // For tests, let 1 session be 5 blocks
-        (System::block_number() / 5) as u32
+        (System::block_number() / SESSION_LEN) as u32
     }
 
     #[cfg(feature = "runtime-benchmarks")]
