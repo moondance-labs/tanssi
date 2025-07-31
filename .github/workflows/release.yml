@@ -932,6 +932,7 @@ jobs:
             - name: Download polkadot binary
               run: |
                 cd test
+                pnpm install
                 ./scripts/download-polkadot.sh
 
             - name: Get westend api data
