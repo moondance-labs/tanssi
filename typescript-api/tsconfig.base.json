@@ -15,7 +15,8 @@
         "paths": {
             "dancebox": ["dancebox/src"],
             "flashbox": ["flashbox/src"],
-            "dancelight": ["dancelight/src"]
+            "dancelight": ["dancelight/src"],
+            "starlight": ["starlight/src"]
         }
     },
     "exclude": ["node_modules", "build"]
