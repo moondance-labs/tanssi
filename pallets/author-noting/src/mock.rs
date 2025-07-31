@@ -16,6 +16,7 @@
 
 use {
     crate::{self as author_noting_pallet, Config, ParaMode},
+    alloc::{collections::btree_map::BTreeMap, vec},
     cumulus_pallet_parachain_system::{RelayChainState, RelaychainStateProvider},
     cumulus_primitives_core::ParaId,
     frame_support::{
@@ -131,13 +132,13 @@ impl mock_data::Config for Test {}
     serde::Deserialize,
 )]
 pub struct Mocks {
-    pub container_chains: Vec<(ParaId, Vec<AccountId>)>,
+    pub container_chains: BTreeMap<ParaId, Vec<AccountId>>,
 }
 
 impl Default for Mocks {
     fn default() -> Self {
         Self {
-            container_chains: vec![(1001.into(), vec![1])],
+            container_chains: BTreeMap::from_iter([(1001.into(), vec![1])]),
         }
     }
 }
@@ -167,14 +168,14 @@ pub struct MockContainerChainGetter;
 impl tp_traits::GetContainerChainsWithCollators<AccountId> for MockContainerChainGetter {
     fn container_chains_with_collators(
         _for_session: tp_traits::ForSession,
-    ) -> Vec<(ParaId, Vec<AccountId>)> {
+    ) -> BTreeMap<ParaId, Vec<AccountId>> {
         mock_data::Mock::<Test>::get().container_chains
     }
 
     fn get_all_collators_assigned_to_chains(
         _for_session: tp_traits::ForSession,
     ) -> alloc::collections::btree_set::BTreeSet<AccountId> {
-        alloc::collections::btree_set::BTreeSet::new()
+        todo!()
     }
 
     #[cfg(feature = "runtime-benchmarks")]
@@ -183,7 +184,7 @@ impl tp_traits::GetContainerChainsWithCollators<AccountId> for MockContainerChai
         container_chains: &[(ParaId, Vec<AccountId>)],
     ) {
         MockData::mutate(|m| {
-            m.container_chains = container_chains.to_vec();
+            m.container_chains = container_chains.iter().cloned().collect();
         });
     }
 }

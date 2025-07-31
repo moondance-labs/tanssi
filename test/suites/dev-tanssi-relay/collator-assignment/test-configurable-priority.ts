@@ -215,9 +215,7 @@ describeSuite({
                 const collatorAssignmentBefore = (
                     await polkadotJs.query.tanssiCollatorAssignment.collatorContainerChain()
                 ).toJSON();
-                expect(sortCollatorAssignment(collatorAssignmentBefore)).to.be.deep.equal([
-                    2000, 2001, 2004, 2002, 2003,
-                ]);
+                expect(sortCollatorAssignment(collatorAssignmentBefore)).to.be.deep.equal([2000, 2001, 2004]);
 
                 // Let's change the parachain percentage to 90
                 const tx = await polkadotJs.tx.sudo
@@ -233,9 +231,7 @@ describeSuite({
                     await polkadotJs.query.tanssiCollatorAssignment.collatorContainerChain()
                 ).toJSON();
                 // Pool paras are not truncated but they are sorted by tip
-                expect(sortCollatorAssignment(collatorAssignmentAfter)).to.be.deep.equal([
-                    2000, 2001, 2004, 2002, 2003,
-                ]);
+                expect(sortCollatorAssignment(collatorAssignmentAfter)).to.be.deep.equal([2000, 2001, 2004]);
             },
         });
 
@@ -254,9 +250,7 @@ describeSuite({
                 const collatorAssignmentBefore = (
                     await polkadotJs.query.tanssiCollatorAssignment.collatorContainerChain()
                 ).toJSON();
-                expect(sortCollatorAssignment(collatorAssignmentBefore)).to.be.deep.equal([
-                    2000, 2001, 2004, 2002, 2003,
-                ]);
+                expect(sortCollatorAssignment(collatorAssignmentBefore)).to.be.deep.equal([2000, 2001, 2004]);
 
                 // Let's change percentage of parachain to 30%
                 const tx = await polkadotJs.tx.sudo

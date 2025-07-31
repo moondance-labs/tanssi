@@ -421,8 +421,10 @@ fn test_author_collation_aura_add_assigned_to_paras() {
             assert_eq!(authorities(), vec![alice_id, bob_id]);
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32.into()],
-                vec![CHARLIE.into(), DAVE.into()]
+                assignment
+                    .get_container_chain(&1001u32.into())
+                    .unwrap_or(&vec![]),
+                &[CHARLIE.into(), DAVE.into()]
             );
         });
 }
@@ -539,14 +541,16 @@ fn test_authors_paras_inserted_a_posteriori() {
             // Assignment should happen after 2 sessions
             run_to_session(1u32);
             let assignment = CollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
+            assert!(assignment.container_para_ids().is_empty());
             run_to_session(2u32);
 
             // Charlie and Dave should be assigned to para 1001
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32.into()],
-                vec![CHARLIE.into(), DAVE.into()]
+                assignment
+                    .get_container_chain(&1001u32.into())
+                    .unwrap_or(&vec![]),
+                &[CHARLIE.into(), DAVE.into()]
             );
         });
 }
@@ -610,14 +614,16 @@ fn test_authors_paras_inserted_a_posteriori_with_collators_already_assigned() {
             // Assignment should happen after 2 sessions
             run_to_session(1u32);
             let assignment = CollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
+            assert!(assignment.container_para_ids().is_empty());
             run_to_session(2u32);
 
             // Charlie and Dave are now assigned to para 1001
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32.into()],
-                vec![CHARLIE.into(), DAVE.into()]
+                assignment
+                    .get_container_chain(&1001u32.into())
+                    .unwrap_or(&vec![]),
+                &[CHARLIE.into(), DAVE.into()]
             );
             assert_eq!(
                 assignment.orchestrator_chain,
@@ -676,12 +682,12 @@ fn test_paras_registered_but_zero_credits() {
             // Assignment should happen after 2 sessions
             run_to_session(1u32);
             let assignment = CollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
+            assert!(assignment.container_para_ids().is_empty());
             run_to_session(2u32);
 
             // Nobody should be assigned to para 1001
             let assignment = CollatorAssignment::collator_container_chain();
-            assert_eq!(assignment.container_chains.get(&1001u32.into()), None);
+            assert_eq!(assignment.get_container_chain(&1001u32.into()), None);
         });
 }
 
@@ -742,11 +748,11 @@ fn test_paras_registered_but_not_enough_credits() {
             // Assignment should happen after 2 sessions
             run_to_session(1u32);
             let assignment = CollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
+            assert!(assignment.container_para_ids().is_empty());
             run_to_session(2u32);
             // Nobody should be assigned to para 1001
             let assignment = CollatorAssignment::collator_container_chain();
-            assert_eq!(assignment.container_chains.get(&1001u32.into()), None);
+            assert_eq!(assignment.get_container_chain(&1001u32.into()), None);
 
             // Now purchase the missing block credit
             assert_ok!(ServicesPayment::set_block_production_credits(
@@ -759,8 +765,8 @@ fn test_paras_registered_but_not_enough_credits() {
             // Charlie and Dave should be assigned to para 1001
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32.into()],
-                vec![CHARLIE.into(), DAVE.into()]
+                assignment.get_container_chain(&1001u32.into()).unwrap(),
+                &[CHARLIE.into(), DAVE.into()]
             );
         });
 }
@@ -822,13 +828,13 @@ fn test_paras_registered_but_only_credits_for_1_session() {
             // Assignment should happen after 2 sessions
             run_to_session(1u32);
             let assignment = CollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
+            assert!(assignment.container_para_ids().is_empty());
             run_to_session(2u32);
             // Charlie and Dave should be assigned to para 1001
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32.into()],
-                vec![CHARLIE.into(), DAVE.into()]
+                assignment.get_container_chain(&1001u32.into()).unwrap(),
+                &[CHARLIE.into(), DAVE.into()]
             );
 
             // No credits are consumed if the container chain is not producing blocks
@@ -865,7 +871,7 @@ fn test_paras_registered_but_only_credits_for_1_session() {
             run_to_session(4u32);
             // Nobody should be assigned to para 1001
             let assignment = CollatorAssignment::collator_container_chain();
-            assert_eq!(assignment.container_chains.get(&1001u32.into()), None,);
+            assert_eq!(assignment.get_container_chain(&1001u32.into()), None);
 
             // The container chain only produced one block, so it only consumed one block credit.
             // (it could have produced more blocks, but at most it would have consumed `Period::get()` credits)
@@ -909,8 +915,8 @@ fn test_parachains_deregister_collators_re_assigned() {
             // Charlie and Dave to 1001
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32.into()],
-                vec![CHARLIE.into(), DAVE.into()]
+                assignment.get_container_chain(&1001u32.into()).unwrap(),
+                &[CHARLIE.into(), DAVE.into()]
             );
 
             assert_ok!(Registrar::deregister(root_origin(), 1001.into()), ());
@@ -920,8 +926,8 @@ fn test_parachains_deregister_collators_re_assigned() {
 
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32.into()],
-                vec![CHARLIE.into(), DAVE.into()]
+                assignment.get_container_chain(&1001u32.into()).unwrap(),
+                &[CHARLIE.into(), DAVE.into()]
             );
 
             run_to_session(2u32);
@@ -929,8 +935,8 @@ fn test_parachains_deregister_collators_re_assigned() {
             // Charlie and Dave should be assigne dot para 1002 this time
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1002u32.into()],
-                vec![CHARLIE.into(), DAVE.into()]
+                assignment.get_container_chain(&1002u32.into()).unwrap(),
+                &[CHARLIE.into(), DAVE.into()]
             );
         });
 }
@@ -980,8 +986,8 @@ fn test_parachains_deregister_collators_config_change_reassigned() {
             // Charlie and Dave to 1001
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32.into()],
-                vec![CHARLIE.into(), DAVE.into()]
+                assignment.get_container_chain(&1001u32.into()).unwrap(),
+                &[CHARLIE.into(), DAVE.into()]
             );
 
             // Assignment should happen after 2 sessions
@@ -989,8 +995,8 @@ fn test_parachains_deregister_collators_config_change_reassigned() {
 
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32.into()],
-                vec![CHARLIE.into(), DAVE.into()]
+                assignment.get_container_chain(&1001u32.into()).unwrap(),
+                &[CHARLIE.into(), DAVE.into()]
             );
 
             run_to_session(2u32);
@@ -998,8 +1004,8 @@ fn test_parachains_deregister_collators_config_change_reassigned() {
             // Charlie, Dave and BOB should be assigne dot para 1001 this time
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32.into()],
-                vec![CHARLIE.into(), DAVE.into(), BOB.into()]
+                assignment.get_container_chain(&1001u32.into()).unwrap(),
+                &[CHARLIE.into(), DAVE.into(), BOB.into()]
             );
 
             assert_eq!(assignment.orchestrator_chain, vec![ALICE.into()]);
@@ -1091,7 +1097,7 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
                 Runtime::parachain_collators(100.into()),
                 Some(vec![ALICE.into(), BOB.into()])
             );
-            assert_eq!(Runtime::parachain_collators(1001.into()), Some(vec![]));
+            assert_eq!(Runtime::parachain_collators(1001.into()), None);
             assert_eq!(
                 Runtime::current_collator_parachain_assignment(ALICE.into()),
                 Some(100.into())
@@ -1146,7 +1152,7 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
                 Runtime::parachain_collators(100.into()),
                 Some(vec![ALICE.into(), BOB.into()])
             );
-            assert_eq!(Runtime::parachain_collators(1001.into()), Some(vec![]));
+            assert_eq!(Runtime::parachain_collators(1001.into()), None);
             assert_eq!(
                 Runtime::current_collator_parachain_assignment(CHARLIE.into()),
                 None
@@ -1162,8 +1168,8 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
             assert_eq!(authorities(), vec![alice_id, bob_id]);
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32.into()],
-                vec![CHARLIE.into(), DAVE.into()]
+                assignment.get_container_chain(&1001u32.into()).unwrap(),
+                &[CHARLIE.into(), DAVE.into()]
             );
 
             assert_eq!(
@@ -1212,7 +1218,7 @@ fn test_author_collation_aura_add_assigned_to_paras_runtime_api() {
                 Runtime::parachain_collators(100.into()),
                 Some(vec![ALICE.into(), CHARLIE.into()])
             );
-            assert_eq!(Runtime::parachain_collators(1001.into()), Some(vec![]));
+            assert_eq!(Runtime::parachain_collators(1001.into()), None);
             assert_eq!(
                 Runtime::current_collator_parachain_assignment(BOB.into()),
                 None
@@ -1249,7 +1255,7 @@ fn test_consensus_runtime_api() {
                 Runtime::para_id_authorities(100.into()),
                 Some(vec![alice_id.clone(), bob_id.clone()])
             );
-            assert_eq!(Runtime::para_id_authorities(1001.into()), Some(vec![]));
+            assert_eq!(Runtime::para_id_authorities(1001.into()), None);
             assert_eq!(
                 Runtime::check_para_id_assignment(alice_id.clone()),
                 Some(100.into())
@@ -1337,7 +1343,7 @@ fn test_consensus_runtime_api_session_changes() {
                 Runtime::para_id_authorities(100.into()),
                 Some(vec![alice_id.clone(), bob_id.clone()])
             );
-            assert_eq!(Runtime::para_id_authorities(1001.into()), Some(vec![]));
+            assert_eq!(Runtime::para_id_authorities(1001.into()), None);
             assert_eq!(
                 Runtime::check_para_id_assignment(alice_id.clone()),
                 Some(100.into())
@@ -1382,7 +1388,7 @@ fn test_consensus_runtime_api_session_changes() {
                 Runtime::para_id_authorities(100.into()),
                 Some(vec![alice_id.clone(), bob_id.clone()])
             );
-            assert_eq!(Runtime::para_id_authorities(1001.into()), Some(vec![]));
+            assert_eq!(Runtime::para_id_authorities(1001.into()), None);
             assert_eq!(
                 Runtime::check_para_id_assignment(alice_id.clone()),
                 Some(100.into())
@@ -1446,7 +1452,7 @@ fn test_consensus_runtime_api_next_session() {
                 Runtime::para_id_authorities(100.into()),
                 Some(vec![alice_id.clone(), bob_id.clone()])
             );
-            assert_eq!(Runtime::para_id_authorities(1001.into()), Some(vec![]));
+            assert_eq!(Runtime::para_id_authorities(1001.into()), None);
             assert_eq!(
                 Runtime::check_para_id_assignment(alice_id.clone()),
                 Some(100.into())
@@ -1509,7 +1515,7 @@ fn test_consensus_runtime_api_next_session() {
                 Runtime::para_id_authorities(100.into()),
                 Some(vec![alice_id.clone(), bob_id.clone()])
             );
-            assert_eq!(Runtime::para_id_authorities(1001.into()), Some(vec![]));
+            assert_eq!(Runtime::para_id_authorities(1001.into()), None);
             assert_eq!(
                 Runtime::check_para_id_assignment(alice_id.clone()),
                 Some(100.into())
@@ -1640,8 +1646,8 @@ fn test_author_noting_not_self_para() {
             // Charlie and Dave to 1001
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32.into()],
-                vec![CHARLIE.into(), DAVE.into()]
+                assignment.get_container_chain(&1001u32.into()).unwrap(),
+                &[CHARLIE.into(), DAVE.into()]
             );
 
             let s = ParaHeaderSproofBuilderItem {
@@ -1780,8 +1786,8 @@ fn test_author_noting_runtime_api() {
             // Charlie and Dave to 1001
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32.into()],
-                vec![CHARLIE.into(), DAVE.into()]
+                assignment.get_container_chain(&1001u32.into()).unwrap(),
+                &[CHARLIE.into(), DAVE.into()]
             );
 
             let s = ParaHeaderSproofBuilderItem {
@@ -2602,8 +2608,8 @@ fn test_register_parathread_genesis() {
 
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&ParaId::from(3001)],
-                vec![CHARLIE.into()]
+                assignment.get_container_chain(&ParaId::from(3001)).unwrap(),
+                &[CHARLIE.into()]
             );
         });
 }
@@ -2667,13 +2673,13 @@ fn test_ed_plus_block_credit_session_purchase_works() {
             // Assignment should happen after 2 sessions
             run_to_session(1u32);
             let assignment = CollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
+            assert!(assignment.container_para_ids().is_empty());
             run_to_session(2u32);
             // Charlie and Dave should be assigned to para 1001
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32.into()],
-                vec![CHARLIE.into(), DAVE.into()]
+                assignment.get_container_chain(&1001u32.into()).unwrap(),
+                &[CHARLIE.into(), DAVE.into()]
             );
 
             // Simulate block inclusion from container chain 1001
@@ -2701,7 +2707,7 @@ fn test_ed_plus_block_credit_session_purchase_works() {
             run_to_session(3u32);
             // Nobody should be assigned to para 1001
             let assignment = CollatorAssignment::collator_container_chain();
-            assert_eq!(assignment.container_chains.get(&1001u32.into()), None,);
+            assert_eq!(assignment.get_container_chain(&1001u32.into()), None);
         });
 }
 
@@ -2765,11 +2771,11 @@ fn test_ed_plus_block_credit_session_minus_1_purchase_fails() {
             // Assignment should happen after 2 sessions
             run_to_session(1u32);
             let assignment = CollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
+            assert!(assignment.container_para_ids().is_empty());
             run_to_session(2u32);
             // Charlie and Dave should not be assigned to para 1001
             let assignment = CollatorAssignment::collator_container_chain();
-            assert_eq!(assignment.container_chains.get(&1001u32.into()), None,);
+            assert_eq!(assignment.get_container_chain(&1001u32.into()), None);
         });
 }
 
@@ -2834,14 +2840,14 @@ fn test_reassignment_ed_plus_two_block_credit_session_purchase_works() {
             // Assignment should happen after 2 sessions
             run_to_session(1u32);
             let assignment = CollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
+            assert!(assignment.container_para_ids().is_empty());
 
             run_to_session(2u32);
             // Charlie and Dave should be assigned to para 1001
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32.into()],
-                vec![CHARLIE.into(), DAVE.into()]
+                assignment.get_container_chain(&1001u32.into()).unwrap(),
+                &[CHARLIE.into(), DAVE.into()]
             );
 
             // Simulate block inclusion from container chain 1001
@@ -2870,15 +2876,15 @@ fn test_reassignment_ed_plus_two_block_credit_session_purchase_works() {
             // Charlie and Dave should be assigned to para 1001
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32.into()],
-                vec![CHARLIE.into(), DAVE.into()]
+                assignment.get_container_chain(&1001u32.into()).unwrap(),
+                &[CHARLIE.into(), DAVE.into()]
             );
 
             // After this it should not be assigned anymore, since credits are not payable
             run_to_session(4u32);
             // Nobody should be assigned to para 1001
             let assignment = CollatorAssignment::collator_container_chain();
-            assert_eq!(assignment.container_chains.get(&1001u32.into()), None,);
+            assert_eq!(assignment.get_container_chain(&1001u32.into()), None);
         });
 }
 
@@ -2943,14 +2949,14 @@ fn test_reassignment_ed_plus_two_block_credit_session_minus_1_purchase_fails() {
             // Assignment should happen after 2 sessions
             run_to_session(1u32);
             let assignment = CollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
+            assert!(assignment.container_para_ids().is_empty());
 
             run_to_session(2u32);
             // Charlie and Dave should be assigned to para 1001
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32.into()],
-                vec![CHARLIE.into(), DAVE.into()]
+                assignment.get_container_chain(&1001u32.into()).unwrap(),
+                &[CHARLIE.into(), DAVE.into()]
             );
 
             // Simulate block inclusion from container chain 1001
@@ -2978,7 +2984,7 @@ fn test_reassignment_ed_plus_two_block_credit_session_minus_1_purchase_fails() {
             run_to_session(3u32);
             // Nobody should be assigned to para 1001
             let assignment = CollatorAssignment::collator_container_chain();
-            assert_eq!(assignment.container_chains.get(&1001u32.into()), None,);
+            assert_eq!(assignment.get_container_chain(&1001u32.into()), None);
         });
 }
 
@@ -3041,13 +3047,13 @@ fn test_credits_with_purchase_can_be_combined() {
             // Assignment should happen after 2 sessions
             run_to_session(1u32);
             let assignment = CollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
+            assert!(assignment.container_para_ids().is_empty());
             run_to_session(2u32);
             // Charlie and Dave should be assigned to para 1001
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32.into()],
-                vec![CHARLIE.into(), DAVE.into()]
+                assignment.get_container_chain(&1001u32.into()).unwrap(),
+                &[CHARLIE.into(), DAVE.into()]
             );
         });
 }
@@ -3183,13 +3189,13 @@ fn test_ed_plus_collator_assignment_session_purchase_works() {
             // Assignment should happen after 2 sessions
             run_to_session(1u32);
             let assignment = CollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
+            assert!(assignment.container_para_ids().is_empty());
             run_to_session(2u32);
             // Charlie and Dave should be assigned to para 1001
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32.into()],
-                vec![CHARLIE.into(), DAVE.into()]
+                assignment.get_container_chain(&1001u32.into()).unwrap(),
+                &[CHARLIE.into(), DAVE.into()]
             );
 
             // Simulate block inclusion from container chain 1001
@@ -3216,7 +3222,7 @@ fn test_ed_plus_collator_assignment_session_purchase_works() {
             run_to_session(4u32);
             // Nobody should be assigned to para 1001
             let assignment = CollatorAssignment::collator_container_chain();
-            assert_eq!(assignment.container_chains.get(&1001u32.into()), None,);
+            assert_eq!(assignment.get_container_chain(&1001u32.into()), None);
         });
 }
 
@@ -3280,11 +3286,11 @@ fn test_ed_plus_collator_assignment_credit_session_minus_1_purchase_fails() {
             // Assignment should happen after 2 sessions
             run_to_session(1u32);
             let assignment = CollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
+            assert!(assignment.container_para_ids().is_empty());
             run_to_session(2u32);
             // Charlie and Dave should not be assigned to para 1001
             let assignment = CollatorAssignment::collator_container_chain();
-            assert_eq!(assignment.container_chains.get(&1001u32.into()), None,);
+            assert_eq!(assignment.get_container_chain(&1001u32.into()), None);
         });
 }
 
@@ -3349,13 +3355,13 @@ fn test_collator_assignment_credits_with_purchase_can_be_combined() {
             // Assignment should happen after 2 sessions
             run_to_session(1u32);
             let assignment = CollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
+            assert!(assignment.container_para_ids().is_empty());
             run_to_session(2u32);
             // Charlie and Dave should be assigned to para 1001
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32.into()],
-                vec![CHARLIE.into(), DAVE.into()]
+                assignment.get_container_chain(&1001u32.into()).unwrap(),
+                &[CHARLIE.into(), DAVE.into()]
             );
         });
 }
@@ -3431,20 +3437,20 @@ fn test_block_credits_and_collator_assignation_credits_through_tank() {
             // Assignment should happen after 2 sessions
             run_to_session(1u32);
             let assignment = CollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
+            assert!(assignment.container_para_ids().is_empty());
             run_to_session(2u32);
             // Charlie and Dave should be assigned to para 1001
             let assignment = CollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32.into()],
-                vec![CHARLIE.into(), DAVE.into()]
+                assignment.get_container_chain(&1001u32.into()).unwrap(),
+                &[CHARLIE.into(), DAVE.into()]
             );
 
             // After this it should not be assigned anymore, since credits are not payable
             run_to_session(4u32);
             // Nobody should be assigned to para 1001
             let assignment = CollatorAssignment::collator_container_chain();
-            assert_eq!(assignment.container_chains.get(&1001u32.into()), None,);
+            assert_eq!(assignment.get_container_chain(&1001u32.into()), None);
         });
 }
 
@@ -3548,7 +3554,13 @@ fn test_max_collators_uses_pending_value() {
 
             // Initial assignment: 1 collator in orchestrator chain and 2 collators in container 1001
             let assignment = CollatorAssignment::collator_container_chain();
-            assert_eq!(assignment.container_chains[&1001u32.into()].len(), 2);
+            assert_eq!(
+                assignment
+                    .get_container_chain(&1001u32.into())
+                    .unwrap()
+                    .len(),
+                2
+            );
             assert_eq!(assignment.orchestrator_chain.len(), 1);
 
             assert_ok!(Configuration::set_max_collators(root_origin(), 2));
@@ -3562,17 +3574,24 @@ fn test_max_collators_uses_pending_value() {
 
                 let assignment = CollatorAssignment::collator_container_chain();
                 assert!(
-                    assignment.container_chains[&1001u32.into()].len() <= 2,
+                    assignment
+                        .get_container_chain(&1001u32.into())
+                        .unwrap_or(&vec![])
+                        .len()
+                        <= 2,
                     "session {}: {} collators assigned to container chain 1001",
                     session,
-                    assignment.container_chains[&1001u32.into()].len()
+                    assignment
+                        .get_container_chain(&1001u32.into())
+                        .unwrap()
+                        .len()
                 );
             }
 
             // Final assignment: because max_collators = 2, there are only 2 collators, one in
             // orchestrator chain, and the other one idle
             let assignment = CollatorAssignment::collator_container_chain();
-            assert_eq!(assignment.container_chains[&1001u32.into()].len(), 0);
+            assert_eq!(assignment.get_container_chain(&1001u32.into()), None);
             assert_eq!(assignment.orchestrator_chain.len(), 1);
         });
 }
@@ -3642,9 +3661,8 @@ fn test_collator_assignment_tip_priority_on_congestion() {
             let max_tip = 1 * UNIT;
 
             assert_eq!(
-                CollatorAssignment::collator_container_chain().container_chains[&1003u32.into()]
-                    .len(),
-                0
+                CollatorAssignment::collator_container_chain().get_container_chain(&1003u32.into()),
+                None,
             );
 
             // Send funds to tank
@@ -3663,7 +3681,9 @@ fn test_collator_assignment_tip_priority_on_congestion() {
 
             run_to_session(2);
             assert_eq!(
-                CollatorAssignment::collator_container_chain().container_chains[&para_id.into()]
+                CollatorAssignment::collator_container_chain()
+                    .get_container_chain(&para_id.into())
+                    .unwrap()
                     .len(),
                 2,
             );
@@ -3752,9 +3772,8 @@ fn test_collator_assignment_tip_not_assigned_on_insufficient_balance() {
 
             run_to_session(1);
             assert_eq!(
-                CollatorAssignment::collator_container_chain().container_chains[&para_id.into()]
-                    .len(),
-                0
+                CollatorAssignment::collator_container_chain().get_container_chain(&para_id.into()),
+                None,
             );
         });
 }
@@ -3807,17 +3826,29 @@ fn test_collator_assignment_tip_only_charge_willing_paras() {
 
             run_to_session(2);
 
-            let assignment = CollatorAssignment::collator_container_chain().container_chains;
+            let assignment = CollatorAssignment::collator_container_chain();
 
             // 2 out of the 3 paras should have collators assigned, with one paying tip to get
             // prioritized, and the other selected at random that should not be charged any tips
-            assert_eq!(assignment[&para_id_with_tip.into()].len(), 2);
+            assert_eq!(
+                assignment
+                    .get_container_chain(&para_id_with_tip.into())
+                    .unwrap()
+                    .len(),
+                2
+            );
             assert_eq!(
                 Balances::usable_balance(ServicesPayment::parachain_tank(para_id_with_tip.into())),
                 tank_funds - max_tip * 2,
             );
 
-            assert_eq!(assignment[&para_id_without_tip.into()].len(), 2);
+            assert_eq!(
+                assignment
+                    .get_container_chain(&para_id_without_tip.into())
+                    .unwrap()
+                    .len(),
+                2
+            );
             assert_eq!(
                 Balances::usable_balance(ServicesPayment::parachain_tank(
                     para_id_without_tip.into()
@@ -3882,14 +3913,16 @@ fn test_collator_assignment_tip_withdraw_min_tip() {
             run_to_session(2);
 
             assert_eq!(
-                CollatorAssignment::collator_container_chain().container_chains
-                    [&para_id_1003.into()]
+                CollatorAssignment::collator_container_chain()
+                    .get_container_chain(&para_id_1003.into())
+                    .unwrap()
                     .len(),
                 2
             );
             assert_eq!(
-                CollatorAssignment::collator_container_chain().container_chains
-                    [&para_id_1002.into()]
+                CollatorAssignment::collator_container_chain()
+                    .get_container_chain(&para_id_1002.into())
+                    .unwrap()
                     .len(),
                 2
             );

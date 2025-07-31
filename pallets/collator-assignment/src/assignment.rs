@@ -56,7 +56,7 @@ where
         collators: Vec<T::AccountId>,
         orchestrator_chain: ChainNumCollators,
         mut chains: Vec<ChainNumCollators>,
-        mut old_assigned: AssignedCollators<T::AccountId>,
+        old_assigned: AssignedCollators<T::AccountId>,
         mut shuffle: Option<TShuffle>,
         full_rotation_mode: FullRotationModes,
     ) -> Result<AssignedCollators<T::AccountId>, AssignmentError>
@@ -68,14 +68,9 @@ where
         }
         // The rest of this function mostly treats orchestrator chain as another container chain, so move it into
         // `old_assigned.container_chains`
-        let old_orchestrator_assigned = mem::take(&mut old_assigned.orchestrator_chain);
-        old_assigned
-            .container_chains
-            .insert(orchestrator_chain.para_id, old_orchestrator_assigned);
-        let mut old_assigned = old_assigned.container_chains;
+        let mut old_assigned = old_assigned.into_single_map(orchestrator_chain.para_id);
         // Orchestrator chain must be the first one in the list because it always has priority
         chains.insert(0, orchestrator_chain);
-        let all_para_ids: Vec<ParaId> = chains.iter().map(|cc| cc.para_id).collect();
         let collators_set = BTreeSet::from_iter(collators.iter().cloned());
         let chains_with_collators =
             Self::select_chains_with_collators(collators.len() as u32, &chains);
@@ -112,27 +107,12 @@ where
         let new_assigned_chains =
             Self::assign_full(collators, chains_with_collators, old_assigned, shuffle)?;
 
-        let mut new_assigned = AssignedCollators {
-            container_chains: new_assigned_chains,
-            ..Default::default()
-        };
-
-        // Add container chains with 0 collators so that they are shown in UI
-        for para_id in all_para_ids {
-            new_assigned.container_chains.entry(para_id).or_default();
-        }
-
-        // The rest of this function mostly treats orchestrator chain as another container chain, remove it from
-        // container chains before returning the final assignment.
-        let orchestrator_assigned = new_assigned
-            .container_chains
-            .remove(&orchestrator_chain.para_id)
-            .unwrap();
+        let new_assigned =
+            AssignedCollators::from_single_map(new_assigned_chains, &orchestrator_chain.para_id);
         // Sanity check to avoid bricking orchestrator chain
-        if orchestrator_assigned.is_empty() && !T::ForceEmptyOrchestrator::get() {
+        if new_assigned.orchestrator_chain.is_empty() && !T::ForceEmptyOrchestrator::get() {
             return Err(AssignmentError::EmptyOrchestrator);
         }
-        new_assigned.orchestrator_chain = orchestrator_assigned;
 
         Ok(new_assigned)
     }
