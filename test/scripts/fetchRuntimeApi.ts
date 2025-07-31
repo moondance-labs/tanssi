@@ -12,7 +12,7 @@ import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import { NETWORK_YARGS_OPTIONS, getApiFor } from "./utils/network";
 import type { ApiPromise } from "@polkadot/api/promise/Api";
-import * as fs from "fs";
+import fs from "node:fs";
 
 // List of endpoints from which to get pallet metadata.
 // Should contain one endpoint for each network.
