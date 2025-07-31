@@ -3,7 +3,6 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 import { jumpToSession } from "utils";
-import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_INACTIVITY_TRACKING } from "helpers";
 import type { AccountId32 } from "@polkadot/types/interfaces";
 import { numberToHex } from "@polkadot/util";
 
@@ -16,9 +15,6 @@ describeSuite({
         let alice: KeyringPair;
         let bob: KeyringPair;
         let bobAccountId: AccountId32;
-        let isStarlight: boolean;
-        let specVersion: number;
-        let shouldSkipStarlightIT: boolean;
 
         async function isAddressInAssignedCollators(address: string) {
             const assignedCollatorsRecords = await polkadotJs.query.collatorAssignment.collatorContainerChain();
@@ -39,15 +35,6 @@ describeSuite({
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
-            // Check if the runtime is Starlight and set the spec version
-            const runtimeName = polkadotJs.runtimeVersion.specName.toString();
-            isStarlight = runtimeName === "starlight";
-            specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
-            shouldSkipStarlightIT =
-                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_INACTIVITY_TRACKING.includes(specVersion);
-            if (shouldSkipStarlightIT) {
-                return;
-            }
 
             alice = context.keyring.alice;
             bob = context.keyring.bob;
@@ -96,12 +83,6 @@ describeSuite({
             id: "E01",
             title: "Setting a collator offline prevents it from being selected for collating in the next session",
             test: async () => {
-                if (shouldSkipStarlightIT) {
-                    console.log(`Skipping E01 test for Starlight version ${specVersion}`);
-                    // TODO: once the pallet is in starlight, check the calls are filtered,
-                    // in case we don't want them for a specific runtime version.
-                    return;
-                }
                 const bobOfflineStatusBeforeMarking = await polkadotJs.query.inactivityTracking.offlineCollators(
                     bob.address
                 );
