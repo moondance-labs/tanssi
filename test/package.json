@@ -22,6 +22,7 @@
         "sudo-register-para": "tsx scripts/sudoRegisterPara.ts",
         "sudo-starlight-register-para": "tsx scripts/sudoStarlightRegisterPara.ts",
         "unhash-key": "tsx scripts/unhashKey.ts",
+        "get-api-info": "tsx scripts/fetchRuntimeApi.ts",
         "zombienet-restart": "tsx scripts/zombienetRestart.ts"
     },
     "keywords": [],
