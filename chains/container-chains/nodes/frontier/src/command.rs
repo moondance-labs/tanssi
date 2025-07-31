@@ -28,7 +28,7 @@ use {
     log::{info, warn},
     node_common::{
         chain_spec as node_common_chain_spec, cli::RelayChainCli, command::generate_genesis_block,
-        service::NodeBuilderConfig as _,
+        service::node_builder::NodeBuilderConfig as _,
     },
     parity_scale_codec::Encode,
     polkadot_cli::IdentifyVariant,

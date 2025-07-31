@@ -26,7 +26,7 @@ use {
     dancebox_runtime::Block,
     frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE},
     log::{info, warn},
-    node_common::{command::generate_genesis_block, service::NodeBuilderConfig as _},
+    node_common::{command::generate_genesis_block, service::node_builder::NodeBuilderConfig as _},
     parity_scale_codec::Encode,
     polkadot_service::WestendChainSpec,
     sc_cli::{

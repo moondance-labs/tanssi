@@ -16,9 +16,9 @@
 
 use {
     clap::Parser,
-    node_common::{cli::BuildSpecCmd, service::Sealing},
-    url::Url,
+    node_common::{cli::BuildSpecCmd, service::node_builder::Sealing},
     tc_service_container_chain::cli::RpcProviderCmd,
+    url::Url,
 };
 
 pub type BaseSubcommand = node_common::cli::Subcommand<BuildSpecCmdSimple>;
@@ -74,7 +74,6 @@ pub struct Cli {
     // get default values when a subcommand is used!
     // TODO: Fix usage of those wrong values in subcommands.
     // SEE: https://github.com/paritytech/polkadot-sdk/issues/9356
-
     /// Disable automatic hardware benchmarks.
     ///
     /// By default these benchmarks are automatically ran at startup and measure
