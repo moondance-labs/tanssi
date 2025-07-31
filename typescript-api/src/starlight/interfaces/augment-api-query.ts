@@ -55,6 +55,7 @@ import type {
     PalletIdentityRegistrarInfo,
     PalletIdentityRegistration,
     PalletIdentityUsernameInformation,
+    PalletInactivityTrackingActivityTrackingStatus,
     PalletInflationRewardsChainsToRewardValue,
     PalletMessageQueueBookState,
     PalletMessageQueuePage,
@@ -1537,6 +1538,54 @@ declare module "@polkadot/api-base/types/storage" {
             usernameOf: AugmentedQuery<
                 ApiType,
                 (arg: AccountId32 | string | Uint8Array) => Observable<Option<Bytes>>,
+                [AccountId32]
+            > &
+                QueryableStorageEntry<ApiType, [AccountId32]>;
+            /**
+             * Generic query
+             **/
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
+        inactivityTracking: {
+            /**
+             * A list of active collators for a session. Repopulated at the start of every session
+             **/
+            activeCollatorsForCurrentSession: AugmentedQuery<ApiType, () => Observable<BTreeSet<AccountId32>>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * A list of active container chains for a session. Repopulated at the start of every session
+             **/
+            activeContainerChainsForCurrentSession: AugmentedQuery<ApiType, () => Observable<BTreeSet<u32>>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * Switch to enable/disable activity tracking
+             **/
+            currentActivityTrackingStatus: AugmentedQuery<
+                ApiType,
+                () => Observable<PalletInactivityTrackingActivityTrackingStatus>,
+                []
+            > &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * Switch to enable/disable offline marking.
+             **/
+            enableMarkingOffline: AugmentedQuery<ApiType, () => Observable<bool>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * A storage map of inactive collators for a session
+             **/
+            inactiveCollators: AugmentedQuery<
+                ApiType,
+                (arg: u32 | AnyNumber | Uint8Array) => Observable<BTreeSet<AccountId32>>,
+                [u32]
+            > &
+                QueryableStorageEntry<ApiType, [u32]>;
+            /**
+             * Storage map indicating the offline status of a collator
+             **/
+            offlineCollators: AugmentedQuery<
+                ApiType,
+                (arg: AccountId32 | string | Uint8Array) => Observable<bool>,
                 [AccountId32]
             > &
                 QueryableStorageEntry<ApiType, [AccountId32]>;

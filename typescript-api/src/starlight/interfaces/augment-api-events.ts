@@ -32,6 +32,7 @@ import type {
     PalletConvictionVotingTally,
     PalletConvictionVotingVoteAccountVote,
     PalletExternalValidatorsForcing,
+    PalletInactivityTrackingActivityTrackingStatus,
     PalletMultisigTimepoint,
     PalletPooledStakingPoolsActivePoolKind,
     PalletProxyDepositKind,
@@ -958,6 +959,28 @@ declare module "@polkadot/api-base/types/events" {
              * A username has been unbound.
              **/
             UsernameUnbound: AugmentedEvent<ApiType, [username: Bytes], { username: Bytes }>;
+            /**
+             * Generic event
+             **/
+            [key: string]: AugmentedEvent<ApiType>;
+        };
+        inactivityTracking: {
+            /**
+             * Event emitted when the activity tracking status is updated
+             **/
+            ActivityTrackingStatusSet: AugmentedEvent<
+                ApiType,
+                [status: PalletInactivityTrackingActivityTrackingStatus],
+                { status: PalletInactivityTrackingActivityTrackingStatus }
+            >;
+            /**
+             * Collator online status updated
+             **/
+            CollatorStatusUpdated: AugmentedEvent<
+                ApiType,
+                [collator: AccountId32, isOffline: bool],
+                { collator: AccountId32; isOffline: bool }
+            >;
             /**
              * Generic event
              **/
