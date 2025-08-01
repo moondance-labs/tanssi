@@ -45,30 +45,46 @@ impl ShouldExecute for AllowExportMessageFromContainerChainBarrier {
             .iter()
             .any(|instr| matches!(instr, Instruction::SetFeesMode { jit_withdraw: true }));
 
-        // Check if ExportMessage exists and destination - ETH
-        let has_export_with_eth_beneficiary = instructions.iter().any(|instr| {
+        // Check all ExportMessage instructions
+        let mut all_exports_valid = true;
+        for instr in instructions {
             if let Instruction::ExportMessage { xcm, .. } = instr {
-                xcm.0.iter().any(|inner_instr| {
-                    if let Instruction::DepositAsset { beneficiary, .. } = inner_instr {
-                        beneficiary.interior().into_iter().any(|junction| {
-                            matches!(
-                                junction,
-                                AccountKey20 {
-                                    network: Some(NetworkId::Ethereum { .. }),
-                                    ..
-                                }
-                            )
-                        })
-                    } else {
-                        false
-                    }
-                })
-            } else {
-                false
-            }
-        });
+                // Verify the exact expected sequence of instructions
+                if xcm.0.len() != 5 {
+                    all_exports_valid = false;
+                    break;
+                }
 
-        if !(is_from_parachain && has_export_with_eth_beneficiary && has_set_fees_mode_jit_true) {
+                // Check each instruction in order
+                match &xcm.0[..] {
+                    [Instruction::ReserveAssetDeposited(_), Instruction::ClearOrigin, Instruction::BuyExecution { .. }, Instruction::DepositAsset { beneficiary, .. }, Instruction::SetTopic(_)] =>
+                    {
+                        // Additional check for Ethereum beneficiary
+                        let has_eth_beneficiary =
+                            beneficiary.interior().into_iter().any(|junction| {
+                                matches!(
+                                    junction,
+                                    AccountKey20 {
+                                        network: Some(NetworkId::Ethereum { .. }),
+                                        ..
+                                    }
+                                )
+                            });
+                        if !has_eth_beneficiary {
+                            all_exports_valid = false;
+                            break;
+                        }
+                    }
+                    _ => {
+                        all_exports_valid = false;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if !(is_from_parachain && all_exports_valid && has_set_fees_mode_jit_true) {
+            log::trace!("validate params: is_from_parachain: {:?}, all_exports_valid: {:?}, has_set_fees_mode_jit_true: {:?}", is_from_parachain, all_exports_valid, has_set_fees_mode_jit_true);
             return Err(ProcessMessageError::Unsupported);
         }
 

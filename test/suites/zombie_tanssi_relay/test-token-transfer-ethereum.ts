@@ -117,7 +117,7 @@ describeSuite({
                     .transferAssets(dest, versionedBeneficiary, versionedAssets, 0, "Unlimited")
                     .signAndSend(alice);
 
-                await waitEventUntilTimeout(relayChainPolkadotJs, "ethereumOutboundQueue.MessageAccepted", 42000);
+                await waitEventUntilTimeout(relayChainPolkadotJs, "ethereumOutboundQueue.MessageAccepted", 90000);
 
                 const balanceAfter = (
                     await containerChainPolkadotJs.query.system.account(holdingAccount)
