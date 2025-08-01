@@ -933,7 +933,7 @@ jobs:
               run: |
                 cd test
                 pnpm install
-                ./scripts/download-polkadot.sh
+                pnpm tsx scripts/downloadPolkadot.ts
 
             - name: Get westend api data
               run: |
