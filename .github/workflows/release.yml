@@ -955,6 +955,7 @@ jobs:
 
             - name: Compare
               run: |
+                cd test
                 ./scripts/compare-apis.sh  tmp/westend-api.json tmp/dancelight-api.json
 
     confirm-required-jobs-passed-dependency-upgrade:
