@@ -2183,8 +2183,8 @@ where
 
 impl pallet_registrar::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    // TODO: revert to non-sudo later after stable
-    type RegistrarOrigin = EnsureRoot<AccountId>;
+    type RegistrarOrigin =
+        EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;
     type MarkValidForCollatingOrigin = EnsureRoot<AccountId>;
     type MaxLengthParaIds = MaxLengthParaIds;
     type MaxGenesisDataSize = MaxEncodedGenesisDataSize;
