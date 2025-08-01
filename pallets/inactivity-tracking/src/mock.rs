@@ -19,7 +19,7 @@ use {
     core::marker::PhantomData,
     frame_support::{
         parameter_types,
-        traits::{ConstU32, ConstU64, Everything, OnFinalize, OnInitialize},
+        traits::{ConstU32, ConstU64, Everything},
     },
     sp_core::H256,
     sp_runtime::{
@@ -271,31 +271,8 @@ impl ExtBuilder {
     }
 }
 
-/// Rolls forward one block. Returns the new block number.
-#[allow(dead_code)]
-pub(crate) fn roll_one_block() -> u64 {
-    InactivityTracking::on_finalize(System::block_number());
-    Session::on_finalize(System::block_number());
-    System::on_finalize(System::block_number());
-
-    System::set_block_number(System::block_number() + 1);
-
-    System::on_initialize(System::block_number());
-    Session::on_initialize(System::block_number());
-    InactivityTracking::on_initialize(System::block_number());
-    System::block_number()
-}
-
-/// Rolls to the desired block. Returns the number of blocks played.
-#[allow(dead_code)]
-pub(crate) fn roll_to(n: u64) -> u64 {
-    let mut num_blocks = 0;
-    let mut block = System::block_number();
-    while block < n {
-        block = roll_one_block();
-        num_blocks += 1;
-    }
-    num_blocks
+pub fn run_to_block(n: u64) {
+    System::run_to_block_with::<AllPalletsWithSystem>(n, frame_system::RunToBlockHooks::default());
 }
 
 #[allow(dead_code)]

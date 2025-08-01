@@ -16,7 +16,7 @@
 
 use {super::*, crate::EnableMarkingOffline};
 fn make_collator_inactive(collator: AccountId) {
-    roll_to(u64::from(get_max_inactive_sessions()) * 5u64);
+    run_to_block(u64::from(get_max_inactive_sessions()) * 5u64);
     for session_index in 0..get_max_inactive_sessions() {
         InactiveCollators::<Test>::insert(session_index, get_collator_set(vec![collator]));
     }

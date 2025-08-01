@@ -237,15 +237,6 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 
 pub const ALICE: u64 = 1;
 
-pub const INIT_TIMESTAMP: u64 = 30_000;
-pub const BLOCK_TIME: u64 = 1000;
-
 pub fn run_to_block(n: u64) {
-    let old_block_number = System::block_number();
-
-    for x in old_block_number..n {
-        System::reset_events();
-        System::set_block_number(x + 1);
-        Timestamp::set_timestamp(System::block_number() * BLOCK_TIME + INIT_TIMESTAMP);
-    }
+    System::run_to_block_with::<AllPalletsWithSystem>(n, frame_system::RunToBlockHooks::default());
 }

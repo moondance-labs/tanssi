@@ -83,7 +83,7 @@ fn test_distribution(
 
     // Wait for delegation to be executable
     for _ in 0..BLOCKS_TO_WAIT {
-        roll_one_block();
+        run_block();
     }
 
     // Execute delegations
@@ -601,7 +601,7 @@ fn reward_distribution_is_transactional() {
 
         // Wait for delegation to be executable
         for _ in 0..BLOCKS_TO_WAIT {
-            roll_one_block();
+            run_block();
         }
 
         assert_ok!(Staking::execute_pending_operations(

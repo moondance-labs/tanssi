@@ -18,9 +18,7 @@ use {
     core::marker::PhantomData,
     cumulus_primitives_core::Weight,
     dancebox_runtime::{Registrar, RuntimeOrigin, ServicesPayment, XcmCoreBuyer},
-    dancebox_runtime_test_utils::{
-        empty_genesis_data, run_to_session, set_dummy_boot_node, start_block,
-    },
+    dancebox_runtime_test_utils::{empty_genesis_data, run_to_session, set_dummy_boot_node},
     frame_support::assert_ok,
     nimbus_primitives::NimbusId,
     pallet_xcm_core_buyer::RelayXcmWeightConfigInner,
@@ -221,9 +219,6 @@ pub fn do_test(
             PARATHREAD_ID.into()
         ));
 
-        // TODO: xcm emulator breaks with the run_to_session function, but it works if we manually
-        // call on_initialize here...
-        start_block();
         run_to_session(2);
 
         if let Some(max_core_price) = set_max_core_price {

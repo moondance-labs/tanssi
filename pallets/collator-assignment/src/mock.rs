@@ -25,7 +25,7 @@ use {
     dp_collator_assignment::AssignedCollators,
     frame_support::{
         parameter_types,
-        traits::{ConstBool, ConstU16, ConstU64, Hooks},
+        traits::{ConstBool, ConstU16, ConstU64},
         weights::Weight,
     },
     frame_system as system,
@@ -365,25 +365,26 @@ pub trait GetCollators<AccountId, SessionIndex> {
     fn collators(session_index: SessionIndex) -> Vec<AccountId>;
 }
 
-pub fn run_to_block(n: u64) {
-    let old_block_number = System::block_number();
-    let session_len = 5;
+const SESSION_LEN: u64 = 5;
 
-    for x in (old_block_number + 1)..=n {
-        System::reset_events();
-        System::set_block_number(x);
-        CollatorAssignment::on_initialize(x);
-
-        if x % session_len == 1 {
-            let session_index = (x / session_len) as u32;
-            CollatorAssignment::initializer_on_new_session(
-                &session_index,
-                CollatorsGetter::collators(session_index),
-            );
-        }
-
-        CollatorAssignment::on_finalize(x);
+pub fn maybe_new_session(x: u64) {
+    if x % SESSION_LEN == 1 {
+        let session_index = (x / SESSION_LEN) as u32;
+        CollatorAssignment::initializer_on_new_session(
+            &session_index,
+            CollatorsGetter::collators(session_index),
+        );
     }
+}
+
+pub fn run_to_block(n: u64) {
+    System::run_to_block_with::<AllPalletsWithSystem>(
+        n,
+        frame_system::RunToBlockHooks::default().before_initialize(|bn| {
+            System::reset_events();
+            maybe_new_session(bn)
+        }),
+    );
 }
 
 /// Any AccountId >= 100 will be considered an invulnerable

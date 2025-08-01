@@ -75,7 +75,7 @@ impl pallet_configuration::GetSessionIndex<u32> for CurrentSessionIndexGetter {
     /// Returns current session index.
     fn session_index() -> u32 {
         // For tests, let 1 session be 5 blocks
-        (System::block_number() / 5) as u32
+        (System::block_number() / SESSION_LEN) as u32
     }
 
     #[cfg(feature = "runtime-benchmarks")]
@@ -112,17 +112,18 @@ pub fn new_test_ext_with_genesis(config: HostConfiguration) -> sp_io::TestExtern
     .into()
 }
 
-pub fn run_to_block(n: u64) {
-    let old_block_number = System::block_number();
-    let session_len = 5;
+const SESSION_LEN: u64 = 5;
 
-    for x in (old_block_number + 1)..=n {
-        System::reset_events();
-        System::set_block_number(x);
-
-        if x % session_len == 1 {
-            let session_index = (x / session_len) as u32;
-            Configuration::initializer_on_new_session(&session_index);
-        }
+pub fn maybe_new_session(x: u64) {
+    if x % SESSION_LEN == 1 {
+        let session_index = (x / SESSION_LEN) as u32;
+        Configuration::initializer_on_new_session(&session_index);
     }
+}
+
+pub fn run_to_block(n: u64) {
+    System::run_to_block_with::<AllPalletsWithSystem>(
+        n,
+        frame_system::RunToBlockHooks::default().before_initialize(|bn| maybe_new_session(bn)),
+    );
 }

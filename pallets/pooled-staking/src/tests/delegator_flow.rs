@@ -231,7 +231,7 @@ pool_test!(
                 expected_joining: final_amount,
             }
             .test();
-            roll_to(block_number + BLOCKS_TO_WAIT - 1); // too soon
+            run_to_block(block_number + BLOCKS_TO_WAIT - 1); // too soon
 
             assert_noop!(
                 Staking::execute_pending_operations(
@@ -274,7 +274,7 @@ pool_test!(
             }
             .test::<P>();
 
-            roll_to(block_number + BLOCKS_TO_WAIT - 1); // too soon
+            run_to_block(block_number + BLOCKS_TO_WAIT - 1); // too soon
             assert_noop!(
                 Staking::execute_pending_operations(
                     RuntimeOrigin::signed(ACCOUNT_DELEGATOR_1),
