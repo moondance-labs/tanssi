@@ -28,3 +28,8 @@ tanssi-emulated-integration-tests-common = { workspace = true }
 tp-bridge = { workspace = true, features = [ "std" ] }
 xcm = { workspace = true }
 xcm-emulator = { workspace = true }
+
+[features]
+fast-runtime = [
+    "starlight-runtime/fast-runtime",
+]

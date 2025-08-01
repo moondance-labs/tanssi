@@ -65,3 +65,6 @@ tp-data-preservers-common = { workspace = true }
 tp-stream-payment-common = { workspace = true }
 tp-traits = { workspace = true }
 xcm = { workspace = true }
+
+[features]
+fast-runtime = []
