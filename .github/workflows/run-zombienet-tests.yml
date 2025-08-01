@@ -1,6 +1,8 @@
-name: Manually run all zombienet tests
+name: Run all zombienet tests on schedule
 
 on:
+  schedule:
+    - cron: "0 0 * * 6"  # Runs every Saturday at 12 AM UTC
   workflow_dispatch:
     inputs:
       sha:
@@ -150,6 +152,11 @@ jobs:
           name: binaries
           path: target/release
 
+      - name: Setup GH CLI
+        uses: cli/cli-action@v2
+        with:
+          version: latest
+
       - name: Make binaries executable
         uses: ./.github/workflow-templates/make-binaries-executable
 
@@ -168,3 +175,13 @@ jobs:
         uses: ./.github/workflow-templates/zombienet-tests
         with:
           test_name: ${{ matrix.test_name }}
+
+      - name: Create issue with gh CLI
+        if: failure()
+        run: |
+          gh issue create \
+            --title "🚨 Critical Test Failure in ${{ github.workflow }}" \
+            --body "Tests failed in [${{ github.workflow }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).\n\n@moondance-labs/coredev please investigate." \
+            --repo "${{ github.repository }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
