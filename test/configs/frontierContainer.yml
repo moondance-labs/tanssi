@@ -1,4 +1,4 @@
-endpoint: wss://dancebox-3001.tanssi-api.network
+endpoint: wss://services.tanssi-testnet.network/dancebox-3001
 block: ${env.FRONTIER_TEMPLATE_BLOCK_NUMBER}
 mock-signature-host: true
 db: ./tmp/db_ftrcon.sqlite

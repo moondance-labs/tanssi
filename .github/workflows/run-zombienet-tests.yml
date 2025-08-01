@@ -42,7 +42,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22.x
-          cache: "pnpm"
 
       - name: Get test names
         id: get_tests
@@ -51,12 +50,10 @@ jobs:
           test_name=${{ github.event.inputs.test_name || '.*' }}
 
           # Read and filter the tests from the config file using regex and foundation type
-          # Exclude zombie upgrade tests because they need more complex logic, using docker
           tests=$(jq -r --arg type "$foundation_type" --arg regex "$test_name" '
             .environments
             | map(select((.foundation.type == $type or $type == "*") and (.name | test($regex))))
             | map(.name)
-            | if $type == "zombie" then map(select(test("_upgrade$") | not)) else . end  # Exclude upgrade tests only if foundation type is zombie
           ' test/moonwall.config.json | jq -c '.')
 
           echo "Will run tests: $tests"
@@ -105,18 +102,19 @@ jobs:
         run: rustup show
       - name: Build
         run: cargo build --features=fast-runtime --release --all
-      - name: Save runtime wasm
+      - name: Package all runtime Wasm into tarball
         run: |
           mkdir -p runtimes
-          cp $CARGO_TARGET_DIR/release/wbuild/container-chain-template-simple-runtime/container_chain_template_simple_runtime.compact.compressed.wasm runtimes/;
-          cp $CARGO_TARGET_DIR/release/wbuild/container-chain-template-frontier-runtime/container_chain_template_frontier_runtime.compact.compressed.wasm runtimes/;
-          cp $CARGO_TARGET_DIR/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm runtimes/;
-          cp $CARGO_TARGET_DIR/release/wbuild/flashbox-runtime/flashbox_runtime.compact.compressed.wasm runtimes/;
-      - name: Upload runtimes
+          cd $CARGO_TARGET_DIR
+          # gather all .wasm paths (relative to $CARGO_TARGET_DIR)…
+          find . -type f -name '*.wasm' > wasm_files.txt
+          # …then tar them up into a gzipped archive in the workspace
+          tar czf $GITHUB_WORKSPACE/runtimes/runtimes.tar.gz -T wasm_files.txt
+      - name: Upload runtime archive
         uses: actions/upload-artifact@v4
         with:
-          name: runtimes
-          path: runtimes
+          name: wasm-runtimes
+          path: runtimes/runtimes.tar.gz
 
       - name: Copy parachain node binaries
         uses: ./.github/workflow-templates/copy-parachain-node-binaries
@@ -140,6 +138,8 @@ jobs:
   run-tests:
     runs-on: self-hosted
     needs: [ "get-tests", "build" ]
+    env:
+      CARGO_TARGET_DIR: "target"
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.get-tests.outputs.matrix) }}
@@ -153,6 +153,17 @@ jobs:
       - name: Make binaries executable
         uses: ./.github/workflow-templates/make-binaries-executable
 
+      - name: Download runtime archive
+        uses: actions/download-artifact@v4
+        with:
+          name: wasm-runtimes
+          path: runtimes
+      - name: Extract runtimes back into target/
+        run: |
+          # ensure the target dir exists
+          mkdir -p $CARGO_TARGET_DIR
+          # unpack, preserving all sub‑dirs exactly as they were
+          tar xzf runtimes/runtimes.tar.gz -C $CARGO_TARGET_DIR
       - name: Run Zombienet Test ${{ matrix.test_name }}
         uses: ./.github/workflow-templates/zombienet-tests
         with:

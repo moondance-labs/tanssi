@@ -42,8 +42,11 @@ use {
     sp_runtime::{traits::MaybeEquivalence, FixedU128, TokenError},
     tanssi_runtime_common::relay::NativeTokenTransferMessageProcessor,
     xcm::{
-        latest::{prelude::*, Junctions::*, Location},
-        VersionedLocation, VersionedXcm,
+        latest::{
+            prelude::*, Asset as XcmAsset, AssetId as XcmAssetId, Assets as XcmAssets, Fungibility,
+            Junctions::*, Location,
+        },
+        VersionedAssets, VersionedLocation, VersionedXcm,
     },
 };
 
@@ -2462,4 +2465,233 @@ fn test_root_can_send_raw_message() {
                 "MessageQueued event should be emitted!"
             );
         })
+}
+
+#[test]
+fn receive_erc20_tokens_does_not_fail_if_below_ed() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (EthereumSovereignAccount::get(), 100_000 * UNIT),
+            (SnowbridgeFeesAccount::get(), 100_000 * UNIT),
+            (AccountId::from(ALICE), 100_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            let relayer =
+                <Runtime as frame_system::Config>::RuntimeOrigin::signed(AccountId::from(ALICE));
+
+            let channel_id: ChannelId = ChannelId::new(hex!(
+                "00000000000000000000006e61746976655f746f6b656e5f7472616e73666572"
+            ));
+            let agent_id = AgentId::from_low_u64_be(10);
+            let para_id: ParaId = 2000u32.into();
+            let amount_to_transfer = 1u128;
+            let fee = 1000u128;
+
+            assert_ok!(EthereumTokenTransfers::set_token_transfer_channel(
+                root_origin(),
+                channel_id,
+                agent_id,
+                para_id
+            ));
+
+            // Define a mock ERC20 token address
+            let token_address = H160(hex!("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"));
+
+            let erc20_asset_location = Location {
+                parents: 1,
+                interior: X2([
+                    GlobalConsensus(EthereumNetwork::get()),
+                    AccountKey20 {
+                        network: Some(EthereumNetwork::get()),
+                        key: token_address.into(),
+                    },
+                ]
+                .into()),
+            };
+            let asset_id = 42u16;
+            assert_ok!(ForeignAssetsCreator::create_foreign_asset(
+                root_origin(),
+                erc20_asset_location,
+                asset_id,
+                AccountId::from(ALICE),
+                true,
+                1_000_000
+            ));
+
+            let payload = VersionedXcmMessage::V1(MessageV1 {
+                chain_id: 1,
+                command: Command::SendToken {
+                    token: token_address,
+                    destination: Destination::AccountId32 { id: BOB },
+                    amount: amount_to_transfer,
+                    fee,
+                },
+            });
+
+            let event = OutboundMessageAccepted {
+                channel_id: <[u8; 32]>::from(channel_id).into(),
+                nonce: 1,
+                message_id: Default::default(),
+                payload: payload.encode(),
+            };
+
+            let message = EventProof {
+                event_log: Log {
+                    address:
+                        <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
+                    topics: event
+                        .encode_topics()
+                        .into_iter()
+                        .map(|word| H256::from(word.0 .0))
+                        .collect(),
+                    data: event.encode_data(),
+                },
+                proof: mock_snowbridge_message_proof(),
+            };
+
+            assert_ok!(EthereumInboundQueue::submit(relayer, message));
+        });
+}
+
+#[test]
+fn receive_erc20_tokens_does_not_fail_if_not_sufficient_and_random_address() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (EthereumSovereignAccount::get(), 100_000 * UNIT),
+            (SnowbridgeFeesAccount::get(), 100_000 * UNIT),
+            (AccountId::from(ALICE), 100_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            let relayer =
+                <Runtime as frame_system::Config>::RuntimeOrigin::signed(AccountId::from(ALICE));
+
+            let channel_id: ChannelId = ChannelId::new(hex!(
+                "00000000000000000000006e61746976655f746f6b656e5f7472616e73666572"
+            ));
+            let agent_id = AgentId::from_low_u64_be(10);
+            let para_id: ParaId = 2000u32.into();
+            let amount_to_transfer = 10_000u128;
+            let fee = 1000u128;
+
+            assert_ok!(EthereumTokenTransfers::set_token_transfer_channel(
+                root_origin(),
+                channel_id,
+                agent_id,
+                para_id
+            ));
+
+            // Define a mock ERC20 token address
+            let token_address = H160(hex!("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"));
+
+            let erc20_asset_location = Location {
+                parents: 1,
+                interior: X2([
+                    GlobalConsensus(EthereumNetwork::get()),
+                    AccountKey20 {
+                        network: Some(EthereumNetwork::get()),
+                        key: token_address.into(),
+                    },
+                ]
+                .into()),
+            };
+            let asset_id = 42u16;
+            assert_ok!(ForeignAssetsCreator::create_foreign_asset(
+                root_origin(),
+                erc20_asset_location.clone(),
+                asset_id,
+                AccountId::from(ALICE),
+                false,
+                1
+            ));
+
+            let recipient = H256::random();
+
+            let payload = VersionedXcmMessage::V1(MessageV1 {
+                chain_id: 1,
+                command: Command::SendToken {
+                    token: token_address,
+                    destination: Destination::AccountId32 {
+                        id: recipient.into(),
+                    },
+                    amount: amount_to_transfer,
+                    fee,
+                },
+            });
+
+            let event = OutboundMessageAccepted {
+                channel_id: <[u8; 32]>::from(channel_id).into(),
+                nonce: 1,
+                message_id: Default::default(),
+                payload: payload.encode(),
+            };
+
+            let message = EventProof {
+                event_log: Log {
+                    address:
+                        <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
+                    topics: event
+                        .encode_topics()
+                        .into_iter()
+                        .map(|word| H256::from(word.0 .0))
+                        .collect(),
+                    data: event.encode_data(),
+                },
+                proof: mock_snowbridge_message_proof(),
+            };
+
+            // Inbound execution should not error
+            assert_ok!(EthereumInboundQueue::submit(relayer, message));
+
+            // Check that xcm processing failed
+            let xcm_failed_event = System::events()
+                .iter()
+                .filter(|r| match &r.event {
+                    RuntimeEvent::XcmPallet(pallet_xcm::Event::ProcessXcmError {
+                        origin: _,
+                        message_id: _,
+                        error,
+                        ..
+                    }) => *error == XcmError::FailedToTransactAsset(""),
+                    _ => false,
+                })
+                .count();
+
+            assert_eq!(
+                xcm_failed_event, 1,
+                "ProcessXcmError event should be emitted!"
+            );
+
+            let trapped_assets: XcmAssets = vec![XcmAsset {
+                id: XcmAssetId::from(erc20_asset_location),
+                fun: Fungibility::Fungible(amount_to_transfer),
+            }]
+            .into();
+
+            let ethereum_location = EthereumLocation::get();
+
+            // Check that assets are trapped
+            let assets_trapped_event = System::events()
+                .iter()
+                .filter(|r| match &r.event {
+                    RuntimeEvent::XcmPallet(pallet_xcm::Event::AssetsTrapped {
+                        hash: _,
+                        origin,
+                        assets,
+                    }) => {
+                        *origin == ethereum_location
+                            && *assets == VersionedAssets::V5(trapped_assets.clone())
+                    }
+                    _ => false,
+                })
+                .count();
+
+            assert_eq!(
+                assets_trapped_event, 1,
+                "AssetsTrapped event should be emitted!"
+            );
+        });
 }
