@@ -222,9 +222,10 @@ where
                 Self::process_xcm_local_native_eth_transfer(eth_transfer_data)
             }
             // TODO: Add support for container transfers here
-            _ => Err(DispatchError::Other(
-                "container transfers not supported yet",
-            )),
+            _ => {
+                log::error!("EthTokensLocalProcessor: container transfers not supported yet");
+                return Ok(());
+            }
         }
     }
 }
@@ -297,7 +298,10 @@ where
 
         let destination_account = match eth_transfer_data.destination {
             Destination::AccountId32 { id } => id,
-            _ => return Err(DispatchError::Other("invalid destination")),
+            _ => {
+                log::error!("EthTokensLocalProcessor: invalid destination");
+                return Ok(());
+            }
         };
 
         let mut xcm = Xcm::<T::RuntimeCall>(vec![
@@ -316,25 +320,26 @@ where
 
         let ethereum_location = EthereumLocation::get();
 
-        let weight = XcmWeigher::weight(&mut xcm)
-            .map_err(|()| DispatchError::Other("UnweighableMessage"))?;
-        let mut message_id = xcm.using_encoded(sp_io::hashing::blake2_256);
+        if let Ok(weight) = XcmWeigher::weight(&mut xcm) {
+            let mut message_id = xcm.using_encoded(sp_io::hashing::blake2_256);
 
-        let outcome = XcmProcessor::prepare_and_execute(
-            ethereum_location,
-            xcm,
-            &mut message_id,
-            weight,
-            weight,
-        );
-
-        outcome.ensure_complete().map_err(|error| {
-            log::error!(
-                "EthTokensLocalProcessor: XCM execution failed with error {:?}",
-                error
+            let outcome = XcmProcessor::prepare_and_execute(
+                ethereum_location,
+                xcm,
+                &mut message_id,
+                weight,
+                weight,
             );
-            DispatchError::Other("LocalExecutionIncomplete")
-        })?;
+
+            if let Err(error) = outcome.ensure_complete() {
+                log::error!(
+                    "EthTokensLocalProcessor: XCM execution failed with error {:?}",
+                    error
+                );
+            }
+        } else {
+            log::error!("EthTokensLocalProcessor: unweighable message");
+        }
 
         Ok(())
     }
