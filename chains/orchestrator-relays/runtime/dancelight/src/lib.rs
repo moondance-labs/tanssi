@@ -1303,7 +1303,7 @@ impl parachains_slashing::Config for Runtime {
 }
 
 parameter_types! {
-    pub const ParaDeposit: Balance = 40 * UNITS;
+    pub const ParaDeposit: Balance = 500 * UNITS;
 }
 
 impl paras_registrar::Config for Runtime {
