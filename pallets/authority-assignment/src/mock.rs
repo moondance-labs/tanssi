@@ -14,10 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use dp_collator_assignment::AssignedCollators;
 use {
     crate::{self as pallet_authority_assignment},
     alloc::collections::btree_map::BTreeMap,
+    dp_collator_assignment::AssignedCollators,
     frame_support::traits::{ConstU16, ConstU64},
     frame_system as system,
     parity_scale_codec::{Decode, Encode},
