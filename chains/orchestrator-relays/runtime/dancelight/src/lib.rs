@@ -77,7 +77,7 @@ use {
     parachains_scheduler::common::Assignment,
     parity_scale_codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen},
     primitives::{
-        slashing, vstaging::async_backing::Constraints, vstaging::CandidateEvent,
+        slashing, vstaging::CandidateEvent,
         vstaging::CommittedCandidateReceiptV2, vstaging::CoreState, vstaging::ScrapedOnChainVotes,
         ApprovalVotingParams, BlockNumber, CandidateHash, CoreIndex, DisputeState, ExecutorParams,
         GroupRotationInfo, Hash, Id as ParaId, InboundDownwardMessage, InboundHrmpMessage, Moment,
@@ -2482,7 +2482,7 @@ sp_api::impl_runtime_apis! {
         }
     }
 
-    #[api_version(13)]
+    #[api_version(12)]
     impl primitives::runtime_api::ParachainHost<Block> for Runtime {
         fn validators() -> Vec<ValidatorId> {
             parachains_runtime_api_impl::validators::<Runtime>()
@@ -2647,14 +2647,6 @@ sp_api::impl_runtime_apis! {
 
         fn candidates_pending_availability(para_id: ParaId) -> Vec<CommittedCandidateReceiptV2<Hash>> {
             parachains_runtime_api_impl::candidates_pending_availability::<Runtime>(para_id)
-        }
-
-        fn backing_constraints(para_id: ParaId) -> Option<Constraints> {
-            parachains_staging_runtime_api_impl::backing_constraints::<Runtime>(para_id)
-        }
-
-        fn scheduling_lookahead() -> u32 {
-            parachains_staging_runtime_api_impl::scheduling_lookahead::<Runtime>()
         }
 
         fn validation_code_bomb_limit() -> u32 {
