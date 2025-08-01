@@ -12,9 +12,7 @@
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
+// along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-mod common;
-mod inactivity_tracking;
-mod integration_test;
-mod offline_marking;
+#[cfg(test)]
+mod tests;

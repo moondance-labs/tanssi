@@ -35,9 +35,6 @@ use sp_runtime::{DispatchError, TransactionOutcome};
 
 pub mod weights;
 
-#[cfg(test)]
-mod tests;
-
 use {
     alloc::{
         boxed::Box,
