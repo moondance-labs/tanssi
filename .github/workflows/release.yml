@@ -929,34 +929,15 @@ jobs:
             - name: Make binaries executable
               uses: ./.github/workflow-templates/make-binaries-executable
 
-            - name: Download polkadot binary
+            - name: Install dependencies
               run: |
                 cd test
                 pnpm install
-                pnpm tsx scripts/downloadPolkadot.ts
 
-            - name: Get westend api data
+            - name: Run comparison
               run: |
                 cd test
-                ./tmp/polkadot --chain=westend-dev --rpc-port 34100 > westend.log 2>&1 &
-                echo $! > westend.pid
-                sleep 10  # Wait for node to be ready
-                pnpm get-api-info tmp/westend-api.json --url ws://127.0.0.1:34100
-                kill $(cat westend.pid)
-
-            - name: Get dancelight api data
-              run: |
-                cd test
-                ../target/release/tanssi-relay --chain=dancelight-dev --rpc-port 34100 > dancelight.log 2>&1 &
-                echo $! > dancelight.pid
-                sleep 10  # Wait for node to be ready
-                pnpm get-api-info tmp/dancelight-api.json --url ws://127.0.0.1:34100
-                kill $(cat dancelight.pid)
-
-            - name: Compare
-              run: |
-                cd test
-                pnpm compare-api-info  tmp/westend-api.json tmp/dancelight-api.json
+                ./scripts/run-check-api-diff-job.sh
 
     confirm-required-jobs-passed-dependency-upgrade:
       runs-on: ubuntu-latest
