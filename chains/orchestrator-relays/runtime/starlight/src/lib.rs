@@ -305,18 +305,6 @@ impl Convert<AggregateMessageOrigin, ParaId> for GetParaFromAggregateMessageOrig
     }
 }
 
-pub struct IsContainerChainManagementExtrinsics;
-impl Contains<RuntimeCall> for IsContainerChainManagementExtrinsics {
-    fn contains(c: &RuntimeCall) -> bool {
-        matches!(
-            c,
-            RuntimeCall::ServicesPayment(_)
-                | RuntimeCall::StreamPayment(_)
-                | RuntimeCall::DataPreservers(_)
-        )
-    }
-}
-
 pub struct IsDemocracyExtrinsics;
 impl Contains<RuntimeCall> for IsDemocracyExtrinsics {
     fn contains(c: &RuntimeCall) -> bool {
@@ -333,32 +321,30 @@ impl Contains<RuntimeCall> for IsDemocracyExtrinsics {
     }
 }
 
-pub struct IsXcmExtrinsics;
-impl Contains<RuntimeCall> for IsXcmExtrinsics {
+/// The relay register and deregister calls should no longer be necessary
+/// Everything is handled by the ContainerRegistrar
+pub struct IsRelayRegister;
+impl Contains<RuntimeCall> for IsRelayRegister {
     fn contains(c: &RuntimeCall) -> bool {
         matches!(
             c,
-            RuntimeCall::Hrmp(_)
-                | RuntimeCall::MessageQueue(_)
-                | RuntimeCall::AssetRate(_)
-                | RuntimeCall::XcmPallet(_)
+            RuntimeCall::Registrar(paras_registrar::Call::register { .. })
+        ) || matches!(
+            c,
+            RuntimeCall::Registrar(paras_registrar::Call::deregister { .. })
         )
     }
 }
 
-pub struct IsContainerChainRegistrationExtrinsics;
-impl Contains<RuntimeCall> for IsContainerChainRegistrationExtrinsics {
+/// Starlight shouold not permit parathread registration for now
+/// TODO: remove once they are enabled
+pub struct IsParathreadRegistrar;
+impl Contains<RuntimeCall> for IsParathreadRegistrar {
     fn contains(c: &RuntimeCall) -> bool {
-        match c {
-            RuntimeCall::ContainerRegistrar(inner) => {
-                !matches!(inner, pallet_registrar::Call::register { .. })
-            }
-            RuntimeCall::OnDemandAssignmentProvider(_) => true,
-            RuntimeCall::Registrar(inner) => {
-                !matches!(inner, paras_registrar::Call::reserve { .. })
-            }
-            _ => false,
-        }
+        matches!(
+            c,
+            RuntimeCall::ContainerRegistrar(pallet_registrar::Call::register_parathread { .. })
+        )
     }
 }
 
@@ -1685,10 +1671,9 @@ impl Contains<RuntimeCall> for MaintenanceFilter {
 
 /// Normal Call Filter
 type NormalFilter = EverythingBut<(
-    IsContainerChainManagementExtrinsics,
+    IsRelayRegister,
+    IsParathreadRegistrar,
     IsDemocracyExtrinsics,
-    IsXcmExtrinsics,
-    IsContainerChainRegistrationExtrinsics,
 )>;
 
 impl pallet_maintenance_mode::Config for Runtime {
@@ -2198,8 +2183,8 @@ where
 
 impl pallet_registrar::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    // TODO: revert to non-sudo later after stable
-    type RegistrarOrigin = EnsureRoot<AccountId>;
+    type RegistrarOrigin =
+        EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;
     type MarkValidForCollatingOrigin = EnsureRoot<AccountId>;
     type MaxLengthParaIds = MaxLengthParaIds;
     type MaxGenesisDataSize = MaxEncodedGenesisDataSize;
