@@ -48,12 +48,12 @@ use {
     },
     snowbridge_pallet_outbound_queue::OnNewCommitment,
     sp_core::{ConstU32, ConstU8, Get, H160, H256},
-    sp_runtime::{DispatchError, DispatchResult},
+    sp_runtime::{traits::MaybeEquivalence, DispatchError, DispatchResult},
     tanssi_runtime_common::relay::RewardThroughFeesAccount,
     tp_bridge::{DoNothingConvertMessage, DoNothingRouter, EthereumSystemHandler},
     xcm::latest::{
-        prelude::*, Asset as XcmAsset, AssetId as XcmAssetId, Assets as XcmAssets, ExecuteXcm,
-        Fungibility, Junctions::*,
+        prelude::*, validate_send, Asset as XcmAsset, AssetId as XcmAssetId, Assets as XcmAssets,
+        ExecuteXcm, Fungibility, Junctions::*, SendXcm, Xcm,
     },
     xcm_executor::traits::WeightBounds,
 };
@@ -341,6 +341,229 @@ where
             log::error!("EthTokensLocalProcessor: unweighable message");
         }
 
+        Ok(())
+    }
+}
+
+pub struct NativeContainerTokensProcessor<
+    T,
+    XcmSender,
+    XcmWeigher,
+    EthereumLocation,
+    EthereumNetwork,
+>(PhantomData<(T, XcmSender, XcmWeigher, EthereumLocation, EthereumNetwork)>);
+
+impl<T, XcmSender, XcmWeigher, EthereumLocation, EthereumNetwork> MessageProcessor
+    for NativeContainerTokensProcessor<T, XcmSender, XcmWeigher, EthereumLocation, EthereumNetwork>
+where
+    T: snowbridge_pallet_inbound_queue::Config
+        + pallet_ethereum_token_transfers::Config
+        + snowbridge_pallet_system::Config,
+    XcmSender: SendXcm,
+    XcmWeigher: WeightBounds<T::RuntimeCall>,
+    EthereumLocation: Get<Location>,
+    EthereumNetwork: Get<NetworkId>,
+{
+    fn can_process_message(channel: &Channel, envelope: &Envelope) -> bool {
+        // Ensure that the message is intended for the current channel, para_id and agent_id
+        // TODO: move this to a common helper function
+        if let Some(channel_info) =
+            pallet_ethereum_token_transfers::CurrentChannelInfo::<Runtime>::get()
+        {
+            if envelope.channel_id != channel_info.channel_id
+                || channel.para_id != channel_info.para_id
+                || channel.agent_id != channel_info.agent_id
+            {
+                return false;
+            }
+        } else {
+            return false;
+        }
+
+        // Check it is from the right gateway
+        if envelope.gateway != T::GatewayAddress::get() {
+            return false;
+        }
+
+        // Try decoding the message and check if the destination owns the token being transferred
+        match VersionedXcmMessage::decode_all(&mut envelope.payload.as_slice()) {
+            Ok(VersionedXcmMessage::V1(MessageV1 {
+                command:
+                    Command::SendNativeToken {
+                        token_id,
+                        destination,
+                        ..
+                    },
+                ..
+            })) => {
+                // Check if the asset is registered on EthereumSystem
+                if let Some(expected_token_location) =
+                    snowbridge_pallet_system::Pallet::<T>::convert(&token_id)
+                {
+                    let chain_part = expected_token_location.first_interior();
+                    let mut expected_para_id = 0u32;
+
+                    match destination {
+                        Destination::ForeignAccountId32 { para_id, .. } => {
+                            expected_para_id = para_id;
+                        }
+                        Destination::ForeignAccountId20 { para_id, .. } => {
+                            expected_para_id = para_id;
+                        }
+                        _ => {
+                            log::error!("NativeContainerTokensProcessor: invalid destination");
+                            return false;
+                        }
+                    }
+
+                    match chain_part {
+                        Some(Parachain(id)) => {
+                            return expected_para_id == *id;
+                        }
+                        _ => {
+                            log::error!("NativeContainerTokensProcessor: invalid chain part");
+                            return false;
+                        }
+                    }
+                } else {
+                    log::error!("NativeContainerTokensProcessor: token location not found for token_id: {:?}", token_id);
+                    return false;
+                }
+            }
+            Ok(msg) => {
+                log::trace!(
+                    "NativeContainerTokensProcessor: unexpected message: {:?}",
+                    msg
+                );
+                false
+            }
+            Err(e) => {
+                log::trace!("NativeContainerTokensProcessor: failed to decode message. This is expected if the message is not for this processor. Error: {:?}", e);
+                false
+            }
+        }
+    }
+
+    fn process_message(channel: Channel, envelope: Envelope) -> DispatchResult {
+        match VersionedXcmMessage::decode_all(&mut envelope.payload.as_slice()) {
+            Ok(VersionedXcmMessage::V1(MessageV1 {
+                command:
+                    Command::SendNativeToken {
+                        token_id,
+                        destination,
+                        amount,
+                        fee: tanssi_fee,
+                    },
+                ..
+            })) => {
+                // TODO: refactor
+
+                if let Some(token_location) =
+                    snowbridge_pallet_system::Pallet::<T>::convert(&token_id)
+                {
+                    let mut beneficiary = Location::parent();
+                    let mut container_fee = 0u128;
+                    let mut container_para_id = 0u32;
+
+                    match destination {
+                        Destination::ForeignAccountId32 {
+                            para_id,
+                            id,
+                            fee: dest_para_fee,
+                        } => {
+                            beneficiary = Location::new(0, [AccountId32 { network: None, id }]);
+                            container_fee = dest_para_fee;
+                            container_para_id = para_id;
+                        }
+                        Destination::ForeignAccountId20 {
+                            para_id,
+                            id,
+                            fee: dest_para_fee,
+                        } => {
+                            beneficiary = Location::new(
+                                0,
+                                [AccountKey20 {
+                                    network: None,
+                                    key: id,
+                                }],
+                            );
+                            container_fee = dest_para_fee;
+                            container_para_id = para_id;
+                        }
+                        _ => {
+                            log::error!("NativeContainerTokensProcessor::process_message: invalid destination");
+                            return Ok(());
+                        }
+                    }
+
+                    let network = EthereumNetwork::get();
+                    let bridge_location = Location::new(2, GlobalConsensus(network));
+
+                    let total_fees = tanssi_fee.saturating_add(container_fee);
+
+                    let container_location = Location::new(0, [Parachain(container_para_id)]);
+
+                    // Reanchor the token location to the container's point of view
+                    let reanchor_result = token_location
+                        .clone()
+                        .reanchored(&container_location, &T::UniversalLocation::get());
+
+                    if let Ok(token_location_reanchored) = reanchor_result {
+                        let container_asset: Asset = (token_location_reanchored, amount).into();
+                        let tanssi_asset_fee: Asset = (Location::parent(), total_fees).into();
+
+                        let remote_xcm = Xcm::<()>(vec![
+                            WithdrawAsset(container_asset.clone().into()),
+                            BuyExecution {
+                                fees: tanssi_asset_fee,
+                                weight_limit: Unlimited,
+                            },
+                            DepositAsset {
+                                assets: Definite(container_asset.into()),
+                                beneficiary,
+                            },
+                            // When the execution finishes deposit any leftover assets to the ETH
+                            // sovereign account on destination.
+                            SetAppendix(Xcm(vec![DepositAsset {
+                                assets: Wild(AllCounted(2)),
+                                beneficiary: bridge_location,
+                            }])),
+                        ]);
+
+                        let (ticket, price) = validate_send::<XcmSender>(container_location.clone(), remote_xcm.clone())
+                        .map_err(|error| {
+                            log::error!("NativeContainerTokensProcessor: XCM validate_send failed with error {:?}", error);
+                            DispatchError::Other("XCM validate_send failed with error")
+                        })?;
+
+                        let message_id = XcmSender::deliver(ticket)
+                        .map_err(|error| {
+                            log::error!("NativeContainerTokensProcessor: XCM deliver failed with error {:?}", error);
+                            DispatchError::Other("XCM deliver failed with error")
+                        })?;
+                    } else {
+                        log::error!(
+                            "NativeContainerTokensProcessor: failed to reanchor token location"
+                        );
+                        return Ok(());
+                    }
+                } else {
+                    log::error!("NativeContainerTokensProcessor: token location not found for token_id: {:?}", token_id);
+                    return Ok(());
+                }
+            }
+            Ok(msg) => {
+                log::trace!(
+                    "NativeContainerTokensProcessor: unexpected message: {:?}",
+                    msg
+                );
+                return Ok(());
+            }
+            Err(e) => {
+                log::trace!("NativeContainerTokensProcessor: failed to decode message. This is expected if the message is not for this processor. Error: {:?}", e);
+                return Ok(());
+            }
+        }
         Ok(())
     }
 }
