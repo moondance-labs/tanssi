@@ -1101,7 +1101,7 @@
                 {
                     "name": "para",
                     "type": "polkadotJs",
-                    "endpoints": ["wss://dancebox.tanssi-api.network"]
+                    "endpoints": ["wss://services.tanssi-testnet.network/dancebox"]
                 }
             ]
         },
@@ -1165,7 +1165,7 @@
                 {
                     "name": "para",
                     "type": "polkadotJs",
-                    "endpoints": ["wss://dancelight.tanssi-api.network"]
+                    "endpoints": ["wss://services.tanssi-testnet.network/dancelight"]
                 }
             ]
         },
