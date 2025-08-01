@@ -15,6 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
+    crate::cli::ContainerChainCli,
     crate::rpc::generate_rpc_builder::{GenerateRpcBuilder, GenerateRpcBuilderParams},
     cumulus_client_consensus_common::{
         ParachainBlockImport as TParachainBlockImport, ParachainBlockImportMarker,
@@ -36,6 +37,7 @@ use {
     sc_basic_authorship::ProposerFactory,
     sc_consensus::{BasicQueue, BlockImport},
     sc_executor::WasmExecutor,
+    sc_network::NetworkBackend,
     sc_network::NetworkBlock,
     sc_network_sync::SyncingService,
     sc_service::{
@@ -59,7 +61,6 @@ use {
     tokio_util::sync::CancellationToken,
 };
 
-use crate::cli::ContainerChainCli;
 #[allow(deprecated)]
 use sc_executor::NativeElseWasmExecutor;
 
@@ -179,6 +180,7 @@ pub fn start_node_impl_container<
     'a,
     RuntimeApi: MinimalContainerRuntimeApi + 'a,
     TGenerateRpcBuilder: GenerateRpcBuilder<RuntimeApi> + 'a,
+    Net: NetworkBackend<Block, Hash>,
 >(
     parachain_config: Configuration,
     relay_chain_interface: Arc<dyn RelayChainInterface>,
@@ -211,7 +213,7 @@ pub fn start_node_impl_container<
         let import_queue_service = import_queue.service();
 
         let node_builder = node_builder
-            .build_cumulus_network::<_, sc_network::NetworkWorker<_, _>>(
+            .build_cumulus_network::<_, Net>(
                 &parachain_config,
                 para_id,
                 import_queue,
