@@ -11,6 +11,7 @@
             "-lparachain=debug",
             "--database=paritydb",
             "--no-beefy",
+            "--network-backend=litep2p",
             "--wasmtime-precompiled=wasm"
         ],
         "genesis": {
@@ -64,6 +65,7 @@
                         "--no-hardware-benchmarks",
                         "--database=paritydb",
                         "--wasmtime-precompiled=wasm",
+                        "--network-backend=litep2p",
                         "--pool-type=fork-aware"
                     ],
                     "rpc_port": 9949,
@@ -77,7 +79,10 @@
                         "--no-hardware-benchmarks",
                         "--database=paritydb",
                         "--wasmtime-precompiled=wasm",
-                        "--pool-type=fork-aware"
+                        "--network-backend=litep2p",
+                        "--pool-type=fork-aware",
+                        "--",
+                        "--network-backend=litep2p"
                     ],
                     "prometheus_port": 33102
                 },
@@ -88,7 +93,10 @@
                         "--no-hardware-benchmarks",
                         "--database=paritydb",
                         "--wasmtime-precompiled=wasm",
-                        "--pool-type=fork-aware"
+                        "--network-backend=litep2p",
+                        "--pool-type=fork-aware",
+                        "--",
+                        "--network-backend=litep2p"
                     ],
                     "prometheus_port": 33102
                 },
@@ -99,7 +107,10 @@
                         "--no-hardware-benchmarks",
                         "--database=paritydb",
                         "--wasmtime-precompiled=wasm",
-                        "--pool-type=fork-aware"
+                        "--network-backend=litep2p",
+                        "--pool-type=fork-aware",
+                        "--",
+                        "--network-backend=litep2p"
                     ],
                     "prometheus_port": 33102
                 },
@@ -110,7 +121,10 @@
                         "--no-hardware-benchmarks",
                         "--database=paritydb",
                         "--wasmtime-precompiled=wasm",
-                        "--pool-type=fork-aware"
+                        "--network-backend=litep2p",
+                        "--pool-type=fork-aware",
+                        "--",
+                        "--network-backend=litep2p"
                     ],
                     "prometheus_port": 33102
                 },
@@ -121,7 +135,10 @@
                         "--no-hardware-benchmarks",
                         "--database=paritydb",
                         "--wasmtime-precompiled=wasm",
-                        "--pool-type=fork-aware"
+                        "--network-backend=litep2p",
+                        "--pool-type=fork-aware",
+                        "--",
+                        "--network-backend=litep2p"
                     ],
                     "prometheus_port": 33102
                 },
@@ -132,7 +149,10 @@
                         "--no-hardware-benchmarks",
                         "--database=paritydb",
                         "--wasmtime-precompiled=wasm",
-                        "--pool-type=fork-aware"
+                        "--network-backend=litep2p",
+                        "--pool-type=fork-aware",
+                        "--",
+                        "--network-backend=litep2p"
                     ],
                     "prometheus_port": 33102
                 }
@@ -146,7 +166,8 @@
                     "name": "FullNode-2001",
                     "validator": false,
                     "command": "../target/release/container-chain-frontier-node",
-                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb",
+                        "--network-backend=litep2p","--wasmtime-precompiled=wasm"],
                     "rpc_port": 9950,
                     "p2p_port": 33050
                 }
@@ -163,7 +184,8 @@
                     "name": "FullNode-2002",
                     "validator": false,
                     "command": "../target/release/container-chain-simple-node",
-                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb",
+                        "--network-backend=litep2p","--wasmtime-precompiled=wasm"],
                     "rpc_port": 9951,
                     "p2p_port": 33051
                 }
