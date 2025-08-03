@@ -31,5 +31,5 @@ xcm-emulator = { workspace = true }
 
 [features]
 fast-runtime = [
-    "starlight-runtime/fast-runtime",
+	"starlight-runtime/fast-runtime",
 ]

@@ -52,5 +52,5 @@ xcm-executor = { workspace = true }
 
 [features]
 fast-runtime = [
-    "dancebox-runtime/fast-runtime",
+	"dancebox-runtime/fast-runtime",
 ]
