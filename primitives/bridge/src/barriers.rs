@@ -40,15 +40,20 @@ impl ShouldExecute for AllowExportMessageFromContainerChainBarrier {
             _ => false,
         };
 
-        // Check if fees mode is set to JIT withdraw
-        let has_set_fees_mode_jit_true = instructions
-            .iter()
-            .any(|instr| matches!(instr, Instruction::SetFeesMode { jit_withdraw: true }));
+        // Strict check for first-level instructions
+        let valid_first_level = match instructions {
+            [Instruction::SetFeesMode { jit_withdraw: true }, Instruction::ExportMessage { .. }] => {
+                true
+            }
+            _ => false,
+        };
 
         // Check all ExportMessage instructions
-        let mut all_exports_valid = true;
+        let mut all_exports_valid = false;
         for instr in instructions {
             if let Instruction::ExportMessage { xcm, .. } = instr {
+                all_exports_valid = true;
+
                 // Verify the exact expected sequence of instructions
                 if xcm.0.len() != 5 {
                     all_exports_valid = false;
@@ -83,11 +88,48 @@ impl ShouldExecute for AllowExportMessageFromContainerChainBarrier {
             }
         }
 
-        if !(is_from_parachain && all_exports_valid && has_set_fees_mode_jit_true) {
-            log::trace!("validate params: is_from_parachain: {:?}, all_exports_valid: {:?}, has_set_fees_mode_jit_true: {:?}", is_from_parachain, all_exports_valid, has_set_fees_mode_jit_true);
+        if !(is_from_parachain && valid_first_level && all_exports_valid) {
+            log::trace!("validate params: is_from_parachain: {:?}, all_exports_valid: {:?}, valid_first_level: {:?}", is_from_parachain, all_exports_valid, valid_first_level);
             return Err(ProcessMessageError::Unsupported);
         }
 
         Ok(())
     }
+}
+
+#[test]
+fn test_barrier_bypass() {
+    type RuntimeCall = ();
+
+    // We need to be a container chain to pass the barrier
+    let para_origin = Location {
+        parents: 0,
+        interior: Junctions::X1([Parachain(2000)].into()),
+    };
+    // Whatever, the barrier doesn't care about this
+    let mut props = Properties {
+        weight_credit: Weight::zero(),
+        message_id: None,
+    };
+
+    // This could be any malicous XCM, as long as it does not contain an ExportMessage instruction
+    let mut msg: Xcm<RuntimeCall> = Xcm::new();
+
+    // bypass fee payment by effectively setting jit_withdraw to false
+    msg.inner_mut()
+        .push(Instruction::SetFeesMode { jit_withdraw: true });
+    msg.inner_mut().push(Instruction::SetFeesMode {
+        jit_withdraw: false,
+    });
+
+    // Let's make sure we not pass the barrier
+    frame_support::assert_err!(
+        AllowExportMessageFromContainerChainBarrier::should_execute(
+            &para_origin,
+            msg.inner_mut(),
+            Weight::zero(),
+            &mut props
+        ),
+        ProcessMessageError::Unsupported
+    );
 }
