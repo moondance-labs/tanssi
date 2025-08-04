@@ -27,8 +27,8 @@ use {
     frame_benchmarking_cli::{BenchmarkCmd, SUBSTRATE_REFERENCE_HARDWARE},
     log::{info, warn},
     node_common::{
-        chain_spec as node_common_chain_spec, cli::RelayChainCli, command::generate_genesis_block,
-        service::node_builder::NodeBuilderConfig as _,
+        chain_spec as node_common_chain_spec, cli::ContainerNodeRelayChainCli,
+        command::generate_genesis_block, service::node_builder::NodeBuilderConfig as _,
     },
     parity_scale_codec::Encode,
     polkadot_cli::IdentifyVariant,
@@ -193,9 +193,9 @@ pub fn run() -> Result<()> {
                 println!("relay args: {:?}", cli.relaychain_args());
                 panic!();
 
-                let polkadot_cli = RelayChainCli::<NodeName>::new(
+                let polkadot_cli = ContainerNodeRelayChainCli::<NodeName>::new(
                     &config,
-                    [RelayChainCli::<NodeName>::executable_name()]
+                    [ContainerNodeRelayChainCli::<NodeName>::executable_name()]
                         .iter()
                         .chain(cli.relaychain_args().iter()),
                 );
@@ -293,9 +293,9 @@ pub fn run() -> Result<()> {
                     .map(|e| e.para_id)
                     .ok_or("Could not find parachain ID in chain-spec.")?;
 
-                let polkadot_cli = RelayChainCli::<NodeName>::new(
+                let polkadot_cli = ContainerNodeRelayChainCli::<NodeName>::new(
                     &config,
-                    [RelayChainCli::<NodeName>::executable_name()].iter().chain(relaychain_args.iter()),
+                    [ContainerNodeRelayChainCli::<NodeName>::executable_name()].iter().chain(relaychain_args.iter()),
                 );
 
                 let rpc_config = crate::cli::RpcConfig {
@@ -375,9 +375,9 @@ fn rpc_provider_mode(cli: &Cli, cmd: &crate::cli::RpcProviderCmd) -> Result<()> 
     let runner = cli.create_runner(&cmd.base.container_run.normalize())?;
 
     runner.run_node_until_exit(|config| async move {
-        let polkadot_cli = RelayChainCli::<NodeName>::new(
+        let polkadot_cli = ContainerNodeRelayChainCli::<NodeName>::new(
             &config,
-            [RelayChainCli::<NodeName>::executable_name()]
+            [ContainerNodeRelayChainCli::<NodeName>::executable_name()]
                 .iter()
                 .chain(cli.relaychain_args().iter()),
         );

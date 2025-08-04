@@ -128,6 +128,7 @@ tc-consensus = { path = "client/consensus" }
 tc-orchestrator-chain-interface-through-rpc = { path = "client/orchestrator-chain-interface-through-rpc" }
 tc-service-container-chain-rpc-provider = { path = "client/service-container-chain-rpc-provider" }
 tc-service-container-chain-spawner = { path = "client/service-container-chain-spawner" }
+tc-service-orchestrator-chain = { path = "client/service-orchestrator-chain" }
 
 dancebox-emulated-chain = { path = "chains/xcm-integration-tests/emulated/chains/orchestrator-paras/dancebox" }
 dancebox-runtime-test-utils = { path = "chains/xcm-integration-tests/emulated/dancebox-runtime-test-utils" }

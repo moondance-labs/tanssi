@@ -12,32 +12,212 @@
 // GNU General Public License for more details.
 
 // You should have received a copy of the GNU General Public License
-// along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
-
-//! Helper functions used to implement solochain collator
+// along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 use {
-    crate::cli::{Cli, RelayChainCli},
+    cumulus_client_cli::CollatorOptions,
     futures::FutureExt,
-    jsonrpsee::server::BatchRequestConfig,
     log::{info, warn},
-    sc_chain_spec::{ChainType, GenericChainSpec, NoExtension},
-    sc_cli::{CliConfiguration, DefaultConfigurationValues, Signals, SubstrateCli},
-    sc_network::config::{NetworkBackendType, NetworkConfiguration, TransportConfig},
-    sc_network_common::role::Role,
-    sc_service::{
-        config::{ExecutorConfiguration, KeystoreConfig},
-        BasePath, BlocksPruning, Configuration, DatabaseSource, TaskManager,
+    node_common::{
+        cli::RelayChainCli, service::solochain::RelayAsOrchestratorChainInterfaceBuilder,
     },
-    sc_tracing::logging::LoggerBuilder,
+    sc_cli::{CliConfiguration, DefaultConfigurationValues, LoggerBuilder, Signals, SubstrateCli},
+    sc_network::config::NetworkBackendType,
+    sc_service::{
+        config::{ExecutorConfiguration, KeystoreConfig, NetworkConfiguration, TransportConfig},
+        BasePath, BlocksPruning, ChainType, Configuration, DatabaseSource, GenericChainSpec,
+        KeystoreContainer, NoExtension, Role, TaskManager,
+    },
     std::{
         future::Future,
+        marker::PhantomData,
         num::NonZeroUsize,
         path::{Path, PathBuf},
+        sync::Arc,
         time::Duration,
     },
     tc_service_container_chain_spawner::cli::ContainerChainCli,
+    tc_service_container_chain_spawner::{
+        spawner,
+        spawner::{CcSpawnMsg, ContainerChainSpawnParams, ContainerChainSpawner},
+    },
+    tokio::sync::mpsc::unbounded_channel,
+    tokio_util::sync::CancellationToken,
 };
+
+/// Start a solochain node.
+pub async fn start_solochain_node(
+    polkadot_config: Configuration,
+    container_chain_cli: ContainerChainCli,
+    collator_options: CollatorOptions,
+    hwbench: Option<sc_sysinfo::HwBench>,
+) -> sc_service::error::Result<TaskManager> {
+    let tokio_handle = polkadot_config.tokio_handle.clone();
+    let orchestrator_para_id = Default::default();
+
+    let chain_type = polkadot_config.chain_spec.chain_type().clone();
+    let relay_chain = polkadot_config.chain_spec.id().to_string();
+
+    // We use the relaychain keystore config for collators
+    // Ensure that the user did not provide any custom keystore path for collators
+    if container_chain_cli
+        .base
+        .base
+        .keystore_params
+        .keystore_path
+        .is_some()
+    {
+        panic!(
+            "--keystore-path not allowed here, must be set in relaychain args, after the first --"
+        )
+    }
+    let keystore = &polkadot_config.keystore;
+
+    // Instead of putting keystore in
+    // Collator1000-01/data/chains/simple_container_2000/keystore
+    // We put it in
+    // Collator1000-01/relay-data/chains/dancelight_local_testnet/keystore
+    // And same for "network" folder
+    // But zombienet will put the keys in the old path, so we need to manually copy it if we
+    // are running under zombienet
+    copy_zombienet_keystore(keystore, container_chain_cli.base_path())?;
+
+    let keystore_container = KeystoreContainer::new(keystore)?;
+
+    // No metrics so no prometheus registry
+    let prometheus_registry = None;
+    let mut task_manager = TaskManager::new(tokio_handle.clone(), prometheus_registry)?;
+
+    // Each container chain will spawn its own telemetry
+    let telemetry_worker_handle = None;
+
+    // Dummy parachain config only needed because `build_relay_chain_interface` needs to know if we
+    // are collators or not
+    let validator = container_chain_cli.base.collator;
+    let mut dummy_parachain_config = dummy_config(
+        polkadot_config.tokio_handle.clone(),
+        polkadot_config.base_path.clone(),
+    );
+    dummy_parachain_config.role = if validator {
+        Role::Authority
+    } else {
+        Role::Full
+    };
+    let (relay_chain_interface, collator_key) =
+        cumulus_client_service::build_relay_chain_interface(
+            polkadot_config,
+            &dummy_parachain_config,
+            telemetry_worker_handle.clone(),
+            &mut task_manager,
+            collator_options.clone(),
+            hwbench.clone(),
+        )
+        .await
+        .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
+
+    log::info!("start_solochain_node: is validator? {}", validator);
+
+    let overseer_handle = relay_chain_interface
+        .overseer_handle()
+        .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
+    let sync_keystore = keystore_container.keystore();
+    let collate_on_tanssi: Arc<
+        dyn Fn() -> (CancellationToken, futures::channel::oneshot::Receiver<()>) + Send + Sync,
+    > = Arc::new(move || {
+        // collate_on_tanssi will not be called in solochains because solochains use a different consensus
+        // mechanism and need validators instead of collators.
+        // The runtime enforces this because the orchestrator_chain is never assigned any collators.
+        panic!("Called collate_on_tanssi on solochain collator. This is unsupported and the runtime shouldn't allow this, it is a bug")
+    });
+
+    let orchestrator_chain_interface_builder = RelayAsOrchestratorChainInterfaceBuilder {
+        overseer_handle: overseer_handle.clone(),
+        relay_chain_interface: relay_chain_interface.clone(),
+    };
+    let orchestrator_chain_interface = orchestrator_chain_interface_builder.build();
+    // Channel to send messages to start/stop container chains
+    let (cc_spawn_tx, cc_spawn_rx) = unbounded_channel();
+
+    if validator {
+        // Start task which detects para id assignment, and starts/stops container chains.
+        crate::build_check_assigned_para_id(
+            orchestrator_chain_interface.clone(),
+            sync_keystore.clone(),
+            cc_spawn_tx.clone(),
+            task_manager.spawn_essential_handle(),
+        );
+    }
+
+    // If the orchestrator chain is running as a full-node, we start a full node for the
+    // container chain immediately, because only collator nodes detect their container chain
+    // assignment so otherwise it will never start.
+    if !validator {
+        if let Some(container_chain_para_id) = container_chain_cli.base.para_id {
+            // Spawn new container chain node
+            cc_spawn_tx
+                .send(CcSpawnMsg::UpdateAssignment {
+                    current: Some(container_chain_para_id.into()),
+                    next: Some(container_chain_para_id.into()),
+                })
+                .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
+        }
+    }
+
+    // Start container chain spawner task. This will start and stop container chains on demand.
+    let spawn_handle = task_manager.spawn_handle();
+
+    let container_chain_spawner = ContainerChainSpawner {
+        params: ContainerChainSpawnParams {
+            orchestrator_chain_interface,
+            container_chain_cli,
+            tokio_handle,
+            chain_type,
+            relay_chain,
+            relay_chain_interface,
+            sync_keystore,
+            orchestrator_para_id,
+            collation_params: if validator {
+                Some(spawner::CollationParams {
+                    // TODO: all these args must be solochain instead of orchestrator
+                    orchestrator_client: None,
+                    orchestrator_tx_pool: None,
+                    orchestrator_para_id,
+                    collator_key: collator_key
+                        .expect("there should be a collator key if we're a validator"),
+                    solochain: true,
+                })
+            } else {
+                None
+            },
+            spawn_handle,
+            data_preserver: false,
+            generate_rpc_builder:
+                tc_service_container_chain_spawner::rpc::GenerateSubstrateRpcBuilder::<
+                    dancebox_runtime::RuntimeApi,
+                >::new(),
+            phantom: PhantomData,
+        },
+        state: Default::default(),
+        db_folder_cleanup_done: false,
+        collate_on_tanssi,
+        collation_cancellation_constructs: None,
+    };
+    let state = container_chain_spawner.state.clone();
+
+    task_manager.spawn_essential_handle().spawn(
+        "container-chain-spawner-rx-loop",
+        None,
+        container_chain_spawner.rx_loop(cc_spawn_rx, validator, true),
+    );
+
+    task_manager.spawn_essential_handle().spawn(
+        "container-chain-spawner-debug-state",
+        None,
+        tc_service_container_chain_spawner::monitor::monitor_task(state),
+    );
+
+    Ok(task_manager)
+}
 
 /// Alternative to [Configuration] struct used in solochain context.
 pub struct SolochainConfig {
@@ -157,7 +337,7 @@ impl SolochainRunner {
 }
 
 /// Equivalent to [Cli::create_runner]
-pub fn create_runner<T: CliConfiguration<DVC>, DVC: DefaultConfigurationValues>(
+pub fn create_runner<T: SubstrateCli + CliConfiguration<DVC>, DVC: DefaultConfigurationValues>(
     command: &T,
 ) -> sc_cli::Result<SolochainRunner> {
     let tokio_runtime = sc_cli::build_runtime()?;
@@ -166,7 +346,7 @@ pub fn create_runner<T: CliConfiguration<DVC>, DVC: DefaultConfigurationValues>(
     // Also capture them as early as possible.
     let signals = tokio_runtime.block_on(async { Signals::capture() })?;
 
-    init_cmd(command, &Cli::support_url(), &Cli::impl_version())?;
+    init_cmd(command, &T::support_url(), &T::impl_version())?;
 
     let base_path = command.base_path()?.unwrap();
     let network_node_name = command.node_name()?;
@@ -322,7 +502,7 @@ pub fn dummy_config(tokio_handle: tokio::runtime::Handle, base_path: BasePath) -
             max_subs_per_conn: 0,
             port: 0,
             message_buffer_capacity: 0,
-            batch_config: BatchRequestConfig::Disabled,
+            batch_config: jsonrpsee::server::BatchRequestConfig::Disabled,
             rate_limit: None,
             rate_limit_whitelisted_ips: vec![],
             rate_limit_trust_proxy_headers: false,

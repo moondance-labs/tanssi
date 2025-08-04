@@ -9091,6 +9091,7 @@ dependencies = [
  "sp-state-machine",
  "sp-timestamp",
  "sp-transaction-pool",
+ "substrate-build-script-utils",
  "substrate-frame-rpc-system",
  "substrate-prometheus-endpoint",
  "tc-consensus",
@@ -19492,6 +19493,7 @@ dependencies = [
  "substrate-prometheus-endpoint",
  "tc-consensus",
  "tc-service-container-chain-spawner",
+ "tc-service-orchestrator-chain",
  "tokio",
  "tokio-util",
  "tp-author-noting-inherent",
@@ -19971,6 +19973,35 @@ dependencies = [
  "tokio-util",
  "tp-traits",
  "url",
+]
+
+[[package]]
+name = "tc-service-orchestrator-chain"
+version = "0.15.0"
+dependencies = [
+ "chrono",
+ "clap",
+ "cumulus-client-cli",
+ "cumulus-client-service",
+ "dancebox-runtime",
+ "dc-orchestrator-chain-interface",
+ "fdlimit",
+ "futures 0.3.31",
+ "jsonrpsee",
+ "log",
+ "nimbus-primitives",
+ "node-common",
+ "sc-cli",
+ "sc-network",
+ "sc-service",
+ "sc-sysinfo",
+ "sp-core",
+ "sp-keystore",
+ "sp-panic-handler",
+ "tc-consensus",
+ "tc-service-container-chain-spawner",
+ "tokio",
+ "tokio-util",
 ]
 
 [[package]]

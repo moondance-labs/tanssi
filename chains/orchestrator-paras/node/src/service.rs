@@ -17,7 +17,6 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
 use {
-    crate::command::solochain::{copy_zombienet_keystore, dummy_config},
     core::marker::PhantomData,
     cumulus_client_cli::CollatorOptions,
     cumulus_client_collator::service::CollatorService,
@@ -43,9 +42,8 @@ use {
     frame_support::__private::sp_tracing::tracing::Instrument,
     futures::{Stream, StreamExt},
     nimbus_primitives::{NimbusId, NimbusPair},
-    node_common::service::{
-        node_builder::{ManualSealConfiguration, NodeBuilder, NodeBuilderConfig, Sealing},
-        solochain::RelayAsOrchestratorChainInterfaceBuilder,
+    node_common::service::node_builder::{
+        ManualSealConfiguration, NodeBuilder, NodeBuilderConfig, Sealing,
     },
     pallet_author_noting_runtime_api::AuthorNotingApi,
     pallet_collator_assignment_runtime_api::CollatorAssignmentApi,
@@ -56,22 +54,20 @@ use {
     polkadot_parachain_primitives::primitives::HeadData,
     polkadot_primitives::UpgradeGoAhead,
     polkadot_service::Handle,
-    sc_cli::CliConfiguration,
     sc_client_api::{
         AuxStore, Backend as BackendT, BlockchainEvents, HeaderBackend, UsageProvider,
     },
     sc_consensus::BasicQueue,
     sc_network::NetworkBlock,
-    sc_network_common::role::Role,
     sc_network_sync::SyncingService,
-    sc_service::{Configuration, KeystoreContainer, SpawnTaskHandle, TFullBackend, TaskManager},
+    sc_service::{Configuration, SpawnTaskHandle, TFullBackend, TaskManager},
     sc_telemetry::TelemetryHandle,
     sc_transaction_pool::TransactionPoolHandle,
     sp_api::ApiExt,
     sp_api::StorageProof,
     sp_consensus::SyncOracle,
     sp_consensus_slots::Slot,
-    sp_core::{traits::SpawnEssentialNamed, H256},
+    sp_core::H256,
     sp_keystore::KeystorePtr,
     sp_state_machine::{Backend as StateBackend, StorageValue},
     std::{pin::Pin, sync::Arc, time::Duration},
@@ -90,7 +86,7 @@ use {
         },
         spawner::{self, CcSpawnMsg, ContainerChainSpawnParams, ContainerChainSpawner},
     },
-    tokio::sync::mpsc::{unbounded_channel, UnboundedSender},
+    tokio::sync::mpsc,
     tokio_util::sync::CancellationToken,
 };
 
@@ -135,85 +131,6 @@ impl sp_inherents::InherentDataProvider for MockTimestampInherentDataProvider {
         // The pallet never reports error.
         None
     }
-}
-
-/// Background task used to detect changes to container chain assignment,
-/// and start/stop container chains on demand. The check runs on every new block.
-pub fn build_check_assigned_para_id(
-    client: Arc<dyn OrchestratorChainInterface>,
-    sync_keystore: KeystorePtr,
-    cc_spawn_tx: UnboundedSender<CcSpawnMsg>,
-    spawner: impl SpawnEssentialNamed,
-) {
-    let check_assigned_para_id_task = async move {
-        // Subscribe to new blocks in order to react to para id assignment
-        // This must be the stream of finalized blocks, otherwise the collators may rotate to a
-        // different chain before the block is finalized, and that could lead to a stalled chain
-        let mut import_notifications = client.finality_notification_stream().await.unwrap();
-
-        while let Some(msg) = import_notifications.next().await {
-            let block_hash = msg.hash();
-            let client_set_aside_for_cidp = client.clone();
-            let sync_keystore = sync_keystore.clone();
-            let cc_spawn_tx = cc_spawn_tx.clone();
-
-            check_assigned_para_id(
-                cc_spawn_tx,
-                sync_keystore,
-                client_set_aside_for_cidp,
-                block_hash,
-            )
-            .await
-            .unwrap();
-        }
-    };
-
-    spawner.spawn_essential(
-        "check-assigned-para-id",
-        None,
-        Box::pin(check_assigned_para_id_task),
-    );
-}
-
-/// Check the parachain assignment using the orchestrator chain client, and send a `CcSpawnMsg` to
-/// start or stop the required container chains.
-///
-/// Checks the assignment for the next block, so if there is a session change on block 15, this will
-/// detect the assignment change after importing block 14.
-async fn check_assigned_para_id(
-    cc_spawn_tx: UnboundedSender<CcSpawnMsg>,
-    sync_keystore: KeystorePtr,
-    client_set_aside_for_cidp: Arc<dyn OrchestratorChainInterface>,
-    block_hash: H256,
-) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    // Check current assignment
-    let current_container_chain_para_id =
-        tc_consensus::first_eligible_key::<dyn OrchestratorChainInterface, NimbusPair>(
-            client_set_aside_for_cidp.as_ref(),
-            &block_hash,
-            sync_keystore.clone(),
-        )
-        .await
-        .map(|(_nimbus_key, para_id)| para_id);
-
-    // Check assignment in the next session
-    let next_container_chain_para_id = tc_consensus::first_eligible_key_next_session::<
-        dyn OrchestratorChainInterface,
-        NimbusPair,
-    >(
-        client_set_aside_for_cidp.as_ref(),
-        &block_hash,
-        sync_keystore,
-    )
-    .await
-    .map(|(_nimbus_key, para_id)| para_id);
-
-    cc_spawn_tx.send(CcSpawnMsg::UpdateAssignment {
-        current: current_container_chain_para_id,
-        next: next_container_chain_para_id,
-    })?;
-
-    Ok(())
 }
 
 pub fn import_queue(
@@ -263,7 +180,7 @@ async fn start_node_impl(
         .ok_or("Could not find relay_chain extension in chain-spec.")?;
 
     // Channel to send messages to start/stop container chains
-    let (cc_spawn_tx, cc_spawn_rx) = unbounded_channel();
+    let (cc_spawn_tx, cc_spawn_rx) = mpsc::unbounded_channel();
 
     // Create a `NodeBuilder` which helps setup parachain nodes common systems.
     let mut node_builder = NodeConfig::new_builder(&parachain_config, hwbench.clone())?;
@@ -362,7 +279,7 @@ async fn start_node_impl(
         // Note that if this node was started without a `container_chain_config`, we don't
         // support collation on container chains, so there is no need to detect changes to assignment
         if container_chain_config.is_some() {
-            build_check_assigned_para_id(
+            tc_service_orchestrator_chain::build_check_assigned_para_id(
                 orchestrator_chain_interface.clone(),
                 sync_keystore.clone(),
                 cc_spawn_tx.clone(),
@@ -707,180 +624,6 @@ pub async fn start_parachain_node(
         name = "Orchestrator",
     ))
     .await
-}
-
-/// Start a solochain node.
-pub async fn start_solochain_node(
-    polkadot_config: Configuration,
-    container_chain_cli: ContainerChainCli,
-    collator_options: CollatorOptions,
-    hwbench: Option<sc_sysinfo::HwBench>,
-) -> sc_service::error::Result<TaskManager> {
-    let tokio_handle = polkadot_config.tokio_handle.clone();
-    let orchestrator_para_id = Default::default();
-
-    let chain_type = polkadot_config.chain_spec.chain_type().clone();
-    let relay_chain = polkadot_config.chain_spec.id().to_string();
-
-    // We use the relaychain keystore config for collators
-    // Ensure that the user did not provide any custom keystore path for collators
-    if container_chain_cli
-        .base
-        .base
-        .keystore_params
-        .keystore_path
-        .is_some()
-    {
-        panic!(
-            "--keystore-path not allowed here, must be set in relaychain args, after the first --"
-        )
-    }
-    let keystore = &polkadot_config.keystore;
-
-    // Instead of putting keystore in
-    // Collator1000-01/data/chains/simple_container_2000/keystore
-    // We put it in
-    // Collator1000-01/relay-data/chains/dancelight_local_testnet/keystore
-    // And same for "network" folder
-    // But zombienet will put the keys in the old path, so we need to manually copy it if we
-    // are running under zombienet
-    copy_zombienet_keystore(keystore, container_chain_cli.base_path())?;
-
-    let keystore_container = KeystoreContainer::new(keystore)?;
-
-    // No metrics so no prometheus registry
-    let prometheus_registry = None;
-    let mut task_manager = TaskManager::new(tokio_handle.clone(), prometheus_registry)?;
-
-    // Each container chain will spawn its own telemetry
-    let telemetry_worker_handle = None;
-
-    // Dummy parachain config only needed because `build_relay_chain_interface` needs to know if we
-    // are collators or not
-    let validator = container_chain_cli.base.collator;
-    let mut dummy_parachain_config = dummy_config(
-        polkadot_config.tokio_handle.clone(),
-        polkadot_config.base_path.clone(),
-    );
-    dummy_parachain_config.role = if validator {
-        Role::Authority
-    } else {
-        Role::Full
-    };
-    let (relay_chain_interface, collator_key) =
-        cumulus_client_service::build_relay_chain_interface(
-            polkadot_config,
-            &dummy_parachain_config,
-            telemetry_worker_handle.clone(),
-            &mut task_manager,
-            collator_options.clone(),
-            hwbench.clone(),
-        )
-        .await
-        .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
-
-    log::info!("start_solochain_node: is validator? {}", validator);
-
-    let overseer_handle = relay_chain_interface
-        .overseer_handle()
-        .map_err(|e| sc_service::Error::Application(Box::new(e)))?;
-    let sync_keystore = keystore_container.keystore();
-    let collate_on_tanssi: Arc<
-        dyn Fn() -> (CancellationToken, futures::channel::oneshot::Receiver<()>) + Send + Sync,
-    > = Arc::new(move || {
-        // collate_on_tanssi will not be called in solochains because solochains use a different consensus
-        // mechanism and need validators instead of collators.
-        // The runtime enforces this because the orchestrator_chain is never assigned any collators.
-        panic!("Called collate_on_tanssi on solochain collator. This is unsupported and the runtime shouldn't allow this, it is a bug")
-    });
-
-    let orchestrator_chain_interface_builder = RelayAsOrchestratorChainInterfaceBuilder {
-        overseer_handle: overseer_handle.clone(),
-        relay_chain_interface: relay_chain_interface.clone(),
-    };
-    let orchestrator_chain_interface = orchestrator_chain_interface_builder.build();
-    // Channel to send messages to start/stop container chains
-    let (cc_spawn_tx, cc_spawn_rx) = unbounded_channel();
-
-    if validator {
-        // Start task which detects para id assignment, and starts/stops container chains.
-        build_check_assigned_para_id(
-            orchestrator_chain_interface.clone(),
-            sync_keystore.clone(),
-            cc_spawn_tx.clone(),
-            task_manager.spawn_essential_handle(),
-        );
-    }
-
-    // If the orchestrator chain is running as a full-node, we start a full node for the
-    // container chain immediately, because only collator nodes detect their container chain
-    // assignment so otherwise it will never start.
-    if !validator {
-        if let Some(container_chain_para_id) = container_chain_cli.base.para_id {
-            // Spawn new container chain node
-            cc_spawn_tx
-                .send(CcSpawnMsg::UpdateAssignment {
-                    current: Some(container_chain_para_id.into()),
-                    next: Some(container_chain_para_id.into()),
-                })
-                .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
-        }
-    }
-
-    // Start container chain spawner task. This will start and stop container chains on demand.
-    let spawn_handle = task_manager.spawn_handle();
-
-    let container_chain_spawner = ContainerChainSpawner {
-        params: ContainerChainSpawnParams {
-            orchestrator_chain_interface,
-            container_chain_cli,
-            tokio_handle,
-            chain_type,
-            relay_chain,
-            relay_chain_interface,
-            sync_keystore,
-            orchestrator_para_id,
-            collation_params: if validator {
-                Some(spawner::CollationParams {
-                    // TODO: all these args must be solochain instead of orchestrator
-                    orchestrator_client: None,
-                    orchestrator_tx_pool: None,
-                    orchestrator_para_id,
-                    collator_key: collator_key
-                        .expect("there should be a collator key if we're a validator"),
-                    solochain: true,
-                })
-            } else {
-                None
-            },
-            spawn_handle,
-            data_preserver: false,
-            generate_rpc_builder:
-                tc_service_container_chain_spawner::rpc::GenerateSubstrateRpcBuilder::<
-                    dancebox_runtime::RuntimeApi,
-                >::new(),
-            phantom: PhantomData,
-        },
-        state: Default::default(),
-        db_folder_cleanup_done: false,
-        collate_on_tanssi,
-        collation_cancellation_constructs: None,
-    };
-    let state = container_chain_spawner.state.clone();
-
-    task_manager.spawn_essential_handle().spawn(
-        "container-chain-spawner-rx-loop",
-        None,
-        container_chain_spawner.rx_loop(cc_spawn_rx, validator, true),
-    );
-
-    task_manager.spawn_essential_handle().spawn(
-        "container-chain-spawner-debug-state",
-        None,
-        monitor::monitor_task(state),
-    );
-
-    Ok(task_manager)
 }
 
 pub const SOFT_DEADLINE_PERCENT: sp_runtime::Percent = sp_runtime::Percent::from_percent(100);

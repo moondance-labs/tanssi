@@ -49,6 +49,7 @@ pallet-registrar-runtime-api = { workspace = true, features = [ "std" ] }
 services-payment-rpc = { workspace = true }
 stream-payment-rpc = { workspace = true }
 tc-service-container-chain-spawner = { workspace = true }
+tc-service-orchestrator-chain = { workspace = true }
 tp-author-noting-inherent = { workspace = true, features = [ "std" ] }
 tp-data-preservers-common = { workspace = true, features = [ "std" ] }
 
