@@ -30,7 +30,7 @@ use {
         relay_chain::{well_known_keys as RelayWellKnownKeys, CollatorPair},
         CollectCollationInfo, ParaId,
     },
-    cumulus_relay_chain_interface::{call_runtime_api, OverseerHandle, RelayChainInterface},
+    cumulus_relay_chain_interface::{OverseerHandle, RelayChainInterface},
     dancebox_runtime::{
         opaque::{Block, Hash},
         AccountId, RuntimeApi,
@@ -43,7 +43,10 @@ use {
     frame_support::__private::sp_tracing::tracing::Instrument,
     futures::{Stream, StreamExt},
     nimbus_primitives::{NimbusId, NimbusPair},
-    node_common::service::{ManualSealConfiguration, NodeBuilder, NodeBuilderConfig, Sealing},
+    node_common::service::{
+        node_builder::{ManualSealConfiguration, NodeBuilder, NodeBuilderConfig, Sealing},
+        solochain::RelayAsOrchestratorChainInterfaceBuilder,
+    },
     pallet_author_noting_runtime_api::AuthorNotingApi,
     pallet_collator_assignment_runtime_api::CollatorAssignmentApi,
     pallet_data_preservers_runtime_api::DataPreserversApi,
@@ -78,7 +81,7 @@ use {
         },
         OnDemandBlockProductionApi, OrchestratorAuraWorkerAuxData, TanssiAuthorityAssignmentApi,
     },
-    tc_service_container_chain::{
+    tc_service_container_chain_spawner::{
         cli::ContainerChainCli,
         monitor,
         service::{
@@ -462,9 +465,10 @@ async fn start_node_impl(
                     None
                 },
                 spawn_handle,
-                generate_rpc_builder: tc_service_container_chain::rpc::GenerateSubstrateRpcBuilder::<
-                    dancebox_runtime::RuntimeApi,
-                >::new(),
+                generate_rpc_builder:
+                    tc_service_container_chain_spawner::rpc::GenerateSubstrateRpcBuilder::<
+                        dancebox_runtime::RuntimeApi,
+                    >::new(),
                 phantom: PhantomData,
             },
             state: Default::default(),
@@ -790,7 +794,7 @@ pub async fn start_solochain_node(
         panic!("Called collate_on_tanssi on solochain collator. This is unsupported and the runtime shouldn't allow this, it is a bug")
     });
 
-    let orchestrator_chain_interface_builder = OrchestratorChainSolochainInterfaceBuilder {
+    let orchestrator_chain_interface_builder = RelayAsOrchestratorChainInterfaceBuilder {
         overseer_handle: overseer_handle.clone(),
         relay_chain_interface: relay_chain_interface.clone(),
     };
@@ -851,9 +855,10 @@ pub async fn start_solochain_node(
             },
             spawn_handle,
             data_preserver: false,
-            generate_rpc_builder: tc_service_container_chain::rpc::GenerateSubstrateRpcBuilder::<
-                dancebox_runtime::RuntimeApi,
-            >::new(),
+            generate_rpc_builder:
+                tc_service_container_chain_spawner::rpc::GenerateSubstrateRpcBuilder::<
+                    dancebox_runtime::RuntimeApi,
+                >::new(),
             phantom: PhantomData,
         },
         state: Default::default(),
@@ -1178,26 +1183,6 @@ impl OrchestratorChainInProcessInterfaceBuilder {
     }
 }
 
-/// Builder for a concrete relay chain interface, created from a full node. Builds
-/// a [`RelayChainInProcessInterface`] to access relay chain data necessary for parachain operation.
-///
-/// The builder takes a [`polkadot_client::Client`]
-/// that wraps a concrete instance. By using [`polkadot_client::ExecuteWithClient`]
-/// the builder gets access to this concrete instance and instantiates a [`RelayChainInProcessInterface`] with it.
-struct OrchestratorChainSolochainInterfaceBuilder {
-    overseer_handle: Handle,
-    relay_chain_interface: Arc<dyn RelayChainInterface>,
-}
-
-impl OrchestratorChainSolochainInterfaceBuilder {
-    pub fn build(self) -> Arc<dyn OrchestratorChainInterface> {
-        Arc::new(OrchestratorChainSolochainInterface::new(
-            self.overseer_handle,
-            self.relay_chain_interface,
-        ))
-    }
-}
-
 /// Provides an implementation of the [`RelayChainInterface`] using a local in-process relay chain node.
 pub struct OrchestratorChainInProcessInterface<Client> {
     pub full_client: Arc<Client>,
@@ -1387,190 +1372,5 @@ where
         let runtime_api = self.full_client.runtime_api();
 
         Ok(runtime_api.check_para_id_assignment_next_session(orchestrator_parent, authority)?)
-    }
-}
-
-/// Provides an implementation of the [`RelayChainInterface`] using a local in-process relay chain node.
-pub struct OrchestratorChainSolochainInterface {
-    pub overseer_handle: Handle,
-    pub relay_chain_interface: Arc<dyn RelayChainInterface>,
-}
-
-impl OrchestratorChainSolochainInterface {
-    /// Create a new instance of [`RelayChainInProcessInterface`]
-    pub fn new(
-        overseer_handle: Handle,
-        relay_chain_interface: Arc<dyn RelayChainInterface>,
-    ) -> Self {
-        Self {
-            overseer_handle,
-            relay_chain_interface,
-        }
-    }
-}
-
-#[async_trait::async_trait]
-impl OrchestratorChainInterface for OrchestratorChainSolochainInterface {
-    async fn get_storage_by_key(
-        &self,
-        relay_parent: PHash,
-        key: &[u8],
-    ) -> OrchestratorChainResult<Option<StorageValue>> {
-        self.relay_chain_interface
-            .get_storage_by_key(relay_parent, key)
-            .await
-            .map_err(|e| OrchestratorChainError::Application(Box::new(e)))
-    }
-
-    async fn prove_read(
-        &self,
-        relay_parent: PHash,
-        relevant_keys: &Vec<Vec<u8>>,
-    ) -> OrchestratorChainResult<StorageProof> {
-        self.relay_chain_interface
-            .prove_read(relay_parent, relevant_keys)
-            .await
-            .map_err(|e| OrchestratorChainError::Application(Box::new(e)))
-    }
-
-    fn overseer_handle(&self) -> OrchestratorChainResult<Handle> {
-        Ok(self.overseer_handle.clone())
-    }
-
-    /// Get a stream of import block notifications.
-    async fn import_notification_stream(
-        &self,
-    ) -> OrchestratorChainResult<Pin<Box<dyn Stream<Item = PHeader> + Send>>> {
-        self.relay_chain_interface
-            .import_notification_stream()
-            .await
-            .map_err(|e| OrchestratorChainError::Application(Box::new(e)))
-    }
-
-    /// Get a stream of new best block notifications.
-    async fn new_best_notification_stream(
-        &self,
-    ) -> OrchestratorChainResult<Pin<Box<dyn Stream<Item = PHeader> + Send>>> {
-        self.relay_chain_interface
-            .new_best_notification_stream()
-            .await
-            .map_err(|e| OrchestratorChainError::Application(Box::new(e)))
-    }
-
-    /// Get a stream of finality notifications.
-    async fn finality_notification_stream(
-        &self,
-    ) -> OrchestratorChainResult<Pin<Box<dyn Stream<Item = PHeader> + Send>>> {
-        self.relay_chain_interface
-            .finality_notification_stream()
-            .await
-            .map_err(|e| OrchestratorChainError::Application(Box::new(e)))
-    }
-
-    async fn genesis_data(
-        &self,
-        relay_parent: PHash,
-        para_id: ParaId,
-    ) -> OrchestratorChainResult<Option<ContainerChainGenesisData>> {
-        let res: Option<ContainerChainGenesisData> = call_runtime_api(
-            &self.relay_chain_interface,
-            "RegistrarApi_genesis_data",
-            relay_parent,
-            &para_id,
-        )
-        .await
-        .map_err(|e| OrchestratorChainError::Application(Box::new(e)))?;
-
-        Ok(res)
-    }
-
-    async fn boot_nodes(
-        &self,
-        relay_parent: PHash,
-        para_id: ParaId,
-    ) -> OrchestratorChainResult<Vec<Vec<u8>>> {
-        let res: Vec<Vec<u8>> = call_runtime_api(
-            &self.relay_chain_interface,
-            "RegistrarApi_boot_nodes",
-            relay_parent,
-            &para_id,
-        )
-        .await
-        .map_err(|e| OrchestratorChainError::Application(Box::new(e)))?;
-
-        Ok(res)
-    }
-
-    async fn latest_block_number(
-        &self,
-        relay_parent: PHash,
-        para_id: ParaId,
-    ) -> OrchestratorChainResult<Option<BlockNumber>> {
-        let res: Option<BlockNumber> = call_runtime_api(
-            &self.relay_chain_interface,
-            "AuthorNotingApi_latest_block_number",
-            relay_parent,
-            &para_id,
-        )
-        .await
-        .map_err(|e| OrchestratorChainError::Application(Box::new(e)))?;
-
-        Ok(res)
-    }
-
-    async fn best_block_hash(&self) -> OrchestratorChainResult<PHash> {
-        self.relay_chain_interface
-            .best_block_hash()
-            .await
-            .map_err(|e| OrchestratorChainError::Application(Box::new(e)))
-    }
-
-    async fn finalized_block_hash(&self) -> OrchestratorChainResult<PHash> {
-        self.relay_chain_interface
-            .finalized_block_hash()
-            .await
-            .map_err(|e| OrchestratorChainError::Application(Box::new(e)))
-    }
-
-    async fn data_preserver_active_assignment(
-        &self,
-        _orchestrator_parent: PHash,
-        _profile_id: DataPreserverProfileId,
-    ) -> OrchestratorChainResult<DataPreserverAssignment<ParaId>> {
-        unimplemented!("Data preserver node does not support Dancelight yet")
-    }
-
-    async fn check_para_id_assignment(
-        &self,
-        relay_parent: PHash,
-        authority: NimbusId,
-    ) -> OrchestratorChainResult<Option<ParaId>> {
-        let res: Option<ParaId> = call_runtime_api(
-            &self.relay_chain_interface,
-            "TanssiAuthorityAssignmentApi_check_para_id_assignment",
-            relay_parent,
-            &authority,
-        )
-        .await
-        .map_err(|e| OrchestratorChainError::Application(Box::new(e)))?;
-
-        Ok(res)
-    }
-
-    async fn check_para_id_assignment_next_session(
-        &self,
-        relay_parent: PHash,
-        authority: NimbusId,
-    ) -> OrchestratorChainResult<Option<ParaId>> {
-        let res: Option<ParaId> = call_runtime_api(
-            &self.relay_chain_interface,
-            "TanssiAuthorityAssignmentApi_check_para_id_assignment_next_session",
-            relay_parent,
-            &authority,
-        )
-        .await
-        .map_err(|e| OrchestratorChainError::Application(Box::new(e)))?;
-
-        Ok(res)
     }
 }

@@ -74,7 +74,7 @@ impl std::ops::Deref for RunCmd {
 #[derive(Debug, Parser)]
 pub struct RpcProviderCmd {
     #[clap(flatten)]
-    pub base: tc_service_container_chain::cli::RpcProviderCmd,
+    pub base: tc_service_container_chain_rpc_provider::RpcProviderCmd,
 
     #[clap(flatten)]
     pub eth: EthRpcArguments,

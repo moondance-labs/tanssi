@@ -60,7 +60,9 @@ use {
         sync::{Arc, Mutex},
         time::Duration,
     },
-    tc_service_container_chain::service::{ContainerChainClient, MinimalContainerRuntimeApi},
+    tc_service_container_chain_spawner::service::{
+        ContainerChainClient, MinimalContainerRuntimeApi,
+    },
 };
 
 pub struct DefaultEthConfig<C, BE>(std::marker::PhantomData<(C, BE)>);
@@ -494,7 +496,7 @@ impl<RuntimeApi> GenerateFrontierRpcBuilder<RuntimeApi> {
 }
 
 const _: () = {
-    use tc_service_container_chain::rpc::generate_rpc_builder::*;
+    use tc_service_container_chain_spawner::rpc::generate_rpc_builder::*;
 
     impl<RuntimeApi: FrontierRpcRuntimeApi> GenerateRpcBuilder<RuntimeApi>
         for GenerateFrontierRpcBuilder<RuntimeApi>

@@ -37,7 +37,7 @@ use {
     sp_core::hexdisplay::HexDisplay,
     sp_runtime::traits::{AccountIdConversion, Block as BlockT},
     std::io::Write,
-    tc_service_container_chain::{chain_spec::RawChainSpec, cli::ContainerChainCli},
+    tc_service_container_chain_spawner::{chain_spec::RawChainSpec, cli::ContainerChainCli},
 };
 
 pub mod solochain;

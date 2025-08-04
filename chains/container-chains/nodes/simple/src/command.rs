@@ -17,7 +17,7 @@
 use {
     crate::{
         chain_spec,
-        cli::{Cli, Subcommand, BaseSubcommand},
+        cli::{BaseSubcommand, Cli, Subcommand},
         service::{self, NodeConfig},
     },
     container_chain_template_simple_runtime::Block,
@@ -35,7 +35,8 @@ use {
     sp_core::hexdisplay::HexDisplay,
     sp_runtime::traits::{AccountIdConversion, Block as BlockT, Get},
     std::marker::PhantomData,
-    tc_service_container_chain::{cli::{ContainerChainCli, RpcProviderCmd}, service::RpcProviderMode},
+    tc_service_container_chain_rpc_provider::{RpcProviderCmd, RpcProviderMode},
+    tc_service_container_chain_spawner::cli::ContainerChainCli,
 };
 
 pub struct NodeName;
@@ -357,13 +358,15 @@ fn rpc_provider_mode(cli: &Cli, cmd: &RpcProviderCmd) -> Result<()> {
                 .chain(cli.container_chain_args().iter()),
         );
 
-        let generate_rpc_builder = tc_service_container_chain::rpc::GenerateSubstrateRpcBuilder::<
-            container_chain_template_simple_runtime::RuntimeApi,
-        >::new();
+        let generate_rpc_builder =
+            tc_service_container_chain_spawner::rpc::GenerateSubstrateRpcBuilder::<
+                container_chain_template_simple_runtime::RuntimeApi,
+            >::new();
 
         RpcProviderMode {
             config,
             provider_profile_id: cmd.profile_id,
+            solochain: cmd.solochain,
             orchestrator_endpoints: cmd.orchestrator_endpoints.clone(),
             collator_options: cmd.container_run.collator_options(),
             polkadot_cli,

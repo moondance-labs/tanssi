@@ -36,7 +36,7 @@ use {
         path::{Path, PathBuf},
         time::Duration,
     },
-    tc_service_container_chain::cli::ContainerChainCli,
+    tc_service_container_chain_spawner::cli::ContainerChainCli,
 };
 
 /// Alternative to [Configuration] struct used in solochain context.

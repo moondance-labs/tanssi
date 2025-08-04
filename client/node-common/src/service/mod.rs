@@ -15,3 +15,4 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 pub mod node_builder;
+pub mod solochain;

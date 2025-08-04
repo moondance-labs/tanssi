@@ -24,6 +24,7 @@ parity-scale-codec = { workspace = true }
 serde = { workspace = true, features = [ "derive" ] }
 
 # Local
+dc-orchestrator-chain-interface = { workspace = true }
 tc-consensus = { workspace = true }
 tp-traits = { workspace = true }
 
@@ -68,6 +69,7 @@ sp-keystore = { workspace = true, features = [ "std" ] }
 sp-offchain = { workspace = true, features = [ "std" ] }
 sp-runtime = { workspace = true, features = [ "std" ] }
 sp-session = { workspace = true, features = [ "std" ] }
+sp-state-machine = { workspace = true, features = [ "std" ] }
 sp-timestamp = { workspace = true, features = [ "std" ] }
 
 sp-transaction-pool = { workspace = true }

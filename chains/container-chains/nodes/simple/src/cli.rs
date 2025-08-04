@@ -17,8 +17,7 @@
 use {
     clap::Parser,
     node_common::{cli::BuildSpecCmd, service::node_builder::Sealing},
-    tc_service_container_chain::cli::RpcProviderCmd,
-    url::Url,
+    tc_service_container_chain_rpc_provider::RpcProviderCmd,
 };
 
 pub type BaseSubcommand = node_common::cli::Subcommand<BuildSpecCmdSimple>;

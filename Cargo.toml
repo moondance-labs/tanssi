@@ -126,7 +126,8 @@ services-payment-rpc = { path = "client/services-payment" }
 stream-payment-rpc = { path = "client/stream-payment" }
 tc-consensus = { path = "client/consensus" }
 tc-orchestrator-chain-interface-through-rpc = { path = "client/orchestrator-chain-interface-through-rpc" }
-tc-service-container-chain = { path = "client/service-container-chain" }
+tc-service-container-chain-rpc-provider = { path = "client/service-container-chain-rpc-provider" }
+tc-service-container-chain-spawner = { path = "client/service-container-chain-spawner" }
 
 dancebox-emulated-chain = { path = "chains/xcm-integration-tests/emulated/chains/orchestrator-paras/dancebox" }
 dancebox-runtime-test-utils = { path = "chains/xcm-integration-tests/emulated/dancebox-runtime-test-utils" }

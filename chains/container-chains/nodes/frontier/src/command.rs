@@ -17,7 +17,7 @@
 use {
     crate::{
         chain_spec,
-        cli::{Cli, Subcommand, BaseSubcommand},
+        cli::{BaseSubcommand, Cli, Subcommand},
         service::{self, frontier_database_dir, NodeConfig},
     },
     container_chain_template_frontier_runtime::Block,
@@ -36,10 +36,8 @@ use {
     sc_service::DatabaseSource,
     sp_core::hexdisplay::HexDisplay,
     sp_runtime::traits::{AccountIdConversion, Block as BlockT, Get},
-    tc_service_container_chain::{
-        cli::{ContainerChainCli},
-        service::RpcProviderMode,
-    },
+    tc_service_container_chain_rpc_provider::RpcProviderMode,
+    tc_service_container_chain_spawner::cli::ContainerChainCli,
 };
 
 pub struct NodeName;
@@ -384,13 +382,10 @@ fn rpc_provider_mode(cli: &Cli, cmd: &crate::cli::RpcProviderCmd) -> Result<()> 
                 .chain(cli.relaychain_args().iter()),
         );
 
-        // TODO: Wrong args
-        let container_chain_cli = ContainerChainCli::new(
-            &config,
-            [ContainerChainCli::executable_name()]
-                .iter()
-                .chain(cli.container_chain_args().iter()),
-        );
+        let container_chain_cli = ContainerChainCli {
+            base: cmd.base.container_run.clone(),
+            preloaded_chain_spec: None,
+        };
 
         let rpc_config = crate::cli::RpcConfig {
             eth_log_block_cache: cmd.eth.eth_log_block_cache,
@@ -407,6 +402,7 @@ fn rpc_provider_mode(cli: &Cli, cmd: &crate::cli::RpcProviderCmd) -> Result<()> 
         RpcProviderMode {
             config,
             provider_profile_id: cmd.base.profile_id,
+            solochain: cmd.base.solochain,
             orchestrator_endpoints: cmd.base.orchestrator_endpoints.clone(),
             collator_options: cmd.base.container_run.collator_options(),
             polkadot_cli,

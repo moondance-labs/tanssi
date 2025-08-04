@@ -17,7 +17,7 @@
 use {
     node_common::{cli::BuildSpecCmd, service::node_builder::Sealing},
     std::path::PathBuf,
-    tc_service_container_chain::cli::ContainerChainRunCmd,
+    tc_service_container_chain_spawner::cli::ContainerChainRunCmd,
 };
 
 /// Sub-commands supported by the collator.
