@@ -16,8 +16,7 @@
 
 #![cfg(test)]
 use {
-    crate::tests::common::*,
-    alloc::collections::btree_set::BTreeSet,
+    dancebox_runtime_test_utils::*,
     frame_support::{assert_ok, BoundedBTreeSet},
     pallet_inactivity_tracking::pallet::{
         ActiveCollatorsForCurrentSession, ActiveContainerChainsForCurrentSession, InactiveCollators,
@@ -25,6 +24,7 @@ use {
     parity_scale_codec::Encode,
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_runtime::{traits::BlakeTwo256, DigestItem},
+    std::collections::BTreeSet,
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
     tp_traits::{
         ForSession, GetContainerChainsWithCollators, MaybeSelfChainBlockAuthor,
@@ -377,7 +377,7 @@ fn inactivity_tracking_edge_case_one_block_per_collator() {
     // last block of each session.
 
     // Skip test if not compiled with fast-runtime
-    let session_period = crate::Period::get();
+    let session_period = dancebox_runtime::Period::get();
     if session_period > 10 {
         println!(
             "Skipping test because session period must be 10, is {:?}",
@@ -441,7 +441,7 @@ fn inactivity_tracking_edge_case_inactive_at_session_start() {
     // last block of each session.
 
     // Skip test if not compiled with fast-runtime
-    let session_period = crate::Period::get();
+    let session_period = dancebox_runtime::Period::get();
     if session_period > 10 {
         println!(
             "Skipping test because session period must be 10, is {:?}",

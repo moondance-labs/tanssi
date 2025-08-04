@@ -49,3 +49,8 @@ xcm = { workspace = true }
 xcm-builder = { workspace = true }
 xcm-emulator = { workspace = true }
 xcm-executor = { workspace = true }
+
+[features]
+fast-runtime = [
+	"dancebox-runtime/fast-runtime",
+]
