@@ -7,6 +7,7 @@ import {
     STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SERVICES_PAYMENT,
     STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_DATA_PRESERVERS,
     STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_REGISTRAR,
+    STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_REGISTRAR_BESIDES_REGISTER,
     checkCallIsFiltered,
 } from "helpers";
 
@@ -22,6 +23,7 @@ describeSuite({
         let shouldSkipStarlightSP: boolean;
         let shouldSkipStarlightDP: boolean;
         let shouldSkipStarlightCR: boolean;
+        let shouldSkipStarlightCRBR: boolean;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
@@ -38,13 +40,18 @@ describeSuite({
             shouldSkipStarlightCR =
                 isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_REGISTRAR.includes(specVersion);
 
+            shouldSkipStarlightCRBR =
+                isStarlight &&
+                STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_REGISTRAR_BESIDES_REGISTER.includes(specVersion);
+
             // If one on these features is enabled and the others aren't, the test should fail.
             // It will only succeed when the three features are enabled (or disabled) for the current starlight runtime version.
-            if (shouldSkipStarlightSP || shouldSkipStarlightDP || shouldSkipStarlightCR) {
-                console.log(`Skipping Collator Assignment tests for Starlight version ${specVersion}`);
-
+            if (shouldSkipStarlightCRBR) {
                 const registerTx1 = polkadotJs.tx.containerRegistrar.register(2000, "0x", "0x");
                 await checkCallIsFiltered(context, polkadotJs, await registerTx1.signAsync(alice));
+            }
+            if (shouldSkipStarlightSP || shouldSkipStarlightDP || shouldSkipStarlightCR) {
+                console.log(`Skipping Collator Assignment tests for Starlight version ${specVersion}`);
 
                 const registerTx2 = polkadotJs.tx.containerRegistrar.registerParathread(2000, "0x", "0x", "0x");
                 await checkCallIsFiltered(context, polkadotJs, await registerTx2.signAsync(alice));

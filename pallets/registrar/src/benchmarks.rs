@@ -53,7 +53,7 @@ fn create_funded_user<T: Config>(
 ) -> (T::AccountId, DepositBalanceOf<T>) {
     const SEED: u32 = 0;
     let user = account(string, n, SEED);
-    let min_reserve_amount = T::Currency::minimum_balance() * 10_000_000u32.into();
+    let min_reserve_amount = T::Currency::minimum_balance() * 100_000_000u32.into();
     let total = min_reserve_amount + extra;
     assert_ok!(T::Currency::mint_into(&user, total));
     (user, total)

@@ -52,7 +52,7 @@ describeSuite({
                     0,
                     `No NewEra event found at the start of era ${currentEraIndex}`
                 );
-                expect(newEraEvents[0].event.data[0].toHuman()).to.be.equal(
+                expect(newEraEvents[0].event.data[0].toString()).to.be.equal(
                     currentEraIndex.toString(),
                     `NewEra event data does not match current era index ${currentEraIndex} at the start of the era.`
                 );

@@ -99,7 +99,7 @@ use {
     tp_bridge::ConvertLocation,
     tp_traits::{
         prod_or_fast_parameter_types, EraIndex, GetHostConfiguration, GetSessionContainerChains,
-        ParaIdAssignmentHooks, RegistrarHandler, Slot, SlotFrequency,
+        NodeActivityTrackingHelper, ParaIdAssignmentHooks, RegistrarHandler, Slot, SlotFrequency,
     },
     xcm::Version as XcmVersion,
     xcm_runtime_apis::{
@@ -181,6 +181,7 @@ use {
 #[cfg(test)]
 mod tests;
 
+#[cfg(not(feature = "disable-genesis-builder"))]
 pub mod genesis_config_presets;
 
 impl_runtime_weights!(starlight_runtime_constants);
@@ -198,7 +199,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_version: 1500,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
-    transaction_version: 26,
+    transaction_version: 27,
     system_version: 1,
 };
 
@@ -348,12 +349,16 @@ impl Contains<RuntimeCall> for IsXcmExtrinsics {
 pub struct IsContainerChainRegistrationExtrinsics;
 impl Contains<RuntimeCall> for IsContainerChainRegistrationExtrinsics {
     fn contains(c: &RuntimeCall) -> bool {
-        matches!(
-            c,
-            RuntimeCall::ContainerRegistrar(_)
-                | RuntimeCall::OnDemandAssignmentProvider(_)
-                | RuntimeCall::Registrar(_)
-        )
+        match c {
+            RuntimeCall::ContainerRegistrar(inner) => {
+                !matches!(inner, pallet_registrar::Call::register { .. })
+            }
+            RuntimeCall::OnDemandAssignmentProvider(_) => true,
+            RuntimeCall::Registrar(inner) => {
+                !matches!(inner, paras_registrar::Call::reserve { .. })
+            }
+            _ => false,
+        }
     }
 }
 
@@ -783,6 +788,7 @@ where
             pallet_transaction_payment::ChargeTransactionPayment::<Runtime>::from(tip),
             //cumulus_primitives_storage_weight_reclaim::StorageWeightReclaim::<Runtime>::new(),
             frame_metadata_hash_extension::CheckMetadataHash::new(true),
+            frame_system::WeightReclaim::new(),
         );
         let raw_payload = SignedPayload::new(call, tx_ext)
             .map_err(|e| {
@@ -1320,7 +1326,7 @@ impl parachains_slashing::Config for Runtime {
 }
 
 parameter_types! {
-    pub const ParaDeposit: Balance = 40 * UNITS;
+    pub const ParaDeposit: Balance = 500 * UNITS;
 }
 
 impl paras_registrar::Config for Runtime {
@@ -1833,6 +1839,7 @@ pub struct CandidateHasRegisteredKeys;
 impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
     fn is_candidate_eligible(a: &AccountId) -> bool {
         <Session as ValidatorRegistration<AccountId>>::is_registered(a)
+            && !InactivityTracking::is_node_offline(a)
     }
     #[cfg(feature = "runtime-benchmarks")]
     fn make_candidate_eligible(a: &AccountId, eligible: bool) {
@@ -1858,7 +1865,15 @@ impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
         } else {
             let _ = Session::purge_keys(RuntimeOrigin::signed(a.clone()));
         }
+
+        if InactivityTracking::is_node_offline(a) {
+            InactivityTracking::make_node_online(a);
+        }
     }
+}
+
+parameter_types! {
+    pub const MaxCandidatesBufferSize: u32 = 100;
 }
 
 impl pallet_pooled_staking::Config for Runtime {
@@ -1873,9 +1888,26 @@ impl pallet_pooled_staking::Config for Runtime {
     type RewardsCollatorCommission = RewardsCollatorCommission;
     type JoiningRequestTimer = SessionTimer<Runtime, StakingSessionDelay>;
     type LeavingRequestTimer = SessionTimer<Runtime, StakingSessionDelay>;
-    type EligibleCandidatesBufferSize = ConstU32<100>;
+    type EligibleCandidatesBufferSize = MaxCandidatesBufferSize;
     type EligibleCandidatesFilter = CandidateHasRegisteredKeys;
     type WeightInfo = weights::pallet_pooled_staking::SubstrateWeight<Runtime>;
+}
+
+parameter_types! {
+    pub const MaxInactiveSessions: u32 = 5;
+}
+impl pallet_inactivity_tracking::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type MaxInactiveSessions = MaxInactiveSessions;
+    type MaxCollatorsPerSession = MaxCandidatesBufferSize;
+    type MaxContainerChains = MaxLengthParaIds;
+    type CurrentSessionIndex = CurrentSessionIndexGetter;
+    type CurrentCollatorsFetcher = TanssiCollatorAssignment;
+    type GetSelfChainBlockAuthor = ();
+    type ParaFilter = tp_parathread_filter_common::ExcludeAllParathreadsFilter<Runtime>;
+    type InvulnerablesFilter = tp_invulnerables_filter_common::InvulnerablesFilter<Runtime>;
+    type CollatorStakeHelper = PooledStaking;
+    type WeightInfo = weights::pallet_inactivity_tracking::SubstrateWeight<Runtime>;
 }
 
 construct_runtime! {
@@ -1931,6 +1963,9 @@ construct_runtime! {
         // InflationRewards must be after Session
         InflationRewards: pallet_inflation_rewards = 33,
         PooledStaking: pallet_pooled_staking = 34,
+
+        // Inactivity tracking
+        InactivityTracking: pallet_inactivity_tracking = 35,
 
         // Governance stuff; uncallable initially.
         Treasury: pallet_treasury = 40,
@@ -2033,6 +2068,7 @@ pub type TxExtension = (
     frame_system::CheckWeight<Runtime>,
     pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
     frame_metadata_hash_extension::CheckMetadataHash<Runtime>,
+    frame_system::WeightReclaim<Runtime>,
 );
 
 /// Unchecked extrinsic type as expected by this runtime.
@@ -2261,7 +2297,7 @@ impl pallet_author_noting::Config for Runtime {
     type ContainerChains = TanssiCollatorAssignment;
     type SlotBeacon = BabeSlotBeacon<Runtime>;
     type ContainerChainAuthor = TanssiCollatorAssignment;
-    type AuthorNotingHook = (InflationRewards, ServicesPayment);
+    type AuthorNotingHook = (InflationRewards, ServicesPayment, InactivityTracking);
     type RelayOrPara = pallet_author_noting::RelayMode;
     type MaxContainerChains = MaxLengthParaIds;
     type WeightInfo = weights::pallet_author_noting::SubstrateWeight<Runtime>;
@@ -2327,6 +2363,7 @@ mod benches {
         [pallet_pooled_staking, PooledStaking]
         [pallet_configuration, CollatorConfiguration]
         [pallet_stream_payment, StreamPayment]
+        [pallet_inactivity_tracking, InactivityTracking]
 
         // XCM
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
@@ -3321,6 +3358,7 @@ sp_api::impl_runtime_apis! {
         }
     }
 
+    #[cfg(not(feature = "disable-genesis-builder"))]
     impl sp_genesis_builder::GenesisBuilder<Block> for Runtime {
         fn build_state(config: Vec<u8>) -> sp_genesis_builder::Result {
             build_state::<RuntimeGenesisConfig>(config)
@@ -3427,9 +3465,13 @@ impl tanssi_initializer::ApplyNewSession<Runtime> for OwnApplySession {
             &queued_id_to_nimbus_map,
             &assignments.next_assignment,
         );
+        // 6. InactivityTracking
+        InactivityTracking::process_ended_session();
     }
 
-    fn on_before_session_ending() {}
+    fn on_before_session_ending() {
+        InactivityTracking::on_before_session_ending();
+    }
 }
 parameter_types! {
     pub MockParaId :ParaId = 0u32.into();

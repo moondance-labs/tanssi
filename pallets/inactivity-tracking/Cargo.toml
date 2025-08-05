@@ -21,6 +21,8 @@ frame-benchmarking = { workspace = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
 
+log = { workspace = true }
+
 sp-core = { workspace = true }
 sp-runtime = { workspace = true }
 sp-staking = { workspace = true }
@@ -38,6 +40,7 @@ std = [
 	"frame-benchmarking/std",
 	"frame-support/std",
 	"frame-system/std",
+	"log/std",
 	"pallet-session/std",
 	"parity-scale-codec/std",
 	"scale-info/std",
