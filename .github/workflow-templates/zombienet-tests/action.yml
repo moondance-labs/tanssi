@@ -24,8 +24,8 @@ runs:
 
     - name: "Run zombie test"
       uses: nick-fields/retry@v3
-      max_attempts: 3
       with:
+        max_attempts: 3
         shell: bash
         command: |
           pnpm install
