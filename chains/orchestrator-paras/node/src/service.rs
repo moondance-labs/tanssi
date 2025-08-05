@@ -590,7 +590,6 @@ fn start_consensus_orchestrator(
                         .runtime_api()
                         .registered_paras(block_hash)?,
                 };
-                let para_ids: Vec<_> = para_ids.into_iter().collect();
                 let author_noting_inherent =
                     tp_author_noting_inherent::OwnParachainInherentData::create_at(
                         relay_parent,

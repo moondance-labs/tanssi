@@ -1793,7 +1793,7 @@ impl_runtime_apis! {
         }
 
         /// Return the list of collators of the given `ParaId`.
-        /// Returns `None` if the `ParaId` is not in the registrar.
+        /// Returns `None` if the `ParaId` does not have any assigned collators.
         fn parachain_collators(para_id: ParaId) -> Option<Vec<AccountId>> {
             let assigned_collators = CollatorAssignment::collator_container_chain();
             let self_para_id = ParachainInfo::get();
