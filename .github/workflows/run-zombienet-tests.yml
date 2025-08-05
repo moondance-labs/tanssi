@@ -35,6 +35,10 @@ on:
           - chopsticks
           - read_only
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   get-tests:
     runs-on: self-hosted

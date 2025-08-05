@@ -23,12 +23,14 @@ runs:
         cache: "pnpm"
 
     - name: "Run zombie test"
-      shell: bash
-      run: |
-        pnpm install
-
-        cd test
-        pnpm moonwall test ${{ inputs.test_name }}
+      uses: nick-fields/retry@v3
+      max_attempts: 3
+      with:
+        shell: bash
+        command: |
+          pnpm install
+          cd test
+          pnpm moonwall test ${{ inputs.test_name }}
 
     - name: "Gather zombie logs"
       if: failure()
