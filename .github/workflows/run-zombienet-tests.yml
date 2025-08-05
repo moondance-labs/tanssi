@@ -1,8 +1,6 @@
 name: Run Zombienet tests
 
 on:
-  # TODO: Remove after test
-  pull_request:
   schedule:
     - cron: "0 0 * * 6"  # Runs every Saturday at 12 AM UTC
   workflow_dispatch:
