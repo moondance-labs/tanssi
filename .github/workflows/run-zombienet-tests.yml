@@ -87,7 +87,6 @@ jobs:
             echo "No tests found. Exiting."
             exit 1
           fi
-
           echo "tests=$tests" >> $GITHUB_ENV
 
       - name: Set tests output
@@ -97,8 +96,8 @@ jobs:
           echo "tests=$include_tests" >> $GITHUB_OUTPUT
 
   build:
-    needs: get-tests
     runs-on: self-hosted
+    needs: [ "get-tests" ]
     env:
       TMP_TARGET: "/tmp/target"
       CARGO_TARGET_DIR: "target"
@@ -175,10 +174,8 @@ jobs:
           name: binaries
           path: target/release
 
-      - name: Setup GH CLI
-        uses: cli/cli-action@v2
-        with:
-          version: latest
+      - name: Install GitHub CLI
+        uses: ./.github/workflow-templates/gh-cli
 
       - name: Make binaries executable
         uses: ./.github/workflow-templates/make-binaries-executable
