@@ -18,6 +18,7 @@
 //! or parachain mode. It is extracted outside of `tanssi-node`/`chains/orchestrator-paras/node`
 //! to be used by `service-container-chain-rpc-provider` which can embed an orchestrator node too.
 
+pub mod parachain;
 pub mod solochain;
 
 use {

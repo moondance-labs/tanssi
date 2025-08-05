@@ -36,6 +36,7 @@ use {
         sync::Arc,
         time::Duration,
     },
+    tc_consensus::RelayChainInterface,
     tc_service_container_chain_spawner::cli::ContainerChainCli,
     tc_service_container_chain_spawner::{
         spawner,
@@ -45,13 +46,21 @@ use {
     tokio_util::sync::CancellationToken,
 };
 
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub enum EnableContainerChainSpawner {
+    Yes,
+    No,
+}
+
 /// Start a solochain node.
 pub async fn start_solochain_node(
     polkadot_config: Configuration,
     container_chain_cli: ContainerChainCli,
     collator_options: CollatorOptions,
     hwbench: Option<sc_sysinfo::HwBench>,
-) -> sc_service::error::Result<TaskManager> {
+    // In container chain rpc provider mode, it manages its own spawner.
+    enable_cc_spawner: EnableContainerChainSpawner,
+) -> sc_service::error::Result<(TaskManager, Arc<dyn RelayChainInterface>)> {
     let tokio_handle = polkadot_config.tokio_handle.clone();
     let orchestrator_para_id = Default::default();
 
@@ -94,6 +103,7 @@ pub async fn start_solochain_node(
     // Dummy parachain config only needed because `build_relay_chain_interface` needs to know if we
     // are collators or not
     let validator = container_chain_cli.base.collator;
+
     let mut dummy_parachain_config = dummy_config(
         polkadot_config.tokio_handle.clone(),
         polkadot_config.base_path.clone(),
@@ -139,6 +149,10 @@ pub async fn start_solochain_node(
     let (cc_spawn_tx, cc_spawn_rx) = unbounded_channel();
 
     if validator {
+        if enable_cc_spawner == EnableContainerChainSpawner::No {
+            panic!("cannot be a validator if container chain spawner is disabled");
+        }
+
         // Start task which detects para id assignment, and starts/stops container chains.
         crate::build_check_assigned_para_id(
             orchestrator_chain_interface.clone(),
@@ -151,7 +165,7 @@ pub async fn start_solochain_node(
     // If the orchestrator chain is running as a full-node, we start a full node for the
     // container chain immediately, because only collator nodes detect their container chain
     // assignment so otherwise it will never start.
-    if !validator {
+    if !validator && enable_cc_spawner == EnableContainerChainSpawner::Yes {
         if let Some(container_chain_para_id) = container_chain_cli.base.para_id {
             // Spawn new container chain node
             cc_spawn_tx
@@ -163,60 +177,63 @@ pub async fn start_solochain_node(
         }
     }
 
-    // Start container chain spawner task. This will start and stop container chains on demand.
-    let spawn_handle = task_manager.spawn_handle();
+    if enable_cc_spawner == EnableContainerChainSpawner::Yes {
+        // Start container chain spawner task. This will start and stop container chains on demand.
+        let spawn_handle = task_manager.spawn_handle();
+        let relay_chain_interface = relay_chain_interface.clone();
 
-    let container_chain_spawner = ContainerChainSpawner {
-        params: ContainerChainSpawnParams {
-            orchestrator_chain_interface,
-            container_chain_cli,
-            tokio_handle,
-            chain_type,
-            relay_chain,
-            relay_chain_interface,
-            sync_keystore,
-            orchestrator_para_id,
-            collation_params: if validator {
-                Some(spawner::CollationParams {
-                    // TODO: all these args must be solochain instead of orchestrator
-                    orchestrator_client: None,
-                    orchestrator_tx_pool: None,
-                    orchestrator_para_id,
-                    collator_key: collator_key
-                        .expect("there should be a collator key if we're a validator"),
-                    solochain: true,
-                })
-            } else {
-                None
+        let container_chain_spawner = ContainerChainSpawner {
+            params: ContainerChainSpawnParams {
+                orchestrator_chain_interface,
+                container_chain_cli,
+                tokio_handle,
+                chain_type,
+                relay_chain,
+                relay_chain_interface,
+                sync_keystore,
+                orchestrator_para_id,
+                collation_params: if validator {
+                    Some(spawner::CollationParams {
+                        // TODO: all these args must be solochain instead of orchestrator
+                        orchestrator_client: None,
+                        orchestrator_tx_pool: None,
+                        orchestrator_para_id,
+                        collator_key: collator_key
+                            .expect("there should be a collator key if we're a validator"),
+                        solochain: true,
+                    })
+                } else {
+                    None
+                },
+                spawn_handle,
+                data_preserver: false,
+                generate_rpc_builder:
+                    tc_service_container_chain_spawner::rpc::GenerateSubstrateRpcBuilder::<
+                        dancebox_runtime::RuntimeApi,
+                    >::new(),
+                phantom: PhantomData,
             },
-            spawn_handle,
-            data_preserver: false,
-            generate_rpc_builder:
-                tc_service_container_chain_spawner::rpc::GenerateSubstrateRpcBuilder::<
-                    dancebox_runtime::RuntimeApi,
-                >::new(),
-            phantom: PhantomData,
-        },
-        state: Default::default(),
-        db_folder_cleanup_done: false,
-        collate_on_tanssi,
-        collation_cancellation_constructs: None,
-    };
-    let state = container_chain_spawner.state.clone();
+            state: Default::default(),
+            db_folder_cleanup_done: false,
+            collate_on_tanssi,
+            collation_cancellation_constructs: None,
+        };
+        let state = container_chain_spawner.state.clone();
 
-    task_manager.spawn_essential_handle().spawn(
-        "container-chain-spawner-rx-loop",
-        None,
-        container_chain_spawner.rx_loop(cc_spawn_rx, validator, true),
-    );
+        task_manager.spawn_essential_handle().spawn(
+            "container-chain-spawner-rx-loop",
+            None,
+            container_chain_spawner.rx_loop(cc_spawn_rx, validator, true),
+        );
 
-    task_manager.spawn_essential_handle().spawn(
-        "container-chain-spawner-debug-state",
-        None,
-        tc_service_container_chain_spawner::monitor::monitor_task(state),
-    );
+        task_manager.spawn_essential_handle().spawn(
+            "container-chain-spawner-debug-state",
+            None,
+            tc_service_container_chain_spawner::monitor::monitor_task(state),
+        );
+    }
 
-    Ok(task_manager)
+    Ok((task_manager, relay_chain_interface))
 }
 
 /// Alternative to [Configuration] struct used in solochain context.

@@ -9,6 +9,7 @@ version = "0.15.0"
 workspace = true
 
 [dependencies]
+async-trait = { workspace = true }
 chrono = { workspace = true }
 clap = { workspace = true, features = [ "derive" ] }
 fdlimit = { workspace = true }
@@ -19,26 +20,88 @@ tokio = { workspace = true }
 tokio-util = { workspace = true }
 
 # Local
-node-common = { workspace = true }
-tc-service-container-chain-spawner = { workspace = true }
-
 dancebox-runtime = { workspace = true, features = [ "std" ] }
-
 dc-orchestrator-chain-interface = { workspace = true }
+flume = { workspace = true }
+manual-container-chains-exclusion-rpc = { workspace = true }
+manual-randomness-rpc = { workspace = true }
+manual-xcm-rpc = { workspace = true }
+node-common = { workspace = true }
+pallet-author-noting-runtime-api = { workspace = true, features = [ "std" ] }
+pallet-collator-assignment-runtime-api = { workspace = true, features = [ "std" ] }
+pallet-configuration = { workspace = true, features = [ "std" ] }
+pallet-data-preservers-runtime-api = { workspace = true, features = [ "std" ] }
+pallet-registrar-runtime-api = { workspace = true, features = [ "std" ] }
+services-payment-rpc = { workspace = true }
+stream-payment-rpc = { workspace = true }
 tc-consensus = { workspace = true }
+tc-service-container-chain-spawner = { workspace = true }
+tp-author-noting-inherent = { workspace = true, features = [ "std" ] }
 
 # Substrate
+sc-basic-authorship = { workspace = true }
+sc-chain-spec = { workspace = true }
 sc-cli = { workspace = true }
+sc-client-api = { workspace = true }
+sc-consensus = { workspace = true }
+sc-consensus-aura = { workspace = true }
+sc-consensus-manual-seal = { workspace = true }
 sc-network = { workspace = true }
+sc-network-sync = { workspace = true }
 sc-service = { workspace = true }
 sc-sysinfo = { workspace = true }
+sc-tracing = { workspace = true }
+sc-transaction-pool = { workspace = true }
+sc-transaction-pool-api = { workspace = true }
+sp-api = { workspace = true, features = [ "std" ] }
+sp-block-builder = { workspace = true }
+sp-blockchain = { workspace = true }
+sp-consensus = { workspace = true }
+sp-consensus-aura = { workspace = true }
+sp-consensus-slots = { workspace = true }
 sp-core = { workspace = true }
 sp-keystore = { workspace = true }
 sp-panic-handler = { workspace = true }
+sp-state-machine = { workspace = true, features = [ "std" ] }
+sp-timestamp = { workspace = true, features = [ "std" ] }
+substrate-frame-rpc-system = { workspace = true }
+
+# Polkadot
+polkadot-cli = { workspace = true }
+polkadot-primitives = { workspace = true }
 
 # Cumulus
 cumulus-client-cli = { workspace = true }
+cumulus-client-collator = { workspace = true }
+cumulus-client-consensus-aura = { workspace = true }
+cumulus-client-consensus-proposer = { workspace = true }
 cumulus-client-service = { workspace = true }
+cumulus-primitives-core = { workspace = true }
+cumulus-relay-chain-interface = { workspace = true }
 
 # Nimbus
+nimbus-consensus = { workspace = true }
 nimbus-primitives = { workspace = true, features = [ "std" ] }
+
+[features]
+default = []
+runtime-benchmarks = [
+	"cumulus-primitives-core/runtime-benchmarks",
+	"dancebox-runtime/runtime-benchmarks",
+	"nimbus-primitives/runtime-benchmarks",
+	"pallet-configuration/runtime-benchmarks",
+	"polkadot-cli/runtime-benchmarks",
+	"polkadot-primitives/runtime-benchmarks",
+	"sc-service/runtime-benchmarks",
+	"tc-service-container-chain-spawner/runtime-benchmarks",
+]
+try-runtime = [
+	"dancebox-runtime/try-runtime",
+	"nimbus-primitives/try-runtime",
+	"pallet-configuration/try-runtime",
+	"polkadot-cli/try-runtime",
+	"tc-service-container-chain-spawner/try-runtime",
+]
+
+fast-runtime = [ "dancebox-runtime/fast-runtime" ]
+metadata-hash = [ "dancebox-runtime/metadata-hash" ]

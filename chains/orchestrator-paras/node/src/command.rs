@@ -18,7 +18,7 @@ use {
     crate::{
         chain_spec,
         cli::{Cli, Subcommand},
-        service::{self, IdentifyVariant, NodeConfig},
+        service::{self, IdentifyVariant},
     },
     cumulus_client_cli::extract_genesis_wasm,
     cumulus_client_service::storage_proof_size::HostFunctions as ReclaimHostFunctions,
@@ -36,6 +36,7 @@ use {
     sp_runtime::traits::{AccountIdConversion, Block as BlockT},
     std::io::Write,
     tc_service_container_chain_spawner::{chain_spec::RawChainSpec, cli::ContainerChainCli},
+    tc_service_orchestrator_chain::parachain::NodeConfig,
 };
 
 fn load_spec(
@@ -164,7 +165,8 @@ pub fn run() -> Result<()> {
         }
         Some(Subcommand::CheckBlock(cmd)) => {
             construct_async_run!(|components, cli, cmd, config| {
-                let (_, import_queue) = service::import_queue(&config, &components);
+                let (_, import_queue) =
+                    tc_service_orchestrator_chain::parachain::import_queue(&config, &components);
                 Ok(cmd.run(components.client, import_queue))
             })
         }
@@ -180,7 +182,8 @@ pub fn run() -> Result<()> {
         }
         Some(Subcommand::ImportBlocks(cmd)) => {
             construct_async_run!(|components, cli, cmd, config| {
-                let (_, import_queue) = service::import_queue(&config, &components);
+                let (_, import_queue) =
+                    tc_service_orchestrator_chain::parachain::import_queue(&config, &components);
                 Ok(cmd.run(components.client, import_queue))
             })
         }
@@ -361,8 +364,10 @@ pub fn run() -> Result<()> {
                     container_chain_cli,
                     collator_options,
                     hwbench,
+                    tc_service_orchestrator_chain::solochain::EnableContainerChainSpawner::Yes,
                 )
                 .await
+                .map(|(task_manager, _)| task_manager)
                 .map_err(Into::into)
             })
         }
@@ -437,7 +442,7 @@ pub fn run() -> Result<()> {
                     container_chain_config = Some((container_chain_cli, tokio_handle));
                 }
 
-                crate::service::start_parachain_node(
+                tc_service_orchestrator_chain::parachain::start_parachain_node(
                     config,
                     polkadot_config,
                     container_chain_config,

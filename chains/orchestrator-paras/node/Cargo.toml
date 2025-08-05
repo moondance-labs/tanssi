@@ -148,6 +148,7 @@ runtime-benchmarks = [
 	"sc-service/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"tc-service-container-chain-spawner/runtime-benchmarks",
+	"tc-service-orchestrator-chain/runtime-benchmarks",
 	"tp-data-preservers-common/runtime-benchmarks",
 ]
 try-runtime = [
@@ -160,6 +161,7 @@ try-runtime = [
 	"polkadot-service/try-runtime",
 	"sp-runtime/try-runtime",
 	"tc-service-container-chain-spawner/try-runtime",
+	"tc-service-orchestrator-chain/try-runtime",
 ]
 
 fast-runtime = [ "dancebox-runtime/fast-runtime", "flashbox-runtime/fast-runtime" ]
