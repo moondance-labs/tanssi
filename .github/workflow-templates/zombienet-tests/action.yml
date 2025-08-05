@@ -26,6 +26,7 @@ runs:
       uses: nick-fields/retry@v3
       with:
         max_attempts: 3
+        timeout_minutes: 60
         shell: bash
         command: |
           pnpm install
