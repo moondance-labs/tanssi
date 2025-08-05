@@ -1,4 +1,4 @@
-name: Run all zombienet tests on schedule
+name: Run Zombienet tests
 
 on:
   schedule:
