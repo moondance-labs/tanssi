@@ -18,7 +18,7 @@ use {
     crate::{
         assert_event_emitted, assert_event_not_emitted,
         mock::{
-            roll_to, AccountId, Balance, Balances, ExtBuilder, OpenStreamHoldAmount, Runtime,
+            run_to_block, AccountId, Balance, Balances, ExtBuilder, OpenStreamHoldAmount, Runtime,
             RuntimeOrigin, StreamPayment, StreamPaymentAssetId, StreamPaymentAssets, TimeUnit,
             ALICE, BOB, CHARLIE, DEFAULT_BALANCE, MEGA,
         },
@@ -439,7 +439,7 @@ mod perform_payment {
             assert_balance_change!(-, ALICE, open_stream.deposit + opening_deposit);
             assert_eq!(get_deposit(ALICE), open_stream.deposit);
 
-            let delta = u128::from(roll_to(10));
+            let delta = u128::from(run_to_block(10));
             let payment = delta * open_stream.config.rate;
             let deposit_left = open_stream.deposit - payment;
 
@@ -485,7 +485,7 @@ mod perform_payment {
             assert_balance_change!(-, ALICE, open_stream.deposit + opening_deposit);
             assert_eq!(get_deposit(ALICE), open_stream.deposit);
 
-            roll_to(10);
+            run_to_block(10);
             let payment = 0;
             let deposit_left = open_stream.deposit;
 
@@ -535,7 +535,7 @@ mod perform_payment {
             assert_balance_change!(-, ALICE, open_stream.deposit + opening_deposit);
             assert_eq!(get_deposit(ALICE), open_stream.deposit);
 
-            roll_to(10);
+            run_to_block(10);
             let payment = open_stream.deposit;
             let deposit_left = 0;
 
@@ -583,7 +583,7 @@ mod perform_payment {
             assert_balance_change!(-, ALICE, open_stream.deposit + opening_deposit);
             assert_eq!(get_deposit(ALICE), open_stream.deposit);
 
-            roll_to(20);
+            run_to_block(20);
             let payment = open_stream.deposit;
             let deposit_left = 0;
 
@@ -630,7 +630,7 @@ mod perform_payment {
             assert_balance_change!(-, ALICE, open_stream.deposit + opening_deposit);
             assert_eq!(get_deposit(ALICE), open_stream.deposit,);
 
-            roll_to(10);
+            run_to_block(10);
             let payment = open_stream.deposit;
             let deposit_left = 0;
 
@@ -677,7 +677,7 @@ mod perform_payment {
             assert_balance_change!(-, ALICE, open_stream.deposit + opening_deposit);
             assert_eq!(get_deposit(ALICE), open_stream.deposit);
 
-            let delta = u128::from(roll_to(10));
+            let delta = u128::from(run_to_block(10));
             let payment = delta * open_stream.config.rate * 12; // 12 sec per block
             let deposit_left = open_stream.deposit - payment;
 
@@ -726,7 +726,7 @@ mod perform_payment {
             assert_balance_change!(-, ALICE, initial_deposit + opening_deposit);
             assert_eq!(get_deposit(ALICE), initial_deposit);
 
-            roll_to(10);
+            run_to_block(10);
 
             assert_ok!(StreamPayment::perform_payment(
                 RuntimeOrigin::signed(CHARLIE),
@@ -811,7 +811,7 @@ mod close_stream {
             assert_balance_change!(-, ALICE, open_stream.deposit + opening_deposit);
             assert_eq!(get_deposit(ALICE), open_stream.deposit);
 
-            let delta = u128::from(roll_to(10));
+            let delta = u128::from(run_to_block(10));
             let payment = delta * open_stream.config.rate;
             let deposit_left = open_stream.deposit - payment;
 
@@ -864,7 +864,7 @@ mod close_stream {
             assert_balance_change!(-, ALICE, open_stream.deposit + opening_deposit);
             assert_eq!(get_deposit(ALICE), open_stream.deposit);
 
-            roll_to(11);
+            run_to_block(11);
             assert!(
                 StreamPayment::stream_payment_status(0, None)
                     .unwrap()
@@ -901,7 +901,7 @@ mod close_stream {
             assert_balance_change!(-, ALICE, open_stream.deposit + opening_deposit);
             assert_eq!(get_deposit(ALICE), open_stream.deposit);
 
-            let delta = u128::from(roll_to(10));
+            let delta = u128::from(run_to_block(10));
             let payment = delta * open_stream.config.rate;
             let deposit_left = open_stream.deposit - payment;
 
@@ -1327,7 +1327,7 @@ mod request_change {
             ));
 
             // Roll to block after deadline, payment should stop at deadline.
-            let delta = u128::from(roll_to(11));
+            let delta = u128::from(run_to_block(11));
             let payment = (delta - 1) * open_stream.config.rate;
 
             assert_ok!(StreamPayment::perform_payment(
@@ -1373,7 +1373,7 @@ mod request_change {
             let open_stream = OpenStream::default();
             assert_ok!(open_stream.call());
 
-            roll_to(12);
+            run_to_block(12);
 
             let change1 = StreamConfig {
                 rate: 101,
@@ -1399,7 +1399,7 @@ mod request_change {
             open_stream.config.minimum_request_deadline_delay = 10;
             assert_ok!(open_stream.call());
 
-            roll_to(5);
+            run_to_block(5);
 
             let change1 = StreamConfig {
                 rate: 101,
@@ -1857,7 +1857,7 @@ mod accept_requested_change {
             ));
 
             // Roll to block after deadline, payment should stop at deadline.
-            let delta = u128::from(roll_to(11));
+            let delta = u128::from(run_to_block(11));
             let payment = (delta - 1) * open_stream.config.rate;
 
             assert_ok!(StreamPayment::perform_payment(
@@ -1870,8 +1870,8 @@ mod accept_requested_change {
                 ..default()
             });
 
-            // Accepting the request shouldn't not pay retroactively
-            roll_to(20);
+            // Accepting the request should not pay retroactively
+            run_to_block(20);
 
             let deposit_before = Streams::<Runtime>::get(0).unwrap().deposit;
             let increase = 42;
