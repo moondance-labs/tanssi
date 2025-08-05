@@ -554,12 +554,16 @@ pub mod pallet {
         fn read_assigned_collators() -> AssignedCollators<T::AccountId> {
             let mut pending_collator_list = PendingCollatorContainerChain::<T>::get();
 
-            if let Some(assigned_collators) = pending_collator_list.take() {
+            let mut assigned = if let Some(assigned_collators) = pending_collator_list.take() {
                 assigned_collators
             } else {
                 // Read current
                 CollatorContainerChain::<T>::get()
-            }
+            };
+
+            assigned.cleanup_empty();
+
+            assigned
         }
 
         pub fn initializer_on_new_session(

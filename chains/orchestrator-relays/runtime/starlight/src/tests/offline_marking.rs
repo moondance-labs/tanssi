@@ -58,9 +58,8 @@ fn init_test_setup() {
     );
     assert_eq!(
         TanssiCollatorAssignment::collator_container_chain()
-            .container_chains
-            .iter()
-            .any(|(_, collators)| collators.contains(&BOB.into())),
+            .container_para_id_of(&BOB.into())
+            .is_some(),
         true
     );
     assert_eq!(
@@ -110,9 +109,8 @@ fn set_collator_offline_using_set_offline_removes_it_from_assigned_collators_and
             assert_eq!(
                 pending_assignment_before_offline_marking
                     .unwrap()
-                    .container_chains
-                    .iter()
-                    .any(|(_, collators)| collators.contains(&BOB.into())),
+                    .container_para_id_of(&BOB.into())
+                    .is_some(),
                 true
             );
             assert_eq!(InactivityTracking::is_node_offline(&BOB.into()), false);
@@ -127,9 +125,8 @@ fn set_collator_offline_using_set_offline_removes_it_from_assigned_collators_and
             // - in the sorted eligible candidates list
             assert_eq!(
                 TanssiCollatorAssignment::collator_container_chain()
-                    .container_chains
-                    .iter()
-                    .any(|(_, collators)| collators.contains(&BOB.into())),
+                    .container_para_id_of(&BOB.into())
+                    .is_some(),
                 false
             );
             assert_eq!(
@@ -193,9 +190,8 @@ fn set_collator_online_using_adds_it_to_assigned_collators_and_sorted_eligible_c
             assert_eq!(
                 pending_assignment_after_online_marking
                     .unwrap()
-                    .container_chains
-                    .iter()
-                    .any(|(_, collators)| collators.contains(&BOB.into())),
+                    .container_para_id_of(&BOB.into())
+                    .is_some(),
                 true
             );
             run_to_session(4);
@@ -205,9 +201,8 @@ fn set_collator_online_using_adds_it_to_assigned_collators_and_sorted_eligible_c
             // - in the sorted eligible candidates list
             assert_eq!(
                 TanssiCollatorAssignment::collator_container_chain()
-                    .container_chains
-                    .iter()
-                    .any(|(_, collators)| collators.contains(&BOB.into())),
+                    .container_para_id_of(&BOB.into())
+                    .is_some(),
                 true
             );
             assert_eq!(
