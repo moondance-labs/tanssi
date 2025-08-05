@@ -18,7 +18,7 @@ use {
     crate::{
         chain_spec,
         cli::{Cli, Subcommand},
-        service::{self, IdentifyVariant},
+        service::IdentifyVariant,
     },
     cumulus_client_cli::extract_genesis_wasm,
     cumulus_client_service::storage_proof_size::HostFunctions as ReclaimHostFunctions,
