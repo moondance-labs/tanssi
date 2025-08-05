@@ -405,11 +405,7 @@ pub mod pallet {
         ) -> DispatchResult {
             ensure_root(origin)?;
 
-            if let Some(xcm_weights) = xcm_weights {
-                RelayXcmWeightConfig::<T>::put(xcm_weights);
-            } else {
-                RelayXcmWeightConfig::<T>::kill();
-            }
+            RelayXcmWeightConfig::<T>::set(xcm_weights);
 
             Ok(())
         }
@@ -422,11 +418,7 @@ pub mod pallet {
         ) -> DispatchResult {
             ensure_root(origin)?;
 
-            if let Some(relay_chain) = relay_chain {
-                RelayChain::<T>::put(relay_chain);
-            } else {
-                RelayChain::<T>::kill();
-            }
+            RelayChain::<T>::set(relay_chain);
 
             Ok(())
         }
