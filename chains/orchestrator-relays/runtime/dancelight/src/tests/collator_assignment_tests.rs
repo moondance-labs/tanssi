@@ -16,9 +16,6 @@
 
 #![cfg(test)]
 
-use sp_arithmetic::Perbill;
-use std::collections::BTreeSet;
-use tp_traits::GetHostConfiguration;
 use {
     crate::{
         tests::common::*, Balances, CollatorConfiguration, Configuration, ContainerRegistrar,
@@ -33,9 +30,11 @@ use {
     frame_support::{assert_noop, assert_ok, dispatch::RawOrigin},
     parity_scale_codec::Encode,
     runtime_common::paras_registrar,
+    sp_arithmetic::Perbill,
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_core::Get,
     sp_runtime::{traits::BlakeTwo256, DigestItem},
+    std::collections::BTreeSet,
     tanssi_runtime_common::relay::BabeAuthorVrfBlockRandomness,
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
 };
@@ -2476,7 +2475,7 @@ fn test_collator_assignment_tip_priority_on_less_cores() {
 
             // Assignment without tip: selects the lowest para ids
             // 1003 should not be part of the container chains because we only have 2 cores for parachains.
-            // Parathreads 1005 and 1006 should also not be here because we don't have enough collators.
+            // Parathreads 1006 and 1007 should also not be here because we don't have enough collators.
             assert_eq!(
                 TanssiCollatorAssignment::collator_container_chain().container_para_ids(),
                 BTreeSet::from_iter([
@@ -2749,11 +2748,16 @@ fn test_collator_assignment_parathreads_adjusted_on_vacant_parachain_core() {
             (AccountId::from(CHARLIE), 100_000 * UNIT),
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
+        // TODO: refactor, add function `with_n_collators(8, 100 * UNIT)`
         .with_collators(vec![
             (AccountId::from(ALICE), 210 * UNIT),
             (AccountId::from(BOB), 100 * UNIT),
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
+            (AccountId::from(EVE), 100 * UNIT),
+            (AccountId::from(FERDIE), 100 * UNIT),
+            (collator_n(11), 100 * UNIT),
+            (collator_n(12), 100 * UNIT),
         ])
         .with_empty_parachains(vec![1001, 1002])
         .with_additional_empty_parathreads(vec![1003, 1004, 1005, 1006])
@@ -2764,11 +2768,29 @@ fn test_collator_assignment_parathreads_adjusted_on_vacant_parachain_core() {
             },
             ..Default::default()
         })
+        .with_config(pallet_configuration::HostConfiguration {
+            collators_per_container: 2,
+            collators_per_parathread: 1,
+            ..Default::default()
+        })
         .build()
         .execute_with(|| {
             let parathread_id: ParaId = 1006u32.into();
             let max_tip_for_parathread = 1 * UNIT;
             let tank_funds = 100 * UNIT;
+
+            // Need 8 collators, 2 * 2 parachains + 1 * 4 parathreads
+            assert_eq!(
+                TanssiCollatorAssignment::collator_container_chain().container_para_ids(),
+                BTreeSet::from_iter([
+                    1001u32.into(),
+                    1002u32.into(),
+                    1003u32.into(),
+                    1004u32.into(),
+                    1005u32.into(),
+                    1006u32.into()
+                ])
+            );
 
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
@@ -2783,6 +2805,16 @@ fn test_collator_assignment_parathreads_adjusted_on_vacant_parachain_core() {
             ));
 
             run_to_session(2);
+
+            // We have 6 cores and 50% go to parachains
+            // But we have 2 parachains and 4 parathreads
+            // Extra parathreads can use the free parachain core
+            assert_eq!(
+                GetCoreAllocationConfigurationImpl::get()
+                    .unwrap()
+                    .max_parachain_percentage,
+                Perbill::from_percent(50)
+            );
 
             // Even though parachains can only get 50% of cores since we have vacant parachain core, it can be allocated to parathreads
             // and we are not considering tips
@@ -2814,6 +2846,10 @@ fn test_collator_assignment_parachain_cannot_be_adjusted_on_vacant_parathread_co
             (AccountId::from(BOB), 100 * UNIT),
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
+            (AccountId::from(EVE), 100 * UNIT),
+            (AccountId::from(FERDIE), 100 * UNIT),
+            (collator_n(11), 100 * UNIT),
+            (collator_n(12), 100 * UNIT),
         ])
         .with_empty_parachains(vec![1001, 1002, 1003, 1004, 1005])
         .with_additional_empty_parathreads(vec![1006])
@@ -2831,7 +2867,8 @@ fn test_collator_assignment_parachain_cannot_be_adjusted_on_vacant_parathread_co
             let tank_funds = 100 * UNIT;
             let max_tip_for_parachain = 1 * UNIT;
 
-            // 1003 should not be part of the container chains as we have less cores available
+            // 1004 and 1005 should not be part of the container chains as we have less cores available
+            // 1006 is a parathread so it has a separate limit
             assert_eq!(
                 TanssiCollatorAssignment::collator_container_chain().container_para_ids(),
                 BTreeSet::from_iter([
@@ -2849,7 +2886,7 @@ fn test_collator_assignment_parachain_cannot_be_adjusted_on_vacant_parathread_co
                 tank_funds,
             ));
 
-            // Set tip for 1003
+            // Set tip for 1005
             assert_ok!(ServicesPayment::set_max_tip(
                 root_origin(),
                 parachain_id,
@@ -2857,6 +2894,16 @@ fn test_collator_assignment_parachain_cannot_be_adjusted_on_vacant_parathread_co
             ));
 
             run_to_session(2);
+
+            // We have 6 cores and 50% go to parachains
+            // But we have 5 parachains and 1 parathread
+            // So only 3 parathreads will be assigned collators
+            assert_eq!(
+                GetCoreAllocationConfigurationImpl::get()
+                    .unwrap()
+                    .max_parachain_percentage,
+                Perbill::from_percent(50)
+            );
 
             // Even when we have vacant parathread core, it cannot be allocated to parachain
             // tips can be used to get the scarce parachain core

@@ -429,20 +429,11 @@ impl<AC> ParaIdAssignmentHooks<u32, AC> for MockParaIdAssignmentHooksImpl {
 
 /// Returns a map of collator to assigned para id
 pub fn assigned_collators() -> BTreeMap<u64, u32> {
-    let mut assigned_collators = CollatorContainerChain::<Test>::get();
-    let mut h = BTreeMap::new();
+    let assigned_collators = CollatorContainerChain::<Test>::get();
 
-    for collator in core::mem::take(&mut assigned_collators.orchestrator_chain) {
-        h.insert(collator, 1000);
-    }
+    let h = assigned_collators.invert_map(ParaId::from(1000));
 
-    for (para_id, collators) in assigned_collators.into_container_chains_with_collators() {
-        for collator in collators.into_iter() {
-            h.insert(collator, u32::from(para_id));
-        }
-    }
-
-    h
+    h.into_iter().map(|(k, v)| (k, u32::from(v))).collect()
 }
 
 /// Returns the default assignment for session 0 used in tests. Collator 100 is assigned to the orchestrator chain.

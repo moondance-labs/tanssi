@@ -18,9 +18,9 @@
 
 use {
     crate::{
-        tests::common::*, BabeCurrentBlockRandomnessGetter, Balances, CollatorConfiguration,
-        Configuration, ContainerRegistrar, GetCoreAllocationConfigurationImpl, Paras, Registrar,
-        RuntimeEvent, ServicesPayment, TanssiAuthorityMapping, TanssiInvulnerables,
+        tests::common::*, Balances, CollatorConfiguration, Configuration, ContainerRegistrar,
+        GetCoreAllocationConfigurationImpl, Paras, Registrar, RuntimeEvent, ServicesPayment,
+        TanssiAuthorityMapping, TanssiInvulnerables,
     },
     alloc::vec,
     cumulus_primitives_core::{
@@ -30,9 +30,12 @@ use {
     frame_support::{assert_noop, assert_ok, dispatch::RawOrigin},
     parity_scale_codec::Encode,
     runtime_common::paras_registrar,
+    sp_arithmetic::Perbill,
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_core::Get,
     sp_runtime::{traits::BlakeTwo256, DigestItem},
+    std::collections::BTreeSet,
+    tanssi_runtime_common::relay::BabeAuthorVrfBlockRandomness,
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
 };
 
@@ -87,11 +90,13 @@ fn test_collator_assignment_rotation() {
             // Check that the randomness in CollatorAssignment is set by looking at the event
             run_to_block(session_to_block(rotation_period));
 
-            // Expected randomness depends on block number, uses BabeCurrentBlockRandomnessGetter
+            // Expected randomness depends on block number, uses BabeAuthorVrfBlockRandomness
             let expected_randomness: [u8; 32] =
-                BabeCurrentBlockRandomnessGetter::get_block_randomness_mixed(b"CollatorAssignment")
-                    .unwrap()
-                    .into();
+                BabeAuthorVrfBlockRandomness::<Runtime>::get_block_randomness_mixed(
+                    b"CollatorAssignment",
+                )
+                .unwrap()
+                .into();
             let events = System::events()
                 .into_iter()
                 .map(|r| r.event)
@@ -2013,7 +2018,7 @@ fn test_collator_assignment_tip_priority_on_congestion() {
             assert_eq!(
                 TanssiCollatorAssignment::collator_container_chain()
                     .get_container_chain(&1003u32.into()),
-                None,
+                None
             );
 
             // Send funds to tank
@@ -2126,7 +2131,7 @@ fn test_collator_assignment_tip_not_assigned_on_insufficient_balance() {
             assert_eq!(
                 TanssiCollatorAssignment::collator_container_chain()
                     .get_container_chain(&para_id.into()),
-                None,
+                None
             );
         });
 }
@@ -2456,18 +2461,29 @@ fn test_collator_assignment_tip_priority_on_less_cores() {
             let max_tip_for_parachain = 1 * UNIT;
             let max_tip_for_parathread = 10 * UNIT;
 
-            // 1003 should not be part of the container chains as we have less cores available
+            // 50% of cores go to parachains.
+            // We have 4 cores, so 2 go to parachains, the rest to parathreads
             assert_eq!(
-                TanssiCollatorAssignment::collator_container_chain()
-                    .container_para_ids()
-                    .into_iter()
-                    .collect::<Vec<ParaId>>(),
-                vec![
+                GetCoreAllocationConfigurationImpl::get()
+                    .unwrap()
+                    .max_parachain_percentage,
+                Perbill::from_percent(50)
+            );
+            // We have 6 collators, and 2 per parachain, so 4 collators go to parachains.
+            // And 2 collators remain for parathreads. We have 1 collator per parathread, so only
+            // 2 parathreads will have collators.
+
+            // Assignment without tip: selects the lowest para ids
+            // 1003 should not be part of the container chains because we only have 2 cores for parachains.
+            // Parathreads 1006 and 1007 should also not be here because we don't have enough collators.
+            assert_eq!(
+                TanssiCollatorAssignment::collator_container_chain().container_para_ids(),
+                BTreeSet::from_iter([
                     1001u32.into(),
                     1002u32.into(),
                     1004u32.into(),
                     1005u32.into(),
-                ]
+                ])
             );
 
             // Send funds to tank
@@ -2499,6 +2515,19 @@ fn test_collator_assignment_tip_priority_on_less_cores() {
             }
 
             run_to_session(2);
+
+            // Now 1003 is part of container chains with collator as we sorted by tip
+            // And 1005 and 1006 as well for parathread
+            // Even though parathread's tip is 10 times more it cannot kick out parachain
+            assert_eq!(
+                TanssiCollatorAssignment::collator_container_chain().container_para_ids(),
+                BTreeSet::from_iter([
+                    1001u32.into(),
+                    1003u32.into(),
+                    1005u32.into(),
+                    1006u32.into(),
+                ])
+            );
 
             assert_eq!(
                 TanssiCollatorAssignment::collator_container_chain()
@@ -2543,25 +2572,9 @@ fn test_collator_assignment_tip_priority_on_less_cores() {
                 assert_eq!(
                     TanssiCollatorAssignment::collator_container_chain()
                         .get_container_chain(parathread_id),
-                    None,
+                    None
                 );
             }
-
-            // Now 1003 is part of container chains with collator as we sorted by tip
-            // And 1005 and 1006 as well for parathread
-            // Even though parathread's tip is 10 times more it cannot kick out parachain
-            assert_eq!(
-                TanssiCollatorAssignment::collator_container_chain()
-                    .container_para_ids()
-                    .into_iter()
-                    .collect::<Vec<ParaId>>(),
-                vec![
-                    1001u32.into(),
-                    1003u32.into(),
-                    1005u32.into(),
-                    1006u32.into(),
-                ]
-            );
         });
 
     ExtBuilder::default()
@@ -2624,16 +2637,13 @@ fn test_collator_assignment_tip_priority_on_less_cores() {
 
             // 1003 should not be part of the container chains as we have less cores available
             assert_eq!(
-                TanssiCollatorAssignment::collator_container_chain()
-                    .container_para_ids()
-                    .into_iter()
-                    .collect::<Vec<ParaId>>(),
-                vec![
+                TanssiCollatorAssignment::collator_container_chain().container_para_ids(),
+                BTreeSet::from_iter([
                     1001u32.into(),
                     1002u32.into(),
                     1004u32.into(),
                     1005u32.into(),
-                ]
+                ])
             );
 
             for parachain_id in &parachain_ids_offering_tip {
@@ -2664,6 +2674,19 @@ fn test_collator_assignment_tip_priority_on_less_cores() {
             ));
 
             run_to_session(2);
+
+            // Now 1002 and 1003 are part of container chains with collator as we sorted by tip
+            // And 1006 as well for parathread
+            // Even though parachain's tip is 10 times more it cannot kick out parathread
+            assert_eq!(
+                TanssiCollatorAssignment::collator_container_chain().container_para_ids(),
+                BTreeSet::from_iter([
+                    1002u32.into(),
+                    1003u32.into(),
+                    1004u32.into(),
+                    1006u32.into(),
+                ])
+            );
 
             for parachain_id in &parachain_ids_offering_tip {
                 assert_eq!(
@@ -2713,22 +2736,6 @@ fn test_collator_assignment_tip_priority_on_less_cores() {
                     None
                 );
             }
-
-            // Now 1003 is part of container chains with collator as we sorted by tip
-            // And 1005 and 1006 as well for parathread
-            // Even though parachain's tip is 10 times more it cannot kick out parathread
-            assert_eq!(
-                TanssiCollatorAssignment::collator_container_chain()
-                    .container_para_ids()
-                    .into_iter()
-                    .collect::<Vec<ParaId>>(),
-                vec![
-                    1002u32.into(),
-                    1003u32.into(),
-                    1004u32.into(),
-                    1006u32.into(),
-                ]
-            );
         });
 }
 
@@ -2741,11 +2748,16 @@ fn test_collator_assignment_parathreads_adjusted_on_vacant_parachain_core() {
             (AccountId::from(CHARLIE), 100_000 * UNIT),
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
+        // TODO: refactor, add function `with_n_collators(8, 100 * UNIT)`
         .with_collators(vec![
             (AccountId::from(ALICE), 210 * UNIT),
             (AccountId::from(BOB), 100 * UNIT),
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
+            (AccountId::from(EVE), 100 * UNIT),
+            (AccountId::from(FERDIE), 100 * UNIT),
+            (collator_n(11), 100 * UNIT),
+            (collator_n(12), 100 * UNIT),
         ])
         .with_empty_parachains(vec![1001, 1002])
         .with_additional_empty_parathreads(vec![1003, 1004, 1005, 1006])
@@ -2756,11 +2768,29 @@ fn test_collator_assignment_parathreads_adjusted_on_vacant_parachain_core() {
             },
             ..Default::default()
         })
+        .with_config(pallet_configuration::HostConfiguration {
+            collators_per_container: 2,
+            collators_per_parathread: 1,
+            ..Default::default()
+        })
         .build()
         .execute_with(|| {
             let parathread_id: ParaId = 1006u32.into();
             let max_tip_for_parathread = 1 * UNIT;
             let tank_funds = 100 * UNIT;
+
+            // Need 8 collators, 2 * 2 parachains + 1 * 4 parathreads
+            assert_eq!(
+                TanssiCollatorAssignment::collator_container_chain().container_para_ids(),
+                BTreeSet::from_iter([
+                    1001u32.into(),
+                    1002u32.into(),
+                    1003u32.into(),
+                    1004u32.into(),
+                    1005u32.into(),
+                    1006u32.into()
+                ])
+            );
 
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
@@ -2776,14 +2806,28 @@ fn test_collator_assignment_parathreads_adjusted_on_vacant_parachain_core() {
 
             run_to_session(2);
 
+            // We have 6 cores and 50% go to parachains
+            // But we have 2 parachains and 4 parathreads
+            // Extra parathreads can use the free parachain core
+            assert_eq!(
+                GetCoreAllocationConfigurationImpl::get()
+                    .unwrap()
+                    .max_parachain_percentage,
+                Perbill::from_percent(50)
+            );
+
             // Even though parachains can only get 50% of cores since we have vacant parachain core, it can be allocated to parathreads
             // and we are not considering tips
             assert_eq!(
-                TanssiCollatorAssignment::collator_container_chain()
-                    .container_para_ids()
-                    .into_iter()
-                    .collect::<Vec<ParaId>>(),
-                vec![1001u32.into(), 1002u32.into(),]
+                TanssiCollatorAssignment::collator_container_chain().container_para_ids(),
+                BTreeSet::from_iter([
+                    1001u32.into(),
+                    1002u32.into(),
+                    1003u32.into(),
+                    1004u32.into(),
+                    1005u32.into(),
+                    1006u32.into()
+                ])
             );
         });
 }
@@ -2802,6 +2846,10 @@ fn test_collator_assignment_parachain_cannot_be_adjusted_on_vacant_parathread_co
             (AccountId::from(BOB), 100 * UNIT),
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
+            (AccountId::from(EVE), 100 * UNIT),
+            (AccountId::from(FERDIE), 100 * UNIT),
+            (collator_n(11), 100 * UNIT),
+            (collator_n(12), 100 * UNIT),
         ])
         .with_empty_parachains(vec![1001, 1002, 1003, 1004, 1005])
         .with_additional_empty_parathreads(vec![1006])
@@ -2819,13 +2867,16 @@ fn test_collator_assignment_parachain_cannot_be_adjusted_on_vacant_parathread_co
             let tank_funds = 100 * UNIT;
             let max_tip_for_parachain = 1 * UNIT;
 
-            // 1003 should not be part of the container chains as we have less cores available
+            // 1004 and 1005 should not be part of the container chains as we have less cores available
+            // 1006 is a parathread so it has a separate limit
             assert_eq!(
-                TanssiCollatorAssignment::collator_container_chain()
-                    .container_para_ids()
-                    .into_iter()
-                    .collect::<Vec<ParaId>>(),
-                vec![1001u32.into(), 1002u32.into(),]
+                TanssiCollatorAssignment::collator_container_chain().container_para_ids(),
+                BTreeSet::from_iter([
+                    1001u32.into(),
+                    1002u32.into(),
+                    1003u32.into(),
+                    1006u32.into()
+                ])
             );
 
             // Send funds to tank
@@ -2835,7 +2886,7 @@ fn test_collator_assignment_parachain_cannot_be_adjusted_on_vacant_parathread_co
                 tank_funds,
             ));
 
-            // Set tip for 1003
+            // Set tip for 1005
             assert_ok!(ServicesPayment::set_max_tip(
                 root_origin(),
                 parachain_id,
@@ -2844,14 +2895,26 @@ fn test_collator_assignment_parachain_cannot_be_adjusted_on_vacant_parathread_co
 
             run_to_session(2);
 
+            // We have 6 cores and 50% go to parachains
+            // But we have 5 parachains and 1 parathread
+            // So only 3 parathreads will be assigned collators
+            assert_eq!(
+                GetCoreAllocationConfigurationImpl::get()
+                    .unwrap()
+                    .max_parachain_percentage,
+                Perbill::from_percent(50)
+            );
+
             // Even when we have vacant parathread core, it cannot be allocated to parachain
             // tips can be used to get the scarce parachain core
             assert_eq!(
-                TanssiCollatorAssignment::collator_container_chain()
-                    .container_para_ids()
-                    .into_iter()
-                    .collect::<Vec<ParaId>>(),
-                vec![1001u32.into(), 1005u32.into(),]
+                TanssiCollatorAssignment::collator_container_chain().container_para_ids(),
+                BTreeSet::from_iter([
+                    1001u32.into(),
+                    1002u32.into(),
+                    1005u32.into(),
+                    1006u32.into()
+                ])
             );
         });
 }

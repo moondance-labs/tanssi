@@ -14,13 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use tp_traits::ParaId;
 use {
     crate::{mock::*, CollatorContainerChain, Event, PendingCollatorContainerChain},
     dp_collator_assignment::AssignedCollators,
     sp_runtime::Perbill,
     std::collections::BTreeMap,
-    tp_traits::{FullRotationMode, FullRotationModes},
+    tp_traits::{FullRotationMode, FullRotationModes, ParaId},
 };
 
 mod assign_full;
@@ -34,6 +33,11 @@ fn create_assigned_collators(
     orchestrator_chain: Vec<u64>,
     container_chains: Vec<(u32, Vec<u64>)>,
 ) -> AssignedCollators<u64> {
+    for (_k, v) in container_chains.iter() {
+        if v.is_empty() {
+            panic!("Collator assignment cannot be empty")
+        }
+    }
     let mut m: BTreeMap<_, _> = container_chains.into_iter().collect();
     m.insert(999, orchestrator_chain);
     let m = m.into_iter().map(|(k, v)| (ParaId::from(k), v)).collect();
@@ -1222,7 +1226,7 @@ fn assign_collators_remove_from_orchestator_when_all_assigned() {
 }
 
 #[test]
-fn collator_assignment_includes_empty_chains() {
+fn collator_assignment_removes_empty_chains() {
     new_test_ext().execute_with(|| {
         run_to_block(1);
 
@@ -1239,18 +1243,10 @@ fn collator_assignment_includes_empty_chains() {
         assert_eq!(assigned_collators(), initial_collators(),);
         run_to_block(11);
 
-        let assigned_collators = CollatorContainerChain::<Test>::get();
-        let expected = create_assigned_collators(
-            vec![1, 2],
-            vec![
-                (2000, vec![]),
-                (2001, vec![]),
-                (2002, vec![]),
-                (3000, vec![]),
-                (3001, vec![]),
-                (3002, vec![]),
-            ],
-        );
+        // Only 2 collators so the only chain with collators is the orchestrator chain
+        let assigned_collators =
+            CollatorContainerChain::<Test>::get().into_single_map(ParaId::from(1000));
+        let expected = BTreeMap::from_iter([(ParaId::from(1000), vec![1, 2])]);
         assert_eq!(assigned_collators, expected);
     });
 }

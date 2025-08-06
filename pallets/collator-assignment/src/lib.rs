@@ -481,6 +481,8 @@ pub mod pallet {
                 &maybe_tip,
             );
 
+            // post_assignment hook has a weird api, but basically this is an iterator over
+            // the removed chains (new_assigned_before_hook - new_assigned_after_hook)
             for removed_para_id in new_assigned
                 .container_para_ids()
                 .difference(&new_assigned_para_ids)
