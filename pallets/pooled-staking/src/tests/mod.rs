@@ -230,7 +230,7 @@ impl FullDelegation {
         }
         .test();
 
-        roll_to(block_number + BLOCKS_TO_WAIT);
+        run_to_block(block_number + BLOCKS_TO_WAIT);
 
         ExecuteDelegation {
             candidate,
@@ -434,7 +434,7 @@ impl FullUndelegation {
         }
         .test::<P>();
 
-        roll_to(block_number + BLOCKS_TO_WAIT);
+        run_to_block(block_number + BLOCKS_TO_WAIT);
 
         ExecuteUndelegation {
             candidate,
