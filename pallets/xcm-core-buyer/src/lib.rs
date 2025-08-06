@@ -418,7 +418,11 @@ pub mod pallet {
         ) -> DispatchResult {
             ensure_root(origin)?;
 
-            RelayChain::<T>::set(relay_chain);
+            if let Some(relay_chain) = relay_chain {
+                RelayChain::<T>::put(relay_chain);
+            } else {
+                RelayChain::<T>::kill();
+            }
 
             Ok(())
         }
