@@ -67,6 +67,8 @@ describeSuite({
                 return;
             }
 
+            // Test starts with 2000 and 2001 being parachains.
+            // Register parathreads 2002, 2003, 2004.
             const nextProfileId = await polkadotJs.query.dataPreservers.nextProfileId();
             const slotFrequency = polkadotJs.createType("TpTraitsSlotFrequency", {
                 min: 6,
@@ -140,10 +142,17 @@ describeSuite({
 
             const activeConfig = (await polkadotJs.query.collatorConfiguration.activeConfig()).toJSON();
 
+            // Check expected num cores and parachain percentage
+            // 60% of 4 cores go to parachains, so 2 cores
+            expect(activeConfig.maxParachainCoresPercentage).toBe(600000000);
+            const configNumCores = (await polkadotJs.query.configuration.activeConfig()).toJSON().schedulerParams
+                .numCores;
+            expect(configNumCores).toBe(4);
+
             // @ts-expect-error Missing Orchestrator Pallets in api-augment
             const numberOfInvulnerables = (await polkadotJs.query.tanssiInvulnerables.invulnerables()).length;
 
-            // We will have two collators less than we need so that we can detect changes in order
+            // We will have one collators less than we need so that we can detect changes in order
             // in below tests easily.
             const numberOfInvulnerablesNeeded =
                 // @ts-expect-error Missing Orchestrator Pallets in api-augment
@@ -151,7 +160,7 @@ describeSuite({
                 // @ts-expect-error Missing Orchestrator Pallets in api-augment
                 activeConfig.collatorsPerParathread * 3 -
                 numberOfInvulnerables -
-                2;
+                1;
 
             const sr25519keyring = new Keyring({ type: "sr25519" });
             const ed25519keyring = new Keyring({ type: "ed25519" });
@@ -215,9 +224,11 @@ describeSuite({
                 const collatorAssignmentBefore = (
                     await polkadotJs.query.tanssiCollatorAssignment.collatorContainerChain()
                 ).toJSON();
-                expect(sortCollatorAssignment(collatorAssignmentBefore)).to.be.deep.equal([2000, 2001, 2004]);
+                // We have 1 collator less than needed, so 1 parathread does not get collators (2002)
+                // 60% parachain cores with 4 cores means all 2 parachains have a core.
+                expect(sortCollatorAssignment(collatorAssignmentBefore)).to.be.deep.equal([2000, 2001, 2003, 2004]);
 
-                // Let's change the parachain percentage to 90
+                // Let's change the parachain percentage to 90%, so 3 cores to parachains and 1 core to parathreads
                 const tx = await polkadotJs.tx.sudo
                     .sudo(polkadotJs.tx.collatorConfiguration.setMaxParachainCoresPercentage(900000000))
                     .signAsync(alice);
@@ -230,8 +241,9 @@ describeSuite({
                 const collatorAssignmentAfter = (
                     await polkadotJs.query.tanssiCollatorAssignment.collatorContainerChain()
                 ).toJSON();
-                // Pool paras are not truncated but they are sorted by tip
-                expect(sortCollatorAssignment(collatorAssignmentAfter)).to.be.deep.equal([2000, 2001, 2004]);
+                // With 90% parachain cores we expect only 1 core to be available to parathreads, but here we see
+                // the same 2 parathreads as before, meaning that parathreads can use unused parachain cores.
+                expect(sortCollatorAssignment(collatorAssignmentAfter)).to.be.deep.equal([2000, 2001, 2003, 2004]);
             },
         });
 
@@ -250,9 +262,10 @@ describeSuite({
                 const collatorAssignmentBefore = (
                     await polkadotJs.query.tanssiCollatorAssignment.collatorContainerChain()
                 ).toJSON();
-                expect(sortCollatorAssignment(collatorAssignmentBefore)).to.be.deep.equal([2000, 2001, 2004]);
+                expect(sortCollatorAssignment(collatorAssignmentBefore)).to.be.deep.equal([2000, 2001, 2003, 2004]);
 
                 // Let's change percentage of parachain to 30%
+                // 30% of 4 cores is 1 core.
                 const tx = await polkadotJs.tx.sudo
                     .sudo(polkadotJs.tx.collatorConfiguration.setMaxParachainCoresPercentage(300000000))
                     .signAsync(alice);
@@ -411,6 +424,8 @@ const emptyGenesisData = (api) => {
     return g;
 };
 
+// Sort collator assignment by number of collators (more first), then by para id (lower first).
+// Return list of para ids.
 const sortCollatorAssignment = (collatorAssignment) => {
     return Object.keys(collatorAssignment.containerChains)
         .sort((a, b) => {
