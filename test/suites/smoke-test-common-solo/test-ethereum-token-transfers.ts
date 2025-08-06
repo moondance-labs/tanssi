@@ -3,7 +3,7 @@ import "@tanssi/api-augment/dancelight";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
 import type { EthereumTokenTransfersNativeTokenTransferred } from "@polkadot/types/lookup";
-import { hexToU8a } from "@polkadot/util";
+import { hexToBigInt, hexToU8a } from "@polkadot/util";
 import { encodeAddress } from "@polkadot/util-crypto";
 import { Interface } from "ethers";
 import { ETHEREUM_MAINNET_SOVEREIGN_ACCOUNT_ADDRESS, SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS } from "utils";
@@ -197,24 +197,24 @@ describeSuite({
                                 );
                             }
 
+                            const messageV1 = versioned.toJSON().v1;
+                            if (!messageV1 || !messageV1.command?.sendNativeToken) continue;
+
                             const { destination, amount } = versioned.toJSON().v1.command.sendNativeToken;
 
                             const relatedEvents = events.filter(
                                 (e) => e.phase.isApplyExtrinsic && e.phase.asApplyExtrinsic.eq(index)
                             );
 
-                            const matched = relatedEvents.some(({ event }) => {
-                                const { section, method, data } = event;
-                                if (section !== "balances" || method !== "Transfer") return false;
-
-                                const [from, to, value] = data;
-
-                                return (
+                            const matched = matchEvent(
+                                relatedEvents,
+                                "balances",
+                                "Transfer",
+                                ([from, to, value]) =>
                                     from.toString() === sovereignAccount &&
                                     to.toString() === destination.accountId32 &&
                                     value.toString() === amount.toString()
-                                );
-                            });
+                            );
 
                             expect(
                                 matched,
@@ -225,8 +225,172 @@ describeSuite({
                 }
             },
         });
+
+        it({
+            id: "C04",
+            title: "foreignAsset is issued when ERC20 token is received",
+            test: async ({ skip }) => {
+                // Find blocks where ethereum inbound queue receives a message, if the message is a SendToken message,
+                // then foreignAsset should be issued and the amount should be minted to the destination address
+
+                let currentBlock = (await api.rpc.chain.getBlock()).block.header.number.toNumber();
+
+                if (BLOCK_NUMBER_TO_DEBUG !== undefined) {
+                    BLOCKS_AMOUNT_TO_CHECK = 1;
+                    currentBlock = BLOCK_NUMBER_TO_DEBUG + 1;
+                }
+
+                for (let i = 1; i <= BLOCKS_AMOUNT_TO_CHECK; i++) {
+                    const blockNumber = currentBlock - i;
+                    process.stdout.write(`\rProcessing block [${blockNumber}]: ${i}/${BLOCKS_AMOUNT_TO_CHECK}`);
+
+                    const blockHash = await api.rpc.chain.getBlockHash(blockNumber);
+                    const block = await api.rpc.chain.getBlock(blockHash);
+                    const events = await api.query.system.events.at(blockHash);
+                    const extrinsics = block.block.extrinsics;
+
+                    for (const [index, extrinsic] of extrinsics.entries()) {
+                        const { section, method } = extrinsic.method;
+
+                        if (section === "ethereumInboundQueue" && method === "submit") {
+                            const message = extrinsic.args[0];
+                            const { eventLog } = message.toJSON();
+
+                            const decodedEvent = iface.decodeEventLog(
+                                "OutboundMessageAccepted",
+                                eventLog.data,
+                                eventLog.topics
+                            );
+
+                            if (decodedEvent.payload.startsWith(MAGIC_BYTES)) {
+                                const channelId = "0x0000000000000000000000000000000000000000000000000000000000000001";
+                                const previousNonce = await (
+                                    await api.at(block.block.header.parentHash)
+                                ).query.ethereumInboundQueue.nonce(channelId);
+                                const currentNonce = await (await api.at(blockHash)).query.ethereumInboundQueue.nonce(
+                                    channelId
+                                );
+                                expect(currentNonce.toBigInt()).to.be.equal(previousNonce.toBigInt() + 1n);
+                                skip();
+                            }
+
+                            let versioned = null;
+                            try {
+                                versioned = api.registry.createType("VersionedXcmMessage", decodedEvent.payload);
+                            } catch (e) {
+                                throw new Error(
+                                    `Unrecognized event payload for "ethereumInboundQueue.submit" for block #${blockNumber}. Details: ${decodedEvent.payload}. Decoder is missing.`
+                                );
+                            }
+
+                            const messageV1 = versioned.toJSON().v1;
+                            if (!messageV1 || !messageV1.command?.sendToken) continue;
+
+                            const { destination, amount } = messageV1.command.sendToken;
+
+                            const relatedEvents = events.filter(
+                                (e) => e.phase.isApplyExtrinsic && e.phase.asApplyExtrinsic.eq(index)
+                            );
+
+                            const matched = matchEvent(
+                                relatedEvents,
+                                "foreignAssets",
+                                "Issued",
+                                ([_, owner, issuedAmount]) =>
+                                    owner.toString() === destination.accountId32.toString() &&
+                                    issuedAmount.toString() === hexToBigInt(amount).toString()
+                            );
+
+                            expect(
+                                matched,
+                                `Expected foreignAssets.Issued of ${hexToBigInt(amount).toString()} to ${destination.accountId32} in block ${blockNumber}`
+                            ).toBe(true);
+                        }
+                    }
+                }
+            },
+        });
+
+        it({
+            id: "C05",
+            title: "foreignAsset is burned when ERC20token is sent",
+            test: async () => {
+                // Find blocks where xcm transfer assets is called transfering assets to ethereum, then check that
+                // the asset is burned from the account that signed the call
+                let currentBlock = (await api.rpc.chain.getBlock()).block.header.number.toNumber();
+
+                if (BLOCK_NUMBER_TO_DEBUG !== undefined) {
+                    BLOCKS_AMOUNT_TO_CHECK = 1;
+                    currentBlock = BLOCK_NUMBER_TO_DEBUG + 1;
+                }
+
+                for (let i = 1; i <= BLOCKS_AMOUNT_TO_CHECK; i++) {
+                    const blockNumber = currentBlock - i;
+                    process.stdout.write(`\rProcessing block [${blockNumber}]: ${i}/${BLOCKS_AMOUNT_TO_CHECK}`);
+
+                    const blockHash = await api.rpc.chain.getBlockHash(blockNumber);
+                    const block = await api.rpc.chain.getBlock(blockHash);
+                    const events = await api.query.system.events.at(blockHash);
+                    const extrinsics = block.block.extrinsics;
+
+                    for (const [index, extrinsic] of extrinsics.entries()) {
+                        const { section, method } = extrinsic.method;
+
+                        if (section === "xcmPallet" && method === "transferAssets") {
+                            const signer = extrinsic.signer.toString();
+
+                            const [dest, _, assets] = extrinsic.args;
+
+                            const jsonDest = dest.toJSON();
+                            const versionKey = Object.keys(jsonDest)[0]; // e.g., "v3"
+                            const location = jsonDest[versionKey];
+
+                            // Is not a message to ethereum
+                            if (!location?.interior?.x1?.globalConsensus?.ethereum) continue;
+
+                            const jsonAssets = assets.toJSON();
+                            const assetsArray = jsonAssets[versionKey];
+
+                            const relatedEvents = events.filter(
+                                (e) => e.phase.isApplyExtrinsic && e.phase.asApplyExtrinsic.eq(index)
+                            );
+
+                            for (const asset of assetsArray) {
+                                const amount = asset.fun.fungible;
+
+                                const matched = matchEvent(
+                                    relatedEvents,
+                                    "foreignAssets",
+                                    "Burned",
+                                    ([_, owner, burnedAmount]) =>
+                                        owner.toString() === signer.toString() &&
+                                        burnedAmount.toString() === hexToBigInt(amount).toString()
+                                );
+
+                                expect(
+                                    matched,
+                                    `Expected foreignAssets.Burned of ${amount.toString()} from ${signer} in block ${blockNumber}`
+                                ).toBe(true);
+                            }
+                        }
+                    }
+                }
+            },
+        });
     },
 });
+
+function matchEvent(
+    events: { event: { section: string; method: string; data: any[] } }[],
+    section: string,
+    method: string,
+    matchFn: (data: any[]) => boolean
+): boolean {
+    return events.some(({ event }) => {
+        if (event.section !== section || event.method !== method) return false;
+        return matchFn(event.data);
+    });
+}
 
 const iface = new Interface([
     "event OutboundMessageAccepted(bytes32 indexed channel_id, uint64 nonce, bytes32 indexed message_id, bytes payload)",
