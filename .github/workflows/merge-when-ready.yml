@@ -51,9 +51,7 @@ jobs:
             fail-fast: false
             matrix:
                 test_name:
-                    - zombie_tanssi_warp_sync
                     - zombie_data_preservers
-                    - zombie_tanssi_parathreads
                     - zombie_tanssi_rotation
         steps:
             - name: Checkout

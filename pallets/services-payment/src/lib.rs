@@ -242,11 +242,7 @@ pub mod pallet {
         ) -> DispatchResultWithPostInfo {
             T::ManagerOrigin::ensure_origin(origin, &para_id)?;
 
-            if let Some(refund_address) = refund_address.clone() {
-                RefundAddress::<T>::insert(para_id, refund_address.clone());
-            } else {
-                RefundAddress::<T>::remove(para_id);
-            }
+            RefundAddress::<T>::set(para_id, refund_address.clone());
 
             Self::deposit_event(Event::<T>::RefundAddressUpdated {
                 para_id,
@@ -306,11 +302,7 @@ pub mod pallet {
         ) -> DispatchResultWithPostInfo {
             T::ManagerOrigin::ensure_origin(origin, &para_id)?;
 
-            if let Some(max_tip) = max_tip {
-                MaxTip::<T>::insert(para_id, max_tip);
-            } else {
-                MaxTip::<T>::remove(para_id);
-            }
+            MaxTip::<T>::set(para_id, max_tip);
 
             Ok(().into())
         }
