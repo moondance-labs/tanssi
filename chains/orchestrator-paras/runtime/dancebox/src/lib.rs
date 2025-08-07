@@ -39,12 +39,7 @@ pub mod weights;
 mod tests;
 
 use {
-    alloc::{
-        boxed::Box,
-        collections::{btree_map::BTreeMap, btree_set::BTreeSet},
-        vec,
-        vec::Vec,
-    },
+    alloc::{boxed::Box, collections::btree_set::BTreeSet, vec, vec::Vec},
     core::marker::PhantomData,
     cumulus_pallet_parachain_system::{
         RelayChainStateProof, RelayNumberMonotonicallyIncreases, RelaychainDataProvider,
@@ -895,16 +890,12 @@ impl<AC> ParaIdAssignmentHooks<BalanceOf<Runtime>, AC> for ParaIdAssignmentHooks
 
     fn post_assignment(
         current_assigned: &BTreeSet<ParaId>,
-        new_assigned: &mut BTreeMap<ParaId, Vec<AC>>,
+        new_assigned: &mut BTreeSet<ParaId>,
         maybe_tip: &Option<BalanceOf<Runtime>>,
     ) -> Weight {
         let blocks_per_session = Period::get();
         let mut total_weight = Weight::zero();
-        new_assigned.retain(|&para_id, collators| {
-            // Short-circuit in case collators are empty
-            if collators.is_empty() {
-                return true;
-            }
+        new_assigned.retain(|&para_id| {
             with_storage_layer(|| {
                 Self::charge_para_ids_internal(
                     blocks_per_session,
@@ -1838,7 +1829,7 @@ pub fn get_para_id_authorities(para_id: ParaId) -> Option<Vec<NimbusId>> {
     if para_id == self_para_id {
         Some(assigned_authorities.orchestrator_chain)
     } else {
-        assigned_authorities.container_chains.get(&para_id).cloned()
+        assigned_authorities.get_container_chain(&para_id).cloned()
     }
 }
 
@@ -2345,7 +2336,7 @@ impl_runtime_apis! {
         }
 
         /// Return the list of collators of the given `ParaId`.
-        /// Returns `None` if the `ParaId` is not in the registrar.
+        /// Returns `None` if the `ParaId` does not have any assigned collators.
         fn parachain_collators(para_id: ParaId) -> Option<Vec<AccountId>> {
             let assigned_collators = CollatorAssignment::collator_container_chain();
             let self_para_id = ParachainInfo::get();
@@ -2353,7 +2344,7 @@ impl_runtime_apis! {
             if para_id == self_para_id {
                 Some(assigned_collators.orchestrator_chain)
             } else {
-                assigned_collators.container_chains.get(&para_id).cloned()
+                assigned_collators.get_container_chain(&para_id).cloned()
             }
         }
 
@@ -2370,11 +2361,7 @@ impl_runtime_apis! {
             let should_end_session = <Runtime as pallet_session::Config>::ShouldEndSession::should_end_session(parent_number + 1);
             let for_session = if should_end_session { ForSession::Next } else { ForSession::Current };
 
-            CollatorAssignment::container_chains_with_collators(for_session)
-                .into_iter()
-                .filter_map(
-                    |(para_id, collators)| (!collators.is_empty()).then_some(para_id)
-                ).collect()
+            CollatorAssignment::container_chains_with_collators(for_session).into_keys().collect()
         }
     }
 

@@ -19,7 +19,7 @@ use {
     dp_collator_assignment::AssignedCollators,
     sp_runtime::Perbill,
     std::collections::BTreeMap,
-    tp_traits::{FullRotationMode, FullRotationModes},
+    tp_traits::{FullRotationMode, FullRotationModes, ParaId},
 };
 
 mod assign_full;
@@ -27,6 +27,23 @@ mod keep_collator_subset;
 mod prioritize_invulnerables;
 mod select_chains;
 mod with_core_config;
+
+// Helper to construct `AssignedCollators` in tests
+fn create_assigned_collators(
+    orchestrator_chain: Vec<u64>,
+    container_chains: Vec<(u32, Vec<u64>)>,
+) -> AssignedCollators<u64> {
+    for (_k, v) in container_chains.iter() {
+        if v.is_empty() {
+            panic!("Collator assignment cannot be empty")
+        }
+    }
+    let mut m: BTreeMap<_, _> = container_chains.into_iter().collect();
+    m.insert(999, orchestrator_chain);
+    let m = m.into_iter().map(|(k, v)| (ParaId::from(k), v)).collect();
+
+    AssignedCollators::from_single_map(m, &ParaId::from(999))
+}
 
 #[test]
 fn assign_initial_collators() {
@@ -1209,7 +1226,7 @@ fn assign_collators_remove_from_orchestator_when_all_assigned() {
 }
 
 #[test]
-fn collator_assignment_includes_empty_chains() {
+fn collator_assignment_removes_empty_chains() {
     new_test_ext().execute_with(|| {
         run_to_block(1);
 
@@ -1226,18 +1243,10 @@ fn collator_assignment_includes_empty_chains() {
         assert_eq!(assigned_collators(), initial_collators(),);
         run_to_block(11);
 
-        let assigned_collators = CollatorContainerChain::<Test>::get();
-        let expected = AssignedCollators {
-            orchestrator_chain: vec![1, 2],
-            container_chains: BTreeMap::from_iter(vec![
-                (2000.into(), vec![]),
-                (2001.into(), vec![]),
-                (2002.into(), vec![]),
-                (3000.into(), vec![]),
-                (3001.into(), vec![]),
-                (3002.into(), vec![]),
-            ]),
-        };
+        // Only 2 collators so the only chain with collators is the orchestrator chain
+        let assigned_collators =
+            CollatorContainerChain::<Test>::get().into_single_map(ParaId::from(1000));
+        let expected = BTreeMap::from_iter([(ParaId::from(1000), vec![1, 2])]);
         assert_eq!(assigned_collators, expected);
     });
 }
@@ -1261,10 +1270,7 @@ fn collator_assignment_remove_parachains_without_credits() {
         run_to_block(11);
 
         let assigned_collators = CollatorContainerChain::<Test>::get();
-        let expected = AssignedCollators {
-            orchestrator_chain: vec![1, 2, 3, 4, 5],
-            container_chains: BTreeMap::from_iter(vec![(2000.into(), vec![6, 7])]),
-        };
+        let expected = create_assigned_collators(vec![1, 2, 3, 4, 5], vec![(2000, vec![6, 7])]);
         assert_eq!(assigned_collators, expected);
     });
 }
@@ -1288,10 +1294,7 @@ fn collator_assignment_remove_parathreads_without_credits() {
         run_to_block(11);
 
         let assigned_collators = CollatorContainerChain::<Test>::get();
-        let expected = AssignedCollators {
-            orchestrator_chain: vec![1, 2, 3, 4, 5],
-            container_chains: BTreeMap::from_iter(vec![(3000.into(), vec![6, 7])]),
-        };
+        let expected = create_assigned_collators(vec![1, 2, 3, 4, 5], vec![(3000, vec![6, 7])]);
         assert_eq!(assigned_collators, expected);
     });
 }

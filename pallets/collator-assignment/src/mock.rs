@@ -416,10 +416,10 @@ impl<AC> ParaIdAssignmentHooks<u32, AC> for MockParaIdAssignmentHooksImpl {
 
     fn post_assignment(
         _current_assigned: &BTreeSet<ParaId>,
-        new_assigned: &mut BTreeMap<ParaId, Vec<AC>>,
+        new_assigned: &mut BTreeSet<ParaId>,
         _maybe_tip: &Option<u32>,
     ) -> Weight {
-        new_assigned.retain(|para_id, _| *para_id <= ParaId::from(5000));
+        new_assigned.retain(|para_id| *para_id <= ParaId::from(5000));
         Weight::zero()
     }
 
@@ -431,19 +431,9 @@ impl<AC> ParaIdAssignmentHooks<u32, AC> for MockParaIdAssignmentHooksImpl {
 pub fn assigned_collators() -> BTreeMap<u64, u32> {
     let assigned_collators = CollatorContainerChain::<Test>::get();
 
-    let mut h = BTreeMap::new();
+    let h = assigned_collators.invert_map(ParaId::from(1000));
 
-    for (para_id, collators) in assigned_collators.container_chains.iter() {
-        for collator in collators.iter() {
-            h.insert(*collator, u32::from(*para_id));
-        }
-    }
-
-    for collator in assigned_collators.orchestrator_chain {
-        h.insert(collator, 1000);
-    }
-
-    h
+    h.into_iter().map(|(k, v)| (k, u32::from(v))).collect()
 }
 
 /// Returns the default assignment for session 0 used in tests. Collator 100 is assigned to the orchestrator chain.
@@ -533,12 +523,13 @@ pub fn extract_assignments_in_range(
     range: Range<u32>,
 ) -> BTreeMap<u32, BTreeSet<u64>> {
     assignment
-        .container_chains
-        .iter()
+        .clone()
+        .into_container_chains_with_collators()
+        .into_iter()
         .filter_map(|(chain_id, collators)| {
-            let id = u32::from(*chain_id);
+            let id = u32::from(chain_id);
             if range.contains(&id) {
-                Some((id, collators.iter().cloned().collect()))
+                Some((id, collators.into_iter().collect()))
             } else {
                 None
             }

@@ -110,15 +110,13 @@ pub fn authorities_for_container(para_id: ParaId) -> Option<Vec<NimbusId>> {
 
     TanssiAuthorityAssignment::collator_container_chain(session_index)
         .expect("authorities should be set")
-        .container_chains
-        .get(&para_id)
+        .get_container_chain(&para_id)
         .cloned()
 }
 
 pub fn accounts_for_container(para_id: ParaId) -> Option<Vec<AccountId>> {
     TanssiCollatorAssignment::collator_container_chain()
-        .container_chains
-        .get(&para_id)
+        .get_container_chain(&para_id)
         .cloned()
 }
 
@@ -859,6 +857,12 @@ pub const CHARLIE: [u8; 32] = [6u8; 32];
 pub const DAVE: [u8; 32] = [7u8; 32];
 pub const EVE: [u8; 32] = [8u8; 32];
 pub const FERDIE: [u8; 32] = [9u8; 32];
+
+pub fn collator_n(n: u8) -> AccountId {
+    assert!(n >= 10, "use a constant like ALICE instead of this");
+
+    AccountId::from([n; 32])
+}
 
 // Whether we have custom data to inject in paras inherent
 fn take_new_inherent_data() -> Option<cumulus_primitives_core::relay_chain::vstaging::InherentData>

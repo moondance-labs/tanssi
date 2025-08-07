@@ -51,7 +51,7 @@ describeSuite({
                             `Container chain ${paraId} should not have substracted credits`
                         ).toBe(startingCredits);
                         expect(
-                            collators.toJSON().containerChains[paraId.toString()].length,
+                            collators.toJSON().containerChains[paraId.toString()]?.length || 0,
                             `Container chain ${paraId} has more than 0 collators`
                         ).toBe(0);
                     }

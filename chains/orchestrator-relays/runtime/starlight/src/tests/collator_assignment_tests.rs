@@ -18,9 +18,9 @@
 
 use {
     crate::{
-        tests::common::*, BabeCurrentBlockRandomnessGetter, Balances, CollatorConfiguration,
-        Configuration, ContainerRegistrar, GetCoreAllocationConfigurationImpl, Paras, Registrar,
-        RuntimeEvent, ServicesPayment, TanssiAuthorityMapping, TanssiInvulnerables,
+        tests::common::*, Balances, CollatorConfiguration, Configuration, ContainerRegistrar,
+        GetCoreAllocationConfigurationImpl, Paras, Registrar, RuntimeEvent, ServicesPayment,
+        TanssiAuthorityMapping, TanssiInvulnerables,
     },
     alloc::vec,
     cumulus_primitives_core::{
@@ -30,9 +30,12 @@ use {
     frame_support::{assert_noop, assert_ok, dispatch::RawOrigin},
     parity_scale_codec::Encode,
     runtime_common::paras_registrar,
+    sp_arithmetic::Perbill,
     sp_consensus_aura::AURA_ENGINE_ID,
     sp_core::Get,
     sp_runtime::{traits::BlakeTwo256, DigestItem},
+    std::collections::BTreeSet,
+    tanssi_runtime_common::relay::BabeAuthorVrfBlockRandomness,
     test_relay_sproof_builder::{HeaderAs, ParaHeaderSproofBuilder, ParaHeaderSproofBuilderItem},
 };
 
@@ -67,8 +70,8 @@ fn test_collator_assignment_rotation() {
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             let initial_assignment = assignment.clone();
             assert_eq!(
-                assignment.container_chains[&1001u32.into()],
-                vec![ALICE.into(), BOB.into()]
+                assignment.get_container_chain(&1001u32.into()).unwrap(),
+                &[ALICE.into(), BOB.into()]
             );
 
             let rotation_period = CollatorConfiguration::config().full_rotation_period;
@@ -87,11 +90,13 @@ fn test_collator_assignment_rotation() {
             // Check that the randomness in CollatorAssignment is set by looking at the event
             run_to_block(session_to_block(rotation_period));
 
-            // Expected randomness depends on block number, uses BabeCurrentBlockRandomnessGetter
+            // Expected randomness depends on block number, uses BabeAuthorVrfBlockRandomness
             let expected_randomness: [u8; 32] =
-                BabeCurrentBlockRandomnessGetter::get_block_randomness_mixed(b"CollatorAssignment")
-                    .unwrap()
-                    .into();
+                BabeAuthorVrfBlockRandomness::<Runtime>::get_block_randomness_mixed(
+                    b"CollatorAssignment",
+                )
+                .unwrap()
+                .into();
             let events = System::events()
                 .into_iter()
                 .map(|r| r.event)
@@ -346,14 +351,16 @@ fn test_session_keys_with_authority_assignment() {
             let key_mapping_session_0 =
                 TanssiAuthorityAssignment::collator_container_chain(0).unwrap();
             assert_eq!(
-                key_mapping_session_0.container_chains[&1000u32.into()],
-                vec![alice_keys.nimbus.clone(), bob_keys.nimbus.clone()],
+                key_mapping_session_0
+                    .get_container_chain(&1000u32.into())
+                    .unwrap(),
+                &[alice_keys.nimbus.clone(), bob_keys.nimbus.clone()],
             );
 
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1000u32.into()],
-                vec![ALICE.into(), BOB.into()],
+                assignment.get_container_chain(&1000u32.into()).unwrap(),
+                &[ALICE.into(), BOB.into()],
             );
 
             let key_mapping_session_1 =
@@ -425,8 +432,10 @@ fn test_session_keys_with_authority_assignment() {
             let key_mapping_session_2 =
                 TanssiAuthorityAssignment::collator_container_chain(2).unwrap();
             assert_eq!(
-                key_mapping_session_2.container_chains[&1000u32.into()],
-                vec![alice_keys_2.nimbus.clone(), bob_keys_2.nimbus.clone()],
+                key_mapping_session_2
+                    .get_container_chain(&1000u32.into())
+                    .unwrap(),
+                &[alice_keys_2.nimbus.clone(), bob_keys_2.nimbus.clone()],
             );
             assert_eq!(
                 TanssiCollatorAssignment::pending_collator_container_chain(),
@@ -452,8 +461,10 @@ fn test_session_keys_with_authority_assignment() {
             let key_mapping_session_2 =
                 TanssiAuthorityAssignment::collator_container_chain(2).unwrap();
             assert_eq!(
-                key_mapping_session_2.container_chains[&1000u32.into()],
-                vec![alice_keys_2.nimbus.clone(), bob_keys_2.nimbus.clone()],
+                key_mapping_session_2
+                    .get_container_chain(&1000u32.into())
+                    .unwrap(),
+                &[alice_keys_2.nimbus.clone(), bob_keys_2.nimbus.clone()],
             );
             assert_eq!(
                 old_assignment_session_1,
@@ -464,8 +475,10 @@ fn test_session_keys_with_authority_assignment() {
             let key_mapping_session_3 =
                 TanssiAuthorityAssignment::collator_container_chain(3).unwrap();
             assert_eq!(
-                key_mapping_session_3.container_chains[&1000u32.into()],
-                vec![alice_keys_2.nimbus.clone(), bob_keys_2.nimbus.clone()],
+                key_mapping_session_3
+                    .get_container_chain(&1000u32.into())
+                    .unwrap(),
+                &[alice_keys_2.nimbus.clone(), bob_keys_2.nimbus.clone()],
             );
             assert_eq!(
                 TanssiCollatorAssignment::pending_collator_container_chain(),
@@ -689,7 +702,7 @@ fn test_authors_paras_inserted_a_posteriori() {
 
             run_to_session(2);
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
+            assert!(assignment.container_para_ids().is_empty());
 
             // We need to accept the validation code, so that the para is onboarded after 2 sessions.
             assert_ok!(Paras::add_trusted_validation_code(
@@ -736,8 +749,8 @@ fn test_authors_paras_inserted_a_posteriori() {
             // Alice and Bob should be assigned to para 2000
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&2000u32.into()],
-                vec![ALICE.into(), BOB.into()]
+                assignment.get_container_chain(&2000u32.into()).unwrap(),
+                &[ALICE.into(), BOB.into()]
             );
         });
 }
@@ -774,7 +787,7 @@ fn test_authors_paras_inserted_a_posteriori_with_collators_already_assigned() {
 
             run_to_session(2);
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
+            assert!(assignment.container_para_ids().is_empty());
 
             // We need to accept the validation code, so that the para is onboarded after 2 sessions.
             assert_ok!(Paras::add_trusted_validation_code(
@@ -783,7 +796,7 @@ fn test_authors_paras_inserted_a_posteriori_with_collators_already_assigned() {
             ));
             run_to_session(4);
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
+            assert!(assignment.container_para_ids().is_empty());
 
             set_dummy_boot_node(origin_of(ALICE.into()), 2000.into());
 
@@ -803,8 +816,8 @@ fn test_authors_paras_inserted_a_posteriori_with_collators_already_assigned() {
             // Alice and Bob are now assigned to para 2000
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&2000u32.into()],
-                vec![ALICE.into(), BOB.into()]
+                assignment.get_container_chain(&2000u32.into()).unwrap(),
+                &[ALICE.into(), BOB.into()]
             );
         });
 }
@@ -841,7 +854,7 @@ fn test_collators_not_assigned_if_wasm_code_is_invalid() {
 
             run_to_session(2);
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
+            assert!(assignment.container_para_ids().is_empty());
 
             // In session 2, we should mark the validation code as trusted in the relay
             // for the paraId to be onboarded as a parathread after 2 sessions.
@@ -862,7 +875,7 @@ fn test_collators_not_assigned_if_wasm_code_is_invalid() {
 
             // paraId should not have any collators assigned.
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
+            assert!(assignment.container_para_ids().is_empty());
         });
 }
 
@@ -890,7 +903,7 @@ fn test_paras_registered_but_zero_credits() {
 
             run_to_session(2);
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
+            assert!(assignment.container_para_ids().is_empty());
 
             // We need to accept the validation code, so that the para is onboarded after 2 sessions.
             assert_ok!(Paras::add_trusted_validation_code(
@@ -899,7 +912,7 @@ fn test_paras_registered_but_zero_credits() {
             ));
             run_to_session(4);
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
+            assert!(assignment.container_para_ids().is_empty());
 
             set_dummy_boot_node(origin_of(ALICE.into()), 2000.into());
 
@@ -919,7 +932,7 @@ fn test_paras_registered_but_zero_credits() {
 
             // Nobody should be assigned to para 2000
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert_eq!(assignment.container_chains.get(&2000u32.into()), None,);
+            assert_eq!(assignment.get_container_chain(&2000u32.into()), None);
         });
 }
 
@@ -947,7 +960,7 @@ fn test_paras_registered_but_not_enough_credits() {
 
             run_to_session(2);
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
+            assert!(assignment.container_para_ids().is_empty());
 
             // We need to accept the validation code, so that the para is onboarded after 2 sessions.
             assert_ok!(Paras::add_trusted_validation_code(
@@ -956,7 +969,7 @@ fn test_paras_registered_but_not_enough_credits() {
             ));
             run_to_session(4);
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
+            assert!(assignment.container_para_ids().is_empty());
 
             set_dummy_boot_node(origin_of(ALICE.into()), 2000.into());
 
@@ -982,7 +995,7 @@ fn test_paras_registered_but_not_enough_credits() {
             run_to_session(6u32);
             // Nobody should be assigned to para 2000
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert_eq!(assignment.container_chains.get(&2000u32.into()), None);
+            assert_eq!(assignment.get_container_chain(&2000u32.into()), None);
 
             // Now purchase the missing block credit
             assert_ok!(ServicesPayment::set_block_production_credits(
@@ -995,8 +1008,8 @@ fn test_paras_registered_but_not_enough_credits() {
             // Alice and Bob should be assigned to para 2000
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&2000u32.into()],
-                vec![ALICE.into(), BOB.into()]
+                assignment.get_container_chain(&2000u32.into()).unwrap(),
+                &[ALICE.into(), BOB.into()]
             );
         });
 }
@@ -1025,7 +1038,7 @@ fn test_paras_registered_but_only_credits_for_1_session() {
 
             run_to_session(2);
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
+            assert!(assignment.container_para_ids().is_empty());
 
             // We need to accept the validation code, so that the para is onboarded after 2 sessions.
             assert_ok!(Paras::add_trusted_validation_code(
@@ -1034,7 +1047,7 @@ fn test_paras_registered_but_only_credits_for_1_session() {
             ));
             run_to_session(4);
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
+            assert!(assignment.container_para_ids().is_empty());
 
             set_dummy_boot_node(origin_of(ALICE.into()), 2000.into());
 
@@ -1061,8 +1074,8 @@ fn test_paras_registered_but_only_credits_for_1_session() {
             // Alice and Bob should be assigned to para 2000
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&2000u32.into()],
-                vec![ALICE.into(), BOB.into()]
+                assignment.get_container_chain(&2000u32.into()).unwrap(),
+                &[ALICE.into(), BOB.into()]
             );
 
             // No credits are consumed if the container chain is not producing blocks
@@ -1099,7 +1112,7 @@ fn test_paras_registered_but_only_credits_for_1_session() {
             run_to_session(8u32);
             // Nobody should be assigned to para 2000
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert_eq!(assignment.container_chains.get(&2000u32.into()), None,);
+            assert_eq!(assignment.get_container_chain(&2000u32.into()), None);
 
             // The container chain only produced one block, so it only consumed one block credit.
             // (it could have produced more blocks, but at most it would have consumed `Period::get()` credits)
@@ -1254,7 +1267,7 @@ fn test_ed_plus_block_credit_session_purchase_works() {
 
             run_to_session(2);
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
+            assert!(assignment.container_para_ids().is_empty());
 
             // We need to accept the validation code, so that the para is onboarded after 2 sessions.
             assert_ok!(Paras::add_trusted_validation_code(
@@ -1291,8 +1304,8 @@ fn test_ed_plus_block_credit_session_purchase_works() {
             // Alice and Bob should be assigned to para 2000
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&2000u32.into()],
-                vec![ALICE.into(), BOB.into()]
+                assignment.get_container_chain(&2000u32.into()).unwrap(),
+                &[ALICE.into(), BOB.into()]
             );
 
             // Simulate block inclusion from container chain 2000
@@ -1320,7 +1333,7 @@ fn test_ed_plus_block_credit_session_purchase_works() {
             run_to_session(7u32);
             // Nobody should be assigned to para 2000
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert_eq!(assignment.container_chains.get(&2000u32.into()), None,);
+            assert_eq!(assignment.get_container_chain(&2000u32.into()), None);
         });
 }
 
@@ -1348,7 +1361,7 @@ fn test_ed_plus_block_credit_session_minus_1_purchase_fails() {
 
             run_to_session(2);
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
+            assert!(assignment.container_para_ids().is_empty());
 
             // We need to accept the validation code, so that the para is onboarded after 2 sessions.
             assert_ok!(Paras::add_trusted_validation_code(
@@ -1358,7 +1371,7 @@ fn test_ed_plus_block_credit_session_minus_1_purchase_fails() {
 
             run_to_session(4);
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
+            assert!(assignment.container_para_ids().is_empty());
 
             set_dummy_boot_node(origin_of(ALICE.into()), 2000.into());
 
@@ -1387,7 +1400,7 @@ fn test_ed_plus_block_credit_session_minus_1_purchase_fails() {
             run_to_session(6u32);
             // Alice and Bob should not be assigned to para 2000
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert_eq!(assignment.container_chains.get(&2000u32.into()), None,);
+            assert_eq!(assignment.get_container_chain(&2000u32.into()), None);
         });
 }
 
@@ -1415,7 +1428,7 @@ fn test_reassignment_ed_plus_two_block_credit_session_purchase_works() {
 
             run_to_session(2);
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
+            assert!(assignment.container_para_ids().is_empty());
 
             // We need to accept the validation code, so that the para is onboarded after 2 sessions.
             assert_ok!(Paras::add_trusted_validation_code(
@@ -1425,7 +1438,7 @@ fn test_reassignment_ed_plus_two_block_credit_session_purchase_works() {
 
             run_to_session(4);
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
+            assert!(assignment.container_para_ids().is_empty());
 
             set_dummy_boot_node(origin_of(ALICE.into()), 2000.into());
 
@@ -1457,8 +1470,8 @@ fn test_reassignment_ed_plus_two_block_credit_session_purchase_works() {
             // Alice and Bob should be assigned to para 2000
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&2000u32.into()],
-                vec![ALICE.into(), BOB.into()]
+                assignment.get_container_chain(&2000u32.into()).unwrap(),
+                &[ALICE.into(), BOB.into()]
             );
 
             // Simulate block inclusion from container chain 2000
@@ -1487,8 +1500,8 @@ fn test_reassignment_ed_plus_two_block_credit_session_purchase_works() {
             // Alice and Bob should be assigned to para 2000
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&2000u32.into()],
-                vec![ALICE.into(), BOB.into()]
+                assignment.get_container_chain(&2000u32.into()).unwrap(),
+                &[ALICE.into(), BOB.into()]
             );
 
             // After this it should not be assigned anymore, since credits are not payable
@@ -1496,7 +1509,7 @@ fn test_reassignment_ed_plus_two_block_credit_session_purchase_works() {
 
             // Nobody should be assigned to para 2000
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert_eq!(assignment.container_chains.get(&2000u32.into()), None,);
+            assert_eq!(assignment.get_container_chain(&2000u32.into()), None);
         });
 }
 
@@ -1524,7 +1537,7 @@ fn test_reassignment_ed_plus_two_block_credit_session_minus_1_purchase_fails() {
 
             run_to_session(2);
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
+            assert!(assignment.container_para_ids().is_empty());
 
             // We need to accept the validation code, so that the para is onboarded after 2 sessions.
             assert_ok!(Paras::add_trusted_validation_code(
@@ -1534,7 +1547,7 @@ fn test_reassignment_ed_plus_two_block_credit_session_minus_1_purchase_fails() {
 
             run_to_session(4);
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
+            assert!(assignment.container_para_ids().is_empty());
 
             set_dummy_boot_node(origin_of(ALICE.into()), 2000.into());
 
@@ -1566,8 +1579,8 @@ fn test_reassignment_ed_plus_two_block_credit_session_minus_1_purchase_fails() {
             // Alice and Bob should be assigned to para 2000
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&2000u32.into()],
-                vec![ALICE.into(), BOB.into()]
+                assignment.get_container_chain(&2000u32.into()).unwrap(),
+                &[ALICE.into(), BOB.into()]
             );
 
             // Simulate block inclusion from container chain 2000
@@ -1595,7 +1608,7 @@ fn test_reassignment_ed_plus_two_block_credit_session_minus_1_purchase_fails() {
             run_to_session(7u32);
             // Nobody should be assigned to para 2000
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert_eq!(assignment.container_chains.get(&2000u32.into()), None,);
+            assert_eq!(assignment.get_container_chain(&2000u32.into()), None);
         });
 }
 
@@ -1623,7 +1636,7 @@ fn test_credits_with_purchase_can_be_combined() {
 
             run_to_session(2);
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
+            assert!(assignment.container_para_ids().is_empty());
 
             // We need to accept the validation code, so that the para is onboarded after 2 sessions.
             assert_ok!(Paras::add_trusted_validation_code(
@@ -1632,7 +1645,7 @@ fn test_credits_with_purchase_can_be_combined() {
             ));
             run_to_session(4);
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
+            assert!(assignment.container_para_ids().is_empty());
 
             set_dummy_boot_node(origin_of(ALICE.into()), 2000.into());
 
@@ -1662,8 +1675,8 @@ fn test_credits_with_purchase_can_be_combined() {
             // Alice and Bob should be assigned to para 2000
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&2000u32.into()],
-                vec![ALICE.into(), BOB.into()]
+                assignment.get_container_chain(&2000u32.into()).unwrap(),
+                &[ALICE.into(), BOB.into()]
             );
         });
 }
@@ -1692,7 +1705,7 @@ fn test_ed_plus_collator_assignment_session_purchase_works() {
 
             run_to_session(2);
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
+            assert!(assignment.container_para_ids().is_empty());
 
             // We need to accept the validation code, so that the para is onboarded after 2 sessions.
             assert_ok!(Paras::add_trusted_validation_code(
@@ -1701,7 +1714,7 @@ fn test_ed_plus_collator_assignment_session_purchase_works() {
             ));
             run_to_session(4);
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
+            assert!(assignment.container_para_ids().is_empty());
 
             set_dummy_boot_node(origin_of(ALICE.into()), 2000.into());
 
@@ -1730,8 +1743,8 @@ fn test_ed_plus_collator_assignment_session_purchase_works() {
             // Alice and Bob should be assigned to para 2000
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&2000u32.into()],
-                vec![ALICE.into(), BOB.into()]
+                assignment.get_container_chain(&2000u32.into()).unwrap(),
+                &[ALICE.into(), BOB.into()]
             );
 
             // Simulate block inclusion from container chain 2000
@@ -1758,7 +1771,7 @@ fn test_ed_plus_collator_assignment_session_purchase_works() {
             run_to_session(8u32);
             // Nobody should be assigned to para 2000
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert_eq!(assignment.container_chains.get(&2000u32.into()), None,);
+            assert_eq!(assignment.get_container_chain(&2000u32.into()), None);
         });
 }
 
@@ -1786,7 +1799,7 @@ fn test_ed_plus_collator_assignment_credit_session_minus_1_purchase_fails() {
 
             run_to_session(2);
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
+            assert!(assignment.container_para_ids().is_empty());
 
             // We need to accept the validation code, so that the para is onboarded after 2 sessions.
             assert_ok!(Paras::add_trusted_validation_code(
@@ -1795,7 +1808,7 @@ fn test_ed_plus_collator_assignment_credit_session_minus_1_purchase_fails() {
             ));
             run_to_session(4);
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
+            assert!(assignment.container_para_ids().is_empty());
 
             set_dummy_boot_node(origin_of(ALICE.into()), 2000.into());
 
@@ -1824,7 +1837,7 @@ fn test_ed_plus_collator_assignment_credit_session_minus_1_purchase_fails() {
             run_to_session(6u32);
             // Alice and Bob should not be assigned to para 2000
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert_eq!(assignment.container_chains.get(&2000u32.into()), None,);
+            assert_eq!(assignment.get_container_chain(&2000u32.into()), None);
         });
 }
 
@@ -1886,13 +1899,13 @@ fn test_collator_assignment_credits_with_purchase_can_be_combined() {
             // Assignment should happen after 2 sessions
             run_to_session(5u32);
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
+            assert!(assignment.container_para_ids().is_empty());
             run_to_session(6u32);
             // Alice and Bob should be assigned to para 2000
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&2000u32.into()],
-                vec![ALICE.into(), BOB.into()]
+                assignment.get_container_chain(&2000u32.into()).unwrap(),
+                &[ALICE.into(), BOB.into()]
             );
         });
 }
@@ -1921,7 +1934,7 @@ fn test_block_credits_and_collator_assignation_credits_through_tank() {
 
             run_to_session(2);
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
+            assert!(assignment.container_para_ids().is_empty());
 
             // We need to accept the validation code, so that the para is onboarded after 2 sessions.
             assert_ok!(Paras::add_trusted_validation_code(
@@ -1965,22 +1978,22 @@ fn test_block_credits_and_collator_assignation_credits_through_tank() {
                     + crate::EXISTENTIAL_DEPOSIT
             ));
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert!(assignment.container_chains.is_empty());
+            assert!(assignment.container_para_ids().is_empty());
 
             // Assignment should happen after 2 sessions
             run_to_session(6u32);
             // Alice and Bob should be assigned to para 2000
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&2000u32.into()],
-                vec![ALICE.into(), BOB.into()]
+                assignment.get_container_chain(&2000u32.into()).unwrap(),
+                &[ALICE.into(), BOB.into()]
             );
 
             // After this it should not be assigned anymore, since credits are not payable
             run_to_session(8u32);
             // Nobody should be assigned to para 2000
             let assignment = TanssiCollatorAssignment::collator_container_chain();
-            assert_eq!(assignment.container_chains.get(&2000u32.into()), None,);
+            assert_eq!(assignment.get_container_chain(&2000u32.into()), None);
         });
 }
 
@@ -2003,10 +2016,9 @@ fn test_collator_assignment_tip_priority_on_congestion() {
             let max_tip = 1 * UNIT;
 
             assert_eq!(
-                TanssiCollatorAssignment::collator_container_chain().container_chains
-                    [&1003u32.into()]
-                    .len(),
-                0
+                TanssiCollatorAssignment::collator_container_chain()
+                    .get_container_chain(&1003u32.into()),
+                None
             );
 
             // Send funds to tank
@@ -2025,8 +2037,9 @@ fn test_collator_assignment_tip_priority_on_congestion() {
 
             run_to_session(2);
             assert_eq!(
-                TanssiCollatorAssignment::collator_container_chain().container_chains
-                    [&para_id.into()]
+                TanssiCollatorAssignment::collator_container_chain()
+                    .get_container_chain(&para_id.into())
+                    .unwrap()
                     .len(),
                 2,
             );
@@ -2116,10 +2129,9 @@ fn test_collator_assignment_tip_not_assigned_on_insufficient_balance() {
 
             run_to_session(1);
             assert_eq!(
-                TanssiCollatorAssignment::collator_container_chain().container_chains
-                    [&para_id.into()]
-                    .len(),
-                0
+                TanssiCollatorAssignment::collator_container_chain()
+                    .get_container_chain(&para_id.into()),
+                None
             );
         });
 }
@@ -2175,17 +2187,29 @@ fn test_collator_assignment_tip_only_charge_willing_paras() {
 
             run_to_session(2);
 
-            let assignment = TanssiCollatorAssignment::collator_container_chain().container_chains;
+            let assignment = TanssiCollatorAssignment::collator_container_chain();
 
             // 2 out of the 3 paras should have collators assigned, with one paying tip to get
             // prioritized, and the other selected at random that should not be charged any tips
-            assert_eq!(assignment[&para_id_with_tip.into()].len(), 2);
+            assert_eq!(
+                assignment
+                    .get_container_chain(&para_id_with_tip.into())
+                    .unwrap()
+                    .len(),
+                2
+            );
             assert_eq!(
                 Balances::usable_balance(ServicesPayment::parachain_tank(para_id_with_tip.into())),
                 tank_funds - max_tip * 2,
             );
 
-            assert_eq!(assignment[&para_id_without_tip.into()].len(), 2);
+            assert_eq!(
+                assignment
+                    .get_container_chain(&para_id_without_tip.into())
+                    .unwrap()
+                    .len(),
+                2
+            );
             assert_eq!(
                 Balances::usable_balance(ServicesPayment::parachain_tank(
                     para_id_without_tip.into()
@@ -2246,14 +2270,16 @@ fn test_collator_assignment_tip_withdraw_min_tip() {
             run_to_session(2);
 
             assert_eq!(
-                TanssiCollatorAssignment::collator_container_chain().container_chains
-                    [&para_id_1003.into()]
+                TanssiCollatorAssignment::collator_container_chain()
+                    .get_container_chain(&para_id_1003.into())
+                    .unwrap()
                     .len(),
                 2
             );
             assert_eq!(
-                TanssiCollatorAssignment::collator_container_chain().container_chains
-                    [&para_id_1002.into()]
+                TanssiCollatorAssignment::collator_container_chain()
+                    .get_container_chain(&para_id_1002.into())
+                    .unwrap()
                     .len(),
                 2
             );
@@ -2291,8 +2317,8 @@ fn test_parachains_deregister_collators_re_assigned() {
             // Alice and Bob to 1001
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32.into()],
-                vec![ALICE.into(), BOB.into()]
+                assignment.get_container_chain(&1001u32.into()).unwrap(),
+                &[ALICE.into(), BOB.into()]
             );
 
             assert_ok!(
@@ -2305,8 +2331,8 @@ fn test_parachains_deregister_collators_re_assigned() {
 
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32.into()],
-                vec![ALICE.into(), BOB.into()]
+                assignment.get_container_chain(&1001u32.into()).unwrap(),
+                &[ALICE.into(), BOB.into()]
             );
 
             run_to_session(2u32);
@@ -2314,8 +2340,8 @@ fn test_parachains_deregister_collators_re_assigned() {
             // Alice and Bob should be assigned to para 1002 this time
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1002u32.into()],
-                vec![ALICE.into(), BOB.into()]
+                assignment.get_container_chain(&1002u32.into()).unwrap(),
+                &[ALICE.into(), BOB.into()]
             );
         });
 }
@@ -2348,8 +2374,8 @@ fn test_parachains_collators_config_change_reassigned() {
             // Alice and Bob to 1001
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32.into()],
-                vec![ALICE.into(), BOB.into()]
+                assignment.get_container_chain(&1001u32.into()).unwrap(),
+                &[ALICE.into(), BOB.into()]
             );
 
             // Assignment should happen after 2 sessions
@@ -2357,8 +2383,8 @@ fn test_parachains_collators_config_change_reassigned() {
 
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32.into()],
-                vec![ALICE.into(), BOB.into()]
+                assignment.get_container_chain(&1001u32.into()).unwrap(),
+                &[ALICE.into(), BOB.into()]
             );
 
             run_to_session(2u32);
@@ -2366,8 +2392,8 @@ fn test_parachains_collators_config_change_reassigned() {
             // Alice, Bob and Charlie should be assigned to para 1001 this time
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&1001u32.into()],
-                vec![ALICE.into(), BOB.into(), CHARLIE.into()]
+                assignment.get_container_chain(&1001u32.into()).unwrap(),
+                &[ALICE.into(), BOB.into(), CHARLIE.into()]
             );
         });
 }
@@ -2435,21 +2461,29 @@ fn test_collator_assignment_tip_priority_on_less_cores() {
             let max_tip_for_parachain = 1 * UNIT;
             let max_tip_for_parathread = 10 * UNIT;
 
-            // 1003 should not be part of the container chains as we have less cores available
+            // 50% of cores go to parachains.
+            // We have 4 cores, so 2 go to parachains, the rest to parathreads
             assert_eq!(
-                TanssiCollatorAssignment::collator_container_chain()
-                    .container_chains
-                    .keys()
-                    .cloned()
-                    .collect::<Vec<ParaId>>(),
-                vec![
+                GetCoreAllocationConfigurationImpl::get()
+                    .unwrap()
+                    .max_parachain_percentage,
+                Perbill::from_percent(50)
+            );
+            // We have 6 collators, and 2 per parachain, so 4 collators go to parachains.
+            // And 2 collators remain for parathreads. We have 1 collator per parathread, so only
+            // 2 parathreads will have collators.
+
+            // Assignment without tip: selects the lowest para ids
+            // 1003 should not be part of the container chains because we only have 2 cores for parachains.
+            // Parathreads 1006 and 1007 should also not be here because we don't have enough collators.
+            assert_eq!(
+                TanssiCollatorAssignment::collator_container_chain().container_para_ids(),
+                BTreeSet::from_iter([
                     1001u32.into(),
                     1002u32.into(),
                     1004u32.into(),
                     1005u32.into(),
-                    1006u32.into(),
-                    1007u32.into()
-                ]
+                ])
             );
 
             // Send funds to tank
@@ -2482,36 +2516,53 @@ fn test_collator_assignment_tip_priority_on_less_cores() {
 
             run_to_session(2);
 
+            // Now 1003 is part of container chains with collator as we sorted by tip
+            // And 1005 and 1006 as well for parathread
+            // Even though parathread's tip is 10 times more it cannot kick out parachain
             assert_eq!(
-                TanssiCollatorAssignment::collator_container_chain().container_chains
-                    [&parachain_id_offering_tip]
+                TanssiCollatorAssignment::collator_container_chain().container_para_ids(),
+                BTreeSet::from_iter([
+                    1001u32.into(),
+                    1003u32.into(),
+                    1005u32.into(),
+                    1006u32.into(),
+                ])
+            );
+
+            assert_eq!(
+                TanssiCollatorAssignment::collator_container_chain()
+                    .get_container_chain(&parachain_id_offering_tip)
+                    .unwrap()
                     .len(),
                 2,
             );
 
             // The first parachain has collator even without tip as it is highest priority without tip
             assert_eq!(
-                TanssiCollatorAssignment::collator_container_chain().container_chains
-                    [parachain_ids_without_tip
-                        .first()
-                        .expect("at least one parachain id is without tip")]
-                .len(),
+                TanssiCollatorAssignment::collator_container_chain()
+                    .get_container_chain(
+                        parachain_ids_without_tip
+                            .first()
+                            .expect("at least one parachain id is without tip")
+                    )
+                    .unwrap()
+                    .len(),
                 2
             );
 
             for parachain_id in &mut parachain_ids_without_tip.iter().skip(1) {
                 assert_eq!(
                     TanssiCollatorAssignment::collator_container_chain()
-                        .container_chains
-                        .get(parachain_id),
+                        .get_container_chain(parachain_id),
                     None
                 );
             }
 
             for parathread_id in &parathread_ids_offering_tip {
                 assert_eq!(
-                    TanssiCollatorAssignment::collator_container_chain().container_chains
-                        [parathread_id]
+                    TanssiCollatorAssignment::collator_container_chain()
+                        .get_container_chain(parathread_id)
+                        .unwrap()
                         .len(),
                     1,
                 );
@@ -2519,31 +2570,11 @@ fn test_collator_assignment_tip_priority_on_less_cores() {
 
             for parathread_id in &parathread_ids_without_tip {
                 assert_eq!(
-                    TanssiCollatorAssignment::collator_container_chain().container_chains
-                        [parathread_id]
-                        .len(),
-                    0
+                    TanssiCollatorAssignment::collator_container_chain()
+                        .get_container_chain(parathread_id),
+                    None
                 );
             }
-
-            // Now 1003 is part of container chains with collator as we sorted by tip
-            // And 1005 and 1006 as well for parathread
-            // Even though parathread's tip is 10 times more it cannot kick out parachain
-            assert_eq!(
-                TanssiCollatorAssignment::collator_container_chain()
-                    .container_chains
-                    .keys()
-                    .cloned()
-                    .collect::<Vec<ParaId>>(),
-                vec![
-                    1001u32.into(),
-                    1003u32.into(),
-                    1004u32.into(),
-                    1005u32.into(),
-                    1006u32.into(),
-                    1007u32.into()
-                ]
-            );
         });
 
     ExtBuilder::default()
@@ -2606,19 +2637,13 @@ fn test_collator_assignment_tip_priority_on_less_cores() {
 
             // 1003 should not be part of the container chains as we have less cores available
             assert_eq!(
-                TanssiCollatorAssignment::collator_container_chain()
-                    .container_chains
-                    .keys()
-                    .cloned()
-                    .collect::<Vec<ParaId>>(),
-                vec![
+                TanssiCollatorAssignment::collator_container_chain().container_para_ids(),
+                BTreeSet::from_iter([
                     1001u32.into(),
                     1002u32.into(),
                     1004u32.into(),
                     1005u32.into(),
-                    1006u32.into(),
-                    1007u32.into()
-                ]
+                ])
             );
 
             for parachain_id in &parachain_ids_offering_tip {
@@ -2650,10 +2675,24 @@ fn test_collator_assignment_tip_priority_on_less_cores() {
 
             run_to_session(2);
 
+            // Now 1002 and 1003 are part of container chains with collator as we sorted by tip
+            // And 1006 as well for parathread
+            // Even though parachain's tip is 10 times more it cannot kick out parathread
+            assert_eq!(
+                TanssiCollatorAssignment::collator_container_chain().container_para_ids(),
+                BTreeSet::from_iter([
+                    1002u32.into(),
+                    1003u32.into(),
+                    1004u32.into(),
+                    1006u32.into(),
+                ])
+            );
+
             for parachain_id in &parachain_ids_offering_tip {
                 assert_eq!(
-                    TanssiCollatorAssignment::collator_container_chain().container_chains
-                        [parachain_id]
+                    TanssiCollatorAssignment::collator_container_chain()
+                        .get_container_chain(parachain_id)
+                        .unwrap()
                         .len(),
                     2,
                 );
@@ -2664,56 +2703,39 @@ fn test_collator_assignment_tip_priority_on_less_cores() {
             for parachain_id in &parachain_ids_without_tip {
                 assert_eq!(
                     TanssiCollatorAssignment::collator_container_chain()
-                        .container_chains
-                        .get(parachain_id),
+                        .get_container_chain(parachain_id),
                     None
                 );
             }
 
             assert_eq!(
-                TanssiCollatorAssignment::collator_container_chain().container_chains
-                    [&parathread_id_offering_tip]
+                TanssiCollatorAssignment::collator_container_chain()
+                    .get_container_chain(&parathread_id_offering_tip)
+                    .unwrap()
                     .len(),
                 1,
             );
 
             // The first parathread has collator even without tip as it is highest priority without tip and we have one collator remaining
             assert_eq!(
-                TanssiCollatorAssignment::collator_container_chain().container_chains
-                    [parathread_ids_without_tip
-                        .first()
-                        .expect("at least one parathread id is without tip")]
-                .len(),
+                TanssiCollatorAssignment::collator_container_chain()
+                    .get_container_chain(
+                        parathread_ids_without_tip
+                            .first()
+                            .expect("at least one parathread id is without tip")
+                    )
+                    .unwrap()
+                    .len(),
                 1
             );
 
             for parathread_id in &mut parathread_ids_without_tip.iter().skip(1) {
                 assert_eq!(
-                    TanssiCollatorAssignment::collator_container_chain().container_chains
-                        [parathread_id]
-                        .len(),
-                    0
+                    TanssiCollatorAssignment::collator_container_chain()
+                        .get_container_chain(parathread_id),
+                    None
                 );
             }
-
-            // Now 1003 is part of container chains with collator as we sorted by tip
-            // And 1005 and 1006 as well for parathread
-            // Even though parachain's tip is 10 times more it cannot kick out parathread
-            assert_eq!(
-                TanssiCollatorAssignment::collator_container_chain()
-                    .container_chains
-                    .keys()
-                    .cloned()
-                    .collect::<Vec<ParaId>>(),
-                vec![
-                    1002u32.into(),
-                    1003u32.into(),
-                    1004u32.into(),
-                    1005u32.into(),
-                    1006u32.into(),
-                    1007u32.into()
-                ]
-            );
         });
 }
 
@@ -2726,11 +2748,16 @@ fn test_collator_assignment_parathreads_adjusted_on_vacant_parachain_core() {
             (AccountId::from(CHARLIE), 100_000 * UNIT),
             (AccountId::from(DAVE), 100_000 * UNIT),
         ])
+        // TODO: refactor, add function `with_n_collators(8, 100 * UNIT)`
         .with_collators(vec![
             (AccountId::from(ALICE), 210 * UNIT),
             (AccountId::from(BOB), 100 * UNIT),
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
+            (AccountId::from(EVE), 100 * UNIT),
+            (AccountId::from(FERDIE), 100 * UNIT),
+            (collator_n(11), 100 * UNIT),
+            (collator_n(12), 100 * UNIT),
         ])
         .with_empty_parachains(vec![1001, 1002])
         .with_additional_empty_parathreads(vec![1003, 1004, 1005, 1006])
@@ -2741,11 +2768,29 @@ fn test_collator_assignment_parathreads_adjusted_on_vacant_parachain_core() {
             },
             ..Default::default()
         })
+        .with_config(pallet_configuration::HostConfiguration {
+            collators_per_container: 2,
+            collators_per_parathread: 1,
+            ..Default::default()
+        })
         .build()
         .execute_with(|| {
             let parathread_id: ParaId = 1006u32.into();
             let max_tip_for_parathread = 1 * UNIT;
             let tank_funds = 100 * UNIT;
+
+            // Need 8 collators, 2 * 2 parachains + 1 * 4 parathreads
+            assert_eq!(
+                TanssiCollatorAssignment::collator_container_chain().container_para_ids(),
+                BTreeSet::from_iter([
+                    1001u32.into(),
+                    1002u32.into(),
+                    1003u32.into(),
+                    1004u32.into(),
+                    1005u32.into(),
+                    1006u32.into()
+                ])
+            );
 
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
@@ -2761,22 +2806,28 @@ fn test_collator_assignment_parathreads_adjusted_on_vacant_parachain_core() {
 
             run_to_session(2);
 
+            // We have 6 cores and 50% go to parachains
+            // But we have 2 parachains and 4 parathreads
+            // Extra parathreads can use the free parachain core
+            assert_eq!(
+                GetCoreAllocationConfigurationImpl::get()
+                    .unwrap()
+                    .max_parachain_percentage,
+                Perbill::from_percent(50)
+            );
+
             // Even though parachains can only get 50% of cores since we have vacant parachain core, it can be allocated to parathreads
             // and we are not considering tips
             assert_eq!(
-                TanssiCollatorAssignment::collator_container_chain()
-                    .container_chains
-                    .keys()
-                    .cloned()
-                    .collect::<Vec<ParaId>>(),
-                vec![
+                TanssiCollatorAssignment::collator_container_chain().container_para_ids(),
+                BTreeSet::from_iter([
                     1001u32.into(),
                     1002u32.into(),
                     1003u32.into(),
                     1004u32.into(),
                     1005u32.into(),
                     1006u32.into()
-                ]
+                ])
             );
         });
 }
@@ -2795,6 +2846,10 @@ fn test_collator_assignment_parachain_cannot_be_adjusted_on_vacant_parathread_co
             (AccountId::from(BOB), 100 * UNIT),
             (AccountId::from(CHARLIE), 100 * UNIT),
             (AccountId::from(DAVE), 100 * UNIT),
+            (AccountId::from(EVE), 100 * UNIT),
+            (AccountId::from(FERDIE), 100 * UNIT),
+            (collator_n(11), 100 * UNIT),
+            (collator_n(12), 100 * UNIT),
         ])
         .with_empty_parachains(vec![1001, 1002, 1003, 1004, 1005])
         .with_additional_empty_parathreads(vec![1006])
@@ -2812,19 +2867,16 @@ fn test_collator_assignment_parachain_cannot_be_adjusted_on_vacant_parathread_co
             let tank_funds = 100 * UNIT;
             let max_tip_for_parachain = 1 * UNIT;
 
-            // 1003 should not be part of the container chains as we have less cores available
+            // 1004 and 1005 should not be part of the container chains as we have less cores available
+            // 1006 is a parathread so it has a separate limit
             assert_eq!(
-                TanssiCollatorAssignment::collator_container_chain()
-                    .container_chains
-                    .keys()
-                    .cloned()
-                    .collect::<Vec<ParaId>>(),
-                vec![
+                TanssiCollatorAssignment::collator_container_chain().container_para_ids(),
+                BTreeSet::from_iter([
                     1001u32.into(),
                     1002u32.into(),
                     1003u32.into(),
                     1006u32.into()
-                ]
+                ])
             );
 
             // Send funds to tank
@@ -2834,7 +2886,7 @@ fn test_collator_assignment_parachain_cannot_be_adjusted_on_vacant_parathread_co
                 tank_funds,
             ));
 
-            // Set tip for 1003
+            // Set tip for 1005
             assert_ok!(ServicesPayment::set_max_tip(
                 root_origin(),
                 parachain_id,
@@ -2843,20 +2895,26 @@ fn test_collator_assignment_parachain_cannot_be_adjusted_on_vacant_parathread_co
 
             run_to_session(2);
 
+            // We have 6 cores and 50% go to parachains
+            // But we have 5 parachains and 1 parathread
+            // So only 3 parathreads will be assigned collators
+            assert_eq!(
+                GetCoreAllocationConfigurationImpl::get()
+                    .unwrap()
+                    .max_parachain_percentage,
+                Perbill::from_percent(50)
+            );
+
             // Even when we have vacant parathread core, it cannot be allocated to parachain
             // tips can be used to get the scarce parachain core
             assert_eq!(
-                TanssiCollatorAssignment::collator_container_chain()
-                    .container_chains
-                    .keys()
-                    .cloned()
-                    .collect::<Vec<ParaId>>(),
-                vec![
+                TanssiCollatorAssignment::collator_container_chain().container_para_ids(),
+                BTreeSet::from_iter([
                     1001u32.into(),
                     1002u32.into(),
                     1005u32.into(),
                     1006u32.into()
-                ]
+                ])
             );
         });
 }

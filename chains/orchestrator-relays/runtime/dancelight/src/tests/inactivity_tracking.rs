@@ -110,12 +110,12 @@ fn inactivity_tracking_correctly_updates_storages() {
         .execute_with(|| {
             let assignment = TanssiCollatorAssignment::collator_container_chain();
             assert_eq!(
-                assignment.container_chains[&3000.into()],
-                vec![ALICE.into(), BOB.into()]
+                assignment.get_container_chain(&3000.into()).unwrap(),
+                &[ALICE.into(), BOB.into()]
             );
             assert_eq!(
-                assignment.container_chains[&3001.into()],
-                vec![CHARLIE.into(), DAVE.into()]
+                assignment.get_container_chain(&3001.into()).unwrap(),
+                &[CHARLIE.into(), DAVE.into()]
             );
             note_blocks_for_container_chain(3000.into(), 3001.into(), 1, session_to_block(1));
             run_block();
