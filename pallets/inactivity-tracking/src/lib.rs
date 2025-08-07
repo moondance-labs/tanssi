@@ -143,6 +143,10 @@ pub mod pallet {
         /// Helper for dealing with collator's stake
         type CollatorStakeHelper: StakingCandidateHelper<Collator<Self>>;
 
+        /// The cooldown period length in sessions when a collator is notified as inactive.
+        #[pallet::constant]
+        type CooldownLength: Get<u32>;
+
         /// The weight information of this pallet.
         type WeightInfo: weights::WeightInfo;
     }
