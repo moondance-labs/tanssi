@@ -23,6 +23,7 @@ else
 fi
 
 pushd $symbiotic_contracts_dir
+#    TODO: Add custom ci-fast profile on the fly
 export FOUNDRY_PROFILE=ci
 forge build
 popd
