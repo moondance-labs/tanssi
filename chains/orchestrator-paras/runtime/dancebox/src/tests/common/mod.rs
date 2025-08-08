@@ -586,7 +586,7 @@ pub fn set_author_noting_inherent_data(builder: ParaHeaderSproofBuilder) {
 
     assert_ok!(RuntimeCall::AuthorNoting(
         pallet_author_noting::Call::<Runtime>::set_latest_author_data {
-            data: tp_author_noting_inherent::OwnParachainInherentData {
+            data: tp_author_noting_inherent_core::OwnParachainInherentData {
                 relay_storage_proof,
             }
         }
