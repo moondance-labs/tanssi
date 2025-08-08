@@ -64,7 +64,7 @@ mod benchmarks {
         let mut container_chains = vec![];
 
         let data = if TypeId::of::<<<T as Config>::RelayOrPara as RelayOrPara>::InherentArg>()
-            == TypeId::of::<tp_author_noting_inherent::OwnParachainInherentData>()
+            == TypeId::of::<tp_author_noting_inherent_core::OwnParachainInherentData>()
         {
             // RELAY MODE
             let mut sproof_builder = test_sproof::ParaHeaderSproofBuilder::default();
@@ -93,7 +93,7 @@ mod benchmarks {
                 },
             );
 
-            let arg = tp_author_noting_inherent::OwnParachainInherentData {
+            let arg = tp_author_noting_inherent_core::OwnParachainInherentData {
                 relay_storage_proof: proof,
             };
 

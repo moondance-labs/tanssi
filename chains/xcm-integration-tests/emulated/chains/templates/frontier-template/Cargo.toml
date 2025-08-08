@@ -26,6 +26,6 @@ sp-core = { workspace = true }
 sp-runtime = { workspace = true }
 sp-trie = { workspace = true }
 tanssi-emulated-integration-tests-common = { workspace = true }
-tp-author-noting-inherent = { workspace = true }
+tp-author-noting-inherent-core = { workspace = true }
 xcm = { workspace = true }
 xcm-emulator = { workspace = true }

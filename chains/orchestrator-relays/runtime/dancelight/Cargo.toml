@@ -130,7 +130,7 @@ cumulus-primitives-core = { workspace = true }
 # Tanssi
 dp-consensus = { workspace = true }
 dp-container-chain-genesis-data = { workspace = true }
-tp-author-noting-inherent = { workspace = true }
+tp-author-noting-inherent-core = { workspace = true }
 tp-data-preservers-common = { workspace = true }
 tp-invulnerables-filter-common = { workspace = true }
 tp-parathread-filter-common = { workspace = true }
@@ -346,7 +346,7 @@ std = [
 	"substrate-wasm-builder",
 	"tanssi-runtime-common/std",
 	"test-relay-sproof-builder/std",
-	"tp-author-noting-inherent/std",
+	"tp-author-noting-inherent-core/std",
 	"tp-bridge/std",
 	"tp-data-preservers-common/std",
 	"tp-invulnerables-filter-common/std",

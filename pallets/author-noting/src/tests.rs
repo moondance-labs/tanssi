@@ -677,12 +677,12 @@ fn weights_assigned_to_extrinsics_are_correct() {
         frame_support::storage::unhashed::put(MOCK_RELAY_ROOT_KEY, &relay_root);
 
         let mut inherent_data = InherentData::default();
-        let system_inherent_data = tp_author_noting_inherent::OwnParachainInherentData {
+        let system_inherent_data = tp_author_noting_inherent_core::OwnParachainInherentData {
             relay_storage_proof: relay_chain_state,
         };
         inherent_data
             .put_data(
-                tp_author_noting_inherent::INHERENT_IDENTIFIER,
+                tp_author_noting_inherent_core::INHERENT_IDENTIFIER,
                 &system_inherent_data,
             )
             .expect("failed to put VFP inherent");

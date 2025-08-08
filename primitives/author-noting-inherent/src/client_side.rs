@@ -40,39 +40,18 @@ async fn collect_relay_storage_proof(
         .ok()
 }
 
-impl OwnParachainInherentData {
-    /// Create the [`OwnParachainInherentData`] at the given `relay_parent`.
-    ///
-    /// Returns `None` if the creation failed.
-    pub async fn create_at(
-        relay_parent: PHash,
-        relay_chain_interface: &impl RelayChainInterface,
-        para_ids: &[ParaId],
-    ) -> Option<OwnParachainInherentData> {
-        let relay_storage_proof =
-            collect_relay_storage_proof(relay_chain_interface, para_ids, relay_parent).await?;
+/// Create the [`OwnParachainInherentData`] at the given `relay_parent`.
+///
+/// Returns `None` if the creation failed.
+pub async fn create_at(
+    relay_parent: PHash,
+    relay_chain_interface: &impl RelayChainInterface,
+    para_ids: &[ParaId],
+) -> Option<OwnParachainInherentData> {
+    let relay_storage_proof =
+        collect_relay_storage_proof(relay_chain_interface, para_ids, relay_parent).await?;
 
-        Some(OwnParachainInherentData {
-            relay_storage_proof,
-        })
-    }
-}
-
-// Implementation of InherentDataProvider
-#[async_trait::async_trait]
-impl sp_inherents::InherentDataProvider for OwnParachainInherentData {
-    async fn provide_inherent_data(
-        &self,
-        inherent_data: &mut sp_inherents::InherentData,
-    ) -> Result<(), sp_inherents::Error> {
-        inherent_data.put_data(crate::INHERENT_IDENTIFIER, &self)
-    }
-
-    async fn try_handle_error(
-        &self,
-        _: &sp_inherents::InherentIdentifier,
-        _: &[u8],
-    ) -> Option<Result<(), sp_inherents::Error>> {
-        None
-    }
+    Some(OwnParachainInherentData {
+        relay_storage_proof,
+    })
 }

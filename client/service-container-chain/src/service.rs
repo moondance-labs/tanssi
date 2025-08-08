@@ -452,19 +452,19 @@ fn start_consensus_container<RuntimeApi: MinimalContainerRuntimeApi>(
 
             async move {
                 let authorities_noting_inherent = if solochain {
-                    ccp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData::create_at_solochain(
+                    ccp_authorities_noting_inherent::create_at_solochain(
                         relay_parent,
                         &relay_chain_interface,
                     )
-                        .await
+                    .await
                 } else {
-                    ccp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData::create_at(
+                    ccp_authorities_noting_inherent::create_at(
                         relay_parent,
                         &relay_chain_interface,
                         &orchestrator_chain_interface,
                         orchestrator_para_id,
                     )
-                        .await
+                    .await
                 };
 
                 let slot_duration = {
@@ -536,12 +536,12 @@ fn start_consensus_container<RuntimeApi: MinimalContainerRuntimeApi>(
                     Ok(aux_data)
                 } else {
                     let latest_header =
-                        ccp_authorities_noting_inherent::ContainerChainAuthoritiesInherentData::get_latest_orchestrator_head_info(
+                        ccp_authorities_noting_inherent::get_latest_orchestrator_head_info(
                             relay_parent,
                             &relay_chain_interace_for_orch,
                             orchestrator_para_id,
                         )
-                            .await;
+                        .await;
 
                     let latest_header = latest_header.ok_or_else(|| {
                         Box::<dyn std::error::Error + Send + Sync>::from(

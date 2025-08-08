@@ -255,7 +255,7 @@ pub struct BlockTests {
             dyn Fn(
                 &BlockTests,
                 RelayChainBlockNumber,
-                &mut tp_author_noting_inherent::OwnParachainInherentData,
+                &mut tp_author_noting_inherent_core::OwnParachainInherentData,
             ),
         >,
     >,
@@ -352,7 +352,7 @@ impl BlockTests {
                 let inherent_data = {
                     let mut inherent_data = InherentData::default();
                     let mut system_inherent_data =
-                        tp_author_noting_inherent::OwnParachainInherentData {
+                        tp_author_noting_inherent_core::OwnParachainInherentData {
                             relay_storage_proof,
                         };
                     if let Some(ref hook) = self.inherent_data_hook {
@@ -360,7 +360,7 @@ impl BlockTests {
                     }
                     inherent_data
                         .put_data(
-                            tp_author_noting_inherent::INHERENT_IDENTIFIER,
+                            tp_author_noting_inherent_core::INHERENT_IDENTIFIER,
                             &system_inherent_data,
                         )
                         .expect("failed to put VFP inherent");
