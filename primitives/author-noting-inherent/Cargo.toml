@@ -64,5 +64,5 @@ std = [
 	"sp-trie/std",
 	"sp-version/std",
 	"test-relay-sproof-builder/std",
-    "tp-author-noting-inherent-core/std",
+	"tp-author-noting-inherent-core/std",
 ]
