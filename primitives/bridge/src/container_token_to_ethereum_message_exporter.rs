@@ -103,7 +103,7 @@ where
             return Err(NotApplicable);
         }
 
-        let _ = match local_sub.as_slice() {
+        let para_id = match local_sub.as_slice() {
             [Parachain(para_id)] => *para_id,
             _ => {
                 log::error!(target: "xcm::ethereum_blob_exporter", "could not get parachain id from universal source '{local_sub:?}'.");
@@ -116,7 +116,8 @@ where
             MissingArgument
         })?;
 
-        let mut converter = XcmConverter::<ConvertAssetId, ()>::new(&message, expected_network);
+        let mut converter =
+            XcmConverter::<ConvertAssetId, ()>::new(&message, expected_network, para_id);
         let (command, message_id) = converter.convert().map_err(|err|{
             log::error!(target: "xcm::ethereum_blob_exporter", "unroutable due to pattern matching error '{err:?}'.");
             Unroutable
@@ -178,6 +179,7 @@ enum XcmConverterError {
     SetTopicExpected,
     ReserveAssetDepositedExpected,
     InvalidAsset,
+    ParaIdMismatch,
     UnexpectedInstruction,
 }
 
@@ -193,16 +195,18 @@ macro_rules! match_expression {
 struct XcmConverter<'a, ConvertAssetId, Call> {
     iter: Peekable<Iter<'a, Instruction<Call>>>,
     ethereum_network: NetworkId,
+    para_id: u32,
     _marker: PhantomData<ConvertAssetId>,
 }
 impl<'a, ConvertAssetId, Call> XcmConverter<'a, ConvertAssetId, Call>
 where
     ConvertAssetId: MaybeEquivalence<TokenId, Location>,
 {
-    fn new(message: &'a Xcm<Call>, ethereum_network: NetworkId) -> Self {
+    fn new(message: &'a Xcm<Call>, ethereum_network: NetworkId, para_id: u32) -> Self {
         Self {
             iter: message.inner().iter().peekable(),
             ethereum_network,
+            para_id,
             _marker: Default::default(),
         }
     }
@@ -243,6 +247,27 @@ where
             *network == self.ethereum_network
         } else {
             true
+        }
+    }
+
+    fn check_reserve_asset_para_id(&self, location: &Location) -> Result<(), ()> {
+        if location.parents != 1 {
+            return Err(());
+        }
+
+        match &location.interior {
+            Junctions::X3(arc) => {
+                let [j1, j2, _] = arc.as_ref();
+                if let GlobalConsensus(_) = j1 {
+                    if let Parachain(id) = j2 {
+                        if *id == self.para_id {
+                            return Ok(());
+                        }
+                    }
+                }
+                Err(())
+            }
+            _ => Err(()),
         }
     }
 
@@ -335,6 +360,9 @@ where
             _ => None,
         }
         .ok_or(AssetResolutionFailed)?;
+
+        self.check_reserve_asset_para_id(&asset_id)
+            .map_err(|_| ParaIdMismatch)?;
 
         // transfer amount must be greater than 0.
         ensure!(amount > 0, ZeroAssetTransfer);
