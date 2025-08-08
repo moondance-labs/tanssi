@@ -49,7 +49,8 @@ use {
     sp_core::{ConstU32, H160},
     sp_runtime::Perbill,
     tp_bridge::{
-        sovereign_paid_remote_exporter::SovereignPaidRemoteExporter, EthereumLocationsConverterFor,
+        sovereign_paid_remote_exporter::SovereignPaidRemoteExporter,
+        ContainerChainEthereumLocationConverter,
     },
     xcm::latest::prelude::*,
     xcm_builder::{
@@ -140,7 +141,7 @@ pub type LocationToAccountId = (
     xcm_builder::HashedDescription<AccountId, Descriptor>,
     // Ethereum contract sovereign account.
     // (Used to convert ethereum contract locations to sovereign account)
-    EthereumLocationsConverterFor<AccountId>,
+    ContainerChainEthereumLocationConverter<AccountId>,
 );
 
 /// Local origins on this chain are allowed to dispatch XCM sends/executions.
