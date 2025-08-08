@@ -189,7 +189,7 @@ import type {
     SpWeightsRuntimeDbWeight,
     SpWeightsWeightV2Weight,
     StagingParachainInfoCall,
-    TpAuthorNotingInherentOwnParachainInherentData,
+    TpAuthorNotingInherentCoreOwnParachainInherentData,
     TpDataPreserversCommonAssignerExtra,
     TpDataPreserversCommonAssignmentWitness,
     TpDataPreserversCommonProviderRequest,
@@ -387,7 +387,7 @@ declare module "@polkadot/types/types/registry" {
         SpWeightsRuntimeDbWeight: SpWeightsRuntimeDbWeight;
         SpWeightsWeightV2Weight: SpWeightsWeightV2Weight;
         StagingParachainInfoCall: StagingParachainInfoCall;
-        TpAuthorNotingInherentOwnParachainInherentData: TpAuthorNotingInherentOwnParachainInherentData;
+        TpAuthorNotingInherentCoreOwnParachainInherentData: TpAuthorNotingInherentCoreOwnParachainInherentData;
         TpDataPreserversCommonAssignerExtra: TpDataPreserversCommonAssignerExtra;
         TpDataPreserversCommonAssignmentWitness: TpDataPreserversCommonAssignmentWitness;
         TpDataPreserversCommonProviderRequest: TpDataPreserversCommonProviderRequest;
