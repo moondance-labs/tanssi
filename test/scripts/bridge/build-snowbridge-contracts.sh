@@ -11,5 +11,6 @@ echo "Building snowbridge contracts"
 
 pushd $contract_dir
 $scripts_root_dir/add-ci-fast-foundry-profile.sh
+export FOUNDRY_PROFILE=ci-fast
 forge build
 popd

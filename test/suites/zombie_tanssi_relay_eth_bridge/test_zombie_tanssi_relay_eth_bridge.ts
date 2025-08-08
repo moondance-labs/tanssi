@@ -48,7 +48,7 @@ function logTiming(message?: string) {
         const prev = current;
         current = now;
         console.log(
-            `${message ? `[${message}]` : ""} Checkpoint timing: ${((current - start) / 1000).toFixed(2)} seconds. Diff with prev: ${((current - prev) / 1000).toFixed(2)}`
+            `${message ? `[${message}]` : ""} Checkpoint timing: ${((current - start) / 1000).toFixed(2)} sec. Diff with prev: ${((current - prev) / 1000).toFixed(2)} sec`
         );
     }
 }
