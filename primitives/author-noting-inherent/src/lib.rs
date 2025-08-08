@@ -19,7 +19,7 @@
 //! This crate defines the client-side primitives that should be taken into account when building
 //! the author-noting pallet inherent.
 //!
-//! Client-side methods should be implemented in `tp-author-noting-inherent-core` crate instead.
+//! Runtime-side methods should be implemented in `tp-author-noting-inherent-core` crate instead.
 //!
 //! In particular, this crate contains:
 //! - The client side trait implementations to introduce the inherent
