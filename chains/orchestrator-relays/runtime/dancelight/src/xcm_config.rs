@@ -410,7 +410,6 @@ pub type ContainerToSnowbridgeMessageExporter = ContainerEthereumBlobExporter<
     UniversalLocation,
     EthereumNetwork,
     snowbridge_pallet_outbound_queue::Pallet<Runtime>,
-    snowbridge_core::AgentIdOf,
     EthereumSystem,
     SnowbridgeChannelInfo,
 >;

@@ -21,7 +21,7 @@ use {
     parity_scale_codec::{Decode, Encode},
     snowbridge_core::{AgentId, ChannelId, TokenId, TokenIdOf},
     snowbridge_outbound_queue_primitives::v1::message::{Command, Message, SendMessage},
-    sp_core::{H160, H256},
+    sp_core::H160,
     sp_runtime::traits::MaybeEquivalence,
     xcm::latest::SendError::{MissingArgument, NotApplicable, Unroutable},
     xcm::prelude::*,
@@ -32,7 +32,6 @@ pub struct EthereumBlobExporter<
     UniversalLocation,
     EthereumNetwork,
     OutboundQueue,
-    AgentHashedDescription,
     ConvertAssetId,
     BridgeChannelInfo,
 >(
@@ -40,25 +39,16 @@ pub struct EthereumBlobExporter<
         UniversalLocation,
         EthereumNetwork,
         OutboundQueue,
-        AgentHashedDescription,
         ConvertAssetId,
         BridgeChannelInfo,
     )>,
 );
 
-impl<
-        UniversalLocation,
-        EthereumNetwork,
-        OutboundQueue,
-        AgentHashedDescription,
-        ConvertAssetId,
-        BridgeChannelInfo,
-    > ExportXcm
+impl<UniversalLocation, EthereumNetwork, OutboundQueue, ConvertAssetId, BridgeChannelInfo> ExportXcm
     for EthereumBlobExporter<
         UniversalLocation,
         EthereumNetwork,
         OutboundQueue,
-        AgentHashedDescription,
         ConvertAssetId,
         BridgeChannelInfo,
     >
@@ -66,7 +56,6 @@ where
     UniversalLocation: Get<InteriorLocation>,
     EthereumNetwork: Get<NetworkId>,
     OutboundQueue: SendMessage<Balance = u128>,
-    AgentHashedDescription: ConvertLocation<H256>,
     ConvertAssetId: MaybeEquivalence<TokenId, Location>,
     BridgeChannelInfo: Get<Option<(ChannelId, AgentId)>>,
 {
