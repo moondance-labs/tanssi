@@ -3581,7 +3581,7 @@ dependencies = [
  "staging-xcm-builder",
  "staging-xcm-executor",
  "tanssi-emulated-integration-tests-common",
- "tp-author-noting-inherent",
+ "tp-author-noting-inherent-core",
  "xcm-emulator",
 ]
 
@@ -3708,7 +3708,7 @@ dependencies = [
  "tanssi-relay-encoder",
  "tanssi-runtime-common",
  "test-relay-sproof-builder",
- "tp-author-noting-inherent",
+ "tp-author-noting-inherent-core",
  "tp-data-preservers-common",
  "tp-invulnerables-filter-common",
  "tp-parathread-filter-common",
@@ -5384,7 +5384,7 @@ dependencies = [
  "substrate-wasm-builder",
  "tanssi-runtime-common",
  "test-relay-sproof-builder",
- "tp-author-noting-inherent",
+ "tp-author-noting-inherent-core",
  "tp-data-preservers-common",
  "tp-stream-payment-common",
  "tp-traits",
@@ -5930,7 +5930,7 @@ dependencies = [
  "sp-trie",
  "staging-xcm",
  "tanssi-emulated-integration-tests-common",
- "tp-author-noting-inherent",
+ "tp-author-noting-inherent-core",
  "xcm-emulator",
 ]
 
@@ -16842,7 +16842,7 @@ dependencies = [
  "sp-trie",
  "staging-xcm",
  "tanssi-emulated-integration-tests-common",
- "tp-author-noting-inherent",
+ "tp-author-noting-inherent-core",
  "xcm-emulator",
 ]
 
@@ -18711,7 +18711,7 @@ dependencies = [
  "test-relay-sproof-builder",
  "tiny-keccak",
  "tokio",
- "tp-author-noting-inherent",
+ "tp-author-noting-inherent-core",
  "tp-bridge",
  "tp-data-preservers-common",
  "tp-invulnerables-filter-common",
@@ -19410,7 +19410,6 @@ version = "0.15.0"
 dependencies = [
  "async-io 1.13.0",
  "async-trait",
- "ccp-authorities-noting-inherent",
  "chrono",
  "clap",
  "color-eyre",
@@ -19429,7 +19428,6 @@ dependencies = [
  "dc-orchestrator-chain-interface",
  "dp-container-chain-genesis-data",
  "dp-core",
- "dp-slot-duration-runtime-api",
  "exit-future",
  "fdlimit",
  "flashbox-runtime",

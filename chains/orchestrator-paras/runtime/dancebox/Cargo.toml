@@ -103,7 +103,7 @@ sp-trie = { workspace = true }
 
 dp-consensus = { workspace = true }
 sp-version = { workspace = true }
-tp-author-noting-inherent = { workspace = true }
+tp-author-noting-inherent-core = { workspace = true }
 tp-data-preservers-common = { workspace = true }
 tp-invulnerables-filter-common = { workspace = true }
 tp-stream-payment-common = { workspace = true }
@@ -277,7 +277,7 @@ std = [
 	"tanssi-relay-encoder/std",
 	"tanssi-runtime-common/std",
 	"test-relay-sproof-builder/std",
-	"tp-author-noting-inherent/std",
+	"tp-author-noting-inherent-core/std",
 	"tp-data-preservers-common/std",
 	"tp-invulnerables-filter-common/std",
 	"tp-parathread-filter-common/std",
