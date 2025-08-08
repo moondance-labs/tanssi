@@ -47,7 +47,7 @@ use {
     sp_consensus_aura::{inherents::InherentType, Slot, AURA_ENGINE_ID},
     sp_inherents::{InherentIdentifier, IsFatalError},
     sp_runtime::{traits::Header, DigestItem, DispatchResult},
-    tp_author_noting_inherent::INHERENT_IDENTIFIER,
+    tp_author_noting_inherent_core::INHERENT_IDENTIFIER,
     tp_traits::{
         AuthorNotingHook, AuthorNotingInfo, ContainerChainBlockInfo, ForSession, GenericStateProof,
         GenericStorageReader, GetContainerChainAuthor, GetContainerChainsWithCollators,
@@ -291,7 +291,7 @@ pub mod pallet {
         type Error = InherentError;
         // TODO, what should we put here
         const INHERENT_IDENTIFIER: InherentIdentifier =
-            tp_author_noting_inherent::INHERENT_IDENTIFIER;
+            tp_author_noting_inherent_core::INHERENT_IDENTIFIER;
 
         fn is_inherent_required(_: &InherentData) -> Result<Option<Self::Error>, Self::Error> {
             // Return Ok(Some(_)) unconditionally because this inherent is required in every block
@@ -468,7 +468,7 @@ impl RelayOrPara for RelayMode {
 }
 
 impl<RCSP: RelaychainStateProvider> RelayOrPara for ParaMode<RCSP> {
-    type InherentArg = tp_author_noting_inherent::OwnParachainInherentData;
+    type InherentArg = tp_author_noting_inherent_core::OwnParachainInherentData;
     type GenericStorageReader = GenericStateProof<cumulus_primitives_core::relay_chain::Block>;
 
     fn create_inherent_arg(data: &InherentData) -> Self::InherentArg {
@@ -479,7 +479,7 @@ impl<RCSP: RelaychainStateProvider> RelayOrPara for ParaMode<RCSP> {
     }
 
     fn create_storage_reader(data: Self::InherentArg) -> Self::GenericStorageReader {
-        let tp_author_noting_inherent::OwnParachainInherentData {
+        let tp_author_noting_inherent_core::OwnParachainInherentData {
             relay_storage_proof,
         } = data;
 

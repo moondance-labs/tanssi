@@ -591,13 +591,12 @@ fn start_consensus_orchestrator(
                         .registered_paras(block_hash)?,
                 };
                 let para_ids: Vec<_> = para_ids.into_iter().collect();
-                let author_noting_inherent =
-                    tp_author_noting_inherent::OwnParachainInherentData::create_at(
-                        relay_parent,
-                        &relay_chain_interface,
-                        &para_ids,
-                    )
-                    .await;
+                let author_noting_inherent = tp_author_noting_inherent::create_at(
+                    relay_parent,
+                    &relay_chain_interface,
+                    &para_ids,
+                )
+                .await;
 
                 // Fetch duration every block to avoid downtime when passing from 12 to 6s
                 let slot_duration = sc_consensus_aura::standalone::slot_duration_at(

@@ -32,7 +32,7 @@ cumulus-pallet-parachain-system = { workspace = true }
 cumulus-primitives-core = { workspace = true }
 dp-core = { workspace = true }
 nimbus-primitives = { workspace = true }
-tp-author-noting-inherent = { workspace = true }
+tp-author-noting-inherent-core = { workspace = true }
 tp-traits = { workspace = true }
 
 [dev-dependencies]
@@ -74,7 +74,7 @@ std = [
 	"sp-trie/std",
 	"sp-version/std",
 	"test-relay-sproof-builder/std",
-	"tp-author-noting-inherent/std",
+	"tp-author-noting-inherent-core/std",
 	"tp-traits/std",
 ]
 runtime-benchmarks = [

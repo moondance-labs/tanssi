@@ -1,7 +1,7 @@
 [package]
 name = "tp-author-noting-inherent"
 authors = { workspace = true }
-description = "primitives related to author-noting-inherent"
+description = "client-side primitives related to author-noting-inherent"
 edition = "2021"
 license = "GPL-3.0-only"
 version = "0.1.0"
@@ -16,6 +16,7 @@ scale-info = { workspace = true }
 
 dp-core = { workspace = true, optional = true }
 test-relay-sproof-builder = { workspace = true, optional = true }
+tp-author-noting-inherent-core = { workspace = true }
 
 # Substrate
 sp-consensus-aura = { workspace = true, optional = true }
@@ -63,4 +64,5 @@ std = [
 	"sp-trie/std",
 	"sp-version/std",
 	"test-relay-sproof-builder/std",
+    "tp-author-noting-inherent-core/std",
 ]

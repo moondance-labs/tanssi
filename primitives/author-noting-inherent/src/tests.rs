@@ -15,7 +15,10 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    crate::{tests::mock_relay_chain_impl::MyMockRelayInterface, OwnParachainInherentData},
+    crate::{
+        client_side::create_at, tests::mock_relay_chain_impl::MyMockRelayInterface,
+        OwnParachainInherentData,
+    },
     cumulus_pallet_parachain_system::RelayChainStateProof,
     cumulus_primitives_core::relay_chain::{vstaging::CoreState, BlakeTwo256, BlockNumber},
     dp_core::well_known_keys::para_id_head,
@@ -322,11 +325,7 @@ fn create_inherent_with_no_para_ids() {
     };
 
     let para_ids = &[];
-    let proof = block_on(OwnParachainInherentData::create_at(
-        mock_relay_parent,
-        &relay_chain,
-        para_ids,
-    ));
+    let proof = block_on(create_at(mock_relay_parent, &relay_chain, para_ids));
 
     assert_eq!(
         proof,
@@ -362,11 +361,7 @@ fn create_inherent_with_two_para_ids() {
     };
 
     let para_ids = &[2000.into(), 2001.into()];
-    let proof = block_on(OwnParachainInherentData::create_at(
-        mock_relay_parent,
-        &relay_chain,
-        para_ids,
-    ));
+    let proof = block_on(create_at(mock_relay_parent, &relay_chain, para_ids));
 
     assert_eq!(
         proof,
@@ -387,12 +382,7 @@ fn test_provide_inherent_data() {
     };
     let relay_parent = Default::default();
     let para_ids = &[];
-    let proof = block_on(OwnParachainInherentData::create_at(
-        relay_parent,
-        &relay_chain,
-        para_ids,
-    ))
-    .unwrap();
+    let proof = block_on(create_at(relay_parent, &relay_chain, para_ids)).unwrap();
 
     let mut inherent_data = sp_inherents::InherentData::new();
     block_on(proof.provide_inherent_data(&mut inherent_data)).unwrap();
