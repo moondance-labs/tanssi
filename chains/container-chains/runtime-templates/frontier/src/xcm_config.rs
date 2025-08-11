@@ -48,6 +48,7 @@ use {
     polkadot_runtime_common::xcm_sender::ExponentialPrice,
     sp_core::{ConstU32, H160},
     sp_runtime::Perbill,
+    tanssi_runtime_common::universal_aliases::CommonUniversalAliases,
     xcm::latest::prelude::*,
     xcm_builder::{
         AccountKey20Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
@@ -221,7 +222,7 @@ impl xcm_executor::Config for XcmConfig {
     type AssetExchanger = ();
     type FeeManager = XcmFeeManagerFromComponents<Equals<RootLocation>, ()>;
     type MessageExporter = ();
-    type UniversalAliases = Nothing;
+    type UniversalAliases = CommonUniversalAliases;
     type CallDispatcher = RuntimeCall;
     type SafeCallFilter = Everything;
     type Aliasers = Nothing;
