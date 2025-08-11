@@ -420,20 +420,15 @@ where
                     snowbridge_pallet_system::Pallet::<T>::convert(&token_id)
                 {
                     let chain_part = expected_token_location.first_interior();
-                    let mut expected_para_id = 0u32;
 
-                    match destination {
-                        Destination::ForeignAccountId32 { para_id, .. } => {
-                            expected_para_id = para_id;
-                        }
-                        Destination::ForeignAccountId20 { para_id, .. } => {
-                            expected_para_id = para_id;
-                        }
+                    let expected_para_id = match destination {
+                        Destination::ForeignAccountId32 { para_id, .. } => para_id,
+                        Destination::ForeignAccountId20 { para_id, .. } => para_id,
                         _ => {
                             log::error!("NativeContainerTokensProcessor: invalid destination");
-                            return false;
+                            0u32
                         }
-                    }
+                    };
 
                     match chain_part {
                         Some(Parachain(id)) => {
@@ -463,7 +458,7 @@ where
         }
     }
 
-    fn process_message(channel: Channel, envelope: Envelope) -> DispatchResult {
+    fn process_message(_channel: Channel, envelope: Envelope) -> DispatchResult {
         match VersionedXcmMessage::decode_all(&mut envelope.payload.as_slice()) {
             Ok(VersionedXcmMessage::V1(MessageV1 {
                 command:
@@ -541,7 +536,7 @@ where
                                 }])),
                             ]);
 
-                            if let Ok((ticket, price)) = validate_send::<XcmSender>(
+                            if let Ok((ticket, _price)) = validate_send::<XcmSender>(
                                 container_location.clone(),
                                 remote_xcm.clone(),
                             ) {
