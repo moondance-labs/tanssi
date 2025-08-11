@@ -20,7 +20,7 @@ use {
     cumulus_primitives_core::relay_chain::{
         AccountId, AssignmentId, AuthorityDiscoveryId, ValidatorId,
     },
-    sc_consensus_grandpa::AuthorityId as GrandpaId,
+    sp_consensus_grandpa::AuthorityId as GrandpaId,
 };
 
 pub fn initial_authorities() -> Vec<(

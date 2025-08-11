@@ -186,7 +186,6 @@ rand = { workspace = true, features = [ "std", "std_rng" ] }
 remote-externalities = { workspace = true }
 rococo-runtime = { workspace = true }
 rococo-runtime-constants = { workspace = true }
-sc-consensus-grandpa = { workspace = true }
 separator = { workspace = true }
 serde_json = { workspace = true }
 sp-tracing = { workspace = true }

@@ -116,7 +116,6 @@ frame-try-runtime = { workspace = true, optional = true }
 cumulus-primitives-parachain-inherent = { workspace = true }
 cumulus-test-relay-sproof-builder = { workspace = true }
 polkadot-runtime-parachains = { workspace = true, features = [ "std" ] }
-sc-consensus-grandpa = { workspace = true }
 sp-consensus-babe = { workspace = true, features = [ "std" ] }
 sp-consensus-beefy = { workspace = true, features = [ "std" ] }
 sp-io = { workspace = true }

@@ -25,9 +25,9 @@ use {
         configuration::HostConfiguration,
         paras::{ParaGenesisArgs, ParaKind},
     },
-    sc_consensus_grandpa::AuthorityId as GrandpaId,
     sp_consensus_babe::AuthorityId as BabeId,
     sp_consensus_beefy::{ecdsa_crypto::AuthorityId as BeefyId, test_utils::Keyring},
+    sp_consensus_grandpa::AuthorityId as GrandpaId,
     sp_core::storage::Storage,
     tanssi_emulated_integration_tests_common::{accounts, validators},
 };
