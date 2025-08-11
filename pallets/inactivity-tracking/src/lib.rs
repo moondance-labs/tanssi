@@ -273,7 +273,7 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::set_offline())]
         pub fn set_offline(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
             let collator = ensure_signed(origin)?;
-            Self::mark_collator_offline(&collator)
+            Self::mark_collator_offline(&collator, None)
         }
 
         /// Allows a collator to mark itself online.
@@ -296,7 +296,8 @@ pub mod pallet {
                 Self::is_node_inactive(&collator),
                 Error::<T>::CollatorCannotBeNotifiedAsInactive
             );
-            Self::mark_collator_offline(&collator)
+
+            Self::mark_collator_offline(&collator, Some(T::CooldownLength::get()))
         }
     }
 
@@ -540,7 +541,10 @@ pub mod pallet {
         }
 
         /// Internal function to mark a collator as offline.
-        pub fn mark_collator_offline(collator: &Collator<T>) -> DispatchResultWithPostInfo {
+        pub fn mark_collator_offline(
+            collator: &Collator<T>,
+            _cooldown: Option<u32>,
+        ) -> DispatchResultWithPostInfo {
             ensure!(
                 <EnableMarkingOffline<T>>::get(),
                 Error::<T>::MarkingOfflineNotEnabled
