@@ -19,10 +19,9 @@ use {
     core::{iter::Peekable, marker::PhantomData, slice::Iter},
     frame_support::{ensure, traits::Get},
     parity_scale_codec::{Decode, Encode},
-    snowbridge_core::{AgentId, ChannelId, TokenId, TokenIdOf},
+    snowbridge_core::{AgentId, ChannelId, TokenIdOf},
     snowbridge_outbound_queue_primitives::v1::message::{Command, Message, SendMessage},
     sp_core::H160,
-    sp_runtime::traits::MaybeEquivalence,
     xcm::latest::SendError::{MissingArgument, NotApplicable, Unroutable},
     xcm::prelude::*,
     xcm_executor::traits::{ConvertLocation, ExportXcm},
@@ -32,31 +31,22 @@ pub struct EthereumBlobExporter<
     UniversalLocation,
     EthereumNetwork,
     OutboundQueue,
-    ConvertAssetId,
     BridgeChannelInfo,
 >(
     PhantomData<(
         UniversalLocation,
         EthereumNetwork,
         OutboundQueue,
-        ConvertAssetId,
         BridgeChannelInfo,
     )>,
 );
 
-impl<UniversalLocation, EthereumNetwork, OutboundQueue, ConvertAssetId, BridgeChannelInfo> ExportXcm
-    for EthereumBlobExporter<
-        UniversalLocation,
-        EthereumNetwork,
-        OutboundQueue,
-        ConvertAssetId,
-        BridgeChannelInfo,
-    >
+impl<UniversalLocation, EthereumNetwork, OutboundQueue, BridgeChannelInfo> ExportXcm
+    for EthereumBlobExporter<UniversalLocation, EthereumNetwork, OutboundQueue, BridgeChannelInfo>
 where
     UniversalLocation: Get<InteriorLocation>,
     EthereumNetwork: Get<NetworkId>,
     OutboundQueue: SendMessage<Balance = u128>,
-    ConvertAssetId: MaybeEquivalence<TokenId, Location>,
     BridgeChannelInfo: Get<Option<(ChannelId, AgentId)>>,
 {
     type Ticket = (Vec<u8>, XcmHash);
@@ -116,8 +106,7 @@ where
             MissingArgument
         })?;
 
-        let mut converter =
-            XcmConverter::<ConvertAssetId, ()>::new(&message, expected_network, para_id);
+        let mut converter = XcmConverter::<()>::new(&message, expected_network, para_id);
         let (command, message_id) = converter.convert().map_err(|err|{
             log::error!(target: "xcm::ethereum_blob_exporter", "unroutable due to pattern matching error '{err:?}'.");
             Unroutable
@@ -192,22 +181,17 @@ macro_rules! match_expression {
 	};
 }
 
-struct XcmConverter<'a, ConvertAssetId, Call> {
+struct XcmConverter<'a, Call> {
     iter: Peekable<Iter<'a, Instruction<Call>>>,
     ethereum_network: NetworkId,
     para_id: u32,
-    _marker: PhantomData<ConvertAssetId>,
 }
-impl<'a, ConvertAssetId, Call> XcmConverter<'a, ConvertAssetId, Call>
-where
-    ConvertAssetId: MaybeEquivalence<TokenId, Location>,
-{
+impl<'a, Call> XcmConverter<'a, Call> {
     fn new(message: &'a Xcm<Call>, ethereum_network: NetworkId, para_id: u32) -> Self {
         Self {
             iter: message.inner().iter().peekable(),
             ethereum_network,
             para_id,
-            _marker: Default::default(),
         }
     }
 
@@ -369,10 +353,6 @@ where
 
         let token_id = TokenIdOf::convert_location(&asset_id).ok_or(InvalidAsset)?;
 
-        // let expected_asset_id = ConvertAssetId::convert(&token_id).ok_or(InvalidAsset)?;
-
-        // ensure!(asset_id == expected_asset_id, InvalidAsset);
-
         // Check if there is a SetTopic and skip over it if found.
         let topic_id = match_expression!(self.next()?, SetTopic(id), id).ok_or(SetTopicExpected)?;
 
@@ -384,5 +364,91 @@ where
             },
             *topic_id,
         ))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use {
+        super::*,
+        frame_support::parameter_types,
+        snowbridge_outbound_queue_primitives::{v1::Fee, SendError, SendMessageFeeProvider},
+        sp_core::H256,
+    };
+
+    parameter_types! {
+        const EthereumNetwork: NetworkId = Ethereum { chain_id: 11155111 };
+        UniversalLocation: InteriorLocation = [GlobalConsensus(ByGenesis([ 152, 58, 26, 114, 80, 61, 108, 195, 99, 103, 118, 116, 126, 198, 39, 23, 43, 81, 39, 43, 244, 94, 80, 163, 85, 52, 143, 172, 182, 122, 130, 10 ])), Parachain(2001)].into();
+        const BridgeChannelInfo: Option<(ChannelId, AgentId)> = Some((ChannelId::new([1u8; 32]), H256([2u8; 32])));
+    }
+
+    struct MockOkOutboundQueue;
+    impl SendMessage for MockOkOutboundQueue {
+        type Ticket = ();
+
+        fn validate(_: &Message) -> Result<(Self::Ticket, Fee<Self::Balance>), SendError> {
+            Ok((
+                (),
+                Fee {
+                    local: 1,
+                    remote: 1,
+                },
+            ))
+        }
+
+        fn deliver(_: Self::Ticket) -> Result<H256, SendError> {
+            Ok(H256::zero())
+        }
+    }
+
+    impl SendMessageFeeProvider for MockOkOutboundQueue {
+        type Balance = u128;
+
+        fn local_fee() -> Self::Balance {
+            1
+        }
+    }
+    struct MockErrOutboundQueue;
+    impl SendMessage for MockErrOutboundQueue {
+        type Ticket = ();
+
+        fn validate(_: &Message) -> Result<(Self::Ticket, Fee<Self::Balance>), SendError> {
+            Err(SendError::MessageTooLarge)
+        }
+
+        fn deliver(_: Self::Ticket) -> Result<H256, SendError> {
+            Err(SendError::MessageTooLarge)
+        }
+    }
+
+    impl SendMessageFeeProvider for MockErrOutboundQueue {
+        type Balance = u128;
+
+        fn local_fee() -> Self::Balance {
+            1
+        }
+    }
+
+    #[test]
+    fn exporter_validate_with_unknown_network_yields_not_applicable() {
+        let network = Ethereum { chain_id: 11155111 };
+        let channel: u32 = 0;
+        let mut universal_source: Option<InteriorLocation> = None;
+        let mut destination: Option<InteriorLocation> = None;
+        let mut message: Option<Xcm<()>> = None;
+
+        let result = EthereumBlobExporter::<
+            UniversalLocation,
+            EthereumNetwork,
+            MockOkOutboundQueue,
+            BridgeChannelInfo,
+        >::validate(
+            network,
+            channel,
+            &mut universal_source,
+            &mut destination,
+            &mut message,
+        );
+        assert_eq!(result, Err(MissingArgument));
     }
 }

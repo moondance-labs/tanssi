@@ -402,6 +402,9 @@ where
 {
     fn convert_location(location: &Location) -> Option<AccountId> {
         match location.unpack() {
+            (1, [GlobalConsensus(Ethereum { chain_id })]) => {
+                Some(Self::from_chain_id(chain_id).into())
+            }
             (2, [GlobalConsensus(Ethereum { chain_id })]) => {
                 Some(Self::from_chain_id(chain_id).into())
             }
