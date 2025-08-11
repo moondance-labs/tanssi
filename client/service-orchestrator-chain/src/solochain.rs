@@ -52,6 +52,11 @@ pub enum EnableContainerChainSpawner {
     No,
 }
 
+pub struct SolochainNodeStarted {
+    pub task_manager: TaskManager,
+    pub relay_chain_interface: Arc<dyn RelayChainInterface>,
+}
+
 /// Start a solochain node.
 pub async fn start_solochain_node(
     polkadot_config: Configuration,
@@ -60,7 +65,7 @@ pub async fn start_solochain_node(
     hwbench: Option<sc_sysinfo::HwBench>,
     // In container chain rpc provider mode, it manages its own spawner.
     enable_cc_spawner: EnableContainerChainSpawner,
-) -> sc_service::error::Result<(TaskManager, Arc<dyn RelayChainInterface>)> {
+) -> sc_service::error::Result<SolochainNodeStarted> {
     let tokio_handle = polkadot_config.tokio_handle.clone();
     let orchestrator_para_id = Default::default();
 
@@ -233,7 +238,10 @@ pub async fn start_solochain_node(
         );
     }
 
-    Ok((task_manager, relay_chain_interface))
+    Ok(SolochainNodeStarted {
+        task_manager,
+        relay_chain_interface,
+    })
 }
 
 /// Alternative to [Configuration] struct used in solochain context.

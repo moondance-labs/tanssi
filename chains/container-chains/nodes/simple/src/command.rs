@@ -20,6 +20,7 @@ use {
         cli::{BaseSubcommand, Cli, Subcommand},
         service::{self, NodeConfig},
     },
+    clap::Parser,
     container_chain_template_simple_runtime::Block,
     cumulus_client_service::storage_proof_size::HostFunctions as ReclaimHostFunctions,
     cumulus_primitives_core::ParaId,
@@ -338,25 +339,31 @@ pub fn run() -> Result<()> {
 }
 
 fn rpc_provider_mode(cli: &Cli, cmd: &RpcProviderCmd) -> Result<()> {
-    todo!();
     log::info!("Starting in RPC provider mode!");
 
     let runner = cli.create_runner(&cli.run.normalize())?;
 
     runner.run_node_until_exit(|config| async move {
+        let container_chain_cli = ContainerChainCli {
+            base: cmd.container_run.clone(),
+            preloaded_chain_spec: None,
+        };
+
         let polkadot_cli = ContainerNodeRelayChainCli::<NodeName>::new(
             &config,
             [ContainerNodeRelayChainCli::<NodeName>::executable_name()]
                 .iter()
-                .chain(cli.relaychain_args().iter()),
+                .chain(cmd.relaychain_args().iter()),
         );
 
-        let container_chain_cli = ContainerChainCli::new(
-            &config,
-            [ContainerChainCli::executable_name()]
-                .iter()
-                .chain(cli.container_chain_args().iter()),
-        );
+        let mut orchestrator_cli = None;
+        if cmd.solochain {
+            orchestrator_cli = Some(cumulus_client_cli::RunCmd::parse_from(
+                [String::from("orchestrator")]
+                    .iter()
+                    .chain(cmd.orchestrator_chain_args().iter()),
+            ));
+        }
 
         let generate_rpc_builder =
             tc_service_container_chain_spawner::rpc::GenerateSubstrateRpcBuilder::<
@@ -366,10 +373,10 @@ fn rpc_provider_mode(cli: &Cli, cmd: &RpcProviderCmd) -> Result<()> {
         RpcProviderMode {
             config,
             provider_profile_id: cmd.profile_id,
-            solochain: cmd.solochain,
             orchestrator_endpoints: cmd.orchestrator_endpoints.clone(),
             collator_options: cmd.container_run.collator_options(),
             polkadot_cli,
+            orchestrator_cli,
             container_chain_cli,
             generate_rpc_builder,
             phantom: PhantomData,

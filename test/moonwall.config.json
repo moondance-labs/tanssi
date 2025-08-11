@@ -985,7 +985,7 @@
             ]
         },
         {
-            "name": "zombie_data_preservers",
+            "name": "zombie_data_preservers_dancebox",
             "testFileDir": ["suites/zombie_data_preservers"],
             "runScripts": [
                 "build-spec-data-preservers.sh",
@@ -998,7 +998,7 @@
             "foundation": {
                 "type": "zombie",
                 "zombieSpec": {
-                    "configPath": "./configs/zombie_data_preservers.json",
+                    "configPath": "./configs/zombie_data_preservers_dancebox.json",
                     "skipBlockCheck": ["DataPreserver-2000", "DataPreserver-2001"]
                 }
             },

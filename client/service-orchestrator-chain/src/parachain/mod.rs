@@ -34,7 +34,7 @@ use {
         OrchestratorChainError, OrchestratorChainInterface, OrchestratorChainResult, PHash,
         PHeader,
     },
-    futures::{FutureExt, Stream, StreamExt},
+    futures::{Stream, StreamExt},
     nimbus_primitives::{NimbusId, NimbusPair},
     node_common::{service::node_builder::NodeBuilder, service::node_builder::NodeBuilderConfig},
     pallet_author_noting_runtime_api::AuthorNotingApi,
@@ -42,7 +42,6 @@ use {
     pallet_data_preservers_runtime_api::DataPreserversApi,
     pallet_registrar_runtime_api::RegistrarApi,
     polkadot_cli::ProvideRuntimeApi,
-    sc_cli::CliConfiguration,
     sc_client_api::{
         AuxStore, Backend as BackendT, BlockchainEvents, HeaderBackend, UsageProvider,
     },
@@ -86,6 +85,14 @@ impl NodeBuilderConfig for NodeConfig {
     type ParachainExecutor = ParachainExecutor;
 }
 
+pub struct ParachainNodeStarted {
+    pub task_manager: TaskManager,
+    pub client: Arc<ParachainClient>,
+    pub relay_chain_interface: Arc<dyn RelayChainInterface>,
+    pub orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
+    pub keystore: KeystorePtr,
+}
+
 /// Start a parachain node.
 pub async fn start_parachain_node(
     parachain_config: Configuration,
@@ -95,7 +102,7 @@ pub async fn start_parachain_node(
     para_id: ParaId,
     hwbench: Option<sc_sysinfo::HwBench>,
     max_pov_percentage: Option<u32>,
-) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> {
+) -> sc_service::error::Result<ParachainNodeStarted> {
     start_node_impl(
         parachain_config,
         polkadot_config,
@@ -297,7 +304,7 @@ async fn start_node_impl(
     para_id: ParaId,
     hwbench: Option<sc_sysinfo::HwBench>,
     max_pov_percentage: Option<u32>,
-) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> {
+) -> sc_service::error::Result<ParachainNodeStarted> {
     let parachain_config = prepare_node_config(orchestrator_config);
     let chain_type: sc_chain_spec::ChainType = parachain_config.chain_spec.chain_type();
     let relay_chain = node_common::chain_spec::Extensions::try_get(&*parachain_config.chain_spec)
@@ -478,6 +485,8 @@ async fn start_node_impl(
         let orchestrator_client = node_builder.client.clone();
         let orchestrator_tx_pool = node_builder.transaction_pool.clone();
         let spawn_handle = node_builder.task_manager.spawn_handle();
+        let relay_chain_interface = relay_chain_interface.clone();
+        let orchestrator_chain_interface = orchestrator_chain_interface.clone();
 
         // This considers that the container chains have the same APIs as dancebox, which
         // is not the case. However the spawner don't call APIs that are not part of the expected
@@ -533,7 +542,13 @@ async fn start_node_impl(
         )
     }
 
-    Ok((node_builder.task_manager, node_builder.client))
+    Ok(ParachainNodeStarted {
+        task_manager: node_builder.task_manager,
+        client: node_builder.client,
+        relay_chain_interface,
+        orchestrator_chain_interface,
+        keystore: node_builder.keystore_container.keystore(),
+    })
 }
 
 pub fn import_queue(

@@ -20,6 +20,7 @@ use {
         cli::{BaseSubcommand, Cli, Subcommand},
         service::{self, frontier_database_dir, NodeConfig},
     },
+    clap::Parser,
     container_chain_template_frontier_runtime::Block,
     core::marker::PhantomData,
     cumulus_client_service::storage_proof_size::HostFunctions as ReclaimHostFunctions,
@@ -189,9 +190,6 @@ pub fn run() -> Result<()> {
                 };
 
                 cmd.base.run(frontier_database_config)?;
-
-                println!("relay args: {:?}", cli.relaychain_args());
-                panic!();
 
                 let polkadot_cli = ContainerNodeRelayChainCli::<NodeName>::new(
                     &config,
@@ -369,23 +367,31 @@ pub fn run() -> Result<()> {
 }
 
 fn rpc_provider_mode(cli: &Cli, cmd: &crate::cli::RpcProviderCmd) -> Result<()> {
-    todo!();
     log::info!("Starting in RPC provider mode!");
 
     let runner = cli.create_runner(&cmd.base.container_run.normalize())?;
 
     runner.run_node_until_exit(|config| async move {
-        let polkadot_cli = ContainerNodeRelayChainCli::<NodeName>::new(
-            &config,
-            [ContainerNodeRelayChainCli::<NodeName>::executable_name()]
-                .iter()
-                .chain(cli.relaychain_args().iter()),
-        );
-
         let container_chain_cli = ContainerChainCli {
             base: cmd.base.container_run.clone(),
             preloaded_chain_spec: None,
         };
+
+        let polkadot_cli = ContainerNodeRelayChainCli::<NodeName>::new(
+            &config,
+            [ContainerNodeRelayChainCli::<NodeName>::executable_name()]
+                .iter()
+                .chain(cmd.base.relaychain_args().iter()),
+        );
+
+        let mut orchestrator_cli = None;
+        if cmd.base.solochain {
+            orchestrator_cli = Some(cumulus_client_cli::RunCmd::parse_from(
+                [String::from("orchestrator")]
+                    .iter()
+                    .chain(cmd.base.orchestrator_chain_args().iter()),
+            ));
+        }
 
         let rpc_config = crate::cli::RpcConfig {
             eth_log_block_cache: cmd.eth.eth_log_block_cache,
@@ -402,10 +408,10 @@ fn rpc_provider_mode(cli: &Cli, cmd: &crate::cli::RpcProviderCmd) -> Result<()> 
         RpcProviderMode {
             config,
             provider_profile_id: cmd.base.profile_id,
-            solochain: cmd.base.solochain,
             orchestrator_endpoints: cmd.base.orchestrator_endpoints.clone(),
             collator_options: cmd.base.container_run.collator_options(),
             polkadot_cli,
+            orchestrator_cli,
             container_chain_cli,
             generate_rpc_builder,
             phantom: PhantomData,

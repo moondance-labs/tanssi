@@ -367,7 +367,7 @@ pub fn run() -> Result<()> {
                     tc_service_orchestrator_chain::solochain::EnableContainerChainSpawner::Yes,
                 )
                 .await
-                .map(|(task_manager, _)| task_manager)
+                .map(|r| r.task_manager)
                 .map_err(Into::into)
             })
         }
@@ -452,7 +452,7 @@ pub fn run() -> Result<()> {
                     cli.run.experimental_max_pov_percentage,
                 )
                     .await
-                    .map(|r| r.0)
+                    .map(|r| r.task_manager)
                     .map_err(Into::into)
             })
         }
