@@ -183,7 +183,7 @@ pub mod pallet {
     /// Storage map indicating the offline status of a collator
     #[pallet::storage]
     pub type OfflineCollators<T: Config> =
-        StorageMap<_, Blake2_128Concat, Collator<T>, bool, ValueQuery>;
+        StorageMap<_, Blake2_128Concat, Collator<T>, u32, OptionQuery>;
 
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
@@ -213,6 +213,8 @@ pub mod pallet {
         CollatorNotEligibleCandidate,
         /// Error returned when the collator status is attempted to be set to offline when it is already offline
         CollatorNotOnline,
+        /// Error returned when the collator status is attempted to be set to online before its cooldown period is over
+        CollatorNotReadyToBeOnline,
         /// Error returned when the collator status is attempted to be set to online when it is already online
         CollatorNotOffline,
         /// Error returned when the collator attempted to be set offline is invulnerable
@@ -543,7 +545,7 @@ pub mod pallet {
         /// Internal function to mark a collator as offline.
         pub fn mark_collator_offline(
             collator: &Collator<T>,
-            _cooldown: Option<u32>,
+            cooldown: Option<u32>,
         ) -> DispatchResultWithPostInfo {
             ensure!(
                 <EnableMarkingOffline<T>>::get(),
@@ -554,14 +556,17 @@ pub mod pallet {
                 Error::<T>::CollatorNotEligibleCandidate
             );
             ensure!(
-                !<OfflineCollators<T>>::get(collator.clone()),
+                <OfflineCollators<T>>::get(collator.clone()).is_none(),
                 Error::<T>::CollatorNotOnline
             );
             ensure!(
                 !T::InvulnerablesFilter::is_invulnerable(collator),
                 Error::<T>::MarkingInvulnerableOfflineInvalid
             );
-            <OfflineCollators<T>>::insert(collator.clone(), true);
+            let cooldown_period = cooldown
+                .unwrap_or(0u32)
+                .saturating_add(T::CurrentSessionIndex::session_index());
+            <OfflineCollators<T>>::insert(collator.clone(), cooldown_period);
             // Updates the SortedEligibleCandidates list. Has to be called after the collator is marked offline.
             T::CollatorStakeHelper::on_online_status_change(collator, false)?;
             Self::deposit_event(Event::<T>::CollatorStatusUpdated {
@@ -573,8 +578,17 @@ pub mod pallet {
 
         pub fn mark_collator_online(collator: &Collator<T>) -> DispatchResultWithPostInfo {
             ensure!(
-                <OfflineCollators<T>>::get(collator),
+                <OfflineCollators<T>>::get(collator).is_some(),
                 Error::<T>::CollatorNotOffline
+            );
+            ensure!(
+                <OfflineCollators<T>>::get(collator).unwrap()
+                    < T::CurrentSessionIndex::session_index(),
+                Error::<T>::CollatorNotReadyToBeOnline
+            );
+            ensure!(
+                T::CollatorStakeHelper::is_candidate_selected(collator),
+                Error::<T>::CollatorNotEligibleCandidate
             );
             <OfflineCollators<T>>::remove(collator.clone());
             // Updates the SortedEligibleCandidates list. Has to be called after the collator is marked online.
@@ -616,7 +630,7 @@ impl<T: Config> NodeActivityTrackingHelper<Collator<T>> for Pallet<T> {
         true
     }
     fn is_node_offline(node: &Collator<T>) -> bool {
-        <OfflineCollators<T>>::get(node)
+        <OfflineCollators<T>>::get(node).is_some()
     }
 
     #[cfg(feature = "runtime-benchmarks")]
