@@ -293,7 +293,7 @@ import type {
     StagingXcmV5Response,
     StagingXcmV5TraitsOutcome,
     StagingXcmV5Xcm,
-    TpAuthorNotingInherentOwnParachainInherentData,
+    TpAuthorNotingInherentCoreOwnParachainInherentData,
     TpDataPreserversCommonAssignerExtra,
     TpDataPreserversCommonAssignmentWitness,
     TpDataPreserversCommonProviderRequest,
@@ -627,7 +627,7 @@ declare module "@polkadot/types/types/registry" {
         StagingXcmV5Response: StagingXcmV5Response;
         StagingXcmV5TraitsOutcome: StagingXcmV5TraitsOutcome;
         StagingXcmV5Xcm: StagingXcmV5Xcm;
-        TpAuthorNotingInherentOwnParachainInherentData: TpAuthorNotingInherentOwnParachainInherentData;
+        TpAuthorNotingInherentCoreOwnParachainInherentData: TpAuthorNotingInherentCoreOwnParachainInherentData;
         TpDataPreserversCommonAssignerExtra: TpDataPreserversCommonAssignerExtra;
         TpDataPreserversCommonAssignmentWitness: TpDataPreserversCommonAssignmentWitness;
         TpDataPreserversCommonProviderRequest: TpDataPreserversCommonProviderRequest;

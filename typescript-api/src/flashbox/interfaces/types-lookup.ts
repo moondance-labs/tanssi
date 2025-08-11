@@ -2293,7 +2293,7 @@ declare module "@polkadot/types/lookup" {
     interface PalletAuthorNotingCall extends Enum {
         readonly isSetLatestAuthorData: boolean;
         readonly asSetLatestAuthorData: {
-            readonly data: TpAuthorNotingInherentOwnParachainInherentData;
+            readonly data: TpAuthorNotingInherentCoreOwnParachainInherentData;
         } & Struct;
         readonly isSetAuthor: boolean;
         readonly asSetAuthor: {
@@ -2309,8 +2309,8 @@ declare module "@polkadot/types/lookup" {
         readonly type: "SetLatestAuthorData" | "SetAuthor" | "KillAuthorData";
     }
 
-    /** @name TpAuthorNotingInherentOwnParachainInherentData (240) */
-    interface TpAuthorNotingInherentOwnParachainInherentData extends Struct {
+    /** @name TpAuthorNotingInherentCoreOwnParachainInherentData (240) */
+    interface TpAuthorNotingInherentCoreOwnParachainInherentData extends Struct {
         readonly relayStorageProof: SpTrieStorageProof;
     }
 

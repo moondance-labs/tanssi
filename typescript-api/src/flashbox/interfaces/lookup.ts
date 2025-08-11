@@ -1960,7 +1960,7 @@ export default {
     PalletAuthorNotingCall: {
         _enum: {
             set_latest_author_data: {
-                data: "TpAuthorNotingInherentOwnParachainInherentData",
+                data: "TpAuthorNotingInherentCoreOwnParachainInherentData",
             },
             set_author: {
                 paraId: "u32",
@@ -1974,9 +1974,9 @@ export default {
         },
     },
     /**
-     * Lookup240: tp_author_noting_inherent::OwnParachainInherentData
+     * Lookup240: tp_author_noting_inherent_core::OwnParachainInherentData
      **/
-    TpAuthorNotingInherentOwnParachainInherentData: {
+    TpAuthorNotingInherentCoreOwnParachainInherentData: {
         relayStorageProof: "SpTrieStorageProof",
     },
     /**

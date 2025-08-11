@@ -44,7 +44,7 @@ import type {
     StagingXcmExecutorAssetTransferTransferType,
     StagingXcmV5Location,
     StagingXcmV5Response,
-    TpAuthorNotingInherentOwnParachainInherentData,
+    TpAuthorNotingInherentCoreOwnParachainInherentData,
     TpDataPreserversCommonAssignerExtra,
     TpDataPreserversCommonAssignmentWitness,
     TpStreamPaymentCommonAssetId,
@@ -141,12 +141,12 @@ declare module "@polkadot/api-base/types/submittable" {
             setLatestAuthorData: AugmentedSubmittable<
                 (
                     data:
-                        | TpAuthorNotingInherentOwnParachainInherentData
+                        | TpAuthorNotingInherentCoreOwnParachainInherentData
                         | { relayStorageProof?: any }
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [TpAuthorNotingInherentOwnParachainInherentData]
+                [TpAuthorNotingInherentCoreOwnParachainInherentData]
             >;
             /**
              * Generic tx
