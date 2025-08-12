@@ -583,7 +583,7 @@ pub mod pallet {
             );
             ensure!(
                 <OfflineCollators<T>>::get(collator).unwrap()
-                    < T::CurrentSessionIndex::session_index(),
+                    <= T::CurrentSessionIndex::session_index(),
                 Error::<T>::CollatorNotReadyToBeOnline
             );
             ensure!(
