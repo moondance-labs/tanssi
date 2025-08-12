@@ -48,7 +48,7 @@ use {
     polkadot_runtime_common::xcm_sender::ExponentialPrice,
     sp_core::{ConstU32, H160},
     sp_runtime::Perbill,
-    tp_bridge::{
+    tp_container_chain::{
         sovereign_paid_remote_exporter::SovereignPaidRemoteExporter,
         ContainerChainEthereumLocationConverter,
     },

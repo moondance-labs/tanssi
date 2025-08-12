@@ -108,8 +108,8 @@ cumulus-primitives-utility = { workspace = true }
 parachain-info = { workspace = true }
 parachains-common = { workspace = true }
 
-# Bridges
-tp-bridge = { workspace = true }
+# Container Chain primitives
+tp-container-chain = { workspace = true }
 
 # Frontier
 fp-account = { workspace = true, features = [ "serde" ] }
@@ -224,7 +224,6 @@ std = [
 	"sp-trie/std",
 	"sp-version/std",
 	"tanssi-runtime-common/std",
-	"tp-bridge/std",
 	"xcm-builder/std",
 	"xcm-executor/std",
 	"xcm-primitives/std",
@@ -278,7 +277,6 @@ runtime-benchmarks = [
 	"polkadot-runtime-common/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"tanssi-runtime-common/runtime-benchmarks",
-	"tp-bridge/runtime-benchmarks",
 	"xcm-builder/runtime-benchmarks",
 	"xcm-executor/runtime-benchmarks",
 	"xcm-primitives/runtime-benchmarks",

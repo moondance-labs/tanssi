@@ -2448,7 +2448,7 @@ dependencies = [
  "staging-xcm-executor",
  "substrate-wasm-builder",
  "tanssi-runtime-common",
- "tp-bridge",
+ "tp-container-chain",
  "xcm-primitives",
  "xcm-runtime-apis",
 ]
@@ -2531,7 +2531,7 @@ dependencies = [
  "staging-xcm-executor",
  "substrate-wasm-builder",
  "tanssi-runtime-common",
- "tp-bridge",
+ "tp-container-chain",
  "xcm-primitives",
  "xcm-runtime-apis",
 ]
@@ -20457,6 +20457,26 @@ dependencies = [
  "snowbridge-outbound-queue-primitives",
  "snowbridge-pallet-outbound-queue",
  "snowbridge-pallet-system",
+ "sp-core",
+ "sp-runtime",
+ "staging-xcm",
+ "staging-xcm-builder",
+ "staging-xcm-executor",
+]
+
+[[package]]
+name = "tp-container-chain"
+version = "0.1.0"
+dependencies = [
+ "cumulus-primitives-core",
+ "frame-support",
+ "frame-system",
+ "hex-literal 0.3.4",
+ "impl-trait-for-tuples",
+ "log",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
  "sp-core",
  "sp-runtime",
  "staging-xcm",
