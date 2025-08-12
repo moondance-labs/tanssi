@@ -66,6 +66,7 @@ fn set_offline_works() {
             .into(),
         );
         assert!(OfflineCollators::<Test>::get(COLLATOR_1).is_some());
+        assert_eq!(OfflineCollators::<Test>::get(COLLATOR_1), Some(0u32));
     });
 }
 #[test]
@@ -126,8 +127,6 @@ fn set_online_works() {
     ExtBuilder.build().execute_with(|| {
         OfflineCollators::<Test>::insert(COLLATOR_1, 0u32);
         assert!(OfflineCollators::<Test>::get(COLLATOR_1).is_some());
-        // We need to run to a session after the cooldown period
-        run_to_block(6u64);
         assert_ok!(Pallet::<Test>::set_online(RuntimeOrigin::signed(
             COLLATOR_1
         )));
@@ -156,7 +155,7 @@ fn set_online_fails_for_online_collators() {
 #[test]
 fn set_online_fails_for_offline_collator_within_cooldown_period() {
     ExtBuilder.build().execute_with(|| {
-        OfflineCollators::<Test>::insert(COLLATOR_1, 0u32);
+        OfflineCollators::<Test>::insert(COLLATOR_1, 1u32);
         assert!(OfflineCollators::<Test>::get(COLLATOR_1).is_some());
         assert_noop!(
             Pallet::<Test>::set_online(RuntimeOrigin::signed(COLLATOR_1)),
@@ -174,6 +173,7 @@ fn notify_inactive_collator_works() {
             true
         ));
         assert!(OfflineCollators::<Test>::get(COLLATOR_1).is_none());
+        assert_eq!(CurrentSessionIndexGetter::session_index(), 2);
         assert_ok!(Pallet::<Test>::notify_inactive_collator(
             RuntimeOrigin::signed(COLLATOR_3),
             COLLATOR_1
@@ -186,6 +186,9 @@ fn notify_inactive_collator_works() {
             .into(),
         );
         assert!(OfflineCollators::<Test>::get(COLLATOR_1).is_some());
+        // Since we are currently in session 2 and the cooldown period is 1 session
+        // the collator should be marked as offline util session 3
+        assert_eq!(OfflineCollators::<Test>::get(COLLATOR_1), Some(3u32));
     });
 }
 
@@ -257,6 +260,52 @@ fn notify_inactive_collator_fails_if_collator_is_invulnerable() {
         assert_noop!(
             Pallet::<Test>::notify_inactive_collator(RuntimeOrigin::signed(COLLATOR_3), COLLATOR_2),
             Error::<Test>::MarkingInvulnerableOfflineInvalid
+        );
+    });
+}
+
+#[test]
+fn calling_set_online_after_set_offline_works() {
+    ExtBuilder.build().execute_with(|| {
+        assert!(OfflineCollators::<Test>::get(COLLATOR_1).is_none());
+        assert_ok!(Pallet::<Test>::enable_offline_marking(
+            RuntimeOrigin::root(),
+            true
+        ));
+        assert_ok!(Pallet::<Test>::set_offline(RuntimeOrigin::signed(
+            COLLATOR_1
+        )));
+        assert!(OfflineCollators::<Test>::get(COLLATOR_1).is_some());
+        assert_ok!(Pallet::<Test>::set_online(RuntimeOrigin::signed(
+            COLLATOR_1
+        )));
+        System::assert_last_event(
+            Event::CollatorStatusUpdated {
+                collator: COLLATOR_1,
+                is_offline: false,
+            }
+            .into(),
+        );
+        assert!(OfflineCollators::<Test>::get(COLLATOR_1).is_none());
+    });
+}
+#[test]
+fn calling_set_online_after_notify_inactive_collator_fails() {
+    ExtBuilder.build().execute_with(|| {
+        make_collator_inactive(COLLATOR_1);
+        assert_ok!(Pallet::<Test>::enable_offline_marking(
+            RuntimeOrigin::root(),
+            true
+        ));
+        assert!(OfflineCollators::<Test>::get(COLLATOR_1).is_none());
+        assert_ok!(Pallet::<Test>::notify_inactive_collator(
+            RuntimeOrigin::signed(COLLATOR_3),
+            COLLATOR_1
+        ));
+        assert!(OfflineCollators::<Test>::get(COLLATOR_1).is_some());
+        assert_noop!(
+            Pallet::<Test>::set_online(RuntimeOrigin::signed(COLLATOR_1)),
+            Error::<Test>::CollatorNotReadyToBeOnline
         );
     });
 }
