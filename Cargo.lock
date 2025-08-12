@@ -9894,7 +9894,6 @@ dependencies = [
  "parity-scale-codec",
  "scale-info",
  "serde",
- "similar-asserts",
  "sp-core",
  "sp-io",
  "sp-runtime",
@@ -16254,12 +16253,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "separator"
-version = "0.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f97841a747eef040fcd2e7b3b9a220a7205926e60488e673d9e4926d27772ce5"
-
-[[package]]
 name = "serde"
 version = "1.0.219"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -18238,14 +18231,11 @@ dependencies = [
  "alloy-sol-types 0.4.2",
  "binary-merkle-tree",
  "bitvec",
- "container-chain-template-frontier-runtime",
- "container-chain-template-simple-runtime",
  "cumulus-pallet-parachain-system",
  "cumulus-pallet-session-benchmarking",
  "cumulus-primitives-core",
  "dp-consensus",
  "dp-container-chain-genesis-data",
- "emulated-integration-tests-common",
  "finality-grandpa",
  "frame-benchmarking",
  "frame-executive",
@@ -18324,11 +18314,7 @@ dependencies = [
  "polkadot-runtime-common",
  "polkadot-runtime-parachains",
  "rand 0.8.5",
- "rococo-runtime",
- "rococo-runtime-constants",
- "sc-consensus-grandpa",
  "scale-info",
- "separator",
  "serde",
  "serde_derive",
  "serde_json",
@@ -18391,8 +18377,6 @@ dependencies = [
  "tp-traits",
  "tp-xcm-commons",
  "westend-runtime",
- "westend-runtime-constants",
- "xcm-emulator",
  "xcm-runtime-apis",
 ]
 
