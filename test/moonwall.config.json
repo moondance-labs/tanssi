@@ -985,7 +985,7 @@
             ]
         },
         {
-            "name": "zombie_data_preservers_dancebox",
+            "name": "zombie_data_preservers_remote_dancebox",
             "testFileDir": ["suites/zombie_data_preservers"],
             "runScripts": [
                 "build-spec-data-preservers.sh",
@@ -998,7 +998,51 @@
             "foundation": {
                 "type": "zombie",
                 "zombieSpec": {
-                    "configPath": "./configs/zombie_data_preservers_dancebox.json",
+                    "configPath": "./configs/zombie_data_preservers_remote_dancebox.json",
+                    "skipBlockCheck": ["DataPreserver-2000", "DataPreserver-2001"]
+                }
+            },
+            "vitestArgs": {
+                "bail": 1
+            },
+            "connections": [
+                {
+                    "name": "Relay",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9947"]
+                },
+                {
+                    "name": "Tanssi",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9948"]
+                },
+                {
+                    "name": "Container2000",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9949"]
+                },
+                {
+                    "name": "Container2001",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9951"]
+                }
+            ]
+        },
+        {
+            "name": "zombie_data_preservers_embeded_dancebox",
+            "testFileDir": ["suites/zombie_data_preservers"],
+            "runScripts": [
+                "build-spec-data-preservers.sh",
+                "downloadPolkadot.ts",
+                "compile-wasm.ts compile -b ../target/release/tanssi-node -o wasm -c specs/data-preservers-dancebox-1000.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/data-preservers-container-2000.json",
+                "compile-wasm.ts compile -b ../target/release/container-chain-frontier-node -o wasm -c specs/data-preservers-container-2001.json"
+            ],
+            "timeout": 700000,
+            "foundation": {
+                "type": "zombie",
+                "zombieSpec": {
+                    "configPath": "./configs/zombie_data_preservers_embeded_dancebox.json",
                     "skipBlockCheck": ["DataPreserver-2000", "DataPreserver-2001"]
                 }
             },

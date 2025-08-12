@@ -758,6 +758,14 @@ impl<
             }
         }
 
+        let orchestrator_para_id = self
+            .params
+            .collation_params
+            .as_ref()
+            .expect("assignment update should only occur in a collating node")
+            .orchestrator_para_id
+            .clone();
+
         let HandleUpdateAssignmentResult {
             chains_to_stop,
             chains_to_start,

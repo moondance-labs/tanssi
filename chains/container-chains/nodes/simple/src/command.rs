@@ -358,7 +358,7 @@ fn rpc_provider_mode(cli: &Cli, cmd: &RpcProviderCmd) -> Result<()> {
         );
 
         let mut orchestrator_cli = None;
-        if cmd.solochain {
+        if !cmd.solochain {
             orchestrator_cli = Some(cumulus_client_cli::RunCmd::parse_from(
                 [String::from("orchestrator")]
                     .iter()

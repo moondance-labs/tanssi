@@ -125,27 +125,31 @@
                 {
                     "name": "DataPreserver-2000",
                     "validator": false,
-                    "command": "../target/release/container-chain-simple-node rpc-provider",
+                    "command": "./scripts/data-preservers-reorder-args.sh ../target/release/container-chain-simple-node rpc-provider --",
                     "args": [
-                        "--profile-id=2",
+                        "-- --profile-id=2",
                         "--orchestrator-endpoints=ws://127.0.0.1:9948/",
                         "--database=paritydb",
-                        "--wasmtime-precompiled=wasm"
+                        "--wasmtime-precompiled=wasm",
+                        "--prometheus-external --prometheus-port 33102",
+                        " --rpc-cors all --unsafe-rpc-external --rpc-methods unsafe",
+                        "--rpc-port 9950"
                     ],
-                    "prometheus_port": 33102,
-                    "rpc_port": 9950
+                    "prometheus_port": 33102
                 },
                 {
                     "name": "DataPreserver-2001",
                     "validator": false,
-                    "command": "../target/release/container-chain-frontier-node rpc-provider",
+                    "command": "./scripts/data-preservers-reorder-args.sh ../target/release/container-chain-frontier-node rpc-provider --",
                     "args": [
-                        "--profile-id=3",
+                        "-- --profile-id=3",
                         "--orchestrator-endpoints=ws://127.0.0.1:9948/",
                         "--database=paritydb",
-                        "--wasmtime-precompiled=wasm"
+                        "--wasmtime-precompiled=wasm",
+                        "--prometheus-external --prometheus-port 33103",
+                        " --rpc-cors all --unsafe-rpc-external --rpc-methods unsafe",
+                        "--rpc-port 9952"
                     ],
-                    "rpc_port": 9952,
                     "prometheus_port": 33103
                 }
             ]
