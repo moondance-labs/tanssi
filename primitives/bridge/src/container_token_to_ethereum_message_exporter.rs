@@ -285,7 +285,10 @@ impl<'a, Call> XcmConverter<'a, Call> {
             .ok_or(BuyExecutionExpected)?;
 
         let (deposit_assets, beneficiary) = match self.next()? {
-            Instruction::DepositAsset { assets, beneficiary } => (assets, beneficiary),
+            Instruction::DepositAsset {
+                assets,
+                beneficiary,
+            } => (assets, beneficiary),
             _ => return Err(DepositAssetExpected),
         };
 
@@ -998,7 +1001,7 @@ mod tests {
                 ])),
                 Parachain(2001),
             ]
-                .into(),
+            .into(),
         );
         let mut destination: Option<InteriorLocation> = Here.into();
         let asset_location = Location::new(
@@ -1008,14 +1011,17 @@ mod tests {
                 39, 43, 244, 94, 80, 163, 85, 52, 143, 172, 182, 122, 130, 10,
             ]))],
         );
-        let assets: Assets = vec![Asset {
-            id: AssetId(asset_location.clone()),
-            fun: Fungible(123321000000000000),
-        }, Asset {
-            id: AssetId(asset_location.clone()),
-            fun: Fungible(123321000000000000),
-        }]
-            .into();
+        let assets: Assets = vec![
+            Asset {
+                id: AssetId(asset_location.clone()),
+                fun: Fungible(123321000000000000),
+            },
+            Asset {
+                id: AssetId(asset_location.clone()),
+                fun: Fungible(123321000000000000),
+            },
+        ]
+        .into();
 
         let beneficiary_address: [u8; 20] = hex!("2000000000000000000000000000000000000000");
 
@@ -1035,10 +1041,10 @@ mod tests {
                         network: Some(Ethereum { chain_id: 11155111 }),
                         key: beneficiary_address,
                     }
-                        .into(),
+                    .into(),
                 },
             ]
-                .into(),
+            .into(),
         );
 
         let result = EthereumBlobExporter::<
@@ -1068,7 +1074,7 @@ mod tests {
                 ])),
                 Parachain(2001),
             ]
-                .into(),
+            .into(),
         );
         let mut destination: Option<InteriorLocation> = Here.into();
         let asset_location = Location::new(
@@ -1082,7 +1088,7 @@ mod tests {
             id: AssetId(asset_location.clone()),
             fun: Fungible(123321000000000000),
         }]
-            .into();
+        .into();
 
         let asset_location1 = Location::new(
             2,
@@ -1095,7 +1101,7 @@ mod tests {
             id: AssetId(asset_location1.clone()),
             fun: Fungible(123321000000000000),
         }]
-            .into();
+        .into();
 
         let beneficiary_address: [u8; 20] = hex!("2000000000000000000000000000000000000000");
 
@@ -1115,10 +1121,10 @@ mod tests {
                         network: Some(Ethereum { chain_id: 11155111 }),
                         key: beneficiary_address,
                     }
-                        .into(),
+                    .into(),
                 },
             ]
-                .into(),
+            .into(),
         );
 
         let result = EthereumBlobExporter::<
@@ -1148,7 +1154,7 @@ mod tests {
                 ])),
                 Parachain(2001),
             ]
-                .into(),
+            .into(),
         );
         let mut destination: Option<InteriorLocation> = Here.into();
         let asset_location = Location::new(
@@ -1162,7 +1168,7 @@ mod tests {
             id: AssetId(asset_location.clone()),
             fun: Fungible(123321000000000000),
         }]
-            .into();
+        .into();
 
         let asset_location1 = Location::new(
             1,
@@ -1175,7 +1181,7 @@ mod tests {
             id: AssetId(asset_location1.clone()),
             fun: Fungible(123321000000000001),
         }]
-            .into();
+        .into();
 
         let beneficiary_address: [u8; 20] = hex!("2000000000000000000000000000000000000000");
 
@@ -1195,10 +1201,10 @@ mod tests {
                         network: Some(Ethereum { chain_id: 11155111 }),
                         key: beneficiary_address,
                     }
-                        .into(),
+                    .into(),
                 },
             ]
-                .into(),
+            .into(),
         );
 
         let result = EthereumBlobExporter::<
@@ -1228,7 +1234,7 @@ mod tests {
                 ])),
                 Parachain(2001),
             ]
-                .into(),
+            .into(),
         );
         let mut destination: Option<InteriorLocation> = Here.into();
         let asset_location = Location::new(
@@ -1242,7 +1248,7 @@ mod tests {
             id: AssetId(asset_location.clone()),
             fun: NonFungible([42u8; 32].into()),
         }]
-            .into();
+        .into();
 
         let beneficiary_address: [u8; 20] = hex!("2000000000000000000000000000000000000000");
 
@@ -1262,10 +1268,10 @@ mod tests {
                         network: Some(Ethereum { chain_id: 11155111 }),
                         key: beneficiary_address,
                     }
-                        .into(),
+                    .into(),
                 },
             ]
-                .into(),
+            .into(),
         );
 
         let result = EthereumBlobExporter::<
@@ -1285,10 +1291,18 @@ mod tests {
 
     #[test]
     fn exporter_para_mismatch_yields_unroutable() {
-        let asset_para_location: InteriorLocation =
-            [GlobalConsensus(Polkadot), Parachain(2001), PalletInstance(10)].into();
-        let asset_para_location1: InteriorLocation =
-            [GlobalConsensus(Polkadot), Parachain(2002), PalletInstance(10)].into();
+        let asset_para_location: InteriorLocation = [
+            GlobalConsensus(Polkadot),
+            Parachain(2001),
+            PalletInstance(10),
+        ]
+        .into();
+        let asset_para_location1: InteriorLocation = [
+            GlobalConsensus(Polkadot),
+            Parachain(2002),
+            PalletInstance(10),
+        ]
+        .into();
         let network = Ethereum { chain_id: 11155111 };
         let channel: u32 = 0;
         let mut universal_source: Option<InteriorLocation> = Some(
@@ -1299,28 +1313,22 @@ mod tests {
                 ])),
                 Parachain(2001),
             ]
-                .into(),
+            .into(),
         );
         let mut destination: Option<InteriorLocation> = Here.into();
-        let asset_location = Location::new(
-            1,
-            asset_para_location,
-        );
-        let asset_location1 = Location::new(
-            1,
-            asset_para_location1,
-        );
+        let asset_location = Location::new(1, asset_para_location);
+        let asset_location1 = Location::new(1, asset_para_location1);
         let assets: Assets = vec![Asset {
             id: AssetId(asset_location.clone()),
             fun: Fungible(123321000000000000),
         }]
-            .into();
+        .into();
 
         let assets1: Assets = vec![Asset {
             id: AssetId(asset_location1.clone()),
             fun: Fungible(123321000000000000),
         }]
-            .into();
+        .into();
 
         let beneficiary_address: [u8; 20] = hex!("2000000000000000000000000000000000000000");
 
@@ -1340,10 +1348,10 @@ mod tests {
                         network: Some(Ethereum { chain_id: 11155111 }),
                         key: beneficiary_address,
                     }
-                        .into(),
+                    .into(),
                 },
             ]
-                .into(),
+            .into(),
         );
 
         let result = EthereumBlobExporter::<
@@ -1363,8 +1371,12 @@ mod tests {
 
     #[test]
     fn exporter_incorrect_amount_yields_unroutable() {
-        let asset_para_location: InteriorLocation =
-            [GlobalConsensus(Polkadot), Parachain(2001), PalletInstance(10)].into();
+        let asset_para_location: InteriorLocation = [
+            GlobalConsensus(Polkadot),
+            Parachain(2001),
+            PalletInstance(10),
+        ]
+        .into();
         let network = Ethereum { chain_id: 11155111 };
         let channel: u32 = 0;
         let mut universal_source: Option<InteriorLocation> = Some(
@@ -1375,18 +1387,15 @@ mod tests {
                 ])),
                 Parachain(2001),
             ]
-                .into(),
+            .into(),
         );
         let mut destination: Option<InteriorLocation> = Here.into();
-        let asset_location = Location::new(
-            1,
-            asset_para_location,
-        );
+        let asset_location = Location::new(1, asset_para_location);
         let assets: Assets = vec![Asset {
             id: AssetId(asset_location.clone()),
             fun: Fungible(0),
         }]
-            .into();
+        .into();
 
         let beneficiary_address: [u8; 20] = hex!("2000000000000000000000000000000000000000");
 
@@ -1406,10 +1415,10 @@ mod tests {
                         network: Some(Ethereum { chain_id: 11155111 }),
                         key: beneficiary_address,
                     }
-                        .into(),
+                    .into(),
                 },
             ]
-                .into(),
+            .into(),
         );
 
         let result = EthereumBlobExporter::<
@@ -1429,8 +1438,12 @@ mod tests {
 
     #[test]
     fn exporter_no_set_topic_yields_unroutable() {
-        let asset_para_location: InteriorLocation =
-            [GlobalConsensus(Polkadot), Parachain(2001), PalletInstance(10)].into();
+        let asset_para_location: InteriorLocation = [
+            GlobalConsensus(Polkadot),
+            Parachain(2001),
+            PalletInstance(10),
+        ]
+        .into();
         let network = Ethereum { chain_id: 11155111 };
         let channel: u32 = 0;
         let mut universal_source: Option<InteriorLocation> = Some(
@@ -1441,18 +1454,15 @@ mod tests {
                 ])),
                 Parachain(2001),
             ]
-                .into(),
+            .into(),
         );
         let mut destination: Option<InteriorLocation> = Here.into();
-        let asset_location = Location::new(
-            1,
-            asset_para_location,
-        );
+        let asset_location = Location::new(1, asset_para_location);
         let assets: Assets = vec![Asset {
             id: AssetId(asset_location.clone()),
             fun: Fungible(123321000000000000),
         }]
-            .into();
+        .into();
 
         let beneficiary_address: [u8; 20] = hex!("2000000000000000000000000000000000000000");
 
@@ -1472,10 +1482,10 @@ mod tests {
                         network: Some(Ethereum { chain_id: 11155111 }),
                         key: beneficiary_address,
                     }
-                        .into(),
+                    .into(),
                 },
             ]
-                .into(),
+            .into(),
         );
 
         let result = EthereumBlobExporter::<
@@ -1495,8 +1505,12 @@ mod tests {
 
     #[test]
     fn exporter_extra_instruction_yields_unroutable() {
-        let asset_para_location: InteriorLocation =
-            [GlobalConsensus(Polkadot), Parachain(2001), PalletInstance(10)].into();
+        let asset_para_location: InteriorLocation = [
+            GlobalConsensus(Polkadot),
+            Parachain(2001),
+            PalletInstance(10),
+        ]
+        .into();
         let network = Ethereum { chain_id: 11155111 };
         let channel: u32 = 0;
         let mut universal_source: Option<InteriorLocation> = Some(
@@ -1507,18 +1521,15 @@ mod tests {
                 ])),
                 Parachain(2001),
             ]
-                .into(),
+            .into(),
         );
         let mut destination: Option<InteriorLocation> = Here.into();
-        let asset_location = Location::new(
-            1,
-            asset_para_location,
-        );
+        let asset_location = Location::new(1, asset_para_location);
         let assets: Assets = vec![Asset {
             id: AssetId(asset_location.clone()),
             fun: Fungible(123321000000000000),
         }]
-            .into();
+        .into();
 
         let beneficiary_address: [u8; 20] = hex!("2000000000000000000000000000000000000000");
 
@@ -1538,12 +1549,15 @@ mod tests {
                         network: Some(Ethereum { chain_id: 11155111 }),
                         key: beneficiary_address,
                     }
-                        .into(),
+                    .into(),
                 },
-                SetTopic([57, 238, 159, 80, 83, 113, 184, 105, 108, 164, 73, 6, 134, 160, 7, 234, 121, 88, 234, 173, 250, 136, 18, 29, 1, 204, 109, 70, 45, 3, 160, 251]),
-                ClearOrigin
+                SetTopic([
+                    57, 238, 159, 80, 83, 113, 184, 105, 108, 164, 73, 6, 134, 160, 7, 234, 121,
+                    88, 234, 173, 250, 136, 18, 29, 1, 204, 109, 70, 45, 3, 160, 251,
+                ]),
+                ClearOrigin,
             ]
-                .into(),
+            .into(),
         );
 
         let result = EthereumBlobExporter::<
@@ -1563,8 +1577,12 @@ mod tests {
 
     #[test]
     fn exporter_bridge_channel_issue_yields_unroutable() {
-        let asset_para_location: InteriorLocation =
-            [GlobalConsensus(Polkadot), Parachain(2001), PalletInstance(10)].into();
+        let asset_para_location: InteriorLocation = [
+            GlobalConsensus(Polkadot),
+            Parachain(2001),
+            PalletInstance(10),
+        ]
+        .into();
         let network = Ethereum { chain_id: 11155111 };
         let channel: u32 = 0;
         let mut universal_source: Option<InteriorLocation> = Some(
@@ -1575,18 +1593,15 @@ mod tests {
                 ])),
                 Parachain(2001),
             ]
-                .into(),
+            .into(),
         );
         let mut destination: Option<InteriorLocation> = Here.into();
-        let asset_location = Location::new(
-            1,
-            asset_para_location,
-        );
+        let asset_location = Location::new(1, asset_para_location);
         let assets: Assets = vec![Asset {
             id: AssetId(asset_location.clone()),
             fun: Fungible(123321000000000000),
         }]
-            .into();
+        .into();
 
         let beneficiary_address: [u8; 20] = hex!("2000000000000000000000000000000000000000");
 
@@ -1606,11 +1621,14 @@ mod tests {
                         network: Some(Ethereum { chain_id: 11155111 }),
                         key: beneficiary_address,
                     }
-                        .into(),
+                    .into(),
                 },
-                SetTopic([57, 238, 159, 80, 83, 113, 184, 105, 108, 164, 73, 6, 134, 160, 7, 234, 121, 88, 234, 173, 250, 136, 18, 29, 1, 204, 109, 70, 45, 3, 160, 251]),
+                SetTopic([
+                    57, 238, 159, 80, 83, 113, 184, 105, 108, 164, 73, 6, 134, 160, 7, 234, 121,
+                    88, 234, 173, 250, 136, 18, 29, 1, 204, 109, 70, 45, 3, 160, 251,
+                ]),
             ]
-                .into(),
+            .into(),
         );
 
         let result = EthereumBlobExporter::<
