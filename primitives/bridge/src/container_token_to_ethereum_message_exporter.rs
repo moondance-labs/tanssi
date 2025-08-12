@@ -284,24 +284,18 @@ impl<'a, Call> XcmConverter<'a, Call> {
         let fee_asset = match_expression!(self.next(), Ok(BuyExecution { fees, .. }), fees)
             .ok_or(BuyExecutionExpected)?;
 
-        let (deposit_assets, beneficiary) = match_expression!(
-            self.next()?,
-            DepositAsset {
-                assets,
-                beneficiary
-            },
-            (assets, beneficiary)
-        )
-        .ok_or(DepositAssetExpected)?;
+        let (deposit_assets, beneficiary) = match self.next()? {
+            Instruction::DepositAsset { assets, beneficiary } => (assets, beneficiary),
+            _ => return Err(DepositAssetExpected),
+        };
 
         // assert that the beneficiary is AccountKey20.
-        let recipient = match_expression!(
-            beneficiary.unpack(),
-            (0, [AccountKey20 { network, key }])
-                if self.network_matches(network),
-            H160(*key)
-        )
-        .ok_or(BeneficiaryResolutionFailed)?;
+        let (parents, interior) = beneficiary.unpack();
+
+        let recipient = match (parents, interior) {
+            (0, [AccountKey20 { network, key }]) if self.network_matches(network) => H160(*key),
+            _ => return Err(BeneficiaryResolutionFailed),
+        };
 
         // Make sure there are reserved assets.
         if reserve_assets.len() == 0 {
@@ -773,7 +767,6 @@ mod tests {
                     fees: assets.get(0).unwrap().clone(),
                     weight_limit: Unlimited,
                 },
-                ClearOrigin,
             ]
             .into(),
         );
@@ -831,7 +824,6 @@ mod tests {
                     fees: assets.get(0).unwrap().clone(),
                     weight_limit: Unlimited,
                 },
-                ClearOrigin,
                 DepositAsset {
                     assets: filter,
                     beneficiary: AccountKey20 {
@@ -897,11 +889,10 @@ mod tests {
                     fees: assets.get(0).unwrap().clone(),
                     weight_limit: Unlimited,
                 },
-                ClearOrigin,
                 DepositAsset {
                     assets: filter,
                     beneficiary: AccountKey20 {
-                        network: None,
+                        network: Some(Ethereum { chain_id: 11155111 }),
                         key: beneficiary_address,
                     }
                     .into(),
@@ -927,6 +918,713 @@ mod tests {
 
     #[test]
     fn exporter_reserve_not_match_deposit_yields_unroutable() {
-        // TODO: Add scenario
+        let network = Ethereum { chain_id: 11155111 };
+        let channel: u32 = 0;
+        let mut universal_source: Option<InteriorLocation> = Some(
+            [
+                GlobalConsensus(ByGenesis([
+                    152, 58, 26, 114, 80, 61, 108, 195, 99, 103, 118, 116, 126, 198, 39, 23, 43,
+                    81, 39, 43, 244, 94, 80, 163, 85, 52, 143, 172, 182, 122, 130, 10,
+                ])),
+                Parachain(2001),
+            ]
+            .into(),
+        );
+        let mut destination: Option<InteriorLocation> = Here.into();
+        let asset_location = Location::new(
+            1,
+            [GlobalConsensus(ByGenesis([
+                152, 58, 26, 114, 80, 61, 108, 195, 99, 103, 118, 116, 126, 198, 39, 23, 43, 81,
+                39, 43, 244, 94, 80, 163, 85, 52, 143, 172, 182, 122, 130, 10,
+            ]))],
+        );
+        let assets: Assets = vec![Asset {
+            id: AssetId(asset_location.clone()),
+            fun: Fungible(123321000000000000),
+        }]
+        .into();
+
+        let beneficiary_address: [u8; 20] = hex!("2000000000000000000000000000000000000000");
+        let assets1: Assets = vec![Asset {
+            id: AssetId(asset_location),
+            fun: Fungible(999),
+        }]
+        .into();
+        let filter: AssetFilter = assets1.clone().into();
+        let mut message: Option<Xcm<()>> = Some(
+            vec![
+                ReserveAssetDeposited(assets.clone()),
+                ClearOrigin,
+                BuyExecution {
+                    fees: assets.get(0).unwrap().clone(),
+                    weight_limit: Unlimited,
+                },
+                DepositAsset {
+                    assets: filter,
+                    beneficiary: AccountKey20 {
+                        network: Some(Ethereum { chain_id: 11155111 }),
+                        key: beneficiary_address,
+                    }
+                    .into(),
+                },
+            ]
+            .into(),
+        );
+
+        let result = EthereumBlobExporter::<
+            UniversalLocation,
+            EthereumNetwork,
+            MockOkOutboundQueue,
+            BridgeChannelInfo,
+        >::validate(
+            network,
+            channel,
+            &mut universal_source,
+            &mut destination,
+            &mut message,
+        );
+        assert_eq!(result, Err(Unroutable));
+    }
+
+    #[test]
+    fn exporter_reserve_assets_more_then_one_yields_unroutable() {
+        let network = Ethereum { chain_id: 11155111 };
+        let channel: u32 = 0;
+        let mut universal_source: Option<InteriorLocation> = Some(
+            [
+                GlobalConsensus(ByGenesis([
+                    152, 58, 26, 114, 80, 61, 108, 195, 99, 103, 118, 116, 126, 198, 39, 23, 43,
+                    81, 39, 43, 244, 94, 80, 163, 85, 52, 143, 172, 182, 122, 130, 10,
+                ])),
+                Parachain(2001),
+            ]
+                .into(),
+        );
+        let mut destination: Option<InteriorLocation> = Here.into();
+        let asset_location = Location::new(
+            1,
+            [GlobalConsensus(ByGenesis([
+                152, 58, 26, 114, 80, 61, 108, 195, 99, 103, 118, 116, 126, 198, 39, 23, 43, 81,
+                39, 43, 244, 94, 80, 163, 85, 52, 143, 172, 182, 122, 130, 10,
+            ]))],
+        );
+        let assets: Assets = vec![Asset {
+            id: AssetId(asset_location.clone()),
+            fun: Fungible(123321000000000000),
+        }, Asset {
+            id: AssetId(asset_location.clone()),
+            fun: Fungible(123321000000000000),
+        }]
+            .into();
+
+        let beneficiary_address: [u8; 20] = hex!("2000000000000000000000000000000000000000");
+
+        let filter: AssetFilter = Wild(WildAsset::AllCounted(1));
+
+        let mut message: Option<Xcm<()>> = Some(
+            vec![
+                ReserveAssetDeposited(assets.clone()),
+                ClearOrigin,
+                BuyExecution {
+                    fees: assets.get(0).unwrap().clone(),
+                    weight_limit: Unlimited,
+                },
+                DepositAsset {
+                    assets: filter,
+                    beneficiary: AccountKey20 {
+                        network: Some(Ethereum { chain_id: 11155111 }),
+                        key: beneficiary_address,
+                    }
+                        .into(),
+                },
+            ]
+                .into(),
+        );
+
+        let result = EthereumBlobExporter::<
+            UniversalLocation,
+            EthereumNetwork,
+            MockOkOutboundQueue,
+            BridgeChannelInfo,
+        >::validate(
+            network,
+            channel,
+            &mut universal_source,
+            &mut destination,
+            &mut message,
+        );
+        assert_eq!(result, Err(Unroutable));
+    }
+
+    #[test]
+    fn exporter_fee_id_does_not_equal_to_reserve_id_yields_unroutable() {
+        let network = Ethereum { chain_id: 11155111 };
+        let channel: u32 = 0;
+        let mut universal_source: Option<InteriorLocation> = Some(
+            [
+                GlobalConsensus(ByGenesis([
+                    152, 58, 26, 114, 80, 61, 108, 195, 99, 103, 118, 116, 126, 198, 39, 23, 43,
+                    81, 39, 43, 244, 94, 80, 163, 85, 52, 143, 172, 182, 122, 130, 10,
+                ])),
+                Parachain(2001),
+            ]
+                .into(),
+        );
+        let mut destination: Option<InteriorLocation> = Here.into();
+        let asset_location = Location::new(
+            1,
+            [GlobalConsensus(ByGenesis([
+                152, 58, 26, 114, 80, 61, 108, 195, 99, 103, 118, 116, 126, 198, 39, 23, 43, 81,
+                39, 43, 244, 94, 80, 163, 85, 52, 143, 172, 182, 122, 130, 10,
+            ]))],
+        );
+        let assets: Assets = vec![Asset {
+            id: AssetId(asset_location.clone()),
+            fun: Fungible(123321000000000000),
+        }]
+            .into();
+
+        let asset_location1 = Location::new(
+            2,
+            [GlobalConsensus(ByGenesis([
+                152, 58, 26, 114, 80, 61, 108, 195, 99, 103, 118, 116, 126, 198, 39, 23, 43, 81,
+                39, 43, 244, 94, 80, 163, 85, 52, 143, 172, 182, 122, 130, 10,
+            ]))],
+        );
+        let assets1: Assets = vec![Asset {
+            id: AssetId(asset_location1.clone()),
+            fun: Fungible(123321000000000000),
+        }]
+            .into();
+
+        let beneficiary_address: [u8; 20] = hex!("2000000000000000000000000000000000000000");
+
+        let filter: AssetFilter = Wild(WildAsset::AllCounted(1));
+
+        let mut message: Option<Xcm<()>> = Some(
+            vec![
+                ReserveAssetDeposited(assets.clone()),
+                ClearOrigin,
+                BuyExecution {
+                    fees: assets1.get(0).unwrap().clone(),
+                    weight_limit: Unlimited,
+                },
+                DepositAsset {
+                    assets: filter,
+                    beneficiary: AccountKey20 {
+                        network: Some(Ethereum { chain_id: 11155111 }),
+                        key: beneficiary_address,
+                    }
+                        .into(),
+                },
+            ]
+                .into(),
+        );
+
+        let result = EthereumBlobExporter::<
+            UniversalLocation,
+            EthereumNetwork,
+            MockOkOutboundQueue,
+            BridgeChannelInfo,
+        >::validate(
+            network,
+            channel,
+            &mut universal_source,
+            &mut destination,
+            &mut message,
+        );
+        assert_eq!(result, Err(Unroutable));
+    }
+
+    #[test]
+    fn exporter_fee_amount_greater_then_reserve_amount_yields_unroutable() {
+        let network = Ethereum { chain_id: 11155111 };
+        let channel: u32 = 0;
+        let mut universal_source: Option<InteriorLocation> = Some(
+            [
+                GlobalConsensus(ByGenesis([
+                    152, 58, 26, 114, 80, 61, 108, 195, 99, 103, 118, 116, 126, 198, 39, 23, 43,
+                    81, 39, 43, 244, 94, 80, 163, 85, 52, 143, 172, 182, 122, 130, 10,
+                ])),
+                Parachain(2001),
+            ]
+                .into(),
+        );
+        let mut destination: Option<InteriorLocation> = Here.into();
+        let asset_location = Location::new(
+            1,
+            [GlobalConsensus(ByGenesis([
+                152, 58, 26, 114, 80, 61, 108, 195, 99, 103, 118, 116, 126, 198, 39, 23, 43, 81,
+                39, 43, 244, 94, 80, 163, 85, 52, 143, 172, 182, 122, 130, 10,
+            ]))],
+        );
+        let assets: Assets = vec![Asset {
+            id: AssetId(asset_location.clone()),
+            fun: Fungible(123321000000000000),
+        }]
+            .into();
+
+        let asset_location1 = Location::new(
+            1,
+            [GlobalConsensus(ByGenesis([
+                152, 58, 26, 114, 80, 61, 108, 195, 99, 103, 118, 116, 126, 198, 39, 23, 43, 81,
+                39, 43, 244, 94, 80, 163, 85, 52, 143, 172, 182, 122, 130, 10,
+            ]))],
+        );
+        let assets1: Assets = vec![Asset {
+            id: AssetId(asset_location1.clone()),
+            fun: Fungible(123321000000000001),
+        }]
+            .into();
+
+        let beneficiary_address: [u8; 20] = hex!("2000000000000000000000000000000000000000");
+
+        let filter: AssetFilter = Wild(WildAsset::AllCounted(1));
+
+        let mut message: Option<Xcm<()>> = Some(
+            vec![
+                ReserveAssetDeposited(assets.clone()),
+                ClearOrigin,
+                BuyExecution {
+                    fees: assets1.get(0).unwrap().clone(),
+                    weight_limit: Unlimited,
+                },
+                DepositAsset {
+                    assets: filter,
+                    beneficiary: AccountKey20 {
+                        network: Some(Ethereum { chain_id: 11155111 }),
+                        key: beneficiary_address,
+                    }
+                        .into(),
+                },
+            ]
+                .into(),
+        );
+
+        let result = EthereumBlobExporter::<
+            UniversalLocation,
+            EthereumNetwork,
+            MockOkOutboundQueue,
+            BridgeChannelInfo,
+        >::validate(
+            network,
+            channel,
+            &mut universal_source,
+            &mut destination,
+            &mut message,
+        );
+        assert_eq!(result, Err(Unroutable));
+    }
+
+    #[test]
+    fn exporter_reserve_assets_incorrect_resolution_yields_unroutable() {
+        let network = Ethereum { chain_id: 11155111 };
+        let channel: u32 = 0;
+        let mut universal_source: Option<InteriorLocation> = Some(
+            [
+                GlobalConsensus(ByGenesis([
+                    152, 58, 26, 114, 80, 61, 108, 195, 99, 103, 118, 116, 126, 198, 39, 23, 43,
+                    81, 39, 43, 244, 94, 80, 163, 85, 52, 143, 172, 182, 122, 130, 10,
+                ])),
+                Parachain(2001),
+            ]
+                .into(),
+        );
+        let mut destination: Option<InteriorLocation> = Here.into();
+        let asset_location = Location::new(
+            1,
+            [GlobalConsensus(ByGenesis([
+                152, 58, 26, 114, 80, 61, 108, 195, 99, 103, 118, 116, 126, 198, 39, 23, 43, 81,
+                39, 43, 244, 94, 80, 163, 85, 52, 143, 172, 182, 122, 130, 10,
+            ]))],
+        );
+        let assets: Assets = vec![Asset {
+            id: AssetId(asset_location.clone()),
+            fun: NonFungible([42u8; 32].into()),
+        }]
+            .into();
+
+        let beneficiary_address: [u8; 20] = hex!("2000000000000000000000000000000000000000");
+
+        let filter: AssetFilter = Wild(WildAsset::AllCounted(1));
+
+        let mut message: Option<Xcm<()>> = Some(
+            vec![
+                ReserveAssetDeposited(assets.clone()),
+                ClearOrigin,
+                BuyExecution {
+                    fees: assets.get(0).unwrap().clone(),
+                    weight_limit: Unlimited,
+                },
+                DepositAsset {
+                    assets: filter,
+                    beneficiary: AccountKey20 {
+                        network: Some(Ethereum { chain_id: 11155111 }),
+                        key: beneficiary_address,
+                    }
+                        .into(),
+                },
+            ]
+                .into(),
+        );
+
+        let result = EthereumBlobExporter::<
+            UniversalLocation,
+            EthereumNetwork,
+            MockOkOutboundQueue,
+            BridgeChannelInfo,
+        >::validate(
+            network,
+            channel,
+            &mut universal_source,
+            &mut destination,
+            &mut message,
+        );
+        assert_eq!(result, Err(Unroutable));
+    }
+
+    #[test]
+    fn exporter_para_mismatch_yields_unroutable() {
+        let asset_para_location: InteriorLocation =
+            [GlobalConsensus(Polkadot), Parachain(2001), PalletInstance(10)].into();
+        let asset_para_location1: InteriorLocation =
+            [GlobalConsensus(Polkadot), Parachain(2002), PalletInstance(10)].into();
+        let network = Ethereum { chain_id: 11155111 };
+        let channel: u32 = 0;
+        let mut universal_source: Option<InteriorLocation> = Some(
+            [
+                GlobalConsensus(ByGenesis([
+                    152, 58, 26, 114, 80, 61, 108, 195, 99, 103, 118, 116, 126, 198, 39, 23, 43,
+                    81, 39, 43, 244, 94, 80, 163, 85, 52, 143, 172, 182, 122, 130, 10,
+                ])),
+                Parachain(2001),
+            ]
+                .into(),
+        );
+        let mut destination: Option<InteriorLocation> = Here.into();
+        let asset_location = Location::new(
+            1,
+            asset_para_location,
+        );
+        let asset_location1 = Location::new(
+            1,
+            asset_para_location1,
+        );
+        let assets: Assets = vec![Asset {
+            id: AssetId(asset_location.clone()),
+            fun: Fungible(123321000000000000),
+        }]
+            .into();
+
+        let assets1: Assets = vec![Asset {
+            id: AssetId(asset_location1.clone()),
+            fun: Fungible(123321000000000000),
+        }]
+            .into();
+
+        let beneficiary_address: [u8; 20] = hex!("2000000000000000000000000000000000000000");
+
+        let filter: AssetFilter = Wild(WildAsset::AllCounted(1));
+
+        let mut message: Option<Xcm<()>> = Some(
+            vec![
+                ReserveAssetDeposited(assets1.clone()),
+                ClearOrigin,
+                BuyExecution {
+                    fees: assets.get(0).unwrap().clone(),
+                    weight_limit: Unlimited,
+                },
+                DepositAsset {
+                    assets: filter,
+                    beneficiary: AccountKey20 {
+                        network: Some(Ethereum { chain_id: 11155111 }),
+                        key: beneficiary_address,
+                    }
+                        .into(),
+                },
+            ]
+                .into(),
+        );
+
+        let result = EthereumBlobExporter::<
+            UniversalLocation,
+            EthereumNetwork,
+            MockOkOutboundQueue,
+            BridgeChannelInfo,
+        >::validate(
+            network,
+            channel,
+            &mut universal_source,
+            &mut destination,
+            &mut message,
+        );
+        assert_eq!(result, Err(Unroutable));
+    }
+
+    #[test]
+    fn exporter_incorrect_amount_yields_unroutable() {
+        let asset_para_location: InteriorLocation =
+            [GlobalConsensus(Polkadot), Parachain(2001), PalletInstance(10)].into();
+        let network = Ethereum { chain_id: 11155111 };
+        let channel: u32 = 0;
+        let mut universal_source: Option<InteriorLocation> = Some(
+            [
+                GlobalConsensus(ByGenesis([
+                    152, 58, 26, 114, 80, 61, 108, 195, 99, 103, 118, 116, 126, 198, 39, 23, 43,
+                    81, 39, 43, 244, 94, 80, 163, 85, 52, 143, 172, 182, 122, 130, 10,
+                ])),
+                Parachain(2001),
+            ]
+                .into(),
+        );
+        let mut destination: Option<InteriorLocation> = Here.into();
+        let asset_location = Location::new(
+            1,
+            asset_para_location,
+        );
+        let assets: Assets = vec![Asset {
+            id: AssetId(asset_location.clone()),
+            fun: Fungible(0),
+        }]
+            .into();
+
+        let beneficiary_address: [u8; 20] = hex!("2000000000000000000000000000000000000000");
+
+        let filter: AssetFilter = Wild(WildAsset::AllCounted(1));
+
+        let mut message: Option<Xcm<()>> = Some(
+            vec![
+                ReserveAssetDeposited(assets.clone()),
+                ClearOrigin,
+                BuyExecution {
+                    fees: assets.get(0).unwrap().clone(),
+                    weight_limit: Unlimited,
+                },
+                DepositAsset {
+                    assets: filter,
+                    beneficiary: AccountKey20 {
+                        network: Some(Ethereum { chain_id: 11155111 }),
+                        key: beneficiary_address,
+                    }
+                        .into(),
+                },
+            ]
+                .into(),
+        );
+
+        let result = EthereumBlobExporter::<
+            UniversalLocation,
+            EthereumNetwork,
+            MockOkOutboundQueue,
+            BridgeChannelInfo,
+        >::validate(
+            network,
+            channel,
+            &mut universal_source,
+            &mut destination,
+            &mut message,
+        );
+        assert_eq!(result, Err(Unroutable));
+    }
+
+    #[test]
+    fn exporter_no_set_topic_yields_unroutable() {
+        let asset_para_location: InteriorLocation =
+            [GlobalConsensus(Polkadot), Parachain(2001), PalletInstance(10)].into();
+        let network = Ethereum { chain_id: 11155111 };
+        let channel: u32 = 0;
+        let mut universal_source: Option<InteriorLocation> = Some(
+            [
+                GlobalConsensus(ByGenesis([
+                    152, 58, 26, 114, 80, 61, 108, 195, 99, 103, 118, 116, 126, 198, 39, 23, 43,
+                    81, 39, 43, 244, 94, 80, 163, 85, 52, 143, 172, 182, 122, 130, 10,
+                ])),
+                Parachain(2001),
+            ]
+                .into(),
+        );
+        let mut destination: Option<InteriorLocation> = Here.into();
+        let asset_location = Location::new(
+            1,
+            asset_para_location,
+        );
+        let assets: Assets = vec![Asset {
+            id: AssetId(asset_location.clone()),
+            fun: Fungible(123321000000000000),
+        }]
+            .into();
+
+        let beneficiary_address: [u8; 20] = hex!("2000000000000000000000000000000000000000");
+
+        let filter: AssetFilter = Wild(WildAsset::AllCounted(1));
+
+        let mut message: Option<Xcm<()>> = Some(
+            vec![
+                ReserveAssetDeposited(assets.clone()),
+                ClearOrigin,
+                BuyExecution {
+                    fees: assets.get(0).unwrap().clone(),
+                    weight_limit: Unlimited,
+                },
+                DepositAsset {
+                    assets: filter,
+                    beneficiary: AccountKey20 {
+                        network: Some(Ethereum { chain_id: 11155111 }),
+                        key: beneficiary_address,
+                    }
+                        .into(),
+                },
+            ]
+                .into(),
+        );
+
+        let result = EthereumBlobExporter::<
+            UniversalLocation,
+            EthereumNetwork,
+            MockOkOutboundQueue,
+            BridgeChannelInfo,
+        >::validate(
+            network,
+            channel,
+            &mut universal_source,
+            &mut destination,
+            &mut message,
+        );
+        assert_eq!(result, Err(Unroutable));
+    }
+
+    #[test]
+    fn exporter_extra_instruction_yields_unroutable() {
+        let asset_para_location: InteriorLocation =
+            [GlobalConsensus(Polkadot), Parachain(2001), PalletInstance(10)].into();
+        let network = Ethereum { chain_id: 11155111 };
+        let channel: u32 = 0;
+        let mut universal_source: Option<InteriorLocation> = Some(
+            [
+                GlobalConsensus(ByGenesis([
+                    152, 58, 26, 114, 80, 61, 108, 195, 99, 103, 118, 116, 126, 198, 39, 23, 43,
+                    81, 39, 43, 244, 94, 80, 163, 85, 52, 143, 172, 182, 122, 130, 10,
+                ])),
+                Parachain(2001),
+            ]
+                .into(),
+        );
+        let mut destination: Option<InteriorLocation> = Here.into();
+        let asset_location = Location::new(
+            1,
+            asset_para_location,
+        );
+        let assets: Assets = vec![Asset {
+            id: AssetId(asset_location.clone()),
+            fun: Fungible(123321000000000000),
+        }]
+            .into();
+
+        let beneficiary_address: [u8; 20] = hex!("2000000000000000000000000000000000000000");
+
+        let filter: AssetFilter = Wild(WildAsset::AllCounted(1));
+
+        let mut message: Option<Xcm<()>> = Some(
+            vec![
+                ReserveAssetDeposited(assets.clone()),
+                ClearOrigin,
+                BuyExecution {
+                    fees: assets.get(0).unwrap().clone(),
+                    weight_limit: Unlimited,
+                },
+                DepositAsset {
+                    assets: filter,
+                    beneficiary: AccountKey20 {
+                        network: Some(Ethereum { chain_id: 11155111 }),
+                        key: beneficiary_address,
+                    }
+                        .into(),
+                },
+                SetTopic([57, 238, 159, 80, 83, 113, 184, 105, 108, 164, 73, 6, 134, 160, 7, 234, 121, 88, 234, 173, 250, 136, 18, 29, 1, 204, 109, 70, 45, 3, 160, 251]),
+                ClearOrigin
+            ]
+                .into(),
+        );
+
+        let result = EthereumBlobExporter::<
+            UniversalLocation,
+            EthereumNetwork,
+            MockOkOutboundQueue,
+            BridgeChannelInfo,
+        >::validate(
+            network,
+            channel,
+            &mut universal_source,
+            &mut destination,
+            &mut message,
+        );
+        assert_eq!(result, Err(Unroutable));
+    }
+
+    #[test]
+    fn exporter_bridge_channel_issue_yields_unroutable() {
+        let asset_para_location: InteriorLocation =
+            [GlobalConsensus(Polkadot), Parachain(2001), PalletInstance(10)].into();
+        let network = Ethereum { chain_id: 11155111 };
+        let channel: u32 = 0;
+        let mut universal_source: Option<InteriorLocation> = Some(
+            [
+                GlobalConsensus(ByGenesis([
+                    152, 58, 26, 114, 80, 61, 108, 195, 99, 103, 118, 116, 126, 198, 39, 23, 43,
+                    81, 39, 43, 244, 94, 80, 163, 85, 52, 143, 172, 182, 122, 130, 10,
+                ])),
+                Parachain(2001),
+            ]
+                .into(),
+        );
+        let mut destination: Option<InteriorLocation> = Here.into();
+        let asset_location = Location::new(
+            1,
+            asset_para_location,
+        );
+        let assets: Assets = vec![Asset {
+            id: AssetId(asset_location.clone()),
+            fun: Fungible(123321000000000000),
+        }]
+            .into();
+
+        let beneficiary_address: [u8; 20] = hex!("2000000000000000000000000000000000000000");
+
+        let filter: AssetFilter = Wild(WildAsset::AllCounted(1));
+
+        let mut message: Option<Xcm<()>> = Some(
+            vec![
+                ReserveAssetDeposited(assets.clone()),
+                ClearOrigin,
+                BuyExecution {
+                    fees: assets.get(0).unwrap().clone(),
+                    weight_limit: Unlimited,
+                },
+                DepositAsset {
+                    assets: filter,
+                    beneficiary: AccountKey20 {
+                        network: Some(Ethereum { chain_id: 11155111 }),
+                        key: beneficiary_address,
+                    }
+                        .into(),
+                },
+                SetTopic([57, 238, 159, 80, 83, 113, 184, 105, 108, 164, 73, 6, 134, 160, 7, 234, 121, 88, 234, 173, 250, 136, 18, 29, 1, 204, 109, 70, 45, 3, 160, 251]),
+            ]
+                .into(),
+        );
+
+        let result = EthereumBlobExporter::<
+            UniversalLocation,
+            EthereumNetwork,
+            MockOkOutboundQueue,
+            BridgeChannelInfo,
+        >::validate(
+            network,
+            channel,
+            &mut universal_source,
+            &mut destination,
+            &mut message,
+        );
+        assert!(result.is_ok());
     }
 }
