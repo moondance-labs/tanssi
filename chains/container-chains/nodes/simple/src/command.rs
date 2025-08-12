@@ -115,7 +115,7 @@ pub fn run() -> Result<()> {
     // Match rpc provider subcommand in wrapper
     let subcommand = match &cli.subcommand {
         Some(Subcommand::RpcProvider(cmd)) => {
-            return rpc_provider_mode(&cli, dbg!(cmd));
+            return rpc_provider_mode(&cli, cmd);
         }
         Some(Subcommand::Base(cmd)) => Some(cmd),
         None => None,
@@ -339,11 +339,12 @@ pub fn run() -> Result<()> {
 }
 
 fn rpc_provider_mode(cli: &Cli, cmd: &RpcProviderCmd) -> Result<()> {
-    log::info!("Starting in RPC provider mode!");
-
+    // Should use cmd.container_run but currently fails to initialize due to missing chain spec.
     let runner = cli.create_runner(&cli.run.normalize())?;
 
     runner.run_node_until_exit(|config| async move {
+        log::info!("Starting in RPC provider mode!");
+
         let container_chain_cli = ContainerChainCli {
             base: cmd.container_run.clone(),
             preloaded_chain_spec: None,

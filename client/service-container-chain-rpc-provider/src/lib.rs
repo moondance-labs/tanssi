@@ -237,15 +237,10 @@ where
         }
 
         // Container chain spawner
-        let relay_chain = node_common::chain_spec::Extensions::try_get(&*self.config.chain_spec)
-            .map(|e| e.relay_chain.clone())
-            .ok_or("Could not find relay_chain extension in chain-spec.")?;
-
-        let para_id = node_common::chain_spec::Extensions::try_get(&*self.config.chain_spec)
-            .map(|e| e.para_id)
-            .ok_or("Could not find parachain ID in chain-spec.")?;
-
-        let para_id = ParaId::from(para_id);
+        let relay_chain = self
+            .polkadot_cli
+            .chain_id(false)
+            .expect("to get relay chain id");
 
         let container_chain_spawner = ContainerChainSpawner {
             params: ContainerChainSpawnParams {
@@ -256,7 +251,6 @@ where
                 relay_chain,
                 relay_chain_interface,
                 sync_keystore: keystore,
-                orchestrator_para_id: para_id,
                 collation_params: None,
                 spawn_handle: task_manager.spawn_handle().clone(),
                 data_preserver: true,

@@ -196,7 +196,6 @@ pub async fn start_solochain_node(
                 relay_chain,
                 relay_chain_interface,
                 sync_keystore,
-                orchestrator_para_id,
                 collation_params: if validator {
                     Some(spawner::CollationParams {
                         // TODO: all these args must be solochain instead of orchestrator

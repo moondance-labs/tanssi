@@ -369,10 +369,13 @@ impl sc_cli::CliConfiguration<Self> for ContainerChainCli {
     }
 
     fn chain_id(&self, _is_dev: bool) -> sc_cli::Result<String> {
-        self.base
+        // Make chain id from para_id if present, otherwise use a generic name.
+        // We may not know the para_id in advance.
+        Ok(self
+            .base
             .para_id
             .map(|para_id| format!("container-chain-{}", para_id))
-            .ok_or("no para-id in container chain args".into())
+            .unwrap_or("container-chain-unknown".into()))
     }
 
     fn role(&self, is_dev: bool) -> sc_cli::Result<sc_service::Role> {

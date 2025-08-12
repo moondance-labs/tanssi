@@ -121,7 +121,6 @@ pub struct ContainerChainSpawnParams<
     pub relay_chain: String,
     pub relay_chain_interface: Arc<dyn RelayChainInterface>,
     pub sync_keystore: KeystorePtr,
-    pub orchestrator_para_id: ParaId,
     pub spawn_handle: SpawnTaskHandle,
     pub collation_params: Option<CollationParams>,
     pub data_preserver: bool,
@@ -709,6 +708,14 @@ impl<
         validator: bool,
         solochain: bool,
     ) {
+        let orchestrator_para_id = self
+            .params
+            .collation_params
+            .as_ref()
+            .expect("assignment update should only occur in a collating node")
+            .orchestrator_para_id
+            .clone();
+
         // The node always starts as an orchestrator chain collator.
         // This is because the assignment is detected after importing a new block, so if all
         // collators stop at the same time, when they start again nobody will produce the new block.
@@ -716,7 +723,7 @@ impl<
         // then the real assignment is used.
         // Except in solochain mode, then the initial assignment is None.
         if validator && !solochain {
-            self.handle_update_assignment(Some(self.params.orchestrator_para_id), None)
+            self.handle_update_assignment(Some(orchestrator_para_id), None)
                 .await;
         }
 
@@ -757,12 +764,12 @@ impl<
             need_to_restart: _,
         } = handle_update_assignment_state_change(
             &mut self.state.lock().expect("poison error"),
-            self.params.orchestrator_para_id,
+            orchestrator_para_id,
             current,
             next,
         );
 
-        if current != Some(self.params.orchestrator_para_id) {
+        if current != Some(orchestrator_para_id) {
             // If not assigned to orchestrator chain anymore, we need to stop the collator process
             let maybe_exit_notification_receiver = self
                 .collation_cancellation_constructs

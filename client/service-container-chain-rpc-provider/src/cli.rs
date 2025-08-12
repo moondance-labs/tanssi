@@ -90,12 +90,13 @@ impl sc_cli::CliConfiguration<Self> for EmbededOrchestratorCli {
     }
 
     fn base_path(&self) -> sc_cli::Result<Option<sc_service::BasePath>> {
-        Ok(self
-            .shared_params()
-            .base_path()?)
+        Ok(self.shared_params().base_path()?)
     }
 
-    fn rpc_addr(&self, default_listen_port: u16) -> sc_cli::Result<Option<Vec<sc_cli::RpcEndpoint>>> {
+    fn rpc_addr(
+        &self,
+        default_listen_port: u16,
+    ) -> sc_cli::Result<Option<Vec<sc_cli::RpcEndpoint>>> {
         self.0.base.rpc_addr(default_listen_port)
     }
 
@@ -109,7 +110,12 @@ impl sc_cli::CliConfiguration<Self> for EmbededOrchestratorCli {
             .prometheus_config(default_listen_port, chain_spec)
     }
 
-    fn init<F>(&self, _support_url: &String, _impl_version: &String, _logger_hook: F) -> sc_cli::Result<()>
+    fn init<F>(
+        &self,
+        _support_url: &String,
+        _impl_version: &String,
+        _logger_hook: F,
+    ) -> sc_cli::Result<()>
     where
         F: FnOnce(&mut sc_cli::LoggerBuilder),
     {
@@ -124,7 +130,10 @@ impl sc_cli::CliConfiguration<Self> for EmbededOrchestratorCli {
         self.0.base.role(is_dev)
     }
 
-    fn transaction_pool(&self, is_dev: bool) -> sc_cli::Result<sc_service::config::TransactionPoolOptions> {
+    fn transaction_pool(
+        &self,
+        is_dev: bool,
+    ) -> sc_cli::Result<sc_service::config::TransactionPoolOptions> {
         self.0.base.transaction_pool(is_dev)
     }
 
