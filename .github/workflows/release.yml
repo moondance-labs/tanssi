@@ -395,6 +395,30 @@ jobs:
             body:         |
               **All weights are good now.** 🎉
             edit-mode:    replace
+
+    check-unused-dependencies:
+      runs-on: self-hosted
+      permissions:
+        contents: read
+      steps:
+        - uses: actions/checkout@v4
+        - name: Install Rust toolchain
+          uses: actions-rs/toolchain@v1
+          with:
+            toolchain: nightly
+            override: true
+            components: rust-src
+            target: wasm32-unknown-unknown
+        - name: Install required dependencies
+          run: |
+            sudo apt-get install -y libprotobuf-dev protobuf-compiler
+            cargo +nightly install cargo-udeps
+        - name: Check for unused dependencies
+          run: |
+            # There may be false negatives/positives
+            # In case of false positives, check https://github.com/est31/cargo-udeps?tab=readme-ov-file#ignoring-some-of-the-dependencies
+            cargo +nightly udeps --workspace --features try-runtime,runtime-benchmarks --all-targets        
+
     rust-test:
       runs-on: self-hosted
       needs: ["set-tags", "build"]

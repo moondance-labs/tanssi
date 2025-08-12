@@ -67,10 +67,7 @@ pallet-balances = { workspace = true }
 pallet-beefy = { workspace = true }
 pallet-beefy-mmr = { workspace = true }
 pallet-collator-assignment = { workspace = true }
-pallet-collective = { workspace = true }
 pallet-conviction-voting = { workspace = true }
-pallet-democracy = { workspace = true }
-pallet-elections-phragmen = { workspace = true }
 pallet-ethereum-token-transfers = { workspace = true }
 pallet-external-validator-slashes = { workspace = true }
 pallet-external-validators = { workspace = true }
@@ -81,7 +78,6 @@ pallet-identity = { workspace = true }
 pallet-inactivity-tracking = { workspace = true, optional = true }
 pallet-initializer = { workspace = true }
 pallet-invulnerables = { workspace = true }
-pallet-membership = { workspace = true }
 pallet-message-queue = { workspace = true }
 pallet-mmr = { workspace = true }
 pallet-multiblock-migrations = { workspace = true }
@@ -98,7 +94,6 @@ pallet-session = { workspace = true }
 pallet-staking = { workspace = true }
 pallet-sudo = { workspace = true }
 pallet-timestamp = { workspace = true }
-pallet-tips = { workspace = true }
 pallet-transaction-payment = { workspace = true }
 pallet-transaction-payment-rpc-runtime-api = { workspace = true }
 pallet-treasury = { workspace = true }
@@ -150,7 +145,6 @@ pallet-registrar-runtime-api = { workspace = true }
 pallet-services-payment = { workspace = true }
 pallet-services-payment-runtime-api = { workspace = true }
 pallet-stream-payment = { workspace = true }
-pallet-stream-payment-runtime-api = { workspace = true }
 tanssi-runtime-common = { workspace = true, features = [ "relay" ] }
 
 # Moonkit
@@ -244,12 +238,9 @@ std = [
 	"pallet-beefy-mmr/std",
 	"pallet-beefy/std",
 	"pallet-collator-assignment/std",
-	"pallet-collective/std",
 	"pallet-configuration/std",
 	"pallet-conviction-voting/std",
 	"pallet-data-preservers/std",
-	"pallet-democracy/std",
-	"pallet-elections-phragmen/std",
 	"pallet-ethereum-token-transfers/std",
 	"pallet-external-validator-slashes/std",
 	"pallet-external-validators-rewards-runtime-api/std",
@@ -262,7 +253,6 @@ std = [
 	"pallet-initializer/std",
 	"pallet-invulnerables/std",
 	"pallet-maintenance-mode/std",
-	"pallet-membership/std",
 	"pallet-message-queue/std",
 	"pallet-migrations/std",
 	"pallet-mmr/std",
@@ -284,11 +274,9 @@ std = [
 	"pallet-services-payment/std",
 	"pallet-session/std",
 	"pallet-staking/std",
-	"pallet-stream-payment-runtime-api/std",
 	"pallet-stream-payment/std",
 	"pallet-sudo/std",
 	"pallet-timestamp/std",
-	"pallet-tips/std",
 	"pallet-transaction-payment-rpc-runtime-api/std",
 	"pallet-transaction-payment/std",
 	"pallet-treasury/std",
@@ -380,12 +368,9 @@ runtime-benchmarks = [
 	"pallet-beefy-mmr/runtime-benchmarks",
 	"pallet-collator-assignment/runtime-benchmarks",
 	"pallet-collator-assignment/runtime-benchmarks",
-	"pallet-collective/runtime-benchmarks",
 	"pallet-configuration/runtime-benchmarks",
 	"pallet-conviction-voting/runtime-benchmarks",
 	"pallet-data-preservers/runtime-benchmarks",
-	"pallet-democracy/runtime-benchmarks",
-	"pallet-elections-phragmen/runtime-benchmarks",
 	"pallet-ethereum-token-transfers/runtime-benchmarks",
 	"pallet-external-validator-slashes/runtime-benchmarks",
 	"pallet-external-validators-rewards/runtime-benchmarks",
@@ -395,7 +380,6 @@ runtime-benchmarks = [
 	"pallet-inactivity-tracking/runtime-benchmarks",
 	"pallet-inflation-rewards/runtime-benchmarks",
 	"pallet-invulnerables/runtime-benchmarks",
-	"pallet-membership/runtime-benchmarks",
 	"pallet-message-queue/runtime-benchmarks",
 	"pallet-migrations/runtime-benchmarks",
 	"pallet-mmr/runtime-benchmarks",
@@ -416,7 +400,6 @@ runtime-benchmarks = [
 	"pallet-stream-payment/runtime-benchmarks",
 	"pallet-sudo/runtime-benchmarks",
 	"pallet-timestamp/runtime-benchmarks",
-	"pallet-tips/runtime-benchmarks",
 	"pallet-transaction-payment/runtime-benchmarks",
 	"pallet-treasury/runtime-benchmarks",
 	"pallet-utility/runtime-benchmarks",
@@ -473,12 +456,9 @@ try-runtime = [
 	"pallet-beefy-mmr/try-runtime",
 	"pallet-beefy/try-runtime",
 	"pallet-collator-assignment/try-runtime",
-	"pallet-collective/try-runtime",
 	"pallet-configuration/try-runtime",
 	"pallet-conviction-voting/try-runtime",
 	"pallet-data-preservers/try-runtime",
-	"pallet-democracy/try-runtime",
-	"pallet-elections-phragmen/try-runtime",
 	"pallet-ethereum-token-transfers/try-runtime",
 	"pallet-external-validator-slashes/try-runtime",
 	"pallet-external-validators-rewards/try-runtime",
@@ -490,7 +470,6 @@ try-runtime = [
 	"pallet-initializer/try-runtime",
 	"pallet-invulnerables/try-runtime",
 	"pallet-maintenance-mode/try-runtime",
-	"pallet-membership/try-runtime",
 	"pallet-message-queue/try-runtime",
 	"pallet-migrations/try-runtime",
 	"pallet-mmr/try-runtime",
@@ -513,7 +492,6 @@ try-runtime = [
 	"pallet-stream-payment/try-runtime",
 	"pallet-sudo/try-runtime",
 	"pallet-timestamp/try-runtime",
-	"pallet-tips/try-runtime",
 	"pallet-transaction-payment/try-runtime",
 	"pallet-treasury/try-runtime",
 	"pallet-utility/try-runtime",

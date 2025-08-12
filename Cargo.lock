@@ -807,28 +807,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "assets-common"
-version = "0.21.0"
-source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2503#0e0d8ef22ea3d9a8eb65bce50fb22591e1d6bdb0"
-dependencies = [
- "cumulus-primitives-core",
- "frame-support",
- "impl-trait-for-tuples",
- "pallet-asset-conversion",
- "pallet-assets",
- "pallet-xcm",
- "parachains-common",
- "parity-scale-codec",
- "scale-info",
- "sp-api",
- "sp-runtime",
- "staging-xcm",
- "staging-xcm-builder",
- "staging-xcm-executor",
- "tracing",
-]
-
-[[package]]
 name = "async-backing-primitives"
 version = "0.9.0"
 source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2503#a408238d698f40695a10c4315e44ff3ecbef3b2d"
@@ -2191,7 +2169,6 @@ dependencies = [
  "dc-orchestrator-chain-interface",
  "dp-core",
  "fc-api",
- "fc-cli",
  "fc-consensus",
  "fc-db",
  "fc-mapping-sync",
@@ -2357,7 +2334,6 @@ dependencies = [
  "async-backing-primitives",
  "ccp-xcm",
  "cumulus-pallet-parachain-system",
- "cumulus-pallet-session-benchmarking",
  "cumulus-pallet-weight-reclaim",
  "cumulus-pallet-xcm",
  "cumulus-pallet-xcmp-queue",
@@ -2447,7 +2423,6 @@ dependencies = [
  "staging-xcm-builder",
  "staging-xcm-executor",
  "substrate-wasm-builder",
- "tanssi-runtime-common",
  "xcm-primitives",
  "xcm-runtime-apis",
 ]
@@ -2458,7 +2433,6 @@ version = "0.1.0"
 dependencies = [
  "async-backing-primitives",
  "cumulus-pallet-parachain-system",
- "cumulus-pallet-session-benchmarking",
  "cumulus-pallet-weight-reclaim",
  "cumulus-pallet-xcm",
  "cumulus-pallet-xcmp-queue",
@@ -2529,7 +2503,6 @@ dependencies = [
  "staging-xcm-builder",
  "staging-xcm-executor",
  "substrate-wasm-builder",
- "tanssi-runtime-common",
  "xcm-primitives",
  "xcm-runtime-apis",
 ]
@@ -3575,10 +3548,7 @@ dependencies = [
 name = "dancebox-runtime"
 version = "0.1.0"
 dependencies = [
- "assets-common",
  "async-backing-primitives",
- "container-chain-template-frontier-runtime",
- "container-chain-template-simple-runtime",
  "cumulus-pallet-parachain-system",
  "cumulus-pallet-session-benchmarking",
  "cumulus-pallet-weight-reclaim",
@@ -3592,7 +3562,6 @@ dependencies = [
  "dp-consensus",
  "dp-core",
  "dp-slot-duration-runtime-api",
- "emulated-integration-tests-common",
  "frame-benchmarking",
  "frame-executive",
  "frame-metadata-hash-extension",
@@ -3658,10 +3627,7 @@ dependencies = [
  "polkadot-parachain-primitives",
  "polkadot-runtime-common",
  "polkadot-runtime-parachains",
- "polkadot-service",
- "rococo-runtime",
  "rococo-runtime-constants",
- "sc-consensus-grandpa",
  "sc-service",
  "scale-info",
  "serde",
@@ -3702,9 +3668,6 @@ dependencies = [
  "tp-traits",
  "tp-xcm-commons",
  "tp-xcm-core-buyer",
- "westend-runtime",
- "westend-runtime-constants",
- "xcm-emulator",
  "xcm-primitives",
  "xcm-runtime-apis",
 ]
@@ -3760,15 +3723,12 @@ dependencies = [
  "alloy-sol-types 0.4.2",
  "binary-merkle-tree",
  "bitvec",
- "container-chain-template-frontier-runtime",
- "container-chain-template-simple-runtime",
  "cumulus-pallet-parachain-system",
  "cumulus-pallet-session-benchmarking",
  "cumulus-primitives-core",
  "dancelight-runtime-constants",
  "dp-consensus",
  "dp-container-chain-genesis-data",
- "emulated-integration-tests-common",
  "finality-grandpa",
  "frame-benchmarking",
  "frame-executive",
@@ -3796,12 +3756,9 @@ dependencies = [
  "pallet-beefy",
  "pallet-beefy-mmr",
  "pallet-collator-assignment",
- "pallet-collective",
  "pallet-configuration",
  "pallet-conviction-voting",
  "pallet-data-preservers",
- "pallet-democracy",
- "pallet-elections-phragmen",
  "pallet-ethereum-token-transfers",
  "pallet-external-validator-slashes",
  "pallet-external-validators",
@@ -3815,7 +3772,6 @@ dependencies = [
  "pallet-initializer",
  "pallet-invulnerables",
  "pallet-maintenance-mode",
- "pallet-membership",
  "pallet-message-queue",
  "pallet-migrations 0.1.0",
  "pallet-migrations 10.1.0",
@@ -3838,10 +3794,8 @@ dependencies = [
  "pallet-session",
  "pallet-staking",
  "pallet-stream-payment",
- "pallet-stream-payment-runtime-api",
  "pallet-sudo",
  "pallet-timestamp",
- "pallet-tips",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
  "pallet-treasury",
@@ -3855,11 +3809,7 @@ dependencies = [
  "polkadot-runtime-common",
  "polkadot-runtime-parachains",
  "rand 0.8.5",
- "rococo-runtime",
- "rococo-runtime-constants",
- "sc-consensus-grandpa",
  "scale-info",
- "separator",
  "serde",
  "serde_derive",
  "serde_json",
@@ -3920,9 +3870,6 @@ dependencies = [
  "tp-stream-payment-common",
  "tp-traits",
  "tp-xcm-commons",
- "westend-runtime",
- "westend-runtime-constants",
- "xcm-emulator",
  "xcm-runtime-apis",
 ]
 
@@ -4994,24 +4941,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "fc-cli"
-version = "1.0.0-dev"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2503#e17260ad0e384e1c95698f3e7649d4d6889c6bfb"
-dependencies = [
- "clap",
- "ethereum-types",
- "fc-db",
- "fp-rpc",
- "fp-storage",
- "sc-cli",
- "serde",
- "serde_json",
- "sp-api",
- "sp-blockchain",
- "sp-runtime",
-]
-
-[[package]]
 name = "fc-consensus"
 version = "2.0.0-dev"
 source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2503#e17260ad0e384e1c95698f3e7649d4d6889c6bfb"
@@ -5287,7 +5216,6 @@ dependencies = [
  "cumulus-primitives-core",
  "cumulus-primitives-parachain-inherent",
  "cumulus-primitives-timestamp",
- "cumulus-primitives-utility",
  "cumulus-test-relay-sproof-builder",
  "dp-consensus",
  "dp-core",
@@ -5344,7 +5272,6 @@ dependencies = [
  "polkadot-parachain-primitives",
  "polkadot-runtime-common",
  "polkadot-runtime-parachains",
- "sc-consensus-grandpa",
  "scale-info",
  "serde",
  "smallvec",
@@ -5909,14 +5836,12 @@ dependencies = [
  "hex-literal 0.3.4",
  "nimbus-primitives",
  "pallet-author-inherent",
- "pallet-author-noting",
  "pallet-cc-authorities-noting",
  "sp-core",
  "sp-runtime",
  "sp-trie",
  "staging-xcm",
  "tanssi-emulated-integration-tests-common",
- "tp-author-noting-inherent",
  "xcm-emulator",
 ]
 
@@ -8419,13 +8344,10 @@ dependencies = [
 name = "manual-randomness-rpc"
 version = "0.1.0"
 dependencies = [
- "cumulus-primitives-core",
  "flume 0.10.14",
- "hex-literal 0.3.4",
  "jsonrpsee",
  "parity-scale-codec",
  "sp-core",
- "staging-xcm",
 ]
 
 [[package]]
@@ -9028,24 +8950,18 @@ dependencies = [
  "core_extensions",
  "cumulus-client-cli",
  "cumulus-client-collator",
- "cumulus-client-consensus-aura",
  "cumulus-client-consensus-common",
- "cumulus-client-consensus-proposer",
  "cumulus-client-network",
  "cumulus-client-service",
  "cumulus-primitives-core",
  "cumulus-primitives-parachain-inherent",
  "cumulus-relay-chain-interface",
- "flume 0.10.14",
- "fp-evm",
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "futures 0.3.31",
  "hex-literal 0.3.4",
  "jsonrpsee",
  "log",
- "nimbus-consensus",
- "nimbus-primitives",
  "parity-scale-codec",
  "polkadot-cli",
  "polkadot-primitives",
@@ -9089,7 +9005,6 @@ dependencies = [
  "sp-transaction-pool",
  "substrate-frame-rpc-system",
  "substrate-prometheus-endpoint",
- "tc-consensus",
  "tp-traits",
 ]
 
@@ -9446,7 +9361,6 @@ dependencies = [
  "frame-support",
  "frame-system",
  "log",
- "pallet-balances",
  "pallet-session",
  "pallet-timestamp",
  "parity-scale-codec",
@@ -9621,7 +9535,6 @@ dependencies = [
  "sp-core",
  "sp-io",
  "sp-runtime",
- "tp-traits",
 ]
 
 [[package]]
@@ -9935,23 +9848,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-collective"
-version = "40.1.0"
-source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2503#0e0d8ef22ea3d9a8eb65bce50fb22591e1d6bdb0"
-dependencies = [
- "docify",
- "frame-benchmarking",
- "frame-support",
- "frame-system",
- "log",
- "parity-scale-codec",
- "scale-info",
- "sp-core",
- "sp-io",
- "sp-runtime",
-]
-
-[[package]]
 name = "pallet-configuration"
 version = "0.1.0"
 dependencies = [
@@ -9993,7 +9889,6 @@ dependencies = [
  "frame-support",
  "frame-system",
  "log",
- "nimbus-primitives",
  "num-traits",
  "pallet-balances",
  "parity-scale-codec",
@@ -10138,7 +10033,6 @@ dependencies = [
  "pallet-timestamp",
  "parity-scale-codec",
  "polkadot-primitives",
- "polkadot-runtime-parachains",
  "scale-info",
  "snowbridge-core",
  "snowbridge-merkle-tree",
@@ -10599,7 +10493,6 @@ dependencies = [
  "parity-scale-codec",
  "scale-info",
  "serde",
- "similar-asserts",
  "sp-core",
  "sp-io",
  "sp-runtime",
@@ -10913,7 +10806,6 @@ dependencies = [
 name = "pallet-pooled-staking"
 version = "0.1.0"
 dependencies = [
- "dp-core",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
@@ -11037,7 +10929,6 @@ version = "0.1.0"
 dependencies = [
  "dp-container-chain-genesis-data",
  "frame-support",
- "pallet-registrar",
  "parity-scale-codec",
  "scale-info",
  "sp-api",
@@ -11202,17 +11093,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pallet-staking-reward-curve"
-version = "12.0.0"
-source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2503#0e0d8ef22ea3d9a8eb65bce50fb22591e1d6bdb0"
-dependencies = [
- "proc-macro-crate 3.3.0",
- "proc-macro2",
- "quote",
- "syn 2.0.104",
-]
-
-[[package]]
 name = "pallet-staking-reward-fn"
 version = "22.0.1"
 source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2503#0e0d8ef22ea3d9a8eb65bce50fb22591e1d6bdb0"
@@ -11251,7 +11131,6 @@ dependencies = [
 name = "pallet-stream-payment"
 version = "0.1.0"
 dependencies = [
- "dp-core",
  "frame-benchmarking",
  "frame-support",
  "frame-system",
@@ -11266,8 +11145,6 @@ dependencies = [
  "sp-io",
  "sp-runtime",
  "tap",
- "tp-maths",
- "tp-traits",
 ]
 
 [[package]]
@@ -11562,7 +11439,6 @@ dependencies = [
  "parity-scale-codec",
  "scale-info",
  "serde",
- "similar-asserts",
  "sp-consensus-slots",
  "sp-core",
  "sp-io",
@@ -12646,28 +12522,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "polkadot-node-subsystem-test-helpers"
-version = "1.0.0"
-source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2503#0e0d8ef22ea3d9a8eb65bce50fb22591e1d6bdb0"
-dependencies = [
- "async-trait",
- "futures 0.3.31",
- "parking_lot 0.12.4",
- "polkadot-erasure-coding",
- "polkadot-node-primitives",
- "polkadot-node-subsystem",
- "polkadot-node-subsystem-util",
- "polkadot-primitives",
- "sc-client-api",
- "sc-keystore",
- "sc-utils",
- "sp-application-crypto",
- "sp-core",
- "sp-keyring",
- "sp-keystore",
-]
-
-[[package]]
 name = "polkadot-node-subsystem-types"
 version = "22.0.0"
 source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2503#0e0d8ef22ea3d9a8eb65bce50fb22591e1d6bdb0"
@@ -12788,19 +12642,6 @@ dependencies = [
  "sp-staking",
  "sp-std",
  "thiserror 1.0.69",
-]
-
-[[package]]
-name = "polkadot-primitives-test-helpers"
-version = "0.1.0"
-source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2503#0e0d8ef22ea3d9a8eb65bce50fb22591e1d6bdb0"
-dependencies = [
- "polkadot-primitives",
- "rand 0.8.5",
- "sp-application-crypto",
- "sp-core",
- "sp-keyring",
- "sp-runtime",
 ]
 
 [[package]]
@@ -13129,130 +12970,6 @@ dependencies = [
  "parity-scale-codec",
  "polkadot-primitives",
  "tracing-gum",
-]
-
-[[package]]
-name = "polkadot-test-client"
-version = "1.0.0"
-source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2503#0e0d8ef22ea3d9a8eb65bce50fb22591e1d6bdb0"
-dependencies = [
- "frame-benchmarking",
- "parity-scale-codec",
- "polkadot-primitives",
- "polkadot-test-runtime",
- "polkadot-test-service",
- "sc-block-builder",
- "sc-consensus",
- "sc-service",
- "sp-api",
- "sp-blockchain",
- "sp-consensus",
- "sp-consensus-babe",
- "sp-inherents",
- "sp-io",
- "sp-runtime",
- "sp-state-machine",
- "sp-timestamp",
- "substrate-test-client",
-]
-
-[[package]]
-name = "polkadot-test-runtime"
-version = "1.0.0"
-source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2503#0e0d8ef22ea3d9a8eb65bce50fb22591e1d6bdb0"
-dependencies = [
- "frame-election-provider-support",
- "frame-executive",
- "frame-support",
- "frame-system",
- "frame-system-rpc-runtime-api",
- "log",
- "pallet-authority-discovery",
- "pallet-authorship",
- "pallet-babe",
- "pallet-balances",
- "pallet-grandpa",
- "pallet-indices",
- "pallet-offences",
- "pallet-session",
- "pallet-staking",
- "pallet-staking-reward-curve",
- "pallet-sudo",
- "pallet-timestamp",
- "pallet-transaction-payment",
- "pallet-transaction-payment-rpc-runtime-api",
- "pallet-vesting",
- "pallet-xcm",
- "parity-scale-codec",
- "polkadot-primitives",
- "polkadot-runtime-common",
- "polkadot-runtime-parachains",
- "scale-info",
- "serde",
- "sp-api",
- "sp-authority-discovery",
- "sp-block-builder",
- "sp-consensus-babe",
- "sp-consensus-beefy",
- "sp-core",
- "sp-genesis-builder",
- "sp-inherents",
- "sp-io",
- "sp-mmr-primitives",
- "sp-offchain",
- "sp-runtime",
- "sp-session",
- "sp-staking",
- "sp-transaction-pool",
- "sp-version",
- "staging-xcm",
- "staging-xcm-builder",
- "staging-xcm-executor",
- "substrate-wasm-builder",
- "test-runtime-constants",
-]
-
-[[package]]
-name = "polkadot-test-service"
-version = "1.0.0"
-source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2503#0e0d8ef22ea3d9a8eb65bce50fb22591e1d6bdb0"
-dependencies = [
- "frame-system",
- "futures 0.3.31",
- "pallet-balances",
- "pallet-staking",
- "pallet-transaction-payment",
- "polkadot-node-primitives",
- "polkadot-node-subsystem",
- "polkadot-overseer",
- "polkadot-parachain-primitives",
- "polkadot-primitives",
- "polkadot-runtime-common",
- "polkadot-runtime-parachains",
- "polkadot-service",
- "polkadot-test-runtime",
- "rand 0.8.5",
- "sc-chain-spec",
- "sc-cli",
- "sc-client-api",
- "sc-consensus",
- "sc-consensus-grandpa",
- "sc-network",
- "sc-service",
- "sc-tracing",
- "serde_json",
- "sp-arithmetic",
- "sp-authority-discovery",
- "sp-blockchain",
- "sp-consensus",
- "sp-consensus-babe",
- "sp-core",
- "sp-keyring",
- "sp-runtime",
- "sp-state-machine",
- "substrate-test-client",
- "test-runtime-constants",
- "tokio",
 ]
 
 [[package]]
@@ -16624,31 +16341,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "serial_test"
-version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0e56dd856803e253c8f298af3f4d7eb0ae5e23a737252cd90bb4f3b435033b2d"
-dependencies = [
- "dashmap",
- "futures 0.3.31",
- "lazy_static",
- "log",
- "parking_lot 0.12.4",
- "serial_test_derive",
-]
-
-[[package]]
-name = "serial_test_derive"
-version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "91d129178576168c589c9ec973feedf7d3126c01ac2bf08795109aa35b69fb8f"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.104",
-]
-
-[[package]]
 name = "services-payment-rpc"
 version = "0.1.0"
 dependencies = [
@@ -16828,7 +16520,6 @@ dependencies = [
  "sp-trie",
  "staging-xcm",
  "tanssi-emulated-integration-tests-common",
- "tp-author-noting-inherent",
  "xcm-emulator",
 ]
 
@@ -18581,12 +18272,9 @@ dependencies = [
  "pallet-beefy",
  "pallet-beefy-mmr",
  "pallet-collator-assignment",
- "pallet-collective",
  "pallet-configuration",
  "pallet-conviction-voting",
  "pallet-data-preservers",
- "pallet-democracy",
- "pallet-elections-phragmen",
  "pallet-ethereum-token-transfers",
  "pallet-external-validator-slashes",
  "pallet-external-validators",
@@ -18599,7 +18287,6 @@ dependencies = [
  "pallet-initializer",
  "pallet-invulnerables",
  "pallet-maintenance-mode",
- "pallet-membership",
  "pallet-message-queue",
  "pallet-migrations 0.1.0",
  "pallet-migrations 10.1.0",
@@ -18622,10 +18309,8 @@ dependencies = [
  "pallet-session",
  "pallet-staking",
  "pallet-stream-payment",
- "pallet-stream-payment-runtime-api",
  "pallet-sudo",
  "pallet-timestamp",
- "pallet-tips",
  "pallet-transaction-payment",
  "pallet-transaction-payment-rpc-runtime-api",
  "pallet-treasury",
@@ -19369,7 +19054,6 @@ name = "tanssi-emulated-integration-tests-common"
 version = "0.0.0"
 dependencies = [
  "cumulus-primitives-core",
- "dancelight-runtime",
  "frame-support",
  "frame-system",
  "nimbus-primitives",
@@ -19509,7 +19193,6 @@ dependencies = [
  "polkadot-overseer",
  "sp-debug-derive",
  "substrate-build-script-utils",
- "substrate-rpc-client",
  "tanssi-relay-cli",
  "tempfile",
  "tikv-jemallocator",
@@ -19621,18 +19304,15 @@ dependencies = [
  "polkadot-node-network-protocol",
  "polkadot-node-primitives",
  "polkadot-node-subsystem",
- "polkadot-node-subsystem-test-helpers",
  "polkadot-node-subsystem-types",
  "polkadot-node-subsystem-util",
  "polkadot-overseer",
  "polkadot-parachain-primitives",
  "polkadot-primitives",
- "polkadot-primitives-test-helpers",
  "polkadot-rpc",
  "polkadot-runtime-parachains",
  "polkadot-service",
  "polkadot-statement-distribution",
- "polkadot-test-client",
  "sc-authority-discovery",
  "sc-basic-authorship",
  "sc-block-builder",
@@ -19660,7 +19340,6 @@ dependencies = [
  "schnellru",
  "serde",
  "serde_json",
- "serial_test",
  "sp-api",
  "sp-authority-discovery",
  "sp-block-builder",
@@ -19715,7 +19394,6 @@ dependencies = [
  "pallet-external-validator-slashes",
  "pallet-external-validators",
  "pallet-foreign-asset-creator",
- "pallet-invulnerables",
  "pallet-migrations 0.1.0",
  "pallet-pooled-staking",
  "pallet-registrar",
@@ -19782,7 +19460,6 @@ dependencies = [
  "futures 0.3.31",
  "futures-timer",
  "log",
- "nimbus-consensus",
  "nimbus-primitives",
  "orchestra",
  "pallet-registrar-runtime-api",
@@ -19792,7 +19469,6 @@ dependencies = [
  "polkadot-core-primitives",
  "polkadot-node-primitives",
  "polkadot-node-subsystem",
- "polkadot-node-subsystem-test-helpers",
  "polkadot-node-subsystem-util",
  "polkadot-overseer",
  "polkadot-parachain-primitives",
@@ -19839,7 +19515,6 @@ dependencies = [
 name = "tc-orchestrator-chain-rpc-interface"
 version = "0.1.0"
 dependencies = [
- "async-io 1.13.0",
  "async-trait",
  "dc-orchestrator-chain-interface",
  "dp-container-chain-genesis-data",
@@ -19916,7 +19591,6 @@ dependencies = [
  "sc-transaction-pool",
  "sc-transaction-pool-api",
  "serde",
- "services-payment-rpc",
  "sp-api",
  "sp-block-builder",
  "sp-blockchain",
@@ -19927,7 +19601,6 @@ dependencies = [
  "sp-runtime",
  "sp-timestamp",
  "sp-transaction-pool",
- "stream-payment-rpc",
  "substrate-build-script-utils",
  "substrate-frame-rpc-system",
  "substrate-prometheus-endpoint",
@@ -19990,17 +19663,6 @@ dependencies = [
  "sp-runtime",
  "sp-state-machine",
  "sp-trie",
-]
-
-[[package]]
-name = "test-runtime-constants"
-version = "1.0.0"
-source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2503#0e0d8ef22ea3d9a8eb65bce50fb22591e1d6bdb0"
-dependencies = [
- "frame-support",
- "polkadot-primitives",
- "smallvec",
- "sp-runtime",
 ]
 
 [[package]]

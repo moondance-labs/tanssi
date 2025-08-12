@@ -22,7 +22,6 @@ scale-info = { workspace = true }
 serde = { workspace = true, features = [ "derive" ] }
 sp-core = { workspace = true }
 sp-runtime = { workspace = true }
-tp-traits = { workspace = true }
 
 [dev-dependencies]
 sp-io = { workspace = true }
@@ -40,7 +39,6 @@ std = [
 	"sp-core/std",
 	"sp-io/std",
 	"sp-runtime/std",
-	"tp-traits/std",
 ]
 try-runtime = [
 	"frame-support/try-runtime",

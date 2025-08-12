@@ -160,11 +160,7 @@ node-common = { workspace = true }
 [dev-dependencies]
 assert_matches = { workspace = true }
 env_logger = { workspace = true }
-polkadot-node-subsystem-test-helpers = { workspace = true }
-polkadot-test-client = { workspace = true }
-serial_test = { workspace = true }
 tempfile = { workspace = true }
-test-helpers = { workspace = true }
 
 [features]
 default = [ "db", "full-node" ]
@@ -222,7 +218,6 @@ runtime-benchmarks = [
 	"polkadot-primitives/runtime-benchmarks",
 	"polkadot-runtime-parachains/runtime-benchmarks",
 	"polkadot-service/runtime-benchmarks",
-	"polkadot-test-client/runtime-benchmarks",
 	"sc-client-db/runtime-benchmarks",
 	"service/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
