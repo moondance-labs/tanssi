@@ -10,6 +10,9 @@ import {
     PER_BILL_RATIO,
 } from "utils";
 
+// For debug purposes only, specify block here to check it
+const BLOCK_NUMBER_TO_DEBUG = undefined;
+
 describeSuite({
     id: "SM04",
     title: "Sample suite that only runs on Dancebox chains",
@@ -95,7 +98,9 @@ describeSuite({
                 }
                 const latestBlock = await api.rpc.chain.getBlock();
 
-                const latestBlockHash = latestBlock.block.hash;
+                const latestBlockHash = BLOCK_NUMBER_TO_DEBUG
+                    ? await api.rpc.chain.getBlockHash(BLOCK_NUMBER_TO_DEBUG)
+                    : latestBlock.block.hash;
                 const latestParentBlockHash = latestBlock.block.header.parentHash;
                 const apiAtIssuanceAfter = await api.at(latestBlockHash);
                 const apiAtIssuanceBefore = await api.at(latestParentBlockHash);
@@ -113,7 +118,6 @@ describeSuite({
                 const tolerancePerBill = 1n; // = 0.0000001%
                 const toleranceDiff = (expectedIssuanceIncrement * tolerancePerBill) / PER_BILL_RATIO;
 
-                // we know there might be rounding errors, so we always check it is in the range +-1
                 expect(
                     issuance >= expectedIssuanceIncrement - toleranceDiff &&
                         issuance <= expectedIssuanceIncrement + toleranceDiff,
