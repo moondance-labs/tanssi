@@ -43,3 +43,5 @@ export const TREASURY_ADDRESS_LIGHT_CHAINS = "5EYCAe5ijiYfyeZ2JJCGq56LmPyNRAKzpG
 
 // Parachain Tanssi: Pallet Id "tns/tsry"
 export const TREASURY_ADDRESS_BOX_CHAINS = "5EYCAe5jXiVvytpxmBupXPCNE9Vduq7gPeTwy9xMgQtKWMnR";
+
+export const PER_BILL_RATIO = 1000000000n;

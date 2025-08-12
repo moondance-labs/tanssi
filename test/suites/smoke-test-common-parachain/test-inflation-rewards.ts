@@ -7,7 +7,11 @@ import {
     filterRewardFromOrchestratorWithFailure,
     getAuthorFromDigest,
     PARACHAIN_BOND,
+    PER_BILL_RATIO,
 } from "utils";
+
+// For debug purposes only, specify block here to check it
+const BLOCK_NUMBER_TO_DEBUG = undefined;
 
 describeSuite({
     id: "SM04",
@@ -94,7 +98,9 @@ describeSuite({
                 }
                 const latestBlock = await api.rpc.chain.getBlock();
 
-                const latestBlockHash = latestBlock.block.hash;
+                const latestBlockHash = BLOCK_NUMBER_TO_DEBUG
+                    ? await api.rpc.chain.getBlockHash(BLOCK_NUMBER_TO_DEBUG)
+                    : latestBlock.block.hash;
                 const latestParentBlockHash = latestBlock.block.header.parentHash;
                 const apiAtIssuanceAfter = await api.at(latestBlockHash);
                 const apiAtIssuanceBefore = await api.at(latestParentBlockHash);
@@ -109,10 +115,13 @@ describeSuite({
                 const expectedIssuanceIncrement =
                     runtimeVersion > 500 ? (supplyBefore * 9n) / 1_000_000_000n : (supplyBefore * 19n) / 1_000_000_000n;
 
-                // we know there might be rounding errors, so we always check it is in the range +-1
+                const tolerancePerBill = 1n; // = 0.0000001%
+                const toleranceDiff = (expectedIssuanceIncrement * tolerancePerBill) / PER_BILL_RATIO;
+
                 expect(
-                    issuance >= expectedIssuanceIncrement - 1n && issuance <= expectedIssuanceIncrement + 1n,
-                    `Issuance not in the range, Actual: ${issuance}, Expected:  ${expectedIssuanceIncrement}`
+                    issuance >= expectedIssuanceIncrement - toleranceDiff &&
+                        issuance <= expectedIssuanceIncrement + toleranceDiff,
+                    `Block: ${latestBlock.block.header.number.toString()} Issuance not in the range, Actual: ${issuance}, Expected:  ${expectedIssuanceIncrement}. toleranceDiff: ${toleranceDiff.toString()}`
                 ).to.be.true;
             },
         });
