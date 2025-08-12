@@ -9,12 +9,11 @@ import {
     DANCELIGHT_REWARDS_PORTION_PER_BILL_RATIO,
     fetchIssuance,
     fetchRewardAuthorContainers,
+    PER_BILL_RATIO,
     STARLIGHT_BLOCK_INFLATION_PERBILL,
     STARLIGHT_REWARDS_PORTION_PER_BILL_RATIO,
 } from "utils";
 import { isStarlightRuntime } from "../../utils/runtime.ts";
-
-const PER_BILL_RATIO = 1000000000n;
 
 describeSuite({
     id: "SMOK06",
