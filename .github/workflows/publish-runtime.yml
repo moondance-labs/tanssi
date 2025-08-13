@@ -5,13 +5,13 @@ on:
   workflow_dispatch:
     inputs:
       from:
-        description: tag (ex. runtime-53) to retrieve commit diff from
+        description: tag (ex. runtime-53 or runtime-53-para or runtime-53-starlight or runtime-53-templates) to retrieve commit diff from
         required: true
       to:
-        description: tag (ex. runtime-155) to generate release note and srtool runtimes from
+        description: tag (ex. runtime-155 or runtime-155-para or runtime-155-starlight or runtime-155-templates) to generate release note and srtool runtimes from
         required: true
       chains:
-        description: the chains for which we should do the release (ex. dancebox)
+        description: the chains for which we should do the release
         required: false
         type: choice
         default: orchestrator-para-only
@@ -32,6 +32,8 @@ jobs:
 
   setup-scripts:
     runs-on: ubuntu-latest
+    outputs:
+      rust_version: ${{ steps.get-version.outputs.rust_version }}
     steps:
       - uses: actions/checkout@v4
       - name: Upload scripts
@@ -44,6 +46,13 @@ jobs:
         with:
           name: original-tools
           path: tools
+
+      - name: Get rust version from rust-toolchain file
+        id: get-version
+        run: |
+          RUST_VERSION=$(grep '^channel' rust-toolchain | cut -d '"' -f2)
+          echo "Rust version is $RUST_VERSION"
+          echo "rust_version=$RUST_VERSION" >> "$GITHUB_OUTPUT"
   
   matrix_prep:
     runs-on: ubuntu-latest
@@ -56,12 +65,12 @@ jobs:
       - name: create matrix
         id: prepare
         run: |
-          dancebox='{"runtime_name": "dancebox","runtime_path" : "./chains/orchestrator-paras/runtime/dancebox/src/lib.rs"}'
-          flashbox='{"runtime_name": "flashbox","runtime_path" : "./chains/orchestrator-paras/runtime/flashbox/src/lib.rs"}'
-          frontier_template='{"runtime_name": "frontier-template","runtime_path" : "./chains/container-chains/runtime-templates/frontier/src/lib.rs"}'
-          simple_template='{"runtime_name": "simple-template","runtime_path" : "./chains/container-chains/runtime-templates/simple/src/lib.rs"}'
-          dancelight='{"runtime_name": "dancelight","runtime_path" : "./chains/orchestrator-relays/runtime/dancelight/src/lib.rs"}'
-          starlight='{"runtime_name": "starlight","runtime_path" : "./chains/orchestrator-relays/runtime/starlight/src/lib.rs"}'
+          dancebox='{"runtime_name": "dancebox","runtime_path" : "./chains/orchestrator-paras/runtime/dancebox/src/lib.rs", "build_features": "metadata-hash"}'
+          flashbox='{"runtime_name": "flashbox","runtime_path" : "./chains/orchestrator-paras/runtime/flashbox/src/lib.rs", "build_features": "metadata-hash"}'
+          frontier_template='{"runtime_name": "frontier-template","runtime_path" : "./chains/container-chains/runtime-templates/frontier/src/lib.rs", "build_features": "metadata-hash"}'
+          simple_template='{"runtime_name": "simple-template","runtime_path" : "./chains/container-chains/runtime-templates/simple/src/lib.rs", "build_features": "metadata-hash"}'
+          dancelight='{"runtime_name": "dancelight","runtime_path" : "./chains/orchestrator-relays/runtime/dancelight/src/lib.rs", "build_features": "on-chain-release-build"}'
+          starlight='{"runtime_name": "starlight","runtime_path" : "./chains/orchestrator-relays/runtime/starlight/src/lib.rs", "build_features": "on-chain-release-build"}'
 
           if [[ ${{ github.event.inputs.chains }} = "orchestrator-para-only" ]]; then
             echo "matrix_tests=[$dancebox, $flashbox]" >> $GITHUB_OUTPUT
@@ -86,19 +95,19 @@ jobs:
           fi
   build-srtool-runtimes:
     needs: ["setup-scripts", "matrix_prep"]
-    runs-on: self-hosted
+    runs-on: tanssi-release
     strategy:
       matrix:
         chain: ${{ fromJson(needs.matrix_prep.outputs.matrix_tests) }}
         srtool_image:
           - paritytech/srtool
         srtool_image_tag:
-          - 1.81.0
+          - ${{ needs.setup-scripts.outputs.rust_version }}
         # Change this once https://github.com/paritytech/srtool/pull/81 gets merged
         srtool_build_base_dockerhub:
           - moondancelabs/srtool
         srtool_build_source_image_tag:
-          - temp-1.81
+          - temp-${{ needs.setup-scripts.outputs.rust_version }}
 
     steps:
       - uses: actions/checkout@v4
@@ -139,7 +148,7 @@ jobs:
           GH_WORKFLOW_MATRIX_CHAIN: ${{ matrix.chain.runtime_name }}
           GH_WORKFLOW_MATRIX_SRTOOL_IMAGE: ${{ matrix.srtool_image }}
           GH_WORKFLOW_MATRIX_SRTOOL_IMAGE_TAG: ${{ matrix.srtool_image_tag }}
-          RUNTIME_BUILD_OPTS: "--features=metadata-hash"
+          RUNTIME_BUILD_OPTS: "--features=${{ matrix.chain.build_features }}"
         run: |
           
           chmod u+x ./original-scripts/build-runtime-srtool.sh

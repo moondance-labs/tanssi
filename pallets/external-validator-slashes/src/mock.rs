@@ -16,13 +16,14 @@
 
 use {
     crate as external_validator_slashes,
+    core::cell::RefCell,
     frame_support::{
         parameter_types,
-        traits::{ConstU16, ConstU32, ConstU64, Get, Hooks},
+        traits::{ConstU16, ConstU32, ConstU64, Get},
         weights::constants::RocksDbWeight,
     },
     frame_system as system,
-    snowbridge_core::outbound::{SendError, SendMessageFeeProvider},
+    snowbridge_outbound_queue_primitives::{SendError, SendMessageFeeProvider},
     sp_core::H256,
     sp_runtime::{
         testing::UintAuthorityId,
@@ -30,7 +31,6 @@ use {
         BuildStorage,
     },
     sp_staking::SessionIndex,
-    sp_std::cell::RefCell,
     tp_traits::{ActiveEraInfo, EraIndex, EraIndexProvider, InvulnerablesProvider},
 };
 
@@ -164,6 +164,7 @@ impl pallet_session::Config for Test {
     type ValidatorIdOf = ConvertInto;
     type NextSessionRotation = pallet_session::PeriodicSessions<Period, Offset>;
     type WeightInfo = ();
+    type DisablingStrategy = ();
 }
 
 sp_runtime::impl_opaque_keys! {
@@ -287,13 +288,18 @@ impl sp_runtime::traits::Convert<u64, Option<u64>> for IdentityValidator {
     }
 }
 
-/// Rolls forward one block. Returns the new block number.
-#[allow(dead_code)]
-pub(crate) fn roll_one_block() -> u64 {
-    ExternalValidatorSlashes::on_finalize(System::block_number());
-    System::on_finalize(System::block_number());
-    System::set_block_number(System::block_number() + 1);
-    System::on_initialize(System::block_number());
-    ExternalValidatorSlashes::on_initialize(System::block_number());
-    System::block_number()
+pub fn run_block() {
+    run_to_block(System::block_number() + 1);
+}
+
+pub const INIT_TIMESTAMP: u64 = 30_000;
+pub const BLOCK_TIME: u64 = 1000;
+
+pub fn run_to_block(n: u64) {
+    System::run_to_block_with::<AllPalletsWithSystem>(
+        n,
+        frame_system::RunToBlockHooks::default().before_initialize(|bn| {
+            Timestamp::set_timestamp(bn * BLOCK_TIME + INIT_TIMESTAMP);
+        }),
+    );
 }

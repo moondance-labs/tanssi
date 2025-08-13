@@ -20,10 +20,8 @@ use {
         traits::{ConstU32, ConstU64},
     },
     pallet_balances::AccountData,
-    snowbridge_core::{
-        outbound::{SendError, SendMessageFeeProvider},
-        TokenId,
-    },
+    snowbridge_core::TokenId,
+    snowbridge_outbound_queue_primitives::{SendError, SendMessageFeeProvider},
     sp_core::H256,
     sp_runtime::{
         traits::{BlakeTwo256, IdentityLookup, Keccak256, MaybeEquivalence},
@@ -258,9 +256,12 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
         .unwrap();
 
     let balances = vec![(1, 100), (2, 100), (3, 100), (4, 100), (5, 100)];
-    pallet_balances::GenesisConfig::<Test> { balances }
-        .assimilate_storage(&mut t)
-        .unwrap();
+    pallet_balances::GenesisConfig::<Test> {
+        balances,
+        ..Default::default()
+    }
+    .assimilate_storage(&mut t)
+    .unwrap();
 
     let ext: sp_io::TestExternalities = t.into();
 
@@ -271,11 +272,10 @@ pub const INIT_TIMESTAMP: u64 = 30_000;
 pub const BLOCK_TIME: u64 = 1000;
 
 pub fn run_to_block(n: u64) {
-    let old_block_number = System::block_number();
-
-    for x in old_block_number..n {
-        System::reset_events();
-        System::set_block_number(x + 1);
-        Timestamp::set_timestamp(System::block_number() * BLOCK_TIME + INIT_TIMESTAMP);
-    }
+    System::run_to_block_with::<AllPalletsWithSystem>(
+        n,
+        frame_system::RunToBlockHooks::default().before_initialize(|bn| {
+            Timestamp::set_timestamp(bn * BLOCK_TIME + INIT_TIMESTAMP);
+        }),
+    );
 }

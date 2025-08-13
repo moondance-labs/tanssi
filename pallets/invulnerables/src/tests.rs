@@ -16,8 +16,8 @@
 use {
     crate::{
         mock::{
-            initialize_to_block, new_test_ext, Invulnerables, RootAccount, RuntimeEvent,
-            RuntimeOrigin, System, Test,
+            new_test_ext, run_to_block, Invulnerables, RootAccount, RuntimeEvent, RuntimeOrigin,
+            System, Test,
         },
         Error,
     },
@@ -35,7 +35,7 @@ fn basic_setup_works() {
 #[test]
 fn add_invulnerable_works() {
     new_test_ext().execute_with(|| {
-        initialize_to_block(1);
+        run_to_block(1);
         assert_eq!(Invulnerables::invulnerables(), vec![1, 2]);
         let new = 3;
 
@@ -69,7 +69,7 @@ fn add_invulnerable_works() {
 #[test]
 fn add_invulnerable_does_not_work_if_not_registered() {
     new_test_ext().execute_with(|| {
-        initialize_to_block(1);
+        run_to_block(1);
         assert_eq!(Invulnerables::invulnerables(), vec![1, 2]);
         let new = 42;
 
@@ -107,7 +107,7 @@ fn invulnerable_limit_works() {
 #[test]
 fn remove_invulnerable_works() {
     new_test_ext().execute_with(|| {
-        initialize_to_block(1);
+        run_to_block(1);
         assert_eq!(Invulnerables::invulnerables(), vec![1, 2]);
 
         assert_ok!(Invulnerables::add_invulnerable(

@@ -28,13 +28,6 @@ pub mod xcm_config;
 
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
-use {
-    frame_support::{
-        storage::{with_storage_layer, with_transaction},
-        traits::{ExistenceRequirement, WithdrawReasons},
-    },
-    polkadot_runtime_common::SlowAdjustingFeeUpdate,
-};
 
 #[cfg(any(feature = "std", test))]
 pub use sp_runtime::BuildStorage;
@@ -46,6 +39,13 @@ pub mod weights;
 mod tests;
 
 use {
+    alloc::{
+        boxed::Box,
+        collections::{btree_map::BTreeMap, btree_set::BTreeSet},
+        vec,
+        vec::Vec,
+    },
+    core::marker::PhantomData,
     cumulus_pallet_parachain_system::{
         RelayChainStateProof, RelayNumberMonotonicallyIncreases, RelaychainDataProvider,
         RelaychainStateProvider,
@@ -83,7 +83,7 @@ use {
     nimbus_primitives::{NimbusId, SlotBeacon},
     pallet_collator_assignment::{GetRandomnessForNextBlock, RotateCollatorsEveryNSessions},
     pallet_invulnerables::InvulnerableRewardDistribution,
-    pallet_pooled_staking::traits::{IsCandidateEligible, Timer},
+    pallet_pooled_staking::traits::IsCandidateEligible,
     pallet_registrar::RegistrarHooks,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     pallet_services_payment::{
@@ -93,6 +93,7 @@ use {
     pallet_stream_payment_runtime_api::{StreamPaymentApiError, StreamPaymentApiStatus},
     pallet_transaction_payment::FungibleAdapter,
     pallet_xcm_core_buyer::BuyingError,
+    parity_scale_codec::DecodeWithMemTracking,
     polkadot_runtime_common::BlockHashCount,
     scale_info::prelude::format,
     smallvec::smallvec,
@@ -109,19 +110,16 @@ use {
         transaction_validity::{TransactionSource, TransactionValidity},
         AccountId32, ApplyExtrinsicResult, Cow,
     },
-    sp_std::{
-        collections::{btree_map::BTreeMap, btree_set::BTreeSet},
-        marker::PhantomData,
-        prelude::*,
-    },
     sp_version::RuntimeVersion,
+    tanssi_runtime_common::SessionTimer,
     tp_stream_payment_common::StreamId,
     tp_traits::{
         apply, derive_storage_traits, GetContainerChainAuthor, GetHostConfiguration,
-        GetSessionContainerChains, MaybeSelfChainBlockAuthor, ParaIdAssignmentHooks,
-        RelayStorageRootProvider, RemoveInvulnerables, SlotFrequency,
+        GetSessionContainerChains, MaybeSelfChainBlockAuthor, NodeActivityTrackingHelper,
+        ParaIdAssignmentHooks, RelayStorageRootProvider, RemoveInvulnerables, SlotFrequency,
     },
     tp_xcm_core_buyer::BuyCoreCollatorProof,
+    xcm::Version as XcmVersion,
     xcm::{IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation, VersionedXcm},
     xcm_runtime_apis::{
         dry_run::{CallDryRunEffects, Error as XcmDryRunApiError, XcmDryRunEffects},
@@ -131,6 +129,13 @@ use {
 pub use {
     dp_core::{AccountId, Address, Balance, BlockNumber, Hash, Header, Index, Signature},
     sp_runtime::{MultiAddress, Perbill, Permill},
+};
+use {
+    frame_support::{
+        storage::{with_storage_layer, with_transaction},
+        traits::{ExistenceRequirement, WithdrawReasons},
+    },
+    polkadot_runtime_common::SlowAdjustingFeeUpdate,
 };
 
 /// Block type as expected by this runtime.
@@ -144,18 +149,20 @@ pub type BlockId = generic::BlockId<Block>;
 pub type CollatorId = AccountId;
 
 /// The `TxExtension` to the basic transaction logic.
-pub type TxExtension = (
-    frame_system::CheckNonZeroSender<Runtime>,
-    frame_system::CheckSpecVersion<Runtime>,
-    frame_system::CheckTxVersion<Runtime>,
-    frame_system::CheckGenesis<Runtime>,
-    frame_system::CheckEra<Runtime>,
-    frame_system::CheckNonce<Runtime>,
-    frame_system::CheckWeight<Runtime>,
-    pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
-    cumulus_primitives_storage_weight_reclaim::StorageWeightReclaim<Runtime>,
-    frame_metadata_hash_extension::CheckMetadataHash<Runtime>,
-);
+pub type TxExtension = cumulus_pallet_weight_reclaim::StorageWeightReclaim<
+    Runtime,
+    (
+        frame_system::CheckNonZeroSender<Runtime>,
+        frame_system::CheckSpecVersion<Runtime>,
+        frame_system::CheckTxVersion<Runtime>,
+        frame_system::CheckGenesis<Runtime>,
+        frame_system::CheckEra<Runtime>,
+        frame_system::CheckNonce<Runtime>,
+        frame_system::CheckWeight<Runtime>,
+        pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
+        frame_metadata_hash_extension::CheckMetadataHash<Runtime>,
+    ),
+>;
 
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic =
@@ -257,7 +264,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: Cow::Borrowed("dancebox"),
     impl_name: Cow::Borrowed("dancebox"),
     authoring_version: 1,
-    spec_version: 1400,
+    spec_version: 1500,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -397,6 +404,10 @@ impl frame_system::Config for Runtime {
     type PostInherents = ();
     type PostTransactions = ();
     type ExtensionsWeightInfo = weights::frame_system_extensions::SubstrateWeight<Runtime>;
+}
+
+impl cumulus_pallet_weight_reclaim::Config for Runtime {
+    type WeightInfo = weights::cumulus_pallet_weight_reclaim::SubstrateWeight<Runtime>;
 }
 
 impl pallet_timestamp::Config for Runtime {
@@ -564,8 +575,6 @@ impl BabeCurrentBlockRandomnessGetter {
 
     /// Return the block randomness from the relay mixed with the provided subject.
     /// This ensures that the randomness will be different on different pallets, as long as the subject is different.
-    // TODO: audit usage of randomness API
-    // https://github.com/paritytech/polkadot/issues/2601
     fn get_block_randomness_mixed(subject: &[u8]) -> Option<Hash> {
         Self::get_block_randomness()
             .map(|random_hash| mix_randomness::<Runtime>(random_hash, subject))
@@ -717,6 +726,7 @@ impl pallet_session::Config for Runtime {
     type SessionHandler = <SessionKeys as sp_runtime::traits::OpaqueKeys>::KeyTypeIdProviders;
     type Keys = SessionKeys;
     type WeightInfo = weights::pallet_session::SubstrateWeight<Runtime>;
+    type DisablingStrategy = ();
 }
 
 /// Read full_rotation_period from pallet_configuration
@@ -743,7 +753,7 @@ impl GetRandomnessForNextBlock<u32> for BabeGetRandomnessForNextBlock {
             {
                 // Return random_hash as a [u8; 32] instead of a Hash
                 let mut buf = [0u8; 32];
-                let len = sp_std::cmp::min(32, random_hash.as_ref().len());
+                let len = core::cmp::min(32, random_hash.as_ref().len());
                 buf[..len].copy_from_slice(&random_hash.as_ref()[..len]);
 
                 buf
@@ -770,7 +780,6 @@ impl RemoveInvulnerables<CollatorId> for RemoveInvulnerablesImpl {
         if num_invulnerables == 0 {
             return vec![];
         }
-        // TODO: check if this works on session changes
         let all_invulnerables = pallet_invulnerables::Invulnerables::<Runtime>::get();
         if all_invulnerables.is_empty() {
             return vec![];
@@ -1258,7 +1267,7 @@ impl pallet_utility::Config for Runtime {
 
 /// The type used to represent the kinds of proxying allowed.
 #[apply(derive_storage_traits)]
-#[derive(Copy, Ord, PartialOrd, MaxEncodedLen)]
+#[derive(Copy, Ord, PartialOrd, MaxEncodedLen, DecodeWithMemTracking)]
 #[allow(clippy::unnecessary_cast)]
 pub enum ProxyType {
     /// All calls can be proxied. This is the trivial/most permissive filter.
@@ -1369,6 +1378,7 @@ impl pallet_proxy::Config for Runtime {
     // - 4 bytes BlockNumber (u32)
     type AnnouncementDepositFactor = ConstU128<{ currency::deposit(0, 68) }>;
     type WeightInfo = weights::pallet_proxy::SubstrateWeight<Runtime>;
+    type BlockNumberProvider = System;
 }
 
 pub struct XcmExecutionManager;
@@ -1463,47 +1473,11 @@ parameter_types! {
     pub const StakingSessionDelay: u32 = 2;
 }
 
-pub struct SessionTimer<Delay>(PhantomData<Delay>);
-
-impl<Delay> Timer for SessionTimer<Delay>
-where
-    Delay: Get<u32>,
-{
-    type Instant = u32;
-
-    fn now() -> Self::Instant {
-        Session::current_index()
-    }
-
-    fn is_elapsed(instant: &Self::Instant) -> bool {
-        let delay = Delay::get();
-        let Some(end) = instant.checked_add(delay) else {
-            return false;
-        };
-        end <= Self::now()
-    }
-
-    #[cfg(feature = "runtime-benchmarks")]
-    fn elapsed_instant() -> Self::Instant {
-        let delay = Delay::get();
-        Self::now()
-            .checked_add(delay)
-            .expect("overflow when computing valid elapsed instant")
-    }
-
-    #[cfg(feature = "runtime-benchmarks")]
-    fn skip_to_elapsed() {
-        let session_to_reach = Self::elapsed_instant();
-        while Self::now() < session_to_reach {
-            Session::rotate_session();
-        }
-    }
-}
-
-pub struct CandidateHasRegisteredKeys;
-impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
+pub struct CandidateIsOnlineAndHasRegisteredKeys;
+impl IsCandidateEligible<AccountId> for CandidateIsOnlineAndHasRegisteredKeys {
     fn is_candidate_eligible(a: &AccountId) -> bool {
         <Session as ValidatorRegistration<AccountId>>::is_registered(a)
+            && !InactivityTracking::is_node_offline(a)
     }
     #[cfg(feature = "runtime-benchmarks")]
     fn make_candidate_eligible(a: &AccountId, eligible: bool) {
@@ -1520,13 +1494,16 @@ impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
         } else {
             let _ = Session::purge_keys(RuntimeOrigin::signed(a.clone()));
         }
+
+        if InactivityTracking::is_node_offline(a) {
+            InactivityTracking::make_node_online(a);
+        }
     }
 }
 
 parameter_types! {
     pub const MaxCandidatesBufferSize: u32 = 100;
 }
-
 impl pallet_pooled_staking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
@@ -1537,10 +1514,10 @@ impl pallet_pooled_staking::Config for Runtime {
     type MinimumSelfDelegation = MinimumSelfDelegation;
     type RuntimeHoldReason = RuntimeHoldReason;
     type RewardsCollatorCommission = RewardsCollatorCommission;
-    type JoiningRequestTimer = SessionTimer<StakingSessionDelay>;
-    type LeavingRequestTimer = SessionTimer<StakingSessionDelay>;
+    type JoiningRequestTimer = SessionTimer<Runtime, StakingSessionDelay>;
+    type LeavingRequestTimer = SessionTimer<Runtime, StakingSessionDelay>;
     type EligibleCandidatesBufferSize = MaxCandidatesBufferSize;
-    type EligibleCandidatesFilter = CandidateHasRegisteredKeys;
+    type EligibleCandidatesFilter = CandidateIsOnlineAndHasRegisteredKeys;
     type WeightInfo = weights::pallet_pooled_staking::SubstrateWeight<Runtime>;
 }
 
@@ -1551,7 +1528,6 @@ parameter_types! {
     // initial_supply * (1.05) = initial_supply * (1+x)^5_259_600
     // we should solve for x = (1.05)^(1/5_259_600) -1 -> 0.000000009 per block or 9/1_000_000_000
     // 1% in the case of dev mode
-    // TODO: check if we can put the prod inflation for tests too
     // TODO: better calculus for going from annual to block inflation (if it can be done)
     pub const InflationRate: Perbill = prod_or_fast!(Perbill::from_parts(9), Perbill::from_percent(1));
 
@@ -1660,7 +1636,7 @@ parameter_types! {
     pub const TreasuryId: PalletId = PalletId(*b"tns/tsry");
     pub const ProposalBond: Permill = Permill::from_percent(5);
     pub TreasuryAccount: AccountId = Treasury::account_id();
-    pub const MaxBalance: Balance = Balance::max_value();
+    pub const MaxBalance: Balance = Balance::MAX;
     // We allow it to be 1 minute in fast mode to be able to test it
     pub const SpendPeriod: BlockNumber = prod_or_fast!(6 * DAYS, 1 * MINUTES);
     pub const DataDepositPerByte: Balance = 1 * CENTS;
@@ -1709,13 +1685,13 @@ impl pallet_multisig::Config for Runtime {
     type DepositFactor = DepositFactor;
     type MaxSignatories = MaxSignatories;
     type WeightInfo = weights::pallet_multisig::SubstrateWeight<Runtime>;
+    type BlockNumberProvider = System;
 }
 parameter_types! {
     pub const MaxInactiveSessions: u32 = 5;
 }
 impl pallet_inactivity_tracking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type CollatorId = CollatorId;
     type MaxInactiveSessions = MaxInactiveSessions;
     type MaxCollatorsPerSession = MaxCandidatesBufferSize;
     type MaxContainerChains = MaxLengthParaIds;
@@ -1723,6 +1699,8 @@ impl pallet_inactivity_tracking::Config for Runtime {
     type CurrentCollatorsFetcher = CollatorAssignment;
     type GetSelfChainBlockAuthor = GetSelfChainBlockAuthor;
     type ParaFilter = tp_parathread_filter_common::ExcludeAllParathreadsFilter<Runtime>;
+    type InvulnerablesFilter = tp_invulnerables_filter_common::InvulnerablesFilter<Runtime>;
+    type CollatorStakeHelper = PooledStaking;
     type WeightInfo = weights::pallet_inactivity_tracking::SubstrateWeight<Runtime>;
 }
 
@@ -1787,6 +1765,7 @@ construct_runtime!(
 
         // More system support stuff
         RelayStorageRoots: pallet_relay_storage_roots = 60,
+        WeightReclaim: cumulus_pallet_weight_reclaim = 61,
 
         RootTesting: pallet_root_testing = 100,
         AsyncBacking: pallet_async_backing::{Pallet, Storage} = 110,
@@ -1834,6 +1813,7 @@ mod benches {
         [pallet_message_queue, MessageQueue]
         [pallet_xcm_core_buyer, XcmCoreBuyer]
         [pallet_relay_storage_roots, RelayStorageRoots]
+        [cumulus_pallet_weight_reclaim, WeightReclaim]
     );
 }
 
@@ -2008,7 +1988,7 @@ impl_runtime_apis! {
             Vec<frame_support::traits::StorageInfo>,
         ) {
             use cumulus_pallet_session_benchmarking::Pallet as SessionBench;
-            use frame_benchmarking::{Benchmarking, BenchmarkList};
+            use frame_benchmarking::{BenchmarkList};
             use frame_support::traits::StorageInfoTrait;
             use pallet_xcm::benchmarking::Pallet as PalletXcmExtrinsicsBenchmark;
 
@@ -2019,16 +1999,17 @@ impl_runtime_apis! {
             (list, storage_info)
         }
 
+        #[allow(non_local_definitions)]
         fn dispatch_benchmark(
             config: frame_benchmarking::BenchmarkConfig,
         ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, alloc::string::String> {
-            use frame_benchmarking::{BenchmarkBatch, Benchmarking, BenchmarkError};
+            use frame_benchmarking::{BenchmarkBatch, BenchmarkError};
             use sp_core::storage::TrackedStorageKey;
             use cumulus_pallet_session_benchmarking::Pallet as SessionBench;
             impl cumulus_pallet_session_benchmarking::Config for Runtime {}
 
             impl frame_system_benchmarking::Config for Runtime {
-                fn setup_set_code_requirements(code: &sp_std::vec::Vec<u8>) -> Result<(), BenchmarkError> {
+                fn setup_set_code_requirements(code: &alloc::vec::Vec<u8>) -> Result<(), BenchmarkError> {
                     ParachainSystem::initialize_for_set_code_benchmark(code.len() as u32);
                     Ok(())
                 }
@@ -2064,8 +2045,41 @@ impl_runtime_apis! {
                 type TrustedReserve = TrustedReserve;
 
                 fn get_asset() -> Asset {
+                    use frame_support::{assert_ok, traits::tokens::fungible::{Inspect, Mutate}};
+                    use xcm::latest::prelude::Junctions::X2;
+
+                    let (account, _) = pallet_xcm_benchmarks::account_and_location::<Runtime>(1);
+
+                    assert_ok!(<Balances as Mutate<_>>::mint_into(
+                        &account,
+                        <Balances as Inspect<_>>::minimum_balance(),
+                    ));
+
+                    let asset_id = 42u16;
+
+                    let asset_location = Location {
+                        parents: 1,
+                        interior: X2([
+                            GlobalConsensus(NetworkId::Ethereum { chain_id: 1 }),
+                            AccountKey20 {
+                                network: Some(NetworkId::Ethereum { chain_id: 1 }),
+                                key: [0; 20],
+                            },
+                        ]
+                        .into()),
+                    };
+
+                    assert_ok!(ForeignAssetsCreator::create_foreign_asset(
+                        RuntimeOrigin::root(),
+                        asset_location.clone(),
+                        asset_id,
+                        account.clone(),
+                        true,
+                        1u128,
+                    ));
+
                     Asset {
-                        id: AssetId(SelfReserve::get()),
+                        id: AssetId(asset_location),
                         fun: Fungible(ExistentialDeposit::get() * 100),
                     }
                 }
@@ -2237,7 +2251,7 @@ impl_runtime_apis! {
                             initial_asset_amount - asset_amount,
                         );
                     });
-                    Some((assets, fee_index as u32, dest, verify))
+                    Some((assets, fee_index, dest, verify))
                 }
             }
 
@@ -2644,8 +2658,8 @@ impl_runtime_apis! {
     }
 
     impl xcm_runtime_apis::dry_run::DryRunApi<Block, RuntimeCall, RuntimeEvent, OriginCaller> for Runtime {
-        fn dry_run_call(origin: OriginCaller, call: RuntimeCall) -> Result<CallDryRunEffects<RuntimeEvent>, XcmDryRunApiError> {
-            PolkadotXcm::dry_run_call::<Runtime, xcm_config::XcmRouter, OriginCaller, RuntimeCall>(origin, call)
+        fn dry_run_call(origin: OriginCaller, call: RuntimeCall, result_xcms_version: XcmVersion) -> Result<CallDryRunEffects<RuntimeEvent>, XcmDryRunApiError> {
+            PolkadotXcm::dry_run_call::<Runtime, xcm_config::XcmRouter, OriginCaller, RuntimeCall>(origin, call, result_xcms_version)
         }
 
         fn dry_run_xcm(origin_location: VersionedLocation, xcm: VersionedXcm<RuntimeCall>) -> Result<XcmDryRunEffects<RuntimeEvent>, XcmDryRunApiError> {
@@ -2684,7 +2698,7 @@ impl cumulus_pallet_parachain_system::CheckInherents<Block> for CheckInherents {
         let inherent_data =
             cumulus_primitives_timestamp::InherentDataProvider::from_relay_chain_slot_and_duration(
                 relay_chain_slot,
-                sp_std::time::Duration::from_secs(6),
+                core::time::Duration::from_secs(6),
             )
             .create_inherent_data()
             .expect("Could not create the timestamp inherent data");

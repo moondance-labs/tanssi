@@ -4,7 +4,7 @@ authors = { workspace = true }
 description = "Utils to tie different Tanssi components together and allow instantiation of a node."
 edition = "2021"
 license = "GPL-3.0-only"
-version = "0.14.0"
+version = "0.15.0"
 
 [lints]
 workspace = true
@@ -229,6 +229,7 @@ runtime-benchmarks = [
 	"starlight-runtime-constants?/runtime-benchmarks",
 	"starlight-runtime?/runtime-benchmarks",
 	"xcm-runtime-apis/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
 ]
 try-runtime = [
 	"dancelight-runtime?/try-runtime",

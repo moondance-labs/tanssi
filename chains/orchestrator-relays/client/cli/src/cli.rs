@@ -25,6 +25,7 @@ use {
 };
 
 #[allow(missing_docs)]
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Parser)]
 pub enum Subcommand {
     /// Build a chain specification.
@@ -162,7 +163,6 @@ pub struct RunCmd {
     /// pool for tasks with the priority below critical.
     ///
     ///  **Dangerous!** Do not touch unless explicitly advised to.
-
     #[arg(long)]
     pub prepare_workers_soft_max_num: Option<usize>,
     /// Override the absolute number of pvf workers that can be spawned in the pvf prepare pool.
@@ -184,6 +184,12 @@ pub struct RunCmd {
     // Enable the development service
     #[arg(long)]
     pub dev_service: bool,
+
+    /// How long finalized data should be kept in the availability store (in hours).
+    /// Only used for testnets. If not specified, set to 1 hour. Always set to 25 hours for live
+    /// networks.
+    #[arg(long)]
+    pub keep_finalized_for: Option<u32>,
 }
 
 #[allow(missing_docs)]

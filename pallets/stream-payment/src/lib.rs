@@ -16,6 +16,7 @@
 
 #![doc = include_str!("../README.md")]
 #![cfg_attr(not(feature = "std"), no_std)]
+extern crate alloc;
 
 #[cfg(test)]
 mod mock;
@@ -33,7 +34,9 @@ pub mod weights;
 pub use weights::WeightInfo;
 
 use {
+    alloc::fmt::Debug,
     core::cmp::min,
+    core::marker::PhantomData,
     frame_support::{
         dispatch::DispatchErrorWithPostInfo,
         pallet,
@@ -46,14 +49,13 @@ use {
         Blake2_128Concat,
     },
     frame_system::pallet_prelude::*,
-    parity_scale_codec::{FullCodec, MaxEncodedLen},
+    parity_scale_codec::{DecodeWithMemTracking, FullCodec, MaxEncodedLen},
     scale_info::TypeInfo,
     serde::{Deserialize, Serialize},
     sp_runtime::{
         traits::{AtLeast32BitUnsigned, CheckedAdd, CheckedSub, One, Saturating, Zero},
         ArithmeticError,
     },
-    sp_std::{fmt::Debug, marker::PhantomData},
 };
 
 pub use pallet::*;
@@ -232,6 +234,7 @@ pub mod pallet {
         Serialize,
         Deserialize,
         MaxEncodedLen,
+        DecodeWithMemTracking,
     )]
     pub struct StreamConfig<Unit, AssetId, BalanceOrDuration> {
         /// Unit in which time is measured using a `TimeProvider`.
@@ -262,6 +265,7 @@ pub mod pallet {
         Eq,
         Encode,
         Decode,
+        DecodeWithMemTracking,
         Copy,
         Clone,
         TypeInfo,
@@ -296,6 +300,7 @@ pub mod pallet {
         Serialize,
         Deserialize,
         MaxEncodedLen,
+        DecodeWithMemTracking,
     )]
     pub enum ChangeKind<Time> {
         /// The requested change is a suggestion, and the other party doesn't
@@ -320,6 +325,7 @@ pub mod pallet {
         Serialize,
         Deserialize,
         MaxEncodedLen,
+        DecodeWithMemTracking,
     )]
     pub enum DepositChange<Balance> {
         /// Increase deposit by given amount.
@@ -488,6 +494,7 @@ pub mod pallet {
         /// and initial deposit (in the asset defined in the config).
         #[pallet::call_index(0)]
         #[pallet::weight(T::WeightInfo::open_stream())]
+        #[allow(clippy::useless_conversion)]
         pub fn open_stream(
             origin: OriginFor<T>,
             target: AccountIdOf<T>,
@@ -505,6 +512,7 @@ pub mod pallet {
         /// before closing the stream.
         #[pallet::call_index(1)]
         #[pallet::weight(T::WeightInfo::close_stream())]
+        #[allow(clippy::useless_conversion)]
         pub fn close_stream(
             origin: OriginFor<T>,
             stream_id: T::StreamId,
@@ -564,6 +572,7 @@ pub mod pallet {
         /// Perform the pending payment of a stream. Anyone can call this.
         #[pallet::call_index(2)]
         #[pallet::weight(T::WeightInfo::perform_payment())]
+        #[allow(clippy::useless_conversion)]
         pub fn perform_payment(
             origin: OriginFor<T>,
             stream_id: T::StreamId,
@@ -592,6 +601,7 @@ pub mod pallet {
             T::WeightInfo::request_change_immediate()
             .max(T::WeightInfo::request_change_delayed())
         )]
+        #[allow(clippy::useless_conversion)]
         pub fn request_change(
             origin: OriginFor<T>,
             stream_id: T::StreamId,
@@ -694,6 +704,7 @@ pub mod pallet {
         /// deposit.
         #[pallet::call_index(4)]
         #[pallet::weight(T::WeightInfo::accept_requested_change())]
+        #[allow(clippy::useless_conversion)]
         pub fn accept_requested_change(
             origin: OriginFor<T>,
             stream_id: T::StreamId,
@@ -798,6 +809,7 @@ pub mod pallet {
 
         #[pallet::call_index(5)]
         #[pallet::weight(T::WeightInfo::cancel_change_request())]
+        #[allow(clippy::useless_conversion)]
         pub fn cancel_change_request(
             origin: OriginFor<T>,
             stream_id: T::StreamId,
@@ -832,6 +844,7 @@ pub mod pallet {
         /// will not have the same scale/value.
         #[pallet::call_index(6)]
         #[pallet::weight(T::WeightInfo::immediately_change_deposit())]
+        #[allow(clippy::useless_conversion)]
         pub fn immediately_change_deposit(
             origin: OriginFor<T>,
             stream_id: T::StreamId,

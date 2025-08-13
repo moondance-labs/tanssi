@@ -2,6 +2,8 @@
 
 # Exit on any error
 set -e
+YELLOW='\033[1;33m'
+NC='\033[0m'
 
 # Start ethereum nodes, the nodes must be built first
 scripts_path="$(realpath ./scripts/bridge)"
@@ -13,7 +15,17 @@ echo $ethereum_data_dir
 mkdir -p $output_dir
 mkdir -p $logs_dir
 
+check_process() {
+    local name="$1"
+    if pgrep -f "$name" >/dev/null 2>&1; then
+        echo -e "${YELLOW}⚠️  Process matching '$name' is already running! Skipping...${NC}"
+        return 1
+    fi
+    return 0
+}
+
 start_geth() {
+    check_process "geth" || return
     echo "Starting geth local node"
     local timestamp="0" #start Prague from genesis
     jq \
@@ -45,6 +57,7 @@ start_geth() {
 }
 
 start_lodestar() {
+    check_process "lodestar" || return
     echo "Starting lodestar local node"
     local genesisHash=$(curl $eth_endpoint_http \
         -X POST \

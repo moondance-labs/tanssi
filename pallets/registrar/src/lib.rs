@@ -26,6 +26,7 @@
 //! storage item.
 
 #![cfg_attr(not(feature = "std"), no_std)]
+extern crate alloc;
 
 #[cfg(test)]
 mod mock;
@@ -43,9 +44,11 @@ pub use weights::WeightInfo;
 pub use pallet::*;
 
 use {
+    alloc::{collections::btree_set::BTreeSet, vec, vec::Vec},
     cumulus_primitives_core::relay_chain::HeadData,
     dp_chain_state_snapshot::GenericStateProof,
     dp_container_chain_genesis_data::ContainerChainGenesisData,
+    dp_core::{well_known_keys::REGISTRAR_PARAS_INDEX, ParaInfo},
     frame_support::{
         pallet_prelude::*,
         traits::{
@@ -62,7 +65,6 @@ use {
         traits::{AtLeast32BitUnsigned, Verify},
         Saturating,
     },
-    sp_std::{collections::btree_set::BTreeSet, prelude::*},
     tp_traits::{
         GetCurrentContainerChains, GetSessionContainerChains, GetSessionIndex, ParaId,
         ParathreadParams as ParathreadParamsTy, RegistrarHandler, RelayStorageRootProvider,
@@ -369,7 +371,7 @@ pub mod pallet {
 
         #[cfg(feature = "try-runtime")]
         fn try_state(_n: BlockNumberFor<T>) -> Result<(), sp_runtime::TryRuntimeError> {
-            use {scale_info::prelude::format, sp_std::collections::btree_set::BTreeSet};
+            use {alloc::collections::btree_set::BTreeSet, scale_info::prelude::format};
             // A para id can only be in 1 of [`RegisteredParaIds`, `PendingVerification`, `Paused`]
             // Get all those para ids and check for duplicates
             let mut para_ids: Vec<ParaId> = vec![];
@@ -814,7 +816,7 @@ pub mod pallet {
 
                 let deposit = Self::get_genesis_cost(genesis_data.encoded_size());
                 let new_balance = T::Currency::minimum_balance()
-                    .saturating_mul(10_000_000u32.into())
+                    .saturating_mul(100_000_000u32.into())
                     .saturating_add(deposit);
                 let account = create_funded_user::<T>("caller", 1000, new_balance).0;
                 T::InnerRegistrar::prepare_chain_registration(*para_id, account.clone());
@@ -1492,7 +1494,7 @@ pub trait RegistrarHooks {
 
 impl RegistrarHooks for () {}
 
-pub struct EnsureSignedByManager<T>(sp_std::marker::PhantomData<T>);
+pub struct EnsureSignedByManager<T>(core::marker::PhantomData<T>);
 
 impl<T> EnsureOriginWithArg<T::RuntimeOrigin, ParaId> for EnsureSignedByManager<T>
 where
@@ -1520,23 +1522,4 @@ where
 
         Ok(frame_system::RawOrigin::Signed(manager).into())
     }
-}
-
-// TODO: import this from dancekit
-pub const REGISTRAR_PARAS_INDEX: &[u8] =
-    &hex_literal::hex!["3fba98689ebed1138735e0e7a5a790abcd710b30bd2eab0352ddcc26417aa194"];
-
-// Need to copy ParaInfo from
-// polkadot-sdk/polkadot/runtime/common/src/paras_registrar/mod.rs
-// Because its fields are not public...
-// TODO: import this from dancekit
-#[derive(Encode, Decode, Clone, PartialEq, Eq, Default, TypeInfo)]
-pub struct ParaInfo<Account, Balance> {
-    /// The account that has placed a deposit for registering this para.
-    manager: Account,
-    /// The amount reserved by the `manager` account for the registration.
-    deposit: Balance,
-    /// Whether the para registration should be locked from being controlled by the manager.
-    /// None means the lock had not been explicitly set, and should be treated as false.
-    locked: Option<bool>,
 }

@@ -14,10 +14,10 @@ describeSuite({
             title: "Weight should be match expected",
             test: async () => {
                 // TODO: is it expected that this test breaks, just copy the new weights
-                const expectedRefTime = { avg: new BN(829188539) };
+                const expectedRefTime = { min: new BN(0), avg: new BN(829188539), max: new BN(0) };
                 expectedRefTime.min = expectedRefTime.avg.divn(1.1);
                 expectedRefTime.max = expectedRefTime.avg.muln(1.1);
-                const expectedProofSize = { avg: new BN(5507) };
+                const expectedProofSize = { min: new BN(0), avg: new BN(5507), max: new BN(0) };
                 expectedProofSize.min = expectedProofSize.avg.divn(1.1);
                 expectedProofSize.max = expectedProofSize.avg.muln(1.1);
 
@@ -52,12 +52,12 @@ describeSuite({
                 expect(
                     refTime,
                     `refTime is ${refTime} but expected a value between ${expectedRefTime.min} and ${expectedRefTime.max}`
-                ).to.satisfy((val) => val >= expectedRefTime.min && val <= expectedRefTime.max);
+                ).to.satisfy((val: BN) => val.gte(expectedRefTime.min) && val.lte(expectedRefTime.max));
 
                 expect(
                     proofSize,
                     `proofSize is ${proofSize} but expected a value between ${expectedProofSize.min} and ${expectedProofSize.max}`
-                ).to.satisfy((val) => val >= expectedProofSize.min && val <= expectedProofSize.max);
+                ).to.satisfy((val: BN) => val.gte(expectedProofSize.min) && val.lte(expectedProofSize.max));
             },
         });
     },

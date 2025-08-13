@@ -17,13 +17,13 @@
 mod pallet_xcm_benchmarks_fungible;
 mod pallet_xcm_benchmarks_generic;
 
-use frame_support::BoundedVec;
 use {
     crate::Runtime,
+    alloc::vec::Vec,
     frame_support::weights::Weight,
+    frame_support::BoundedVec,
     pallet_xcm_benchmarks_fungible::WeightInfo as XcmBalancesWeight,
     pallet_xcm_benchmarks_generic::WeightInfo as XcmGeneric,
-    sp_std::prelude::*,
     xcm::{
         latest::{prelude::*, AssetTransferFilter, Weight as XCMWeight},
         DoubleEncoded,
@@ -77,7 +77,7 @@ impl WeighAssets for AssetFilter {
         match self {
             Self::Definite(assets) => assets
                 .inner()
-                .into_iter()
+                .iter()
                 .map(From::from)
                 .map(|t| match t {
                     AssetTypes::Balances => balances_weight,
@@ -87,7 +87,7 @@ impl WeighAssets for AssetFilter {
                 .fold(Weight::zero(), |acc, x| acc.saturating_add(x)),
             Self::Wild(AllOf { .. } | AllOfCounted { .. }) => balances_weight,
             Self::Wild(AllCounted(count)) => {
-                balances_weight.saturating_mul(MAX_ASSETS.min(*count as u64))
+                balances_weight.saturating_mul(MAX_ASSETS.min(u64::from(*count)))
             }
             Self::Wild(All) => balances_weight.saturating_mul(MAX_ASSETS),
         }
@@ -97,8 +97,8 @@ impl WeighAssets for AssetFilter {
 impl WeighAssets for Assets {
     fn weigh_assets(&self, balances_weight: Weight) -> Weight {
         self.inner()
-            .into_iter()
-            .map(|m| <AssetTypes as From<&Asset>>::from(m))
+            .iter()
+            .map(<AssetTypes as From<&Asset>>::from)
             .map(|t| match t {
                 AssetTypes::Balances => balances_weight,
                 AssetTypes::Ethereum => balances_weight,
@@ -298,7 +298,7 @@ where
         _dest: &Location,
         remote_fees: &Option<AssetTransferFilter>,
         _preserve_origin: &bool,
-        assets: &Vec<AssetTransferFilter>,
+        assets: &BoundedVec<AssetTransferFilter, MaxAssetTransferFilters>,
         _xcm: &Xcm<()>,
     ) -> Weight {
         let mut weight = if let Some(remote_fees) = remote_fees {

@@ -22,9 +22,14 @@
 //! The tracking functionality can be enabled or disabled with root privileges.
 //! By default, the tracking is enabled.
 #![cfg_attr(not(feature = "std"), no_std)]
+extern crate alloc;
 
 use {
-    frame_support::{dispatch::DispatchResult, pallet_prelude::Weight},
+    alloc::collections::btree_set::BTreeSet,
+    frame_support::{
+        dispatch::DispatchResult, dispatch::DispatchResultWithPostInfo, ensure,
+        pallet_prelude::Weight,
+    },
     parity_scale_codec::{Decode, Encode},
     scale_info::TypeInfo,
     serde::{Deserialize, Serialize},
@@ -33,8 +38,8 @@ use {
     sp_staking::SessionIndex,
     tp_traits::{
         AuthorNotingHook, AuthorNotingInfo, ForSession, GetContainerChainsWithCollators,
-        GetSessionIndex, MaybeSelfChainBlockAuthor, NodeActivityTrackingHelper, ParaId,
-        ParathreadHelper,
+        GetSessionIndex, InvulnerablesHelper, MaybeSelfChainBlockAuthor,
+        NodeActivityTrackingHelper, ParaId, ParathreadHelper, StakingCandidateHelper,
     },
 };
 
@@ -48,6 +53,7 @@ mod tests;
 mod benchmarking;
 
 pub mod weights;
+
 pub use weights::WeightInfo;
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -59,11 +65,13 @@ pub mod pallet {
     use {
         super::*,
         crate::weights::WeightInfo,
+        alloc::collections::btree_set::BTreeSet,
         core::marker::PhantomData,
         frame_support::{pallet_prelude::*, storage::types::StorageMap},
         frame_system::pallet_prelude::*,
-        sp_std::collections::btree_set::BTreeSet,
     };
+
+    pub type Collator<T> = <T as frame_system::Config>::AccountId;
 
     /// The status of collator activity tracking
     #[derive(
@@ -71,6 +79,7 @@ pub mod pallet {
         PartialEq,
         Eq,
         Encode,
+        DecodeWithMemTracking,
         Decode,
         TypeInfo,
         Serialize,
@@ -103,14 +112,6 @@ pub mod pallet {
         /// Overarching event type.
         type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 
-        /// A stable identifier for a collator.
-        type CollatorId: Member
-            + Parameter
-            + Ord
-            + MaybeSerializeDeserialize
-            + MaxEncodedLen
-            + TryFrom<Self::AccountId>;
-
         /// The maximum number of sessions for which a collator can be inactive
         /// before being moved to the offline queue
         #[pallet::constant]
@@ -128,13 +129,19 @@ pub mod pallet {
         type CurrentSessionIndex: GetSessionIndex<SessionIndex>;
 
         /// Helper that fetches a list of collators eligible to produce blocks for the current session
-        type CurrentCollatorsFetcher: GetContainerChainsWithCollators<Self::CollatorId>;
+        type CurrentCollatorsFetcher: GetContainerChainsWithCollators<Collator<Self>>;
 
         /// Helper that returns the block author for the orchestrator chain (if it exists)
-        type GetSelfChainBlockAuthor: MaybeSelfChainBlockAuthor<Self::CollatorId>;
+        type GetSelfChainBlockAuthor: MaybeSelfChainBlockAuthor<Collator<Self>>;
 
         /// Helper that checks if a ParaId is a parathread
         type ParaFilter: ParathreadHelper;
+
+        /// Helper for dealing with invulnerables.
+        type InvulnerablesFilter: InvulnerablesHelper<Collator<Self>>;
+
+        /// Helper for dealing with collator's stake
+        type CollatorStakeHelper: StakingCandidateHelper<Collator<Self>>;
 
         /// The weight information of this pallet.
         type WeightInfo: weights::WeightInfo;
@@ -151,43 +158,68 @@ pub mod pallet {
         _,
         Twox64Concat,
         SessionIndex,
-        BoundedBTreeSet<T::CollatorId, T::MaxCollatorsPerSession>,
+        BoundedBTreeSet<Collator<T>, T::MaxCollatorsPerSession>,
         ValueQuery,
     >;
 
     /// A list of active collators for a session. Repopulated at the start of every session
     #[pallet::storage]
     pub type ActiveCollatorsForCurrentSession<T: Config> =
-        StorageValue<_, BoundedBTreeSet<T::CollatorId, T::MaxCollatorsPerSession>, ValueQuery>;
+        StorageValue<_, BoundedBTreeSet<Collator<T>, T::MaxCollatorsPerSession>, ValueQuery>;
 
     /// A list of active container chains for a session. Repopulated at the start of every session
     #[pallet::storage]
     pub type ActiveContainerChainsForCurrentSession<T: Config> =
         StorageValue<_, BoundedBTreeSet<ParaId, T::MaxContainerChains>, ValueQuery>;
 
+    /// Switch to enable/disable offline marking.
+    #[pallet::storage]
+    pub type EnableMarkingOffline<T: Config> = StorageValue<_, bool, ValueQuery>;
+
+    /// Storage map indicating the offline status of a collator
+    #[pallet::storage]
+    pub type OfflineCollators<T: Config> =
+        StorageMap<_, Blake2_128Concat, Collator<T>, bool, ValueQuery>;
+
     #[pallet::event]
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
         /// Event emitted when the activity tracking status is updated
         ActivityTrackingStatusSet { status: ActivityTrackingStatus },
+        /// Collator online status updated
+        CollatorStatusUpdated {
+            collator: Collator<T>,
+            is_offline: bool,
+        },
     }
 
     #[pallet::error]
     pub enum Error<T> {
         /// The size of a collator set for a session has already reached MaxCollatorsPerSession value
         MaxCollatorsPerSessionReached,
-        /// The size of a chains set for a session has already reached MaxContainerChains value
-        MaxContainerChainsReached,
         /// Error returned when the activity tracking status is attempted to be updated before the end session
         ActivityTrackingStatusUpdateSuspended,
         /// Error returned when the activity tracking status is attempted to be enabled when it is already enabled
         ActivityTrackingStatusAlreadyEnabled,
         /// Error returned when the activity tracking status is attempted to be disabled when it is already disabled
         ActivityTrackingStatusAlreadyDisabled,
+        /// Error returned when the collator status is attempted to be set to offline when offline marking is disabled
+        MarkingOfflineNotEnabled,
+        /// Error returned when the collator is not part of the sorted eligible candidates list
+        CollatorNotEligibleCandidate,
+        /// Error returned when the collator status is attempted to be set to offline when it is already offline
+        CollatorNotOnline,
+        /// Error returned when the collator status is attempted to be set to online when it is already online
+        CollatorNotOffline,
+        /// Error returned when the collator attempted to be set offline is invulnerable
+        MarkingInvulnerableOfflineInvalid,
+        /// Error returned when the collator attempted to be set offline is not inactive
+        CollatorCannotBeNotifiedAsInactive,
     }
 
     #[pallet::call]
     impl<T: Config> Pallet<T> {
+        /// Enables or disables inactivity tracking.
         #[pallet::call_index(0)]
         #[pallet::weight(T::WeightInfo::set_inactivity_tracking_status())]
         pub fn set_inactivity_tracking_status(
@@ -222,6 +254,46 @@ pub mod pallet {
             );
             Ok(())
         }
+
+        /// Enables or disables the marking of collators as offline.
+        #[pallet::call_index(1)]
+        #[pallet::weight(T::WeightInfo::enable_offline_marking())]
+        pub fn enable_offline_marking(origin: OriginFor<T>, value: bool) -> DispatchResult {
+            ensure_root(origin)?;
+            <EnableMarkingOffline<T>>::set(value);
+            Ok(())
+        }
+
+        /// Allows a collator to mark itself offline.
+        #[pallet::call_index(2)]
+        #[pallet::weight(T::WeightInfo::set_offline())]
+        pub fn set_offline(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
+            let collator = ensure_signed(origin)?;
+            Self::mark_collator_offline(&collator)
+        }
+
+        /// Allows a collator to mark itself online.
+        #[pallet::call_index(3)]
+        #[pallet::weight(T::WeightInfo::set_online())]
+        pub fn set_online(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
+            let collator = ensure_signed(origin)?;
+            Self::mark_collator_online(&collator)
+        }
+
+        /// Allows an account to notify inactive collator to be marked offline.
+        #[pallet::call_index(4)]
+        #[pallet::weight(T::WeightInfo::notify_inactive_collator())]
+        pub fn notify_inactive_collator(
+            origin: OriginFor<T>,
+            collator: Collator<T>,
+        ) -> DispatchResultWithPostInfo {
+            ensure_signed(origin)?;
+            ensure!(
+                Self::is_node_inactive(&collator),
+                Error::<T>::CollatorCannotBeNotifiedAsInactive
+            );
+            Self::mark_collator_offline(&collator)
+        }
     }
 
     #[pallet::hooks]
@@ -237,8 +309,9 @@ pub mod pallet {
                 {
                     total_weight.saturating_accrue(T::DbWeight::get().reads(1));
                     if start <= T::CurrentSessionIndex::session_index() {
+                        let authors: &[T::AccountId] = &[orchestrator_chain_author];
                         total_weight
-                            .saturating_accrue(Self::on_author_noted(orchestrator_chain_author));
+                            .saturating_accrue(Self::on_authors_noted(authors.iter().cloned()));
                     }
                 }
             }
@@ -302,13 +375,13 @@ pub mod pallet {
                 }
             }
             if let Ok(inactive_collators) =
-                BoundedBTreeSet::<T::CollatorId, T::MaxCollatorsPerSession>::try_from(
+                BoundedBTreeSet::<Collator<T>, T::MaxCollatorsPerSession>::try_from(
                     T::CurrentCollatorsFetcher::get_all_collators_assigned_to_chains(
                         ForSession::Current,
                     )
                     .difference(&<ActiveCollatorsForCurrentSession<T>>::get())
                     .cloned()
-                    .collect::<BTreeSet<T::CollatorId>>(),
+                    .collect::<BTreeSet<Collator<T>>>(),
                 )
             {
                 InactiveCollators::<T>::insert(current_session_index, inactive_collators);
@@ -353,7 +426,7 @@ pub mod pallet {
                             // Collators assigned to inactive chain are added
                             // to the current active collators storage
                             for collator_id in collator_ids {
-                                if let Err(_) = active_collators.try_insert(collator_id.clone()) {
+                                if active_collators.try_insert(collator_id.clone()).is_err() {
                                     // If we reach MaxCollatorsPerSession limit there must be a bug in the pallet
                                     // so we disable the activity tracking
                                     Self::set_inactivity_tracking_status_inner(
@@ -372,56 +445,143 @@ pub mod pallet {
 
         /// Internal update the current session active collator records.
         /// This function is called when a container chain or orchestrator chain collator is noted.
-        pub fn on_author_noted(author: T::CollatorId) -> Weight {
-            let mut total_weight = T::DbWeight::get().reads_writes(1, 0);
-            let _ = <ActiveCollatorsForCurrentSession<T>>::try_mutate(
-                |active_collators| -> DispatchResult {
-                    if let Err(_) = active_collators.try_insert(author.clone()) {
-                        // If we reach MaxCollatorsPerSession limit there must be a bug in the pallet
-                        // so we disable the activity tracking
-                        Self::set_inactivity_tracking_status_inner(
-                            T::CurrentSessionIndex::session_index(),
-                            false,
-                        );
-                        total_weight.saturating_accrue(T::DbWeight::get().reads_writes(1, 2));
-                        return Err(Error::<T>::MaxCollatorsPerSessionReached.into());
-                    } else {
-                        total_weight.saturating_accrue(T::DbWeight::get().writes(1));
+        pub fn on_authors_noted(authors: impl IntoIterator<Item = T::AccountId>) -> Weight {
+            let authors: BTreeSet<_> = authors.into_iter().collect();
+            if authors.is_empty() {
+                return Weight::zero();
+            }
+
+            let mut total_weight = T::DbWeight::get().reads(1);
+
+            let result = <ActiveCollatorsForCurrentSession<T>>::try_mutate(|active_collators| {
+                let mut temp_set: BTreeSet<Collator<T>> =
+                    core::mem::take(active_collators).into_inner();
+
+                temp_set.extend(authors);
+
+                match BoundedBTreeSet::<Collator<T>, T::MaxCollatorsPerSession>::try_from(temp_set)
+                {
+                    Ok(bounded_set) => {
+                        *active_collators = bounded_set;
+                        Ok(())
                     }
-                    Ok(())
-                },
-            );
-            total_weight
+                    Err(_) => Err(()),
+                }
+            });
+
+            match result {
+                Ok(_) => {
+                    total_weight.saturating_accrue(T::DbWeight::get().writes(1));
+                    total_weight
+                }
+                Err(_) => {
+                    log::error!(
+                        "Limit of active collators per session reached. Disabling activity tracking."
+                    );
+                    // If we reach MaxCollatorsPerSession limit there must be a bug in the pallet
+                    // so we disable the activity tracking
+                    Self::set_inactivity_tracking_status_inner(
+                        T::CurrentSessionIndex::session_index(),
+                        false,
+                    );
+                    total_weight.saturating_accrue(T::DbWeight::get().writes(2));
+                    total_weight
+                }
+            }
         }
 
         /// Internal update the current session active chains records.
         /// This function is called when a container chain is noted.
-        pub fn on_chain_noted(chain_id: ParaId) -> Weight {
-            let mut total_weight = T::DbWeight::get().reads_writes(1, 0);
-            let _ = <ActiveContainerChainsForCurrentSession<T>>::try_mutate(
-                |active_chains| -> DispatchResult {
-                    if let Err(_) = active_chains.try_insert(chain_id) {
-                        // If we reach MaxContainerChains limit there must be a bug in the pallet
-                        // so we disable the activity tracking
-                        Self::set_inactivity_tracking_status_inner(
-                            T::CurrentSessionIndex::session_index(),
-                            false,
-                        );
-                        total_weight.saturating_accrue(T::DbWeight::get().reads_writes(1, 2));
-                        return Err(Error::<T>::MaxContainerChainsReached.into());
-                    } else {
-                        total_weight += T::DbWeight::get().writes(1);
+        pub fn on_chains_noted(chains: impl IntoIterator<Item = ParaId>) -> Weight {
+            let chains: BTreeSet<_> = chains.into_iter().collect();
+            if chains.is_empty() {
+                return Weight::zero();
+            }
+
+            let mut total_weight = T::DbWeight::get().reads(1);
+
+            let result = <ActiveContainerChainsForCurrentSession<T>>::try_mutate(|active_chains| {
+                let mut temp_set: BTreeSet<ParaId> = core::mem::take(active_chains).into_inner();
+
+                temp_set.extend(chains);
+
+                match BoundedBTreeSet::<ParaId, T::MaxContainerChains>::try_from(temp_set) {
+                    Ok(bounded_set) => {
+                        *active_chains = bounded_set;
+                        Ok(())
                     }
-                    Ok(())
-                },
-            );
+                    Err(_) => Err(()),
+                }
+            });
+
+            match result {
+                Ok(_) => {
+                    total_weight.saturating_accrue(T::DbWeight::get().writes(1));
+                }
+                Err(_) => {
+                    // If we reach MaxContainerChains limit there must be a bug in the pallet
+                    // so we disable the activity tracking
+                    log::error!(
+                        "Limit of active container chains reached. Disabling activity tracking."
+                    );
+                    Self::set_inactivity_tracking_status_inner(
+                        T::CurrentSessionIndex::session_index(),
+                        false,
+                    );
+                    total_weight.saturating_accrue(T::DbWeight::get().writes(2));
+                }
+            }
+
             total_weight
+        }
+
+        /// Internal function to mark a collator as offline.
+        pub fn mark_collator_offline(collator: &Collator<T>) -> DispatchResultWithPostInfo {
+            ensure!(
+                <EnableMarkingOffline<T>>::get(),
+                Error::<T>::MarkingOfflineNotEnabled
+            );
+            ensure!(
+                T::CollatorStakeHelper::is_candidate_selected(collator),
+                Error::<T>::CollatorNotEligibleCandidate
+            );
+            ensure!(
+                !<OfflineCollators<T>>::get(collator.clone()),
+                Error::<T>::CollatorNotOnline
+            );
+            ensure!(
+                !T::InvulnerablesFilter::is_invulnerable(collator),
+                Error::<T>::MarkingInvulnerableOfflineInvalid
+            );
+            <OfflineCollators<T>>::insert(collator.clone(), true);
+            // Updates the SortedEligibleCandidates list. Has to be called after the collator is marked offline.
+            T::CollatorStakeHelper::on_online_status_change(collator, false)?;
+            Self::deposit_event(Event::<T>::CollatorStatusUpdated {
+                collator: collator.clone(),
+                is_offline: true,
+            });
+            Ok(().into())
+        }
+
+        pub fn mark_collator_online(collator: &Collator<T>) -> DispatchResultWithPostInfo {
+            ensure!(
+                <OfflineCollators<T>>::get(collator),
+                Error::<T>::CollatorNotOffline
+            );
+            <OfflineCollators<T>>::remove(collator.clone());
+            // Updates the SortedEligibleCandidates list. Has to be called after the collator is marked online.
+            T::CollatorStakeHelper::on_online_status_change(collator, true)?;
+            Self::deposit_event(Event::<T>::CollatorStatusUpdated {
+                collator: collator.clone(),
+                is_offline: false,
+            });
+            Ok(().into())
         }
     }
 }
 
-impl<T: Config> NodeActivityTrackingHelper<T::CollatorId> for Pallet<T> {
-    fn is_node_inactive(node: &T::CollatorId) -> bool {
+impl<T: Config> NodeActivityTrackingHelper<Collator<T>> for Pallet<T> {
+    fn is_node_inactive(node: &Collator<T>) -> bool {
         // If inactivity tracking is not enabled all nodes are considered active.
         // We don't need to check the activity records and can return false
         // Inactivity tracking is not enabled if
@@ -447,24 +607,58 @@ impl<T: Config> NodeActivityTrackingHelper<T::CollatorId> for Pallet<T> {
         }
         true
     }
+    fn is_node_offline(node: &Collator<T>) -> bool {
+        <OfflineCollators<T>>::get(node)
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn make_node_online(node: &Collator<T>) {
+        let _ = Self::mark_collator_online(node);
+    }
+
+    #[cfg(feature = "runtime-benchmarks")]
+    fn make_node_inactive(node: &Collator<T>) {
+        // First we need to make sure that eniugh sessions had pass
+        // so the node can be marked as inactive
+        let max_inactive_sessions = T::MaxInactiveSessions::get();
+        if T::CurrentSessionIndex::session_index() < max_inactive_sessions {
+            T::CurrentSessionIndex::skip_to_session(max_inactive_sessions)
+        }
+
+        // Now we can insert the node as inactive for all sessions in the current inactivity window
+        let mut inactive_nodes_set: BoundedBTreeSet<
+            Collator<T>,
+            <T as Config>::MaxCollatorsPerSession,
+        > = BoundedBTreeSet::new();
+        let _ = inactive_nodes_set.try_insert(node.clone());
+        for session_index in 0..max_inactive_sessions {
+            <InactiveCollators<T>>::insert(session_index, inactive_nodes_set.clone());
+        }
+    }
 }
 
-impl<T: Config> AuthorNotingHook<T::CollatorId> for Pallet<T> {
-    fn on_container_authors_noted(info: &[AuthorNotingInfo<T::CollatorId>]) -> Weight {
+impl<T: Config> AuthorNotingHook<Collator<T>> for Pallet<T> {
+    fn on_container_authors_noted(info: &[AuthorNotingInfo<Collator<T>>]) -> Weight {
         let mut total_weight = T::DbWeight::get().reads_writes(1, 0);
         if let ActivityTrackingStatus::Enabled { start, end: _ } =
             <CurrentActivityTrackingStatus<T>>::get()
         {
             if start <= T::CurrentSessionIndex::session_index() {
-                for author_info in info {
-                    total_weight
-                        .saturating_accrue(Self::on_author_noted(author_info.author.clone()));
-                    total_weight.saturating_accrue(Self::on_chain_noted(author_info.para_id));
-                }
+                let (authors, chains): (BTreeSet<_>, BTreeSet<_>) = info
+                    .iter()
+                    .map(
+                        |AuthorNotingInfo {
+                             author, para_id, ..
+                         }| (author.clone(), *para_id),
+                    )
+                    .unzip();
+
+                total_weight.saturating_accrue(Self::on_authors_noted(authors));
+                total_weight.saturating_accrue(Self::on_chains_noted(chains));
             }
         }
         total_weight
     }
     #[cfg(feature = "runtime-benchmarks")]
-    fn prepare_worst_case_for_bench(_a: &T::CollatorId, _b: BlockNumber, _para_id: ParaId) {}
+    fn prepare_worst_case_for_bench(_a: &Collator<T>, _b: BlockNumber, _para_id: ParaId) {}
 }

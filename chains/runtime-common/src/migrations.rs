@@ -37,6 +37,8 @@
 extern crate alloc;
 
 use {
+    alloc::{boxed::Box, collections::btree_set::BTreeSet, vec, vec::Vec},
+    core::marker::PhantomData,
     cumulus_primitives_core::ParaId,
     frame_support::{
         migration::{clear_storage_prefix, move_pallet, storage_key_iter},
@@ -55,8 +57,8 @@ use {
     pallet_registrar::HoldReason,
     sp_core::Get,
     sp_runtime::Perbill,
-    sp_std::{collections::btree_set::BTreeSet, marker::PhantomData, prelude::*},
 };
+
 #[cfg(feature = "try-runtime")]
 use {frame_support::ensure, parity_scale_codec::DecodeAll};
 
@@ -553,6 +555,66 @@ where
         Ok(())
     }
 }
+
+pub struct MigrateSnowbridgeFeePerGasMigrationV0ToV1<T>(PhantomData<T>);
+impl<T> Migration for MigrateSnowbridgeFeePerGasMigrationV0ToV1<T>
+where
+    T: snowbridge_pallet_system::Config,
+{
+    fn friendly_name(&self) -> &str {
+        "MM_MigrateSnowbridgeFeePerGasMigrationV0ToV1"
+    }
+
+    fn migrate(&self, _available_weight: Weight) -> Weight {
+        snowbridge_pallet_system::migration::FeePerGasMigrationV0ToV1::<T>::on_runtime_upgrade()
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        snowbridge_pallet_system::migration::FeePerGasMigrationV0ToV1::<T>::pre_upgrade()
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(&self, state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        snowbridge_pallet_system::migration::FeePerGasMigrationV0ToV1::<T>::post_upgrade(state)
+    }
+}
+
+pub struct MigratePalletSessionV0toV1<T>(PhantomData<T>);
+impl<T: frame_system::Config + pallet_session::Config> Migration for MigratePalletSessionV0toV1<T>
+where
+    pallet_session::migrations::v1::MigrateV0ToV1<
+        T,
+        pallet_session::migrations::v1::InitOffenceSeverity<T>,
+    >: frame_support::traits::OnRuntimeUpgrade,
+{
+    fn friendly_name(&self) -> &str {
+        "MM_MigratePalletSessionV0ToV1"
+    }
+
+    fn migrate(&self, _available_weight: Weight) -> Weight {
+        pallet_session::migrations::v1::MigrateV0ToV1::<
+            T,
+            pallet_session::migrations::v1::InitOffenceSeverity<T>,
+        >::on_runtime_upgrade()
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        pallet_session::migrations::v1::MigrateV0ToV1::<
+            T,
+            pallet_session::migrations::v1::InitOffenceSeverity<T>,
+        >::pre_upgrade()
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(&self, state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        pallet_session::migrations::v1::MigrateV0ToV1::<
+            T,
+            pallet_session::migrations::v1::InitOffenceSeverity<T>,
+        >::post_upgrade(state)
+    }
+}
 pub struct MigrateToLatestXcmVersion<Runtime>(PhantomData<Runtime>);
 impl<Runtime> Migration for MigrateToLatestXcmVersion<Runtime>
 where
@@ -799,51 +861,6 @@ where
     }
 }
 
-pub struct ExternalValidatorsInitialMigration<Runtime>(pub PhantomData<Runtime>);
-
-impl<Runtime> Migration for ExternalValidatorsInitialMigration<Runtime>
-where
-    Runtime: pallet_external_validators::Config,
-    Runtime: pallet_session::Config<
-        ValidatorId = <Runtime as pallet_external_validators::Config>::ValidatorId,
-    >,
-{
-    fn friendly_name(&self) -> &str {
-        "TM_ExternalValidatorsInitialMigration"
-    }
-
-    fn migrate(&self, _available_weight: Weight) -> Weight {
-        use frame_support::pallet_prelude::*;
-
-        // Set initial WhitelistedValidators to current validators from pallet session
-        let session_keys = pallet_session::QueuedKeys::<Runtime>::get();
-        let session_validators = BoundedVec::truncate_from(
-            session_keys
-                .into_iter()
-                .map(|(validator, _keys)| validator)
-                .collect(),
-        );
-        pallet_external_validators::WhitelistedValidators::<Runtime>::put(session_validators);
-
-        // Kill storage of ValidatorManager pallet
-        let pallet_prefix: &[u8] = b"ValidatorManager";
-        let _ = clear_storage_prefix(pallet_prefix, b"", b"", None, None);
-
-        // One db read and one db write per element, plus the on-chain storage
-        Runtime::DbWeight::get().reads_writes(1, 1)
-    }
-
-    #[cfg(feature = "try-runtime")]
-    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
-        Ok(vec![])
-    }
-
-    #[cfg(feature = "try-runtime")]
-    fn post_upgrade(&self, _state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
-        Ok(())
-    }
-}
-
 pub struct MigrateMMRLeafPallet<T>(pub PhantomData<T>);
 
 impl<T: frame_system::Config> Migration for MigrateMMRLeafPallet<T> {
@@ -875,62 +892,6 @@ impl<T: frame_system::Config> Migration for MigrateMMRLeafPallet<T> {
 impl<T> MigrateMMRLeafPallet<T> {
     pub fn old_pallet_name() -> &'static str {
         "MMRLeaf"
-    }
-}
-
-pub struct BondedErasTimestampMigration<Runtime>(pub PhantomData<Runtime>);
-
-impl<Runtime> Migration for BondedErasTimestampMigration<Runtime>
-where
-    Runtime: pallet_external_validator_slashes::Config,
-{
-    fn friendly_name(&self) -> &str {
-        "TM_ExternalValidatorSlashesBondedErasTimestampMigration"
-    }
-
-    fn migrate(&self, _available_weight: Weight) -> Weight {
-        use frame_support::pallet_prelude::*;
-
-        let bonded_eras: Vec<(sp_staking::EraIndex, sp_staking::SessionIndex)> =
-            frame_support::storage::unhashed::get(
-                &pallet_external_validator_slashes::BondedEras::<Runtime>::hashed_key(),
-            )
-            .unwrap_or_default();
-        let new_eras = bonded_eras
-            .iter()
-            .map(|(era, session)| (*era, *session, 0u64))
-            .collect();
-        pallet_external_validator_slashes::BondedEras::<Runtime>::set(new_eras);
-
-        // One db read and one db write per element, plus the on-chain storage
-        Runtime::DbWeight::get().reads_writes(1, 1)
-    }
-
-    #[cfg(feature = "try-runtime")]
-    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
-        use frame_support::pallet_prelude::*;
-
-        let previous_bonded_eras: Vec<(sp_staking::EraIndex, sp_staking::SessionIndex)> =
-            frame_support::storage::unhashed::get(
-                &pallet_external_validator_slashes::BondedEras::<Runtime>::hashed_key(),
-            )
-            .unwrap_or_default();
-
-        Ok(previous_bonded_eras.encode())
-    }
-
-    #[cfg(feature = "try-runtime")]
-    fn post_upgrade(&self, state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
-        use parity_scale_codec::Decode;
-        let previous_bonded_eras: Vec<(sp_staking::EraIndex, sp_staking::SessionIndex)> =
-            Decode::decode(&mut &state[..]).expect("state to be decoded properly");
-        let new_eras = pallet_external_validator_slashes::BondedEras::<Runtime>::get();
-        for (i, bonded) in new_eras.iter().enumerate() {
-            assert_eq!(previous_bonded_eras[i].0, bonded.0);
-            assert_eq!(previous_bonded_eras[i].1, bonded.1);
-            assert_eq!(bonded.2, 0u64);
-        }
-        Ok(())
     }
 }
 
@@ -1007,7 +968,7 @@ pub mod snowbridge_system_migration {
                         _ => None,
                     };
                     snowbridge_pallet_system::NativeToForeignId::<T>::insert(
-                        &new_location.expect("valid location"),
+                        new_location.expect("valid location"),
                         old_val,
                     );
                 }
@@ -1197,6 +1158,7 @@ where
     Runtime: pallet_balances::Config,
     Runtime: pallet_configuration::Config,
     Runtime: pallet_registrar::Config,
+    Runtime: pallet_session::Config,
     Runtime: pallet_services_payment::Config,
     Runtime: pallet_data_preservers::Config,
     Runtime: pallet_stream_payment::Config,
@@ -1224,6 +1186,7 @@ where
         //let migrate_config_max_parachain_percentage = MigrateConfigurationAddParachainPercentage::<Runtime>(Default::default());
         //let migrate_config_full_rotation_mode = MigrateConfigurationAddFullRotationMode::<Runtime>(Default::default());
         //let migrate_stream_payment_new_config_items = MigrateStreamPaymentNewConfigFields::<Runtime>(Default::default());
+        let migrate_pallet_session_v0_to_v1 = MigratePalletSessionV0toV1::<Runtime>(Default::default());
 
         vec![
             // Applied in runtime 400
@@ -1248,6 +1211,7 @@ where
             //Box::new(migrate_config_full_rotation_mode),
             // Applied in runtime 1200
             //Box::new(migrate_stream_payment_new_config_items),
+            Box::new(migrate_pallet_session_v0_to_v1),
         ]
     }
 }
@@ -1257,6 +1221,7 @@ pub struct DanceboxMigrations<Runtime>(PhantomData<Runtime>);
 impl<Runtime> GetMigrations for DanceboxMigrations<Runtime>
 where
     Runtime: pallet_pooled_staking::Config,
+    Runtime: pallet_session::Config,
     Runtime: pallet_registrar::Config,
     Runtime: pallet_balances::Config,
     Runtime: pallet_configuration::Config,
@@ -1305,6 +1270,7 @@ where
         //let migrate_config_full_rotation_mode = MigrateConfigurationAddFullRotationMode::<Runtime>(Default::default());
         //let migrate_stream_payment_new_config_items = MigrateStreamPaymentNewConfigFields::<Runtime>(Default::default());
         //let migrate_pallet_xcm_v5 = MigrateToLatestXcmVersion::<Runtime>(Default::default());
+        let migrate_pallet_session_v0_to_v1 = MigratePalletSessionV0toV1::<Runtime>(Default::default());
 
         vec![
             // Applied in runtime 200
@@ -1349,77 +1315,199 @@ where
             //Box::new(migrate_stream_payment_new_config_items),
             // Applied in runtime 1200
             //Box::new(migrate_pallet_xcm_v5),
+            Box::new(migrate_pallet_session_v0_to_v1),
         ]
     }
 }
 
-pub struct DancelightMigrations<Runtime>(PhantomData<Runtime>);
+#[cfg(feature = "relay")]
+pub use relay::*;
+#[cfg(feature = "relay")]
+mod relay {
+    use super::*;
 
-impl<Runtime> GetMigrations for DancelightMigrations<Runtime>
-where
-    Runtime: frame_system::Config,
-    Runtime: pallet_external_validators::Config,
-    Runtime: pallet_configuration::Config,
-    Runtime: pallet_session::Config<
-        ValidatorId = <Runtime as pallet_external_validators::Config>::ValidatorId,
-    >,
-    Runtime: pallet_external_validator_slashes::Config,
-    Runtime: snowbridge_pallet_system::Config,
-    Runtime: runtime_parachains::scheduler::Config,
-    Runtime: runtime_parachains::shared::Config,
-    Runtime: pallet_xcm::Config,
-{
-    fn get_migrations() -> Vec<Box<dyn Migration>> {
-        /*let migrate_config_full_rotation_mode =
-        MigrateConfigurationAddFullRotationMode::<Runtime>(Default::default());*/
+    pub struct ExternalValidatorsInitialMigration<Runtime>(pub PhantomData<Runtime>);
 
-        /*let external_validator_slashes_bonded_eras_timestamp =
-        BondedErasTimestampMigration::<Runtime>(Default::default());*/
-        /*let snowbridge_ethereum_system_xcm_v5 =
-        SnowbridgeEthereumSystemXcmV5::<Runtime>(Default::default());*/
-        //let migrate_pallet_xcm_v5 = MigrateToLatestXcmVersion::<Runtime>(Default::default());
-        //let para_shared_v1_migration = MigrateParaSharedToV1::<Runtime>(Default::default());
-        //let para_scheduler_v3_migration = MigrateParaSchedulerToV3::<Runtime>(Default::default());
+    impl<Runtime> Migration for ExternalValidatorsInitialMigration<Runtime>
+    where
+        Runtime: pallet_external_validators::Config,
+        Runtime: pallet_session::Config<
+            ValidatorId = <Runtime as pallet_external_validators::Config>::ValidatorId,
+        >,
+    {
+        fn friendly_name(&self) -> &str {
+            "TM_ExternalValidatorsInitialMigration"
+        }
 
-        let eth_system_genesis_hashes = MigrateEthSystemGenesisHashes::<
-            Runtime,
-            snowbridge_system_migration::DancelightLocation,
-        >(Default::default());
+        fn migrate(&self, _available_weight: Weight) -> Weight {
+            use frame_support::pallet_prelude::*;
 
-        vec![
-            // Applied in runtime 1000
-            //Box::new(migrate_mmr_leaf_pallet),
-            // Applied in runtime 900
-            //Box::new(migrate_external_validators),
-            // Applied in runtime 1100
-            //Box::new(migrate_config_full_rotation_mode),
-            // Applied in runtime  1100
-            //Box::new(external_validator_slashes_bonded_eras_timestamp),
-            // Applied in runtime 1200
-            //Box::new(snowbridge_ethereum_system_xcm_v5),
-            // Applied in runtime 1200
-            //Box::new(migrate_pallet_xcm_v5),
-            // Apllied in runtime 1200
-            // Box::new(para_shared_v1_migration),
-            // Applied in runtime 1200
-            //Box::new(para_scheduler_v3_migration),
-            Box::new(eth_system_genesis_hashes),
-        ]
+            // Set initial WhitelistedValidators to current validators from pallet session
+            let session_keys = pallet_session::QueuedKeys::<Runtime>::get();
+            let session_validators = BoundedVec::truncate_from(
+                session_keys
+                    .into_iter()
+                    .map(|(validator, _keys)| validator)
+                    .collect(),
+            );
+            pallet_external_validators::WhitelistedValidators::<Runtime>::put(session_validators);
+
+            // Kill storage of ValidatorManager pallet
+            let pallet_prefix: &[u8] = b"ValidatorManager";
+            let _ = clear_storage_prefix(pallet_prefix, b"", b"", None, None);
+
+            // One db read and one db write per element, plus the on-chain storage
+            Runtime::DbWeight::get().reads_writes(1, 1)
+        }
+
+        #[cfg(feature = "try-runtime")]
+        fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+            Ok(vec![])
+        }
+
+        #[cfg(feature = "try-runtime")]
+        fn post_upgrade(&self, _state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+            Ok(())
+        }
     }
-}
 
-pub struct StarlightMigrations<Runtime>(PhantomData<Runtime>);
+    pub struct BondedErasTimestampMigration<Runtime>(pub PhantomData<Runtime>);
 
-impl<Runtime> GetMigrations for StarlightMigrations<Runtime>
-where
-    Runtime: frame_system::Config,
-    Runtime: snowbridge_pallet_system::Config,
-{
-    fn get_migrations() -> Vec<Box<dyn Migration>> {
-        let eth_system_genesis_hashes = MigrateEthSystemGenesisHashes::<
-            Runtime,
-            snowbridge_system_migration::StarlightLocation,
-        >(Default::default());
-        vec![Box::new(eth_system_genesis_hashes)]
+    impl<Runtime> Migration for BondedErasTimestampMigration<Runtime>
+    where
+        Runtime: pallet_external_validator_slashes::Config,
+    {
+        fn friendly_name(&self) -> &str {
+            "TM_ExternalValidatorSlashesBondedErasTimestampMigration"
+        }
+
+        fn migrate(&self, _available_weight: Weight) -> Weight {
+            use frame_support::pallet_prelude::*;
+
+            let bonded_eras: Vec<(sp_staking::EraIndex, sp_staking::SessionIndex)> =
+                frame_support::storage::unhashed::get(
+                    &pallet_external_validator_slashes::BondedEras::<Runtime>::hashed_key(),
+                )
+                .unwrap_or_default();
+            let new_eras = bonded_eras
+                .iter()
+                .map(|(era, session)| (*era, *session, 0u64))
+                .collect();
+            pallet_external_validator_slashes::BondedEras::<Runtime>::set(new_eras);
+
+            // One db read and one db write per element, plus the on-chain storage
+            Runtime::DbWeight::get().reads_writes(1, 1)
+        }
+
+        #[cfg(feature = "try-runtime")]
+        fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+            use frame_support::pallet_prelude::*;
+
+            let previous_bonded_eras: Vec<(sp_staking::EraIndex, sp_staking::SessionIndex)> =
+                frame_support::storage::unhashed::get(
+                    &pallet_external_validator_slashes::BondedEras::<Runtime>::hashed_key(),
+                )
+                .unwrap_or_default();
+
+            Ok(previous_bonded_eras.encode())
+        }
+
+        #[cfg(feature = "try-runtime")]
+        fn post_upgrade(&self, state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+            use parity_scale_codec::Decode;
+            let previous_bonded_eras: Vec<(sp_staking::EraIndex, sp_staking::SessionIndex)> =
+                Decode::decode(&mut &state[..]).expect("state to be decoded properly");
+            let new_eras = pallet_external_validator_slashes::BondedEras::<Runtime>::get();
+            for (i, bonded) in new_eras.iter().enumerate() {
+                assert_eq!(previous_bonded_eras[i].0, bonded.0);
+                assert_eq!(previous_bonded_eras[i].1, bonded.1);
+                assert_eq!(bonded.2, 0u64);
+            }
+            Ok(())
+        }
+    }
+
+    pub struct DancelightMigrations<Runtime>(PhantomData<Runtime>);
+
+    impl<Runtime> GetMigrations for DancelightMigrations<Runtime>
+    where
+        Runtime: frame_system::Config,
+        Runtime: pallet_external_validators::Config,
+        Runtime: pallet_configuration::Config,
+        Runtime: pallet_session::Config<
+            ValidatorId = <Runtime as pallet_external_validators::Config>::ValidatorId,
+        >,
+        Runtime: pallet_external_validator_slashes::Config,
+        Runtime: snowbridge_pallet_system::Config,
+        Runtime: runtime_parachains::scheduler::Config,
+        Runtime: runtime_parachains::shared::Config,
+        Runtime: pallet_xcm::Config,
+    {
+        fn get_migrations() -> Vec<Box<dyn Migration>> {
+            /*let migrate_config_full_rotation_mode =
+            MigrateConfigurationAddFullRotationMode::<Runtime>(Default::default());*/
+            /*let external_validator_slashes_bonded_eras_timestamp =
+            BondedErasTimestampMigration::<Runtime>(Default::default());*/
+            /*let snowbridge_ethereum_system_xcm_v5 =
+            SnowbridgeEthereumSystemXcmV5::<Runtime>(Default::default());*/
+            //let migrate_pallet_xcm_v5 = MigrateToLatestXcmVersion::<Runtime>(Default::default());
+            //let para_shared_v1_migration = MigrateParaSharedToV1::<Runtime>(Default::default());
+            //let para_scheduler_v3_migration = MigrateParaSchedulerToV3::<Runtime>(Default::default());
+            let migrate_pallet_session_v0_to_v1 =
+                MigratePalletSessionV0toV1::<Runtime>(Default::default());
+            let migrate_snowbridge_fee_per_gas_migration_v0_to_v1 =
+                MigrateSnowbridgeFeePerGasMigrationV0ToV1::<Runtime>(Default::default());
+            let eth_system_genesis_hashes = MigrateEthSystemGenesisHashes::<
+                Runtime,
+                snowbridge_system_migration::DancelightLocation,
+            >(Default::default());
+
+            vec![
+                // Applied in runtime 1000
+                //Box::new(migrate_mmr_leaf_pallet),
+                // Applied in runtime 900
+                //Box::new(migrate_external_validators),
+                // Applied in runtime 1100
+                //Box::new(migrate_config_full_rotation_mode),
+                // Applied in runtime  1100
+                //Box::new(external_validator_slashes_bonded_eras_timestamp),
+                // Applied in runtime 1200
+                //Box::new(snowbridge_ethereum_system_xcm_v5),
+                // Applied in runtime 1200
+                //Box::new(migrate_pallet_xcm_v5),
+                // Apllied in runtime 1200
+                // Box::new(para_shared_v1_migration),
+                // Applied in runtime 1200
+                //Box::new(para_scheduler_v3_migration),
+                Box::new(migrate_pallet_session_v0_to_v1),
+                Box::new(migrate_snowbridge_fee_per_gas_migration_v0_to_v1),
+                Box::new(eth_system_genesis_hashes),
+            ]
+        }
+    }
+
+    pub struct StarlightMigrations<Runtime>(PhantomData<Runtime>);
+
+    impl<Runtime> GetMigrations for StarlightMigrations<Runtime>
+    where
+        Runtime: frame_system::Config,
+        Runtime: pallet_session::Config,
+        Runtime: snowbridge_pallet_system::Config,
+    {
+        fn get_migrations() -> Vec<Box<dyn Migration>> {
+            let migrate_pallet_session_v0_to_v1 =
+                MigratePalletSessionV0toV1::<Runtime>(Default::default());
+            let migrate_snowbridge_fee_per_gas_migration_v0_to_v1 =
+                MigrateSnowbridgeFeePerGasMigrationV0ToV1::<Runtime>(Default::default());
+            let eth_system_genesis_hashes = MigrateEthSystemGenesisHashes::<
+                Runtime,
+                snowbridge_system_migration::StarlightLocation,
+            >(Default::default());
+            vec![
+                Box::new(migrate_pallet_session_v0_to_v1),
+                Box::new(migrate_snowbridge_fee_per_gas_migration_v0_to_v1),
+                Box::new(eth_system_genesis_hashes),
+            ]
+        }
     }
 }

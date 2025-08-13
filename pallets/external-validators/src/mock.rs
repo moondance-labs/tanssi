@@ -18,9 +18,7 @@ use {
     crate as pallet_external_validators,
     frame_support::{
         assert_ok, ord_parameter_types, parameter_types,
-        traits::{
-            fungible::Mutate, ConstU32, ConstU64, OnFinalize, OnInitialize, ValidatorRegistration,
-        },
+        traits::{fungible::Mutate, ConstU32, ConstU64, ValidatorRegistration},
     },
     frame_system::{self as system, EnsureSignedBy},
     pallet_balances::AccountData,
@@ -195,6 +193,7 @@ impl pallet_session::Config for Test {
     type SessionHandler = TestSessionHandler;
     type Keys = MockSessionKeys;
     type WeightInfo = ();
+    type DisablingStrategy = ();
 }
 
 // Pallet to provide some mock data, used to test
@@ -294,9 +293,12 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
         keys,
         ..Default::default()
     };
-    pallet_balances::GenesisConfig::<Test> { balances }
-        .assimilate_storage(&mut t)
-        .unwrap();
+    pallet_balances::GenesisConfig::<Test> {
+        balances,
+        ..Default::default()
+    }
+    .assimilate_storage(&mut t)
+    .unwrap();
     pallet_external_validators::GenesisConfig::<Test> {
         skip_external_validators: false,
         whitelisted_validators,
@@ -336,19 +338,12 @@ pub fn run_to_session(n: u32) {
 }
 
 pub fn run_to_block(n: u64) {
-    let old_block_number = System::block_number();
-
-    for x in old_block_number..n {
-        ExternalValidators::on_finalize(System::block_number());
-        Session::on_finalize(System::block_number());
-
-        System::reset_events();
-        System::set_block_number(x + 1);
-        Timestamp::set_timestamp(System::block_number() * BLOCK_TIME + INIT_TIMESTAMP);
-
-        ExternalValidators::on_initialize(System::block_number());
-        Session::on_initialize(System::block_number());
-    }
+    System::run_to_block_with::<AllPalletsWithSystem>(
+        n,
+        frame_system::RunToBlockHooks::default().before_initialize(|bn| {
+            Timestamp::set_timestamp(bn * BLOCK_TIME + INIT_TIMESTAMP);
+        }),
+    );
 }
 
 pub fn last_event() -> RuntimeEvent {

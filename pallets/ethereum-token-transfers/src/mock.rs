@@ -16,22 +16,21 @@
 
 use {
     crate as pallet_ethereum_token_transfers,
+    core::cell::RefCell,
     frame_support::{
         parameter_types,
         traits::{ConstU32, ConstU64},
     },
     pallet_balances::AccountData,
     parity_scale_codec::{Decode, Encode},
-    snowbridge_core::{
-        outbound::{Fee, Message, SendError, SendMessageFeeProvider},
-        AgentId, ChannelId, ParaId, TokenId,
-    },
+    snowbridge_core::{AgentId, ChannelId, ParaId, TokenId},
+    snowbridge_outbound_queue_primitives::v1::{Fee, Message},
+    snowbridge_outbound_queue_primitives::{SendError, SendMessageFeeProvider},
     sp_core::H256,
     sp_runtime::{
         traits::{BlakeTwo256, IdentityLookup, MaybeEquivalence},
         BuildStorage,
     },
-    sp_std::cell::RefCell,
     tp_bridge::{ChannelInfo, EthereumSystemChannelManager, TicketInfo},
     xcm::prelude::*,
 };
@@ -143,7 +142,7 @@ impl TicketInfo for DummyTicket {
 }
 
 pub struct MockOkOutboundQueue;
-impl snowbridge_core::outbound::SendMessage for MockOkOutboundQueue {
+impl snowbridge_outbound_queue_primitives::v1::SendMessage for MockOkOutboundQueue {
     type Ticket = DummyTicket;
 
     fn deliver(_: Self::Ticket) -> Result<H256, SendError> {
@@ -224,9 +223,12 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
         .unwrap();
 
     let balances = vec![(1, 100), (2, 100), (3, 100), (4, 100), (5, 100)];
-    pallet_balances::GenesisConfig::<Test> { balances }
-        .assimilate_storage(&mut t)
-        .unwrap();
+    pallet_balances::GenesisConfig::<Test> {
+        balances,
+        ..Default::default()
+    }
+    .assimilate_storage(&mut t)
+    .unwrap();
 
     let ext: sp_io::TestExternalities = t.into();
 
@@ -235,15 +237,6 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 
 pub const ALICE: u64 = 1;
 
-pub const INIT_TIMESTAMP: u64 = 30_000;
-pub const BLOCK_TIME: u64 = 1000;
-
 pub fn run_to_block(n: u64) {
-    let old_block_number = System::block_number();
-
-    for x in old_block_number..n {
-        System::reset_events();
-        System::set_block_number(x + 1);
-        Timestamp::set_timestamp(System::block_number() * BLOCK_TIME + INIT_TIMESTAMP);
-    }
+    System::run_to_block_with::<AllPalletsWithSystem>(n, frame_system::RunToBlockHooks::default());
 }

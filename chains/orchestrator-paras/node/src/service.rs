@@ -17,9 +17,7 @@
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
 use {
-    crate::command::solochain::{
-        build_solochain_config_dir, copy_zombienet_keystore, dummy_config, keystore_config,
-    },
+    crate::command::solochain::{copy_zombienet_keystore, dummy_config},
     core::marker::PhantomData,
     cumulus_client_cli::CollatorOptions,
     cumulus_client_collator::service::CollatorService,
@@ -60,6 +58,7 @@ use {
         AuxStore, Backend as BackendT, BlockchainEvents, HeaderBackend, UsageProvider,
     },
     sc_consensus::BasicQueue,
+    sc_network::NetworkBackend,
     sc_network::NetworkBlock,
     sc_network_common::role::Role,
     sc_network_sync::SyncingService,
@@ -246,7 +245,7 @@ pub fn import_queue(
 /// Start a node with the given parachain `Configuration` and relay chain `Configuration`.
 ///
 /// This is the actual implementation that is abstract over the executor and the runtime api.
-async fn start_node_impl(
+async fn start_node_impl<Net>(
     orchestrator_config: Configuration,
     polkadot_config: Configuration,
     container_chain_config: Option<(ContainerChainCli, tokio::runtime::Handle)>,
@@ -254,7 +253,10 @@ async fn start_node_impl(
     para_id: ParaId,
     hwbench: Option<sc_sysinfo::HwBench>,
     max_pov_percentage: Option<u32>,
-) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> {
+) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)>
+where
+    Net: NetworkBackend<Block, Hash>,
+{
     let parachain_config = prepare_node_config(orchestrator_config);
     let chain_type: sc_chain_spec::ChainType = parachain_config.chain_spec.chain_type();
     let relay_chain = crate::chain_spec::Extensions::try_get(&*parachain_config.chain_spec)
@@ -277,7 +279,7 @@ async fn start_node_impl(
     let force_authoring = parachain_config.force_authoring;
 
     let node_builder = node_builder
-        .build_cumulus_network::<_, sc_network::NetworkWorker<_, _>>(
+        .build_cumulus_network::<_, Net>(
             &parachain_config,
             para_id,
             import_queue,
@@ -412,8 +414,6 @@ async fn start_node_impl(
         // Save callback for later, used when collator rotates from container chain back to orchestrator chain
         collate_on_tanssi = Arc::new(start_collation);
     }
-
-    node_builder.network.start_network.start_network();
 
     let sync_keystore = node_builder.keystore_container.keystore();
 
@@ -684,7 +684,7 @@ fn start_consensus_orchestrator(
 }
 
 /// Start a parachain node.
-pub async fn start_parachain_node(
+pub async fn start_parachain_node<Net>(
     parachain_config: Configuration,
     polkadot_config: Configuration,
     container_config: Option<(ContainerChainCli, tokio::runtime::Handle)>,
@@ -692,8 +692,11 @@ pub async fn start_parachain_node(
     para_id: ParaId,
     hwbench: Option<sc_sysinfo::HwBench>,
     max_pov_percentage: Option<u32>,
-) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> {
-    start_node_impl(
+) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)>
+where
+    Net: NetworkBackend<Block, Hash>,
+{
+    start_node_impl::<Net>(
         parachain_config,
         polkadot_config,
         container_config,
@@ -722,27 +725,31 @@ pub async fn start_solochain_node(
     let chain_type = polkadot_config.chain_spec.chain_type().clone();
     let relay_chain = polkadot_config.chain_spec.id().to_string();
 
-    let base_path = container_chain_cli
+    // We use the relaychain keystore config for collators
+    // Ensure that the user did not provide any custom keystore path for collators
+    if container_chain_cli
         .base
         .base
-        .shared_params
-        .base_path
-        .as_ref()
-        .expect("base_path is always set");
-    let config_dir = build_solochain_config_dir(base_path);
-    let keystore = keystore_config(container_chain_cli.keystore_params(), &config_dir)
-        .map_err(|e| sc_service::Error::Application(Box::new(e) as Box<_>))?;
+        .keystore_params
+        .keystore_path
+        .is_some()
+    {
+        panic!(
+            "--keystore-path not allowed here, must be set in relaychain args, after the first --"
+        )
+    }
+    let keystore = &polkadot_config.keystore;
 
     // Instead of putting keystore in
     // Collator1000-01/data/chains/simple_container_2000/keystore
     // We put it in
-    // Collator1000-01/data/config/keystore
+    // Collator1000-01/relay-data/chains/dancelight_local_testnet/keystore
     // And same for "network" folder
     // But zombienet will put the keys in the old path, so we need to manually copy it if we
     // are running under zombienet
-    copy_zombienet_keystore(&keystore)?;
+    copy_zombienet_keystore(keystore, container_chain_cli.base_path())?;
 
-    let keystore_container = KeystoreContainer::new(&keystore)?;
+    let keystore_container = KeystoreContainer::new(keystore)?;
 
     // No metrics so no prometheus registry
     let prometheus_registry = None;
@@ -1089,7 +1096,6 @@ pub fn start_dev_node(
                         current_para_block_head: None,
                         relay_offset: 1000,
                         relay_blocks_per_para_block: 2,
-                        // TODO: Recheck
                         para_blocks_per_relay_epoch: 10,
                         relay_randomness_config: (),
                         xcm_config: MockXcmConfig::new(
@@ -1138,9 +1144,6 @@ pub fn start_dev_node(
     let node_builder = node_builder.spawn_common_tasks(parachain_config, rpc_builder)?;
 
     log::info!("Development Service Ready");
-
-    // We start the networking part.
-    node_builder.network.start_network.start_network();
 
     Ok(node_builder.task_manager)
 }

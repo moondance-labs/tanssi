@@ -30,10 +30,8 @@ parity-scale-codec = { workspace = true }
 scale-info = { workspace = true }
 sp-core = { workspace = true }
 sp-runtime = { workspace = true }
-sp-std = { workspace = true }
 
 [dev-dependencies]
-bounded-collections = { workspace = true }
 num-traits = { workspace = true }
 pallet-balances = { workspace = true, features = [ "std" ] }
 similar-asserts = { workspace = true }
@@ -42,7 +40,6 @@ sp-io = { workspace = true, features = [ "std" ] }
 [features]
 default = [ "std" ]
 std = [
-	"bounded-collections/std",
 	"dp-core/std",
 	"frame-benchmarking/std",
 	"frame-support/std",
@@ -56,7 +53,6 @@ std = [
 	"sp-core/std",
 	"sp-io/std",
 	"sp-runtime/std",
-	"sp-std/std",
 	"tp-traits/std",
 ]
 runtime-benchmarks = [

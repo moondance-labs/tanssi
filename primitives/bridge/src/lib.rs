@@ -18,15 +18,19 @@
 //! with each other or with mocks.
 
 #![cfg_attr(not(feature = "std"), no_std)]
+extern crate alloc;
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmarks;
 #[cfg(test)]
 mod tests;
 
+pub mod generic_token_message_processor;
+pub mod snowbridge_outbound_token_transfer;
 pub mod symbiotic_message_processor;
 
 use {
+    alloc::vec::Vec,
     core::marker::PhantomData,
     cumulus_primitives_core::{
         relay_chain::{AccountId, Balance},
@@ -40,24 +44,21 @@ use {
         traits::Contains,
     },
     frame_system::unique,
-    parity_scale_codec::MaxEncodedLen,
+    parity_scale_codec::{DecodeWithMemTracking, MaxEncodedLen},
     scale_info::TypeInfo,
-    snowbridge_core::{
-        outbound::{Fee, SendError},
-        AgentId, Channel, ChannelId, ParaId,
-    },
-    snowbridge_pallet_outbound_queue::send_message_impl::Ticket,
-    snowbridge_router_primitives::inbound::{
+    snowbridge_core::{AgentId, Channel, ChannelId, ParaId},
+    snowbridge_inbound_queue_primitives::v1::{
         ConvertMessage, ConvertMessageError, VersionedXcmMessage,
     },
+    snowbridge_outbound_queue_primitives::{v1::Fee, SendError},
+    snowbridge_pallet_outbound_queue::send_message_impl::Ticket,
     sp_core::{blake2_256, hashing, H256},
     sp_runtime::{app_crypto::sp_core, traits::Convert, RuntimeDebug},
-    sp_std::vec::Vec,
 };
 
-// Separate import as rustfmt wrongly change it to `sp_std::vec::self`, which is the module instead
+// Separate import as rustfmt wrongly change it to `alloc::vec::self`, which is the module instead
 // of the macro.
-use sp_std::vec;
+use alloc::vec;
 
 pub use {
     custom_do_process_message::{ConstantGasMeter, CustomProcessSnowbridgeMessage},
@@ -71,7 +72,7 @@ pub use benchmarks::*;
 mod custom_do_process_message;
 mod custom_send_message;
 
-#[derive(Clone, Encode, Decode, RuntimeDebug, TypeInfo, PartialEq)]
+#[derive(Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo, PartialEq)]
 pub struct SlashData {
     pub encoded_validator_id: Vec<u8>,
     pub slash_fraction: u32,
@@ -79,7 +80,7 @@ pub struct SlashData {
 }
 
 /// A command which is executable by the Gateway contract on Ethereum
-#[derive(Clone, Encode, Decode, RuntimeDebug, TypeInfo, PartialEq)]
+#[derive(Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo, PartialEq)]
 pub enum Command {
     // TODO: add real commands here
     Test(Vec<u8>),
@@ -150,7 +151,7 @@ impl Command {
                 let era_index_token = Token::Uint(U256::from(*era_index));
                 let mut slashes_tokens_vec: Vec<Token> = vec![];
 
-                for slash in slashes.into_iter() {
+                for slash in slashes.iter() {
                     let account_token = Token::FixedBytes(slash.encoded_validator_id.clone());
                     let slash_fraction_token = Token::Uint(U256::from(slash.slash_fraction));
                     let external_idx = Token::Uint(U256::from(slash.external_idx));
@@ -391,7 +392,9 @@ impl<AccountId> EthereumLocationsConverterFor<AccountId> {
 }
 
 /// Information of a recently created channel.
-#[derive(Encode, Decode, RuntimeDebug, TypeInfo, Clone, PartialEq, MaxEncodedLen)]
+#[derive(
+    Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo, Clone, PartialEq, MaxEncodedLen,
+)]
 pub struct ChannelInfo {
     pub channel_id: ChannelId,
     pub para_id: ParaId,
@@ -411,11 +414,11 @@ where
 {
     fn create_channel(channel_id: ChannelId, agent_id: AgentId, para_id: ParaId) -> ChannelInfo {
         if let Some(channel) = snowbridge_pallet_system::Channels::<Runtime>::get(channel_id) {
-            return ChannelInfo {
+            ChannelInfo {
                 channel_id,
                 para_id: channel.para_id,
                 agent_id: channel.agent_id,
-            };
+            }
         } else {
             if !snowbridge_pallet_system::Agents::<Runtime>::contains_key(agent_id) {
                 snowbridge_pallet_system::Agents::<Runtime>::insert(agent_id, ());
@@ -424,11 +427,11 @@ where
             let channel = Channel { agent_id, para_id };
             snowbridge_pallet_system::Channels::<Runtime>::insert(channel_id, channel);
 
-            return ChannelInfo {
+            ChannelInfo {
                 channel_id,
                 para_id,
                 agent_id,
-            };
+            }
         }
     }
 }
@@ -445,8 +448,8 @@ where
     Runtime: snowbridge_pallet_system::Config,
 {
     fn set_up_token(location: Location, token_id: snowbridge_core::TokenId) {
-        snowbridge_pallet_system::ForeignToNativeId::<Runtime>::insert(&token_id, &location);
-        snowbridge_pallet_system::NativeToForeignId::<Runtime>::insert(&location, &token_id);
+        snowbridge_pallet_system::ForeignToNativeId::<Runtime>::insert(token_id, &location);
+        snowbridge_pallet_system::NativeToForeignId::<Runtime>::insert(&location, token_id);
     }
 
     fn set_up_channel(channel_id: ChannelId, para_id: ParaId, agent_id: AgentId) {

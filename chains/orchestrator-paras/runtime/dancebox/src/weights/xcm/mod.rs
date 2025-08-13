@@ -19,10 +19,10 @@ pub mod pallet_xcm_benchmarks_generic;
 
 use {
     crate::Runtime,
+    alloc::vec::Vec,
     frame_support::{weights::Weight, BoundedVec},
     pallet_xcm_benchmarks_fungible::WeightInfo as XcmBalancesWeight,
     pallet_xcm_benchmarks_generic::WeightInfo as XcmGeneric,
-    sp_std::prelude::*,
     xcm::{
         latest::{prelude::*, AssetTransferFilter, Weight as XCMWeight},
         DoubleEncoded,
@@ -41,7 +41,7 @@ impl WeighAssets for AssetFilter {
             Self::Definite(assets) => assets.weigh_multi_assets(balances_weight),
             Self::Wild(AllOf { .. } | AllOfCounted { .. }) => balances_weight,
             Self::Wild(AllCounted(count)) => {
-                balances_weight.saturating_mul(MAX_ASSETS.min(*count as u64))
+                balances_weight.saturating_mul(MAX_ASSETS.min(u64::from(*count)))
             }
             Self::Wild(All) => balances_weight.saturating_mul(MAX_ASSETS),
         }
@@ -244,7 +244,7 @@ where
         _dest: &Location,
         remote_fees: &Option<AssetTransferFilter>,
         _preserve_origin: &bool,
-        assets: &Vec<AssetTransferFilter>,
+        assets: &BoundedVec<AssetTransferFilter, MaxAssetTransferFilters>,
         _xcm: &Xcm<()>,
     ) -> Weight {
         let mut weight = if let Some(remote_fees) = remote_fees {

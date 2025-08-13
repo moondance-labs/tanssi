@@ -24,6 +24,7 @@
 //! - Invulnerable: An account appointed by governance and guaranteed to be in the collator set.
 
 #![cfg_attr(not(feature = "std"), no_std)]
+extern crate alloc;
 
 pub use pallet::*;
 use {
@@ -49,6 +50,7 @@ pub mod pallet {
     use frame_support::traits::Currency;
 
     use {
+        alloc::vec::Vec,
         frame_support::{
             pallet_prelude::*,
             traits::{EnsureOrigin, ValidatorRegistration},
@@ -58,7 +60,6 @@ pub mod pallet {
         pallet_session::SessionManager,
         sp_runtime::traits::Convert,
         sp_staking::SessionIndex,
-        sp_std::vec::Vec,
     };
 
     /// The current storage version.
@@ -117,7 +118,7 @@ pub mod pallet {
             let duplicate_invulnerables = self
                 .invulnerables
                 .iter()
-                .collect::<sp_std::collections::btree_set::BTreeSet<_>>();
+                .collect::<alloc::collections::btree_set::BTreeSet<_>>();
             assert!(
                 duplicate_invulnerables.len() == self.invulnerables.len(),
                 "duplicate invulnerables in genesis."
@@ -163,6 +164,7 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::add_invulnerable(
 			T::MaxInvulnerables::get().saturating_sub(1),
 		))]
+        #[allow(clippy::useless_conversion)]
         pub fn add_invulnerable(origin: OriginFor<T>, who: T::AccountId) -> DispatchResult {
             T::UpdateOrigin::ensure_origin(origin)?;
             // don't let one unprepared collator ruin things for everyone.

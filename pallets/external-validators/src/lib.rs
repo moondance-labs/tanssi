@@ -32,15 +32,18 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+extern crate alloc;
+
 pub use pallet::*;
 use {
+    alloc::{collections::btree_set::BTreeSet, vec::Vec},
+    core::cmp::Ordering,
     frame_support::pallet_prelude::Weight,
     log::log,
-    parity_scale_codec::{Decode, Encode, MaxEncodedLen},
+    parity_scale_codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen},
     scale_info::TypeInfo,
     sp_runtime::{traits::Get, RuntimeDebug},
     sp_staking::SessionIndex,
-    sp_std::{collections::btree_set::BTreeSet, vec::Vec},
     tp_traits::{
         ActiveEraInfo, EraIndex, EraIndexProvider, ExternalIndexProvider, InvulnerablesProvider,
         OnEraEnd, OnEraStart, ValidatorProvider,
@@ -65,6 +68,7 @@ pub mod pallet {
     use frame_support::traits::Currency;
     use {
         super::*,
+        alloc::vec::Vec,
         frame_support::{
             pallet_prelude::*,
             traits::{EnsureOrigin, UnixTime, ValidatorRegistration},
@@ -72,7 +76,6 @@ pub mod pallet {
         },
         frame_system::pallet_prelude::*,
         sp_runtime::{traits::Convert, SaturatedConversion},
-        sp_std::vec::Vec,
     };
 
     /// Configure the pallet by specifying the parameters and types on which it depends.
@@ -222,7 +225,7 @@ pub mod pallet {
                 // T::ValidatorId does not impl Ord or Hash so we cannot collect into set directly,
                 // but we can check for duplicates if we encode them first.
                 .map(|x| x.encode())
-                .collect::<sp_std::collections::btree_set::BTreeSet<_>>();
+                .collect::<alloc::collections::btree_set::BTreeSet<_>>();
             assert!(
                 duplicate_validators.len() == self.whitelisted_validators.len(),
                 "duplicate validators in genesis."
@@ -300,6 +303,7 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::add_whitelisted(
 			T::MaxWhitelistedValidators::get().saturating_sub(1),
 		))]
+        #[allow(clippy::useless_conversion)]
         pub fn add_whitelisted(origin: OriginFor<T>, who: T::AccountId) -> DispatchResult {
             T::UpdateOrigin::ensure_origin(origin)?;
             // don't let one unprepared validator ruin things for everyone.
@@ -479,12 +483,13 @@ pub mod pallet {
             if let Some(next_active_era_start_session_index) =
                 Self::eras_start_session_index(next_active_era)
             {
-                if next_active_era_start_session_index == start_session {
-                    Self::start_era(start_session);
-                } else if next_active_era_start_session_index < start_session {
-                    // This arm should never happen, but better handle it than to stall the pallet.
-                    frame_support::print("Warning: A session appears to have been skipped.");
-                    Self::start_era(start_session);
+                match next_active_era_start_session_index.cmp(&start_session) {
+                    Ordering::Equal => Self::start_era(start_session),
+                    Ordering::Less => {
+                        frame_support::print("Warning: A session appears to have been skipped.");
+                        Self::start_era(start_session);
+                    }
+                    Ordering::Greater => {}
                 }
             }
         }
@@ -549,7 +554,7 @@ pub mod pallet {
                 *s = Some(s.map(|s| s.saturating_add(1)).unwrap_or(0));
                 s.unwrap()
             });
-            ErasStartSessionIndex::<T>::insert(&new_planned_era, &start_session_index);
+            ErasStartSessionIndex::<T>::insert(new_planned_era, start_session_index);
 
             // Clean old era information.
             if let Some(old_era) =
@@ -690,7 +695,17 @@ impl<T: Config> InvulnerablesProvider<T::ValidatorId> for Pallet<T> {
 
 /// Mode of era-forcing.
 #[derive(
-    Copy, Clone, PartialEq, Eq, Default, Encode, Decode, RuntimeDebug, TypeInfo, MaxEncodedLen,
+    Copy,
+    Clone,
+    PartialEq,
+    Eq,
+    Default,
+    Encode,
+    Decode,
+    DecodeWithMemTracking,
+    RuntimeDebug,
+    TypeInfo,
+    MaxEncodedLen,
 )]
 pub enum Forcing {
     /// Not forcing anything - just let whatever happen.

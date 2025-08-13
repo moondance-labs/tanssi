@@ -44,7 +44,6 @@ sp-mmr-primitives = { workspace = true }
 sp-runtime = { workspace = true }
 sp-session = { workspace = true }
 sp-staking = { workspace = true }
-sp-std = { workspace = true }
 sp-storage = { workspace = true }
 sp-trie = { workspace = true }
 sp-version = { workspace = true }
@@ -79,6 +78,7 @@ pallet-external-validators-rewards = { workspace = true }
 pallet-external-validators-rewards-runtime-api = { workspace = true }
 pallet-grandpa = { workspace = true }
 pallet-identity = { workspace = true }
+pallet-inactivity-tracking = { workspace = true, optional = true }
 pallet-initializer = { workspace = true }
 pallet-invulnerables = { workspace = true }
 pallet-membership = { workspace = true }
@@ -132,6 +132,8 @@ dp-consensus = { workspace = true }
 dp-container-chain-genesis-data = { workspace = true }
 tp-author-noting-inherent = { workspace = true }
 tp-data-preservers-common = { workspace = true }
+tp-invulnerables-filter-common = { workspace = true }
+tp-parathread-filter-common = { workspace = true }
 tp-stream-payment-common = { workspace = true }
 tp-traits = { workspace = true }
 tp-xcm-commons = { workspace = true }
@@ -149,7 +151,7 @@ pallet-services-payment = { workspace = true }
 pallet-services-payment-runtime-api = { workspace = true }
 pallet-stream-payment = { workspace = true }
 pallet-stream-payment-runtime-api = { workspace = true }
-tanssi-runtime-common = { workspace = true }
+tanssi-runtime-common = { workspace = true, features = [ "relay" ] }
 
 # Moonkit
 pallet-maintenance-mode = { workspace = true, features = [ "xcm-support" ] }
@@ -159,13 +161,16 @@ pallet-migrations = { workspace = true }
 keyring = { workspace = true }
 snowbridge-beacon-primitives = { workspace = true }
 snowbridge-core = { workspace = true }
+snowbridge-inbound-queue-primitives = { workspace = true }
+snowbridge-merkle-tree = { workspace = true }
+snowbridge-outbound-queue-primitives = { workspace = true }
 snowbridge-outbound-queue-runtime-api = { workspace = true }
 snowbridge-pallet-ethereum-client = { workspace = true }
 snowbridge-pallet-inbound-queue = { workspace = true }
 snowbridge-pallet-inbound-queue-fixtures = { workspace = true, optional = true }
 snowbridge-pallet-outbound-queue = { workspace = true }
 snowbridge-pallet-system = { workspace = true }
-snowbridge-router-primitives = { workspace = true }
+snowbridge-verification-primitives = { workspace = true }
 tp-bridge = { workspace = true }
 
 [dev-dependencies]
@@ -252,6 +257,7 @@ std = [
 	"pallet-external-validators/std",
 	"pallet-grandpa/std",
 	"pallet-identity/std",
+	"pallet-inactivity-tracking/std",
 	"pallet-inflation-rewards/std",
 	"pallet-initializer/std",
 	"pallet-invulnerables/std",
@@ -304,6 +310,9 @@ std = [
 	"serde_json/std",
 	"snowbridge-beacon-primitives/std",
 	"snowbridge-core/std",
+	"snowbridge-inbound-queue-primitives/std",
+	"snowbridge-merkle-tree/std",
+	"snowbridge-outbound-queue-primitives/std",
 	"snowbridge-outbound-queue-runtime-api/std",
 	"snowbridge-pallet-ethereum-client/fuzzing",
 	"snowbridge-pallet-ethereum-client/std",
@@ -311,7 +320,7 @@ std = [
 	"snowbridge-pallet-inbound-queue/std",
 	"snowbridge-pallet-outbound-queue/std",
 	"snowbridge-pallet-system/std",
-	"snowbridge-router-primitives/std",
+	"snowbridge-verification-primitives/std",
 	"sp-api/std",
 	"sp-application-crypto/std",
 	"sp-arithmetic/std",
@@ -325,7 +334,6 @@ std = [
 	"sp-runtime/std",
 	"sp-session/std",
 	"sp-staking/std",
-	"sp-std/std",
 	"sp-storage/std",
 	"sp-tracing/std",
 	"sp-trie/std",
@@ -337,6 +345,8 @@ std = [
 	"tp-author-noting-inherent/std",
 	"tp-bridge/std",
 	"tp-data-preservers-common/std",
+	"tp-invulnerables-filter-common/std",
+	"tp-parathread-filter-common/std",
 	"tp-stream-payment-common/std",
 	"tp-traits/std",
 	"tp-xcm-commons/std",
@@ -382,6 +392,7 @@ runtime-benchmarks = [
 	"pallet-external-validators/runtime-benchmarks",
 	"pallet-grandpa/runtime-benchmarks",
 	"pallet-identity/runtime-benchmarks",
+	"pallet-inactivity-tracking/runtime-benchmarks",
 	"pallet-inflation-rewards/runtime-benchmarks",
 	"pallet-invulnerables/runtime-benchmarks",
 	"pallet-membership/runtime-benchmarks",
@@ -418,25 +429,28 @@ runtime-benchmarks = [
 	"runtime-common/runtime-benchmarks",
 	"runtime-parachains/runtime-benchmarks",
 	"snowbridge-core/runtime-benchmarks",
+	"snowbridge-inbound-queue-primitives/runtime-benchmarks",
 	"snowbridge-pallet-ethereum-client/runtime-benchmarks",
 	"snowbridge-pallet-inbound-queue-fixtures",
 	"snowbridge-pallet-inbound-queue-fixtures/runtime-benchmarks",
 	"snowbridge-pallet-inbound-queue/runtime-benchmarks",
 	"snowbridge-pallet-outbound-queue/runtime-benchmarks",
 	"snowbridge-pallet-system/runtime-benchmarks",
-	"snowbridge-router-primitives/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"sp-staking/runtime-benchmarks",
 	"starlight-runtime-constants/runtime-benchmarks",
 	"tanssi-runtime-common/runtime-benchmarks",
 	"tp-bridge/runtime-benchmarks",
 	"tp-data-preservers-common/runtime-benchmarks",
+	"tp-invulnerables-filter-common/runtime-benchmarks",
+	"tp-parathread-filter-common/runtime-benchmarks",
 	"tp-stream-payment-common/runtime-benchmarks",
 	"tp-traits/runtime-benchmarks",
 	"westend-runtime/runtime-benchmarks",
 	"xcm-builder/runtime-benchmarks",
 	"xcm-executor/runtime-benchmarks",
 	"xcm-runtime-apis/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
 ]
 try-runtime = [
 	"container-chain-template-frontier-runtime/try-runtime",
@@ -471,6 +485,7 @@ try-runtime = [
 	"pallet-external-validators/try-runtime",
 	"pallet-grandpa/try-runtime",
 	"pallet-identity/try-runtime",
+	"pallet-inactivity-tracking/try-runtime",
 	"pallet-inflation-rewards/try-runtime",
 	"pallet-initializer/try-runtime",
 	"pallet-invulnerables/try-runtime",
@@ -530,6 +545,10 @@ metadata-hash = [ "substrate-wasm-builder/metadata-hash" ]
 # A feature that should be enabled when the runtime should be built for on-chain
 # deployment. This will disable stuff that shouldn't be part of the on-chain wasm
 # to make it smaller, like logging for example.
-on-chain-release-build = [ "metadata-hash" ]
+on-chain-release-build = [ "disable-genesis-builder", "metadata-hash" ]
+
+# When enabled, the GenesisBuilder API will be supported, GenesisConfig shall be
+# stripped from the final binary
+disable-genesis-builder = []
 
 testing-helpers = []

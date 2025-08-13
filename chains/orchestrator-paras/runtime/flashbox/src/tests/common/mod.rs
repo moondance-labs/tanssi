@@ -16,6 +16,7 @@
 
 use {
     crate::{AuthorInherent, BlockProductionCost, CollatorAssignmentCost},
+    alloc::collections::btree_map::BTreeMap,
     cumulus_primitives_core::{ParaId, PersistedValidationData},
     cumulus_primitives_parachain_inherent::ParachainInherentData,
     dp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApi,
@@ -33,7 +34,6 @@ use {
     sp_consensus_slots::Slot,
     sp_core::{Get, Pair},
     sp_runtime::{traits::Dispatchable, BuildStorage, Digest, DigestItem},
-    sp_std::collections::btree_map::BTreeMap,
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
 };
 
@@ -391,6 +391,7 @@ impl ExtBuilder {
 
         pallet_balances::GenesisConfig::<Runtime> {
             balances: self.balances,
+            ..Default::default()
         }
         .assimilate_storage(&mut t)
         .unwrap();

@@ -432,7 +432,13 @@ describeSuite({
                         "Shutting down container chain service",
                         "Entering off-chain worker.",
                         "Overweight para inherent data after enacting the candidates",
+                        "Failed to get header for included block.",
                     ]);
+                }
+                const fullNodeLogs = ["/FullNode-2000.log", "/FullNode-2001.log", "/FullNode-2002.log"];
+                for (const log of fullNodeLogs) {
+                    const logFilePath = getTmpZombiePath() + log;
+                    await checkLogsNotExist(logFilePath, ["Reason: Unsupported protocol. Banned, disconnecting."]);
                 }
             },
         });

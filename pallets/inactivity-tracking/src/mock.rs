@@ -6,6 +6,7 @@
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 
+use frame_support::dispatch::DispatchResultWithPostInfo;
 // Tanssi is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -14,9 +15,11 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 use {
     crate as pallet_inactivity_tracking,
+    alloc::collections::btree_set::BTreeSet,
+    core::marker::PhantomData,
     frame_support::{
         parameter_types,
-        traits::{ConstU32, ConstU64, Everything, OnFinalize, OnInitialize},
+        traits::{ConstU32, ConstU64, Everything},
     },
     sp_core::H256,
     sp_runtime::{
@@ -25,7 +28,6 @@ use {
         BuildStorage, RuntimeAppPublic,
     },
     sp_staking::SessionIndex,
-    sp_std::collections::btree_set::BTreeSet,
     tp_traits::{ForSession, ParaId},
 };
 
@@ -148,6 +150,7 @@ impl pallet_session::Config for Test {
     type SessionHandler = TestSessionHandler;
     type Keys = MockSessionKeys;
     type WeightInfo = ();
+    type DisablingStrategy = ();
 }
 
 pub struct CurrentSessionIndexGetter;
@@ -182,8 +185,8 @@ impl tp_traits::GetContainerChainsWithCollators<AccountId> for MockContainerChai
 
     #[cfg(feature = "runtime-benchmarks")]
     fn set_container_chains_with_collators(
-        for_session: ForSession,
-        container_chains: &[(ParaId, Vec<AccountId>)],
+        _for_session: ForSession,
+        _container_chains: &[(ParaId, Vec<AccountId>)],
     ) {
     }
 }
@@ -196,10 +199,34 @@ impl tp_traits::ParathreadHelper for MockParathreadHelper {
         paras_for_session
     }
 }
+pub struct MockInvulnerableCheckHandler<AccountId>(PhantomData<AccountId>);
+
+impl tp_traits::InvulnerablesHelper<AccountId> for MockInvulnerableCheckHandler<AccountId> {
+    fn is_invulnerable(account: &AccountId) -> bool {
+        *account == COLLATOR_2
+    }
+}
+
+pub struct MockCollatorStakeHelper<AccountId>(PhantomData<AccountId>);
+impl tp_traits::StakingCandidateHelper<AccountId> for MockCollatorStakeHelper<AccountId> {
+    fn is_candidate_selected(candidate: &AccountId) -> bool {
+        if (candidate == &COLLATOR_1) || (candidate == &COLLATOR_2) {
+            return true;
+        }
+        false
+    }
+    fn on_online_status_change(
+        _candidate: &AccountId,
+        _is_online: bool,
+    ) -> DispatchResultWithPostInfo {
+        Ok(().into())
+    }
+    #[cfg(feature = "runtime-benchmarks")]
+    fn make_collator_eligible_candidate(_collator: &AccountId) {}
+}
 
 impl pallet_inactivity_tracking::Config for Test {
     type RuntimeEvent = RuntimeEvent;
-    type CollatorId = AccountId;
     type MaxInactiveSessions = ConstU32<2>;
     type MaxCollatorsPerSession = ConstU32<5>;
     type MaxContainerChains = ConstU32<3>;
@@ -207,6 +234,8 @@ impl pallet_inactivity_tracking::Config for Test {
     type CurrentCollatorsFetcher = MockContainerChainsInfoFetcher;
     type GetSelfChainBlockAuthor = ();
     type ParaFilter = MockParathreadHelper;
+    type InvulnerablesFilter = MockInvulnerableCheckHandler<AccountId>;
+    type CollatorStakeHelper = MockCollatorStakeHelper<AccountId>;
     type WeightInfo = ();
 }
 
@@ -218,7 +247,7 @@ impl ExtBuilder {
         let mut t = frame_system::GenesisConfig::<Test>::default()
             .build_storage()
             .expect("Frame system builds valid default genesis config");
-        let balances = vec![(1, 100), (2, 100)];
+        let balances = [(1, 100), (2, 100)];
         let keys = balances
             .iter()
             .map(|&(i, _)| {
@@ -242,31 +271,8 @@ impl ExtBuilder {
     }
 }
 
-/// Rolls forward one block. Returns the new block number.
-#[allow(dead_code)]
-pub(crate) fn roll_one_block() -> u64 {
-    InactivityTracking::on_finalize(System::block_number());
-    Session::on_finalize(System::block_number());
-    System::on_finalize(System::block_number());
-
-    System::set_block_number(System::block_number() + 1);
-
-    System::on_initialize(System::block_number());
-    Session::on_initialize(System::block_number());
-    InactivityTracking::on_initialize(System::block_number());
-    System::block_number()
-}
-
-/// Rolls to the desired block. Returns the number of blocks played.
-#[allow(dead_code)]
-pub(crate) fn roll_to(n: u64) -> u64 {
-    let mut num_blocks = 0;
-    let mut block = System::block_number();
-    while block < n {
-        block = roll_one_block();
-        num_blocks += 1;
-    }
-    num_blocks
+pub fn run_to_block(n: u64) {
+    System::run_to_block_with::<AllPalletsWithSystem>(n, frame_system::RunToBlockHooks::default());
 }
 
 #[allow(dead_code)]

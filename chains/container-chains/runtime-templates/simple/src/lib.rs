@@ -36,6 +36,8 @@ pub mod weights;
 
 pub use sp_runtime::{traits::ExtrinsicLike, MultiAddress, Perbill, Permill};
 use {
+    alloc::vec,
+    alloc::vec::Vec,
     cumulus_primitives_core::AggregateMessageOrigin,
     dp_impl_tanssi_pallets_config::impl_tanssi_pallets_config,
     frame_support::{
@@ -63,7 +65,7 @@ use {
     },
     nimbus_primitives::{NimbusId, SlotBeacon},
     pallet_transaction_payment::FungibleAdapter,
-    parity_scale_codec::{Decode, Encode},
+    parity_scale_codec::{Decode, DecodeWithMemTracking, Encode},
     polkadot_runtime_common::SlowAdjustingFeeUpdate,
     scale_info::TypeInfo,
     serde::{Deserialize, Serialize},
@@ -79,8 +81,8 @@ use {
         transaction_validity::{TransactionSource, TransactionValidity},
         ApplyExtrinsicResult, Cow, MultiSignature, SaturatedConversion,
     },
-    sp_std::prelude::*,
     sp_version::RuntimeVersion,
+    xcm::Version as XcmVersion,
     xcm::{IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation, VersionedXcm},
     xcm_runtime_apis::{
         dry_run::{CallDryRunEffects, Error as XcmDryRunApiError, XcmDryRunEffects},
@@ -128,17 +130,19 @@ pub type SignedBlock = generic::SignedBlock<Block>;
 pub type BlockId = generic::BlockId<Block>;
 
 /// The SignedExtension to the basic transaction logic.
-pub type TxExtension = (
-    frame_system::CheckNonZeroSender<Runtime>,
-    frame_system::CheckSpecVersion<Runtime>,
-    frame_system::CheckTxVersion<Runtime>,
-    frame_system::CheckGenesis<Runtime>,
-    frame_system::CheckEra<Runtime>,
-    frame_system::CheckNonce<Runtime>,
-    frame_system::CheckWeight<Runtime>,
-    pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
-    cumulus_primitives_storage_weight_reclaim::StorageWeightReclaim<Runtime>,
-);
+pub type TxExtension = cumulus_pallet_weight_reclaim::StorageWeightReclaim<
+    Runtime,
+    (
+        frame_system::CheckNonZeroSender<Runtime>,
+        frame_system::CheckSpecVersion<Runtime>,
+        frame_system::CheckTxVersion<Runtime>,
+        frame_system::CheckGenesis<Runtime>,
+        frame_system::CheckEra<Runtime>,
+        frame_system::CheckNonce<Runtime>,
+        frame_system::CheckWeight<Runtime>,
+        pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
+    ),
+>;
 
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic =
@@ -226,7 +230,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: Cow::Borrowed("container-chain-template"),
     impl_name: Cow::Borrowed("container-chain-template"),
     authoring_version: 1,
-    spec_version: 1400,
+    spec_version: 1500,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -496,6 +500,7 @@ impl pallet_utility::Config for Runtime {
     Decode,
     Debug,
     MaxEncodedLen,
+    DecodeWithMemTracking,
     TypeInfo,
     Serialize,
     Deserialize,
@@ -580,6 +585,7 @@ impl pallet_proxy::Config for Runtime {
     // - 4 bytes BlockNumber (u32)
     type AnnouncementDepositFactor = ConstU128<{ deposit(0, 68) }>;
     type WeightInfo = weights::pallet_proxy::SubstrateWeight<Runtime>;
+    type BlockNumberProvider = System;
 }
 
 pub struct XcmExecutionManager;
@@ -682,6 +688,7 @@ impl pallet_multisig::Config for Runtime {
     type DepositFactor = DepositFactor;
     type MaxSignatories = MaxSignatories;
     type WeightInfo = weights::pallet_multisig::SubstrateWeight<Runtime>;
+    type BlockNumberProvider = System;
 }
 
 impl frame_system::offchain::SigningTypes for Runtime {
@@ -705,10 +712,12 @@ where
     ) -> Option<UncheckedExtrinsic> {
         use sp_runtime::traits::StaticLookup;
         // take the biggest period possible.
-        let period = BlockHashCount::get()
-            .checked_next_power_of_two()
-            .map(|c| c / 2)
-            .unwrap_or(2) as u64;
+        let period = u64::from(
+            BlockHashCount::get()
+                .checked_next_power_of_two()
+                .map(|c| c / 2)
+                .unwrap_or(2),
+        );
 
         let current_block = System::block_number()
             .saturated_into::<u64>()
@@ -716,7 +725,7 @@ where
             // so the actual block number is `n`.
             .saturating_sub(1);
         let tip = 0;
-        let tx_ext: TxExtension = (
+        let tx_ext = TxExtension::new((
             frame_system::CheckNonZeroSender::<Runtime>::new(),
             frame_system::CheckSpecVersion::<Runtime>::new(),
             frame_system::CheckTxVersion::<Runtime>::new(),
@@ -728,9 +737,8 @@ where
             frame_system::CheckNonce::<Runtime>::from(nonce),
             frame_system::CheckWeight::<Runtime>::new(),
             pallet_transaction_payment::ChargeTransactionPayment::<Runtime>::from(tip),
-            cumulus_primitives_storage_weight_reclaim::StorageWeightReclaim::<Runtime>::new(),
             //frame_metadata_hash_extension::CheckMetadataHash::new(true),
-        );
+        ));
         let raw_payload = SignedPayload::new(call, tx_ext)
             .map_err(|e| {
                 log::warn!("Unable to create signed payload: {:?}", e);
@@ -764,6 +772,10 @@ where
 impl pallet_ocw_testing::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type UnsignedInterval = ConstU32<6>;
+}
+
+impl cumulus_pallet_weight_reclaim::Config for Runtime {
+    type WeightInfo = weights::cumulus_pallet_weight_reclaim::SubstrateWeight<Runtime>;
 }
 
 impl_tanssi_pallets_config!(Runtime);
@@ -806,6 +818,8 @@ construct_runtime!(
         AssetRate: pallet_asset_rate::{Pallet, Call, Storage, Event<T>} = 77,
         XcmExecutorUtils: pallet_xcm_executor_utils::{Pallet, Call, Storage, Event<T>} = 78,
 
+        WeightReclaim: cumulus_pallet_weight_reclaim = 80,
+
         RootTesting: pallet_root_testing = 100,
         AsyncBacking: pallet_async_backing::{Pallet, Storage} = 110,
 
@@ -838,6 +852,7 @@ mod benches {
         [pallet_foreign_asset_creator, ForeignAssetsCreator]
         [pallet_asset_rate, AssetRate]
         [pallet_xcm_executor_utils, XcmExecutorUtils]
+        [cumulus_pallet_weight_reclaim, WeightReclaim]
     );
 }
 
@@ -961,7 +976,7 @@ impl_runtime_apis! {
             Vec<frame_benchmarking::BenchmarkList>,
             Vec<frame_support::traits::StorageInfo>,
         ) {
-            use frame_benchmarking::{Benchmarking, BenchmarkList};
+            use frame_benchmarking::{BenchmarkList};
             use frame_support::traits::StorageInfoTrait;
             use pallet_xcm::benchmarking::Pallet as PalletXcmExtrinsicsBenchmark;
 
@@ -972,14 +987,17 @@ impl_runtime_apis! {
             (list, storage_info)
         }
 
+        #[allow(non_local_definitions)]
         fn dispatch_benchmark(
             config: frame_benchmarking::BenchmarkConfig,
         ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, alloc::string::String> {
-            use frame_benchmarking::{BenchmarkBatch, Benchmarking, BenchmarkError};
+            use frame_benchmarking::{BenchmarkBatch, BenchmarkError};
             use sp_core::storage::TrackedStorageKey;
             use xcm::latest::prelude::*;
+            use alloc::boxed::Box;
+
             impl frame_system_benchmarking::Config for Runtime {
-                fn setup_set_code_requirements(code: &sp_std::vec::Vec<u8>) -> Result<(), BenchmarkError> {
+                fn setup_set_code_requirements(code: &alloc::vec::Vec<u8>) -> Result<(), BenchmarkError> {
                     ParachainSystem::initialize_for_set_code_benchmark(code.len() as u32);
                     Ok(())
                 }
@@ -995,7 +1013,6 @@ impl_runtime_apis! {
                     ExistentialDeposit::get()
                 ).into());
             }
-
             impl pallet_xcm_benchmarks::Config for Runtime {
                 type XcmConfig = xcm_config::XcmConfig;
                 type AccountIdConverter = xcm_config::LocationToAccountId;
@@ -1162,7 +1179,7 @@ impl_runtime_apis! {
                             initial_asset_amount - asset_amount,
                         );
                     });
-                    Some((assets, fee_index as u32, dest, verify))
+                    Some((assets, fee_index, dest, verify))
                 }
             }
 
@@ -1314,8 +1331,8 @@ impl_runtime_apis! {
     }
 
     impl xcm_runtime_apis::dry_run::DryRunApi<Block, RuntimeCall, RuntimeEvent, OriginCaller> for Runtime {
-        fn dry_run_call(origin: OriginCaller, call: RuntimeCall) -> Result<CallDryRunEffects<RuntimeEvent>, XcmDryRunApiError> {
-            PolkadotXcm::dry_run_call::<Runtime, xcm_config::XcmRouter, OriginCaller, RuntimeCall>(origin, call)
+        fn dry_run_call(origin: OriginCaller, call: RuntimeCall, result_xcms_version: XcmVersion) -> Result<CallDryRunEffects<RuntimeEvent>, XcmDryRunApiError> {
+            PolkadotXcm::dry_run_call::<Runtime, xcm_config::XcmRouter, OriginCaller, RuntimeCall>(origin, call, result_xcms_version)
         }
 
         fn dry_run_xcm(origin_location: VersionedLocation, xcm: VersionedXcm<RuntimeCall>) -> Result<XcmDryRunEffects<RuntimeEvent>, XcmDryRunApiError> {
@@ -1352,7 +1369,7 @@ impl cumulus_pallet_parachain_system::CheckInherents<Block> for CheckInherents {
         let inherent_data =
             cumulus_primitives_timestamp::InherentDataProvider::from_relay_chain_slot_and_duration(
                 relay_chain_slot,
-                sp_std::time::Duration::from_secs(6),
+                core::time::Duration::from_secs(6),
             )
             .create_inherent_data()
             .expect("Could not create the timestamp inherent data");

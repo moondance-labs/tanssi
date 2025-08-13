@@ -16,8 +16,8 @@
 
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
-#[allow(deprecated)]
 use {
+    container_chain_template_simple_runtime::Hash,
     container_chain_template_simple_runtime::{opaque::Block, RuntimeApi},
     cumulus_client_cli::CollatorOptions,
     cumulus_client_consensus_common::ParachainBlockImport as TParachainBlockImport,
@@ -33,6 +33,7 @@ use {
     polkadot_primitives::UpgradeGoAhead,
     sc_consensus::BasicQueue,
     sc_executor::WasmExecutor,
+    sc_network::NetworkBackend,
     sc_service::{Configuration, TFullBackend, TFullClient, TaskManager},
     sp_api::ProvideRuntimeApi,
     sp_blockchain::HeaderBackend,
@@ -112,13 +113,16 @@ pub fn import_queue(
 ///
 /// This is the actual implementation that is abstract over the executor and the runtime api.
 #[sc_tracing::logging::prefix_logs_with("Parachain")]
-pub async fn start_parachain_node(
+pub async fn start_parachain_node<Net>(
     parachain_config: Configuration,
     polkadot_config: Configuration,
     collator_options: CollatorOptions,
     para_id: ParaId,
     hwbench: Option<sc_sysinfo::HwBench>,
-) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> {
+) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)>
+where
+    Net: NetworkBackend<Block, Hash>,
+{
     let parachain_config = prepare_node_config(parachain_config);
 
     // Create a `NodeBuilder` which helps setup parachain nodes common systems.
@@ -133,7 +137,7 @@ pub async fn start_parachain_node(
 
     // Build cumulus network, allowing to access network-related services.
     let node_builder = node_builder
-        .build_cumulus_network::<_, sc_network::NetworkWorker<_, _>>(
+        .build_cumulus_network::<_, Net>(
             &parachain_config,
             para_id,
             import_queue,
@@ -165,8 +169,6 @@ pub async fn start_parachain_node(
         relay_chain_interface.clone(),
         relay_chain_slot_duration,
     )?;
-
-    node_builder.network.start_network.start_network();
 
     Ok((node_builder.task_manager, node_builder.client))
 }
@@ -348,8 +350,6 @@ pub async fn start_dev_node(
     let node_builder = node_builder.spawn_common_tasks(parachain_config, rpc_builder)?;
 
     log::info!("Development Service Ready");
-
-    node_builder.network.start_network.start_network();
 
     Ok(node_builder.task_manager)
 }

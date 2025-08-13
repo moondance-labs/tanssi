@@ -15,14 +15,13 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 #[cfg(feature = "runtime-benchmarks")]
-use crate::{CollatorAssignment, Session, System};
-#[cfg(feature = "runtime-benchmarks")]
-use pallet_session::ShouldEndSession;
-#[cfg(feature = "runtime-benchmarks")]
-use sp_std::{collections::btree_map::BTreeMap, vec};
-#[cfg(feature = "runtime-benchmarks")]
-use tp_traits::GetContainerChainAuthor;
-use xcm::latest::WESTEND_GENESIS_HASH;
+use {
+    crate::{CollatorAssignment, Session, System},
+    alloc::{collections::btree_map::BTreeMap, vec},
+    pallet_session::ShouldEndSession,
+    tp_traits::GetContainerChainAuthor,
+};
+
 use {
     super::{
         currency::MICRODANCE, weights::xcm::XcmWeight as XcmGenericWeights, AccountId,
@@ -32,10 +31,11 @@ use {
         RuntimeOrigin, TransactionByteFee, WeightToFee, XcmpQueue,
     },
     crate::{get_para_id_authorities, weights, AuthorNoting},
+    alloc::vec::Vec,
     cumulus_primitives_core::{AggregateMessageOrigin, ParaId},
     frame_support::{
         parameter_types,
-        traits::{Everything, Nothing, PalletInfoAccess, TransformOrigin},
+        traits::{Disabled, Equals, Everything, Nothing, PalletInfoAccess, TransformOrigin},
         weights::Weight,
     },
     frame_system::{pallet_prelude::BlockNumberFor, EnsureRoot},
@@ -46,23 +46,23 @@ use {
         ParaIdIntoAccountTruncating, XCMNotifier,
     },
     parachains_common::message_queue::{NarrowOriginToSibling, ParaIdToSibling},
-    parity_scale_codec::{Decode, Encode},
+    parity_scale_codec::{Decode, DecodeWithMemTracking, Encode},
     polkadot_runtime_common::xcm_sender::ExponentialPrice,
     scale_info::TypeInfo,
     sp_consensus_slots::Slot,
     sp_core::{ConstU32, MaxEncodedLen},
     sp_runtime::{transaction_validity::TransactionPriority, Perbill},
-    sp_std::vec::Vec,
     tp_traits::ParathreadParams,
     tp_xcm_commons::NativeAssetReserve,
     xcm::latest::prelude::*,
+    xcm::latest::WESTEND_GENESIS_HASH,
     xcm_builder::{
         AccountId32Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
         AllowTopLevelPaidExecutionFrom, ConvertedConcreteId, EnsureXcmOrigin, FungibleAdapter,
         FungiblesAdapter, IsConcrete, NoChecking, ParentIsPreset, RelayChainAsNative,
         SiblingParachainAsNative, SiblingParachainConvertsVia, SignedAccountId32AsNative,
         SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId,
-        UsingComponents, WeightInfoBounds, WithComputedOrigin,
+        UsingComponents, WeightInfoBounds, WithComputedOrigin, XcmFeeManagerFromComponents,
     },
     xcm_executor::{traits::JustTry, XcmExecutor},
 };
@@ -99,6 +99,7 @@ parameter_types! {
     [GlobalConsensus(RelayNetwork::get()), Parachain(ParachainInfo::parachain_id().into())].into();
 
     pub const BaseDeliveryFee: u128 = 100 * MICRODANCE;
+    pub RootLocation: Location = Location::here();
 }
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -204,7 +205,6 @@ impl xcm_executor::Config for XcmConfig {
     type Barrier = XcmBarrier;
     type Weigher = XcmWeigher;
     // Local token trader only
-    // TODO: update once we have a way to do fees
     type Trader = (
         UsingComponents<WeightToFee, SelfReserve, AccountId, Balances, ()>,
         cumulus_primitives_utility::TakeFirstAssetTrader<
@@ -224,7 +224,7 @@ impl xcm_executor::Config for XcmConfig {
     type MaxAssetsIntoHolding = MaxAssetsIntoHolding;
     type AssetLocker = ();
     type AssetExchanger = ();
-    type FeeManager = ();
+    type FeeManager = XcmFeeManagerFromComponents<Equals<RootLocation>, ()>;
     type MessageExporter = ();
     type UniversalAliases = Nothing;
     type CallDispatcher = RuntimeCall;
@@ -235,6 +235,7 @@ impl xcm_executor::Config for XcmConfig {
     type HrmpChannelAcceptedHandler = ();
     type HrmpChannelClosingHandler = ();
     type XcmRecorder = ();
+    type XcmEventEmitter = PolkadotXcm;
 }
 
 impl pallet_xcm::Config for Runtime {
@@ -259,9 +260,9 @@ impl pallet_xcm::Config for Runtime {
     type MaxLockers = ConstU32<8>;
     type MaxRemoteLockConsumers = ConstU32<0>;
     type RemoteLockConsumerIdentifier = ();
-    // TODO pallet-xcm weights
     type WeightInfo = weights::pallet_xcm::SubstrateWeight<Runtime>;
     type AdminOrigin = EnsureRoot<AccountId>;
+    type AuthorizedAliasConsideration = Disabled;
 }
 
 pub type PriceForSiblingParachainDelivery =
@@ -340,6 +341,7 @@ impl pallet_assets::Config<ForeignAssetsInstance> for Runtime {
     type CallbackHandle = ();
     type AssetAccountDeposit = ForeignAssetsAssetAccountDeposit;
     type RemoveItemsLimit = frame_support::traits::ConstU32<1000>;
+    type Holder = ();
     #[cfg(feature = "runtime-benchmarks")]
     type BenchmarkHelper = ForeignAssetBenchmarkHelper;
 }
@@ -483,11 +485,7 @@ impl GetParathreadParams for GetParathreadParamsImpl {
 
     #[cfg(feature = "runtime-benchmarks")]
     fn set_parathread_params(para_id: ParaId, parathread_params: Option<ParathreadParams>) {
-        if let Some(parathread_params) = parathread_params {
-            pallet_registrar::ParathreadParams::<Runtime>::insert(para_id, parathread_params);
-        } else {
-            pallet_registrar::ParathreadParams::<Runtime>::remove(para_id);
-        }
+        pallet_registrar::ParathreadParams::<Runtime>::set(para_id, parathread_params);
     }
 }
 
@@ -524,7 +522,18 @@ impl CheckCollatorValidity<AccountId, NimbusId> for CheckCollatorValidityImpl {
 
 /// Relay chains supported by pallet_xcm_core_buyer, each relay chain has different
 /// pallet indices for pallet_on_demand_assignment_provider
-#[derive(Debug, Default, Clone, PartialEq, Eq, Encode, Decode, TypeInfo, MaxEncodedLen)]
+#[derive(
+    Debug,
+    Default,
+    Clone,
+    PartialEq,
+    Eq,
+    Encode,
+    Decode,
+    TypeInfo,
+    MaxEncodedLen,
+    DecodeWithMemTracking,
+)]
 pub enum RelayChain {
     #[default]
     Westend,

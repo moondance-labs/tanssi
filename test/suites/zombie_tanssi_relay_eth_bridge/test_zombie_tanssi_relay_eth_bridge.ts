@@ -3,12 +3,12 @@ import "@tanssi/api-augment/dancelight";
 import { afterAll, beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type KeyringPair, generateKeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
-import type { MultiLocation } from "@polkadot/types/interfaces/xcm/types";
-import { u8aToHex } from "@polkadot/util";
+import { u8aToHex, hexToU8a } from "@polkadot/util";
 import { decodeAddress } from "@polkadot/util-crypto";
 import { ethers } from "ethers";
 import { type ChildProcessWithoutNullStreams, exec, spawn } from "node:child_process";
 import {
+    ASSET_HUB_AGENT_ID,
     ASSET_HUB_CHANNEL_ID,
     ASSET_HUB_PARA_ID,
     SNOWBRIDGE_FEES_ACCOUNT,
@@ -18,6 +18,7 @@ import {
 } from "utils";
 
 import { keccak256 } from "viem";
+import { ETHEREUM_NETWORK_TESTNET, FOREIGN_ASSET_ID } from "utils/constants";
 
 // Change this if we change the storage parameter in runtime
 const GATEWAY_STORAGE_KEY = "0xaed97c7854d601808b98ae43079dafb3";
@@ -31,6 +32,45 @@ function execCommand(command: string, options?): Promise<{ stdout: string; stder
             } else {
                 resolve({ stdout, stderr });
             }
+        });
+    });
+}
+
+let current: number;
+let start: number;
+function logTiming(message?: string) {
+    const now = performance.now();
+    if (start === undefined) {
+        console.log("Starting performance measurement.");
+        start = now;
+        current = start;
+    } else {
+        const prev = current;
+        current = now;
+        console.log(
+            `${message ? `[${message}]` : ""} Checkpoint timing: ${((current - start) / 1000).toFixed(2)} sec. Diff with prev: ${((current - prev) / 1000).toFixed(2)} sec`
+        );
+    }
+}
+
+function execCommandLive(command: string, args: string[] = [], options = {}): Promise<number> {
+    return new Promise((resolve, reject) => {
+        const child = spawn(command, args, {
+            stdio: "inherit",
+            shell: true,
+            ...options,
+        });
+
+        child.on("close", (code) => {
+            if (code === 0) {
+                resolve(code);
+            } else {
+                reject(new Error(`Process exited with code ${code}`));
+            }
+        });
+
+        child.on("error", (err) => {
+            reject(err);
         });
     });
 }
@@ -68,7 +108,10 @@ describeSuite({
         let middlewareContract: ethers.Contract;
         let gatewayContract: ethers.Contract;
         let tokenContract: ethers.Contract;
+        let wETHContract: ethers.Contract;
+        let wETHAddress: string;
         let gatewayProxyAddress: string;
+        let gatewayOwnerAddress: string;
         let middlewareAddress: string;
         let operatorRewardAddress: string;
         let operatorRewardContract: ethers.Contract;
@@ -76,6 +119,8 @@ describeSuite({
         let operatorRewardDetails: any;
 
         let tokenId: any;
+        let wETHBalanceFromEthereum: bigint;
+        let wETHTokenLocation: any;
 
         let ethInfo: any;
 
@@ -117,33 +162,50 @@ describeSuite({
             );
             console.log("Transferred money to relayers", fundingTxHash.txHash.toHex());
 
+            logTiming("Before start ETH node");
+
             ethereumNodeChildProcess = spawn("./scripts/bridge/start-ethereum-node.sh", {
                 shell: true,
                 detached: true,
             });
+            ethereumNodeChildProcess.stdout.setEncoding("utf-8");
             ethereumNodeChildProcess.stderr.setEncoding("utf-8");
-            ethereumNodeChildProcess.stderr.on("data", (chunk) => console.log(chunk));
+            ethereumNodeChildProcess.stdout.on("data", (chunk) => {
+                console.log("ETH Node STDOUT: ", chunk);
+            });
+            ethereumNodeChildProcess.stderr.on("data", (chunk) => {
+                console.error("ETH Node STDERR: ", chunk);
+            });
+            ethereumNodeChildProcess.on("error", (err) => {
+                console.error("ETH Node Process Error: ", err);
+            });
+            ethereumNodeChildProcess.on("exit", (code, signal) => {
+                console.log(`ETH Node exited with code ${code}, signal ${signal}`);
+            });
 
-            await execCommand("./scripts/bridge/generate-beefy-checkpoint.sh", {
+            logTiming("Before generate beefy checkpoint");
+            await execCommandLive("./scripts/bridge/generate-beefy-checkpoint.sh", [], {
                 env: {
                     RELAYCHAIN_ENDPOINT: "ws://127.0.0.1:9947",
                     ...process.env,
                 },
             });
+            logTiming("After generate beefy checkpoint");
 
             // Waiting till ethreum node produces one block
             console.log("Waiting some time for ethereum node to produce block, before we deploy contract");
             await sleep(20000);
+            logTiming("Before deploy contracts");
 
             // We override the operator 3 key because it goes to a slashing vault
-            await execCommand("./scripts/bridge/deploy-ethereum-contracts.sh", {
+            await execCommandLive("./scripts/bridge/deploy-ethereum-contracts.sh", [], {
                 env: {
                     OPERATOR3_KEY: u8aToHex(operatorAccount.addressRaw),
                     ...process.env,
                 },
             });
 
-            console.log("Contracts deployed");
+            logTiming("Contracts deployed");
 
             ethInfo = JSON.parse((await execCommand("./scripts/bridge/generate-eth-info.sh")).stdout);
 
@@ -152,6 +214,9 @@ describeSuite({
 
             console.log("Gateway contract proxy address is:", ethInfo.snowbridge_info.contracts.GatewayProxy.address);
             gatewayProxyAddress = ethInfo.snowbridge_info.contracts.GatewayProxy.address;
+
+            console.log("WETH9 contract address is:", ethInfo.snowbridge_info.contracts.WETH9.address);
+            wETHAddress = ethInfo.snowbridge_info.contracts.WETH9.address;
 
             console.log("Symbiotic middleware address is: ", ethInfo.symbiotic_info.contracts.MiddlewareProxy.address);
             const middlewareCallerDetails = ethInfo.symbiotic_info.contracts.Middleware;
@@ -175,6 +240,7 @@ describeSuite({
 
             customHttpProvider = new ethers.WebSocketProvider(ethUrl);
             ethereumWallet = new ethers.Wallet(ethInfo.ethereum_key, customHttpProvider);
+            gatewayOwnerAddress = ethereumWallet.address.toLowerCase();
 
             // Setting up Middleware
             middlewareContract = new ethers.Contract(middlewareAddress, combinedMiddlewareAbi, ethereumWallet);
@@ -199,8 +265,31 @@ describeSuite({
                 ethInfo.snowbridge_info.contracts.Gateway.abi,
                 ethereumWallet
             );
+
+            wETHContract = new ethers.Contract(
+                wETHAddress,
+                ethInfo.snowbridge_info.contracts.WETH9.abi,
+                ethereumWallet
+            );
+
             const setMiddlewareTx = await gatewayContract.setMiddleware(middlewareAddress);
             await setMiddlewareTx.wait();
+
+            const registerTokenFee = await gatewayContract.quoteRegisterTokenFee();
+            const registerWETHTx = await gatewayContract.registerToken(wETHAddress, { value: registerTokenFee * 10n });
+            await registerWETHTx.wait();
+
+            const isWETHTokenRegistered = await gatewayContract.isTokenRegistered(wETHAddress);
+            expect(isWETHTokenRegistered).to.be.true;
+
+            const depositWETHTx = await wETHContract.deposit({ value: 10000000000000000000n });
+            await depositWETHTx.wait();
+
+            wETHBalanceFromEthereum = 300000000000000n;
+            const approveWETHTx = await wETHContract.approve(gatewayProxyAddress, wETHBalanceFromEthereum);
+            await approveWETHTx.wait();
+
+            logTiming("Before setup relayer");
 
             const initialBeaconUpdate = JSON.parse(
                 (
@@ -212,11 +301,29 @@ describeSuite({
                     })
                 ).stdout
             );
+            logTiming("Before setup relayer");
 
-            const tokenLocation = relayApi.createType<MultiLocation>("MultiLocation", {
+            wETHTokenLocation = {
+                parents: 1,
+                interior: {
+                    X2: [
+                        {
+                            GlobalConsensus: ETHEREUM_NETWORK_TESTNET,
+                        },
+                        {
+                            AccountKey20: {
+                                network: ETHEREUM_NETWORK_TESTNET,
+                                key: hexToU8a(wETHAddress),
+                            },
+                        },
+                    ],
+                },
+            };
+
+            const tokenLocation = {
                 parents: 0,
                 interior: "Here",
-            });
+            };
             const versionedNativeTokenLocation = {
                 V3: tokenLocation,
             };
@@ -235,6 +342,13 @@ describeSuite({
                     relayApi.tx.utility.batch([
                         relayApi.tx.ethereumBeaconClient.forceCheckpoint(initialBeaconUpdate),
                         relayApi.tx.ethereumSystem.registerToken(versionedNativeTokenLocation, metadata),
+                        relayApi.tx.foreignAssetsCreator.createForeignAsset(
+                            wETHTokenLocation,
+                            FOREIGN_ASSET_ID,
+                            alice.address,
+                            true,
+                            1
+                        ),
                     ])
                 ),
                 alice
@@ -245,6 +359,7 @@ describeSuite({
             const tokenIds = allEntries.map(([, id]) => id.toHuman());
 
             tokenId = tokenIds[0];
+            logTiming("Before start relayer");
 
             relayerChildProcess = spawn("./scripts/bridge/start-relayer.sh", {
                 shell: true,
@@ -256,12 +371,14 @@ describeSuite({
             });
             relayerChildProcess.stderr.setEncoding("utf-8");
             relayerChildProcess.stderr.on("data", (chunk) => console.log(chunk));
+            logTiming("After start relayer");
         }, 12000000);
 
         it({
             id: "T01",
             title: "Ethereum Blocks are being recognized on tanssi-relay",
             test: async () => {
+                logTiming("Starting T01");
                 await waitSessions(context, relayApi, 1, null, "Tanssi-relay");
                 const firstFinalizedBlockRoot = (
                     await relayApi.query.ethereumBeaconClient.latestFinalizedBlockRoot()
@@ -281,6 +398,8 @@ describeSuite({
             id: "T02",
             title: "Dancelight Blocks are being recognized on ethereum",
             test: async () => {
+                logTiming("Starting T02");
+
                 const beefyContract = new ethers.Contract(
                     beefyClientDetails.address,
                     beefyClientDetails.abi,
@@ -298,6 +417,7 @@ describeSuite({
             id: "T03",
             title: "Message can be passed from ethereum to Starlight",
             test: async () => {
+                logTiming("Starting T03");
                 const externalValidatorsBefore = await relayApi.query.externalValidators.externalValidators();
 
                 const epoch = await middlewareContract.getCurrentEpoch();
@@ -318,7 +438,7 @@ describeSuite({
                 await waitSessions(
                     context,
                     relayApi,
-                    6,
+                    10,
                     async () => {
                         try {
                             const externalValidators = await relayApi.query.externalValidators.externalValidators();
@@ -351,6 +471,7 @@ describeSuite({
             id: "T04",
             title: "Operator produces blocks",
             test: async () => {
+                logTiming("Starting T04");
                 // wait some time for the operator to be part of session validator
                 await waitSessions(
                     context,
@@ -386,6 +507,7 @@ describeSuite({
             id: "T05",
             title: "Rewards and slashes are being sent to symbiotic successfully",
             test: async () => {
+                logTiming("Starting T05");
                 // Send slash event forcefully
                 const activeEraInfo = (await relayApi.query.externalValidators.activeEra()).toJSON();
                 const currentExternalIndex = await relayApi.query.externalValidators.currentExternalIndex();
@@ -468,6 +590,7 @@ describeSuite({
             id: "T06",
             title: "Rewards are claimable",
             test: async () => {
+                logTiming("Starting T06");
                 // Find the first era index claimable
                 const currentEra = (await relayApi.query.externalValidators.activeEra()).unwrap().index;
 
@@ -547,6 +670,7 @@ describeSuite({
             id: "T07",
             title: "Slash reaches slasher contract",
             test: async () => {
+                logTiming("Starting T07");
                 const epoch = await middlewareContract.getCurrentEpoch();
                 const operatorAndVaults = await middlewareContract.getOperatorVaultPairs(epoch);
                 const operator = await middlewareContract.operatorByKey(operatorAccount.addressRaw);
@@ -585,6 +709,7 @@ describeSuite({
             id: "T08",
             title: "Native token is transferred to (and from) Ethereum successfully",
             test: async () => {
+                logTiming("Starting T08");
                 // Wait a few sessions to ensure the token was properly registered on Ethereum
                 await waitSessions(context, relayApi, 4, null, "Tanssi-relay");
 
@@ -594,9 +719,6 @@ describeSuite({
                     new Uint8Array([...new TextEncoder().encode("para"), ...assetHubParaId.toU8a().reverse()])
                 );
                 expect(assetHubChannelId).to.be.eq(ASSET_HUB_CHANNEL_ID);
-
-                // Get the channel info
-                const channelInfo = (await relayApi.query.ethereumSystem.channels(assetHubChannelId)).unwrap().toJSON();
 
                 const channelOperatingModeOf = await gatewayContract.channelOperatingModeOf(assetHubChannelId);
 
@@ -608,8 +730,8 @@ describeSuite({
                     .sudo(
                         relayApi.tx.ethereumTokenTransfers.setTokenTransferChannel(
                             assetHubChannelId,
-                            channelInfo.agentId.toString(),
-                            Number(channelInfo.paraId)
+                            ASSET_HUB_AGENT_ID,
+                            Number(ASSET_HUB_PARA_ID)
                         )
                     )
                     .signAndSend(alice);
@@ -722,7 +844,7 @@ describeSuite({
                 const executionRelayBefore = (await relayApi.query.system.account(executionRelay.address)).data.free;
                 expect(randomBalanceBefore.toBigInt()).to.be.eq(0n);
 
-                // Send the token from Ethereum
+                // Send the native TANSSI token from Ethereum
                 const tx = await gatewayContract.sendToken(
                     tokenAddress,
                     ASSET_HUB_PARA_ID,
@@ -738,6 +860,24 @@ describeSuite({
                 );
 
                 await tx.wait();
+
+                // Send the WETH token as well
+                const neededFeeWETH = await gatewayContract.quoteSendTokenFee(wETHAddress, ASSET_HUB_PARA_ID, fee);
+                const sendWETHTokenTx = await gatewayContract.sendToken(
+                    wETHAddress,
+                    ASSET_HUB_PARA_ID,
+                    {
+                        kind: 1,
+                        data: u8aToHex(alice.addressRaw),
+                    },
+                    fee,
+                    wETHBalanceFromEthereum,
+                    {
+                        value: neededFeeWETH * 10n,
+                    }
+                );
+
+                await sendWETHTokenTx.wait();
 
                 const ownerBalanceAfter = await tokenContract.balanceOf(recipient);
 
@@ -756,7 +896,7 @@ describeSuite({
                     async () => {
                         try {
                             const nonceAfter = await relayApi.query.ethereumInboundQueue.nonce(assetHubChannelId);
-                            expect(nonceAfter.toNumber()).to.not.deep.eq(nonceInChannelBefore.toNumber());
+                            expect(nonceAfter.toNumber()).to.be.eq(nonceInChannelBefore.toNumber() + 2);
                         } catch (error) {
                             return false;
                         }
@@ -783,6 +923,85 @@ describeSuite({
                 // Ensure the token has been received on the Starlight side
                 const randomBalanceAfter = (await relayApi.query.system.account(randomAccount.address)).data.free;
                 expect(randomBalanceAfter.toBigInt()).to.be.eq(randomBalanceBefore.toBigInt() + amountBackFromETH);
+
+                // Ensure the WETH token has been received on the Starlight side
+                const aliceWETHBalanceAfter = await relayApi.query.foreignAssets.account(
+                    FOREIGN_ASSET_ID,
+                    alice.address
+                );
+
+                expect(aliceWETHBalanceAfter.unwrap().balance.toBigInt()).to.be.eq(wETHBalanceFromEthereum);
+
+                const ethLocation = {
+                    V4: {
+                        parents: 1,
+                        interior: {
+                            X1: [
+                                {
+                                    GlobalConsensus: ETHEREUM_NETWORK_TESTNET,
+                                },
+                            ],
+                        },
+                    },
+                };
+
+                const beneficiaryLocation = {
+                    V4: {
+                        parents: 0,
+                        interior: {
+                            X1: [
+                                {
+                                    AccountKey20: {
+                                        network: ETHEREUM_NETWORK_TESTNET,
+                                        key: hexToU8a(gatewayOwnerAddress),
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                };
+
+                const wETHBalanceToSend = wETHBalanceFromEthereum - 200000000000000n;
+                const assets = {
+                    V4: [
+                        {
+                            id: wETHTokenLocation,
+                            fun: {
+                                Fungible: wETHBalanceToSend,
+                            },
+                        },
+                    ],
+                };
+
+                const wETHBalanceBefore = await wETHContract.balanceOf(gatewayOwnerAddress);
+
+                console.log("Sending WETH back from Tanssi to Ethereum");
+
+                const transferWETHTx = await relayApi.tx.xcmPallet
+                    .transferAssets(ethLocation, beneficiaryLocation, assets, 0, "Unlimited")
+                    .signAndSend(alice);
+
+                console.log("Transfer WETH tx was submitted:", transferWETHTx.toHex());
+
+                let wETHTransferReceived = false;
+                let wETHTransferSuccess = false;
+
+                await gatewayContract.on("InboundMessageDispatched", (channelID, _nonce, _messageID, success) => {
+                    if (channelID === assetHubChannelId) {
+                        wETHTransferReceived = true;
+                        wETHTransferSuccess = success;
+                    }
+                });
+
+                while (!wETHTransferReceived) {
+                    await sleep(1000);
+                }
+                expect(wETHTransferSuccess).to.be.true;
+
+                const balanceAfter = await wETHContract.balanceOf(gatewayOwnerAddress);
+                expect(balanceAfter).to.be.eq(wETHBalanceBefore + wETHBalanceToSend);
+
+                logTiming("Finish T08");
             },
         });
 
@@ -794,7 +1013,7 @@ describeSuite({
             if (relayerChildProcess) {
                 relayerChildProcess.kill("SIGINT");
             }
-            await execCommand("./scripts/bridge/cleanup.sh olep");
+            await execCommandLive("./scripts/bridge/cleanup.sh olep");
         });
     },
 });

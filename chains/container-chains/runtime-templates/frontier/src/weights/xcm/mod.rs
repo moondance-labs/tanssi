@@ -18,9 +18,9 @@ pub mod pallet_xcm_benchmarks_generic;
 
 use {
     crate::Runtime,
+    alloc::vec::Vec,
     frame_support::{weights::Weight, BoundedVec},
     pallet_xcm_benchmarks_generic::WeightInfo as XcmGeneric,
-    sp_std::prelude::*,
     xcm::{
         latest::{prelude::*, AssetTransferFilter, Weight as XCMWeight},
         DoubleEncoded,
@@ -241,7 +241,7 @@ where
         _dest: &Location,
         _remote_fees: &Option<AssetTransferFilter>,
         _preserve_origin: &bool,
-        _assets: &Vec<AssetTransferFilter>,
+        _assets: &BoundedVec<AssetTransferFilter, MaxAssetTransferFilters>,
         _xcm: &Xcm<()>,
     ) -> Weight {
         Weight::MAX

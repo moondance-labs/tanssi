@@ -15,10 +15,11 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 pub mod genesis;
+pub use dancelight_runtime;
 use xcm_emulator::decl_test_relay_chains;
 
 decl_test_relay_chains! {
-    #[api_version(11)]
+    #[api_version(13)]
     pub struct Dancelight {
         genesis = genesis::genesis(),
         on_init = (),

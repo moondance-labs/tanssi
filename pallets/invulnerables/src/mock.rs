@@ -174,6 +174,7 @@ impl pallet_session::Config for Test {
     type SessionHandler = TestSessionHandler;
     type Keys = MockSessionKeys;
     type WeightInfo = ();
+    type DisablingStrategy = ();
 }
 
 pub fn new_test_ext() -> sp_io::TestExternalities {
@@ -199,9 +200,12 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
         keys,
         ..Default::default()
     };
-    pallet_balances::GenesisConfig::<Test> { balances }
-        .assimilate_storage(&mut t)
-        .unwrap();
+    pallet_balances::GenesisConfig::<Test> {
+        balances,
+        ..Default::default()
+    }
+    .assimilate_storage(&mut t)
+    .unwrap();
     invulnerables::GenesisConfig::<Test> { invulnerables }
         .assimilate_storage(&mut t)
         .unwrap();
@@ -210,9 +214,6 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
     t.into()
 }
 
-pub fn initialize_to_block(n: u64) {
-    for i in System::block_number() + 1..=n {
-        System::set_block_number(i);
-        <AllPalletsWithSystem as frame_support::traits::OnInitialize<u64>>::on_initialize(i);
-    }
+pub fn run_to_block(n: u64) {
+    System::run_to_block_with::<AllPalletsWithSystem>(n, frame_system::RunToBlockHooks::default());
 }

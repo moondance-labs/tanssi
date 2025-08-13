@@ -180,6 +180,14 @@ declare module "@polkadot/api-base/types/errors" {
              **/
             CallbackFailed: AugmentedError<ApiType>;
             /**
+             * The asset cannot be destroyed because some accounts for this asset contain freezes.
+             **/
+            ContainsFreezes: AugmentedError<ApiType>;
+            /**
+             * The asset cannot be destroyed because some accounts for this asset contain holds.
+             **/
+            ContainsHolds: AugmentedError<ApiType>;
+            /**
              * The origin account is frozen.
              **/
             Frozen: AugmentedError<ApiType>;
@@ -392,13 +400,33 @@ declare module "@polkadot/api-base/types/errors" {
              **/
             ActivityTrackingStatusUpdateSuspended: AugmentedError<ApiType>;
             /**
+             * Error returned when the collator attempted to be set offline is not inactive
+             **/
+            CollatorCannotBeNotifiedAsInactive: AugmentedError<ApiType>;
+            /**
+             * Error returned when the collator is not part of the sorted eligible candidates list
+             **/
+            CollatorNotEligibleCandidate: AugmentedError<ApiType>;
+            /**
+             * Error returned when the collator status is attempted to be set to online when it is already online
+             **/
+            CollatorNotOffline: AugmentedError<ApiType>;
+            /**
+             * Error returned when the collator status is attempted to be set to offline when it is already offline
+             **/
+            CollatorNotOnline: AugmentedError<ApiType>;
+            /**
+             * Error returned when the collator attempted to be set offline is invulnerable
+             **/
+            MarkingInvulnerableOfflineInvalid: AugmentedError<ApiType>;
+            /**
+             * Error returned when the collator status is attempted to be set to offline when offline marking is disabled
+             **/
+            MarkingOfflineNotEnabled: AugmentedError<ApiType>;
+            /**
              * The size of a collator set for a session has already reached MaxCollatorsPerSession value
              **/
             MaxCollatorsPerSessionReached: AugmentedError<ApiType>;
-            /**
-             * The size of a chains set for a session has already reached MaxContainerChains value
-             **/
-            MaxContainerChainsReached: AugmentedError<ApiType>;
             /**
              * Generic error
              **/
@@ -546,7 +574,7 @@ declare module "@polkadot/api-base/types/errors" {
              **/
             NoApprovalsNeeded: AugmentedError<ApiType>;
             /**
-             * Multisig operation not found when attempting to cancel.
+             * Multisig operation not found in storage.
              **/
             NotFound: AugmentedError<ApiType>;
             /**
@@ -554,7 +582,8 @@ declare module "@polkadot/api-base/types/errors" {
              **/
             NoTimepoint: AugmentedError<ApiType>;
             /**
-             * Only the account that originally created the multisig is able to cancel it.
+             * Only the account that originally created the multisig is able to cancel it or update
+             * its deposits.
              **/
             NotOwner: AugmentedError<ApiType>;
             /**
@@ -592,10 +621,6 @@ declare module "@polkadot/api-base/types/errors" {
              **/
             HostConfigurationNotAvailable: AugmentedError<ApiType>;
             /**
-             * No code upgrade has been authorized.
-             **/
-            NothingAuthorized: AugmentedError<ApiType>;
-            /**
              * No validation function upgrade is currently scheduled.
              **/
             NotScheduled: AugmentedError<ApiType>;
@@ -613,10 +638,6 @@ declare module "@polkadot/api-base/types/errors" {
              **/
             TooBig: AugmentedError<ApiType>;
             /**
-             * The given code upgrade has not been authorized.
-             **/
-            Unauthorized: AugmentedError<ApiType>;
-            /**
              * The inherent which supplies the validation data did not run this block.
              **/
             ValidationDataNotAvailable: AugmentedError<ApiType>;
@@ -630,6 +651,10 @@ declare module "@polkadot/api-base/types/errors" {
              * The given account is not an identifiable sovereign account for any location.
              **/
             AccountNotSovereign: AugmentedError<ApiType>;
+            /**
+             * The alias to remove authorization for was not found.
+             **/
+            AliasNotFound: AugmentedError<ApiType>;
             /**
              * The location is invalid since it already has a subscription from us.
              **/
@@ -659,6 +684,10 @@ declare module "@polkadot/api-base/types/errors" {
              * The assets to be sent are empty.
              **/
             Empty: AugmentedError<ApiType>;
+            /**
+             * Expiry block number is in the past.
+             **/
+            ExpiresInPast: AugmentedError<ApiType>;
             /**
              * The operation required fees to be paid which the initiator could not meet.
              **/
@@ -708,6 +737,10 @@ declare module "@polkadot/api-base/types/errors" {
              * Too many assets have been attempted for transfer.
              **/
             TooManyAssets: AugmentedError<ApiType>;
+            /**
+             * Too many locations authorized to alias origin.
+             **/
+            TooManyAuthorizedAliases: AugmentedError<ApiType>;
             /**
              * The asset owner has too many locks on the asset.
              **/

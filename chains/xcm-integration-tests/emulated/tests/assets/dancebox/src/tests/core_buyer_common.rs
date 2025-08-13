@@ -18,9 +18,7 @@ use {
     core::marker::PhantomData,
     cumulus_primitives_core::Weight,
     dancebox_runtime::{Registrar, RuntimeOrigin, ServicesPayment, XcmCoreBuyer},
-    dancebox_runtime_test_utils::{
-        empty_genesis_data, run_to_session, set_dummy_boot_node, start_block,
-    },
+    dancebox_runtime_test_utils::{empty_genesis_data, run_to_session, set_dummy_boot_node},
     frame_support::assert_ok,
     nimbus_primitives::NimbusId,
     pallet_xcm_core_buyer::RelayXcmWeightConfigInner,
@@ -45,10 +43,10 @@ pub const ROCOCO_ED: u128 = rococo_runtime_constants::currency::EXISTENTIAL_DEPO
 pub const BUY_EXECUTION_COST: u128 = dancebox_runtime::xcm_config::XCM_BUY_EXECUTION_COST_ROCOCO;
 // Difference between BUY_EXECUTION_COST and the actual cost that depends on the weight of the XCM
 // message, gets refunded on successful execution of core buying extrinsic.
-pub const BUY_EXECUTION_REFUND: u128 = 24506230;
+pub const BUY_EXECUTION_REFUND: u128 = 19533231;
 // Difference between BUY_EXECUTION_COST and the actual cost that depends on the weight of the XCM
 // message, gets refunded on un-successful execution of core buying extrinsic.
-pub const BUY_EXECUTION_REFUND_ON_FAILURE: u128 = 22172920;
+pub const BUY_EXECUTION_REFUND_ON_FAILURE: u128 = 17199921;
 
 pub const PLACE_ORDER_WEIGHT_AT_MOST: Weight = Weight::from_parts(1_000_000_000, 100_000);
 
@@ -221,9 +219,6 @@ pub fn do_test(
             PARATHREAD_ID.into()
         ));
 
-        // TODO: xcm emulator breaks with the run_to_session function, but it works if we manually
-        // call on_initialize here...
-        start_block();
         run_to_session(2);
 
         if let Some(max_core_price) = set_max_core_price {

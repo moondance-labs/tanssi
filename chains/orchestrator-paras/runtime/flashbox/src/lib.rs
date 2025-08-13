@@ -32,6 +32,7 @@ use {
         traits::{ExistenceRequirement, WithdrawReasons},
     },
     pallet_services_payment::ProvideCollatorAssignmentCost,
+    parity_scale_codec::DecodeWithMemTracking,
     polkadot_runtime_common::SlowAdjustingFeeUpdate,
 };
 
@@ -45,6 +46,12 @@ pub mod weights;
 mod tests;
 
 use {
+    alloc::{
+        collections::{btree_map::BTreeMap, btree_set::BTreeSet},
+        vec,
+        vec::Vec,
+    },
+    core::marker::PhantomData,
     cumulus_pallet_parachain_system::RelayNumberMonotonicallyIncreases,
     cumulus_primitives_core::{relay_chain::SessionIndex, BodyId, ParaId},
     frame_support::{
@@ -96,11 +103,6 @@ use {
         transaction_validity::{TransactionSource, TransactionValidity},
         AccountId32, ApplyExtrinsicResult, Cow,
     },
-    sp_std::{
-        collections::{btree_map::BTreeMap, btree_set::BTreeSet},
-        marker::PhantomData,
-        prelude::*,
-    },
     sp_version::RuntimeVersion,
     tp_stream_payment_common::StreamId,
     tp_traits::{
@@ -125,18 +127,20 @@ pub type BlockId = generic::BlockId<Block>;
 pub type CollatorId = AccountId;
 
 /// The `TxExtension` to the basic transaction logic.
-pub type TxExtension = (
-    frame_system::CheckNonZeroSender<Runtime>,
-    frame_system::CheckSpecVersion<Runtime>,
-    frame_system::CheckTxVersion<Runtime>,
-    frame_system::CheckGenesis<Runtime>,
-    frame_system::CheckEra<Runtime>,
-    frame_system::CheckNonce<Runtime>,
-    frame_system::CheckWeight<Runtime>,
-    pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
-    cumulus_primitives_storage_weight_reclaim::StorageWeightReclaim<Runtime>,
-    frame_metadata_hash_extension::CheckMetadataHash<Runtime>,
-);
+pub type TxExtension = cumulus_pallet_weight_reclaim::StorageWeightReclaim<
+    Runtime,
+    (
+        frame_system::CheckNonZeroSender<Runtime>,
+        frame_system::CheckSpecVersion<Runtime>,
+        frame_system::CheckTxVersion<Runtime>,
+        frame_system::CheckGenesis<Runtime>,
+        frame_system::CheckEra<Runtime>,
+        frame_system::CheckNonce<Runtime>,
+        frame_system::CheckWeight<Runtime>,
+        pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
+        frame_metadata_hash_extension::CheckMetadataHash<Runtime>,
+    ),
+>;
 
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic =
@@ -145,6 +149,12 @@ pub type UncheckedExtrinsic =
 /// Extrinsic type that has already been checked.
 pub type CheckedExtrinsic = generic::CheckedExtrinsic<AccountId, RuntimeCall, TxExtension>;
 
+/// The runtime migrations per release.
+pub mod migrations {
+    /// Unreleased migrations. Add new ones here:
+    pub type Unreleased = ();
+}
+
 /// Executive: handles dispatch to the various modules.
 pub type Executive = frame_executive::Executive<
     Runtime,
@@ -152,6 +162,7 @@ pub type Executive = frame_executive::Executive<
     frame_system::ChainContext<Runtime>,
     Runtime,
     AllPalletsWithSystem,
+    migrations::Unreleased,
 >;
 
 /// DANCE, the native token, uses 12 decimals of precision.
@@ -231,7 +242,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: Cow::Borrowed("flashbox"),
     impl_name: Cow::Borrowed("flashbox"),
     authoring_version: 1,
-    spec_version: 1400,
+    spec_version: 1500,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -590,6 +601,7 @@ impl pallet_session::Config for Runtime {
     type SessionHandler = <SessionKeys as sp_runtime::traits::OpaqueKeys>::KeyTypeIdProviders;
     type Keys = SessionKeys;
     type WeightInfo = weights::pallet_session::SubstrateWeight<Runtime>;
+    type DisablingStrategy = ();
 }
 
 pub struct RemoveInvulnerablesImpl;
@@ -602,7 +614,6 @@ impl RemoveInvulnerables<CollatorId> for RemoveInvulnerablesImpl {
         if num_invulnerables == 0 {
             return vec![];
         }
-        // TODO: check if this works on session changes
         let all_invulnerables = pallet_invulnerables::Invulnerables::<Runtime>::get();
         if all_invulnerables.is_empty() {
             return vec![];
@@ -1084,7 +1095,7 @@ impl pallet_utility::Config for Runtime {
 
 /// The type used to represent the kinds of proxies allowed.
 #[apply(derive_storage_traits)]
-#[derive(Copy, Ord, PartialOrd, MaxEncodedLen)]
+#[derive(Copy, Ord, PartialOrd, MaxEncodedLen, DecodeWithMemTracking)]
 #[allow(clippy::unnecessary_cast)]
 pub enum ProxyType {
     /// All calls can be proxied. This is the trivial/most permissive filter.
@@ -1188,6 +1199,7 @@ impl pallet_proxy::Config for Runtime {
     // - 4 bytes BlockNumber (u32)
     type AnnouncementDepositFactor = ConstU128<{ currency::deposit(0, 68) }>;
     type WeightInfo = weights::pallet_proxy::SubstrateWeight<Runtime>;
+    type BlockNumberProvider = System;
 }
 
 impl pallet_migrations::Config for Runtime {
@@ -1282,7 +1294,6 @@ parameter_types! {
     // initial_supply * (1.05) = initial_supply * (1+x)^5_259_600
     // we should solve for x = (1.05)^(1/5_259_600) -1 -> 0.000000009 per block or 9/1_000_000_000
     // 1% in the case of dev mode
-    // TODO: check if we can put the prod inflation for tests too
     // TODO: better calculus for going from annual to block inflation (if it can be done)
     pub const InflationRate: Perbill = prod_or_fast!(Perbill::from_parts(9), Perbill::from_percent(1));
 
@@ -1391,7 +1402,7 @@ parameter_types! {
     pub const TreasuryId: PalletId = PalletId(*b"tns/tsry");
     pub const ProposalBond: Permill = Permill::from_percent(5);
     pub TreasuryAccount: AccountId = Treasury::account_id();
-    pub const MaxBalance: Balance = Balance::max_value();
+    pub const MaxBalance: Balance = Balance::MAX;
     pub const SpendPeriod: BlockNumber = prod_or_fast!(6 * DAYS, 1 * MINUTES);
     pub const DataDepositPerByte: Balance = 1 * CENTS;
 }
@@ -1438,6 +1449,11 @@ impl pallet_multisig::Config for Runtime {
     type DepositFactor = DepositFactor;
     type MaxSignatories = MaxSignatories;
     type WeightInfo = weights::pallet_multisig::SubstrateWeight<Runtime>;
+    type BlockNumberProvider = System;
+}
+
+impl cumulus_pallet_weight_reclaim::Config for Runtime {
+    type WeightInfo = weights::cumulus_pallet_weight_reclaim::SubstrateWeight<Runtime>;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.
@@ -1489,6 +1505,7 @@ construct_runtime!(
 
         // More system support stuff
         RelayStorageRoots: pallet_relay_storage_roots = 60,
+        WeightReclaim: cumulus_pallet_weight_reclaim = 61,
 
         RootTesting: pallet_root_testing = 100,
         AsyncBacking: pallet_async_backing::{Pallet, Storage} = 110,
@@ -1523,6 +1540,7 @@ mod benches {
         [pallet_author_inherent, AuthorInherent]
         [pallet_treasury, Treasury]
         [pallet_relay_storage_roots, RelayStorageRoots]
+        [cumulus_pallet_weight_reclaim, WeightReclaim]
     );
 }
 
@@ -1662,7 +1680,7 @@ impl_runtime_apis! {
             Vec<frame_support::traits::StorageInfo>,
         ) {
             use cumulus_pallet_session_benchmarking::Pallet as SessionBench;
-            use frame_benchmarking::{Benchmarking, BenchmarkList};
+            use frame_benchmarking::{BenchmarkList};
             use frame_support::traits::StorageInfoTrait;
 
             let mut list = Vec::<BenchmarkList>::new();
@@ -1672,14 +1690,15 @@ impl_runtime_apis! {
             (list, storage_info)
         }
 
+        #[allow(non_local_definitions)]
         fn dispatch_benchmark(
             config: frame_benchmarking::BenchmarkConfig,
         ) -> Result<Vec<frame_benchmarking::BenchmarkBatch>, alloc::string::String> {
-            use frame_benchmarking::{BenchmarkBatch, Benchmarking, BenchmarkError};
+            use frame_benchmarking::{BenchmarkBatch, BenchmarkError};
             use sp_core::storage::TrackedStorageKey;
 
             impl frame_system_benchmarking::Config for Runtime {
-                fn setup_set_code_requirements(code: &sp_std::vec::Vec<u8>) -> Result<(), BenchmarkError> {
+                fn setup_set_code_requirements(code: &alloc::vec::Vec<u8>) -> Result<(), BenchmarkError> {
                     ParachainSystem::initialize_for_set_code_benchmark(code.len() as u32);
                     Ok(())
                 }
@@ -2041,7 +2060,7 @@ impl cumulus_pallet_parachain_system::CheckInherents<Block> for CheckInherents {
         let inherent_data =
             cumulus_primitives_timestamp::InherentDataProvider::from_relay_chain_slot_and_duration(
                 relay_chain_slot,
-                sp_std::time::Duration::from_secs(6),
+                core::time::Duration::from_secs(6),
             )
             .create_inherent_data()
             .expect("Could not create the timestamp inherent data");

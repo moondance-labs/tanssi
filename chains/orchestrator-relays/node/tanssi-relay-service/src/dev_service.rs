@@ -223,7 +223,11 @@ pub fn build_full<OverseerGenerator: OverseerGen>(
             capacity
         });
 
-    match config.network.network_backend {
+    match config
+        .network
+        .network_backend
+        .unwrap_or(sc_network::config::NetworkBackendType::Libp2p)
+    {
         sc_network::config::NetworkBackendType::Libp2p => {
             new_full::<_, sc_network::NetworkWorker<Block, Hash>>(sealing, config, params)
         }
@@ -353,7 +357,7 @@ where
                     availability_bitvec.clone(),
                     &signature_ctx,
                     ValidatorIndex(i as u32),
-                    &public,
+                    public,
                 )
                 .unwrap()
                 .unwrap()
@@ -402,7 +406,7 @@ where
                 // Iterate keys until we find an eligible one, or run out of candidates.
                 for type_public_pair in &available_keys {
                     if let Ok(validator) =
-                        polkadot_primitives::ValidatorId::from_slice(&type_public_pair)
+                        polkadot_primitives::ValidatorId::from_slice(type_public_pair)
                     {
                         // if we find the validator in keystore, we try to create a backed cand
                         if validator_keys_to_find == &validator {
@@ -417,7 +421,7 @@ where
                                 .unwrap();
 
                             // if we dont do this we have a backed candidate every 2 blocks
-                            // TODO: figure out why
+                            // we want
                             persisted_validation_data.relay_parent_storage_root =
                                 parent_header.state_root;
 
@@ -497,7 +501,7 @@ where
                                 candidate,
                                 validity_votes.clone(),
                                 bitvec::bitvec![u8, bitvec::order::Lsb0; 1; indices_associated_to_core.len()],
-                                Some(core),
+                                core,
                             ));
                         }
                     }
@@ -506,7 +510,7 @@ where
         }
 
         Ok(ParachainsInherentData {
-            bitfields: bitfields,
+            bitfields,
             backed_candidates: backed_cand,
             disputes: Vec::new(),
             parent_header,
@@ -657,7 +661,7 @@ fn new_full<
 
     let (upward_mock_sender, upward_mock_receiver) = flume::bounded::<Vec<u8>>(100);
 
-    let (network, system_rpc_tx, tx_handler_controller, network_starter, sync_service) =
+    let (network, system_rpc_tx, tx_handler_controller, sync_service) =
         service::build_network(service::BuildNetworkParams {
             config: &config,
             net_config,
@@ -858,8 +862,6 @@ fn new_full<
         tx_handler_controller,
         telemetry: telemetry.as_mut(),
     })?;
-
-    network_starter.start_network();
 
     Ok(NewFull {
         task_manager,

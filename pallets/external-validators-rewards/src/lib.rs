@@ -18,6 +18,7 @@
 //! Storage will be cleared after a period of time.
 
 #![cfg_attr(not(feature = "std"), no_std)]
+extern crate alloc;
 
 #[cfg(test)]
 mod mock;
@@ -33,6 +34,7 @@ pub mod weights;
 pub use pallet::*;
 
 use {
+    alloc::{collections::btree_set::BTreeSet, vec::Vec},
     frame_support::traits::{
         fungible::{self, Mutate},
         Defensive, Get, ValidatorSet,
@@ -41,11 +43,10 @@ use {
     polkadot_primitives::ValidatorIndex,
     runtime_parachains::session_info,
     snowbridge_core::{ChannelId, TokenId},
-    snowbridge_outbound_queue_merkle_tree::{merkle_proof, merkle_root, verify_proof, MerkleProof},
+    snowbridge_merkle_tree::{merkle_proof, merkle_root, verify_proof, MerkleProof},
     sp_core::H256,
     sp_runtime::traits::{Hash, MaybeEquivalence, Zero},
     sp_staking::SessionIndex,
-    sp_std::{collections::btree_set::BTreeSet, vec::Vec},
     tp_bridge::{Command, DeliverMessage, Message, TicketInfo, ValidateMessage},
     tp_traits::ExternalIndexProvider,
     xcm::prelude::*,
@@ -64,8 +65,8 @@ pub struct EraRewardsUtils {
 pub mod pallet {
     pub use crate::weights::WeightInfo;
     use {
-        super::*, frame_support::pallet_prelude::*, sp_runtime::Saturating,
-        sp_std::collections::btree_map::BTreeMap, tp_traits::EraIndexProvider,
+        super::*, alloc::collections::btree_map::BTreeMap, frame_support::pallet_prelude::*,
+        sp_runtime::Saturating, tp_traits::EraIndexProvider,
     };
 
     /// The current storage version.
@@ -166,7 +167,7 @@ pub mod pallet {
             era_index: EraIndex,
             maybe_account_id_check: Option<AccountId>,
         ) -> Option<EraRewardsUtils> {
-            let total_points: u128 = self.total as u128;
+            let total_points: u128 = u128::from(self.total);
             let mut leaves = Vec::with_capacity(self.individual.len());
             let mut leaf_index = None;
 
@@ -240,7 +241,7 @@ pub mod pallet {
             account_id: T::AccountId,
             era_index: EraIndex,
         ) -> Option<MerkleProof> {
-            let era_rewards = RewardPointsForEra::<T>::get(&era_index);
+            let era_rewards = RewardPointsForEra::<T>::get(era_index);
             let utils = era_rewards.generate_era_rewards_utils::<<T as Config>::Hashing>(
                 era_index,
                 Some(account_id),
@@ -284,7 +285,7 @@ pub mod pallet {
             let token_id = T::TokenIdFromLocation::convert_back(&token_location);
 
             if let Some(token_id) = token_id {
-                let era_rewards = RewardPointsForEra::<T>::get(&era_index);
+                let era_rewards = RewardPointsForEra::<T>::get(era_index);
                 if let Some(utils) = era_rewards
                     .generate_era_rewards_utils::<<T as Config>::Hashing>(era_index, None)
                 {
@@ -356,7 +357,6 @@ pub mod pallet {
                         "Outbound message not sent for era {:?}!",
                         era_index
                     );
-                    return;
                 }
             } else {
                 log::error!(target: "ext_validators_rewards", "no token id found for location {:?}", token_location);
@@ -379,7 +379,7 @@ where
         indices: impl IntoIterator<Item = ValidatorIndex>,
         points: u32,
     ) {
-        let validators = session_info::AccountKeys::<C>::get(&session_index);
+        let validators = session_info::AccountKeys::<C>::get(session_index);
         let validators = match validators
             .defensive_proof("account_keys are present for dispute_period sessions")
         {

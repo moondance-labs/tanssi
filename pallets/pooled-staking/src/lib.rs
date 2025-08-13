@@ -32,6 +32,7 @@
 //! participate in other processes such as gouvernance.
 
 #![cfg_attr(not(feature = "std"), no_std)]
+extern crate alloc;
 
 mod calls;
 mod candidate;
@@ -60,6 +61,8 @@ pub use {
     pools::{ActivePoolKind, CandidateSummary, DelegatorCandidateSummary, PoolKind},
 };
 
+#[cfg(feature = "runtime-benchmarks")]
+use frame_support::traits::fungible::Mutate;
 #[pallet]
 pub mod pallet {
     use {
@@ -68,6 +71,7 @@ pub mod pallet {
             traits::{IsCandidateEligible, Timer},
             weights::WeightInfo,
         },
+        alloc::vec::Vec,
         calls::Calls,
         core::marker::PhantomData,
         frame_support::{
@@ -77,12 +81,11 @@ pub mod pallet {
             Blake2_128Concat,
         },
         frame_system::pallet_prelude::*,
-        parity_scale_codec::{Decode, Encode, FullCodec},
+        parity_scale_codec::{Decode, DecodeWithMemTracking, Encode, FullCodec},
         scale_info::TypeInfo,
         serde::{Deserialize, Serialize},
         sp_core::Get,
         sp_runtime::{BoundedVec, Perbill},
-        sp_std::vec::Vec,
         tp_maths::MulDiv,
     };
 
@@ -178,7 +181,9 @@ pub mod pallet {
         Serialize,
         Deserialize,
         MaxEncodedLen,
+        DecodeWithMemTracking,
     )]
+    #[allow(clippy::multiple_bound_locations)]
     pub enum PendingOperationKey<A: FullCodec, J: FullCodec, L: FullCodec> {
         /// Candidate requested to join the auto compounding pool of a candidate.
         JoiningAutoCompounding { candidate: A, at: J },
@@ -195,8 +200,18 @@ pub mod pallet {
     >;
 
     #[derive(
-        RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo, Serialize, Deserialize,
+        RuntimeDebug,
+        PartialEq,
+        Eq,
+        Encode,
+        Decode,
+        Clone,
+        TypeInfo,
+        Serialize,
+        Deserialize,
+        DecodeWithMemTracking,
     )]
+    #[allow(clippy::multiple_bound_locations)]
     pub struct PendingOperationQuery<A: FullCodec, J: FullCodec, L: FullCodec> {
         pub delegator: A,
         pub operation: PendingOperationKey<A, J, L>,
@@ -213,7 +228,16 @@ pub mod pallet {
     /// worth up to the provided stake. The amount of stake thus will be at most the provided
     /// amount.
     #[derive(
-        RuntimeDebug, PartialEq, Eq, Encode, Decode, Clone, TypeInfo, Serialize, Deserialize,
+        RuntimeDebug,
+        PartialEq,
+        Eq,
+        Encode,
+        Decode,
+        Clone,
+        TypeInfo,
+        Serialize,
+        Deserialize,
+        DecodeWithMemTracking,
     )]
     pub enum SharesOrStake<T> {
         Shares(T),
@@ -315,7 +339,6 @@ pub mod pallet {
         type EligibleCandidatesBufferSize: Get<u32>;
         /// Additional filter for candidates to be eligible.
         type EligibleCandidatesFilter: IsCandidateEligible<Self::AccountId>;
-
         type WeightInfo: WeightInfo;
     }
 
@@ -537,8 +560,8 @@ pub mod pallet {
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         #[cfg(feature = "try-runtime")]
         fn try_state(_n: BlockNumberFor<T>) -> Result<(), sp_runtime::TryRuntimeError> {
+            use alloc::collections::btree_set::BTreeSet;
             use frame_support::storage_alias;
-            use sp_std::collections::btree_set::BTreeSet;
 
             let mut all_candidates = BTreeSet::new();
             for (candidate, _k2) in Pools::<T>::iter_keys() {
@@ -634,6 +657,7 @@ pub mod pallet {
     impl<T: Config> Pallet<T> {
         #[pallet::call_index(0)]
         #[pallet::weight(T::WeightInfo::rebalance_hold())]
+        #[allow(clippy::useless_conversion)]
         pub fn rebalance_hold(
             origin: OriginFor<T>,
             candidate: Candidate<T>,
@@ -648,6 +672,7 @@ pub mod pallet {
 
         #[pallet::call_index(1)]
         #[pallet::weight(T::WeightInfo::request_delegate())]
+        #[allow(clippy::useless_conversion)]
         pub fn request_delegate(
             origin: OriginFor<T>,
             candidate: Candidate<T>,
@@ -662,6 +687,7 @@ pub mod pallet {
         /// Execute pending operations can incur in claim manual rewards per operation, we simply add the worst case
         #[pallet::call_index(2)]
         #[pallet::weight(T::WeightInfo::execute_pending_operations(operations.len() as u32).saturating_add(T::WeightInfo::claim_manual_rewards(operations.len() as u32)))]
+        #[allow(clippy::useless_conversion)]
         pub fn execute_pending_operations(
             origin: OriginFor<T>,
             operations: Vec<PendingOperationQueryOf<T>>,
@@ -675,6 +701,7 @@ pub mod pallet {
         /// Request undelegate can incur in either claim manual rewards or hold rebalances, we simply add the worst case
         #[pallet::call_index(3)]
         #[pallet::weight(T::WeightInfo::request_undelegate().saturating_add(T::WeightInfo::claim_manual_rewards(1).max(T::WeightInfo::rebalance_hold())))]
+        #[allow(clippy::useless_conversion)]
         pub fn request_undelegate(
             origin: OriginFor<T>,
             candidate: Candidate<T>,
@@ -688,6 +715,7 @@ pub mod pallet {
 
         #[pallet::call_index(4)]
         #[pallet::weight(T::WeightInfo::claim_manual_rewards(pairs.len() as u32))]
+        #[allow(clippy::useless_conversion)]
         pub fn claim_manual_rewards(
             origin: OriginFor<T>,
             pairs: Vec<(Candidate<T>, Delegator<T>)>,
@@ -700,6 +728,7 @@ pub mod pallet {
 
         #[pallet::call_index(5)]
         #[pallet::weight(T::WeightInfo::update_candidate_position(candidates.len() as u32))]
+        #[allow(clippy::useless_conversion)]
         pub fn update_candidate_position(
             origin: OriginFor<T>,
             candidates: Vec<Candidate<T>>,
@@ -712,6 +741,7 @@ pub mod pallet {
 
         #[pallet::call_index(6)]
         #[pallet::weight(T::WeightInfo::swap_pool())]
+        #[allow(clippy::useless_conversion)]
         pub fn swap_pool(
             origin: OriginFor<T>,
             candidate: Candidate<T>,
@@ -752,6 +782,44 @@ pub mod pallet {
             rewards: CreditOf<T>,
         ) -> DispatchResultWithPostInfo {
             pools::distribute_rewards::<T>(&candidate, rewards)
+        }
+    }
+    impl<T: Config> tp_traits::StakingCandidateHelper<Candidate<T>> for Pallet<T> {
+        fn is_candidate_selected(candidate: &Candidate<T>) -> bool {
+            <SortedEligibleCandidates<T>>::get()
+                .into_iter()
+                .any(|c| &c.candidate == candidate)
+        }
+        fn on_online_status_change(
+            candidate: &Candidate<T>,
+            _is_online: bool,
+        ) -> DispatchResultWithPostInfo {
+            Calls::<T>::update_candidate_position(&[candidate.clone()])
+        }
+
+        #[cfg(feature = "runtime-benchmarks")]
+        fn make_collator_eligible_candidate(collator: &Candidate<T>) {
+            use alloc::vec;
+            let minimum_stake = T::MinimumSelfDelegation::get();
+            T::Currency::set_balance(collator, minimum_stake + minimum_stake);
+            T::EligibleCandidatesFilter::make_candidate_eligible(collator, true);
+            Calls::<T>::request_delegate(
+                collator.clone(),
+                collator.clone(),
+                ActivePoolKind::AutoCompounding,
+                minimum_stake,
+            )
+            .expect("request_delegate should not fail in benchmarks");
+            let timer = T::JoiningRequestTimer::now();
+            T::JoiningRequestTimer::skip_to_elapsed();
+            Calls::<T>::execute_pending_operations(vec![PendingOperationQuery {
+                delegator: collator.clone(),
+                operation: PendingOperationKey::JoiningAutoCompounding {
+                    candidate: collator.clone(),
+                    at: timer.clone(),
+                },
+            }])
+            .expect("execute_pending_operations should not fail in benchmarks");
         }
     }
 }

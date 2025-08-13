@@ -27,7 +27,6 @@ use {
     pallet_session::{self as session, SessionManager},
     rand::{RngCore, SeedableRng},
     sp_runtime::{codec, traits::Convert},
-    sp_std::prelude::*,
 };
 const SEED: u32 = 0;
 
@@ -54,6 +53,7 @@ fn create_funded_user<T: Config + pallet_balances::Config>(
 }
 
 struct InputFromRng<'a, T>(&'a mut T);
+#[allow(clippy::needless_lifetimes)]
 impl<'a, T: RngCore> codec::Input for InputFromRng<'a, T> {
     fn remaining_len(&mut self) -> Result<Option<usize>, codec::Error> {
         Ok(None)

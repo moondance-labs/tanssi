@@ -16,9 +16,8 @@
 
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
-#[allow(deprecated)]
 use {
-    container_chain_template_frontier_runtime::{opaque::Block, RuntimeApi},
+    container_chain_template_frontier_runtime::{opaque::Block, Hash, RuntimeApi},
     cumulus_client_cli::CollatorOptions,
     cumulus_client_consensus_common::ParachainBlockImport as TParachainBlockImport,
     cumulus_client_parachain_inherent::{MockValidationDataInherentDataProvider, MockXcmConfig},
@@ -37,6 +36,7 @@ use {
     polkadot_primitives::UpgradeGoAhead,
     sc_consensus::BasicQueue,
     sc_executor::WasmExecutor,
+    sc_network::NetworkBackend,
     sc_service::{Configuration, TFullBackend, TFullClient, TaskManager},
     sp_api::ProvideRuntimeApi,
     sp_blockchain::HeaderBackend,
@@ -169,14 +169,17 @@ pub fn import_queue(
 ///
 /// This is the actual implementation that is abstract over the executor and the runtime api.
 #[sc_tracing::logging::prefix_logs_with("Parachain")]
-async fn start_node_impl(
+async fn start_node_impl<Net>(
     parachain_config: Configuration,
     polkadot_config: Configuration,
     collator_options: CollatorOptions,
     para_id: ParaId,
     rpc_config: crate::cli::RpcConfig,
     hwbench: Option<sc_sysinfo::HwBench>,
-) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> {
+) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)>
+where
+    Net: NetworkBackend<Block, Hash>,
+{
     let parachain_config = prepare_node_config(parachain_config);
 
     // Create a `NodeBuilder` which helps setup parachain nodes common systems.
@@ -205,7 +208,7 @@ async fn start_node_impl(
 
     // Build cumulus network, allowing to access network-related services.
     let node_builder = node_builder
-        .build_cumulus_network::<_, sc_network::NetworkWorker<_, _>>(
+        .build_cumulus_network::<_, Net>(
             &parachain_config,
             para_id,
             import_queue,
@@ -252,12 +255,6 @@ async fn start_node_impl(
         let frontier_backend = frontier_backend.clone();
 
         Box::new(move |subscription_task_executor| {
-            let graph_pool = pool.0.as_any()
-                .downcast_ref::<sc_transaction_pool::BasicPool<
-                    sc_transaction_pool::FullChainApi<ParachainClient, Block>
-                    , Block
-                >>().expect("Frontier container chain template supports only single state transaction pool! Use --pool-type=single-state");
-
             let deps = crate::rpc::FullDeps {
                 backend: backend.clone(),
                 client: client.clone(),
@@ -266,7 +263,7 @@ async fn start_node_impl(
                     fc_db::Backend::KeyValue(b) => b.clone(),
                     fc_db::Backend::Sql(b) => b.clone(),
                 },
-                graph: graph_pool.pool().clone(),
+                graph: pool.clone(),
                 pool: pool.clone(),
                 max_past_logs,
                 max_block_range,
@@ -298,21 +295,22 @@ async fn start_node_impl(
         relay_chain_slot_duration,
     )?;
 
-    node_builder.network.start_network.start_network();
-
     Ok((node_builder.task_manager, node_builder.client))
 }
 
 /// Start a parachain node.
-pub async fn start_parachain_node(
+pub async fn start_parachain_node<Net>(
     parachain_config: Configuration,
     polkadot_config: Configuration,
     collator_options: CollatorOptions,
     para_id: ParaId,
     rpc_config: crate::cli::RpcConfig,
     hwbench: Option<sc_sysinfo::HwBench>,
-) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> {
-    start_node_impl(
+) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)>
+where
+    Net: NetworkBackend<Block, Hash>,
+{
+    start_node_impl::<Net>(
         parachain_config,
         polkadot_config,
         collator_options,
@@ -340,9 +338,6 @@ pub async fn start_dev_node(
     para_id: ParaId,
     hwbench: Option<sc_sysinfo::HwBench>,
 ) -> Result<TaskManager, sc_service::error::Error> {
-    // TODO: Not present before, is this wanted and was forgotten?
-    // let parachain_config = prepare_node_config(parachain_config);
-
     // Create a `NodeBuilder` which helps setup parachain nodes common systems.
     let node_builder = NodeConfig::new_builder(&parachain_config, hwbench)?;
 
@@ -468,7 +463,6 @@ pub async fn start_dev_node(
                         current_para_block_head: None,
                         relay_offset: 1000,
                         relay_blocks_per_para_block: 2,
-                        // TODO: Recheck
                         para_blocks_per_relay_epoch: 10,
                         relay_randomness_config: (),
                         xcm_config: MockXcmConfig::new(
@@ -532,11 +526,6 @@ pub async fn start_dev_node(
         let block_data_cache = block_data_cache;
 
         Box::new(move |subscription_task_executor| {
-            let graph_pool= pool.0.as_any()
-                .downcast_ref::<sc_transaction_pool::BasicPool<
-                    sc_transaction_pool::FullChainApi<ParachainClient, Block>
-                    , Block
-                >>().expect("Frontier container chain template supports only single state transaction pool! Use --pool-type=single-state");
             let deps = crate::rpc::FullDeps {
                 backend: backend.clone(),
                 client: client.clone(),
@@ -545,7 +534,7 @@ pub async fn start_dev_node(
                     fc_db::Backend::KeyValue(b) => b.clone(),
                     fc_db::Backend::Sql(b) => b.clone(),
                 },
-                graph: graph_pool.pool().clone(),
+                graph: pool.clone(),
                 pool: pool.clone(),
                 max_past_logs,
                 max_block_range,
@@ -572,6 +561,5 @@ pub async fn start_dev_node(
 
     log::info!("Development Service Ready");
 
-    node_builder.network.start_network.start_network();
     Ok(node_builder.task_manager)
 }

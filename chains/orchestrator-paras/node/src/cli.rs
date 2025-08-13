@@ -144,14 +144,6 @@ pub struct RunCmd {
     /// Id of the parachain this collator collates for.
     #[arg(long)]
     pub parachain_id: Option<u32>,
-
-    /// EXPERIMENTAL: This is meant to be used only if collator is overshooting the PoV size, and
-    /// building blocks that do not fit in the max_pov_size. It is a percentage of the max_pov_size
-    /// configuration of the relay-chain.
-    ///
-    /// It will be removed once <https://github.com/paritytech/polkadot-sdk/issues/6020> is fixed.
-    #[arg(long)]
-    pub experimental_max_pov_percentage: Option<u32>,
 }
 
 impl std::ops::Deref for RunCmd {
@@ -245,6 +237,9 @@ pub struct RelayChainCli {
 
     /// The base path that should be used by the relay chain.
     pub base_path: PathBuf,
+
+    /// Is this a tanssi solochain? Used to select default chain spec.
+    pub solochain: bool,
 }
 
 impl RelayChainCli {
@@ -261,6 +256,7 @@ impl RelayChainCli {
             base_path,
             chain_id,
             base: clap::Parser::parse_from(relay_chain_args),
+            solochain: false,
         }
     }
 }
