@@ -586,10 +586,6 @@ pub mod pallet {
                     <= T::CurrentSessionIndex::session_index(),
                 Error::<T>::CollatorNotReadyToBeOnline
             );
-            ensure!(
-                T::CollatorStakeHelper::is_candidate_selected(collator),
-                Error::<T>::CollatorNotEligibleCandidate
-            );
             <OfflineCollators<T>>::remove(collator.clone());
             // Updates the SortedEligibleCandidates list. Has to be called after the collator is marked online.
             T::CollatorStakeHelper::on_online_status_change(collator, true)?;
