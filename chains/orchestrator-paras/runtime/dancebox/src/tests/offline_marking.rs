@@ -116,7 +116,7 @@ fn set_collator_offline_using_set_offline_removes_it_from_assigned_collators_and
 }
 
 #[test]
-fn set_collator_online_using_adds_it_to_assigned_collators_and_sorted_eligible_candidates() {
+fn set_collator_online_adds_it_to_assigned_collators_and_sorted_eligible_candidates() {
     ExtBuilder::default()
         .with_config(pallet_configuration::HostConfiguration {
             max_collators: 100,
