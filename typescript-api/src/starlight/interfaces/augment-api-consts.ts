@@ -399,6 +399,10 @@ declare module "@polkadot/api-base/types/consts" {
         };
         inactivityTracking: {
             /**
+             * The cooldown period length in sessions when a collator is notified as inactive.
+             **/
+            cooldownLength: u32 & AugmentedConst<ApiType>;
+            /**
              * The maximum amount of collators that can be stored for a session
              **/
             maxCollatorsPerSession: u32 & AugmentedConst<ApiType>;

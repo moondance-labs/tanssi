@@ -940,6 +940,10 @@ declare module "@polkadot/api-base/types/errors" {
              **/
             CollatorNotOnline: AugmentedError<ApiType>;
             /**
+             * Error returned when the collator status is attempted to be set to online before its cooldown period is over
+             **/
+            CollatorNotReadyToBeOnline: AugmentedError<ApiType>;
+            /**
              * Error returned when the collator attempted to be set offline is invulnerable
              **/
             MarkingInvulnerableOfflineInvalid: AugmentedError<ApiType>;
