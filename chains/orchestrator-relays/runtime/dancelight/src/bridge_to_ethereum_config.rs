@@ -56,6 +56,7 @@ use {
         ExecuteXcm, Fungibility, Junctions::*, SendXcm, Xcm,
     },
     xcm_executor::traits::WeightBounds,
+    xcm::WrapVersion,
 };
 
 pub const SLOTS_PER_EPOCH: u32 = snowbridge_pallet_ethereum_client::config::SLOTS_PER_EPOCH as u32;
@@ -510,40 +511,70 @@ where
 
                         let container_location = Location::new(0, [Parachain(container_para_id)]);
 
-                        // Reanchor the token location to the container's point of view
-                        let reanchor_result = token_location
-                            .clone()
-                            .reanchored(&container_location, &T::UniversalLocation::get());
+                        let token_split = token_location.interior().clone().split_global().ok();
 
-                        if let Ok(token_location_reanchored) = reanchor_result {
-                            let container_asset: Asset = (token_location_reanchored, amount).into();
-                            let tanssi_asset_fee: Asset = (Location::parent(), total_fees).into();
-                            let inbound_queue_pallet_index = InboundQueuePalletInstance::get();
+                        if let Some((_, interior)) = token_split {
+                            let container_token_from_tanssi = Location::new(0, interior);
+                            let reanchor_result = container_token_from_tanssi
+                                .reanchored(&container_location, &T::UniversalLocation::get());
 
-                            let remote_xcm = Xcm::<()>(vec![
-                                WithdrawAsset(container_asset.clone().into()),
-                                BuyExecution {
-                                    fees: tanssi_asset_fee,
-                                    weight_limit: Unlimited,
-                                },
-                                DescendOrigin(PalletInstance(inbound_queue_pallet_index).into()),
-                                UniversalOrigin(GlobalConsensus(network)),
-                                DepositAsset {
-                                    assets: Definite(container_asset.into()),
-                                    beneficiary,
-                                },
-                                // When the execution finishes deposit any leftover assets to the ETH
-                                // sovereign account on destination.
-                                SetAppendix(Xcm(vec![DepositAsset {
-                                    assets: Wild(AllCounted(2)),
-                                    beneficiary: bridge_location,
-                                }])),
-                            ]);
+                            if let Ok(token_location_reanchored) = reanchor_result {
+                                let container_asset: Asset =
+                                    (token_location_reanchored, amount).into();
+                                let tanssi_asset_fee: Asset =
+                                    (Location::parent(), total_fees).into();
+                                let inbound_queue_pallet_index = InboundQueuePalletInstance::get();
 
-                            if let Err(error) =
-                                send_xcm::<XcmSender>(container_location, remote_xcm)
-                            {
-                                log::error!("NativeContainerTokensProcessor: XCM send failed with error {:?}", error);
+                                let remote_xcm = Xcm::<()>(vec![
+                                    WithdrawAsset(
+                                        vec![tanssi_asset_fee.clone(), container_asset.clone()]
+                                            .into(),
+                                    ),
+                                    BuyExecution {
+                                        fees: tanssi_asset_fee,
+                                        weight_limit: Unlimited,
+                                    },
+                                    DescendOrigin(
+                                        PalletInstance(inbound_queue_pallet_index).into(),
+                                    ),
+                                    UniversalOrigin(GlobalConsensus(network)),
+                                    DepositAsset {
+                                        assets: Definite(container_asset.into()),
+                                        beneficiary,
+                                    },
+                                    // When the execution finishes deposit any leftover assets to the ETH
+                                    // sovereign account on destination.
+                                    SetAppendix(Xcm(vec![DepositAsset {
+                                        assets: Wild(AllCounted(2)),
+                                        beneficiary: bridge_location,
+                                    }])),
+                                ]);
+
+                                // let versioned_xcm = crate::XcmPallet::wrap_version(&container_location, remote_xcm.clone());
+
+                                // //let versioned_xcm = crate::VersionedXcm::<()>::from(remote_xcm.clone());
+
+                                // if let Err(error) = versioned_xcm.clone().unwrap().check_is_decodable() {
+                                //     log::error!("EnsureDecodableXcm: check_is_decodable failed with error: {:?}", error);
+                                //     //return Err(SendError::Transport("EnsureDecodableXcm validate_xcm_nesting error"))
+                                // }
+
+                                // if let Ok(_) = versioned_xcm.clone().unwrap().check_is_decodable() {
+                                //     log::error!("EnsureDecodableXcm: check_is_decodable SUCCEEEDS");
+                                //     log::error!("Remote XCM: {:?}", versioned_xcm.unwrap());
+                                // }
+
+                                if let Err(error) =
+                                    send_xcm::<XcmSender>(container_location, remote_xcm)
+                                {
+                                    log::error!("NativeContainerTokensProcessor: XCM send failed with error {:?}", error);
+                                }
+
+                                log::info!("NativeContainerTokensProcessor: XCM send succeeded");
+                            } else {
+                                log::error!(
+                                "NativeContainerTokensProcessor: failed to reanchor token location"
+                            );
                             }
                         } else {
                             log::error!(

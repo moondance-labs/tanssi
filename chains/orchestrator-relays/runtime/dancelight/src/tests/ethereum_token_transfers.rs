@@ -2699,6 +2699,26 @@ fn receive_erc20_tokens_does_not_fail_if_not_sufficient_and_random_address() {
 
 #[test]
 fn receive_container_native_tokens_from_eth_works() {
+    // std::env::set_var(
+    //     "RUST_LOG",
+    //     // error from everything + verbose XCM internals
+    //     "error,\
+    // xcm::check_is_decodable=error,\
+    // xcm::execute=trace,\
+    // xcm::send=trace,\
+    // xcm=trace,\
+    // xcm_builder=trace",
+    // );
+
+    // // Option A (preferred): route `log::` to tracing and print to test output
+    // let _ = tracing_log::LogTracer::init();
+    // let _ = sp_tracing::tracing_subscriber::fmt()
+    //     .with_env_filter(sp_tracing::tracing_subscriber::EnvFilter::from_default_env())
+    //     .with_test_writer()
+    //     .try_init();
+
+    std::env::set_var("RUST_LOG", "xcm::check_is_decodable=trace");
+
     ExtBuilder::default()
         .with_balances(vec![
             (EthereumSovereignAccount::get(), 100_000 * UNIT),
@@ -2708,15 +2728,19 @@ fn receive_container_native_tokens_from_eth_works() {
         ])
         .build()
         .execute_with(|| {
-            sp_tracing::try_init_simple();
+
+            // Make sure this is the first thing executed in the block:
+            //sp_tracing::try_init_simple();
+
+            //sp_tracing::init_for_tests();
 
             let relayer =
                 <Runtime as frame_system::Config>::RuntimeOrigin::signed(AccountId::from(ALICE));
 
             let channel_id: ChannelId = ChannelId::new(hex!(
-                "00000000000000000000006e61746976655f746f6b656e5f7472616e73666572"
+                "0000000000000000000000000000000000000000000000000000000000000004"
             ));
-            let agent_id = AgentId::from_low_u64_be(10);
+            let agent_id = AgentId::from(hex!("0000000000000000000000000000000000000000000000000000000000000005"));
             let para_id: ParaId = 2000u32.into();
             let amount_to_transfer = 10_000;
             let fee = 1000;
@@ -2724,10 +2748,9 @@ fn receive_container_native_tokens_from_eth_works() {
 
             let container_para_id = 3000u32;
 
-            assert_ok!(XcmPallet::force_xcm_version(
+            assert_ok!(XcmPallet::force_default_xcm_version(
                 root_origin(),
-                Box::new(Location::new(0, [Parachain(container_para_id)])).into(),
-                4u32
+                Some(5u32)
             ));
 
             assert_ok!(EthereumTokenTransfers::set_token_transfer_channel(
