@@ -55,8 +55,8 @@ use {
         prelude::*, validate_send, Asset as XcmAsset, AssetId as XcmAssetId, Assets as XcmAssets,
         ExecuteXcm, Fungibility, Junctions::*, SendXcm, Xcm,
     },
-    xcm_executor::traits::WeightBounds,
     xcm::WrapVersion,
+    xcm_executor::traits::WeightBounds,
 };
 
 pub const SLOTS_PER_EPOCH: u32 = snowbridge_pallet_ethereum_client::config::SLOTS_PER_EPOCH as u32;
@@ -373,7 +373,9 @@ impl<T, XcmSender, EthereumLocation, EthereumNetwork, InboundQueuePalletInstance
 where
     T: snowbridge_pallet_inbound_queue::Config
         + pallet_ethereum_token_transfers::Config
-        + snowbridge_pallet_system::Config,
+        + snowbridge_pallet_system::Config
+        + pallet_xcm::Config,
+    <T as frame_system::Config>::RuntimeEvent: From<RuntimeEvent>,
     XcmSender: SendXcm,
     EthereumLocation: Get<Location>,
     EthereumNetwork: Get<NetworkId>,
@@ -515,8 +517,10 @@ where
 
                         if let Some((_, interior)) = token_split {
                             let container_token_from_tanssi = Location::new(0, interior);
-                            let reanchor_result = container_token_from_tanssi
-                                .reanchored(&container_location, &T::UniversalLocation::get());
+                            let reanchor_result = container_token_from_tanssi.reanchored(
+                                &container_location,
+                                &<T as pallet_xcm::Config>::UniversalLocation::get(),
+                            );
 
                             if let Ok(token_location_reanchored) = reanchor_result {
                                 let container_asset: Asset =
@@ -550,27 +554,21 @@ where
                                     }])),
                                 ]);
 
-                                // let versioned_xcm = crate::XcmPallet::wrap_version(&container_location, remote_xcm.clone());
-
-                                // //let versioned_xcm = crate::VersionedXcm::<()>::from(remote_xcm.clone());
-
-                                // if let Err(error) = versioned_xcm.clone().unwrap().check_is_decodable() {
-                                //     log::error!("EnsureDecodableXcm: check_is_decodable failed with error: {:?}", error);
-                                //     //return Err(SendError::Transport("EnsureDecodableXcm validate_xcm_nesting error"))
-                                // }
-
-                                // if let Ok(_) = versioned_xcm.clone().unwrap().check_is_decodable() {
-                                //     log::error!("EnsureDecodableXcm: check_is_decodable SUCCEEEDS");
-                                //     log::error!("Remote XCM: {:?}", versioned_xcm.unwrap());
-                                // }
-
-                                if let Err(error) =
-                                    send_xcm::<XcmSender>(container_location, remote_xcm)
-                                {
-                                    log::error!("NativeContainerTokensProcessor: XCM send failed with error {:?}", error);
-                                }
-
-                                log::info!("NativeContainerTokensProcessor: XCM send succeeded");
+                                send_xcm::<XcmSender>(container_location.clone(), remote_xcm.clone())
+                                    .map(|(message_id, _price)| {
+                                        frame_system::Pallet::<T>::deposit_event(RuntimeEvent::XcmPallet(
+                                            pallet_xcm::Event::Sent {
+                                                origin: Here.into_location(),
+                                                destination: container_location,
+                                                message: remote_xcm,
+                                                message_id,
+                                            },
+                                        ));
+                                    })
+                                    .map_err(|e| {
+                                        log::error!("NativeContainerTokensProcessor: XCM send failed with error: {:?}", e);
+                                    })
+                                    .ok();
                             } else {
                                 log::error!(
                                 "NativeContainerTokensProcessor: failed to reanchor token location"

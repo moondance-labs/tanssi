@@ -16,6 +16,7 @@ import {
     STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_ETH_TOKEN_TRANSFERS,
     STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_FOREIGN_ASSETS_CREATOR,
     checkCallIsFiltered,
+    expectEventCount,
 } from "helpers";
 import type { KeyringPair } from "@moonwall/util";
 
@@ -40,6 +41,7 @@ describeSuite({
             const runtimeName = polkadotJs.runtimeVersion.specName.toString();
             isStarlight = runtimeName === "starlight";
             specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
+            // TODO: check if we need to filter container native tokens for a specific runtime
             shouldSkipStarlightETT =
                 isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_ETH_TOKEN_TRANSFERS.includes(specVersion);
             shouldSkipStarlightForeignAssetsCreator =
@@ -134,6 +136,11 @@ describeSuite({
                 // Submit the message
                 const tx3 = await polkadotJs.tx.ethereumInboundQueue.submit(messageExtrinsics[0]).signAsync(alice);
                 await context.createBlock([tx3], { allowFailures: false });
+
+                // Check for the XCM Sent event
+                await expectEventCount(polkadotJs, {
+                    Sent: 1,
+                });
             },
         });
     },

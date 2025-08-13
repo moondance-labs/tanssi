@@ -19,10 +19,10 @@
 use {
     crate::{
         bridge_to_ethereum_config::EthereumGatewayAddress, tests::common::*,
-        xcm_config::UniversalLocation, Balances, EthereumInboundQueue, EthereumLocation,
-        EthereumSovereignAccount, EthereumSystem, EthereumTokenTransfers, ForeignAssets,
-        ForeignAssetsCreator, RuntimeEvent, SnowbridgeFeesAccount, TokenLocationReanchored,
-        XcmPallet,
+        xcm_config::UniversalLocation, Balances, Configuration, EthereumInboundQueue,
+        EthereumLocation, EthereumSovereignAccount, EthereumSystem, EthereumTokenTransfers,
+        ForeignAssets, ForeignAssetsCreator, Paras, RuntimeEvent, SnowbridgeFeesAccount,
+        TokenLocationReanchored, XcmPallet,
     },
     alloc::vec,
     alloy_sol_types::SolEvent,
@@ -33,6 +33,7 @@ use {
     },
     hex_literal::hex,
     parity_scale_codec::Encode,
+    polkadot_parachain_primitives::primitives::HeadData,
     snowbridge_core::{AgentId, Channel, ChannelId, ParaId},
     snowbridge_inbound_queue_primitives::v1::{
         Command, Destination, Envelope, MessageProcessor, MessageV1, OutboundMessageAccepted,
@@ -2699,49 +2700,24 @@ fn receive_erc20_tokens_does_not_fail_if_not_sufficient_and_random_address() {
 
 #[test]
 fn receive_container_native_tokens_from_eth_works() {
-    // std::env::set_var(
-    //     "RUST_LOG",
-    //     // error from everything + verbose XCM internals
-    //     "error,\
-    // xcm::check_is_decodable=error,\
-    // xcm::execute=trace,\
-    // xcm::send=trace,\
-    // xcm=trace,\
-    // xcm_builder=trace",
-    // );
-
-    // // Option A (preferred): route `log::` to tracing and print to test output
-    // let _ = tracing_log::LogTracer::init();
-    // let _ = sp_tracing::tracing_subscriber::fmt()
-    //     .with_env_filter(sp_tracing::tracing_subscriber::EnvFilter::from_default_env())
-    //     .with_test_writer()
-    //     .try_init();
-
-    std::env::set_var("RUST_LOG", "xcm::check_is_decodable=trace");
-
     ExtBuilder::default()
         .with_balances(vec![
-            (EthereumSovereignAccount::get(), 100_000 * UNIT),
-            (SnowbridgeFeesAccount::get(), 100_000 * UNIT),
             (AccountId::from(ALICE), 100_000 * UNIT),
             (AccountId::from(BOB), 100_000 * UNIT),
         ])
         .build()
         .execute_with(|| {
-
-            // Make sure this is the first thing executed in the block:
-            //sp_tracing::try_init_simple();
-
-            //sp_tracing::init_for_tests();
-
             let relayer =
                 <Runtime as frame_system::Config>::RuntimeOrigin::signed(AccountId::from(ALICE));
 
             let channel_id: ChannelId = ChannelId::new(hex!(
                 "0000000000000000000000000000000000000000000000000000000000000004"
             ));
-            let agent_id = AgentId::from(hex!("0000000000000000000000000000000000000000000000000000000000000005"));
+            let agent_id = AgentId::from(hex!(
+                "0000000000000000000000000000000000000000000000000000000000000005"
+            ));
             let para_id: ParaId = 2000u32.into();
+
             let amount_to_transfer = 10_000;
             let fee = 1000;
             let container_fee = 500;
@@ -2751,6 +2727,12 @@ fn receive_container_native_tokens_from_eth_works() {
             assert_ok!(XcmPallet::force_default_xcm_version(
                 root_origin(),
                 Some(5u32)
+            ));
+
+            assert_ok!(Paras::force_set_current_head(
+                root_origin(),
+                container_para_id.into(),
+                HeadData::from(vec![1u8, 2u8, 3u8])
             ));
 
             assert_ok!(EthereumTokenTransfers::set_token_transfer_channel(
@@ -2815,6 +2797,11 @@ fn receive_container_native_tokens_from_eth_works() {
 
             assert_ok!(EthereumInboundQueue::submit(relayer, message.clone()));
 
-            // TODO: check for XCM events
+            // TODO: check the exact message here once it is fully implemented
+            assert_eq!(
+                filter_events!(RuntimeEvent::XcmPallet(pallet_xcm::Event::Sent { .. },)).count(),
+                1,
+                "XCM Sent event should be emitted!"
+            );
         });
 }
