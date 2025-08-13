@@ -28,7 +28,7 @@ use {
     log::{info, warn},
     node_common::{command::generate_genesis_block, service::NodeBuilderConfig as _},
     parity_scale_codec::Encode,
-    polkadot_service::WestendChainSpec,
+    polkadot_service::{GenericChainSpec, WestendChainSpec},
     sc_cli::{
         ChainSpec, CliConfiguration, DefaultConfigurationValues, ImportParams, KeystoreParams,
         NetworkParams, Result, SharedParams, SubstrateCli,
@@ -167,13 +167,26 @@ impl SubstrateCli for RelayChainCli {
     }
 
     fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
+        const STARLIGHT_RAW_SPECS: &[u8] =
+            include_bytes!("../../../../specs/solochain/starlight-raw-specs.json");
+
         match id {
             "westend_moonbase_relay_testnet" => Ok(Box::new(WestendChainSpec::from_json_bytes(
                 &include_bytes!("../../../../specs/dancebox/alphanet-relay-raw-specs.json")[..],
             )?)),
-            // If we are not using a moonbeam-centric pre-baked relay spec, then fall back to the
+            // Default to starlight if this is a solochain node. Else default to polkadot default.
+            "" if self.solochain => Ok(Box::new(GenericChainSpec::from_json_bytes(
+                STARLIGHT_RAW_SPECS,
+            )?)),
+            "starlight" | "tanssi" => Ok(Box::new(GenericChainSpec::from_json_bytes(
+                STARLIGHT_RAW_SPECS,
+            )?)),
+            "dancelight" => Ok(Box::new(GenericChainSpec::from_json_bytes(
+                &include_bytes!("../../../../specs/solochain/dancelight-raw-specs.json")[..],
+            )?)),
+            // If we are not using a pre-baked relay spec, then fall back to the
             // Polkadot service to interpret the id.
-            _ => polkadot_cli::Cli::from_iter([RelayChainCli::executable_name()].iter())
+            id => polkadot_cli::Cli::from_iter([RelayChainCli::executable_name()].iter())
                 .load_spec(id),
         }
     }
@@ -484,18 +497,36 @@ pub fn run() -> Result<()> {
                     container_chain_config = Some((container_chain_cli, tokio_handle));
                 }
 
-                crate::service::start_parachain_node(
-                    config,
-                    polkadot_config,
-                    container_chain_config,
-                    collator_options,
-                    id,
-                    hwbench,
-                    cli.run.experimental_max_pov_percentage,
-                )
-                    .await
-                    .map(|r| r.0)
-                    .map_err(Into::into)
+                match config.network.network_backend.unwrap_or(sc_network::config::NetworkBackendType::Libp2p) {
+                    sc_network::config::NetworkBackendType::Libp2p => {
+                        crate::service::start_parachain_node::<sc_network::NetworkWorker<_, _>>(
+                            config,
+                            polkadot_config,
+                            container_chain_config,
+                            collator_options,
+                            id,
+                            hwbench,
+                            cli.run.experimental_max_pov_percentage,
+                        )
+                            .await
+                            .map(|r| r.0)
+                            .map_err(Into::into)
+                    }
+                    sc_network::config::NetworkBackendType::Litep2p => {
+                        crate::service::start_parachain_node::<sc_network::Litep2pNetworkBackend>(
+                            config,
+                            polkadot_config,
+                            container_chain_config,
+                            collator_options,
+                            id,
+                            hwbench,
+                            cli.run.experimental_max_pov_percentage,
+                        )
+                            .await
+                            .map(|r| r.0)
+                            .map_err(Into::into)
+                    }
+                }
             })
         }
     }

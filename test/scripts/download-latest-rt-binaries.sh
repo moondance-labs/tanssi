@@ -105,20 +105,16 @@ fi
 
 # Helper: get the short SHA8 for a given tag
 get_sha8() {
-  local tag ret resp type url tagresp
+  local tag resp type url tagresp
 
   tag=$1
 
   # Fetch the ref object
-  resp=$(curl -s -H "Accept: application/vnd.github.v3+json" \
+  resp=$(curl -sSf -H "Accept: application/vnd.github.v3+json" \
     "https://api.github.com/repos/moondance-labs/tanssi/git/refs/tags/$tag")
-  ret=$?
-  (( ret == 0 )) || return "$ret"
 
   # Determine if it’s a lightweight or annotated tag
   type=$(jq -r '.object.type' <<<"$resp")
-  ret=$?
-  (( ret == 0 )) || return "$ret"
 
   if [[ $type == "commit" ]]; then
     # Lightweight tag: object.sha is the commit
@@ -126,19 +122,13 @@ get_sha8() {
   else
     # Annotated tag: need to follow the tag object
     url=$(jq -r '.object.url' <<<"$resp")
-    ret=$?
-    (( ret == 0 )) || return "$ret"
-
-    tagresp=$(curl -s -H "Accept: application/vnd.github.v3+json" "$url")
-    ret=$?
-    (( ret == 0 )) || return "$ret"
-
+    tagresp=$(curl -sSf -H "Accept: application/vnd.github.v3+json" "$url")
     jq -r '.object.sha' <<<"$tagresp" | cut -c1-8
   fi
 }
 
 # Cache GitHub releases JSON
-RELEASES_JSON=$(curl -s https://api.github.com/repos/moondance-labs/tanssi/releases)
+RELEASES_JSON=$(curl -sSf https://api.github.com/repos/moondance-labs/tanssi/releases)
 
 # Fetch latest non-starlight runtime tag
 if $DOWNLOAD_TANSSI_NODE || $DOWNLOAD_FRONTIER_NODE || $DOWNLOAD_SIMPLE_NODE; then

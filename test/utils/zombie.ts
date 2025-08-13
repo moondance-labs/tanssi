@@ -259,6 +259,33 @@ export const findCollatorProcessPid = async (collatorName: string) => {
     throw error;
 };
 
+export const findValidatorProcessPid = async (collatorName: string) => {
+    const pattern = `(tanssi-relay.*${collatorName})`;
+    const cmd = `ps aux | grep -E "${pattern}"`;
+    const { stdout } = await execPromisify(cmd);
+    const processes = stdout
+        .split("\n")
+        .filter((line) => line && !line.includes("grep -E"))
+        .map((line) => {
+            const parts = line.split(/\s+/);
+            const pid = parts[1];
+            const command = parts.slice(10).join(" ");
+            return {
+                name: `PID: ${pid}, Command: ${command}`,
+                value: pid,
+            };
+        });
+
+    if (processes.length === 1) {
+        return processes[0].value; // return pid
+    }
+    const error = {
+        message: "Multiple processes found.",
+        processes: processes.map((p) => p.name),
+    };
+    throw error;
+};
+
 export function isProcessRunning(pid: number): boolean {
     try {
         // The `kill` function with signal 0 does not terminate the process

@@ -92,13 +92,13 @@ pub type DancelightChainSpec = GenericChainSpec;
 
 pub fn dancelight_config() -> Result<DancelightChainSpec, String> {
     DancelightChainSpec::from_json_bytes(
-        &include_bytes!("../chain-specs/dancelight-raw-specs.json")[..],
+        &include_bytes!("../../../../../specs/solochain/dancelight-raw-specs.json")[..],
     )
 }
 
 pub fn tanssi_config() -> Result<StarlightChainSpec, String> {
     StarlightChainSpec::from_json_bytes(
-        &include_bytes!("../chain-specs/starlight-raw-specs.json")[..],
+        &include_bytes!("../../../../../specs/solochain/starlight-raw-specs.json")[..],
     )
 }
 
