@@ -7,8 +7,8 @@ source $scripts_path/set-env.sh
 
 deploy_command() {
     local deploy_script=$1
-
-    OWNER_PRIVATE_KEY=$ethereum_key forge script \
+    $scripts_root_dir/add-ci-fast-foundry-profile.sh
+    OWNER_PRIVATE_KEY=$ethereum_key FOUNDRY_PROFILE=ci-fast forge script \
     --rpc-url $eth_endpoint_http \
     --sender 0x$ethereum_address \
     --private-key $ethereum_key \
