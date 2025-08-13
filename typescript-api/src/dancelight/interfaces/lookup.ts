@@ -7371,6 +7371,7 @@ export default {
             "MarkingOfflineNotEnabled",
             "CollatorNotEligibleCandidate",
             "CollatorNotOnline",
+            "CollatorNotReadyToBeOnline",
             "CollatorNotOffline",
             "MarkingInvulnerableOfflineInvalid",
             "CollatorCannotBeNotifiedAsInactive",

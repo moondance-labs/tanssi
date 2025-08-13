@@ -1683,7 +1683,7 @@ declare module "@polkadot/api-base/types/storage" {
              **/
             offlineCollators: AugmentedQuery<
                 ApiType,
-                (arg: AccountId32 | string | Uint8Array) => Observable<bool>,
+                (arg: AccountId32 | string | Uint8Array) => Observable<Option<u32>>,
                 [AccountId32]
             > &
                 QueryableStorageEntry<ApiType, [AccountId32]>;
