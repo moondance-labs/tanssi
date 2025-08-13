@@ -406,7 +406,7 @@ jobs:
           uses: actions-rs/toolchain@v1
           with:
             toolchain: nightly
-            override: true
+            override: false
             components: rust-src
             target: wasm32-unknown-unknown
         - name: Install required dependencies
