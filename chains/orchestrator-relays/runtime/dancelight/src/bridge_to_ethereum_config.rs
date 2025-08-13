@@ -38,7 +38,7 @@ use {
     },
     alloc::vec,
     core::marker::PhantomData,
-    frame_support::weights::ConstantMultiplier,
+    frame_support::{traits::PalletInfoAccess, weights::ConstantMultiplier},
     pallet_xcm::EnsureXcm,
     parity_scale_codec::DecodeAll,
     snowbridge_beacon_primitives::ForkVersions,
@@ -348,7 +348,6 @@ where
 pub struct NativeContainerTokensProcessor<
     T,
     XcmSender,
-    XcmWeigher,
     EthereumLocation,
     EthereumNetwork,
     InboundQueuePalletInstance,
@@ -356,19 +355,16 @@ pub struct NativeContainerTokensProcessor<
     PhantomData<(
         T,
         XcmSender,
-        XcmWeigher,
         EthereumLocation,
         EthereumNetwork,
         InboundQueuePalletInstance,
     )>,
 );
 
-impl<T, XcmSender, XcmWeigher, EthereumLocation, EthereumNetwork, InboundQueuePalletInstance>
-    MessageProcessor
+impl<T, XcmSender, EthereumLocation, EthereumNetwork, InboundQueuePalletInstance> MessageProcessor
     for NativeContainerTokensProcessor<
         T,
         XcmSender,
-        XcmWeigher,
         EthereumLocation,
         EthereumNetwork,
         InboundQueuePalletInstance,
@@ -378,7 +374,6 @@ where
         + pallet_ethereum_token_transfers::Config
         + snowbridge_pallet_system::Config,
     XcmSender: SendXcm,
-    XcmWeigher: WeightBounds<T::RuntimeCall>,
     EthereumLocation: Get<Location>,
     EthereumNetwork: Get<NetworkId>,
     InboundQueuePalletInstance: Get<u8>,
@@ -419,7 +414,11 @@ where
                 if let Some(expected_token_location) =
                     snowbridge_pallet_system::Pallet::<T>::convert(&token_id)
                 {
-                    let chain_part = expected_token_location.first_interior();
+                    let chain_part = expected_token_location
+                        .interior()
+                        .clone()
+                        .split_global()
+                        .ok();
 
                     let expected_para_id = match destination {
                         Destination::ForeignAccountId32 { para_id, .. } => para_id,
@@ -431,8 +430,13 @@ where
                     };
 
                     match chain_part {
-                        Some(Parachain(id)) => {
-                            return expected_para_id == *id;
+                        Some((_, interior)) => {
+                            if let Some(Parachain(id)) = interior.first() {
+                                return expected_para_id == *id;
+                            } else {
+                                log::error!("NativeContainerTokensProcessor: invalid interior");
+                                return false;
+                            }
                         }
                         _ => {
                             log::error!("NativeContainerTokensProcessor: invalid chain part");
@@ -536,17 +540,10 @@ where
                                 }])),
                             ]);
 
-                            if let Ok((ticket, _price)) = validate_send::<XcmSender>(
-                                container_location.clone(),
-                                remote_xcm.clone(),
-                            ) {
-                                if let Err(error) = XcmSender::deliver(ticket) {
-                                    log::error!("NativeContainerTokensProcessor: XCM deliver failed with error {:?}", error);
-                                }
-                            } else {
-                                log::error!(
-                                    "NativeContainerTokensProcessor: XCM validate_send failed"
-                                );
+                            if let Err(error) =
+                                send_xcm::<XcmSender>(container_location, remote_xcm)
+                            {
+                                log::error!("NativeContainerTokensProcessor: XCM send failed with error {:?}", error);
                             }
                         } else {
                             log::error!(
@@ -674,6 +671,10 @@ mod test_helpers {
     }
 }
 
+parameter_types! {
+    pub InboundQueuePalletInstance: u8 = <EthereumInboundQueue as PalletInfoAccess>::index() as u8;
+}
+
 pub type EthTokensProcessor = EthTokensLocalProcessor<
     Runtime,
     xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
@@ -684,6 +685,14 @@ pub type EthTokensProcessor = EthTokensLocalProcessor<
 
 #[cfg(not(feature = "runtime-benchmarks"))]
 pub type NativeTokensProcessor = NativeTokenTransferMessageProcessor<Runtime>;
+
+pub type NativeContainerProcessor = NativeContainerTokensProcessor<
+    Runtime,
+    xcm_config::XcmRouter,
+    dancelight_runtime_constants::snowbridge::EthereumLocation,
+    dancelight_runtime_constants::snowbridge::EthereumNetwork,
+    InboundQueuePalletInstance,
+>;
 
 impl snowbridge_pallet_inbound_queue::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
@@ -710,7 +719,11 @@ impl snowbridge_pallet_inbound_queue::Config for Runtime {
     #[cfg(not(feature = "runtime-benchmarks"))]
     type MessageProcessor = (
         SymbioticMessageProcessor<Self>,
-        GenericTokenMessageProcessor<Self, NativeTokensProcessor, EthTokensProcessor>,
+        GenericTokenMessageProcessor<
+            Self,
+            (NativeTokensProcessor, NativeContainerProcessor),
+            EthTokensProcessor,
+        >,
     );
     type RewardProcessor = RewardThroughFeesAccount<Self>;
     #[cfg(feature = "runtime-benchmarks")]
