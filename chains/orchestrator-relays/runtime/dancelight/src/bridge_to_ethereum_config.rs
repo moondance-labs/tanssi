@@ -38,7 +38,7 @@ use {
     },
     alloc::vec,
     core::marker::PhantomData,
-    frame_support::{dispatch::DispatchClass, weights::ConstantMultiplier},
+    frame_support::weights::ConstantMultiplier,
     pallet_xcm::EnsureXcm,
     parity_scale_codec::DecodeAll,
     snowbridge_beacon_primitives::ForkVersions,
@@ -222,9 +222,10 @@ where
                 Self::process_xcm_local_native_eth_transfer(eth_transfer_data)
             }
             // TODO: Add support for container transfers here
-            _ => Err(DispatchError::Other(
-                "container transfers not supported yet",
-            )),
+            _ => {
+                log::error!("EthTokensLocalProcessor: container transfers not supported yet");
+                return Ok(());
+            }
         }
     }
 }
@@ -297,7 +298,10 @@ where
 
         let destination_account = match eth_transfer_data.destination {
             Destination::AccountId32 { id } => id,
-            _ => return Err(DispatchError::Other("invalid destination")),
+            _ => {
+                log::error!("EthTokensLocalProcessor: invalid destination");
+                return Ok(());
+            }
         };
 
         let mut xcm = Xcm::<T::RuntimeCall>(vec![
@@ -316,27 +320,26 @@ where
 
         let ethereum_location = EthereumLocation::get();
 
-        let weight = XcmWeigher::weight(&mut xcm)
-            .map_err(|()| DispatchError::Other("UnweighableMessage"))?;
-        let mut message_id = xcm.using_encoded(sp_io::hashing::blake2_256);
+        if let Ok(weight) = XcmWeigher::weight(&mut xcm) {
+            let mut message_id = xcm.using_encoded(sp_io::hashing::blake2_256);
 
-        let outcome = XcmProcessor::prepare_and_execute(
-            ethereum_location,
-            xcm,
-            &mut message_id,
-            weight,
-            weight,
-        );
-
-        frame_system::Pallet::<T>::register_extra_weight_unchecked(weight, DispatchClass::Normal);
-
-        outcome.ensure_complete().map_err(|error| {
-            log::error!(
-                "EthTokensLocalProcessor: XCM execution failed with error {:?}",
-                error
+            let outcome = XcmProcessor::prepare_and_execute(
+                ethereum_location,
+                xcm,
+                &mut message_id,
+                weight,
+                weight,
             );
-            DispatchError::Other("LocalExecutionIncomplete")
-        })?;
+
+            if let Err(error) = outcome.ensure_complete() {
+                log::error!(
+                    "EthTokensLocalProcessor: XCM execution failed with error {:?}",
+                    error
+                );
+            }
+        } else {
+            log::error!("EthTokensLocalProcessor: unweighable message");
+        }
 
         Ok(())
     }
@@ -345,12 +348,20 @@ where
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmark_helper {
     use {
-        crate::{EthereumBeaconClient, Runtime, RuntimeOrigin},
-        snowbridge_beacon_primitives::BeaconHeader,
+        crate::{
+            bridge_to_ethereum_config::EthTokensProcessor, AccountId, Balances,
+            EthereumBeaconClient, ForeignAssetsCreator, Runtime, RuntimeOrigin,
+            SnowbridgeFeesAccount, UNITS,
+        },
+        frame_support::traits::fungible::Mutate,
         snowbridge_core::Channel,
-        snowbridge_inbound_queue_primitives::v1::{Envelope, MessageProcessor},
+        snowbridge_inbound_queue_primitives::{
+            v1::{Envelope, MessageProcessor},
+            EventFixture,
+        },
+        snowbridge_pallet_inbound_queue::Nonce,
         snowbridge_pallet_system::Channels,
-        sp_core::H256,
+        sp_runtime::DispatchResult,
         xcm::latest::Location,
     };
 
@@ -363,8 +374,10 @@ mod benchmark_helper {
     }
 
     impl snowbridge_pallet_inbound_queue::BenchmarkHelper<Runtime> for EthSystemBenchHelper {
-        fn initialize_storage(beacon_header: BeaconHeader, block_roots_root: H256) {
-            let submit_message = snowbridge_pallet_inbound_queue_fixtures::register_token::make_register_token_message();
+        fn initialize_storage() -> EventFixture {
+            // In our case send token command is the worst case to benchmark, but this might change in the future
+            let submit_message =
+                snowbridge_pallet_inbound_queue_fixtures::send_token::make_send_token_message();
             let envelope: Envelope = Envelope::try_from(&submit_message.event.event_log).unwrap();
 
             Channels::<Runtime>::set(
@@ -375,19 +388,46 @@ mod benchmark_helper {
                 }),
             );
 
-            EthereumBeaconClient::store_finalized_header(beacon_header, block_roots_root).unwrap();
+            Nonce::<Runtime>::insert(envelope.channel_id, 1);
+
+            let eth_transfer_data =
+                EthTokensProcessor::decode_message_for_eth_transfer(envelope.payload.as_slice())
+                    .unwrap();
+
+            ForeignAssetsCreator::create_foreign_asset(
+                RuntimeOrigin::root(),
+                eth_transfer_data.token_location,
+                42,
+                AccountId::new([0; 32]),
+                true,
+                1,
+            )
+            .expect("creating foreign asset");
+
+            EthereumBeaconClient::store_finalized_header(
+                submit_message.finalized_header,
+                submit_message.block_roots_root,
+            )
+            .expect("storing finalized header");
+
+            Balances::mint_into(&SnowbridgeFeesAccount::get(), 10 * UNITS)
+                .expect("minting fees_account balance");
+
+            submit_message
         }
     }
 
-    pub struct DoNothingMessageProcessor;
-
-    impl MessageProcessor for DoNothingMessageProcessor {
-        fn can_process_message(_: &Channel, _: &Envelope) -> bool {
+    pub struct WorstCaseMessageProcessor<P>(core::marker::PhantomData<P>);
+    impl<P> MessageProcessor for WorstCaseMessageProcessor<P>
+    where
+        P: MessageProcessor,
+    {
+        fn can_process_message(_channel: &Channel, _envelope: &Envelope) -> bool {
             true
         }
 
-        fn process_message(_: Channel, _: Envelope) -> Result<(), sp_runtime::DispatchError> {
-            Ok(())
+        fn process_message(channel: Channel, envelope: Envelope) -> DispatchResult {
+            P::process_message(channel, envelope)
         }
     }
 }
@@ -445,5 +485,5 @@ impl snowbridge_pallet_inbound_queue::Config for Runtime {
     );
     type RewardProcessor = RewardThroughFeesAccount<Self>;
     #[cfg(feature = "runtime-benchmarks")]
-    type MessageProcessor = (benchmark_helper::DoNothingMessageProcessor,);
+    type MessageProcessor = (benchmark_helper::WorstCaseMessageProcessor<EthTokensProcessor>,);
 }

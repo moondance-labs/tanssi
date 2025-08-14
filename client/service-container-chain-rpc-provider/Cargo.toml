@@ -29,6 +29,7 @@ dc-orchestrator-chain-interface = { workspace = true }
 
 # Substrate
 sc-cli = { workspace = true }
+sc-network = { workspace = true }
 sc-service = { workspace = true }
 sc-telemetry = { workspace = true }
 sc-tracing = { workspace = true }

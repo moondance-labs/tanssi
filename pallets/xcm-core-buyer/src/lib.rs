@@ -405,11 +405,7 @@ pub mod pallet {
         ) -> DispatchResult {
             ensure_root(origin)?;
 
-            if let Some(xcm_weights) = xcm_weights {
-                RelayXcmWeightConfig::<T>::put(xcm_weights);
-            } else {
-                RelayXcmWeightConfig::<T>::kill();
-            }
+            RelayXcmWeightConfig::<T>::set(xcm_weights);
 
             Ok(())
         }

@@ -17,7 +17,7 @@
 use {
     crate::cli::{ContainerNodeRelayChainCli, RelayChainCli},
     parity_scale_codec::Encode,
-    polkadot_service::WestendChainSpec,
+    polkadot_service::{GenericChainSpec, WestendChainSpec},
     sc_chain_spec::construct_genesis_block,
     sc_cli::{
         ChainSpec, CliConfiguration, DefaultConfigurationValues, ImportParams, KeystoreParams,
@@ -251,13 +251,26 @@ impl SubstrateCli for RelayChainCli {
     }
 
     fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
+        const STARLIGHT_RAW_SPECS: &[u8] =
+            include_bytes!("../../../specs/solochain/starlight-raw-specs.json");
+
         match id {
             "westend_moonbase_relay_testnet" => Ok(Box::new(WestendChainSpec::from_json_bytes(
                 &include_bytes!("../../../specs/dancebox/alphanet-relay-raw-specs.json")[..],
             )?)),
-            // If we are not using a moonbeam-centric pre-baked relay spec, then fall back to the
+            // Default to starlight if this is a solochain node. Else default to polkadot default.
+            "" if self.solochain => Ok(Box::new(GenericChainSpec::from_json_bytes(
+                STARLIGHT_RAW_SPECS,
+            )?)),
+            "starlight" | "tanssi" => Ok(Box::new(GenericChainSpec::from_json_bytes(
+                STARLIGHT_RAW_SPECS,
+            )?)),
+            "dancelight" => Ok(Box::new(GenericChainSpec::from_json_bytes(
+                &include_bytes!("../../../specs/solochain/dancelight-raw-specs.json")[..],
+            )?)),
+            // If we are not using a pre-baked relay spec, then fall back to the
             // Polkadot service to interpret the id.
-            _ => polkadot_cli::Cli::from_iter([RelayChainCli::executable_name()].iter())
+            id => polkadot_cli::Cli::from_iter([RelayChainCli::executable_name()].iter())
                 .load_spec(id),
         }
     }

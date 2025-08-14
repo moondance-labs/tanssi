@@ -159,16 +159,41 @@ where
 
                 let para_id = ParaId::from(para_id);
 
-                let started = tc_service_orchestrator_chain::parachain::start_parachain_node(
-                    orchestrator_config,
-                    polkadot_config,
-                    None, // container_config, we don't use it as we manage that ourselfves.
-                    self.collator_options,
-                    para_id,
-                    None, // no hwbench,
-                    None, // no max_pov_percentage
-                )
-                .await?;
+                let started = match self
+                    .config
+                    .network
+                    .network_backend
+                    .unwrap_or(sc_network::config::NetworkBackendType::Libp2p)
+                {
+                    sc_network::config::NetworkBackendType::Libp2p => {
+                        tc_service_orchestrator_chain::parachain::start_parachain_node::<
+                            sc_network::NetworkWorker<_, _>,
+                        >(
+                            orchestrator_config,
+                            polkadot_config,
+                            None, // container_config, we don't use it as we manage that ourselfves.
+                            self.collator_options,
+                            para_id,
+                            None, // no hwbench,
+                            None, // no max_pov_percentage
+                        )
+                        .await?
+                    }
+                    sc_network::config::NetworkBackendType::Litep2p => {
+                        tc_service_orchestrator_chain::parachain::start_parachain_node::<
+                            sc_network::Litep2pNetworkBackend,
+                        >(
+                            orchestrator_config,
+                            polkadot_config,
+                            None, // container_config, we don't use it as we manage that ourselfves.
+                            self.collator_options,
+                            para_id,
+                            None, // no hwbench,
+                            None, // no max_pov_percentage
+                        )
+                        .await?
+                    }
+                };
 
                 task_manager = started.task_manager;
                 relay_chain_interface = started.relay_chain_interface;

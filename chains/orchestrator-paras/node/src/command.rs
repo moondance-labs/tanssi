@@ -442,18 +442,36 @@ pub fn run() -> Result<()> {
                     container_chain_config = Some((container_chain_cli, tokio_handle));
                 }
 
-                tc_service_orchestrator_chain::parachain::start_parachain_node(
-                    config,
-                    polkadot_config,
-                    container_chain_config,
-                    collator_options,
-                    id,
-                    hwbench,
-                    cli.run.experimental_max_pov_percentage,
-                )
-                    .await
-                    .map(|r| r.task_manager)
-                    .map_err(Into::into)
+                match config.network.network_backend.unwrap_or(sc_network::config::NetworkBackendType::Libp2p) {
+                    sc_network::config::NetworkBackendType::Libp2p => {
+                         tc_service_orchestrator_chain::parachain::start_parachain_node::<sc_network::NetworkWorker<_, _>>(
+                            config,
+                            polkadot_config,
+                            container_chain_config,
+                            collator_options,
+                            id,
+                            hwbench,
+                            cli.run.experimental_max_pov_percentage,
+                        )
+                            .await
+                            .map(|r| r.task_manager)
+                            .map_err(Into::into)
+                    }
+                    sc_network::config::NetworkBackendType::Litep2p => {
+                        tc_service_orchestrator_chain::parachain::start_parachain_node::<sc_network::Litep2pNetworkBackend>(
+                            config,
+                            polkadot_config,
+                            container_chain_config,
+                            collator_options,
+                            id,
+                            hwbench,
+                            cli.run.experimental_max_pov_percentage,
+                        )
+                            .await
+                            .map(|r| r.task_manager)
+                            .map_err(Into::into)
+                    }
+                }
             })
         }
     }

@@ -16,9 +16,8 @@
 
 //! Service and ServiceFactory implementation. Specialized wrapper over substrate service.
 
-#[allow(deprecated)]
 use {
-    container_chain_template_frontier_runtime::{opaque::Block, RuntimeApi},
+    container_chain_template_frontier_runtime::{opaque::Block, Hash, RuntimeApi},
     cumulus_client_cli::CollatorOptions,
     cumulus_client_consensus_common::ParachainBlockImport as TParachainBlockImport,
     cumulus_client_parachain_inherent::{MockValidationDataInherentDataProvider, MockXcmConfig},
@@ -39,6 +38,7 @@ use {
     polkadot_primitives::UpgradeGoAhead,
     sc_consensus::BasicQueue,
     sc_executor::WasmExecutor,
+    sc_network::NetworkBackend,
     sc_service::{Configuration, TFullBackend, TFullClient, TaskManager},
     sp_api::ProvideRuntimeApi,
     sp_blockchain::HeaderBackend,
@@ -171,14 +171,17 @@ pub fn import_queue(
 ///
 /// This is the actual implementation that is abstract over the executor and the runtime api.
 #[sc_tracing::logging::prefix_logs_with("Parachain")]
-async fn start_node_impl(
+async fn start_node_impl<Net>(
     parachain_config: Configuration,
     polkadot_config: Configuration,
     collator_options: CollatorOptions,
     para_id: ParaId,
     rpc_config: crate::cli::RpcConfig,
     hwbench: Option<sc_sysinfo::HwBench>,
-) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> {
+) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)>
+where
+    Net: NetworkBackend<Block, Hash>,
+{
     let parachain_config = prepare_node_config(parachain_config);
 
     // Create a `NodeBuilder` which helps setup parachain nodes common systems.
@@ -207,7 +210,7 @@ async fn start_node_impl(
 
     // Build cumulus network, allowing to access network-related services.
     let node_builder = node_builder
-        .build_cumulus_network::<_, sc_network::NetworkWorker<_, _>>(
+        .build_cumulus_network::<_, Net>(
             &parachain_config,
             para_id,
             import_queue,
@@ -298,15 +301,18 @@ async fn start_node_impl(
 }
 
 /// Start a parachain node.
-pub async fn start_parachain_node(
+pub async fn start_parachain_node<Net>(
     parachain_config: Configuration,
     polkadot_config: Configuration,
     collator_options: CollatorOptions,
     para_id: ParaId,
     rpc_config: crate::cli::RpcConfig,
     hwbench: Option<sc_sysinfo::HwBench>,
-) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> {
-    start_node_impl(
+) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)>
+where
+    Net: NetworkBackend<Block, Hash>,
+{
+    start_node_impl::<Net>(
         parachain_config,
         polkadot_config,
         collator_options,

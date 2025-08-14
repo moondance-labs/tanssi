@@ -323,16 +323,34 @@ pub fn run() -> Result<()> {
                     }
                 }
 
-                crate::service::start_parachain_node(
-                    config,
-                    polkadot_config,
-                    collator_options,
-                    id,
-                    hwbench,
-                )
-                    .await
-                    .map(|r| r.0)
-                    .map_err(Into::into)
+                match config.network.network_backend.unwrap_or(sc_network::config::NetworkBackendType::Libp2p) {
+                    sc_network::config::NetworkBackendType::Libp2p => {
+                        crate::service::start_parachain_node::<sc_network::NetworkWorker<_, _>>(
+                            config,
+                            polkadot_config,
+                            collator_options,
+                            id,
+                            hwbench,
+                        )
+                            .await
+                            .map(|r| r.0)
+                            .map_err(Into::into)
+                    }
+                    sc_network::config::NetworkBackendType::Litep2p => {
+                        crate::service::start_parachain_node::<sc_network::Litep2pNetworkBackend>(
+                            config,
+                            polkadot_config,
+                            collator_options,
+                            id,
+                            hwbench,
+                        )
+                            .await
+                            .map(|r| r.0)
+                            .map_err(Into::into)
+
+                    }
+                }
+
             })
         }
     }

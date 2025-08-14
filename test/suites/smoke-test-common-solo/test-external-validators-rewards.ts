@@ -6,11 +6,13 @@ import {
     getAccountBalance,
     getCurrentEraStartBlock,
     findEraBlockUsingBinarySearch,
-    HOLESKY_SOVEREIGN_ACCOUNT_ADDRESS,
     PRIMARY_GOVERNANCE_CHANNEL_ID,
     SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS,
     DANCELIGHT_ERA_INFLATION_PERBILL,
+    ETHEREUM_MAINNET_SOVEREIGN_ACCOUNT_ADDRESS,
+    STARLIGHT_ERA_INFLATION_PERBILL,
 } from "utils";
+import { isStarlightRuntime } from "../../utils/runtime.ts";
 
 describeSuite({
     id: "SMOK05",
@@ -63,8 +65,9 @@ describeSuite({
                 const apiAtCheckpointA = await api.at(await api.rpc.chain.getBlockHash(blockNumberCheckpointA));
                 const apiAtCheckpointB = await api.at(await api.rpc.chain.getBlockHash(blockNumberCheckpointB));
 
-                const sovereignAccount =
-                    runtimeVersion > 1101 ? SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS : HOLESKY_SOVEREIGN_ACCOUNT_ADDRESS;
+                const sovereignAccount = isStarlightRuntime(api)
+                    ? ETHEREUM_MAINNET_SOVEREIGN_ACCOUNT_ADDRESS
+                    : SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS;
 
                 const sovereignBalanceCheckpointB = await getAccountBalance(apiAtCheckpointB, sovereignAccount);
                 const sovereignBalanceCheckpointA = await getAccountBalance(apiAtCheckpointA, sovereignAccount);
@@ -84,8 +87,10 @@ describeSuite({
                 // The event is triggered, nonce should be incremented
                 if (event) {
                     const supplyBefore = (await apiAtCheckpointA.query.balances.totalIssuance()).toBigInt();
-                    const expectedSovereignIssuance =
-                        (supplyBefore * DANCELIGHT_ERA_INFLATION_PERBILL) / 1_000_000_000n;
+                    const eraInflation = isStarlightRuntime(api)
+                        ? STARLIGHT_ERA_INFLATION_PERBILL
+                        : DANCELIGHT_ERA_INFLATION_PERBILL;
+                    const expectedSovereignIssuance = (supplyBefore * eraInflation) / 1_000_000_000n;
 
                     expect(nonceDiff).toEqual(1);
 
@@ -94,8 +99,9 @@ describeSuite({
 
                     // we know there might be rounding errors, so we always check it is in the range +-1
                     expect(
-                        issuance >= expectedSovereignIssuance - 1n && issuance <= expectedSovereignIssuance + 1n,
-                        `Issuance not in the range, Actual: ${issuance}, Expected:  ${expectedSovereignIssuance}, Error margin: ${errorMargin}`
+                        issuance >= expectedSovereignIssuance - errorMargin &&
+                            issuance <= expectedSovereignIssuance + errorMargin,
+                        `Issuance not in the range, Actual: ${issuance}, Expected:  ${expectedSovereignIssuance}, Error margin: ${errorMargin}. Block: ${blockNumberCheckpointB}`
                     ).to.be.true;
                 }
                 // The event is not triggered, nonce should be the same

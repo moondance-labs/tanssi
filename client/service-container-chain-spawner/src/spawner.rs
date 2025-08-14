@@ -394,18 +394,40 @@ async fn try_spawn<
             container_chain_cli_config.database.set_path(&db_path);
 
             let (container_chain_task_manager, container_chain_client, container_chain_db) =
-                start_node_impl_container(
-                    container_chain_cli_config,
-                    relay_chain_interface.clone(),
-                    orchestrator_chain_interface.clone(),
-                    sync_keystore.clone(),
-                    container_chain_para_id,
-                    collation_params.clone(),
-                    generate_rpc_builder.clone(),
-                    &container_chain_cli,
-                    data_preserver,
-                )
-                .await?;
+                match container_chain_cli_config
+                    .network
+                    .network_backend
+                    .unwrap_or(sc_network::config::NetworkBackendType::Libp2p)
+                {
+                    sc_network::config::NetworkBackendType::Libp2p => {
+                        start_node_impl_container::<_, _, sc_network::NetworkWorker<_, _>>(
+                            container_chain_cli_config,
+                            relay_chain_interface.clone(),
+                            orchestrator_chain_interface.clone(),
+                            sync_keystore.clone(),
+                            container_chain_para_id,
+                            collation_params.clone(),
+                            generate_rpc_builder.clone(),
+                            &container_chain_cli,
+                            data_preserver,
+                        )
+                        .await?
+                    }
+                    sc_network::config::NetworkBackendType::Litep2p => {
+                        start_node_impl_container::<_, _, sc_network::Litep2pNetworkBackend>(
+                            container_chain_cli_config,
+                            relay_chain_interface.clone(),
+                            orchestrator_chain_interface.clone(),
+                            sync_keystore.clone(),
+                            container_chain_para_id,
+                            collation_params.clone(),
+                            generate_rpc_builder.clone(),
+                            &container_chain_cli,
+                            data_preserver,
+                        )
+                        .await?
+                    }
+                };
 
             // Keep all node parts in one variable to make them easier to drop
             let node_parts = (
