@@ -181,6 +181,9 @@ tiny-keccak = { workspace = true }
 tokio = { workspace = true, features = [ "macros" ] }
 westend-runtime = { workspace = true }
 
+[package.metadata.cargo-udeps.ignore]
+development = ["westend-runtime"]
+
 [build-dependencies]
 substrate-wasm-builder = { workspace = true, optional = true }
 

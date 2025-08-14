@@ -139,13 +139,9 @@ frame-try-runtime = { workspace = true, optional = true }
 
 [dev-dependencies]
 cumulus-primitives-parachain-inherent = { workspace = true }
-cumulus-test-relay-sproof-builder = { workspace = true }
-dancebox-runtime-test-utils = { workspace = true }
-emulated-integration-tests-common = { workspace = true }
 pallet-staking = { workspace = true, features = [ "std" ] }
 paste = { workspace = true }
 polkadot-runtime-parachains = { workspace = true, features = [ "std" ] }
-rococo-runtime-constants = { workspace = true }
 sc-service = { workspace = true }
 sp-consensus-babe = { workspace = true, features = [ "std" ] }
 sp-consensus-beefy = { workspace = true, features = [ "std" ] }
@@ -171,7 +167,6 @@ std = [
 	"cumulus-primitives-parachain-inherent/std",
 	"cumulus-primitives-timestamp/std",
 	"cumulus-primitives-utility/std",
-	"cumulus-test-relay-sproof-builder/std",
 	"dp-consensus/std",
 	"dp-core/std",
 	"dp-slot-duration-runtime-api/std",
@@ -239,7 +234,6 @@ std = [
 	"polkadot-parachain-primitives/std",
 	"polkadot-runtime-common/std",
 	"polkadot-runtime-parachains/std",
-	"rococo-runtime-constants/std",
 	"scale-info/std",
 	"serde/std",
 	"serde_json/std",
