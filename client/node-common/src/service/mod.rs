@@ -14,19 +14,5 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-//! Substrate Parachain Node Template CLI
-
-#![warn(missing_docs)]
-use color_eyre::eyre;
-mod chain_spec;
-mod cli;
-mod command;
-mod service;
-#[cfg(test)]
-mod tests;
-
-fn main() -> eyre::Result<()> {
-    color_eyre::install()?;
-    command::run()?;
-    Ok(())
-}
+pub mod node_builder;
+pub mod solochain;

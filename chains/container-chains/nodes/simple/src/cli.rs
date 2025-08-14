@@ -16,11 +16,19 @@
 
 use {
     clap::Parser,
-    node_common::{cli::BuildSpecCmd, cli::Subcommand, service::Sealing},
-    url::Url,
+    node_common::{cli::BuildSpecCmd, service::node_builder::Sealing},
+    tc_service_container_chain_rpc_provider::RpcProviderCmd,
 };
 
-pub type SimpleSubcommand = Subcommand<BuildSpecCmdSimple>;
+pub type BaseSubcommand = node_common::cli::Subcommand<BuildSpecCmdSimple>;
+
+/// Custom subcommand enum with `rpc-provider`
+#[derive(Debug, clap::Subcommand)]
+pub enum Subcommand {
+    RpcProvider(RpcProviderCmd),
+    #[command(flatten)]
+    Base(BaseSubcommand),
+}
 
 #[derive(Debug, Parser)]
 #[group(skip)]
@@ -55,11 +63,16 @@ impl std::ops::Deref for RunCmd {
 )]
 pub struct Cli {
     #[command(subcommand)]
-    pub subcommand: Option<SimpleSubcommand>,
+    pub subcommand: Option<Subcommand>,
 
     #[command(flatten)]
     pub run: RunCmd,
 
+    // ===== WARNING =====
+    // The following arguments are only parsed if `subcommand` is `None`. They
+    // get default values when a subcommand is used!
+    // TODO: Fix usage of those wrong values in subcommands.
+    // SEE: https://github.com/paritytech/polkadot-sdk/issues/9356
     /// Disable automatic hardware benchmarks.
     ///
     /// By default these benchmarks are automatically ran at startup and measure
@@ -73,15 +86,6 @@ pub struct Cli {
     /// Optional parachain id that should be used to build chain spec.
     #[arg(long)]
     pub para_id: Option<u32>,
-
-    /// Profile id associated with the node, whose assignements will be followed to provide RPC services.
-    #[arg(long)]
-    pub rpc_provider_profile_id: Option<u64>,
-
-    /// Endpoints to connect to orchestrator nodes, avoiding to start a local orchestrator node.
-    /// If this list is empty, a local embeded orchestrator node is started.
-    #[arg(long)]
-    pub orchestrator_endpoints: Vec<Url>,
 
     /// Relay chain arguments, optionally followed by "--" and container chain arguments
     #[arg(raw = true)]

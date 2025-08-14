@@ -27,7 +27,9 @@ use {
         relay_chain::well_known_keys as RelayWellKnownKeys, CollectCollationInfo, ParaId,
     },
     nimbus_primitives::NimbusId,
-    node_common::service::{ManualSealConfiguration, NodeBuilder, NodeBuilderConfig, Sealing},
+    node_common::service::node_builder::{
+        ManualSealConfiguration, NodeBuilder, NodeBuilderConfig, Sealing,
+    },
     parity_scale_codec::Encode,
     polkadot_parachain_primitives::primitives::HeadData,
     polkadot_primitives::UpgradeGoAhead,
