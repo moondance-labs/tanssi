@@ -19,10 +19,10 @@
 use {
     crate::{
         bridge_to_ethereum_config::EthereumGatewayAddress, tests::common::*,
-        xcm_config::UniversalLocation, Balances, Configuration, EthereumInboundQueue,
-        EthereumLocation, EthereumSovereignAccount, EthereumSystem, EthereumTokenTransfers,
-        ForeignAssets, ForeignAssetsCreator, Paras, RuntimeEvent, SnowbridgeFeesAccount,
-        TokenLocationReanchored, XcmPallet,
+        xcm_config::UniversalLocation, Balances, EthereumInboundQueue, EthereumLocation,
+        EthereumSovereignAccount, EthereumSystem, EthereumTokenTransfers, ForeignAssets,
+        ForeignAssetsCreator, Paras, RuntimeEvent, SnowbridgeFeesAccount, TokenLocationReanchored,
+        XcmPallet,
     },
     alloc::vec,
     alloy_sol_types::SolEvent,
@@ -2802,6 +2802,107 @@ fn receive_container_native_tokens_from_eth_works() {
                 filter_events!(RuntimeEvent::XcmPallet(pallet_xcm::Event::Sent { .. },)).count(),
                 1,
                 "XCM Sent event should be emitted!"
+            );
+        });
+}
+
+#[test]
+fn receive_container_native_tokens_fails_if_account_id_32() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 100_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            let relayer =
+                <Runtime as frame_system::Config>::RuntimeOrigin::signed(AccountId::from(ALICE));
+
+            let channel_id: ChannelId = ChannelId::new(hex!(
+                "0000000000000000000000000000000000000000000000000000000000000004"
+            ));
+            let agent_id = AgentId::from(hex!(
+                "0000000000000000000000000000000000000000000000000000000000000005"
+            ));
+            let para_id: ParaId = 2000u32.into();
+
+            let amount_to_transfer = 10_000;
+            let fee = 1000;
+
+            let container_para_id = 3000u32;
+
+            assert_ok!(XcmPallet::force_default_xcm_version(
+                root_origin(),
+                Some(5u32)
+            ));
+
+            assert_ok!(Paras::force_set_current_head(
+                root_origin(),
+                container_para_id.into(),
+                HeadData::from(vec![1u8, 2u8, 3u8])
+            ));
+
+            assert_ok!(EthereumTokenTransfers::set_token_transfer_channel(
+                root_origin(),
+                channel_id,
+                agent_id,
+                para_id
+            ));
+
+            let token_location =
+                Location::new(0, [Parachain(container_para_id), PalletInstance(3)]);
+
+            assert_ok!(EthereumSystem::register_token(
+                root_origin(),
+                Box::new(token_location.clone().into()),
+                snowbridge_core::AssetMetadata {
+                    name: "para".as_bytes().to_vec().try_into().unwrap(),
+                    symbol: "para".as_bytes().to_vec().try_into().unwrap(),
+                    decimals: 12,
+                }
+            ));
+
+            let token_location_reanchored = token_location
+                .reanchored(&EthereumLocation::get(), &UniversalLocation::get())
+                .expect("unable to reanchor token");
+
+            let token_id = EthereumSystem::convert_back(&token_location_reanchored).unwrap();
+            let payload = VersionedXcmMessage::V1(MessageV1 {
+                chain_id: 1,
+                command: Command::SendNativeToken {
+                    token_id,
+                    destination: Destination::AccountId32 {
+                        id: AccountId::from(BOB).into(),
+                    },
+                    amount: amount_to_transfer,
+                    fee,
+                },
+            });
+
+            let event = OutboundMessageAccepted {
+                channel_id: <[u8; 32]>::from(channel_id).into(),
+                nonce: 1,
+                message_id: Default::default(),
+                payload: payload.encode(),
+            };
+
+            let message = EventProof {
+                event_log: Log {
+                    address:
+                        <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
+                    topics: event
+                        .encode_topics()
+                        .into_iter()
+                        .map(|word| H256::from(word.0 .0))
+                        .collect(),
+                    data: event.encode_data(),
+                },
+                proof: mock_snowbridge_message_proof(),
+            };
+
+            assert_noop!(
+                EthereumInboundQueue::submit(relayer, message.clone()),
+                sp_runtime::DispatchError::Other("No handler for message found")
             );
         });
 }
