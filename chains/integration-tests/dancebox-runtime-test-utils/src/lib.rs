@@ -15,10 +15,12 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    crate::{AuthorInherent, BlockProductionCost, CollatorAssignmentCost, RuntimeOrigin},
-    alloc::collections::btree_map::BTreeMap,
+    core::cell::Cell,
     cumulus_primitives_core::{ParaId, PersistedValidationData},
     cumulus_primitives_parachain_inherent::ParachainInherentData,
+    dancebox_runtime::{
+        AuthorInherent, BlockProductionCost, CollatorAssignmentCost, RuntimeOrigin,
+    },
     dp_consensus::runtime_decl_for_tanssi_authority_assignment_api::TanssiAuthorityAssignmentApi,
     frame_support::{
         assert_ok,
@@ -34,10 +36,11 @@ use {
     sp_consensus_slots::Slot,
     sp_core::{Get, Pair},
     sp_runtime::{traits::Dispatchable, BuildStorage, Digest, DigestItem},
+    std::{collections::BTreeMap, thread_local},
     test_relay_sproof_builder::ParaHeaderSproofBuilder,
 };
 
-pub use crate::{
+pub use dancebox_runtime::{
     AccountId, AssetRate, AuthorNoting, AuthorityAssignment, AuthorityMapping, Balance, Balances,
     CollatorAssignment, Configuration, DataPreservers, ForeignAssets, ForeignAssetsCreator,
     InactivityTracking, InflationRewards, Initializer, Invulnerables, MinimumSelfDelegation,
@@ -48,7 +51,7 @@ pub use crate::{
 pub const UNIT: Balance = 1_000_000_000_000;
 
 pub fn session_to_block(n: u32) -> u32 {
-    let block_number = crate::Period::get() * n;
+    let block_number = dancebox_runtime::Period::get() * n;
 
     // Add 1 because the block that emits the NewSession event cannot contain any extrinsics,
     // so this is the first block of the new session that can actually be used
@@ -59,6 +62,18 @@ pub fn session_to_block(n: u32) -> u32 {
 pub struct RunSummary {
     pub author_id: AccountId,
     pub inflation: Balance,
+}
+
+thread_local! {
+    static SHOULD_WRITE_SLOT_INFO: Cell<bool> = Cell::new(true);
+}
+
+pub fn set_should_write_slot_info(value: bool) {
+    SHOULD_WRITE_SLOT_INFO.with(|flag| flag.set(value));
+}
+
+fn should_write_slot_info() -> bool {
+    SHOULD_WRITE_SLOT_INFO.with(|flag| flag.get())
 }
 
 pub fn run_to_session(n: u32) {
@@ -208,10 +223,12 @@ pub fn start_block() -> RunSummary {
     InflationRewards::on_initialize(System::block_number());
     let new_issuance = Balances::total_issuance();
 
-    frame_support::storage::unhashed::put(
-        &frame_support::storage::storage_prefix(b"AsyncBacking", b"SlotInfo"),
-        &(Slot::from(slot), 1),
-    );
+    if should_write_slot_info() {
+        frame_support::storage::unhashed::put(
+            &frame_support::storage::storage_prefix(b"AsyncBacking", b"SlotInfo"),
+            &(Slot::from(slot), 1),
+        );
+    }
 
     pallet_author_inherent::Pallet::<Runtime>::kick_off_authorship_validation(None.into())
         .expect("author inherent to dispatch correctly");
@@ -497,7 +514,7 @@ impl ExtBuilder {
                     (
                         account.clone(),
                         account,
-                        crate::SessionKeys { nimbus: nimbus_id },
+                        dancebox_runtime::SessionKeys { nimbus: nimbus_id },
                     )
                 })
                 .collect();
