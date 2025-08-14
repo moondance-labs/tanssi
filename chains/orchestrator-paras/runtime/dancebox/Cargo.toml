@@ -140,6 +140,8 @@ frame-try-runtime = { workspace = true, optional = true }
 [dev-dependencies]
 cumulus-primitives-parachain-inherent = { workspace = true }
 cumulus-test-relay-sproof-builder = { workspace = true }
+dancebox-runtime-test-utils = { workspace = true }
+emulated-integration-tests-common = { workspace = true }
 pallet-staking = { workspace = true, features = [ "std" ] }
 paste = { workspace = true }
 polkadot-runtime-parachains = { workspace = true, features = [ "std" ] }
