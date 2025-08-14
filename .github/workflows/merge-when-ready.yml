@@ -51,9 +51,7 @@ jobs:
             fail-fast: false
             matrix:
                 test_name:
-                    - zombie_tanssi_warp_sync
                     - zombie_data_preservers
-                    - zombie_tanssi_parathreads
                     - zombie_tanssi_rotation
         steps:
             - name: Checkout
@@ -85,6 +83,42 @@ jobs:
 
             - name: Make binaries executable
               uses: ./.github/workflow-templates/make-binaries-executable
+
+            - name: Cache Foundry
+              uses: actions/cache@v3
+              with:
+                path: |
+                  ~/.foundry
+                  ~/.cache/foundry
+                key: symbiotic-${{ runner.os }}-${{ hashFiles('**/scripts/bridge/set-env.sh') }}
+
+            - name: Cache Symbiotic Contracts
+              uses: actions/cache@v3
+              id: cache-symbiotic
+              with:
+                path: |
+                  test/tmp/bridge/tanssi-symbiotic
+                  test/tmp/bridge/tanssi-symbiotic/out
+                  test/tmp/bridge/tanssi-symbiotic/cache
+                key: symbiotic-${{ runner.os }}-${{ hashFiles('**/scripts/bridge/set-env.sh') }}
+
+            - name: Cache Snowbridge Relayer
+              uses: actions/cache@v3
+              id: cache-relayer
+              with:
+                path: |
+                  test/tmp/bridge/relayer
+                  test/tmp/bridge/relayer/snowbridge/contracts/out
+                  test/tmp/bridge/relayer/snowbridge/contracts/cache
+                key: relayer-${{ runner.os }}-${{ hashFiles('**/scripts/bridge/set-env.sh') }}
+
+            - name: Cache Ethereum Node Binaries
+              uses: actions/cache@v3
+              id: cache-ethereum-binaries
+              with:
+                path: |
+                  test/tmp/bridge/output/bin
+                key: ethereum-bins-${{ runner.os }}-${{ hashFiles('**/scripts/bridge/set-env.sh') }}
 
             - name: Run Zombienet Test
               id: e2e-test

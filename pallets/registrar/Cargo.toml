@@ -20,10 +20,8 @@ dp-core = { workspace = true }
 frame-benchmarking = { workspace = true, optional = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
-hex-literal = { workspace = true }
 log = { workspace = true }
 parity-scale-codec = { workspace = true }
-polkadot-runtime-common = { workspace = true }
 scale-info = { workspace = true }
 serde = { workspace = true, features = [ "derive" ] }
 sp-core = { workspace = true }
@@ -52,7 +50,6 @@ std = [
 	"log/std",
 	"pallet-balances/std",
 	"parity-scale-codec/std",
-	"polkadot-runtime-common/std",
 	"scale-info/std",
 	"serde/std",
 	"sp-core/std",
@@ -68,7 +65,6 @@ runtime-benchmarks = [
 	"frame-support/runtime-benchmarks",
 	"frame-system/runtime-benchmarks",
 	"pallet-balances/runtime-benchmarks",
-	"polkadot-runtime-common/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"tp-traits/runtime-benchmarks",
 ]
@@ -76,6 +72,5 @@ try-runtime = [
 	"frame-support/try-runtime",
 	"frame-system/try-runtime",
 	"pallet-balances/try-runtime",
-	"polkadot-runtime-common/try-runtime",
 	"sp-runtime/try-runtime",
 ]
