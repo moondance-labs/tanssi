@@ -222,10 +222,7 @@ pub fn do_test(
             PARATHREAD_ID.into()
         ));
 
-        // TODO: xcm emulator breaks with the run_to_session function, but it works if we manually
-        // call on_initialize here...
         set_should_write_slot_info(false);
-        start_block();
         run_to_session(2);
 
         if let Some(max_core_price) = set_max_core_price {
