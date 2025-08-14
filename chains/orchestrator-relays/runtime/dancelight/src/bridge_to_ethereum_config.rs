@@ -52,10 +52,9 @@ use {
     tanssi_runtime_common::relay::RewardThroughFeesAccount,
     tp_bridge::{DoNothingConvertMessage, DoNothingRouter, EthereumSystemHandler},
     xcm::latest::{
-        prelude::*, validate_send, Asset as XcmAsset, AssetId as XcmAssetId, Assets as XcmAssets,
-        ExecuteXcm, Fungibility, Junctions::*, SendXcm, Xcm,
+        prelude::*, Asset as XcmAsset, AssetId as XcmAssetId, Assets as XcmAssets, ExecuteXcm,
+        Fungibility, Junctions::*, Xcm,
     },
-    xcm::WrapVersion,
     xcm_executor::traits::WeightBounds,
 };
 
@@ -348,24 +347,21 @@ where
 
 pub struct NativeContainerTokensProcessor<
     T,
-    XcmSender,
     EthereumLocation,
     EthereumNetwork,
     InboundQueuePalletInstance,
 >(
     PhantomData<(
         T,
-        XcmSender,
         EthereumLocation,
         EthereumNetwork,
         InboundQueuePalletInstance,
     )>,
 );
 
-impl<T, XcmSender, EthereumLocation, EthereumNetwork, InboundQueuePalletInstance> MessageProcessor
+impl<T, EthereumLocation, EthereumNetwork, InboundQueuePalletInstance> MessageProcessor
     for NativeContainerTokensProcessor<
         T,
-        XcmSender,
         EthereumLocation,
         EthereumNetwork,
         InboundQueuePalletInstance,
@@ -376,7 +372,6 @@ where
         + snowbridge_pallet_system::Config
         + pallet_xcm::Config,
     <T as frame_system::Config>::RuntimeEvent: From<RuntimeEvent>,
-    XcmSender: SendXcm,
     EthereumLocation: Get<Location>,
     EthereumNetwork: Get<NetworkId>,
     InboundQueuePalletInstance: Get<u8>,
@@ -554,7 +549,7 @@ where
                                     }])),
                                 ]);
 
-                                send_xcm::<XcmSender>(container_location.clone(), remote_xcm.clone())
+                                send_xcm::<<T as pallet_xcm::Config>::XcmRouter>(container_location.clone(), remote_xcm.clone())
                                     .map(|(message_id, _price)| {
                                         frame_system::Pallet::<T>::deposit_event(RuntimeEvent::XcmPallet(
                                             pallet_xcm::Event::Sent {
@@ -717,7 +712,6 @@ pub type NativeTokensProcessor = NativeTokenTransferMessageProcessor<Runtime>;
 
 pub type NativeContainerProcessor = NativeContainerTokensProcessor<
     Runtime,
-    xcm_config::XcmRouter,
     dancelight_runtime_constants::snowbridge::EthereumLocation,
     dancelight_runtime_constants::snowbridge::EthereumNetwork,
     InboundQueuePalletInstance,
