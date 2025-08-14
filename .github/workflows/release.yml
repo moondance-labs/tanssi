@@ -402,7 +402,8 @@ jobs:
       permissions:
         contents: read
       steps:
-        - uses: actions/checkout@v4
+        - name: Checkout
+          uses: actions/checkout@v4
           with:
             ref: ${{ needs.set-tags.outputs.git_ref }}
 
