@@ -407,18 +407,25 @@ jobs:
           with:
             ref: ${{ needs.set-tags.outputs.git_ref }}
 
+        - name: Install Rust nightly
+          uses: actions-rs/toolchain@v1
+          with:
+            toolchain: nightly
+            override: false
+
         - name: Cache cargo bin
           uses: actions/cache@v4
           with:
             path: ~/.cargo/bin
-            key: cargo-bin-udeps-${{ runner.os }}
+            key: cargo-bin-udeps-nightly-${{ runner.os }}
 
-        - name: Install cargo-udeps
-          run: cargo install cargo-udeps --locked --force
+        - name: Install cargo-udeps (nightly)
+          run: cargo +nightly install cargo-udeps
 
         - name: Check for unused dependencies
           run: |
-            cargo udeps --workspace --features try-runtime,runtime-benchmarks --all-targets
+            cargo +nightly udeps --workspace --features try-runtime,runtime-benchmarks --all-targets
+
     rust-test:
       runs-on: self-hosted
       needs: ["set-tags", "build"]
