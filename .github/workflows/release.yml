@@ -412,6 +412,8 @@ jobs:
           with:
             toolchain: nightly
             override: false
+            components: rust-src
+            target: wasm32-unknown-unknown
 
         - name: Cache cargo bin
           uses: actions/cache@v4
