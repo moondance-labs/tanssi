@@ -421,10 +421,7 @@ where
                     let expected_para_id = match destination {
                         Destination::ForeignAccountId32 { para_id, .. } => para_id,
                         Destination::ForeignAccountId20 { para_id, .. } => para_id,
-                        _ => {
-                            log::error!("NativeContainerTokensProcessor: invalid destination");
-                            0u32
-                        }
+                        _ => 0u32,
                     };
 
                     match chain_part {
@@ -432,7 +429,7 @@ where
                             if let Some(Parachain(id)) = interior.first() {
                                 return expected_para_id == *id;
                             } else {
-                                log::error!("NativeContainerTokensProcessor: invalid interior");
+                                log::error!("NativeContainerTokensProcessor: destination doesn't own the token!");
                                 return false;
                             }
                         }
