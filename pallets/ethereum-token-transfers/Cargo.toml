@@ -29,7 +29,6 @@ frame-benchmarking = { workspace = true }
 
 pallet-balances = { workspace = true, optional = true }
 pallet-session = { workspace = true, features = [ "historical" ] }
-runtime-parachains = { workspace = true }
 
 snowbridge-core = { workspace = true }
 snowbridge-merkle-tree = { workspace = true }
@@ -54,7 +53,6 @@ std = [
 	"pallet-timestamp/std",
 	"parity-scale-codec/std",
 	"polkadot-primitives/std",
-	"runtime-parachains/std",
 	"scale-info/std",
 	"snowbridge-core/std",
 	"snowbridge-merkle-tree/std",
@@ -74,7 +72,6 @@ runtime-benchmarks = [
 	"pallet-balances/runtime-benchmarks",
 	"pallet-timestamp/runtime-benchmarks",
 	"polkadot-primitives/runtime-benchmarks",
-	"runtime-parachains/runtime-benchmarks",
 	"snowbridge-core/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"sp-staking/runtime-benchmarks",
@@ -89,6 +86,5 @@ try-runtime = [
 	"pallet-balances?/try-runtime",
 	"pallet-session/try-runtime",
 	"pallet-timestamp/try-runtime",
-	"runtime-parachains/try-runtime",
 	"sp-runtime/try-runtime",
 ]

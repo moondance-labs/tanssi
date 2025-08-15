@@ -27,7 +27,6 @@ dp-consensus = { workspace = true }
 dp-impl-tanssi-pallets-config = { workspace = true }
 dp-slot-duration-runtime-api = { workspace = true }
 pallet-cc-authorities-noting = { workspace = true }
-tanssi-runtime-common = { workspace = true }
 
 # Moonkit
 async-backing-primitives = { workspace = true }
@@ -98,7 +97,6 @@ xcm-runtime-apis = { workspace = true }
 
 # Cumulus
 cumulus-pallet-parachain-system = { workspace = true }
-cumulus-pallet-session-benchmarking = { workspace = true }
 cumulus-pallet-weight-reclaim = { workspace = true }
 cumulus-pallet-xcm = { workspace = true }
 cumulus-pallet-xcmp-queue = { workspace = true }
@@ -135,7 +133,6 @@ std = [
 	"async-backing-primitives/std",
 	"ccp-xcm/std",
 	"cumulus-pallet-parachain-system/std",
-	"cumulus-pallet-session-benchmarking/std",
 	"cumulus-pallet-weight-reclaim/std",
 	"cumulus-pallet-xcm/std",
 	"cumulus-pallet-xcmp-queue/std",
@@ -220,7 +217,6 @@ std = [
 	"sp-transaction-pool/std",
 	"sp-trie/std",
 	"sp-version/std",
-	"tanssi-runtime-common/std",
 	"xcm-builder/std",
 	"xcm-executor/std",
 	"xcm-primitives/std",
@@ -233,7 +229,6 @@ force-debug = [ "sp-debug-derive/force-debug" ]
 
 runtime-benchmarks = [
 	"cumulus-pallet-parachain-system/runtime-benchmarks",
-	"cumulus-pallet-session-benchmarking/runtime-benchmarks",
 	"cumulus-pallet-weight-reclaim/runtime-benchmarks",
 	"cumulus-pallet-xcmp-queue/runtime-benchmarks",
 	"cumulus-primitives-core/runtime-benchmarks",
@@ -273,7 +268,6 @@ runtime-benchmarks = [
 	"polkadot-parachain-primitives/runtime-benchmarks",
 	"polkadot-runtime-common/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
-	"tanssi-runtime-common/runtime-benchmarks",
 	"xcm-builder/runtime-benchmarks",
 	"xcm-executor/runtime-benchmarks",
 	"xcm-primitives/runtime-benchmarks",
@@ -321,7 +315,6 @@ try-runtime = [
 	"parachain-info/try-runtime",
 	"polkadot-runtime-common/try-runtime",
 	"sp-runtime/try-runtime",
-	"tanssi-runtime-common/try-runtime",
 ]
 
 metadata-hash = []
