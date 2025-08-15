@@ -746,7 +746,6 @@ dependencies = [
  "dancelight-runtime",
  "dancelight-system-emulated-network",
  "frame-support",
- "frontier-template-emulated-chain",
  "pallet-message-queue",
  "pallet-xcm",
  "polkadot-primitives",
@@ -756,8 +755,6 @@ dependencies = [
  "staging-xcm",
  "staging-xcm-executor",
  "tanssi-emulated-integration-tests-common",
- "westend-emulated-chain",
- "westend-system-emulated-network",
  "xcm-emulator",
 ]
 
