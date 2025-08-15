@@ -15,7 +15,6 @@ async-trait = { workspace = true }
 clap = { workspace = true, features = [ "derive" ] }
 core_extensions = { workspace = true, features = [ "type_identity" ] }
 futures = { workspace = true }
-hex-literal = { workspace = true }
 jsonrpsee = { workspace = true, features = [ "server" ] }
 log = { workspace = true }
 parity-scale-codec = { workspace = true }
