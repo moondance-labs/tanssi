@@ -125,7 +125,7 @@
                 {
                     "name": "DataPreserver-2000",
                     "validator": false,
-                    "command": "./scripts/data-preservers-reorder-args.sh ../target/release/container-chain-simple-node rpc-provider --",
+                    "command": "./scripts/data-preservers-run-hack.sh ../target/release/container-chain-simple-node rpc-provider --",
                     "args": [
                         "-- --profile-id=2",
                         "--database=paritydb",
@@ -139,7 +139,7 @@
                 {
                     "name": "DataPreserver-2001",
                     "validator": false,
-                    "command": "./scripts/data-preservers-reorder-args.sh ../target/release/container-chain-frontier-node rpc-provider --",
+                    "command": "./scripts/data-preservers-run-hack.sh ../target/release/container-chain-frontier-node rpc-provider --",
                     "args": [
                         "-- --profile-id=3",
                         "--database=paritydb",
