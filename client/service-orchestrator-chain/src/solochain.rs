@@ -28,6 +28,7 @@ use {
         BasePath, BlocksPruning, ChainType, Configuration, DatabaseSource, GenericChainSpec,
         KeystoreContainer, NoExtension, Role, TaskManager,
     },
+    sp_keystore::KeystorePtr,
     std::{
         future::Future,
         marker::PhantomData,
@@ -55,6 +56,7 @@ pub enum EnableContainerChainSpawner {
 pub struct SolochainNodeStarted {
     pub task_manager: TaskManager,
     pub relay_chain_interface: Arc<dyn RelayChainInterface>,
+    pub keystore: KeystorePtr,
 }
 
 /// Start a solochain node.
@@ -240,6 +242,7 @@ pub async fn start_solochain_node(
     Ok(SolochainNodeStarted {
         task_manager,
         relay_chain_interface,
+        keystore: keystore_container.keystore(),
     })
 }
 

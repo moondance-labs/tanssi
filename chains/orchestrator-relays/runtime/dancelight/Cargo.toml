@@ -142,6 +142,7 @@ pallet-author-noting = { workspace = true }
 pallet-author-noting-runtime-api = { workspace = true }
 pallet-configuration = { workspace = true }
 pallet-data-preservers = { workspace = true }
+pallet-data-preservers-runtime-api = { workspace = true }
 pallet-inactivity-tracking = { workspace = true }
 pallet-inflation-rewards = { workspace = true }
 pallet-outbound-message-commitment-recorder = { workspace = true }
@@ -251,6 +252,7 @@ std = [
 	"pallet-collective/std",
 	"pallet-configuration/std",
 	"pallet-conviction-voting/std",
+	"pallet-data-preservers-runtime-api/std",
 	"pallet-data-preservers/std",
 	"pallet-democracy/std",
 	"pallet-elections-phragmen/std",

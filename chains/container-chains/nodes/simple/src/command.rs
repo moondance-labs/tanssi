@@ -369,7 +369,6 @@ pub fn run() -> Result<()> {
 
 fn rpc_provider_mode(cli: &Cli, cmd: &RpcProviderCmd) -> Result<()> {
     let runner = cli.create_runner(&cmd.container_run.normalize())?;
-   
 
     runner.run_node_until_exit(|config| async move {
         log::info!("Starting in RPC provider mode!");

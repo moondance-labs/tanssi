@@ -135,6 +135,7 @@ impl Cli {
         relay_chain_args
     }
 
+    #[allow(dead_code)]
     pub fn container_chain_args(&self) -> &[String] {
         let (_, container_chain_args) = self.split_extra_args_at_first_dashdash();
 

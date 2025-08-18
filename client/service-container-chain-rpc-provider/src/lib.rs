@@ -23,6 +23,7 @@ use {
     cumulus_primitives_core::ParaId,
     cumulus_relay_chain_interface::RelayChainInterface,
     dc_orchestrator_chain_interface::OrchestratorChainInterface,
+    node_common::service::solochain::RelayAsOrchestratorChainInterfaceBuilder,
     sc_cli::SubstrateCli,
     sc_service::{Configuration, KeystoreContainer, TaskManager},
     sc_telemetry::TelemetryWorker,
@@ -33,6 +34,7 @@ use {
         service::MinimalContainerRuntimeApi,
         spawner::{ContainerChainSpawnParams, ContainerChainSpawner},
     },
+    tc_service_orchestrator_chain::solochain::EnableContainerChainSpawner,
     url::Url,
 };
 
@@ -135,6 +137,7 @@ where
 
             if let Some(orchestrator_cli) = self.orchestrator_cli {
                 // Parachain orchestrator
+
                 let orchestrator_cli = cli::EmbededOrchestratorCli(orchestrator_cli);
 
                 let tokio_handle = self.config.tokio_handle.clone();
@@ -201,7 +204,36 @@ where
                 keystore = started.keystore;
             } else {
                 // Solochain orchestrator
-                todo!()
+
+                let tokio_handle = self.config.tokio_handle.clone();
+
+                let polkadot_config = SubstrateCli::create_configuration(
+                    &self.polkadot_cli,
+                    &self.polkadot_cli,
+                    tokio_handle,
+                )
+                .map_err(|err| format!("Relay chain argument error: {}", err))?;
+
+                let started = tc_service_orchestrator_chain::solochain::start_solochain_node(
+                    polkadot_config,
+                    self.container_chain_cli.clone(),
+                    self.collator_options,
+                    None,                            // no hwbench
+                    EnableContainerChainSpawner::No, // we manage this ourselves
+                )
+                .await?;
+
+                task_manager = started.task_manager;
+                relay_chain_interface = started.relay_chain_interface;
+                keystore = started.keystore;
+
+                orchestrator_chain_interface = RelayAsOrchestratorChainInterfaceBuilder {
+                    overseer_handle: relay_chain_interface
+                        .overseer_handle()
+                        .map_err(|e| sc_service::Error::Application(Box::new(e)))?,
+                    relay_chain_interface: relay_chain_interface.clone(),
+                }
+                .build();
             }
         } else {
             // Connection through RPC
