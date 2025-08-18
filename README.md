@@ -8,7 +8,7 @@
 📢 Follow our latest updates on [Twitter](https://twitter.com/TanssiNetwork)<br>
 🤝 Engage with fellow developers on our [Discord server](https://discord.com/invite/kuyPhew2KB)<br>
 
-## Build the Tanssi Node
+##  Build the Tanssi Node
 
 To build Tanssi, you will need a proper Substrate development environment.
 
