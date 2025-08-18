@@ -5,6 +5,7 @@ ts_scripts_dir="$scripts_root_dir/ts-scripts"
 assets_dir="$scripts_root_dir/assets"
 
 artifacts_dir="$root_dir/tmp/bridge"
+rm -rf "$artifacts_dir"
 mkdir -p $artifacts_dir
 
 logs_dir="$artifacts_dir/logs"
