@@ -53,6 +53,17 @@ fn load_spec(id: &str, para_id: ParaId) -> std::result::Result<Box<dyn ChainSpec
         "dev" => Box::new(chain_spec::development_config(para_id, vec![])),
         "template-rococo" => Box::new(chain_spec::local_testnet_config(para_id, vec![])),
         "" | "local" => Box::new(chain_spec::local_testnet_config(para_id, vec![])),
+        // dummy container chain spec, it will not be used to actually spawn a chain
+        "container-chain-unknown" => Box::new(
+            sc_service::GenericChainSpec::<node_common_chain_spec::Extensions, ()>::builder(
+                b"",
+                node_common_chain_spec::Extensions {
+                    relay_chain: "westend-local".into(),
+                    para_id: 2000,
+                },
+            )
+            .build(),
+        ),
         path => Box::new(chain_spec::ChainSpec::from_json_file(
             std::path::PathBuf::from(path),
         )?),
@@ -357,8 +368,8 @@ pub fn run() -> Result<()> {
 }
 
 fn rpc_provider_mode(cli: &Cli, cmd: &RpcProviderCmd) -> Result<()> {
-    // Should use cmd.container_run but currently fails to initialize due to missing chain spec.
-    let runner = cli.create_runner(&cli.run.normalize())?;
+    let runner = cli.create_runner(&cmd.container_run.normalize())?;
+   
 
     runner.run_node_until_exit(|config| async move {
         log::info!("Starting in RPC provider mode!");

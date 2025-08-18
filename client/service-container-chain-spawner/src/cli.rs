@@ -358,14 +358,14 @@ impl sc_cli::CliConfiguration<Self> for ContainerChainCli {
 
     fn init<F>(
         &self,
-        _support_url: &String,
-        _impl_version: &String,
-        _logger_hook: F,
+        support_url: &String,
+        impl_version: &String,
+        logger_hook: F,
     ) -> sc_cli::Result<()>
     where
         F: FnOnce(&mut sc_cli::LoggerBuilder),
     {
-        unreachable!("PolkadotCli is never initialized; qed");
+        self.base.base.init(support_url, impl_version, logger_hook)
     }
 
     fn chain_id(&self, _is_dev: bool) -> sc_cli::Result<String> {
