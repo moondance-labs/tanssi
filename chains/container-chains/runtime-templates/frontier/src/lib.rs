@@ -96,7 +96,7 @@ use {
         ApplyExtrinsicResult, BoundedVec, Cow,
     },
     sp_version::RuntimeVersion,
-    xcm::v5::{Location, NetworkId},
+    xcm::v5::NetworkId,
     xcm::Version as XcmVersion,
     xcm::{IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation, VersionedXcm},
     xcm_runtime_apis::{
@@ -315,7 +315,6 @@ parameter_types! {
         /// <https://chainlist.org/chain/1>
         /// <https://ethereum.org/en/developers/docs/apis/json-rpc/#net_version>
         pub EthereumNetwork: NetworkId = NetworkId::Ethereum { chain_id: 11155111 };
-        pub EthereumLocation: Location = Location::new(1, EthereumNetwork::get());
 
 }
 

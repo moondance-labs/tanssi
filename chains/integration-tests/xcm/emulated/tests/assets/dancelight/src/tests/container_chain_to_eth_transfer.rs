@@ -34,7 +34,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
     FrontierTemplate::execute_with(|| {
         let sovereign_account =
             container_chain_template_frontier_runtime::xcm_config::LocationToAccountId::convert_location(
-                &container_chain_template_frontier_runtime::EthereumLocation::get(),
+                &Location::new(2, container_chain_template_frontier_runtime::EthereumNetwork::get()),
             )
                 .unwrap();
 
@@ -109,7 +109,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
     SimpleTemplate::execute_with(|| {
         let sovereign_account =
             container_chain_template_simple_runtime::xcm_config::LocationToAccountId::convert_location(
-                &container_chain_template_simple_runtime::EthereumLocation::get(),
+                &Location::new(2, container_chain_template_simple_runtime::EthereumNetwork::get()),
             )
                 .unwrap();
 
