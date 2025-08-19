@@ -48,7 +48,7 @@ use {
     polkadot_runtime_common::xcm_sender::ExponentialPrice,
     sp_core::{ConstU32, H160},
     sp_runtime::Perbill,
-    tanssi_runtime_common::universal_aliases::CommonUniversalAliases,
+    tanssi_runtime_common::{universal_aliases::CommonUniversalAliases, eth_location_converter::ContainerChainEthereumLocationConverter},
     xcm::latest::prelude::*,
     xcm_builder::{
         AccountKey20Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
@@ -61,6 +61,10 @@ use {
     xcm_executor::XcmExecutor,
     xcm_primitives::AccountIdAssetIdConversion,
 };
+
+pub const DANCELIGHT_GENESIS_HASH: [u8; 32] =
+    hex_literal::hex!["983a1a72503d6cc3636776747ec627172b51272bf45e50a355348facb67a820a"];
+
 parameter_types! {
     // Self Reserve location, defines the multilocation identifiying the self-reserve currency
     // This is used to match it also against our Balances pallet when we receive such
@@ -77,7 +81,7 @@ parameter_types! {
     pub UnitWeightCost: Weight = Weight::from_parts(1_000_000_000, 64 * 1024);
 
     // TODO: revisit
-    pub const RelayNetwork: NetworkId = NetworkId::Polkadot;
+    pub const RelayNetwork: NetworkId = NetworkId::ByGenesis(DANCELIGHT_GENESIS_HASH);
 
     // The relay chain Origin type
     pub RelayChainOrigin: RuntimeOrigin = cumulus_pallet_xcm::Origin::Relay.into();
@@ -136,6 +140,8 @@ pub type LocationToAccountId = (
     AccountKey20Aliases<RelayNetwork, AccountId>,
     // Generate remote accounts according to polkadot standards
     xcm_builder::HashedDescription<AccountId, Descriptor>,
+    // Convert Ethereum locations to container-chain account IDs
+    ContainerChainEthereumLocationConverter<AccountId>,
 );
 
 /// Local origins on this chain are allowed to dispatch XCM sends/executions.
@@ -189,6 +195,22 @@ pub type XcmRouter = (
     // ..and XCMP to communicate with the sibling chains.
     XcmpQueue,
 );
+
+// #[cfg(feature = "runtime-benchmarks")]
+// impl BridgingBenchmarksHelper {
+//     pub fn prepare_universal_alias() -> Option<(Location, Junction)> {
+//         let alias =
+//             to_rococo::UniversalAliases::get().into_iter().find_map(|(location, junction)| {
+//                 match to_rococo::SiblingBridgeHubWithBridgeHubRococoInstance::get()
+//                     .eq(&location)
+//                 {
+//                     true => Some((location, junction)),
+//                     false => None,
+//                 }
+//             });
+//         Some(alias.expect("we expect here BridgeHubWestend to Rococo mapping at least"))
+//     }
+// }
 
 pub struct XcmConfig;
 impl xcm_executor::Config for XcmConfig {

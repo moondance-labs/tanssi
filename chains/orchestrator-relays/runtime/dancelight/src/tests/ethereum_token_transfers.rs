@@ -2722,7 +2722,7 @@ fn receive_container_native_tokens_from_eth_works() {
             let fee = 1000;
             let container_fee = 500;
 
-            let container_para_id = 3000u32;
+            let container_para_id = 2001u32;
 
             assert_ok!(XcmPallet::force_default_xcm_version(
                 root_origin(),
@@ -2743,7 +2743,7 @@ fn receive_container_native_tokens_from_eth_works() {
             ));
 
             let token_location =
-                Location::new(0, [Parachain(container_para_id), PalletInstance(3)]);
+                Location::new(0, [Parachain(container_para_id), PalletInstance(10)]);
 
             assert_ok!(EthereumSystem::register_token(
                 root_origin(),
@@ -2780,6 +2780,8 @@ fn receive_container_native_tokens_from_eth_works() {
                 message_id: Default::default(),
                 payload: payload.encode(),
             };
+
+            println!("payload: {:?}", payload.encode());
 
             let message = EventProof {
                 event_log: Log {

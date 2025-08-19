@@ -19735,6 +19735,7 @@ dependencies = [
  "sp-runtime",
  "sp-staking",
  "staging-xcm",
+ "staging-xcm-executor",
 ]
 
 [[package]]

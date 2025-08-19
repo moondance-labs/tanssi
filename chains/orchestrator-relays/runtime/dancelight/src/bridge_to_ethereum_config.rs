@@ -522,6 +522,10 @@ where
                                 let inbound_queue_pallet_index = InboundQueuePalletInstance::get();
 
                                 let remote_xcm = Xcm::<()>(vec![
+                                    DescendOrigin(
+                                        PalletInstance(inbound_queue_pallet_index).into(),
+                                    ),
+                                    UniversalOrigin(GlobalConsensus(network)),
                                     WithdrawAsset(
                                         vec![tanssi_asset_fee.clone(), container_asset.clone()]
                                             .into(),
@@ -530,10 +534,6 @@ where
                                         fees: tanssi_asset_fee,
                                         weight_limit: Unlimited,
                                     },
-                                    DescendOrigin(
-                                        PalletInstance(inbound_queue_pallet_index).into(),
-                                    ),
-                                    UniversalOrigin(GlobalConsensus(network)),
                                     DepositAsset {
                                         assets: Definite(container_asset.into()),
                                         beneficiary,

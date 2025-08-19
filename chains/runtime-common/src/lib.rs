@@ -24,6 +24,7 @@ pub mod migrations;
 pub mod relay;
 
 pub mod universal_aliases;
+pub mod eth_location_converter;
 
 use core::marker::PhantomData;
 use frame_support::traits::{fungible::Credit, tokens::imbalance::ResolveTo, OnUnbalanced};

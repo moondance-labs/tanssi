@@ -9,7 +9,6 @@ import {
     FOREIGN_ASSET_ID,
     ETHEREUM_NETWORK_MAINNET,
     ETHEREUM_NETWORK_TESTNET,
-    type MultiLocation,
     mockAndInsertHeadData,
 } from "utils";
 import {
@@ -100,7 +99,7 @@ describeSuite({
                     .signAsync(alice);
                 await context.createBlock([tx1], { allowFailures: false });
 
-                const tokenLocation: MultiLocation = {
+                const tokenLocation = {
                     parents: 0,
                     interior: {
                         X2: [

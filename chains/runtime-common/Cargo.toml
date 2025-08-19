@@ -53,6 +53,7 @@ sp-core = { workspace = true }
 sp-runtime = { workspace = true }
 sp-staking = { workspace = true }
 xcm = { workspace = true }
+xcm-executor = { workspace = true }
 
 # Cumulus
 cumulus-primitives-core = { workspace = true }
@@ -106,6 +107,7 @@ std = [
 	"sp-runtime/std",
 	"sp-staking/std",
 	"xcm/std",
+	"xcm-executor/std",
 ]
 relay = [
 	"pallet-babe",
@@ -147,6 +149,7 @@ runtime-benchmarks = [
 	"sp-runtime/runtime-benchmarks",
 	"sp-staking/runtime-benchmarks",
 	"xcm/runtime-benchmarks",
+	"xcm-executor/runtime-benchmarks",
 ]
 
 try-runtime = [

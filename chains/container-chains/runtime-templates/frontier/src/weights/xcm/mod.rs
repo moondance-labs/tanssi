@@ -199,7 +199,8 @@ where
         XcmGeneric::<Runtime>::clear_transact_status()
     }
     fn universal_origin(_: &Junction) -> Weight {
-        Weight::MAX
+        // TODO: this is a placeholder weight, we need to get the actual weight from the benchmarks
+        Weight::from_parts(6_000_000, 2_000)
     }
     fn export_message(_: &NetworkId, _: &Junctions, _: &Xcm<()>) -> Weight {
         Weight::MAX
