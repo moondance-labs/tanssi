@@ -212,7 +212,7 @@ describeSuite({
                                 return (
                                     from.toString() === sovereignAccount &&
                                     to.toString() === destination.accountId32 &&
-                                    value.toString() === amount.toString()
+                                    BigInt(value.toString()) === BigInt(amount.toString())
                                 );
                             });
 
