@@ -327,7 +327,7 @@ describeSuite({
                 {
                     // to non-force assign we need to have a para manager, which is not the case
                     // with paras registered in genesis. we thus set the para manager manually here
-                    const tx = relayApi.tx.registrar.setParaManager(2000, alice.address);
+                    const tx = relayApi.tx.containerRegistrar.setParaManager(2000, alice.address);
                     await signAndSendAndInclude(relayApi.tx.sudo.sudo(tx), alice);
                     await context.waitBlock(1, "Relay");
                 }

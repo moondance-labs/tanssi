@@ -37,7 +37,7 @@ use {
         sync::Arc,
         time::Duration,
     },
-    tc_consensus::RelayChainInterface,
+    tc_consensus::{RelayChainInterface, OrchestratorChainInterface},
     tc_service_container_chain_spawner::cli::ContainerChainCli,
     tc_service_container_chain_spawner::{
         spawner,
@@ -56,6 +56,7 @@ pub enum EnableContainerChainSpawner {
 pub struct SolochainNodeStarted {
     pub task_manager: TaskManager,
     pub relay_chain_interface: Arc<dyn RelayChainInterface>,
+    pub orchestrator_chain_interface: Arc<dyn OrchestratorChainInterface>,
     pub keystore: KeystorePtr,
 }
 
@@ -188,6 +189,7 @@ pub async fn start_solochain_node(
         // Start container chain spawner task. This will start and stop container chains on demand.
         let spawn_handle = task_manager.spawn_handle();
         let relay_chain_interface = relay_chain_interface.clone();
+        let orchestrator_chain_interface = orchestrator_chain_interface.clone();
 
         let container_chain_spawner = ContainerChainSpawner {
             params: ContainerChainSpawnParams {
@@ -242,6 +244,7 @@ pub async fn start_solochain_node(
     Ok(SolochainNodeStarted {
         task_manager,
         relay_chain_interface,
+        orchestrator_chain_interface,
         keystore: keystore_container.keystore(),
     })
 }

@@ -23,7 +23,6 @@ use {
     cumulus_primitives_core::ParaId,
     cumulus_relay_chain_interface::RelayChainInterface,
     dc_orchestrator_chain_interface::OrchestratorChainInterface,
-    node_common::service::solochain::RelayAsOrchestratorChainInterfaceBuilder,
     sc_cli::SubstrateCli,
     sc_service::{Configuration, KeystoreContainer, TaskManager},
     sc_telemetry::TelemetryWorker,
@@ -225,15 +224,8 @@ where
 
                 task_manager = started.task_manager;
                 relay_chain_interface = started.relay_chain_interface;
+                orchestrator_chain_interface = started.orchestrator_chain_interface;
                 keystore = started.keystore;
-
-                orchestrator_chain_interface = RelayAsOrchestratorChainInterfaceBuilder {
-                    overseer_handle: relay_chain_interface
-                        .overseer_handle()
-                        .map_err(|e| sc_service::Error::Application(Box::new(e)))?,
-                    relay_chain_interface: relay_chain_interface.clone(),
-                }
-                .build();
             }
         } else {
             // Connection through RPC

@@ -200,14 +200,27 @@ impl OrchestratorChainInterface for RelayAsOrchestratorChainInterface {
         orchestrator_parent: PHash,
         profile_id: DataPreserverProfileId,
     ) -> OrchestratorChainResult<DataPreserverAssignment<ParaId>> {
-        call_runtime_api(
+        use {
+            dc_orchestrator_chain_interface::DataPreserverAssignment as InterfaceAssignment,
+            pallet_data_preservers_runtime_api::Assignment as RuntimeAssignment,
+        };
+
+        let assignment: RuntimeAssignment<ParaId> = call_runtime_api(
             &self.relay_chain_interface,
             "DataPreserversApi_get_active_assignment",
             orchestrator_parent,
-            Some(profile_id),
+            profile_id,
         )
         .await
-        .map_err(|e| OrchestratorChainError::Application(Box::new(e)))
+        .map_err(|e| OrchestratorChainError::Application(Box::new(e)))?;
+
+        let assignment = match assignment {
+            RuntimeAssignment::NotAssigned => InterfaceAssignment::NotAssigned,
+            RuntimeAssignment::Active(para_id) => InterfaceAssignment::Active(para_id),
+            RuntimeAssignment::Inactive(para_id) => InterfaceAssignment::Inactive(para_id),
+        };
+
+        Ok(assignment)
     }
 
     async fn check_para_id_assignment(

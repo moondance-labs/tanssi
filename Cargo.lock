@@ -9050,6 +9050,7 @@ dependencies = [
  "log",
  "nimbus-consensus",
  "nimbus-primitives",
+ "pallet-data-preservers-runtime-api",
  "parity-scale-codec",
  "polkadot-cli",
  "polkadot-primitives",

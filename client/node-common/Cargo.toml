@@ -28,6 +28,7 @@ serde = { workspace = true, features = [ "derive" ] }
 dc-orchestrator-chain-interface = { workspace = true }
 tc-consensus = { workspace = true }
 tp-traits = { workspace = true }
+pallet-data-preservers-runtime-api = { workspace = true }
 
 # Nimbus
 nimbus-consensus = { workspace = true }
