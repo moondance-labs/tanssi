@@ -1670,11 +1670,7 @@ impl Contains<RuntimeCall> for MaintenanceFilter {
 }
 
 /// Normal Call Filter
-type NormalFilter = EverythingBut<(
-    IsRelayRegister,
-    IsParathreadRegistrar,
-    IsDemocracyExtrinsics,
-)>;
+type NormalFilter = EverythingBut<(IsRelayRegister, IsParathreadRegistrar)>;
 
 impl pallet_maintenance_mode::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;

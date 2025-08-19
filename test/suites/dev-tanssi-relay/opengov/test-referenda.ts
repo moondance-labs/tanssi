@@ -3,7 +3,6 @@ import "@tanssi/api-augment";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import type { KeyringPair } from "@polkadot/keyring/types";
-import { isDancelightRuntime, isStarlightRuntime } from "../../../utils/runtime.ts";
 import { BN } from "@polkadot/util";
 
 export type ExtrinsicFailedEventDataType = {
@@ -47,12 +46,7 @@ describeSuite({
             id: "E01",
             timeout: 60000,
             title: "Referenda for root is executed",
-            test: async ({ skip }) => {
-                // Skip if the runtime is Starlight, as OpenGov is not supported
-                if (!isDancelightRuntime(api)) {
-                    skip();
-                }
-
+            test: async () => {
                 // Bob wants to add Alice as a proxy
                 const delegate = alice.address;
                 const proxyType = "Any";
@@ -143,12 +137,7 @@ describeSuite({
         it({
             id: "E02",
             title: "Not enough support, referenda rejected",
-            test: async ({ skip }) => {
-                // Skip if the runtime is Starlight, as OpenGov is not supported
-                if (!isDancelightRuntime(api)) {
-                    skip();
-                }
-
+            test: async () => {
                 const tx = api.tx.system.remark("0x0005");
 
                 // Step 1: Let's create preimage
@@ -228,45 +217,8 @@ describeSuite({
 
         it({
             id: "E03",
-            title: "Referenda is disabled for Starlight",
-            test: async ({ skip }) => {
-                if (!isStarlightRuntime(api)) {
-                    skip();
-                }
-
-                const delegate = alice.address;
-                const proxyType = "Any";
-                const delay = 0;
-
-                const tx = api.tx.proxy.addProxy(delegate, proxyType, delay);
-
-                const notePreimageTx = api.tx.preimage.notePreimage(tx.method.toHex());
-                const preimageBlock = await context.createBlock(await notePreimageTx.signAsync(alice), {
-                    allowFailures: true,
-                });
-                expect(preimageBlock.result?.successful).to.be.false;
-
-                const submitTx = api.tx.referenda.submit(
-                    {
-                        system: "Root",
-                    },
-                    { Lookup: { Hash: tx.method.hash.toHex(), len: tx.method.encodedLength } },
-                    { After: "1" }
-                );
-
-                const submitBlock = await context.createBlock(await submitTx.signAsync(bob), { allowFailures: true });
-                expect(submitBlock.result?.successful).to.be.false;
-            },
-        });
-
-        it({
-            id: "E04",
             title: "Only Root track is enabled",
-            test: async ({ skip }) => {
-                if (!isDancelightRuntime(api)) {
-                    skip();
-                }
-
+            test: async () => {
                 const tx = api.tx.system.remark("0x0001");
 
                 // Step 1: Let's create preimage
@@ -309,13 +261,9 @@ describeSuite({
         });
 
         it({
-            id: "E05",
+            id: "E04",
             title: "Referenda without votes will be rejected",
-            test: async ({ skip }) => {
-                if (!isDancelightRuntime(api)) {
-                    skip();
-                }
-
+            test: async () => {
                 const tx = api.tx.system.remark("0x0002");
 
                 // Step 1: Let's create preimage
