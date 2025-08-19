@@ -22,6 +22,7 @@ scale-info = { workspace = true, features = [ "derive" ] }
 pallet-configuration = { workspace = true }
 pallet-data-preservers = { workspace = true }
 pallet-foreign-asset-creator = { workspace = true }
+pallet-inactivity-tracking = { workspace = true, features = [ "migrations" ] }
 pallet-invulnerables = { workspace = true }
 pallet-pooled-staking = { workspace = true, features = [ "migrations" ] }
 pallet-registrar = { workspace = true }
@@ -84,6 +85,7 @@ std = [
 	"pallet-external-validator-slashes?/std",
 	"pallet-external-validators?/std",
 	"pallet-foreign-asset-creator/std",
+	"pallet-inactivity-tracking/std",
 	"pallet-invulnerables/std",
 	"pallet-migrations/std",
 	"pallet-pooled-staking/std",
@@ -129,6 +131,7 @@ runtime-benchmarks = [
 	"pallet-external-validator-slashes?/runtime-benchmarks",
 	"pallet-external-validators?/runtime-benchmarks",
 	"pallet-foreign-asset-creator/runtime-benchmarks",
+	"pallet-inactivity-tracking/runtime-benchmarks",
 	"pallet-invulnerables/runtime-benchmarks",
 	"pallet-migrations/runtime-benchmarks",
 	"pallet-pooled-staking/runtime-benchmarks",
@@ -163,6 +166,7 @@ try-runtime = [
 	"pallet-external-validator-slashes?/try-runtime",
 	"pallet-external-validators?/try-runtime",
 	"pallet-foreign-asset-creator/try-runtime",
+	"pallet-inactivity-tracking/try-runtime",
 	"pallet-invulnerables/try-runtime",
 	"pallet-migrations/try-runtime",
 	"pallet-pooled-staking/try-runtime",
