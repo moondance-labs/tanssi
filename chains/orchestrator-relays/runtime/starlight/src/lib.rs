@@ -440,7 +440,7 @@ impl EnsureOriginWithArg<RuntimeOrigin, RuntimeParametersKey> for DynamicParamet
         match key {
             Preimage(_) => frame_system::ensure_root(origin.clone()),
         }
-        .map_err(|_| origin)
+            .map_err(|_| origin)
     }
 
     #[cfg(feature = "runtime-benchmarks")]
@@ -504,7 +504,7 @@ impl pallet_babe::Config for Runtime {
     type MaxNominators = ConstU32<0>;
     type KeyOwnerProof = sp_session::MembershipProof;
     type EquivocationReportSystem =
-        pallet_babe::EquivocationReportSystem<Self, Offences, Historical, ReportLongevity>;
+    pallet_babe::EquivocationReportSystem<Self, Offences, Historical, ReportLongevity>;
 }
 
 parameter_types! {
@@ -540,7 +540,7 @@ parameter_types! {
 impl pallet_transaction_payment::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type OnChargeTransaction =
-        FungibleAdapter<Balances, tanssi_runtime_common::DealWithFees<Runtime>>;
+    FungibleAdapter<Balances, tanssi_runtime_common::DealWithFees<Runtime>>;
     type OperationalFeeMultiplier = OperationalFeeMultiplier;
     type WeightToFee = WeightToFee;
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
@@ -728,7 +728,7 @@ impl pallet_grandpa::Config for Runtime {
     type MaxSetIdSessionEntries = MaxSetIdSessionEntries;
     type KeyOwnerProof = sp_session::MembershipProof;
     type EquivocationReportSystem =
-        pallet_grandpa::EquivocationReportSystem<Self, Offences, Historical, ReportLongevity>;
+    pallet_grandpa::EquivocationReportSystem<Self, Offences, Historical, ReportLongevity>;
 }
 
 /// Submits a transaction with the node's public and signature type. Adheres to the signed extension
@@ -1046,7 +1046,7 @@ impl parachains_session_info::Config for Runtime {
 }
 
 pub type RewardValidators =
-    pallet_external_validators_rewards::RewardValidatorsWithEraPoints<Runtime>;
+pallet_external_validators_rewards::RewardValidatorsWithEraPoints<Runtime>;
 
 impl parachains_inclusion::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
@@ -1102,7 +1102,7 @@ impl ProcessMessage for MessageProcessor {
                     xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
                     RuntimeCall,
                 >::process_message(
-                    message, Junction::Parachain(para.into()), meter, id
+                    message, Junction::Parachain(para.into()), meter, id,
                 )
             }
             AggregateMessageOrigin::Snowbridge(_) => {
@@ -1130,7 +1130,7 @@ impl pallet_message_queue::Config for Runtime {
     type MessageProcessor = MessageProcessor;
     #[cfg(feature = "runtime-benchmarks")]
     type MessageProcessor =
-        pallet_message_queue::mock_helpers::NoopMessageProcessor<AggregateMessageOrigin>;
+    pallet_message_queue::mock_helpers::NoopMessageProcessor<AggregateMessageOrigin>;
     type QueueChangeHandler = ParaInclusion;
     type QueuePausedQuery = ();
     type WeightInfo = weights::pallet_message_queue::SubstrateWeight<Runtime>;
@@ -1148,10 +1148,10 @@ impl parachains_hrmp::Config for Runtime {
     type ChannelManager = EnsureRoot<AccountId>;
     type Currency = Balances;
     type DefaultChannelSizeAndCapacityWithSystem =
-        parachains_configuration::ActiveConfigHrmpChannelSizeAndCapacityRatio<
-            Runtime,
-            HrmpChannelSizeAndCapacityWithSystemRatio,
-        >;
+    parachains_configuration::ActiveConfigHrmpChannelSizeAndCapacityRatio<
+        Runtime,
+        HrmpChannelSizeAndCapacityWithSystemRatio,
+    >;
     type WeightInfo = weights::runtime_parachains_hrmp::SubstrateWeight<Runtime>;
     type VersionWrapper = XcmPallet;
 }
@@ -1168,7 +1168,7 @@ impl parachains_scheduler::Config for Runtime {
 
 pub struct CollatorAssignmentProvider;
 impl parachains_scheduler::common::AssignmentProvider<BlockNumberFor<Runtime>>
-    for CollatorAssignmentProvider
+for CollatorAssignmentProvider
 {
     fn pop_assignment_for_core(core_idx: CoreIndex) -> Option<Assignment> {
         let assigned_collators = TanssiCollatorAssignment::collator_container_chain();
@@ -1304,7 +1304,7 @@ impl parachains_disputes::Config for Runtime {
 impl parachains_slashing::Config for Runtime {
     type KeyOwnerProofSystem = Historical;
     type KeyOwnerProof =
-        <Self::KeyOwnerProofSystem as KeyOwnerProofSystem<(KeyTypeId, ValidatorId)>>::Proof;
+    <Self::KeyOwnerProofSystem as KeyOwnerProofSystem<(KeyTypeId, ValidatorId)>>::Proof;
     type KeyOwnerIdentification = <Self::KeyOwnerProofSystem as KeyOwnerProofSystem<(
         KeyTypeId,
         ValidatorId,
@@ -1319,7 +1319,7 @@ impl parachains_slashing::Config for Runtime {
 }
 
 parameter_types! {
-    pub const ParaDeposit: Balance = 100 * UNITS;
+    pub const ParaDeposit: Balance = 1000 * UNITS;
 }
 
 impl paras_registrar::Config for Runtime {
@@ -1359,7 +1359,7 @@ impl pallet_beefy::Config for Runtime {
     type WeightInfo = ();
     type KeyOwnerProof = <Historical as KeyOwnerProofSystem<(KeyTypeId, BeefyId)>>::Proof;
     type EquivocationReportSystem =
-        pallet_beefy::EquivocationReportSystem<Self, Offences, Historical, ReportLongevity>;
+    pallet_beefy::EquivocationReportSystem<Self, Offences, Historical, ReportLongevity>;
     type AncestryHelper = BeefyMmrLeaf;
 }
 
@@ -1725,7 +1725,7 @@ impl pallet_services_payment::Config for Runtime {
     /// The maximum number of session credits that can be accumulated
     type FreeCollatorAssignmentCredits = FreeCollatorAssignmentCredits;
     type ManagerOrigin =
-        EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;
+    EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;
     type WeightInfo = weights::pallet_services_payment::SubstrateWeight<Runtime>;
 }
 
@@ -2065,7 +2065,7 @@ pub type TxExtension = (
 
 /// Unchecked extrinsic type as expected by this runtime.
 pub type UncheckedExtrinsic =
-    generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, TxExtension>;
+generic::UncheckedExtrinsic<Address, RuntimeCall, Signature, TxExtension>;
 
 /// Executive: handles dispatch to the various modules.
 pub type Executive = frame_executive::Executive<
@@ -2088,9 +2088,9 @@ pub struct InnerStarlightRegistrar<Runtime, AccountId, RegistrarManager, Registr
     PhantomData<(Runtime, AccountId, RegistrarManager, RegistrarWeightInfo)>,
 );
 impl<Runtime, AccountId, RegistrarManager, RegistrarWeightInfo> RegistrarHandler<AccountId>
-    for InnerStarlightRegistrar<Runtime, AccountId, RegistrarManager, RegistrarWeightInfo>
+for InnerStarlightRegistrar<Runtime, AccountId, RegistrarManager, RegistrarWeightInfo>
 where
-    RegistrarManager: RegistrarInterface<AccountId = AccountId>,
+    RegistrarManager: RegistrarInterface<AccountId=AccountId>,
     RegistrarWeightInfo: paras_registrar::WeightInfo,
     Runtime: pallet_registrar::Config + paras_registrar::Config,
     sp_runtime::AccountId32: From<AccountId>,
@@ -2184,7 +2184,7 @@ where
 impl pallet_registrar::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type RegistrarOrigin =
-        EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;
+    EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;
     type MarkValidForCollatingOrigin = EnsureRoot<AccountId>;
     type MaxLengthParaIds = MaxLengthParaIds;
     type MaxGenesisDataSize = MaxEncodedGenesisDataSize;
@@ -2267,7 +2267,7 @@ impl pallet_registrar::RegistrarHooks for StarlightRegistrarHooks {
             <Runtime as pallet_data_preservers::Config>::AssignmentOrigin::try_successful_origin(
                 &para_id,
             )
-            .expect("should be able to get para manager");
+                .expect("should be able to get para manager");
 
         DataPreservers::start_assignment(
             para_manager,
@@ -2275,7 +2275,7 @@ impl pallet_registrar::RegistrarHooks for StarlightRegistrarHooks {
             para_id,
             tp_data_preservers_common::AssignerExtra::Free,
         )
-        .expect("assignment to work");
+            .expect("assignment to work");
 
         assert!(
             pallet_data_preservers::Assignments::<Runtime>::get(para_id).contains(&profile_id),
@@ -3589,7 +3589,7 @@ impl ParaIdAssignmentHooksImpl {
             &pallet_services_payment::Pallet::<Runtime>::parachain_tank(para_id),
             remaining_to_pay,
         )
-        .into_result(true)?;
+            .into_result(true)?;
         // TODO: Have proper weight
         Ok(Weight::zero())
     }
@@ -3609,7 +3609,7 @@ impl<AC> ParaIdAssignmentHooks<BalanceOf<Runtime>, AC> for ParaIdAssignmentHooks
                     &Some(max_tip),
                 ))
             })
-            .is_ok()
+                .is_ok()
         });
     }
 
@@ -3633,10 +3633,10 @@ impl<AC> ParaIdAssignmentHooks<BalanceOf<Runtime>, AC> for ParaIdAssignmentHooks
                     maybe_tip,
                 )
             })
-            .inspect(|weight| {
-                total_weight += *weight;
-            })
-            .is_ok()
+                .inspect(|weight| {
+                    total_weight += *weight;
+                })
+                .is_ok()
         });
         total_weight
     }
@@ -3713,7 +3713,7 @@ impl pallet_collator_assignment::Config for Runtime {
     type SessionIndex = u32;
     type SelfParaId = MockParaId;
     type ShouldRotateAllCollators =
-        RotateCollatorsEveryNSessions<ConfigurationCollatorRotationSessionPeriod>;
+    RotateCollatorsEveryNSessions<ConfigurationCollatorRotationSessionPeriod>;
     type Randomness = pallet_collator_assignment::SolochainRandomness<
         BabeGetCollatorAssignmentRandomness<Runtime>,
     >;
@@ -3767,7 +3767,7 @@ mod benchmark_helpers {
                     slot: slot.into(),
                     authority_index: 0,
                 })
-                .encode(),
+                    .encode(),
             )],
         };
 
