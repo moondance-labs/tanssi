@@ -735,8 +735,7 @@ impl<
             .collation_params
             .as_ref()
             .expect("assignment update should only occur in a collating node")
-            .orchestrator_para_id
-            .clone();
+            .orchestrator_para_id;
 
         // The node always starts as an orchestrator chain collator.
         // This is because the assignment is detected after importing a new block, so if all
@@ -785,8 +784,7 @@ impl<
             .collation_params
             .as_ref()
             .expect("assignment update should only occur in a collating node")
-            .orchestrator_para_id
-            .clone();
+            .orchestrator_para_id;
 
         let HandleUpdateAssignmentResult {
             chains_to_stop,

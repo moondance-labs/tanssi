@@ -90,7 +90,7 @@ impl sc_cli::CliConfiguration<Self> for EmbededOrchestratorCli {
     }
 
     fn base_path(&self) -> sc_cli::Result<Option<sc_service::BasePath>> {
-        Ok(self.shared_params().base_path()?)
+        self.shared_params().base_path()
     }
 
     fn rpc_addr(

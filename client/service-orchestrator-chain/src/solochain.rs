@@ -37,7 +37,7 @@ use {
         sync::Arc,
         time::Duration,
     },
-    tc_consensus::{RelayChainInterface, OrchestratorChainInterface},
+    tc_consensus::{OrchestratorChainInterface, RelayChainInterface},
     tc_service_container_chain_spawner::cli::ContainerChainCli,
     tc_service_container_chain_spawner::{
         spawner,

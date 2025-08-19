@@ -24,6 +24,7 @@ pub type BaseSubcommand = node_common::cli::Subcommand<BuildSpecCmdSimple>;
 
 /// Custom subcommand enum with `rpc-provider`
 #[derive(Debug, clap::Subcommand)]
+#[allow(clippy::large_enum_variant)]
 pub enum Subcommand {
     RpcProvider(RpcProviderCmd),
     #[command(flatten)]
