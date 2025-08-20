@@ -16,10 +16,10 @@
 #![cfg(test)]
 
 use {
-    crate::{
-        tests::common::*, CollatorAssignment, InactivityTracking, Invulnerables,
-        MinimumSelfDelegation, PooledStaking,
+    dancebox_runtime::{
+        CollatorAssignment, InactivityTracking, Invulnerables, MinimumSelfDelegation, PooledStaking,
     },
+    dancebox_runtime_test_utils::*,
     frame_support::assert_ok,
     pallet_pooled_staking::{ActivePoolKind, SortedEligibleCandidates},
     tp_traits::NodeActivityTrackingHelper,
