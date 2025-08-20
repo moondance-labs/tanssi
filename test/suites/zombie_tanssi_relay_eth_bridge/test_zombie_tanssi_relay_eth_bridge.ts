@@ -1,7 +1,7 @@
 import "@tanssi/api-augment/dancelight";
 
 import { afterAll, beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { type KeyringPair, generateKeyringPair } from "@moonwall/util";
+import { type KeyringPair, generateKeyringPair, alith } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import { u8aToHex, hexToU8a } from "@polkadot/util";
 import { decodeAddress } from "@polkadot/util-crypto";
@@ -15,6 +15,9 @@ import {
     signAndSendAndInclude,
     sleep,
     waitSessions,
+    TESTNET_ETHEREUM_NETWORK_ID,
+    waitEventUntilTimeout,
+    SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS,
 } from "utils";
 
 import { keccak256 } from "viem";
@@ -1002,6 +1005,151 @@ describeSuite({
                 expect(balanceAfter).to.be.eq(wETHBalanceBefore + wETHBalanceToSend);
 
                 logTiming("Finish T08");
+            },
+        });
+
+        it({
+            id: "T09",
+            title: "Should allow sending asset from container chain to Ethereum",
+            test: async () => {
+                logTiming("Start T09");
+
+                // Random ETH destination that we send asset to
+                const destinationAddress = "0x1234567890abcdef1234567890abcdef12345678";
+                const holdingAccount = SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS;
+                const tokenToTransfer = 123_321_000_000_000_000n;
+
+                const containerChainPolkadotJs = context.polkadotJs("Container2000");
+
+                const chain = containerChainPolkadotJs.consts.system.version.specName.toString();
+
+                const aliceAccount32 = new Keyring({ type: "sr25519" }).addFromUri("//Alice", {
+                    name: "Alice default",
+                });
+                alice = chain === "frontier-template" ? alith : aliceAccount32;
+
+                const ethereumNetwork = { Ethereum: { chainId: TESTNET_ETHEREUM_NETWORK_ID } };
+
+                const convertLocation = await relayApi.call.locationToAccountApi.convertLocation({
+                    V3: { parents: 0, interior: { X1: { Parachain: 2000 } } },
+                });
+                const convertedAddress = convertLocation.asOk.toHuman();
+
+                console.log("Converted address:", convertedAddress);
+
+                const txHash = await relayApi.tx.utility
+                    .batch([
+                        relayApi.tx.balances.transferKeepAlive(convertedAddress, 100_000_000_000_000n),
+                        relayApi.tx.sudo.sudo(
+                            relayApi.tx.ethereumTokenTransfers.setTokenTransferChannel(
+                                ASSET_HUB_CHANNEL_ID,
+                                ASSET_HUB_AGENT_ID,
+                                Number(ASSET_HUB_PARA_ID)
+                            )
+                        ),
+                    ])
+                    .signAndSend(aliceAccount32);
+
+                expect(!!txHash.toHuman()).to.be.true;
+
+                // Check balance before transfer
+                const balanceBefore = (
+                    await containerChainPolkadotJs.query.system.account(holdingAccount)
+                ).data.free.toBigInt();
+                const versionedBeneficiary = {
+                    V3: {
+                        parents: 0,
+                        interior: {
+                            X1: {
+                                AccountKey20: {
+                                    network: ethereumNetwork,
+                                    key: destinationAddress,
+                                },
+                            },
+                        },
+                    },
+                };
+                const metadata = await containerChainPolkadotJs.rpc.state.getMetadata();
+                const balancesPalletIndex = metadata.asLatest.pallets
+                    .find(({ name }) => name.toString() === "Balances")
+                    .index.toNumber();
+
+                const assetToTransferNative = {
+                    id: {
+                        Concrete: {
+                            parents: 0,
+                            interior: {
+                                X1: { PalletInstance: Number(balancesPalletIndex) },
+                            },
+                        },
+                    },
+                    fun: { Fungible: tokenToTransfer },
+                };
+                const versionedAssets = {
+                    V3: [assetToTransferNative],
+                };
+
+                // Specify ethereum destination with global consensus
+                const dest = {
+                    V3: {
+                        parents: 2,
+                        interior: {
+                            X1: {
+                                GlobalConsensus: ethereumNetwork,
+                            },
+                        },
+                    },
+                };
+
+                const channelNonceBefore = await relayApi.query.ethereumOutboundQueue.nonce(ASSET_HUB_CHANNEL_ID);
+
+                // const balanceBefore = await containerTokenContract.balanceOf(destinationAddress);
+                await containerChainPolkadotJs.tx.polkadotXcm
+                    .transferAssets(dest, versionedBeneficiary, versionedAssets, 0, "Unlimited")
+                    .signAndSend(alice);
+
+                await waitEventUntilTimeout(relayApi, "ethereumOutboundQueue.MessageAccepted", 90000);
+
+                const balanceAfter = (
+                    await containerChainPolkadotJs.query.system.account(holdingAccount)
+                ).data.free.toBigInt();
+
+                expect(balanceAfter - balanceBefore).toEqual(tokenToTransfer);
+
+                const channelNonceAfter = await relayApi.query.ethereumOutboundQueue.nonce(ASSET_HUB_CHANNEL_ID);
+
+                // Check that nonce has changed
+                expect(channelNonceAfter.toNumber() - channelNonceBefore.toNumber()).toEqual(1);
+
+                // TODO: Check if correct InboundMessageDispatched event dispatched
+                // let tokensTransferReceived = false;
+                // let tokensTransferSuccess = false;
+                // await gatewayContract.on(
+                //     "InboundMessageDispatched",
+                //     (channelID, _nonce, _messageID, success, rewardAddress) => {
+                //         console.log("params: ", channelID, _nonce, _messageID, success, rewardAddress);
+                //
+                //         if (channelID === ASSET_HUB_CHANNEL_ID) {
+                //             tokensTransferReceived = true;
+                //             tokensTransferSuccess = success;
+                //         }
+                //     }
+                // );
+
+                // logTiming("Before waiting token transfer received");
+                //
+                // while (!tokensTransferReceived) {
+                //     await sleep(1000);
+                // }
+                // expect(tokensTransferSuccess).to.be.true;
+                //
+                // logTiming("After waiting token transfer received");
+
+                // TODO: Check if receiver balance changed
+                // const balanceAfter = await containerTokenContract.balanceOf(destinationAddress);
+                // expect(balanceAfter).to.be.eq(tokensBalanceBefore + tokenToTransfer);
+
+                logTiming("Finish T09");
             },
         });
 
