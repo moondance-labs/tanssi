@@ -1168,16 +1168,49 @@ where
 
     #[cfg(feature = "try-runtime")]
     fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
-        //use parity_scale_codec::Encode;
-        Ok(vec![])
+        use parity_scale_codec::Encode;
+        let Some(collator_id) =
+            pallet_inactivity_tracking::OfflineCollators::<Runtime>::iter_keys().next()
+        else {
+            return Ok(vec![]);
+        };
+
+        let old_collator_offline_status: bool =
+            frame_support::storage::unhashed::get(&pallet_inactivity_tracking::OfflineCollators::<
+                Runtime,
+            >::hashed_key_for(
+                collator_id.clone()
+            ))
+            .expect("key was found so entry must exist");
+
+        Ok((collator_id, old_collator_offline_status).encode())
     }
 
     #[cfg(feature = "try-runtime")]
     fn post_upgrade(&self, state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
-        //use parity_scale_codec::Decode;
+        use parity_scale_codec::Decode;
+        use tp_traits::GetSessionIndex;
         if state.is_empty() {
-            // there were no offline collators
+            // There were no offline collators
             return Ok(());
+        }
+
+        let (collator_id, old_collator_offline_status) =
+            <(Runtime::AccountId, bool)>::decode(&mut &state[..]).expect("to decode properly");
+
+        if old_collator_offline_status {
+            let new_collator_offline_status =
+                pallet_inactivity_tracking::OfflineCollators::<Runtime>::get(collator_id.clone())
+                    .expect("entry should still exist");
+
+            let expected_collator_offline_status =
+                <Runtime as pallet_inactivity_tracking::Config>::CurrentSessionIndex::session_index(
+                );
+
+            assert_eq!(
+                new_collator_offline_status, expected_collator_offline_status,
+                "Migrated collator offline status don't match expected value"
+            );
         }
 
         Ok(())

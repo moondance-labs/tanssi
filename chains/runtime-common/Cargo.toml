@@ -30,6 +30,7 @@ pallet-services-payment = { workspace = true }
 pallet-session = { workspace = true }
 pallet-stream-payment = { workspace = true, features = [ "migrations" ] }
 pallet-treasury = { workspace = true }
+tp-traits = { workspace = true }
 
 # Moonkit
 pallet-migrations = { workspace = true }
@@ -107,6 +108,7 @@ std = [
 	"sp-core/std",
 	"sp-runtime/std",
 	"sp-staking/std",
+	"tp-traits/std",
 	"xcm/std",
 ]
 relay = [
@@ -149,6 +151,7 @@ runtime-benchmarks = [
 	"snowbridge-pallet-system/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"sp-staking/runtime-benchmarks",
+	"tp-traits/runtime-benchmarks",
 	"xcm/runtime-benchmarks",
 ]
 
