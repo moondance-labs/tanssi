@@ -26,3 +26,8 @@ tanssi-emulated-integration-tests-common = { workspace = true }
 xcm = { workspace = true }
 xcm-emulator = { workspace = true }
 xcm-executor = { workspace = true }
+
+[features]
+fast-runtime = [
+	"starlight-runtime/fast-runtime",
+]
