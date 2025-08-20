@@ -151,7 +151,7 @@ mod tests {
         msg.inner_mut().push(SetFeesMode { jit_withdraw: true });
         msg.inner_mut().push(ExportMessage {
             network: NetworkId::Ethereum { chain_id: 11155111 },
-            destination: Here.into(),
+            destination: Here,
             xcm: Xcm::new(),
         });
 
@@ -182,7 +182,7 @@ mod tests {
         let mut msg: Xcm<RuntimeCall> = Xcm::new();
         msg.inner_mut().push(ExportMessage {
             network: NetworkId::Ethereum { chain_id: 11155111 },
-            destination: Here.into(),
+            destination: Here,
             xcm: Xcm::new(),
         });
         msg.inner_mut().push(SetFeesMode { jit_withdraw: true });
@@ -231,7 +231,7 @@ mod tests {
         msg.inner_mut().push(SetFeesMode { jit_withdraw: true });
         msg.inner_mut().push(ExportMessage {
             network: NetworkId::Ethereum { chain_id: 11155111 },
-            destination: Here.into(),
+            destination: Here,
             xcm: export_xcm,
         });
 
@@ -290,7 +290,7 @@ mod tests {
         msg.inner_mut().push(SetFeesMode { jit_withdraw: true });
         msg.inner_mut().push(ExportMessage {
             network: NetworkId::Ethereum { chain_id: 11155111 },
-            destination: Here.into(),
+            destination: Here,
             xcm: export_xcm,
         });
 
@@ -360,7 +360,7 @@ mod tests {
         msg.inner_mut().push(SetFeesMode { jit_withdraw: true });
         msg.inner_mut().push(ExportMessage {
             network: NetworkId::Ethereum { chain_id: 11155111 },
-            destination: Here.into(),
+            destination: Here,
             xcm: export_xcm,
         });
 
@@ -430,7 +430,7 @@ mod tests {
         msg.inner_mut().push(SetFeesMode { jit_withdraw: true });
         msg.inner_mut().push(ExportMessage {
             network: NetworkId::Ethereum { chain_id: 11155111 },
-            destination: Here.into(),
+            destination: Here,
             xcm: export_xcm,
         });
 
