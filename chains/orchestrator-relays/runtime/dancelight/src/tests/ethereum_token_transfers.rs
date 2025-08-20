@@ -2718,9 +2718,9 @@ fn receive_container_native_tokens_from_eth_works() {
             ));
             let para_id: ParaId = 2000u32.into();
 
-            let amount_to_transfer = 10_000;
-            let fee = 1000;
-            let container_fee = 500;
+            let amount_to_transfer = 100_000_000;
+            let fee = 1_500_000_000_000_000;
+            let container_fee = 500_000_000_000_000;
 
             let container_para_id = 2001u32;
 
@@ -2764,9 +2764,9 @@ fn receive_container_native_tokens_from_eth_works() {
                 chain_id: 1,
                 command: Command::SendNativeToken {
                     token_id,
-                    destination: Destination::ForeignAccountId32 {
+                    destination: Destination::ForeignAccountId20 {
                         para_id: container_para_id,
-                        id: AccountId::from(BOB).into(),
+                        id: [5u8; 20],
                         fee: container_fee,
                     },
                     amount: amount_to_transfer,
@@ -2780,8 +2780,6 @@ fn receive_container_native_tokens_from_eth_works() {
                 message_id: Default::default(),
                 payload: payload.encode(),
             };
-
-            println!("payload: {:?}", payload.encode());
 
             let message = EventProof {
                 event_log: Log {
