@@ -14,12 +14,20 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+//! Crate containing various primitives for container chain
+//! token transfers.
+#![cfg_attr(not(feature = "std"), no_std)]
 extern crate alloc;
 
 use {
-    crate::PhantomData, parity_scale_codec::Encode, sp_core::blake2_256, xcm::latest::prelude::*,
-    xcm_executor::traits::ConvertLocation,
+    core::marker::PhantomData,
+    cumulus_primitives_core::{Ethereum, GlobalConsensus, Location},
+    frame_support::pallet_prelude::Encode,
+    sp_core::blake2_256,
+    sp_runtime::app_crypto::sp_core,
 };
+
+pub use xcm_executor::traits::ConvertLocation;
 
 pub struct ContainerChainEthereumLocationConverter<AccountId>(PhantomData<AccountId>);
 

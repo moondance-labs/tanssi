@@ -50,6 +50,7 @@ use {
         WithComputedOrigin, XcmFeeManagerFromComponents,
     },
     xcm_executor::XcmExecutor,
+    tp_container_chain::ContainerChainEthereumLocationConverter,
 };
 
 // TODO: make this dynamic through pallet parameters
@@ -128,6 +129,8 @@ pub type LocationToAccountId = (
         AccountId,
         xcm_builder::DescribeFamily<xcm_builder::DescribeAllTerminal>,
     >,
+    // Convert Ethereum locations to container-chain account IDs
+    ContainerChainEthereumLocationConverter<AccountId>,
 );
 
 /// Local origins on this chain are allowed to dispatch XCM sends/executions.

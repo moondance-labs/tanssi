@@ -23,7 +23,6 @@ pub mod migrations;
 #[cfg(feature = "relay")]
 pub mod relay;
 
-pub mod eth_location_converter;
 pub mod universal_aliases;
 
 use core::marker::PhantomData;

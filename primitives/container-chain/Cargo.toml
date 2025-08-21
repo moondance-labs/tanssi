@@ -1,0 +1,56 @@
+[package]
+name = "tp-container-chain"
+authors = { workspace = true }
+description = "Tanssi container chain primitives"
+edition = "2021"
+license = "GPL-3.0-only"
+version = "0.1.0"
+
+[lints]
+workspace = true
+
+[dependencies]
+frame-support = { workspace = true }
+frame-system = { workspace = true }
+impl-trait-for-tuples = { workspace = true }
+log = { workspace = true }
+parity-scale-codec = { workspace = true }
+scale-info = { workspace = true }
+serde = { workspace = true }
+sp-core = { workspace = true }
+sp-runtime = { workspace = true }
+xcm = { workspace = true }
+xcm-builder = { workspace = true }
+xcm-executor = { workspace = true }
+
+# Cumulus
+cumulus-primitives-core = { workspace = true }
+
+[dev-dependencies]
+hex-literal = { workspace = true }
+
+[features]
+default = [ "std" ]
+std = [
+	"cumulus-primitives-core/std",
+	"frame-support/std",
+	"frame-system/std",
+	"log/std",
+	"parity-scale-codec/std",
+	"scale-info/std",
+	"serde/std",
+	"sp-core/std",
+	"sp-runtime/std",
+	"xcm-builder/std",
+	"xcm-executor/std",
+	"xcm/std",
+]
+runtime-benchmarks = [
+	"cumulus-primitives-core/runtime-benchmarks",
+	"frame-support/runtime-benchmarks",
+	"frame-system/runtime-benchmarks",
+	"sp-runtime/runtime-benchmarks",
+	"xcm-builder/runtime-benchmarks",
+	"xcm-executor/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
+]
