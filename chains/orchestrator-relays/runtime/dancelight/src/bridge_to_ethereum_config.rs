@@ -21,7 +21,9 @@ use crate::EthereumBeaconClient;
 
 #[cfg(not(feature = "runtime-benchmarks"))]
 use {
-    tanssi_runtime_common::relay::NativeTokenTransferMessageProcessor,
+    tanssi_runtime_common::relay::{
+        GatewayAndChannelValidator, NativeTokenTransferData, NativeTokenTransferMessageProcessor,
+    },
     tp_bridge::{
         generic_token_message_processor::GenericTokenMessageProcessor,
         symbiotic_message_processor::SymbioticMessageProcessor,
@@ -181,22 +183,8 @@ where
     EthereumNetwork: Get<NetworkId>,
 {
     fn can_process_message(channel: &Channel, envelope: &Envelope) -> bool {
-        // Ensure that the message is intended for the current channel, para_id and agent_id
-        if let Some(channel_info) =
-            pallet_ethereum_token_transfers::CurrentChannelInfo::<Runtime>::get()
-        {
-            if envelope.channel_id != channel_info.channel_id
-                || channel.para_id != channel_info.para_id
-                || channel.agent_id != channel_info.agent_id
-            {
-                return false;
-            }
-        } else {
-            return false;
-        }
-
-        // Check it is from the right gateway
-        if envelope.gateway != T::GatewayAddress::get() {
+        if !GatewayAndChannelValidator::<T>::validate_gateway_and_channel(channel, envelope) {
+            log::warn!("EthTokensLocalProcessor: invalid gateway or channel");
             return false;
         }
 
@@ -377,218 +365,202 @@ where
     InboundQueuePalletInstance: Get<u8>,
 {
     fn can_process_message(channel: &Channel, envelope: &Envelope) -> bool {
-        // Ensure that the message is intended for the current channel, para_id and agent_id
-        // TODO: move this to a common helper function
-        if let Some(channel_info) =
-            pallet_ethereum_token_transfers::CurrentChannelInfo::<Runtime>::get()
-        {
-            if envelope.channel_id != channel_info.channel_id
-                || channel.para_id != channel_info.para_id
-                || channel.agent_id != channel_info.agent_id
-            {
-                return false;
-            }
-        } else {
-            return false;
-        }
-
-        // Check it is from the right gateway
-        if envelope.gateway != T::GatewayAddress::get() {
+        // Validate channel and gateway
+        if !GatewayAndChannelValidator::<T>::validate_gateway_and_channel(channel, envelope) {
+            log::warn!(
+                "NativeContainerTokensProcessor::can_process_message: invalid gateway or channel"
+            );
             return false;
         }
 
         // Try decoding the message and check if the destination owns the token being transferred
-        match VersionedXcmMessage::decode_all(&mut envelope.payload.as_slice()) {
-            Ok(VersionedXcmMessage::V1(MessageV1 {
-                command:
-                    Command::SendNativeToken {
-                        token_id,
-                        destination,
-                        ..
-                    },
-                ..
-            })) => {
-                // Check if the asset is registered on EthereumSystem
-                if let Some(expected_token_location) =
-                    snowbridge_pallet_system::Pallet::<T>::convert(&token_id)
-                {
-                    let chain_part = expected_token_location
-                        .interior()
-                        .clone()
-                        .split_global()
-                        .ok();
-
-                    let expected_para_id = match destination {
-                        Destination::ForeignAccountId32 { para_id, .. } => para_id,
-                        Destination::ForeignAccountId20 { para_id, .. } => para_id,
-                        _ => 0u32,
-                    };
-
-                    match chain_part {
-                        Some((_, interior)) => {
-                            if let Some(Parachain(id)) = interior.first() {
-                                return expected_para_id == *id;
-                            } else {
-                                log::error!("NativeContainerTokensProcessor: destination doesn't own the token!");
-                                return false;
-                            }
-                        }
-                        _ => {
-                            log::error!("NativeContainerTokensProcessor: invalid chain part");
-                            return false;
-                        }
-                    }
-                } else {
-                    log::error!("NativeContainerTokensProcessor: token location not found for token_id: {:?}", token_id);
-                    return false;
-                }
-            }
-            Ok(msg) => {
-                log::trace!(
-                    "NativeContainerTokensProcessor: unexpected message: {:?}",
-                    msg
+        if let Some(token_data) =
+            NativeTokenTransferData::decode_native_token_message(&envelope.payload)
+        {
+            // Check if the asset is registered on EthereumSystem
+            if let Some(token_location) = Self::get_token_location(&token_data.token_id) {
+                Self::validate_destination_owns_token(&token_location, &token_data.destination)
+            } else {
+                log::error!(
+                    "NativeContainerTokensProcessor::can_process_message: token location not found for token_id: {:?}",
+                    token_data.token_id
                 );
                 false
             }
-            Err(e) => {
-                log::trace!("NativeContainerTokensProcessor: failed to decode message. This is expected if the message is not for this processor. Error: {:?}", e);
+        } else {
+            false
+        }
+    }
+
+    fn process_message(_channel: Channel, envelope: Envelope) -> DispatchResult {
+        if let Some(token_data) =
+            NativeTokenTransferData::decode_native_token_message(&envelope.payload)
+        {
+            if let Some(token_location) = Self::get_token_location(&token_data.token_id) {
+                Self::process_native_token_transfer(token_data, token_location);
+                Ok(())
+            } else {
+                log::error!(
+                    "NativeContainerTokensProcessor::process_message: token location not found for token_id: {:?}",
+                    token_data.token_id
+                );
+                Ok(())
+            }
+        } else {
+            Ok(())
+        }
+    }
+}
+
+impl<T, EthereumLocation, EthereumNetwork, InboundQueuePalletInstance>
+    NativeContainerTokensProcessor<T, EthereumLocation, EthereumNetwork, InboundQueuePalletInstance>
+where
+    T: snowbridge_pallet_inbound_queue::Config
+        + pallet_ethereum_token_transfers::Config
+        + snowbridge_pallet_system::Config
+        + pallet_xcm::Config,
+    <T as frame_system::Config>::RuntimeEvent: From<RuntimeEvent>,
+    EthereumLocation: Get<Location>,
+    EthereumNetwork: Get<NetworkId>,
+    InboundQueuePalletInstance: Get<u8>,
+{
+    /// Gets the token location from a token_id using EthereumSystem pallet.
+    fn get_token_location(token_id: &H256) -> Option<Location> {
+        snowbridge_pallet_system::Pallet::<T>::convert(token_id)
+    }
+
+    /// Validates that the destination para_id owns the token being transferred.
+    fn validate_destination_owns_token(
+        token_location: &Location,
+        destination: &Destination,
+    ) -> bool {
+        let chain_part = token_location.interior().clone().split_global().ok();
+
+        let expected_para_id = match destination {
+            Destination::ForeignAccountId32 { para_id, .. } => *para_id,
+            Destination::ForeignAccountId20 { para_id, .. } => *para_id,
+            _ => 0u32,
+        };
+
+        match chain_part {
+            Some((_, interior)) => {
+                if let Some(Parachain(id)) = interior.first() {
+                    expected_para_id == *id
+                } else {
+                    log::error!(
+                        "NativeContainerTokensProcessor: destination doesn't own the token!"
+                    );
+                    false
+                }
+            }
+            _ => {
+                log::error!("NativeContainerTokensProcessor: invalid chain part");
                 false
             }
         }
     }
 
-    fn process_message(_channel: Channel, envelope: Envelope) -> DispatchResult {
-        match VersionedXcmMessage::decode_all(&mut envelope.payload.as_slice()) {
-            Ok(VersionedXcmMessage::V1(MessageV1 {
-                command:
-                    Command::SendNativeToken {
-                        token_id,
-                        destination,
-                        amount,
-                        fee: tanssi_fee,
-                    },
-                ..
-            })) => {
-                // TODO: refactor
-
-                if let Some(token_location) =
-                    snowbridge_pallet_system::Pallet::<T>::convert(&token_id)
-                {
-                    // TODO: refactor this
-                    let destination_info = match destination {
-                        Destination::ForeignAccountId32 { para_id, id, fee } => {
-                            let beneficiary = Location::new(0, [AccountId32 { network: None, id }]);
-                            Some((beneficiary, fee, para_id))
-                        }
-                        Destination::ForeignAccountId20 { para_id, id, fee } => {
-                            let beneficiary = Location::new(
-                                0,
-                                [AccountKey20 {
-                                    network: None,
-                                    key: id,
-                                }],
-                            );
-                            Some((beneficiary, fee, para_id))
-                        }
-                        _ => {
-                            log::error!("NativeContainerTokensProcessor::process_message: invalid destination");
-                            None
-                        }
-                    };
-
-                    if let Some((beneficiary, container_fee, container_para_id)) = destination_info
-                    {
-                        let network = EthereumNetwork::get();
-                        let bridge_location = Location::new(2, GlobalConsensus(network));
-
-                        let total_fees = tanssi_fee.saturating_add(container_fee);
-
-                        let container_location = Location::new(0, [Parachain(container_para_id)]);
-
-                        let token_split = token_location.interior().clone().split_global().ok();
-
-                        if let Some((_, interior)) = token_split {
-                            let container_token_from_tanssi = Location::new(0, interior);
-                            let reanchor_result = container_token_from_tanssi.reanchored(
-                                &container_location,
-                                &<T as pallet_xcm::Config>::UniversalLocation::get(),
-                            );
-
-                            if let Ok(token_location_reanchored) = reanchor_result {
-                                let container_asset: Asset =
-                                    (token_location_reanchored, amount).into();
-                                let tanssi_asset_fee: Asset =
-                                    (Location::parent(), total_fees).into();
-                                let inbound_queue_pallet_index = InboundQueuePalletInstance::get();
-
-                                let remote_xcm = Xcm::<()>(vec![
-                                    DescendOrigin(
-                                        PalletInstance(inbound_queue_pallet_index).into(),
-                                    ),
-                                    UniversalOrigin(GlobalConsensus(network)),
-                                    WithdrawAsset(
-                                        vec![tanssi_asset_fee.clone(), container_asset.clone()]
-                                            .into(),
-                                    ),
-                                    BuyExecution {
-                                        fees: tanssi_asset_fee,
-                                        weight_limit: Unlimited,
-                                    },
-                                    DepositAsset {
-                                        assets: Definite(container_asset.into()),
-                                        beneficiary,
-                                    },
-                                    // When the execution finishes deposit any leftover assets to the ETH
-                                    // sovereign account on destination.
-                                    SetAppendix(Xcm(vec![DepositAsset {
-                                        assets: Wild(AllCounted(2)),
-                                        beneficiary: bridge_location,
-                                    }])),
-                                ]);
-
-                                send_xcm::<<T as pallet_xcm::Config>::XcmRouter>(container_location.clone(), remote_xcm.clone())
-                                    .map(|(message_id, _price)| {
-                                        frame_system::Pallet::<T>::deposit_event(RuntimeEvent::XcmPallet(
-                                            pallet_xcm::Event::Sent {
-                                                origin: Here.into_location(),
-                                                destination: container_location,
-                                                message: remote_xcm,
-                                                message_id,
-                                            },
-                                        ));
-                                    })
-                                    .map_err(|e| {
-                                        log::error!("NativeContainerTokensProcessor: XCM send failed with error: {:?}", e);
-                                    })
-                                    .ok();
-                            } else {
-                                log::error!(
-                                "NativeContainerTokensProcessor: failed to reanchor token location"
-                            );
-                            }
-                        } else {
-                            log::error!(
-                                "NativeContainerTokensProcessor: failed to reanchor token location"
-                            );
-                        }
-                    }
-                } else {
-                    log::error!("NativeContainerTokensProcessor: token location not found for token_id: {:?}", token_id);
-                }
+    /// Process a native token transfer by creating and sending an XCM message to the destination parachain.
+    fn process_native_token_transfer(
+        token_data: NativeTokenTransferData,
+        token_location: Location,
+    ) {
+        let destination_info = match token_data.destination {
+            Destination::ForeignAccountId32 { para_id, id, fee } => {
+                let beneficiary = Location::new(0, [AccountId32 { network: None, id }]);
+                Some((beneficiary, fee, para_id))
             }
-            Ok(msg) => {
-                log::trace!(
-                    "NativeContainerTokensProcessor: unexpected message: {:?}",
-                    msg
+            Destination::ForeignAccountId20 { para_id, id, fee } => {
+                let beneficiary = Location::new(
+                    0,
+                    [AccountKey20 {
+                        network: None,
+                        key: id,
+                    }],
                 );
-                return Ok(());
+                Some((beneficiary, fee, para_id))
             }
-            Err(e) => {
-                log::trace!("NativeContainerTokensProcessor: failed to decode message. This is expected if the message is not for this processor. Error: {:?}", e);
-                return Ok(());
+            _ => {
+                log::error!("NativeContainerTokensProcessor::process_native_token_transfer: invalid destination");
+                None
+            }
+        };
+
+        if let Some((beneficiary, container_fee, container_para_id)) = destination_info {
+            let network = EthereumNetwork::get();
+            let bridge_location = Location::new(2, GlobalConsensus(network));
+
+            let total_fees = token_data.fee.saturating_add(container_fee);
+
+            let container_location = Location::new(0, [Parachain(container_para_id)]);
+
+            let token_split = token_location.interior().clone().split_global().ok();
+
+            if let Some((_, interior)) = token_split {
+                let container_token_from_tanssi = Location::new(0, interior);
+                let reanchor_result = container_token_from_tanssi.reanchored(
+                    &container_location,
+                    &<T as pallet_xcm::Config>::UniversalLocation::get(),
+                );
+
+                if let Ok(token_location_reanchored) = reanchor_result {
+                    let container_asset: Asset =
+                        (token_location_reanchored, token_data.amount).into();
+                    let tanssi_asset_fee: Asset = (Location::parent(), total_fees).into();
+                    let inbound_queue_pallet_index = InboundQueuePalletInstance::get();
+
+                    let remote_xcm = Xcm::<()>(vec![
+                        DescendOrigin(PalletInstance(inbound_queue_pallet_index).into()),
+                        UniversalOrigin(GlobalConsensus(network)),
+                        WithdrawAsset(
+                            vec![tanssi_asset_fee.clone(), container_asset.clone()].into(),
+                        ),
+                        BuyExecution {
+                            fees: tanssi_asset_fee,
+                            weight_limit: Unlimited,
+                        },
+                        DepositAsset {
+                            assets: Definite(container_asset.into()),
+                            beneficiary,
+                        },
+                        // When the execution finishes deposit any leftover assets to the ETH
+                        // sovereign account on destination.
+                        SetAppendix(Xcm(vec![DepositAsset {
+                            assets: Wild(AllCounted(2)),
+                            beneficiary: bridge_location,
+                        }])),
+                    ]);
+
+                    send_xcm::<<T as pallet_xcm::Config>::XcmRouter>(
+                        container_location.clone(),
+                        remote_xcm.clone(),
+                    )
+                    .map(|(message_id, _price)| {
+                        frame_system::Pallet::<T>::deposit_event(RuntimeEvent::XcmPallet(
+                            pallet_xcm::Event::Sent {
+                                origin: Here.into_location(),
+                                destination: container_location,
+                                message: remote_xcm,
+                                message_id,
+                            },
+                        ));
+                    })
+                    .map_err(|e| {
+                        log::error!(
+                            "NativeContainerTokensProcessor: XCM send failed with error: {:?}",
+                            e
+                        );
+                    })
+                    .ok();
+                } else {
+                    log::error!(
+                        "NativeContainerTokensProcessor: failed to reanchor token location"
+                    );
+                }
+            } else {
+                log::error!("NativeContainerTokensProcessor: failed to reanchor token location");
             }
         }
-        Ok(())
     }
 }
 

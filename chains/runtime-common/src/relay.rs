@@ -27,7 +27,7 @@ use frame_system::pallet_prelude::BlockNumberFor;
 use parity_scale_codec::{DecodeAll, Encode};
 use snowbridge_core::Channel;
 use snowbridge_pallet_inbound_queue::RewardProcessor;
-use sp_core::Get;
+use sp_core::{Get, H256};
 use sp_runtime::Vec;
 use sp_runtime::{
     traits::{Hash as _, MaybeEquivalence},
@@ -40,18 +40,13 @@ use {
     snowbridge_inbound_queue_primitives::EventProof as Message,
 };
 
-/// `NativeTokenTransferMessageProcessor` is responsible for receiving and processing the Tanssi
-/// native token sent from Ethereum. If the message is valid, it performs the token transfer
-/// from the Ethereum sovereign account to the specified destination account.
-pub struct NativeTokenTransferMessageProcessor<T>(PhantomData<T>);
-impl<T> MessageProcessor for NativeTokenTransferMessageProcessor<T>
+/// Validates the gateway and channel of an inbound envelope
+pub struct GatewayAndChannelValidator<T>(PhantomData<T>);
+impl<T> GatewayAndChannelValidator<T>
 where
-    T: snowbridge_pallet_inbound_queue::Config
-        + pallet_ethereum_token_transfers::Config
-        + snowbridge_pallet_system::Config,
-    T::AccountId: From<[u8; 32]>,
+    T: snowbridge_pallet_inbound_queue::Config + pallet_ethereum_token_transfers::Config,
 {
-    fn can_process_message(channel: &Channel, envelope: &Envelope) -> bool {
+    pub fn validate_gateway_and_channel(channel: &Channel, envelope: &Envelope) -> bool {
         // Ensure that the message is intended for the current channel, para_id and agent_id
         if let Some(channel_info) = pallet_ethereum_token_transfers::CurrentChannelInfo::<T>::get()
         {
@@ -80,96 +75,136 @@ where
             log::warn!("Wrong gateway address: {:?}", envelope.gateway);
             return false;
         }
+        true
+    }
+}
+
+/// Information needed to process a native token transfer message from ethereum.
+pub struct NativeTokenTransferData {
+    pub token_id: H256,
+    pub destination: Destination,
+    pub amount: u128,
+    pub fee: u128,
+}
+
+impl NativeTokenTransferData {
+    pub fn decode_native_token_message(payload: &[u8]) -> Option<Self> {
+        match VersionedXcmMessage::decode_all(&mut payload.as_ref()) {
+            Ok(VersionedXcmMessage::V1(MessageV1 {
+                command:
+                    Command::SendNativeToken {
+                        token_id,
+                        destination,
+                        amount,
+                        fee,
+                    },
+                ..
+            })) => Some(NativeTokenTransferData {
+                token_id,
+                destination,
+                amount,
+                fee,
+            }),
+            Ok(msg) => {
+                log::trace!("NativeTokenTransferData: unexpected message: {:?}", msg);
+                None
+            }
+            Err(e) => {
+                log::trace!("NativeTokenTransferData: failed to decode message. This is expected if the message is not related to a SendNativeToken command. Error: {:?}", e);
+                None
+            }
+        }
+    }
+}
+
+/// `NativeTokenTransferMessageProcessor` is responsible for receiving and processing the Tanssi
+/// native token sent from Ethereum. If the message is valid, it performs the token transfer
+/// from the Ethereum sovereign account to the specified destination account.
+pub struct NativeTokenTransferMessageProcessor<T>(PhantomData<T>);
+impl<T> MessageProcessor for NativeTokenTransferMessageProcessor<T>
+where
+    T: snowbridge_pallet_inbound_queue::Config
+        + pallet_ethereum_token_transfers::Config
+        + snowbridge_pallet_system::Config,
+    T::AccountId: From<[u8; 32]>,
+{
+    fn can_process_message(channel: &Channel, envelope: &Envelope) -> bool {
+        if !GatewayAndChannelValidator::<T>::validate_gateway_and_channel(channel, envelope) {
+            log::warn!("NativeTokenTransferMessageProcessor: invalid gateway or channel");
+            return false;
+        }
 
         // Try decode the message and check the token id is the expected one
-        match VersionedXcmMessage::decode_all(&mut envelope.payload.as_slice()) {
-            Ok(VersionedXcmMessage::V1(MessageV1 {
-                command: Command::SendNativeToken { token_id, .. },
-                ..
-            })) => {
-                let token_location = T::TokenLocationReanchored::get();
+        if let Some(token_data) =
+            NativeTokenTransferData::decode_native_token_message(&envelope.payload)
+        {
+            let token_location = T::TokenLocationReanchored::get();
 
-                if let Some(expected_token_id) =
-                    snowbridge_pallet_system::Pallet::<T>::convert_back(&token_location)
-                {
-                    if token_id == expected_token_id {
-                        true
-                    } else {
-                        // TODO: ensure this does not warn on container token transfers or other message types, if yes change to debug
-                        log::warn!(
-                            "NativeTokenTransferMessageProcessor: unexpected token_id: {:?}",
-                            token_id
-                        );
-                        false
-                    }
+            if let Some(expected_token_id) =
+                snowbridge_pallet_system::Pallet::<T>::convert_back(&token_location)
+            {
+                if token_data.token_id == expected_token_id {
+                    true
                 } else {
-                    log::warn!("NativeTokenTransferMessageProcessor: token id not found for location: {:?}", token_location);
-
+                    // TODO: ensure this does not warn on container token transfers or other message types, if yes change to debug
+                    log::warn!(
+                        "NativeTokenTransferMessageProcessor: unexpected token_id: {:?}",
+                        token_data.token_id
+                    );
                     false
                 }
-            }
-            Ok(msg) => {
-                log::trace!(
-                    "NativeTokenTransferMessageProcessor: unexpected message: {:?}",
-                    msg
+            } else {
+                log::warn!(
+                    "NativeTokenTransferMessageProcessor: token id not found for location: {:?}",
+                    token_location
                 );
                 false
             }
-            Err(e) => {
-                log::trace!("NativeTokenTransferMessageProcessor: failed to decode message. This is expected if the message is not for this processor. Error: {:?}", e);
-                false
-            }
+        } else {
+            false
         }
     }
 
     fn process_message(_channel: Channel, envelope: Envelope) -> DispatchResult {
-        // - Decode payload as SendNativeToken
-        let message = VersionedXcmMessage::decode_all(&mut envelope.payload.as_slice())
-        .map_err(|e| {
-            log::trace!("NativeTokenTransferMessageProcessor: failed to decode message. This is expected if the message is not for this processor. Error: {:?}", e);
+        // Decode payload as SendNativeToken using the helper function
+        if let Some(token_data) =
+            NativeTokenTransferData::decode_native_token_message(&envelope.payload)
+        {
+            log::trace!("NativeTokenTransferMessageProcessor: processing token transfer: token_id={:?}, amount={}, destination={:?}", 
+                token_data.token_id, token_data.amount, token_data.destination);
 
-            DispatchError::Other("unable to parse the envelope payload")
-        })?;
+            match token_data.destination {
+                Destination::AccountId32 {
+                    id: destination_account,
+                } => {
+                    // Transfer the amounts of tokens from Ethereum sov account to the destination
+                    let sovereign_account = T::EthereumSovereignAccount::get();
 
-        log::trace!("NativeTokenTransferMessageProcessor: {:?}", message);
+                    if let Err(e) = T::Currency::transfer(
+                        &sovereign_account,
+                        &destination_account.into(),
+                        token_data.amount.into(),
+                        Preservation::Preserve,
+                    ) {
+                        log::warn!(
+                            "NativeTokenTransferMessageProcessor: Error transferring tokens: {:?}",
+                            e
+                        );
+                    }
 
-        match message {
-            VersionedXcmMessage::V1(MessageV1 {
-                chain_id: _,
-                command:
-                    Command::SendNativeToken {
-                        destination:
-                            Destination::AccountId32 {
-                                id: destination_account,
-                            },
-                        amount,
-                        ..
-                    },
-            }) => {
-                // - Transfer the amounts of tokens from Ethereum sov account to the destination
-                let sovereign_account = T::EthereumSovereignAccount::get();
-
-                if let Err(e) = T::Currency::transfer(
-                    &sovereign_account,
-                    &destination_account.into(),
-                    amount.into(),
-                    Preservation::Preserve,
-                ) {
-                    log::warn!(
-                        "NativeTokenTransferMessageProcessor: Error transferring tokens: {:?}",
-                        e
-                    );
+                    Ok(())
                 }
-
-                Ok(())
+                _ => {
+                    log::warn!(
+                        "NativeTokenTransferMessageProcessor: unsupported destination type: {:?}",
+                        token_data.destination
+                    );
+                    Ok(())
+                }
             }
-            msg => {
-                log::warn!(
-                    "NativeTokenTransferMessageProcessor: unexpected message: {:?}",
-                    msg
-                );
-                Ok(())
-            }
+        } else {
+            log::trace!("NativeTokenTransferMessageProcessor: failed to decode message. This is expected if the message is not for this processor.");
+            Err(DispatchError::Other("unable to parse the envelope payload"))
         }
     }
 }

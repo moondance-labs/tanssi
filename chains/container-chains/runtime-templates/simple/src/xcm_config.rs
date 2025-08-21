@@ -40,7 +40,7 @@ use {
     sp_core::ConstU32,
     sp_runtime::Perbill,
     tanssi_runtime_common::universal_aliases::CommonUniversalAliases,
-    xcm::latest::{prelude::*, WESTEND_GENESIS_HASH},
+    xcm::latest::prelude::*,
     xcm_builder::{
         AccountId32Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
         AllowTopLevelPaidExecutionFrom, ConvertedConcreteId, EnsureXcmOrigin, FungibleAdapter,
@@ -51,6 +51,10 @@ use {
     },
     xcm_executor::XcmExecutor,
 };
+
+// TODO: make this dynamic through pallet parameters
+pub const DANCELIGHT_GENESIS_HASH: [u8; 32] =
+    hex_literal::hex!["983a1a72503d6cc3636776747ec627172b51272bf45e50a355348facb67a820a"];
 
 parameter_types! {
     // Self Reserve location, defines the multilocation identifying the self-reserve currency
@@ -68,7 +72,7 @@ parameter_types! {
     pub UnitWeightCost: Weight = Weight::from_parts(1_000_000_000, 64 * 1024);
 
     // TODO: revisit
-    pub const RelayNetwork: NetworkId = NetworkId::ByGenesis(WESTEND_GENESIS_HASH);
+    pub const RelayNetwork: NetworkId = NetworkId::ByGenesis(DANCELIGHT_GENESIS_HASH);
 
     // The relay chain Origin type
     pub RelayChainOrigin: RuntimeOrigin = cumulus_pallet_xcm::Origin::Relay.into();

@@ -65,6 +65,7 @@ use {
     xcm_primitives::AccountIdAssetIdConversion,
 };
 
+// TODO: make this dynamic through pallet parameters
 pub const DANCELIGHT_GENESIS_HASH: [u8; 32] =
     hex_literal::hex!["983a1a72503d6cc3636776747ec627172b51272bf45e50a355348facb67a820a"];
 

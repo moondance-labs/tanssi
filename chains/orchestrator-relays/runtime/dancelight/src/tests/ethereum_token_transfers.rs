@@ -2869,6 +2869,117 @@ fn receive_container_native_tokens_from_eth_works() {
 }
 
 #[test]
+fn receive_container_native_tokens_from_eth_doesnt_error_if_error_sending_xcm() {
+    ExtBuilder::default()
+        .with_balances(vec![
+            (AccountId::from(ALICE), 100_000 * UNIT),
+            (AccountId::from(BOB), 100_000 * UNIT),
+        ])
+        .build()
+        .execute_with(|| {
+            let relayer =
+                <Runtime as frame_system::Config>::RuntimeOrigin::signed(AccountId::from(ALICE));
+
+            let channel_id: ChannelId = ChannelId::new(hex!(
+                "0000000000000000000000000000000000000000000000000000000000000004"
+            ));
+            let agent_id = AgentId::from(hex!(
+                "0000000000000000000000000000000000000000000000000000000000000005"
+            ));
+            let para_id: ParaId = 2000u32.into();
+
+            let amount_to_transfer = 100_000_000;
+            let fee = 1_500_000_000_000_000;
+            let container_fee = 500_000_000_000_000;
+
+            let container_para_id = 2001u32;
+
+            assert_ok!(XcmPallet::force_default_xcm_version(
+                root_origin(),
+                Some(5u32)
+            ));
+
+            // We don't set the current head on purpose, so the XCM sending will fail
+            // assert_ok!(Paras::force_set_current_head(
+            //     root_origin(),
+            //     container_para_id.into(),
+            //     HeadData::from(vec![1u8, 2u8, 3u8])
+            // ));
+
+            assert_ok!(EthereumTokenTransfers::set_token_transfer_channel(
+                root_origin(),
+                channel_id,
+                agent_id,
+                para_id
+            ));
+
+            let token_location =
+                Location::new(0, [Parachain(container_para_id), PalletInstance(10)]);
+
+            assert_ok!(EthereumSystem::register_token(
+                root_origin(),
+                Box::new(token_location.clone().into()),
+                snowbridge_core::AssetMetadata {
+                    name: "para".as_bytes().to_vec().try_into().unwrap(),
+                    symbol: "para".as_bytes().to_vec().try_into().unwrap(),
+                    decimals: 12,
+                }
+            ));
+
+            let token_location_reanchored = token_location
+                .clone()
+                .reanchored(&EthereumLocation::get(), &UniversalLocation::get())
+                .expect("unable to reanchor token");
+
+            let token_id = EthereumSystem::convert_back(&token_location_reanchored).unwrap();
+            let beneficiary_key = [5u8; 20];
+            let payload = VersionedXcmMessage::V1(MessageV1 {
+                chain_id: 1,
+                command: Command::SendNativeToken {
+                    token_id,
+                    destination: Destination::ForeignAccountId20 {
+                        para_id: container_para_id,
+                        id: beneficiary_key,
+                        fee: container_fee,
+                    },
+                    amount: amount_to_transfer,
+                    fee,
+                },
+            });
+
+            let event = OutboundMessageAccepted {
+                channel_id: <[u8; 32]>::from(channel_id).into(),
+                nonce: 1,
+                message_id: Default::default(),
+                payload: payload.encode(),
+            };
+
+            let message = EventProof {
+                event_log: Log {
+                    address:
+                        <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
+                    topics: event
+                        .encode_topics()
+                        .into_iter()
+                        .map(|word| H256::from(word.0 .0))
+                        .collect(),
+                    data: event.encode_data(),
+                },
+                proof: mock_snowbridge_message_proof(),
+            };
+
+            // This should fail to send the XCM, but should not error
+            assert_ok!(EthereumInboundQueue::submit(relayer, message.clone()));
+
+            assert_eq!(
+                filter_events!(RuntimeEvent::XcmPallet(pallet_xcm::Event::Sent { .. })).count(),
+                0,
+                "XCM Sent event should NOT be emitted!"
+            );
+        });
+}
+
+#[test]
 fn receive_container_native_tokens_fails_if_account_id_32() {
     ExtBuilder::default()
         .with_balances(vec![
