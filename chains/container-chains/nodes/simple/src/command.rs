@@ -191,7 +191,7 @@ pub fn run() -> Result<()> {
                     &config,
                     [ContainerNodeRelayChainCli::<NodeName>::executable_name()]
                         .iter()
-                        .chain(cli.relaychain_args().iter()),
+                        .chain(cli.relay_chain_args.iter()),
                 );
 
                 let polkadot_config = SubstrateCli::create_configuration(
@@ -289,7 +289,7 @@ pub fn run() -> Result<()> {
 
                 let polkadot_cli = ContainerNodeRelayChainCli::<NodeName>::new(
                     &config,
-                    [ContainerNodeRelayChainCli::<NodeName>::executable_name()].iter().chain(cli.relaychain_args().iter()),
+                    [ContainerNodeRelayChainCli::<NodeName>::executable_name()].iter().chain(cli.relay_chain_args.iter()),
                 );
 
                 let extension = node_common_chain_spec::Extensions::try_get(&*config.chain_spec);
@@ -331,7 +331,7 @@ pub fn run() -> Result<()> {
 
                 if let cumulus_client_cli::RelayChainMode::ExternalRpc(rpc_target_urls) =
                     collator_options.clone().relay_chain_mode {
-                    if !rpc_target_urls.is_empty() && !cli.relaychain_args().is_empty() {
+                    if !rpc_target_urls.is_empty() && !cli.relay_chain_args.is_empty() {
                         warn!("Detected relay chain node arguments together with --relay-chain-rpc-url. This command starts a minimal Polkadot node that only uses a network-related subset of all relay chain CLI options.");
                     }
                 }

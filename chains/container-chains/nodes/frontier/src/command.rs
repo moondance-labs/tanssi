@@ -208,7 +208,7 @@ pub fn run() -> Result<()> {
                     &config,
                     [ContainerNodeRelayChainCli::<NodeName>::executable_name()]
                         .iter()
-                        .chain(cli.relaychain_args().iter()),
+                        .chain(cli.relay_chain_args.iter()),
                 );
 
                 let polkadot_config = SubstrateCli::create_configuration(
@@ -293,7 +293,7 @@ pub fn run() -> Result<()> {
             let collator_options = cli.run.collator_options();
 
             runner.run_node_until_exit(|config| async move {
-                let relaychain_args = cli.relaychain_args();
+                let relaychain_args = cli.relay_chain_args;
                 let hwbench = (!cli.no_hardware_benchmarks).then(||
                     config.database.path().map(|database_path| {
                         let _ = std::fs::create_dir_all(database_path);

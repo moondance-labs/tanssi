@@ -37,6 +37,7 @@ use {
     url::Url,
 };
 
+/// Watches for an assignment and provide RPC services for assigned chain.
 #[derive(Clone, Debug, clap::Parser)]
 pub struct RpcProviderCmd {
     /// Arguments to run a container chain node.

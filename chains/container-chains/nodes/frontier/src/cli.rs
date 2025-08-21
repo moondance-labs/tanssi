@@ -70,7 +70,7 @@ impl std::ops::Deref for RunCmd {
     }
 }
 
-/// Custom `rpc-provider` command with eth rpc configuration
+/// Watches for an assignment and provide Ethereum RPC services for assigned chain.
 #[derive(Debug, Parser)]
 pub struct RpcProviderCmd {
     #[clap(flatten)]
@@ -123,36 +123,9 @@ pub struct Cli {
     #[arg(long)]
     pub para_id: Option<u32>,
 
-    /// Relay chain arguments, optionally followed by "--" and container chain arguments
+    /// Relay chain arguments
     #[arg(raw = true)]
-    extra_args: Vec<String>,
-}
-
-impl Cli {
-    pub fn relaychain_args(&self) -> &[String] {
-        let (relay_chain_args, _) = self.split_extra_args_at_first_dashdash();
-
-        relay_chain_args
-    }
-
-    #[allow(dead_code)]
-    pub fn container_chain_args(&self) -> &[String] {
-        let (_, container_chain_args) = self.split_extra_args_at_first_dashdash();
-
-        container_chain_args
-    }
-
-    fn split_extra_args_at_first_dashdash(&self) -> (&[String], &[String]) {
-        let index_of_dashdash = self.extra_args.iter().position(|x| *x == "--");
-
-        if let Some(i) = index_of_dashdash {
-            let (container_chain_args, extra_extra) = self.extra_args.split_at(i);
-            (&extra_extra[1..], container_chain_args)
-        } else {
-            // Only relay chain args
-            (&self.extra_args, &[])
-        }
-    }
+    pub relay_chain_args: Vec<String>,
 }
 
 #[derive(Debug, Clone, clap::Args)]
