@@ -23,8 +23,8 @@ pub mod migrations;
 #[cfg(feature = "relay")]
 pub mod relay;
 
-pub mod universal_aliases;
 pub mod eth_location_converter;
+pub mod universal_aliases;
 
 use core::marker::PhantomData;
 use frame_support::traits::{fungible::Credit, tokens::imbalance::ResolveTo, OnUnbalanced};

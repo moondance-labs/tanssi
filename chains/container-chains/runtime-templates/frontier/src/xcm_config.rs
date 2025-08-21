@@ -48,7 +48,10 @@ use {
     polkadot_runtime_common::xcm_sender::ExponentialPrice,
     sp_core::{ConstU32, H160},
     sp_runtime::Perbill,
-    tanssi_runtime_common::{universal_aliases::CommonUniversalAliases, eth_location_converter::ContainerChainEthereumLocationConverter},
+    tanssi_runtime_common::{
+        eth_location_converter::ContainerChainEthereumLocationConverter,
+        universal_aliases::CommonUniversalAliases,
+    },
     xcm::latest::prelude::*,
     xcm_builder::{
         AccountKey20Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,

@@ -18,11 +18,12 @@
 
 use {
     crate::{
-        bridge_to_ethereum_config::EthereumGatewayAddress, tests::common::*,
-        xcm_config::UniversalLocation, Balances, EthereumInboundQueue, EthereumLocation,
-        EthereumSovereignAccount, EthereumSystem, EthereumTokenTransfers, ForeignAssets,
-        ForeignAssetsCreator, Paras, RuntimeEvent, SnowbridgeFeesAccount, TokenLocationReanchored,
-        XcmPallet,
+        bridge_to_ethereum_config::{EthereumGatewayAddress, InboundQueuePalletInstance},
+        tests::common::*,
+        xcm_config::UniversalLocation,
+        Balances, EthereumInboundQueue, EthereumLocation, EthereumSovereignAccount, EthereumSystem,
+        EthereumTokenTransfers, ForeignAssets, ForeignAssetsCreator, Paras, RuntimeEvent,
+        SnowbridgeFeesAccount, TokenLocationReanchored, XcmPallet,
     },
     alloc::vec,
     alloy_sol_types::SolEvent,
@@ -2756,17 +2757,19 @@ fn receive_container_native_tokens_from_eth_works() {
             ));
 
             let token_location_reanchored = token_location
+                .clone()
                 .reanchored(&EthereumLocation::get(), &UniversalLocation::get())
                 .expect("unable to reanchor token");
 
             let token_id = EthereumSystem::convert_back(&token_location_reanchored).unwrap();
+            let beneficiary_key = [5u8; 20];
             let payload = VersionedXcmMessage::V1(MessageV1 {
                 chain_id: 1,
                 command: Command::SendNativeToken {
                     token_id,
                     destination: Destination::ForeignAccountId20 {
                         para_id: container_para_id,
-                        id: [5u8; 20],
+                        id: beneficiary_key,
                         fee: container_fee,
                     },
                     amount: amount_to_transfer,
@@ -2797,12 +2800,71 @@ fn receive_container_native_tokens_from_eth_works() {
 
             assert_ok!(EthereumInboundQueue::submit(relayer, message.clone()));
 
-            // TODO: check the exact message here once it is fully implemented
-            assert_eq!(
-                filter_events!(RuntimeEvent::XcmPallet(pallet_xcm::Event::Sent { .. },)).count(),
-                1,
-                "XCM Sent event should be emitted!"
+            let tanssi_location = Location::here();
+            let container_location = Location::new(0, [Parachain(container_para_id)]);
+            let inbound_queue_pallet_index = InboundQueuePalletInstance::get();
+            let network = EthereumNetwork::get();
+            let tanssi_fee = fee.saturating_add(container_fee);
+            let bridge_location = Location::new(2, GlobalConsensus(network));
+            let token_split = token_location_reanchored
+                .interior()
+                .clone()
+                .split_global()
+                .unwrap();
+            let container_token_from_tanssi = Location::new(0, token_split.1);
+            let container_token_location_reanchored = container_token_from_tanssi
+                .reanchored(&container_location, &UniversalLocation::get())
+                .unwrap();
+
+            let container_asset: XcmAsset =
+                (container_token_location_reanchored, amount_to_transfer).into();
+
+            let tanssi_asset_fee: XcmAsset = (Location::parent(), tanssi_fee).into();
+
+            let beneficiary = Location::new(
+                0,
+                [AccountKey20 {
+                    network: None,
+                    key: beneficiary_key,
+                }],
             );
+
+            let remote_xcm = Xcm::<()>(vec![
+                DescendOrigin(PalletInstance(inbound_queue_pallet_index).into()),
+                UniversalOrigin(GlobalConsensus(network)),
+                WithdrawAsset(vec![tanssi_asset_fee.clone(), container_asset.clone()].into()),
+                BuyExecution {
+                    fees: tanssi_asset_fee,
+                    weight_limit: Unlimited,
+                },
+                DepositAsset {
+                    assets: Definite(container_asset.into()),
+                    beneficiary,
+                },
+                SetAppendix(Xcm(vec![DepositAsset {
+                    assets: Wild(AllCounted(2)),
+                    beneficiary: bridge_location,
+                }])),
+            ]);
+
+            let xcm_sent_event = System::events()
+                .iter()
+                .filter(|r| match &r.event {
+                    RuntimeEvent::XcmPallet(pallet_xcm::Event::Sent {
+                        origin,
+                        destination,
+                        message,
+                        message_id: _,
+                    }) => {
+                        *origin == tanssi_location
+                            && *destination == container_location
+                            && *message == remote_xcm
+                    }
+                    _ => false,
+                })
+                .count();
+
+            assert_eq!(xcm_sent_event, 1, "XCM Sent event should be emitted!");
         });
 }
 
@@ -2826,8 +2888,8 @@ fn receive_container_native_tokens_fails_if_account_id_32() {
             ));
             let para_id: ParaId = 2000u32.into();
 
-            let amount_to_transfer = 10_000;
-            let fee = 1000;
+            let amount_to_transfer = 100_000_000;
+            let fee = 1_500_000_000_000_000;
 
             let container_para_id = 3000u32;
 
@@ -2927,8 +2989,8 @@ fn receive_container_native_tokens_fails_if_token_not_registered() {
             ));
             let para_id: ParaId = 2000u32.into();
 
-            let amount_to_transfer = 10_000;
-            let fee = 1000;
+            let amount_to_transfer = 100_000_000;
+            let fee = 1_500_000_000_000_000;
 
             let container_para_id = 3000u32;
 
@@ -3027,11 +3089,11 @@ fn receive_container_native_tokens_fails_if_destination_doesnt_own_token() {
             ));
             let para_id: ParaId = 2000u32.into();
 
-            let amount_to_transfer = 10_000;
-            let fee = 1000;
+            let amount_to_transfer = 100_000_000;
+            let fee = 1_500_000_000_000_000;
 
             let container_para_id_1 = 3000u32;
-            let container_fee = 500;
+            let container_fee = 500_000_000_000_000;
 
             assert_ok!(XcmPallet::force_default_xcm_version(
                 root_origin(),

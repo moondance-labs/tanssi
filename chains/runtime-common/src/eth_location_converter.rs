@@ -17,11 +17,8 @@
 extern crate alloc;
 
 use {
-    crate::PhantomData,
-    xcm::latest::prelude::*,
+    crate::PhantomData, parity_scale_codec::Encode, sp_core::blake2_256, xcm::latest::prelude::*,
     xcm_executor::traits::ConvertLocation,
-    parity_scale_codec::Encode,
-    sp_core::blake2_256,
 };
 
 pub struct ContainerChainEthereumLocationConverter<AccountId>(PhantomData<AccountId>);
