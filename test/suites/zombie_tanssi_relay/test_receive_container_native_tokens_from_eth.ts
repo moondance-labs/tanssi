@@ -1,15 +1,8 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type KeyringPair, alith } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
-import { encodeAddress } from "@polkadot/util-crypto";
 
-import {
-    SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS,
-    generateEventLog,
-    generateUpdate,
-    signAndSendAndInclude,
-    ETHEREUM_NETWORK_TESTNET,
-} from "utils";
+import { generateEventLog, generateUpdate, signAndSendAndInclude, ETHEREUM_NETWORK_TESTNET, waitSessions } from "utils";
 
 describeSuite({
     id: "ZOMBIETANSS02",
@@ -21,15 +14,6 @@ describeSuite({
         let aliceFrontier: KeyringPair;
         let aliceRelay: KeyringPair;
         let chain: string;
-
-        // Random ETH destination that we send asset to
-        const destinationAddress = "0x1234567890abcdef1234567890abcdef12345678";
-        const holdingAccount = SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS;
-        const tokenToTransfer = 123_321_000_000_000_000n;
-
-        const newChannelId = "0x0000000000000000000000000000000000000000000000000000000000000001";
-        const newAgentId = "0x0000000000000000000000000000000000000000000000000000000000000001";
-        const newParaId = 0;
 
         beforeAll(async () => {
             containerChainPolkadotJs = context.polkadotJs("Container2001");
@@ -52,14 +36,18 @@ describeSuite({
 
                 const ethereumSovereignAccountAddress = ethereumSovereignAccount.asOk.toHuman();
 
+                // Amount of native container tokens to transfer.
                 const transferAmount = BigInt(100_000_000);
+
+                // Tanssi's fees, that will be charged on the container side.
                 const fee = BigInt(1_500_000_000_000_000);
+
+                // This number is combined with the previous one, and the final amount
+                // is charged in Tanssi asset on the container side.
                 const containerFee = BigInt(500_000_000_000_000);
 
                 // Create token receiver account
-                const tokenReceiver = encodeAddress(
-                    "0x0505050505050505050505050505050505050505050505050505050505050505"
-                );
+                const tokenReceiver = "0x0505050505050505050505050505050505050505";
 
                 // Hard-coding payload as we do not have scale encoding-decoding
                 const log = await generateEventLog(
@@ -91,7 +79,7 @@ describeSuite({
                 const newAgentId = "0x0000000000000000000000000000000000000000000000000000000000000005";
                 const newParaId = 500;
 
-                const tx1 = await relayChainPolkadotJs.tx.sudo.sudo(
+                const tx1 = relayChainPolkadotJs.tx.sudo.sudo(
                     relayChainPolkadotJs.tx.ethereumTokenTransfers.setTokenTransferChannel(
                         newChannelId,
                         newAgentId,
@@ -151,6 +139,7 @@ describeSuite({
                     interior: "Here",
                 };
 
+                // Register Tanssi asset on the container chain.
                 const registerTanssiAssetTx = containerChainPolkadotJs.tx.sudo.sudo(
                     containerChainPolkadotJs.tx.foreignAssetsCreator.createForeignAsset(
                         relayTokenLocation,
@@ -168,6 +157,7 @@ describeSuite({
                 );
                 await signAndSendAndInclude(assetRateTx, aliceFrontier);
 
+                // Mint some Tanssi assets on Ethereum's sovereign account on the container chain.
                 const transferRelayToken = containerChainPolkadotJs.tx.foreignAssets.mint(
                     42,
                     ethereumSovereignAccountAddress,
@@ -176,15 +166,50 @@ describeSuite({
 
                 await signAndSendAndInclude(transferRelayToken, aliceFrontier);
 
-                // Simulate previous token reception from Ethereum.
+                // Simulate previous native container token reception from Ethereum.
                 const transferContainerToken = containerChainPolkadotJs.tx.balances.transferKeepAlive(
                     ethereumSovereignAccountAddress,
                     20000000000000000n
                 );
                 await signAndSendAndInclude(transferContainerToken, aliceFrontier);
 
+                const relayBalanceInContainerBefore = (
+                    await containerChainPolkadotJs.query.foreignAssets.account(42, ethereumSovereignAccountAddress)
+                )
+                    .unwrap()
+                    .balance.toBigInt();
+
+                const receiverNativeContainerBalanceBefore = (
+                    await containerChainPolkadotJs.query.system.account(tokenReceiver)
+                ).data.free.toBigInt();
+
                 const tx5 = relayChainPolkadotJs.tx.ethereumInboundQueue.submit(messageExtrinsics[0]);
                 await signAndSendAndInclude(tx5, aliceRelay);
+
+                // Wait for the XCM message to reach the container chain
+                await waitSessions(context, relayChainPolkadotJs, 1, null, "Tanssi-relay");
+
+                const relayBalanceInContainerAfter = (
+                    await containerChainPolkadotJs.query.foreignAssets.account(42, ethereumSovereignAccountAddress)
+                )
+                    .unwrap()
+                    .balance.toBigInt();
+
+                const receiverNativeContainerBalanceAfter = (
+                    await containerChainPolkadotJs.query.system.account(tokenReceiver)
+                ).data.free.toBigInt();
+
+                // Check that fees were deducted from the ETH sovereign account and refunding amount
+                // was also deposited.
+                expect(relayBalanceInContainerAfter).toBeLessThan(relayBalanceInContainerBefore);
+                expect(receiverNativeContainerBalanceAfter).toBeGreaterThan(
+                    receiverNativeContainerBalanceBefore - (fee + containerFee)
+                );
+
+                // Check that the native container token amount was deposited into the receiver account.
+                expect(receiverNativeContainerBalanceAfter).to.be.eq(
+                    receiverNativeContainerBalanceBefore + transferAmount
+                );
             },
         });
     },
