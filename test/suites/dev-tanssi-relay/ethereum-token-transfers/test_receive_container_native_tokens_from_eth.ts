@@ -3,61 +3,29 @@ import "@tanssi/api-augment";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import { encodeAddress } from "@polkadot/util-crypto";
-import {
-    generateEventLog,
-    generateUpdate,
-    FOREIGN_ASSET_ID,
-    ETHEREUM_NETWORK_MAINNET,
-    ETHEREUM_NETWORK_TESTNET,
-    mockAndInsertHeadData,
-} from "utils";
-import {
-    STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_ETH_TOKEN_TRANSFERS,
-    STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_FOREIGN_ASSETS_CREATOR,
-    checkCallIsFiltered,
-    expectEventCount,
-} from "helpers";
+import { generateEventLog, generateUpdate, mockAndInsertHeadData } from "utils";
+import { expectEventCount } from "helpers";
 import type { KeyringPair } from "@moonwall/util";
 
 describeSuite({
     id: "DTR1802",
-    title: "NativeContainerTokensProcessor: receive inbound container native tokens from Ethereum",
+    title: "NativeContainerTokensProcessor: receive and forward container native tokens from Ethereum",
     foundationMethods: "dev",
 
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
-        let isStarlight: boolean;
-        let specVersion: number;
-        let shouldSkipStarlightETT: boolean;
-        let shouldSkipStarlightForeignAssetsCreator: boolean;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             const keyring = new Keyring({ type: "sr25519" });
             alice = keyring.addFromUri("//Alice", { name: "Alice default" });
-
-            const runtimeName = polkadotJs.runtimeVersion.specName.toString();
-            isStarlight = runtimeName === "starlight";
-            specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
-            // TODO: check if we need to filter container native tokens for a specific runtime
-            shouldSkipStarlightETT =
-                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_ETH_TOKEN_TRANSFERS.includes(specVersion);
-            shouldSkipStarlightForeignAssetsCreator =
-                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_FOREIGN_ASSETS_CREATOR.includes(specVersion);
         });
 
         it({
             id: "E01",
             title: "Receive Container native token from Ethereum in Tanssi chain",
             test: async () => {
-                const transferAmount = BigInt(10_000);
-
-                // Create token receiver account
-                const tokenReceiver = encodeAddress(
-                    "0x0505050505050505050505050505050505050505050505050505050505050505"
-                );
-
                 // Hard-coding payload as we do not have scale encoding-decoding
                 const log = await generateEventLog(
                     polkadotJs,
@@ -69,13 +37,26 @@ describeSuite({
                         Buffer.from("0000000000000000000000000000000000000000000000000000000000000000", "hex")
                     ),
                     1,
-                    // TODO: update payload
+                    // Payload with the following shape:
+                    // let payload = VersionedXcmMessage::V1(MessageV1 {
+                    //     chain_id: 1,
+                    //     command: Command::SendNativeToken {
+                    //         token_id: 0x485f805cb9de38b4324485447c664e16035aa9d28e8723df192fa02ad3530889,
+                    //         destination: Destination::ForeignAccountId20 {
+                    //             para_id: 2001,
+                    //             id: [5u; 20],
+                    //             fee: 500_000_000_000_000,
+                    //         },
+                    //         amount: 100_000_000,
+                    //         fee: 1_500_000_000_000_000,
+                    //     },
+                    // });
                     new Uint8Array([
-                        0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 140, 120, 233, 238, 11, 21, 62, 133, 228, 32, 120, 65, 38, 255,
-                        96, 141, 25, 14, 69, 31, 177, 119, 211, 140, 199, 58, 87, 188, 75, 43, 8, 140, 1, 184, 11, 0, 0,
-                        5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
-                        244, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 16, 39, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                        0, 232, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                        0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 72, 95, 128, 92, 185, 222, 56, 180, 50, 68, 133, 68, 124, 102, 78,
+                        22, 3, 90, 169, 210, 142, 135, 35, 223, 25, 47, 160, 42, 211, 83, 8, 137, 2, 209, 7, 0, 0, 5, 5,
+                        5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 0, 64, 99, 82, 191, 198, 1, 0, 0, 0, 0, 0,
+                        0, 0, 0, 0, 0, 225, 245, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 192, 41, 247, 61, 84, 5, 0,
+                        0, 0, 0, 0, 0, 0, 0, 0,
                     ])
                 );
                 const { checkpointUpdate, messageExtrinsics } = await generateUpdate(polkadotJs, [log]);
@@ -105,10 +86,10 @@ describeSuite({
                     interior: {
                         X2: [
                             {
-                                Parachain: 3000,
+                                Parachain: 2001,
                             },
                             {
-                                PalletInstance: 3,
+                                PalletInstance: 10,
                             },
                         ],
                     },
@@ -118,8 +99,8 @@ describeSuite({
                 };
 
                 const metadata = {
-                    name: "para3000",
-                    symbol: "para3000",
+                    name: "para2001",
+                    symbol: "para2001",
                     decimals: 12,
                 };
 
@@ -130,7 +111,7 @@ describeSuite({
 
                 await context.createBlock([tx2], { allowFailures: false });
 
-                const paraId = polkadotJs.createType("ParaId", 3000);
+                const paraId = polkadotJs.createType("ParaId", 2001);
                 await mockAndInsertHeadData(context, paraId, 2, 2, alice);
 
                 // Submit the message
