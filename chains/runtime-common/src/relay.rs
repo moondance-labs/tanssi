@@ -88,8 +88,8 @@ pub struct NativeTokenTransferData {
 }
 
 impl NativeTokenTransferData {
-    pub fn decode_native_token_message(payload: &[u8]) -> Option<Self> {
-        match VersionedXcmMessage::decode_all(&mut payload.as_ref()) {
+    pub fn decode_native_token_message(mut payload: &[u8]) -> Option<Self> {
+        match VersionedXcmMessage::decode_all(&mut payload) {
             Ok(VersionedXcmMessage::V1(MessageV1 {
                 command:
                     Command::SendNativeToken {
