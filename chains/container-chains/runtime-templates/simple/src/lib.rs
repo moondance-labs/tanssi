@@ -1047,7 +1047,8 @@ impl_runtime_apis! {
                 }
 
                 fn universal_alias() -> Result<(Location, Junction), BenchmarkError> {
-                    Err(BenchmarkError::Skip)
+                    tanssi_runtime_common::universal_aliases::AliasingBenchmarksHelper::prepare_universal_alias()
+                    .ok_or(BenchmarkError::Skip)
                 }
 
                 fn transact_origin_and_runtime_call() -> Result<(Location, RuntimeCall), BenchmarkError> {

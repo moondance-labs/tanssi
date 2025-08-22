@@ -1331,9 +1331,8 @@ impl_runtime_apis! {
                 }
 
                 fn universal_alias() -> Result<(Location, Junction), BenchmarkError> {
-                    // xcm_config::BridgingBenchmarksHelper::prepare_universal_alias()
-                    // .ok_or(BenchmarkError::Skip)
-                    Err(BenchmarkError::Skip)
+                    tanssi_runtime_common::universal_aliases::AliasingBenchmarksHelper::prepare_universal_alias()
+                    .ok_or(BenchmarkError::Skip)
                 }
 
                 fn transact_origin_and_runtime_call() -> Result<(Location, RuntimeCall), BenchmarkError> {

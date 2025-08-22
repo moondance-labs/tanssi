@@ -49,6 +49,7 @@ use {
     sp_core::{ConstU32, H160},
     sp_runtime::Perbill,
     tanssi_runtime_common::universal_aliases::CommonUniversalAliases,
+    tp_container_chain::ContainerChainEthereumLocationConverter,
     xcm::latest::prelude::*,
     xcm_builder::{
         AccountKey20Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
@@ -60,7 +61,6 @@ use {
     },
     xcm_executor::XcmExecutor,
     xcm_primitives::AccountIdAssetIdConversion,
-    tp_container_chain::ContainerChainEthereumLocationConverter,
 };
 
 // TODO: make this dynamic through pallet parameters
@@ -197,22 +197,6 @@ pub type XcmRouter = (
     // ..and XCMP to communicate with the sibling chains.
     XcmpQueue,
 );
-
-// #[cfg(feature = "runtime-benchmarks")]
-// impl BridgingBenchmarksHelper {
-//     pub fn prepare_universal_alias() -> Option<(Location, Junction)> {
-//         let alias =
-//             to_rococo::UniversalAliases::get().into_iter().find_map(|(location, junction)| {
-//                 match to_rococo::SiblingBridgeHubWithBridgeHubRococoInstance::get()
-//                     .eq(&location)
-//                 {
-//                     true => Some((location, junction)),
-//                     false => None,
-//                 }
-//             });
-//         Some(alias.expect("we expect here BridgeHubWestend to Rococo mapping at least"))
-//     }
-// }
 
 pub struct XcmConfig;
 impl xcm_executor::Config for XcmConfig {

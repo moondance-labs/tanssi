@@ -21,9 +21,7 @@ use crate::EthereumBeaconClient;
 
 #[cfg(not(feature = "runtime-benchmarks"))]
 use {
-    tanssi_runtime_common::relay::{
-        GatewayAndChannelValidator, NativeTokenTransferData, NativeTokenTransferMessageProcessor,
-    },
+    tanssi_runtime_common::relay::NativeTokenTransferMessageProcessor,
     tp_bridge::{
         generic_token_message_processor::GenericTokenMessageProcessor,
         symbiotic_message_processor::SymbioticMessageProcessor,
@@ -51,7 +49,9 @@ use {
     snowbridge_pallet_outbound_queue::OnNewCommitment,
     sp_core::{ConstU32, ConstU8, Get, H160, H256},
     sp_runtime::{traits::MaybeEquivalence, DispatchError, DispatchResult},
-    tanssi_runtime_common::relay::RewardThroughFeesAccount,
+    tanssi_runtime_common::relay::{
+        GatewayAndChannelValidator, NativeTokenTransferData, RewardThroughFeesAccount,
+    },
     tp_bridge::{DoNothingConvertMessage, DoNothingRouter, EthereumSystemHandler},
     xcm::latest::{
         prelude::*, Asset as XcmAsset, AssetId as XcmAssetId, Assets as XcmAssets, ExecuteXcm,

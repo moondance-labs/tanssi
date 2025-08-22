@@ -40,6 +40,7 @@ use {
     sp_core::ConstU32,
     sp_runtime::Perbill,
     tanssi_runtime_common::universal_aliases::CommonUniversalAliases,
+    tp_container_chain::ContainerChainEthereumLocationConverter,
     xcm::latest::prelude::*,
     xcm_builder::{
         AccountId32Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
@@ -50,7 +51,6 @@ use {
         WithComputedOrigin, XcmFeeManagerFromComponents,
     },
     xcm_executor::XcmExecutor,
-    tp_container_chain::ContainerChainEthereumLocationConverter,
 };
 
 // TODO: make this dynamic through pallet parameters

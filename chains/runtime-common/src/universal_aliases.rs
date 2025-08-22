@@ -52,3 +52,21 @@ impl Contains<(Location, Junction)> for CommonUniversalAliases {
         CommonUniversalAliases::get().contains(alias)
     }
 }
+
+#[cfg(feature = "runtime-benchmarks")]
+pub struct AliasingBenchmarksHelper;
+
+#[cfg(feature = "runtime-benchmarks")]
+impl AliasingBenchmarksHelper {
+    pub fn prepare_universal_alias() -> Option<(Location, Junction)> {
+        let alias = CommonUniversalAliases::get()
+            .into_iter()
+            .find_map(|(location, junction)| {
+                match ParentWithEthereumInboundQueueInstance::get().eq(&location) {
+                    true => Some((location, junction)),
+                    false => None,
+                }
+            });
+        Some(alias.expect("Tanssi's InboundQueue to container-chain mapping expected here"))
+    }
+}
