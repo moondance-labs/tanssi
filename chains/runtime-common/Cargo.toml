@@ -106,8 +106,8 @@ std = [
 	"sp-core/std",
 	"sp-runtime/std",
 	"sp-staking/std",
-	"xcm/std",
 	"xcm-executor/std",
+	"xcm/std",
 ]
 relay = [
 	"pallet-babe",
@@ -148,8 +148,8 @@ runtime-benchmarks = [
 	"snowbridge-pallet-system/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"sp-staking/runtime-benchmarks",
-	"xcm/runtime-benchmarks",
 	"xcm-executor/runtime-benchmarks",
+	"xcm/runtime-benchmarks",
 ]
 
 try-runtime = [
