@@ -3,7 +3,7 @@ import "@tanssi/api-augment";
 import { beforeAll, describeSuite } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import { generateEventLog, generateUpdate, mockAndInsertHeadData } from "utils";
-import { expectEventCount } from "helpers";
+import { expectEventCount, STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_TRANSFERS } from "helpers";
 import type { KeyringPair } from "@moonwall/util";
 
 describeSuite({
@@ -14,17 +14,32 @@ describeSuite({
     testCases: ({ it, context }) => {
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
+        let isStarlight: boolean;
+        let specVersion: number;
+        let shouldSkipStarlightCTT: boolean;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             const keyring = new Keyring({ type: "sr25519" });
             alice = keyring.addFromUri("//Alice", { name: "Alice default" });
+
+            const runtimeName = polkadotJs.runtimeVersion.specName.toString();
+            isStarlight = runtimeName === "starlight";
+            specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
+            shouldSkipStarlightCTT =
+                isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_TRANSFERS.includes(specVersion);
         });
 
         it({
             id: "E01",
-            title: "Receive Container native token from Ethereum in Tanssi chain",
+            title: "Receive Container native token from Ethereum in Tanssi chain and forward to container",
             test: async () => {
+                if (shouldSkipStarlightCTT) {
+                    console.log(
+                        `Skipping E01 test for Starlight version ${specVersion}: Container native token transfers not available yet`
+                    );
+                    return;
+                }
                 // Hard-coding payload as we do not have scale encoding-decoding
                 const log = await generateEventLog(
                     polkadotJs,
@@ -110,12 +125,21 @@ describeSuite({
 
                 await context.createBlock([tx2], { allowFailures: false });
 
+                console.log("LOG 1");
+
                 const paraId = polkadotJs.createType("ParaId", 2001);
                 await mockAndInsertHeadData(context, paraId, 2, 2, alice);
 
+                console.log("LOG 2");
+
                 // Submit the message
                 const tx3 = await polkadotJs.tx.ethereumInboundQueue.submit(messageExtrinsics[0]).signAsync(alice);
+
+                console.log("LOG 3");
+
                 await context.createBlock([tx3], { allowFailures: false });
+
+                console.log("LOG 4");
 
                 // Check for the XCM Sent event
                 await expectEventCount(polkadotJs, {
