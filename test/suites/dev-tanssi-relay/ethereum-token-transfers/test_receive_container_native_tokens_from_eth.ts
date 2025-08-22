@@ -1,8 +1,7 @@
 import "@tanssi/api-augment";
 
-import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import { beforeAll, describeSuite } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
-import { encodeAddress } from "@polkadot/util-crypto";
 import { generateEventLog, generateUpdate, mockAndInsertHeadData } from "utils";
 import { expectEventCount } from "helpers";
 import type { KeyringPair } from "@moonwall/util";
