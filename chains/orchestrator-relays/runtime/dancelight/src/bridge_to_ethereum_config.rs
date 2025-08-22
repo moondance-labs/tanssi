@@ -333,6 +333,8 @@ where
     }
 }
 
+/// `NativeContainerTokensProcessor` is responsible for receiving and processing native container
+/// chain tokens coming from Ethereum and forwarding them to the container chain via Tanssi through XCM.
 pub struct NativeContainerTokensProcessor<
     T,
     EthereumLocation,
