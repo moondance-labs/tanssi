@@ -33,7 +33,9 @@ use {
     dc_orchestrator_chain_interface::OrchestratorChainInterface,
     dp_slot_duration_runtime_api::TanssiSlotDurationApi,
     nimbus_primitives::{NimbusId, NimbusPair},
-    node_common::service::{MinimalCumulusRuntimeApi, NodeBuilder, NodeBuilderConfig},
+    node_common::service::node_builder::{
+        MinimalCumulusRuntimeApi, NodeBuilder, NodeBuilderConfig,
+    },
     sc_basic_authorship::ProposerFactory,
     sc_consensus::{BasicQueue, BlockImport},
     sc_executor::WasmExecutor,

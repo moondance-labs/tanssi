@@ -22,7 +22,6 @@ describeSuite({
     title: "Data Preservers Test",
     foundationMethods: "zombie",
     testCases: ({ it, context }) => {
-        let paraApi: ApiPromise;
         let relayApi: ApiPromise;
         let container2000Api: ApiPromise;
         let container2001Api: ApiPromise;
@@ -41,7 +40,6 @@ describeSuite({
         let balanceBeforeAssignment: bigint;
 
         beforeAll(async () => {
-            paraApi = context.polkadotJs("Tanssi");
             relayApi = context.polkadotJs("Relay");
             container2000Api = context.polkadotJs("Container2000");
             container2001Api = context.polkadotJs("Container2001");
@@ -51,12 +49,7 @@ describeSuite({
             bob = keyring.addFromUri("//Bob", { name: "Bob default" });
 
             const relayNetwork = relayApi.consts.system.version.specName.toString();
-            expect(relayNetwork, "Relay API incorrect").to.contain("rococo");
-
-            const paraNetwork = paraApi.consts.system.version.specName.toString();
-            const paraId1000 = (await paraApi.query.parachainInfo.parachainId()).toString();
-            expect(paraNetwork, "Para API incorrect").to.contain("dancebox");
-            expect(paraId1000, "Para API incorrect").to.be.equal("1000");
+            expect(relayNetwork, "Relay API incorrect").to.contain("dancelight");
 
             const container2000Network = container2000Api.consts.system.version.specName.toString();
             const paraId2000 = (await container2000Api.query.parachainInfo.parachainId()).toString();
@@ -76,9 +69,9 @@ describeSuite({
 
         it({
             id: "T01",
-            title: "Blocks are being produced on parachain",
+            title: "Blocks are being produced on relay",
             test: async () => {
-                const blockNum = (await paraApi.rpc.chain.getBlock()).block.header.number.toNumber();
+                const blockNum = (await relayApi.rpc.chain.getBlock()).block.header.number.toNumber();
                 expect(blockNum).to.be.greaterThan(0);
             },
         });
@@ -106,28 +99,36 @@ describeSuite({
                     assignmentRequest: "Free",
                 };
 
-                profile1 = Number(await paraApi.query.dataPreservers.nextProfileId());
+                console.log("nextProfileId");
+                profile1 = Number(await relayApi.query.dataPreservers.nextProfileId());
                 expect(profile1).to.be.eq(2); // 0 and 1 are auto assigned for bootnodes
 
                 {
-                    const tx = paraApi.tx.dataPreservers.forceCreateProfile(profile, bob.address);
-                    await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx), alice);
-                    await context.waitBlock(1, "Tanssi");
+                    console.log("forceCreateProfile");
+                    const tx = relayApi.tx.dataPreservers.forceCreateProfile(profile, bob.address);
+                    await signAndSendAndInclude(relayApi.tx.sudo.sudo(tx), alice);
+                    await context.waitBlock(1, "Relay");
+
+                    const blockNum = (await relayApi.rpc.chain.getBlock()).block.header.number.toNumber();
+                    console.log(`included in block ${blockNum}`);
                 }
 
                 {
-                    const tx = paraApi.tx.dataPreservers.forceStartAssignment(profile1, 2000, "Free");
-                    await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx), alice);
-                    await context.waitBlock(1, "Tanssi");
+                    console.log("forceStartAssignment");
+                    const tx = relayApi.tx.dataPreservers.forceStartAssignment(profile1, 2000, "Free");
+                    await signAndSendAndInclude(relayApi.tx.sudo.sudo(tx), alice);
+                    await context.waitBlock(1, "Relay");
                 }
 
-                const onChainProfile = (await paraApi.query.dataPreservers.profiles(profile1)).unwrap();
+                console.log("check assignment");
+                const onChainProfile = (await relayApi.query.dataPreservers.profiles(profile1)).unwrap();
                 const onChainProfileAccount = u8aToHex(decodeAddress(onChainProfile.account.toString()));
                 const bobAccount = u8aToHex(bob.addressRaw);
 
                 expect(onChainProfileAccount).to.be.eq(bobAccount);
                 expect(onChainProfile.assignment.toHuman().toString()).to.be.eq(["2,000", "Free"].toString());
 
+                console.log("check logs");
                 await expectLogs(logFilePath, 300, ["NotAssigned => Active(Id(2000))"]);
             },
         });
@@ -169,22 +170,22 @@ describeSuite({
                     assignmentRequest: "Free",
                 };
 
-                profile2 = Number(await paraApi.query.dataPreservers.nextProfileId());
+                profile2 = Number(await relayApi.query.dataPreservers.nextProfileId());
                 expect(profile2).to.be.eq(3);
 
                 {
-                    const tx = paraApi.tx.dataPreservers.forceCreateProfile(profile, bob.address);
-                    await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx), alice);
-                    await context.waitBlock(1, "Tanssi");
+                    const tx = relayApi.tx.dataPreservers.forceCreateProfile(profile, bob.address);
+                    await signAndSendAndInclude(relayApi.tx.sudo.sudo(tx), alice);
+                    await context.waitBlock(1, "Relay");
                 }
 
                 {
-                    const tx = paraApi.tx.dataPreservers.forceStartAssignment(profile2, 2001, "Free");
-                    await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx), alice);
-                    await context.waitBlock(1, "Tanssi");
+                    const tx = relayApi.tx.dataPreservers.forceStartAssignment(profile2, 2001, "Free");
+                    await signAndSendAndInclude(relayApi.tx.sudo.sudo(tx), alice);
+                    await context.waitBlock(1, "Relay");
                 }
 
-                const onChainProfile = (await paraApi.query.dataPreservers.profiles(profile2)).unwrap();
+                const onChainProfile = (await relayApi.query.dataPreservers.profiles(profile2)).unwrap();
                 const onChainProfileAccount = u8aToHex(decodeAddress(onChainProfile.account.toString()));
                 const bobAccount = u8aToHex(bob.addressRaw);
 
@@ -253,12 +254,12 @@ describeSuite({
             timeout: 180000,
             test: async () => {
                 {
-                    const tx = paraApi.tx.dataPreservers.stopAssignment(profile2, 2001);
+                    const tx = relayApi.tx.dataPreservers.stopAssignment(profile2, 2001);
                     await signAndSendAndInclude(tx, bob);
-                    await context.waitBlock(1, "Tanssi");
+                    await context.waitBlock(1, "Relay");
                 }
 
-                const onChainProfile = (await paraApi.query.dataPreservers.profiles(profile2)).unwrap();
+                const onChainProfile = (await relayApi.query.dataPreservers.profiles(profile2)).unwrap();
                 const onChainProfileAccount = u8aToHex(decodeAddress(onChainProfile.account.toString()));
                 const bobAccount = u8aToHex(bob.addressRaw);
 
@@ -291,12 +292,12 @@ describeSuite({
                 };
 
                 {
-                    const tx = paraApi.tx.dataPreservers.updateProfile(profile2, newProfile);
+                    const tx = relayApi.tx.dataPreservers.updateProfile(profile2, newProfile);
                     await signAndSendAndInclude(tx, bob);
-                    await context.waitBlock(1, "Tanssi");
+                    await context.waitBlock(1, "Relay");
                 }
 
-                const onChainProfile = (await paraApi.query.dataPreservers.profiles(profile2)).unwrap();
+                const onChainProfile = (await relayApi.query.dataPreservers.profiles(profile2)).unwrap();
                 const onChainProfileAccount = u8aToHex(decodeAddress(onChainProfile.account.toString()));
                 const bobAccount = u8aToHex(bob.addressRaw);
 
@@ -321,34 +322,34 @@ describeSuite({
         it({
             id: "T11",
             title: "Start new assignment for chain 2000 with stream payment",
-            timeout: 180000,
+            timeout: 240000,
             test: async () => {
                 {
                     // to non-force assign we need to have a para manager, which is not the case
                     // with paras registered in genesis. we thus set the para manager manually here
-                    const tx = paraApi.tx.registrar.setParaManager(2000, alice.address);
-                    await signAndSendAndInclude(paraApi.tx.sudo.sudo(tx), alice);
-                    await context.waitBlock(1, "Tanssi");
+                    const tx = relayApi.tx.containerRegistrar.setParaManager(2000, alice.address);
+                    await signAndSendAndInclude(relayApi.tx.sudo.sudo(tx), alice);
+                    await context.waitBlock(1, "Relay");
                 }
 
-                balanceBeforeAssignment = (await paraApi.query.system.account(bob.address)).data.free.toBigInt();
+                balanceBeforeAssignment = (await relayApi.query.system.account(bob.address)).data.free.toBigInt();
                 console.log(`balanceBeforeAssignment: ${balanceBeforeAssignment}`);
 
                 {
                     // pays for 10 blocks of service
-                    const tx = paraApi.tx.dataPreservers.startAssignment(profile2, 2000, {
+                    const tx = relayApi.tx.dataPreservers.startAssignment(profile2, 2000, {
                         StreamPayment: { initialDeposit: 10000000 },
                     });
                     await signAndSendAndInclude(tx, alice);
-                    await context.waitBlock(1, "Tanssi");
+                    await context.waitBlock(1, "Relay");
                 }
 
-                const onChainProfile = (await paraApi.query.dataPreservers.profiles(profile2)).unwrap();
+                const onChainProfile = (await relayApi.query.dataPreservers.profiles(profile2)).unwrap();
                 expect(JSON.stringify(onChainProfile.assignment.toHuman())).to.be.eq(
                     JSON.stringify(["2,000", { StreamPayment: { streamId: "0" } }])
                 );
 
-                const streamPayment = (await paraApi.query.streamPayment.streams(0)).unwrap();
+                const streamPayment = (await relayApi.query.streamPayment.streams(0)).unwrap();
                 expect(JSON.stringify(streamPayment.source.toHuman())).to.eq(JSON.stringify(alice.address));
                 expect(JSON.stringify(streamPayment.target.toHuman())).to.eq(JSON.stringify(bob.address));
                 expect(JSON.stringify(streamPayment.config)).to.eq(
@@ -379,7 +380,7 @@ describeSuite({
             title: "Start new assignment for chain 2000 with stream payment - wait 10 blocks",
             timeout: 180000,
             test: async () => {
-                await context.waitBlock(10, "Tanssi");
+                await context.waitBlock(10, "Relay");
             },
         });
 
@@ -393,16 +394,16 @@ describeSuite({
 
                 {
                     // pays for 10 blocks of service
-                    const tx = paraApi.tx.streamPayment.performPayment(0);
+                    const tx = relayApi.tx.streamPayment.performPayment(0);
                     await signAndSendAndInclude(tx, alice);
-                    await context.waitBlock(1, "Tanssi");
+                    await context.waitBlock(1, "Relay");
                 }
 
-                const balanceAfter = (await paraApi.query.system.account(bob.address)).data.free.toBigInt();
+                const balanceAfter = (await relayApi.query.system.account(bob.address)).data.free.toBigInt();
                 console.log(`balanceAfter: ${balanceAfter}`);
                 expect(balanceAfter).to.be.eq(balanceBeforeAssignment + BigInt(10000000));
 
-                await context.waitBlock(1, "Tanssi");
+                await context.waitBlock(1, "Relay");
             },
         });
     },

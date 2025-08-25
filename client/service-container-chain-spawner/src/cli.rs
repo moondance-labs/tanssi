@@ -358,21 +358,24 @@ impl sc_cli::CliConfiguration<Self> for ContainerChainCli {
 
     fn init<F>(
         &self,
-        _support_url: &String,
-        _impl_version: &String,
-        _logger_hook: F,
+        support_url: &String,
+        impl_version: &String,
+        logger_hook: F,
     ) -> sc_cli::Result<()>
     where
         F: FnOnce(&mut sc_cli::LoggerBuilder),
     {
-        unreachable!("PolkadotCli is never initialized; qed");
+        self.base.base.init(support_url, impl_version, logger_hook)
     }
 
     fn chain_id(&self, _is_dev: bool) -> sc_cli::Result<String> {
-        self.base
+        // Make chain id from para_id if present, otherwise use a generic name.
+        // We may not know the para_id in advance.
+        Ok(self
+            .base
             .para_id
             .map(|para_id| format!("container-chain-{}", para_id))
-            .ok_or("no para-id in container chain args".into())
+            .unwrap_or("container-chain-unknown".into()))
     }
 
     fn role(&self, is_dev: bool) -> sc_cli::Result<sc_service::Role> {

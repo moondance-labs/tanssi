@@ -1,5 +1,5 @@
 [package]
-name = "tc-orchestrator-chain-rpc-interface"
+name = "tc-orchestrator-chain-interface-through-rpc"
 authors = { workspace = true }
 edition = "2021"
 license = "GPL-3.0-only"

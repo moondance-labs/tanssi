@@ -125,28 +125,32 @@
                 {
                     "name": "DataPreserver-2000",
                     "validator": false,
-                    "command": "../target/release/container-chain-simple-node",
+                    "command": "./scripts/data-preservers-run-hack.sh ../target/release/container-chain-simple-node rpc-provider --",
                     "args": [
-                        "--rpc-provider-profile-id=2",
+                        "-- --profile-id=2",
                         "--orchestrator-endpoints=ws://127.0.0.1:9948/",
                         "--database=paritydb",
                         "--wasmtime-precompiled=wasm",
-                        "-- --rpc-port 9950"
+                        "--prometheus-external --prometheus-port 33102",
+                        " --rpc-cors all --unsafe-rpc-external --rpc-methods unsafe",
+                        "--rpc-port 9950"
                     ],
                     "prometheus_port": 33102
                 },
                 {
                     "name": "DataPreserver-2001",
                     "validator": false,
-                    "command": "../target/release/container-chain-frontier-node",
+                    "command": "./scripts/data-preservers-run-hack.sh ../target/release/container-chain-frontier-node rpc-provider --",
                     "args": [
-                        "--rpc-provider-profile-id=3",
+                        "-- --profile-id=3",
                         "--orchestrator-endpoints=ws://127.0.0.1:9948/",
                         "--database=paritydb",
                         "--wasmtime-precompiled=wasm",
-                        "-- --rpc-port 9952 --rpc-cors all --unsafe-rpc-external --rpc-methods unsafe"
+                        "--prometheus-external --prometheus-port 33102",
+                        " --rpc-cors all --unsafe-rpc-external --rpc-methods unsafe",
+                        "--rpc-port 9952"
                     ],
-                    "prometheus_port": 33103
+                    "prometheus_port": 33102
                 }
             ]
         },
@@ -176,7 +180,7 @@
                     "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
                     "rpc_port": 9951,
                     "p2p_port": 33050,
-                    "prometheus_port": 33103
+                    "prometheus_port": 33102
                 }
             ]
         }
