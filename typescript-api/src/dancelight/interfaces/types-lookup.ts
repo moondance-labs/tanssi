@@ -8578,6 +8578,7 @@ declare module "@polkadot/types/lookup" {
         readonly isMarkingOfflineNotEnabled: boolean;
         readonly isCollatorNotEligibleCandidate: boolean;
         readonly isCollatorNotOnline: boolean;
+        readonly isCollatorNotReadyToBeOnline: boolean;
         readonly isCollatorNotOffline: boolean;
         readonly isMarkingInvulnerableOfflineInvalid: boolean;
         readonly isCollatorCannotBeNotifiedAsInactive: boolean;
@@ -8589,6 +8590,7 @@ declare module "@polkadot/types/lookup" {
             | "MarkingOfflineNotEnabled"
             | "CollatorNotEligibleCandidate"
             | "CollatorNotOnline"
+            | "CollatorNotReadyToBeOnline"
             | "CollatorNotOffline"
             | "MarkingInvulnerableOfflineInvalid"
             | "CollatorCannotBeNotifiedAsInactive";
