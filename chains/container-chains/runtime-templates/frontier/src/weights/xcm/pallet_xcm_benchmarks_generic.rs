@@ -354,6 +354,13 @@ impl<T: frame_system::Config> WeightInfo<T> {
 		// Minimum execution time: 951_000 picoseconds.
 		Weight::from_parts(1_031_000, 0)
 	}
+	pub(crate) fn universal_origin() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `0`
+		//  Estimated: `0`
+		// Minimum execution time: 5_770_000 picoseconds.
+		Weight::from_parts(5_770_000, 0)
+	}
 	pub(crate) fn set_fees_mode() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
