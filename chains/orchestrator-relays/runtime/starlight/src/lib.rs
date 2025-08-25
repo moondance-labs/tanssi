@@ -305,19 +305,10 @@ impl Convert<AggregateMessageOrigin, ParaId> for GetParaFromAggregateMessageOrig
     }
 }
 
-pub struct IsDemocracyExtrinsics;
-impl Contains<RuntimeCall> for IsDemocracyExtrinsics {
+pub struct IsTreasuryExtrinsics;
+impl Contains<RuntimeCall> for IsTreasuryExtrinsics {
     fn contains(c: &RuntimeCall) -> bool {
-        matches!(
-            c,
-            RuntimeCall::Treasury(_)
-                | RuntimeCall::ConvictionVoting(_)
-                | RuntimeCall::Referenda(_)
-                | RuntimeCall::FellowshipCollective(_)
-                | RuntimeCall::FellowshipReferenda(_)
-                | RuntimeCall::Whitelist(_)
-                | RuntimeCall::Preimage(_)
-        )
+        matches!(c, RuntimeCall::Treasury(_))
     }
 }
 
@@ -1670,11 +1661,7 @@ impl Contains<RuntimeCall> for MaintenanceFilter {
 }
 
 /// Normal Call Filter
-type NormalFilter = EverythingBut<(
-    IsRelayRegister,
-    IsParathreadRegistrar,
-    IsDemocracyExtrinsics,
-)>;
+type NormalFilter = EverythingBut<(IsRelayRegister, IsParathreadRegistrar, IsTreasuryExtrinsics)>;
 
 impl pallet_maintenance_mode::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;

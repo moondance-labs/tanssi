@@ -22,70 +22,12 @@ use {
 };
 
 #[test]
-fn test_disabled_some_extrinsics_democracy() {
+fn test_disabled_some_extrinsics() {
     ExtBuilder::default().build().execute_with(|| {
         run_to_block(2);
 
         assert_noop!(
             RuntimeCall::Treasury(pallet_treasury::Call::payout { index: 0u32 }).dispatch(
-                <Runtime as frame_system::Config>::RuntimeOrigin::signed(AccountId::from(ALICE))
-            ),
-            frame_system::Error::<Runtime>::CallFiltered
-        );
-
-        assert_noop!(
-            RuntimeCall::ConvictionVoting(pallet_conviction_voting::Call::undelegate {
-                class: 0u16,
-            })
-            .dispatch(<Runtime as frame_system::Config>::RuntimeOrigin::signed(
-                AccountId::from(ALICE)
-            )),
-            frame_system::Error::<Runtime>::CallFiltered
-        );
-
-        assert_noop!(
-            RuntimeCall::Referenda(pallet_referenda::Call::place_decision_deposit { index: 0u32 })
-                .dispatch(<Runtime as frame_system::Config>::RuntimeOrigin::signed(
-                    AccountId::from(ALICE)
-                )),
-            frame_system::Error::<Runtime>::CallFiltered
-        );
-
-        assert_noop!(
-            RuntimeCall::FellowshipCollective(pallet_ranked_collective::Call::add_member {
-                who: sp_runtime::MultiAddress::Id(sp_runtime::AccountId32::from(BOB))
-            })
-            .dispatch(<Runtime as frame_system::Config>::RuntimeOrigin::signed(
-                AccountId::from(ALICE)
-            )),
-            frame_system::Error::<Runtime>::CallFiltered
-        );
-
-        assert_noop!(
-            RuntimeCall::FellowshipReferenda(pallet_referenda::Call::<
-                Runtime,
-                pallet_referenda::Instance2,
-            >::cancel {
-                index: 0u32
-            })
-            .dispatch(<Runtime as frame_system::Config>::RuntimeOrigin::signed(
-                AccountId::from(ALICE)
-            )),
-            frame_system::Error::<Runtime>::CallFiltered
-        );
-
-        assert_noop!(
-            RuntimeCall::Whitelist(pallet_whitelist::Call::whitelist_call {
-                call_hash: Default::default()
-            })
-            .dispatch(<Runtime as frame_system::Config>::RuntimeOrigin::signed(
-                AccountId::from(ALICE)
-            )),
-            frame_system::Error::<Runtime>::CallFiltered
-        );
-
-        assert_noop!(
-            RuntimeCall::Preimage(pallet_preimage::Call::note_preimage { bytes: vec![] }).dispatch(
                 <Runtime as frame_system::Config>::RuntimeOrigin::signed(AccountId::from(ALICE))
             ),
             frame_system::Error::<Runtime>::CallFiltered
