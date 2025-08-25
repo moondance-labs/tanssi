@@ -15,7 +15,6 @@ workspace = true
 [dependencies]
 dp-container-chain-genesis-data = { workspace = true }
 frame-support = { workspace = true }
-pallet-registrar = { workspace = true }
 parity-scale-codec = { workspace = true }
 scale-info = { workspace = true }
 sp-api = { workspace = true }
@@ -26,7 +25,6 @@ default = [ "std" ]
 std = [
 	"dp-container-chain-genesis-data/std",
 	"frame-support/std",
-	"pallet-registrar/std",
 	"parity-scale-codec/std",
 	"scale-info/std",
 	"sp-api/std",

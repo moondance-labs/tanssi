@@ -61,7 +61,6 @@ polkadot-primitives = { workspace = true }
 
 # Nimbus Dependencies
 async-backing-primitives = { workspace = true }
-nimbus-consensus = { workspace = true }
 nimbus-primitives = { workspace = true, features = [ "std" ] }
 
 # Frontier Dependencies
@@ -81,7 +80,6 @@ futures-timer = { workspace = true }
 orchestra = { workspace = true, features = [ "futures_channel" ] }
 parking_lot = { workspace = true }
 polkadot-core-primitives = { workspace = true }
-polkadot-node-subsystem-test-helpers = { workspace = true }
 polkadot-node-subsystem-util = { workspace = true }
 polkadot-parachain-primitives = { workspace = true }
 sc-block-builder = { workspace = true }

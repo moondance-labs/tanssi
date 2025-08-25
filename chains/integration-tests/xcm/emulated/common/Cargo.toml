@@ -32,7 +32,6 @@ cumulus-primitives-core = { workspace = true, default-features = true }
 xcm-emulator = { workspace = true, default-features = true }
 
 # Bridges
-dancelight-runtime = { workspace = true, features = [ "std" ] }
 keyring = { workspace = true }
 nimbus-primitives = { workspace = true }
 snowbridge-beacon-primitives = { workspace = true }
