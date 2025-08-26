@@ -66,14 +66,14 @@ pub struct Cli {
     #[command(subcommand)]
     pub subcommand: Option<Subcommand>,
 
-    #[command(flatten)]
-    pub run: RunCmd,
-
     // ===== WARNING =====
     // The following arguments are only parsed if `subcommand` is `None`. They
     // get default values when a subcommand is used!
     // TODO: Fix usage of those wrong values in subcommands.
     // SEE: https://github.com/paritytech/polkadot-sdk/issues/9356
+    #[command(flatten)]
+    pub run: RunCmd,
+
     /// Disable automatic hardware benchmarks.
     ///
     /// By default these benchmarks are automatically ran at startup and measure

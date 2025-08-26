@@ -136,7 +136,7 @@ where
             // Embeded node
 
             if let Some(orchestrator_cli) = self.orchestrator_cli {
-                // Parachain orchestrator
+                log::info!("Starting embeded orchestrator parachain node ...");
 
                 let orchestrator_cli = cli::EmbededOrchestratorCli(orchestrator_cli);
 
@@ -203,7 +203,7 @@ where
                 orchestrator_chain_interface = started.orchestrator_chain_interface;
                 keystore = started.keystore;
             } else {
-                // Solochain orchestrator
+                log::info!("Starting embeded orchestrator solochain node ...");
 
                 let tokio_handle = self.config.tokio_handle.clone();
 
@@ -229,7 +229,8 @@ where
                 keystore = started.keystore;
             }
         } else {
-            // Connection through RPC
+            log::info!("Connecting to remote orchestrator node(s) ...");
+
             task_manager = TaskManager::new(self.config.tokio_handle.clone(), None)
                 .map_err(|e| sc_cli::Error::Application(Box::new(e)))?;
 
@@ -286,7 +287,8 @@ where
             keystore = keystore_container.keystore();
         }
 
-        // Container chain spawner
+        log::info!("Starting container chain spawner and assignment watcher ...");
+
         let relay_chain = self
             .polkadot_cli
             .chain_id(false)
