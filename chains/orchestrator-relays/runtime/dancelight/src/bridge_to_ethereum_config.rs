@@ -459,13 +459,20 @@ where
         token_location: &Location,
         destination: &Destination,
     ) -> bool {
-        let chain_part = token_location.interior().clone().split_global().ok();
-
+        // Extract para_id from destination - only foreign destinations are supported
         let expected_para_id = match destination {
             Destination::ForeignAccountId32 { para_id, .. } => *para_id,
             Destination::ForeignAccountId20 { para_id, .. } => *para_id,
-            _ => 0u32,
+            _ => {
+                log::error!(
+                    "NativeContainerTokensProcessor: unsupported destination type: {:?}",
+                    destination
+                );
+                return false;
+            }
         };
+
+        let chain_part = token_location.interior().clone().split_global().ok();
 
         match chain_part {
             Some((_, interior)) => {
