@@ -3300,3 +3300,202 @@ fn receive_container_native_tokens_fails_if_destination_doesnt_own_token() {
             );
         });
 }
+
+#[test]
+fn native_container_can_process_message_returns_false_for_wrong_channel() {
+    ExtBuilder::default().build().execute_with(|| {
+        let channel_id = ChannelId::new([1; 32]);
+        let agent_id = AgentId::from_low_u64_be(10);
+        let para_id: ParaId = 2000u32.into();
+        let container_para_id = 3000u32;
+
+        // Register a container token in EthereumSystem
+        let token_location = Location::new(0, [Parachain(container_para_id), PalletInstance(3)]);
+        assert_ok!(EthereumSystem::register_token(
+            root_origin(),
+            Box::new(token_location.clone().into()),
+            snowbridge_core::AssetMetadata {
+                name: "para".as_bytes().to_vec().try_into().unwrap(),
+                symbol: "para".as_bytes().to_vec().try_into().unwrap(),
+                decimals: 12,
+            }
+        ));
+
+        let token_location_reanchored = token_location
+            .reanchored(&EthereumLocation::get(), &crate::xcm_config::UniversalLocation::get())
+            .expect("unable to reanchor token");
+        let token_id = EthereumSystem::convert_back(&token_location_reanchored).unwrap();
+
+        // DO NOT register the channel with EthereumTokenTransfers to test failure
+        // assert_ok!(EthereumTokenTransfers::set_token_transfer_channel(
+        //     root_origin(),
+        //     channel_id,
+        //     agent_id,
+        //     para_id
+        // ));
+
+        let channel = Channel { para_id, agent_id };
+
+        // Create container token payload inline
+        let payload = VersionedXcmMessage::V1(MessageV1 {
+            chain_id: 1,
+            command: Command::SendNativeToken {
+                token_id,
+                destination: Destination::ForeignAccountId32 {
+                    para_id: container_para_id,
+                    id: AccountId::from(ALICE).into(),
+                    fee: 1000,
+                },
+                amount: 100,
+                fee: 0,
+            },
+        }).encode();
+
+        let envelope = Envelope {
+            channel_id,
+            gateway: EthereumGatewayAddress::get(),
+            payload,
+            nonce: 1,
+            message_id: H256::zero(),
+        };
+
+        assert!(
+            !<crate::bridge_to_ethereum_config::NativeContainerProcessor as MessageProcessor>::can_process_message(
+                &channel, &envelope
+            )
+        );
+    });
+}
+
+#[test]
+fn native_container_can_process_message_returns_false_for_wrong_gateway() {
+    ExtBuilder::default().build().execute_with(|| {
+        let channel_id = ChannelId::new([1; 32]);
+        let agent_id = AgentId::from_low_u64_be(10);
+        let para_id: ParaId = 2000u32.into();
+        let container_para_id = 3000u32;
+
+        // Register a container token in EthereumSystem
+        let token_location = Location::new(0, [Parachain(container_para_id), PalletInstance(3)]);
+        assert_ok!(EthereumSystem::register_token(
+            root_origin(),
+            Box::new(token_location.clone().into()),
+            snowbridge_core::AssetMetadata {
+                name: "para".as_bytes().to_vec().try_into().unwrap(),
+                symbol: "para".as_bytes().to_vec().try_into().unwrap(),
+                decimals: 12,
+            }
+        ));
+
+        let token_location_reanchored = token_location
+            .reanchored(&EthereumLocation::get(), &crate::xcm_config::UniversalLocation::get())
+            .expect("unable to reanchor token");
+        let token_id = EthereumSystem::convert_back(&token_location_reanchored).unwrap();
+
+        // Register the channel with EthereumTokenTransfers
+        assert_ok!(EthereumTokenTransfers::set_token_transfer_channel(
+            root_origin(),
+            channel_id,
+            agent_id,
+            para_id
+        ));
+
+        let channel = Channel { para_id, agent_id };
+
+        // Create container token payload inline
+        let payload = VersionedXcmMessage::V1(MessageV1 {
+            chain_id: 1,
+            command: Command::SendNativeToken {
+                token_id,
+                destination: Destination::ForeignAccountId32 {
+                    para_id: container_para_id,
+                    id: AccountId::from(ALICE).into(),
+                    fee: 1000,
+                },
+                amount: 100,
+                fee: 0,
+            },
+        }).encode();
+
+        let envelope = Envelope {
+            channel_id,
+            gateway: H160::random(), // Wrong gateway address
+            payload,
+            nonce: 1,
+            message_id: H256::zero(),
+        };
+
+        assert!(
+            !<crate::bridge_to_ethereum_config::NativeContainerProcessor as MessageProcessor>::can_process_message(
+                &channel, &envelope
+            )
+        );
+    });
+}
+
+#[test]
+fn native_container_can_process_message_returns_true_for_valid_message() {
+    ExtBuilder::default().build().execute_with(|| {
+        let channel_id = ChannelId::new([1; 32]);
+        let agent_id = AgentId::from_low_u64_be(10);
+        let para_id: ParaId = 2000u32.into();
+        let container_para_id = 3000u32;
+
+        // Register a container token in EthereumSystem
+        let token_location = Location::new(0, [Parachain(container_para_id), PalletInstance(3)]);
+        assert_ok!(EthereumSystem::register_token(
+            root_origin(),
+            Box::new(token_location.clone().into()),
+            snowbridge_core::AssetMetadata {
+                name: "para".as_bytes().to_vec().try_into().unwrap(),
+                symbol: "para".as_bytes().to_vec().try_into().unwrap(),
+                decimals: 12,
+            }
+        ));
+
+        let token_location_reanchored = token_location
+            .reanchored(&EthereumLocation::get(), &crate::xcm_config::UniversalLocation::get())
+            .expect("unable to reanchor token");
+        let token_id = EthereumSystem::convert_back(&token_location_reanchored).unwrap();
+
+        // Register the channel with EthereumTokenTransfers
+        assert_ok!(EthereumTokenTransfers::set_token_transfer_channel(
+            root_origin(),
+            channel_id,
+            agent_id,
+            para_id
+        ));
+
+        let channel = Channel { para_id, agent_id };
+
+        // Create container token payload with destination that owns the token (same para_id)
+        let payload = VersionedXcmMessage::V1(MessageV1 {
+            chain_id: 1,
+            command: Command::SendNativeToken {
+                token_id,
+                destination: Destination::ForeignAccountId32 {
+                    para_id: container_para_id, // Same para_id as token owner
+                    id: AccountId::from(ALICE).into(),
+                    fee: 1000,
+                },
+                amount: 100,
+                fee: 0,
+            },
+        }).encode();
+
+        let envelope = Envelope {
+            channel_id,
+            gateway: EthereumGatewayAddress::get(), // Correct gateway address
+            payload,
+            nonce: 1,
+            message_id: H256::zero(),
+        };
+
+        // This should return true since all validations pass
+        assert!(
+            <crate::bridge_to_ethereum_config::NativeContainerProcessor as MessageProcessor>::can_process_message(
+                &channel, &envelope
+            )
+        );
+    });
+}
