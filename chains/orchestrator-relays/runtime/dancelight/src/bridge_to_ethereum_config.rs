@@ -376,42 +376,54 @@ where
         }
 
         // Try decoding the message and check if the destination owns the token being transferred
-        if let Some(token_data) =
-            NativeTokenTransferData::decode_native_token_message(&envelope.payload)
-        {
-            // Check if the asset is registered on EthereumSystem
-            if let Some(token_location) = Self::get_token_location(&token_data.token_id) {
+        match Self::get_token_data_and_location(&envelope.payload) {
+            TokenDataResult::Success(token_data, token_location) => {
                 Self::validate_destination_owns_token(&token_location, &token_data.destination)
-            } else {
+            }
+            TokenDataResult::DecodeFailure => {
+                log::error!(
+                    "NativeContainerTokensProcessor::can_process_message: failed to decode token data"
+                );
+                false
+            }
+            TokenDataResult::LocationNotFound(token_data) => {
                 log::error!(
                     "NativeContainerTokensProcessor::can_process_message: token location not found for token_id: {:?}",
                     token_data.token_id
                 );
                 false
             }
-        } else {
-            false
         }
     }
 
     fn process_message(_channel: Channel, envelope: Envelope) -> DispatchResult {
-        if let Some(token_data) =
-            NativeTokenTransferData::decode_native_token_message(&envelope.payload)
-        {
-            if let Some(token_location) = Self::get_token_location(&token_data.token_id) {
+        match Self::get_token_data_and_location(&envelope.payload) {
+            TokenDataResult::Success(token_data, token_location) => {
                 Self::process_native_token_transfer(token_data, token_location);
                 Ok(())
-            } else {
+            }
+            TokenDataResult::DecodeFailure => Err(DispatchError::Other(
+                "NativeContainerTokensProcessor: unexpected message",
+            )),
+            TokenDataResult::LocationNotFound(token_data) => {
                 log::error!(
                     "NativeContainerTokensProcessor::process_message: token location not found for token_id: {:?}",
                     token_data.token_id
                 );
                 Ok(())
             }
-        } else {
-            Ok(())
         }
     }
+}
+
+/// Result of token data and location extraction
+enum TokenDataResult {
+    /// Successfully extracted both token data and location
+    Success(NativeTokenTransferData, Location),
+    /// Failed to decode token data from payload
+    DecodeFailure,
+    /// Token data decoded but location not found
+    LocationNotFound(NativeTokenTransferData),
 }
 
 impl<T, EthereumLocation, EthereumNetwork, InboundQueuePalletInstance>
@@ -426,9 +438,20 @@ where
     EthereumNetwork: Get<NetworkId>,
     InboundQueuePalletInstance: Get<u8>,
 {
-    /// Gets the token location from a token_id using EthereumSystem pallet.
-    fn get_token_location(token_id: &H256) -> Option<Location> {
-        snowbridge_pallet_system::Pallet::<T>::convert(token_id)
+    /// Decodes token data from payload and gets the corresponding token location.
+    /// Returns different outcomes based on what succeeded or failed.
+    fn get_token_data_and_location(payload: &[u8]) -> TokenDataResult {
+        if let Some(token_data) = NativeTokenTransferData::decode_native_token_message(payload) {
+            if let Some(token_location) =
+                snowbridge_pallet_system::Pallet::<T>::convert(&token_data.token_id)
+            {
+                TokenDataResult::Success(token_data, token_location)
+            } else {
+                TokenDataResult::LocationNotFound(token_data)
+            }
+        } else {
+            TokenDataResult::DecodeFailure
+        }
     }
 
     /// Validates that the destination para_id owns the token being transferred.
