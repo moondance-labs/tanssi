@@ -99,28 +99,23 @@ describeSuite({
                     assignmentRequest: "Free",
                 };
 
-                console.log("nextProfileId");
                 profile1 = Number(await relayApi.query.dataPreservers.nextProfileId());
                 expect(profile1).to.be.eq(2); // 0 and 1 are auto assigned for bootnodes
 
                 {
-                    console.log("forceCreateProfile");
                     const tx = relayApi.tx.dataPreservers.forceCreateProfile(profile, bob.address);
                     await signAndSendAndInclude(relayApi.tx.sudo.sudo(tx), alice);
                     await context.waitBlock(1, "Relay");
 
                     const blockNum = (await relayApi.rpc.chain.getBlock()).block.header.number.toNumber();
-                    console.log(`included in block ${blockNum}`);
                 }
 
                 {
-                    console.log("forceStartAssignment");
                     const tx = relayApi.tx.dataPreservers.forceStartAssignment(profile1, 2000, "Free");
                     await signAndSendAndInclude(relayApi.tx.sudo.sudo(tx), alice);
                     await context.waitBlock(1, "Relay");
                 }
 
-                console.log("check assignment");
                 const onChainProfile = (await relayApi.query.dataPreservers.profiles(profile1)).unwrap();
                 const onChainProfileAccount = u8aToHex(decodeAddress(onChainProfile.account.toString()));
                 const bobAccount = u8aToHex(bob.addressRaw);
@@ -128,7 +123,6 @@ describeSuite({
                 expect(onChainProfileAccount).to.be.eq(bobAccount);
                 expect(onChainProfile.assignment.toHuman().toString()).to.be.eq(["2,000", "Free"].toString());
 
-                console.log("check logs");
                 await expectLogs(logFilePath, 300, ["NotAssigned => Active(Id(2000))"]);
             },
         });
