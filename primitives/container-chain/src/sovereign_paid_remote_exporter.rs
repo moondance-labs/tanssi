@@ -65,16 +65,33 @@ where
             _ => None,
         };
 
-        let fees_mode_instruction = SetFeesMode { jit_withdraw: true };
-
         let export_instruction = ExportMessage {
             network: EthereumNetwork::get(),
             destination: Here,
             xcm: xcm.clone(),
         };
 
+        // For now hardcoding fees, but later it should be converted from fixed Tanssi relay amount
+        let fees = Asset {
+            id: AssetId(Location::here()),
+            fun: Fungible(2_700_000_000_000u128),
+        };
+        let network = EthereumNetwork::get();
+        let eth_location = Location::new(2, GlobalConsensus(network));
+
         // Prepare the message to send
-        let mut message = Xcm(vec![fees_mode_instruction, export_instruction]);
+        let mut message = Xcm(vec![
+            WithdrawAsset(fees.clone().into()),
+            BuyExecution {
+                fees,
+                weight_limit: Unlimited,
+            },
+            SetAppendix(Xcm(vec![DepositAsset {
+                assets: AllCounted(1).into(),
+                beneficiary: eth_location,
+            }])),
+            export_instruction,
+        ]);
 
         let tanssi_location = Location {
             parents: 1,

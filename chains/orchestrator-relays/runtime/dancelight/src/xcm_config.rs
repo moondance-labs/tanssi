@@ -45,7 +45,6 @@ use {
     sp_core::ConstU32,
     sp_runtime::traits::TryConvertInto,
     tp_bridge::{
-        barriers,
         container_token_to_ethereum_message_exporter::EthereumBlobExporter as ContainerEthereumBlobExporter,
         snowbridge_outbound_token_transfer::{EthereumBlobExporter, SnowbrigeTokenTransferRouter},
         EthereumLocationsConverterFor,
@@ -206,7 +205,6 @@ pub type Barrier = TrailingSetTopicAsId<(
     TakeWeightCredit,
     // Expected responses are OK.
     AllowKnownQueryResponses<XcmPallet>,
-    barriers::AllowExportMessageFromContainerChainBarrier,
     WithComputedOrigin<
         (
             // If the message is one that immediately attempts to pay for execution, then allow it.
