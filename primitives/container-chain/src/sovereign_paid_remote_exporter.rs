@@ -37,13 +37,15 @@ fn is_ethereum_location(loc: &Location, ethereum_network: NetworkId) -> bool {
     )
 }
 
-pub struct SovereignPaidRemoteExporter<Router, UniversalLocation, EthereumNetwork>(
-    PhantomData<(Router, UniversalLocation, EthereumNetwork)>,
+pub struct SovereignPaidRemoteExporter<Router, UniversalLocation, EthereumNetwork, ExecutionFee>(
+    PhantomData<(Router, UniversalLocation, EthereumNetwork, ExecutionFee)>,
 );
-impl<Router: SendXcm, UniversalLocation: Get<InteriorLocation>, EthereumNetwork> SendXcm
-    for SovereignPaidRemoteExporter<Router, UniversalLocation, EthereumNetwork>
+impl<Router: SendXcm, UniversalLocation: Get<InteriorLocation>, EthereumNetwork, ExecutionFee>
+    SendXcm
+    for SovereignPaidRemoteExporter<Router, UniversalLocation, EthereumNetwork, ExecutionFee>
 where
     EthereumNetwork: Get<NetworkId>,
+    ExecutionFee: Get<u128>,
 {
     type Ticket = Router::Ticket;
 
@@ -74,7 +76,7 @@ where
         // For now hardcoding fees, but later it should be converted from fixed Tanssi relay amount
         let fees = Asset {
             id: AssetId(Location::here()),
-            fun: Fungible(2_700_000_000_000u128),
+            fun: Fungible(ExecutionFee::get()),
         };
         let network = EthereumNetwork::get();
         let eth_location = Location::new(2, GlobalConsensus(network));
@@ -116,9 +118,9 @@ where
     }
 }
 
-impl<Router: SendXcm, UniversalLocation: Get<InteriorLocation>, EthereumNetwork>
+impl<Router: SendXcm, UniversalLocation: Get<InteriorLocation>, EthereumNetwork, ExecutionFee>
     InspectMessageQueues
-    for SovereignPaidRemoteExporter<Router, UniversalLocation, EthereumNetwork>
+    for SovereignPaidRemoteExporter<Router, UniversalLocation, EthereumNetwork, ExecutionFee>
 {
     fn clear_messages() {}
 

@@ -88,6 +88,9 @@ parameter_types! {
     pub const BaseDeliveryFee: u128 = 100 * MICROUNIT;
 
     pub RootLocation: Location = Location::here();
+
+    // TODO: Revisit later
+    pub const ContainerToEthTransferFee: u128 = 2_700_000_000_000u128;
 }
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -184,7 +187,12 @@ pub type XcmRouter = WithUniqueTopic<(
     UmpRouter,
     // ..and XCMP to communicate with the sibling chains.
     XcmpQueue,
-    SovereignPaidRemoteExporter<UmpRouter, UniversalLocation, crate::EthereumNetwork>,
+    SovereignPaidRemoteExporter<
+        UmpRouter,
+        UniversalLocation,
+        crate::EthereumNetwork,
+        ContainerToEthTransferFee,
+    >,
 )>;
 
 pub struct XcmConfig;
