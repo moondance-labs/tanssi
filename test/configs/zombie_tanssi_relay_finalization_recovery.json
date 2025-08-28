@@ -34,7 +34,7 @@
         "nodes": [
             {
                 "name": "alice",
-                "rpc_port": "9947",
+                "rpc_port": 9947,
                 "validator": true
             },
             {
@@ -48,6 +48,7 @@
             },
             {
                 "name": "dave",
+                "rpc_port": 9946,
                 "validator": true
             }
         ]
