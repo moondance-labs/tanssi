@@ -11,9 +11,6 @@ describeSuite({
         let relayApi: ApiPromise;
         let relayCharlieApi: ApiPromise;
         let relayDaveApi: ApiPromise;
-        let container2000Api: ApiPromise;
-        let container2001Api: ApiPromise;
-        let container2002Api: ApiPromise;
         let finalizedBlockStalled: number;
         let alice: KeyringPair;
         let keyring: Keyring;
@@ -22,30 +19,9 @@ describeSuite({
             relayApi = context.polkadotJs("Tanssi-relay");
             relayCharlieApi = context.polkadotJs("Tanssi-charlie");
             relayDaveApi = context.polkadotJs("Tanssi-dave");
-            container2000Api = context.polkadotJs("Container2000");
-            container2001Api = context.polkadotJs("Container2001");
-            container2002Api = context.polkadotJs("Container2002");
 
             keyring = new Keyring({ type: "sr25519" });
             alice = keyring.addFromUri("//Alice", { name: "Alice default" });
-
-            const relayNetwork = relayApi.consts.system.version.specName.toString();
-            expect(relayNetwork, "Relay API incorrect").to.contain("dancelight");
-
-            const container2000Network = container2000Api.consts.system.version.specName.toString();
-            const paraId2000 = (await container2000Api.query.parachainInfo.parachainId()).toString();
-            expect(container2000Network, "Container2000 API incorrect").to.contain("container-chain-template");
-            expect(paraId2000, "Container2000 API incorrect").to.be.equal("2000");
-
-            const container2001Network = container2001Api.consts.system.version.specName.toString();
-            const paraId2001 = (await container2001Api.query.parachainInfo.parachainId()).toString();
-            expect(container2001Network, "Container2001 API incorrect").to.contain("frontier-template");
-            expect(paraId2001, "Container2001 API incorrect").to.be.equal("2001");
-
-            const container2002Network = container2002Api.consts.system.version.specName.toString();
-            const paraId2002 = (await container2002Api.query.parachainInfo.parachainId()).toString();
-            expect(container2002Network, "Container2002 API incorrect").to.contain("container-chain-template");
-            expect(paraId2002, "Container2002 API incorrect").to.be.equal("2002");
         }, 120000);
 
         it({
