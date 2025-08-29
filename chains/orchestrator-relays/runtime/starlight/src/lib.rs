@@ -3264,10 +3264,7 @@ sp_api::impl_runtime_apis! {
                     (
                         EthereumLocation::get(),
                         Asset {
-                            id: AssetId(Location {
-                                parents: 1,
-                                interior: X1([GlobalConsensus(EthereumNetwork::get())].into()),
-                            }),
+                            id: AssetId(EthereumLocation::get()),
                             fun: Fungible(ExistentialDeposit::get() * 100),
                         },
                     )
