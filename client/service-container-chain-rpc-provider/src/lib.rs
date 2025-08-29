@@ -138,7 +138,7 @@ where
             if let Some(orchestrator_cli) = self.orchestrator_cli {
                 log::info!("Starting embeded orchestrator parachain node ...");
 
-                let orchestrator_cli = cli::EmbededOrchestratorCli(orchestrator_cli);
+                let orchestrator_cli = cli::EmbededParachainOrchestratorCli(orchestrator_cli);
 
                 let tokio_handle = self.config.tokio_handle.clone();
                 let orchestrator_config = SubstrateCli::create_configuration(

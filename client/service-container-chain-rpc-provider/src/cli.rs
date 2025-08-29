@@ -20,7 +20,7 @@ use sc_cli::ChainSpec;
 /// Specialized `ChainSpec` for the normal parachain runtime.
 pub type OrchestratorChainSpec = sc_service::GenericChainSpec<Extensions>;
 
-pub struct EmbededOrchestratorCli(pub cumulus_client_cli::RunCmd);
+pub struct EmbededParachainOrchestratorCli(pub cumulus_client_cli::RunCmd);
 
 fn load_spec(path: &str) -> std::result::Result<Box<dyn ChainSpec>, String> {
     Ok(Box::new(OrchestratorChainSpec::from_json_file(
@@ -28,9 +28,9 @@ fn load_spec(path: &str) -> std::result::Result<Box<dyn ChainSpec>, String> {
     )?))
 }
 
-impl sc_cli::SubstrateCli for EmbededOrchestratorCli {
+impl sc_cli::SubstrateCli for EmbededParachainOrchestratorCli {
     fn impl_name() -> String {
-        "Orchestrator embeded node".into()
+        "Parachain orchestrator embeded node".into()
     }
 
     fn impl_version() -> String {
@@ -38,7 +38,7 @@ impl sc_cli::SubstrateCli for EmbededOrchestratorCli {
     }
 
     fn description() -> String {
-        "Orchestrator embeded node".into()
+        "Parachain orchestrator embeded node".into()
     }
 
     fn author() -> String {
@@ -58,7 +58,7 @@ impl sc_cli::SubstrateCli for EmbededOrchestratorCli {
     }
 }
 
-impl sc_cli::DefaultConfigurationValues for EmbededOrchestratorCli {
+impl sc_cli::DefaultConfigurationValues for EmbededParachainOrchestratorCli {
     fn p2p_listen_port() -> u16 {
         30334
     }
@@ -72,7 +72,7 @@ impl sc_cli::DefaultConfigurationValues for EmbededOrchestratorCli {
     }
 }
 
-impl sc_cli::CliConfiguration<Self> for EmbededOrchestratorCli {
+impl sc_cli::CliConfiguration<Self> for EmbededParachainOrchestratorCli {
     fn shared_params(&self) -> &sc_cli::SharedParams {
         self.0.base.shared_params()
     }
