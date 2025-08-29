@@ -555,10 +555,13 @@ where
                             assets: Definite(container_asset.into()),
                             beneficiary,
                         },
-                        // When the execution finishes deposit any leftover assets to the ETH
+                        // When the execution finishes deposit any leftover fees to the ETH
                         // sovereign account on destination.
                         SetAppendix(Xcm(vec![DepositAsset {
-                            assets: Wild(AllCounted(2)),
+                            assets: Wild(AllOf {
+                                id: Location::parent().into(),
+                                fun: WildFungibility::Fungible,
+                            }),
                             beneficiary: bridge_location,
                         }])),
                     ]);
