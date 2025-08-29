@@ -2842,7 +2842,10 @@ fn receive_container_native_tokens_from_eth_works() {
                     beneficiary,
                 },
                 SetAppendix(Xcm(vec![DepositAsset {
-                    assets: Wild(AllCounted(2)),
+                    assets: Wild(AllOf {
+                        id: Location::parent().into(),
+                        fun: WildFungibility::Fungible,
+                    }),
                     beneficiary: bridge_location,
                 }])),
             ]);
