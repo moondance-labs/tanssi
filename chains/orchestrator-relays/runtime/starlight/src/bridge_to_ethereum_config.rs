@@ -453,7 +453,7 @@ impl snowbridge_pallet_inbound_queue::Config for Runtime {
     #[cfg(not(feature = "runtime-benchmarks"))]
     type MessageProcessor = (
         SymbioticMessageProcessor<Self>,
-        GenericTokenMessageProcessor<Self, NativeTokensProcessor, EthTokensProcessor>,
+        GenericTokenMessageProcessor<Self, NativeTokensProcessor, EthTokensLocalProcessor>,
     );
     type RewardProcessor = RewardThroughFeesAccount<Self>;
     #[cfg(feature = "runtime-benchmarks")]
