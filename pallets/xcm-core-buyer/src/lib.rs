@@ -19,6 +19,7 @@
 //! This pallet allows collators to buy parathread cores on demand.
 
 #![cfg_attr(not(feature = "std"), no_std)]
+extern crate alloc;
 
 use frame_support::{Deserialize, Serialize};
 pub use pallet::*;
@@ -38,6 +39,7 @@ pub use weights::WeightInfo;
 #[cfg(feature = "runtime-benchmarks")]
 use tp_traits::BlockNumber;
 use {
+    alloc::{vec, vec::Vec},
     dp_core::ParaId,
     frame_support::{
         dispatch::GetDispatchInfo,
@@ -48,7 +50,6 @@ use {
     parity_scale_codec::EncodeLike,
     sp_consensus_slots::Slot,
     sp_runtime::traits::{AccountIdConversion, Convert, Get},
-    sp_std::{vec, vec::Vec},
     tp_traits::{
         AuthorNotingHook, AuthorNotingInfo, LatestAuthorInfoFetcher, ParathreadParams,
         SlotFrequency,
@@ -182,7 +183,7 @@ pub mod pallet {
             + EncodeLike
             + Clone
             + PartialEq
-            + sp_std::fmt::Debug
+            + alloc::fmt::Debug
             + MaxEncodedLen;
 
         /// Get the parathread params. Used to verify that the para id is a parathread.
@@ -404,11 +405,7 @@ pub mod pallet {
         ) -> DispatchResult {
             ensure_root(origin)?;
 
-            if let Some(xcm_weights) = xcm_weights {
-                RelayXcmWeightConfig::<T>::put(xcm_weights);
-            } else {
-                RelayXcmWeightConfig::<T>::kill();
-            }
+            RelayXcmWeightConfig::<T>::set(xcm_weights);
 
             Ok(())
         }
@@ -601,7 +598,7 @@ pub mod pallet {
             if let Some(latest_author_info) = maybe_latest_author_info {
                 let current_slot = T::SlotBeacon::slot();
                 if !parathread_params.slot_frequency.should_parathread_buy_core(
-                    Slot::from(current_slot as u64),
+                    Slot::from(u64::from(current_slot)),
                     T::BuyCoreSlotDrift::get(),
                     latest_author_info.latest_slot_number,
                 ) {

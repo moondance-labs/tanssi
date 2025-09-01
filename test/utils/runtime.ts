@@ -11,3 +11,15 @@ export const isDancebox = (api: ApiDecoration<"promise">): boolean => {
 
     return runtimeName === "dancebox";
 };
+
+export const isStarlightRuntime = (api: ApiDecoration<"promise">): boolean => {
+    const runtimeName = api.runtimeVersion.specName.toString();
+
+    return runtimeName.includes("starlight");
+};
+
+export const isDancelightRuntime = (api: ApiDecoration<"promise">): boolean => {
+    const runtimeName = api.runtimeVersion.specName.toString();
+
+    return runtimeName.includes("dancelight");
+};

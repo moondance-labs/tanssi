@@ -93,7 +93,7 @@ ${commonTemplate}
       `-f from=runtime-${previousVersion}-starlight -f to=runtime-${newVersion}-starlight\`
 - [ ] Run the action Upgrade typescript API with ${newVersion}, push and empty commit and merge
 - [ ] Once merged, run the Publish Typescript API with the commit of the previously merged branch
-- [ ] Create a PR that increment spec version (like #1051) in both containers, tanssi and starlight runtimes
+- [ ] Create a PR that increment spec version (like #1051) in both containers, tanssi and starlight runtimes. Update also the typescript-api version (like #1192)
     `;
     console.log(template);
   } else {

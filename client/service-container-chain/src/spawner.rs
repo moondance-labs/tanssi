@@ -284,6 +284,46 @@ async fn try_spawn<
             .prometheus_port = Some(random_ports[0]);
         container_chain_cli.base.base.network_params.port = Some(random_ports[1]);
         container_chain_cli.base.base.rpc_params.rpc_port = Some(random_ports[2]);
+
+        // Use a different network key for syncing the chain. This is to avoid full nodes banning collators
+        // by mistake, with error:
+        // Reason: Unsupported protocol. Banned, disconnecting.
+        //
+        // Store this new key in a new path to not conflict with the real network key.
+        // The same key is used for all container chains, that doesn't seem to cause problems.
+
+        // Collator-01/data/containers
+        let mut syncing_network_key_path = container_chain_cli
+            .base
+            .base
+            .shared_params
+            .base_path
+            .clone()
+            .expect("base path always set");
+        // Collator-01/data/containers/keystore/network_syncing/secret_ed25519
+        syncing_network_key_path.push("keystore/network_syncing/secret_ed25519");
+
+        // Clear network key_params. These will be used by the collating process, but not by the syncing process.
+        container_chain_cli
+            .base
+            .base
+            .network_params
+            .node_key_params
+            .node_key = None;
+        container_chain_cli
+            .base
+            .base
+            .network_params
+            .node_key_params
+            .node_key_file = Some(syncing_network_key_path);
+        // Generate a new network key if it has not been generated already.
+        // This is safe to enable if your node is not an authority. We use it only for syncing the network.
+        container_chain_cli
+            .base
+            .base
+            .network_params
+            .node_key_params
+            .unsafe_force_node_key_generation = true;
     }
 
     let validator = collation_params.is_some();
@@ -355,18 +395,40 @@ async fn try_spawn<
             container_chain_cli_config.database.set_path(&db_path);
 
             let (container_chain_task_manager, container_chain_client, container_chain_db) =
-                start_node_impl_container(
-                    container_chain_cli_config,
-                    relay_chain_interface.clone(),
-                    orchestrator_chain_interface.clone(),
-                    sync_keystore.clone(),
-                    container_chain_para_id,
-                    collation_params.clone(),
-                    generate_rpc_builder.clone(),
-                    &container_chain_cli,
-                    data_preserver,
-                )
-                .await?;
+                match container_chain_cli_config
+                    .network
+                    .network_backend
+                    .unwrap_or(sc_network::config::NetworkBackendType::Libp2p)
+                {
+                    sc_network::config::NetworkBackendType::Libp2p => {
+                        start_node_impl_container::<_, _, sc_network::NetworkWorker<_, _>>(
+                            container_chain_cli_config,
+                            relay_chain_interface.clone(),
+                            orchestrator_chain_interface.clone(),
+                            sync_keystore.clone(),
+                            container_chain_para_id,
+                            collation_params.clone(),
+                            generate_rpc_builder.clone(),
+                            &container_chain_cli,
+                            data_preserver,
+                        )
+                        .await?
+                    }
+                    sc_network::config::NetworkBackendType::Litep2p => {
+                        start_node_impl_container::<_, _, sc_network::Litep2pNetworkBackend>(
+                            container_chain_cli_config,
+                            relay_chain_interface.clone(),
+                            orchestrator_chain_interface.clone(),
+                            sync_keystore.clone(),
+                            container_chain_para_id,
+                            collation_params.clone(),
+                            generate_rpc_builder.clone(),
+                            &container_chain_cli,
+                            data_preserver,
+                        )
+                        .await?
+                    }
+                };
 
             // Keep all node parts in one variable to make them easier to drop
             let node_parts = (

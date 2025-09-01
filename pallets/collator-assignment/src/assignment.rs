@@ -14,24 +14,22 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 use {
+    alloc::{
+        collections::{btree_map::BTreeMap, btree_set::BTreeSet},
+        vec::Vec,
+    },
+    core::{cmp, marker::PhantomData, mem},
     dp_collator_assignment::AssignedCollators,
     frame_support::traits::Get,
     sp_runtime::Saturating,
-    sp_std::{
-        cmp,
-        collections::{btree_map::BTreeMap, btree_set::BTreeSet},
-        marker::PhantomData,
-        mem,
-        vec::Vec,
-    },
     tp_traits::{
         FullRotationMode, FullRotationModes, ParaId, RemoveInvulnerables as RemoveInvulnerablesT,
     },
 };
 
-// Separate import of `sp_std::vec!` macro, which cause issues with rustfmt if grouped
-// with `sp_std::vec::Vec`.
-use sp_std::vec;
+// Separate import of `alloc::vec!` macro, which cause issues with rustfmt if grouped
+// with `alloc::vec::Vec`.
+use alloc::vec;
 
 /// Helper methods to implement collator assignment algorithm
 pub struct Assignment<T>(PhantomData<T>);

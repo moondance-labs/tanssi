@@ -48,53 +48,21 @@ runs:
       run: |
         mage --version
 
-    - name: Cache Foundry
-      uses: actions/cache@v3
-      with:
-        path: |
-          ~/.foundry
-          ~/.cache/foundry
-        key: foundry-${{ runner.os }}-${{ hashFiles('**/foundry.toml', '**/remappings.txt') }}
 
     - name: Install Foundry
       uses: foundry-rs/foundry-toolchain@v1
+      with:
+        version: v1.2.3
     - name: Check forge
       shell: bash
       id: check_forge
       run: |
         forge --version
 
-    - name: Cache Symbiotic Contracts
-      uses: actions/cache@v3
-      id: cache-symbiotic
-      with:
-        path: |
-          test/tmp/bridge/tanssi-symbiotic
-          test/tmp/bridge/tanssi-symbiotic/out
-          test/tmp/bridge/tanssi-symbiotic/cache
-        key: symbiotic-${{ runner.os }}-${{ hashFiles('**/scripts/bridge/set-env.sh') }}
-
-    - name: Cache Snowbridge Relayer
-      uses: actions/cache@v3
-      id: cache-relayer
-      with:
-        path: |
-          test/tmp/bridge/relayer
-          test/tmp/bridge/relayer/snowbridge/contracts/out
-          test/tmp/bridge/relayer/snowbridge/contracts/cache
-        key: relayer-${{ runner.os }}-${{ hashFiles('**/scripts/bridge/set-env.sh') }}
-
     - name: Prepare Bin Folders
       shell: bash
       run: |
         mkdir -p test/tmp/bridge/output/bin
-    - name: Cache Ethereum Node Binaries
-      uses: actions/cache@v3
-      id: cache-ethereum-binaries
-      with:
-        path: |
-          test/tmp/bridge/output/bin
-        key: ethereum-bins-${{ runner.os }}-${{ hashFiles('**/scripts/bridge/set-env.sh') }}
 
     - name: Pnpm
       uses: pnpm/action-setup@v4.0.0

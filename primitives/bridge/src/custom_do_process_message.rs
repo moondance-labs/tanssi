@@ -16,6 +16,7 @@
 
 use {
     super::*,
+    alloc::boxed::Box,
     frame_support::{
         ensure,
         traits::{Defensive, ProcessMessage, ProcessMessageError},
@@ -25,7 +26,6 @@ use {
         CommittedMessage, MessageLeaves, Messages, Nonce, ProcessMessageOriginOf, WeightInfo,
     },
     sp_runtime::traits::Hash,
-    sp_std::boxed::Box,
 };
 
 /// Alternative to [snowbridge_pallet_outbound_queue::Pallet::process_message] using a different
@@ -60,9 +60,7 @@ where
         );
 
         // Convert versioned message into latest supported message version
-        let queued_message: QueuedMessage = versioned_queued_message
-            .try_into()
-            .map_err(|_| Unsupported)?;
+        let queued_message: QueuedMessage = versioned_queued_message.into();
 
         // Obtain next nonce
         let nonce = <Nonce<T>>::try_mutate(

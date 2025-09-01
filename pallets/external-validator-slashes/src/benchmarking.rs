@@ -26,7 +26,6 @@ use {
     frame_system::RawOrigin,
     pallet_session::{self as session},
     sp_runtime::traits::TrailingZeroInput,
-    sp_std::prelude::*,
 };
 
 const MAX_SLASHES: u32 = 1000;
@@ -61,7 +60,7 @@ mod benchmarks {
 
         assert_eq!(
             Slashes::<T>::get(
-                &era.saturating_add(T::SlashDeferDuration::get())
+                era.saturating_add(T::SlashDeferDuration::get())
                     .saturating_add(One::one())
             )
             .len(),
@@ -79,7 +78,7 @@ mod benchmarks {
 
         assert_eq!(
             Slashes::<T>::get(
-                &era.saturating_add(T::SlashDeferDuration::get())
+                era.saturating_add(T::SlashDeferDuration::get())
                     .saturating_add(One::one())
             )
             .len(),

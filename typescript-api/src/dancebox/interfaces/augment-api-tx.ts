@@ -2052,10 +2052,35 @@ declare module "@polkadot/api-base/types/submittable" {
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
         };
         inactivityTracking: {
+            /**
+             * Enables or disables the marking of collators as offline.
+             **/
+            enableOfflineMarking: AugmentedSubmittable<
+                (value: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [bool]
+            >;
+            /**
+             * Allows an account to notify inactive collator to be marked offline.
+             **/
+            notifyInactiveCollator: AugmentedSubmittable<
+                (collator: AccountId32 | string | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [AccountId32]
+            >;
+            /**
+             * Enables or disables inactivity tracking.
+             **/
             setInactivityTrackingStatus: AugmentedSubmittable<
                 (enableInactivityTracking: bool | boolean | Uint8Array) => SubmittableExtrinsic<ApiType>,
                 [bool]
             >;
+            /**
+             * Allows a collator to mark itself offline.
+             **/
+            setOffline: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
+            /**
+             * Allows a collator to mark itself online.
+             **/
+            setOnline: AugmentedSubmittable<() => SubmittableExtrinsic<ApiType>, []>;
             /**
              * Generic tx
              **/

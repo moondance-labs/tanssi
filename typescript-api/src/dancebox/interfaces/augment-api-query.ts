@@ -597,6 +597,11 @@ declare module "@polkadot/api-base/types/storage" {
             > &
                 QueryableStorageEntry<ApiType, []>;
             /**
+             * Switch to enable/disable offline marking.
+             **/
+            enableMarkingOffline: AugmentedQuery<ApiType, () => Observable<bool>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
              * A storage map of inactive collators for a session
              **/
             inactiveCollators: AugmentedQuery<
@@ -605,6 +610,15 @@ declare module "@polkadot/api-base/types/storage" {
                 [u32]
             > &
                 QueryableStorageEntry<ApiType, [u32]>;
+            /**
+             * Storage map indicating the offline status of a collator
+             **/
+            offlineCollators: AugmentedQuery<
+                ApiType,
+                (arg: AccountId32 | string | Uint8Array) => Observable<bool>,
+                [AccountId32]
+            > &
+                QueryableStorageEntry<ApiType, [AccountId32]>;
             /**
              * Generic query
              **/

@@ -25,11 +25,17 @@ extern crate alloc;
 use frame_support::storage::{with_storage_layer, with_transaction};
 // Fix compile error in impl_runtime_weights! macro
 use {
+    alloc::{
+        collections::{btree_map::BTreeMap, btree_set::BTreeSet, vec_deque::VecDeque},
+        vec,
+        vec::Vec,
+    },
     authority_discovery_primitives::AuthorityId as AuthorityDiscoveryId,
     beefy_primitives::{
         ecdsa_crypto::{AuthorityId as BeefyId, Signature as BeefySignature},
         mmr::{BeefyDataProvider, MmrLeafVersion},
     },
+    core::{cmp::Ordering, marker::PhantomData},
     cumulus_primitives_core::relay_chain::{HeadData, ValidationCode},
     dp_container_chain_genesis_data::ContainerChainGenesisDataItem,
     frame_support::{
@@ -52,12 +58,12 @@ use {
     parachains_scheduler::common::Assignment,
     parity_scale_codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen},
     primitives::{
-        slashing, vstaging::CandidateEvent, vstaging::CommittedCandidateReceiptV2,
-        vstaging::CoreState, vstaging::ScrapedOnChainVotes, ApprovalVotingParams, BlockNumber,
-        CandidateHash, CoreIndex, DisputeState, ExecutorParams, GroupRotationInfo, Hash,
-        Id as ParaId, InboundDownwardMessage, InboundHrmpMessage, Moment, NodeFeatures, Nonce,
-        OccupiedCoreAssumption, PersistedValidationData, SessionInfo, Signature,
-        ValidationCodeHash, ValidatorId, ValidatorIndex, PARACHAIN_KEY_TYPE_ID,
+        slashing, vstaging::async_backing::Constraints, vstaging::CandidateEvent,
+        vstaging::CommittedCandidateReceiptV2, vstaging::CoreState, vstaging::ScrapedOnChainVotes,
+        ApprovalVotingParams, BlockNumber, CandidateHash, CoreIndex, DisputeState, ExecutorParams,
+        GroupRotationInfo, Hash, Id as ParaId, InboundDownwardMessage, InboundHrmpMessage, Moment,
+        NodeFeatures, Nonce, OccupiedCoreAssumption, PersistedValidationData, SessionInfo,
+        Signature, ValidationCodeHash, ValidatorId, ValidatorIndex, PARACHAIN_KEY_TYPE_ID,
     },
     runtime_common::{
         self as polkadot_runtime_common, impl_runtime_weights, paras_registrar, paras_sudo_wrapper,
@@ -72,7 +78,9 @@ use {
         initializer as parachains_initializer, on_demand as parachains_assigner_on_demand,
         origin as parachains_origin, paras as parachains_paras,
         paras_inherent as parachains_paras_inherent,
-        runtime_api_impl::v11 as parachains_runtime_api_impl,
+        runtime_api_impl::{
+            v11 as parachains_runtime_api_impl, vstaging as parachains_staging_runtime_api_impl,
+        },
         scheduler as parachains_scheduler, session_info as parachains_session_info,
         shared as parachains_shared,
     },
@@ -83,20 +91,15 @@ use {
     snowbridge_outbound_queue_primitives::v1::Fee,
     sp_core::{storage::well_known_keys as StorageWellKnownKeys, Get},
     sp_genesis_builder::PresetId,
-    sp_runtime::{
-        traits::{BlockNumberProvider, ConvertInto},
-        AccountId32,
-    },
-    sp_std::{
-        cmp::Ordering,
-        collections::{btree_map::BTreeMap, btree_set::BTreeSet, vec_deque::VecDeque},
-        marker::PhantomData,
-        prelude::*,
+    sp_runtime::{traits::ConvertInto, AccountId32},
+    tanssi_runtime_common::{
+        relay::{BabeGetCollatorAssignmentRandomness, BabeSlotBeacon},
+        SessionTimer,
     },
     tp_bridge::ConvertLocation,
     tp_traits::{
         prod_or_fast_parameter_types, EraIndex, GetHostConfiguration, GetSessionContainerChains,
-        ParaIdAssignmentHooks, RegistrarHandler, Slot, SlotFrequency,
+        NodeActivityTrackingHelper, ParaIdAssignmentHooks, RegistrarHandler, Slot, SlotFrequency,
     },
     xcm::Version as XcmVersion,
     xcm_runtime_apis::{
@@ -182,6 +185,7 @@ use {
 #[cfg(test)]
 mod tests;
 
+#[cfg(not(feature = "disable-genesis-builder"))]
 pub mod genesis_config_presets;
 
 impl_runtime_weights!(starlight_runtime_constants);
@@ -196,10 +200,10 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: Cow::Borrowed("starlight"),
     impl_name: Cow::Borrowed("tanssi-starlight-v2.0"),
     authoring_version: 0,
-    spec_version: 1400,
+    spec_version: 1500,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
-    transaction_version: 26,
+    transaction_version: 27,
     system_version: 1,
 };
 
@@ -305,18 +309,6 @@ impl Convert<AggregateMessageOrigin, ParaId> for GetParaFromAggregateMessageOrig
     }
 }
 
-pub struct IsContainerChainManagementExtrinsics;
-impl Contains<RuntimeCall> for IsContainerChainManagementExtrinsics {
-    fn contains(c: &RuntimeCall) -> bool {
-        matches!(
-            c,
-            RuntimeCall::ServicesPayment(_)
-                | RuntimeCall::StreamPayment(_)
-                | RuntimeCall::DataPreservers(_)
-        )
-    }
-}
-
 pub struct IsDemocracyExtrinsics;
 impl Contains<RuntimeCall> for IsDemocracyExtrinsics {
     fn contains(c: &RuntimeCall) -> bool {
@@ -333,27 +325,29 @@ impl Contains<RuntimeCall> for IsDemocracyExtrinsics {
     }
 }
 
-pub struct IsXcmExtrinsics;
-impl Contains<RuntimeCall> for IsXcmExtrinsics {
+/// The relay register and deregister calls should no longer be necessary
+/// Everything is handled by the ContainerRegistrar
+pub struct IsRelayRegister;
+impl Contains<RuntimeCall> for IsRelayRegister {
     fn contains(c: &RuntimeCall) -> bool {
         matches!(
             c,
-            RuntimeCall::Hrmp(_)
-                | RuntimeCall::MessageQueue(_)
-                | RuntimeCall::AssetRate(_)
-                | RuntimeCall::XcmPallet(_)
+            RuntimeCall::Registrar(paras_registrar::Call::register { .. })
+        ) || matches!(
+            c,
+            RuntimeCall::Registrar(paras_registrar::Call::deregister { .. })
         )
     }
 }
 
-pub struct IsContainerChainRegistrationExtrinsics;
-impl Contains<RuntimeCall> for IsContainerChainRegistrationExtrinsics {
+/// Starlight shouold not permit parathread registration for now
+/// TODO: remove once they are enabled
+pub struct IsParathreadRegistrar;
+impl Contains<RuntimeCall> for IsParathreadRegistrar {
     fn contains(c: &RuntimeCall) -> bool {
         matches!(
             c,
-            RuntimeCall::ContainerRegistrar(_)
-                | RuntimeCall::OnDemandAssignmentProvider(_)
-                | RuntimeCall::Registrar(_)
+            RuntimeCall::ContainerRegistrar(pallet_registrar::Call::register_parathread { .. })
         )
     }
 }
@@ -655,7 +649,7 @@ parameter_types! {
     pub const MaxAuthorities: u32 = 100_000;
     pub const MaxKeys: u32 = 10_000;
     pub const MaxPeerInHeartbeats: u32 = 10_000;
-    pub const MaxBalance: Balance = Balance::max_value();
+    pub const MaxBalance: Balance = Balance::MAX;
     pub TreasuryAccount: AccountId = Treasury::account_id();
     pub SnowbridgeFeesAccount: AccountId = PalletId(*b"sb/feeac").into_account_truncating();
 }
@@ -757,10 +751,12 @@ where
     ) -> Option<UncheckedExtrinsic> {
         use sp_runtime::traits::StaticLookup;
         // take the biggest period possible.
-        let period = BlockHashCount::get()
-            .checked_next_power_of_two()
-            .map(|c| c / 2)
-            .unwrap_or(2) as u64;
+        let period = u64::from(
+            BlockHashCount::get()
+                .checked_next_power_of_two()
+                .map(|c| c / 2)
+                .unwrap_or(2),
+        );
 
         let current_block = System::block_number()
             .saturated_into::<u64>()
@@ -782,6 +778,7 @@ where
             pallet_transaction_payment::ChargeTransactionPayment::<Runtime>::from(tip),
             //cumulus_primitives_storage_weight_reclaim::StorageWeightReclaim::<Runtime>::new(),
             frame_metadata_hash_extension::CheckMetadataHash::new(true),
+            frame_system::WeightReclaim::new(),
         );
         let raw_payload = SignedPayload::new(call, tx_ext)
             .map_err(|e| {
@@ -1067,7 +1064,7 @@ impl parachains_inclusion::Config for Runtime {
 }
 
 parameter_types! {
-    pub const ParasUnsignedPriority: TransactionPriority = TransactionPriority::max_value();
+    pub const ParasUnsignedPriority: TransactionPriority = TransactionPriority::MAX;
 }
 
 impl parachains_paras::Config for Runtime {
@@ -1183,7 +1180,7 @@ impl parachains_scheduler::common::AssignmentProvider<BlockNumberFor<Runtime>>
             .container_chains
             .iter()
             .filter_map(|(&para_id, collators)| {
-                if Paras::is_parachain(para_id) && collators.len() > 0 {
+                if Paras::is_parachain(para_id) && !collators.is_empty() {
                     Some(para_id)
                 } else {
                     None
@@ -1208,12 +1205,11 @@ impl parachains_scheduler::common::AssignmentProvider<BlockNumberFor<Runtime>>
                 )?;
 
             // Let's check that we have collators before allowing an assignment
-            if assigned_collators
+            if !assigned_collators
                 .container_chains
                 .get(&assignment.para_id())
                 .unwrap_or(&vec![])
-                .len()
-                > 0
+                .is_empty()
             {
                 Some(assignment)
             } else {
@@ -1327,7 +1323,7 @@ impl parachains_slashing::Config for Runtime {
 }
 
 parameter_types! {
-    pub const ParaDeposit: Balance = 40 * UNITS;
+    pub const ParaDeposit: Balance = 500 * UNITS;
 }
 
 impl paras_registrar::Config for Runtime {
@@ -1436,10 +1432,7 @@ impl pallet_beefy_mmr::Config for Runtime {
 
 impl paras_sudo_wrapper::Config for Runtime {}
 
-use {
-    pallet_pooled_staking::traits::{IsCandidateEligible, Timer},
-    pallet_staking::SessionInterface,
-};
+use {pallet_pooled_staking::traits::IsCandidateEligible, pallet_staking::SessionInterface};
 
 pub struct StarlightSessionInterface;
 impl SessionInterface<AccountId> for StarlightSessionInterface {
@@ -1514,8 +1507,8 @@ pub struct RewardsBenchHelper;
 #[cfg(feature = "runtime-benchmarks")]
 impl tp_bridge::TokenChannelSetterBenchmarkHelperTrait for RewardsBenchHelper {
     fn set_up_token(location: Location, token_id: TokenId) {
-        snowbridge_pallet_system::ForeignToNativeId::<Runtime>::insert(&token_id, &location);
-        snowbridge_pallet_system::NativeToForeignId::<Runtime>::insert(&location, &token_id);
+        snowbridge_pallet_system::ForeignToNativeId::<Runtime>::insert(token_id, &location);
+        snowbridge_pallet_system::NativeToForeignId::<Runtime>::insert(&location, token_id);
     }
 
     fn set_up_channel(_channel_id: ChannelId, _para_id: ParaId, _agent_id: AgentId) {}
@@ -1682,10 +1675,9 @@ impl Contains<RuntimeCall> for MaintenanceFilter {
 
 /// Normal Call Filter
 type NormalFilter = EverythingBut<(
-    IsContainerChainManagementExtrinsics,
+    IsRelayRegister,
+    IsParathreadRegistrar,
     IsDemocracyExtrinsics,
-    IsXcmExtrinsics,
-    IsContainerChainRegistrationExtrinsics,
 )>;
 
 impl pallet_maintenance_mode::Config for Runtime {
@@ -1839,47 +1831,11 @@ parameter_types! {
     pub const StakingSessionDelay: u32 = 2;
 }
 
-pub struct SessionTimer<Delay>(PhantomData<Delay>);
-
-impl<Delay> Timer for SessionTimer<Delay>
-where
-    Delay: Get<u32>,
-{
-    type Instant = u32;
-
-    fn now() -> Self::Instant {
-        Session::current_index()
-    }
-
-    fn is_elapsed(instant: &Self::Instant) -> bool {
-        let delay = Delay::get();
-        let Some(end) = instant.checked_add(delay) else {
-            return false;
-        };
-        end <= Self::now()
-    }
-
-    #[cfg(feature = "runtime-benchmarks")]
-    fn elapsed_instant() -> Self::Instant {
-        let delay = Delay::get();
-        Self::now()
-            .checked_add(delay)
-            .expect("overflow when computing valid elapsed instant")
-    }
-
-    #[cfg(feature = "runtime-benchmarks")]
-    fn skip_to_elapsed() {
-        let session_to_reach = Self::elapsed_instant();
-        while Self::now() < session_to_reach {
-            Session::rotate_session();
-        }
-    }
-}
-
 pub struct CandidateHasRegisteredKeys;
 impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
     fn is_candidate_eligible(a: &AccountId) -> bool {
         <Session as ValidatorRegistration<AccountId>>::is_registered(a)
+            && !InactivityTracking::is_node_offline(a)
     }
     #[cfg(feature = "runtime-benchmarks")]
     fn make_candidate_eligible(a: &AccountId, eligible: bool) {
@@ -1905,7 +1861,15 @@ impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
         } else {
             let _ = Session::purge_keys(RuntimeOrigin::signed(a.clone()));
         }
+
+        if InactivityTracking::is_node_offline(a) {
+            InactivityTracking::make_node_online(a);
+        }
     }
+}
+
+parameter_types! {
+    pub const MaxCandidatesBufferSize: u32 = 100;
 }
 
 impl pallet_pooled_staking::Config for Runtime {
@@ -1918,11 +1882,28 @@ impl pallet_pooled_staking::Config for Runtime {
     type MinimumSelfDelegation = MinimumSelfDelegation;
     type RuntimeHoldReason = RuntimeHoldReason;
     type RewardsCollatorCommission = RewardsCollatorCommission;
-    type JoiningRequestTimer = SessionTimer<StakingSessionDelay>;
-    type LeavingRequestTimer = SessionTimer<StakingSessionDelay>;
-    type EligibleCandidatesBufferSize = ConstU32<100>;
+    type JoiningRequestTimer = SessionTimer<Runtime, StakingSessionDelay>;
+    type LeavingRequestTimer = SessionTimer<Runtime, StakingSessionDelay>;
+    type EligibleCandidatesBufferSize = MaxCandidatesBufferSize;
     type EligibleCandidatesFilter = CandidateHasRegisteredKeys;
     type WeightInfo = weights::pallet_pooled_staking::SubstrateWeight<Runtime>;
+}
+
+parameter_types! {
+    pub const MaxInactiveSessions: u32 = 5;
+}
+impl pallet_inactivity_tracking::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type MaxInactiveSessions = MaxInactiveSessions;
+    type MaxCollatorsPerSession = MaxCandidatesBufferSize;
+    type MaxContainerChains = MaxLengthParaIds;
+    type CurrentSessionIndex = CurrentSessionIndexGetter;
+    type CurrentCollatorsFetcher = TanssiCollatorAssignment;
+    type GetSelfChainBlockAuthor = ();
+    type ParaFilter = tp_parathread_filter_common::ExcludeAllParathreadsFilter<Runtime>;
+    type InvulnerablesFilter = tp_invulnerables_filter_common::InvulnerablesFilter<Runtime>;
+    type CollatorStakeHelper = PooledStaking;
+    type WeightInfo = weights::pallet_inactivity_tracking::SubstrateWeight<Runtime>;
 }
 
 construct_runtime! {
@@ -1978,6 +1959,9 @@ construct_runtime! {
         // InflationRewards must be after Session
         InflationRewards: pallet_inflation_rewards = 33,
         PooledStaking: pallet_pooled_staking = 34,
+
+        // Inactivity tracking
+        InactivityTracking: pallet_inactivity_tracking = 35,
 
         // Governance stuff; uncallable initially.
         Treasury: pallet_treasury = 40,
@@ -2084,6 +2068,7 @@ pub type TxExtension = (
     frame_system::CheckWeight<Runtime>,
     pallet_transaction_payment::ChargeTransactionPayment<Runtime>,
     frame_metadata_hash_extension::CheckMetadataHash<Runtime>,
+    frame_system::WeightReclaim<Runtime>,
 );
 
 /// Unchecked extrinsic type as expected by this runtime.
@@ -2206,8 +2191,8 @@ where
 
 impl pallet_registrar::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    // TODO: revert to non-sudo later after stable
-    type RegistrarOrigin = EnsureRoot<AccountId>;
+    type RegistrarOrigin =
+        EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;
     type MarkValidForCollatingOrigin = EnsureRoot<AccountId>;
     type MaxLengthParaIds = MaxLengthParaIds;
     type MaxGenesisDataSize = MaxEncodedGenesisDataSize;
@@ -2307,25 +2292,12 @@ impl pallet_registrar::RegistrarHooks for StarlightRegistrarHooks {
     }
 }
 
-pub struct BabeSlotBeacon;
-
-impl BlockNumberProvider for BabeSlotBeacon {
-    type BlockNumber = u32;
-
-    fn current_block_number() -> Self::BlockNumber {
-        // TODO: nimbus_primitives::SlotBeacon requires u32, but this is a u64 in pallet_babe, and
-        // also it gets converted to u64 in pallet_author_noting, so let's do something to remove
-        // this intermediate u32 conversion, such as using a different trait
-        u64::from(pallet_babe::CurrentSlot::<Runtime>::get()) as u32
-    }
-}
-
 impl pallet_author_noting::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type ContainerChains = TanssiCollatorAssignment;
-    type SlotBeacon = BabeSlotBeacon;
+    type SlotBeacon = BabeSlotBeacon<Runtime>;
     type ContainerChainAuthor = TanssiCollatorAssignment;
-    type AuthorNotingHook = (InflationRewards, ServicesPayment);
+    type AuthorNotingHook = (InflationRewards, ServicesPayment, InactivityTracking);
     type RelayOrPara = pallet_author_noting::RelayMode;
     type MaxContainerChains = MaxLengthParaIds;
     type WeightInfo = weights::pallet_author_noting::SubstrateWeight<Runtime>;
@@ -2391,6 +2363,11 @@ mod benches {
         [pallet_pooled_staking, PooledStaking]
         [pallet_configuration, CollatorConfiguration]
         [pallet_stream_payment, StreamPayment]
+        [pallet_inactivity_tracking, InactivityTracking]
+
+        // Foreign Assets
+        [pallet_foreign_asset_creator, ForeignAssetsCreator]
+        [pallet_assets, ForeignAssets]
 
         // Foreign Assets
         [pallet_foreign_asset_creator, ForeignAssetsCreator]
@@ -2486,7 +2463,7 @@ sp_api::impl_runtime_apis! {
             Runtime::metadata_at_version(version)
         }
 
-        fn metadata_versions() -> sp_std::vec::Vec<u32> {
+        fn metadata_versions() -> alloc::vec::Vec<u32> {
             Runtime::metadata_versions()
         }
     }
@@ -2528,7 +2505,7 @@ sp_api::impl_runtime_apis! {
         }
     }
 
-    #[api_version(11)]
+    #[api_version(13)]
     impl primitives::runtime_api::ParachainHost<Block> for Runtime {
         fn validators() -> Vec<ValidatorId> {
             parachains_runtime_api_impl::validators::<Runtime>()
@@ -2695,6 +2672,17 @@ sp_api::impl_runtime_apis! {
 
         fn candidates_pending_availability(para_id: ParaId) -> Vec<CommittedCandidateReceiptV2<Hash>> {
             parachains_runtime_api_impl::candidates_pending_availability::<Runtime>(para_id)
+        }
+        fn backing_constraints(para_id: ParaId) -> Option<Constraints> {
+            parachains_staging_runtime_api_impl::backing_constraints::<Runtime>(para_id)
+        }
+
+        fn scheduling_lookahead() -> u32 {
+            parachains_staging_runtime_api_impl::scheduling_lookahead::<Runtime>()
+        }
+
+        fn validation_code_bomb_limit() -> u32 {
+            parachains_staging_runtime_api_impl::validation_code_bomb_limit::<Runtime>()
         }
     }
 
@@ -3160,6 +3148,7 @@ sp_api::impl_runtime_apis! {
             use xcm_config::{
                 AssetHub, LocalCheckAccount, LocationConverter, TokenLocation, XcmConfig,
             };
+            use alloc::boxed::Box;
 
             parameter_types! {
                 pub ExistentialDepositAsset: Option<Asset> = Some((
@@ -3411,6 +3400,7 @@ sp_api::impl_runtime_apis! {
         }
     }
 
+    #[cfg(not(feature = "disable-genesis-builder"))]
     impl sp_genesis_builder::GenesisBuilder<Block> for Runtime {
         fn build_state(config: Vec<u8>) -> sp_genesis_builder::Result {
             build_state::<RuntimeGenesisConfig>(config)
@@ -3517,9 +3507,13 @@ impl tanssi_initializer::ApplyNewSession<Runtime> for OwnApplySession {
             &queued_id_to_nimbus_map,
             &assignments.next_assignment,
         );
+        // 6. InactivityTracking
+        InactivityTracking::process_ended_session();
     }
 
-    fn on_before_session_ending() {}
+    fn on_before_session_ending() {
+        InactivityTracking::on_before_session_ending();
+    }
 }
 parameter_types! {
     pub MockParaId :ParaId = 0u32.into();
@@ -3563,33 +3557,6 @@ pub struct ConfigurationCollatorRotationSessionPeriod;
 impl Get<u32> for ConfigurationCollatorRotationSessionPeriod {
     fn get() -> u32 {
         CollatorConfiguration::config().full_rotation_period
-    }
-}
-
-pub struct BabeGetCollatorAssignmentRandomness;
-impl Get<[u8; 32]> for BabeGetCollatorAssignmentRandomness {
-    fn get() -> [u8; 32] {
-        let block_number = System::block_number();
-        let random_seed = if block_number != 0 {
-            if let Some(random_hash) = {
-                BabeCurrentBlockRandomnessGetter::get_block_randomness_mixed(b"CollatorAssignment")
-            } {
-                // Return random_hash as a [u8; 32] instead of a Hash
-                let mut buf = [0u8; 32];
-                let len = sp_std::cmp::min(32, random_hash.as_ref().len());
-                buf[..len].copy_from_slice(&random_hash.as_ref()[..len]);
-
-                buf
-            } else {
-                // If there is no randomness return [0; 32]
-                [0; 32]
-            }
-        } else {
-            // In block 0 (genesis) there is no randomness
-            [0; 32]
-        };
-
-        random_seed
     }
 }
 
@@ -3765,7 +3732,7 @@ fn host_config_at_session(
         .max_by_key(|(session, _config)| *session)
         .map(|(_session, config)| config)
         // If pending configs is empty after filter, read active config
-        .unwrap_or_else(|| runtime_parachains::configuration::ActiveConfig::<Runtime>::get())
+        .unwrap_or_else(runtime_parachains::configuration::ActiveConfig::<Runtime>::get)
 }
 
 pub struct GetCoreAllocationConfigurationImpl;
@@ -3798,8 +3765,9 @@ impl pallet_collator_assignment::Config for Runtime {
     type SelfParaId = MockParaId;
     type ShouldRotateAllCollators =
         RotateCollatorsEveryNSessions<ConfigurationCollatorRotationSessionPeriod>;
-    type Randomness =
-        pallet_collator_assignment::SolochainRandomness<BabeGetCollatorAssignmentRandomness>;
+    type Randomness = pallet_collator_assignment::SolochainRandomness<
+        BabeGetCollatorAssignmentRandomness<Runtime>,
+    >;
     type RemoveInvulnerables = ();
     type ParaIdAssignmentHooks = ParaIdAssignmentHooksImpl;
     type CollatorAssignmentTip = ServicesPayment;

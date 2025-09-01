@@ -23,6 +23,10 @@ EOF
   exit 1
 fi
 
+SPECIFIED_TAG=""
+TAG_TO_USE=""
+RELAY_TAG_TO_USE=""
+
 # Flags for which artifacts to download
 DOWNLOAD_TANSSI_NODE=false
 DOWNLOAD_FRONTIER_NODE=false
@@ -31,32 +35,67 @@ DOWNLOAD_RELAY=false
 USE_LATEST_CLIENT_VERSION=false
 USE_LATEST_RUNTIME_VERSION=false
 OUTPUT_TO_TARGET_RELEASE=false
+INCLUDE_ALL_ARCHS=false
 
-for bin in "$@"; do
-  case "$bin" in
-    --latest-client) USE_LATEST_CLIENT_VERSION=true ;;
-    --latest-runtime) USE_LATEST_RUNTIME_VERSION=true ;;
-    # TODO: implementing --output-path $path was too hard
-    --output-to-target-release) OUTPUT_TO_TARGET_RELEASE=true ;;
-    tanssi-node) DOWNLOAD_TANSSI_NODE=true ;; 
-    container-chain-frontier-node) DOWNLOAD_FRONTIER_NODE=true ;; 
-    container-chain-simple-node) DOWNLOAD_SIMPLE_NODE=true ;; 
-    tanssi-relay) DOWNLOAD_RELAY=true ;; 
-    *) echo "Unknown binary: $bin" >&2; exit 1 ;;
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --latest-client)
+      USE_LATEST_CLIENT_VERSION=true
+      shift
+      ;;
+    --latest-runtime)
+      USE_LATEST_RUNTIME_VERSION=true
+      shift
+      ;;
+    --tag)
+      if [[ -n "${2:-}" && ! "$2" =~ ^-- ]]; then
+        SPECIFIED_TAG="$2"
+        shift 2
+      else
+        echo "Error: --tag requires a value" >&2
+        exit 1
+      fi
+      ;;
+    --output-to-target-release)
+      OUTPUT_TO_TARGET_RELEASE=true
+      shift
+      ;;
+    --include-all-archs)
+      INCLUDE_ALL_ARCHS=true
+      shift
+      ;;
+    tanssi-node)
+      DOWNLOAD_TANSSI_NODE=true
+      shift
+      ;;
+    container-chain-frontier-node)
+      DOWNLOAD_FRONTIER_NODE=true
+      shift
+      ;;
+    container-chain-simple-node)
+      DOWNLOAD_SIMPLE_NODE=true
+      shift
+      ;;
+    tanssi-relay)
+      DOWNLOAD_RELAY=true
+      shift
+      ;;
+    *)
+      echo "Unknown option or binary: $1" >&2
+      exit 1
+      ;;
   esac
 done
 
-
 # After processing all args, if neither “latest-client” nor “latest-runtime” was requested,
 # default to fetching the latest runtime.
-if [ "$USE_LATEST_CLIENT_VERSION" = false ] && [ "$USE_LATEST_RUNTIME_VERSION" = false ]; then
-  USE_LATEST_RUNTIME_VERSION=true
-fi
-
-# If the user explicitly asked for *both* latest-client AND latest-runtime, error out.
-if [ "$USE_LATEST_CLIENT_VERSION" = true ] && [ "$USE_LATEST_RUNTIME_VERSION" = true ]; then
-  echo "Error: cannot use both --latest-client and --latest-runtime" >&2
-  exit 1
+if [ -n "$SPECIFIED_TAG" ]; then
+  # If the user explicitly asked for *both* latest-client AND latest-runtime, error out.
+  if [ "$USE_LATEST_CLIENT_VERSION" = true ] || [ "$USE_LATEST_RUNTIME_VERSION" = true ]; then
+    echo "Error: --tag cannot be used with --latest-client or --latest-runtime" >&2
+    exit 1
+  fi
 fi
 
 OUTPUT_PATH="tmp"
@@ -66,20 +105,16 @@ fi
 
 # Helper: get the short SHA8 for a given tag
 get_sha8() {
-  local tag ret resp type url tagresp
+  local tag resp type url tagresp
 
   tag=$1
 
   # Fetch the ref object
-  resp=$(curl -s -H "Accept: application/vnd.github.v3+json" \
+  resp=$(curl -sSf -H "Accept: application/vnd.github.v3+json" \
     "https://api.github.com/repos/moondance-labs/tanssi/git/refs/tags/$tag")
-  ret=$?
-  (( ret == 0 )) || return "$ret"
 
   # Determine if it’s a lightweight or annotated tag
   type=$(jq -r '.object.type' <<<"$resp")
-  ret=$?
-  (( ret == 0 )) || return "$ret"
 
   if [[ $type == "commit" ]]; then
     # Lightweight tag: object.sha is the commit
@@ -87,77 +122,77 @@ get_sha8() {
   else
     # Annotated tag: need to follow the tag object
     url=$(jq -r '.object.url' <<<"$resp")
-    ret=$?
-    (( ret == 0 )) || return "$ret"
-
-    tagresp=$(curl -s -H "Accept: application/vnd.github.v3+json" "$url")
-    ret=$?
-    (( ret == 0 )) || return "$ret"
-
+    tagresp=$(curl -sSf -H "Accept: application/vnd.github.v3+json" "$url")
     jq -r '.object.sha' <<<"$tagresp" | cut -c1-8
   fi
 }
 
 # Cache GitHub releases JSON
-RELEASES_JSON=$(curl -s https://api.github.com/repos/moondance-labs/tanssi/releases)
+RELEASES_JSON=$(curl -sSf https://api.github.com/repos/moondance-labs/tanssi/releases)
 
 # Fetch latest non-starlight runtime tag
 if $DOWNLOAD_TANSSI_NODE || $DOWNLOAD_FRONTIER_NODE || $DOWNLOAD_SIMPLE_NODE; then
-  if [ "$USE_LATEST_CLIENT_VERSION" = true ]; then
-    NONSTARL_TAG=$(jq -r '.[]
-      | select(.tag_name | test("v";"i"))
-      | .tag_name' <<<"$RELEASES_JSON" | head -n1)
-  else
-    NONSTARL_TAG=$(jq -r '.[]
-      | select(
-          .tag_name | test("runtime";"i")
-          and (test("starlight";"i") | not)
-        )
-      | .tag_name' <<<"$RELEASES_JSON" | head -n1)
+  if [ -z "$SPECIFIED_TAG" ]; then
+    if [ "$USE_LATEST_CLIENT_VERSION" = true ]; then
+      NONSTARL_TAG=$(jq -r '.[]
+        | select(.tag_name | test("v";"i"))
+        | .tag_name' <<<"$RELEASES_JSON" | head -n1)
+      [[ -n $NONSTARL_TAG ]]
+      NONSTARL_SHA=$(get_sha8 "$NONSTARL_TAG")
+      runtime_ver=${NONSTARL_TAG//[!0-9]/}
+      if (( runtime_ver >= 900 )); then
+        TAG_TO_USE="sha-${NONSTARL_SHA}-fast-runtime"
+      else
+        TAG_TO_USE="sha-${NONSTARL_SHA}"
+      fi
+    else
+      NONSTARL_TAG=$(jq -r '.[]
+        | select(
+            .tag_name | test("runtime";"i")
+            and (test("starlight";"i") | not)
+          )
+        | .tag_name' <<<"$RELEASES_JSON" | head -n1)
+      [[ -n $NONSTARL_TAG ]]
+      NONSTARL_SHA=$(get_sha8 "$NONSTARL_TAG")
+      runtime_ver=${NONSTARL_TAG//[!0-9]/}
+      TAG_TO_USE="sha-${NONSTARL_SHA}-fast-runtime"
+      fi
+    else
+      TAG_TO_USE="${SPECIFIED_TAG}"
+    fi
   fi
-  [[ -n $NONSTARL_TAG ]]
-  NONSTARL_SHA=$(get_sha8 "$NONSTARL_TAG")
-  runtime_ver=${NONSTARL_TAG//[!0-9]/}
-  if [ "$USE_LATEST_CLIENT_VERSION" = true ]; then
-      # If we are asked to use the latest client version it is hard to find the actual runtime
-      # version, but at least we know it is >= 900
-      runtime_ver="900"
-  fi
-  if (( runtime_ver >= 900 )); then
-    TANSSI_IMAGE="moondancelabs/tanssi:sha-${NONSTARL_SHA}-fast-runtime"
-  else
-    TANSSI_IMAGE="moondancelabs/tanssi:sha-${NONSTARL_SHA}"
-  fi
-  if (( runtime_ver >= 900 )); then
-    FRONTIER_IMAGE="moondancelabs/container-chain-evm-template:sha-${NONSTARL_SHA}-fast-runtime"
-  else
-    FRONTIER_IMAGE="moondancelabs/container-chain-evm-template:sha-${NONSTARL_SHA}"
-  fi
-  if (( runtime_ver >= 900 )); then
-    SIMPLE_IMAGE="moondancelabs/container-chain-simple-template:sha-${NONSTARL_SHA}-fast-runtime"
-  else
-    SIMPLE_IMAGE="moondancelabs/container-chain-simple-template:sha-${NONSTARL_SHA}"
-  fi
-fi
+
+TANSSI_IMAGE="moondancelabs/tanssi:${TAG_TO_USE}"
+FRONTIER_IMAGE="moondancelabs/container-chain-evm-template:${TAG_TO_USE}"
+SIMPLE_IMAGE="moondancelabs/container-chain-simple-template:${TAG_TO_USE}"
 
 # Fetch latest starlight runtime tag
 if $DOWNLOAD_RELAY; then
-  if [ "$USE_LATEST_CLIENT_VERSION" = true ]; then
-    STARL_TAG=$(jq -r '.[]
-      | select(.tag_name | test("v";"i"))
-      | .tag_name' <<<"$RELEASES_JSON" | head -n1)
+  if [ -z "$SPECIFIED_TAG" ]; then
+    if [ "$USE_LATEST_CLIENT_VERSION" = true ]; then
+      STARL_TAG=$(jq -r '.[]
+        | select(.tag_name | test("v";"i"))
+        | .tag_name' <<<"$RELEASES_JSON" | head -n1)
+      [[ -n $STARL_TAG ]]
+      STARL_SHA=$(get_sha8 "$STARL_TAG")
+      RELAY_TAG_TO_USE="sha-${STARL_SHA}-fast-runtime"
+    else
+      STARL_TAG=$(jq -r '.[]
+        | select(
+            .tag_name | test("runtime";"i")
+            and test("starlight";"i")
+          )
+        | .tag_name' <<<"$RELEASES_JSON" | head -n1)
+      [[ -n $STARL_TAG ]]
+      STARL_SHA=$(get_sha8 "$STARL_TAG")
+      RELAY_TAG_TO_USE="sha-${STARL_SHA}-fast-runtime"
+    fi
   else
-    STARL_TAG=$(jq -r '.[]
-      | select(
-          .tag_name | test("runtime";"i")
-          and test("starlight";"i")
-        )
-      | .tag_name' <<<"$RELEASES_JSON" | head -n1)
+    RELAY_TAG_TO_USE=${SPECIFIED_TAG}
   fi
-  [[ -n $STARL_TAG ]]
-  STARL_SHA=$(get_sha8 "$STARL_TAG")
-  RELAY_IMAGE="moondancelabs/starlight:sha-${STARL_SHA}-fast-runtime"
 fi
+
+RELAY_IMAGE="moondancelabs/starlight:${RELAY_TAG_TO_USE}"
 
 # Define Docker images
 
@@ -167,11 +202,25 @@ mkdir -p $OUTPUT_PATH
 # Download requested binaries
 if $DOWNLOAD_TANSSI_NODE; then
   echo "Fetching tanssi-node from $TANSSI_IMAGE..."
+  BINARIES=(
+    tanssi-node
+  )
+  BINARIES_SKYLAKE=(
+    tanssi-node-skylake
+  )
+  BINARIES_ZNVER3=(
+    tanssi-node-znver3
+  )
+  if [ "$INCLUDE_ALL_ARCHS" = true ]; then
+      BINARIES+=("${BINARIES_SKYLAKE[@]}")
+      BINARIES+=("${BINARIES_ZNVER3[@]}")
+  fi
   docker run --rm \
-      --entrypoint tar \
-      "$TANSSI_IMAGE" \
-      -C /tanssi -cf - tanssi-node \
-    | tar -C $OUTPUT_PATH -xf -
+    --entrypoint tar \
+    "$TANSSI_IMAGE" \
+    -C /tanssi -cf - \
+      "${BINARIES[@]}" | tar -C $OUTPUT_PATH -xf -
+
   chmod +x $OUTPUT_PATH/tanssi-node
   echo "→ $OUTPUT_PATH/tanssi-node"
 fi
@@ -186,11 +235,24 @@ if $DOWNLOAD_FRONTIER_NODE; then
       runtime_ver="900"
   fi
   if (( runtime_ver >= 700 )); then
+    BINARIES=(
+    container-chain-frontier-node
+    )
+    BINARIES_SKYLAKE=(
+      container-chain-frontier-node-skylake
+    )
+    BINARIES_ZNVER3=(
+      container-chain-frontier-node-znver3
+    )
+    if [ "$INCLUDE_ALL_ARCHS" = true ]; then
+      BINARIES+=("${BINARIES_SKYLAKE[@]}")
+      BINARIES+=("${BINARIES_ZNVER3[@]}")
+    fi
     docker run --rm \
-        --entrypoint tar \
-        "$FRONTIER_IMAGE" \
-        -C /container-chain-template-evm -cf - container-chain-frontier-node \
-      | tar -C $OUTPUT_PATH -xf -
+    --entrypoint tar \
+    "$FRONTIER_IMAGE" \
+    -C /container-chain-template-evm  -cf - \
+      "${BINARIES[@]}" | tar -C $OUTPUT_PATH -xf -
   else
     docker run --rm \
         --entrypoint tar \
@@ -212,11 +274,24 @@ if $DOWNLOAD_SIMPLE_NODE; then
       runtime_ver="900"
   fi
   if (( runtime_ver >= 700 )); then
+    BINARIES=(
+    container-chain-simple-node
+    )
+    BINARIES_SKYLAKE=(
+      container-chain-simple-node-skylake
+    )
+    BINARIES_ZNVER3=(
+      container-chain-simple-node-znver3
+    )
+    if [ "$INCLUDE_ALL_ARCHS" = true ]; then
+      BINARIES+=("${BINARIES_SKYLAKE[@]}")
+      BINARIES+=("${BINARIES_ZNVER3[@]}")
+    fi
     docker run --rm \
-        --entrypoint tar \
-        "$SIMPLE_IMAGE" \
-        -C /container-chain-template-simple -cf - container-chain-simple-node \
-      | tar -C $OUTPUT_PATH -xf -
+    --entrypoint tar \
+    "$SIMPLE_IMAGE" \
+    -C /container-chain-template-simple -cf - \
+      "${BINARIES[@]}" | tar -C $OUTPUT_PATH -xf -
   else
     docker run --rm \
         --entrypoint tar \
@@ -230,14 +305,31 @@ fi
 
 if $DOWNLOAD_RELAY; then
   echo "Fetching tanssi-relay + workers from $RELAY_IMAGE..."
+  BINARIES=(
+  tanssi-relay
+  tanssi-relay-execute-worker
+  tanssi-relay-prepare-worker
+  )
+  BINARIES_SKYLAKE=(
+  tanssi-relay-skylake
+  tanssi-relay-execute-worker-skylake
+  tanssi-relay-prepare-worker-skylake
+  )
+  BINARIES_ZNVER3=(
+  tanssi-relay-znver3
+  tanssi-relay-execute-worker-znver3
+  tanssi-relay-prepare-worker-znver3
+  )
+  if [ "$INCLUDE_ALL_ARCHS" = true ]; then
+    BINARIES+=("${BINARIES_SKYLAKE[@]}")
+    BINARIES+=("${BINARIES_ZNVER3[@]}")
+  fi
+  echo "${BINARIES[@]}"
   docker run --rm \
     --entrypoint tar \
     "$RELAY_IMAGE" \
     -C /tanssi-relay -cf - \
-      tanssi-relay \
-      tanssi-relay-execute-worker \
-      tanssi-relay-prepare-worker \
-  | tar -C $OUTPUT_PATH -xf -
+      "${BINARIES[@]}" | tar -C $OUTPUT_PATH -xf -
 
   chmod +x \
     $OUTPUT_PATH/tanssi-relay \

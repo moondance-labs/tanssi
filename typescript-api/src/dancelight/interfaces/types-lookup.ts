@@ -1548,7 +1548,12 @@ declare module "@polkadot/types/lookup" {
         readonly asActivityTrackingStatusSet: {
             readonly status: PalletInactivityTrackingActivityTrackingStatus;
         } & Struct;
-        readonly type: "ActivityTrackingStatusSet";
+        readonly isCollatorStatusUpdated: boolean;
+        readonly asCollatorStatusUpdated: {
+            readonly collator: AccountId32;
+            readonly isOffline: bool;
+        } & Struct;
+        readonly type: "ActivityTrackingStatusSet" | "CollatorStatusUpdated";
     }
 
     /** @name PalletInactivityTrackingActivityTrackingStatus (128) */
@@ -2901,7 +2906,22 @@ declare module "@polkadot/types/lookup" {
         readonly asSetInactivityTrackingStatus: {
             readonly enableInactivityTracking: bool;
         } & Struct;
-        readonly type: "SetInactivityTrackingStatus";
+        readonly isEnableOfflineMarking: boolean;
+        readonly asEnableOfflineMarking: {
+            readonly value: bool;
+        } & Struct;
+        readonly isSetOffline: boolean;
+        readonly isSetOnline: boolean;
+        readonly isNotifyInactiveCollator: boolean;
+        readonly asNotifyInactiveCollator: {
+            readonly collator: AccountId32;
+        } & Struct;
+        readonly type:
+            | "SetInactivityTrackingStatus"
+            | "EnableOfflineMarking"
+            | "SetOffline"
+            | "SetOnline"
+            | "NotifyInactiveCollator";
     }
 
     /** @name PalletTreasuryCall (252) */
@@ -8552,16 +8572,26 @@ declare module "@polkadot/types/lookup" {
     /** @name PalletInactivityTrackingError (714) */
     interface PalletInactivityTrackingError extends Enum {
         readonly isMaxCollatorsPerSessionReached: boolean;
-        readonly isMaxContainerChainsReached: boolean;
         readonly isActivityTrackingStatusUpdateSuspended: boolean;
         readonly isActivityTrackingStatusAlreadyEnabled: boolean;
         readonly isActivityTrackingStatusAlreadyDisabled: boolean;
+        readonly isMarkingOfflineNotEnabled: boolean;
+        readonly isCollatorNotEligibleCandidate: boolean;
+        readonly isCollatorNotOnline: boolean;
+        readonly isCollatorNotOffline: boolean;
+        readonly isMarkingInvulnerableOfflineInvalid: boolean;
+        readonly isCollatorCannotBeNotifiedAsInactive: boolean;
         readonly type:
             | "MaxCollatorsPerSessionReached"
-            | "MaxContainerChainsReached"
             | "ActivityTrackingStatusUpdateSuspended"
             | "ActivityTrackingStatusAlreadyEnabled"
-            | "ActivityTrackingStatusAlreadyDisabled";
+            | "ActivityTrackingStatusAlreadyDisabled"
+            | "MarkingOfflineNotEnabled"
+            | "CollatorNotEligibleCandidate"
+            | "CollatorNotOnline"
+            | "CollatorNotOffline"
+            | "MarkingInvulnerableOfflineInvalid"
+            | "CollatorCannotBeNotifiedAsInactive";
     }
 
     /** @name PalletTreasuryProposal (715) */
@@ -10238,6 +10268,9 @@ declare module "@polkadot/types/lookup" {
         readonly type: "Disabled" | "Enabled";
     }
 
-    /** @name DancelightRuntimeRuntime (979) */
+    /** @name FrameSystemExtensionsWeightReclaim (979) */
+    type FrameSystemExtensionsWeightReclaim = Null;
+
+    /** @name DancelightRuntimeRuntime (980) */
     type DancelightRuntimeRuntime = Null;
 } // declare module

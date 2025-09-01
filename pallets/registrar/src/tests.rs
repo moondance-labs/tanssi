@@ -206,9 +206,6 @@ fn deregister_para_id_42_after_1_sessions() {
         // Run two more sessions for the paraId to get deregistered
         // in the relay context (if any) via InnerRegistrar.
         run_to_session(5);
-        // Run end_block after run_to_session to mock the reality and
-        // kill BufferedParasToDeregister storage after a session change.
-        end_block();
 
         // Check that InnerRegistrar methods were called properly.
         assert!(Mock::mock()
@@ -1057,9 +1054,6 @@ fn deregister_2_container_chains_in_same_block() {
         ));
 
         run_to_session(2);
-        // Run end_block after each run_to_session to mock the reality and
-        // kill BufferedParasToDeregister storage after a session change.
-        end_block();
 
         assert_eq!(
             ParaRegistrar::registered_para_ids(),
@@ -1090,9 +1084,6 @@ fn deregister_2_container_chains_in_same_block() {
         );
 
         run_to_session(4);
-        end_block();
-        start_block();
-
         assert_eq!(ParaRegistrar::registered_para_ids(), vec![]);
         assert_eq!(
             ParaRegistrar::para_genesis_data(ParaId::from(42)).as_ref(),
@@ -1150,9 +1141,6 @@ fn deregister_2_container_chains_in_consecutive_sessions() {
         ));
 
         run_to_session(2);
-        // Run end_block after each run_to_session to mock the reality and
-        // kill BufferedParasToDeregister storage after a session change.
-        end_block();
 
         assert_eq!(
             ParaRegistrar::registered_para_ids(),
@@ -1169,7 +1157,6 @@ fn deregister_2_container_chains_in_consecutive_sessions() {
         assert_ok!(ParaRegistrar::deregister(RuntimeOrigin::root(), 42.into(),));
 
         run_to_session(3);
-        end_block();
         assert_eq!(
             ParaRegistrar::registered_para_ids(),
             vec![42.into(), 43.into()]
@@ -1198,7 +1185,6 @@ fn deregister_2_container_chains_in_consecutive_sessions() {
         );
 
         run_to_session(4);
-        end_block();
         assert_eq!(ParaRegistrar::registered_para_ids(), vec![43.into()]);
         assert_eq!(
             ParaRegistrar::para_genesis_data(ParaId::from(42)).as_ref(),
@@ -1226,7 +1212,6 @@ fn deregister_2_container_chains_in_consecutive_sessions() {
         );
 
         run_to_session(5);
-        end_block();
         assert_eq!(ParaRegistrar::registered_para_ids(), vec![]);
         assert_eq!(
             ParaRegistrar::para_genesis_data(ParaId::from(42)).as_ref(),

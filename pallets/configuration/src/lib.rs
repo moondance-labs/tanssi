@@ -28,6 +28,7 @@
 //! T::SessionDelay to apply these changes
 
 #![cfg_attr(not(feature = "std"), no_std)]
+extern crate alloc;
 
 #[cfg(test)]
 mod mock;
@@ -43,11 +44,11 @@ mod benchmarks;
 
 pub use pallet::*;
 use {
+    alloc::{vec, vec::Vec},
     frame_support::pallet_prelude::*,
     frame_system::pallet_prelude::*,
     serde::{Deserialize, Serialize},
     sp_runtime::{traits::AtLeast32BitUnsigned, Perbill, Saturating},
-    sp_std::prelude::*,
     tp_traits::{FullRotationModes, GetSessionIndex},
 };
 
@@ -225,7 +226,7 @@ pub mod pallet {
     pub struct GenesisConfig<T: Config> {
         pub config: HostConfiguration,
         #[serde(skip)]
-        pub _config: sp_std::marker::PhantomData<T>,
+        pub _config: core::marker::PhantomData<T>,
     }
 
     #[pallet::genesis_build]

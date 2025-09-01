@@ -15,7 +15,6 @@ parity-scale-codec = { workspace = true }
 scale-info = { workspace = true }
 sp-keystore = { workspace = true }
 sp-runtime = { workspace = true }
-sp-std = { workspace = true }
 tp-traits = { workspace = true }
 
 [features]
@@ -26,7 +25,6 @@ std = [
 	"scale-info/std",
 	"sp-keystore/std",
 	"sp-runtime/std",
-	"sp-std/std",
 	"tp-traits/std",
 ]
 runtime-benchmarks = [
