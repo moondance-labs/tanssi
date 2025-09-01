@@ -20,7 +20,7 @@ jobs:
       RUSTFLAGS: "-C target-cpu=${{ matrix.cpu }}"
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ github.event.inputs.sha }}
       - name: Setup Rust toolchain
@@ -52,7 +52,7 @@ jobs:
             image: ["starlight"]
     steps:
         - name: Checkout
-          uses: actions/checkout@v4
+          uses: actions/checkout@v5
           with:
             ref: ${{ github.event.inputs.sha }}
         - uses: actions/download-artifact@v4

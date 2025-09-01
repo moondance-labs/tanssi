@@ -44,7 +44,7 @@ jobs:
       matrix: ${{ steps.set_tests.outputs.tests }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Pnpm
         uses: pnpm/action-setup@v4.1.0
@@ -105,7 +105,7 @@ jobs:
       CARGO_TARGET_DIR: "target"
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ github.event.inputs.sha || 'master' }}
 

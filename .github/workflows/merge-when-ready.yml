@@ -27,7 +27,7 @@ jobs:
         needs: ["enforce-ready-to-merge-label"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
               with:
                 ref: ${{ github.event.pull_request.head.sha }}
             - name: Cargo build
@@ -55,7 +55,7 @@ jobs:
                     - zombie_tanssi_rotation
         steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
             - name: "Download binaries"
               uses: actions/download-artifact@v4
               with:
@@ -74,7 +74,7 @@ jobs:
         runs-on: self-hosted
         steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
             - name: "Download binaries"
               uses: actions/download-artifact@v4
               with:
@@ -128,7 +128,7 @@ jobs:
       runs-on: self-hosted
       steps:
         - name: Checkout
-          uses: actions/checkout@v4
+          uses: actions/checkout@v5
         - name: Cargo build
           uses: ./.github/workflow-templates/cargo-build
           with:
@@ -159,7 +159,7 @@ jobs:
                       chain: dev
         steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
             - name: "Download benchmark binaries"
               uses: actions/download-artifact@v4
               with:
@@ -189,7 +189,7 @@ jobs:
                     - stagelight_dancelight_smoke S01
         steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
 
             - name: Pnpm
               uses: pnpm/action-setup@v4.1.0
