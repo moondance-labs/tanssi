@@ -2,7 +2,12 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type KeyringPair, alith } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 
-import { SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS, TESTNET_ETHEREUM_NETWORK_ID, waitEventUntilTimeout } from "utils";
+import {
+    type MultiLocation,
+    SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS,
+    TESTNET_ETHEREUM_NETWORK_ID,
+    waitEventUntilTimeout
+} from "utils";
 
 describeSuite({
     id: "ZOMBIETANSS02",
@@ -110,6 +115,33 @@ describeSuite({
                         },
                     },
                 };
+
+                const versionedLocation = {
+                    V3: {
+                        parents: 0,
+                        interior: {
+                            X2: [
+                                {
+                                    Parachain: 2001,
+                                },
+                                {
+                                    PalletInstance: 10,
+                                },
+                            ],
+                        },
+                    },
+                };
+
+                const containerTokenMetadata = {
+                    name: "test-name",
+                    symbol: "test-symbol",
+                    decimals: 12,
+                };
+
+                // Register token on EthereumSystem.
+                await relayChainPolkadotJs.tx.sudo
+                    .sudo(relayChainPolkadotJs.tx.ethereumSystem.registerToken(versionedLocation, containerTokenMetadata))
+                    .signAsync(aliceAccount32);
 
                 const channelNonceBefore = await relayChainPolkadotJs.query.ethereumOutboundQueue.nonce(newChannelId);
 

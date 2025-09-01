@@ -19,34 +19,44 @@ use {
     core::{iter::Peekable, marker::PhantomData, slice::Iter},
     frame_support::{ensure, traits::Get},
     parity_scale_codec::{Decode, Encode},
-    snowbridge_core::{AgentId, ChannelId, TokenIdOf},
+    snowbridge_core::{AgentId, ChannelId, TokenId},
     snowbridge_outbound_queue_primitives::v1::message::{Command, Message, SendMessage},
     sp_core::H160,
+    sp_runtime::traits::MaybeEquivalence,
     xcm::latest::SendError::{MissingArgument, NotApplicable, Unroutable},
     xcm::prelude::*,
-    xcm_executor::traits::{ConvertLocation, ExportXcm},
+    xcm_executor::traits::ExportXcm,
 };
 
 pub struct EthereumBlobExporter<
     UniversalLocation,
     EthereumNetwork,
     OutboundQueue,
+    ConvertAssetId,
     BridgeChannelInfo,
 >(
     PhantomData<(
         UniversalLocation,
         EthereumNetwork,
         OutboundQueue,
+        ConvertAssetId,
         BridgeChannelInfo,
     )>,
 );
 
-impl<UniversalLocation, EthereumNetwork, OutboundQueue, BridgeChannelInfo> ExportXcm
-    for EthereumBlobExporter<UniversalLocation, EthereumNetwork, OutboundQueue, BridgeChannelInfo>
+impl<UniversalLocation, EthereumNetwork, OutboundQueue, ConvertAssetId, BridgeChannelInfo> ExportXcm
+    for EthereumBlobExporter<
+        UniversalLocation,
+        EthereumNetwork,
+        OutboundQueue,
+        ConvertAssetId,
+        BridgeChannelInfo,
+    >
 where
     UniversalLocation: Get<InteriorLocation>,
     EthereumNetwork: Get<NetworkId>,
     OutboundQueue: SendMessage<Balance = u128>,
+    ConvertAssetId: MaybeEquivalence<TokenId, Location>,
     BridgeChannelInfo: Get<Option<(ChannelId, AgentId)>>,
 {
     type Ticket = (Vec<u8>, XcmHash);
@@ -106,7 +116,8 @@ where
             MissingArgument
         })?;
 
-        let mut converter = XcmConverter::<()>::new(&message, expected_network, para_id);
+        let mut converter =
+            XcmConverter::<ConvertAssetId, ()>::new(&message, expected_network, para_id);
         let (command, message_id) = converter.convert().map_err(|err|{
             log::error!(target: "xcm::ethereum_blob_exporter", "unroutable due to pattern matching error '{err:?}'.");
             Unroutable
@@ -170,6 +181,7 @@ enum XcmConverterError {
     SetTopicExpected,
     ReserveAssetDepositedExpected,
     InvalidAsset,
+    AssetReanchorFailed,
     ParaIdMismatch,
     UnexpectedInstruction,
 }
@@ -183,17 +195,22 @@ macro_rules! match_expression {
 	};
 }
 
-struct XcmConverter<'a, Call> {
+struct XcmConverter<'a, ConvertAssetId, Call> {
     iter: Peekable<Iter<'a, Instruction<Call>>>,
     ethereum_network: NetworkId,
     para_id: u32,
+    _marker: PhantomData<ConvertAssetId>,
 }
-impl<'a, Call> XcmConverter<'a, Call> {
+impl<'a, ConvertAssetId, Call> XcmConverter<'a, ConvertAssetId, Call>
+where
+    ConvertAssetId: MaybeEquivalence<TokenId, Location>,
+{
     fn new(message: &'a Xcm<Call>, ethereum_network: NetworkId, para_id: u32) -> Self {
         Self {
             iter: message.inner().iter().peekable(),
             ethereum_network,
             para_id,
+            _marker: Default::default(),
         }
     }
 
@@ -343,7 +360,21 @@ impl<'a, Call> XcmConverter<'a, Call> {
         // transfer amount must be greater than 0.
         ensure!(amount > 0, ZeroAssetTransfer);
 
-        let token_id = TokenIdOf::convert_location(&asset_id).ok_or(InvalidAsset)?;
+        let anchor = Location {
+            parents: 0,
+            interior: Junctions::X1([Parachain(self.para_id)].into()),
+        };
+
+        let dest = Location::here();
+
+        let reanchored_location = asset_id
+            .reanchored(&dest, &anchor.interior)
+            .map_err(|_| AssetReanchorFailed)?;
+
+        // TODO: Move to trace
+        log::info!("reanchored_location={reanchored_location:?}");
+
+        let token_id = ConvertAssetId::convert_back(&reanchored_location).ok_or(InvalidAsset)?;
 
         // Check if there is a SetTopic and skip over it if found.
         let topic_id = match_expression!(self.next()?, SetTopic(id), id).ok_or(SetTopicExpected)?;
