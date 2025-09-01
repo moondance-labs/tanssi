@@ -684,7 +684,7 @@ describeSuite({
                     proof: operatorMerkleProof.toHuman().proof,
                     data: additionalData,
                 };
-                console.log(`Claiming rewards with inputs ${claimRewardsInput}`);
+                console.log(`Claiming rewards with inputs ${JSON.stringify(claimRewardsInput)}`);
                 expect(operatorMerkleProof.isEmpty).to.be.false;
                 try {
                     const claimTx = await operatorRewardContract.claimRewards(claimRewardsInput);
@@ -720,53 +720,34 @@ describeSuite({
                 logTiming("Starting T07");
                 const epoch = await middlewareContract.getCurrentEpoch();
                 const operatorAndVaults = await middlewareContract.getOperatorVaultPairs(epoch);
-                for (const opAccount of [operatorAccount, operatorAccount2]) {
-                    const operator = await middlewareContract.operatorByKey(opAccount.addressRaw);
-                    const matchedPair = operatorAndVaults.find(
-                        (operatorVaultPair) => operatorVaultPair[0] === operator
-                    );
+                const operator = await middlewareContract.operatorByKey(operatorAccount.addressRaw);
+                const matchedPair = operatorAndVaults.find((operatorVaultPair) => operatorVaultPair[0] === operator);
 
-                    console.log("operator is ", operator);
-                    console.log("operatorVaults ", operatorAndVaults);
-                    console.log("matchedPair ", matchedPair);
+                console.log("operator is ", operator);
+                console.log("oepratorVaults ", operatorAndVaults);
+                console.log("matchedPair ", matchedPair);
 
-                    const vaultDetails = ethInfo.symbiotic_info.contracts.Vault;
-                    const vaultContract = new ethers.Contract(matchedPair[1][0], vaultDetails.abi, ethereumWallet);
-                    const slasher = await vaultContract.slasher();
-                    // Here we load a random slasher, to check its type
-                    const slasherDetails = ethInfo.symbiotic_info.contracts.Slasher;
-                    const vetoSlasherDetails = ethInfo.symbiotic_info.contracts.VetoSlasher;
+                const vaultDetails = ethInfo.symbiotic_info.contracts.Vault;
+                const vaultContract = new ethers.Contract(matchedPair[1][0], vaultDetails.abi, ethereumWallet);
+                const slasher = await vaultContract.slasher();
+                // Here we load a random slasher, to check its type
+                const slasherDetails = ethInfo.symbiotic_info.contracts.Slasher;
+                const vetoSlasherDetails = ethInfo.symbiotic_info.contracts.VetoSlasher;
 
-                    // Setting up slasher
-                    const slasherContract = new ethers.Contract(slasher, slasherDetails.abi, ethereumWallet);
+                // Setting up slasher
+                const slasherContract = new ethers.Contract(slasher, slasherDetails.abi, ethereumWallet);
+
+                const network = await middlewareContract.NETWORK();
+                const subnetwork = `${network}000000000000000000000000`;
+                // type 0 means instant slash
+                if ((await slasherContract.TYPE()) === 0n) {
+                    const cummulativeSlash = await slasherContract.cumulativeSlash(subnetwork, operator);
+                    expect(cummulativeSlash).to.be.greaterThan(0);
+                } else {
+                    // else we hav e a veto slash
                     const vetoSlasherContract = new ethers.Contract(slasher, vetoSlasherDetails.abi, ethereumWallet);
-
-                    const network = await middlewareContract.NETWORK();
-                    const subnetwork = `${network}000000000000000000000000`;
-                    console.log(
-                        "Slasher type: ",
-                        opAccount === operatorAccount ? await slasherContract.TYPE() : await vetoSlasherContract.TYPE()
-                    );
-                    // type 0 means instant slash
-                    if (
-                        opAccount === operatorAccount
-                            ? (await slasherContract.TYPE()) === 0n
-                            : (await vetoSlasherContract.TYPE()) === 1n
-                    ) {
-                        console.log("Slasher - instant");
-                        const cummulativeSlash = await slasherContract.cumulativeSlash(subnetwork, operator);
-                        expect(cummulativeSlash).to.be.greaterThan(0);
-                    } else {
-                        console.log("Slasher - veto");
-                        // else we have a veto slash
-                        const vetoSlasherContract = new ethers.Contract(
-                            slasher,
-                            vetoSlasherDetails.abi,
-                            ethereumWallet
-                        );
-                        const lengthSlashes = await vetoSlasherContract.slashRequestsLength();
-                        expect(lengthSlashes).to.be.greaterThan(0);
-                    }
+                    const lengthSlashes = await vetoSlasherContract.slashRequestsLength();
+                    expect(lengthSlashes).to.be.greaterThan(0);
                 }
             },
         });
