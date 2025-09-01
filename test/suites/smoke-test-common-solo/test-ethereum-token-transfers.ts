@@ -188,7 +188,14 @@ describeSuite({
                                 skip();
                             }
 
-                            const versioned = api.registry.createType("VersionedXcmMessage", decodedEvent.payload);
+                            let versioned = null;
+                            try {
+                                versioned = api.registry.createType("VersionedXcmMessage", decodedEvent.payload);
+                            } catch (e) {
+                                throw new Error(
+                                    `Unrecognized event payload for "ethereumInboundQueue.submit" for block #${blockNumber}. Details: ${decodedEvent.payload}. Decoder is missing.`
+                                );
+                            }
 
                             const { destination, amount } = versioned.toJSON().v1.command.sendNativeToken;
 
@@ -205,7 +212,7 @@ describeSuite({
                                 return (
                                     from.toString() === sovereignAccount &&
                                     to.toString() === destination.accountId32 &&
-                                    value.toString() === amount.toString()
+                                    BigInt(value.toString()) === BigInt(amount.toString())
                                 );
                             });
 

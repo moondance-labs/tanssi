@@ -26,6 +26,7 @@
 //! storage item.
 
 #![cfg_attr(not(feature = "std"), no_std)]
+extern crate alloc;
 
 #[cfg(test)]
 mod mock;
@@ -43,6 +44,7 @@ pub use weights::WeightInfo;
 pub use pallet::*;
 
 use {
+    alloc::{collections::btree_set::BTreeSet, vec, vec::Vec},
     cumulus_primitives_core::relay_chain::HeadData,
     dp_chain_state_snapshot::GenericStateProof,
     dp_container_chain_genesis_data::ContainerChainGenesisData,
@@ -63,7 +65,6 @@ use {
         traits::{AtLeast32BitUnsigned, Verify},
         Saturating,
     },
-    sp_std::{collections::btree_set::BTreeSet, prelude::*},
     tp_traits::{
         GetCurrentContainerChains, GetSessionContainerChains, GetSessionIndex, ParaId,
         ParathreadParams as ParathreadParamsTy, RegistrarHandler, RelayStorageRootProvider,
@@ -370,7 +371,7 @@ pub mod pallet {
 
         #[cfg(feature = "try-runtime")]
         fn try_state(_n: BlockNumberFor<T>) -> Result<(), sp_runtime::TryRuntimeError> {
-            use {scale_info::prelude::format, sp_std::collections::btree_set::BTreeSet};
+            use {alloc::collections::btree_set::BTreeSet, scale_info::prelude::format};
             // A para id can only be in 1 of [`RegisteredParaIds`, `PendingVerification`, `Paused`]
             // Get all those para ids and check for duplicates
             let mut para_ids: Vec<ParaId> = vec![];
@@ -815,7 +816,7 @@ pub mod pallet {
 
                 let deposit = Self::get_genesis_cost(genesis_data.encoded_size());
                 let new_balance = T::Currency::minimum_balance()
-                    .saturating_mul(10_000_000u32.into())
+                    .saturating_mul(100_000_000u32.into())
                     .saturating_add(deposit);
                 let account = create_funded_user::<T>("caller", 1000, new_balance).0;
                 T::InnerRegistrar::prepare_chain_registration(*para_id, account.clone());
@@ -1493,7 +1494,7 @@ pub trait RegistrarHooks {
 
 impl RegistrarHooks for () {}
 
-pub struct EnsureSignedByManager<T>(sp_std::marker::PhantomData<T>);
+pub struct EnsureSignedByManager<T>(core::marker::PhantomData<T>);
 
 impl<T> EnsureOriginWithArg<T::RuntimeOrigin, ParaId> for EnsureSignedByManager<T>
 where

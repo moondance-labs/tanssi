@@ -15,7 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    frame_support::traits::Currency, pallet_treasury::ArgumentsFactory, sp_std::marker::PhantomData,
+    core::marker::PhantomData, frame_support::traits::Currency, pallet_treasury::ArgumentsFactory,
 };
 pub struct TreasuryBenchmarkHelper<T>(PhantomData<T>);
 

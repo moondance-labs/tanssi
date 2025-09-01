@@ -16,12 +16,12 @@
 
 use {
     super::*,
+    core::marker::PhantomData,
     parity_scale_codec::DecodeAll,
     snowbridge_inbound_queue_primitives::v1::{
         Command as SnowbridgeCommand, Envelope, MessageProcessor, MessageV1, VersionedXcmMessage,
     },
     sp_runtime::DispatchError,
-    sp_std::marker::PhantomData,
 };
 
 /// Generic token message processor to handle both native and foreign token commands, as well as token registration.

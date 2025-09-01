@@ -37,6 +37,17 @@ WEIGHT_REF_TIME_PER_SECOND = 1_000_000_000_000
 MAX_REF_TIME = 2 * 1_000_000_000_000 # 2 seconds
 MAX_PROOF_SIZE = 5_242_880 # around 5MB
 
+GITHUB_REPO_URL = "https://github.com/moondance-labs/tanssi"
+try:
+    GITHUB_REF = subprocess.run(
+        ['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
+        check=True,
+        capture_output=True,
+        text=True
+    ).stdout.strip()
+except subprocess.CalledProcessError:
+    GITHUB_REF = "master"
+
 def find_function_name(filepath, lineno):
     # Read file and search backwards from lineno-1 for the nearest fn declaration
     try:
@@ -90,33 +101,38 @@ def diff_mode(git_ref):
     diff_lines = result.stdout.splitlines()
     pattern = re.compile(r'Weight::from_parts\(\s*([0-9_,]+)\s*,\s*([0-9_,]+)\s*\)')
 
+    current_file = None
+    lineno = 0
     any_issues = False
     for line in diff_lines:
-        # Only consider added lines
-        if not line.startswith('+'):
-            continue
-        m = pattern.search(line)
-        if not m:
-            continue
-        arg1 = int(m.group(1).replace('_', ''))
-        arg2 = int(m.group(2).replace('_', ''))
-        emoji_ref = get_emoji(arg1, MAX_REF_TIME)
-        emoji_proof = get_emoji(arg2, MAX_PROOF_SIZE)
-        # Use worst severity
-        if emoji_ref == "🚨 " or emoji_proof == "🚨 ":
-            emoji = "🚨 "
-        elif emoji_ref == "⚠️  " or emoji_proof == "⚠️  ":
-            emoji = "⚠️  "
-        else:
-            emoji = "✅ "
-        # Only record non-green issues
-        if emoji != "✅ ":
-            if any_issues == False:
-                # We rely on the keyword "Found problematic" in the benchmarking schedule run
-                print("🚨 Found problematic weights in PR diff. Check them to ensure all extrinsics can still be called.")
-            any_issues = True
-            # Strip leading '+' for clarity
-            print(f'{line[1:]}')
+        if line.startswith("+++ b/"):
+            current_file = line[6:]
+        elif line.startswith("@@"):
+            match = re.search(r'\+([0-9]+)', line)
+            if match:
+                lineno = int(match.group(1)) - 1
+        elif line.startswith('+'):
+            lineno += 1
+            m = pattern.search(line)
+            if not m:
+                continue
+            arg1 = int(m.group(1).replace('_', ''))
+            arg2 = int(m.group(2).replace('_', ''))
+            emoji_ref = get_emoji(arg1, MAX_REF_TIME)
+            emoji_proof = get_emoji(arg2, MAX_PROOF_SIZE)
+
+            emoji = max(emoji_ref, emoji_proof, key=lambda x: ["✅ ", "⚠️  ", "🚨 "].index(x))
+            # Only record non-green issues
+            if emoji != "✅ ":
+                if any_issues == False:
+                    # We rely on the keyword "Found problematic" in the benchmarking schedule run
+                    print("🚨 Found problematic weights in PR diff. Check them to ensure all extrinsics can still be called.")
+                any_issues = True
+                if current_file:
+                    url = f"{GITHUB_REPO_URL}/blob/{GITHUB_REF}/{current_file}#L{lineno}"
+                    print(f"🔗 {url}")
+                print(f'{line[1:]}')
+
 
 def ripgrep_mode():
     """
@@ -150,7 +166,6 @@ def ripgrep_mode():
             'arg2': arg2,
             'arg1_str': arg1_str,
             'arg2_str': arg2_str,
-            'text': line
         })
 
     if not matches:
@@ -160,10 +175,12 @@ def ripgrep_mode():
     # Print top 10 by ref time
     print("Top calls by ref time:")
     for i, m in enumerate(sorted(matches, key=lambda x: x['arg1'], reverse=True)):
-        print(m['text'])
         fn_name = find_function_name(m['file'], m['line'])
         formatted = format_number_with_underscores(m['arg1'])
         emoji = get_emoji(m['arg1'], MAX_REF_TIME)
+        rel_path = os.path.relpath(m['file'], parent_dir)
+        url = f"{GITHUB_REPO_URL}/blob/{GITHUB_REF}/{rel_path}#L{m['line']}"
+        print(f"🔗 {url}")
         print(f"{emoji}{formatted:>27}: {fn_name}")
         if i+2 > 10 and m['arg1'] < MAX_REF_TIME:
             break
@@ -172,10 +189,12 @@ def ripgrep_mode():
     # Print top 10 by proof size
     print("Top calls by proof size:")
     for i, m in enumerate(sorted(matches, key=lambda x: x['arg2'], reverse=True)):
-        print(m['text'])
         fn_name = find_function_name(m['file'], m['line'])
         formatted = format_number_with_underscores(m['arg2'])
         emoji = get_emoji(m['arg2'], MAX_PROOF_SIZE)
+        rel_path = os.path.relpath(m['file'], parent_dir)
+        url = f"{GITHUB_REPO_URL}/blob/{GITHUB_REF}/{rel_path}#L{m['line']}"
+        print(f"🔗 {url}")
         print(f"{emoji}{formatted:>27}: {fn_name}")
         if i+2 > 10 and m['arg2'] < MAX_PROOF_SIZE:
             break

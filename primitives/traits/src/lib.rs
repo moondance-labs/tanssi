@@ -19,6 +19,8 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
+extern crate alloc;
+
 pub mod alias;
 pub mod prod_or_fast;
 
@@ -31,7 +33,13 @@ pub use {
     dp_chain_state_snapshot::{GenericStateProof, ReadEntryErr},
     dp_container_chain_genesis_data::ContainerChainGenesisDataItem,
 };
+
 use {
+    alloc::{
+        collections::{btree_map::BTreeMap, btree_set::BTreeSet},
+        vec,
+        vec::Vec,
+    },
     core::marker::PhantomData,
     frame_support::{
         dispatch::DispatchErrorWithPostInfo,
@@ -49,15 +57,7 @@ use {
         traits::{CheckedAdd, CheckedMul},
         ArithmeticError, DispatchResult, Perbill, RuntimeDebug,
     },
-    sp_std::{
-        collections::{btree_map::BTreeMap, btree_set::BTreeSet},
-        vec::Vec,
-    },
 };
-
-// Separate import as rustfmt wrongly change it to `sp_std::vec::self`, which is the module instead
-// of the macro.
-use sp_std::vec;
 
 /// The collator-assignment hook to react to collators being assigned to container chains.
 pub trait CollatorAssignmentHook<Balance> {
@@ -622,12 +622,42 @@ pub trait ExternalIndexProvider {
     fn get_external_index() -> u64;
 }
 
-// A trait to verify if a node has been inactive during the last minimum activity
+// A trait to check invulnerables
+pub trait InvulnerablesHelper<AccountId> {
+    /// Checks if the given `AccountId` is invulnerable.
+    fn is_invulnerable(account_id: &AccountId) -> bool;
+}
+
+// A trait to verify the inactivity status of nodes
+// and handle the offline status of nodes
 pub trait NodeActivityTrackingHelper<AccountId> {
+    /// Check if a node is inactive.
     fn is_node_inactive(node: &AccountId) -> bool;
+    /// Check if a node is offline.
+    fn is_node_offline(node: &AccountId) -> bool;
+    #[cfg(feature = "runtime-benchmarks")]
+    /// Marks online node as online
+    fn make_node_online(node: &AccountId);
+    /// Marks node as inactive for the current activity window so it could be notified as inactive
+    #[cfg(feature = "runtime-benchmarks")]
+    fn make_node_inactive(node: &AccountId);
 }
 
 // A trait to help verify if a ParaId is a chain or parathread
 pub trait ParathreadHelper {
     fn get_parathreads_for_session() -> BTreeSet<ParaId>;
+}
+
+// A trait to help updating the collators rewards when a collator's online status changes.
+pub trait StakingCandidateHelper<AccountId> {
+    /// Check if the candidate is in SortedEligibleCandidates list.
+    fn is_candidate_selected(candidate: &AccountId) -> bool;
+    /// Updates stake when candidate's online status change.
+    fn on_online_status_change(
+        candidate: &AccountId,
+        is_online: bool,
+    ) -> DispatchResultWithPostInfo;
+    /// Benchmarking helper function that makes collator part of the SortedEligibleCollators list.
+    #[cfg(feature = "runtime-benchmarks")]
+    fn make_collator_eligible_candidate(collator: &AccountId);
 }

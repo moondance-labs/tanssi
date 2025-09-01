@@ -18,9 +18,9 @@ pub mod pallet_xcm_benchmarks_generic;
 
 use {
     crate::Runtime,
+    alloc::vec::Vec,
     frame_support::{weights::Weight, BoundedVec},
     pallet_xcm_benchmarks_generic::WeightInfo as XcmGeneric,
-    sp_std::prelude::*,
     xcm::{
         latest::{prelude::*, AssetTransferFilter, Weight as XCMWeight},
         DoubleEncoded,

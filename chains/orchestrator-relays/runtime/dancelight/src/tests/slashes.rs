@@ -19,11 +19,11 @@ use {
         tests::common::*, BondingDuration, EthereumSystem, ExternalValidatorSlashes,
         ExternalValidators, Grandpa, Historical, RuntimeEvent, SessionsPerEra, SlashDeferDuration,
     },
+    alloc::vec,
     frame_support::{assert_noop, assert_ok, traits::KeyOwnerProofSystem},
     parity_scale_codec::Encode,
     sp_core::{Pair, H256},
     sp_runtime::Perbill,
-    sp_std::vec,
     tp_bridge::Command,
     xcm::{latest::prelude::*, VersionedLocation},
 };
@@ -450,11 +450,13 @@ fn test_slashes_are_sent_to_ethereum() {
 
             let outbound_msg_queue_event = System::events()
                 .iter()
-                .filter(|r| match r.event {
-                    RuntimeEvent::EthereumOutboundQueue(
-                        snowbridge_pallet_outbound_queue::Event::MessageQueued { .. },
-                    ) => true,
-                    _ => false,
+                .filter(|r| {
+                    matches!(
+                        r.event,
+                        RuntimeEvent::EthereumOutboundQueue(
+                            snowbridge_pallet_outbound_queue::Event::MessageQueued { .. },
+                        )
+                    )
                 })
                 .count();
 
@@ -473,11 +475,13 @@ fn test_slashes_are_sent_to_ethereum() {
 
             let outbound_msg_queue_event = System::events()
                 .iter()
-                .filter(|r| match r.event {
-                    RuntimeEvent::EthereumOutboundQueue(
-                        snowbridge_pallet_outbound_queue::Event::MessageQueued { .. },
-                    ) => true,
-                    _ => false,
+                .filter(|r| {
+                    matches!(
+                        r.event,
+                        RuntimeEvent::EthereumOutboundQueue(
+                            snowbridge_pallet_outbound_queue::Event::MessageQueued { .. },
+                        )
+                    )
                 })
                 .count();
 
@@ -583,7 +587,7 @@ fn test_slashes_are_sent_to_ethereum_accumulatedly() {
                 assert_ok!(ExternalValidatorSlashes::force_inject_slash(
                     RuntimeOrigin::root(),
                     0,
-                    AccountId::new(H256::from_low_u64_be(i as u64).to_fixed_bytes()),
+                    AccountId::new(H256::from_low_u64_be(u64::from(i)).to_fixed_bytes()),
                     Perbill::from_percent(75),
                     1
                 ));
@@ -601,12 +605,10 @@ fn test_slashes_are_sent_to_ethereum_accumulatedly() {
 
             let outbound_msg_queue_event = System::events()
                 .iter()
-                .filter(|r| match r.event {
+                .filter(|r| matches!(r.event,
                     RuntimeEvent::EthereumOutboundQueue(
                         snowbridge_pallet_outbound_queue::Event::MessageQueued { .. },
-                    ) => true,
-                    _ => false,
-                })
+                    )))
                 .count();
 
             // We have two reasons for sending messages:
@@ -629,12 +631,10 @@ fn test_slashes_are_sent_to_ethereum_accumulatedly() {
 
             let outbound_msg_queue_event = System::events()
                 .iter()
-                .filter(|r| match r.event {
+                .filter(|r| matches!(r.event,
                     RuntimeEvent::EthereumOutboundQueue(
                         snowbridge_pallet_outbound_queue::Event::MessageQueued { .. },
-                    ) => true,
-                    _ => false,
-                })
+                    )))
                 .count();
 
             let unprocessed_slashes = ExternalValidatorSlashes::unreported_slashes();
@@ -652,12 +652,11 @@ fn test_slashes_are_sent_to_ethereum_accumulatedly() {
 
             let outbound_msg_queue_event = System::events()
                 .iter()
-                .filter(|r| match r.event {
+                .filter(|r| matches!(r.event,
                     RuntimeEvent::EthereumOutboundQueue(
                         snowbridge_pallet_outbound_queue::Event::MessageQueued { .. },
-                    ) => true,
-                    _ => false,
-                })
+                    )
+                ))
                 .count();
 
             let unprocessed_slashes = ExternalValidatorSlashes::unreported_slashes();
@@ -725,7 +724,7 @@ fn test_slashes_are_sent_to_ethereum_accumulate_until_next_era() {
                 assert_ok!(ExternalValidatorSlashes::force_inject_slash(
                     RuntimeOrigin::root(),
                     0,
-                    AccountId::new(H256::from_low_u64_be(i as u64).to_fixed_bytes()),
+                    AccountId::new(H256::from_low_u64_be(u64::from(i)).to_fixed_bytes()),
                     Perbill::from_percent(75),
                     1
                 ));
@@ -743,12 +742,11 @@ fn test_slashes_are_sent_to_ethereum_accumulate_until_next_era() {
 
             let outbound_msg_queue_event = System::events()
                 .iter()
-                .filter(|r| match r.event {
+                .filter(|r| matches!(r.event,
                     RuntimeEvent::EthereumOutboundQueue(
                         snowbridge_pallet_outbound_queue::Event::MessageQueued { .. },
-                    ) => true,
-                    _ => false,
-                })
+                    )
+                ))
                 .count();
 
             // We have two reasons for sending messages:
@@ -776,12 +774,11 @@ fn test_slashes_are_sent_to_ethereum_accumulate_until_next_era() {
             // the rewards one plus the one where we sent remaining slashes
             let outbound_msg_queue_event = System::events()
                 .iter()
-                .filter(|r| match r.event {
+                .filter(|r| matches!(r.event,
                     RuntimeEvent::EthereumOutboundQueue(
                         snowbridge_pallet_outbound_queue::Event::MessageQueued { .. },
-                    ) => true,
-                    _ => false,
-                })
+                    )
+                ))
                 .count();
             assert_eq!(
                 outbound_msg_queue_event, 2,

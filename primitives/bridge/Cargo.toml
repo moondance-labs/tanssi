@@ -30,8 +30,8 @@ snowbridge-pallet-outbound-queue = { workspace = true }
 snowbridge-pallet-system = { workspace = true }
 sp-core = { workspace = true }
 sp-runtime = { workspace = true }
-sp-std = { workspace = true }
 xcm = { workspace = true }
+xcm-builder = { workspace = true }
 xcm-executor = { workspace = true }
 
 # Cumulus
@@ -62,7 +62,7 @@ std = [
 	"snowbridge-pallet-system/std",
 	"sp-core/std",
 	"sp-runtime/std",
-	"sp-std/std",
+	"xcm-builder/std",
 	"xcm-executor/std",
 	"xcm/std",
 ]
@@ -76,6 +76,7 @@ runtime-benchmarks = [
 	"snowbridge-pallet-outbound-queue/runtime-benchmarks",
 	"snowbridge-pallet-system/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
+	"xcm-builder/runtime-benchmarks",
 	"xcm-executor/runtime-benchmarks",
 	"xcm/runtime-benchmarks",
 ]

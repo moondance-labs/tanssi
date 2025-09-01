@@ -32,6 +32,7 @@
 //! participate in other processes such as gouvernance.
 
 #![cfg_attr(not(feature = "std"), no_std)]
+extern crate alloc;
 
 mod calls;
 mod candidate;
@@ -60,6 +61,8 @@ pub use {
     pools::{ActivePoolKind, CandidateSummary, DelegatorCandidateSummary, PoolKind},
 };
 
+#[cfg(feature = "runtime-benchmarks")]
+use frame_support::traits::fungible::Mutate;
 #[pallet]
 pub mod pallet {
     use {
@@ -68,6 +71,7 @@ pub mod pallet {
             traits::{IsCandidateEligible, Timer},
             weights::WeightInfo,
         },
+        alloc::vec::Vec,
         calls::Calls,
         core::marker::PhantomData,
         frame_support::{
@@ -82,7 +86,6 @@ pub mod pallet {
         serde::{Deserialize, Serialize},
         sp_core::Get,
         sp_runtime::{BoundedVec, Perbill},
-        sp_std::vec::Vec,
         tp_maths::MulDiv,
     };
 
@@ -336,7 +339,6 @@ pub mod pallet {
         type EligibleCandidatesBufferSize: Get<u32>;
         /// Additional filter for candidates to be eligible.
         type EligibleCandidatesFilter: IsCandidateEligible<Self::AccountId>;
-
         type WeightInfo: WeightInfo;
     }
 
@@ -558,8 +560,8 @@ pub mod pallet {
     impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
         #[cfg(feature = "try-runtime")]
         fn try_state(_n: BlockNumberFor<T>) -> Result<(), sp_runtime::TryRuntimeError> {
+            use alloc::collections::btree_set::BTreeSet;
             use frame_support::storage_alias;
-            use sp_std::collections::btree_set::BTreeSet;
 
             let mut all_candidates = BTreeSet::new();
             for (candidate, _k2) in Pools::<T>::iter_keys() {
@@ -780,6 +782,44 @@ pub mod pallet {
             rewards: CreditOf<T>,
         ) -> DispatchResultWithPostInfo {
             pools::distribute_rewards::<T>(&candidate, rewards)
+        }
+    }
+    impl<T: Config> tp_traits::StakingCandidateHelper<Candidate<T>> for Pallet<T> {
+        fn is_candidate_selected(candidate: &Candidate<T>) -> bool {
+            <SortedEligibleCandidates<T>>::get()
+                .into_iter()
+                .any(|c| &c.candidate == candidate)
+        }
+        fn on_online_status_change(
+            candidate: &Candidate<T>,
+            _is_online: bool,
+        ) -> DispatchResultWithPostInfo {
+            Calls::<T>::update_candidate_position(&[candidate.clone()])
+        }
+
+        #[cfg(feature = "runtime-benchmarks")]
+        fn make_collator_eligible_candidate(collator: &Candidate<T>) {
+            use alloc::vec;
+            let minimum_stake = T::MinimumSelfDelegation::get();
+            T::Currency::set_balance(collator, minimum_stake + minimum_stake);
+            T::EligibleCandidatesFilter::make_candidate_eligible(collator, true);
+            Calls::<T>::request_delegate(
+                collator.clone(),
+                collator.clone(),
+                ActivePoolKind::AutoCompounding,
+                minimum_stake,
+            )
+            .expect("request_delegate should not fail in benchmarks");
+            let timer = T::JoiningRequestTimer::now();
+            T::JoiningRequestTimer::skip_to_elapsed();
+            Calls::<T>::execute_pending_operations(vec![PendingOperationQuery {
+                delegator: collator.clone(),
+                operation: PendingOperationKey::JoiningAutoCompounding {
+                    candidate: collator.clone(),
+                    at: timer.clone(),
+                },
+            }])
+            .expect("execute_pending_operations should not fail in benchmarks");
         }
     }
 }

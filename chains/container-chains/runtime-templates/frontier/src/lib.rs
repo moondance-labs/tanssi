@@ -38,6 +38,7 @@ pub mod xcm_config;
 
 use {
     crate::precompiles::TemplatePrecompiles,
+    alloc::{vec, vec::Vec},
     cumulus_primitives_core::AggregateMessageOrigin,
     dp_impl_tanssi_pallets_config::impl_tanssi_pallets_config,
     fp_account::EthereumSignature,
@@ -94,7 +95,6 @@ use {
         },
         ApplyExtrinsicResult, BoundedVec, Cow,
     },
-    sp_std::prelude::*,
     sp_version::RuntimeVersion,
     xcm::Version as XcmVersion,
     xcm::{IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation, VersionedXcm},
@@ -338,7 +338,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: Cow::Borrowed("frontier-template"),
     impl_name: Cow::Borrowed("frontier-template"),
     authoring_version: 1,
-    spec_version: 1400,
+    spec_version: 1500,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -832,7 +832,7 @@ pub enum DeployFilter {
     Whitelisted(BoundedVec<H160, ConstU32<100>>),
 }
 
-pub struct AddressFilter<Runtime, AddressList>(sp_std::marker::PhantomData<(Runtime, AddressList)>);
+pub struct AddressFilter<Runtime, AddressList>(core::marker::PhantomData<(Runtime, AddressList)>);
 impl<Runtime, AddressList> EnsureCreateOrigin<Runtime> for AddressFilter<Runtime, AddressList>
 where
     Runtime: pallet_evm::Config,
@@ -1276,8 +1276,10 @@ impl_runtime_apis! {
             use frame_benchmarking::{BenchmarkBatch, BenchmarkError};
             use sp_core::storage::TrackedStorageKey;
             use xcm::latest::prelude::*;
+            use alloc::boxed::Box;
+
             impl frame_system_benchmarking::Config for Runtime {
-                fn setup_set_code_requirements(code: &sp_std::vec::Vec<u8>) -> Result<(), BenchmarkError> {
+                fn setup_set_code_requirements(code: &alloc::vec::Vec<u8>) -> Result<(), BenchmarkError> {
                     ParachainSystem::initialize_for_set_code_benchmark(code.len() as u32);
                     Ok(())
                 }
@@ -1464,7 +1466,7 @@ impl_runtime_apis! {
                             initial_asset_amount - asset_amount,
                         );
                     });
-                    Some((assets, fee_index as u32, dest, verify))
+                    Some((assets, fee_index, dest, verify))
                 }
             }
 
@@ -1708,7 +1710,7 @@ impl_runtime_apis! {
 
         fn gas_limit_multiplier_support() {}
 
-        fn pending_block(xts: Vec<<Block as BlockT>::Extrinsic>) -> (Option<pallet_ethereum::Block>, Option<sp_std::prelude::Vec<TransactionStatus>>) {
+        fn pending_block(xts: Vec<<Block as BlockT>::Extrinsic>) -> (Option<pallet_ethereum::Block>, Option<alloc::vec::Vec<TransactionStatus>>) {
             for ext in xts.into_iter() {
                 let _ = Executive::apply_extrinsic(ext);
             }
@@ -1864,7 +1866,7 @@ impl cumulus_pallet_parachain_system::CheckInherents<Block> for CheckInherents {
         let inherent_data =
             cumulus_primitives_timestamp::InherentDataProvider::from_relay_chain_slot_and_duration(
                 relay_chain_slot,
-                sp_std::time::Duration::from_secs(6),
+                core::time::Duration::from_secs(6),
             )
             .create_inherent_data()
             .expect("Could not create the timestamp inherent data");

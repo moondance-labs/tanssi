@@ -22,13 +22,13 @@ use {
         tests::common::*, Balances, CollatorConfiguration, ContainerRegistrar, DataPreservers,
         ForeignAssetsCreator, Registrar, StreamPayment,
     },
+    alloc::vec,
     cumulus_primitives_core::{relay_chain::HeadData, ParaId},
     frame_support::{assert_err, assert_noop, assert_ok, BoundedVec},
     pallet_registrar_runtime_api::{
         runtime_decl_for_registrar_api::RegistrarApi, ContainerChainGenesisData,
     },
     pallet_stream_payment::StreamConfig,
-    sp_std::vec,
     starlight_runtime_constants::currency::EXISTENTIAL_DEPOSIT,
     tp_stream_payment_common::{
         AssetId as StreamPaymentAssetId, TimeUnit as StreamPaymentTimeUnit,
@@ -490,7 +490,7 @@ fn test_data_preserver_with_stream_payment() {
             assert!(
                 pallet_data_preservers::Assignments::<Runtime>::get(para_id).contains(&profile_id)
             );
-            let profile = pallet_data_preservers::Profiles::<Runtime>::get(&profile_id)
+            let profile = pallet_data_preservers::Profiles::<Runtime>::get(profile_id)
                 .expect("profile to exists");
             let (assigned_para_id, witness) = profile.assignment.expect("profile to be assigned");
             assert_eq!(assigned_para_id, para_id);
@@ -578,11 +578,10 @@ fn test_registrar_extrinsic_permissions() {
             ));
 
             // Pause container chain should succeed if para manager
-            // TODO: Revert later after allowed this operation to para manager
-            // assert_ok!(
-            //     ContainerRegistrar::pause_container_chain(origin_of(BOB.into()), para_id),
-            //     ()
-            // );
+            assert_ok!(
+                ContainerRegistrar::pause_container_chain(origin_of(BOB.into()), para_id),
+                ()
+            );
         });
 }
 

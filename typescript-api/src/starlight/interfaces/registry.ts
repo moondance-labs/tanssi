@@ -48,6 +48,7 @@ import type {
     FrameSystemExtensionsCheckSpecVersion,
     FrameSystemExtensionsCheckTxVersion,
     FrameSystemExtensionsCheckWeight,
+    FrameSystemExtensionsWeightReclaim,
     FrameSystemLastRuntimeUpgradeInfo,
     FrameSystemLimitsBlockLength,
     FrameSystemLimitsBlockWeights,
@@ -139,6 +140,10 @@ import type {
     PalletIdentityRegistrarInfo,
     PalletIdentityRegistration,
     PalletIdentityUsernameInformation,
+    PalletInactivityTrackingActivityTrackingStatus,
+    PalletInactivityTrackingCall,
+    PalletInactivityTrackingError,
+    PalletInactivityTrackingEvent,
     PalletInflationRewardsChainsToRewardValue,
     PalletInflationRewardsEvent,
     PalletInvulnerablesCall,
@@ -594,6 +599,7 @@ declare module "@polkadot/types/types/registry" {
         FrameSystemExtensionsCheckSpecVersion: FrameSystemExtensionsCheckSpecVersion;
         FrameSystemExtensionsCheckTxVersion: FrameSystemExtensionsCheckTxVersion;
         FrameSystemExtensionsCheckWeight: FrameSystemExtensionsCheckWeight;
+        FrameSystemExtensionsWeightReclaim: FrameSystemExtensionsWeightReclaim;
         FrameSystemLastRuntimeUpgradeInfo: FrameSystemLastRuntimeUpgradeInfo;
         FrameSystemLimitsBlockLength: FrameSystemLimitsBlockLength;
         FrameSystemLimitsBlockWeights: FrameSystemLimitsBlockWeights;
@@ -685,6 +691,10 @@ declare module "@polkadot/types/types/registry" {
         PalletIdentityRegistrarInfo: PalletIdentityRegistrarInfo;
         PalletIdentityRegistration: PalletIdentityRegistration;
         PalletIdentityUsernameInformation: PalletIdentityUsernameInformation;
+        PalletInactivityTrackingActivityTrackingStatus: PalletInactivityTrackingActivityTrackingStatus;
+        PalletInactivityTrackingCall: PalletInactivityTrackingCall;
+        PalletInactivityTrackingError: PalletInactivityTrackingError;
+        PalletInactivityTrackingEvent: PalletInactivityTrackingEvent;
         PalletInflationRewardsChainsToRewardValue: PalletInflationRewardsChainsToRewardValue;
         PalletInflationRewardsEvent: PalletInflationRewardsEvent;
         PalletInvulnerablesCall: PalletInvulnerablesCall;

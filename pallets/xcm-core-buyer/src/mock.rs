@@ -19,6 +19,7 @@ use {
         self as pallet_xcm_core_buyer, CheckCollatorValidity, GetPurchaseCoreCall,
         ParaIdIntoAccountTruncating, RelayXcmWeightConfigInner,
     },
+    alloc::collections::btree_map::BTreeMap,
     dp_core::ParaId,
     frame_support::{
         assert_ok,
@@ -37,7 +38,6 @@ use {
         traits::{BlakeTwo256, IdentityLookup},
         BuildStorage, RuntimeAppPublic,
     },
-    sp_std::collections::btree_map::BTreeMap,
     tp_traits::{
         ContainerChainBlockInfo, LatestAuthorInfoFetcher, ParathreadParams, SlotFrequency,
     },
@@ -413,18 +413,12 @@ pub fn new_test_ext() -> sp_io::TestExternalities {
 }
 
 pub fn run_to_block(n: u64) {
-    let old_block_number = System::block_number();
-
-    for x in (old_block_number + 1)..=n {
-        if x > 0 {
-            XcmCoreBuyer::on_finalize(x - 1);
-            System::on_finalize(x - 1);
-        }
-        System::reset_events();
-        System::set_block_number(x);
-        System::on_initialize(x);
-        XcmCoreBuyer::on_initialize(x);
-    }
+    System::run_to_block_with::<AllPalletsWithSystem>(
+        n,
+        frame_system::RunToBlockHooks::default().before_initialize(|_bn| {
+            System::reset_events();
+        }),
+    );
 }
 
 pub const ALICE: u64 = 1;

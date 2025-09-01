@@ -17,13 +17,14 @@
 //! Runtime API for XCM core buyer pallet
 
 #![cfg_attr(not(feature = "std"), no_std)]
+extern crate alloc;
 
 pub use pallet_xcm_core_buyer::BuyingError;
 use {
+    alloc::boxed::Box,
     frame_support::sp_runtime,
     sp_consensus_slots::Slot,
     sp_runtime::{traits::Block as BlockT, RuntimeAppPublic},
-    sp_std::boxed::Box,
     tp_xcm_core_buyer::BuyCoreCollatorProof,
 };
 

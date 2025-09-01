@@ -3,7 +3,17 @@ import "@tanssi/api-augment/dancelight";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
 import type { ApiDecoration } from "@polkadot/api/types";
-import { DANCELIGHT_BLOCK_INFLATION_PERBILL, DANCELIGHT_BOND, fetchIssuance, fetchRewardAuthorContainers } from "utils";
+import {
+    DANCELIGHT_BLOCK_INFLATION_PERBILL,
+    DANCELIGHT_BOND,
+    DANCELIGHT_REWARDS_PORTION_PER_BILL_RATIO,
+    fetchIssuance,
+    fetchRewardAuthorContainers,
+    PER_BILL_RATIO,
+    STARLIGHT_BLOCK_INFLATION_PERBILL,
+    STARLIGHT_REWARDS_PORTION_PER_BILL_RATIO,
+} from "utils";
+import { isStarlightRuntime } from "../../utils/runtime.ts";
 
 describeSuite({
     id: "SMOK06",
@@ -32,23 +42,28 @@ describeSuite({
                 if (numberOfChains === 0) {
                     skip();
                 }
-                // 70% is distributed across all rewards
+                const tolerancePerBill = 1n; // = 0.0000001%
                 const events = await apiAt.query.system.events();
                 const issuance = fetchIssuance(events).amount.toBigInt();
-                const chainRewards = (issuance * 7n) / 10n;
+                const chainRewards = isStarlightRuntime(api)
+                    ? (issuance * STARLIGHT_REWARDS_PORTION_PER_BILL_RATIO[0]) /
+                      STARLIGHT_REWARDS_PORTION_PER_BILL_RATIO[1]
+                    : (issuance * DANCELIGHT_REWARDS_PORTION_PER_BILL_RATIO[0]) /
+                      DANCELIGHT_REWARDS_PORTION_PER_BILL_RATIO[1];
                 const expectedChainReward = chainRewards / BigInt(numberOfChains);
                 const rewardEvents = fetchRewardAuthorContainers(events);
+                const toleranceDiff = (expectedChainReward * tolerancePerBill) / PER_BILL_RATIO;
                 const failures = rewardEvents.filter(
                     ({ balance }) =>
                         !(
-                            balance.toBigInt() >= expectedChainReward - 1n &&
-                            balance.toBigInt() <= expectedChainReward + 1n
+                            balance.toBigInt() >= expectedChainReward - toleranceDiff &&
+                            balance.toBigInt() <= expectedChainReward + toleranceDiff
                         )
                 );
 
                 for (const { accountId, balance } of failures) {
                     log(
-                        `${accountId.toHuman()} reward ${balance.toBigInt()} , not in the range of ${expectedChainReward}`
+                        `${accountId.toHuman()} reward ${balance.toBigInt()} , not in the range of ${expectedChainReward}. Diff: ${expectedChainReward - balance.toBigInt()}. Tolerance value: ${toleranceDiff}`
                     );
                 }
 
@@ -77,8 +92,12 @@ describeSuite({
 
                 const issuance = fetchIssuance(events).amount.toBigInt();
 
+                const blockInflation = isStarlightRuntime(api)
+                    ? STARLIGHT_BLOCK_INFLATION_PERBILL
+                    : DANCELIGHT_BLOCK_INFLATION_PERBILL;
+
                 // expected issuance block increment in prod
-                const expectedIssuanceIncrement = (supplyBefore * DANCELIGHT_BLOCK_INFLATION_PERBILL) / 1_000_000_000n;
+                const expectedIssuanceIncrement = (supplyBefore * blockInflation) / 1_000_000_000n;
 
                 // we know there might be rounding errors, so we always check it is in the range +-1
                 expect(

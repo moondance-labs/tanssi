@@ -1231,6 +1231,10 @@ export default {
             ActivityTrackingStatusSet: {
                 status: "PalletInactivityTrackingActivityTrackingStatus",
             },
+            CollatorStatusUpdated: {
+                collator: "AccountId32",
+                isOffline: "bool",
+            },
         },
     },
     /**
@@ -2518,6 +2522,14 @@ export default {
         _enum: {
             set_inactivity_tracking_status: {
                 enableInactivityTracking: "bool",
+            },
+            enable_offline_marking: {
+                value: "bool",
+            },
+            set_offline: "Null",
+            set_online: "Null",
+            notify_inactive_collator: {
+                collator: "AccountId32",
             },
         },
     },
@@ -7353,10 +7365,15 @@ export default {
     PalletInactivityTrackingError: {
         _enum: [
             "MaxCollatorsPerSessionReached",
-            "MaxContainerChainsReached",
             "ActivityTrackingStatusUpdateSuspended",
             "ActivityTrackingStatusAlreadyEnabled",
             "ActivityTrackingStatusAlreadyDisabled",
+            "MarkingOfflineNotEnabled",
+            "CollatorNotEligibleCandidate",
+            "CollatorNotOnline",
+            "CollatorNotOffline",
+            "MarkingInvulnerableOfflineInvalid",
+            "CollatorCannotBeNotifiedAsInactive",
         ],
     },
     /**
@@ -8801,7 +8818,11 @@ export default {
         _enum: ["Disabled", "Enabled"],
     },
     /**
-     * Lookup979: dancelight_runtime::Runtime
+     * Lookup979: frame_system::extensions::weight_reclaim::WeightReclaim<T>
+     **/
+    FrameSystemExtensionsWeightReclaim: "Null",
+    /**
+     * Lookup980: dancelight_runtime::Runtime
      **/
     DancelightRuntimeRuntime: "Null",
 };

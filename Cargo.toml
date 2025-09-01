@@ -8,6 +8,15 @@ members = [
 	"bin/utils/tanssi-utils",
 	"chains/container-chains/nodes/*",
 	"chains/container-chains/runtime-templates/*",
+	"chains/integration-tests/dancebox-runtime-test-utils",
+	"chains/integration-tests/dancebox-runtime-tests",
+	"chains/integration-tests/xcm/emulated/chains/orchestrator-paras/*",
+	"chains/integration-tests/xcm/emulated/chains/relays/*",
+	"chains/integration-tests/xcm/emulated/chains/templates/*",
+	"chains/integration-tests/xcm/emulated/common",
+	"chains/integration-tests/xcm/emulated/networks/*",
+	"chains/integration-tests/xcm/emulated/tests/assets/*",
+	"chains/integration-tests/xcm/emulated/tests/bridges/*",
 	"chains/orchestrator-paras/node",
 	"chains/orchestrator-paras/runtime/*",
 	"chains/orchestrator-relays/client/*",
@@ -16,14 +25,6 @@ members = [
 	"chains/orchestrator-relays/runtime/dancelight/constants",
 	"chains/orchestrator-relays/runtime/starlight",
 	"chains/orchestrator-relays/runtime/starlight/constants",
-	"chains/xcm-integration-tests/emulated/chains/orchestrator-paras/*",
-	"chains/xcm-integration-tests/emulated/chains/relays/*",
-	"chains/xcm-integration-tests/emulated/chains/templates/*",
-	"chains/xcm-integration-tests/emulated/common",
-	"chains/xcm-integration-tests/emulated/dancebox-runtime-test-utils",
-	"chains/xcm-integration-tests/emulated/networks/*",
-	"chains/xcm-integration-tests/emulated/tests/assets/*",
-	"chains/xcm-integration-tests/emulated/tests/bridges/*",
 	"client/*",
 	"pallets/*",
 	"pallets/collator-assignment/runtime-api",
@@ -128,23 +129,24 @@ tc-consensus = { path = "client/consensus" }
 tc-orchestrator-chain-rpc-interface = { path = "client/orchestrator-chain-rpc-interface" }
 tc-service-container-chain = { path = "client/service-container-chain" }
 
-dancebox-emulated-chain = { path = "chains/xcm-integration-tests/emulated/chains/orchestrator-paras/dancebox" }
-dancebox-runtime-test-utils = { path = "chains/xcm-integration-tests/emulated/dancebox-runtime-test-utils" }
-dancelight-emulated-chain = { path = "chains/xcm-integration-tests/emulated/chains/relays/dancelight" }
-dancelight-system-emulated-network = { path = "chains/xcm-integration-tests/emulated/networks/dancelight-system" }
-frontier-template-emulated-chain = { path = "chains/xcm-integration-tests/emulated/chains/templates/frontier-template" }
-rococo-emulated-chain = { path = "chains/xcm-integration-tests/emulated/chains/relays/rococo" }
-rococo-system-emulated-network = { path = "chains/xcm-integration-tests/emulated/networks/rococo-system" }
-simple-template-emulated-chain = { path = "chains/xcm-integration-tests/emulated/chains/templates/simple-template" }
-starlight-emulated-chain = { path = "chains/xcm-integration-tests/emulated/chains/relays/starlight" }
-starlight-system-emulated-network = { path = "chains/xcm-integration-tests/emulated/networks/starlight-system" }
-tanssi-emulated-integration-tests-common = { path = "chains/xcm-integration-tests/emulated/common" }
-westend-emulated-chain = { path = "chains/xcm-integration-tests/emulated/chains/relays/westend" }
-westend-system-emulated-network = { path = "chains/xcm-integration-tests/emulated/networks/westend-system" }
+dancebox-emulated-chain = { path = "chains/integration-tests/xcm/emulated/chains/orchestrator-paras/dancebox" }
+dancebox-runtime-test-utils = { path = "chains/integration-tests/dancebox-runtime-test-utils" }
+dancelight-emulated-chain = { path = "chains/integration-tests/xcm/emulated/chains/relays/dancelight" }
+dancelight-system-emulated-network = { path = "chains/integration-tests/xcm/emulated/networks/dancelight-system" }
+frontier-template-emulated-chain = { path = "chains/integration-tests/xcm/emulated/chains/templates/frontier-template" }
+rococo-emulated-chain = { path = "chains/integration-tests/xcm/emulated/chains/relays/rococo" }
+rococo-system-emulated-network = { path = "chains/integration-tests/xcm/emulated/networks/rococo-system" }
+simple-template-emulated-chain = { path = "chains/integration-tests/xcm/emulated/chains/templates/simple-template" }
+starlight-emulated-chain = { path = "chains/integration-tests/xcm/emulated/chains/relays/starlight" }
+starlight-system-emulated-network = { path = "chains/integration-tests/xcm/emulated/networks/starlight-system" }
+tanssi-emulated-integration-tests-common = { path = "chains/integration-tests/xcm/emulated/common" }
+westend-emulated-chain = { path = "chains/integration-tests/xcm/emulated/chains/relays/westend" }
+westend-system-emulated-network = { path = "chains/integration-tests/xcm/emulated/networks/westend-system" }
 
 tp-author-noting-inherent = { path = "primitives/author-noting-inherent", default-features = false }
 tp-bridge = { path = "primitives/bridge", default-features = false }
 tp-data-preservers-common = { path = "primitives/data-preservers-common", default-features = false }
+tp-invulnerables-filter-common = { path = "primitives/invulnerables-filter-common", default-features = false }
 tp-maths = { path = "primitives/maths", default-features = false }
 tp-parathread-filter-common = { path = "primitives/parathread-filter-common", default-features = false }
 tp-stream-payment-common = { path = "primitives/stream-payment-common", default-features = false }
@@ -239,7 +241,6 @@ sp-panic-handler = { git = "https://github.com/moondance-labs/polkadot-sdk", bra
 sp-runtime = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2503", default-features = false }
 sp-session = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2503", default-features = false }
 sp-state-machine = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2503", default-features = false }
-sp-std = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2503", default-features = false }
 sp-transaction-pool = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2503", default-features = false }
 sp-trie = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2503", default-features = false }
 sp-version = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2503", default-features = false }

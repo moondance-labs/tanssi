@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use snowbridge_outbound_queue_primitives::v1::AgentExecuteCommand;
 use {super::*, hex_literal::hex};
 
 #[test]
@@ -99,4 +100,79 @@ fn test_report_slashes_encoding() {
     );
 
     assert_eq!(command.abi_encode(), expected);
+}
+
+mod xcm_converter {
+    use super::*;
+    use crate::snowbridge_outbound_token_transfer::XcmConverter;
+    use cumulus_primitives_core::WeightLimit;
+    use snowbridge_outbound_queue_primitives::v1::Command;
+    use xcm::opaque::latest::{
+        AssetFilter, AssetId, Fungibility, Instruction, Junction, NetworkId, WildAsset,
+    };
+
+    #[test]
+    fn works_with_complete_message() {
+        let agent_id = AgentId::repeat_byte(0x77);
+        let token_address = hex!("0123456789abcdef0123456789abcdef01234567");
+        let beneficiary_address = hex!("0101010101010101010101010101010101010101");
+        let amount = 1000;
+        let topic = hex!("deadbeafdeadbeafdeadbeafdeadbeafdeadbeafdeadbeafdeadbeafdeadbeaf");
+
+        let ethereum_network = NetworkId::Ethereum { chain_id: 42 };
+
+        let asset_location = Location::new(
+            0,
+            [Junction::AccountKey20 {
+                network: Some(ethereum_network),
+                key: token_address,
+            }],
+        );
+        let asset = AssetId(asset_location).into_asset(Fungibility::Fungible(amount));
+        let reserve_assets = Assets::from(vec![asset.clone()]);
+
+        let beneficiary = Location::new(
+            0,
+            [Junction::AccountKey20 {
+                network: Some(ethereum_network),
+                key: beneficiary_address,
+            }],
+        );
+
+        let xcm_message = Xcm(vec![
+            Instruction::WithdrawAsset(reserve_assets),
+            Instruction::ClearOrigin,
+            Instruction::BuyExecution {
+                fees: asset,
+                weight_limit: WeightLimit::Unlimited,
+            },
+            Instruction::DepositAsset {
+                assets: AssetFilter::Wild(WildAsset::All),
+                beneficiary,
+            },
+            Instruction::SetTopic(topic),
+        ]);
+
+        let mut xcm_converter =
+            XcmConverter::<(), ()>::new(&xcm_message, ethereum_network, agent_id);
+
+        let command = xcm_converter
+            .make_unlock_native_token_command()
+            .expect("should be valid xcm message");
+
+        assert_eq!(
+            command,
+            (
+                Command::AgentExecute {
+                    agent_id,
+                    command: AgentExecuteCommand::TransferToken {
+                        token: token_address.into(),
+                        recipient: beneficiary_address.into(),
+                        amount,
+                    },
+                },
+                topic
+            )
+        )
+    }
 }
