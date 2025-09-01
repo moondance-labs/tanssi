@@ -655,61 +655,65 @@ describeSuite({
 
                     console.log("era to analyze ", eraToAnalyze);
                     console.log(await operatorRewardContract.eraRoot(eraToAnalyze));
-                    console.log("thid");
+                    console.log("third");
                     console.log((await operatorRewardContract.eraRoot(eraToAnalyze))[3]);
                 }
                 if (eraToAnalyze < 0) {
                     throw new Error("No era was found in operator rewards to be claimed");
                 }
 
-                const operatorMerkleProof = await relayApi.call.externalValidatorsRewardsApi.generateRewardsMerkleProof(
-                    operatorAccount.address,
-                    eraToAnalyze
-                );
+                for (const opAccount of [operatorAccount, operatorAccount2]) {
+                    const operatorMerkleProof =
+                        await relayApi.call.externalValidatorsRewardsApi.generateRewardsMerkleProof(
+                            opAccount.address,
+                            eraToAnalyze
+                        );
 
-                const eraRewardsInfo = await relayApi.query.externalValidatorsRewards.rewardPointsForEra(eraToAnalyze);
-                //(uint256, bytes, bytes)
-                // no hints and I am passing a max admin fee
-                const additionalData =
-                    "0x0000000000000000000000000000000000000000000000000000000000001" +
-                    "000000000000000000000000000000000000000000000000000000000000000006000000000000000000" +
-                    "000000000000000000000000000000000000000000000800000000000000000000000000000000000000" +
-                    "000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
-                    "0000000";
+                    const eraRewardsInfo =
+                        await relayApi.query.externalValidatorsRewards.rewardPointsForEra(eraToAnalyze);
+                    //(uint256, bytes, bytes)
+                    // no hints and I am passing a max admin fee
+                    const additionalData =
+                        "0x0000000000000000000000000000000000000000000000000000000000001" +
+                        "000000000000000000000000000000000000000000000000000000000000000006000000000000000000" +
+                        "000000000000000000000000000000000000000000000800000000000000000000000000000000000000" +
+                        "000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
+                        "0000000";
 
-                const claimRewardsInput = {
-                    operatorKey: operatorAccount.addressRaw,
-                    eraIndex: eraToAnalyze,
-                    totalPointsClaimable: eraRewardsInfo.individual.toJSON()[operatorAccount.address.toString()],
-                    proof: operatorMerkleProof.toHuman().proof,
-                    data: additionalData,
-                };
-                console.log(`Claiming rewards with inputs ${JSON.stringify(claimRewardsInput)}`);
-                expect(operatorMerkleProof.isEmpty).to.be.false;
-                try {
-                    const claimTx = await operatorRewardContract.claimRewards(claimRewardsInput);
-                    await claimTx.wait();
-                } catch (e) {
-                    if (e.data) {
-                        console.log(e.data);
+                    const claimRewardsInput = {
+                        operatorKey: opAccount.addressRaw,
+                        eraIndex: eraToAnalyze,
+                        totalPointsClaimable: eraRewardsInfo.individual.toJSON()[opAccount.address.toString()],
+                        proof: operatorMerkleProof.toHuman().proof,
+                        data: additionalData,
+                    };
+                    console.log(`Claiming rewards with inputs ${JSON.stringify(claimRewardsInput)}`);
+                    expect(operatorMerkleProof.isEmpty).to.be.false;
+                    try {
+                        const claimTx = await operatorRewardContract.claimRewards(claimRewardsInput);
+                        await claimTx.wait();
+                    } catch (e) {
+                        if (e.data) {
+                            console.log(e.data);
 
-                        const decodedError = operatorRewardContractImpl.interface.parseError(e.data);
-                        throw new Error(`Failed to claim rewards with error: ${decodedError}`);
+                            const decodedError = operatorRewardContractImpl.interface.parseError(e.data);
+                            throw new Error(`Failed to claim rewards with error: ${decodedError}`);
+                        }
+                        throw new Error(`Failed to claim rewards with error: ${e.toHuman()}`);
                     }
-                    throw new Error(`Failed to claim rewards with error: ${e.toHuman()}`);
+
+                    const tokenAddress = await gatewayContract.tokenAddressOf(tokenId);
+
+                    tokenContract = new ethers.Contract(
+                        tokenAddress,
+                        ethInfo.symbiotic_info.contracts.Token.abi,
+                        ethereumWallet
+                    );
+
+                    const operator = await middlewareContract.operatorByKey(opAccount.addressRaw);
+                    const operatorBalance = await tokenContract.balanceOf(operator);
+                    expect(operatorBalance).to.not.be.eq(0n);
                 }
-
-                const tokenAddress = await gatewayContract.tokenAddressOf(tokenId);
-
-                tokenContract = new ethers.Contract(
-                    tokenAddress,
-                    ethInfo.symbiotic_info.contracts.Token.abi,
-                    ethereumWallet
-                );
-
-                const operator = await middlewareContract.operatorByKey(operatorAccount.addressRaw);
-                const operatorBalance = await tokenContract.balanceOf(operator);
-                expect(operatorBalance).to.not.be.eq(0n);
             },
         });
 
