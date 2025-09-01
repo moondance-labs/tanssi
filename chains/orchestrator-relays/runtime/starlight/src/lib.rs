@@ -1688,7 +1688,7 @@ impl pallet_maintenance_mode::Config for Runtime {
 }
 
 pub const FIXED_BLOCK_PRODUCTION_COST: u128 = 10000 * MICROUNITS;
-pub const FIXED_COLLATOR_ASSIGNMENT_COST: u128 = 1000000 * MICROUNITS;
+pub const FIXED_COLLATOR_ASSIGNMENT_COST: u128 = 5 * UNITS;
 
 pub struct BlockProductionCost<Runtime>(PhantomData<Runtime>);
 impl ProvideBlockProductionCost<Runtime> for BlockProductionCost<Runtime> {
