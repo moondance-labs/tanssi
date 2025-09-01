@@ -19,6 +19,7 @@ import {
 
 import { keccak256 } from "viem";
 import { ETHEREUM_NETWORK_TESTNET, FOREIGN_ASSET_ID } from "utils/constants";
+import type { SubmittableExtrinsic } from "@polkadot/api/types";
 
 // Change this if we change the storage parameter in runtime
 const GATEWAY_STORAGE_KEY = "0xaed97c7854d601808b98ae43079dafb3";
@@ -96,7 +97,10 @@ describeSuite({
     foundationMethods: "zombie",
     testCases: ({ it, context }) => {
         let relayApi: ApiPromise;
+        // TODO: Consider removing
         let relayCharlieApi: ApiPromise;
+        let relayDaveApi: ApiPromise;
+        let relayEveApi: ApiPromise;
         let ethereumNodeChildProcess: ChildProcessWithoutNullStreams;
         let relayerChildProcess: ChildProcessWithoutNullStreams;
         let alice: KeyringPair;
@@ -125,7 +129,9 @@ describeSuite({
         let ethInfo: any;
 
         let operatorAccount: KeyringPair;
-        let operatorNimbusKey: string;
+        let operatorAccount2: KeyringPair;
+        let operatorAccount3: KeyringPair;
+
         let executionRelay: KeyringPair;
 
         beforeAll(async () => {
@@ -134,6 +140,8 @@ describeSuite({
             expect(relayNetwork, "Relay API incorrect").to.contain("dancelight");
 
             relayCharlieApi = context.polkadotJs("Tanssi-charlie");
+            relayDaveApi = context.polkadotJs("Tanssi-dave");
+            relayEveApi = context.polkadotJs("Tanssi-eve");
 
             // //BeaconRelay
             const keyring = new Keyring({ type: "sr25519" });
@@ -149,9 +157,24 @@ describeSuite({
             operatorAccount = keyring.addFromUri("//Charlie", {
                 name: "Charlie default",
             });
-            // We rotate the keys for charlie so that we have access to them from this test as well as the node
-            operatorNimbusKey = (await relayCharlieApi.rpc.author.rotateKeys()).toHex();
-            await relayApi.tx.session.setKeys(operatorNimbusKey, []).signAndSend(operatorAccount);
+            // TODO: setting keys for relay RPC?
+            await relayApi.tx.session
+                .setKeys(await relayCharlieApi.rpc.author.rotateKeys(), [])
+                .signAndSend(operatorAccount);
+
+            operatorAccount2 = keyring.addFromUri("//Dave", {
+                name: "Dave default",
+            });
+            await relayApi.tx.session
+                .setKeys(await relayDaveApi.rpc.author.rotateKeys(), [])
+                .signAndSend(operatorAccount2);
+
+            operatorAccount3 = keyring.addFromUri("//Eve", {
+                name: "Eve default",
+            });
+            await relayApi.tx.session
+                .setKeys(await relayEveApi.rpc.author.rotateKeys(), [])
+                .signAndSend(operatorAccount3);
 
             const fundingTxHash = await signAndSendAndInclude(
                 relayApi.tx.utility.batch([
@@ -201,6 +224,8 @@ describeSuite({
             await execCommandLive("./scripts/bridge/deploy-ethereum-contracts.sh", [], {
                 env: {
                     OPERATOR3_KEY: u8aToHex(operatorAccount.addressRaw),
+                    OPERATOR2_KEY: u8aToHex(operatorAccount2.addressRaw),
+                    OPERATOR1_KEY: u8aToHex(operatorAccount3.addressRaw),
                     ...process.env,
                 },
             });
@@ -481,6 +506,8 @@ describeSuite({
                         try {
                             const sessionValidators = await relayApi.query.session.validators();
                             expect(sessionValidators).to.contain(operatorAccount.address);
+                            expect(sessionValidators).to.contain(operatorAccount2.address);
+                            expect(sessionValidators).to.contain(operatorAccount3.address);
                         } catch (error) {
                             return false;
                         }
@@ -491,12 +518,23 @@ describeSuite({
 
                 // In new era's first session at least one block need to be produced by the operator
                 const blocksPerSession = 10;
+                const countedSet = new Set();
                 for (let i = 0; i < 3 * blocksPerSession; ++i) {
                     const latestBlockHash = await relayApi.rpc.chain.getBlockHash();
                     const author = (await relayApi.derive.chain.getHeader(latestBlockHash)).author;
-                    if (author?.toString() === operatorAccount.address) {
-                        return;
+                    if (author) {
+                        if (
+                            [operatorAccount.address, operatorAccount2.address, operatorAccount3.address].includes(
+                                author.toString()
+                            )
+                        ) {
+                            countedSet.add(author.toString());
+                        }
+                        if (countedSet.size >= 3) {
+                            return;
+                        }
                     }
+
                     await context.waitBlock(1, "Tanssi-relay");
                 }
                 expect.fail("operator didn't produce a block");
@@ -509,15 +547,22 @@ describeSuite({
             test: async () => {
                 logTiming("Starting T05");
                 // Send slash event forcefully
-                const activeEraInfo = (await relayApi.query.externalValidators.activeEra()).toJSON();
-                const currentExternalIndex = await relayApi.query.externalValidators.currentExternalIndex();
-                const forceInjectSlashCall = relayApi.tx.externalValidatorSlashes.forceInjectSlash(
-                    activeEraInfo.index,
-                    operatorAccount.address,
-                    1000,
-                    currentExternalIndex
-                );
-                const forceInjectTx = await relayApi.tx.sudo.sudo(forceInjectSlashCall).signAndSend(alice);
+                const txs: SubmittableExtrinsic<"promise">[] = [];
+                for (const operator of [operatorAccount, operatorAccount2]) {
+                    const activeEraInfo = (await relayApi.query.externalValidators.activeEra()).toJSON();
+                    const currentExternalIndex = await relayApi.query.externalValidators.currentExternalIndex();
+
+                    txs.push(
+                        relayApi.tx.externalValidatorSlashes.forceInjectSlash(
+                            activeEraInfo.index,
+                            operator.address,
+                            1000,
+                            currentExternalIndex
+                        )
+                    );
+                }
+
+                const forceInjectTx = await relayApi.tx.sudo.sudo(relayApi.tx.utility.batch(txs)).signAndSend(alice);
 
                 console.log("Force inject tx was submitted:", forceInjectTx.toHex());
 
@@ -530,7 +575,7 @@ describeSuite({
                 const blockToFetchRewardEventFrom = currentBlock + blocksToWaitForRewards;
                 const blockToFetchSlashEventFrom = currentBlock + blocksToWaitForSlashes;
 
-                console.log("We will wait till", currentBlock + blocksToWaitFor, "blocks");
+                console.log(`We will wait ${blocksToWaitFor} blocks - till ${currentBlock + blocksToWaitFor}`);
 
                 await context.waitBlock(blocksToWaitFor, "Tanssi-relay");
                 const relayApiAtRewardEventBlock = await relayApi.at(
@@ -568,6 +613,8 @@ describeSuite({
                 let slashMessageSuccess = false;
 
                 gatewayContract.on("InboundMessageDispatched", (_channelID, _nonce, messageID, success) => {
+                    console.log("messageID:", messageID);
+
                     if (rewardMessageId === messageID) {
                         rewardMessageReceived = true;
                         rewardMessageSuccess = success;
@@ -673,34 +720,53 @@ describeSuite({
                 logTiming("Starting T07");
                 const epoch = await middlewareContract.getCurrentEpoch();
                 const operatorAndVaults = await middlewareContract.getOperatorVaultPairs(epoch);
-                const operator = await middlewareContract.operatorByKey(operatorAccount.addressRaw);
-                const matchedPair = operatorAndVaults.find((operatorVaultPair) => operatorVaultPair[0] === operator);
+                for (const opAccount of [operatorAccount, operatorAccount2]) {
+                    const operator = await middlewareContract.operatorByKey(opAccount.addressRaw);
+                    const matchedPair = operatorAndVaults.find(
+                        (operatorVaultPair) => operatorVaultPair[0] === operator
+                    );
 
-                console.log("operator is ", operator);
-                console.log("oepratorVaults ", operatorAndVaults);
-                console.log("matchedPair ", matchedPair);
+                    console.log("operator is ", operator);
+                    console.log("operatorVaults ", operatorAndVaults);
+                    console.log("matchedPair ", matchedPair);
 
-                const vaultDetails = ethInfo.symbiotic_info.contracts.Vault;
-                const vaultContract = new ethers.Contract(matchedPair[1][0], vaultDetails.abi, ethereumWallet);
-                const slasher = await vaultContract.slasher();
-                // Here we load a random slasher, to check its type
-                const slasherDetails = ethInfo.symbiotic_info.contracts.Slasher;
-                const vetoSlasherDetails = ethInfo.symbiotic_info.contracts.VetoSlasher;
+                    const vaultDetails = ethInfo.symbiotic_info.contracts.Vault;
+                    const vaultContract = new ethers.Contract(matchedPair[1][0], vaultDetails.abi, ethereumWallet);
+                    const slasher = await vaultContract.slasher();
+                    // Here we load a random slasher, to check its type
+                    const slasherDetails = ethInfo.symbiotic_info.contracts.Slasher;
+                    const vetoSlasherDetails = ethInfo.symbiotic_info.contracts.VetoSlasher;
 
-                // Setting up slasher
-                const slasherContract = new ethers.Contract(slasher, slasherDetails.abi, ethereumWallet);
-
-                const network = await middlewareContract.NETWORK();
-                const subnetwork = `${network}000000000000000000000000`;
-                // type 0 means instant slash
-                if ((await slasherContract.TYPE()) === 0n) {
-                    const cummulativeSlash = await slasherContract.cumulativeSlash(subnetwork, operator);
-                    expect(cummulativeSlash).to.be.greaterThan(0);
-                } else {
-                    // else we hav e a veto slash
+                    // Setting up slasher
+                    const slasherContract = new ethers.Contract(slasher, slasherDetails.abi, ethereumWallet);
                     const vetoSlasherContract = new ethers.Contract(slasher, vetoSlasherDetails.abi, ethereumWallet);
-                    const lengthSlashes = await vetoSlasherContract.slashRequestsLength();
-                    expect(lengthSlashes).to.be.greaterThan(0);
+
+                    const network = await middlewareContract.NETWORK();
+                    const subnetwork = `${network}000000000000000000000000`;
+                    console.log(
+                        "Slasher type: ",
+                        opAccount === operatorAccount ? await slasherContract.TYPE() : await vetoSlasherContract.TYPE()
+                    );
+                    // type 0 means instant slash
+                    if (
+                        opAccount === operatorAccount
+                            ? (await slasherContract.TYPE()) === 0n
+                            : (await vetoSlasherContract.TYPE()) === 1n
+                    ) {
+                        console.log("Slasher - instant");
+                        const cummulativeSlash = await slasherContract.cumulativeSlash(subnetwork, operator);
+                        expect(cummulativeSlash).to.be.greaterThan(0);
+                    } else {
+                        console.log("Slasher - veto");
+                        // else we have a veto slash
+                        const vetoSlasherContract = new ethers.Contract(
+                            slasher,
+                            vetoSlasherDetails.abi,
+                            ethereumWallet
+                        );
+                        const lengthSlashes = await vetoSlasherContract.slashRequestsLength();
+                        expect(lengthSlashes).to.be.greaterThan(0);
+                    }
                 }
             },
         });
