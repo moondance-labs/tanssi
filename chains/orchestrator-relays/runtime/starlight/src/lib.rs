@@ -156,7 +156,6 @@ pub use {
 #[cfg(feature = "runtime-benchmarks")]
 use {
     snowbridge_core::{AgentId, TokenId},
-    starlight_runtime_constants::snowbridge::EthereumNetwork,
     xcm::latest::Junctions::*,
 };
 

@@ -150,7 +150,6 @@ pub use {
 
 #[cfg(feature = "runtime-benchmarks")]
 use {
-    dancelight_runtime_constants::snowbridge::EthereumNetwork,
     snowbridge_core::{AgentId, TokenId},
     xcm::latest::Junctions::*,
 };
