@@ -5,6 +5,7 @@ import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 import { jumpSessions } from "utils";
 import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SERVICES_PAYMENT, checkCallIsFiltered } from "helpers";
+import { isStarlightRuntime } from "../../../utils/runtime.ts";
 
 describeSuite({
     id: "COMM0204",
@@ -15,7 +16,7 @@ describeSuite({
         let alice: KeyringPair;
         const paraId2000 = 2000;
         const paraId2001 = 2001;
-        const costPerSession = 100_000_000n;
+        let costPerSession = 100_000_000n;
         let collatorAssignmentAlias: any;
         let isStarlight: boolean;
         let specVersion: number;
@@ -28,10 +29,14 @@ describeSuite({
                 ? polkadotJs.query.tanssiCollatorAssignment
                 : polkadotJs.query.collatorAssignment;
 
-            isStarlight = runtimeName === "starlight";
+            isStarlight = isStarlightRuntime(polkadotJs);
             specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
             shouldSkipStarlightSP =
                 isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SERVICES_PAYMENT.includes(specVersion);
+
+            if (isStarlight) {
+                costPerSession = 5_000_000_000_000n;
+            }
         });
 
         it({
