@@ -399,7 +399,7 @@ where
     fn process_message(_channel: Channel, envelope: Envelope) -> DispatchResult {
         match Self::get_token_data_and_location(&envelope.payload) {
             TokenDataResult::Success(token_data, token_location) => {
-                Self::process_native_token_transfer(token_data, token_location);
+                Self::process_native_container_token_transfer(token_data, token_location);
                 Ok(())
             }
             TokenDataResult::DecodeFailure => Err(DispatchError::Other(
@@ -492,109 +492,95 @@ where
         }
     }
 
-    /// Process a native token transfer by creating and sending an XCM message to the destination parachain.
-    fn process_native_token_transfer(
+    /// Process a native container token transfer by creating and sending an XCM message to the destination parachain.
+    fn process_native_container_token_transfer(
         token_data: NativeTokenTransferData,
         token_location: Location,
     ) {
-        let destination_info = match token_data.destination {
-            Destination::ForeignAccountId32 { para_id, id, fee } => {
-                let beneficiary = Location::new(0, [AccountId32 { network: None, id }]);
-                Some((beneficiary, fee, para_id))
-            }
-            Destination::ForeignAccountId20 { para_id, id, fee } => {
-                let beneficiary = Location::new(
-                    0,
-                    [AccountKey20 {
-                        network: None,
-                        key: id,
-                    }],
-                );
-                Some((beneficiary, fee, para_id))
-            }
-            _ => {
-                log::error!("NativeContainerTokensProcessor::process_native_token_transfer: invalid destination");
-                None
-            }
-        };
-
-        if let Some((beneficiary, container_fee, container_para_id)) = destination_info {
-            let network = EthereumNetwork::get();
-            let bridge_location = Location::new(2, GlobalConsensus(network));
-
-            let total_fees = token_data.fee.saturating_add(container_fee);
+        let token_split = token_location.interior().clone().split_global().ok();
+        if let Some((_, interior)) = token_split {
+            let (beneficiary, container_fee, container_para_id) = match token_data.destination {
+                Destination::ForeignAccountId32 { para_id, id, fee } => {
+                    let beneficiary = Location::new(0, [AccountId32 { network: None, id }]);
+                    (beneficiary, fee, para_id)
+                }
+                Destination::ForeignAccountId20 { para_id, id, fee } => {
+                    let beneficiary = Location::new(
+                        0,
+                        [AccountKey20 {
+                            network: None,
+                            key: id,
+                        }],
+                    );
+                    (beneficiary, fee, para_id)
+                }
+                _ => {
+                    log::error!("NativeContainerTokensProcessor::process_native_token_transfer: invalid destination");
+                    return;
+                }
+            };
 
             let container_location = Location::new(0, [Parachain(container_para_id)]);
 
-            let token_split = token_location.interior().clone().split_global().ok();
+            let container_token_from_tanssi = Location::new(0, interior);
+            let reanchor_result = container_token_from_tanssi.reanchored(
+                &container_location,
+                &<T as pallet_xcm::Config>::UniversalLocation::get(),
+            );
 
-            if let Some((_, interior)) = token_split {
-                let container_token_from_tanssi = Location::new(0, interior);
-                let reanchor_result = container_token_from_tanssi.reanchored(
-                    &container_location,
-                    &<T as pallet_xcm::Config>::UniversalLocation::get(),
-                );
+            if let Ok(token_location_reanchored) = reanchor_result {
+                let network = EthereumNetwork::get();
 
-                if let Ok(token_location_reanchored) = reanchor_result {
-                    let container_asset: Asset =
-                        (token_location_reanchored, token_data.amount).into();
-                    let tanssi_asset_fee: Asset = (Location::parent(), total_fees).into();
-                    let inbound_queue_pallet_index = InboundQueuePalletInstance::get();
+                let total_container_asset = token_data.amount.saturating_add(container_fee);
+                let container_asset_to_withdraw: Asset =
+                    (token_location_reanchored.clone(), total_container_asset).into();
+                let container_asset_fee: Asset =
+                    (token_location_reanchored.clone(), container_fee).into();
+                let container_asset_to_deposit: Asset =
+                    (token_location_reanchored.clone(), token_data.amount).into();
 
-                    let remote_xcm = Xcm::<()>(vec![
-                        DescendOrigin(PalletInstance(inbound_queue_pallet_index).into()),
-                        UniversalOrigin(GlobalConsensus(network)),
-                        WithdrawAsset(
-                            vec![tanssi_asset_fee.clone(), container_asset.clone()].into(),
-                        ),
-                        BuyExecution {
-                            fees: tanssi_asset_fee,
-                            weight_limit: Unlimited,
+                let inbound_queue_pallet_index = InboundQueuePalletInstance::get();
+
+                let remote_xcm = Xcm::<()>(vec![
+                    DescendOrigin(PalletInstance(inbound_queue_pallet_index).into()),
+                    UniversalOrigin(GlobalConsensus(network)),
+                    WithdrawAsset(vec![container_asset_to_withdraw.clone()].into()),
+                    BuyExecution {
+                        fees: container_asset_fee,
+                        weight_limit: Unlimited,
+                    },
+                    DepositAsset {
+                        assets: Definite(container_asset_to_deposit.into()),
+                        beneficiary,
+                    },
+                ]);
+
+                send_xcm::<<T as pallet_xcm::Config>::XcmRouter>(
+                    container_location.clone(),
+                    remote_xcm.clone(),
+                )
+                .map(|(message_id, _price)| {
+                    frame_system::Pallet::<T>::deposit_event(RuntimeEvent::XcmPallet(
+                        pallet_xcm::Event::Sent {
+                            origin: Here.into_location(),
+                            destination: container_location,
+                            message: remote_xcm,
+                            message_id,
                         },
-                        DepositAsset {
-                            assets: Definite(container_asset.into()),
-                            beneficiary,
-                        },
-                        // When the execution finishes deposit any leftover fees to the ETH
-                        // sovereign account on destination.
-                        SetAppendix(Xcm(vec![DepositAsset {
-                            assets: Wild(AllOf {
-                                id: Location::parent().into(),
-                                fun: WildFungibility::Fungible,
-                            }),
-                            beneficiary: bridge_location,
-                        }])),
-                    ]);
-
-                    send_xcm::<<T as pallet_xcm::Config>::XcmRouter>(
-                        container_location.clone(),
-                        remote_xcm.clone(),
-                    )
-                    .map(|(message_id, _price)| {
-                        frame_system::Pallet::<T>::deposit_event(RuntimeEvent::XcmPallet(
-                            pallet_xcm::Event::Sent {
-                                origin: Here.into_location(),
-                                destination: container_location,
-                                message: remote_xcm,
-                                message_id,
-                            },
-                        ));
-                    })
-                    .map_err(|e| {
-                        log::error!(
-                            "NativeContainerTokensProcessor: XCM send failed with error: {:?}",
-                            e
-                        );
-                    })
-                    .ok();
-                } else {
+                    ));
+                })
+                .map_err(|e| {
                     log::error!(
-                        "NativeContainerTokensProcessor: failed to reanchor token location"
+                        "NativeContainerTokensProcessor: XCM send failed with error: {:?}",
+                        e
                     );
-                }
+                })
+                .ok();
             } else {
                 log::error!("NativeContainerTokensProcessor: failed to reanchor token location");
             }
+        } else {
+            log::error!("NativeContainerTokensProcessor: failed to reanchor token location");
         }
     }
 }

@@ -2804,8 +2804,6 @@ fn receive_container_native_tokens_from_eth_works() {
             let container_location = Location::new(0, [Parachain(container_para_id)]);
             let inbound_queue_pallet_index = InboundQueuePalletInstance::get();
             let network = EthereumNetwork::get();
-            let tanssi_fee = fee.saturating_add(container_fee);
-            let bridge_location = Location::new(2, GlobalConsensus(network));
             let token_split = token_location_reanchored
                 .interior()
                 .clone()
@@ -2816,10 +2814,18 @@ fn receive_container_native_tokens_from_eth_works() {
                 .reanchored(&container_location, &UniversalLocation::get())
                 .unwrap();
 
-            let container_asset: XcmAsset =
-                (container_token_location_reanchored, amount_to_transfer).into();
+            let total_container_asset = amount_to_transfer.saturating_add(container_fee);
 
-            let tanssi_asset_fee: XcmAsset = (Location::parent(), tanssi_fee).into();
+            let container_asset_to_withdraw: XcmAsset = (
+                container_token_location_reanchored.clone(),
+                total_container_asset,
+            )
+                .into();
+
+            let container_asset_fee: XcmAsset =
+                (container_token_location_reanchored.clone(), container_fee).into();
+            let container_asset_to_deposit: XcmAsset =
+                (container_token_location_reanchored, amount_to_transfer).into();
 
             let beneficiary = Location::new(
                 0,
@@ -2832,22 +2838,15 @@ fn receive_container_native_tokens_from_eth_works() {
             let remote_xcm = Xcm::<()>(vec![
                 DescendOrigin(PalletInstance(inbound_queue_pallet_index).into()),
                 UniversalOrigin(GlobalConsensus(network)),
-                WithdrawAsset(vec![tanssi_asset_fee.clone(), container_asset.clone()].into()),
+                WithdrawAsset(vec![container_asset_to_withdraw.clone()].into()),
                 BuyExecution {
-                    fees: tanssi_asset_fee,
+                    fees: container_asset_fee,
                     weight_limit: Unlimited,
                 },
                 DepositAsset {
-                    assets: Definite(container_asset.into()),
+                    assets: Definite(container_asset_to_deposit.into()),
                     beneficiary,
                 },
-                SetAppendix(Xcm(vec![DepositAsset {
-                    assets: Wild(AllOf {
-                        id: Location::parent().into(),
-                        fun: WildFungibility::Fungible,
-                    }),
-                    beneficiary: bridge_location,
-                }])),
             ]);
 
             let xcm_sent_event = System::events()
