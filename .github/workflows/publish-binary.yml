@@ -75,7 +75,7 @@ jobs:
         with:
           node-version: 22.x
       - name: Download Original Tools
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: original-tools
           path: original-tools
@@ -108,7 +108,7 @@ jobs:
         cpu: ["", "skylake", "znver3"]
         node: ["tanssi-node", "container-chain-frontier-node", "container-chain-simple-node"]
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           pattern: binaries-*
           merge-multiple: true
