@@ -97,10 +97,6 @@ describeSuite({
     foundationMethods: "zombie",
     testCases: ({ it, context }) => {
         let relayApi: ApiPromise;
-        // TODO: Consider removing
-        let relayCharlieApi: ApiPromise;
-        let relayDaveApi: ApiPromise;
-        let relayEveApi: ApiPromise;
         let ethereumNodeChildProcess: ChildProcessWithoutNullStreams;
         let relayerChildProcess: ChildProcessWithoutNullStreams;
         let alice: KeyringPair;
@@ -139,10 +135,6 @@ describeSuite({
             const relayNetwork = relayApi.consts.system.version.specName.toString();
             expect(relayNetwork, "Relay API incorrect").to.contain("dancelight");
 
-            relayCharlieApi = context.polkadotJs("Tanssi-charlie");
-            relayDaveApi = context.polkadotJs("Tanssi-dave");
-            relayEveApi = context.polkadotJs("Tanssi-eve");
-
             // //BeaconRelay
             const keyring = new Keyring({ type: "sr25519" });
             alice = keyring.addFromUri("//Alice", { name: "Alice default" });
@@ -157,24 +149,17 @@ describeSuite({
             operatorAccount = keyring.addFromUri("//Charlie", {
                 name: "Charlie default",
             });
-            // TODO: setting keys for relay RPC?
-            await relayApi.tx.session
-                .setKeys(await relayCharlieApi.rpc.author.rotateKeys(), [])
-                .signAndSend(operatorAccount);
+            await relayApi.tx.session.setKeys(await relayApi.rpc.author.rotateKeys(), []).signAndSend(operatorAccount);
 
             operatorAccount2 = keyring.addFromUri("//Dave", {
                 name: "Dave default",
             });
-            await relayApi.tx.session
-                .setKeys(await relayDaveApi.rpc.author.rotateKeys(), [])
-                .signAndSend(operatorAccount2);
+            await relayApi.tx.session.setKeys(await relayApi.rpc.author.rotateKeys(), []).signAndSend(operatorAccount2);
 
             operatorAccount3 = keyring.addFromUri("//Eve", {
                 name: "Eve default",
             });
-            await relayApi.tx.session
-                .setKeys(await relayEveApi.rpc.author.rotateKeys(), [])
-                .signAndSend(operatorAccount3);
+            await relayApi.tx.session.setKeys(await relayApi.rpc.author.rotateKeys(), []).signAndSend(operatorAccount3);
 
             const fundingTxHash = await signAndSendAndInclude(
                 relayApi.tx.utility.batch([
