@@ -68,7 +68,7 @@ mod benchmarks {
         let payment: BalanceOf<T> = T::ProvideBlockProductionCost::block_cost(&para_id)
             .0
             .saturating_mul(1000u32.into());
-        let caller = create_funded_user::<T>("caller", 1, 1_000_000_000_000_000_000u128.into());
+        let caller = create_funded_user::<T>("caller", 1, 1_000_000_000_000_000_000u128);
 
         // Before call: 0 credits
         assert_eq!(
@@ -173,7 +173,7 @@ mod benchmarks {
             let block_cost = T::ProvideBlockProductionCost::block_cost(&para_id.into()).0;
             let credits: BalanceOf<T> = 1000u32.into();
             let balance_to_purchase = block_cost.saturating_mul(credits);
-            let caller = create_funded_user::<T>("caller", 1, 1_000_000_000_000_000_000u128.into());
+            let caller = create_funded_user::<T>("caller", 1, 1_000_000_000_000_000_000u128);
             let existential_deposit = <T::Currency>::minimum_balance();
             assert_ok!(Pallet::<T>::purchase_credits(
                 RawOrigin::Signed(caller.clone()).into(),
@@ -200,7 +200,7 @@ mod benchmarks {
             T::ProvideCollatorAssignmentCost::collator_assignment_cost(&para_id.into()).0;
         let max_credit_stored = T::FreeCollatorAssignmentCredits::get();
         let balance_to_purchase = collator_assignment_cost.saturating_mul(max_credit_stored.into());
-        let caller = create_funded_user::<T>("caller", 1, 1_000_000_000_000_000_000u128.into());
+        let caller = create_funded_user::<T>("caller", 1, 1_000_000_000_000_000_000u128);
         let existential_deposit = <T::Currency>::minimum_balance();
         let tip = 1_000_000u32;
         assert_ok!(Pallet::<T>::purchase_credits(
