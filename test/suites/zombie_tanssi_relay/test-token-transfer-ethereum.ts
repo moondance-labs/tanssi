@@ -3,7 +3,7 @@ import { type KeyringPair, alith } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 
 import {
-    SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS,
+    SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS, sleep,
     TESTNET_ETHEREUM_NETWORK_ID,
     waitEventUntilTimeout
 } from "utils";
@@ -156,6 +156,9 @@ describeSuite({
                 const balanceAfter = (
                     await containerChainPolkadotJs.query.system.account(holdingAccount)
                 ).data.free.toBigInt();
+
+                // Wait 2 blocks until nonce changed
+                await sleep(18000);
 
                 expect(balanceAfter - balanceBefore).toEqual(tokenToTransfer);
 
