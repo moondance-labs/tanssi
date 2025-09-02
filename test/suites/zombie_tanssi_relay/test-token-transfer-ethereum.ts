@@ -2,11 +2,7 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type KeyringPair, alith } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 
-import {
-    SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS, sleep,
-    TESTNET_ETHEREUM_NETWORK_ID,
-    waitEventUntilTimeout
-} from "utils";
+import { SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS, sleep, TESTNET_ETHEREUM_NETWORK_ID, waitEventUntilTimeout } from "utils";
 
 describeSuite({
     id: "ZOMBIETANSS02",
@@ -58,8 +54,8 @@ describeSuite({
                             X3: [
                                 {
                                     GlobalConsensus: {
-                                        ByGenesis: "0x983a1a72503d6cc3636776747ec627172b51272bf45e50a355348facb67a820a"
-                                    }
+                                        ByGenesis: "0x983a1a72503d6cc3636776747ec627172b51272bf45e50a355348facb67a820a",
+                                    },
                                 },
                                 {
                                     Parachain: 2001,
@@ -78,7 +74,6 @@ describeSuite({
                     decimals: 12,
                 };
 
-
                 const txHash = await relayChainPolkadotJs.tx.utility
                     .batch([
                         relayChainPolkadotJs.tx.balances.transferKeepAlive(convertedAddress, 100_000_000_000_000n),
@@ -89,8 +84,12 @@ describeSuite({
                                 newParaId
                             )
                         ),
-                        relayChainPolkadotJs.tx.sudo
-                            .sudo(relayChainPolkadotJs.tx.ethereumSystem.registerToken(versionedLocation, containerTokenMetadata))
+                        relayChainPolkadotJs.tx.sudo.sudo(
+                            relayChainPolkadotJs.tx.ethereumSystem.registerToken(
+                                versionedLocation,
+                                containerTokenMetadata
+                            )
+                        ),
                     ])
                     .signAndSend(aliceAccount32);
 
