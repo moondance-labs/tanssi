@@ -44,12 +44,13 @@ fn test_can_buy_credits_before_registering_para() {
         .execute_with(|| {
             run_to_block(2);
 
+            let blocks_number = 1_000_000;
             // Try to buy the maximum amount of credits
             let balance_before = System::account(AccountId::from(ALICE)).data.free;
             assert_ok!(ServicesPayment::purchase_credits(
                 origin_of(ALICE.into()),
                 2000.into(),
-                block_credits_to_required_balance(u32::MAX, 2000.into())
+                block_credits_to_required_balance(blocks_number, 2000.into())
             ));
             let balance_after = System::account(AccountId::from(ALICE)).data.free;
 
@@ -60,10 +61,10 @@ fn test_can_buy_credits_before_registering_para() {
 
             assert_eq!(
                 balance_tank,
-                block_credits_to_required_balance(u32::MAX, 2000.into())
+                block_credits_to_required_balance(blocks_number, 2000.into())
             );
 
-            let expected_cost = block_credits_to_required_balance(u32::MAX, 2000.into());
+            let expected_cost = block_credits_to_required_balance(blocks_number, 2000.into());
             assert_eq!(balance_before - balance_after, expected_cost);
         });
 }
