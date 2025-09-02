@@ -85,7 +85,7 @@ jobs:
               uses: ./.github/workflow-templates/make-binaries-executable
 
             - name: Cache Foundry
-              uses: actions/cache@v3
+              uses: actions/cache@v4
               with:
                 path: |
                   ~/.foundry
@@ -93,7 +93,7 @@ jobs:
                 key: symbiotic-${{ runner.os }}-${{ hashFiles('**/scripts/bridge/set-env.sh') }}
 
             - name: Cache Symbiotic Contracts
-              uses: actions/cache@v3
+              uses: actions/cache@v4
               id: cache-symbiotic
               with:
                 path: |
@@ -103,7 +103,7 @@ jobs:
                 key: symbiotic-${{ runner.os }}-${{ hashFiles('**/scripts/bridge/set-env.sh') }}
 
             - name: Cache Snowbridge Relayer
-              uses: actions/cache@v3
+              uses: actions/cache@v4
               id: cache-relayer
               with:
                 path: |
@@ -113,7 +113,7 @@ jobs:
                 key: relayer-${{ runner.os }}-${{ hashFiles('**/scripts/bridge/set-env.sh') }}
 
             - name: Cache Ethereum Node Binaries
-              uses: actions/cache@v3
+              uses: actions/cache@v4
               id: cache-ethereum-binaries
               with:
                 path: |
