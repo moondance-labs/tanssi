@@ -3,7 +3,6 @@ import { type KeyringPair, alith } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 
 import {
-    type MultiLocation,
     SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS,
     TESTNET_ETHEREUM_NETWORK_ID,
     waitEventUntilTimeout
@@ -52,6 +51,34 @@ describeSuite({
 
                 console.log("Converted address:", convertedAddress);
 
+                const versionedLocation = {
+                    V3: {
+                        parents: 1,
+                        interior: {
+                            X3: [
+                                {
+                                    GlobalConsensus: {
+                                        ByGenesis: "0x983a1a72503d6cc3636776747ec627172b51272bf45e50a355348facb67a820a"
+                                    }
+                                },
+                                {
+                                    Parachain: 2001,
+                                },
+                                {
+                                    PalletInstance: 10,
+                                },
+                            ],
+                        },
+                    },
+                };
+
+                const containerTokenMetadata = {
+                    name: "para2001",
+                    symbol: "para2001",
+                    decimals: 12,
+                };
+
+
                 const txHash = await relayChainPolkadotJs.tx.utility
                     .batch([
                         relayChainPolkadotJs.tx.balances.transferKeepAlive(convertedAddress, 100_000_000_000_000n),
@@ -62,6 +89,8 @@ describeSuite({
                                 newParaId
                             )
                         ),
+                        relayChainPolkadotJs.tx.sudo
+                            .sudo(relayChainPolkadotJs.tx.ethereumSystem.registerToken(versionedLocation, containerTokenMetadata))
                     ])
                     .signAndSend(aliceAccount32);
 
@@ -115,38 +144,6 @@ describeSuite({
                         },
                     },
                 };
-
-                const versionedLocation = {
-                    V3: {
-                        parents: 1,
-                        interior: {
-                            X3: [
-                                {
-                                    GlobalConsensus: {
-                                        ByGenesis: [152, 58, 26, 114, 80, 61, 108, 195, 99, 103, 118, 116, 126, 198, 39, 23, 43, 81, 39, 43, 244, 94, 80, 163, 85, 52, 143, 172, 182, 122, 130, 10]
-                                    }
-                                },
-                                {
-                                    Parachain: 2001,
-                                },
-                                {
-                                    PalletInstance: 10,
-                                },
-                            ],
-                        },
-                    },
-                };
-
-                const containerTokenMetadata = {
-                    name: "test-name",
-                    symbol: "test-symbol",
-                    decimals: 12,
-                };
-
-                // Register token on EthereumSystem.
-                await relayChainPolkadotJs.tx.sudo
-                    .sudo(relayChainPolkadotJs.tx.ethereumSystem.registerToken(versionedLocation, containerTokenMetadata))
-                    .signAsync(aliceAccount32);
 
                 const channelNonceBefore = await relayChainPolkadotJs.query.ethereumOutboundQueue.nonce(newChannelId);
 
