@@ -1,18 +1,12 @@
-import { beforeAll, customDevRpcRequest, describeSuite, expect } from "@moonwall/cli";
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type KeyringPair, generateKeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import { u8aToHex } from "@polkadot/util";
-import {
-    type RawXcmMessage,
-    XcmFragment,
-    injectUmpMessageAndSeal,
-    jumpToSession,
-    TESTNET_ETHEREUM_NETWORK_ID,
-} from "utils";
+import { XcmFragment, TESTNET_ETHEREUM_NETWORK_ID } from "utils";
 import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_EXPORTS } from "helpers";
 
 describeSuite({
-    id: "DEVT1904",
+    id: "DEVT1905",
     title: "XCM - Succeeds sending XCM",
     foundationMethods: "dev",
     testCases: ({ context, it }) => {
@@ -127,7 +121,7 @@ describeSuite({
 
         it({
             id: "T01",
-            title: "Should succeed exporting the message",
+            title: "Should succeed exporting the message by faking the para origin",
             test: async () => {
                 const ethereumNetwork = { Ethereum: { chainId: TESTNET_ETHEREUM_NETWORK_ID } };
 
@@ -158,28 +152,34 @@ describeSuite({
                     ],
                     beneficiary: u8aToHex(random.addressRaw),
                 })
+                    .push_any({
+                        DescendOrigin: {
+                            X1: {
+                                Parachain: 2000,
+                            },
+                        },
+                    })
                     .withdraw_asset()
                     .buy_execution()
                     .export_message(xcmToExport.instructions, ethereumNetwork, "Here")
                     .as_v3();
 
-                await context.createBlock();
-                // Send RPC call to enable para inherent candidate generation
-
-                await customDevRpcRequest("mock_enableParaInherentCandidate", []);
-
-                // Send ump message
-                await injectUmpMessageAndSeal(context, {
-                    type: "XcmVersionedXcm",
-                    payload: xcmMessage,
-                } as RawXcmMessage);
-
                 const tokenTransferNonceBefore =
                     await polkadotJs.query.ethereumOutboundQueue.nonce(tokenTransferChannel);
 
-                // Wait until message is processed
-                await jumpToSession(context, 3);
+                const executeMessageTx = await polkadotJs.tx.sudo.sudo(
+                    polkadotJs.tx.xcmPallet.execute(xcmMessage, {
+                        refTime: 1000000000,
+                        proofSize: 1000000,
+                    })
+                );
+                await context.createBlock(await executeMessageTx.signAsync(alice), {
+                    allowFailures: false,
+                });
+
+                // we need one more for the nonce to be updated
                 await context.createBlock();
+
                 const tokenTransferNonceAfter =
                     await polkadotJs.query.ethereumOutboundQueue.nonce(tokenTransferChannel);
 
