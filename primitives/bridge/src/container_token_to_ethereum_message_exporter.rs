@@ -417,9 +417,20 @@ mod tests {
     };
 
     parameter_types! {
+        pub EthereumLocation: Location = Location::new(1, EthereumNetwork::get());
         const EthereumNetwork: NetworkId = Ethereum { chain_id: 11155111 };
         UniversalLocation: InteriorLocation = [GlobalConsensus(ByGenesis([ 152, 58, 26, 114, 80, 61, 108, 195, 99, 103, 118, 116, 126, 198, 39, 23, 43, 81, 39, 43, 244, 94, 80, 163, 85, 52, 143, 172, 182, 122, 130, 10 ])), Parachain(2001)].into();
         const BridgeChannelInfo: Option<(ChannelId, AgentId)> = Some((ChannelId::new([1u8; 32]), H256([2u8; 32])));
+    }
+
+    pub struct MockTokenIdConvert;
+    impl MaybeEquivalence<TokenId, Location> for MockTokenIdConvert {
+        fn convert(_id: &TokenId) -> Option<Location> {
+            Some(Location::parent())
+        }
+        fn convert_back(_loc: &Location) -> Option<TokenId> {
+            Some(H256::from_low_u64_be(123))
+        }
     }
 
     struct MockOkOutboundQueue;
@@ -480,7 +491,9 @@ mod tests {
         let result = ContainerEthereumBlobExporter::<
             UniversalLocation,
             EthereumNetwork,
+            EthereumLocation,
             MockOkOutboundQueue,
+            MockTokenIdConvert,
             BridgeChannelInfo,
         >::validate(
             network,
@@ -503,7 +516,9 @@ mod tests {
         let result = ContainerEthereumBlobExporter::<
             UniversalLocation,
             EthereumNetwork,
+            EthereumLocation,
             MockOkOutboundQueue,
+            MockTokenIdConvert,
             BridgeChannelInfo,
         >::validate(
             network,
@@ -532,7 +547,9 @@ mod tests {
         let result = ContainerEthereumBlobExporter::<
             UniversalLocation,
             EthereumNetwork,
+            EthereumLocation,
             MockOkOutboundQueue,
+            MockTokenIdConvert,
             BridgeChannelInfo,
         >::validate(
             network,
@@ -555,7 +572,9 @@ mod tests {
         let result = ContainerEthereumBlobExporter::<
             UniversalLocation,
             EthereumNetwork,
+            EthereumLocation,
             MockOkOutboundQueue,
+            MockTokenIdConvert,
             BridgeChannelInfo,
         >::validate(
             network,
@@ -570,7 +589,9 @@ mod tests {
         let result = ContainerEthereumBlobExporter::<
             UniversalLocation,
             EthereumNetwork,
+            EthereumLocation,
             MockOkOutboundQueue,
+            MockTokenIdConvert,
             BridgeChannelInfo,
         >::validate(
             network,
@@ -599,7 +620,9 @@ mod tests {
         let result = ContainerEthereumBlobExporter::<
             UniversalLocation,
             EthereumNetwork,
+            EthereumLocation,
             MockOkOutboundQueue,
+            MockTokenIdConvert,
             BridgeChannelInfo,
         >::validate(
             network,
@@ -631,7 +654,9 @@ mod tests {
         let result = ContainerEthereumBlobExporter::<
             UniversalLocation,
             EthereumNetwork,
+            EthereumLocation,
             MockOkOutboundQueue,
+            MockTokenIdConvert,
             BridgeChannelInfo,
         >::validate(
             network,
@@ -663,7 +688,9 @@ mod tests {
         let result = ContainerEthereumBlobExporter::<
             UniversalLocation,
             EthereumNetwork,
+            EthereumLocation,
             MockOkOutboundQueue,
+            MockTokenIdConvert,
             BridgeChannelInfo,
         >::validate(
             network,
@@ -717,7 +744,9 @@ mod tests {
         let result = ContainerEthereumBlobExporter::<
             UniversalLocation,
             EthereumNetwork,
+            EthereumLocation,
             MockOkOutboundQueue,
+            MockTokenIdConvert,
             BridgeChannelInfo,
         >::validate(
             network,
@@ -769,7 +798,9 @@ mod tests {
         let result = ContainerEthereumBlobExporter::<
             UniversalLocation,
             EthereumNetwork,
+            EthereumLocation,
             MockOkOutboundQueue,
+            MockTokenIdConvert,
             BridgeChannelInfo,
         >::validate(
             network,
@@ -824,7 +855,9 @@ mod tests {
         let result = ContainerEthereumBlobExporter::<
             UniversalLocation,
             EthereumNetwork,
+            EthereumLocation,
             MockOkOutboundQueue,
+            MockTokenIdConvert,
             BridgeChannelInfo,
         >::validate(
             network,
@@ -889,7 +922,9 @@ mod tests {
         let result = ContainerEthereumBlobExporter::<
             UniversalLocation,
             EthereumNetwork,
+            EthereumLocation,
             MockOkOutboundQueue,
+            MockTokenIdConvert,
             BridgeChannelInfo,
         >::validate(
             network,
@@ -954,7 +989,9 @@ mod tests {
         let result = ContainerEthereumBlobExporter::<
             UniversalLocation,
             EthereumNetwork,
+            EthereumLocation,
             MockOkOutboundQueue,
+            MockTokenIdConvert,
             BridgeChannelInfo,
         >::validate(
             network,
@@ -1024,7 +1061,9 @@ mod tests {
         let result = ContainerEthereumBlobExporter::<
             UniversalLocation,
             EthereumNetwork,
+            EthereumLocation,
             MockOkOutboundQueue,
+            MockTokenIdConvert,
             BridgeChannelInfo,
         >::validate(
             network,
@@ -1097,7 +1136,9 @@ mod tests {
         let result = ContainerEthereumBlobExporter::<
             UniversalLocation,
             EthereumNetwork,
+            EthereumLocation,
             MockOkOutboundQueue,
+            MockTokenIdConvert,
             BridgeChannelInfo,
         >::validate(
             network,
@@ -1177,7 +1218,9 @@ mod tests {
         let result = ContainerEthereumBlobExporter::<
             UniversalLocation,
             EthereumNetwork,
+            EthereumLocation,
             MockOkOutboundQueue,
+            MockTokenIdConvert,
             BridgeChannelInfo,
         >::validate(
             network,
@@ -1257,7 +1300,9 @@ mod tests {
         let result = ContainerEthereumBlobExporter::<
             UniversalLocation,
             EthereumNetwork,
+            EthereumLocation,
             MockOkOutboundQueue,
+            MockTokenIdConvert,
             BridgeChannelInfo,
         >::validate(
             network,
@@ -1324,7 +1369,9 @@ mod tests {
         let result = ContainerEthereumBlobExporter::<
             UniversalLocation,
             EthereumNetwork,
+            EthereumLocation,
             MockOkOutboundQueue,
+            MockTokenIdConvert,
             BridgeChannelInfo,
         >::validate(
             network,
@@ -1404,7 +1451,9 @@ mod tests {
         let result = ContainerEthereumBlobExporter::<
             UniversalLocation,
             EthereumNetwork,
+            EthereumLocation,
             MockOkOutboundQueue,
+            MockTokenIdConvert,
             BridgeChannelInfo,
         >::validate(
             network,
@@ -1471,7 +1520,9 @@ mod tests {
         let result = ContainerEthereumBlobExporter::<
             UniversalLocation,
             EthereumNetwork,
+            EthereumLocation,
             MockOkOutboundQueue,
+            MockTokenIdConvert,
             BridgeChannelInfo,
         >::validate(
             network,
@@ -1538,7 +1589,9 @@ mod tests {
         let result = ContainerEthereumBlobExporter::<
             UniversalLocation,
             EthereumNetwork,
+            EthereumLocation,
             MockOkOutboundQueue,
+            MockTokenIdConvert,
             BridgeChannelInfo,
         >::validate(
             network,
@@ -1610,7 +1663,9 @@ mod tests {
         let result = ContainerEthereumBlobExporter::<
             UniversalLocation,
             EthereumNetwork,
+            EthereumLocation,
             MockOkOutboundQueue,
+            MockTokenIdConvert,
             BridgeChannelInfo,
         >::validate(
             network,
@@ -1623,7 +1678,7 @@ mod tests {
     }
 
     #[test]
-    fn exporter_bridge_channel_issue_yields_unroutable() {
+    fn exporter_bridge_success() {
         let asset_para_location: InteriorLocation = [
             GlobalConsensus(Polkadot),
             Parachain(2001),
@@ -1681,7 +1736,9 @@ mod tests {
         let result = ContainerEthereumBlobExporter::<
             UniversalLocation,
             EthereumNetwork,
+            EthereumLocation,
             MockOkOutboundQueue,
+            MockTokenIdConvert,
             BridgeChannelInfo,
         >::validate(
             network,
