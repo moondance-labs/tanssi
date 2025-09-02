@@ -72,7 +72,7 @@ mod benchmarks {
         let payment: BalanceOf<T> = T::ProvideBlockProductionCost::block_cost(&para_id)
             .0
             .saturating_mul(1000u32.into());
-        let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
+        let caller = create_funded_user::<T>("caller", 1, 4_000_000_000u32);
 
         // Before call: 0 credits
         assert_eq!(
@@ -177,7 +177,7 @@ mod benchmarks {
             let block_cost = T::ProvideBlockProductionCost::block_cost(&para_id.into()).0;
             let credits: BalanceOf<T> = 1000u32.into();
             let balance_to_purchase = block_cost.saturating_mul(credits);
-            let caller = create_funded_user::<T>("caller", 1, 1_000_000_000u32);
+            let caller = create_funded_user::<T>("caller", 1, 4_000_000_000u32);
             let existential_deposit = <T::Currency>::minimum_balance();
             assert_ok!(Pallet::<T>::purchase_credits(
                 RawOrigin::Signed(caller.clone()).into(),
