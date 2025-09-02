@@ -50,7 +50,6 @@ use {
     sp_core::{ConstU32, ConstU8, Get, H160, H256},
     sp_runtime::{DispatchError, DispatchResult},
     tanssi_runtime_common::relay::RewardThroughFeesAccount,
-    tp_bridge::generic_token_message_processor::NoOpProcessor,
     tp_bridge::{DoNothingConvertMessage, DoNothingRouter, EthereumSystemHandler},
     xcm::latest::{
         prelude::*, Asset as XcmAsset, AssetId as XcmAssetId, Assets as XcmAssets, ExecuteXcm,
@@ -424,6 +423,14 @@ mod test_helpers {
     }
 }
 
+pub type EthTokensProcessor = EthTokensLocalProcessor<
+    Runtime,
+    xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
+    <xcm_config::XcmConfig as xcm_executor::Config>::Weigher,
+    starlight_runtime_constants::snowbridge::EthereumLocation,
+    starlight_runtime_constants::snowbridge::EthereumNetwork,
+>;
+
 #[cfg(not(feature = "runtime-benchmarks"))]
 pub type NativeTokensProcessor = NativeTokenTransferMessageProcessor<Runtime>;
 
@@ -452,9 +459,9 @@ impl snowbridge_pallet_inbound_queue::Config for Runtime {
     #[cfg(not(feature = "runtime-benchmarks"))]
     type MessageProcessor = (
         SymbioticMessageProcessor<Self>,
-        GenericTokenMessageProcessor<Self, NativeTokensProcessor, EthTokensLocalProcessor>,
+        GenericTokenMessageProcessor<Self, NativeTokensProcessor, EthTokensProcessor>,
     );
     type RewardProcessor = RewardThroughFeesAccount<Self>;
     #[cfg(feature = "runtime-benchmarks")]
-    type MessageProcessor = (benchmark_helper::WorstCaseMessageProcessor<NoOpProcessor>,); // TODO: will be addressed later
+    type MessageProcessor = (benchmark_helper::WorstCaseMessageProcessor<EthTokensProcessor>,);
 }
