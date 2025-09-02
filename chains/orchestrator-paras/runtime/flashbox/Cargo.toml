@@ -103,7 +103,6 @@ cumulus-pallet-session-benchmarking = { workspace = true }
 cumulus-pallet-weight-reclaim = { workspace = true }
 cumulus-primitives-core = { workspace = true }
 cumulus-primitives-timestamp = { workspace = true }
-cumulus-primitives-utility = { workspace = true }
 pallet-invulnerables = { workspace = true }
 parachain-info = { workspace = true }
 
@@ -116,7 +115,6 @@ frame-try-runtime = { workspace = true, optional = true }
 cumulus-primitives-parachain-inherent = { workspace = true }
 cumulus-test-relay-sproof-builder = { workspace = true }
 polkadot-runtime-parachains = { workspace = true, features = [ "std" ] }
-sc-consensus-grandpa = { workspace = true }
 sp-consensus-babe = { workspace = true, features = [ "std" ] }
 sp-consensus-beefy = { workspace = true, features = [ "std" ] }
 sp-io = { workspace = true }
@@ -137,7 +135,6 @@ std = [
 	"cumulus-primitives-core/std",
 	"cumulus-primitives-parachain-inherent/std",
 	"cumulus-primitives-timestamp/std",
-	"cumulus-primitives-utility/std",
 	"cumulus-test-relay-sproof-builder/std",
 	"dp-consensus/std",
 	"dp-core/std",
@@ -231,7 +228,6 @@ runtime-benchmarks = [
 	"cumulus-pallet-session-benchmarking/runtime-benchmarks",
 	"cumulus-pallet-weight-reclaim/runtime-benchmarks",
 	"cumulus-primitives-core/runtime-benchmarks",
-	"cumulus-primitives-utility/runtime-benchmarks",
 	"dp-consensus/runtime-benchmarks",
 	"frame-benchmarking",
 	"frame-benchmarking/runtime-benchmarks",

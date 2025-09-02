@@ -395,6 +395,39 @@ jobs:
             body:         |
               **All weights are good now.** 🎉
             edit-mode:    replace
+
+    check-unused-dependencies:
+      runs-on: self-hosted
+      needs: ["set-tags"]
+      permissions:
+        contents: read
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+          with:
+            ref: ${{ needs.set-tags.outputs.git_ref }}
+
+        - name: Install Rust nightly
+          uses: actions-rs/toolchain@v1
+          with:
+            toolchain: nightly
+            override: false
+            components: rust-src
+            target: wasm32-unknown-unknown
+
+        - name: Cache cargo bin
+          uses: actions/cache@v4
+          with:
+            path: ~/.cargo/bin
+            key: cargo-bin-udeps-nightly-${{ runner.os }}
+
+        - name: Install cargo-udeps (nightly)
+          run: cargo +nightly install cargo-udeps
+
+        - name: Check for unused dependencies
+          run: |
+            cargo +nightly udeps --workspace --features try-runtime,runtime-benchmarks --all-targets
+
     rust-test:
       runs-on: self-hosted
       needs: ["set-tags", "build"]
