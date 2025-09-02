@@ -274,6 +274,7 @@ try-runtime = [
 	"parachain-info/try-runtime",
 	"polkadot-runtime-common/try-runtime",
 	"sp-runtime/try-runtime",
+	"tanssi-runtime-common/try-runtime",
 ]
 
 metadata-hash = []
