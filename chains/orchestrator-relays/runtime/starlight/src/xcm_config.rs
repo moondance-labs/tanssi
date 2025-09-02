@@ -20,8 +20,9 @@ use {
     super::{
         parachains_origin,
         weights::{self, xcm::XcmWeight},
-        AccountId, AllPalletsWithSystem, Balances, Dmp, Fellows, ParaId, Runtime, RuntimeCall,
-        RuntimeEvent, RuntimeOrigin, TransactionByteFee, Treasury, WeightToFee, XcmPallet,
+        AccountId, AllPalletsWithSystem, Balance, Balances, Dmp, Fellows, ForeignAssets,
+        ForeignAssetsCreator, ParaId, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin,
+        TransactionByteFee, Treasury, WeightToFee, XcmPallet,
     },
     crate::governance::StakingAdmin,
     frame_support::{
@@ -35,19 +36,29 @@ use {
         ToAuthor,
     },
     sp_core::ConstU32,
-    starlight_runtime_constants::{currency::CENTS, system_parachain::*, TANSSI_GENESIS_HASH},
+    sp_runtime::traits::TryConvertInto,
+    starlight_runtime_constants::{
+        currency::CENTS,
+        snowbridge::{EthereumLocation, EthereumNetwork},
+        system_parachain::*,
+        TANSSI_GENESIS_HASH,
+    },
     tp_bridge::EthereumLocationsConverterFor,
-    tp_xcm_commons::NativeAssetReserve,
-    xcm::{latest::prelude::*, opaque::latest::WESTEND_GENESIS_HASH},
+    tp_xcm_commons::{EthereumAssetReserve, NativeAssetReserve},
+    xcm::{
+        latest::prelude::{AssetId as XcmAssetId, *},
+        opaque::latest::WESTEND_GENESIS_HASH,
+    },
     xcm_builder::{
         AccountId32Aliases, AllowExplicitUnpaidExecutionFrom, AllowKnownQueryResponses,
         AllowSubscriptionsFrom, AllowTopLevelPaidExecutionFrom, ChildParachainAsNative,
-        ChildParachainConvertsVia, DescribeAllTerminal, DescribeFamily, FixedWeightBounds,
-        FrameTransactionalProcessor, FungibleAdapter, HashedDescription, IsChildSystemParachain,
-        IsConcrete, MintLocation, OriginToPluralityVoice, SendXcmFeeToAccount,
-        SignedAccountId32AsNative, SignedToAccountId32, SovereignSignedViaLocation,
-        TakeWeightCredit, TrailingSetTopicAsId, UsingComponents, WeightInfoBounds,
-        WithComputedOrigin, WithUniqueTopic, XcmFeeManagerFromComponents,
+        ChildParachainConvertsVia, ConvertedConcreteId, DescribeAllTerminal, DescribeFamily,
+        FixedWeightBounds, FrameTransactionalProcessor, FungibleAdapter, FungiblesAdapter,
+        HashedDescription, IsChildSystemParachain, IsConcrete, MintLocation, NoChecking,
+        OriginToPluralityVoice, SendXcmFeeToAccount, SignedAccountId32AsNative,
+        SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId,
+        UsingComponents, WeightInfoBounds, WithComputedOrigin, WithUniqueTopic,
+        XcmFeeManagerFromComponents,
     },
     xcm_executor::XcmExecutor,
 };
@@ -97,6 +108,22 @@ pub type LocalAssetTransactor = FungibleAdapter<
     LocalCheckAccount,
 >;
 
+/// Means for transacting foreign assets from different global consensus.
+pub type ForeignFungiblesTransactor = FungiblesAdapter<
+    // Use this fungibles implementation:
+    ForeignAssets,
+    // Use this currency when it is a fungible asset matching the given location or name:
+    (ConvertedConcreteId<AssetId, Balance, ForeignAssetsCreator, TryConvertInto>,),
+    // Convert an XCM Location into a local account id:
+    LocationConverter,
+    // Our chain's account ID type (we can't get away without mentioning it explicitly):
+    AccountId,
+    // We dont need to check teleports here.
+    NoChecking,
+    // The account to use for tracking teleports.
+    CheckingAccount,
+>;
+
 /// The means that we convert an the XCM message origin location into a local dispatch origin.
 type LocalOriginConverter = (
     // A `Signed` origin of the sovereign account that the original location controls.
@@ -111,7 +138,7 @@ parameter_types! {
     /// The amount of weight an XCM operation takes. This is a safe overestimate.
     pub const BaseXcmWeight: Weight = Weight::from_parts(1_000_000_000, 64 * 1024);
     /// The asset ID for the asset that we use to pay for message delivery fees.
-    pub FeeAssetId: AssetId = AssetId(TokenLocation::get());
+    pub FeeAssetId: XcmAssetId = XcmAssetId(TokenLocation::get());
     /// The base fee for the message delivery fees.
     pub const BaseDeliveryFee: u128 = CENTS.saturating_mul(3);
 }
@@ -127,7 +154,7 @@ pub type XcmRouter = WithUniqueTopic<
 >;
 
 parameter_types! {
-    pub Star: AssetFilter = Wild(AllOf { fun: WildFungible, id: AssetId(TokenLocation::get()) });
+    pub Star: AssetFilter = Wild(AllOf { fun: WildFungible, id: XcmAssetId(TokenLocation::get()) });
     pub AssetHub: Location = Parachain(ASSET_HUB_ID).into_location();
     pub Contracts: Location = Parachain(CONTRACTS_ID).into_location();
     pub Encointer: Location = Parachain(ENCOINTER_ID).into_location();
@@ -194,9 +221,12 @@ pub struct XcmConfig;
 impl xcm_executor::Config for XcmConfig {
     type RuntimeCall = RuntimeCall;
     type XcmSender = XcmRouter;
-    type AssetTransactor = LocalAssetTransactor;
+    type AssetTransactor = (LocalAssetTransactor, ForeignFungiblesTransactor);
     type OriginConverter = LocalOriginConverter;
-    type IsReserve = NativeAssetReserve;
+    type IsReserve = (
+        NativeAssetReserve,
+        EthereumAssetReserve<EthereumLocation, EthereumNetwork>,
+    );
     type IsTeleporter = ();
     type UniversalLocation = UniversalLocation;
     type Barrier = Barrier;
@@ -289,4 +319,63 @@ impl pallet_xcm::Config for Runtime {
     type WeightInfo = weights::pallet_xcm::SubstrateWeight<Runtime>;
     type AdminOrigin = EnsureRoot<AccountId>;
     type AuthorizedAliasConsideration = Disabled;
+}
+
+parameter_types! {
+    pub const ForeignAssetsAssetDeposit: Balance = 0;
+    pub const ForeignAssetsAssetAccountDeposit: Balance = 0;
+    pub const ForeignAssetsApprovalDeposit: Balance = 0;
+    pub const ForeignAssetsAssetsStringLimit: u32 = 50;
+    pub const ForeignAssetsMetadataDepositBase: Balance = 0;
+    pub const ForeignAssetsMetadataDepositPerByte: Balance = 0;
+    pub CheckingAccount: AccountId = XcmPallet::check_account();
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+/// Simple conversion of `u32` into an `AssetId` for use in benchmarking.
+pub struct ForeignAssetBenchmarkHelper;
+#[cfg(feature = "runtime-benchmarks")]
+impl pallet_assets::BenchmarkHelper<AssetId> for ForeignAssetBenchmarkHelper {
+    fn create_asset_id_parameter(id: u32) -> AssetId {
+        id.try_into()
+            .expect("number too large to create benchmarks")
+    }
+}
+
+pub type AssetId = u16;
+pub type ForeignAssetsInstance = pallet_assets::Instance1;
+impl pallet_assets::Config<ForeignAssetsInstance> for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type Balance = Balance;
+    type AssetId = AssetId;
+    type AssetIdParameter = AssetId;
+    type Currency = Balances;
+    type CreateOrigin = frame_support::traits::NeverEnsureOrigin<AccountId>;
+    type ForceOrigin = EnsureRoot<AccountId>;
+    type AssetDeposit = ForeignAssetsAssetDeposit;
+    type MetadataDepositBase = ForeignAssetsMetadataDepositBase;
+    type MetadataDepositPerByte = ForeignAssetsMetadataDepositPerByte;
+    type ApprovalDeposit = ForeignAssetsApprovalDeposit;
+    type StringLimit = ForeignAssetsAssetsStringLimit;
+    type Freezer = ();
+    type Extra = ();
+    type WeightInfo = weights::pallet_assets::SubstrateWeight<Runtime>;
+    type CallbackHandle = ();
+    type AssetAccountDeposit = ForeignAssetsAssetAccountDeposit;
+    type RemoveItemsLimit = frame_support::traits::ConstU32<1000>;
+    type Holder = ();
+    #[cfg(feature = "runtime-benchmarks")]
+    type BenchmarkHelper = ForeignAssetBenchmarkHelper;
+}
+
+impl pallet_foreign_asset_creator::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type ForeignAsset = Location;
+    type ForeignAssetCreatorOrigin = EnsureRoot<AccountId>;
+    type ForeignAssetModifierOrigin = EnsureRoot<AccountId>;
+    type ForeignAssetDestroyerOrigin = EnsureRoot<AccountId>;
+    type Fungibles = ForeignAssets;
+    type WeightInfo = weights::pallet_foreign_asset_creator::SubstrateWeight<Runtime>;
+    type OnForeignAssetCreated = ();
+    type OnForeignAssetDestroyed = ();
 }
