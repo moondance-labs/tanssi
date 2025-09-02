@@ -40,7 +40,7 @@ jobs:
                     echo "git_ref=$GITHUB_REF" >> $GITHUB_OUTPUT
                   fi
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
               with:
                   ref: ${{ steps.check-git-ref.outputs.git_ref }}
             - name: Get Sha
@@ -64,7 +64,7 @@ jobs:
         needs: ["set-tags"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Find un-copyrighted files
@@ -83,7 +83,7 @@ jobs:
         needs: ["set-tags"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Setup Rust toolchain
@@ -104,7 +104,7 @@ jobs:
           SCCACHE_GHA_ENABLED: "true"
         steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Setup Rust toolchain
@@ -128,7 +128,7 @@ jobs:
         needs: ["set-tags"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Setup Rust toolchain
@@ -143,7 +143,7 @@ jobs:
         needs: ["set-tags"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Setup Rust toolchain
@@ -158,7 +158,7 @@ jobs:
         needs: ["set-tags"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
@@ -180,7 +180,7 @@ jobs:
         needs: ["set-tags"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
@@ -210,7 +210,7 @@ jobs:
           SCCACHE_GHA_ENABLED: "true"
         steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Cargo build
@@ -238,7 +238,7 @@ jobs:
           RUNTIMES_AS_STRING: "dancebox_runtime,flashbox_runtime,dancelight_runtime,starlight_runtime,container_chain_template_simple_runtime,container_chain_template_frontier_runtime"
         steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Setup Rust toolchain
@@ -344,7 +344,7 @@ jobs:
         GH_TOKEN: ${{ github.token }}
       steps:
         - name: Checkout
-          uses: actions/checkout@v4
+          uses: actions/checkout@v5
           with:
             ref: ${{ needs.set-tags.outputs.git_ref }}
         - name: Fetch PR base commit
@@ -440,7 +440,7 @@ jobs:
         SCCACHE_GHA_ENABLED: "true"
       steps:
         - name: Checkout
-          uses: actions/checkout@v4
+          uses: actions/checkout@v5
           with:
             ref: ${{ needs.set-tags.outputs.git_ref }}
         - name: Run sccache-cache
@@ -468,7 +468,7 @@ jobs:
         needs: ["set-tags", "build"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
@@ -501,7 +501,7 @@ jobs:
         needs: ["set-tags", "build"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
@@ -534,7 +534,7 @@ jobs:
         needs: ["set-tags", "build"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
@@ -567,7 +567,7 @@ jobs:
         needs: ["set-tags", "build"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
@@ -600,7 +600,7 @@ jobs:
         needs: ["set-tags", "build"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
@@ -633,7 +633,7 @@ jobs:
         needs: ["set-tags", "build"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
@@ -663,7 +663,7 @@ jobs:
         needs: ["set-tags", "build"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
@@ -704,7 +704,7 @@ jobs:
                 test_name: [zombie_tanssi, zombie_tanssi_relay]
         steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: "Download binaries"
@@ -750,7 +750,7 @@ jobs:
           DEBUG_COLORS: 1
         steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - uses: pnpm/action-setup@v4.1.0
@@ -792,7 +792,7 @@ jobs:
                 chain: ["dancebox"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
@@ -852,7 +852,7 @@ jobs:
                       runtime: container-chain-template-simple
         steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
@@ -899,7 +899,7 @@ jobs:
                       runtime: starlight
         steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
@@ -939,7 +939,7 @@ jobs:
         needs: ["set-tags", "build"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: Pnpm
@@ -1005,7 +1005,7 @@ jobs:
         if: ${{ (needs.set-tags.outputs.image_exists == 'false') && (github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'push') }}
         steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
               with:
                   ref: ${{ needs.set-tags.outputs.git_ref }}
             - name: "Download binaries"
