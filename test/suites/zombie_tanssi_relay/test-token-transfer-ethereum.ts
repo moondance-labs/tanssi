@@ -118,9 +118,14 @@ describeSuite({
 
                 const versionedLocation = {
                     V3: {
-                        parents: 0,
+                        parents: 1,
                         interior: {
-                            X2: [
+                            X3: [
+                                {
+                                    GlobalConsensus: {
+                                        ByGenesis: [152, 58, 26, 114, 80, 61, 108, 195, 99, 103, 118, 116, 126, 198, 39, 23, 43, 81, 39, 43, 244, 94, 80, 163, 85, 52, 143, 172, 182, 122, 130, 10]
+                                    }
+                                },
                                 {
                                     Parachain: 2001,
                                 },

@@ -28,9 +28,10 @@ use {
     xcm_executor::traits::ExportXcm,
 };
 
-pub struct EthereumBlobExporter<
+pub struct ContainerEthereumBlobExporter<
     UniversalLocation,
     EthereumNetwork,
+    EthereumLocation,
     OutboundQueue,
     ConvertAssetId,
     BridgeChannelInfo,
@@ -38,16 +39,25 @@ pub struct EthereumBlobExporter<
     PhantomData<(
         UniversalLocation,
         EthereumNetwork,
+        EthereumLocation,
         OutboundQueue,
         ConvertAssetId,
         BridgeChannelInfo,
     )>,
 );
 
-impl<UniversalLocation, EthereumNetwork, OutboundQueue, ConvertAssetId, BridgeChannelInfo> ExportXcm
-    for EthereumBlobExporter<
+impl<
         UniversalLocation,
         EthereumNetwork,
+        EthereumLocation,
+        OutboundQueue,
+        ConvertAssetId,
+        BridgeChannelInfo,
+    > ExportXcm
+    for ContainerEthereumBlobExporter<
+        UniversalLocation,
+        EthereumNetwork,
+        EthereumLocation,
         OutboundQueue,
         ConvertAssetId,
         BridgeChannelInfo,
@@ -55,6 +65,7 @@ impl<UniversalLocation, EthereumNetwork, OutboundQueue, ConvertAssetId, BridgeCh
 where
     UniversalLocation: Get<InteriorLocation>,
     EthereumNetwork: Get<NetworkId>,
+    EthereumLocation: Get<Location>,
     OutboundQueue: SendMessage<Balance = u128>,
     ConvertAssetId: MaybeEquivalence<TokenId, Location>,
     BridgeChannelInfo: Get<Option<(ChannelId, AgentId)>>,
@@ -117,7 +128,11 @@ where
         })?;
 
         let mut converter =
-            XcmConverter::<ConvertAssetId, ()>::new(&message, expected_network, para_id);
+            XcmConverter::<ConvertAssetId, UniversalLocation, EthereumLocation, ()>::new(
+                &message,
+                expected_network,
+                para_id,
+            );
         let (command, message_id) = converter.convert().map_err(|err|{
             log::error!(target: "xcm::ethereum_blob_exporter", "unroutable due to pattern matching error '{err:?}'.");
             Unroutable
@@ -195,15 +210,18 @@ macro_rules! match_expression {
 	};
 }
 
-struct XcmConverter<'a, ConvertAssetId, Call> {
+struct XcmConverter<'a, ConvertAssetId, UniversalLocation, EthereumLocation, Call> {
     iter: Peekable<Iter<'a, Instruction<Call>>>,
     ethereum_network: NetworkId,
     para_id: u32,
-    _marker: PhantomData<ConvertAssetId>,
+    _marker: PhantomData<(ConvertAssetId, UniversalLocation, EthereumLocation)>,
 }
-impl<'a, ConvertAssetId, Call> XcmConverter<'a, ConvertAssetId, Call>
+impl<'a, ConvertAssetId, UniversalLocation, EthereumLocation, Call>
+    XcmConverter<'a, ConvertAssetId, UniversalLocation, EthereumLocation, Call>
 where
     ConvertAssetId: MaybeEquivalence<TokenId, Location>,
+    UniversalLocation: Get<InteriorLocation>,
+    EthereumLocation: Get<Location>,
 {
     fn new(message: &'a Xcm<Call>, ethereum_network: NetworkId, para_id: u32) -> Self {
         Self {
@@ -360,15 +378,13 @@ where
         // transfer amount must be greater than 0.
         ensure!(amount > 0, ZeroAssetTransfer);
 
-        let anchor = Location {
+        let asset_location = Location {
             parents: 0,
-            interior: Junctions::X1([Parachain(self.para_id)].into()),
+            interior: Junctions::X2([Parachain(self.para_id), PalletInstance(10)].into()),
         };
 
-        let dest = Location::here();
-
-        let reanchored_location = asset_id
-            .reanchored(&dest, &anchor.interior)
+        let reanchored_location = asset_location
+            .reanchored(&EthereumLocation::get(), &UniversalLocation::get())
             .map_err(|_| AssetReanchorFailed)?;
 
         // TODO: Move to trace
@@ -461,7 +477,7 @@ mod tests {
         let mut destination: Option<InteriorLocation> = None;
         let mut message: Option<Xcm<()>> = None;
 
-        let result = EthereumBlobExporter::<
+        let result = ContainerEthereumBlobExporter::<
             UniversalLocation,
             EthereumNetwork,
             MockOkOutboundQueue,
@@ -484,7 +500,7 @@ mod tests {
         let mut destination: Option<InteriorLocation> = None;
         let mut message: Option<Xcm<()>> = None;
 
-        let result = EthereumBlobExporter::<
+        let result = ContainerEthereumBlobExporter::<
             UniversalLocation,
             EthereumNetwork,
             MockOkOutboundQueue,
@@ -513,7 +529,7 @@ mod tests {
         );
         let mut message: Option<Xcm<()>> = None;
 
-        let result = EthereumBlobExporter::<
+        let result = ContainerEthereumBlobExporter::<
             UniversalLocation,
             EthereumNetwork,
             MockOkOutboundQueue,
@@ -536,7 +552,7 @@ mod tests {
         let mut destination: Option<InteriorLocation> = Here.into();
         let mut message: Option<Xcm<()>> = None;
 
-        let result = EthereumBlobExporter::<
+        let result = ContainerEthereumBlobExporter::<
             UniversalLocation,
             EthereumNetwork,
             MockOkOutboundQueue,
@@ -551,7 +567,7 @@ mod tests {
         assert_eq!(result, Err(MissingArgument));
 
         let mut universal_source: Option<InteriorLocation> = Here.into();
-        let result = EthereumBlobExporter::<
+        let result = ContainerEthereumBlobExporter::<
             UniversalLocation,
             EthereumNetwork,
             MockOkOutboundQueue,
@@ -580,7 +596,7 @@ mod tests {
         let mut destination: Option<InteriorLocation> = Here.into();
         let mut message: Option<Xcm<()>> = None;
 
-        let result = EthereumBlobExporter::<
+        let result = ContainerEthereumBlobExporter::<
             UniversalLocation,
             EthereumNetwork,
             MockOkOutboundQueue,
@@ -612,7 +628,7 @@ mod tests {
         let mut destination: Option<InteriorLocation> = Here.into();
         let mut message: Option<Xcm<()>> = None;
 
-        let result = EthereumBlobExporter::<
+        let result = ContainerEthereumBlobExporter::<
             UniversalLocation,
             EthereumNetwork,
             MockOkOutboundQueue,
@@ -644,7 +660,7 @@ mod tests {
         let mut destination: Option<InteriorLocation> = Here.into();
         let mut message: Option<Xcm<()>> = Some(vec![SetTopic([0; 32])].into());
 
-        let result = EthereumBlobExporter::<
+        let result = ContainerEthereumBlobExporter::<
             UniversalLocation,
             EthereumNetwork,
             MockOkOutboundQueue,
@@ -698,7 +714,7 @@ mod tests {
             .into(),
         );
 
-        let result = EthereumBlobExporter::<
+        let result = ContainerEthereumBlobExporter::<
             UniversalLocation,
             EthereumNetwork,
             MockOkOutboundQueue,
@@ -750,7 +766,7 @@ mod tests {
             .into(),
         );
 
-        let result = EthereumBlobExporter::<
+        let result = ContainerEthereumBlobExporter::<
             UniversalLocation,
             EthereumNetwork,
             MockOkOutboundQueue,
@@ -805,7 +821,7 @@ mod tests {
             .into(),
         );
 
-        let result = EthereumBlobExporter::<
+        let result = ContainerEthereumBlobExporter::<
             UniversalLocation,
             EthereumNetwork,
             MockOkOutboundQueue,
@@ -870,7 +886,7 @@ mod tests {
             .into(),
         );
 
-        let result = EthereumBlobExporter::<
+        let result = ContainerEthereumBlobExporter::<
             UniversalLocation,
             EthereumNetwork,
             MockOkOutboundQueue,
@@ -935,7 +951,7 @@ mod tests {
             .into(),
         );
 
-        let result = EthereumBlobExporter::<
+        let result = ContainerEthereumBlobExporter::<
             UniversalLocation,
             EthereumNetwork,
             MockOkOutboundQueue,
@@ -1005,7 +1021,7 @@ mod tests {
             .into(),
         );
 
-        let result = EthereumBlobExporter::<
+        let result = ContainerEthereumBlobExporter::<
             UniversalLocation,
             EthereumNetwork,
             MockOkOutboundQueue,
@@ -1078,7 +1094,7 @@ mod tests {
             .into(),
         );
 
-        let result = EthereumBlobExporter::<
+        let result = ContainerEthereumBlobExporter::<
             UniversalLocation,
             EthereumNetwork,
             MockOkOutboundQueue,
@@ -1158,7 +1174,7 @@ mod tests {
             .into(),
         );
 
-        let result = EthereumBlobExporter::<
+        let result = ContainerEthereumBlobExporter::<
             UniversalLocation,
             EthereumNetwork,
             MockOkOutboundQueue,
@@ -1238,7 +1254,7 @@ mod tests {
             .into(),
         );
 
-        let result = EthereumBlobExporter::<
+        let result = ContainerEthereumBlobExporter::<
             UniversalLocation,
             EthereumNetwork,
             MockOkOutboundQueue,
@@ -1305,7 +1321,7 @@ mod tests {
             .into(),
         );
 
-        let result = EthereumBlobExporter::<
+        let result = ContainerEthereumBlobExporter::<
             UniversalLocation,
             EthereumNetwork,
             MockOkOutboundQueue,
@@ -1385,7 +1401,7 @@ mod tests {
             .into(),
         );
 
-        let result = EthereumBlobExporter::<
+        let result = ContainerEthereumBlobExporter::<
             UniversalLocation,
             EthereumNetwork,
             MockOkOutboundQueue,
@@ -1452,7 +1468,7 @@ mod tests {
             .into(),
         );
 
-        let result = EthereumBlobExporter::<
+        let result = ContainerEthereumBlobExporter::<
             UniversalLocation,
             EthereumNetwork,
             MockOkOutboundQueue,
@@ -1519,7 +1535,7 @@ mod tests {
             .into(),
         );
 
-        let result = EthereumBlobExporter::<
+        let result = ContainerEthereumBlobExporter::<
             UniversalLocation,
             EthereumNetwork,
             MockOkOutboundQueue,
@@ -1591,7 +1607,7 @@ mod tests {
             .into(),
         );
 
-        let result = EthereumBlobExporter::<
+        let result = ContainerEthereumBlobExporter::<
             UniversalLocation,
             EthereumNetwork,
             MockOkOutboundQueue,
@@ -1662,7 +1678,7 @@ mod tests {
             .into(),
         );
 
-        let result = EthereumBlobExporter::<
+        let result = ContainerEthereumBlobExporter::<
             UniversalLocation,
             EthereumNetwork,
             MockOkOutboundQueue,
