@@ -4,6 +4,7 @@ import { type ApiPromise, Keyring } from "@polkadot/api";
 import { u8aToHex } from "@polkadot/util";
 import { XcmFragment, TESTNET_ETHEREUM_NETWORK_ID } from "utils";
 import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_EXPORTS } from "helpers";
+import { isStarlightRuntime } from "../../../utils/runtime.ts";
 
 describeSuite({
     id: "DEVT1906",
@@ -30,7 +31,7 @@ describeSuite({
             random = generateKeyringPair("sr25519");
 
             chain = polkadotJs.consts.system.version.specName.toString();
-            isStarlight = chain === "starlight";
+            isStarlight = isStarlightRuntime(polkadotJs);
             specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
             shouldSkipStarlightContainerExport =
                 isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_EXPORTS.includes(specVersion);
@@ -123,6 +124,11 @@ describeSuite({
             id: "T01",
             title: "Should fail exporting from a user-level call",
             test: async () => {
+                if (shouldSkipStarlightContainerExport) {
+                    console.log(`Skipping XCM tests for Starlight version ${specVersion}`);
+                    return;
+                }
+
                 const ethereumNetwork = { Ethereum: { chainId: TESTNET_ETHEREUM_NETWORK_ID } };
 
                 const xcmToExport = new XcmFragment({
@@ -186,6 +192,11 @@ describeSuite({
             id: "T02",
             title: "Should fail exporting if clear origin message is not there",
             test: async () => {
+                if (shouldSkipStarlightContainerExport) {
+                    console.log(`Skipping XCM tests for Starlight version ${specVersion}`);
+                    return;
+                }
+
                 const ethereumNetwork = { Ethereum: { chainId: TESTNET_ETHEREUM_NETWORK_ID } };
 
                 const xcmToExport = new XcmFragment({
@@ -251,6 +262,11 @@ describeSuite({
             id: "T03",
             title: "Should fail exporting if buy_execution not there message is not there",
             test: async () => {
+                if (shouldSkipStarlightContainerExport) {
+                    console.log(`Skipping XCM tests for Starlight version ${specVersion}`);
+                    return;
+                }
+
                 const ethereumNetwork = { Ethereum: { chainId: TESTNET_ETHEREUM_NETWORK_ID } };
 
                 const xcmToExport = new XcmFragment({
@@ -317,6 +333,11 @@ describeSuite({
             id: "T04",
             title: "Should fail exporting if exporting to something not ethereum",
             test: async () => {
+                if (shouldSkipStarlightContainerExport) {
+                    console.log(`Skipping XCM tests for Starlight version ${specVersion}`);
+                    return;
+                }
+
                 // random chain id
                 const noneEthereumNetwork = { Ethereum: { chainId: 5 } };
 

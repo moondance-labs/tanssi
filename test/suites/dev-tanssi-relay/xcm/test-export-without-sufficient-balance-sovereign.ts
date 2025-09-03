@@ -4,6 +4,7 @@ import { type ApiPromise, Keyring } from "@polkadot/api";
 import { u8aToHex } from "@polkadot/util";
 import { XcmFragment, TESTNET_ETHEREUM_NETWORK_ID } from "utils";
 import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_EXPORTS } from "helpers";
+import { isStarlightRuntime } from "../../../utils/runtime.ts";
 
 describeSuite({
     id: "DEVT1909",
@@ -30,7 +31,7 @@ describeSuite({
             random = generateKeyringPair("sr25519");
 
             chain = polkadotJs.consts.system.version.specName.toString();
-            isStarlight = chain === "starlight";
+            isStarlight = isStarlightRuntime(polkadotJs);
             specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
             shouldSkipStarlightContainerExport =
                 isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_EXPORTS.includes(specVersion);
@@ -118,6 +119,11 @@ describeSuite({
             id: "T01",
             title: "Should fail because the sovereign account does not have enough tokens to pay for the export",
             test: async () => {
+                if (shouldSkipStarlightContainerExport) {
+                    console.log(`Skipping XCM tests for Starlight version ${specVersion}`);
+                    return;
+                }
+
                 const ethereumNetwork = { Ethereum: { chainId: TESTNET_ETHEREUM_NETWORK_ID } };
 
                 const xcmToExport = new XcmFragment({
