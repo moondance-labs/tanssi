@@ -21,7 +21,6 @@ describeSuite({
         let alice: KeyringPair;
         let random: KeyringPair;
         let transferredBalance: bigint;
-        let chain: string;
         let isStarlight: boolean;
         let specVersion: number;
         let shouldSkipStarlightContainerExport: boolean;
@@ -36,7 +35,6 @@ describeSuite({
 
             random = generateKeyringPair("sr25519");
 
-            chain = polkadotJs.consts.system.version.specName.toString();
             isStarlight = isStarlightRuntime(polkadotJs);
             specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
             shouldSkipStarlightContainerExport =
