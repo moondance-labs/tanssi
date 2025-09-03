@@ -189,14 +189,25 @@ where
                 || channel.para_id != channel_info.para_id
                 || channel.agent_id != channel_info.agent_id
             {
+                log::debug!(
+                    "Unexpected channel id: {:?} != {:?}",
+                    (envelope.channel_id, channel.para_id, channel.agent_id),
+                    (
+                        channel_info.channel_id,
+                        channel_info.para_id,
+                        channel_info.agent_id
+                    )
+                );
                 return false;
             }
         } else {
+            log::warn!("CurrentChannelInfo not set in storage");
             return false;
         }
 
         // Check it is from the right gateway
         if envelope.gateway != T::GatewayAddress::get() {
+            log::warn!("Wrong gateway address: {:?}", envelope.gateway);
             return false;
         }
 
@@ -204,10 +215,17 @@ where
             Self::decode_message_for_eth_transfer(envelope.payload.as_slice())
         {
             // Check if the token location is a foreign asset included in ForeignAssetCreator
-            return pallet_foreign_asset_creator::ForeignAssetToAssetId::<Runtime>::get(
-                eth_transfer_data.token_location,
-            )
-            .is_some();
+            let asset_id_exists =
+                pallet_foreign_asset_creator::ForeignAssetToAssetId::<Runtime>::get(
+                    &eth_transfer_data.token_location,
+                )
+                .is_some();
+
+            if !asset_id_exists {
+                log::warn!("EthTokensLocalProcessor: location not found in ForeignAssetToAssetId map: {:?}", eth_transfer_data.token_location);
+            }
+
+            return asset_id_exists;
         }
 
         false
@@ -216,6 +234,8 @@ where
     fn process_message(_channel: Channel, envelope: Envelope) -> DispatchResult {
         let eth_transfer_data = Self::decode_message_for_eth_transfer(envelope.payload.as_slice())
             .ok_or(DispatchError::Other("unexpected message"))?;
+
+        log::trace!("EthTokensLocalProcessor: {:?}", eth_transfer_data);
 
         match eth_transfer_data.destination {
             Destination::AccountId32 { id: _ } => {
@@ -231,6 +251,7 @@ where
 }
 
 /// Information needed to process an eth transfer message or check its validity.
+#[derive(Debug)]
 pub struct EthTransferData {
     token_location: Location,
     destination: Destination,
@@ -284,7 +305,14 @@ where
                     amount,
                 })
             }
-            _ => None,
+            Ok(msg) => {
+                log::trace!("EthTokensLocalProcessor: unexpected message: {:?}", msg);
+                None
+            }
+            Err(e) => {
+                log::trace!("EthTokensLocalProcessor: failed to decode message. This is expected if the message is not for this processor. Error: {:?}", e);
+                None
+            }
         }
     }
 
