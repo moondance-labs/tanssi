@@ -51,7 +51,9 @@ snowbridge-pallet-system = { workspace = true }
 sp-core = { workspace = true }
 sp-runtime = { workspace = true }
 sp-staking = { workspace = true }
+sp-io = { workspace = true }
 xcm = { workspace = true }
+xcm-executor = { workspace = true }
 
 # Cumulus
 cumulus-primitives-core = { workspace = true }
@@ -103,7 +105,9 @@ std = [
 	"sp-core/std",
 	"sp-runtime/std",
 	"sp-staking/std",
+	"sp-io/std",
 	"xcm/std",
+	"xcm-executor/std",
 ]
 relay = [
 	"pallet-babe",
@@ -144,6 +148,7 @@ runtime-benchmarks = [
 	"sp-runtime/runtime-benchmarks",
 	"sp-staking/runtime-benchmarks",
 	"xcm/runtime-benchmarks",
+	"xcm-executor/runtime-benchmarks",
 ]
 
 try-runtime = [
