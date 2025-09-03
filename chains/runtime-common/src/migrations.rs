@@ -1189,7 +1189,6 @@ where
     #[cfg(feature = "try-runtime")]
     fn post_upgrade(&self, state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
         use parity_scale_codec::Decode;
-        use tp_traits::GetSessionIndex;
         if state.is_empty() {
             // There were no offline collators
             return Ok(());
@@ -1204,8 +1203,7 @@ where
                     .expect("entry should still exist");
 
             let expected_collator_offline_status =
-                <Runtime as pallet_inactivity_tracking::Config>::CurrentSessionIndex::session_index(
-                );
+                pallet_inactivity_tracking::OfflineStatus::Disabled;
 
             assert_eq!(
                 new_collator_offline_status, expected_collator_offline_status,

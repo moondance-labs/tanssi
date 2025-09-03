@@ -14,9 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 use {
-    crate::Config,
+    crate::{Config, OfflineStatus},
     frame_support::{pallet_prelude::Weight, traits::Get},
-    tp_traits::GetSessionIndex,
 };
 
 // Migrating offline collator storage from bool to Option<u32>.
@@ -25,7 +24,7 @@ pub fn migrate_offline_collators_storage<T: Config>(_available_weight: Weight) -
     crate::OfflineCollators::<T>::translate(|_key, value: bool| {
         count += 1;
         if value {
-            Some(T::CurrentSessionIndex::session_index())
+            Some(OfflineStatus::Disabled)
         } else {
             None
         }
