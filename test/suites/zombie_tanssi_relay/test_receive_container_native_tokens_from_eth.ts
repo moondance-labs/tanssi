@@ -39,11 +39,7 @@ describeSuite({
                 // Amount of native container tokens to transfer.
                 const transferAmount = BigInt(100_000_000);
 
-                // Tanssi's fees, that will be charged on the container side.
-                const fee = BigInt(1_500_000_000_000_000);
-
-                // This number is combined with the previous one, and the final amount
-                // is charged in Tanssi asset on the container side.
+                // Amount in native container tokens to charge on destination.
                 const containerFee = BigInt(500_000_000_000_000);
 
                 // Create token receiver account
@@ -134,38 +130,6 @@ describeSuite({
                 );
                 await signAndSendAndInclude(tx4, aliceRelay);
 
-                const relayTokenLocation = {
-                    parents: 1,
-                    interior: "Here",
-                };
-
-                // Register Tanssi asset on the container chain.
-                const registerTanssiAssetTx = containerChainPolkadotJs.tx.sudo.sudo(
-                    containerChainPolkadotJs.tx.foreignAssetsCreator.createForeignAsset(
-                        relayTokenLocation,
-                        42,
-                        aliceFrontier.address,
-                        true,
-                        1
-                    )
-                );
-
-                await signAndSendAndInclude(registerTanssiAssetTx, aliceFrontier);
-
-                const assetRateTx = containerChainPolkadotJs.tx.sudo.sudo(
-                    containerChainPolkadotJs.tx.assetRate.create("42", 50_000_000_000_000_000_000n)
-                );
-                await signAndSendAndInclude(assetRateTx, aliceFrontier);
-
-                // Mint some Tanssi assets on Ethereum's sovereign account on the container chain.
-                const transferRelayToken = containerChainPolkadotJs.tx.foreignAssets.mint(
-                    42,
-                    ethereumSovereignAccountAddress,
-                    20000000000000000000000n
-                );
-
-                await signAndSendAndInclude(transferRelayToken, aliceFrontier);
-
                 // Simulate previous native container token reception from Ethereum.
                 const transferContainerToken = containerChainPolkadotJs.tx.balances.transferKeepAlive(
                     ethereumSovereignAccountAddress,
@@ -173,15 +137,17 @@ describeSuite({
                 );
                 await signAndSendAndInclude(transferContainerToken, aliceFrontier);
 
-                const relayBalanceInContainerBefore = (
-                    await containerChainPolkadotJs.query.foreignAssets.account(42, ethereumSovereignAccountAddress)
-                )
-                    .unwrap()
-                    .balance.toBigInt();
+                const ethereumSovereignContainerBalanceBefore = (
+                    await containerChainPolkadotJs.query.system.account(ethereumSovereignAccountAddress)
+                ).data.free.toBigInt();
+
+                console.log("ethereumSovereignContainerBalanceBefore: ", ethereumSovereignContainerBalanceBefore);
 
                 const receiverNativeContainerBalanceBefore = (
                     await containerChainPolkadotJs.query.system.account(tokenReceiver)
                 ).data.free.toBigInt();
+
+                console.log("receiverNativeContainerBalanceBefore: ", receiverNativeContainerBalanceBefore);
 
                 const tx5 = relayChainPolkadotJs.tx.ethereumInboundQueue.submit(messageExtrinsics[0]);
                 await signAndSendAndInclude(tx5, aliceRelay);
@@ -189,21 +155,21 @@ describeSuite({
                 // Wait for the XCM message to reach the container chain
                 await waitSessions(context, relayChainPolkadotJs, 1, null, "Tanssi-relay");
 
-                const relayBalanceInContainerAfter = (
-                    await containerChainPolkadotJs.query.foreignAssets.account(42, ethereumSovereignAccountAddress)
-                )
-                    .unwrap()
-                    .balance.toBigInt();
+                const ethereumSovereignContainerBalanceAfter = (
+                    await containerChainPolkadotJs.query.system.account(ethereumSovereignAccountAddress)
+                ).data.free.toBigInt();
+
+                console.log("ethereumSovereignContainerBalanceAfter: ", ethereumSovereignContainerBalanceAfter);
 
                 const receiverNativeContainerBalanceAfter = (
                     await containerChainPolkadotJs.query.system.account(tokenReceiver)
                 ).data.free.toBigInt();
 
-                // Check that fees were deducted from the ETH sovereign account and refunding amount
-                // was also deposited.
-                expect(relayBalanceInContainerAfter).toBeLessThan(relayBalanceInContainerBefore);
-                expect(receiverNativeContainerBalanceAfter).toBeGreaterThan(
-                    receiverNativeContainerBalanceBefore - (fee + containerFee)
+                console.log("ethereumSovereignContainerBalanceAfter: ", ethereumSovereignContainerBalanceAfter);
+
+                // Check that fees + amount were deducted from the ETH sovereign account
+                expect(ethereumSovereignContainerBalanceAfter).to.be.eq(
+                    ethereumSovereignContainerBalanceBefore - (containerFee + transferAmount)
                 );
 
                 // Check that the native container token amount was deposited into the receiver account.

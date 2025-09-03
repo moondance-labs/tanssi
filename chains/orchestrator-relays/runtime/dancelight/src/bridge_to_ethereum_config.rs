@@ -406,7 +406,7 @@ where
                 "NativeContainerTokensProcessor: unexpected message",
             )),
             TokenDataResult::LocationNotFound(token_data) => {
-                log::error!(
+                log::warn!(
                     "NativeContainerTokensProcessor::process_message: token location not found for token_id: {:?}",
                     token_data.token_id
                 );

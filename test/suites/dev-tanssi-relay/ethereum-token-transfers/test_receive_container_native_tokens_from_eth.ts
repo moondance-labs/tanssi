@@ -125,21 +125,13 @@ describeSuite({
 
                 await context.createBlock([tx2], { allowFailures: false });
 
-                console.log("LOG 1");
-
                 const paraId = polkadotJs.createType("ParaId", 2001);
                 await mockAndInsertHeadData(context, paraId, 2, 2, alice);
-
-                console.log("LOG 2");
 
                 // Submit the message
                 const tx3 = await polkadotJs.tx.ethereumInboundQueue.submit(messageExtrinsics[0]).signAsync(alice);
 
-                console.log("LOG 3");
-
                 await context.createBlock([tx3], { allowFailures: false });
-
-                console.log("LOG 4");
 
                 // Check for the XCM Sent event
                 await expectEventCount(polkadotJs, {
