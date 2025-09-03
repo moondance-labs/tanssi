@@ -238,6 +238,8 @@ pub mod pallet {
         CollatorNotEligibleCandidate,
         /// Error returned when the collator status is attempted to be set to offline when it is already offline
         CollatorNotOnline,
+        /// Error returned when the collator status is attempted to be set to offline when it has already been notified as offline
+        CollatorAlreadyNotifiedOffline,
         /// Error returned when the collator status is attempted to be set to online before its cooldown period is over
         CollatorNotReadyToBeOnline,
         /// Error returned when the collator status is attempted to be set to online when it is already online
@@ -581,15 +583,17 @@ pub mod pallet {
                 Error::<T>::CollatorNotEligibleCandidate
             );
             ensure!(
-                <OfflineCollators<T>>::get(collator.clone()).is_none(),
-                Error::<T>::CollatorNotOnline
-            );
-            ensure!(
                 !T::InvulnerablesFilter::is_invulnerable(collator),
                 Error::<T>::MarkingInvulnerableOfflineInvalid
             );
             match cooldown {
                 Some(cooldown_value) => {
+                    ensure!(
+                        <OfflineCollators<T>>::get(collator.clone()).is_none()
+                            || <OfflineCollators<T>>::get(collator.clone())
+                                == Some(OfflineStatus::Disabled),
+                        Error::<T>::CollatorAlreadyNotifiedOffline
+                    );
                     let cooldown_end =
                         T::CurrentSessionIndex::session_index().saturating_add(cooldown_value);
                     <OfflineCollators<T>>::insert(
@@ -598,6 +602,10 @@ pub mod pallet {
                     );
                 }
                 None => {
+                    ensure!(
+                        <OfflineCollators<T>>::get(collator.clone()).is_none(),
+                        Error::<T>::CollatorNotOnline
+                    );
                     <OfflineCollators<T>>::insert(collator.clone(), OfflineStatus::Disabled);
                 }
             }

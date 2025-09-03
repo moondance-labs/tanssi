@@ -292,7 +292,7 @@ fn notify_inactive_collator_fails_for_notified_offline_collators() {
         assert!(OfflineCollators::<Test>::get(COLLATOR_1).is_some());
         assert_noop!(
             Pallet::<Test>::notify_inactive_collator(RuntimeOrigin::signed(COLLATOR_3), COLLATOR_1),
-            Error::<Test>::CollatorNotOnline
+            Error::<Test>::CollatorAlreadyNotifiedOffline
         );
     });
 }
