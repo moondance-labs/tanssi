@@ -60,6 +60,7 @@ import type {
     PalletIdentityRegistration,
     PalletIdentityUsernameInformation,
     PalletInactivityTrackingActivityTrackingStatus,
+    PalletInactivityTrackingOfflineStatus,
     PalletInflationRewardsChainsToRewardValue,
     PalletMessageQueueBookState,
     PalletMessageQueuePage,
@@ -615,7 +616,7 @@ declare module "@polkadot/api-base/types/storage" {
              **/
             offlineCollators: AugmentedQuery<
                 ApiType,
-                (arg: AccountId32 | string | Uint8Array) => Observable<Option<u32>>,
+                (arg: AccountId32 | string | Uint8Array) => Observable<Option<PalletInactivityTrackingOfflineStatus>>,
                 [AccountId32]
             > &
                 QueryableStorageEntry<ApiType, [AccountId32]>;
