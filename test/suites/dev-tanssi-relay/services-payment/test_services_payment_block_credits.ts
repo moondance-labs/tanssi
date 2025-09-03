@@ -5,6 +5,7 @@ import { type KeyringPair, generateKeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 import { jumpSessions, jumpToSession, paraIdTank } from "utils";
 import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SERVICES_PAYMENT, checkCallIsFiltered } from "helpers";
+import { isStarlightRuntime } from "../../../utils/runtime.ts";
 
 describeSuite({
     id: "DEVT1201",
@@ -17,16 +18,20 @@ describeSuite({
         let isStarlight: boolean;
         let specVersion: number;
         let shouldSkipStarlightSP: boolean;
+        let costPerBlock = 1_000_000n;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             alice = context.keyring.alice;
 
-            const runtimeName = polkadotJs.runtimeVersion.specName.toString();
-            isStarlight = runtimeName === "starlight";
+            isStarlight = isStarlightRuntime(polkadotJs);
             specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
             shouldSkipStarlightSP =
                 isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SERVICES_PAYMENT.includes(specVersion);
+
+            if (isStarlight) {
+                costPerBlock = 10_000_000_000n;
+            }
         });
         it({
             id: "E01",
@@ -275,7 +280,7 @@ describeSuite({
 
                 // Use random account instead of alice because alice is getting block rewards
                 const randomAccount = generateKeyringPair("sr25519");
-                const value = 100_000_000_000n;
+                const value = 1000_000_000_000_000n;
                 await context.createBlock([
                     await polkadotJs.tx.balances.transferAllowDeath(randomAccount.address, value).signAsync(alice),
                 ]);
@@ -286,7 +291,7 @@ describeSuite({
                 ).data.free.toBigInt();
                 const purchasedCredits = 1000n * blocksPerSession;
 
-                const requiredBalance = purchasedCredits * 1_000_000n;
+                const requiredBalance = purchasedCredits * costPerBlock;
                 const tx = polkadotJs.tx.servicesPayment.purchaseCredits(paraId, requiredBalance);
                 await context.createBlock([await tx.signAsync(randomAccount)]);
 
