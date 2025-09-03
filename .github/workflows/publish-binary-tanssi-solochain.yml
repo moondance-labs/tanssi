@@ -16,7 +16,7 @@ jobs:
   setup-scripts:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Upload tools
         uses: actions/upload-artifact@v4
         with:
@@ -33,7 +33,7 @@ jobs:
       RUSTFLAGS: "-C target-cpu=${{ matrix.cpu }}"
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ github.event.inputs.to }}
       - name: Setup Rust toolchain
@@ -65,7 +65,7 @@ jobs:
       asset_upload_url: ${{ steps.create-release.outputs.upload_url }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ github.event.inputs.to }}
           fetch-depth: 0
@@ -74,7 +74,7 @@ jobs:
         with:
           node-version: 22.x
       - name: Download Original Tools
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: original-tools
           path: original-tools
@@ -107,7 +107,7 @@ jobs:
         cpu: ["", "skylake", "znver3"]
         node: ["tanssi-relay", "tanssi-relay-execute-worker", "tanssi-relay-prepare-worker"]
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           pattern: binaries-*
           merge-multiple: true
