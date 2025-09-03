@@ -56,6 +56,9 @@ use {
     xcm_executor::XcmExecutor,
 };
 
+pub const TANSSI_GENESIS_HASH: [u8; 32] =
+    hex_literal::hex!["dd6d086f75ec041b66e20c4186d327b23c8af244c534a2418de6574e8c041a60"];
+
 parameter_types! {
     // Self Reserve location, defines the multilocation identifying the self-reserve currency
     // This is used to match it also against our Balances pallet when we receive such
@@ -71,8 +74,7 @@ parameter_types! {
     // One XCM operation is 1_000_000_000 weight - almost certainly a conservative estimate.
     pub UnitWeightCost: Weight = Weight::from_parts(1_000_000_000, 64 * 1024);
 
-    // TODO: revisit
-    pub const RelayNetwork: NetworkId = NetworkId::Polkadot;
+    pub const RelayNetwork: NetworkId = NetworkId::ByGenesis(TANSSI_GENESIS_HASH);
 
     // The relay chain Origin type
     pub RelayChainOrigin: RuntimeOrigin = cumulus_pallet_xcm::Origin::Relay.into();
