@@ -19394,7 +19394,6 @@ dependencies = [
  "pallet-external-validators",
  "pallet-foreign-asset-creator",
  "pallet-inactivity-tracking",
- "pallet-invulnerables",
  "pallet-migrations 0.1.0",
  "pallet-pooled-staking",
  "pallet-registrar",
