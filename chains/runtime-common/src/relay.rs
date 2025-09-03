@@ -220,21 +220,30 @@ pub struct NativeContainerTokensProcessor<
     EthereumLocation,
     EthereumNetwork,
     InboundQueuePalletInstance,
+    TanssiLocationReanchored,
 >(
     PhantomData<(
         T,
         EthereumLocation,
         EthereumNetwork,
         InboundQueuePalletInstance,
+        TanssiLocationReanchored,
     )>,
 );
 
-impl<T, EthereumLocation, EthereumNetwork, InboundQueuePalletInstance> MessageProcessor
+impl<
+        T,
+        EthereumLocation,
+        EthereumNetwork,
+        InboundQueuePalletInstance,
+        TanssiLocationReanchored,
+    > MessageProcessor
     for NativeContainerTokensProcessor<
         T,
         EthereumLocation,
         EthereumNetwork,
         InboundQueuePalletInstance,
+        TanssiLocationReanchored,
     >
 where
     T: snowbridge_pallet_inbound_queue::Config
@@ -245,6 +254,7 @@ where
     EthereumLocation: Get<Location>,
     EthereumNetwork: Get<NetworkId>,
     InboundQueuePalletInstance: Get<u8>,
+    TanssiLocationReanchored: Get<Location>,
 {
     fn can_process_message(channel: &Channel, envelope: &Envelope) -> bool {
         // Validate channel and gateway
@@ -273,6 +283,12 @@ where
                 );
                 false
             }
+            TokenDataResult::UnsupportedToken => {
+                log::error!(
+                    "NativeContainerTokensProcessor::can_process_message: unsupported token"
+                );
+                false
+            }
         }
     }
 
@@ -292,6 +308,10 @@ where
                 );
                 Ok(())
             }
+            TokenDataResult::UnsupportedToken => {
+                log::error!("NativeContainerTokensProcessor::process_message: unsupported token");
+                Ok(())
+            }
         }
     }
 }
@@ -304,10 +324,24 @@ enum TokenDataResult {
     DecodeFailure,
     /// Token data decoded but location not found
     LocationNotFound(NativeTokenTransferData),
+    /// Token data decoded but the token is not supported
+    UnsupportedToken,
 }
 
-impl<T, EthereumLocation, EthereumNetwork, InboundQueuePalletInstance>
-    NativeContainerTokensProcessor<T, EthereumLocation, EthereumNetwork, InboundQueuePalletInstance>
+impl<
+        T,
+        EthereumLocation,
+        EthereumNetwork,
+        InboundQueuePalletInstance,
+        TanssiLocationReanchored,
+    >
+    NativeContainerTokensProcessor<
+        T,
+        EthereumLocation,
+        EthereumNetwork,
+        InboundQueuePalletInstance,
+        TanssiLocationReanchored,
+    >
 where
     T: snowbridge_pallet_inbound_queue::Config
         + pallet_ethereum_token_transfers::Config
@@ -317,6 +351,7 @@ where
     EthereumLocation: Get<Location>,
     EthereumNetwork: Get<NetworkId>,
     InboundQueuePalletInstance: Get<u8>,
+    TanssiLocationReanchored: Get<Location>,
 {
     /// Decodes token data from payload and gets the corresponding token location.
     /// Returns different outcomes based on what succeeded or failed.
@@ -325,7 +360,12 @@ where
             if let Some(token_location) =
                 snowbridge_pallet_system::Pallet::<T>::convert(&token_data.token_id)
             {
-                TokenDataResult::Success(token_data, token_location)
+                if token_location == TanssiLocationReanchored::get() {
+                    // Extra safety check to forbid native Tanssi token for this processor
+                    TokenDataResult::UnsupportedToken
+                } else {
+                    TokenDataResult::Success(token_data, token_location)
+                }
             } else {
                 TokenDataResult::LocationNotFound(token_data)
             }

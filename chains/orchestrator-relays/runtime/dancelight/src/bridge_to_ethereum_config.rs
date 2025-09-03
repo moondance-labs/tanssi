@@ -454,6 +454,7 @@ pub type NativeContainerProcessor = NativeContainerTokensProcessor<
     dancelight_runtime_constants::snowbridge::EthereumLocation,
     dancelight_runtime_constants::snowbridge::EthereumNetwork,
     InboundQueuePalletInstance,
+    TokenLocationReanchored,
 >;
 
 impl snowbridge_pallet_inbound_queue::Config for Runtime {
