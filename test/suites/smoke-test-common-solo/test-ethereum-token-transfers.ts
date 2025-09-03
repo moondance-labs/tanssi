@@ -268,7 +268,6 @@ describeSuite({
                             );
 
                             if (decodedEvent.payload.startsWith(MAGIC_BYTES)) {
-
                                 const currentChannelInfo = (
                                     await api.query.ethereumTokenTransfers.currentChannelInfo()
                                 ).toJSON();
