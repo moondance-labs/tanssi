@@ -1,6 +1,7 @@
 import "@tanssi/api-augment/dancelight";
 
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import { filterAndApply } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 import type { EthereumTokenTransfersNativeTokenTransferred } from "@polkadot/types/lookup";
 import { hexToBigInt, hexToU8a } from "@polkadot/util";
@@ -206,15 +207,19 @@ describeSuite({
                                 (e) => e.phase.isApplyExtrinsic && e.phase.asApplyExtrinsic.eq(index)
                             );
 
-                            const matched = matchEvent(
+                            const matched = filterAndApply(
                                 relatedEvents,
                                 "balances",
-                                "Transfer",
-                                ([from, to, value]) =>
-                                    from.toString() === sovereignAccount &&
-                                    to.toString() === destination.accountId32 &&
-                                    value.toString() === amount.toString()
-                            );
+                                ["Transfer"],
+                                ({ event: { data } }) => {
+                                    const [from, to, value] = data;
+                                    return (
+                                        from.toString() === sovereignAccount &&
+                                        to.toString() === destination.accountId32 &&
+                                        value.toString() === amount.toString()
+                                    );
+                                }
+                            )[0];
 
                             expect(
                                 matched,
@@ -288,18 +293,18 @@ describeSuite({
 
                             const { destination, amount } = messageV1.command.sendToken;
 
-                            const relatedEvents = events.filter(
-                                (e) => e.phase.isApplyExtrinsic && e.phase.asApplyExtrinsic.eq(index)
-                            );
-
-                            const matched = matchEvent(
-                                relatedEvents,
+                            const matched = filterAndApply(
+                                events,
                                 "foreignAssets",
-                                "Issued",
-                                ([_, owner, issuedAmount]) =>
-                                    owner.toString() === destination.accountId32.toString() &&
-                                    issuedAmount.toString() === hexToBigInt(amount).toString()
-                            );
+                                ["Issued"],
+                                ({ event: { data } }) => {
+                                    const [_, owner, issuedAmount] = data;
+                                    return (
+                                        owner.toString() === destination.accountId32.toString() &&
+                                        issuedAmount.toString() === hexToBigInt(amount).toString()
+                                    );
+                                }
+                            )[0];
 
                             expect(
                                 matched,
@@ -358,14 +363,18 @@ describeSuite({
                             for (const asset of assetsArray) {
                                 const amount = asset.fun.fungible;
 
-                                const matched = matchEvent(
+                                const matched = filterAndApply(
                                     relatedEvents,
                                     "foreignAssets",
-                                    "Burned",
-                                    ([_, owner, burnedAmount]) =>
-                                        owner.toString() === signer.toString() &&
-                                        burnedAmount.toString() === hexToBigInt(amount).toString()
-                                );
+                                    ["Burned"],
+                                    ({ event: { data } }) => {
+                                        const [_, owner, burnedAmount] = data;
+                                        return (
+                                            owner.toString() === signer.toString() &&
+                                            burnedAmount.toString() === hexToBigInt(amount).toString()
+                                        );
+                                    }
+                                )[0];
 
                                 expect(
                                     matched,
@@ -379,18 +388,6 @@ describeSuite({
         });
     },
 });
-
-function matchEvent(
-    events: { event: { section: string; method: string; data: any[] } }[],
-    section: string,
-    method: string,
-    matchFn: (data: any[]) => boolean
-): boolean {
-    return events.some(({ event }) => {
-        if (event.section !== section || event.method !== method) return false;
-        return matchFn(event.data);
-    });
-}
 
 const iface = new Interface([
     "event OutboundMessageAccepted(bytes32 indexed channel_id, uint64 nonce, bytes32 indexed message_id, bytes payload)",
