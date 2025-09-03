@@ -152,12 +152,12 @@ describeSuite({
 
                 await waitEventUntilTimeout(relayChainPolkadotJs, "ethereumOutboundQueue.MessageAccepted", 90000);
 
+                // Wait 2 blocks until nonce changed
+                await sleep(24000);
+
                 const balanceAfter = (
                     await containerChainPolkadotJs.query.system.account(holdingAccount)
                 ).data.free.toBigInt();
-
-                // Wait 2 blocks until nonce changed
-                await sleep(24000);
 
                 expect(balanceAfter - balanceBefore).toEqual(tokenToTransfer);
 
