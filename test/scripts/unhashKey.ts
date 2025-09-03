@@ -14,7 +14,7 @@ pnpm unhash-key
 # Search for a key in all endpoints
 pnpm unhash-key 0x94eadf0156a8ad5156507773d0471e4a49f6c9aa90c04982c05388649310f22f
 # Search for a key in a specific endpoint
-pnpm unhash-key --url 'wss://dancelight.tanssi-api.network' 0x94eadf0156a8ad5156507773d0471e4a49f6c9aa90c04982c05388649310f22f
+pnpm unhash-key --url 'wss://services.tanssi-testnet.network/dancelight' 0x94eadf0156a8ad5156507773d0471e4a49f6c9aa90c04982c05388649310f22f
  */
 
 import { decodeKey } from "@acala-network/chopsticks-core";
@@ -30,16 +30,16 @@ import type { ApiPromise } from "@polkadot/api/promise/Api";
 // Should contain one endpoint for each network.
 const DEFAULT_ENDPOINTS = [
     "wss://rpc.polkadot.io",
-    "wss://dancelight.tanssi-api.network",
+    "wss://services.tanssi-testnet.network/dancelight",
     "wss://services.tanssi-dev.network/stagelight",
-    "wss://dancebox.tanssi-api.network",
+    "wss://services.tanssi-testnet.network/dancebox",
     "wss://fraa-flashbox-rpc.a.stagenet.tanssi.network",
     "wss://services.tanssi-dev.network/stagebox",
     // Relay chains, ideally we should use our relay endpoint
     "wss://rococo-rpc.polkadot.io",
     "wss://westend-rpc.polkadot.io",
     // Frontier template
-    "wss://dancebox-3001.tanssi-api.network",
+    "wss://services.tanssi-testnet.network/dancebox-3001",
     // TODO: add simple template rpc endpoint
 ];
 

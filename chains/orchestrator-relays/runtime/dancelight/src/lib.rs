@@ -150,7 +150,6 @@ pub use {
 
 #[cfg(feature = "runtime-benchmarks")]
 use {
-    dancelight_runtime_constants::snowbridge::EthereumNetwork,
     snowbridge_core::{AgentId, TokenId},
     xcm::latest::Junctions::*,
 };
@@ -180,6 +179,7 @@ use {
 #[cfg(test)]
 mod tests;
 
+#[cfg(not(feature = "disable-genesis-builder"))]
 pub mod genesis_config_presets;
 
 impl_runtime_weights!(dancelight_runtime_constants);
@@ -3229,10 +3229,7 @@ sp_api::impl_runtime_apis! {
                     (
                         EthereumLocation::get(),
                         Asset {
-                            id: AssetId(Location {
-                                parents: 1,
-                                interior: X1([GlobalConsensus(EthereumNetwork::get())].into()),
-                            }),
+                            id: AssetId(EthereumLocation::get()),
                             fun: Fungible(ExistentialDeposit::get() * 100),
                         },
                     )
@@ -3379,6 +3376,7 @@ sp_api::impl_runtime_apis! {
         }
     }
 
+    #[cfg(not(feature = "disable-genesis-builder"))]
     impl sp_genesis_builder::GenesisBuilder<Block> for Runtime {
         fn build_state(config: Vec<u8>) -> sp_genesis_builder::Result {
             build_state::<RuntimeGenesisConfig>(config)

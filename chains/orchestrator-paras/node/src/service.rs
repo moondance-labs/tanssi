@@ -58,6 +58,7 @@ use {
         AuxStore, Backend as BackendT, BlockchainEvents, HeaderBackend, UsageProvider,
     },
     sc_consensus::BasicQueue,
+    sc_network::NetworkBackend,
     sc_network::NetworkBlock,
     sc_network_common::role::Role,
     sc_network_sync::SyncingService,
@@ -244,7 +245,7 @@ pub fn import_queue(
 /// Start a node with the given parachain `Configuration` and relay chain `Configuration`.
 ///
 /// This is the actual implementation that is abstract over the executor and the runtime api.
-async fn start_node_impl(
+async fn start_node_impl<Net>(
     orchestrator_config: Configuration,
     polkadot_config: Configuration,
     container_chain_config: Option<(ContainerChainCli, tokio::runtime::Handle)>,
@@ -252,7 +253,10 @@ async fn start_node_impl(
     para_id: ParaId,
     hwbench: Option<sc_sysinfo::HwBench>,
     max_pov_percentage: Option<u32>,
-) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> {
+) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)>
+where
+    Net: NetworkBackend<Block, Hash>,
+{
     let parachain_config = prepare_node_config(orchestrator_config);
     let chain_type: sc_chain_spec::ChainType = parachain_config.chain_spec.chain_type();
     let relay_chain = crate::chain_spec::Extensions::try_get(&*parachain_config.chain_spec)
@@ -275,7 +279,7 @@ async fn start_node_impl(
     let force_authoring = parachain_config.force_authoring;
 
     let node_builder = node_builder
-        .build_cumulus_network::<_, sc_network::NetworkWorker<_, _>>(
+        .build_cumulus_network::<_, Net>(
             &parachain_config,
             para_id,
             import_queue,
@@ -680,7 +684,7 @@ fn start_consensus_orchestrator(
 }
 
 /// Start a parachain node.
-pub async fn start_parachain_node(
+pub async fn start_parachain_node<Net>(
     parachain_config: Configuration,
     polkadot_config: Configuration,
     container_config: Option<(ContainerChainCli, tokio::runtime::Handle)>,
@@ -688,8 +692,11 @@ pub async fn start_parachain_node(
     para_id: ParaId,
     hwbench: Option<sc_sysinfo::HwBench>,
     max_pov_percentage: Option<u32>,
-) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)> {
-    start_node_impl(
+) -> sc_service::error::Result<(TaskManager, Arc<ParachainClient>)>
+where
+    Net: NetworkBackend<Block, Hash>,
+{
+    start_node_impl::<Net>(
         parachain_config,
         polkadot_config,
         container_config,

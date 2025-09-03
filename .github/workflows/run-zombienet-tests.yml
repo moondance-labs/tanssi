@@ -1,19 +1,29 @@
-name: Manually run all zombienet tests
+name: Run Zombienet tests
 
 on:
+  schedule:
+    - cron: "0 0 * * 6"  # Runs every Saturday at 12 AM UTC
   workflow_dispatch:
     inputs:
       sha:
-        description: full sha to the codebase
-        required: true
-      test_name:
-        description: "Name of the test suite to be run (e.g. zombie_flashbox, supports regex)"
-        required: true
+        description: "Full commit SHA to use (default: master)"
+        required: false
         type: string
-        default: ".*"
+      test_name:
+        description: "Name of the test suite to run (regex supported, overrides bundle)"
+        required: false
+        type: string
+      test_bundle:
+        description: "Test bundle to run (ignored if test_name is set)"
+        required: false
+        type: choice
+        default: "weekly_bundle"
+        options:
+          - weekly_bundle
+          - manual_bundle
       foundation_type:
-        description: Foundation type to filter tests, select zombie to run all zombienet tests
-        required: true
+        description: Foundation type to filter tests
+        required: false
         type: choice
         default: "zombie"
         options:
@@ -23,8 +33,11 @@ on:
           - chopsticks
           - read_only
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  # Preliminary job to get the list of tests
   get-tests:
     runs-on: self-hosted
     outputs:
@@ -33,7 +46,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Pnpm
+      - name: Setup Pnpm
         uses: pnpm/action-setup@v4.1.0
         with:
           version: 9
@@ -42,25 +55,37 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22.x
-          cache: "pnpm"
 
-      - name: Get test names
+      - name: Determine Tests
         id: get_tests
         run: |
-          foundation_type=${{ github.event.inputs.foundation_type || 'zombie' }}
-          test_name=${{ github.event.inputs.test_name || '.*' }}
+          foundation_type="${{ github.event.inputs.foundation_type || 'zombie' }}"
+          test_name="${{ github.event.inputs.test_name || '' }}"
+          test_bundle="${{ github.event.inputs.test_bundle || 'weekly_bundle' }}"
 
-          # Read and filter the tests from the config file using regex and foundation type
-          # Exclude zombie upgrade tests because they need more complex logic, using docker
-          tests=$(jq -r --arg type "$foundation_type" --arg regex "$test_name" '
-            .environments
-            | map(select((.foundation.type == $type or $type == "*") and (.name | test($regex))))
-            | map(.name)
-            | if $type == "zombie" then map(select(test("_upgrade$") | not)) else . end  # Exclude upgrade tests only if foundation type is zombie
-          ' test/moonwall.config.json | jq -c '.')
+          echo "Input test_name: $test_name"
+          echo "Input bundle: $test_bundle"
 
-          echo "Will run tests: $tests"
-          if [ -z "$tests" ]; then
+          if [ -z "$test_name" ]; then
+            if [ "$test_bundle" == "weekly_bundle" ]; then
+              tests='["zombie_tanssi_warp_sync", "zombie_tanssi_parathreads", "zombie_tanssi_metrics"]'
+            elif [ "$test_bundle" == "manual_bundle" ]; then
+              tests='["zombie_tanssi_relay_finalization_recovery", "zombie_simple_template_offchain", "zombie_tanssi_keep_db", "zombie_tanssi_one_node", "zombie_tanssi_relay_starlight", "zombie_tanssi_relay_unneeded_para", "zombie_tanssi_relay_keystore"]'
+            else
+              echo "Unknown bundle: $test_bundle"
+              exit 1
+            fi
+          else
+            tests=$(jq -r --arg type "$foundation_type" --arg regex "$test_name" '
+              .environments
+              | map(select((.foundation.type == $type or $type == "*") and (.name | test($regex))))
+              | map(.name)
+            ' test/moonwall.config.json | jq -c '.')
+          fi
+
+          echo "Selected tests: $tests"
+
+          if [ -z "$tests" ] || [ "$tests" == "[]" ]; then
             echo "No tests found. Exiting."
             exit 1
           fi
@@ -72,7 +97,6 @@ jobs:
           include_tests=$(echo '${{ env.tests }}' | jq -c '{include: . | map({test_name: .})}')
           echo "tests=$include_tests" >> $GITHUB_OUTPUT
 
-  ####### Building binaries #######
   build:
     runs-on: self-hosted
     needs: [ "get-tests" ]
@@ -83,7 +107,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.set-tags.outputs.git_ref }}
+          ref: ${{ github.event.inputs.sha || 'master' }}
+
       - name: Run sccache-cache
         uses: mozilla-actions/sccache-action@v0.0.9
       - name: Setup Variables
@@ -105,18 +130,19 @@ jobs:
         run: rustup show
       - name: Build
         run: cargo build --features=fast-runtime --release --all
-      - name: Save runtime wasm
+      - name: Package all runtime Wasm into tarball
         run: |
           mkdir -p runtimes
-          cp $CARGO_TARGET_DIR/release/wbuild/container-chain-template-simple-runtime/container_chain_template_simple_runtime.compact.compressed.wasm runtimes/;
-          cp $CARGO_TARGET_DIR/release/wbuild/container-chain-template-frontier-runtime/container_chain_template_frontier_runtime.compact.compressed.wasm runtimes/;
-          cp $CARGO_TARGET_DIR/release/wbuild/dancebox-runtime/dancebox_runtime.compact.compressed.wasm runtimes/;
-          cp $CARGO_TARGET_DIR/release/wbuild/flashbox-runtime/flashbox_runtime.compact.compressed.wasm runtimes/;
-      - name: Upload runtimes
+          cd $CARGO_TARGET_DIR
+          # gather all .wasm paths (relative to $CARGO_TARGET_DIR)…
+          find . -type f -name '*.wasm' > wasm_files.txt
+          # …then tar them up into a gzipped archive in the workspace
+          tar czf $GITHUB_WORKSPACE/runtimes/runtimes.tar.gz -T wasm_files.txt
+      - name: Upload runtime archive
         uses: actions/upload-artifact@v4
         with:
-          name: runtimes
-          path: runtimes
+          name: wasm-runtimes
+          path: runtimes/runtimes.tar.gz
 
       - name: Copy parachain node binaries
         uses: ./.github/workflow-templates/copy-parachain-node-binaries
@@ -135,14 +161,14 @@ jobs:
         with:
           name: binaries
           path: binaries
-
-  # Run each test as a separate job using a matrix strategy
   run-tests:
     runs-on: self-hosted
     needs: [ "get-tests", "build" ]
+    env:
+      CARGO_TARGET_DIR: "target"
     strategy:
       fail-fast: false
-      matrix: ${{ fromJSON(needs.get-tests.outputs.matrix) }}
+      matrix: ${{ fromJson(needs.get-tests.outputs.matrix) }}
     steps:
       - name: "Download binaries"
         uses: actions/download-artifact@v4
@@ -150,10 +176,34 @@ jobs:
           name: binaries
           path: target/release
 
+      - name: Install GitHub CLI
+        uses: ./.github/workflow-templates/gh-cli
+
       - name: Make binaries executable
         uses: ./.github/workflow-templates/make-binaries-executable
 
+      - name: Download runtime archive
+        uses: actions/download-artifact@v4
+        with:
+          name: wasm-runtimes
+          path: runtimes
+      - name: Extract runtimes back into target/
+        run: |
+          # ensure the target dir exists
+          mkdir -p $CARGO_TARGET_DIR
+          # unpack, preserving all sub‑dirs exactly as they were
+          tar xzf runtimes/runtimes.tar.gz -C $CARGO_TARGET_DIR
       - name: Run Zombienet Test ${{ matrix.test_name }}
         uses: ./.github/workflow-templates/zombienet-tests
         with:
           test_name: ${{ matrix.test_name }}
+
+      - name: Create issue with gh CLI
+        if: failure()
+        run: |
+          gh issue create \
+            --title "🚨 Zombienet Test Failure in ${{ github.workflow }}" \
+            --body "Tests ${{ matrix.test_name }} failed in [${{ github.workflow }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}).\n\n@moondance-labs/coredev please investigate." \
+            --repo "${{ github.repository }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -99,7 +99,7 @@ use {
     tp_bridge::ConvertLocation,
     tp_traits::{
         prod_or_fast_parameter_types, EraIndex, GetHostConfiguration, GetSessionContainerChains,
-        ParaIdAssignmentHooks, RegistrarHandler, Slot, SlotFrequency,
+        NodeActivityTrackingHelper, ParaIdAssignmentHooks, RegistrarHandler, Slot, SlotFrequency,
     },
     xcm::Version as XcmVersion,
     xcm_runtime_apis::{
@@ -154,7 +154,10 @@ pub use {
 };
 
 #[cfg(feature = "runtime-benchmarks")]
-use snowbridge_core::{AgentId, TokenId};
+use {
+    snowbridge_core::{AgentId, TokenId},
+    xcm::latest::Junctions::*,
+};
 
 /// Constant values used within the runtime.
 use starlight_runtime_constants::{currency::*, fee::*, snowbridge::EthereumLocation, time::*};
@@ -181,6 +184,7 @@ use {
 #[cfg(test)]
 mod tests;
 
+#[cfg(not(feature = "disable-genesis-builder"))]
 pub mod genesis_config_presets;
 
 impl_runtime_weights!(starlight_runtime_constants);
@@ -304,18 +308,6 @@ impl Convert<AggregateMessageOrigin, ParaId> for GetParaFromAggregateMessageOrig
     }
 }
 
-pub struct IsContainerChainManagementExtrinsics;
-impl Contains<RuntimeCall> for IsContainerChainManagementExtrinsics {
-    fn contains(c: &RuntimeCall) -> bool {
-        matches!(
-            c,
-            RuntimeCall::ServicesPayment(_)
-                | RuntimeCall::StreamPayment(_)
-                | RuntimeCall::DataPreservers(_)
-        )
-    }
-}
-
 pub struct IsDemocracyExtrinsics;
 impl Contains<RuntimeCall> for IsDemocracyExtrinsics {
     fn contains(c: &RuntimeCall) -> bool {
@@ -332,27 +324,29 @@ impl Contains<RuntimeCall> for IsDemocracyExtrinsics {
     }
 }
 
-pub struct IsXcmExtrinsics;
-impl Contains<RuntimeCall> for IsXcmExtrinsics {
+/// The relay register and deregister calls should no longer be necessary
+/// Everything is handled by the ContainerRegistrar
+pub struct IsRelayRegister;
+impl Contains<RuntimeCall> for IsRelayRegister {
     fn contains(c: &RuntimeCall) -> bool {
         matches!(
             c,
-            RuntimeCall::Hrmp(_)
-                | RuntimeCall::MessageQueue(_)
-                | RuntimeCall::AssetRate(_)
-                | RuntimeCall::XcmPallet(_)
+            RuntimeCall::Registrar(paras_registrar::Call::register { .. })
+        ) || matches!(
+            c,
+            RuntimeCall::Registrar(paras_registrar::Call::deregister { .. })
         )
     }
 }
 
-pub struct IsContainerChainRegistrationExtrinsics;
-impl Contains<RuntimeCall> for IsContainerChainRegistrationExtrinsics {
+/// Starlight shouold not permit parathread registration for now
+/// TODO: remove once they are enabled
+pub struct IsParathreadRegistrar;
+impl Contains<RuntimeCall> for IsParathreadRegistrar {
     fn contains(c: &RuntimeCall) -> bool {
         matches!(
             c,
-            RuntimeCall::ContainerRegistrar(_)
-                | RuntimeCall::OnDemandAssignmentProvider(_)
-                | RuntimeCall::Registrar(_)
+            RuntimeCall::ContainerRegistrar(pallet_registrar::Call::register_parathread { .. })
         )
     }
 }
@@ -1328,7 +1322,7 @@ impl parachains_slashing::Config for Runtime {
 }
 
 parameter_types! {
-    pub const ParaDeposit: Balance = 40 * UNITS;
+    pub const ParaDeposit: Balance = 1000 * UNITS;
 }
 
 impl paras_registrar::Config for Runtime {
@@ -1680,10 +1674,9 @@ impl Contains<RuntimeCall> for MaintenanceFilter {
 
 /// Normal Call Filter
 type NormalFilter = EverythingBut<(
-    IsContainerChainManagementExtrinsics,
+    IsRelayRegister,
+    IsParathreadRegistrar,
     IsDemocracyExtrinsics,
-    IsXcmExtrinsics,
-    IsContainerChainRegistrationExtrinsics,
 )>;
 
 impl pallet_maintenance_mode::Config for Runtime {
@@ -1694,8 +1687,8 @@ impl pallet_maintenance_mode::Config for Runtime {
     type XcmExecutionManager = ();
 }
 
-pub const FIXED_BLOCK_PRODUCTION_COST: u128 = 1 * MICROUNITS;
-pub const FIXED_COLLATOR_ASSIGNMENT_COST: u128 = 100 * MICROUNITS;
+pub const FIXED_BLOCK_PRODUCTION_COST: u128 = 10000 * MICROUNITS;
+pub const FIXED_COLLATOR_ASSIGNMENT_COST: u128 = 5 * UNITS;
 
 pub struct BlockProductionCost<Runtime>(PhantomData<Runtime>);
 impl ProvideBlockProductionCost<Runtime> for BlockProductionCost<Runtime> {
@@ -1841,6 +1834,7 @@ pub struct CandidateHasRegisteredKeys;
 impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
     fn is_candidate_eligible(a: &AccountId) -> bool {
         <Session as ValidatorRegistration<AccountId>>::is_registered(a)
+            && !InactivityTracking::is_node_offline(a)
     }
     #[cfg(feature = "runtime-benchmarks")]
     fn make_candidate_eligible(a: &AccountId, eligible: bool) {
@@ -1866,7 +1860,15 @@ impl IsCandidateEligible<AccountId> for CandidateHasRegisteredKeys {
         } else {
             let _ = Session::purge_keys(RuntimeOrigin::signed(a.clone()));
         }
+
+        if InactivityTracking::is_node_offline(a) {
+            InactivityTracking::make_node_online(a);
+        }
     }
+}
+
+parameter_types! {
+    pub const MaxCandidatesBufferSize: u32 = 100;
 }
 
 impl pallet_pooled_staking::Config for Runtime {
@@ -1881,9 +1883,26 @@ impl pallet_pooled_staking::Config for Runtime {
     type RewardsCollatorCommission = RewardsCollatorCommission;
     type JoiningRequestTimer = SessionTimer<Runtime, StakingSessionDelay>;
     type LeavingRequestTimer = SessionTimer<Runtime, StakingSessionDelay>;
-    type EligibleCandidatesBufferSize = ConstU32<100>;
+    type EligibleCandidatesBufferSize = MaxCandidatesBufferSize;
     type EligibleCandidatesFilter = CandidateHasRegisteredKeys;
     type WeightInfo = weights::pallet_pooled_staking::SubstrateWeight<Runtime>;
+}
+
+parameter_types! {
+    pub const MaxInactiveSessions: u32 = 5;
+}
+impl pallet_inactivity_tracking::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type MaxInactiveSessions = MaxInactiveSessions;
+    type MaxCollatorsPerSession = MaxCandidatesBufferSize;
+    type MaxContainerChains = MaxLengthParaIds;
+    type CurrentSessionIndex = CurrentSessionIndexGetter;
+    type CurrentCollatorsFetcher = TanssiCollatorAssignment;
+    type GetSelfChainBlockAuthor = ();
+    type ParaFilter = tp_parathread_filter_common::ExcludeAllParathreadsFilter<Runtime>;
+    type InvulnerablesFilter = tp_invulnerables_filter_common::InvulnerablesFilter<Runtime>;
+    type CollatorStakeHelper = PooledStaking;
+    type WeightInfo = weights::pallet_inactivity_tracking::SubstrateWeight<Runtime>;
 }
 
 construct_runtime! {
@@ -1940,6 +1959,9 @@ construct_runtime! {
         InflationRewards: pallet_inflation_rewards = 33,
         PooledStaking: pallet_pooled_staking = 34,
 
+        // Inactivity tracking
+        InactivityTracking: pallet_inactivity_tracking = 35,
+
         // Governance stuff; uncallable initially.
         Treasury: pallet_treasury = 40,
         ConvictionVoting: pallet_conviction_voting = 41,
@@ -1991,6 +2013,10 @@ construct_runtime! {
 
         // Asset rate.
         AssetRate: pallet_asset_rate = 86,
+
+        // Foreign assets.
+        ForeignAssets: pallet_assets::<Instance1> = 87,
+        ForeignAssetsCreator: pallet_foreign_asset_creator = 88,
 
         // Pallet for sending XCM.
         XcmPallet: pallet_xcm = 90,
@@ -2164,8 +2190,8 @@ where
 
 impl pallet_registrar::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    // TODO: revert to non-sudo later after stable
-    type RegistrarOrigin = EnsureRoot<AccountId>;
+    type RegistrarOrigin =
+        EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;
     type MarkValidForCollatingOrigin = EnsureRoot<AccountId>;
     type MaxLengthParaIds = MaxLengthParaIds;
     type MaxGenesisDataSize = MaxEncodedGenesisDataSize;
@@ -2270,7 +2296,7 @@ impl pallet_author_noting::Config for Runtime {
     type ContainerChains = TanssiCollatorAssignment;
     type SlotBeacon = BabeSlotBeacon<Runtime>;
     type ContainerChainAuthor = TanssiCollatorAssignment;
-    type AuthorNotingHook = (InflationRewards, ServicesPayment);
+    type AuthorNotingHook = (InflationRewards, ServicesPayment, InactivityTracking);
     type RelayOrPara = pallet_author_noting::RelayMode;
     type MaxContainerChains = MaxLengthParaIds;
     type WeightInfo = weights::pallet_author_noting::SubstrateWeight<Runtime>;
@@ -2336,6 +2362,15 @@ mod benches {
         [pallet_pooled_staking, PooledStaking]
         [pallet_configuration, CollatorConfiguration]
         [pallet_stream_payment, StreamPayment]
+        [pallet_inactivity_tracking, InactivityTracking]
+
+        // Foreign Assets
+        [pallet_foreign_asset_creator, ForeignAssetsCreator]
+        [pallet_assets, ForeignAssets]
+
+        // Foreign Assets
+        [pallet_foreign_asset_creator, ForeignAssetsCreator]
+        [pallet_assets, ForeignAssets]
 
         // XCM
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
@@ -3213,24 +3248,59 @@ sp_api::impl_runtime_apis! {
             }
 
             parameter_types! {
-                pub TrustedTeleporter: Option<(Location, Asset)> = Some((
-                    AssetHub::get(),
-                    Asset { fun: Fungible(1 * UNITS), id: AssetId(TokenLocation::get()) },
-                ));
-                pub TrustedReserve: Option<(Location, Asset)> = None;
+                pub TrustedReserve: Option<(Location, Asset)> = Some(
+                    (
+                        EthereumLocation::get(),
+                        Asset {
+                            id: AssetId(EthereumLocation::get()),
+                            fun: Fungible(ExistentialDeposit::get() * 100),
+                        },
+                    )
+                );
             }
 
             impl pallet_xcm_benchmarks::fungible::Config for Runtime {
                 type TransactAsset = Balances;
 
                 type CheckedAccount = LocalCheckAccount;
-                type TrustedTeleporter = TrustedTeleporter;
+                type TrustedTeleporter = ();
                 type TrustedReserve = TrustedReserve;
 
                 fn get_asset() -> Asset {
+                    use frame_support::{assert_ok, traits::tokens::fungible::{Inspect, Mutate}};
+                    let (account, _) = pallet_xcm_benchmarks::account_and_location::<Runtime>(1);
+
+                    assert_ok!(<Balances as Mutate<_>>::mint_into(
+                        &account,
+                        <Balances as Inspect<_>>::minimum_balance(),
+                    ));
+
+                    let asset_id = 42u16;
+
+                    let asset_location = Location {
+                        parents: 1,
+                        interior: X2([
+                            GlobalConsensus(NetworkId::Ethereum { chain_id: 1 }),
+                            AccountKey20 {
+                                network: Some(NetworkId::Ethereum { chain_id: 1 }),
+                                key: [0; 20],
+                            },
+                        ]
+                        .into()),
+                    };
+
+                    assert_ok!(ForeignAssetsCreator::create_foreign_asset(
+                        RuntimeOrigin::root(),
+                        asset_location.clone(),
+                        asset_id,
+                        account.clone(),
+                        true,
+                        1u128,
+                    ));
+
                     Asset {
-                        id: AssetId(TokenLocation::get()),
-                        fun: Fungible(1 * UNITS),
+                        id: AssetId(asset_location),
+                        fun: Fungible(ExistentialDeposit::get() * 100),
                     }
                 }
             }
@@ -3329,6 +3399,7 @@ sp_api::impl_runtime_apis! {
         }
     }
 
+    #[cfg(not(feature = "disable-genesis-builder"))]
     impl sp_genesis_builder::GenesisBuilder<Block> for Runtime {
         fn build_state(config: Vec<u8>) -> sp_genesis_builder::Result {
             build_state::<RuntimeGenesisConfig>(config)
@@ -3435,9 +3506,13 @@ impl tanssi_initializer::ApplyNewSession<Runtime> for OwnApplySession {
             &queued_id_to_nimbus_map,
             &assignments.next_assignment,
         );
+        // 6. InactivityTracking
+        InactivityTracking::process_ended_session();
     }
 
-    fn on_before_session_ending() {}
+    fn on_before_session_ending() {
+        InactivityTracking::on_before_session_ending();
+    }
 }
 parameter_types! {
     pub MockParaId :ParaId = 0u32.into();
