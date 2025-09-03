@@ -27,7 +27,6 @@ dp-consensus = { workspace = true }
 dp-impl-tanssi-pallets-config = { workspace = true }
 dp-slot-duration-runtime-api = { workspace = true }
 pallet-cc-authorities-noting = { workspace = true }
-tanssi-runtime-common = { workspace = true }
 
 # Moonkit
 async-backing-primitives = { workspace = true }
@@ -221,7 +220,6 @@ std = [
 	"sp-transaction-pool/std",
 	"sp-trie/std",
 	"sp-version/std",
-	"tanssi-runtime-common/std",
 	"tp-container-chain/std",
 	"xcm-builder/std",
 	"xcm-executor/std",
@@ -274,7 +272,6 @@ runtime-benchmarks = [
 	"polkadot-parachain-primitives/runtime-benchmarks",
 	"polkadot-runtime-common/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
-	"tanssi-runtime-common/runtime-benchmarks",
 	"tp-container-chain/runtime-benchmarks",
 	"xcm-builder/runtime-benchmarks",
 	"xcm-executor/runtime-benchmarks",
@@ -323,7 +320,6 @@ try-runtime = [
 	"parachain-info/try-runtime",
 	"polkadot-runtime-common/try-runtime",
 	"sp-runtime/try-runtime",
-	"tanssi-runtime-common/try-runtime",
 ]
 
 metadata-hash = []
