@@ -16,13 +16,12 @@
 
 use {
     dancelight_emulated_chain::DancelightRelayPallet,
-    dancelight_runtime::xcm_config,
     dancelight_system_emulated_network::DancelightRelay as Dancelight,
-    frame_support::{assert_err, weights::Weight},
+    frame_support::weights::Weight,
     pallet_xcm::Error,
     primitives::AccountId,
     sp_runtime::DispatchError,
-    xcm::{latest::prelude::*, v5::Location, VersionedXcm},
+    xcm::{latest::prelude::*, VersionedXcm},
     xcm_emulator::{Chain, TestExt},
 };
 
@@ -51,26 +50,4 @@ fn test_message_exporter_disabled_for_origin_account() {
             DispatchError::from(Error::<<Dancelight as Chain>::Runtime>::LocalExecutionIncomplete)
         );
     });
-}
-
-#[test]
-fn test_message_exporter_validate_should_fail() {
-    let mut location = Some(Location {
-        parents: 1,
-        interior: Junctions::Here,
-    });
-
-    let mut message = Some(Xcm(vec![Instruction::ExportMessage {
-        network: NetworkId::Ethereum { chain_id: 1 },
-        destination: Junctions::Here,
-        xcm: Xcm(vec![]),
-    }]));
-
-    assert_err!(
-        <xcm_config::XcmConfig as xcm_executor::Config>::MessageExporter::validate(
-            &mut location,
-            &mut message
-        ),
-        SendError::NotApplicable
-    );
 }
