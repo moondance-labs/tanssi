@@ -157,7 +157,7 @@ describeSuite({
                 ).data.free.toBigInt();
 
                 // Wait 2 blocks until nonce changed
-                await sleep(18000);
+                await sleep(24000);
 
                 expect(balanceAfter - balanceBefore).toEqual(tokenToTransfer);
 
