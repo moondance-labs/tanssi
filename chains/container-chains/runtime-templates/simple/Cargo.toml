@@ -40,6 +40,9 @@ xcm-primitives = { workspace = true }
 # Dancekit
 pallet-xcm-executor-utils = { workspace = true }
 
+# Container Chain primitives
+tp-container-chain = { workspace = true }
+
 # Substrate
 frame-executive = { workspace = true }
 frame-support = { workspace = true }

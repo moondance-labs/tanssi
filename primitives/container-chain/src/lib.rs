@@ -16,8 +16,11 @@
 
 //! Crate containing various primitives for container chain
 //! token transfers.
+
 #![cfg_attr(not(feature = "std"), no_std)]
 extern crate alloc;
+
+pub mod sovereign_paid_remote_exporter;
 
 use {
     core::marker::PhantomData,

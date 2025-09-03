@@ -40,15 +40,18 @@ use {
     sp_core::ConstU32,
     sp_runtime::Perbill,
     tanssi_runtime_common::universal_aliases::CommonUniversalAliases,
-    tp_container_chain::ContainerChainEthereumLocationConverter,
-    xcm::latest::prelude::*,
+    tp_container_chain::{
+        sovereign_paid_remote_exporter::SovereignPaidRemoteExporter,
+        ContainerChainEthereumLocationConverter,
+    },
+    xcm::latest::{prelude::*, WESTEND_GENESIS_HASH},
     xcm_builder::{
         AccountId32Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
         AllowTopLevelPaidExecutionFrom, ConvertedConcreteId, EnsureXcmOrigin, FungibleAdapter,
         IsConcrete, ParentIsPreset, RelayChainAsNative, SiblingParachainAsNative,
         SiblingParachainConvertsVia, SignedAccountId32AsNative, SignedToAccountId32,
         SovereignSignedViaLocation, TakeWeightCredit, UsingComponents, WeightInfoBounds,
-        WithComputedOrigin, XcmFeeManagerFromComponents,
+        WithComputedOrigin, WithUniqueTopic, XcmFeeManagerFromComponents,
     },
     xcm_executor::XcmExecutor,
 };
@@ -86,6 +89,9 @@ parameter_types! {
     pub const BaseDeliveryFee: u128 = 100 * MICROUNIT;
 
     pub RootLocation: Location = Location::here();
+
+    // TODO: Revisit later
+    pub const ContainerToEthTransferFee: u128 = 2_700_000_000_000u128;
 }
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -125,7 +131,8 @@ pub type LocationToAccountId = (
         AccountId,
         xcm_builder::DescribeFamily<xcm_builder::DescribeAllTerminal>,
     >,
-    // Convert Ethereum locations to container-chain account IDs
+    // Ethereum contract sovereign account.
+    // (Used to convert ethereum contract locations to sovereign account)
     ContainerChainEthereumLocationConverter<AccountId>,
 );
 
@@ -167,18 +174,27 @@ pub type XcmOriginToTransactDispatchOrigin = (
     XcmPassthrough<RuntimeOrigin>,
 );
 
+pub type UmpRouter =
+    cumulus_primitives_utility::ParentAsUmp<ParachainSystem, PolkadotXcm, PriceForParentDelivery>;
+
 /// Means for transacting assets on this chain.
 pub type AssetTransactors = (CurrencyTransactor, ForeignFungiblesTransactor);
 pub type XcmWeigher =
     WeightInfoBounds<XcmGenericWeights<RuntimeCall>, RuntimeCall, MaxInstructions>;
 /// The means for routing XCM messages which are not for local execution into the right message
 /// queues.
-pub type XcmRouter = (
+pub type XcmRouter = WithUniqueTopic<(
     // Two routers - use UMP to communicate with the relay chain:
-    cumulus_primitives_utility::ParentAsUmp<ParachainSystem, PolkadotXcm, PriceForParentDelivery>,
+    UmpRouter,
     // ..and XCMP to communicate with the sibling chains.
     XcmpQueue,
-);
+    SovereignPaidRemoteExporter<
+        UmpRouter,
+        UniversalLocation,
+        crate::EthereumNetwork,
+        ContainerToEthTransferFee,
+    >,
+)>;
 
 pub struct XcmConfig;
 impl xcm_executor::Config for XcmConfig {
