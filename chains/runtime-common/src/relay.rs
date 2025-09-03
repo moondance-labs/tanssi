@@ -34,17 +34,17 @@ use sp_runtime::{
     traits::{Hash as _, MaybeEquivalence},
     DispatchError, DispatchResult,
 };
+use xcm::latest::{
+    prelude::*, Asset as XcmAsset, AssetId as XcmAssetId, Assets as XcmAssets, ExecuteXcm,
+    Fungibility, Junctions::*,
+};
+use xcm_executor::traits::WeightBounds;
 use {
     snowbridge_inbound_queue_primitives::v1::{
         Command, Destination, Envelope, MessageProcessor, MessageV1, VersionedXcmMessage,
     },
     snowbridge_inbound_queue_primitives::EventProof as Message,
 };
-use xcm::latest::{
-    prelude::*, Asset as XcmAsset, AssetId as XcmAssetId, Assets as XcmAssets, ExecuteXcm,
-    Fungibility, Junctions::*,
-};
-use xcm_executor::traits::WeightBounds;
 /// `NativeTokenTransferMessageProcessor` is responsible for receiving and processing the Tanssi
 /// native token sent from Ethereum. If the message is valid, it performs the token transfer
 /// from the Ethereum sovereign account to the specified destination account.
@@ -291,7 +291,6 @@ impl<T: pallet_babe::Config + frame_system::Config> Get<[u8; 32]>
     }
 }
 
-
 /// `EthTokensLocalProcessor` is responsible for receiving and processing the ETH native
 /// token and ERC20s coming from Ethereum with Tanssi chain or container-chains as final destinations.
 /// TODO: add support for container transfers
@@ -314,12 +313,12 @@ where
     XcmWeigher: WeightBounds<T::RuntimeCall>,
     EthereumLocation: Get<Location>,
     EthereumNetwork: Get<NetworkId>,
-    cumulus_primitives_core::Location: EncodeLike<<T as pallet_foreign_asset_creator::Config>::ForeignAsset>,
+    cumulus_primitives_core::Location:
+        EncodeLike<<T as pallet_foreign_asset_creator::Config>::ForeignAsset>,
 {
     fn can_process_message(channel: &Channel, envelope: &Envelope) -> bool {
         // Ensure that the message is intended for the current channel, para_id and agent_id
-        if let Some(channel_info) =
-            pallet_ethereum_token_transfers::CurrentChannelInfo::<T>::get()
+        if let Some(channel_info) = pallet_ethereum_token_transfers::CurrentChannelInfo::<T>::get()
         {
             if envelope.channel_id != channel_info.channel_id
                 || channel.para_id != channel_info.para_id
@@ -368,9 +367,9 @@ where
 
 /// Information needed to process an eth transfer message or check its validity.
 pub struct EthTransferData {
-    token_location: Location,
-    destination: Destination,
-    amount: u128,
+    pub token_location: Location,
+    pub destination: Destination,
+    pub amount: u128,
 }
 
 impl<T, XcmProcessor, XcmWeigher, EthereumLocation, EthereumNetwork>
@@ -383,7 +382,7 @@ where
     EthereumNetwork: Get<NetworkId>,
 {
     /// Retrieve the eth transfer data from the message payload.
-    fn decode_message_for_eth_transfer(mut payload: &[u8]) -> Option<EthTransferData> {
+    pub fn decode_message_for_eth_transfer(mut payload: &[u8]) -> Option<EthTransferData> {
         match VersionedXcmMessage::decode_all(&mut payload) {
             Ok(VersionedXcmMessage::V1(MessageV1 {
                 command:
