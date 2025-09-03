@@ -422,7 +422,7 @@ jobs:
             key: cargo-bin-udeps-nightly-${{ runner.os }}
 
         - name: Install cargo-udeps (nightly)
-          run: cargo +nightly install cargo-udeps
+          run: cargo +nightly install cargo-udeps --force
 
         - name: Check for unused dependencies
           run: |

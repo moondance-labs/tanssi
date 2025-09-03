@@ -1322,7 +1322,7 @@ impl parachains_slashing::Config for Runtime {
 }
 
 parameter_types! {
-    pub const ParaDeposit: Balance = 500 * UNITS;
+    pub const ParaDeposit: Balance = 1000 * UNITS;
 }
 
 impl paras_registrar::Config for Runtime {
@@ -1687,8 +1687,8 @@ impl pallet_maintenance_mode::Config for Runtime {
     type XcmExecutionManager = ();
 }
 
-pub const FIXED_BLOCK_PRODUCTION_COST: u128 = 1 * MICROUNITS;
-pub const FIXED_COLLATOR_ASSIGNMENT_COST: u128 = 100 * MICROUNITS;
+pub const FIXED_BLOCK_PRODUCTION_COST: u128 = 10000 * MICROUNITS;
+pub const FIXED_COLLATOR_ASSIGNMENT_COST: u128 = 5 * UNITS;
 
 pub struct BlockProductionCost<Runtime>(PhantomData<Runtime>);
 impl ProvideBlockProductionCost<Runtime> for BlockProductionCost<Runtime> {
