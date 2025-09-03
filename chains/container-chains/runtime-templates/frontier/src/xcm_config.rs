@@ -63,10 +63,6 @@ use {
     xcm_primitives::AccountIdAssetIdConversion,
 };
 
-// TODO: make this dynamic through pallet parameters
-pub const DANCELIGHT_GENESIS_HASH: [u8; 32] =
-    hex_literal::hex!["983a1a72503d6cc3636776747ec627172b51272bf45e50a355348facb67a820a"];
-
 parameter_types! {
     // Self Reserve location, defines the multilocation identifiying the self-reserve currency
     // This is used to match it also against our Balances pallet when we receive such
@@ -83,7 +79,7 @@ parameter_types! {
     pub UnitWeightCost: Weight = Weight::from_parts(1_000_000_000, 64 * 1024);
 
     // TODO: revisit
-    pub const RelayNetwork: NetworkId = NetworkId::ByGenesis(DANCELIGHT_GENESIS_HASH);
+    pub const RelayNetwork: NetworkId = NetworkId::Polkadot;
 
     // The relay chain Origin type
     pub RelayChainOrigin: RuntimeOrigin = cumulus_pallet_xcm::Origin::Relay.into();
