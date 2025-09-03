@@ -50,7 +50,7 @@ pub struct NodeName;
 
 impl Get<&'static str> for NodeName {
     fn get() -> &'static str {
-        "Frontier"
+        "Simple"
     }
 }
 
