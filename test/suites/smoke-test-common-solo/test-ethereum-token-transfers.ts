@@ -268,7 +268,12 @@ describeSuite({
                             );
 
                             if (decodedEvent.payload.startsWith(MAGIC_BYTES)) {
-                                const channelId = "0x0000000000000000000000000000000000000000000000000000000000000001";
+
+                                const currentChannelInfo = (
+                                    await api.query.ethereumTokenTransfers.currentChannelInfo()
+                                ).toJSON();
+                                const channelId = currentChannelInfo.channelId;
+
                                 const previousNonce = await (
                                     await api.at(block.block.header.parentHash)
                                 ).query.ethereumInboundQueue.nonce(channelId);
