@@ -84,6 +84,8 @@ parameter_types! {
     // One XCM operation is 1_000_000_000 weight - almost certainly a conservative estimate.
     pub UnitWeightCost: Weight = Weight::from_parts(1_000_000_000, 64 * 1024);
 
+    // For now this is being unused for our use cases (e.g container token transfers).
+    // We might need to revisit this later and make it dynamic (through pallet params for instance).
     pub const RelayNetwork: NetworkId = NetworkId::ByGenesis(TANSSI_GENESIS_HASH);
 
     // The relay chain Origin type
