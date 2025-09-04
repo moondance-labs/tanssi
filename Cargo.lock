@@ -19416,9 +19416,11 @@ dependencies = [
  "snowbridge-pallet-inbound-queue",
  "snowbridge-pallet-system",
  "sp-core",
+ "sp-io",
  "sp-runtime",
  "sp-staking",
  "staging-xcm",
+ "staging-xcm-executor",
 ]
 
 [[package]]
