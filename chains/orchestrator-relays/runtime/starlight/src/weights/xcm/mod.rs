@@ -83,7 +83,6 @@ impl WeighAssets for AssetFilter {
                 .map(|t| match t {
                     AssetTypes::Balances => balances_weight,
                     AssetTypes::Ethereum => {
-                        log::info!("Ethereum asset, balances_weight: {}", balances_weight);
                         balances_weight
                     }
                     AssetTypes::Unknown => Weight::MAX,
@@ -126,7 +125,6 @@ where
         assets.weigh_assets(XcmBalancesWeight::<Runtime>::withdraw_asset())
     }
     fn reserve_asset_deposited(assets: &Assets) -> XCMWeight {
-        log::info!("reserve_asset_deposited");
         assets.weigh_assets(XcmBalancesWeight::<Runtime>::reserve_asset_deposited())
     }
     fn receive_teleported_asset(_assets: &Assets) -> XCMWeight {
@@ -179,7 +177,6 @@ where
         XcmGeneric::<Runtime>::report_error()
     }
     fn deposit_asset(assets: &AssetFilter, _dest: &Location) -> XCMWeight {
-        log::info!("deposit_asset");
         assets.weigh_assets(XcmBalancesWeight::<Runtime>::deposit_asset())
     }
     fn deposit_reserve_asset(assets: &AssetFilter, _dest: &Location, _xcm: &Xcm<()>) -> XCMWeight {
