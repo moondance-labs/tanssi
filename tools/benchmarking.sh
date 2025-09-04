@@ -94,6 +94,7 @@ function bench {
             uniq
         ))
         echo "[+] Benchmarking ${#ALL_PALLETS[@]} pallets"
+        printf " - %s\n" "${ALL_PALLETS[@]}"
         for PALLET in "${ALL_PALLETS[@]}"; do
             TEMPLATE_TO_USE=$TEMPLATE_PATH
             OUTPUT="${OUTPUT_PATH}/$PALLET.rs"
