@@ -48,13 +48,17 @@ use {
     polkadot_runtime_common::xcm_sender::ExponentialPrice,
     sp_core::{ConstU32, H160},
     sp_runtime::Perbill,
+    tp_container_chain::{
+        sovereign_paid_remote_exporter::SovereignPaidRemoteExporter,
+        ContainerChainEthereumLocationConverter,
+    },
     xcm::latest::prelude::*,
     xcm_builder::{
         AccountKey20Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
         AllowTopLevelPaidExecutionFrom, ConvertedConcreteId, EnsureXcmOrigin, FungibleAdapter,
         IsConcrete, ParentIsPreset, RelayChainAsNative, SiblingParachainAsNative,
         SiblingParachainConvertsVia, SignedAccountKey20AsNative, SovereignSignedViaLocation,
-        TakeWeightCredit, UsingComponents, WeightInfoBounds, WithComputedOrigin,
+        TakeWeightCredit, UsingComponents, WeightInfoBounds, WithComputedOrigin, WithUniqueTopic,
         XcmFeeManagerFromComponents,
     },
     xcm_executor::XcmExecutor,
@@ -92,6 +96,9 @@ parameter_types! {
 
     pub const BaseDeliveryFee: u128 = 100 * MICROUNIT;
     pub RootLocation: Location = Location::here();
+
+    // TODO: Revisit later
+    pub const ContainerToEthTransferFee: u128 = 2_700_000_000_000u128;
 }
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -135,6 +142,9 @@ pub type LocationToAccountId = (
     AccountKey20Aliases<RelayNetwork, AccountId>,
     // Generate remote accounts according to polkadot standards
     xcm_builder::HashedDescription<AccountId, Descriptor>,
+    // Ethereum contract sovereign account.
+    // (Used to convert ethereum contract locations to sovereign account)
+    ContainerChainEthereumLocationConverter<AccountId>,
 );
 
 /// Local origins on this chain are allowed to dispatch XCM sends/executions.
@@ -180,14 +190,23 @@ pub type AssetTransactors = (CurrencyTransactor, ForeignFungiblesTransactor);
 pub type XcmWeigher =
     WeightInfoBounds<XcmGenericWeights<RuntimeCall>, RuntimeCall, MaxInstructions>;
 
+pub type UmpRouter =
+    cumulus_primitives_utility::ParentAsUmp<ParachainSystem, PolkadotXcm, PriceForParentDelivery>;
+
 /// The means for routing XCM messages which are not for local execution into the right message
 /// queues.
-pub type XcmRouter = (
+pub type XcmRouter = WithUniqueTopic<(
     // Two routers - use UMP to communicate with the relay chain:
-    cumulus_primitives_utility::ParentAsUmp<ParachainSystem, PolkadotXcm, PriceForParentDelivery>,
+    UmpRouter,
     // ..and XCMP to communicate with the sibling chains.
     XcmpQueue,
-);
+    SovereignPaidRemoteExporter<
+        UmpRouter,
+        UniversalLocation,
+        crate::EthereumNetwork,
+        ContainerToEthTransferFee,
+    >,
+)>;
 
 pub struct XcmConfig;
 impl xcm_executor::Config for XcmConfig {

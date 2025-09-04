@@ -152,7 +152,6 @@ pub use {
 
 #[cfg(feature = "runtime-benchmarks")]
 use {
-    dancelight_runtime_constants::snowbridge::EthereumNetwork,
     snowbridge_core::{AgentId, TokenId},
     xcm::latest::Junctions::*,
 };
@@ -3285,10 +3284,7 @@ sp_api::impl_runtime_apis! {
                     (
                         EthereumLocation::get(),
                         Asset {
-                            id: AssetId(Location {
-                                parents: 1,
-                                interior: X1([GlobalConsensus(EthereumNetwork::get())].into()),
-                            }),
+                            id: AssetId(EthereumLocation::get()),
                             fun: Fungible(ExistentialDeposit::get() * 100),
                         },
                     )

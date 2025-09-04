@@ -44,7 +44,7 @@ pub struct NodeName;
 
 impl Get<&'static str> for NodeName {
     fn get() -> &'static str {
-        "Frontier"
+        "Simple"
     }
 }
 
@@ -427,7 +427,10 @@ mod tests {
         // This is to verify we didn't forget to change one of them
         let v1 = ContainerChainCli::impl_version();
         let v2 = Cli::impl_version();
+        // Container chain nodes report the same version for relay chain side as the parachain side
+        let v3 = RelayChainCli::<NodeName>::impl_version();
 
         assert_eq!(v1, v2);
+        assert_eq!(v1, v3);
     }
 }
