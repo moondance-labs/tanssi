@@ -341,6 +341,7 @@ std = [
 	"xcm-executor/std",
 	"xcm-runtime-apis/std",
 	"xcm/std",
+	"pallet-stream-payment-runtime-api/std"
 ]
 no_std = []
 
