@@ -3350,7 +3350,7 @@ sp_api::impl_runtime_apis! {
 
                     let _ = XcmPallet::force_xcm_version(
                         RuntimeOrigin::root(),
-                        Box::new(Location::new(0, [Parachain(2001)]).into()),
+                        Box::new(Location::new(0, [Parachain(2001)])),
                         5,
                     ).map_err(|_e| {
                         BenchmarkError::Stop("XcmVersion was not stored!")
