@@ -57,7 +57,7 @@ describeSuite({
             test: async () => {
                 // Bob is a staking candidate, but the keys will be removed and we will see what happens
                 const bobKey = (await polkadotJs.query.session.nextKeys(bob.address)).toJSON().nimbus;
-                const aliceKey = (await polkadotJs.query.session.nextKeys(alice.address)).toJSON().nimbus;
+                const charlieKey = (await polkadotJs.query.session.nextKeys(charlie.address)).toJSON().nimbus;
                 const currentSessionBeforePurge = await polkadotJs.query.session.currentIndex();
 
                 // Bob's key should be an authority
@@ -74,17 +74,17 @@ describeSuite({
                 // Bob's key should no longer be an authority
                 const currentSession = await polkadotJs.query.session.currentIndex();
                 const authorities = await polkadotJs.query.authorityAssignment.collatorContainerChain(currentSession);
-                // Bob is no longer an authority, but alice is
+                // Bob is no longer an authority, but charlie is
                 expect(authorities.toJSON().orchestratorChain).not.toContainEqual(bobKey);
-                expect(authorities.toJSON().orchestratorChain).toContainEqual(aliceKey);
+                expect(authorities.toJSON().orchestratorChain).toContainEqual(charlieKey);
                 expect(authorities.toJSON().containerChains["2000"]).not.toContainEqual(bobKey);
                 expect(authorities.toJSON().containerChains["2001"]).not.toContainEqual(bobKey);
 
                 // But not only authority assignment, collator assignment should also not have bob
                 const collators = await polkadotJs.query.collatorAssignment.collatorContainerChain();
-                // Bob is no longer an assigned collator, but alice is
+                // Bob is no longer an assigned collator, but charlie is
                 expect(collators.toJSON().orchestratorChain).not.toContainEqual(bob.address);
-                expect(collators.toJSON().orchestratorChain).toContainEqual(alice.address);
+                expect(collators.toJSON().orchestratorChain).toContainEqual(charlie.address);
                 expect(collators.toJSON().containerChains["2000"]).not.toContainEqual(bob.address);
                 expect(collators.toJSON().containerChains["2001"]).not.toContainEqual(bob.address);
             },
