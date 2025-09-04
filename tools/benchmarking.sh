@@ -109,7 +109,6 @@ function bench {
             fi
             touch "$OUTPUT"
             WASMTIME_BACKTRACE_DETAILS=1 ${BINARY} benchmark pallet \
-            --execution=wasm \
             --wasm-execution=compiled \
             --pallet "$PALLET" \
             --extrinsic "*" \
@@ -133,7 +132,6 @@ function bench {
         fi
         touch "$OUTPUT"
         WASMTIME_BACKTRACE_DETAILS=1 ${BINARY} benchmark pallet \
-            --execution=wasm \
             --wasm-execution=compiled \
             --pallet "${1}" \
             --extrinsic "${2}" \
