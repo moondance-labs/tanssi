@@ -4,7 +4,7 @@ authors = { workspace = true }
 description = "Common code between various nodes"
 edition = "2021"
 license = "GPL-3.0-only"
-version = "0.1.0"
+version = "0.15.0"
 
 [lints]
 workspace = true
@@ -80,3 +80,6 @@ cumulus-client-service = { workspace = true }
 cumulus-primitives-core = { workspace = true }
 cumulus-primitives-parachain-inherent = { workspace = true }
 cumulus-relay-chain-interface = { workspace = true }
+
+[build-dependencies]
+substrate-build-script-utils = { workspace = true }
