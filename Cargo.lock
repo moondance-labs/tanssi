@@ -740,19 +740,23 @@ dependencies = [
 name = "asset-dancelight-integration-tests"
 version = "0.0.0"
 dependencies = [
+ "container-chain-template-frontier-runtime",
  "container-chain-template-simple-runtime",
  "dancelight-emulated-chain",
  "dancelight-runtime",
  "dancelight-system-emulated-network",
  "frame-support",
+ "frontier-template-emulated-chain",
  "pallet-message-queue",
  "pallet-xcm",
  "polkadot-primitives",
  "simple-template-emulated-chain",
+ "sp-core",
  "sp-runtime",
  "staging-xcm",
  "staging-xcm-executor",
  "tanssi-emulated-integration-tests-common",
+ "westend-system-emulated-network",
  "xcm-emulator",
 ]
 
@@ -2423,6 +2427,7 @@ dependencies = [
  "staging-xcm-builder",
  "staging-xcm-executor",
  "substrate-wasm-builder",
+ "tp-container-chain",
  "xcm-primitives",
  "xcm-runtime-apis",
 ]
@@ -2503,6 +2508,7 @@ dependencies = [
  "staging-xcm-builder",
  "staging-xcm-executor",
  "substrate-wasm-builder",
+ "tp-container-chain",
  "xcm-primitives",
  "xcm-runtime-apis",
 ]
@@ -20115,6 +20121,25 @@ dependencies = [
  "snowbridge-outbound-queue-primitives",
  "snowbridge-pallet-outbound-queue",
  "snowbridge-pallet-system",
+ "sp-core",
+ "sp-runtime",
+ "staging-xcm",
+ "staging-xcm-builder",
+ "staging-xcm-executor",
+]
+
+[[package]]
+name = "tp-container-chain"
+version = "0.1.0"
+dependencies = [
+ "cumulus-primitives-core",
+ "frame-support",
+ "frame-system",
+ "impl-trait-for-tuples",
+ "log",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
  "sp-core",
  "sp-runtime",
  "staging-xcm",
