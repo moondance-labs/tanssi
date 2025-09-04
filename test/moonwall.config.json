@@ -1087,7 +1087,7 @@
             ]
         },
         {
-            "name": "zombie_data_preservers_embeded_dancebox",
+            "name": "zombie_data_preservers_embedded_dancebox",
             "testFileDir": ["suites/zombie_data_preservers_dancebox"],
             "runScripts": [
                 "build-spec-data-preservers.sh",
@@ -1100,7 +1100,7 @@
             "foundation": {
                 "type": "zombie",
                 "zombieSpec": {
-                    "configPath": "./configs/zombie_data_preservers_embeded_dancebox.json",
+                    "configPath": "./configs/zombie_data_preservers_embedded_dancebox.json",
                     "skipBlockCheck": ["DataPreserver-2000", "DataPreserver-2001"]
                 }
             },
@@ -1131,7 +1131,7 @@
             ]
         },
         {
-            "name": "zombie_data_preservers_embeded_dancelight",
+            "name": "zombie_data_preservers_embedded_dancelight",
             "testFileDir": ["suites/zombie_data_preservers_dancelight"],
             "runScripts": [
                 "build-spec-dancelight.sh",
@@ -1143,7 +1143,7 @@
             "foundation": {
                 "type": "zombie",
                 "zombieSpec": {
-                    "configPath": "./configs/zombie_data_preservers_embeded_dancelight.json",
+                    "configPath": "./configs/zombie_data_preservers_embedded_dancelight.json",
                     "skipBlockCheck": ["DataPreserver-2000", "DataPreserver-2001"]
                 }
             },
