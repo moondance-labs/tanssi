@@ -647,6 +647,7 @@ fn receive_container_native_tokens_fails_if_destination_doesnt_own_token() {
         });
 }
 
+#[cfg(not(feature = "runtime-benchmarks"))]
 #[test]
 fn native_container_can_process_message_returns_false_for_wrong_channel() {
     ExtBuilder::default().build().execute_with(|| {
@@ -713,6 +714,7 @@ fn native_container_can_process_message_returns_false_for_wrong_channel() {
     });
 }
 
+#[cfg(not(feature = "runtime-benchmarks"))]
 #[test]
 fn native_container_can_process_message_returns_false_for_wrong_gateway() {
     ExtBuilder::default().build().execute_with(|| {
@@ -779,6 +781,7 @@ fn native_container_can_process_message_returns_false_for_wrong_gateway() {
     });
 }
 
+#[cfg(not(feature = "runtime-benchmarks"))]
 #[test]
 fn native_container_can_process_message_returns_true_for_valid_message() {
     ExtBuilder::default().build().execute_with(|| {
