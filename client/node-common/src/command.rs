@@ -179,15 +179,11 @@ impl<N: Get<&'static str>> CliConfiguration<Self> for RelayChainCli<N> {
 
 impl<N: Get<&'static str>> SubstrateCli for RelayChainCli<N> {
     fn impl_version() -> String {
-        option_env!("SUBSTRATE_CLI_IMPL_VERSION")
-            .unwrap_or("Unknown version")
-            .into()
+        env!("SUBSTRATE_CLI_IMPL_VERSION").into()
     }
 
     fn author() -> String {
-        option_env!("CARGO_PKG_AUTHORS")
-            .unwrap_or("Unknown authors")
-            .into()
+        env!("CARGO_PKG_AUTHORS").into()
     }
 
     fn support_url() -> String {
