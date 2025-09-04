@@ -117,7 +117,19 @@ pub mod mock_data {
         where
             F: FnOnce(&mut Mocks) -> R,
         {
-            Mock::<T>::mutate(f)
+            let r = Mock::<T>::mutate(f);
+
+            // Check that invulnerables are before staking collators
+            // So we only accept list such as [100, 101, 102, 1, 2, 3, 4, 5]
+            // One-liner using slice is_sorted_by_key (false before true, so >=100 before <100)
+            let collators = Mock::<T>::get().collators;
+            assert!(
+                collators.is_sorted_by_key(|c| *c < 100),
+                "Expected all >=100 before all <100, got: {:?}",
+                collators
+            );
+
+            r
         }
 
         pub fn core_allocation_config() -> Option<CoreAllocationConfiguration> {
@@ -147,6 +159,7 @@ pub struct Mocks {
     pub collators_per_container: u32,
     pub collators_per_parathread: u32,
     pub target_container_chain_fullness: Perbill,
+    /// Collators. Order means priority so invulnerables must be the first ones on the list.
     pub collators: Vec<u64>,
     pub container_chains: Vec<u32>,
     pub parathreads: Vec<u32>,
@@ -164,7 +177,7 @@ impl Default for Mocks {
         Self {
             max_collators: Default::default(),
             min_orchestrator_chain_collators: 1,
-            max_orchestrator_chain_collators: Default::default(),
+            max_orchestrator_chain_collators: 1,
             collators_per_container: Default::default(),
             collators_per_parathread: Default::default(),
             target_container_chain_fullness: Perbill::from_percent(80),
