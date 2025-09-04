@@ -469,7 +469,10 @@ impl<
             "ensure_successful_delivery params: {origin_ref:?} {dest:?} {fee_reason:?} "
         );
 
-        use xcm_executor::traits::TransactAsset;
+        use xcm_executor::{
+            traits::{FeeManager, TransactAsset},
+            FeesMode,
+        };
 
         if !dest.is_here() {
             log::trace!(target: "xcm::delivery_helper",
@@ -478,20 +481,29 @@ impl<
             return (None, None);
         }
 
-        let overestimated_fees = PriceForDelivery::get();
-        log::debug!(target: "xcm::delivery_helper", "fees to deposit {overestimated_fees:?} for origin: {origin_ref:?}");
-        // mint overestimated fee to origin
-        XcmConfig::AssetTransactor::deposit_asset(
-            &Asset {
-                id: AssetId(Location::new(0, Here)),
-                fun: Fungible(overestimated_fees),
-            },
-            &origin_ref,
-            None,
-        )
-        .unwrap();
+        let mut fees_mode = None;
+        if !XcmConfig::FeeManager::is_waived(Some(origin_ref), fee_reason) {
+            // if not waived, we need to set up accounts for paying and receiving fees
 
-        (None, None)
+            // overestimate delivery fee
+            let overestimated_fees = PriceForDelivery::get();
+            log::debug!(target: "xcm::delivery_helper", "fees to deposit {overestimated_fees:?} for origin: {origin_ref:?}");
+
+            // mint overestimated fee to origin
+            XcmConfig::AssetTransactor::deposit_asset(
+                &Asset {
+                    id: AssetId(Location::new(0, Here)),
+                    fun: Fungible(overestimated_fees),
+                },
+                &origin_ref,
+                None,
+            )
+            .unwrap();
+
+            // expected worst case - direct withdraw
+            fees_mode = Some(FeesMode { jit_withdraw: true });
+        }
+        (fees_mode, None)
     }
 }
 
