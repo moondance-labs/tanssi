@@ -127,7 +127,6 @@ use {
         relay::{BabeGetCollatorAssignmentRandomness, BabeSlotBeacon},
         SessionTimer,
     },
-    tp_bridge::container_token_to_ethereum_message_exporter::ToEthDeliveryHelper,
     tp_bridge::ConvertLocation,
     tp_traits::{
         prod_or_fast_parameter_types, EraIndex, GetHostConfiguration, GetSessionContainerChains,
@@ -3126,6 +3125,7 @@ sp_api::impl_runtime_apis! {
                 AssetHub, LocalCheckAccount, LocationConverter, TokenLocation, XcmConfig,
             };
             use alloc::boxed::Box;
+            use tp_bridge::container_token_to_ethereum_message_exporter::ToEthDeliveryHelper;
 
             parameter_types! {
                 pub ExistentialDepositAsset: Option<Asset> = Some((
