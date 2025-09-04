@@ -14,5 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
+mod container_chain_to_eth_transfer;
 mod reserver_transfers_polkadot_xcm;
 mod xcm_message_exporter;
