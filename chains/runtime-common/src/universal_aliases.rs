@@ -26,11 +26,8 @@ use {
 pub const PARENT_INBOUND_QUEUE_PALLET_INDEX: u8 = 24;
 
 parameter_types! {
-    /// Network and location for the Ethereum chain. On Starlight, the Ethereum chain bridged
-    /// to is the Ethereum mainnet, with chain ID 1.
-    /// <https://chainlist.org/chain/1>
-    /// <https://ethereum.org/en/developers/docs/apis/json-rpc/#net_version>
-    pub EthereumNetwork: NetworkId = NetworkId::Ethereum { chain_id: 11155111 };
+    pub EthereumNetworkSepolia: NetworkId = NetworkId::Ethereum { chain_id: 11155111 };
+    pub EthereumNetworkMainnet: NetworkId = NetworkId::Ethereum { chain_id: 1 };
 
     pub ParentWithEthereumInboundQueueInstance: Location = Location::new(
         1,
@@ -42,7 +39,8 @@ parameter_types! {
     /// Universal aliases common to frontier and simple templates.
     pub CommonUniversalAliases: BTreeSet<(Location, Junction)> = BTreeSet::from_iter(
         alloc::vec![
-            (ParentWithEthereumInboundQueueInstance::get(), GlobalConsensus(EthereumNetwork::get()))
+            (ParentWithEthereumInboundQueueInstance::get(), GlobalConsensus(EthereumNetworkSepolia::get())),
+            (ParentWithEthereumInboundQueueInstance::get(), GlobalConsensus(EthereumNetworkMainnet::get()))
         ]
     );
 }
