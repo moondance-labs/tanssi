@@ -82,9 +82,7 @@ impl WeighAssets for AssetFilter {
                 .map(From::from)
                 .map(|t| match t {
                     AssetTypes::Balances => balances_weight,
-                    AssetTypes::Ethereum => {
-                        balances_weight
-                    }
+                    AssetTypes::Ethereum => balances_weight,
                     AssetTypes::Unknown => Weight::MAX,
                 })
                 .fold(Weight::zero(), |acc, x| acc.saturating_add(x)),
