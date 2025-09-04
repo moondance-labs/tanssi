@@ -127,6 +127,7 @@ use {
         relay::{BabeGetCollatorAssignmentRandomness, BabeSlotBeacon},
         SessionTimer,
     },
+    tp_bridge::container_token_to_ethereum_message_exporter::ToEthDeliveryHelper,
     tp_bridge::ConvertLocation,
     tp_traits::{
         prod_or_fast_parameter_types, EraIndex, GetHostConfiguration, GetSessionContainerChains,
@@ -3133,6 +3134,8 @@ sp_api::impl_runtime_apis! {
                 ).into());
                 pub AssetHubParaId: ParaId = dancelight_runtime_constants::system_parachain::ASSET_HUB_ID.into();
                 pub const RandomParaId: ParaId = ParaId::new(43211234);
+                // Minimum fee amount for exporter: 2680020006582, rounding to a bit more
+                pub const ContainerToEthTransferFee: u128 = 2_700_000_000_000u128;
             }
 
             impl frame_system_benchmarking::Config for Runtime {}
@@ -3205,13 +3208,20 @@ sp_api::impl_runtime_apis! {
             impl pallet_xcm_benchmarks::Config for Runtime {
                 type XcmConfig = XcmConfig;
                 type AccountIdConverter = LocationConverter;
-                type DeliveryHelper = runtime_common::xcm_sender::ToParachainDeliveryHelper<
-                    XcmConfig,
-                    ExistentialDepositAsset,
-                    xcm_config::PriceForChildParachainDelivery,
-                    AssetHubParaId,
-                    Dmp,
-                >;
+                type DeliveryHelper = (
+                    runtime_common::xcm_sender::ToParachainDeliveryHelper<
+                        XcmConfig,
+                        ExistentialDepositAsset,
+                        xcm_config::PriceForChildParachainDelivery,
+                        AssetHubParaId,
+                        Dmp,
+                    >,
+                    ToEthDeliveryHelper<
+                        XcmConfig,
+                        ExistentialDepositAsset,
+                        ContainerToEthTransferFee,
+                    >,
+                );
                 fn valid_destination() -> Result<Location, BenchmarkError> {
                     Ok(AssetHub::get())
                 }
@@ -3327,10 +3337,29 @@ sp_api::impl_runtime_apis! {
                     Err(BenchmarkError::Skip)
                 }
 
-                fn export_message_origin_and_destination(
-                ) -> Result<(Location, NetworkId, InteriorLocation), BenchmarkError> {
-                    // Dancelight doesn't support exporting messages
-                    Err(BenchmarkError::Skip)
+                fn export_message_origin_and_destination() -> Result<(Location, NetworkId, InteriorLocation), BenchmarkError>
+                {
+                    let _ = EthereumTokenTransfers::set_token_transfer_channel(
+                        RuntimeOrigin::root(),
+                        ChannelId::new([1u8; 32]),
+                        AgentId::from([2u8; 32]),
+                        2001u32.into(),
+                    ).map_err(|_e| {
+                        BenchmarkError::Stop("channel and agent was not set!")
+                    })?;
+
+                    let _ = XcmPallet::force_xcm_version(
+                        RuntimeOrigin::root(),
+                        Box::new(Location::new(0, [Parachain(2001)]).into()),
+                        3,
+                    ).map_err(|_e| {
+                        BenchmarkError::Stop("XcmVersion was not stored!")
+                    })?;
+
+                    Ok((Location {
+                        parents: 0,
+                        interior: X1([Parachain(2001)].into()),
+                    }, dancelight_runtime_constants::snowbridge::EthereumNetwork::get(), Here))
                 }
 
                 fn alias_origin() -> Result<(Location, Location), BenchmarkError> {
