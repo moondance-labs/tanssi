@@ -30,12 +30,12 @@ use {
         traits::{Contains, Disabled, Equals, Everything, Nothing},
         weights::Weight,
     },
-    snowbridge_core::{AgentId, ChannelId},
     frame_system::EnsureRoot,
     runtime_common::{
         xcm_sender::{ChildParachainRouter, ExponentialPrice},
         ToAuthor,
     },
+    snowbridge_core::{AgentId, ChannelId},
     sp_core::ConstU32,
     sp_runtime::traits::TryConvertInto,
     starlight_runtime_constants::{
