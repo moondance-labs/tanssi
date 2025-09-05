@@ -334,8 +334,8 @@ where
             Command::AgentExecute {
                 agent_id: self.agent_id,
                 command: AgentExecuteCommand::TransferToken {
-                    token: token,
-                    recipient: recipient,
+                    token,
+                    recipient,
                     amount,
                 },
             },

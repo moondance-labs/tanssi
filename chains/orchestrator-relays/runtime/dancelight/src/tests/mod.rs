@@ -25,6 +25,7 @@ mod author_noting_tests;
 mod beefy;
 mod collator_assignment_tests;
 mod common;
+mod container_token_transfers;
 mod core_scheduling_tests;
 mod ethereum_client;
 mod ethereum_token_transfers;
@@ -43,6 +44,16 @@ mod session_keys;
 mod slashes;
 mod staking;
 mod sudo;
+
+#[macro_export]
+macro_rules! filter_events {
+    ($pat:pat) => {
+        System::events().iter().filter(|r| match r.event {
+            $pat => true,
+            _ => false,
+        })
+    };
+}
 
 #[test]
 fn check_whitelist() {

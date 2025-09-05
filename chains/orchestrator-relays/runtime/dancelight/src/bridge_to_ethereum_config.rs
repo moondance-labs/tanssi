@@ -21,7 +21,9 @@ use crate::EthereumBeaconClient;
 
 #[cfg(not(feature = "runtime-benchmarks"))]
 use {
-    tanssi_runtime_common::relay::NativeTokenTransferMessageProcessor,
+    tanssi_runtime_common::relay::{
+        NativeContainerTokensProcessor, NativeTokenTransferMessageProcessor,
+    },
     tp_bridge::{
         generic_token_message_processor::GenericTokenMessageProcessor,
         symbiotic_message_processor::SymbioticMessageProcessor,
@@ -36,7 +38,7 @@ use {
         OutboundMessageCommitmentRecorder, Runtime, RuntimeEvent, SnowbridgeFeesAccount,
         TokenLocationReanchored, TransactionByteFee, TreasuryAccount, WeightToFee, UNITS,
     },
-    frame_support::weights::ConstantMultiplier,
+    frame_support::{traits::PalletInfoAccess, weights::ConstantMultiplier},
     pallet_xcm::EnsureXcm,
     snowbridge_beacon_primitives::ForkVersions,
     snowbridge_core::{gwei, meth, PricingParameters, Rewards},
@@ -245,6 +247,10 @@ mod test_helpers {
     }
 }
 
+parameter_types! {
+    pub InboundQueuePalletInstance: u8 = <EthereumInboundQueue as PalletInfoAccess>::index() as u8;
+}
+
 pub type EthTokensProcessor = EthTokensLocalProcessor<
     Runtime,
     xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
@@ -255,6 +261,15 @@ pub type EthTokensProcessor = EthTokensLocalProcessor<
 
 #[cfg(not(feature = "runtime-benchmarks"))]
 pub type NativeTokensProcessor = NativeTokenTransferMessageProcessor<Runtime>;
+
+#[cfg(not(feature = "runtime-benchmarks"))]
+pub type NativeContainerProcessor = NativeContainerTokensProcessor<
+    Runtime,
+    dancelight_runtime_constants::snowbridge::EthereumLocation,
+    dancelight_runtime_constants::snowbridge::EthereumNetwork,
+    InboundQueuePalletInstance,
+    TokenLocationReanchored,
+>;
 
 impl snowbridge_pallet_inbound_queue::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
@@ -281,7 +296,11 @@ impl snowbridge_pallet_inbound_queue::Config for Runtime {
     #[cfg(not(feature = "runtime-benchmarks"))]
     type MessageProcessor = (
         SymbioticMessageProcessor<Self>,
-        GenericTokenMessageProcessor<Self, NativeTokensProcessor, EthTokensProcessor>,
+        GenericTokenMessageProcessor<
+            Self,
+            (NativeTokensProcessor, NativeContainerProcessor),
+            EthTokensProcessor,
+        >,
     );
     type RewardProcessor = RewardThroughFeesAccount<Self>;
     #[cfg(feature = "runtime-benchmarks")]
