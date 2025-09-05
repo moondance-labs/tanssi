@@ -16,16 +16,11 @@
 
 use {
     clap::Parser,
-    node_common::{cli::BuildSpecCmd, cli::Subcommand, service::Sealing},
-    url::Url,
+    node_common::{cli::BuildSpecCmd, service::node_builder::Sealing},
 };
 
 #[derive(Debug, Parser)]
-#[group(skip)]
-pub struct RunCmd {
-    #[clap(flatten)]
-    pub base: cumulus_client_cli::RunCmd,
-
+pub struct EthRpcArguments {
     /// Size in bytes of the LRU cache for block data.
     #[arg(long, default_value = "300000000")]
     pub eth_log_block_cache: usize,
@@ -42,13 +37,23 @@ pub struct RunCmd {
     #[arg(long, default_value = "1024")]
     pub max_block_range: u32,
 
+    /// Maximum fee history cache size.
+    #[arg(long, default_value = "2048")]
+    pub fee_history_limit: u64,
+}
+
+#[derive(Debug, Parser)]
+#[group(skip)]
+pub struct RunCmd {
+    #[clap(flatten)]
+    pub base: cumulus_client_cli::RunCmd,
+
     /// Id of the parachain this collator collates for.
     #[arg(long)]
     pub parachain_id: Option<u32>,
 
-    /// Maximum fee history cache size.
-    #[arg(long, default_value = "2048")]
-    pub fee_history_limit: u64,
+    #[clap(flatten)]
+    pub eth: EthRpcArguments,
 
     /// When blocks should be sealed in the dev service.
     ///
@@ -65,7 +70,26 @@ impl std::ops::Deref for RunCmd {
     }
 }
 
-pub type FrontierSubcommand = Subcommand<BuildSpecCmdFrontier>;
+/// Watches for an assignment and provide Ethereum RPC services for assigned chain.
+#[derive(Debug, Parser)]
+pub struct RpcProviderCmd {
+    #[clap(flatten)]
+    pub base: tc_service_container_chain_rpc_provider::RpcProviderCmd,
+
+    #[clap(flatten)]
+    pub eth: EthRpcArguments,
+}
+
+/// Common subcommands enum configured with frontier build spec.
+pub type BaseSubcommand = node_common::cli::Subcommand<BuildSpecCmdFrontier>;
+
+/// Custom subcommand enum with `rpc-provider`
+#[derive(Debug, clap::Subcommand)]
+pub enum Subcommand {
+    RpcProvider(RpcProviderCmd),
+    #[command(flatten)]
+    Base(BaseSubcommand),
+}
 
 #[derive(Debug, clap::Parser)]
 #[command(
@@ -75,8 +99,13 @@ pub type FrontierSubcommand = Subcommand<BuildSpecCmdFrontier>;
 )]
 pub struct Cli {
     #[command(subcommand)]
-    pub subcommand: Option<FrontierSubcommand>,
+    pub subcommand: Option<Subcommand>,
 
+    // ===== WARNING =====
+    // The following arguments are only parsed if `subcommand` is `None`. They
+    // get default values when a subcommand is used!
+    // TODO: Fix usage of those wrong values in subcommands.
+    // SEE: https://github.com/paritytech/polkadot-sdk/issues/9356
     #[command(flatten)]
     pub run: RunCmd,
 
@@ -90,48 +119,13 @@ pub struct Cli {
     #[arg(long)]
     pub no_hardware_benchmarks: bool,
 
-    /// Profile id associated with the node, whose assignements will be followed to provide RPC services.
-    #[arg(long)]
-    pub rpc_provider_profile_id: Option<u64>,
-
-    /// Endpoints to connect to orchestrator nodes, avoiding to start a local orchestrator node.
-    /// If this list is empty, a local embeded orchestrator node is started.
-    #[arg(long)]
-    pub orchestrator_endpoints: Vec<Url>,
-
     /// Optional parachain id that should be used to build chain spec.
     #[arg(long)]
     pub para_id: Option<u32>,
 
-    /// Relay chain arguments, optionally followed by "--" and container chain arguments
+    /// Relay chain arguments
     #[arg(raw = true)]
-    extra_args: Vec<String>,
-}
-
-impl Cli {
-    pub fn relaychain_args(&self) -> &[String] {
-        let (relay_chain_args, _) = self.split_extra_args_at_first_dashdash();
-
-        relay_chain_args
-    }
-
-    pub fn container_chain_args(&self) -> &[String] {
-        let (_, container_chain_args) = self.split_extra_args_at_first_dashdash();
-
-        container_chain_args
-    }
-
-    fn split_extra_args_at_first_dashdash(&self) -> (&[String], &[String]) {
-        let index_of_dashdash = self.extra_args.iter().position(|x| *x == "--");
-
-        if let Some(i) = index_of_dashdash {
-            let (container_chain_args, extra_extra) = self.extra_args.split_at(i);
-            (&extra_extra[1..], container_chain_args)
-        } else {
-            // Only relay chain args
-            (&self.extra_args, &[])
-        }
-    }
+    pub relay_chain_args: Vec<String>,
 }
 
 #[derive(Debug, Clone, clap::Args)]

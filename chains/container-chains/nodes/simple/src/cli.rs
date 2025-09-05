@@ -16,11 +16,20 @@
 
 use {
     clap::Parser,
-    node_common::{cli::BuildSpecCmd, cli::Subcommand, service::Sealing},
-    url::Url,
+    node_common::{cli::BuildSpecCmd, service::node_builder::Sealing},
+    tc_service_container_chain_rpc_provider::RpcProviderCmd,
 };
 
-pub type SimpleSubcommand = Subcommand<BuildSpecCmdSimple>;
+pub type BaseSubcommand = node_common::cli::Subcommand<BuildSpecCmdSimple>;
+
+/// Custom subcommand enum with `rpc-provider`
+#[derive(Debug, clap::Subcommand)]
+#[allow(clippy::large_enum_variant)]
+pub enum Subcommand {
+    RpcProvider(RpcProviderCmd),
+    #[command(flatten)]
+    Base(BaseSubcommand),
+}
 
 #[derive(Debug, Parser)]
 #[group(skip)]
@@ -55,8 +64,13 @@ impl std::ops::Deref for RunCmd {
 )]
 pub struct Cli {
     #[command(subcommand)]
-    pub subcommand: Option<SimpleSubcommand>,
+    pub subcommand: Option<Subcommand>,
 
+    // ===== WARNING =====
+    // The following arguments are only parsed if `subcommand` is `None`. They
+    // get default values when a subcommand is used!
+    // TODO: Fix usage of those wrong values in subcommands.
+    // SEE: https://github.com/paritytech/polkadot-sdk/issues/9356
     #[command(flatten)]
     pub run: RunCmd,
 
@@ -74,44 +88,9 @@ pub struct Cli {
     #[arg(long)]
     pub para_id: Option<u32>,
 
-    /// Profile id associated with the node, whose assignements will be followed to provide RPC services.
-    #[arg(long)]
-    pub rpc_provider_profile_id: Option<u64>,
-
-    /// Endpoints to connect to orchestrator nodes, avoiding to start a local orchestrator node.
-    /// If this list is empty, a local embeded orchestrator node is started.
-    #[arg(long)]
-    pub orchestrator_endpoints: Vec<Url>,
-
-    /// Relay chain arguments, optionally followed by "--" and container chain arguments
+    /// Relay chain arguments
     #[arg(raw = true)]
-    extra_args: Vec<String>,
-}
-
-impl Cli {
-    pub fn relaychain_args(&self) -> &[String] {
-        let (relay_chain_args, _) = self.split_extra_args_at_first_dashdash();
-
-        relay_chain_args
-    }
-
-    pub fn container_chain_args(&self) -> &[String] {
-        let (_, container_chain_args) = self.split_extra_args_at_first_dashdash();
-
-        container_chain_args
-    }
-
-    fn split_extra_args_at_first_dashdash(&self) -> (&[String], &[String]) {
-        let index_of_dashdash = self.extra_args.iter().position(|x| *x == "--");
-
-        if let Some(i) = index_of_dashdash {
-            let (container_chain_args, extra_extra) = self.extra_args.split_at(i);
-            (&extra_extra[1..], container_chain_args)
-        } else {
-            // Only relay chain args
-            (&self.extra_args, &[])
-        }
-    }
+    pub relay_chain_args: Vec<String>,
 }
 
 #[derive(Debug, Clone, clap::Args)]
