@@ -90,10 +90,10 @@ describeSuite({
                 ];
 
                 const moreSessionKeys = [
-                    await relayCharlieApi.rpc.author.rotateKeys(),
-                    await relayCharlieApi.rpc.author.rotateKeys(),
-                    await relayCharlieApi.rpc.author.rotateKeys(),
-                    await relayCharlieApi.rpc.author.rotateKeys(),
+                    await relayApi.rpc.author.rotateKeys(),
+                    await relayApi.rpc.author.rotateKeys(),
+                    await relayApi.rpc.author.rotateKeys(),
+                    await relayApi.rpc.author.rotateKeys(),
                 ];
 
                 await signAndSendAndInclude(
