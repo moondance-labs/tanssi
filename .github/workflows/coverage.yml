@@ -55,7 +55,7 @@ jobs:
       SCCACHE_CACHE_SIZE: "100GB"
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ needs.set-tags.outputs.git_ref }}
       - name: Setup Variables
@@ -180,11 +180,11 @@ jobs:
     needs: ["set-tags","build-and-coverage"]
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ needs.set-tags.outputs.git_ref }}
       - name: "Download coverage"
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: coverage
           path: coverage

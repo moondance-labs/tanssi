@@ -342,6 +342,38 @@ impl<T: frame_system::Config> WeightInfo<T> {
 		// Minimum execution time: 1_160_000 picoseconds.
 		Weight::from_parts(1_252_000, 0)
 	}
+	/// Storage: `EthereumTokenTransfers::CurrentChannelInfo` (r:1 w:0)
+	/// Proof: `EthereumTokenTransfers::CurrentChannelInfo` (`max_values`: Some(1), `max_size`: Some(68), added: 563, mode: `MaxEncodedLen`)
+	/// Storage: `EthereumSystem::Channels` (r:1 w:0)
+	/// Proof: `EthereumSystem::Channels` (`max_values`: None, `max_size`: Some(76), added: 2551, mode: `MaxEncodedLen`)
+	/// Storage: `EthereumSystem::PricingParameters` (r:1 w:0)
+	/// Proof: `EthereumSystem::PricingParameters` (`max_values`: Some(1), `max_size`: Some(112), added: 607, mode: `MaxEncodedLen`)
+	/// Storage: `System::Account` (r:1 w:1)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+	/// Storage: `EthereumOutboundQueue::OperatingMode` (r:1 w:0)
+	/// Proof: `EthereumOutboundQueue::OperatingMode` (`max_values`: Some(1), `max_size`: Some(1), added: 496, mode: `MaxEncodedLen`)
+	/// Storage: `MessageQueue::BookStateFor` (r:1 w:1)
+	/// Proof: `MessageQueue::BookStateFor` (`max_values`: None, `max_size`: Some(136), added: 2611, mode: `MaxEncodedLen`)
+	/// Storage: `MessageQueue::ServiceHead` (r:1 w:1)
+	/// Proof: `MessageQueue::ServiceHead` (`max_values`: Some(1), `max_size`: Some(33), added: 528, mode: `MaxEncodedLen`)
+	/// Storage: UNKNOWN KEY `0x3a72656c61795f64697370617463685f71756575655f72656d61696e696e675f` (r:0 w:1)
+	/// Proof: UNKNOWN KEY `0x3a72656c61795f64697370617463685f71756575655f72656d61696e696e675f` (r:0 w:1)
+	/// Storage: `MessageQueue::Pages` (r:0 w:1)
+	/// Proof: `MessageQueue::Pages` (`max_values`: None, `max_size`: Some(32845), added: 35320, mode: `MaxEncodedLen`)
+	/// Storage: UNKNOWN KEY `0xf5207f03cfdce586301014700e2c2593fad157e461d71fd4c1f936839a5f1f3e` (r:0 w:1)
+	/// Proof: UNKNOWN KEY `0xf5207f03cfdce586301014700e2c2593fad157e461d71fd4c1f936839a5f1f3e` (r:0 w:1)
+	/// The range of component `x` is `[1, 1000]`.
+	pub(crate) fn export_message(x: u32, ) -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `802`
+		//  Estimated: `3601`
+		// Minimum execution time: 135_000_000 picoseconds.
+		Weight::from_parts(151_972_415, 3601)
+			// Standard Error: 1_003
+			.saturating_add(Weight::from_parts(177_079, 0).saturating_mul(x.into()))
+			.saturating_add(T::DbWeight::get().reads(7_u64))
+			.saturating_add(T::DbWeight::get().writes(6_u64))
+	}
 	pub(crate) fn set_fees_mode() -> Weight {
 		// Proof Size summary in bytes:
 		//  Measured:  `0`

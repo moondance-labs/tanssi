@@ -25,6 +25,7 @@ mod benchmarks;
 #[cfg(test)]
 mod tests;
 
+pub mod container_token_to_ethereum_message_exporter;
 pub mod generic_token_message_processor;
 pub mod snowbridge_outbound_token_transfer;
 pub mod symbiotic_message_processor;
