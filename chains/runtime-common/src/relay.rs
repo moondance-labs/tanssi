@@ -31,7 +31,7 @@ use frame_system::pallet_prelude::BlockNumberFor;
 use parity_scale_codec::{DecodeAll, Encode, EncodeLike};
 use snowbridge_core::Channel;
 use snowbridge_pallet_inbound_queue::RewardProcessor;
-use sp_core::{Get, H256, H160};
+use sp_core::{Get, H160, H256};
 use sp_runtime::{
     traits::{Hash as _, MaybeEquivalence},
     DispatchError, DispatchResult,
