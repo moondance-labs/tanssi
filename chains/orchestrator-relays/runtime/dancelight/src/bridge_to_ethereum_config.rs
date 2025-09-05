@@ -32,32 +32,20 @@ use {
 
 use {
     crate::{
-        parameter_types, weights, xcm_config, AggregateMessageOrigin, Balance, Balances, Encode,
+        parameter_types, weights, xcm_config, AggregateMessageOrigin, Balance, Balances,
         EthereumInboundQueue, EthereumOutboundQueue, EthereumSovereignAccount, EthereumSystem,
         FixedU128, GetAggregateMessageOrigin, Keccak256, MessageQueue,
         OutboundMessageCommitmentRecorder, Runtime, RuntimeEvent, SnowbridgeFeesAccount,
         TokenLocationReanchored, TransactionByteFee, TreasuryAccount, WeightToFee, UNITS,
     },
-    alloc::vec,
-    core::marker::PhantomData,
     frame_support::{traits::PalletInfoAccess, weights::ConstantMultiplier},
     pallet_xcm::EnsureXcm,
-    parity_scale_codec::DecodeAll,
     snowbridge_beacon_primitives::ForkVersions,
-    snowbridge_core::{gwei, meth, Channel, PricingParameters, Rewards},
-    snowbridge_inbound_queue_primitives::v1::{
-        Command, Destination, Envelope, MessageProcessor, MessageV1, VersionedXcmMessage,
-    },
+    snowbridge_core::{gwei, meth, PricingParameters, Rewards},
     snowbridge_pallet_outbound_queue::OnNewCommitment,
-    sp_core::{ConstU32, ConstU8, Get, H160, H256},
-    sp_runtime::{DispatchError, DispatchResult},
-    tanssi_runtime_common::relay::{GatewayAndChannelValidator, RewardThroughFeesAccount},
+    sp_core::{ConstU32, ConstU8, H160, H256},
+    tanssi_runtime_common::relay::{EthTokensLocalProcessor, RewardThroughFeesAccount},
     tp_bridge::{DoNothingConvertMessage, DoNothingRouter, EthereumSystemHandler},
-    xcm::latest::{
-        prelude::*, Asset as XcmAsset, AssetId as XcmAssetId, Assets as XcmAssets, ExecuteXcm,
-        Fungibility, Junctions::*, Xcm,
-    },
-    xcm_executor::traits::WeightBounds,
 };
 
 pub const SLOTS_PER_EPOCH: u32 = snowbridge_pallet_ethereum_client::config::SLOTS_PER_EPOCH as u32;
@@ -157,180 +145,6 @@ impl pallet_ethereum_token_transfers::Config for Runtime {
     #[cfg(feature = "runtime-benchmarks")]
     type BenchmarkHelper = tp_bridge::EthereumTokenTransfersBenchHelper<Runtime>;
     type WeightInfo = crate::weights::pallet_ethereum_token_transfers::SubstrateWeight<Runtime>;
-}
-
-/// `EthTokensLocalProcessor` is responsible for receiving and processing the ETH native
-/// token and ERC20s coming from Ethereum with Tanssi chain or container-chains as final destinations.
-/// TODO: add support for container transfers
-pub struct EthTokensLocalProcessor<T, XcmProcessor, XcmWeigher, EthereumLocation, EthereumNetwork>(
-    PhantomData<(
-        T,
-        XcmProcessor,
-        XcmWeigher,
-        EthereumLocation,
-        EthereumNetwork,
-    )>,
-);
-impl<T, XcmProcessor, XcmWeigher, EthereumLocation, EthereumNetwork> MessageProcessor
-    for EthTokensLocalProcessor<T, XcmProcessor, XcmWeigher, EthereumLocation, EthereumNetwork>
-where
-    T: snowbridge_pallet_inbound_queue::Config
-        + pallet_ethereum_token_transfers::Config
-        + pallet_foreign_asset_creator::Config,
-    XcmProcessor: ExecuteXcm<T::RuntimeCall>,
-    XcmWeigher: WeightBounds<T::RuntimeCall>,
-    EthereumLocation: Get<Location>,
-    EthereumNetwork: Get<NetworkId>,
-{
-    fn can_process_message(channel: &Channel, envelope: &Envelope) -> bool {
-        if !GatewayAndChannelValidator::<T>::validate_gateway_and_channel(channel, envelope) {
-            log::warn!("EthTokensLocalProcessor: invalid gateway or channel");
-            return false;
-        }
-
-        if let Some(eth_transfer_data) =
-            Self::decode_message_for_eth_transfer(envelope.payload.as_slice())
-        {
-            // Check if the token location is a foreign asset included in ForeignAssetCreator
-            return pallet_foreign_asset_creator::ForeignAssetToAssetId::<Runtime>::get(
-                eth_transfer_data.token_location,
-            )
-            .is_some();
-        }
-
-        false
-    }
-
-    fn process_message(_channel: Channel, envelope: Envelope) -> DispatchResult {
-        let eth_transfer_data = Self::decode_message_for_eth_transfer(envelope.payload.as_slice())
-            .ok_or(DispatchError::Other("unexpected message"))?;
-
-        match eth_transfer_data.destination {
-            Destination::AccountId32 { id: _ } => {
-                Self::process_xcm_local_native_eth_transfer(eth_transfer_data)
-            }
-            // TODO: Add support for container transfers here
-            _ => {
-                log::error!("EthTokensLocalProcessor: container transfers not supported yet");
-                return Ok(());
-            }
-        }
-    }
-}
-
-/// Information needed to process an eth transfer message or check its validity.
-pub struct EthTransferData {
-    token_location: Location,
-    destination: Destination,
-    amount: u128,
-}
-
-impl<T, XcmProcessor, XcmWeigher, EthereumLocation, EthereumNetwork>
-    EthTokensLocalProcessor<T, XcmProcessor, XcmWeigher, EthereumLocation, EthereumNetwork>
-where
-    T: frame_system::Config,
-    XcmProcessor: ExecuteXcm<T::RuntimeCall>,
-    XcmWeigher: WeightBounds<T::RuntimeCall>,
-    EthereumLocation: Get<Location>,
-    EthereumNetwork: Get<NetworkId>,
-{
-    /// Retrieve the eth transfer data from the message payload.
-    fn decode_message_for_eth_transfer(mut payload: &[u8]) -> Option<EthTransferData> {
-        match VersionedXcmMessage::decode_all(&mut payload) {
-            Ok(VersionedXcmMessage::V1(MessageV1 {
-                command:
-                    Command::SendToken {
-                        token: token_address,
-                        destination,
-                        amount,
-                        fee: _,
-                    },
-                ..
-            })) => {
-                let token_location = if token_address == H160::zero() {
-                    Location {
-                        parents: 1,
-                        interior: X1([GlobalConsensus(EthereumNetwork::get())].into()),
-                    }
-                } else {
-                    Location {
-                        parents: 1,
-                        interior: X2([
-                            GlobalConsensus(EthereumNetwork::get()),
-                            AccountKey20 {
-                                network: Some(EthereumNetwork::get()),
-                                key: token_address.into(),
-                            },
-                        ]
-                        .into()),
-                    }
-                };
-
-                Some(EthTransferData {
-                    token_location,
-                    destination,
-                    amount,
-                })
-            }
-            _ => None,
-        }
-    }
-
-    /// Process a native ETH transfer message to a local account in Tanssi chain.
-    fn process_xcm_local_native_eth_transfer(eth_transfer_data: EthTransferData) -> DispatchResult {
-        let assets_to_holding: XcmAssets = vec![XcmAsset {
-            id: XcmAssetId::from(eth_transfer_data.token_location),
-            fun: Fungibility::Fungible(eth_transfer_data.amount),
-        }]
-        .into();
-
-        let destination_account = match eth_transfer_data.destination {
-            Destination::AccountId32 { id } => id,
-            _ => {
-                log::error!("EthTokensLocalProcessor: invalid destination");
-                return Ok(());
-            }
-        };
-
-        let mut xcm = Xcm::<T::RuntimeCall>(vec![
-            ReserveAssetDeposited(assets_to_holding),
-            DepositAsset {
-                assets: AllCounted(1).into(),
-                beneficiary: Location::new(
-                    0,
-                    [AccountId32 {
-                        network: None,
-                        id: destination_account,
-                    }],
-                ),
-            },
-        ]);
-
-        let ethereum_location = EthereumLocation::get();
-
-        if let Ok(weight) = XcmWeigher::weight(&mut xcm) {
-            let mut message_id = xcm.using_encoded(sp_io::hashing::blake2_256);
-
-            let outcome = XcmProcessor::prepare_and_execute(
-                ethereum_location,
-                xcm,
-                &mut message_id,
-                weight,
-                weight,
-            );
-
-            if let Err(error) = outcome.ensure_complete() {
-                log::error!(
-                    "EthTokensLocalProcessor: XCM execution failed with error {:?}",
-                    error
-                );
-            }
-        } else {
-            log::error!("EthTokensLocalProcessor: unweighable message");
-        }
-
-        Ok(())
-    }
 }
 
 #[cfg(feature = "runtime-benchmarks")]
