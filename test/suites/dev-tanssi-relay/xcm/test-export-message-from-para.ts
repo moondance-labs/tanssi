@@ -190,5 +190,175 @@ describeSuite({
                 expect(tokenTransferNonceAfter.toBigInt()).toBe(tokenTransferNonceBefore.toBigInt() + 1n);
             },
         });
+
+        it({
+            id: "T02",
+            title: "Incorrect parachain should fail",
+            test: async () => {
+                if (shouldSkipStarlightContainerExport) {
+                    console.log(`Skipping XCM tests for Starlight version ${specVersion}`);
+                    return;
+                }
+
+                const ethereumNetwork = { Ethereum: { chainId: TESTNET_ETHEREUM_NETWORK_ID } };
+
+                const incorrectContainerAsset: any = {
+                    parents: 1,
+                    interior: {
+                        X3: [
+                            {
+                                GlobalConsensus: {
+                                    ByGenesis: "0x983a1a72503d6cc3636776747ec627172b51272bf45e50a355348facb67a820a",
+                                },
+                            },
+                            {
+                                Parachain: 2005, // Incorrect parachain ID
+                            },
+                            {
+                                PalletInstance: 5,
+                            },
+                        ],
+                    },
+                };
+                const xcmToExport = new XcmFragment({
+                    assets: [
+                        {
+                            multilocation: incorrectContainerAsset,
+                            fungible: transferredBalance / 10n,
+                        },
+                    ],
+                    beneficiary: "0x983a1a72503d6cc3636776747ec627172b51272b",
+                })
+                    .reserve_asset_deposited()
+                    .clear_origin()
+                    .buy_execution()
+                    .deposit_asset_v3()
+                    .set_topic();
+
+                const xcmMessage = new XcmFragment({
+                    assets: [
+                        {
+                            multilocation: {
+                                parents: 0,
+                                interior: { Here: null },
+                            },
+                            fungible: transferredBalance / 10n,
+                        },
+                    ],
+                    beneficiary: u8aToHex(random.addressRaw),
+                })
+                    .withdraw_asset()
+                    .buy_execution()
+                    .export_message(xcmToExport.instructions, ethereumNetwork, "Here")
+                    .as_v3();
+
+                await context.createBlock();
+                // Send RPC call to enable para inherent candidate generation
+
+                await customDevRpcRequest("mock_enableParaInherentCandidate", []);
+
+                // Send ump message
+                await injectUmpMessageAndSeal(context, {
+                    type: "XcmVersionedXcm",
+                    payload: xcmMessage,
+                } as RawXcmMessage);
+
+                const tokenTransferNonceBefore =
+                    await polkadotJs.query.ethereumOutboundQueue.nonce(tokenTransferChannel);
+
+                // Wait until message is processed
+                await jumpToSession(context, 3);
+                await context.createBlock();
+                const tokenTransferNonceAfter =
+                    await polkadotJs.query.ethereumOutboundQueue.nonce(tokenTransferChannel);
+
+                expect(tokenTransferNonceAfter.toBigInt()).toBe(tokenTransferNonceBefore.toBigInt()); // No change in nonce
+            },
+        });
+
+        it({
+            id: "T03",
+            title: "Export message should show error because of incorrect asset",
+            test: async () => {
+                if (shouldSkipStarlightContainerExport) {
+                    console.log(`Skipping XCM tests for Starlight version ${specVersion}`);
+                    return;
+                }
+
+                const ethereumNetwork = { Ethereum: { chainId: TESTNET_ETHEREUM_NETWORK_ID } };
+
+                const incorrectContainerAsset: any = {
+                    parents: 1,
+                    interior: {
+                        X3: [
+                            {
+                                GlobalConsensus: {
+                                    ByGenesis: "0x983a1a72503d6cc3636776747ec627172b51272bf45e50a355348facb67a820a",
+                                },
+                            },
+                            {
+                                Parachain: 2000,
+                            },
+                            {
+                                PalletInstance: 5, // Incorrect pallet instance
+                            },
+                        ],
+                    },
+                };
+                const xcmToExport = new XcmFragment({
+                    assets: [
+                        {
+                            multilocation: incorrectContainerAsset,
+                            fungible: transferredBalance / 10n,
+                        },
+                    ],
+                    beneficiary: "0x983a1a72503d6cc3636776747ec627172b51272b",
+                })
+                    .reserve_asset_deposited()
+                    .clear_origin()
+                    .buy_execution()
+                    .deposit_asset_v3()
+                    .set_topic();
+
+                const xcmMessage = new XcmFragment({
+                    assets: [
+                        {
+                            multilocation: {
+                                parents: 0,
+                                interior: { Here: null },
+                            },
+                            fungible: transferredBalance / 10n,
+                        },
+                    ],
+                    beneficiary: u8aToHex(random.addressRaw),
+                })
+                    .withdraw_asset()
+                    .buy_execution()
+                    .export_message(xcmToExport.instructions, ethereumNetwork, "Here")
+                    .as_v3();
+
+                await context.createBlock();
+                // Send RPC call to enable para inherent candidate generation
+
+                await customDevRpcRequest("mock_enableParaInherentCandidate", []);
+
+                // Send ump message
+                await injectUmpMessageAndSeal(context, {
+                    type: "XcmVersionedXcm",
+                    payload: xcmMessage,
+                } as RawXcmMessage);
+
+                const tokenTransferNonceBefore =
+                    await polkadotJs.query.ethereumOutboundQueue.nonce(tokenTransferChannel);
+
+                // Wait until message is processed
+                await jumpToSession(context, 3);
+                await context.createBlock();
+                const tokenTransferNonceAfter =
+                    await polkadotJs.query.ethereumOutboundQueue.nonce(tokenTransferChannel);
+
+                expect(tokenTransferNonceAfter.toBigInt()).toBe(tokenTransferNonceBefore.toBigInt()); // No change in nonce, because pallet instance in incorrect
+            },
+        });
     },
 });
