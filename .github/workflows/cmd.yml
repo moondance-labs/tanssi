@@ -67,7 +67,7 @@ jobs:
     if: ${{ github.event.comment.body == '/cmd generate-ts-api' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: refs/pull/${{ github.event.issue.number }}/head
 

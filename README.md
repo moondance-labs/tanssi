@@ -7,6 +7,7 @@
 🔎 For more about Tanssi Network, head to our [website](https://www.tanssi.network)<br>
 📢 Follow our latest updates on [Twitter](https://twitter.com/TanssiNetwork)<br>
 🤝 Engage with fellow developers on our [Discord server](https://discord.com/invite/kuyPhew2KB)<br>
+📄 Check [docs](./docs/README.md) for more details
 
 ## Build the Tanssi Node
 

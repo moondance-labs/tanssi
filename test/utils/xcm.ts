@@ -741,12 +741,10 @@ export class XcmFragment {
 
     // Add a `ExportMessage` instruction
     export_message(
-        xcm_hex = "",
+        xcm: Array = [],
         network: "Any" | XcmV3JunctionNetworkId["type"] = "Ethereum",
         destination: Junctions = { X1: { Parachain: 1000 } }
     ): this {
-        const callVec = stringToU8a(xcm_hex);
-        const xcm = Array.from(callVec);
         this.instructions.push({
             ExportMessage: {
                 network,

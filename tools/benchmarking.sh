@@ -94,6 +94,7 @@ function bench {
             uniq
         ))
         echo "[+] Benchmarking ${#ALL_PALLETS[@]} pallets"
+        printf " - %s\n" "${ALL_PALLETS[@]}"
         for PALLET in "${ALL_PALLETS[@]}"; do
             TEMPLATE_TO_USE=$TEMPLATE_PATH
             OUTPUT="${OUTPUT_PATH}/$PALLET.rs"
@@ -108,7 +109,6 @@ function bench {
             fi
             touch "$OUTPUT"
             WASMTIME_BACKTRACE_DETAILS=1 ${BINARY} benchmark pallet \
-            --execution=wasm \
             --wasm-execution=compiled \
             --pallet "$PALLET" \
             --extrinsic "*" \
@@ -132,7 +132,6 @@ function bench {
         fi
         touch "$OUTPUT"
         WASMTIME_BACKTRACE_DETAILS=1 ${BINARY} benchmark pallet \
-            --execution=wasm \
             --wasm-execution=compiled \
             --pallet "${1}" \
             --extrinsic "${2}" \

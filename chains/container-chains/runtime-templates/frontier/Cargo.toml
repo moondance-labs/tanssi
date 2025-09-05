@@ -13,7 +13,7 @@ targets = [ "x86_64-unknown-linux-gnu" ]
 workspace = true
 
 [dependencies]
-hex-literal = { workspace = true, optional = true }
+hex-literal = { workspace = true }
 log = { workspace = true }
 num_enum = { workspace = true }
 parity-scale-codec = { workspace = true, features = [ "derive" ] }
@@ -98,7 +98,6 @@ xcm-runtime-apis = { workspace = true }
 
 # Cumulus
 cumulus-pallet-parachain-system = { workspace = true }
-cumulus-pallet-session-benchmarking = { workspace = true }
 cumulus-pallet-weight-reclaim = { workspace = true }
 cumulus-pallet-xcm = { workspace = true }
 cumulus-pallet-xcmp-queue = { workspace = true }
@@ -107,6 +106,9 @@ cumulus-primitives-timestamp = { workspace = true }
 cumulus-primitives-utility = { workspace = true }
 parachain-info = { workspace = true }
 parachains-common = { workspace = true }
+
+# Container Chain primitives
+tp-container-chain = { workspace = true }
 
 # Frontier
 fp-account = { workspace = true, features = [ "serde" ] }
@@ -135,7 +137,6 @@ std = [
 	"async-backing-primitives/std",
 	"ccp-xcm/std",
 	"cumulus-pallet-parachain-system/std",
-	"cumulus-pallet-session-benchmarking/std",
 	"cumulus-pallet-weight-reclaim/std",
 	"cumulus-pallet-xcm/std",
 	"cumulus-pallet-xcmp-queue/std",
@@ -221,6 +222,7 @@ std = [
 	"sp-trie/std",
 	"sp-version/std",
 	"tanssi-runtime-common/std",
+	"tp-container-chain/std",
 	"xcm-builder/std",
 	"xcm-executor/std",
 	"xcm-primitives/std",
@@ -233,7 +235,6 @@ force-debug = [ "sp-debug-derive/force-debug" ]
 
 runtime-benchmarks = [
 	"cumulus-pallet-parachain-system/runtime-benchmarks",
-	"cumulus-pallet-session-benchmarking/runtime-benchmarks",
 	"cumulus-pallet-weight-reclaim/runtime-benchmarks",
 	"cumulus-pallet-xcmp-queue/runtime-benchmarks",
 	"cumulus-primitives-core/runtime-benchmarks",
@@ -243,7 +244,6 @@ runtime-benchmarks = [
 	"frame-support/runtime-benchmarks",
 	"frame-system-benchmarking/runtime-benchmarks",
 	"frame-system/runtime-benchmarks",
-	"hex-literal",
 	"nimbus-primitives/runtime-benchmarks",
 	"pallet-asset-rate/runtime-benchmarks",
 	"pallet-assets/runtime-benchmarks",
@@ -274,6 +274,7 @@ runtime-benchmarks = [
 	"polkadot-runtime-common/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"tanssi-runtime-common/runtime-benchmarks",
+	"tp-container-chain/runtime-benchmarks",
 	"xcm-builder/runtime-benchmarks",
 	"xcm-executor/runtime-benchmarks",
 	"xcm-primitives/runtime-benchmarks",

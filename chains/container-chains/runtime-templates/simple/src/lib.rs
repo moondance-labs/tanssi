@@ -83,7 +83,10 @@ use {
     },
     sp_version::RuntimeVersion,
     xcm::Version as XcmVersion,
-    xcm::{IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation, VersionedXcm},
+    xcm::{
+        v5::NetworkId, IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation,
+        VersionedXcm,
+    },
     xcm_runtime_apis::{
         dry_run::{CallDryRunEffects, Error as XcmDryRunApiError, XcmDryRunEffects},
         fees::Error as XcmPaymentApiError,
@@ -200,6 +203,14 @@ impl WeightToFeePolynomial for WeightToFee {
             coeff_integer: p / q,
         }]
     }
+}
+
+parameter_types! {
+        /// Network and location for the Ethereum chain. On Starlight, the Ethereum chain bridged
+        /// to is the Ethereum mainnet, with chain ID 1.
+        /// <https://chainlist.org/chain/1>
+        /// <https://ethereum.org/en/developers/docs/apis/json-rpc/#net_version>
+        pub EthereumNetwork: NetworkId = NetworkId::Ethereum { chain_id: 11155111 };
 }
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
@@ -1047,7 +1058,8 @@ impl_runtime_apis! {
                 }
 
                 fn universal_alias() -> Result<(Location, Junction), BenchmarkError> {
-                    Err(BenchmarkError::Skip)
+                    tanssi_runtime_common::universal_aliases::AliasingBenchmarksHelper::prepare_universal_alias()
+                    .ok_or(BenchmarkError::Skip)
                 }
 
                 fn transact_origin_and_runtime_call() -> Result<(Location, RuntimeCall), BenchmarkError> {

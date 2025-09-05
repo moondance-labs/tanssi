@@ -4,7 +4,7 @@ authors = { workspace = true }
 description = "Common code between various nodes"
 edition = "2021"
 license = "GPL-3.0-only"
-version = "0.1.0"
+version = "0.15.0"
 
 [lints]
 workspace = true
@@ -14,22 +14,14 @@ async-io = { workspace = true }
 async-trait = { workspace = true }
 clap = { workspace = true, features = [ "derive" ] }
 core_extensions = { workspace = true, features = [ "type_identity" ] }
-flume = { workspace = true }
-fp-evm = { workspace = true }
 futures = { workspace = true }
-hex-literal = { workspace = true }
 jsonrpsee = { workspace = true, features = [ "server" ] }
 log = { workspace = true }
 parity-scale-codec = { workspace = true }
 serde = { workspace = true, features = [ "derive" ] }
 
 # Local
-tc-consensus = { workspace = true }
 tp-traits = { workspace = true }
-
-# Nimbus
-nimbus-consensus = { workspace = true }
-nimbus-primitives = { workspace = true, features = [ "std" ] }
 
 # Substrate
 frame-benchmarking = { workspace = true }
@@ -82,11 +74,12 @@ polkadot-service = { workspace = true }
 # Cumulus
 cumulus-client-cli = { workspace = true }
 cumulus-client-collator = { workspace = true }
-cumulus-client-consensus-aura = { workspace = true }
 cumulus-client-consensus-common = { workspace = true }
-cumulus-client-consensus-proposer = { workspace = true }
 cumulus-client-network = { workspace = true }
 cumulus-client-service = { workspace = true }
 cumulus-primitives-core = { workspace = true }
 cumulus-primitives-parachain-inherent = { workspace = true }
 cumulus-relay-chain-interface = { workspace = true }
+
+[build-dependencies]
+substrate-build-script-utils = { workspace = true }

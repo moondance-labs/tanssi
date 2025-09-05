@@ -42,8 +42,7 @@ use {
     snowbridge_core::{gwei, meth, PricingParameters, Rewards},
     snowbridge_pallet_outbound_queue::OnNewCommitment,
     sp_core::{ConstU32, ConstU8, H160, H256},
-    tanssi_runtime_common::relay::RewardThroughFeesAccount,
-    tp_bridge::generic_token_message_processor::NoOpProcessor,
+    tanssi_runtime_common::relay::{EthTokensLocalProcessor, RewardThroughFeesAccount},
     tp_bridge::{DoNothingConvertMessage, DoNothingRouter, EthereumSystemHandler},
 };
 
@@ -145,7 +144,6 @@ impl pallet_ethereum_token_transfers::Config for Runtime {
     type BenchmarkHelper = tp_bridge::EthereumTokenTransfersBenchHelper<Runtime>;
     type WeightInfo = crate::weights::pallet_ethereum_token_transfers::SubstrateWeight<Runtime>;
 }
-
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmark_helper {
     use {
@@ -224,6 +222,14 @@ mod test_helpers {
     }
 }
 
+pub type EthTokensProcessor = EthTokensLocalProcessor<
+    Runtime,
+    xcm_executor::XcmExecutor<xcm_config::XcmConfig>,
+    <xcm_config::XcmConfig as xcm_executor::Config>::Weigher,
+    starlight_runtime_constants::snowbridge::EthereumLocation,
+    starlight_runtime_constants::snowbridge::EthereumNetwork,
+>;
+
 #[cfg(not(feature = "runtime-benchmarks"))]
 pub type NativeTokensProcessor = NativeTokenTransferMessageProcessor<Runtime>;
 
@@ -252,9 +258,9 @@ impl snowbridge_pallet_inbound_queue::Config for Runtime {
     #[cfg(not(feature = "runtime-benchmarks"))]
     type MessageProcessor = (
         SymbioticMessageProcessor<Self>,
-        GenericTokenMessageProcessor<Self, NativeTokensProcessor, NoOpProcessor>,
+        GenericTokenMessageProcessor<Self, NativeTokensProcessor, EthTokensProcessor>,
     );
     type RewardProcessor = RewardThroughFeesAccount<Self>;
     #[cfg(feature = "runtime-benchmarks")]
-    type MessageProcessor = (benchmark_helper::WorstCaseMessageProcessor<NoOpProcessor>,); // TODO: will be addressed later
+    type MessageProcessor = (benchmark_helper::WorstCaseMessageProcessor<EthTokensProcessor>,);
 }
