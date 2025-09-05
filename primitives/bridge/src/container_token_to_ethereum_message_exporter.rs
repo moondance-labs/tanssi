@@ -320,7 +320,8 @@ where
     }
 
     pub fn get_reanchored_location(&self, location: &Location) -> Result<Location, ()> {
-        let token_split = location.interior().clone().split_global().unwrap();
+        let token_split = location.interior().clone().split_global().map_err(|_| ())?;
+
         let container_token_from_tanssi = Location::new(0, token_split.1);
 
         container_token_from_tanssi
