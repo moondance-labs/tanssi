@@ -1039,6 +1039,16 @@
                     "name": "Tanssi-charlie",
                     "type": "polkadotJs",
                     "endpoints": ["ws://127.0.0.1:9948"]
+                },
+                {
+                    "name": "Tanssi-dave",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9949"]
+                },
+                {
+                    "name": "Tanssi-eve",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9950"]
                 }
             ]
         },

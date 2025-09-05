@@ -46,6 +46,18 @@
                 "rpc_port": "9948",
                 "validator": true,
                 "args": ["--pool-type=fork-aware"]
+            },
+            {
+                "name": "dave",
+                "rpc_port": "9949",
+                "validator": true,
+                "args": ["--pool-type=fork-aware"]
+            },
+            {
+                "name": "eve",
+                "rpc_port": "9950",
+                "validator": true,
+                "args": ["--pool-type=fork-aware"]
             }
         ]
     },
