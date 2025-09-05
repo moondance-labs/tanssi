@@ -160,7 +160,7 @@ describeSuite({
 
                 const executeMessageTx = await polkadotJs.tx.sudo.sudo(
                     polkadotJs.tx.xcmPallet.execute(xcmMessage, {
-                        refTime: 1000000000,
+                        refTime: 10000000000,
                         proofSize: 1000000,
                     })
                 );
