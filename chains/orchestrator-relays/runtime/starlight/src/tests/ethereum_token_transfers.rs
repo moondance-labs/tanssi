@@ -20,7 +20,7 @@ use {
     crate::{
         bridge_to_ethereum_config::EthereumGatewayAddress, tests::common::*, Balances,
         EthereumInboundQueue, EthereumSovereignAccount, EthereumSystem, EthereumTokenTransfers,
-        RuntimeEvent, SnowbridgeFeesAccount, TokenLocationReanchored,
+        ForeignAssetsCreator, RuntimeEvent, SnowbridgeFeesAccount, TokenLocationReanchored,
     },
     alloc::vec,
     alloy_sol_types::SolEvent,
@@ -35,8 +35,12 @@ use {
     snowbridge_verification_primitives::{EventProof, Log},
     sp_core::{H160, H256},
     sp_runtime::{traits::MaybeEquivalence, FixedU128, TokenError},
+    starlight_runtime_constants::snowbridge::EthereumNetwork,
     tanssi_runtime_common::relay::NativeTokenTransferMessageProcessor,
-    xcm::{latest::Location, VersionedLocation},
+    xcm::{
+        latest::{prelude::*, Junctions::*, Location},
+        VersionedLocation,
+    },
 };
 
 #[test]
@@ -600,7 +604,7 @@ fn no_error_when_receiving_send_token_command() {
                 <Runtime as frame_system::Config>::RuntimeOrigin::signed(AccountId::from(ALICE));
 
             let channel_id: ChannelId = ChannelId::new(hex!(
-                "00000000000000000000006e61746976655f746f6b656e5f7472616e73666572"
+                "00000000000000000000666f726569676e5f746f6b656e5f7472616e73666572"
             ));
             let agent_id = AgentId::from_low_u64_be(10);
             let para_id: ParaId = 2000u32.into();
@@ -612,6 +616,22 @@ fn no_error_when_receiving_send_token_command() {
                 channel_id,
                 agent_id,
                 para_id
+            ));
+
+            let asset_location = Location {
+                parents: 1,
+                interior: X1([GlobalConsensus(EthereumNetwork::get())].into()),
+            };
+
+            let asset_id = 42u16;
+
+            assert_ok!(ForeignAssetsCreator::create_foreign_asset(
+                root_origin(),
+                asset_location.clone(), // Use the ERC20 location
+                asset_id,
+                AccountId::from(ALICE),
+                true,
+                1
             ));
 
             let payload = VersionedXcmMessage::V1(MessageV1 {

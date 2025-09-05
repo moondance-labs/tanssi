@@ -39,11 +39,12 @@ use {
     polkadot_runtime_common::xcm_sender::ExponentialPrice,
     sp_core::ConstU32,
     sp_runtime::Perbill,
+    tanssi_runtime_common::universal_aliases::CommonUniversalAliases,
     tp_container_chain::{
         sovereign_paid_remote_exporter::SovereignPaidRemoteExporter,
         ContainerChainEthereumLocationConverter,
     },
-    xcm::latest::{prelude::*, WESTEND_GENESIS_HASH},
+    xcm::latest::prelude::*,
     xcm_builder::{
         AccountId32Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
         AllowTopLevelPaidExecutionFrom, ConvertedConcreteId, EnsureXcmOrigin, FungibleAdapter,
@@ -54,6 +55,9 @@ use {
     },
     xcm_executor::XcmExecutor,
 };
+
+pub const TANSSI_GENESIS_HASH: [u8; 32] =
+    hex_literal::hex!["dd6d086f75ec041b66e20c4186d327b23c8af244c534a2418de6574e8c041a60"];
 
 parameter_types! {
     // Self Reserve location, defines the multilocation identifying the self-reserve currency
@@ -70,8 +74,9 @@ parameter_types! {
     // One XCM operation is 1_000_000_000 weight - almost certainly a conservative estimate.
     pub UnitWeightCost: Weight = Weight::from_parts(1_000_000_000, 64 * 1024);
 
-    // TODO: revisit
-    pub const RelayNetwork: NetworkId = NetworkId::ByGenesis(WESTEND_GENESIS_HASH);
+    // For now this is being unused for our use cases (e.g container token transfers).
+    // We might need to revisit this later and make it dynamic (through pallet params for instance).
+    pub const RelayNetwork: NetworkId = NetworkId::ByGenesis(TANSSI_GENESIS_HASH);
 
     // The relay chain Origin type
     pub RelayChainOrigin: RuntimeOrigin = cumulus_pallet_xcm::Origin::Relay.into();
@@ -227,7 +232,7 @@ impl xcm_executor::Config for XcmConfig {
     type AssetExchanger = ();
     type FeeManager = XcmFeeManagerFromComponents<Equals<RootLocation>, ()>;
     type MessageExporter = ();
-    type UniversalAliases = Nothing;
+    type UniversalAliases = CommonUniversalAliases;
     type CallDispatcher = RuntimeCall;
     type SafeCallFilter = Everything;
     type Aliasers = Nothing;
