@@ -172,7 +172,7 @@ describeSuite({
                     await polkadotJs.query.ethereumOutboundQueue.nonce(tokenTransferChannel);
 
                 const executeMessageTx = polkadotJs.tx.xcmPallet.execute(xcmMessage, {
-                    refTime: 1000000000,
+                    refTime: 10000000000,
                     proofSize: 1000000,
                 });
 
@@ -239,7 +239,7 @@ describeSuite({
                     await polkadotJs.query.ethereumOutboundQueue.nonce(tokenTransferChannel);
 
                 const executeMessageTx = polkadotJs.tx.xcmPallet.execute(xcmMessage, {
-                    refTime: 1000000000,
+                    refTime: 10000000000,
                     proofSize: 1000000,
                 });
 
@@ -309,7 +309,7 @@ describeSuite({
                     await polkadotJs.query.ethereumOutboundQueue.nonce(tokenTransferChannel);
 
                 const executeMessageTx = polkadotJs.tx.xcmPallet.execute(xcmMessage, {
-                    refTime: 1000000000,
+                    refTime: 10000000000,
                     proofSize: 1000000,
                 });
 
@@ -382,7 +382,7 @@ describeSuite({
                     await polkadotJs.query.ethereumOutboundQueue.nonce(tokenTransferChannel);
 
                 const executeMessageTx = polkadotJs.tx.xcmPallet.execute(xcmMessage, {
-                    refTime: 1000000000,
+                    refTime: 10000000000,
                     proofSize: 1000000,
                 });
 
