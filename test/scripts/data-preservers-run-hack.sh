@@ -7,11 +7,11 @@
 #
 # If group A lacks --base-path, we derive it from a --base-path found in:
 #   1) group C (relay), else 2) group B (orchestrator), else 3) prefix segment.
-# Derived container base = dirname(source_base)/${CONTAINER_BASE_DIR_NAME:-containers-data}
+# Derived container base = dirname(source_base)/${CONTAINER_BASE_DIR_NAME:-data/containers}
 
 set -euo pipefail
 
-CONTAINER_BASE_DIR_NAME="${CONTAINER_BASE_DIR_NAME:-containers-data}"
+CONTAINER_BASE_DIR_NAME="${CONTAINER_BASE_DIR_NAME:-data/containers}"
 
 err() { echo "Error: $*" >&2; exit 1; }
 
