@@ -503,7 +503,11 @@ describeSuite({
 
                 // In new era's first session at least one block need to be produced by the operator
                 const blocksPerSession = 10;
-                const countedSet = new Set();
+                const countedSet = new Set([
+                    operatorAccount.address,
+                    operatorAccount2.address,
+                    operatorAccount3.address,
+                ]);
                 for (let i = 0; i < 3 * blocksPerSession; ++i) {
                     const latestBlockHash = await relayApi.rpc.chain.getBlockHash();
                     const author = (await relayApi.derive.chain.getHeader(latestBlockHash)).author;
@@ -513,16 +517,16 @@ describeSuite({
                                 author.toString()
                             )
                         ) {
-                            countedSet.add(author.toString());
+                            countedSet.delete(author.toString());
                         }
-                        if (countedSet.size >= 3) {
+                        if (countedSet.size === 0) {
                             return;
                         }
                     }
 
                     await context.waitBlock(1, "Tanssi-relay");
                 }
-                expect.fail("operator didn't produce a block");
+                expect.fail(`Operator(-s) didn't produce a block: ${JSON.stringify([...countedSet])}`);
             },
         });
 
@@ -532,22 +536,15 @@ describeSuite({
             test: async () => {
                 logTiming("Starting T05");
                 // Send slash event forcefully
-                const txs: SubmittableExtrinsic<"promise">[] = [];
-                for (const operator of [operatorAccount, operatorAccount2]) {
-                    const activeEraInfo = (await relayApi.query.externalValidators.activeEra()).toJSON();
-                    const currentExternalIndex = await relayApi.query.externalValidators.currentExternalIndex();
-
-                    txs.push(
-                        relayApi.tx.externalValidatorSlashes.forceInjectSlash(
-                            activeEraInfo.index,
-                            operator.address,
-                            1000,
-                            currentExternalIndex
-                        )
-                    );
-                }
-
-                const forceInjectTx = await relayApi.tx.sudo.sudo(relayApi.tx.utility.batch(txs)).signAndSend(alice);
+                const activeEraInfo = (await relayApi.query.externalValidators.activeEra()).toJSON();
+                const currentExternalIndex = await relayApi.query.externalValidators.currentExternalIndex();
+                const forceInjectSlashCall = relayApi.tx.externalValidatorSlashes.forceInjectSlash(
+                    activeEraInfo.index,
+                    operatorAccount.address,
+                    1000,
+                    currentExternalIndex
+                );
+                const forceInjectTx = await relayApi.tx.sudo.sudo(forceInjectSlashCall).signAndSend(alice);
 
                 console.log("Force inject tx was submitted:", forceInjectTx.toHex());
 
