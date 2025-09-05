@@ -178,6 +178,7 @@ where
     }
 }
 
+#[cfg(not(feature = "runtime-benchmarks"))]
 /// Errors that can be thrown to the pattern matching step.
 #[derive(PartialEq, Debug)]
 enum XcmConverterError {
@@ -201,6 +202,7 @@ enum XcmConverterError {
     UnexpectedInstruction,
 }
 
+#[cfg(not(feature = "runtime-benchmarks"))]
 macro_rules! match_expression {
 	($expression:expr, $(|)? $( $pattern:pat_param )|+ $( if $guard: expr )?, $value:expr $(,)?) => {
 		match $expression {
@@ -210,12 +212,52 @@ macro_rules! match_expression {
 	};
 }
 
+#[cfg(feature = "runtime-benchmarks")]
+struct XcmConverter<'a, ConvertAssetId, UniversalLocation, EthereumLocation, Call> {
+    iter: Peekable<Iter<'a, Instruction<Call>>>,
+    _ethereum_network: NetworkId,
+    _para_id: u32,
+    _marker: PhantomData<(ConvertAssetId, UniversalLocation, EthereumLocation)>,
+}
+#[cfg(feature = "runtime-benchmarks")]
+impl<'a, ConvertAssetId, UniversalLocation, EthereumLocation, Call>
+    XcmConverter<'a, ConvertAssetId, UniversalLocation, EthereumLocation, Call>
+where
+    ConvertAssetId: MaybeEquivalence<TokenId, Location>,
+    UniversalLocation: Get<InteriorLocation>,
+    EthereumLocation: Get<Location>,
+{
+    fn new(message: &'a Xcm<Call>, _ethereum_network: NetworkId, _para_id: u32) -> Self {
+        Self {
+            iter: message.inner().iter().peekable(),
+            _ethereum_network,
+            _para_id,
+            _marker: Default::default(),
+        }
+    }
+
+    fn convert(&mut self) -> Result<(Command, [u8; 32]), sp_runtime::DispatchError> {
+        ensure!(self.iter.len() > 0, "Should have at least one instruction");
+
+        return Ok((
+            Command::MintForeignToken {
+                token_id: Default::default(),
+                recipient: H160::repeat_byte(0),
+                amount: 0,
+            },
+            [0u8; 32],
+        ));
+    }
+}
+
+#[cfg(not(feature = "runtime-benchmarks"))]
 struct XcmConverter<'a, ConvertAssetId, UniversalLocation, EthereumLocation, Call> {
     iter: Peekable<Iter<'a, Instruction<Call>>>,
     ethereum_network: NetworkId,
     para_id: u32,
     _marker: PhantomData<(ConvertAssetId, UniversalLocation, EthereumLocation)>,
 }
+#[cfg(not(feature = "runtime-benchmarks"))]
 impl<'a, ConvertAssetId, UniversalLocation, EthereumLocation, Call>
     XcmConverter<'a, ConvertAssetId, UniversalLocation, EthereumLocation, Call>
 where
@@ -387,8 +429,7 @@ where
             .reanchored(&EthereumLocation::get(), &UniversalLocation::get())
             .map_err(|_| AssetReanchorFailed)?;
 
-        // TODO: Move to trace
-        log::info!("reanchored_location={reanchored_location:?}");
+        log::trace!(target: "xcm::make_mint_foreign_token_command", "reanchored_location={reanchored_location:?}");
 
         let token_id = ConvertAssetId::convert_back(&reanchored_location).ok_or(InvalidAsset)?;
 
@@ -403,6 +444,66 @@ where
             },
             *topic_id,
         ))
+    }
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+pub struct ToEthDeliveryHelper<XcmConfig, ExistentialDeposit, PriceForDelivery>(
+    core::marker::PhantomData<(XcmConfig, ExistentialDeposit, PriceForDelivery)>,
+);
+
+#[cfg(feature = "runtime-benchmarks")]
+impl<
+        XcmConfig: xcm_executor::Config,
+        ExistentialDeposit: Get<Option<Asset>>,
+        PriceForDelivery: Get<u128>,
+    > xcm_builder::EnsureDelivery
+    for ToEthDeliveryHelper<XcmConfig, ExistentialDeposit, PriceForDelivery>
+{
+    fn ensure_successful_delivery(
+        origin_ref: &Location,
+        dest: &Location,
+        fee_reason: xcm_executor::traits::FeeReason,
+    ) -> (Option<xcm_executor::FeesMode>, Option<Assets>) {
+        log::trace!(target: "xcm::delivery_helper",
+            "ensure_successful_delivery params: {origin_ref:?} {dest:?} {fee_reason:?} "
+        );
+
+        use xcm_executor::{
+            traits::{FeeManager, TransactAsset},
+            FeesMode,
+        };
+
+        if !dest.is_here() {
+            log::trace!(target: "xcm::delivery_helper",
+                "skipped due to unmatched remote destination {dest:?}."
+            );
+            return (None, None);
+        }
+
+        let mut fees_mode = None;
+        if !XcmConfig::FeeManager::is_waived(Some(origin_ref), fee_reason) {
+            // if not waived, we need to set up accounts for paying and receiving fees
+
+            // overestimate delivery fee
+            let overestimated_fees = PriceForDelivery::get();
+            log::debug!(target: "xcm::delivery_helper", "fees to deposit {overestimated_fees:?} for origin: {origin_ref:?}");
+
+            // mint overestimated fee to origin
+            XcmConfig::AssetTransactor::deposit_asset(
+                &Asset {
+                    id: AssetId(Location::new(0, Here)),
+                    fun: Fungible(overestimated_fees),
+                },
+                &origin_ref,
+                None,
+            )
+            .unwrap();
+
+            // expected worst case - direct withdraw
+            fees_mode = Some(FeesMode { jit_withdraw: true });
+        }
+        (fees_mode, None)
     }
 }
 

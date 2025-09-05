@@ -18,8 +18,8 @@
 
 use {
     crate::{
-        bridge_to_ethereum_config::EthereumGatewayAddress, tests::common::*, Balances,
-        EthereumInboundQueue, EthereumLocation, EthereumSovereignAccount, EthereumSystem,
+        bridge_to_ethereum_config::EthereumGatewayAddress, filter_events, tests::common::*,
+        Balances, EthereumInboundQueue, EthereumLocation, EthereumSovereignAccount, EthereumSystem,
         EthereumTokenTransfers, ForeignAssets, ForeignAssetsCreator, RuntimeEvent,
         SnowbridgeFeesAccount, TokenLocationReanchored, XcmPallet,
     },
@@ -49,15 +49,6 @@ use {
         VersionedAssets, VersionedLocation, VersionedXcm,
     },
 };
-
-macro_rules! filter_events {
-    ($pat:pat) => {
-        System::events().iter().filter(|r| match r.event {
-            $pat => true,
-            _ => false,
-        })
-    };
-}
 
 #[test]
 fn test_set_token_transfer_channel_reflects_changes_in_ethereum_system() {

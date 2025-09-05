@@ -2429,6 +2429,7 @@ dependencies = [
  "staging-xcm-builder",
  "staging-xcm-executor",
  "substrate-wasm-builder",
+ "tanssi-runtime-common",
  "tp-container-chain",
  "xcm-primitives",
  "xcm-runtime-apis",
@@ -2510,6 +2511,7 @@ dependencies = [
  "staging-xcm-builder",
  "staging-xcm-executor",
  "substrate-wasm-builder",
+ "tanssi-runtime-common",
  "tp-container-chain",
  "xcm-primitives",
  "xcm-runtime-apis",
@@ -19429,9 +19431,11 @@ dependencies = [
  "snowbridge-pallet-inbound-queue",
  "snowbridge-pallet-system",
  "sp-core",
+ "sp-io",
  "sp-runtime",
  "sp-staking",
  "staging-xcm",
+ "staging-xcm-executor",
 ]
 
 [[package]]
