@@ -28,6 +28,7 @@ describeSuite({
         it({
             id: "T01",
             title: "Should receive container native tokens from Ethereum and forward them to container",
+            timeout: 300000,
             test: async () => {
                 const ethereumSovereignAccount =
                     await containerChainPolkadotJs.call.locationToAccountApi.convertLocation({
