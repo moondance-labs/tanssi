@@ -200,6 +200,7 @@ enum XcmConverterError {
     AssetReanchorFailed,
     ParaIdMismatch,
     UnexpectedInstruction,
+    ExtractPalletInstanceIdFailed,
 }
 
 #[cfg(not(feature = "runtime-benchmarks"))]
@@ -313,6 +314,23 @@ where
         }
     }
 
+    pub fn extract_pallet_instance_id(&self, location: &Location) -> Result<u8, ()> {
+        if location.parents != 1 {
+            return Err(());
+        }
+
+        let Junctions::X3(arc) = &location.interior else {
+            return Err(());
+        };
+
+        let [j1, j2, j3] = arc.as_ref();
+
+        match (j1, j2, j3) {
+            (GlobalConsensus(_), Parachain(_), PalletInstance(pallet_id)) => Ok(*pallet_id),
+            _ => Err(()),
+        }
+    }
+
     fn check_reserve_asset_para_id(&self, location: &Location) -> Result<(), ()> {
         if location.parents != 1 {
             return Err(());
@@ -417,12 +435,18 @@ where
         self.check_reserve_asset_para_id(&asset_id)
             .map_err(|_| ParaIdMismatch)?;
 
+        let pallet_instance_id = self
+            .extract_pallet_instance_id(&asset_id)
+            .map_err(|_| ExtractPalletInstanceIdFailed)?;
+
         // transfer amount must be greater than 0.
         ensure!(amount > 0, ZeroAssetTransfer);
 
         let asset_location = Location {
             parents: 0,
-            interior: Junctions::X2([Parachain(self.para_id), PalletInstance(10)].into()),
+            interior: Junctions::X2(
+                [Parachain(self.para_id), PalletInstance(pallet_instance_id)].into(),
+            ),
         };
 
         let reanchored_location = asset_location
