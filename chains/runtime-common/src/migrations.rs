@@ -1150,6 +1150,70 @@ where
         Ok(())
     }
 }
+pub struct OfflineMarkingStorageMigration<Runtime>(PhantomData<Runtime>);
+
+impl<Runtime> Migration for OfflineMarkingStorageMigration<Runtime>
+where
+    Runtime: pallet_inactivity_tracking::Config,
+{
+    fn friendly_name(&self) -> &str {
+        "TM_OfflineMarkingStorageMigration"
+    }
+
+    fn migrate(&self, available_weight: Weight) -> Weight {
+        pallet_inactivity_tracking::migrations::migrate_offline_collators_storage::<Runtime>(
+            available_weight,
+        )
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        use parity_scale_codec::Encode;
+        let Some(collator_id) =
+            pallet_inactivity_tracking::OfflineCollators::<Runtime>::iter_keys().next()
+        else {
+            return Ok(vec![]);
+        };
+
+        let old_collator_offline_status: bool =
+            frame_support::storage::unhashed::get(&pallet_inactivity_tracking::OfflineCollators::<
+                Runtime,
+            >::hashed_key_for(
+                collator_id.clone()
+            ))
+            .expect("key was found so entry must exist");
+
+        Ok((collator_id, old_collator_offline_status).encode())
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(&self, state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        use parity_scale_codec::Decode;
+        if state.is_empty() {
+            // There were no offline collators
+            return Ok(());
+        }
+
+        let (collator_id, old_collator_offline_status) =
+            <(Runtime::AccountId, bool)>::decode(&mut &state[..]).expect("to decode properly");
+
+        if old_collator_offline_status {
+            let new_collator_offline_status =
+                pallet_inactivity_tracking::OfflineCollators::<Runtime>::get(collator_id.clone())
+                    .expect("entry should still exist");
+
+            let expected_collator_offline_status =
+                pallet_inactivity_tracking::OfflineStatus::Disabled;
+
+            assert_eq!(
+                new_collator_offline_status, expected_collator_offline_status,
+                "Migrated collator offline status don't match expected value"
+            );
+        }
+
+        Ok(())
+    }
+}
 
 pub struct FlashboxMigrations<Runtime>(PhantomData<Runtime>);
 
@@ -1230,6 +1294,7 @@ where
     Runtime: pallet_data_preservers::Config,
     Runtime: pallet_xcm::Config,
     Runtime: pallet_stream_payment::Config,
+    Runtime: pallet_inactivity_tracking::Config,
     <Runtime as pallet_balances::Config>::RuntimeHoldReason:
         From<pallet_pooled_staking::HoldReason>,
     Runtime: pallet_foreign_asset_creator::Config,
@@ -1271,6 +1336,8 @@ where
         //let migrate_stream_payment_new_config_items = MigrateStreamPaymentNewConfigFields::<Runtime>(Default::default());
         //let migrate_pallet_xcm_v5 = MigrateToLatestXcmVersion::<Runtime>(Default::default());
         let migrate_pallet_session_v0_to_v1 = MigratePalletSessionV0toV1::<Runtime>(Default::default());
+        let migrate_offline_marking_storage =
+            OfflineMarkingStorageMigration::<Runtime>(Default::default());
 
         vec![
             // Applied in runtime 200
@@ -1316,6 +1383,7 @@ where
             // Applied in runtime 1200
             //Box::new(migrate_pallet_xcm_v5),
             Box::new(migrate_pallet_session_v0_to_v1),
+            Box::new(migrate_offline_marking_storage),
         ]
     }
 }
@@ -1442,6 +1510,7 @@ mod relay {
         Runtime: runtime_parachains::scheduler::Config,
         Runtime: runtime_parachains::shared::Config,
         Runtime: pallet_xcm::Config,
+        Runtime: pallet_inactivity_tracking::Config,
     {
         fn get_migrations() -> Vec<Box<dyn Migration>> {
             /*let migrate_config_full_rotation_mode =
@@ -1461,6 +1530,8 @@ mod relay {
                 Runtime,
                 snowbridge_system_migration::DancelightLocation,
             >(Default::default());
+            let migrate_offline_marking_storage =
+                OfflineMarkingStorageMigration::<Runtime>(Default::default());
 
             vec![
                 // Applied in runtime 1000
@@ -1482,6 +1553,7 @@ mod relay {
                 Box::new(migrate_pallet_session_v0_to_v1),
                 Box::new(migrate_snowbridge_fee_per_gas_migration_v0_to_v1),
                 Box::new(eth_system_genesis_hashes),
+                Box::new(migrate_offline_marking_storage),
             ]
         }
     }
@@ -1493,6 +1565,7 @@ mod relay {
         Runtime: frame_system::Config,
         Runtime: pallet_session::Config,
         Runtime: snowbridge_pallet_system::Config,
+        Runtime: pallet_inactivity_tracking::Config,
     {
         fn get_migrations() -> Vec<Box<dyn Migration>> {
             let migrate_pallet_session_v0_to_v1 =
@@ -1503,10 +1576,13 @@ mod relay {
                 Runtime,
                 snowbridge_system_migration::StarlightLocation,
             >(Default::default());
+            let migrate_offline_marking_storage =
+                OfflineMarkingStorageMigration::<Runtime>(Default::default());
             vec![
                 Box::new(migrate_pallet_session_v0_to_v1),
                 Box::new(migrate_snowbridge_fee_per_gas_migration_v0_to_v1),
                 Box::new(eth_system_genesis_hashes),
+                Box::new(migrate_offline_marking_storage),
             ]
         }
     }

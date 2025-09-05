@@ -1890,6 +1890,7 @@ impl pallet_pooled_staking::Config for Runtime {
 
 parameter_types! {
     pub const MaxInactiveSessions: u32 = 5;
+    pub const CooldownLenghtInSessions: u32 = 2;
 }
 impl pallet_inactivity_tracking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
@@ -1902,6 +1903,7 @@ impl pallet_inactivity_tracking::Config for Runtime {
     type ParaFilter = tp_parathread_filter_common::ExcludeAllParathreadsFilter<Runtime>;
     type InvulnerablesFilter = tp_invulnerables_filter_common::InvulnerablesFilter<Runtime>;
     type CollatorStakeHelper = PooledStaking;
+    type CooldownLength = CooldownLenghtInSessions;
     type WeightInfo = weights::pallet_inactivity_tracking::SubstrateWeight<Runtime>;
 }
 
