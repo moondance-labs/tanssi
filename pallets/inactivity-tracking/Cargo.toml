@@ -67,4 +67,3 @@ try-runtime = [
 	"sp-runtime/try-runtime",
 ]
 
-migrations = []
