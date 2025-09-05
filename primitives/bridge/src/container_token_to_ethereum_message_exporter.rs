@@ -200,7 +200,6 @@ enum XcmConverterError {
     AssetReanchorFailed,
     ParaIdMismatch,
     UnexpectedInstruction,
-    ExtractPalletInstanceIdFailed,
 }
 
 #[cfg(not(feature = "runtime-benchmarks"))]
@@ -314,21 +313,13 @@ where
         }
     }
 
-    pub fn extract_pallet_instance_id(&self, location: &Location) -> Result<u8, ()> {
-        if location.parents != 1 {
-            return Err(());
-        }
+    pub fn get_reanchored_location(&self, location: &Location) -> Result<Location, ()> {
+        let token_split = location.interior().clone().split_global().unwrap();
+        let container_token_from_tanssi = Location::new(0, token_split.1);
 
-        let Junctions::X3(arc) = &location.interior else {
-            return Err(());
-        };
-
-        let [j1, j2, j3] = arc.as_ref();
-
-        match (j1, j2, j3) {
-            (GlobalConsensus(_), Parachain(_), PalletInstance(pallet_id)) => Ok(*pallet_id),
-            _ => Err(()),
-        }
+        container_token_from_tanssi
+            .reanchored(&EthereumLocation::get(), &UniversalLocation::get())
+            .map_err(|_| ())
     }
 
     fn check_reserve_asset_para_id(&self, location: &Location) -> Result<(), ()> {
@@ -435,22 +426,11 @@ where
         self.check_reserve_asset_para_id(&asset_id)
             .map_err(|_| ParaIdMismatch)?;
 
-        let pallet_instance_id = self
-            .extract_pallet_instance_id(&asset_id)
-            .map_err(|_| ExtractPalletInstanceIdFailed)?;
-
         // transfer amount must be greater than 0.
         ensure!(amount > 0, ZeroAssetTransfer);
 
-        let asset_location = Location {
-            parents: 0,
-            interior: Junctions::X2(
-                [Parachain(self.para_id), PalletInstance(pallet_instance_id)].into(),
-            ),
-        };
-
-        let reanchored_location = asset_location
-            .reanchored(&EthereumLocation::get(), &UniversalLocation::get())
+        let reanchored_location = self
+            .get_reanchored_location(&asset_id)
             .map_err(|_| AssetReanchorFailed)?;
 
         log::trace!(target: "xcm::make_mint_foreign_token_command", "reanchored_location={reanchored_location:?}");
@@ -544,8 +524,53 @@ mod tests {
     parameter_types! {
         pub EthereumLocation: Location = Location::new(1, EthereumNetwork::get());
         const EthereumNetwork: NetworkId = Ethereum { chain_id: 11155111 };
-        UniversalLocation: InteriorLocation = [GlobalConsensus(ByGenesis([ 152, 58, 26, 114, 80, 61, 108, 195, 99, 103, 118, 116, 126, 198, 39, 23, 43, 81, 39, 43, 244, 94, 80, 163, 85, 52, 143, 172, 182, 122, 130, 10 ])), Parachain(2001)].into();
+        UniversalLocation: InteriorLocation = [GlobalConsensus(ByGenesis([ 152, 58, 26, 114, 80, 61, 108, 195, 99, 103, 118, 116, 126, 198, 39, 23, 43, 81, 39, 43, 244, 94, 80, 163, 85, 52, 143, 172, 182, 122, 130, 10 ]))].into();
         const BridgeChannelInfo: Option<(ChannelId, AgentId)> = Some((ChannelId::new([1u8; 32]), H256([2u8; 32])));
+    }
+
+    type DummyConverter<'a> = XcmConverter<'a, (), UniversalLocation, EthereumLocation, ()>;
+
+    #[test]
+    fn test_get_reanchored_location() {
+        let input_location = Location {
+            parents: 1,
+            interior: Junctions::X3(
+                [
+                    GlobalConsensus(NetworkId::Polkadot),
+                    Parachain(2001),
+                    PalletInstance(10),
+                ]
+                .into(),
+            ),
+        };
+
+        let expected_location = Location {
+            parents: 1,
+            interior: Junctions::X3(
+                [
+                    GlobalConsensus(ByGenesis([
+                        152, 58, 26, 114, 80, 61, 108, 195, 99, 103, 118, 116, 126, 198, 39, 23,
+                        43, 81, 39, 43, 244, 94, 80, 163, 85, 52, 143, 172, 182, 122, 130, 10,
+                    ])),
+                    Parachain(2001),
+                    PalletInstance(10),
+                ]
+                .into(),
+            ),
+        };
+
+        let xcm = Xcm::<()>(vec![]);
+        let converter = DummyConverter::new(&xcm, NetworkId::Ethereum { chain_id: 11155111 }, 2001);
+
+        let reanchored = converter.get_reanchored_location(&input_location);
+
+        assert_eq!(
+            reanchored,
+            Ok(expected_location.clone()),
+            "Expected {:?}, got {:?}",
+            expected_location,
+            reanchored
+        );
     }
 
     pub struct MockTokenIdConvert;
