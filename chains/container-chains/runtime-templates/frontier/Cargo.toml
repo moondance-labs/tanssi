@@ -13,7 +13,7 @@ targets = [ "x86_64-unknown-linux-gnu" ]
 workspace = true
 
 [dependencies]
-hex-literal = { workspace = true, optional = true }
+hex-literal = { workspace = true }
 log = { workspace = true }
 num_enum = { workspace = true }
 parity-scale-codec = { workspace = true, features = [ "derive" ] }
@@ -27,6 +27,7 @@ dp-consensus = { workspace = true }
 dp-impl-tanssi-pallets-config = { workspace = true }
 dp-slot-duration-runtime-api = { workspace = true }
 pallet-cc-authorities-noting = { workspace = true }
+tanssi-runtime-common = { workspace = true }
 
 # Moonkit
 async-backing-primitives = { workspace = true }
@@ -105,6 +106,9 @@ cumulus-primitives-timestamp = { workspace = true }
 cumulus-primitives-utility = { workspace = true }
 parachain-info = { workspace = true }
 parachains-common = { workspace = true }
+
+# Container Chain primitives
+tp-container-chain = { workspace = true }
 
 # Frontier
 fp-account = { workspace = true, features = [ "serde" ] }
@@ -217,6 +221,8 @@ std = [
 	"sp-transaction-pool/std",
 	"sp-trie/std",
 	"sp-version/std",
+	"tanssi-runtime-common/std",
+	"tp-container-chain/std",
 	"xcm-builder/std",
 	"xcm-executor/std",
 	"xcm-primitives/std",
@@ -238,7 +244,6 @@ runtime-benchmarks = [
 	"frame-support/runtime-benchmarks",
 	"frame-system-benchmarking/runtime-benchmarks",
 	"frame-system/runtime-benchmarks",
-	"hex-literal",
 	"nimbus-primitives/runtime-benchmarks",
 	"pallet-asset-rate/runtime-benchmarks",
 	"pallet-assets/runtime-benchmarks",
@@ -268,6 +273,8 @@ runtime-benchmarks = [
 	"polkadot-parachain-primitives/runtime-benchmarks",
 	"polkadot-runtime-common/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
+	"tanssi-runtime-common/runtime-benchmarks",
+	"tp-container-chain/runtime-benchmarks",
 	"xcm-builder/runtime-benchmarks",
 	"xcm-executor/runtime-benchmarks",
 	"xcm-primitives/runtime-benchmarks",
@@ -315,6 +322,7 @@ try-runtime = [
 	"parachain-info/try-runtime",
 	"polkadot-runtime-common/try-runtime",
 	"sp-runtime/try-runtime",
+	"tanssi-runtime-common/try-runtime",
 ]
 
 metadata-hash = []

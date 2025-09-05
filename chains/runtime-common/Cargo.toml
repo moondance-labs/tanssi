@@ -50,9 +50,11 @@ snowbridge-core = { workspace = true }
 snowbridge-inbound-queue-primitives = { workspace = true }
 snowbridge-pallet-system = { workspace = true }
 sp-core = { workspace = true }
+sp-io = { workspace = true }
 sp-runtime = { workspace = true }
 sp-staking = { workspace = true }
 xcm = { workspace = true }
+xcm-executor = { workspace = true }
 
 # Cumulus
 cumulus-primitives-core = { workspace = true }
@@ -103,8 +105,10 @@ std = [
 	"snowbridge-pallet-system/std",
 	"snowbridge-pallet-system/std",
 	"sp-core/std",
+	"sp-io/std",
 	"sp-runtime/std",
 	"sp-staking/std",
+	"xcm-executor/std",
 	"xcm/std",
 ]
 relay = [
@@ -146,6 +150,7 @@ runtime-benchmarks = [
 	"snowbridge-pallet-system/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
 	"sp-staking/runtime-benchmarks",
+	"xcm-executor/runtime-benchmarks",
 	"xcm/runtime-benchmarks",
 ]
 

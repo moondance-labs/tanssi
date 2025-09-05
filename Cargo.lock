@@ -740,19 +740,23 @@ dependencies = [
 name = "asset-dancelight-integration-tests"
 version = "0.0.0"
 dependencies = [
+ "container-chain-template-frontier-runtime",
  "container-chain-template-simple-runtime",
  "dancelight-emulated-chain",
  "dancelight-runtime",
  "dancelight-system-emulated-network",
  "frame-support",
+ "frontier-template-emulated-chain",
  "pallet-message-queue",
  "pallet-xcm",
  "polkadot-primitives",
  "simple-template-emulated-chain",
+ "sp-core",
  "sp-runtime",
  "staging-xcm",
  "staging-xcm-executor",
  "tanssi-emulated-integration-tests-common",
+ "westend-system-emulated-network",
  "xcm-emulator",
 ]
 
@@ -2423,6 +2427,8 @@ dependencies = [
  "staging-xcm-builder",
  "staging-xcm-executor",
  "substrate-wasm-builder",
+ "tanssi-runtime-common",
+ "tp-container-chain",
  "xcm-primitives",
  "xcm-runtime-apis",
 ]
@@ -2503,6 +2509,8 @@ dependencies = [
  "staging-xcm-builder",
  "staging-xcm-executor",
  "substrate-wasm-builder",
+ "tanssi-runtime-common",
+ "tp-container-chain",
  "xcm-primitives",
  "xcm-runtime-apis",
 ]
@@ -8966,7 +8974,7 @@ checksum = "43794a0ace135be66a25d3ae77d41b91615fb68ae937f904090203e81f755b65"
 
 [[package]]
 name = "node-common"
-version = "0.1.0"
+version = "0.15.0"
 dependencies = [
  "async-io 1.13.0",
  "async-trait",
@@ -9026,6 +9034,7 @@ dependencies = [
  "sp-session",
  "sp-timestamp",
  "sp-transaction-pool",
+ "substrate-build-script-utils",
  "substrate-frame-rpc-system",
  "substrate-prometheus-endpoint",
  "tp-traits",
@@ -19410,9 +19419,11 @@ dependencies = [
  "snowbridge-pallet-inbound-queue",
  "snowbridge-pallet-system",
  "sp-core",
+ "sp-io",
  "sp-runtime",
  "sp-staking",
  "staging-xcm",
+ "staging-xcm-executor",
 ]
 
 [[package]]
@@ -20115,6 +20126,25 @@ dependencies = [
  "snowbridge-outbound-queue-primitives",
  "snowbridge-pallet-outbound-queue",
  "snowbridge-pallet-system",
+ "sp-core",
+ "sp-runtime",
+ "staging-xcm",
+ "staging-xcm-builder",
+ "staging-xcm-executor",
+]
+
+[[package]]
+name = "tp-container-chain"
+version = "0.1.0"
+dependencies = [
+ "cumulus-primitives-core",
+ "frame-support",
+ "frame-system",
+ "impl-trait-for-tuples",
+ "log",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
  "sp-core",
  "sp-runtime",
  "staging-xcm",
