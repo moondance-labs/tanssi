@@ -97,6 +97,9 @@ describeSuite({
     foundationMethods: "zombie",
     testCases: ({ it, context }) => {
         let relayApi: ApiPromise;
+        let charlieRelayApi: ApiPromise;
+        let daveRelayApi: ApiPromise;
+        let eveRelayApi: ApiPromise;
         let ethereumNodeChildProcess: ChildProcessWithoutNullStreams;
         let relayerChildProcess: ChildProcessWithoutNullStreams;
         let alice: KeyringPair;
@@ -132,6 +135,9 @@ describeSuite({
 
         beforeAll(async () => {
             relayApi = context.polkadotJs("Tanssi-relay");
+            charlieRelayApi = context.polkadotJs("Tanssi-charlie");
+            daveRelayApi = context.polkadotJs("Tanssi-dave");
+            eveRelayApi = context.polkadotJs("Tanssi-eve");
             const relayNetwork = relayApi.consts.system.version.specName.toString();
             expect(relayNetwork, "Relay API incorrect").to.contain("dancelight");
 
@@ -149,17 +155,23 @@ describeSuite({
             operatorAccount = keyring.addFromUri("//Charlie", {
                 name: "Charlie default",
             });
-            await relayApi.tx.session.setKeys(await relayApi.rpc.author.rotateKeys(), []).signAndSend(operatorAccount);
+            await relayApi.tx.session
+                .setKeys(await charlieRelayApi.rpc.author.rotateKeys(), [])
+                .signAndSend(operatorAccount);
 
             operatorAccount2 = keyring.addFromUri("//Dave", {
                 name: "Dave default",
             });
-            await relayApi.tx.session.setKeys(await relayApi.rpc.author.rotateKeys(), []).signAndSend(operatorAccount2);
+            await relayApi.tx.session
+                .setKeys(await daveRelayApi.rpc.author.rotateKeys(), [])
+                .signAndSend(operatorAccount2);
 
             operatorAccount3 = keyring.addFromUri("//Eve", {
                 name: "Eve default",
             });
-            await relayApi.tx.session.setKeys(await relayApi.rpc.author.rotateKeys(), []).signAndSend(operatorAccount3);
+            await relayApi.tx.session
+                .setKeys(await eveRelayApi.rpc.author.rotateKeys(), [])
+                .signAndSend(operatorAccount3);
 
             const fundingTxHash = await signAndSendAndInclude(
                 relayApi.tx.utility.batch([
@@ -536,15 +548,22 @@ describeSuite({
             test: async () => {
                 logTiming("Starting T05");
                 // Send slash event forcefully
-                const activeEraInfo = (await relayApi.query.externalValidators.activeEra()).toJSON();
-                const currentExternalIndex = await relayApi.query.externalValidators.currentExternalIndex();
-                const forceInjectSlashCall = relayApi.tx.externalValidatorSlashes.forceInjectSlash(
-                    activeEraInfo.index,
-                    operatorAccount.address,
-                    1000,
-                    currentExternalIndex
-                );
-                const forceInjectTx = await relayApi.tx.sudo.sudo(forceInjectSlashCall).signAndSend(alice);
+                const txs: SubmittableExtrinsic<"promise">[] = [];
+                for (const operator of [operatorAccount, operatorAccount2]) {
+                    const activeEraInfo = (await relayApi.query.externalValidators.activeEra()).toJSON();
+                    const currentExternalIndex = await relayApi.query.externalValidators.currentExternalIndex();
+
+                    txs.push(
+                        relayApi.tx.externalValidatorSlashes.forceInjectSlash(
+                            activeEraInfo.index,
+                            operator.address,
+                            1000,
+                            currentExternalIndex
+                        )
+                    );
+                }
+
+                const forceInjectTx = await relayApi.tx.sudo.sudo(relayApi.tx.utility.batch(txs)).signAndSend(alice);
 
                 console.log("Force inject tx was submitted:", forceInjectTx.toHex());
 
@@ -644,7 +663,7 @@ describeSuite({
                     throw new Error("No era was found in operator rewards to be claimed");
                 }
 
-                for (const opAccount of [operatorAccount, operatorAccount2]) {
+                for (const opAccount of [operatorAccount, operatorAccount2, operatorAccount3]) {
                     const operatorMerkleProof =
                         await relayApi.call.externalValidatorsRewardsApi.generateRewardsMerkleProof(
                             opAccount.address,
