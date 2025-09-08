@@ -253,7 +253,7 @@ describeSuite({
 
             // Setting up operatorRewards
             operatorRewardContract = new ethers.Contract(
-                await middlewareContract.i_operatorRewards(),
+                await middlewareContract.getOperatorRewardsAddress(),
                 operatorRewardDetails.abi,
                 ethereumWallet
             );
