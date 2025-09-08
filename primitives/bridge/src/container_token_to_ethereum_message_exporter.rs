@@ -319,13 +319,11 @@ where
 
         match &location.interior {
             Junctions::X3(arc) => {
-                let [j1, j2, j3] = arc.as_ref();
+                let [j1, j2, _] = arc.as_ref();
                 if let GlobalConsensus(_) = j1 {
                     if let Parachain(id) = j2 {
                         if *id == self.para_id {
-                            if let PalletInstance(_) = j3 {
-                                return Ok(());
-                            }
+                            return Ok(());
                         }
                     }
                 }
