@@ -236,14 +236,13 @@ where
         }
     }
 
+    #[allow(unused)]
     pub fn get_reanchored_location(&self, _location: &Location) -> Result<Location, ()> {
         return Ok(().into());
     }
 
     fn convert(&mut self) -> Result<(Command, [u8; 32]), sp_runtime::DispatchError> {
         ensure!(self.iter.len() > 0, "Should have at least one instruction");
-
-        let _ = self.get_reanchored_location(&Location::new(0, []));
 
         return Ok((
             Command::MintForeignToken {
