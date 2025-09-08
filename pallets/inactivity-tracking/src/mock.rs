@@ -236,6 +236,7 @@ impl pallet_inactivity_tracking::Config for Test {
     type ParaFilter = MockParathreadHelper;
     type InvulnerablesFilter = MockInvulnerableCheckHandler<AccountId>;
     type CollatorStakeHelper = MockCollatorStakeHelper<AccountId>;
+    type CooldownLength = ConstU32<1>;
     type WeightInfo = ();
 }
 

@@ -5,7 +5,7 @@ import { type ApiPromise, Keyring } from "@polkadot/api";
 import { generateEventLog, generateUpdate, signAndSendAndInclude, ETHEREUM_NETWORK_TESTNET, waitSessions } from "utils";
 
 describeSuite({
-    id: "ZOMBIETANSS02",
+    id: "ZOMBIETANSS03",
     title: "Container native tokens transfer from Ethereum to container (via Tanssi)",
     foundationMethods: "zombie",
     testCases: ({ context, it }) => {

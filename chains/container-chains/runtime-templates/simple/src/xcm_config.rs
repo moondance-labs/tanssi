@@ -56,8 +56,8 @@ use {
     xcm_executor::XcmExecutor,
 };
 
-pub const TANSSI_GENESIS_HASH: [u8; 32] =
-    hex_literal::hex!["dd6d086f75ec041b66e20c4186d327b23c8af244c534a2418de6574e8c041a60"];
+pub const DANCELIGHT_GENESIS_HASH: [u8; 32] =
+    hex_literal::hex!["983a1a72503d6cc3636776747ec627172b51272bf45e50a355348facb67a820a"];
 
 parameter_types! {
     // Self Reserve location, defines the multilocation identifying the self-reserve currency
@@ -76,7 +76,7 @@ parameter_types! {
 
     // For now this is being unused for our use cases (e.g container token transfers).
     // We might need to revisit this later and make it dynamic (through pallet params for instance).
-    pub const RelayNetwork: NetworkId = NetworkId::ByGenesis(TANSSI_GENESIS_HASH);
+    pub const RelayNetwork: NetworkId = NetworkId::ByGenesis(DANCELIGHT_GENESIS_HASH);
 
     // The relay chain Origin type
     pub RelayChainOrigin: RuntimeOrigin = cumulus_pallet_xcm::Origin::Relay.into();
