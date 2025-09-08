@@ -1,5 +1,5 @@
 import { beforeAll, customDevRpcRequest, describeSuite, expect } from "@moonwall/cli";
-import { type KeyringPair, generateKeyringPair } from "@moonwall/util";
+import { type KeyringPair, generateKeyringPair, filterAndApply } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import { u8aToHex } from "@polkadot/util";
 import {
@@ -11,6 +11,7 @@ import {
 } from "utils";
 import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_EXPORTS } from "helpers";
 import { isStarlightRuntime } from "../../../utils/runtime.ts";
+import type { EventRecord } from "@polkadot/types/interfaces";
 
 describeSuite({
     id: "DEVT1904",
@@ -266,8 +267,18 @@ describeSuite({
                 const tokenTransferNonceBefore =
                     await polkadotJs.query.ethereumOutboundQueue.nonce(tokenTransferChannel);
 
+                await context.createBlock();
+                const errorEvents = filterAndApply(
+                    await context.polkadotJs().query.system.events(),
+                    "xcmPallet",
+                    ["ProcessXcmError"],
+                    ({ event }: EventRecord) => event.data.toHuman() as unknown as { error: string }
+                );
+                expect(errorEvents.length, "Amount of error events should be 1").toBe(1);
+                expect(errorEvents[0].error, "The error message should be 'Unroutable'").toBe("Unroutable");
+
                 // Wait until message is processed
-                await jumpToSession(context, 3);
+                await jumpToSession(context, 6);
                 await context.createBlock();
                 const tokenTransferNonceAfter =
                     await polkadotJs.query.ethereumOutboundQueue.nonce(tokenTransferChannel);
@@ -351,8 +362,18 @@ describeSuite({
                 const tokenTransferNonceBefore =
                     await polkadotJs.query.ethereumOutboundQueue.nonce(tokenTransferChannel);
 
+                await context.createBlock();
+                const errorEvents = filterAndApply(
+                    await context.polkadotJs().query.system.events(),
+                    "xcmPallet",
+                    ["ProcessXcmError"],
+                    ({ event }: EventRecord) => event.data.toHuman() as unknown as { error: string }
+                );
+                expect(errorEvents.length, "Amount of error events should be 1").toBe(1);
+                expect(errorEvents[0].error, "The error message should be 'Unroutable'").toBe("Unroutable");
+
                 // Wait until message is processed
-                await jumpToSession(context, 3);
+                await jumpToSession(context, 9);
                 await context.createBlock();
                 const tokenTransferNonceAfter =
                     await polkadotJs.query.ethereumOutboundQueue.nonce(tokenTransferChannel);
