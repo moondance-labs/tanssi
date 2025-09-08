@@ -27,7 +27,7 @@ jobs:
         needs: ["enforce-ready-to-merge-label"]
         steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
               with:
                 ref: ${{ github.event.pull_request.head.sha }}
             - name: Cargo build
@@ -55,9 +55,9 @@ jobs:
                     - zombie_tanssi_rotation
         steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
             - name: "Download binaries"
-              uses: actions/download-artifact@v4
+              uses: actions/download-artifact@v5
               with:
                   name: binaries
                   path: target/release
@@ -74,15 +74,51 @@ jobs:
         runs-on: self-hosted
         steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
             - name: "Download binaries"
-              uses: actions/download-artifact@v4
+              uses: actions/download-artifact@v5
               with:
                   name: binaries
                   path: target/release
 
             - name: Make binaries executable
               uses: ./.github/workflow-templates/make-binaries-executable
+
+            - name: Cache Foundry
+              uses: actions/cache@v4
+              with:
+                path: |
+                  ~/.foundry
+                  ~/.cache/foundry
+                key: symbiotic-${{ runner.os }}-${{ hashFiles('**/scripts/bridge/set-env.sh') }}
+
+            - name: Cache Symbiotic Contracts
+              uses: actions/cache@v4
+              id: cache-symbiotic
+              with:
+                path: |
+                  test/tmp/bridge/tanssi-symbiotic
+                  test/tmp/bridge/tanssi-symbiotic/out
+                  test/tmp/bridge/tanssi-symbiotic/cache
+                key: symbiotic-${{ runner.os }}-${{ hashFiles('**/scripts/bridge/set-env.sh') }}
+
+            - name: Cache Snowbridge Relayer
+              uses: actions/cache@v4
+              id: cache-relayer
+              with:
+                path: |
+                  test/tmp/bridge/relayer
+                  test/tmp/bridge/relayer/snowbridge/contracts/out
+                  test/tmp/bridge/relayer/snowbridge/contracts/cache
+                key: relayer-${{ runner.os }}-${{ hashFiles('**/scripts/bridge/set-env.sh') }}
+
+            - name: Cache Ethereum Node Binaries
+              uses: actions/cache@v4
+              id: cache-ethereum-binaries
+              with:
+                path: |
+                  test/tmp/bridge/output/bin
+                key: ethereum-bins-${{ runner.os }}-${{ hashFiles('**/scripts/bridge/set-env.sh') }}
 
             - name: Run Zombienet Test
               id: e2e-test
@@ -92,7 +128,7 @@ jobs:
       runs-on: self-hosted
       steps:
         - name: Checkout
-          uses: actions/checkout@v4
+          uses: actions/checkout@v5
         - name: Cargo build
           uses: ./.github/workflow-templates/cargo-build
           with:
@@ -123,9 +159,9 @@ jobs:
                       chain: dev
         steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
             - name: "Download benchmark binaries"
-              uses: actions/download-artifact@v4
+              uses: actions/download-artifact@v5
               with:
                   name: binaries-benchmark
                   path: target/release
@@ -153,7 +189,7 @@ jobs:
                     - stagelight_dancelight_smoke S01
         steps:
             - name: Checkout
-              uses: actions/checkout@v4
+              uses: actions/checkout@v5
 
             - name: Pnpm
               uses: pnpm/action-setup@v4.1.0

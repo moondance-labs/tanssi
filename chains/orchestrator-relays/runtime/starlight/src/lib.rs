@@ -55,6 +55,7 @@ use {
     pallet_registrar::Error as ContainerRegistrarError,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     pallet_services_payment::{ProvideBlockProductionCost, ProvideCollatorAssignmentCost},
+    pallet_stream_payment_runtime_api::{StreamPaymentApiError, StreamPaymentApiStatus},
     parachains_scheduler::common::Assignment,
     parity_scale_codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen},
     primitives::{
@@ -97,6 +98,7 @@ use {
         SessionTimer,
     },
     tp_bridge::ConvertLocation,
+    tp_stream_payment_common::StreamId,
     tp_traits::{
         prod_or_fast_parameter_types, EraIndex, GetHostConfiguration, GetSessionContainerChains,
         NodeActivityTrackingHelper, ParaIdAssignmentHooks, RegistrarHandler, Slot, SlotFrequency,
@@ -154,7 +156,10 @@ pub use {
 };
 
 #[cfg(feature = "runtime-benchmarks")]
-use snowbridge_core::{AgentId, TokenId};
+use {
+    snowbridge_core::{AgentId, TokenId},
+    xcm::latest::Junctions::*,
+};
 
 /// Constant values used within the runtime.
 use starlight_runtime_constants::{currency::*, fee::*, snowbridge::EthereumLocation, time::*};
@@ -305,18 +310,6 @@ impl Convert<AggregateMessageOrigin, ParaId> for GetParaFromAggregateMessageOrig
     }
 }
 
-pub struct IsContainerChainManagementExtrinsics;
-impl Contains<RuntimeCall> for IsContainerChainManagementExtrinsics {
-    fn contains(c: &RuntimeCall) -> bool {
-        matches!(
-            c,
-            RuntimeCall::ServicesPayment(_)
-                | RuntimeCall::StreamPayment(_)
-                | RuntimeCall::DataPreservers(_)
-        )
-    }
-}
-
 pub struct IsDemocracyExtrinsics;
 impl Contains<RuntimeCall> for IsDemocracyExtrinsics {
     fn contains(c: &RuntimeCall) -> bool {
@@ -333,32 +326,30 @@ impl Contains<RuntimeCall> for IsDemocracyExtrinsics {
     }
 }
 
-pub struct IsXcmExtrinsics;
-impl Contains<RuntimeCall> for IsXcmExtrinsics {
+/// The relay register and deregister calls should no longer be necessary
+/// Everything is handled by the ContainerRegistrar
+pub struct IsRelayRegister;
+impl Contains<RuntimeCall> for IsRelayRegister {
     fn contains(c: &RuntimeCall) -> bool {
         matches!(
             c,
-            RuntimeCall::Hrmp(_)
-                | RuntimeCall::MessageQueue(_)
-                | RuntimeCall::AssetRate(_)
-                | RuntimeCall::XcmPallet(_)
+            RuntimeCall::Registrar(paras_registrar::Call::register { .. })
+        ) || matches!(
+            c,
+            RuntimeCall::Registrar(paras_registrar::Call::deregister { .. })
         )
     }
 }
 
-pub struct IsContainerChainRegistrationExtrinsics;
-impl Contains<RuntimeCall> for IsContainerChainRegistrationExtrinsics {
+/// Starlight shouold not permit parathread registration for now
+/// TODO: remove once they are enabled
+pub struct IsParathreadRegistrar;
+impl Contains<RuntimeCall> for IsParathreadRegistrar {
     fn contains(c: &RuntimeCall) -> bool {
-        match c {
-            RuntimeCall::ContainerRegistrar(inner) => {
-                !matches!(inner, pallet_registrar::Call::register { .. })
-            }
-            RuntimeCall::OnDemandAssignmentProvider(_) => true,
-            RuntimeCall::Registrar(inner) => {
-                !matches!(inner, paras_registrar::Call::reserve { .. })
-            }
-            _ => false,
-        }
+        matches!(
+            c,
+            RuntimeCall::ContainerRegistrar(pallet_registrar::Call::register_parathread { .. })
+        )
     }
 }
 
@@ -1333,7 +1324,7 @@ impl parachains_slashing::Config for Runtime {
 }
 
 parameter_types! {
-    pub const ParaDeposit: Balance = 500 * UNITS;
+    pub const ParaDeposit: Balance = 1000 * UNITS;
 }
 
 impl paras_registrar::Config for Runtime {
@@ -1685,10 +1676,9 @@ impl Contains<RuntimeCall> for MaintenanceFilter {
 
 /// Normal Call Filter
 type NormalFilter = EverythingBut<(
-    IsContainerChainManagementExtrinsics,
+    IsRelayRegister,
+    IsParathreadRegistrar,
     IsDemocracyExtrinsics,
-    IsXcmExtrinsics,
-    IsContainerChainRegistrationExtrinsics,
 )>;
 
 impl pallet_maintenance_mode::Config for Runtime {
@@ -1699,8 +1689,8 @@ impl pallet_maintenance_mode::Config for Runtime {
     type XcmExecutionManager = ();
 }
 
-pub const FIXED_BLOCK_PRODUCTION_COST: u128 = 1 * MICROUNITS;
-pub const FIXED_COLLATOR_ASSIGNMENT_COST: u128 = 100 * MICROUNITS;
+pub const FIXED_BLOCK_PRODUCTION_COST: u128 = 10000 * MICROUNITS;
+pub const FIXED_COLLATOR_ASSIGNMENT_COST: u128 = 5 * UNITS;
 
 pub struct BlockProductionCost<Runtime>(PhantomData<Runtime>);
 impl ProvideBlockProductionCost<Runtime> for BlockProductionCost<Runtime> {
@@ -1773,13 +1763,15 @@ parameter_types! {
     pub const MaxNodeUrlLen: u32 = 200;
 }
 
+pub type DataPreserversProfileId = u64;
+
 impl pallet_data_preservers::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type RuntimeHoldReason = RuntimeHoldReason;
     type Currency = Balances;
     type WeightInfo = weights::pallet_data_preservers::SubstrateWeight<Runtime>;
 
-    type ProfileId = u64;
+    type ProfileId = DataPreserversProfileId;
     type ProfileDeposit = tp_traits::BytesDeposit<ProfileDepositBaseFee, ProfileDepositByteFee>;
     type AssignmentProcessor = tp_data_preservers_common::AssignmentProcessor<Runtime>;
 
@@ -2026,6 +2018,10 @@ construct_runtime! {
         // Asset rate.
         AssetRate: pallet_asset_rate = 86,
 
+        // Foreign assets.
+        ForeignAssets: pallet_assets::<Instance1> = 87,
+        ForeignAssetsCreator: pallet_foreign_asset_creator = 88,
+
         // Pallet for sending XCM.
         XcmPallet: pallet_xcm = 90,
 
@@ -2198,8 +2194,8 @@ where
 
 impl pallet_registrar::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    // TODO: revert to non-sudo later after stable
-    type RegistrarOrigin = EnsureRoot<AccountId>;
+    type RegistrarOrigin =
+        EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;
     type MarkValidForCollatingOrigin = EnsureRoot<AccountId>;
     type MaxLengthParaIds = MaxLengthParaIds;
     type MaxGenesisDataSize = MaxEncodedGenesisDataSize;
@@ -2371,6 +2367,18 @@ mod benches {
         [pallet_configuration, CollatorConfiguration]
         [pallet_stream_payment, StreamPayment]
         [pallet_inactivity_tracking, InactivityTracking]
+
+        // Foreign Assets
+        [pallet_foreign_asset_creator, ForeignAssetsCreator]
+        [pallet_assets, ForeignAssets]
+
+        // Foreign Assets
+        [pallet_foreign_asset_creator, ForeignAssetsCreator]
+        [pallet_assets, ForeignAssets]
+
+        // Foreign Assets
+        [pallet_foreign_asset_creator, ForeignAssetsCreator]
+        [pallet_assets, ForeignAssets]
 
         // XCM
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
@@ -3111,6 +3119,57 @@ sp_api::impl_runtime_apis! {
         }
     }
 
+    impl pallet_stream_payment_runtime_api::StreamPaymentApi<Block, StreamId, Balance, Balance>
+    for Runtime {
+        fn stream_payment_status(
+            stream_id: StreamId,
+            now: Option<Balance>,
+        ) -> Result<StreamPaymentApiStatus<Balance>, StreamPaymentApiError> {
+            match StreamPayment::stream_payment_status(stream_id, now) {
+                Ok(pallet_stream_payment::StreamPaymentStatus {
+                    payment, deposit_left, stalled
+                }) => Ok(StreamPaymentApiStatus {
+                    payment, deposit_left, stalled
+                }),
+                Err(pallet_stream_payment::Error::<Runtime>::UnknownStreamId)
+                => Err(StreamPaymentApiError::UnknownStreamId),
+                Err(e) => Err(StreamPaymentApiError::Other(alloc::format!("{e:?}")))
+            }
+        }
+    }
+
+    impl pallet_data_preservers_runtime_api::DataPreserversApi<Block, DataPreserversProfileId, ParaId> for Runtime {
+        fn get_active_assignment(
+            profile_id: DataPreserversProfileId,
+        ) -> pallet_data_preservers_runtime_api::Assignment<ParaId> {
+            use pallet_data_preservers_runtime_api::Assignment;
+            use pallet_stream_payment::StreamPaymentStatus;
+
+            let Some((para_id, witness)) = pallet_data_preservers::Profiles::<Runtime>::get(profile_id)
+                .and_then(|x| x.assignment) else
+            {
+                return Assignment::NotAssigned;
+            };
+
+            match witness {
+                tp_data_preservers_common::AssignmentWitness::Free => Assignment::Active(para_id),
+                tp_data_preservers_common::AssignmentWitness::StreamPayment { stream_id } => {
+                    // Error means no Stream exists with that ID or some issue occured when computing
+                    // the status. In that case we cannot consider the assignment as active.
+                    let Ok(StreamPaymentStatus { stalled, .. }) = StreamPayment::stream_payment_status( stream_id, None) else {
+                        return Assignment::Inactive(para_id);
+                    };
+
+                    if stalled {
+                        Assignment::Inactive(para_id)
+                    } else {
+                        Assignment::Active(para_id)
+                    }
+                },
+            }
+        }
+    }
+
     #[cfg(feature = "runtime-benchmarks")]
     impl frame_benchmarking::Benchmark<Block> for Runtime {
         fn benchmark_metadata(extra: bool) -> (
@@ -3248,24 +3307,59 @@ sp_api::impl_runtime_apis! {
             }
 
             parameter_types! {
-                pub TrustedTeleporter: Option<(Location, Asset)> = Some((
-                    AssetHub::get(),
-                    Asset { fun: Fungible(1 * UNITS), id: AssetId(TokenLocation::get()) },
-                ));
-                pub TrustedReserve: Option<(Location, Asset)> = None;
+                pub TrustedReserve: Option<(Location, Asset)> = Some(
+                    (
+                        EthereumLocation::get(),
+                        Asset {
+                            id: AssetId(EthereumLocation::get()),
+                            fun: Fungible(ExistentialDeposit::get() * 100),
+                        },
+                    )
+                );
             }
 
             impl pallet_xcm_benchmarks::fungible::Config for Runtime {
                 type TransactAsset = Balances;
 
                 type CheckedAccount = LocalCheckAccount;
-                type TrustedTeleporter = TrustedTeleporter;
+                type TrustedTeleporter = ();
                 type TrustedReserve = TrustedReserve;
 
                 fn get_asset() -> Asset {
+                    use frame_support::{assert_ok, traits::tokens::fungible::{Inspect, Mutate}};
+                    let (account, _) = pallet_xcm_benchmarks::account_and_location::<Runtime>(1);
+
+                    assert_ok!(<Balances as Mutate<_>>::mint_into(
+                        &account,
+                        <Balances as Inspect<_>>::minimum_balance(),
+                    ));
+
+                    let asset_id = 42u16;
+
+                    let asset_location = Location {
+                        parents: 1,
+                        interior: X2([
+                            GlobalConsensus(NetworkId::Ethereum { chain_id: 1 }),
+                            AccountKey20 {
+                                network: Some(NetworkId::Ethereum { chain_id: 1 }),
+                                key: [0; 20],
+                            },
+                        ]
+                        .into()),
+                    };
+
+                    assert_ok!(ForeignAssetsCreator::create_foreign_asset(
+                        RuntimeOrigin::root(),
+                        asset_location.clone(),
+                        asset_id,
+                        account.clone(),
+                        true,
+                        1u128,
+                    ));
+
                     Asset {
-                        id: AssetId(TokenLocation::get()),
-                        fun: Fungible(1 * UNITS),
+                        id: AssetId(asset_location),
+                        fun: Fungible(ExistentialDeposit::get() * 100),
                     }
                 }
             }

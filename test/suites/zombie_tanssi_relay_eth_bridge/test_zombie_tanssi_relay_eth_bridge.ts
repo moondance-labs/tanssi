@@ -36,6 +36,45 @@ function execCommand(command: string, options?): Promise<{ stdout: string; stder
     });
 }
 
+let current: number;
+let start: number;
+function logTiming(message?: string) {
+    const now = performance.now();
+    if (start === undefined) {
+        console.log("Starting performance measurement.");
+        start = now;
+        current = start;
+    } else {
+        const prev = current;
+        current = now;
+        console.log(
+            `${message ? `[${message}]` : ""} Checkpoint timing: ${((current - start) / 1000).toFixed(2)} sec. Diff with prev: ${((current - prev) / 1000).toFixed(2)} sec`
+        );
+    }
+}
+
+function execCommandLive(command: string, args: string[] = [], options = {}): Promise<number> {
+    return new Promise((resolve, reject) => {
+        const child = spawn(command, args, {
+            stdio: "inherit",
+            shell: true,
+            ...options,
+        });
+
+        child.on("close", (code) => {
+            if (code === 0) {
+                resolve(code);
+            } else {
+                reject(new Error(`Process exited with code ${code}`));
+            }
+        });
+
+        child.on("error", (err) => {
+            reject(err);
+        });
+    });
+}
+
 async function calculateNumberOfBlocksTillNextEra(api, blocksPerSession) {
     // Wait till the second block of next era
     const sessionsPerEra = await api.consts.externalValidators.sessionsPerEra;
@@ -126,33 +165,50 @@ describeSuite({
             );
             console.log("Transferred money to relayers", fundingTxHash.txHash.toHex());
 
+            logTiming("Before start ETH node");
+
             ethereumNodeChildProcess = spawn("./scripts/bridge/start-ethereum-node.sh", {
                 shell: true,
                 detached: true,
             });
+            ethereumNodeChildProcess.stdout.setEncoding("utf-8");
             ethereumNodeChildProcess.stderr.setEncoding("utf-8");
-            ethereumNodeChildProcess.stderr.on("data", (chunk) => console.log(chunk));
+            ethereumNodeChildProcess.stdout.on("data", (chunk) => {
+                console.log("ETH Node STDOUT: ", chunk);
+            });
+            ethereumNodeChildProcess.stderr.on("data", (chunk) => {
+                console.error("ETH Node STDERR: ", chunk);
+            });
+            ethereumNodeChildProcess.on("error", (err) => {
+                console.error("ETH Node Process Error: ", err);
+            });
+            ethereumNodeChildProcess.on("exit", (code, signal) => {
+                console.log(`ETH Node exited with code ${code}, signal ${signal}`);
+            });
 
-            await execCommand("./scripts/bridge/generate-beefy-checkpoint.sh", {
+            logTiming("Before generate beefy checkpoint");
+            await execCommandLive("./scripts/bridge/generate-beefy-checkpoint.sh", [], {
                 env: {
                     RELAYCHAIN_ENDPOINT: "ws://127.0.0.1:9947",
                     ...process.env,
                 },
             });
+            logTiming("After generate beefy checkpoint");
 
             // Waiting till ethreum node produces one block
             console.log("Waiting some time for ethereum node to produce block, before we deploy contract");
             await sleep(20000);
+            logTiming("Before deploy contracts");
 
             // We override the operator 3 key because it goes to a slashing vault
-            await execCommand("./scripts/bridge/deploy-ethereum-contracts.sh", {
+            await execCommandLive("./scripts/bridge/deploy-ethereum-contracts.sh", [], {
                 env: {
                     OPERATOR3_KEY: u8aToHex(operatorAccount.addressRaw),
                     ...process.env,
                 },
             });
 
-            console.log("Contracts deployed");
+            logTiming("Contracts deployed");
 
             ethInfo = JSON.parse((await execCommand("./scripts/bridge/generate-eth-info.sh")).stdout);
 
@@ -240,6 +296,8 @@ describeSuite({
             const approveWETHTx = await wETHContract.approve(gatewayProxyAddress, wETHBalanceFromEthereum);
             await approveWETHTx.wait();
 
+            logTiming("Before setup relayer");
+
             const initialBeaconUpdate = JSON.parse(
                 (
                     await execCommand("./scripts/bridge/setup-relayer.sh", {
@@ -250,6 +308,7 @@ describeSuite({
                     })
                 ).stdout
             );
+            logTiming("Before setup relayer");
 
             wETHTokenLocation = {
                 parents: 1,
@@ -326,6 +385,7 @@ describeSuite({
             const tokenIds = allEntries.map(([, id]) => id.toHuman());
 
             tokenId = tokenIds[0];
+            logTiming("Before start relayer");
 
             relayerChildProcess = spawn("./scripts/bridge/start-relayer.sh", {
                 shell: true,
@@ -337,12 +397,14 @@ describeSuite({
             });
             relayerChildProcess.stderr.setEncoding("utf-8");
             relayerChildProcess.stderr.on("data", (chunk) => console.log(chunk));
+            logTiming("After start relayer");
         }, 12000000);
 
         it({
             id: "T01",
             title: "Ethereum Blocks are being recognized on tanssi-relay",
             test: async () => {
+                logTiming("Starting T01");
                 await waitSessions(context, relayApi, 1, null, "Tanssi-relay");
                 const firstFinalizedBlockRoot = (
                     await relayApi.query.ethereumBeaconClient.latestFinalizedBlockRoot()
@@ -362,6 +424,8 @@ describeSuite({
             id: "T02",
             title: "Dancelight Blocks are being recognized on ethereum",
             test: async () => {
+                logTiming("Starting T02");
+
                 const beefyContract = new ethers.Contract(
                     beefyClientDetails.address,
                     beefyClientDetails.abi,
@@ -379,6 +443,7 @@ describeSuite({
             id: "T03",
             title: "Message can be passed from ethereum to Starlight",
             test: async () => {
+                logTiming("Starting T03");
                 const externalValidatorsBefore = await relayApi.query.externalValidators.externalValidators();
 
                 const epoch = await middlewareContract.getCurrentEpoch();
@@ -432,6 +497,7 @@ describeSuite({
             id: "T04",
             title: "Operator produces blocks",
             test: async () => {
+                logTiming("Starting T04");
                 // wait some time for the operator to be part of session validator
                 await waitSessions(
                     context,
@@ -467,6 +533,7 @@ describeSuite({
             id: "T05",
             title: "Rewards and slashes are being sent to symbiotic successfully",
             test: async () => {
+                logTiming("Starting T05");
                 // Send slash event forcefully
                 const activeEraInfo = (await relayApi.query.externalValidators.activeEra()).toJSON();
                 const currentExternalIndex = await relayApi.query.externalValidators.currentExternalIndex();
@@ -549,6 +616,7 @@ describeSuite({
             id: "T06",
             title: "Rewards are claimable",
             test: async () => {
+                logTiming("Starting T06");
                 // Find the first era index claimable
                 const currentEra = (await relayApi.query.externalValidators.activeEra()).unwrap().index;
 
@@ -628,6 +696,7 @@ describeSuite({
             id: "T07",
             title: "Slash reaches slasher contract",
             test: async () => {
+                logTiming("Starting T07");
                 const epoch = await middlewareContract.getCurrentEpoch();
                 const operatorAndVaults = await middlewareContract.getOperatorVaultPairs(epoch);
                 const operator = await middlewareContract.operatorByKey(operatorAccount.addressRaw);
@@ -667,6 +736,7 @@ describeSuite({
             title: "TANSSI, WETH and native ETH token transfers",
             timeout: 1200000,
             test: async () => {
+                logTiming("Starting T08");
                 // Wait a few sessions to ensure the token was properly registered on Ethereum
                 await waitSessions(context, relayApi, 4, null, "Tanssi-relay");
 
@@ -1050,6 +1120,7 @@ describeSuite({
 
                 const balanceAfterNativeETH = await customHttpProvider.getBalance(randomEthereumAccount.address);
                 expect(balanceAfterNativeETH).to.be.eq(nativeETHBalanceBefore + nativeETHBalanceToSend);
+                logTiming("Finish T08");
             },
         });
 
@@ -1061,7 +1132,7 @@ describeSuite({
             if (relayerChildProcess) {
                 relayerChildProcess.kill("SIGINT");
             }
-            await execCommand("./scripts/bridge/cleanup.sh olep");
+            await execCommandLive("./scripts/bridge/cleanup.sh olep");
         });
     },
 });

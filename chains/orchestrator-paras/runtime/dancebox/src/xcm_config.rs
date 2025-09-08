@@ -485,11 +485,7 @@ impl GetParathreadParams for GetParathreadParamsImpl {
 
     #[cfg(feature = "runtime-benchmarks")]
     fn set_parathread_params(para_id: ParaId, parathread_params: Option<ParathreadParams>) {
-        if let Some(parathread_params) = parathread_params {
-            pallet_registrar::ParathreadParams::<Runtime>::insert(para_id, parathread_params);
-        } else {
-            pallet_registrar::ParathreadParams::<Runtime>::remove(para_id);
-        }
+        pallet_registrar::ParathreadParams::<Runtime>::set(para_id, parathread_params);
     }
 }
 

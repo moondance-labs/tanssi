@@ -73,6 +73,7 @@ use {
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     pallet_services_payment::{ProvideBlockProductionCost, ProvideCollatorAssignmentCost},
     pallet_session::historical as session_historical,
+    pallet_stream_payment_runtime_api::{StreamPaymentApiError, StreamPaymentApiStatus},
     pallet_transaction_payment::{FeeDetails, FungibleAdapter, RuntimeDispatchInfo},
     parachains_scheduler::common::Assignment,
     parity_scale_codec::{Decode, DecodeWithMemTracking, Encode, MaxEncodedLen},
@@ -128,6 +129,7 @@ use {
         SessionTimer,
     },
     tp_bridge::ConvertLocation,
+    tp_stream_payment_common::StreamId,
     tp_traits::{
         prod_or_fast_parameter_types, EraIndex, GetHostConfiguration, GetSessionContainerChains,
         NodeActivityTrackingHelper, ParaIdAssignmentHooks, RegistrarHandler, Slot, SlotFrequency,
@@ -150,7 +152,6 @@ pub use {
 
 #[cfg(feature = "runtime-benchmarks")]
 use {
-    dancelight_runtime_constants::snowbridge::EthereumNetwork,
     snowbridge_core::{AgentId, TokenId},
     xcm::latest::Junctions::*,
 };
@@ -1739,13 +1740,15 @@ parameter_types! {
     pub const MaxNodeUrlLen: u32 = 200;
 }
 
+pub type DataPreserversProfileId = u64;
+
 impl pallet_data_preservers::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type RuntimeHoldReason = RuntimeHoldReason;
     type Currency = Balances;
     type WeightInfo = weights::pallet_data_preservers::SubstrateWeight<Runtime>;
 
-    type ProfileId = u64;
+    type ProfileId = DataPreserversProfileId;
     type ProfileDeposit = tp_traits::BytesDeposit<ProfileDepositBaseFee, ProfileDepositByteFee>;
     type AssignmentProcessor = tp_data_preservers_common::AssignmentProcessor<Runtime>;
 
@@ -3088,6 +3091,57 @@ sp_api::impl_runtime_apis! {
         }
     }
 
+    impl pallet_stream_payment_runtime_api::StreamPaymentApi<Block, StreamId, Balance, Balance>
+    for Runtime {
+        fn stream_payment_status(
+            stream_id: StreamId,
+            now: Option<Balance>,
+        ) -> Result<StreamPaymentApiStatus<Balance>, StreamPaymentApiError> {
+            match StreamPayment::stream_payment_status(stream_id, now) {
+                Ok(pallet_stream_payment::StreamPaymentStatus {
+                    payment, deposit_left, stalled
+                }) => Ok(StreamPaymentApiStatus {
+                    payment, deposit_left, stalled
+                }),
+                Err(pallet_stream_payment::Error::<Runtime>::UnknownStreamId)
+                => Err(StreamPaymentApiError::UnknownStreamId),
+                Err(e) => Err(StreamPaymentApiError::Other(alloc::format!("{e:?}")))
+            }
+        }
+    }
+
+    impl pallet_data_preservers_runtime_api::DataPreserversApi<Block, DataPreserversProfileId, ParaId> for Runtime {
+        fn get_active_assignment(
+            profile_id: DataPreserversProfileId,
+        ) -> pallet_data_preservers_runtime_api::Assignment<ParaId> {
+            use pallet_data_preservers_runtime_api::Assignment;
+            use pallet_stream_payment::StreamPaymentStatus;
+
+            let Some((para_id, witness)) = pallet_data_preservers::Profiles::<Runtime>::get(profile_id)
+                .and_then(|x| x.assignment) else
+            {
+                return Assignment::NotAssigned;
+            };
+
+            match witness {
+                tp_data_preservers_common::AssignmentWitness::Free => Assignment::Active(para_id),
+                tp_data_preservers_common::AssignmentWitness::StreamPayment { stream_id } => {
+                    // Error means no Stream exists with that ID or some issue occured when computing
+                    // the status. In that case we cannot consider the assignment as active.
+                    let Ok(StreamPaymentStatus { stalled, .. }) = StreamPayment::stream_payment_status( stream_id, None) else {
+                        return Assignment::Inactive(para_id);
+                    };
+
+                    if stalled {
+                        Assignment::Inactive(para_id)
+                    } else {
+                        Assignment::Active(para_id)
+                    }
+                },
+            }
+        }
+    }
+
     #[cfg(feature = "runtime-benchmarks")]
     impl frame_benchmarking::Benchmark<Block> for Runtime {
         fn benchmark_metadata(extra: bool) -> (
@@ -3126,6 +3180,7 @@ sp_api::impl_runtime_apis! {
                 AssetHub, LocalCheckAccount, LocationConverter, TokenLocation, XcmConfig,
             };
             use alloc::boxed::Box;
+            use tp_bridge::container_token_to_ethereum_message_exporter::ToEthDeliveryHelper;
 
             parameter_types! {
                 pub ExistentialDepositAsset: Option<Asset> = Some((
@@ -3134,6 +3189,8 @@ sp_api::impl_runtime_apis! {
                 ).into());
                 pub AssetHubParaId: ParaId = dancelight_runtime_constants::system_parachain::ASSET_HUB_ID.into();
                 pub const RandomParaId: ParaId = ParaId::new(43211234);
+                // Minimum fee amount for exporter: 2680020006582, rounding to a bit more
+                pub const ContainerToEthTransferFee: u128 = 2_700_000_000_000u128;
             }
 
             impl frame_system_benchmarking::Config for Runtime {}
@@ -3206,13 +3263,20 @@ sp_api::impl_runtime_apis! {
             impl pallet_xcm_benchmarks::Config for Runtime {
                 type XcmConfig = XcmConfig;
                 type AccountIdConverter = LocationConverter;
-                type DeliveryHelper = runtime_common::xcm_sender::ToParachainDeliveryHelper<
-                    XcmConfig,
-                    ExistentialDepositAsset,
-                    xcm_config::PriceForChildParachainDelivery,
-                    AssetHubParaId,
-                    Dmp,
-                >;
+                type DeliveryHelper = (
+                    runtime_common::xcm_sender::ToParachainDeliveryHelper<
+                        XcmConfig,
+                        ExistentialDepositAsset,
+                        xcm_config::PriceForChildParachainDelivery,
+                        AssetHubParaId,
+                        Dmp,
+                    >,
+                    ToEthDeliveryHelper<
+                        XcmConfig,
+                        ExistentialDepositAsset,
+                        ContainerToEthTransferFee,
+                    >,
+                );
                 fn valid_destination() -> Result<Location, BenchmarkError> {
                     Ok(AssetHub::get())
                 }
@@ -3230,10 +3294,7 @@ sp_api::impl_runtime_apis! {
                     (
                         EthereumLocation::get(),
                         Asset {
-                            id: AssetId(Location {
-                                parents: 1,
-                                interior: X1([GlobalConsensus(EthereumNetwork::get())].into()),
-                            }),
+                            id: AssetId(EthereumLocation::get()),
                             fun: Fungible(ExistentialDeposit::get() * 100),
                         },
                     )
@@ -3331,10 +3392,29 @@ sp_api::impl_runtime_apis! {
                     Err(BenchmarkError::Skip)
                 }
 
-                fn export_message_origin_and_destination(
-                ) -> Result<(Location, NetworkId, InteriorLocation), BenchmarkError> {
-                    // Dancelight doesn't support exporting messages
-                    Err(BenchmarkError::Skip)
+                fn export_message_origin_and_destination() -> Result<(Location, NetworkId, InteriorLocation), BenchmarkError>
+                {
+                    let _ = EthereumTokenTransfers::set_token_transfer_channel(
+                        RuntimeOrigin::root(),
+                        ChannelId::new([1u8; 32]),
+                        AgentId::from([2u8; 32]),
+                        2001u32.into(),
+                    ).map_err(|_e| {
+                        BenchmarkError::Stop("channel and agent was not set!")
+                    })?;
+
+                    let _ = XcmPallet::force_xcm_version(
+                        RuntimeOrigin::root(),
+                        Box::new(Location::new(0, [Parachain(2001)])),
+                        5,
+                    ).map_err(|_e| {
+                        BenchmarkError::Stop("XcmVersion was not stored!")
+                    })?;
+
+                    Ok((Location {
+                        parents: 0,
+                        interior: X1([Parachain(2001)].into()),
+                    }, dancelight_runtime_constants::snowbridge::EthereumNetwork::get(), Here))
                 }
 
                 fn alias_origin() -> Result<(Location, Location), BenchmarkError> {

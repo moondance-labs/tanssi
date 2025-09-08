@@ -19,7 +19,7 @@ jobs:
   setup-scripts:
     runs-on: bare-metal
     steps:
-      - uses: actions/checkout@v4.1.2
+      - uses: actions/checkout@v5
       - name: Upload tools
         uses: actions/upload-artifact@v4
         with:
@@ -31,13 +31,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Use Node.js 22.x
         uses: actions/setup-node@v4
         with:
           node-version: 22.x
       - name: Download Original Tools
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: original-tools
           path: original-tools
