@@ -318,14 +318,11 @@ where
         }
     }
 
+    // NOTE: For now we have hardcoded RelayNetwork to the DANCELIGHT_GENESIS_HASH,
+    // so it won't work with Starlight, but after we add pallet parameters and make the
+    // RelayNetwork parameter dynamic, it will work with both
     pub fn get_reanchored_location(&self, location: &Location) -> Result<Location, ()> {
-        let token_split = location.interior().clone().split_global().map_err(|_| ())?;
-
-        let container_token_from_tanssi = Location::new(0, token_split.1);
-
-        container_token_from_tanssi
-            .reanchored(&EthereumLocation::get(), &UniversalLocation::get())
-            .map_err(|_| ())
+        return Ok(location.clone());
     }
 
     fn check_reserve_asset_para_id(&self, location: &Location) -> Result<(), ()> {
@@ -530,7 +527,7 @@ mod tests {
     parameter_types! {
         pub EthereumLocation: Location = Location::new(1, EthereumNetwork::get());
         const EthereumNetwork: NetworkId = Ethereum { chain_id: 11155111 };
-        UniversalLocation: InteriorLocation = [GlobalConsensus(ByGenesis([ 152, 58, 26, 114, 80, 61, 108, 195, 99, 103, 118, 116, 126, 198, 39, 23, 43, 81, 39, 43, 244, 94, 80, 163, 85, 52, 143, 172, 182, 122, 130, 10 ]))].into();
+        UniversalLocation: InteriorLocation = [GlobalConsensus(ByGenesis(hex_literal::hex!["983a1a72503d6cc3636776747ec627172b51272bf45e50a355348facb67a820a"]))].into();
         const BridgeChannelInfo: Option<(ChannelId, AgentId)> = Some((ChannelId::new([1u8; 32]), H256([2u8; 32])));
     }
 
@@ -542,7 +539,9 @@ mod tests {
             parents: 1,
             interior: Junctions::X3(
                 [
-                    GlobalConsensus(NetworkId::Polkadot),
+                    GlobalConsensus(ByGenesis(hex_literal::hex![
+                        "983a1a72503d6cc3636776747ec627172b51272bf45e50a355348facb67a820a"
+                    ])),
                     Parachain(2001),
                     PalletInstance(10),
                 ]
