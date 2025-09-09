@@ -82,9 +82,23 @@ describeSuite({
                 },
             };
 
+            const containerAssetParentView = {
+                parents: 0,
+                interior: {
+                    X2: [
+                        {
+                            Parachain: 2000,
+                        },
+                        {
+                            PalletInstance: 10,
+                        },
+                    ],
+                },
+            };
+
             // Register the token of the container-chain
             const versionedLocation = {
-                V3: containerAsset,
+                V3: containerAssetParentView,
             };
 
             const metadata = {
