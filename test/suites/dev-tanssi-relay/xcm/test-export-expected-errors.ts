@@ -172,9 +172,6 @@ describeSuite({
                     .export_message(xcmToExport.instructions, ethereumNetwork, "Here")
                     .as_v3();
 
-                const tokenTransferNonceBefore =
-                    await polkadotJs.query.ethereumOutboundQueue.nonce(tokenTransferChannel);
-
                 const executeMessageTx = polkadotJs.tx.xcmPallet.execute(xcmMessage, {
                     refTime: 10000000000,
                     proofSize: 1000000,
@@ -236,9 +233,6 @@ describeSuite({
                     .export_message(xcmToExport.instructions, ethereumNetwork, "Here")
                     .as_v3();
 
-                const tokenTransferNonceBefore =
-                    await polkadotJs.query.ethereumOutboundQueue.nonce(tokenTransferChannel);
-
                 const executeMessageTx = polkadotJs.tx.xcmPallet.execute(xcmMessage, {
                     refTime: 10000000000,
                     proofSize: 1000000,
@@ -254,7 +248,7 @@ describeSuite({
 
         it({
             id: "T03",
-            title: "Should fail exporting if buy_execution not there message is not there",
+            title: "Should fail exporting if buy_execution is not present in the message",
             test: async () => {
                 if (shouldSkipStarlightContainerExport) {
                     console.log(`Skipping XCM tests for Starlight version ${specVersion}`);
@@ -299,9 +293,6 @@ describeSuite({
                     .buy_execution()
                     .export_message(xcmToExport.instructions, ethereumNetwork, "Here")
                     .as_v3();
-
-                const tokenTransferNonceBefore =
-                    await polkadotJs.query.ethereumOutboundQueue.nonce(tokenTransferChannel);
 
                 const executeMessageTx = polkadotJs.tx.xcmPallet.execute(xcmMessage, {
                     refTime: 10000000000,
@@ -365,9 +356,6 @@ describeSuite({
                     .export_message(xcmToExport.instructions, noneEthereumNetwork, "Here")
                     .as_v3();
 
-                const tokenTransferNonceBefore =
-                    await polkadotJs.query.ethereumOutboundQueue.nonce(tokenTransferChannel);
-
                 const executeMessageTx = polkadotJs.tx.xcmPallet.execute(xcmMessage, {
                     refTime: 10000000000,
                     proofSize: 1000000,
@@ -429,9 +417,6 @@ describeSuite({
                     .export_message(xcmToExport.instructions, ethereumNetwork, "Here")
                     .as_v3();
 
-                const tokenTransferNonceBefore =
-                    await polkadotJs.query.ethereumOutboundQueue.nonce(tokenTransferChannel);
-
                 const executeMessageTx = polkadotJs.tx.xcmPallet.execute(xcmMessage, {
                     refTime: 10000000000,
                     proofSize: 1000000,
@@ -488,9 +473,6 @@ describeSuite({
                     .buy_execution()
                     .export_message(xcmToExport.instructions, ethereumNetwork, "Here")
                     .as_v3();
-
-                const tokenTransferNonceBefore =
-                    await polkadotJs.query.ethereumOutboundQueue.nonce(tokenTransferChannel);
 
                 const executeMessageTx = polkadotJs.tx.xcmPallet.execute(xcmMessage, {
                     refTime: 10000000000,
@@ -576,9 +558,6 @@ describeSuite({
                     .buy_execution()
                     .export_message(xcmToExport.instructions, ethereumNetwork, "Here")
                     .as_v3();
-
-                const tokenTransferNonceBefore =
-                    await polkadotJs.query.ethereumOutboundQueue.nonce(tokenTransferChannel);
 
                 const executeMessageTx = polkadotJs.tx.xcmPallet.execute(xcmMessage, {
                     refTime: 10000000000,
@@ -770,9 +749,6 @@ describeSuite({
                     .buy_execution()
                     .export_message(xcmToExport.instructions, ethereumNetwork, "Here")
                     .as_v3();
-
-                const tokenTransferNonceBefore =
-                    await polkadotJs.query.ethereumOutboundQueue.nonce(tokenTransferChannel);
 
                 const executeMessageTx = polkadotJs.tx.xcmPallet.execute(xcmMessage, {
                     refTime: 10000000000,
