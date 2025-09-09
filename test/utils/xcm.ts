@@ -537,7 +537,7 @@ export class XcmFragment {
                     },
                 },
             });
-        } else {
+        } else if (hexToU8a(this.config.beneficiary).length === 32) {
             this.instructions.push({
                 DepositAsset: {
                     assets: {
@@ -558,6 +558,8 @@ export class XcmFragment {
                     },
                 },
             });
+        } else {
+            throw new Error("Invalid beneficiary");
         }
         return this;
     }

@@ -1,8 +1,6 @@
 import { expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
 import type { SpRuntimeDispatchError } from "@polkadot/types/lookup";
-import { filterAndApply } from "@moonwall/util";
-import { error } from "console";
 
 export async function expectEventCount(polkadotJs: ApiPromise, eventCounts: Record<string, number>): Promise<void> {
     const events = await polkadotJs.query.system.events();
@@ -88,10 +86,6 @@ export async function retrieveSudoDispatchErrors(polkadotJs: ApiPromise) {
                         section,
                         method,
                     };
-                } else {
-                    return {
-                        type: dispatchError.type,
-                    };
                 }
             }
             return null;
@@ -115,11 +109,6 @@ export async function retrieveBatchDispatchErrors(polkadotJs: ApiPromise) {
                 return {
                     section,
                     method,
-                };
-            } else {
-                // Handle non-module errors like Token errors or arithmetic
-                return {
-                    type: dispatchError.type,
                 };
             }
         })
