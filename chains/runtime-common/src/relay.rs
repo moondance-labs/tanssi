@@ -625,30 +625,60 @@ impl<T: pallet_babe::Config + frame_system::Config> Get<[u8; 32]>
 /// `EthTokensLocalProcessor` is responsible for receiving and processing the ETH native
 /// token and ERC20s coming from Ethereum with Tanssi chain or container-chains as final destinations.
 /// TODO: add support for container transfers
-pub struct EthTokensLocalProcessor<T, XcmProcessor, XcmWeigher, EthereumLocation, EthereumNetwork>(
+pub struct EthTokensLocalProcessor<
+    T,
+    XcmProcessor,
+    XcmWeigher,
+    EthereumLocation,
+    EthereumNetwork,
+    InboundQueuePalletInstance,
+    ContainerTransfersEnabled,
+>(
     PhantomData<(
         T,
         XcmProcessor,
         XcmWeigher,
         EthereumLocation,
         EthereumNetwork,
+        InboundQueuePalletInstance,
+        ContainerTransfersEnabled,
     )>,
 );
-impl<T, XcmProcessor, XcmWeigher, EthereumLocation, EthereumNetwork> MessageProcessor
-    for EthTokensLocalProcessor<T, XcmProcessor, XcmWeigher, EthereumLocation, EthereumNetwork>
+
+impl<
+        T,
+        XcmProcessor,
+        XcmWeigher,
+        EthereumLocation,
+        EthereumNetwork,
+        InboundQueuePalletInstance,
+        ContainerTransfersEnabled,
+    > MessageProcessor
+    for EthTokensLocalProcessor<
+        T,
+        XcmProcessor,
+        XcmWeigher,
+        EthereumLocation,
+        EthereumNetwork,
+        InboundQueuePalletInstance,
+        ContainerTransfersEnabled,
+    >
 where
     T: snowbridge_pallet_inbound_queue::Config
         + pallet_ethereum_token_transfers::Config
-        + pallet_foreign_asset_creator::Config,
-    XcmProcessor: ExecuteXcm<T::RuntimeCall>,
-    XcmWeigher: WeightBounds<T::RuntimeCall>,
+        + pallet_foreign_asset_creator::Config
+        + pallet_xcm::Config,
+    <T as frame_system::Config>::RuntimeEvent: From<pallet_xcm::Event<T>>,
+    XcmProcessor: ExecuteXcm<<T as pallet_xcm::Config>::RuntimeCall>,
+    XcmWeigher: WeightBounds<<T as pallet_xcm::Config>::RuntimeCall>,
     EthereumLocation: Get<Location>,
     EthereumNetwork: Get<NetworkId>,
+    InboundQueuePalletInstance: Get<u8>,
+    ContainerTransfersEnabled: Get<bool>,
     cumulus_primitives_core::Location:
         EncodeLike<<T as pallet_foreign_asset_creator::Config>::ForeignAsset>,
 {
     fn can_process_message(channel: &Channel, envelope: &Envelope) -> bool {
-        // Ensure that the message is intended for the current channel, para_id and agent_id
         if let Some(channel_info) = pallet_ethereum_token_transfers::CurrentChannelInfo::<T>::get()
         {
             if envelope.channel_id != channel_info.channel_id
@@ -661,7 +691,6 @@ where
             return false;
         }
 
-        // Check it is from the right gateway
         if envelope.gateway != T::GatewayAddress::get() {
             return false;
         }
@@ -669,7 +698,6 @@ where
         if let Some(eth_transfer_data) =
             Self::decode_message_for_eth_transfer(envelope.payload.as_slice())
         {
-            // Check if the token location is a foreign asset included in ForeignAssetCreator
             return pallet_foreign_asset_creator::ForeignAssetToAssetId::<T>::get(
                 eth_transfer_data.token_location,
             )
@@ -687,32 +715,52 @@ where
             Destination::AccountId32 { id: _ } => {
                 Self::process_xcm_local_native_eth_transfer(eth_transfer_data)
             }
-            // TODO: Add support for container transfers here
-            _ => {
-                log::error!("EthTokensLocalProcessor: container transfers not supported yet");
-                return Ok(());
+            Destination::ForeignAccountId32 { .. } | Destination::ForeignAccountId20 { .. } => {
+                if ContainerTransfersEnabled::get() {
+                    Self::process_xcm_local_container_eth_transfer(eth_transfer_data)
+                } else {
+                    log::error!("EthTokensLocalProcessor: container transfers not supported yet");
+                    return Ok(());
+                }
             }
         }
     }
 }
 
-/// Information needed to process an eth transfer message or check its validity.
 pub struct EthTransferData {
     pub token_location: Location,
     pub destination: Destination,
     pub amount: u128,
 }
 
-impl<T, XcmProcessor, XcmWeigher, EthereumLocation, EthereumNetwork>
-    EthTokensLocalProcessor<T, XcmProcessor, XcmWeigher, EthereumLocation, EthereumNetwork>
+impl<
+        T,
+        XcmProcessor,
+        XcmWeigher,
+        EthereumLocation,
+        EthereumNetwork,
+        InboundQueuePalletInstance,
+        ContainerTransfersEnabled,
+    >
+    EthTokensLocalProcessor<
+        T,
+        XcmProcessor,
+        XcmWeigher,
+        EthereumLocation,
+        EthereumNetwork,
+        InboundQueuePalletInstance,
+        ContainerTransfersEnabled,
+    >
 where
-    T: frame_system::Config,
-    XcmProcessor: ExecuteXcm<T::RuntimeCall>,
-    XcmWeigher: WeightBounds<T::RuntimeCall>,
+    T: frame_system::Config + pallet_xcm::Config,
+    <T as frame_system::Config>::RuntimeEvent: From<pallet_xcm::Event<T>>,
+    XcmProcessor: ExecuteXcm<<T as pallet_xcm::Config>::RuntimeCall>,
+    XcmWeigher: WeightBounds<<T as pallet_xcm::Config>::RuntimeCall>,
     EthereumLocation: Get<Location>,
     EthereumNetwork: Get<NetworkId>,
+    InboundQueuePalletInstance: Get<u8>,
+    ContainerTransfersEnabled: Get<bool>,
 {
-    /// Retrieve the eth transfer data from the message payload.
     pub fn decode_message_for_eth_transfer(mut payload: &[u8]) -> Option<EthTransferData> {
         match VersionedXcmMessage::decode_all(&mut payload) {
             Ok(VersionedXcmMessage::V1(MessageV1 {
@@ -754,7 +802,6 @@ where
         }
     }
 
-    /// Process a native ETH transfer message to a local account in Tanssi chain.
     fn process_xcm_local_native_eth_transfer(eth_transfer_data: EthTransferData) -> DispatchResult {
         let assets_to_holding: XcmAssets = vec![XcmAsset {
             id: XcmAssetId::from(eth_transfer_data.token_location),
@@ -770,7 +817,7 @@ where
             }
         };
 
-        let mut xcm = Xcm::<T::RuntimeCall>(vec![
+        let mut xcm = Xcm::<<T as pallet_xcm::Config>::RuntimeCall>(vec![
             ReserveAssetDeposited(assets_to_holding),
             DepositAsset {
                 assets: AllCounted(1).into(),
@@ -806,6 +853,100 @@ where
         } else {
             log::error!("EthTokensLocalProcessor: unweighable message");
         }
+
+        Ok(())
+    }
+
+    fn process_xcm_local_container_eth_transfer(
+        eth_transfer_data: EthTransferData,
+    ) -> DispatchResult {
+        let (para_id, beneficiary, fee) = match eth_transfer_data.destination {
+            Destination::ForeignAccountId32 { para_id, id, fee } => (
+                para_id,
+                Location::new(0, [AccountId32 { network: None, id }]),
+                fee,
+            ),
+            Destination::ForeignAccountId20 { para_id, id, fee } => (
+                para_id,
+                Location::new(
+                    0,
+                    [AccountKey20 {
+                        network: None,
+                        key: id,
+                    }],
+                ),
+                fee,
+            ),
+            _ => {
+                log::error!(
+                    "EthTokensLocalProcessor: unsupported destination for container transfer: {:?}",
+                    eth_transfer_data.destination
+                );
+                return Ok(());
+            }
+        };
+
+        let container_location = Location::new(0, [Parachain(para_id)]);
+
+        let token_reanchored = match eth_transfer_data.token_location.reanchored(
+            &container_location,
+            &<T as pallet_xcm::Config>::UniversalLocation::get(),
+        ) {
+            Ok(loc) => loc,
+            Err(e) => {
+                log::error!(
+                    "EthTokensLocalProcessor: failed to reanchor token location: {:?}",
+                    e
+                );
+                return Ok(());
+            }
+        };
+
+        let total = eth_transfer_data.amount.saturating_add(fee);
+        let asset_total: Asset = (token_reanchored.clone(), total).into();
+        let asset_fee: Asset = (token_reanchored.clone(), fee).into();
+        let asset_to_deposit: Asset = (token_reanchored.clone(), eth_transfer_data.amount).into();
+
+        let inbound_queue_pallet_index = InboundQueuePalletInstance::get();
+        let network = EthereumNetwork::get();
+
+        let remote_xcm = Xcm::<()>(vec![
+            DescendOrigin(PalletInstance(inbound_queue_pallet_index).into()),
+            UniversalOrigin(GlobalConsensus(network)),
+            WithdrawAsset(vec![asset_total.clone()].into()),
+            BuyExecution {
+                fees: asset_fee,
+                weight_limit: Unlimited,
+            },
+            DepositAsset {
+                assets: Definite(vec![asset_to_deposit].into()),
+                beneficiary,
+            },
+        ]);
+
+        match send_xcm::<<T as pallet_xcm::Config>::XcmRouter>(
+            container_location.clone(),
+            remote_xcm.clone(),
+        ) {
+            Ok((message_id, _price)) => {
+                let evt: pallet_xcm::Event<T> = pallet_xcm::Event::Sent {
+                    origin: Here.into_location(),
+                    destination: container_location,
+                    message: remote_xcm,
+                    message_id,
+                };
+                frame_system::Pallet::<T>::deposit_event(
+                    <T as frame_system::Config>::RuntimeEvent::from(evt),
+                );
+            }
+            Err(e) => {
+                log::error!(
+                    "EthTokensLocalProcessor: XCM send failed to para_id {} with error: {:?}",
+                    para_id,
+                    e
+                );
+            }
+        };
 
         Ok(())
     }

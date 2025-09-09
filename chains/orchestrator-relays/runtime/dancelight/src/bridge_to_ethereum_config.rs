@@ -257,6 +257,8 @@ pub type EthTokensProcessor = EthTokensLocalProcessor<
     <xcm_config::XcmConfig as xcm_executor::Config>::Weigher,
     dancelight_runtime_constants::snowbridge::EthereumLocation,
     dancelight_runtime_constants::snowbridge::EthereumNetwork,
+    InboundQueuePalletInstance,
+    frame_support::traits::ConstBool<true>
 >;
 
 #[cfg(not(feature = "runtime-benchmarks"))]
