@@ -317,6 +317,8 @@ where
                 (0, [AccountKey20 { network, key }]) if self.network_matches(network) => {
                     Some((H160(*key), *amount))
                 }
+                // Native ETH token
+                (0, []) => Some((H160::zero(), *amount)),
                 _ => None,
             },
             _ => None,

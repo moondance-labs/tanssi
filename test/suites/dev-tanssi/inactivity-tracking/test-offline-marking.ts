@@ -86,7 +86,7 @@ describeSuite({
                 const bobOfflineStatusBeforeMarking = await polkadotJs.query.inactivityTracking.offlineCollators(
                     bob.address
                 );
-                if (bobOfflineStatusBeforeMarking.isTrue) {
+                if (bobOfflineStatusBeforeMarking.isSome) {
                     console.log("BOB is marked as offline before the test starts.");
                     expect(true).to.be.false; // Fail the test if BOB is not offline
                 }
@@ -99,7 +99,7 @@ describeSuite({
                 const bobOfflineStatusAfterMarking = await polkadotJs.query.inactivityTracking.offlineCollators(
                     bob.address
                 );
-                if (bobOfflineStatusAfterMarking.isFalse) {
+                if (bobOfflineStatusAfterMarking.isNone) {
                     console.log("BOB is not marked as offline.");
                     expect(false).to.be.true; // Fail the test if BOB is not offline
                 }
