@@ -18,6 +18,7 @@ import {
     TESTNET_ETHEREUM_NETWORK_ID,
     waitEventUntilTimeout,
     SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS,
+    DANCELIGHT_GENESIS_HASH,
 } from "utils";
 
 import { keccak256 } from "viem";
@@ -93,6 +94,8 @@ async function calculateNumberOfBlocksTillNextEra(api, blocksPerSession) {
     return nextEraStartBlock - currentBlock;
 }
 
+type LocationType = { parents: string; interior: any };
+
 describeSuite({
     id: "ZOMBIETANSSI01",
     title: "Zombie Tanssi Relay Test",
@@ -104,6 +107,7 @@ describeSuite({
         let relayerChildProcess: ChildProcessWithoutNullStreams;
         let alice: KeyringPair;
         let beefyClientDetails: any;
+        let tokensData: { id: string; location: Array<LocationType> }[] = [];
 
         const ethUrl = "ws://127.0.0.1:8546";
         let customHttpProvider: ethers.WebSocketProvider;
@@ -356,6 +360,27 @@ describeSuite({
                 decimals: 12,
             };
 
+            const containerNativeTokenLocation = {
+                V3: {
+                    parents: 1,
+                    interior: {
+                        X3: [
+                            {
+                                GlobalConsensus: {
+                                    ByGenesis: DANCELIGHT_GENESIS_HASH,
+                                },
+                            },
+                            {
+                                Parachain: 2000,
+                            },
+                            {
+                                PalletInstance: 10,
+                            },
+                        ],
+                    },
+                },
+            };
+
             // We need to read initial checkpoint data and address of gateway contract to setup the ethereum client
             // We also need to register token
             // Once that is done, we can start the relayer
@@ -378,6 +403,11 @@ describeSuite({
                             true,
                             1
                         ),
+                        relayApi.tx.ethereumSystem.registerToken(containerNativeTokenLocation, {
+                            name: "para-token",
+                            symbol: "para-token",
+                            decimals: 12,
+                        }),
                     ])
                 ),
                 alice
@@ -385,9 +415,16 @@ describeSuite({
 
             // let's fetch the token id
             const allEntries = await relayApi.query.ethereumSystem.nativeToForeignId.entries();
-            const tokenIds = allEntries.map(([, id]) => id.toHuman());
+            tokensData = allEntries.map(([location, id]) => ({
+                id: id.toHuman() as string,
+                location: location.toHuman() as LocationType[],
+            }));
 
-            tokenId = tokenIds[0];
+            tokenId = tokensData.find(
+                ({ location }) =>
+                    location[0].interior.X1?.length === 1 &&
+                    location[0].interior.X1?.[0].GlobalConsensus.ByGenesis === DANCELIGHT_GENESIS_HASH
+            )?.id;
             logTiming("Before start relayer");
 
             relayerChildProcess = spawn("./scripts/bridge/start-relayer.sh", {
@@ -1156,6 +1193,7 @@ describeSuite({
 
                 console.log("Converted address:", convertedAddress);
 
+                // TODO: We might not need it, because it is already specified in previous test
                 const txHash = await relayApi.tx.utility
                     .batch([
                         relayApi.tx.balances.transferKeepAlive(convertedAddress, 100_000_000_000_000n),
@@ -1222,7 +1260,28 @@ describeSuite({
 
                 const channelNonceBefore = await relayApi.query.ethereumOutboundQueue.nonce(ASSET_HUB_CHANNEL_ID);
 
-                // const balanceBefore = await containerTokenContract.balanceOf(destinationAddress);
+                console.log("Tokens Data", JSON.stringify(tokensData));
+                const containerTokenId = tokensData.find(
+                    ({ location }) =>
+                        location[0].interior.X3?.length === 3 && location[0].interior.X3?.[1].Parachain === "2,000"
+                )?.id;
+
+                console.log("containerTokenId", containerTokenId);
+
+                expect(!!containerTokenId, `Container tokenId should exist: ${containerTokenId}`).toEqual(true);
+
+                const tokenAddress = await gatewayContract.tokenAddressOf(containerTokenId);
+                console.log(`TokenAddress: ${tokenAddress}`);
+
+                tokenContract = new ethers.Contract(
+                    tokenAddress,
+                    ethInfo.symbiotic_info.contracts.Token.abi,
+                    ethereumWallet
+                );
+
+                const tokenBalanceBefore = await tokenContract.balanceOf(destinationAddress);
+                console.log(`tokenBalanceBefore: ${tokenBalanceBefore}`);
+
                 await containerChainPolkadotJs.tx.polkadotXcm
                     .transferAssets(dest, versionedBeneficiary, versionedAssets, 0, "Unlimited")
                     .signAndSend(alice);
@@ -1240,33 +1299,41 @@ describeSuite({
                 // Check that nonce has changed
                 expect(channelNonceAfter.toNumber() - channelNonceBefore.toNumber()).toEqual(1);
 
-                // TODO: Check if correct InboundMessageDispatched event dispatched
-                // let tokensTransferReceived = false;
-                // let tokensTransferSuccess = false;
-                // await gatewayContract.on(
-                //     "InboundMessageDispatched",
-                //     (channelID, _nonce, _messageID, success, rewardAddress) => {
-                //         console.log("params: ", channelID, _nonce, _messageID, success, rewardAddress);
-                //
-                //         if (channelID === ASSET_HUB_CHANNEL_ID) {
-                //             tokensTransferReceived = true;
-                //             tokensTransferSuccess = success;
-                //         }
-                //     }
-                // );
+                let tokensTransferReceived = false;
+                let tokensTransferSuccess = false;
+                await gatewayContract.on(
+                    "InboundMessageDispatched",
+                    (channelID, _nonce, _messageID, success, rewardAddress) => {
+                        console.log(
+                            "Received InboundMessageDispatched event from gateway with params: ",
+                            channelID,
+                            _nonce,
+                            _messageID,
+                            success,
+                            rewardAddress
+                        );
 
-                // logTiming("Before waiting token transfer received");
-                //
-                // while (!tokensTransferReceived) {
-                //     await sleep(1000);
-                // }
-                // expect(tokensTransferSuccess).to.be.true;
-                //
-                // logTiming("After waiting token transfer received");
+                        if (channelID === ASSET_HUB_CHANNEL_ID) {
+                            tokensTransferReceived = true;
+                            tokensTransferSuccess = success;
+                        }
+                    }
+                );
 
-                // TODO: Check if receiver balance changed
-                // const balanceAfter = await containerTokenContract.balanceOf(destinationAddress);
-                // expect(balanceAfter).to.be.eq(tokensBalanceBefore + tokenToTransfer);
+                logTiming("Before waiting token transfer received");
+
+                while (!tokensTransferReceived) {
+                    await sleep(1000);
+                }
+                expect(tokensTransferSuccess).to.be.true;
+
+                logTiming("After waiting token transfer received");
+
+                const tokenBalanceAfter = await tokenContract.balanceOf(destinationAddress);
+                console.log(`tokenBalanceAfter: ${tokenBalanceAfter}`);
+
+                // TODO: Add assertion
+                // expect(tokenBalanceAfter).toBeGreaterThan(tokenBalanceBefore);
 
                 logTiming("Finish T09");
             },
