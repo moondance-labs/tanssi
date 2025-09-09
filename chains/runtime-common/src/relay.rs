@@ -632,7 +632,7 @@ pub struct EthTokensLocalProcessor<
     EthereumLocation,
     EthereumNetwork,
     InboundQueuePalletInstance,
-    ContainerTransfersEnabled,
+    ContainerTransfersEnabled, // TODO: remove this when both runtimes support container transfers :) 
 >(
     PhantomData<(
         T,
@@ -902,9 +902,7 @@ where
             }
         };
 
-        let total = eth_transfer_data.amount.saturating_add(fee);
-        let asset_total: Asset = (token_reanchored.clone(), total).into();
-        let asset_fee: Asset = (token_reanchored.clone(), fee).into();
+        let asset_fee: Asset = (container_location.clone(), fee).into();
         let asset_to_deposit: Asset = (token_reanchored.clone(), eth_transfer_data.amount).into();
 
         let inbound_queue_pallet_index = InboundQueuePalletInstance::get();
@@ -913,7 +911,7 @@ where
         let remote_xcm = Xcm::<()>(vec![
             DescendOrigin(PalletInstance(inbound_queue_pallet_index).into()),
             UniversalOrigin(GlobalConsensus(network)),
-            WithdrawAsset(vec![asset_total.clone()].into()),
+            WithdrawAsset(vec![asset_to_deposit.clone(), container_location.clone()].into()),
             BuyExecution {
                 fees: asset_fee,
                 weight_limit: Unlimited,
