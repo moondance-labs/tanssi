@@ -110,6 +110,7 @@ describeSuite({
         let tokensData: { id: string; location: Array<LocationType> }[] = [];
 
         const ethUrl = "ws://127.0.0.1:8546";
+        const CONTAINER_PARA_ID = 2000;
         let customHttpProvider: ethers.WebSocketProvider;
         let ethereumWallet: ethers.Wallet;
         let middlewareContract: ethers.Contract;
@@ -137,8 +138,11 @@ describeSuite({
         let operatorAccount: KeyringPair;
         let operatorNimbusKey: string;
         let executionRelay: KeyringPair;
+        let containerChainPolkadotJs: ApiPromise;
+        let balancesPalletIndex: number;
 
         beforeAll(async () => {
+            containerChainPolkadotJs = context.polkadotJs("Container2000");
             relayApi = context.polkadotJs("Tanssi-relay");
             const relayNetwork = relayApi.consts.system.version.specName.toString();
             expect(relayNetwork, "Relay API incorrect").to.contain("dancelight");
@@ -354,6 +358,11 @@ describeSuite({
                 V3: tokenLocation,
             };
 
+            const containerMetadata = await containerChainPolkadotJs.rpc.state.getMetadata();
+            balancesPalletIndex = containerMetadata.asLatest.pallets
+                .find(({ name }) => name.toString() === "Balances")
+                .index.toNumber();
+
             const metadata = {
                 name: "dance",
                 symbol: "dance",
@@ -362,19 +371,14 @@ describeSuite({
 
             const containerNativeTokenLocation = {
                 V3: {
-                    parents: 1,
+                    parents: 0,
                     interior: {
-                        X3: [
+                        X2: [
                             {
-                                GlobalConsensus: {
-                                    ByGenesis: DANCELIGHT_GENESIS_HASH,
-                                },
+                                Parachain: CONTAINER_PARA_ID,
                             },
                             {
-                                Parachain: 2000,
-                            },
-                            {
-                                PalletInstance: 10,
+                                PalletInstance: balancesPalletIndex,
                             },
                         ],
                     },
@@ -419,6 +423,7 @@ describeSuite({
                 id: id.toHuman() as string,
                 location: location.toHuman() as LocationType[],
             }));
+            console.log(`Tokens Data: ${JSON.stringify(tokensData)}`);
 
             tokenId = tokensData.find(
                 ({ location }) =>
@@ -1170,47 +1175,47 @@ describeSuite({
             test: async () => {
                 logTiming("Start T09");
 
+                // Uncomment this for debugging purpose, if you run only this test
+                /*
+                await relayApi.tx.sudo
+                    .sudo(
+                        relayApi.tx.ethereumTokenTransfers.setTokenTransferChannel(
+                            ASSET_HUB_CHANNEL_ID,
+                            ASSET_HUB_AGENT_ID,
+                            Number(ASSET_HUB_PARA_ID)
+                        )
+                    )
+                    .signAndSend(alice);
+                await waitSessions(context, relayApi, 4, null, "Tanssi-relay");
+                 */
+
                 // Random ETH destination that we send asset to
-                const destinationAddress = "0x1234567890abcdef1234567890abcdef12345678";
+                const randomDestinationAddress = generateKeyringPair("ethereum").address;
                 const holdingAccount = SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS;
                 const tokenToTransfer = 123_321_000_000_000_000n;
-
-                const containerChainPolkadotJs = context.polkadotJs("Container2000");
 
                 const chain = containerChainPolkadotJs.consts.system.version.specName.toString();
 
                 const aliceAccount32 = new Keyring({ type: "sr25519" }).addFromUri("//Alice", {
                     name: "Alice default",
                 });
-                alice = chain === "frontier-template" ? alith : aliceAccount32;
+                const aliceFrontierOrSimple = chain === "frontier-template" ? alith : aliceAccount32;
 
                 const ethereumNetwork = { Ethereum: { chainId: TESTNET_ETHEREUM_NETWORK_ID } };
 
                 const convertLocation = await relayApi.call.locationToAccountApi.convertLocation({
-                    V3: { parents: 0, interior: { X1: { Parachain: 2000 } } },
+                    V3: { parents: 0, interior: { X1: { Parachain: CONTAINER_PARA_ID } } },
                 });
                 const convertedAddress = convertLocation.asOk.toHuman();
 
-                console.log("Converted address:", convertedAddress);
-
-                // TODO: We might not need it, because it is already specified in previous test
-                const txHash = await relayApi.tx.utility
-                    .batch([
-                        relayApi.tx.balances.transferKeepAlive(convertedAddress, 100_000_000_000_000n),
-                        relayApi.tx.sudo.sudo(
-                            relayApi.tx.ethereumTokenTransfers.setTokenTransferChannel(
-                                ASSET_HUB_CHANNEL_ID,
-                                ASSET_HUB_AGENT_ID,
-                                Number(ASSET_HUB_PARA_ID)
-                            )
-                        ),
-                    ])
+                const txHash = await relayApi.tx.balances
+                    .transferKeepAlive(convertedAddress, 100_000_000_000_000n)
                     .signAndSend(aliceAccount32);
 
                 expect(!!txHash.toHuman()).to.be.true;
 
                 // Check balance before transfer
-                const balanceBefore = (
+                const tokenBalanceBeforeSubstrateNetwork = (
                     await containerChainPolkadotJs.query.system.account(holdingAccount)
                 ).data.free.toBigInt();
                 const versionedBeneficiary = {
@@ -1220,23 +1225,19 @@ describeSuite({
                             X1: {
                                 AccountKey20: {
                                     network: ethereumNetwork,
-                                    key: destinationAddress,
+                                    key: randomDestinationAddress,
                                 },
                             },
                         },
                     },
                 };
-                const metadata = await containerChainPolkadotJs.rpc.state.getMetadata();
-                const balancesPalletIndex = metadata.asLatest.pallets
-                    .find(({ name }) => name.toString() === "Balances")
-                    .index.toNumber();
 
                 const assetToTransferNative = {
                     id: {
                         Concrete: {
                             parents: 0,
                             interior: {
-                                X1: { PalletInstance: Number(balancesPalletIndex) },
+                                X1: { PalletInstance: balancesPalletIndex },
                             },
                         },
                     },
@@ -1260,7 +1261,6 @@ describeSuite({
 
                 const channelNonceBefore = await relayApi.query.ethereumOutboundQueue.nonce(ASSET_HUB_CHANNEL_ID);
 
-                console.log("Tokens Data", JSON.stringify(tokensData));
                 const containerTokenId = tokensData.find(
                     ({ location }) =>
                         location[0].interior.X3?.length === 3 && location[0].interior.X3?.[1].Parachain === "2,000"
@@ -1279,20 +1279,20 @@ describeSuite({
                     ethereumWallet
                 );
 
-                const tokenBalanceBefore = await tokenContract.balanceOf(destinationAddress);
-                console.log(`tokenBalanceBefore: ${tokenBalanceBefore}`);
+                const tokenBalanceBeforeEthNetwork = await tokenContract.balanceOf(randomDestinationAddress);
+                console.log(`[ETH Network] tokenBalanceBefore: ${tokenBalanceBeforeEthNetwork}`);
 
                 await containerChainPolkadotJs.tx.polkadotXcm
                     .transferAssets(dest, versionedBeneficiary, versionedAssets, 0, "Unlimited")
-                    .signAndSend(alice);
+                    .signAndSend(aliceFrontierOrSimple);
 
                 await waitEventUntilTimeout(relayApi, "ethereumOutboundQueue.MessageAccepted", 90000);
 
-                const balanceAfter = (
+                const tokenBalanceAfterSubstrateNetwork = (
                     await containerChainPolkadotJs.query.system.account(holdingAccount)
                 ).data.free.toBigInt();
 
-                expect(balanceAfter - balanceBefore).toEqual(tokenToTransfer);
+                expect(tokenBalanceAfterSubstrateNetwork - tokenBalanceBeforeSubstrateNetwork).toEqual(tokenToTransfer);
 
                 const channelNonceAfter = await relayApi.query.ethereumOutboundQueue.nonce(ASSET_HUB_CHANNEL_ID);
 
@@ -1303,12 +1303,12 @@ describeSuite({
                 let tokensTransferSuccess = false;
                 await gatewayContract.on(
                     "InboundMessageDispatched",
-                    (channelID, _nonce, _messageID, success, rewardAddress) => {
+                    (channelID, nonce, messageID, success, rewardAddress) => {
                         console.log(
                             "Received InboundMessageDispatched event from gateway with params: ",
                             channelID,
-                            _nonce,
-                            _messageID,
+                            nonce,
+                            messageID,
                             success,
                             rewardAddress
                         );
@@ -1329,11 +1329,10 @@ describeSuite({
 
                 logTiming("After waiting token transfer received");
 
-                const tokenBalanceAfter = await tokenContract.balanceOf(destinationAddress);
-                console.log(`tokenBalanceAfter: ${tokenBalanceAfter}`);
+                const tokenBalanceAfterEthNetwork = await tokenContract.balanceOf(randomDestinationAddress);
+                console.log(`[ETH Network] tokenBalanceAfter: ${tokenBalanceAfterEthNetwork}`);
 
-                // TODO: Add assertion
-                // expect(tokenBalanceAfter).toBeGreaterThan(tokenBalanceBefore);
+                expect(tokenBalanceAfterEthNetwork).toEqual(tokenBalanceBeforeEthNetwork + tokenToTransfer);
 
                 logTiming("Finish T09");
             },
