@@ -510,6 +510,58 @@ export class XcmFragment {
         return this;
     }
 
+    deposit_asset_definite(
+        location: any,
+        amount: bigint,
+        beneficiary: `0x${string}`,
+        network: XcmV3JunctionNetworkId["type"] | null = null
+    ): this {
+        if (hexToU8a(this.config.beneficiary).length === 20) {
+            this.instructions.push({
+                DepositAsset: {
+                    assets: {
+                        Definite: [
+                            {
+                                id: {
+                                    Concrete: location,
+                                },
+                                fun: {
+                                    Fungible: amount,
+                                },
+                            },
+                        ],
+                    },
+                    beneficiary: {
+                        parents: 0,
+                        interior: { X1: { AccountKey20: { network, key: beneficiary } } },
+                    },
+                },
+            });
+        } else {
+            this.instructions.push({
+                DepositAsset: {
+                    assets: {
+                        Definite: [
+                            {
+                                id: {
+                                    Concrete: location,
+                                },
+                                fun: {
+                                    Fungible: amount,
+                                },
+                            },
+                        ],
+                    },
+                    beneficiary: {
+                        parents: 0,
+                        interior: { X1: { AccountId32: { network, key: beneficiary } } },
+                    },
+                },
+            });
+        }
+        return this;
+    }
+
     // Add a `SetErrorHandler` instruction, appending all the nested instructions
     set_error_handler_with(callbacks: (() => any)[]): this {
         const error_instructions: any[] = [];

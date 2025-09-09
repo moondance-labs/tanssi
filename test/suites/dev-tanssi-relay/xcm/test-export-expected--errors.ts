@@ -398,5 +398,447 @@ describeSuite({
                 expect(tokenTransferNonceAfter.toBigInt()).toBe(tokenTransferNonceBefore.toBigInt());
             },
         });
+
+        it({
+            id: "T05",
+            title: "Should fail exporting to a 32 byte address in ethereum",
+            test: async () => {
+                if (shouldSkipStarlightContainerExport) {
+                    console.log(`Skipping XCM tests for Starlight version ${specVersion}`);
+                    return;
+                }
+
+                const ethereumNetwork = { Ethereum: { chainId: TESTNET_ETHEREUM_NETWORK_ID } };
+
+                const xcmToExport = new XcmFragment({
+                    assets: [
+                        {
+                            multilocation: containerAsset,
+                            fungible: transferredBalance / 10n,
+                        },
+                    ],
+                    beneficiary: u8aToHex(random.addressRaw),
+                })
+                    .reserve_asset_deposited()
+                    .clear_origin()
+                    .buy_execution()
+                    .deposit_asset_v3()
+                    .set_topic();
+
+                const xcmMessage = new XcmFragment({
+                    assets: [
+                        {
+                            multilocation: {
+                                parents: 0,
+                                interior: { Here: null },
+                            },
+                            fungible: transferredBalance / 10n,
+                        },
+                    ],
+                    beneficiary: u8aToHex(random.addressRaw),
+                })
+                    .push_any({
+                        DescendOrigin: {
+                            X1: {
+                                Parachain: 2000,
+                            },
+                        },
+                    })
+                    .withdraw_asset()
+                    .buy_execution()
+                    .export_message(xcmToExport.instructions, ethereumNetwork, "Here")
+                    .as_v3();
+
+                const tokenTransferNonceBefore =
+                    await polkadotJs.query.ethereumOutboundQueue.nonce(tokenTransferChannel);
+
+                const executeMessageTx = polkadotJs.tx.xcmPallet.execute(xcmMessage, {
+                    refTime: 10000000000,
+                    proofSize: 1000000,
+                });
+
+                const { result } = await context.createBlock(
+                    polkadotJs.tx.sudo.sudo(executeMessageTx).signAsync(alice)
+                );
+                // sudo calls are always true
+                expect(result.successful).to.be.true;
+
+                const tokenTransferNonceAfter =
+                    await polkadotJs.query.ethereumOutboundQueue.nonce(tokenTransferChannel);
+
+                expect(tokenTransferNonceAfter.toBigInt()).toBe(tokenTransferNonceBefore.toBigInt());
+            },
+        });
+
+        it({
+            id: "T06",
+            title: "Should fail exporting a message without appropriate instructions",
+            test: async () => {
+                if (shouldSkipStarlightContainerExport) {
+                    console.log(`Skipping XCM tests for Starlight version ${specVersion}`);
+                    return;
+                }
+
+                const ethereumNetwork = { Ethereum: { chainId: TESTNET_ETHEREUM_NETWORK_ID } };
+
+                // only a set topic inst
+                const xcmToExport = new XcmFragment({
+                    assets: [
+                        {
+                            multilocation: containerAsset,
+                            fungible: transferredBalance / 10n,
+                        },
+                    ],
+                    beneficiary: "0x983a1a72503d6cc3636776747ec627172b51272b",
+                }).set_topic();
+
+                const xcmMessage = new XcmFragment({
+                    assets: [
+                        {
+                            multilocation: {
+                                parents: 0,
+                                interior: { Here: null },
+                            },
+                            fungible: transferredBalance / 10n,
+                        },
+                    ],
+                    beneficiary: u8aToHex(random.addressRaw),
+                })
+                    .push_any({
+                        DescendOrigin: {
+                            X1: {
+                                Parachain: 2000,
+                            },
+                        },
+                    })
+                    .withdraw_asset()
+                    .buy_execution()
+                    .export_message(xcmToExport.instructions, ethereumNetwork, "Here")
+                    .as_v3();
+
+                const tokenTransferNonceBefore =
+                    await polkadotJs.query.ethereumOutboundQueue.nonce(tokenTransferChannel);
+
+                const executeMessageTx = polkadotJs.tx.xcmPallet.execute(xcmMessage, {
+                    refTime: 10000000000,
+                    proofSize: 1000000,
+                });
+
+                const { result } = await context.createBlock(
+                    polkadotJs.tx.sudo.sudo(executeMessageTx).signAsync(alice)
+                );
+                // sudo calls are always true
+                expect(result.successful).to.be.true;
+
+                const tokenTransferNonceAfter =
+                    await polkadotJs.query.ethereumOutboundQueue.nonce(tokenTransferChannel);
+
+                expect(tokenTransferNonceAfter.toBigInt()).toBe(tokenTransferNonceBefore.toBigInt());
+            },
+        });
+
+        it({
+            id: "T07",
+            title: "Should fail exporting a message that contains several assets",
+            test: async () => {
+                if (shouldSkipStarlightContainerExport) {
+                    console.log(`Skipping XCM tests for Starlight version ${specVersion}`);
+                    return;
+                }
+
+                const ethereumNetwork = { Ethereum: { chainId: TESTNET_ETHEREUM_NETWORK_ID } };
+                // pallet instance 11 in this case
+                const containerAsset2 = {
+                    parents: 1,
+                    interior: {
+                        X3: [
+                            {
+                                GlobalConsensus: {
+                                    ByGenesis: "0x983a1a72503d6cc3636776747ec627172b51272bf45e50a355348facb67a820a",
+                                },
+                            },
+                            {
+                                Parachain: 2000,
+                            },
+                            {
+                                PalletInstance: 11,
+                            },
+                        ],
+                    },
+                };
+
+                // many assets
+                const xcmToExport = new XcmFragment({
+                    assets: [
+                        {
+                            multilocation: containerAsset,
+                            fungible: transferredBalance / 10n,
+                        },
+                        {
+                            multilocation: containerAsset2,
+                            fungible: transferredBalance / 10n,
+                        },
+                    ],
+                    beneficiary: "0x983a1a72503d6cc3636776747ec627172b51272b",
+                })
+                    .reserve_asset_deposited()
+                    .clear_origin()
+                    .buy_execution()
+                    .deposit_asset_v3()
+                    .set_topic();
+
+                const xcmMessage = new XcmFragment({
+                    assets: [
+                        {
+                            multilocation: {
+                                parents: 0,
+                                interior: { Here: null },
+                            },
+                            fungible: transferredBalance / 10n,
+                        },
+                    ],
+                    beneficiary: u8aToHex(random.addressRaw),
+                })
+                    .push_any({
+                        DescendOrigin: {
+                            X1: {
+                                Parachain: 2000,
+                            },
+                        },
+                    })
+                    .withdraw_asset()
+                    .buy_execution()
+                    .export_message(xcmToExport.instructions, ethereumNetwork, "Here")
+                    .as_v3();
+
+                const tokenTransferNonceBefore =
+                    await polkadotJs.query.ethereumOutboundQueue.nonce(tokenTransferChannel);
+
+                const executeMessageTx = polkadotJs.tx.xcmPallet.execute(xcmMessage, {
+                    refTime: 10000000000,
+                    proofSize: 1000000,
+                });
+
+                const { result } = await context.createBlock(
+                    polkadotJs.tx.sudo.sudo(executeMessageTx).signAsync(alice)
+                );
+                // sudo calls are always true
+                expect(result.successful).to.be.true;
+
+                const tokenTransferNonceAfter =
+                    await polkadotJs.query.ethereumOutboundQueue.nonce(tokenTransferChannel);
+
+                expect(tokenTransferNonceAfter.toBigInt()).toBe(tokenTransferNonceBefore.toBigInt());
+            },
+        });
+
+        it({
+            id: "T08",
+            title: "Should fail exporting an asset for which we are not reserve",
+            test: async () => {
+                if (shouldSkipStarlightContainerExport) {
+                    console.log(`Skipping XCM tests for Starlight version ${specVersion}`);
+                    return;
+                }
+
+                // We first need to register an asset for 2001, otherwise we dont know if that is the failure reason
+
+                const containerAsset2001 = {
+                    parents: 1,
+                    interior: {
+                        X3: [
+                            {
+                                GlobalConsensus: {
+                                    ByGenesis: "0x983a1a72503d6cc3636776747ec627172b51272bf45e50a355348facb67a820a",
+                                },
+                            },
+                            {
+                                Parachain: 2001,
+                            },
+                            {
+                                PalletInstance: 10,
+                            },
+                        ],
+                    },
+                };
+
+                // Register the token of the container-chain
+                const versionedLocation = {
+                    V3: containerAsset2001,
+                };
+
+                const metadata = {
+                    name: "container2001",
+                    symbol: "cont2001",
+                    decimals: 12,
+                };
+                const registerTokenTx = polkadotJs.tx.ethereumSystem.registerToken(versionedLocation, metadata);
+
+                const ethereumNetwork = { Ethereum: { chainId: TESTNET_ETHEREUM_NETWORK_ID } };
+
+                // many assets
+                const xcmToExport = new XcmFragment({
+                    assets: [
+                        {
+                            multilocation: containerAsset2001,
+                            fungible: transferredBalance / 10n,
+                        },
+                    ],
+                    beneficiary: "0x983a1a72503d6cc3636776747ec627172b51272b",
+                })
+                    .reserve_asset_deposited()
+                    .clear_origin()
+                    .buy_execution()
+                    .deposit_asset_v3()
+                    .set_topic();
+
+                const xcmMessage = new XcmFragment({
+                    assets: [
+                        {
+                            multilocation: {
+                                parents: 0,
+                                interior: { Here: null },
+                            },
+                            fungible: transferredBalance / 10n,
+                        },
+                    ],
+                    beneficiary: u8aToHex(random.addressRaw),
+                })
+                    // we still descend to 2000
+                    .push_any({
+                        DescendOrigin: {
+                            X1: {
+                                Parachain: 2000,
+                            },
+                        },
+                    })
+                    .withdraw_asset()
+                    .buy_execution()
+                    .export_message(xcmToExport.instructions, ethereumNetwork, "Here")
+                    .as_v3();
+
+                const tokenTransferNonceBefore =
+                    await polkadotJs.query.ethereumOutboundQueue.nonce(tokenTransferChannel);
+
+                const executeMessageTx = polkadotJs.tx.xcmPallet.execute(xcmMessage, {
+                    refTime: 10000000000,
+                    proofSize: 1000000,
+                });
+                // session change, no txs
+                await context.createBlock();
+
+                const { result } = await context.createBlock(
+                    polkadotJs.tx.sudo
+                        .sudo(polkadotJs.tx.utility.batch([registerTokenTx, executeMessageTx]))
+                        .signAsync(alice)
+                );
+                // sudo calls are always true
+                expect(result.successful).to.be.true;
+
+                const tokenTransferNonceAfter =
+                    await polkadotJs.query.ethereumOutboundQueue.nonce(tokenTransferChannel);
+
+                expect(tokenTransferNonceAfter.toBigInt()).toBe(tokenTransferNonceBefore.toBigInt());
+            },
+        });
+
+        it({
+            id: "T09",
+            title: "Should fail reserve asset deposited is different to depositAsset",
+            test: async () => {
+                if (shouldSkipStarlightContainerExport) {
+                    console.log(`Skipping XCM tests for Starlight version ${specVersion}`);
+                    return;
+                }
+
+                const containerAsset2 = {
+                    parents: 1,
+                    interior: {
+                        X3: [
+                            {
+                                GlobalConsensus: {
+                                    ByGenesis: "0x983a1a72503d6cc3636776747ec627172b51272bf45e50a355348facb67a820a",
+                                },
+                            },
+                            {
+                                Parachain: 20010,
+                            },
+                            {
+                                PalletInstance: 11,
+                            },
+                        ],
+                    },
+                };
+
+                const ethereumNetwork = { Ethereum: { chainId: TESTNET_ETHEREUM_NETWORK_ID } };
+
+                // here we simply substitute the depositAsset to instead of being wild be definite
+                // we additionally put a different asset
+                const xcmToExport = new XcmFragment({
+                    assets: [
+                        {
+                            multilocation: containerAsset,
+                            fungible: transferredBalance / 10n,
+                        },
+                    ],
+                    beneficiary: "0x983a1a72503d6cc3636776747ec627172b51272b",
+                })
+                    .reserve_asset_deposited()
+                    .clear_origin()
+                    .buy_execution()
+                    .deposit_asset_definite(
+                        containerAsset2,
+                        transferredBalance / 10n,
+                        "0x983a1a72503d6cc3636776747ec627172b51272b"
+                    )
+                    .set_topic();
+
+                const xcmMessage = new XcmFragment({
+                    assets: [
+                        {
+                            multilocation: {
+                                parents: 0,
+                                interior: { Here: null },
+                            },
+                            fungible: transferredBalance / 10n,
+                        },
+                    ],
+                    beneficiary: u8aToHex(random.addressRaw),
+                })
+                    // we still descend to 2000
+                    .push_any({
+                        DescendOrigin: {
+                            X1: {
+                                Parachain: 2000,
+                            },
+                        },
+                    })
+                    .withdraw_asset()
+                    .buy_execution()
+                    .export_message(xcmToExport.instructions, ethereumNetwork, "Here")
+                    .as_v3();
+
+                const tokenTransferNonceBefore =
+                    await polkadotJs.query.ethereumOutboundQueue.nonce(tokenTransferChannel);
+
+                const executeMessageTx = polkadotJs.tx.xcmPallet.execute(xcmMessage, {
+                    refTime: 10000000000,
+                    proofSize: 1000000,
+                });
+                // session change, no txs
+                await context.createBlock();
+
+                const { result } = await context.createBlock(
+                    polkadotJs.tx.sudo.sudo(polkadotJs.tx.utility.batch([executeMessageTx])).signAsync(alice)
+                );
+                // sudo calls are always true
+                expect(result.successful).to.be.true;
+
+                const tokenTransferNonceAfter =
+                    await polkadotJs.query.ethereumOutboundQueue.nonce(tokenTransferChannel);
+
+                expect(tokenTransferNonceAfter.toBigInt()).toBe(tokenTransferNonceBefore.toBigInt());
+            },
+        });
     },
 });
