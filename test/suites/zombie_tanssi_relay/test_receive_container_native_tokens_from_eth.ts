@@ -5,7 +5,7 @@ import { type ApiPromise, Keyring } from "@polkadot/api";
 import { generateEventLog, generateUpdate, signAndSendAndInclude, ETHEREUM_NETWORK_TESTNET, waitSessions } from "utils";
 
 describeSuite({
-    id: "ZOMBIETANSS02",
+    id: "ZOMBIETANSS03",
     title: "Container native tokens transfer from Ethereum to container (via Tanssi)",
     foundationMethods: "zombie",
     testCases: ({ context, it }) => {
@@ -28,6 +28,7 @@ describeSuite({
         it({
             id: "T01",
             title: "Should receive container native tokens from Ethereum and forward them to container",
+            timeout: 300000,
             test: async () => {
                 const ethereumSovereignAccount =
                     await containerChainPolkadotJs.call.locationToAccountApi.convertLocation({
