@@ -154,7 +154,6 @@ describeSuite({
                             fungible: transferredBalance / 10n,
                         },
                     ],
-                    beneficiary: u8aToHex(random.addressRaw),
                 })
                     .push_any({
                         DescendOrigin: {
@@ -221,7 +220,6 @@ describeSuite({
                             fungible: transferredBalance / 10n,
                         },
                     ],
-                    beneficiary: u8aToHex(random.addressRaw),
                 })
                     .push_any({
                         DescendOrigin: {
@@ -291,7 +289,6 @@ describeSuite({
                             fungible: transferredBalance / 10n,
                         },
                     ],
-                    beneficiary: u8aToHex(random.addressRaw),
                 })
                     .push_any({
                         DescendOrigin: {
@@ -364,7 +361,6 @@ describeSuite({
                             fungible: transferredBalance / 10n,
                         },
                     ],
-                    beneficiary: u8aToHex(random.addressRaw),
                 })
                     .push_any({
                         DescendOrigin: {
@@ -435,7 +431,6 @@ describeSuite({
                             fungible: transferredBalance / 10n,
                         },
                     ],
-                    beneficiary: u8aToHex(random.addressRaw),
                 })
                     .push_any({
                         DescendOrigin: {
@@ -502,7 +497,6 @@ describeSuite({
                             fungible: transferredBalance / 10n,
                         },
                     ],
-                    beneficiary: u8aToHex(random.addressRaw),
                 })
                     .push_any({
                         DescendOrigin: {
@@ -597,7 +591,6 @@ describeSuite({
                             fungible: transferredBalance / 10n,
                         },
                     ],
-                    beneficiary: u8aToHex(random.addressRaw),
                 })
                     .push_any({
                         DescendOrigin: {
@@ -702,7 +695,6 @@ describeSuite({
                             fungible: transferredBalance / 10n,
                         },
                     ],
-                    beneficiary: u8aToHex(random.addressRaw),
                 })
                     // we still descend to 2000
                     .push_any({
@@ -803,7 +795,6 @@ describeSuite({
                             fungible: transferredBalance / 10n,
                         },
                     ],
-                    beneficiary: u8aToHex(random.addressRaw),
                 })
                     // we still descend to 2000
                     .push_any({

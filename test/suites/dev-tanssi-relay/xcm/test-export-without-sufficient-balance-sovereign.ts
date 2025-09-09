@@ -149,7 +149,6 @@ describeSuite({
                             fungible: transferredBalance / 10n,
                         },
                     ],
-                    beneficiary: u8aToHex(random.addressRaw),
                 })
                     .push_any({
                         DescendOrigin: {
