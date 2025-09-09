@@ -122,6 +122,7 @@ substrate-build-script-utils = { workspace = true }
 
 [features]
 default = []
+include-git-hash-in-version = []
 runtime-benchmarks = [
 	"container-chain-template-frontier-runtime/runtime-benchmarks",
 	"cumulus-primitives-core/runtime-benchmarks",
