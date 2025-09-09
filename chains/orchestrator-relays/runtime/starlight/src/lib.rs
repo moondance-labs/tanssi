@@ -2374,14 +2374,6 @@ mod benches {
         [pallet_foreign_asset_creator, ForeignAssetsCreator]
         [pallet_assets, ForeignAssets]
 
-        // Foreign Assets
-        [pallet_foreign_asset_creator, ForeignAssetsCreator]
-        [pallet_assets, ForeignAssets]
-
-        // Foreign Assets
-        [pallet_foreign_asset_creator, ForeignAssetsCreator]
-        [pallet_assets, ForeignAssets]
-
         // XCM
         [pallet_xcm, PalletXcmExtrinsicsBenchmark::<Runtime>]
         [pallet_xcm_benchmarks::fungible, pallet_xcm_benchmarks::fungible::Pallet::<Runtime>]
