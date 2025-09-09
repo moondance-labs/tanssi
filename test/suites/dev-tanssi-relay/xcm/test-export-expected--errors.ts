@@ -3,7 +3,12 @@ import { type KeyringPair, generateKeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import { u8aToHex } from "@polkadot/util";
 import { XcmFragment, TESTNET_ETHEREUM_NETWORK_ID } from "utils";
-import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_EXPORTS } from "helpers";
+import {
+    STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_EXPORTS,
+    retrieveDispatchErrors,
+    retrieveSudoDispatchErrors,
+    retrieveBatchDispatchErrors,
+} from "helpers";
 import { isStarlightRuntime } from "../../../utils/runtime.ts";
 
 describeSuite({
@@ -175,13 +180,11 @@ describeSuite({
                     proofSize: 1000000,
                 });
 
-                const { result } = await context.createBlock(executeMessageTx.signAsync(alice));
-                expect(result.successful).to.be.false;
+                await context.createBlock(executeMessageTx.signAsync(alice));
 
-                const tokenTransferNonceAfter =
-                    await polkadotJs.query.ethereumOutboundQueue.nonce(tokenTransferChannel);
-
-                expect(tokenTransferNonceAfter.toBigInt()).toBe(tokenTransferNonceBefore.toBigInt());
+                const errorEvents = await retrieveDispatchErrors(context.polkadotJs());
+                expect(errorEvents.length, "Amount of error events should be 1").toBe(1);
+                expect(errorEvents[0]).to.be.eq("LocalExecutionIncomplete");
             },
         });
 
@@ -241,16 +244,11 @@ describeSuite({
                     proofSize: 1000000,
                 });
 
-                const { result } = await context.createBlock(
-                    polkadotJs.tx.sudo.sudo(executeMessageTx).signAsync(alice)
-                );
-                // sudo calls are always true
-                expect(result.successful).to.be.true;
+                await context.createBlock(polkadotJs.tx.sudo.sudo(executeMessageTx).signAsync(alice));
 
-                const tokenTransferNonceAfter =
-                    await polkadotJs.query.ethereumOutboundQueue.nonce(tokenTransferChannel);
-
-                expect(tokenTransferNonceAfter.toBigInt()).toBe(tokenTransferNonceBefore.toBigInt());
+                const errorEvents = await retrieveSudoDispatchErrors(context.polkadotJs());
+                expect(errorEvents.length, "Amount of error events should be 1").toBe(1);
+                expect(errorEvents[0].method).to.be.eq("LocalExecutionIncomplete");
             },
         });
 
@@ -310,17 +308,10 @@ describeSuite({
                     proofSize: 1000000,
                 });
 
-                const { result } = await context.createBlock(
-                    polkadotJs.tx.sudo.sudo(executeMessageTx).signAsync(alice)
-                );
-                // sudo calls are always true
-                expect(result.successful).to.be.true;
-
-                const tokenTransferNonceAfter =
-                    await polkadotJs.query.ethereumOutboundQueue.nonce(tokenTransferChannel);
-
-                // but the nonce never increases
-                expect(tokenTransferNonceAfter.toBigInt()).toBe(tokenTransferNonceBefore.toBigInt());
+                await context.createBlock(polkadotJs.tx.sudo.sudo(executeMessageTx).signAsync(alice));
+                const errorEvents = await retrieveSudoDispatchErrors(context.polkadotJs());
+                expect(errorEvents.length, "Amount of error events should be 1").toBe(1);
+                expect(errorEvents[0].method).to.be.eq("LocalExecutionIncomplete");
             },
         });
 
@@ -382,16 +373,10 @@ describeSuite({
                     proofSize: 1000000,
                 });
 
-                const { result } = await context.createBlock(
-                    polkadotJs.tx.sudo.sudo(executeMessageTx).signAsync(alice)
-                );
-                // sudo calls are always true
-                expect(result.successful).to.be.true;
-
-                const tokenTransferNonceAfter =
-                    await polkadotJs.query.ethereumOutboundQueue.nonce(tokenTransferChannel);
-
-                expect(tokenTransferNonceAfter.toBigInt()).toBe(tokenTransferNonceBefore.toBigInt());
+                await context.createBlock(polkadotJs.tx.sudo.sudo(executeMessageTx).signAsync(alice));
+                const errorEvents = await retrieveSudoDispatchErrors(context.polkadotJs());
+                expect(errorEvents.length, "Amount of error events should be 1").toBe(1);
+                expect(errorEvents[0].method).to.be.eq("LocalExecutionIncomplete");
             },
         });
 
@@ -451,17 +436,11 @@ describeSuite({
                     refTime: 10000000000,
                     proofSize: 1000000,
                 });
+                await context.createBlock(polkadotJs.tx.sudo.sudo(executeMessageTx).signAsync(alice));
 
-                const { result } = await context.createBlock(
-                    polkadotJs.tx.sudo.sudo(executeMessageTx).signAsync(alice)
-                );
-                // sudo calls are always true
-                expect(result.successful).to.be.true;
-
-                const tokenTransferNonceAfter =
-                    await polkadotJs.query.ethereumOutboundQueue.nonce(tokenTransferChannel);
-
-                expect(tokenTransferNonceAfter.toBigInt()).toBe(tokenTransferNonceBefore.toBigInt());
+                const errorEvents = await retrieveSudoDispatchErrors(context.polkadotJs());
+                expect(errorEvents.length, "Amount of error events should be 1").toBe(1);
+                expect(errorEvents[0].method).to.be.eq("LocalExecutionIncomplete");
             },
         });
 
@@ -517,17 +496,11 @@ describeSuite({
                     refTime: 10000000000,
                     proofSize: 1000000,
                 });
+                await context.createBlock(polkadotJs.tx.sudo.sudo(executeMessageTx).signAsync(alice));
 
-                const { result } = await context.createBlock(
-                    polkadotJs.tx.sudo.sudo(executeMessageTx).signAsync(alice)
-                );
-                // sudo calls are always true
-                expect(result.successful).to.be.true;
-
-                const tokenTransferNonceAfter =
-                    await polkadotJs.query.ethereumOutboundQueue.nonce(tokenTransferChannel);
-
-                expect(tokenTransferNonceAfter.toBigInt()).toBe(tokenTransferNonceBefore.toBigInt());
+                const errorEvents = await retrieveSudoDispatchErrors(context.polkadotJs());
+                expect(errorEvents.length, "Amount of error events should be 1").toBe(1);
+                expect(errorEvents[0].method).to.be.eq("LocalExecutionIncomplete");
             },
         });
 
@@ -612,16 +585,11 @@ describeSuite({
                     proofSize: 1000000,
                 });
 
-                const { result } = await context.createBlock(
-                    polkadotJs.tx.sudo.sudo(executeMessageTx).signAsync(alice)
-                );
-                // sudo calls are always true
-                expect(result.successful).to.be.true;
+                await context.createBlock(polkadotJs.tx.sudo.sudo(executeMessageTx).signAsync(alice));
 
-                const tokenTransferNonceAfter =
-                    await polkadotJs.query.ethereumOutboundQueue.nonce(tokenTransferChannel);
-
-                expect(tokenTransferNonceAfter.toBigInt()).toBe(tokenTransferNonceBefore.toBigInt());
+                const errorEvents = await retrieveSudoDispatchErrors(context.polkadotJs());
+                expect(errorEvents.length, "Amount of error events should be 1").toBe(1);
+                expect(errorEvents[0].method).to.be.eq("LocalExecutionIncomplete");
             },
         });
 
@@ -709,9 +677,6 @@ describeSuite({
                     .export_message(xcmToExport.instructions, ethereumNetwork, "Here")
                     .as_v3();
 
-                const tokenTransferNonceBefore =
-                    await polkadotJs.query.ethereumOutboundQueue.nonce(tokenTransferChannel);
-
                 const executeMessageTx = polkadotJs.tx.xcmPallet.execute(xcmMessage, {
                     refTime: 10000000000,
                     proofSize: 1000000,
@@ -719,18 +684,15 @@ describeSuite({
                 // session change, no txs
                 await context.createBlock();
 
-                const { result } = await context.createBlock(
+                await context.createBlock(
                     polkadotJs.tx.sudo
                         .sudo(polkadotJs.tx.utility.batch([registerTokenTx, executeMessageTx]))
                         .signAsync(alice)
                 );
-                // sudo calls are always true
-                expect(result.successful).to.be.true;
 
-                const tokenTransferNonceAfter =
-                    await polkadotJs.query.ethereumOutboundQueue.nonce(tokenTransferChannel);
-
-                expect(tokenTransferNonceAfter.toBigInt()).toBe(tokenTransferNonceBefore.toBigInt());
+                const errorEvents = await retrieveBatchDispatchErrors(context.polkadotJs());
+                expect(errorEvents.length, "Amount of retrieveBatchDispatchErrorsf error events should be 1").toBe(1);
+                expect(errorEvents[0].method).to.be.eq("LocalExecutionIncomplete");
             },
         });
 
@@ -817,18 +779,12 @@ describeSuite({
                     proofSize: 1000000,
                 });
                 // session change, no txs
-                await context.createBlock();
 
-                const { result } = await context.createBlock(
-                    polkadotJs.tx.sudo.sudo(polkadotJs.tx.utility.batch([executeMessageTx])).signAsync(alice)
-                );
-                // sudo calls are always true
-                expect(result.successful).to.be.true;
+                await context.createBlock(polkadotJs.tx.sudo.sudo(executeMessageTx).signAsync(alice));
 
-                const tokenTransferNonceAfter =
-                    await polkadotJs.query.ethereumOutboundQueue.nonce(tokenTransferChannel);
-
-                expect(tokenTransferNonceAfter.toBigInt()).toBe(tokenTransferNonceBefore.toBigInt());
+                const errorEvents = await retrieveSudoDispatchErrors(context.polkadotJs());
+                expect(errorEvents.length, "Amount of error events should be 1").toBe(1);
+                expect(errorEvents[0].method).to.be.eq("LocalExecutionIncomplete");
             },
         });
     },
