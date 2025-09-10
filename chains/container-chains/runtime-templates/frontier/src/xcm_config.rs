@@ -81,7 +81,7 @@ parameter_types! {
         ].into()
     };
 
-    pub SelfLocation: Location = Location::here();
+    pub NativeAssetLocation: Location = Location::here();
 
     // One XCM operation is 1_000_000_000 weight - almost certainly a conservative estimate.
     pub UnitWeightCost: Weight = Weight::from_parts(1_000_000_000, 64 * 1024);
@@ -163,7 +163,7 @@ pub type CurrencyTransactor = FungibleAdapter<
     // Use this currency:
     Balances,
     // Use this currency when it is a fungible asset matching the given location or name:
-    (IsConcrete<SelfReserve>, IsConcrete<SelfLocation>),
+    (IsConcrete<SelfReserve>, IsConcrete<NativeAssetLocation>),
     // Convert an XCM Location into a local account id:
     LocationToAccountId,
     // Our chain's account ID type (we can't get away without mentioning it explicitly):

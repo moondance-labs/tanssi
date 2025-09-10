@@ -911,7 +911,7 @@ where
         let remote_xcm = Xcm::<()>(vec![
             DescendOrigin(PalletInstance(inbound_queue_pallet_index).into()),
             UniversalOrigin(GlobalConsensus(network)),
-            WithdrawAsset(vec![asset_to_deposit.clone(), container_location.clone()].into()),
+            WithdrawAsset(vec![asset_to_deposit.clone(), asset_fee.clone()].into()),
             BuyExecution {
                 fees: asset_fee,
                 weight_limit: Unlimited,
