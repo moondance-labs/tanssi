@@ -28,7 +28,6 @@ tc-consensus = { workspace = true }
 tp-traits = { workspace = true }
 
 # Nimbus
-nimbus-consensus = { workspace = true }
 nimbus-primitives = { workspace = true, features = [ "std" ] }
 
 # Substrate
