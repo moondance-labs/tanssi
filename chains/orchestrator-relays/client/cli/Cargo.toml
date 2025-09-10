@@ -60,6 +60,7 @@ cli = [
 db = [ "polkadot-service/db" ]
 fast-runtime = [ "polkadot-service?/fast-runtime", "tanssi-relay-service?/fast-runtime" ]
 full-node = [ "polkadot-service/full-node" ]
+include-git-hash-in-version = []
 pyroscope = [ "pyro", "pyroscope_pprofrs" ]
 runtime-benchmarks = [
 	"frame-benchmarking-cli?/runtime-benchmarks",

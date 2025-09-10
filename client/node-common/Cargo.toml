@@ -83,3 +83,6 @@ cumulus-relay-chain-interface = { workspace = true }
 
 [build-dependencies]
 substrate-build-script-utils = { workspace = true }
+
+[features]
+include-git-hash-in-version = []
