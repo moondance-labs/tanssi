@@ -307,6 +307,7 @@ where
                 spawn_handle: task_manager.spawn_handle().clone(),
                 data_preserver: true,
                 generate_rpc_builder: self.generate_rpc_builder,
+                override_sync_mode: None,
                 phantom: PhantomData,
             },
             state: Default::default(),

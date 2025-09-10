@@ -219,6 +219,7 @@ pub async fn start_solochain_node(
                     tc_service_container_chain_spawner::rpc::GenerateSubstrateRpcBuilder::<
                         dancebox_runtime::RuntimeApi,
                     >::new(),
+                override_sync_mode: Some(sc_cli::SyncMode::Warp),
                 phantom: PhantomData,
             },
             state: Default::default(),
