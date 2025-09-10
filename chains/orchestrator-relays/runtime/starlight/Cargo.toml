@@ -71,6 +71,7 @@ pallet-balances = { workspace = true }
 pallet-beefy = { workspace = true }
 pallet-beefy-mmr = { workspace = true }
 pallet-collator-assignment = { workspace = true }
+pallet-collective = { workspace = true }
 pallet-conviction-voting = { workspace = true }
 pallet-ethereum-token-transfers = { workspace = true }
 pallet-external-validator-slashes = { workspace = true }
@@ -235,6 +236,7 @@ std = [
 	"pallet-beefy-mmr/std",
 	"pallet-beefy/std",
 	"pallet-collator-assignment/std",
+	"pallet-collective/std",
 	"pallet-configuration/std",
 	"pallet-conviction-voting/std",
 	"pallet-data-preservers-runtime-api/std",
@@ -364,6 +366,7 @@ runtime-benchmarks = [
 	"pallet-beefy-mmr/runtime-benchmarks",
 	"pallet-collator-assignment/runtime-benchmarks",
 	"pallet-collator-assignment/runtime-benchmarks",
+	"pallet-collective/runtime-benchmarks",
 	"pallet-configuration/runtime-benchmarks",
 	"pallet-conviction-voting/runtime-benchmarks",
 	"pallet-data-preservers/runtime-benchmarks",
@@ -451,6 +454,7 @@ try-runtime = [
 	"pallet-beefy-mmr/try-runtime",
 	"pallet-beefy/try-runtime",
 	"pallet-collator-assignment/try-runtime",
+	"pallet-collective/try-runtime",
 	"pallet-configuration/try-runtime",
 	"pallet-conviction-voting/try-runtime",
 	"pallet-data-preservers/try-runtime",
