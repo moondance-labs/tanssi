@@ -311,6 +311,14 @@ pub mod pallet {
             let old_assigned = Self::read_assigned_collators();
             let old_assigned_para_ids: BTreeSet<ParaId> =
                 old_assigned.container_chains.keys().cloned().collect();
+            let collators_len = collators.len();
+
+            log::trace!(
+                "assign_collators: start: {} collators, {} parachains, {} parathreads",
+                collators.len(),
+                container_chain_ids.len(),
+                parathreads.len()
+            );
 
             // Remove the containerChains that do not have enough credits for block production
             T::ParaIdAssignmentHooks::pre_assignment(
@@ -320,6 +328,8 @@ pub mod pallet {
             // TODO: parathreads should be treated a bit differently, they don't need to have the same amount of credits
             // as parathreads because they will not be producing blocks on every slot.
             T::ParaIdAssignmentHooks::pre_assignment(&mut parathreads, &old_assigned_para_ids);
+
+            log::trace!("assign_collators: after pre_assignment: {} collators, {} parachains, {} parathreads", collators.len(), container_chain_ids.len(), parathreads.len());
 
             let mut shuffle_collators = None;
             // If the random_seed is all zeros, we don't shuffle the list of collators nor the list
@@ -401,18 +411,24 @@ pub mod pallet {
                     )
                 };
 
+            log::trace!(
+                "assign_collators: after order_paras: {} collators, {} chains",
+                collators.len(),
+                chains.len()
+            );
+
             // We assign new collators
             // we use the config scheduled at the target_session_index
             let full_rotation =
                 T::ShouldRotateAllCollators::should_rotate_all_collators(target_session_index);
             if full_rotation {
-                log::info!(
+                log::debug!(
                     "Collator assignment: rotating collators. Session {:?}, Seed: {:?}",
                     current_session_index.encode(),
                     random_seed
                 );
             } else {
-                log::info!(
+                log::debug!(
                     "Collator assignment: keep old assigned. Session {:?}, Seed: {:?}",
                     current_session_index.encode(),
                     random_seed
@@ -457,6 +473,25 @@ pub mod pallet {
             let mut assigned_containers = new_assigned.container_chains.clone();
             assigned_containers.retain(|_, v| !v.is_empty());
 
+            fn count_collators<AccountId>(new_assigned: &AssignedCollators<AccountId>) -> usize {
+                // Count number of assigned collators
+                let mut num_collators = 0;
+                num_collators.saturating_accrue(new_assigned.orchestrator_chain.len());
+                for collators in new_assigned.container_chains.values() {
+                    num_collators.saturating_accrue(collators.len());
+                }
+                num_collators
+            }
+            fn count_chains<AccountId>(new_assigned: &AssignedCollators<AccountId>) -> usize {
+                new_assigned.container_chains.len()
+            }
+
+            log::trace!(
+                "assign_collators: after assign: {} collators, {} chains",
+                count_collators(&new_assigned),
+                count_chains(&new_assigned)
+            );
+
             // On congestion, prioritized chains need to pay the minimum tip of the prioritized chains
             let maybe_tip: Option<BalanceOf<T>> = if !need_to_charge_tip {
                 None
@@ -473,6 +508,19 @@ pub mod pallet {
                 &old_assigned_para_ids,
                 &mut new_assigned.container_chains,
                 &maybe_tip,
+            );
+
+            log::trace!(
+                "assign_collators: after post_assignment: {} collators, {} chains",
+                count_collators(&new_assigned),
+                count_chains(&new_assigned)
+            );
+            log::debug!(
+                "assign_collators: summary: {}/{} collators, {}/{} chains",
+                count_collators(&new_assigned),
+                collators_len,
+                count_chains(&new_assigned),
+                num_total_registered_paras
             );
 
             Self::store_collator_fullness(
@@ -494,6 +542,7 @@ pub mod pallet {
                 pending_changed = true;
             }
             // Update PendingCollatorContainerChain, if it changed
+            log::trace!("assign_collators: pending_changed? {}", pending_changed);
             if pending_changed {
                 PendingCollatorContainerChain::<T>::put(pending);
             }
