@@ -1,5 +1,5 @@
 [package]
-name = "tc-service-container-chain"
+name = "tc-service-container-chain-spawner"
 authors = { workspace = true }
 build = "build.rs"
 edition = "2021"

@@ -21,7 +21,6 @@ use color_eyre::eyre;
 mod chain_spec;
 mod cli;
 mod command;
-mod rpc;
 mod service;
 #[cfg(test)]
 mod tests;
