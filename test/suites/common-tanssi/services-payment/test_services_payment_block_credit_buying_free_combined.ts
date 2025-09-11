@@ -36,7 +36,7 @@ describeSuite({
                 isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SERVICES_PAYMENT.includes(specVersion);
 
             if (isStarlight) {
-                costPerBlock = 20_000_000_000n;
+                costPerBlock = 2_000_000_000n;
             }
         });
 
