@@ -7,13 +7,16 @@ import type { EthereumTokenTransfersNativeTokenTransferred } from "@polkadot/typ
 import { hexToBigInt, hexToU8a } from "@polkadot/util";
 import { encodeAddress } from "@polkadot/util-crypto";
 import { Interface } from "ethers";
-import { ETHEREUM_MAINNET_SOVEREIGN_ACCOUNT_ADDRESS, SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS } from "utils";
+import {
+    ETHEREUM_MAINNET_SOVEREIGN_ACCOUNT_ADDRESS,
+    getBlockNumberToDebug,
+    SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS,
+} from "utils";
 
 const SS58_FORMAT = 42;
 
 let BLOCKS_AMOUNT_TO_CHECK = 100;
-// For debug purposes only, specify block here to check it
-const BLOCK_NUMBER_TO_DEBUG = undefined;
+const BLOCK_NUMBER_TO_DEBUG = getBlockNumberToDebug();
 
 const customTypes = {
     VersionedXcmMessage: {
