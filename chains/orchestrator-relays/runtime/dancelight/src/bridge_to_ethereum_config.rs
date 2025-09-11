@@ -258,7 +258,7 @@ pub type EthTokensProcessor = EthTokensLocalProcessor<
     dancelight_runtime_constants::snowbridge::EthereumLocation,
     dancelight_runtime_constants::snowbridge::EthereumNetwork,
     InboundQueuePalletInstance,
-    frame_support::traits::ConstBool<true>
+    frame_support::traits::ConstBool<true>,
 >;
 
 #[cfg(not(feature = "runtime-benchmarks"))]

@@ -632,7 +632,7 @@ pub struct EthTokensLocalProcessor<
     EthereumLocation,
     EthereumNetwork,
     InboundQueuePalletInstance,
-    ContainerTransfersEnabled, // TODO: remove this when both runtimes support container transfers :) 
+    ContainerTransfersEnabled, // TODO: remove this when all runtimes support container transfers 
 >(
     PhantomData<(
         T,
