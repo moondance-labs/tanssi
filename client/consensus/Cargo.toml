@@ -60,7 +60,7 @@ polkadot-overseer = { workspace = true }
 polkadot-primitives = { workspace = true }
 
 # Nimbus Dependencies
-async-backing-primitives = { workspace = true, features = [ "std" ]  }
+async-backing-primitives = { workspace = true, features = [ "std" ] }
 nimbus-primitives = { workspace = true, features = [ "std" ] }
 
 # Frontier Dependencies
