@@ -1,6 +1,6 @@
 import "@tanssi/api-augment";
 
-import { beforeAll, describeSuite } from "@moonwall/cli";
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import { hexToU8a } from "@polkadot/util";
@@ -14,8 +14,8 @@ import {
 } from "utils";
 
 describeSuite({
-    id: "DTR1807",
-    title: "EthTokensLocalProcessor: receive and forward container foreign tokens from Ethereum",
+    id: "DTR1808",
+    title: "EthTokensLocalProcessor: reception of container foreign tokens (inexisting channel)",
     foundationMethods: "dev",
 
     testCases: ({ it, context }) => {
@@ -48,7 +48,6 @@ describeSuite({
                     return;
                 }
 
-                const paraIdForChannel = 2000;
                 const containerParaId = 2001;
                 const assetId = 42;
                 const tokenAddrHex = "1111111111111111111111111111111111111111";
@@ -92,21 +91,6 @@ describeSuite({
                 const signedTx = await polkadotJs.tx.sudo.sudo(tx).signAsync(alice);
                 await context.createBlock([signedTx], { allowFailures: false });
 
-                // Create EthereumTokenTransfers channel to validate when receiving the tokens.
-                const newChannelId = "0x0000000000000000000000000000000000000000000000000000000000000004";
-                const newAgentId = "0x0000000000000000000000000000000000000000000000000000000000000005";
-
-                const tx1 = await polkadotJs.tx.sudo
-                    .sudo(
-                        polkadotJs.tx.ethereumTokenTransfers.setTokenTransferChannel(
-                            newChannelId,
-                            newAgentId,
-                            paraIdForChannel
-                        )
-                    )
-                    .signAsync(alice);
-                await context.createBlock([tx1], { allowFailures: false });
-
                 const ethereumNetwork = isStarlight ? ETHEREUM_NETWORK_MAINNET : ETHEREUM_NETWORK_TESTNET;
 
                 const ethTokenLocation = {
@@ -145,11 +129,15 @@ describeSuite({
 
                 // Submit the message
                 const tx3 = await polkadotJs.tx.ethereumInboundQueue.submit(messageExtrinsics[0]).signAsync(alice);
-                await context.createBlock([tx3], { allowFailures: false });
 
-                // Check for the XCM Sent event
+                const { result } = await context.createBlock([tx3]);
+
+                // We haven't set the channel info, so execution should fail.
+                expect(result[0].successful).to.be.false;
+
+                // XCM Sent event should not be emitted
                 await expectEventCount(polkadotJs, {
-                    Sent: 1,
+                    Sent: 0,
                 });
             },
         });

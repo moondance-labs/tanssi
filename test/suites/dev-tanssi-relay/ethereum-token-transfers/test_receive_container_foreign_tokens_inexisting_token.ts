@@ -1,21 +1,14 @@
 import "@tanssi/api-augment";
 
-import { beforeAll, describeSuite } from "@moonwall/cli";
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
-import { hexToU8a } from "@polkadot/util";
 import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_TRANSFERS, expectEventCount } from "helpers";
-import {
-    ETHEREUM_NETWORK_MAINNET,
-    ETHEREUM_NETWORK_TESTNET,
-    generateEventLog,
-    generateUpdate,
-    mockAndInsertHeadData,
-} from "utils";
+import { generateEventLog, generateUpdate } from "utils";
 
 describeSuite({
-    id: "DTR1807",
-    title: "EthTokensLocalProcessor: receive and forward container foreign tokens from Ethereum",
+    id: "DTR1809",
+    title: "EthTokensLocalProcessor: reception of container foreign tokens (token not registered)",
     foundationMethods: "dev",
 
     testCases: ({ it, context }) => {
@@ -48,10 +41,7 @@ describeSuite({
                     return;
                 }
 
-                const paraIdForChannel = 2000;
                 const containerParaId = 2001;
-                const assetId = 42;
-                const tokenAddrHex = "1111111111111111111111111111111111111111";
 
                 // Hard-coding payload as we do not have scale encoding-decoding
                 const log = await generateEventLog(
@@ -101,55 +91,30 @@ describeSuite({
                         polkadotJs.tx.ethereumTokenTransfers.setTokenTransferChannel(
                             newChannelId,
                             newAgentId,
-                            paraIdForChannel
+                            containerParaId
                         )
                     )
                     .signAsync(alice);
                 await context.createBlock([tx1], { allowFailures: false });
 
-                const ethereumNetwork = isStarlight ? ETHEREUM_NETWORK_MAINNET : ETHEREUM_NETWORK_TESTNET;
-
-                const ethTokenLocation = {
-                    parents: 1,
-                    interior: {
-                        X2: [
-                            {
-                                GlobalConsensus: ethereumNetwork,
-                            },
-                            {
-                                AccountKey20: {
-                                    network: ethereumNetwork,
-                                    key: hexToU8a(tokenAddrHex),
-                                },
-                            },
-                        ],
-                    },
-                };
-
-                // Register token on foreignAssetsCreator.
-                const tx2 = await polkadotJs.tx.sudo
-                    .sudo(
-                        polkadotJs.tx.foreignAssetsCreator.createForeignAsset(
-                            ethTokenLocation,
-                            assetId,
-                            alice.address,
-                            true,
-                            1
-                        )
-                    )
-                    .signAsync(alice);
-                await context.createBlock([tx2], { allowFailures: false });
-
-                const paraId = polkadotJs.createType("ParaId", containerParaId);
-                await mockAndInsertHeadData(context, paraId, 2, 2, alice);
+                const nonceBefore = await polkadotJs.query.ethereumInboundQueue.nonce(newChannelId);
 
                 // Submit the message
                 const tx3 = await polkadotJs.tx.ethereumInboundQueue.submit(messageExtrinsics[0]).signAsync(alice);
-                await context.createBlock([tx3], { allowFailures: false });
 
-                // Check for the XCM Sent event
+                // Since the token is not registered, execution should fail due to can_process_message returns
+                // false for NativeContainerTokensProcessor and no other processor can process the message either.
+                const { result } = await context.createBlock([tx3]);
+                expect(result[0].successful).to.be.false;
+
+                const nonceAfter = await polkadotJs.query.ethereumInboundQueue.nonce(newChannelId);
+
+                // Nonce should stay the same
+                expect(nonceAfter.toNumber()).to.be.equal(nonceBefore.toNumber());
+
+                // XCM Sent event should not be emitted
                 await expectEventCount(polkadotJs, {
-                    Sent: 1,
+                    Sent: 0,
                 });
             },
         });

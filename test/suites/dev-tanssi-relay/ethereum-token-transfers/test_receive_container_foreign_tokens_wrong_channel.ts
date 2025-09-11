@@ -1,6 +1,6 @@
 import "@tanssi/api-augment";
 
-import { beforeAll, describeSuite } from "@moonwall/cli";
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import { hexToU8a } from "@polkadot/util";
@@ -14,8 +14,8 @@ import {
 } from "utils";
 
 describeSuite({
-    id: "DTR1807",
-    title: "EthTokensLocalProcessor: receive and forward container foreign tokens from Ethereum",
+    id: "DTR1810",
+    title: "EthTokensLocalProcessor: reception of container foreign tokens (wrong channel)",
     foundationMethods: "dev",
 
     testCases: ({ it, context }) => {
@@ -57,8 +57,9 @@ describeSuite({
                 const log = await generateEventLog(
                     polkadotJs,
                     Uint8Array.from(Buffer.from("eda338e4dc46038493b885327842fd3e301cab39", "hex")),
+                    // Wrong channel id
                     Uint8Array.from(
-                        Buffer.from("0000000000000000000000000000000000000000000000000000000000000004", "hex")
+                        Buffer.from("0000000000000000000000000000000000000000000000000000000000000008", "hex")
                     ),
                     Uint8Array.from(
                         Buffer.from("0000000000000000000000000000000000000000000000000000000000000000", "hex")
@@ -143,13 +144,23 @@ describeSuite({
                 const paraId = polkadotJs.createType("ParaId", containerParaId);
                 await mockAndInsertHeadData(context, paraId, 2, 2, alice);
 
+                const nonceBefore = await polkadotJs.query.ethereumInboundQueue.nonce(newChannelId);
+
                 // Submit the message
                 const tx3 = await polkadotJs.tx.ethereumInboundQueue.submit(messageExtrinsics[0]).signAsync(alice);
-                await context.createBlock([tx3], { allowFailures: false });
 
-                // Check for the XCM Sent event
+                // Since the channel is wrong, execution should fail in can_process_message.
+                const { result } = await context.createBlock([tx3]);
+                expect(result[0].successful).to.be.false;
+
+                const nonceAfter = await polkadotJs.query.ethereumInboundQueue.nonce(newChannelId);
+
+                // Nonce should stay the same
+                expect(nonceAfter.toNumber()).to.be.equal(nonceBefore.toNumber());
+
+                // XCM Sent event should not be emitted
                 await expectEventCount(polkadotJs, {
-                    Sent: 1,
+                    Sent: 0,
                 });
             },
         });
