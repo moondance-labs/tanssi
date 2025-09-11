@@ -30,7 +30,9 @@ use {
     fc_rpc_core::types::{FeeHistoryCache, FilterPool},
     fc_storage::StorageOverrideHandler,
     nimbus_primitives::NimbusId,
-    node_common::service::{ManualSealConfiguration, NodeBuilder, NodeBuilderConfig, Sealing},
+    node_common::service::node_builder::{
+        ManualSealConfiguration, NodeBuilder, NodeBuilderConfig, Sealing,
+    },
     parity_scale_codec::Encode,
     polkadot_parachain_primitives::primitives::HeadData,
     polkadot_primitives::UpgradeGoAhead,

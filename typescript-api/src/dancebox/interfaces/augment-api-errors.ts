@@ -400,6 +400,10 @@ declare module "@polkadot/api-base/types/errors" {
              **/
             ActivityTrackingStatusUpdateSuspended: AugmentedError<ApiType>;
             /**
+             * Error returned when the collator status is attempted to be set to offline when it has already been notified as offline
+             **/
+            CollatorAlreadyNotifiedOffline: AugmentedError<ApiType>;
+            /**
              * Error returned when the collator attempted to be set offline is not inactive
              **/
             CollatorCannotBeNotifiedAsInactive: AugmentedError<ApiType>;
@@ -415,6 +419,10 @@ declare module "@polkadot/api-base/types/errors" {
              * Error returned when the collator status is attempted to be set to offline when it is already offline
              **/
             CollatorNotOnline: AugmentedError<ApiType>;
+            /**
+             * Error returned when the collator status is attempted to be set to online before its cooldown period is over
+             **/
+            CollatorNotReadyToBeOnline: AugmentedError<ApiType>;
             /**
              * Error returned when the collator attempted to be set offline is invulnerable
              **/
