@@ -121,11 +121,11 @@ pub struct ContainerChainSpawnParams<
     pub relay_chain: String,
     pub relay_chain_interface: Arc<dyn RelayChainInterface>,
     pub sync_keystore: KeystorePtr,
-    pub orchestrator_para_id: ParaId,
     pub spawn_handle: SpawnTaskHandle,
     pub collation_params: Option<CollationParams>,
     pub data_preserver: bool,
     pub generate_rpc_builder: TGenerateRpcBuilder,
+    pub override_sync_mode: Option<SyncMode>,
 
     pub phantom: PhantomData<RuntimeApi>,
 }
@@ -203,6 +203,7 @@ async fn try_spawn<
         mut collation_params,
         data_preserver,
         generate_rpc_builder,
+        override_sync_mode,
         ..
     } = try_spawn_params;
     // Preload genesis data from orchestrator chain storage.
@@ -371,7 +372,10 @@ async fn try_spawn<
         // Loop will run at most 2 times: 1 time if the db is good and 2 times if the db needs to be removed
         for _ in 0..2 {
             let db_existed_before = check_db_exists();
-            container_chain_cli.base.base.network_params.sync = SyncMode::Warp;
+
+            if let Some(sync) = override_sync_mode {
+                container_chain_cli.base.base.network_params.sync = sync;
+            }
             log::info!(
                 "Container chain sync mode: {:?}",
                 container_chain_cli.base.base.network_params.sync
@@ -731,6 +735,13 @@ impl<
         validator: bool,
         solochain: bool,
     ) {
+        let orchestrator_para_id = self
+            .params
+            .collation_params
+            .as_ref()
+            .expect("assignment update should only occur in a collating node")
+            .orchestrator_para_id;
+
         // The node always starts as an orchestrator chain collator.
         // This is because the assignment is detected after importing a new block, so if all
         // collators stop at the same time, when they start again nobody will produce the new block.
@@ -738,7 +749,7 @@ impl<
         // then the real assignment is used.
         // Except in solochain mode, then the initial assignment is None.
         if validator && !solochain {
-            self.handle_update_assignment(Some(self.params.orchestrator_para_id), None)
+            self.handle_update_assignment(Some(orchestrator_para_id), None)
                 .await;
         }
 
@@ -773,18 +784,25 @@ impl<
             }
         }
 
+        let orchestrator_para_id = self
+            .params
+            .collation_params
+            .as_ref()
+            .expect("assignment update should only occur in a collating node")
+            .orchestrator_para_id;
+
         let HandleUpdateAssignmentResult {
             chains_to_stop,
             chains_to_start,
             need_to_restart: _,
         } = handle_update_assignment_state_change(
             &mut self.state.lock().expect("poison error"),
-            self.params.orchestrator_para_id,
+            orchestrator_para_id,
             current,
             next,
         );
 
-        if current != Some(self.params.orchestrator_para_id) {
+        if current != Some(orchestrator_para_id) {
             // If not assigned to orchestrator chain anymore, we need to stop the collator process
             let maybe_exit_notification_receiver = self
                 .collation_cancellation_constructs
