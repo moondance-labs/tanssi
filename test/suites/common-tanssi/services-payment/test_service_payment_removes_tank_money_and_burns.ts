@@ -16,7 +16,7 @@ describeSuite({
         let alice: KeyringPair;
         const blocksPerSession = 10n;
         const paraId2001 = 2001;
-        const costPerBlock = 1_000_000n;
+        let costPerBlock = 1_000_000n;
         let balanceTankBefore: bigint;
         let registerAlias: any;
         let isStarlight: boolean;
@@ -46,6 +46,10 @@ describeSuite({
                 return;
             }
 
+            if (isStarlight) {
+                costPerBlock = 20_000_000_000n;
+            }
+            
             const sudoSignedTx = await polkadotJs.tx.sudo.sudo(tx2000OneSession).signAsync(alice);
             await context.createBlock([sudoSignedTx]);
             const existentialDeposit = await polkadotJs.consts.balances.existentialDeposit.toBigInt();

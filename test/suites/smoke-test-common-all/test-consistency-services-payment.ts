@@ -12,8 +12,8 @@ describeSuite({
     testCases: ({ it, context }) => {
         let api: ApiPromise;
         let runtimeVersion: number;
-        const costPerSession = 100_000_000n;
-        const costPerBlock = 1_000_000n;
+        let costPerSession: bigint;
+        let costPerBlock: bigint;
         let blocksPerSession: bigint;
         let chain: any;
 
@@ -21,7 +21,10 @@ describeSuite({
             api = context.polkadotJs();
             runtimeVersion = api.runtimeVersion.specVersion.toNumber();
             chain = api.consts.system.version.specName.toString();
-            blocksPerSession = chain === "dancebox" || chain === "dancelight" ? 600n : 50n;
+            blocksPerSession = chain === "dancebox" || chain === "dancelight" ? 600n: chain === "flashbox" ? 50n: 3600n;
+            costPerSession = chain === "dancebox" || chain === "dancelight" || chain === "flashbox" ? 100_000_000n : 5_000_000_000_000n;
+            costPerSession = chain === "dancebox" || chain === "dancelight" || chain === "flashbox" ? 1_000_000n : 2_0000_000_000n;
+
         });
 
         it({
