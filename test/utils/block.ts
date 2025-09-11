@@ -812,3 +812,11 @@ export const waitEventUntilTimeout = async (
 
     throw new Error(`Event "${eventSectionMethod}" not found within ${timeoutMs / 1000}s`);
 };
+
+export const getBlockNumberToDebug = (): number | undefined => {
+    if (process.env.BLOCK_NUMBER_TO_DEBUG !== undefined) {
+        console.log("Using BLOCK_NUMBER_TO_DEBUG parameter:", process.env.BLOCK_NUMBER_TO_DEBUG);
+
+        return Number(process.env.BLOCK_NUMBER_TO_DEBUG);
+    }
+};
