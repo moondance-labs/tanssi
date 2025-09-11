@@ -20,11 +20,18 @@ describeSuite({
         beforeAll(async () => {
             api = context.polkadotJs();
             runtimeVersion = api.runtimeVersion.specVersion.toNumber();
-            chain = api.consts.system.version.specName.toString();
-            blocksPerSession = chain === "dancebox" || chain === "dancelight" ? 600n: chain === "flashbox" ? 50n: 3600n;
-            costPerSession = chain === "dancebox" || chain === "dancelight" || chain === "flashbox" ? 100_000_000n : 5_000_000_000_000n;
-            costPerSession = chain === "dancebox" || chain === "dancelight" || chain === "flashbox" ? 1_000_000n : 2_0000_000_000n;
 
+            chain = api.consts.system.version.specName.toString();
+            blocksPerSession =
+                chain === "dancebox" || chain === "dancelight" ? 600n : chain === "flashbox" ? 50n : 3600n;
+            costPerSession =
+                chain === "dancebox" || chain === "dancelight" || chain === "flashbox" || runtimeVersion < 1500
+                    ? 100_000_000n
+                    : 5_000_000_000_000n;
+            costPerSession =
+                chain === "dancebox" || chain === "dancelight" || chain === "flashbox" || runtimeVersion < 1500
+                    ? 1_000_000n
+                    : 2_0000_000_000n;
         });
 
         it({

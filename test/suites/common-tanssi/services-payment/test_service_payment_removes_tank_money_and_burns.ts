@@ -49,7 +49,7 @@ describeSuite({
             if (isStarlight) {
                 costPerBlock = 20_000_000_000n;
             }
-            
+
             const sudoSignedTx = await polkadotJs.tx.sudo.sudo(tx2000OneSession).signAsync(alice);
             await context.createBlock([sudoSignedTx]);
             const existentialDeposit = await polkadotJs.consts.balances.existentialDeposit.toBigInt();
