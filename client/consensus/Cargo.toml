@@ -19,7 +19,7 @@ sc-consensus-slots = { workspace = true }
 sc-telemetry = { workspace = true }
 sc-transaction-pool = { workspace = true }
 sc-transaction-pool-api = { workspace = true }
-sp-api = { workspace = true }
+sp-api = { workspace = true, features = [ "std" ] }
 sp-application-crypto = { workspace = true, features = [ "full_crypto", "std" ] }
 sp-block-builder = { workspace = true }
 sp-blockchain = { workspace = true }
@@ -60,7 +60,7 @@ polkadot-overseer = { workspace = true }
 polkadot-primitives = { workspace = true }
 
 # Nimbus Dependencies
-async-backing-primitives = { workspace = true }
+async-backing-primitives = { workspace = true, features = [ "std" ]  }
 nimbus-primitives = { workspace = true, features = [ "std" ] }
 
 # Frontier Dependencies

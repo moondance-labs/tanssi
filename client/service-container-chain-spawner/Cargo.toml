@@ -82,7 +82,7 @@ cumulus-primitives-core = { workspace = true }
 cumulus-relay-chain-interface = { workspace = true }
 
 # Nimbus
-async-backing-primitives = { workspace = true }
+async-backing-primitives = { workspace = true, features = [ "std" ]  }
 nimbus-consensus = { workspace = true }
 nimbus-primitives = { workspace = true }
 
