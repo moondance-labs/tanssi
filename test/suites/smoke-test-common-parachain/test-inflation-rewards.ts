@@ -6,12 +6,12 @@ import {
     fetchRewardAuthorContainers,
     filterRewardFromOrchestratorWithFailure,
     getAuthorFromDigest,
-    getBlockNumberToDebug,
+    getBlockNumberForDebug,
     PARACHAIN_BOND,
     PER_BILL_RATIO,
 } from "utils";
 
-const BLOCK_NUMBER_TO_DEBUG = getBlockNumberToDebug();
+const BLOCK_NUMBER_TO_DEBUG = getBlockNumberForDebug();
 
 describeSuite({
     id: "SM04",

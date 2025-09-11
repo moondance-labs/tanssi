@@ -1,13 +1,13 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
-import { getBlockNumberToDebug, getTreasuryAddress } from "../../utils";
+import { getBlockNumberForDebug, getTreasuryAddress } from "../../utils";
 import { filterAndApply } from "@moonwall/util";
 import type { EventRecord } from "@polkadot/types/interfaces";
 import type { FrameSystemEventRecord } from "@polkadot/types/lookup";
 
 const RUNTIME_VERSION_THRESHOLD = 1300;
 let BLOCKS_AMOUNT_TO_CHECK = 100;
-const BLOCK_NUMBER_TO_DEBUG = getBlockNumberToDebug();
+const BLOCK_NUMBER_TO_DEBUG = getBlockNumberForDebug();
 
 describeSuite({
     id: "S07",

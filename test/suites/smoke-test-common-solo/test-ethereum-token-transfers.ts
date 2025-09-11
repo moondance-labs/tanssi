@@ -9,14 +9,14 @@ import { encodeAddress } from "@polkadot/util-crypto";
 import { Interface } from "ethers";
 import {
     ETHEREUM_MAINNET_SOVEREIGN_ACCOUNT_ADDRESS,
-    getBlockNumberToDebug,
+    getBlockNumberForDebug,
     SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS,
 } from "utils";
 
 const SS58_FORMAT = 42;
 
 let BLOCKS_AMOUNT_TO_CHECK = 100;
-const BLOCK_NUMBER_TO_DEBUG = getBlockNumberToDebug();
+const BLOCK_NUMBER_TO_DEBUG = getBlockNumberForDebug();
 
 const customTypes = {
     VersionedXcmMessage: {

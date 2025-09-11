@@ -3,7 +3,7 @@ import "@tanssi/api-augment/dancelight";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
 import type { Vec, u32 } from "@polkadot/types-codec";
-import { getBlockNumberToDebug, hasEnoughCredits, PER_BILL_RATIO } from "utils";
+import { getBlockNumberForDebug, hasEnoughCredits, PER_BILL_RATIO } from "utils";
 import type { ApiDecoration } from "@polkadot/api/types";
 
 const getMaxPossibleAssignmentsBecauseOfCores = async (apiAtBlock: ApiDecoration<"promise">): Promise<bigint> => {
@@ -23,7 +23,7 @@ describeSuite({
         const blocksPerSession = 600n;
         const costPerSession = 100_000_000n;
         const costPerBlock = 1_000_000n;
-        const blockNumberToDebug = getBlockNumberToDebug();
+        const blockNumberToDebug = getBlockNumberForDebug();
 
         beforeAll(() => {
             api = context.polkadotJs();
