@@ -1176,7 +1176,7 @@ describeSuite({
                 logTiming("Start T09");
 
                 // Uncomment this for debugging purpose, if you run only this test
-                /*
+                
                 await relayApi.tx.sudo
                     .sudo(
                         relayApi.tx.ethereumTokenTransfers.setTokenTransferChannel(
@@ -1187,7 +1187,6 @@ describeSuite({
                     )
                     .signAndSend(alice);
                 await waitSessions(context, relayApi, 4, null, "Tanssi-relay");
-                 */
 
                 // We send the token to the gateway owner address
                 const destinationAddress = gatewayOwnerAddress;
@@ -1354,22 +1353,27 @@ describeSuite({
 
                 //const executionRelayBefore = (await relayApi.query.system.account(executionRelay.address)).data.free;
 
-                const fee = 0n;
-                const nativeContainerTokenBalanceFromEthereum = 300000000000000n;
+                const fee = 5_000_000_000n;
+                const nativeContainerTokenBalanceFromEthereum = 50_000_000_000_000n;
                 const neededFeeNativeContainerToken = await gatewayContract.quoteSendTokenFee(
                     tokenAddress,
-                    ASSET_HUB_PARA_ID,
+                    CONTAINER_PARA_ID,
                     fee
                 );
 
+                console.log("container fee: ", neededFeeNativeContainerToken);
+
                 const randomAccount = generateKeyringPair("sr25519");
+                console.log("randomAccount: ", randomAccount.address);
                 const randomBalanceBefore = (await containerChainPolkadotJs.query.system.account(randomAccount.address)).data.free;
+
+                console.log("randomBalanceBefore: ", randomBalanceBefore);
 
                 // Send native ETH from Ethereum
                 const sendNativeContainerTokenTx = await gatewayContract.sendToken(
                     tokenAddress,
                     // TODO: recheck para id
-                    ASSET_HUB_PARA_ID,
+                    CONTAINER_PARA_ID,
                     {
                         kind: 1,
                         data: u8aToHex(randomAccount.addressRaw),
@@ -1377,7 +1381,7 @@ describeSuite({
                     fee,
                     nativeContainerTokenBalanceFromEthereum,
                     {
-                        value: neededFeeNativeContainerToken * 10n + nativeContainerTokenBalanceFromEthereum,
+                        value: neededFeeNativeContainerToken * 10n,
                     }
                 );
 
@@ -1390,6 +1394,7 @@ describeSuite({
 
                 // We retrieve the current nonce and wait at most 6 sessions to see the message being relayed
                 const nonceInChannelBefore = await relayApi.query.ethereumInboundQueue.nonce(ASSET_HUB_CHANNEL_ID);
+                console.log("nonceInChannelBefore: ", nonceInChannelBefore);
 
                 // wait some time for the data to be relayed
                 // As soon as the nonce increases, then we get out
@@ -1400,7 +1405,7 @@ describeSuite({
                     async () => {
                         try {
                             const nonceAfter = await relayApi.query.ethereumInboundQueue.nonce(ASSET_HUB_CHANNEL_ID);
-                            expect(nonceAfter.toNumber()).to.be.eq(nonceInChannelBefore.toNumber() + 3);
+                            expect(nonceAfter.toNumber()).to.be.eq(nonceInChannelBefore.toNumber() + 1);
                         } catch (error) {
                             return false;
                         }
@@ -1426,6 +1431,8 @@ describeSuite({
 
                 // Ensure the token has been received on the container side
                 const randomBalanceAfter = (await containerChainPolkadotJs.query.system.account(randomAccount.address)).data.free;
+
+                console.log("randomBalanceAfter: ", randomBalanceAfter);
                 expect(randomBalanceAfter.toBigInt()).to.be.eq(randomBalanceBefore.toBigInt() + nativeContainerTokenBalanceFromEthereum);
 
                 logTiming("Finish T09");
