@@ -28,10 +28,10 @@ describeSuite({
                 chain === "dancebox" || chain === "dancelight" || chain === "flashbox" || runtimeVersion < 1500
                     ? 100_000_000n
                     : 5_000_000_000_000n;
-            costPerSession =
+            costPerBlock =
                 chain === "dancebox" || chain === "dancelight" || chain === "flashbox" || runtimeVersion < 1500
                     ? 1_000_000n
-                    : 2_0000_000_000n;
+                    : 20_0000_000_000n;
         });
 
         it({

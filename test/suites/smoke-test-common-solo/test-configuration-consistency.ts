@@ -20,7 +20,7 @@ describeSuite({
             const chain = api.consts.system.version.specName.toString();
             blocksPerSession = chain === "dancelight" ? 600n : 3600n;
             costPerSession = chain === "dancelight" || runtimeVersion < 1500 ? 100_000_000n : 5_000_000_000_000n;
-            costPerSession = chain === "dancelight" || runtimeVersion < 1500 ? 1_000_000n : 2_0000_000_000n;
+            costPerBlock = chain === "dancelight" || runtimeVersion < 1500 ? 1_000_000n : 2_0000_000_000n;
         });
 
         it({
