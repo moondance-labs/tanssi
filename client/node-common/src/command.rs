@@ -188,7 +188,7 @@ impl<N: Get<&'static str>> SubstrateCli for ContainerNodeRelayChainCli<N> {
     }
 
     fn support_url() -> String {
-        "https://github.com/paritytech/cumulus/issues/new".into()
+        "https://github.com/moondance-labs/tanssi/issues/new".into()
     }
 
     fn copyright_start_year() -> i32 {
@@ -239,7 +239,7 @@ impl SubstrateCli for RelayChainCli {
     }
 
     fn support_url() -> String {
-        "https://github.com/paritytech/cumulus/issues/new".into()
+        "https://github.com/moondance-labs/tanssi/issues/new".into()
     }
 
     fn copyright_start_year() -> i32 {
