@@ -940,6 +940,7 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 				RuntimeCall::FellowshipCollective(..) |
 				RuntimeCall::FellowshipReferenda(..) |
 				RuntimeCall::Whitelist(..) |
+                RuntimeCall::OpenTechCommitteeCollective(..) |
 				RuntimeCall::Utility(..) |
 				RuntimeCall::Identity(..) |
 				RuntimeCall::Scheduler(..) |
@@ -958,7 +959,8 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 					RuntimeCall::Referenda(..) |
 					RuntimeCall::FellowshipCollective(..) |
 					RuntimeCall::FellowshipReferenda(..) |
-					RuntimeCall::Whitelist(..)
+					RuntimeCall::Whitelist(..) |
+                    RuntimeCall::OpenTechCommitteeCollective(..)
             ),
             ProxyType::IdentityJudgement => matches!(
                 c,
@@ -1978,6 +1980,7 @@ construct_runtime! {
         FellowshipReferenda: pallet_referenda::<Instance2> = 44,
         Origins: pallet_custom_origins = 45,
         Whitelist: pallet_whitelist = 46,
+        OpenTechCommitteeCollective: pallet_collective::<Instance3> = 47,
 
         // Parachains pallets. Start indices at 50 to leave room.
         ParachainsOrigin: parachains_origin = 50,
@@ -2355,6 +2358,7 @@ mod benches {
         [pallet_beefy_mmr, BeefyMmrLeaf]
         [pallet_multiblock_migrations, MultiBlockMigrations]
         [pallet_session, cumulus_pallet_session_benchmarking::Pallet::<Runtime>]
+        [pallet_collective, OpenTechCommitteeCollective]
 
         // Tanssi
         [pallet_author_noting, AuthorNoting]
