@@ -26,6 +26,7 @@ mod beefy;
 mod collator_assignment_tests;
 mod common;
 mod core_scheduling_tests;
+mod container_token_transfers;
 mod ethereum_token_transfers;
 mod external_validators_tests;
 mod inactivity_tracking;
