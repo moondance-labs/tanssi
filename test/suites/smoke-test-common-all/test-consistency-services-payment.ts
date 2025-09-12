@@ -31,7 +31,7 @@ describeSuite({
             costPerBlock =
                 chain === "dancebox" || chain === "dancelight" || chain === "flashbox" || runtimeVersion < 1500
                     ? 1_000_000n
-                    : 2_0000_000_000n;
+                    : 30_000_000_000n;
         });
 
         it({

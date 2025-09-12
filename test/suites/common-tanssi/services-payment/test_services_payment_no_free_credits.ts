@@ -38,7 +38,7 @@ describeSuite({
 
             if (isStarlight) {
                 costPerSession = 50_000_000_000_000n;
-                costPerBlock = 2_000_000_000n;
+                costPerBlock = 30_000_000_000n;
             }
         });
         it({

@@ -51,7 +51,7 @@ describeSuite({
             }
 
             if (isStarlight) {
-                costPerBlock = 2_000_000_000n;
+                costPerBlock = 30_000_000_000n;
             }
 
             const sudoSignedTx = await polkadotJs.tx.sudo.sudo(tx2001OneSession).signAsync(alice);
