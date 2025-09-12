@@ -46,7 +46,7 @@ impl sc_cli::SubstrateCli for EmbededParachainOrchestratorCli {
     }
 
     fn support_url() -> String {
-        "https://github.com/paritytech/cumulus/issues/new".into()
+        "https://github.com/moondance-labs/tanssi/issues/new".into()
     }
 
     fn copyright_start_year() -> i32 {
