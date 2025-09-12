@@ -35,7 +35,7 @@ describeSuite({
                 isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SERVICES_PAYMENT.includes(specVersion);
 
             if (isStarlight) {
-                costPerSession = 5_000_000_000_000n;
+                costPerSession = 50_000_000_000_000n;
             }
         });
 
