@@ -20,9 +20,10 @@ use {
     super::*,
     frame_support::{
         parameter_types,
-        traits::{ConstU16, EitherOf},
+        traits::{ConstU16, EitherOf, MapSuccess},
     },
     frame_system::EnsureRootWithSuccess,
+    sp_runtime::traits::Replace,
 };
 
 mod origins;
@@ -33,7 +34,9 @@ pub use origins::{
 };
 mod tracks;
 pub use tracks::TracksInfo;
+mod councils;
 mod fellowship;
+
 pub use fellowship::{FellowshipCollectiveInstance, FellowshipReferendaInstance};
 
 parameter_types! {
@@ -70,8 +73,18 @@ impl pallet_whitelist::Config for Runtime {
     type WeightInfo = weights::pallet_whitelist::SubstrateWeight<Runtime>;
     type RuntimeCall = RuntimeCall;
     type RuntimeEvent = RuntimeEvent;
-    type WhitelistOrigin =
-        EitherOf<EnsureRootWithSuccess<Self::AccountId, ConstU16<65535>>, Fellows>;
+    type WhitelistOrigin = EitherOf<
+        EnsureRootWithSuccess<Self::AccountId, ConstU16<65535>>,
+        MapSuccess<
+            pallet_collective::EnsureProportionAtLeast<
+                Self::AccountId,
+                councils::OpenTechCommitteeInstance,
+                5,
+                9,
+            >,
+            Replace<ConstU16<6>>,
+        >,
+    >;
     type DispatchWhitelistedOrigin = EitherOf<EnsureRoot<Self::AccountId>, WhitelistedCaller>;
     type Preimages = Preimage;
 }
