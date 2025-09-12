@@ -27,7 +27,7 @@ describeSuite({
             costPerSession =
                 chain === "dancebox" || chain === "dancelight" || chain === "flashbox" || runtimeVersion < 1500
                     ? 100_000_000n
-                    : 5_000_000_000_000n;
+                    : 50_000_000_000_000n;
             costPerBlock =
                 chain === "dancebox" || chain === "dancelight" || chain === "flashbox" || runtimeVersion < 1500
                     ? 1_000_000n
