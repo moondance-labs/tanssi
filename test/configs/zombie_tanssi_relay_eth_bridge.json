@@ -4,7 +4,7 @@
         "provider": "native"
     },
     "relaychain": {
-        "chain": "dancelight-local",
+        "chain_spec_path": "specs/tanssi-relay.json",
         "default_command": "../target/release/tanssi-relay",
         "default_args": [
             "--no-hardware-benchmarks",
@@ -49,6 +49,35 @@
             }
         ]
     },
+    "parachains": [
+        {
+            "id": 2000,
+            "chain_spec_path": "specs/single-container-template-container-2000.json",
+            "collators": [
+                {
+                    "name": "FullNode-2000",
+                    "validator": false,
+                    "command": "../target/release/container-chain-simple-node",
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
+                    "rpc_port": 9949,
+                    "p2p_port": 33049,
+                    "prometheus_port": 33102
+                },
+                {
+                    "name": "Collator-01",
+                    "command": "../target/release/tanssi-node solo-chain",
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
+                    "prometheus_port": 33102
+                },
+                {
+                    "name": "Collator-02",
+                    "command": "../target/release/tanssi-node solo-chain",
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
+                    "prometheus_port": 33102
+                }
+            ]
+        }
+    ],
     "types": {
         "Header": {
             "number": "u64",
