@@ -35,8 +35,8 @@ use {
         parameter_types, weights, xcm_config, AggregateMessageOrigin, Balance, Balances,
         EthereumInboundQueue, EthereumOutboundQueue, EthereumSovereignAccount, EthereumSystem,
         FixedU128, GetAggregateMessageOrigin, Keccak256, MessageQueue,
-        OutboundMessageCommitmentRecorder, Runtime, RuntimeEvent, SnowbridgeFeesAccount,
-        TokenLocationReanchored, TransactionByteFee, TreasuryAccount, WeightToFee, UNITS,
+        OutboundMessageCommitmentRecorder, Runtime, RuntimeEvent, TokenLocationReanchored,
+        TransactionByteFee, TreasuryAccount, WeightToFee, UNITS,
     },
     frame_support::{traits::PalletInfoAccess, weights::ConstantMultiplier},
     pallet_xcm::EnsureXcm,
@@ -44,7 +44,9 @@ use {
     snowbridge_core::{gwei, meth, PricingParameters, Rewards},
     snowbridge_pallet_outbound_queue::OnNewCommitment,
     sp_core::{ConstU32, ConstU8, H160, H256},
-    tanssi_runtime_common::relay::{EthTokensLocalProcessor, RewardThroughFeesAccount},
+    tanssi_runtime_common::relay::{
+        EthTokensLocalProcessor, RewardThroughFeesAccount, SnowbridgeFeesAccount,
+    },
     tp_bridge::{DoNothingConvertMessage, DoNothingRouter, EthereumSystemHandler},
 };
 

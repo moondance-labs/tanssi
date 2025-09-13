@@ -20,7 +20,7 @@ use {
     crate::{
         bridge_to_ethereum_config::EthereumGatewayAddress, tests::common::*, Balances,
         EthereumInboundQueue, EthereumSovereignAccount, EthereumSystem, EthereumTokenTransfers,
-        ForeignAssetsCreator, RuntimeEvent, SnowbridgeFeesAccount, TokenLocationReanchored,
+        ForeignAssetsCreator, RuntimeEvent, TokenLocationReanchored,
     },
     alloc::vec,
     alloy_sol_types::SolEvent,
@@ -36,7 +36,7 @@ use {
     sp_core::{H160, H256},
     sp_runtime::{traits::MaybeEquivalence, FixedU128, TokenError},
     starlight_runtime_constants::snowbridge::EthereumNetwork,
-    tanssi_runtime_common::relay::NativeTokenTransferMessageProcessor,
+    tanssi_runtime_common::relay::{NativeTokenTransferMessageProcessor, SnowbridgeFeesAccount},
     xcm::{
         latest::{prelude::*, Junctions::*, Location},
         VersionedLocation,

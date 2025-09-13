@@ -22,18 +22,21 @@ use alloc::{vec, vec::Vec};
 use core::marker::PhantomData;
 use frame_support::{
     pallet_prelude::Zero,
+    parameter_types,
     traits::{
         fungible::{Inspect, Mutate},
         tokens::{Fortitude, Preservation},
     },
+    PalletId,
 };
 use frame_system::pallet_prelude::BlockNumberFor;
 use parity_scale_codec::{DecodeAll, Encode, EncodeLike};
+use primitives::AccountId;
 use snowbridge_core::Channel;
 use snowbridge_pallet_inbound_queue::RewardProcessor;
 use sp_core::{Get, H160, H256};
 use sp_runtime::{
-    traits::{Hash as _, MaybeEquivalence},
+    traits::{AccountIdConversion, Hash as _, MaybeEquivalence},
     DispatchError, DispatchResult,
 };
 use xcm::latest::{
@@ -47,6 +50,10 @@ use {
     },
     snowbridge_inbound_queue_primitives::EventProof as Message,
 };
+
+parameter_types! {
+    pub SnowbridgeFeesAccount: AccountId = PalletId(*b"sb/feeac").into_account_truncating();
+}
 
 /// Validates the gateway and channel of an inbound envelope
 pub struct GatewayAndChannelValidator<T>(PhantomData<T>);

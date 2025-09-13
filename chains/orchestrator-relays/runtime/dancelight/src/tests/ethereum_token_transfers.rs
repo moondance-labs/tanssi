@@ -21,7 +21,7 @@ use {
         bridge_to_ethereum_config::EthereumGatewayAddress, filter_events, tests::common::*,
         Balances, EthereumInboundQueue, EthereumLocation, EthereumSovereignAccount, EthereumSystem,
         EthereumTokenTransfers, ForeignAssets, ForeignAssetsCreator, RuntimeEvent,
-        SnowbridgeFeesAccount, TokenLocationReanchored, XcmPallet,
+        TokenLocationReanchored, XcmPallet,
     },
     alloc::vec,
     alloy_sol_types::SolEvent,
@@ -40,7 +40,7 @@ use {
     snowbridge_inbound_queue_primitives::{EventProof, Log},
     sp_core::{H160, H256},
     sp_runtime::{traits::MaybeEquivalence, FixedU128, TokenError},
-    tanssi_runtime_common::relay::NativeTokenTransferMessageProcessor,
+    tanssi_runtime_common::relay::{NativeTokenTransferMessageProcessor, SnowbridgeFeesAccount},
     xcm::{
         latest::{
             prelude::*, Asset as XcmAsset, AssetId as XcmAssetId, Assets as XcmAssets, Fungibility,
