@@ -2,7 +2,7 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type KeyringPair, alith } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 
-import { SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS, sleep, TESTNET_ETHEREUM_NETWORK_ID, waitEventUntilTimeout } from "utils";
+import { SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS, sleep, TESTNET_ETHEREUM_NETWORK_ID, waitEventUntilTimeout, SNOWBRIDGE_FEES_ACCOUNT } from "utils";
 
 describeSuite({
     id: "ZOMBIETANSS02",
@@ -146,6 +146,11 @@ describeSuite({
 
                 const channelNonceBefore = await relayChainPolkadotJs.query.ethereumOutboundQueue.nonce(newChannelId);
 
+                // Fees account (on Tanssi) only has the existential deposit
+                const existentialDeposit = relayChainPolkadotJs.consts.balances.existentialDeposit.toBigInt();
+                const feesAccountBalanceBefore = (await relayChainPolkadotJs.query.system.account(SNOWBRIDGE_FEES_ACCOUNT)).data.free.toBigInt();
+                expect(feesAccountBalanceBefore).to.be.eq(existentialDeposit);
+
                 await containerChainPolkadotJs.tx.polkadotXcm
                     .transferAssets(dest, versionedBeneficiary, versionedAssets, 0, "Unlimited")
                     .signAndSend(alice);
@@ -162,6 +167,10 @@ describeSuite({
                 expect(balanceAfter - balanceBefore).toEqual(tokenToTransfer);
 
                 const channelNonceAfter = await relayChainPolkadotJs.query.ethereumOutboundQueue.nonce(newChannelId);
+
+                // Fees are collected on Tanssi
+                const feesAccountBalanceAfter = (await relayChainPolkadotJs.query.system.account(SNOWBRIDGE_FEES_ACCOUNT)).data.free.toBigInt();
+                expect(feesAccountBalanceAfter).toBeGreaterThan(feesAccountBalanceBefore);
 
                 // Check that nonce has changed
                 expect(channelNonceAfter.toNumber() - channelNonceBefore.toNumber()).toEqual(1);

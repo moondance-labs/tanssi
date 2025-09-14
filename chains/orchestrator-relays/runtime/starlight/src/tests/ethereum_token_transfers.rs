@@ -36,7 +36,7 @@ use {
     sp_core::{H160, H256},
     sp_runtime::{traits::MaybeEquivalence, FixedU128, TokenError},
     starlight_runtime_constants::snowbridge::EthereumNetwork,
-    tanssi_runtime_common::relay::{NativeTokenTransferMessageProcessor, SnowbridgeFeesAccount},
+    tanssi_runtime_common::{relay::NativeTokenTransferMessageProcessor, SnowbridgeFeesAccount},
     xcm::{
         latest::{prelude::*, Junctions::*, Location},
         VersionedLocation,

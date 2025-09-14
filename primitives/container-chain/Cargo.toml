@@ -22,6 +22,7 @@ sp-runtime = { workspace = true }
 xcm = { workspace = true }
 xcm-builder = { workspace = true }
 xcm-executor = { workspace = true }
+primitives = { workspace = true }
 
 # Cumulus
 cumulus-primitives-core = { workspace = true }
@@ -38,6 +39,7 @@ std = [
 	"serde/std",
 	"sp-core/std",
 	"sp-runtime/std",
+	"primitives/std",
 	"xcm-builder/std",
 	"xcm-executor/std",
 	"xcm/std",
@@ -47,6 +49,7 @@ runtime-benchmarks = [
 	"frame-support/runtime-benchmarks",
 	"frame-system/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
+	"primitives/runtime-benchmarks",
 	"xcm-builder/runtime-benchmarks",
 	"xcm-executor/runtime-benchmarks",
 	"xcm/runtime-benchmarks",

@@ -24,6 +24,7 @@ use {
     },
     xcm_builder::InspectMessageQueues,
     SendError::*,
+    primitives::AccountId,
 };
 
 // We check if the destination is ETH
@@ -37,15 +38,16 @@ fn is_ethereum_location(loc: &Location, ethereum_network: NetworkId) -> bool {
     )
 }
 
-pub struct SovereignPaidRemoteExporter<Router, UniversalLocation, EthereumNetwork, ExecutionFee>(
-    PhantomData<(Router, UniversalLocation, EthereumNetwork, ExecutionFee)>,
+pub struct SovereignPaidRemoteExporter<Router, UniversalLocation, EthereumNetwork, ExecutionFee, TanssiFeesAccount>(
+    PhantomData<(Router, UniversalLocation, EthereumNetwork, ExecutionFee, TanssiFeesAccount)>,
 );
-impl<Router: SendXcm, UniversalLocation: Get<InteriorLocation>, EthereumNetwork, ExecutionFee>
+impl<Router: SendXcm, UniversalLocation: Get<InteriorLocation>, EthereumNetwork, ExecutionFee, TanssiFeesAccount>
     SendXcm
-    for SovereignPaidRemoteExporter<Router, UniversalLocation, EthereumNetwork, ExecutionFee>
+    for SovereignPaidRemoteExporter<Router, UniversalLocation, EthereumNetwork, ExecutionFee, TanssiFeesAccount>
 where
     EthereumNetwork: Get<NetworkId>,
     ExecutionFee: Get<u128>,
+    TanssiFeesAccount: Get<AccountId>,
 {
     type Ticket = Router::Ticket;
 
@@ -78,8 +80,7 @@ where
             id: AssetId(Location::here()),
             fun: Fungible(ExecutionFee::get()),
         };
-        let network = EthereumNetwork::get();
-        let eth_location = Location::new(2, GlobalConsensus(network));
+        let tanssi_fees_account = Location::new(0, AccountId32 { network: None, id: TanssiFeesAccount::get().into() });
 
         // Prepare the message to send
         let mut message = Xcm(vec![
@@ -90,7 +91,7 @@ where
             },
             SetAppendix(Xcm(vec![DepositAsset {
                 assets: AllCounted(1).into(),
-                beneficiary: eth_location,
+                beneficiary: tanssi_fees_account,
             }])),
             export_instruction,
         ]);
@@ -118,9 +119,9 @@ where
     }
 }
 
-impl<Router: SendXcm, UniversalLocation: Get<InteriorLocation>, EthereumNetwork, ExecutionFee>
+impl<Router: SendXcm, UniversalLocation: Get<InteriorLocation>, EthereumNetwork, ExecutionFee, TanssiFeesAccount>
     InspectMessageQueues
-    for SovereignPaidRemoteExporter<Router, UniversalLocation, EthereumNetwork, ExecutionFee>
+    for SovereignPaidRemoteExporter<Router, UniversalLocation, EthereumNetwork, ExecutionFee, TanssiFeesAccount>
 {
     fn clear_messages() {}
 

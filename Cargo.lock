@@ -20260,6 +20260,7 @@ dependencies = [
  "impl-trait-for-tuples",
  "log",
  "parity-scale-codec",
+ "polkadot-primitives",
  "scale-info",
  "serde",
  "sp-core",

@@ -42,9 +42,9 @@ use {
     snowbridge_core::{gwei, meth, PricingParameters, Rewards},
     snowbridge_pallet_outbound_queue::OnNewCommitment,
     sp_core::{ConstU32, ConstU8, H160, H256},
-    tanssi_runtime_common::relay::{
-        EthTokensLocalProcessor, RewardThroughFeesAccount, SnowbridgeFeesAccount,
-    },
+    tanssi_runtime_common::{relay::{
+        EthTokensLocalProcessor, RewardThroughFeesAccount,
+    }, SnowbridgeFeesAccount},
     tp_bridge::{DoNothingConvertMessage, DoNothingRouter, EthereumSystemHandler},
 };
 

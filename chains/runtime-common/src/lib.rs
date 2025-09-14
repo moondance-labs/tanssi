@@ -26,9 +26,15 @@ pub mod relay;
 pub mod universal_aliases;
 
 use core::marker::PhantomData;
-use frame_support::traits::{fungible::Credit, tokens::imbalance::ResolveTo, OnUnbalanced};
+use frame_support::{parameter_types, traits::{fungible::Credit, tokens::imbalance::ResolveTo, OnUnbalanced}, PalletId};
+use primitives::AccountId;
 use pallet_balances::NegativeImbalance;
 use sp_core::Get;
+use sp_runtime::traits::AccountIdConversion;
+
+parameter_types! {
+    pub SnowbridgeFeesAccount: AccountId = PalletId(*b"sb/feeac").into_account_truncating();
+}
 
 pub struct DealWithFees<R>(core::marker::PhantomData<R>);
 impl<R> OnUnbalanced<Credit<R::AccountId, pallet_balances::Pallet<R>>> for DealWithFees<R>
