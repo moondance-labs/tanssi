@@ -48,21 +48,21 @@ echo ""
 
 # 1. Execute Create Client Release ticket CI job for parachain and solochain
 echo "🔧 Running Create Client Release CI (Parachain)..."
-gh workflow run client-release-issue.yml -f from="$PREV_CLIENT" -f to="$NEXT_CLIENT" -f binary-type="parachain"
+#gh workflow run client-release-issue.yml -f from="$PREV_CLIENT" -f to="$NEXT_CLIENT" -f binary-type="parachain"
 
 echo "🔧 Running Create Client Release CI (Solochain)..."
-gh workflow run client-release-issue.yml -f from="$PREV_CLIENT" -f to="$NEXT_CLIENT" -f binary-type="solochain"
+#gh workflow run client-release-issue.yml -f from="$PREV_CLIENT" -f to="$NEXT_CLIENT" -f binary-type="solochain"
 
 # 2. Execute Create runtime release ticket CI job for parachain and solochain
 echo "🔧 Running Create Client Release CI (Parachain)..."
-gh workflow run runtime-release-issue.yml -f from="$PREV_RUNTIME" -f to="$NEXT_RUNTIME" -f client="$PREV_CLIENT"
+#gh workflow run runtime-release-issue.yml -f from="$PREV_RUNTIME" -f to="$NEXT_RUNTIME" -f client="$PREV_CLIENT"
 
 # 3. Execute Public Binary draft
 echo "🔧 Running Publish Binary Draft..."
-gh workflow run publish-binary.yml -f from="$PREV_CLIENT-para" -f to="$NEXT_CLIENT-para"
+#gh workflow run publish-binary.yml -f from="$PREV_CLIENT-para" -f to="$NEXT_CLIENT-para"
 
 echo "🔧 Publish Dancelight Binary Draft..."
-gh workflow run publish-binary-tanssi-solochain.yml -f from="$PREV_CLIENT" -f to="$NEXT_CLIENT"
+#gh workflow run publish-binary-tanssi-solochain.yml -f from="$PREV_CLIENT" -f to="$NEXT_CLIENT"
 
 # 4. Prepare optimized binary drafts
 echo "📦 Running Prepare Optimized Binary Draft CI..."
@@ -74,23 +74,6 @@ gh workflow run prepare-tanssi-relay-binary.yml -f sha="$SHA"
 # 5. Publish Runtime Draft CI jobs
 TAGS=("para" "starlight" "templates")
 CHAINS=("orchestrator-para-only" "orchestrator-solo-only" "templates-only")
-
-if [ ${#TAGS[@]} -ne ${#CHAINS[@]} ]; then
-  echo "❌ Error: TAGS and CHAINS arrays have different lengths!"
-  echo "  TAGS length: ${#TAGS[@]}"
-  echo "  CHAINS length: ${#CHAINS[@]}"
-  exit 1
-fi
-
-for i in "${!TAGS[@]}"; do
-  TAG=${TAGS[$i]}
-  CHAIN=${CHAINS[$i]}
-  echo "📤 Running Publish Runtime Draft for $CHAIN..."
-  gh workflow run publish-runtime.yml \
-    -f from="runtime-${PREV_RUNTIME}-${TAG}" \
-    -f to="runtime-${NEXT_RUNTIME}-${TAG}" \
-    -f chains="$CHAIN"
-done
 
 echo ""
 echo "✅ All workflows triggered successfully!"

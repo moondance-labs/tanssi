@@ -77,7 +77,8 @@ update_cargo_toml "chains/orchestrator-paras/node/Cargo.toml" "$CLIENT_VERSION"
 update_cargo_toml "chains/orchestrator-relays/client/cli/Cargo.toml" "$CLIENT_VERSION"
 update_cargo_toml "chains/orchestrator-relays/node/tanssi-relay/Cargo.toml" "$CLIENT_VERSION"
 update_cargo_toml "chains/orchestrator-relays/node/tanssi-relay-service/Cargo.toml" "$CLIENT_VERSION"
-update_cargo_toml "client/service-container-chain/Cargo.toml" "$CLIENT_VERSION"
+update_cargo_toml "client/service-orchestrator-chain/Cargo.toml" "$CLIENT_VERSION"
+update_cargo_toml "client/service-container-chain-rpc-provider/Cargo.toml" "$CLIENT_VERSION"
 update_cargo_toml "client/node-common/Cargo.toml" "$CLIENT_VERSION"
 
 # Update lib.rs files
