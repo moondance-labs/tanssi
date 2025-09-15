@@ -19601,7 +19601,7 @@ dependencies = [
 
 [[package]]
 name = "tc-service-container-chain-spawner"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "async-backing-primitives",
  "async-trait",
