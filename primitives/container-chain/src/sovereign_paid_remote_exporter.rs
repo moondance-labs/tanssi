@@ -79,7 +79,7 @@ where
             fun: Fungible(ExecutionFee::get()),
         };
         let network = EthereumNetwork::get();
-        let eth_location = Location::new(2, GlobalConsensus(network));
+        let eth_location = Location::new(1, GlobalConsensus(network));
 
         // Prepare the message to send
         let mut message = Xcm(vec![
