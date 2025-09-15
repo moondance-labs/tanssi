@@ -322,7 +322,7 @@ fn dancelight_testnet_genesis(
         crate::DancelightBondAccount::get(),
         crate::PendingRewardsAccount::get(),
         crate::EthereumSovereignAccount::get(),
-        tanssi_runtime_common::SnowbridgeFeesAccount::get(),
+        crate::SnowbridgeFeesAccount::get(),
         crate::TreasuryPalletId::get().into_account_truncating(),
     ];
 

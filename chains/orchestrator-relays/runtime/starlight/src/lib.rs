@@ -652,6 +652,7 @@ parameter_types! {
     pub const MaxPeerInHeartbeats: u32 = 10_000;
     pub const MaxBalance: Balance = Balance::MAX;
     pub TreasuryAccount: AccountId = Treasury::account_id();
+    pub SnowbridgeFeesAccount: AccountId = PalletId(*b"sb/feeac").into_account_truncating();
 }
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -1688,8 +1689,8 @@ impl pallet_maintenance_mode::Config for Runtime {
     type XcmExecutionManager = ();
 }
 
-pub const FIXED_BLOCK_PRODUCTION_COST: u128 = 10000 * MICROUNITS;
-pub const FIXED_COLLATOR_ASSIGNMENT_COST: u128 = 5 * UNITS;
+pub const FIXED_BLOCK_PRODUCTION_COST: u128 = 30000 * MICROUNITS;
+pub const FIXED_COLLATOR_ASSIGNMENT_COST: u128 = 50 * UNITS;
 
 pub struct BlockProductionCost<Runtime>(PhantomData<Runtime>);
 impl ProvideBlockProductionCost<Runtime> for BlockProductionCost<Runtime> {

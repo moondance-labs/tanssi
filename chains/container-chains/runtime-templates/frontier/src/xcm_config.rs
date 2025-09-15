@@ -48,9 +48,7 @@ use {
     polkadot_runtime_common::xcm_sender::ExponentialPrice,
     sp_core::{ConstU32, H160},
     sp_runtime::Perbill,
-    tanssi_runtime_common::{
-        universal_aliases::CommonUniversalAliases, SnowbridgeFeesAccount as TanssiFeesAccount,
-    },
+    tanssi_runtime_common::universal_aliases::CommonUniversalAliases,
     tp_container_chain::{
         sovereign_paid_remote_exporter::SovereignPaidRemoteExporter,
         ContainerChainEthereumLocationConverter,
@@ -213,7 +211,6 @@ pub type XcmRouter = WithUniqueTopic<(
         UniversalLocation,
         crate::EthereumNetwork,
         ContainerToEthTransferFee,
-        TanssiFeesAccount,
     >,
 )>;
 

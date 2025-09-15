@@ -315,7 +315,7 @@ fn starlight_testnet_genesis(
         crate::StarlightBondAccount::get(),
         crate::PendingRewardsAccount::get(),
         crate::EthereumSovereignAccount::get(),
-        tanssi_runtime_common::SnowbridgeFeesAccount::get(),
+        crate::SnowbridgeFeesAccount::get(),
         crate::TreasuryPalletId::get().into_account_truncating(),
     ];
 
