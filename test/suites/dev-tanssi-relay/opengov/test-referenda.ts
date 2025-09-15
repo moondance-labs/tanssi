@@ -261,7 +261,7 @@ describeSuite({
 
         it({
             id: "E04",
-            title: "Only Root track is enabled",
+            title: "Only Root and Whitelisted tracks are enabled",
             test: async ({ skip }) => {
                 if (!isDancelightRuntime(api)) {
                     skip();
@@ -274,8 +274,8 @@ describeSuite({
                 const preimageBlock = await context.createBlock(await notePreimageTx.signAsync(eve));
                 expect(preimageBlock.result?.successful).to.be.true;
 
-                // Step 2: Alice submits referenda for not existing track
-                const submitTx = api.tx.referenda.submit(
+                // Step 2: Alice submits referenda for whitelisted track
+                const submitTxSuccess = api.tx.referenda.submit(
                     {
                         Origins: "WhitelistedCaller",
                     },
@@ -283,15 +283,26 @@ describeSuite({
                     { After: "1" }
                 );
 
-                const submitBlock = await context.createBlock(await submitTx.signAsync(alice));
-                expect(submitBlock.result?.successful).to.be.false;
+                const submitBlockSuccess = await context.createBlock(await submitTxSuccess.signAsync(alice));
+                expect(submitBlockSuccess.result?.successful).to.be.true;
+
+                // Step 3: Alice submits referenda for not existing track
+                const submitTxFailure = api.tx.referenda.submit(
+                    {
+                        Origins: "GeneralAdmin",
+                    },
+                    { Lookup: { Hash: tx.method.hash.toHex(), len: tx.method.encodedLength } },
+                    { After: "1" }
+                );
+                const submitBlockFailure = await context.createBlock(await submitTxFailure.signAsync(alice));
+                expect(submitBlockFailure.result?.successful).to.be.false;
 
                 const metadata = await api.rpc.state.getMetadata();
                 const referendaPalletIndex = metadata.asLatest.pallets
                     .find(({ name }) => name.toString() === "Referenda")
                     .index.toString();
 
-                const errorData = submitBlock.result.events
+                const errorData = submitBlockFailure.result.events
                     .find((e) => e.event.method === "ExtrinsicFailed")
                     .event.toHuman().data as unknown as ExtrinsicFailedEventDataType;
                 expect(errorData.dispatchError.Module.index).toEqual(referendaPalletIndex);
