@@ -39,7 +39,7 @@ impl pallet_collective::Config<OpenTechCommitteeInstance> for Runtime {
     /// The maximum number of technical committee members.
     type MaxMembers = ConstU32<100>;
     type DefaultVote = pallet_collective::MoreThanMajorityThenPrimeDefaultVote;
-    type WeightInfo = ();
+    type WeightInfo = weights::pallet_collective::SubstrateWeight<Runtime>;
     type SetMembersOrigin = GeneralAdminOrRoot;
     type MaxProposalWeight = MaxProposalWeight;
     type KillOrigin = GeneralAdminOrRoot;
