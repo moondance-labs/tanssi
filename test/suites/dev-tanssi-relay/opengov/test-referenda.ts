@@ -256,6 +256,16 @@ describeSuite({
 
                 const submitBlock = await context.createBlock(await submitTx.signAsync(bob), { allowFailures: true });
                 expect(submitBlock.result?.successful).to.be.false;
+
+                const submitTx2 = api.tx.referenda.submit(
+                    {
+                        Origins: "WhitelistedCaller",
+                    },
+                    { Lookup: { Hash: tx.method.hash.toHex(), len: tx.method.encodedLength } },
+                    { After: "1" }
+                );
+                const submitBlock2 = await context.createBlock(await submitTx2.signAsync(bob), { allowFailures: true });
+                expect(submitBlock2.result?.successful).to.be.false;
             },
         });
 
@@ -286,7 +296,7 @@ describeSuite({
                 const submitBlockSuccess = await context.createBlock(await submitTxSuccess.signAsync(alice));
                 expect(submitBlockSuccess.result?.successful).to.be.true;
 
-                // Step 3: Alice submits referenda for not existing track
+                // Step 3: Alice submits referenda for non-existing track
                 const submitTxFailure = api.tx.referenda.submit(
                     {
                         Origins: "GeneralAdmin",
