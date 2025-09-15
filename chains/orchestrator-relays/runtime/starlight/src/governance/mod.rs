@@ -35,7 +35,7 @@ pub use origins::{
 };
 mod tracks;
 pub use tracks::TracksInfo;
-mod councils;
+pub mod councils;
 mod fellowship;
 
 pub use fellowship::{FellowshipCollectiveInstance, FellowshipReferendaInstance};

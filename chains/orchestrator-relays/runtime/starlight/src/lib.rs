@@ -178,7 +178,8 @@ mod weights;
 pub mod governance;
 use {
     governance::{
-        pallet_custom_origins, AuctionAdmin, Fellows, GeneralAdmin, Treasurer, TreasurySpender,
+        councils::*, pallet_custom_origins, AuctionAdmin, Fellows, GeneralAdmin, Treasurer,
+        TreasurySpender,
     },
     pallet_collator_assignment::CoreAllocationConfiguration,
 };
@@ -1687,7 +1688,10 @@ impl pallet_maintenance_mode::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type NormalCallFilter = NormalFilter;
     type MaintenanceCallFilter = InsideBoth<MaintenanceFilter, NormalFilter>;
-    type MaintenanceOrigin = EnsureRoot<AccountId>;
+    type MaintenanceOrigin = EitherOf<
+        EnsureRoot<AccountId>,
+        pallet_collective::EnsureProportionAtLeast<AccountId, OpenTechCommitteeInstance, 5, 9>,
+    >;
     type XcmExecutionManager = ();
 }
 
