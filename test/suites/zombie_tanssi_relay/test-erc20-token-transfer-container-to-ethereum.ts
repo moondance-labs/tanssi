@@ -7,7 +7,7 @@ import { hexToU8a } from "@polkadot/util";
 
 describeSuite({
     id: "ZOMBIETANSS04",
-    title: "XCM transfer ERC20 tokens back to to Ethereum",
+    title: "XCM transfer ERC20 tokens to Ethereum",
     foundationMethods: "zombie",
     testCases: ({ context, it }) => {
         let containerChainPolkadotJs: ApiPromise;
