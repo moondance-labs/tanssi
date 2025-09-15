@@ -26,9 +26,13 @@ pub mod relay;
 pub mod universal_aliases;
 
 use core::marker::PhantomData;
-use frame_support::{parameter_types, traits::{fungible::Credit, tokens::imbalance::ResolveTo, OnUnbalanced}, PalletId};
-use primitives::AccountId;
+use frame_support::{
+    parameter_types,
+    traits::{fungible::Credit, tokens::imbalance::ResolveTo, OnUnbalanced},
+    PalletId,
+};
 use pallet_balances::NegativeImbalance;
+use primitives::AccountId;
 use sp_core::Get;
 use sp_runtime::traits::AccountIdConversion;
 

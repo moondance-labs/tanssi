@@ -40,7 +40,7 @@ use {
     snowbridge_inbound_queue_primitives::{EventProof, Log},
     sp_core::{H160, H256},
     sp_runtime::{traits::MaybeEquivalence, FixedU128, TokenError},
-    tanssi_runtime_common::{relay::{NativeTokenTransferMessageProcessor}, SnowbridgeFeesAccount},
+    tanssi_runtime_common::{relay::NativeTokenTransferMessageProcessor, SnowbridgeFeesAccount},
     xcm::{
         latest::{
             prelude::*, Asset as XcmAsset, AssetId as XcmAssetId, Assets as XcmAssets, Fungibility,
