@@ -2242,8 +2242,9 @@ dependencies = [
  "substrate-frame-rpc-system",
  "substrate-prometheus-endpoint",
  "tc-consensus",
- "tc-orchestrator-chain-rpc-interface",
- "tc-service-container-chain",
+ "tc-orchestrator-chain-interface-through-rpc",
+ "tc-service-container-chain-rpc-provider",
+ "tc-service-container-chain-spawner",
  "tp-traits",
  "url",
 ]
@@ -2325,8 +2326,9 @@ dependencies = [
  "substrate-frame-rpc-system",
  "substrate-prometheus-endpoint",
  "tc-consensus",
- "tc-orchestrator-chain-rpc-interface",
- "tc-service-container-chain",
+ "tc-orchestrator-chain-interface-through-rpc",
+ "tc-service-container-chain-rpc-provider",
+ "tc-service-container-chain-spawner",
  "tokio",
  "url",
 ]
@@ -8991,11 +8993,14 @@ dependencies = [
  "cumulus-primitives-core",
  "cumulus-primitives-parachain-inherent",
  "cumulus-relay-chain-interface",
+ "dc-orchestrator-chain-interface",
  "frame-benchmarking",
  "frame-benchmarking-cli",
  "futures 0.3.31",
  "jsonrpsee",
  "log",
+ "nimbus-primitives",
+ "pallet-data-preservers-runtime-api",
  "parity-scale-codec",
  "polkadot-cli",
  "polkadot-primitives",
@@ -9035,11 +9040,13 @@ dependencies = [
  "sp-offchain",
  "sp-runtime",
  "sp-session",
+ "sp-state-machine",
  "sp-timestamp",
  "sp-transaction-pool",
  "substrate-build-script-utils",
  "substrate-frame-rpc-system",
  "substrate-prometheus-endpoint",
+ "tc-consensus",
  "tp-traits",
 ]
 
@@ -19205,7 +19212,8 @@ dependencies = [
  "substrate-frame-rpc-system",
  "substrate-prometheus-endpoint",
  "tc-consensus",
- "tc-service-container-chain",
+ "tc-service-container-chain-spawner",
+ "tc-service-orchestrator-chain",
  "tokio",
  "tokio-util",
  "tp-author-noting-inherent",
@@ -19546,7 +19554,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "tc-orchestrator-chain-rpc-interface"
+name = "tc-orchestrator-chain-interface-through-rpc"
 version = "0.1.0"
 dependencies = [
  "async-trait",
@@ -19576,7 +19584,42 @@ dependencies = [
 ]
 
 [[package]]
-name = "tc-service-container-chain"
+name = "tc-service-container-chain-rpc-provider"
+version = "0.15.0"
+dependencies = [
+ "async-trait",
+ "clap",
+ "cumulus-client-cli",
+ "cumulus-client-service",
+ "cumulus-primitives-core",
+ "cumulus-relay-chain-interface",
+ "dancebox-runtime",
+ "dc-orchestrator-chain-interface",
+ "dp-container-chain-genesis-data",
+ "futures 0.3.31",
+ "log",
+ "nimbus-primitives",
+ "node-common",
+ "pallet-data-preservers",
+ "polkadot-overseer",
+ "sc-cli",
+ "sc-client-api",
+ "sc-network",
+ "sc-service",
+ "sc-telemetry",
+ "sc-tracing",
+ "sp-core",
+ "substrate-build-script-utils",
+ "tc-orchestrator-chain-interface-through-rpc",
+ "tc-service-container-chain-spawner",
+ "tc-service-orchestrator-chain",
+ "tokio",
+ "tokio-stream",
+ "url",
+]
+
+[[package]]
+name = "tc-service-container-chain-spawner"
 version = "0.15.0"
 dependencies = [
  "async-backing-primitives",
@@ -19644,6 +19687,75 @@ dependencies = [
  "tokio-util",
  "tp-traits",
  "url",
+]
+
+[[package]]
+name = "tc-service-orchestrator-chain"
+version = "0.15.0"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "clap",
+ "cumulus-client-cli",
+ "cumulus-client-collator",
+ "cumulus-client-consensus-aura",
+ "cumulus-client-consensus-proposer",
+ "cumulus-client-service",
+ "cumulus-primitives-core",
+ "cumulus-relay-chain-interface",
+ "dancebox-runtime",
+ "dc-orchestrator-chain-interface",
+ "fdlimit",
+ "flume 0.10.14",
+ "futures 0.3.31",
+ "jsonrpsee",
+ "log",
+ "manual-container-chains-exclusion-rpc",
+ "manual-randomness-rpc",
+ "manual-xcm-rpc",
+ "nimbus-consensus",
+ "nimbus-primitives",
+ "node-common",
+ "pallet-author-noting-runtime-api",
+ "pallet-collator-assignment-runtime-api",
+ "pallet-configuration",
+ "pallet-data-preservers-runtime-api",
+ "pallet-registrar-runtime-api",
+ "polkadot-cli",
+ "polkadot-primitives",
+ "sc-basic-authorship",
+ "sc-chain-spec",
+ "sc-cli",
+ "sc-client-api",
+ "sc-consensus",
+ "sc-consensus-aura",
+ "sc-consensus-manual-seal",
+ "sc-network",
+ "sc-network-sync",
+ "sc-service",
+ "sc-sysinfo",
+ "sc-tracing",
+ "sc-transaction-pool",
+ "sc-transaction-pool-api",
+ "services-payment-rpc",
+ "sp-api",
+ "sp-block-builder",
+ "sp-blockchain",
+ "sp-consensus",
+ "sp-consensus-aura",
+ "sp-consensus-slots",
+ "sp-core",
+ "sp-keystore",
+ "sp-panic-handler",
+ "sp-state-machine",
+ "sp-timestamp",
+ "stream-payment-rpc",
+ "substrate-frame-rpc-system",
+ "tc-consensus",
+ "tc-service-container-chain-spawner",
+ "tokio",
+ "tokio-util",
+ "tp-author-noting-inherent",
 ]
 
 [[package]]

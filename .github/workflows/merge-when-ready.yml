@@ -51,7 +51,9 @@ jobs:
             fail-fast: false
             matrix:
                 test_name:
-                    - zombie_data_preservers
+                    - zombie_data_preservers_remote_dancebox
+                    - zombie_data_preservers_embedded_dancebox
+                    - zombie_data_preservers_embedded_dancelight
                     - zombie_tanssi_rotation
         steps:
             - name: Checkout
