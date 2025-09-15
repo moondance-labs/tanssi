@@ -31,7 +31,10 @@ use {
     },
     frame_system::EnsureRoot,
     pallet_xcm::XcmPassthrough,
-    pallet_xcm_executor_utils::{filters::IsTeleportFilter, DefaultTrustPolicy},
+    pallet_xcm_executor_utils::{
+        filters::{IsReserveFilter, IsTeleportFilter},
+        DefaultTrustPolicy,
+    },
     parachains_common::message_queue::{NarrowOriginToSibling, ParaIdToSibling},
     polkadot_runtime_common::xcm_sender::ExponentialPrice,
     sp_core::ConstU32,
@@ -205,7 +208,10 @@ impl xcm_executor::Config for XcmConfig {
     type XcmSender = XcmRouter;
     type AssetTransactor = AssetTransactors;
     type OriginConverter = XcmOriginToTransactDispatchOrigin;
-    type IsReserve = EthereumAssetReserveFromPara<crate::EthereumLocation, crate::EthereumNetwork>;
+    type IsReserve = (
+        IsReserveFilter<Runtime>,
+        EthereumAssetReserveFromPara<crate::EthereumLocation, crate::EthereumNetwork>,
+    );
     type IsTeleporter = IsTeleportFilter<Runtime>;
     type UniversalLocation = UniversalLocation;
     type Barrier = XcmBarrier;

@@ -37,7 +37,10 @@ use {
         AssetBalance, AssetId as AssetIdOf, ForeignAssetCreatedHook, ForeignAssetDestroyedHook,
     },
     pallet_xcm::XcmPassthrough,
-    pallet_xcm_executor_utils::{filters::IsTeleportFilter, DefaultTrustPolicy},
+    pallet_xcm_executor_utils::{
+        filters::{IsReserveFilter, IsTeleportFilter},
+        DefaultTrustPolicy,
+    },
     parachains_common::{
         message_queue::{NarrowOriginToSibling, ParaIdToSibling},
         xcm_config::AssetFeeAsExistentialDepositMultiplier,
@@ -219,7 +222,10 @@ impl xcm_executor::Config for XcmConfig {
     type XcmSender = XcmRouter;
     type AssetTransactor = AssetTransactors;
     type OriginConverter = XcmOriginToTransactDispatchOrigin;
-    type IsReserve = EthereumAssetReserveFromPara<crate::EthereumLocation, crate::EthereumNetwork>;
+    type IsReserve = (
+        IsReserveFilter<Runtime>,
+        EthereumAssetReserveFromPara<crate::EthereumLocation, crate::EthereumNetwork>,
+    );
     type IsTeleporter = IsTeleportFilter<Runtime>;
     type UniversalLocation = UniversalLocation;
     type Barrier = XcmBarrier;
