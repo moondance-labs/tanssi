@@ -2431,6 +2431,7 @@ dependencies = [
  "substrate-wasm-builder",
  "tanssi-runtime-common",
  "tp-container-chain",
+ "tp-xcm-commons",
  "xcm-primitives",
  "xcm-runtime-apis",
 ]
@@ -2513,6 +2514,7 @@ dependencies = [
  "substrate-wasm-builder",
  "tanssi-runtime-common",
  "tp-container-chain",
+ "tp-xcm-commons",
  "xcm-primitives",
  "xcm-runtime-apis",
 ]
@@ -3947,6 +3949,7 @@ dependencies = [
  "tokio",
  "tp-author-noting-inherent",
  "tp-bridge",
+ "tp-container-chain",
  "tp-data-preservers-common",
  "tp-invulnerables-filter-common",
  "tp-parathread-filter-common",

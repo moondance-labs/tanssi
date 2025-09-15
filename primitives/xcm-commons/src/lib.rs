@@ -77,3 +77,22 @@ where
         matches!((asset.id.0.parents, asset.id.0.first_interior()), (1, Some(GlobalConsensus(network))) if *network == EthereumNetwork::get())
     }
 }
+
+/// Filter to ensure an ETH asset is coming from a Parachain.
+pub struct EthereumAssetReserveFromPara<EthereumLocation, EthereumNetwork>(
+    core::marker::PhantomData<(EthereumLocation, EthereumNetwork)>,
+);
+impl<EthereumLocation, EthereumNetwork> frame_support::traits::ContainsPair<Asset, Location>
+    for EthereumAssetReserveFromPara<EthereumLocation, EthereumNetwork>
+where
+    EthereumLocation: Get<Location>,
+    EthereumNetwork: Get<NetworkId>,
+{
+    fn contains(asset: &Asset, origin: &Location) -> bool {
+        log::trace!(target: "xcm::contains", "EthereumAssetReserveFromPara asset: {:?}, origin: {:?}, eth_network: {:?}", asset, origin, EthereumLocation::get());
+        if *origin != EthereumLocation::get() {
+            return false;
+        }
+        matches!((asset.id.0.parents, asset.id.0.first_interior()), (2, Some(GlobalConsensus(network))) if *network == EthereumNetwork::get())
+    }
+}

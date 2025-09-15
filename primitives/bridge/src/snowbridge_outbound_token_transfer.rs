@@ -82,6 +82,8 @@ where
         let expected_network = EthereumNetwork::get();
         let universal_location = UniversalLocation::get();
 
+        log::trace!(target: "xcm::ethereum_blob_exporter", "validate params: network={network:?}, _channel={_channel:?}, universal_source={universal_source:?}, destination={destination:?}, message={message:?}");
+
         if network != expected_network {
             log::trace!(target: "xcm::ethereum_blob_exporter", "skipped due to unmatched bridge network {network:?}.");
             return Err(SendError::NotApplicable);
@@ -115,10 +117,25 @@ where
             return Err(SendError::NotApplicable);
         }
 
-        // TODO: Support source being a parachain.
-        if !matches!(local_sub, Junctions::Here) {
-            log::trace!(target: "xcm::ethereum_blob_exporter", "skipped due to unmatched sub network {local_sub:?}.");
-            return Err(SendError::NotApplicable);
+        match local_sub {
+            Junctions::Here => {}
+            Junctions::X1(arc) => {
+                if let [Junction::Parachain(_id)] = arc.as_ref() {
+                } else {
+                    log::trace!(
+                        target: "xcm::ethereum_blob_exporter",
+                        "skipped due to unexpected junction inside X1 {arc:?}."
+                    );
+                    return Err(SendError::NotApplicable);
+                }
+            }
+            _ => {
+                log::trace!(
+                    target: "xcm::ethereum_blob_exporter",
+                    "skipped due to unmatched sub network {local_sub:?}."
+                );
+                return Err(SendError::NotApplicable);
+            }
         }
 
         let (channel_id, agent_id) = BridgeChannelInfo::get().ok_or_else(|| {
@@ -135,7 +152,11 @@ where
             XcmConverter::<ConvertAssetId, ()>::new(&message, expected_network, agent_id);
         let (command, message_id) = converter.convert().map_err(|err|{
             log::error!(target: "xcm::ethereum_blob_exporter", "unroutable due to pattern matching error '{err:?}'.");
-            SendError::Unroutable
+            // For now - putting NotApplicable here to be able to pass the execution to the next
+            // exporter in the tuple. Both exporters: EthereumBlobExporter and ContainerEthereumBlobExporter
+            // should be refactored to the single exporter in a separate PR.
+            // After refactoring - revert error to SendError::Unroutable
+            SendError::NotApplicable
         })?;
 
         let outbound_message = Message {

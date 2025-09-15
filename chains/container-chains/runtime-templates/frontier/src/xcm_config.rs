@@ -37,10 +37,7 @@ use {
         AssetBalance, AssetId as AssetIdOf, ForeignAssetCreatedHook, ForeignAssetDestroyedHook,
     },
     pallet_xcm::XcmPassthrough,
-    pallet_xcm_executor_utils::{
-        filters::{IsReserveFilter, IsTeleportFilter},
-        DefaultTrustPolicy,
-    },
+    pallet_xcm_executor_utils::{filters::IsTeleportFilter, DefaultTrustPolicy},
     parachains_common::{
         message_queue::{NarrowOriginToSibling, ParaIdToSibling},
         xcm_config::AssetFeeAsExistentialDepositMultiplier,
@@ -53,7 +50,9 @@ use {
         sovereign_paid_remote_exporter::SovereignPaidRemoteExporter,
         ContainerChainEthereumLocationConverter,
     },
+    tp_xcm_commons::EthereumAssetReserveFromPara,
     xcm::latest::prelude::*,
+    xcm::prelude::Location,
     xcm_builder::{
         AccountKey20Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
         AllowTopLevelPaidExecutionFrom, ConvertedConcreteId, EnsureXcmOrigin, FungibleAdapter,
@@ -104,7 +103,7 @@ parameter_types! {
     pub RootLocation: Location = Location::here();
 
     // TODO: Revisit later
-    pub const ContainerToEthTransferFee: u128 = 2_700_000_000_000u128;
+    pub const ContainerToEthTransferFee: u128 = 3_500_000_000_000u128;
 }
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -220,7 +219,7 @@ impl xcm_executor::Config for XcmConfig {
     type XcmSender = XcmRouter;
     type AssetTransactor = AssetTransactors;
     type OriginConverter = XcmOriginToTransactDispatchOrigin;
-    type IsReserve = IsReserveFilter<Runtime>;
+    type IsReserve = EthereumAssetReserveFromPara<crate::EthereumLocation, crate::EthereumNetwork>;
     type IsTeleporter = IsTeleportFilter<Runtime>;
     type UniversalLocation = UniversalLocation;
     type Barrier = XcmBarrier;

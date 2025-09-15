@@ -28,6 +28,7 @@ dp-impl-tanssi-pallets-config = { workspace = true }
 dp-slot-duration-runtime-api = { workspace = true }
 pallet-cc-authorities-noting = { workspace = true }
 tanssi-runtime-common = { workspace = true }
+tp-xcm-commons = { workspace = true }
 
 # Moonkit
 async-backing-primitives = { workspace = true }
