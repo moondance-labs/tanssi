@@ -758,7 +758,6 @@ dependencies = [
  "staging-xcm",
  "staging-xcm-executor",
  "tanssi-emulated-integration-tests-common",
- "westend-system-emulated-network",
  "xcm-emulator",
 ]
 

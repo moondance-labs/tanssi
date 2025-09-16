@@ -28,7 +28,6 @@ snowbridge-core = { workspace = true }
 sp-core = { workspace = true }
 sp-runtime = { workspace = true }
 tanssi-emulated-integration-tests-common = { workspace = true }
-westend-system-emulated-network = { workspace = true }
 xcm = { workspace = true }
 xcm-emulator = { workspace = true }
 xcm-executor = { workspace = true }
