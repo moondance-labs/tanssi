@@ -181,7 +181,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
         assert!(fees_balance_after <= INITIAL_BALANCE + container_fee);
 
         // Check that fees were deducted from the container's sovereign account
-        // and that leftover fees were deposited there as well.
+        // and that we are in range as well.
         assert!(container_sovereign_balance_after < INITIAL_BALANCE);
         assert!(container_sovereign_balance_after >= INITIAL_BALANCE - container_fee);
     });
@@ -346,7 +346,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
         assert!(fees_balance_after <= INITIAL_BALANCE + container_fee);
 
         // Check that fees were deducted from the container's sovereign account
-        // and that leftover fees were deposited there as well.
+        // and that we are in range as well.
         assert!(container_sovereign_balance_after < INITIAL_BALANCE);
         assert!(container_sovereign_balance_after >= INITIAL_BALANCE - container_fee);
     });

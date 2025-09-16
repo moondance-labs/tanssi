@@ -192,6 +192,13 @@ describeSuite({
                 ).data.free.toBigInt();
                 expect(containerSovereignAccountBalance).toBeLessThan(initialBalance);
 
+                // Check we are in range
+                const exporterFees = feesAccountBalanceAfter - feesAccountBalanceBefore;
+                const roundingNonExporterFees = 80_000_000n;
+                expect(containerSovereignAccountBalance).toBeGreaterThan(
+                    initialBalance - exporterFees - roundingNonExporterFees
+                );
+
                 // Check that nonce has changed
                 expect(channelNonceAfter.toNumber() - channelNonceBefore.toNumber()).toEqual(1);
             },
