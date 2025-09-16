@@ -150,7 +150,7 @@ where
 
         let mut converter =
             XcmConverter::<ConvertAssetId, ()>::new(&message, expected_network, agent_id);
-        let (command, message_id) = converter.convert().map_err(|err|{
+        let (command, message_id) = converter.convert().map_err(|err| {
             log::error!(target: "xcm::ethereum_blob_exporter", "unroutable due to pattern matching error '{err:?}'.");
             // For now - putting NotApplicable here to be able to pass the execution to the next
             // exporter in the tuple. Both exporters: EthereumBlobExporter and ContainerEthereumBlobExporter
@@ -386,20 +386,20 @@ where
         }
     }
 
-    /// Convert the xcm for Polkadot-native token from the origin chain (container chain) into the Command
-    /// To match transfers of Polkadot-native tokens, we expect an input of the form:
-    /// # ReserveAssetDeposited
-    /// # ClearOrigin
-    /// # BuyExecution
-    /// # DepositAsset
-    /// # SetTopic
+    // /// Convert the xcm for Polkadot-native token from the origin chain (container chain) into the Command
+    // /// To match transfers of Polkadot-native tokens, we expect an input of the form:
+    // /// # ReserveAssetDeposited
+    // /// # ClearOrigin
+    // /// # BuyExecution
+    // /// # DepositAsset
+    // /// # SetTopic
     // fn make_mint_foreign_token_command(
     //     &mut self,
     // ) -> Result<(Command, [u8; 32]), XcmConverterError> {
     // TODO: This function will be used only when we start receiving tokens from containers.
     // The whole struct is copied from Snowbridge and modified for our needs, and thus function
     // will be modified in a latter PR.
-    todo!("make_mint_foreign_token_command");
+    // todo!("make_mint_foreign_token_command");
 
     // use XcmConverterError::*;
 
