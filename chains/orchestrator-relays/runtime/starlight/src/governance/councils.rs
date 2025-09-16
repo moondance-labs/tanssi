@@ -15,12 +15,8 @@
 // along with Polkadot. If not, see <http://www.gnu.org/licenses/>.
 
 use super::*;
-use frame_support::traits::EitherOf;
 
 pub type OpenTechCommitteeInstance = pallet_collective::Instance3;
-
-// Origin for general admin or root
-pub type GeneralAdminOrRoot = EitherOf<EnsureRoot<AccountId>, origins::GeneralAdmin>;
 
 parameter_types! {
     // TODO: Check value of this parameter
@@ -40,9 +36,9 @@ impl pallet_collective::Config<OpenTechCommitteeInstance> for Runtime {
     type MaxMembers = ConstU32<100>;
     type DefaultVote = pallet_collective::MoreThanMajorityThenPrimeDefaultVote;
     type WeightInfo = weights::pallet_collective::SubstrateWeight<Runtime>;
-    type SetMembersOrigin = GeneralAdminOrRoot;
+    type SetMembersOrigin = EnsureRoot<AccountId>;
     type MaxProposalWeight = MaxProposalWeight;
-    type KillOrigin = GeneralAdminOrRoot;
-    type DisapproveOrigin = GeneralAdminOrRoot;
+    type KillOrigin = EnsureRoot<AccountId>;
+    type DisapproveOrigin = EnsureRoot<AccountId>;
     type Consideration = ();
 }
