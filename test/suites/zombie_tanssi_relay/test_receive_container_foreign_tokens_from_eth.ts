@@ -74,7 +74,6 @@ describeSuite({
                 );
                 const { checkpointUpdate, messageExtrinsics } = await generateUpdate(relayChainPolkadotJs, [log]);
 
-
                 console.log("Forcing checkpoint");
                 const tx = relayChainPolkadotJs.tx.ethereumBeaconClient.forceCheckpoint(checkpointUpdate);
                 await signAndSendAndInclude(relayChainPolkadotJs.tx.sudo.sudo(tx), aliceRelay);
@@ -82,7 +81,6 @@ describeSuite({
                 // Create EthereumTokenTransfers channel to validate when receiving the tokens.
                 const newChannelId = "0x0000000000000000000000000000000000000000000000000000000000000004";
                 const newAgentId = "0x0000000000000000000000000000000000000000000000000000000000000005";
-
 
                 console.log("Creating channel");
                 const tx1 = relayChainPolkadotJs.tx.sudo.sudo(
