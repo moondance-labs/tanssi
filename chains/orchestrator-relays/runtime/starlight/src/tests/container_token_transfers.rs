@@ -87,7 +87,7 @@ fn receive_container_foreign_tokens_from_eth_disabled_no_error_and_no_xcm_sent()
             assert_ok!(
                 pallet_foreign_asset_creator::Pallet::<Runtime>::create_foreign_asset(
                     root_origin(),
-                    token_location.clone().into(),
+                    token_location.clone(),
                     asset_id,
                     AccountId::from(ALICE),
                     true,
