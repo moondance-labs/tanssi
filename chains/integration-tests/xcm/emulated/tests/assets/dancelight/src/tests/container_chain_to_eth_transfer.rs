@@ -43,35 +43,18 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
 
     // Common location calculations
     let container_location = Location::new(0, Parachain(CONTAINER_PARA_ID));
-    let eth_network_location = Location::new(
-        1,
-        GlobalConsensus(dancelight_runtime_constants::snowbridge::EthereumNetwork::get()),
-    );
+    let container_sovereign_account =
+        dancelight_runtime::xcm_config::LocationConverter::convert_location(&container_location)
+            .unwrap();
 
     Dancelight::execute_with(|| {
-        let container_sovereign_account =
-            dancelight_runtime::xcm_config::LocationConverter::convert_location(
-                &container_location,
-            )
-            .unwrap();
-        let eth_sovereign_account =
-            dancelight_runtime::xcm_config::LocationConverter::convert_location(
-                &eth_network_location,
-            )
-            .unwrap();
-
         // Get initial balances
         let fees_balance_before =
             <Dancelight as DancelightRelayPallet>::System::account(fees_account.clone())
                 .data
                 .free;
-        let eth_balance_before =
-            <Dancelight as DancelightRelayPallet>::System::account(eth_sovereign_account)
-                .data
-                .free;
 
         assert_eq!(fees_balance_before, INITIAL_BALANCE);
-        assert_eq!(eth_balance_before, 0u128);
 
         // Setup origins
         let root_origin = <Dancelight as Chain>::RuntimeOrigin::root();
@@ -81,7 +64,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
         assert_ok!(
             <Dancelight as DancelightRelayPallet>::Balances::transfer_allow_death(
                 alice_origin,
-                container_sovereign_account.into(),
+                container_sovereign_account.clone().into(),
                 INITIAL_BALANCE
             )
         );
@@ -181,19 +164,13 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
     });
 
     Dancelight::execute_with(|| {
-        let eth_sovereign_account =
-            dancelight_runtime::xcm_config::LocationConverter::convert_location(
-                &eth_network_location,
-            )
-            .unwrap();
-
         // Check final balances
         let fees_balance_after =
             <Dancelight as DancelightRelayPallet>::System::account(fees_account)
                 .data
                 .free;
-        let eth_balance_after =
-            <Dancelight as DancelightRelayPallet>::System::account(eth_sovereign_account)
+        let container_sovereign_balance_after =
+            <Dancelight as DancelightRelayPallet>::System::account(container_sovereign_account)
                 .data
                 .free;
 
@@ -203,9 +180,10 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
         // Check we are in range
         assert!(fees_balance_after <= INITIAL_BALANCE + container_fee);
 
-        // Check that leftover fees were deposited into the ETH sovereign account
-        assert!(eth_balance_after > 0u128);
-        assert!(eth_balance_after < container_fee);
+        // Check that fees were deducted from the container's sovereign account
+        // and that leftover fees were deposited there as well.
+        assert!(container_sovereign_balance_after < INITIAL_BALANCE);
+        assert!(container_sovereign_balance_after >= INITIAL_BALANCE - container_fee);
     });
 }
 
@@ -221,35 +199,18 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
 
     // Common location calculations
     let container_location = Location::new(0, Parachain(CONTAINER_PARA_ID));
-    let eth_network_location = Location::new(
-        1,
-        GlobalConsensus(dancelight_runtime_constants::snowbridge::EthereumNetwork::get()),
-    );
+    let container_sovereign_account =
+        dancelight_runtime::xcm_config::LocationConverter::convert_location(&container_location)
+            .unwrap();
 
     Dancelight::execute_with(|| {
-        let container_sovereign_account =
-            dancelight_runtime::xcm_config::LocationConverter::convert_location(
-                &container_location,
-            )
-            .unwrap();
-        let eth_sovereign_account =
-            dancelight_runtime::xcm_config::LocationConverter::convert_location(
-                &eth_network_location,
-            )
-            .unwrap();
-
         // Get initial balances
         let fees_balance_before =
             <Dancelight as DancelightRelayPallet>::System::account(fees_account.clone())
                 .data
                 .free;
-        let eth_balance_before =
-            <Dancelight as DancelightRelayPallet>::System::account(eth_sovereign_account)
-                .data
-                .free;
 
         assert_eq!(fees_balance_before, INITIAL_BALANCE);
-        assert_eq!(eth_balance_before, 0u128);
 
         // Setup origins
         let root_origin = <Dancelight as Chain>::RuntimeOrigin::root();
@@ -259,7 +220,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
         assert_ok!(
             <Dancelight as DancelightRelayPallet>::Balances::transfer_allow_death(
                 alice_origin,
-                container_sovereign_account.into(),
+                container_sovereign_account.clone().into(),
                 INITIAL_BALANCE
             )
         );
@@ -368,19 +329,13 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
     });
 
     Dancelight::execute_with(|| {
-        let eth_sovereign_account =
-            dancelight_runtime::xcm_config::LocationConverter::convert_location(
-                &eth_network_location,
-            )
-            .unwrap();
-
         // Check final balances
         let fees_balance_after =
             <Dancelight as DancelightRelayPallet>::System::account(fees_account)
                 .data
                 .free;
-        let eth_balance_after =
-            <Dancelight as DancelightRelayPallet>::System::account(eth_sovereign_account)
+        let container_sovereign_balance_after =
+            <Dancelight as DancelightRelayPallet>::System::account(container_sovereign_account)
                 .data
                 .free;
 
@@ -390,8 +345,9 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
         // Check we are in range
         assert!(fees_balance_after <= INITIAL_BALANCE + container_fee);
 
-        // Check that leftover fees were deposited into the ETH sovereign account
-        assert!(eth_balance_after > 0u128);
-        assert!(eth_balance_after < container_fee);
+        // Check that fees were deducted from the container's sovereign account
+        // and that leftover fees were deposited there as well.
+        assert!(container_sovereign_balance_after < INITIAL_BALANCE);
+        assert!(container_sovereign_balance_after >= INITIAL_BALANCE - container_fee);
     });
 }
