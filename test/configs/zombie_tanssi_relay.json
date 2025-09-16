@@ -11,7 +11,8 @@
             "-lparachain=debug",
             "--database=paritydb",
             "--no-beefy",
-            "--wasmtime-precompiled=wasm"
+            "--wasmtime-precompiled=wasm",
+            "-lxcm=trace"
         ],
         "genesis": {
             "runtimeGenesis": {
@@ -146,7 +147,7 @@
                     "name": "FullNode-2001",
                     "validator": false,
                     "command": "../target/release/container-chain-frontier-node",
-                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
+                    "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm", "-lxcm=trace"],
                     "rpc_port": 9950,
                     "p2p_port": 33050
                 }

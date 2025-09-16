@@ -632,7 +632,7 @@ pub struct EthTokensLocalProcessor<
     EthereumLocation,
     EthereumNetwork,
     InboundQueuePalletInstance,
-    ContainerTransfersEnabled, // TODO: remove this when all runtimes support container transfers 
+    ContainerTransfersEnabled, // TODO: remove this when all runtimes support container transfers
 >(
     PhantomData<(
         T,
@@ -698,10 +698,15 @@ where
         if let Some(eth_transfer_data) =
             Self::decode_message_for_eth_transfer(envelope.payload.as_slice())
         {
-            return pallet_foreign_asset_creator::ForeignAssetToAssetId::<T>::get(
-                eth_transfer_data.token_location,
-            )
-            .is_some();
+            match eth_transfer_data.destination {
+                Destination::AccountId32 { id: _ } => {
+                    return pallet_foreign_asset_creator::ForeignAssetToAssetId::<T>::get(
+                        eth_transfer_data.token_location,
+                    )
+                    .is_some();
+                }
+                _ => return true,
+            }
         }
 
         false
@@ -902,7 +907,21 @@ where
             }
         };
 
-        let asset_fee: Asset = (container_location.clone(), fee).into();
+        let container_location_reanchored = match container_location.clone().reanchored(
+            &container_location,
+            &<T as pallet_xcm::Config>::UniversalLocation::get(),
+        ) {
+            Ok(loc) => loc,
+            Err(e) => {
+                log::error!(
+                    "EthTokensLocalProcessor: failed to reanchor native container token location: {:?}",
+                    e
+                );
+                return Ok(());
+            }
+        };
+
+        let asset_fee: Asset = (container_location_reanchored.clone(), fee).into();
         let asset_to_deposit: Asset = (token_reanchored.clone(), eth_transfer_data.amount).into();
 
         let inbound_queue_pallet_index = InboundQueuePalletInstance::get();
@@ -911,11 +930,12 @@ where
         let remote_xcm = Xcm::<()>(vec![
             DescendOrigin(PalletInstance(inbound_queue_pallet_index).into()),
             UniversalOrigin(GlobalConsensus(network)),
-            WithdrawAsset(vec![asset_to_deposit.clone(), asset_fee.clone()].into()),
+            WithdrawAsset(vec![asset_fee.clone()].into()),
             BuyExecution {
-                fees: asset_fee,
+                fees: asset_fee.clone(),
                 weight_limit: Unlimited,
             },
+            ReserveAssetDeposited(vec![asset_to_deposit.clone()].into()),
             DepositAsset {
                 assets: Definite(vec![asset_to_deposit].into()),
                 beneficiary,

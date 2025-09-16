@@ -18,23 +18,21 @@
 
 use {
     crate::{
-        tests::common::*,
-        EthereumInboundQueue, EthereumTokenTransfers, Paras,
-        RuntimeEvent, XcmPallet,
+        tests::common::*, EthereumInboundQueue, EthereumTokenTransfers, Paras, RuntimeEvent,
+        XcmPallet,
     },
     alloc::vec,
     alloy_sol_types::SolEvent,
-    starlight_runtime_constants::snowbridge::EthereumNetwork,
     frame_support::assert_ok,
     parity_scale_codec::Encode,
     polkadot_parachain_primitives::primitives::HeadData,
     snowbridge_core::{AgentId, ChannelId, ParaId},
     snowbridge_inbound_queue_primitives::v1::{
-        Command, Destination, MessageV1, OutboundMessageAccepted,
-        VersionedXcmMessage,
+        Command, Destination, MessageV1, OutboundMessageAccepted, VersionedXcmMessage,
     },
     snowbridge_inbound_queue_primitives::{EventProof, Log},
     sp_core::{H160, H256},
+    starlight_runtime_constants::snowbridge::EthereumNetwork,
     xcm::latest::{prelude::*, Junctions::*, Location},
 };
 

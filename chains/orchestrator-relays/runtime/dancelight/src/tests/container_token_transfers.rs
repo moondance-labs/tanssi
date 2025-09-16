@@ -900,7 +900,7 @@ fn receive_container_foreign_tokens_from_eth_works_for_foreign_account_id_20() {
             assert_ok!(
                 pallet_foreign_asset_creator::Pallet::<Runtime>::create_foreign_asset(
                     root_origin(),
-                    token_location.clone().into(),
+                    token_location.clone(),
                     asset_id,
                     AccountId::from(ALICE),
                     true,
@@ -1013,7 +1013,7 @@ fn receive_container_foreign_tokens_from_eth_works_for_foreign_account_id_32() {
             assert_ok!(
                 pallet_foreign_asset_creator::Pallet::<Runtime>::create_foreign_asset(
                     root_origin(),
-                    token_location.clone().into(),
+                    token_location.clone(),
                     asset_id,
                     AccountId::from(ALICE),
                     true,
@@ -1025,7 +1025,7 @@ fn receive_container_foreign_tokens_from_eth_works_for_foreign_account_id_32() {
 
             let amount_to_transfer = 100_000_000;
             let fee = 1_500_000_000_000_000;
-            let container_fee = 500_000_000_000_000;
+            let container_fee = 2_000_000_000_000_000;
 
             let payload = VersionedXcmMessage::V1(MessageV1 {
                 chain_id: 1,
@@ -1082,28 +1082,47 @@ fn receive_container_foreign_tokens_from_eth_doesnt_error_if_error_sending_xcm()
         let para_id: ParaId = 2000u32.into();
         let container_para_id = 2001u32;
 
-        assert_ok!(XcmPallet::force_default_xcm_version(root_origin(), Some(5u32)));
+        assert_ok!(XcmPallet::force_default_xcm_version(
+            root_origin(),
+            Some(5u32)
+        ));
 
         // We don't set the current head on purpose, so the XCM sending will fail
 
         let channel_id = ChannelId::new([2u8; 32]);
         let agent_id = AgentId::from_low_u64_be(43);
-        assert_ok!(EthereumTokenTransfers::set_token_transfer_channel(root_origin(), channel_id, agent_id, para_id));
+        assert_ok!(EthereumTokenTransfers::set_token_transfer_channel(
+            root_origin(),
+            channel_id,
+            agent_id,
+            para_id
+        ));
 
         let token_addr = H160::repeat_byte(0x22);
         let token_location = Location {
             parents: 1,
             interior: X2([
                 GlobalConsensus(EthereumNetwork::get()),
-                AccountKey20 { network: Some(EthereumNetwork::get()), key: token_addr.into() },
-            ].into()),
+                AccountKey20 {
+                    network: Some(EthereumNetwork::get()),
+                    key: token_addr.into(),
+                },
+            ]
+            .into()),
         };
 
         let asset_id = 42u16;
 
-        assert_ok!(pallet_foreign_asset_creator::Pallet::<Runtime>::create_foreign_asset(
-            root_origin(), token_location.clone().into(), asset_id, AccountId::from(ALICE), true, 1
-        ));
+        assert_ok!(
+            pallet_foreign_asset_creator::Pallet::<Runtime>::create_foreign_asset(
+                root_origin(),
+                token_location.clone(),
+                asset_id,
+                AccountId::from(ALICE),
+                true,
+                1
+            )
+        );
 
         let beneficiary = [5u8; 20];
         let amount_to_transfer = 100_000_000u128;
@@ -1114,11 +1133,16 @@ fn receive_container_foreign_tokens_from_eth_doesnt_error_if_error_sending_xcm()
             chain_id: 1,
             command: Command::SendToken {
                 token: token_addr,
-                destination: Destination::ForeignAccountId20 { para_id: container_para_id, id: beneficiary, fee: container_fee },
+                destination: Destination::ForeignAccountId20 {
+                    para_id: container_para_id,
+                    id: beneficiary,
+                    fee: container_fee,
+                },
                 amount: amount_to_transfer,
                 fee,
             },
-        }).encode();
+        })
+        .encode();
 
         let event = OutboundMessageAccepted {
             channel_id: <[u8; 32]>::from(channel_id).into(),
@@ -1129,8 +1153,13 @@ fn receive_container_foreign_tokens_from_eth_doesnt_error_if_error_sending_xcm()
 
         let message = EventProof {
             event_log: Log {
-                address: <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(),
-                topics: event.encode_topics().into_iter().map(|w| H256::from(w.0 .0)).collect(),
+                address: <Runtime as snowbridge_pallet_inbound_queue::Config>::GatewayAddress::get(
+                ),
+                topics: event
+                    .encode_topics()
+                    .into_iter()
+                    .map(|w| H256::from(w.0 .0))
+                    .collect(),
                 data: event.encode_data(),
             },
             proof: mock_snowbridge_message_proof(),
@@ -1138,10 +1167,12 @@ fn receive_container_foreign_tokens_from_eth_doesnt_error_if_error_sending_xcm()
 
         assert_ok!(EthereumInboundQueue::submit(relayer, message));
 
-        let sent = System::events().iter().any(|r| matches!(
-            r.event,
-            RuntimeEvent::XcmPallet(pallet_xcm::Event::Sent { .. })
-        ));
+        let sent = System::events().iter().any(|r| {
+            matches!(
+                r.event,
+                RuntimeEvent::XcmPallet(pallet_xcm::Event::Sent { .. })
+            )
+        });
         assert!(!sent, "XCM Sent event should NOT be emitted!");
     });
 }
