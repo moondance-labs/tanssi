@@ -80,9 +80,10 @@ describeSuite({
                     decimals: 12,
                 };
 
+                const initialBalance = 100_000_000_000_000n;
                 const txHash = await relayChainPolkadotJs.tx.utility
                     .batch([
-                        relayChainPolkadotJs.tx.balances.transferKeepAlive(convertedAddress, 100_000_000_000_000n),
+                        relayChainPolkadotJs.tx.balances.transferKeepAlive(convertedAddress, initialBalance),
                         relayChainPolkadotJs.tx.sudo.sudo(
                             relayChainPolkadotJs.tx.ethereumTokenTransfers.setTokenTransferChannel(
                                 newChannelId,
@@ -176,11 +177,20 @@ describeSuite({
 
                 const channelNonceAfter = await relayChainPolkadotJs.query.ethereumOutboundQueue.nonce(newChannelId);
 
+                // Wait 2 blocks until fees are collected
+                await sleep(24000);
+
                 // Fees are collected on Tanssi
                 const feesAccountBalanceAfter = (
                     await relayChainPolkadotJs.query.system.account(SNOWBRIDGE_FEES_ACCOUNT)
                 ).data.free.toBigInt();
                 expect(feesAccountBalanceAfter).toBeGreaterThan(feesAccountBalanceBefore);
+
+                // Check that the container chain sovereign account balance (in Tanssi) has been reduced
+                const containerSovereignAccountBalance = (
+                    await relayChainPolkadotJs.query.system.account(convertedAddress)
+                ).data.free.toBigInt();
+                expect(containerSovereignAccountBalance).toBeLessThan(initialBalance);
 
                 // Check that nonce has changed
                 expect(channelNonceAfter.toNumber() - channelNonceBefore.toNumber()).toEqual(1);
