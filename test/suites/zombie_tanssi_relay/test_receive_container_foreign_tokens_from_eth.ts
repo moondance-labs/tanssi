@@ -31,8 +31,6 @@ describeSuite({
             title: "Should receive container foreign tokens from Ethereum and forward them to container",
             timeout: 300000,
             test: async () => {
-                console.log("Entrando al test");
-
                 const ethereumSovereignAccount =
                     await containerChainPolkadotJs.call.locationToAccountApi.convertLocation({
                         V3: { parents: 2, interior: { X1: { GlobalConsensus: ETHEREUM_NETWORK_TESTNET } } },
@@ -52,7 +50,7 @@ describeSuite({
                 const paraIdForChannel = 2000;
                 const containerParaId = 2001;
                 const assetId = 42;
-                const tokenAddrHex = "1111111111111111111111111111111111111111";
+                const tokenAddrHex = "0x1111111111111111111111111111111111111111";
 
                 // Hard-coding payload as we do not have scale encoding-decoding
                 const log = await generateEventLog(
@@ -179,7 +177,7 @@ describeSuite({
                 console.log("receiverNativeContainerBalanceAfter: ", receiverForeignContainerBalanceAfter);
 
                 // Check that fees were deducted in native token from the ETH sovereign account
-                expect(ethereumSovereignContainerNativeBalanceBefore).to.be.eq(
+                expect(ethereumSovereignContainerNativeBalanceAfter).to.be.eq(
                     ethereumSovereignContainerNativeBalanceBefore - containerFee
                 );
 

@@ -254,7 +254,7 @@ impl xcm_executor::Config for XcmConfig {
     type Weigher = XcmWeigher;
     type Trader = (
         UsingComponents<WeightToFee, SelfReserve, AccountId, Balances, ()>,
-        UsingComponents<WeightToFee, NativeAssetLocation, AccountId, Balances, ()>, // TODO: check if this is needed
+        UsingComponents<WeightToFee, NativeAssetLocation, AccountId, Balances, ()>,
         cumulus_primitives_utility::TakeFirstAssetTrader<
             AccountId,
             AssetRateAsMultiplier,
