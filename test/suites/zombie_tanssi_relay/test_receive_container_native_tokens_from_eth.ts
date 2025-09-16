@@ -30,6 +30,7 @@ describeSuite({
             title: "Should receive container native tokens from Ethereum and forward them to container",
             timeout: 300000,
             test: async () => {
+                console.log("01");
                 const ethereumSovereignAccount =
                     await containerChainPolkadotJs.call.locationToAccountApi.convertLocation({
                         V3: { parents: 2, interior: { X1: { GlobalConsensus: ETHEREUM_NETWORK_TESTNET } } },
@@ -71,6 +72,7 @@ describeSuite({
 
                 await signAndSendAndInclude(relayChainPolkadotJs.tx.sudo.sudo(tx), aliceRelay);
 
+                console.log("02");
                 // Create EthereumTokenTransfers channel to validate when receiving the tokens.
                 const newChannelId = "0x0000000000000000000000000000000000000000000000000000000000000004";
                 const newAgentId = "0x0000000000000000000000000000000000000000000000000000000000000005";
@@ -85,6 +87,7 @@ describeSuite({
                 );
                 await signAndSendAndInclude(tx1, aliceRelay);
 
+                console.log("03");
                 const containerMetadata = await containerChainPolkadotJs.rpc.state.getMetadata();
                 const balancesPalletIndex = containerMetadata.asLatest.pallets
                     .find(({ name }) => name.toString() === "Balances")
@@ -119,17 +122,20 @@ describeSuite({
                 );
 
                 await signAndSendAndInclude(tx2, aliceRelay);
+                console.log("04");
 
                 const tx3 = relayChainPolkadotJs.tx.sudo.sudo(
                     relayChainPolkadotJs.tx.paras.forceSetCurrentHead(2001, "0x010203")
                 );
 
                 await signAndSendAndInclude(tx3, aliceRelay);
+                console.log("05");
 
                 const tx4 = relayChainPolkadotJs.tx.sudo.sudo(
                     relayChainPolkadotJs.tx.xcmPallet.forceDefaultXcmVersion(5)
                 );
                 await signAndSendAndInclude(tx4, aliceRelay);
+                console.log("06");
 
                 // Simulate previous native container token reception from Ethereum.
                 const transferContainerToken = containerChainPolkadotJs.tx.balances.transferKeepAlive(
@@ -137,6 +143,7 @@ describeSuite({
                     20000000000000000n
                 );
                 await signAndSendAndInclude(transferContainerToken, aliceFrontier);
+                console.log("07");
 
                 const ethereumSovereignContainerBalanceBefore = (
                     await containerChainPolkadotJs.query.system.account(ethereumSovereignAccountAddress)
@@ -152,9 +159,12 @@ describeSuite({
 
                 const tx5 = relayChainPolkadotJs.tx.ethereumInboundQueue.submit(messageExtrinsics[0]);
                 await signAndSendAndInclude(tx5, aliceRelay);
+                console.log("08");
 
                 // Wait for the XCM message to reach the container chain
                 await waitSessions(context, relayChainPolkadotJs, 1, null, "Tanssi-relay");
+
+                console.log("09");
 
                 const ethereumSovereignContainerBalanceAfter = (
                     await containerChainPolkadotJs.query.system.account(ethereumSovereignAccountAddress)
