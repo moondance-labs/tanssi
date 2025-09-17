@@ -188,7 +188,10 @@ describeSuite({
                                 const currentNonce = await (await api.at(blockHash)).query.ethereumInboundQueue.nonce(
                                     PRIMARY_GOVERNANCE_CHANNEL_ID
                                 );
-                                expect(currentNonce.toBigInt()).to.be.equal(previousNonce.toBigInt() + 1n);
+                                expect(
+                                    currentNonce.toBigInt(),
+                                    `Block: ${blockNumber}. Current nonce ${currentNonce.toBigInt()} should be greater than the previous one ${previousNonce.toBigInt()}.`
+                                ).to.be.equal(previousNonce.toBigInt() + 1n);
                                 skip();
                             }
 
@@ -277,7 +280,10 @@ describeSuite({
                                 const currentNonce = await (await api.at(blockHash)).query.ethereumInboundQueue.nonce(
                                     PRIMARY_GOVERNANCE_CHANNEL_ID
                                 );
-                                expect(currentNonce.toBigInt()).to.be.equal(previousNonce.toBigInt() + 1n);
+                                expect(
+                                    currentNonce.toBigInt(),
+                                    `Block: ${blockNumber}. Current nonce ${currentNonce.toBigInt()} should be greater than the previous one ${previousNonce.toBigInt()}.`
+                                ).to.be.equal(previousNonce.toBigInt() + 1n);
                                 skip();
                             }
 
