@@ -120,12 +120,6 @@ describeSuite({
 
                 await signAndSendAndInclude(tx2, aliceRelay);
 
-                const tx3 = relayChainPolkadotJs.tx.sudo.sudo(
-                    relayChainPolkadotJs.tx.paras.forceSetCurrentHead(2001, "0x010203")
-                );
-
-                await signAndSendAndInclude(tx3, aliceRelay);
-
                 const tx4 = relayChainPolkadotJs.tx.sudo.sudo(
                     relayChainPolkadotJs.tx.xcmPallet.forceDefaultXcmVersion(5)
                 );
