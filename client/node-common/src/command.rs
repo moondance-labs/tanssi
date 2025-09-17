@@ -15,8 +15,9 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
 use {
-    crate::cli::RelayChainCli,
+    crate::cli::{ContainerNodeRelayChainCli, RelayChainCli},
     parity_scale_codec::Encode,
+    polkadot_service::{GenericChainSpec, WestendChainSpec},
     sc_chain_spec::construct_genesis_block,
     sc_cli::{
         ChainSpec, CliConfiguration, DefaultConfigurationValues, ImportParams, KeystoreParams,
@@ -52,7 +53,7 @@ pub fn generate_genesis_block<Block: BlockT>(
     Ok(construct_genesis_block(state_root, genesis_state_version))
 }
 
-impl<N: Get<&'static str>> DefaultConfigurationValues for RelayChainCli<N> {
+impl<N: Get<&'static str>> DefaultConfigurationValues for ContainerNodeRelayChainCli<N> {
     fn p2p_listen_port() -> u16 {
         30334
     }
@@ -66,7 +67,7 @@ impl<N: Get<&'static str>> DefaultConfigurationValues for RelayChainCli<N> {
     }
 }
 
-impl<N: Get<&'static str>> CliConfiguration<Self> for RelayChainCli<N> {
+impl<N: Get<&'static str>> CliConfiguration<Self> for ContainerNodeRelayChainCli<N> {
     fn shared_params(&self) -> &SharedParams {
         self.base.base.shared_params()
     }
@@ -177,7 +178,7 @@ impl<N: Get<&'static str>> CliConfiguration<Self> for RelayChainCli<N> {
     }
 }
 
-impl<N: Get<&'static str>> SubstrateCli for RelayChainCli<N> {
+impl<N: Get<&'static str>> SubstrateCli for ContainerNodeRelayChainCli<N> {
     fn impl_version() -> String {
         env!("SUBSTRATE_CLI_IMPL_VERSION").into()
     }
@@ -187,7 +188,7 @@ impl<N: Get<&'static str>> SubstrateCli for RelayChainCli<N> {
     }
 
     fn support_url() -> String {
-        "https://github.com/paritytech/cumulus/issues/new".into()
+        "https://github.com/moondance-labs/tanssi/issues/new".into()
     }
 
     fn copyright_start_year() -> i32 {
@@ -205,11 +206,193 @@ impl<N: Get<&'static str>> SubstrateCli for RelayChainCli<N> {
     fn description() -> String {
         format!(
             "Container Chain {} Node\n\nThe command-line arguments provided first will be \
-        passed to the parachain node, while the arguments provided after -- will be passed \
+        passed to the orchestrator node, while the arguments provided after -- will be passed \
         to the relay chain node.\n\n\
-        {} <parachain-args> -- <relay-chain-args>",
+        {} <orchestrator-args> -- <relay-chain-args>",
             N::get(),
-            RelayChainCli::<N>::executable_name()
+            ContainerNodeRelayChainCli::<N>::executable_name()
         )
+    }
+}
+
+impl SubstrateCli for RelayChainCli {
+    fn impl_name() -> String {
+        "Tanssi Collator".into()
+    }
+
+    fn impl_version() -> String {
+        env!("SUBSTRATE_CLI_IMPL_VERSION").into()
+    }
+
+    fn description() -> String {
+        format!(
+            "Tanssi Collator\n\nThe command-line arguments provided first will be \
+		passed to the parachain node, while the arguments provided after -- will be passed \
+		to the relay chain node.\n\n\
+		{} <parachain-args> -- <relay-chain-args>",
+            Self::executable_name()
+        )
+    }
+
+    fn author() -> String {
+        env!("CARGO_PKG_AUTHORS").into()
+    }
+
+    fn support_url() -> String {
+        "https://github.com/moondance-labs/tanssi/issues/new".into()
+    }
+
+    fn copyright_start_year() -> i32 {
+        2020
+    }
+
+    fn load_spec(&self, id: &str) -> std::result::Result<Box<dyn sc_service::ChainSpec>, String> {
+        const STARLIGHT_RAW_SPECS: &[u8] =
+            include_bytes!("../../../specs/solochain/starlight-raw-specs.json");
+
+        match id {
+            "westend_moonbase_relay_testnet" => Ok(Box::new(WestendChainSpec::from_json_bytes(
+                &include_bytes!("../../../specs/dancebox/alphanet-relay-raw-specs.json")[..],
+            )?)),
+            // Default to starlight if this is a solochain node. Else default to polkadot default.
+            "" if self.solochain => Ok(Box::new(GenericChainSpec::from_json_bytes(
+                STARLIGHT_RAW_SPECS,
+            )?)),
+            "starlight" | "tanssi" => Ok(Box::new(GenericChainSpec::from_json_bytes(
+                STARLIGHT_RAW_SPECS,
+            )?)),
+            "dancelight" => Ok(Box::new(GenericChainSpec::from_json_bytes(
+                &include_bytes!("../../../specs/solochain/dancelight-raw-specs.json")[..],
+            )?)),
+            // If we are not using a pre-baked relay spec, then fall back to the
+            // Polkadot service to interpret the id.
+            id => polkadot_cli::Cli::from_iter([RelayChainCli::executable_name()].iter())
+                .load_spec(id),
+        }
+    }
+}
+
+impl DefaultConfigurationValues for RelayChainCli {
+    fn p2p_listen_port() -> u16 {
+        30334
+    }
+
+    fn rpc_listen_port() -> u16 {
+        9945
+    }
+
+    fn prometheus_listen_port() -> u16 {
+        9616
+    }
+}
+
+impl CliConfiguration<Self> for RelayChainCli {
+    fn shared_params(&self) -> &SharedParams {
+        self.base.base.shared_params()
+    }
+
+    fn import_params(&self) -> Option<&ImportParams> {
+        self.base.base.import_params()
+    }
+
+    fn network_params(&self) -> Option<&NetworkParams> {
+        self.base.base.network_params()
+    }
+
+    fn keystore_params(&self) -> Option<&KeystoreParams> {
+        self.base.base.keystore_params()
+    }
+
+    fn base_path(&self) -> Result<Option<BasePath>> {
+        Ok(self
+            .shared_params()
+            .base_path()?
+            .or_else(|| Some(self.base_path.clone().into())))
+    }
+
+    fn rpc_addr(&self, default_listen_port: u16) -> Result<Option<Vec<sc_cli::RpcEndpoint>>> {
+        self.base.base.rpc_addr(default_listen_port)
+    }
+
+    fn prometheus_config(
+        &self,
+        default_listen_port: u16,
+        chain_spec: &Box<dyn ChainSpec>,
+    ) -> Result<Option<PrometheusConfig>> {
+        self.base
+            .base
+            .prometheus_config(default_listen_port, chain_spec)
+    }
+
+    fn init<F>(&self, _support_url: &String, _impl_version: &String, _logger_hook: F) -> Result<()>
+    where
+        F: FnOnce(&mut sc_cli::LoggerBuilder),
+    {
+        unreachable!("PolkadotCli is never initialized; qed");
+    }
+
+    fn chain_id(&self, is_dev: bool) -> Result<String> {
+        let chain_id = self.base.base.chain_id(is_dev)?;
+
+        Ok(if chain_id.is_empty() {
+            self.chain_id.clone().unwrap_or_default()
+        } else {
+            chain_id
+        })
+    }
+
+    fn role(&self, is_dev: bool) -> Result<sc_service::Role> {
+        self.base.base.role(is_dev)
+    }
+
+    fn transaction_pool(&self, is_dev: bool) -> Result<sc_service::config::TransactionPoolOptions> {
+        self.base.base.transaction_pool(is_dev)
+    }
+
+    fn trie_cache_maximum_size(&self) -> Result<Option<usize>> {
+        self.base.base.trie_cache_maximum_size()
+    }
+
+    fn rpc_methods(&self) -> Result<sc_service::config::RpcMethods> {
+        self.base.base.rpc_methods()
+    }
+
+    fn rpc_max_connections(&self) -> Result<u32> {
+        self.base.base.rpc_max_connections()
+    }
+
+    fn rpc_cors(&self, is_dev: bool) -> Result<Option<Vec<String>>> {
+        self.base.base.rpc_cors(is_dev)
+    }
+
+    fn default_heap_pages(&self) -> Result<Option<u64>> {
+        self.base.base.default_heap_pages()
+    }
+
+    fn force_authoring(&self) -> Result<bool> {
+        self.base.base.force_authoring()
+    }
+
+    fn disable_grandpa(&self) -> Result<bool> {
+        self.base.base.disable_grandpa()
+    }
+
+    fn max_runtime_instances(&self) -> Result<Option<usize>> {
+        self.base.base.max_runtime_instances()
+    }
+
+    fn announce_block(&self) -> Result<bool> {
+        self.base.base.announce_block()
+    }
+
+    fn telemetry_endpoints(
+        &self,
+        chain_spec: &Box<dyn ChainSpec>,
+    ) -> Result<Option<sc_telemetry::TelemetryEndpoints>> {
+        self.base.base.telemetry_endpoints(chain_spec)
+    }
+
+    fn node_name(&self) -> Result<String> {
+        self.base.base.node_name()
     }
 }
