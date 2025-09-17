@@ -37,7 +37,7 @@ describeSuite({
             id: "C01",
             title: "Collators marked as inactive have not produced any blocks in the last session",
             timeout: 900000,
-            test: async ({skip}) => {
+            test: async ({ skip }) => {
                 if (shouldSkipStarlightSmokeTest) {
                     console.log(`Skipping C01 test for Starlight runtime version ${specVersion}`);
                     skip();
@@ -55,12 +55,15 @@ describeSuite({
                 let currentSessionIndex = (await currentBlockApi.query.session.currentIndex()).toNumber();
 
                 const registeredParaIds = await currentBlockApi.query.containerRegistrar.registeredParaIds();
-                const blocksAmountToCheck = HOURS_TO_CHECK * 3600 / 6;
+                const blocksAmountToCheck = (HOURS_TO_CHECK * 3600) / 6;
 
                 const failureMessages: string[] = [];
 
                 log("Expecting no inactive collators to be block authors for any paraId in the last session!");
-                while (currentSessionIndex === previousSessionIndex || previousSessionEndBlock - currentBlockNumber < blocksAmountToCheck) {
+                while (
+                    currentSessionIndex === previousSessionIndex ||
+                    previousSessionEndBlock - currentBlockNumber < blocksAmountToCheck
+                ) {
                     // For every registered paraId, check if the latest author is in the inactive collators list
                     for (const paraId of registeredParaIds) {
                         const latestAuthorInfo = await currentBlockApi.query.authorNoting.latestAuthor(paraId);
