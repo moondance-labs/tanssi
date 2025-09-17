@@ -5,7 +5,7 @@ import { type ApiPromise, Keyring } from "@polkadot/api";
 import type { KeyringPair } from "@polkadot/keyring/types";
 import { isDancelightRuntime, isStarlightRuntime } from "../../../utils/runtime.ts";
 import { BN } from "@polkadot/util";
-import { ExtrinsicFailedEventDataType } from "../../../utils";
+import type { ExtrinsicFailedEventDataType } from "../../../utils";
 
 export type SubmittedEventDataType = {
     index: number;

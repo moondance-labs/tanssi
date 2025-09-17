@@ -178,8 +178,7 @@ mod weights;
 pub mod governance;
 use {
     governance::{
-        councils::*, pallet_custom_origins, AuctionAdmin, Fellows, GeneralAdmin, Treasurer,
-        TreasurySpender,
+        pallet_custom_origins, AuctionAdmin, Fellows, GeneralAdmin, Treasurer, TreasurySpender,
     },
     pallet_collator_assignment::CoreAllocationConfiguration,
 };
@@ -941,7 +940,6 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 				RuntimeCall::FellowshipCollective(..) |
 				RuntimeCall::FellowshipReferenda(..) |
 				RuntimeCall::Whitelist(..) |
-                RuntimeCall::OpenTechCommitteeCollective(..) |
 				RuntimeCall::Utility(..) |
 				RuntimeCall::Identity(..) |
 				RuntimeCall::Scheduler(..) |
@@ -960,8 +958,7 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 					RuntimeCall::Referenda(..) |
 					RuntimeCall::FellowshipCollective(..) |
 					RuntimeCall::FellowshipReferenda(..) |
-					RuntimeCall::Whitelist(..) |
-                    RuntimeCall::OpenTechCommitteeCollective(..)
+					RuntimeCall::Whitelist(..)
             ),
             ProxyType::IdentityJudgement => matches!(
                 c,
@@ -1688,10 +1685,7 @@ impl pallet_maintenance_mode::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type NormalCallFilter = NormalFilter;
     type MaintenanceCallFilter = InsideBoth<MaintenanceFilter, NormalFilter>;
-    type MaintenanceOrigin = EitherOf<
-        EnsureRoot<AccountId>,
-        pallet_collective::EnsureProportionAtLeast<AccountId, OpenTechCommitteeInstance, 5, 9>,
-    >;
+    type MaintenanceOrigin = EnsureRoot<AccountId>;
     type XcmExecutionManager = ();
 }
 
@@ -1984,7 +1978,6 @@ construct_runtime! {
         FellowshipReferenda: pallet_referenda::<Instance2> = 44,
         Origins: pallet_custom_origins = 45,
         Whitelist: pallet_whitelist = 46,
-        OpenTechCommitteeCollective: pallet_collective::<Instance3> = 47,
 
         // Parachains pallets. Start indices at 50 to leave room.
         ParachainsOrigin: parachains_origin = 50,
@@ -2362,7 +2355,6 @@ mod benches {
         [pallet_beefy_mmr, BeefyMmrLeaf]
         [pallet_multiblock_migrations, MultiBlockMigrations]
         [pallet_session, cumulus_pallet_session_benchmarking::Pallet::<Runtime>]
-        [pallet_collective, OpenTechCommitteeCollective]
 
         // Tanssi
         [pallet_author_noting, AuthorNoting]

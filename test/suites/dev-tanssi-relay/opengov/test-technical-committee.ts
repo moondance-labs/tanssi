@@ -3,7 +3,8 @@ import "@tanssi/api-augment";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import type { KeyringPair } from "@polkadot/keyring/types";
-import { ExtrinsicFailedEventDataType } from "../../../utils";
+import type { ExtrinsicFailedEventDataType } from "../../../utils";
+import { isStarlightRuntime } from "../../../utils/runtime.ts";
 
 describeSuite({
     id: "DEVT24",
@@ -17,6 +18,9 @@ describeSuite({
 
         beforeAll(async () => {
             api = context.polkadotJs();
+            if (isStarlightRuntime(api)) {
+                return;
+            }
             const keyring = new Keyring({ type: "sr25519" });
             alice = keyring.addFromUri("//Alice");
             charlie = keyring.addFromUri("//Charlie");
@@ -42,6 +46,9 @@ describeSuite({
             id: "E01",
             title: "Non-technical committee member address cannot submit a proposal",
             test: async ({ skip }) => {
+                if (isStarlightRuntime(api)) {
+                    skip;
+                }
                 const call = api.tx.system.remark("0x0001");
                 const failedProposal = api.tx.openTechCommitteeCollective.propose(
                     2, // threshold

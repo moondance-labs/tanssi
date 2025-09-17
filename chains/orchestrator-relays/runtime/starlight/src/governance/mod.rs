@@ -16,8 +16,6 @@
 
 //! New governance configurations for the Starlight runtime.
 
-use frame_support::traits::MapSuccess;
-use sp_runtime::traits::Replace;
 use {
     super::*,
     frame_support::{
@@ -35,7 +33,6 @@ pub use origins::{
 };
 mod tracks;
 pub use tracks::TracksInfo;
-pub mod councils;
 mod fellowship;
 
 pub use fellowship::{FellowshipCollectiveInstance, FellowshipReferendaInstance};
@@ -74,18 +71,8 @@ impl pallet_whitelist::Config for Runtime {
     type WeightInfo = weights::pallet_whitelist::SubstrateWeight<Runtime>;
     type RuntimeCall = RuntimeCall;
     type RuntimeEvent = RuntimeEvent;
-    type WhitelistOrigin = EitherOf<
-        EnsureRootWithSuccess<Self::AccountId, ConstU16<65535>>,
-        MapSuccess<
-            pallet_collective::EnsureProportionAtLeast<
-                Self::AccountId,
-                councils::OpenTechCommitteeInstance,
-                5,
-                9,
-            >,
-            Replace<ConstU16<6>>,
-        >,
-    >;
+    type WhitelistOrigin =
+        EitherOf<EnsureRootWithSuccess<Self::AccountId, ConstU16<65535>>, Fellows>;
     type DispatchWhitelistedOrigin = EitherOf<EnsureRoot<Self::AccountId>, WhitelistedCaller>;
     type Preimages = Preimage;
 }
