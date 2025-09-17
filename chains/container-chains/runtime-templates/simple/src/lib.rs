@@ -87,6 +87,7 @@ use {
         v5::NetworkId, IntoVersion, VersionedAssetId, VersionedAssets, VersionedLocation,
         VersionedXcm,
     },
+    xcm::prelude::Location,
     xcm_runtime_apis::{
         dry_run::{CallDryRunEffects, Error as XcmDryRunApiError, XcmDryRunEffects},
         fees::Error as XcmPaymentApiError,
@@ -211,6 +212,7 @@ parameter_types! {
         /// <https://chainlist.org/chain/1>
         /// <https://ethereum.org/en/developers/docs/apis/json-rpc/#net_version>
         pub EthereumNetwork: NetworkId = NetworkId::Ethereum { chain_id: 11155111 };
+        pub EthereumLocation: Location = Location::new(2, EthereumNetwork::get());
 }
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know
