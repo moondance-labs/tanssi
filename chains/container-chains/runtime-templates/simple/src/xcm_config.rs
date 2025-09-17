@@ -18,18 +18,18 @@ use {
     super::{
         currency::MICROUNIT,
         weights::{self, xcm::XcmWeight as XcmGenericWeights},
-        AccountId, AllPalletsWithSystem, AssetRate, Balance, Balances, ForeignAssetsCreator,
-        MaintenanceMode, MessageQueue, ParachainInfo, ParachainSystem, PolkadotXcm, Runtime,
-        RuntimeBlockWeights, RuntimeCall, RuntimeEvent, RuntimeOrigin, TransactionByteFee,
-        WeightToFee, XcmpQueue,EthereumNetwork, EthereumLocation,
+        AccountId, AllPalletsWithSystem, AssetRate, Balance, Balances, EthereumLocation,
+        EthereumNetwork, ForeignAssetsCreator, MaintenanceMode, MessageQueue, ParachainInfo,
+        ParachainSystem, PolkadotXcm, Runtime, RuntimeBlockWeights, RuntimeCall, RuntimeEvent,
+        RuntimeOrigin, TransactionByteFee, WeightToFee, XcmpQueue,
     },
     cumulus_primitives_core::{AggregateMessageOrigin, ParaId},
+    frame_support::traits::Get,
     frame_support::{
         parameter_types,
         traits::{Disabled, Equals, Everything, Nothing, PalletInfoAccess, TransformOrigin},
         weights::Weight,
     },
-    frame_support::traits::Get,
     frame_system::EnsureRoot,
     pallet_xcm::XcmPassthrough,
     pallet_xcm_executor_utils::{
@@ -226,8 +226,7 @@ impl xcm_executor::Config for XcmConfig {
     type XcmSender = XcmRouter;
     type AssetTransactor = AssetTransactors;
     type OriginConverter = XcmOriginToTransactDispatchOrigin;
-    type IsReserve = 
-    (
+    type IsReserve = (
         IsReserveFilter<Runtime>,
         EthereumAssetReserve<EthereumLocation, EthereumNetwork>,
     );
