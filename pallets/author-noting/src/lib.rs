@@ -331,7 +331,10 @@ impl<T: Config> Pallet<T> {
         let head_data = relay_state_proof
             .read_entry::<HeadData>(key.as_slice(), None)
             .map_err(|e| match e {
-                ReadEntryErr::Proof => panic!("Invalid proof provided for para head key"),
+                ReadEntryErr::Proof => {
+                    panic!("Value for para-head key cannot be extracted from proof")
+                }
+                ReadEntryErr::Decode => panic!("Value for para-head key cannot be decoded"),
                 _ => Error::<T>::FailedReading,
             })?;
 
