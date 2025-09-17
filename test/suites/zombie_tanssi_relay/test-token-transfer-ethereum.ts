@@ -177,7 +177,7 @@ describeSuite({
 
                 const channelNonceAfter = await relayChainPolkadotJs.query.ethereumOutboundQueue.nonce(newChannelId);
 
-                // Wait 2 blocks until fees are collected
+                // Wait a few blocks until fees are collected
                 await sleep(24000);
 
                 // Fees are collected on Tanssi
