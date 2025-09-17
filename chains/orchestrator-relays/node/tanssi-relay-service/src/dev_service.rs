@@ -43,7 +43,7 @@ use {
     manual_container_chains_exclusion_rpc::{
         ManualContainerChainsExclusion, ManualContainerChainsExclusionApiServer,
     },
-    node_common::service::Sealing,
+    node_common::service::node_builder::Sealing,
     polkadot_core_primitives::{AccountId, Balance, Block, Hash, Nonce},
     polkadot_node_core_parachains_inherent::Error as InherentError,
     polkadot_overseer::Handle,

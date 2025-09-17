@@ -201,7 +201,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: Cow::Borrowed("starlight"),
     impl_name: Cow::Borrowed("tanssi-starlight-v2.0"),
     authoring_version: 0,
-    spec_version: 1500,
+    spec_version: 1600,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 27,
@@ -1689,8 +1689,8 @@ impl pallet_maintenance_mode::Config for Runtime {
     type XcmExecutionManager = ();
 }
 
-pub const FIXED_BLOCK_PRODUCTION_COST: u128 = 10000 * MICROUNITS;
-pub const FIXED_COLLATOR_ASSIGNMENT_COST: u128 = 5 * UNITS;
+pub const FIXED_BLOCK_PRODUCTION_COST: u128 = 30000 * MICROUNITS;
+pub const FIXED_COLLATOR_ASSIGNMENT_COST: u128 = 50 * UNITS;
 
 pub struct BlockProductionCost<Runtime>(PhantomData<Runtime>);
 impl ProvideBlockProductionCost<Runtime> for BlockProductionCost<Runtime> {

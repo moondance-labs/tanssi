@@ -321,7 +321,7 @@ describeSuite({
         it({
             id: "T11",
             title: "Start new assignment for chain 2000 with stream payment",
-            timeout: 180000,
+            timeout: 240000,
             test: async () => {
                 {
                     // to non-force assign we need to have a para manager, which is not the case

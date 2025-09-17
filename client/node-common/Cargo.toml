@@ -1,10 +1,11 @@
 [package]
 name = "node-common"
 authors = { workspace = true }
+build = "build.rs"
 description = "Common code between various nodes"
 edition = "2021"
 license = "GPL-3.0-only"
-version = "0.15.0"
+version = "0.16.0"
 
 [lints]
 workspace = true
@@ -21,7 +22,13 @@ parity-scale-codec = { workspace = true }
 serde = { workspace = true, features = [ "derive" ] }
 
 # Local
+dc-orchestrator-chain-interface = { workspace = true }
+pallet-data-preservers-runtime-api = { workspace = true }
+tc-consensus = { workspace = true }
 tp-traits = { workspace = true }
+
+# Nimbus
+nimbus-primitives = { workspace = true, features = [ "std" ] }
 
 # Substrate
 frame-benchmarking = { workspace = true }
@@ -60,6 +67,7 @@ sp-keystore = { workspace = true, features = [ "std" ] }
 sp-offchain = { workspace = true, features = [ "std" ] }
 sp-runtime = { workspace = true, features = [ "std" ] }
 sp-session = { workspace = true, features = [ "std" ] }
+sp-state-machine = { workspace = true, features = [ "std" ] }
 sp-timestamp = { workspace = true, features = [ "std" ] }
 
 sp-transaction-pool = { workspace = true }
