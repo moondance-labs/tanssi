@@ -1021,7 +1021,6 @@
             "runScripts": [
                 "build-spec-dancelight.sh",
                 "compile-wasm.ts compile -b ../target/release/tanssi-relay -o wasm -c specs/tanssi-relay.json",
-                "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/single-container-template-container-2000.json",
                 "compile-wasm.ts compile -b ../target/release/container-chain-frontier-node -o wasm -c specs/single-container-template-container-2001.json",
                 "bridge-build-artifacts.sh"
             ],
@@ -1057,14 +1056,9 @@
                     "endpoints": ["ws://127.0.0.1:9950"]
                 },
                 {
-                    "name": "Container2000",
-                    "type": "polkadotJs",
-                    "endpoints": ["ws://127.0.0.1:9951"]
-                },
-                {
                     "name": "Container2001",
                     "type": "polkadotJs",
-                    "endpoints": ["ws://127.0.0.1:9952"]
+                    "endpoints": ["ws://127.0.0.1:9951"]
                 }
             ]
         },
