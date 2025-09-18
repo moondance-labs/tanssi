@@ -24,7 +24,6 @@ use {
         RuntimeOrigin, TransactionByteFee, WeightToFee, XcmpQueue,
     },
     cumulus_primitives_core::{AggregateMessageOrigin, ParaId},
-    frame_support::traits::Get,
     frame_support::{
         parameter_types,
         traits::{Disabled, Equals, Everything, Nothing, PalletInfoAccess, TransformOrigin},
@@ -45,6 +44,7 @@ use {
         sovereign_paid_remote_exporter::SovereignPaidRemoteExporter,
         ContainerChainEthereumLocationConverter,
     },
+    tp_xcm_commons::EthereumAssetReserveFromPara,
     xcm::latest::prelude::*,
     xcm_builder::{
         AccountId32Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
@@ -203,24 +203,6 @@ pub type XcmRouter = WithUniqueTopic<(
     >,
 )>;
 
-/// Filter to ensure an ETH asset is coming from a trusted Ethereum location.
-pub struct EthereumAssetReserve<EthereumLocation, EthereumNetwork>(
-    core::marker::PhantomData<(EthereumLocation, EthereumNetwork)>,
-);
-impl<EthereumLocation, EthereumNetwork> frame_support::traits::ContainsPair<Asset, Location>
-    for EthereumAssetReserve<EthereumLocation, EthereumNetwork>
-where
-    EthereumLocation: Get<Location>,
-    EthereumNetwork: Get<NetworkId>,
-{
-    fn contains(asset: &Asset, origin: &Location) -> bool {
-        log::trace!(target: "xcm::contains", "EthereumAssetReserve asset: {:?}, origin: {:?}", asset, origin);
-        if *origin != EthereumLocation::get() {
-            return false;
-        }
-        matches!((asset.id.0.parents, asset.id.0.first_interior()), (2, Some(GlobalConsensus(network))) if *network == EthereumNetwork::get())
-    }
-}
 pub struct XcmConfig;
 impl xcm_executor::Config for XcmConfig {
     type RuntimeCall = RuntimeCall;
@@ -229,7 +211,7 @@ impl xcm_executor::Config for XcmConfig {
     type OriginConverter = XcmOriginToTransactDispatchOrigin;
     type IsReserve = (
         IsReserveFilter<Runtime>,
-        EthereumAssetReserve<EthereumLocation, EthereumNetwork>,
+        EthereumAssetReserveFromPara<EthereumLocation, EthereumNetwork>,
     );
     type IsTeleporter = IsTeleportFilter<Runtime>;
     type UniversalLocation = UniversalLocation;
