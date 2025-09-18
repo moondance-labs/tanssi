@@ -10,6 +10,7 @@ import { Interface } from "ethers";
 import {
     ETHEREUM_MAINNET_SOVEREIGN_ACCOUNT_ADDRESS,
     getBlockNumberForDebug,
+    PRIMARY_GOVERNANCE_CHANNEL_ID,
     SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS,
 } from "utils";
 
@@ -181,14 +182,16 @@ describeSuite({
                                 // There was an error decoding as versionedXcmMessage, probably because the message
                                 // was a validator update. in any case we will check that the nonce has increased
                                 // This message is received in the primary channel
-                                const channelId = "0x0000000000000000000000000000000000000000000000000000000000000001";
                                 const previousNonce = await (
                                     await api.at(block.block.header.parentHash)
-                                ).query.ethereumInboundQueue.nonce(channelId);
+                                ).query.ethereumInboundQueue.nonce(PRIMARY_GOVERNANCE_CHANNEL_ID);
                                 const currentNonce = await (await api.at(blockHash)).query.ethereumInboundQueue.nonce(
-                                    channelId
+                                    PRIMARY_GOVERNANCE_CHANNEL_ID
                                 );
-                                expect(currentNonce.toBigInt()).to.be.equal(previousNonce.toBigInt() + 1n);
+                                expect(
+                                    currentNonce.toBigInt(),
+                                    `Block: ${blockNumber}. Current nonce ${currentNonce.toBigInt()} should be greater than the previous one ${previousNonce.toBigInt()}.`
+                                ).to.be.equal(previousNonce.toBigInt() + 1n);
                                 skip();
                             }
 
@@ -271,18 +274,16 @@ describeSuite({
                             );
 
                             if (decodedEvent.payload.startsWith(MAGIC_BYTES)) {
-                                const currentChannelInfo = (
-                                    await api.query.ethereumTokenTransfers.currentChannelInfo()
-                                ).toJSON();
-                                const channelId = currentChannelInfo.channelId;
-
                                 const previousNonce = await (
                                     await api.at(block.block.header.parentHash)
-                                ).query.ethereumInboundQueue.nonce(channelId);
+                                ).query.ethereumInboundQueue.nonce(PRIMARY_GOVERNANCE_CHANNEL_ID);
                                 const currentNonce = await (await api.at(blockHash)).query.ethereumInboundQueue.nonce(
-                                    channelId
+                                    PRIMARY_GOVERNANCE_CHANNEL_ID
                                 );
-                                expect(currentNonce.toBigInt()).to.be.equal(previousNonce.toBigInt() + 1n);
+                                expect(
+                                    currentNonce.toBigInt(),
+                                    `Block: ${blockNumber}. Current nonce ${currentNonce.toBigInt()} should be greater than the previous one ${previousNonce.toBigInt()}.`
+                                ).to.be.equal(previousNonce.toBigInt() + 1n);
                                 skip();
                             }
 

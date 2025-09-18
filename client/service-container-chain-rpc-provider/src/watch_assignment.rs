@@ -15,15 +15,15 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    crate::spawner::{wait_for_paritydb_lock, Spawner},
+    cumulus_primitives_core::ParaId,
     dc_orchestrator_chain_interface::{
         DataPreserverAssignment, OrchestratorChainError, OrchestratorChainInterface,
         OrchestratorChainResult,
     },
-    frame_support::__private::sp_tracing::tracing::Instrument,
     futures::stream::StreamExt,
+    sc_tracing::tracing::Instrument,
     std::{future::Future, time::Duration},
-    tc_consensus::ParaId,
+    tc_service_container_chain_spawner::spawner::{wait_for_paritydb_lock, Spawner},
 };
 
 pub type ProfileId = <dancebox_runtime::Runtime as pallet_data_preservers::Config>::ProfileId;

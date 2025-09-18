@@ -197,6 +197,7 @@ pub type XcmRouter = WithUniqueTopic<(
         UniversalLocation,
         crate::EthereumNetwork,
         ContainerToEthTransferFee,
+        ParachainInfo,
     >,
 )>;
 
@@ -433,7 +434,7 @@ pub type AssetRateAsMultiplier =
     >;
 
 parameter_types! {
-    pub const TrustPolicyMaxAssets: u32 = 1000;
+    pub const TrustPolicyMaxAssets: u32 = 10;
     pub const AllNativeTrustPolicy: DefaultTrustPolicy = DefaultTrustPolicy::AllNative;
     pub const AllNeverTrustPolicy: DefaultTrustPolicy = DefaultTrustPolicy::Never;
 }

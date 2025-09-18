@@ -5,7 +5,7 @@ build = "build.rs"
 description = "Frontier container chain template node"
 edition = "2021"
 license = "GPL-3.0-only"
-version = "0.15.0"
+version = "0.16.0"
 
 [lints]
 workspace = true
@@ -28,7 +28,7 @@ url = { workspace = true }
 # Dancekit
 dc-orchestrator-chain-interface = { workspace = true }
 dp-core = { workspace = true }
-tc-orchestrator-chain-rpc-interface = { workspace = true }
+tc-orchestrator-chain-interface-through-rpc = { workspace = true }
 
 # Local
 ccp-authorities-noting-inherent = { workspace = true }
@@ -36,7 +36,8 @@ container-chain-template-frontier-runtime = { workspace = true, features = [ "st
 manual-xcm-rpc = { workspace = true }
 node-common = { workspace = true }
 tc-consensus = { workspace = true }
-tc-service-container-chain = { workspace = true }
+tc-service-container-chain-rpc-provider = { workspace = true }
+tc-service-container-chain-spawner = { workspace = true }
 tp-traits = { workspace = true }
 
 # Nimbus
@@ -136,7 +137,7 @@ runtime-benchmarks = [
 	"polkadot-service/runtime-benchmarks",
 	"sc-service/runtime-benchmarks",
 	"sp-runtime/runtime-benchmarks",
-	"tc-service-container-chain/runtime-benchmarks",
+	"tc-service-container-chain-spawner/runtime-benchmarks",
 	"tp-traits/runtime-benchmarks",
 ]
 try-runtime = [
@@ -147,5 +148,5 @@ try-runtime = [
 	"polkadot-cli/try-runtime",
 	"polkadot-service/try-runtime",
 	"sp-runtime/try-runtime",
-	"tc-service-container-chain/try-runtime",
+	"tc-service-container-chain-spawner/try-runtime",
 ]
