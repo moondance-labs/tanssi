@@ -199,6 +199,7 @@ pub type XcmRouter = WithUniqueTopic<(
         UniversalLocation,
         EthereumNetwork,
         ContainerToEthTransferFee,
+        ParachainInfo,
     >,
 )>;
 
