@@ -729,15 +729,15 @@ export async function getLastSessionEndBlock(api: ApiPromise, lastSessionIndex?:
 
         if (currentSessionIndex === theoreticalSession && theoreticalSessionBefore === theoreticalSession - 1) {
             return theoreticalSessionChangeBlockNumber - 1;
-        } else {
-            while (currentSessionIndex > lastSessionIndex) {
-                blockNumber -= 1;
-                const blockHash = await api.rpc.chain.getBlockHash(blockNumber);
-                const apiAtBlock = await api.at(blockHash);
-                currentSessionIndex = (await apiAtBlock.query.session.currentIndex()).toNumber();
-            }
-            return blockNumber;
         }
+
+        while (currentSessionIndex > lastSessionIndex) {
+            blockNumber -= 1;
+            const blockHash = await api.rpc.chain.getBlockHash(blockNumber);
+            const apiAtBlock = await api.at(blockHash);
+            currentSessionIndex = (await apiAtBlock.query.session.currentIndex()).toNumber();
+        }
+        return blockNumber;
     }
 
     throw new Error(`Unsupported runtime: ${api.runtimeVersion.specName.toString()}`);
