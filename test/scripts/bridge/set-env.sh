@@ -27,7 +27,7 @@ RELAYER_COMMIT="61773050e66a83139330a579a31b597b3a91faea" # TODO: Change to tag 
 
 # THIS IS WHERE CONTRACTS SHOULD BE DEPLOYED
 # TODO: change commit when final changes are merged
-TANSSI_SYMBIOTIC_COMMIT="f39658080f958910fa1cd6584d48fe68635689fd" # TODO: Change to tag when we do release
+TANSSI_SYMBIOTIC_COMMIT="29425df4cce6206d53693f3647abe5e5cc01c669" # TODO: Change to tag when we do release
 GETH_TAG="v1.15.5" # We will need to investigate if this is right
 LODESTAR_TAG="v1.27.0"
 
