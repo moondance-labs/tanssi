@@ -45,9 +45,11 @@ describeSuite({
                 const apiAtBlock = await api.at(await api.rpc.chain.getBlockHash(currentBlock));
 
                 const sessionIndex = (await apiAtBlock.query.session.currentIndex()).toNumber();
-                const blockToCheck = (await apiAtBlock.query.babe.epochStart())[1].toNumber();
+                const currentSessionStartBlockNumber = (await apiAtBlock.query.babe.epochStart())[1].toNumber();
 
-                const apiBeforeLatestNewSession = await api.at(await api.rpc.chain.getBlockHash(blockToCheck - 1));
+                const apiBeforeLatestNewSession = await api.at(
+                    await api.rpc.chain.getBlockHash(currentSessionStartBlockNumber - 1)
+                );
                 const config = await apiAtBlock.query.collatorConfiguration.activeConfig();
 
                 // get pending authorities
@@ -76,7 +78,8 @@ describeSuite({
                     (currentCollatorNumber - config.minOrchestratorCollators.toNumber()) /
                         config.collatorsPerContainer.toNumber()
                 );
-                const maxPossibleAssignmentsBecauseOfCores = await getMaxPossibleAssignmentsBecauseOfCores(apiAtBlock);
+                const maxPossibleAssignmentsBecauseOfCores =
+                    await getMaxPossibleAssignmentsBecauseOfCores(apiBeforeLatestNewSession);
 
                 // If we have container chain collators, is because the collator number is higher
                 if (maxParas > 0) {
