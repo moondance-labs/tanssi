@@ -1047,14 +1047,24 @@
                     "endpoints": ["ws://127.0.0.1:9948"]
                 },
                 {
-                    "name": "Container2000",
+                    "name": "Tanssi-dave",
                     "type": "polkadotJs",
                     "endpoints": ["ws://127.0.0.1:9949"]
                 },
                 {
-                    "name": "Container2001",
+                    "name": "Tanssi-eve",
                     "type": "polkadotJs",
                     "endpoints": ["ws://127.0.0.1:9950"]
+                },
+                {
+                    "name": "Container2000",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9951"]
+                },
+                {
+                    "name": "Container2001",
+                    "type": "polkadotJs",
+                    "endpoints": ["ws://127.0.0.1:9952"]
                 }
             ]
         },

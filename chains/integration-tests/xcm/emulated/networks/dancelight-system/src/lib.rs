@@ -22,7 +22,7 @@ use {
     frontier_template_emulated_chain::FrontierTemplate,
     simple_template_emulated_chain::SimpleTemplate,
     sp_keyring::Sr25519Keyring,
-    tanssi_emulated_integration_tests_common::accounts::{ALICE, BOB, RANDOM},
+    tanssi_emulated_integration_tests_common::accounts::{BOB, RANDOM},
     xcm_emulator::{
         decl_test_networks, Bridge, BridgeLaneId, BridgeMessage, BridgeMessageDispatchError,
         BridgeMessageHandler, Chain, Network,
@@ -58,7 +58,7 @@ parameter_types! {
     pub DancelightEmptyReceiver: AccountId = DancelightRelay::account_id_of(RANDOM);
 
     // SimpleTemplate
-    pub SimpleTemplateSender: AccountId = AccountId::from(ALICE);
+    pub SimpleTemplateSender: AccountId = Sr25519Keyring::Alice.to_account_id();
     pub SimpleTemplateReceiver: AccountId = AccountId::from(BOB);
     pub SimpleTemplateEmptyReceiver: AccountId = SimpleTemplatePara::account_id_of(RANDOM);
 }

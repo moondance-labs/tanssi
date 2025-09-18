@@ -43,6 +43,7 @@ decl_test_relay_chains! {
             EthereumInboundQueue: dancelight_runtime::EthereumInboundQueue,
             EthereumSystem: dancelight_runtime::EthereumSystem,
             ExternalValidators: dancelight_runtime::ExternalValidators,
+            EthereumTokenTransfers: dancelight_runtime::EthereumTokenTransfers,
         }
     }
 }
