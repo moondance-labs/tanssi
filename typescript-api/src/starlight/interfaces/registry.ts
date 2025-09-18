@@ -86,12 +86,6 @@ import type {
     PalletBeefyError,
     PalletCollatorAssignmentCall,
     PalletCollatorAssignmentEvent,
-    PalletCollectiveCall,
-    PalletCollectiveError,
-    PalletCollectiveEvent,
-    PalletCollectiveHoldReason,
-    PalletCollectiveRawOrigin,
-    PalletCollectiveVotes,
     PalletConfigurationCall,
     PalletConfigurationError,
     PalletConfigurationHostConfiguration,
@@ -644,12 +638,6 @@ declare module "@polkadot/types/types/registry" {
         PalletBeefyError: PalletBeefyError;
         PalletCollatorAssignmentCall: PalletCollatorAssignmentCall;
         PalletCollatorAssignmentEvent: PalletCollatorAssignmentEvent;
-        PalletCollectiveCall: PalletCollectiveCall;
-        PalletCollectiveError: PalletCollectiveError;
-        PalletCollectiveEvent: PalletCollectiveEvent;
-        PalletCollectiveHoldReason: PalletCollectiveHoldReason;
-        PalletCollectiveRawOrigin: PalletCollectiveRawOrigin;
-        PalletCollectiveVotes: PalletCollectiveVotes;
         PalletConfigurationCall: PalletConfigurationCall;
         PalletConfigurationError: PalletConfigurationError;
         PalletConfigurationHostConfiguration: PalletConfigurationHostConfiguration;
