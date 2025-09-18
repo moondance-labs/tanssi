@@ -18,8 +18,8 @@ emulated-integration-tests-common = { workspace = true }
 frame-support = { workspace = true }
 frame-system = { workspace = true }
 nimbus-primitives = { workspace = true, features = [ "std" ] }
-pallet-author-inherent = { workspace = true }
-pallet-cc-authorities-noting = { workspace = true }
+pallet-author-inherent = { workspace = true, features = [ "std" ] }
+pallet-cc-authorities-noting = { workspace = true, features = [ "std" ] }
 sp-core = { workspace = true }
 sp-runtime = { workspace = true }
 sp-trie = { workspace = true }
