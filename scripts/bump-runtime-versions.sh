@@ -76,19 +76,13 @@ update_package_json() {
     local runtime_version=$2
     local new_version="0.${runtime_version}.0"
 
-    if command -v jq >/dev/null 2>&1; then
-        tmp_file=$(mktemp)
-        jq --arg v "$new_version" '.version = $v' "$file" > "$tmp_file" && mv "$tmp_file" "$file"
-        echo "Updated $file to version $new_version using jq"
+    # Fallback using sed if jq is not available
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        sed -i '' "s/\"version\": \".*\"/\"version\": \"$new_version\"/" "$file"
     else
-        # Fallback using sed if jq is not available
-        if [[ "$OSTYPE" == "darwin"* ]]; then
-            sed -i '' "s/\"version\": \".*\"/\"version\": \"$new_version\"/" "$file"
-        else
-            sed -i "s/\"version\": \".*\"/\"version\": \"$new_version\"/" "$file"
-        fi
-        echo "Updated $file to version $new_version using sed"
+        sed -i "s/\"version\": \".*\"/\"version\": \"$new_version\"/" "$file"
     fi
+    echo "Updated $file to version $new_version using sed"
 }
 
 # Update Cargo.toml files
