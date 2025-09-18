@@ -55,14 +55,11 @@ gh workflow run client-release-issue.yml -f from="$PREV_CLIENT" -f to="$NEXT_CLI
 
 # 2. Execute Create runtime release ticket CI job for parachain and solochain
 echo "🔧 Running Create Client Release CI (Parachain)..."
-gh workflow run runtime-release-issue.yml -f from="$PREV_RUNTIME" -f to="$NEXT_RUNTIME" -f binary-type="parachain"
-
-echo "🔧 Running Create Client Release CI (Solochain)..."
-gh workflow run runtime-release-issue.yml -f from="$PREV_RUNTIME" -f to="$NEXT_RUNTIME" -f binary-type="solochain"
+gh workflow run runtime-release-issue.yml -f from="$PREV_RUNTIME" -f to="$NEXT_RUNTIME" -f client="$PREV_CLIENT"
 
 # 3. Execute Public Binary draft
 echo "🔧 Running Publish Binary Draft..."
-gh workflow run publish-binary.yml -f from="$PREV_CLIENT" -f to="$NEXT_CLIENT"
+gh workflow run publish-binary.yml -f from="$PREV_CLIENT-para" -f to="$NEXT_CLIENT-para"
 
 echo "🔧 Publish Dancelight Binary Draft..."
 gh workflow run publish-binary-tanssi-solochain.yml -f from="$PREV_CLIENT" -f to="$NEXT_CLIENT"

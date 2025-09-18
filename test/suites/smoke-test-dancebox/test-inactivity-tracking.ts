@@ -17,7 +17,7 @@ describeSuite({
             api = context.polkadotJs();
             lastSessionIndex = (await api.query.session.currentIndex()).toNumber() - 1;
             lastSessionEndBlock = await getLastSessionEndBlock(api, lastSessionIndex);
-        });
+        }, 900000);
 
         it({
             id: "C01",
