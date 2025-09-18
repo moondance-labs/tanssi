@@ -19,6 +19,7 @@ import {
 
 import { keccak256 } from "viem";
 import { ETHEREUM_NETWORK_TESTNET, FOREIGN_ASSET_ID } from "utils/constants";
+import type { SubmittableExtrinsic } from "@polkadot/api/types";
 
 // Change this if we change the storage parameter in runtime
 const GATEWAY_STORAGE_KEY = "0xaed97c7854d601808b98ae43079dafb3";
@@ -96,7 +97,9 @@ describeSuite({
     foundationMethods: "zombie",
     testCases: ({ it, context }) => {
         let relayApi: ApiPromise;
-        let relayCharlieApi: ApiPromise;
+        let charlieRelayApi: ApiPromise;
+        let daveRelayApi: ApiPromise;
+        let eveRelayApi: ApiPromise;
         let ethereumNodeChildProcess: ChildProcessWithoutNullStreams;
         let relayerChildProcess: ChildProcessWithoutNullStreams;
         let alice: KeyringPair;
@@ -118,6 +121,9 @@ describeSuite({
         let operatorRewardContractImpl: ethers.Contract;
         let operatorRewardDetails: any;
 
+        let nativeETHAddress: string;
+        let nativeETHAssetId: number;
+        let nativeETHTokenLocation: any;
         let tokenId: any;
         let wETHBalanceFromEthereum: bigint;
         let wETHTokenLocation: any;
@@ -125,15 +131,18 @@ describeSuite({
         let ethInfo: any;
 
         let operatorAccount: KeyringPair;
-        let operatorNimbusKey: string;
+        let operatorAccount2: KeyringPair;
+        let operatorAccount3: KeyringPair;
+
         let executionRelay: KeyringPair;
 
         beforeAll(async () => {
             relayApi = context.polkadotJs("Tanssi-relay");
+            charlieRelayApi = context.polkadotJs("Tanssi-charlie");
+            daveRelayApi = context.polkadotJs("Tanssi-dave");
+            eveRelayApi = context.polkadotJs("Tanssi-eve");
             const relayNetwork = relayApi.consts.system.version.specName.toString();
             expect(relayNetwork, "Relay API incorrect").to.contain("dancelight");
-
-            relayCharlieApi = context.polkadotJs("Tanssi-charlie");
 
             // //BeaconRelay
             const keyring = new Keyring({ type: "sr25519" });
@@ -149,9 +158,23 @@ describeSuite({
             operatorAccount = keyring.addFromUri("//Charlie", {
                 name: "Charlie default",
             });
-            // We rotate the keys for charlie so that we have access to them from this test as well as the node
-            operatorNimbusKey = (await relayCharlieApi.rpc.author.rotateKeys()).toHex();
-            await relayApi.tx.session.setKeys(operatorNimbusKey, []).signAndSend(operatorAccount);
+            await relayApi.tx.session
+                .setKeys(await charlieRelayApi.rpc.author.rotateKeys(), [])
+                .signAndSend(operatorAccount);
+
+            operatorAccount2 = keyring.addFromUri("//Dave", {
+                name: "Dave default",
+            });
+            await relayApi.tx.session
+                .setKeys(await daveRelayApi.rpc.author.rotateKeys(), [])
+                .signAndSend(operatorAccount2);
+
+            operatorAccount3 = keyring.addFromUri("//Eve", {
+                name: "Eve default",
+            });
+            await relayApi.tx.session
+                .setKeys(await eveRelayApi.rpc.author.rotateKeys(), [])
+                .signAndSend(operatorAccount3);
 
             const fundingTxHash = await signAndSendAndInclude(
                 relayApi.tx.utility.batch([
@@ -201,6 +224,8 @@ describeSuite({
             await execCommandLive("./scripts/bridge/deploy-ethereum-contracts.sh", [], {
                 env: {
                     OPERATOR3_KEY: u8aToHex(operatorAccount.addressRaw),
+                    OPERATOR2_KEY: u8aToHex(operatorAccount2.addressRaw),
+                    OPERATOR1_KEY: u8aToHex(operatorAccount3.addressRaw),
                     ...process.env,
                 },
             });
@@ -250,7 +275,7 @@ describeSuite({
 
             // Setting up operatorRewards
             operatorRewardContract = new ethers.Contract(
-                await middlewareContract.i_operatorRewards(),
+                await middlewareContract.getOperatorRewardsAddress(),
                 operatorRewardDetails.abi,
                 ethereumWallet
             );
@@ -274,6 +299,10 @@ describeSuite({
 
             const setMiddlewareTx = await gatewayContract.setMiddleware(middlewareAddress);
             await setMiddlewareTx.wait();
+
+            nativeETHAddress = "0x0000000000000000000000000000000000000000";
+            const isNativeETHTokenRegistered = await gatewayContract.isTokenRegistered(nativeETHAddress);
+            expect(isNativeETHTokenRegistered).to.be.true;
 
             const registerTokenFee = await gatewayContract.quoteRegisterTokenFee();
             const registerWETHTx = await gatewayContract.registerToken(wETHAddress, { value: registerTokenFee * 10n });
@@ -320,6 +349,18 @@ describeSuite({
                 },
             };
 
+            nativeETHAssetId = 43;
+            nativeETHTokenLocation = {
+                parents: 1,
+                interior: {
+                    X1: [
+                        {
+                            GlobalConsensus: ETHEREUM_NETWORK_TESTNET,
+                        },
+                    ],
+                },
+            };
+
             const tokenLocation = {
                 parents: 0,
                 interior: "Here",
@@ -345,6 +386,13 @@ describeSuite({
                         relayApi.tx.foreignAssetsCreator.createForeignAsset(
                             wETHTokenLocation,
                             FOREIGN_ASSET_ID,
+                            alice.address,
+                            true,
+                            1
+                        ),
+                        relayApi.tx.foreignAssetsCreator.createForeignAsset(
+                            nativeETHTokenLocation,
+                            nativeETHAssetId,
                             alice.address,
                             true,
                             1
@@ -481,6 +529,8 @@ describeSuite({
                         try {
                             const sessionValidators = await relayApi.query.session.validators();
                             expect(sessionValidators).to.contain(operatorAccount.address);
+                            expect(sessionValidators).to.contain(operatorAccount2.address);
+                            expect(sessionValidators).to.contain(operatorAccount3.address);
                         } catch (error) {
                             return false;
                         }
@@ -491,15 +541,30 @@ describeSuite({
 
                 // In new era's first session at least one block need to be produced by the operator
                 const blocksPerSession = 10;
+                const countedSet = new Set([
+                    operatorAccount.address,
+                    operatorAccount2.address,
+                    operatorAccount3.address,
+                ]);
                 for (let i = 0; i < 3 * blocksPerSession; ++i) {
                     const latestBlockHash = await relayApi.rpc.chain.getBlockHash();
                     const author = (await relayApi.derive.chain.getHeader(latestBlockHash)).author;
-                    if (author?.toString() === operatorAccount.address) {
-                        return;
+                    if (author) {
+                        if (
+                            [operatorAccount.address, operatorAccount2.address, operatorAccount3.address].includes(
+                                author.toString()
+                            )
+                        ) {
+                            countedSet.delete(author.toString());
+                        }
+                        if (countedSet.size === 0) {
+                            return;
+                        }
                     }
+
                     await context.waitBlock(1, "Tanssi-relay");
                 }
-                expect.fail("operator didn't produce a block");
+                expect.fail(`Operator(-s) didn't produce a block: ${JSON.stringify([...countedSet])}`);
             },
         });
 
@@ -509,15 +574,22 @@ describeSuite({
             test: async () => {
                 logTiming("Starting T05");
                 // Send slash event forcefully
-                const activeEraInfo = (await relayApi.query.externalValidators.activeEra()).toJSON();
-                const currentExternalIndex = await relayApi.query.externalValidators.currentExternalIndex();
-                const forceInjectSlashCall = relayApi.tx.externalValidatorSlashes.forceInjectSlash(
-                    activeEraInfo.index,
-                    operatorAccount.address,
-                    1000,
-                    currentExternalIndex
-                );
-                const forceInjectTx = await relayApi.tx.sudo.sudo(forceInjectSlashCall).signAndSend(alice);
+                const txs: SubmittableExtrinsic<"promise">[] = [];
+                for (const operator of [operatorAccount, operatorAccount2]) {
+                    const activeEraInfo = (await relayApi.query.externalValidators.activeEra()).toJSON();
+                    const currentExternalIndex = await relayApi.query.externalValidators.currentExternalIndex();
+
+                    txs.push(
+                        relayApi.tx.externalValidatorSlashes.forceInjectSlash(
+                            activeEraInfo.index,
+                            operator.address,
+                            1000,
+                            currentExternalIndex
+                        )
+                    );
+                }
+
+                const forceInjectTx = await relayApi.tx.sudo.sudo(relayApi.tx.utility.batch(txs)).signAndSend(alice);
 
                 console.log("Force inject tx was submitted:", forceInjectTx.toHex());
 
@@ -530,7 +602,7 @@ describeSuite({
                 const blockToFetchRewardEventFrom = currentBlock + blocksToWaitForRewards;
                 const blockToFetchSlashEventFrom = currentBlock + blocksToWaitForSlashes;
 
-                console.log("We will wait till", currentBlock + blocksToWaitFor, "blocks");
+                console.log(`We will wait ${blocksToWaitFor} blocks - till ${currentBlock + blocksToWaitFor}`);
 
                 await context.waitBlock(blocksToWaitFor, "Tanssi-relay");
                 const relayApiAtRewardEventBlock = await relayApi.at(
@@ -568,6 +640,8 @@ describeSuite({
                 let slashMessageSuccess = false;
 
                 gatewayContract.on("InboundMessageDispatched", (_channelID, _nonce, messageID, success) => {
+                    console.log("messageID:", messageID);
+
                     if (rewardMessageId === messageID) {
                         rewardMessageReceived = true;
                         rewardMessageSuccess = success;
@@ -608,61 +682,65 @@ describeSuite({
 
                     console.log("era to analyze ", eraToAnalyze);
                     console.log(await operatorRewardContract.eraRoot(eraToAnalyze));
-                    console.log("thid");
+                    console.log("third");
                     console.log((await operatorRewardContract.eraRoot(eraToAnalyze))[3]);
                 }
                 if (eraToAnalyze < 0) {
                     throw new Error("No era was found in operator rewards to be claimed");
                 }
 
-                const operatorMerkleProof = await relayApi.call.externalValidatorsRewardsApi.generateRewardsMerkleProof(
-                    operatorAccount.address,
-                    eraToAnalyze
-                );
+                for (const opAccount of [operatorAccount, operatorAccount2, operatorAccount3]) {
+                    const operatorMerkleProof =
+                        await relayApi.call.externalValidatorsRewardsApi.generateRewardsMerkleProof(
+                            opAccount.address,
+                            eraToAnalyze
+                        );
 
-                const eraRewardsInfo = await relayApi.query.externalValidatorsRewards.rewardPointsForEra(eraToAnalyze);
-                //(uint256, bytes, bytes)
-                // no hints and I am passing a max admin fee
-                const additionalData =
-                    "0x0000000000000000000000000000000000000000000000000000000000001" +
-                    "000000000000000000000000000000000000000000000000000000000000000006000000000000000000" +
-                    "000000000000000000000000000000000000000000000800000000000000000000000000000000000000" +
-                    "000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
-                    "0000000";
+                    const eraRewardsInfo =
+                        await relayApi.query.externalValidatorsRewards.rewardPointsForEra(eraToAnalyze);
+                    //(uint256, bytes, bytes)
+                    // no hints and I am passing a max admin fee
+                    const additionalData =
+                        "0x0000000000000000000000000000000000000000000000000000000000001" +
+                        "000000000000000000000000000000000000000000000000000000000000000006000000000000000000" +
+                        "000000000000000000000000000000000000000000000800000000000000000000000000000000000000" +
+                        "000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
+                        "0000000";
 
-                const claimRewardsInput = {
-                    operatorKey: operatorAccount.addressRaw,
-                    eraIndex: eraToAnalyze,
-                    totalPointsClaimable: eraRewardsInfo.individual.toJSON()[operatorAccount.address.toString()],
-                    proof: operatorMerkleProof.toHuman().proof,
-                    data: additionalData,
-                };
-                console.log(`Claiming rewards with inputs ${claimRewardsInput}`);
-                expect(operatorMerkleProof.isEmpty).to.be.false;
-                try {
-                    const claimTx = await operatorRewardContract.claimRewards(claimRewardsInput);
-                    await claimTx.wait();
-                } catch (e) {
-                    if (e.data) {
-                        console.log(e.data);
+                    const claimRewardsInput = {
+                        operatorKey: opAccount.addressRaw,
+                        eraIndex: eraToAnalyze,
+                        totalPointsClaimable: eraRewardsInfo.individual.toJSON()[opAccount.address.toString()],
+                        proof: operatorMerkleProof.toHuman().proof,
+                        data: additionalData,
+                    };
+                    console.log(`Claiming rewards with inputs ${JSON.stringify(claimRewardsInput)}`);
+                    expect(operatorMerkleProof.isEmpty).to.be.false;
+                    try {
+                        const claimTx = await operatorRewardContract.claimRewards(claimRewardsInput);
+                        await claimTx.wait();
+                    } catch (e) {
+                        if (e.data) {
+                            console.log(e.data);
 
-                        const decodedError = operatorRewardContractImpl.interface.parseError(e.data);
-                        throw new Error(`Failed to claim rewards with error: ${decodedError}`);
+                            const decodedError = operatorRewardContractImpl.interface.parseError(e.data);
+                            throw new Error(`Failed to claim rewards with error: ${decodedError}`);
+                        }
+                        throw new Error(`Failed to claim rewards with error: ${e.toHuman()}`);
                     }
-                    throw new Error(`Failed to claim rewards with error: ${e.toHuman()}`);
+
+                    const tokenAddress = await gatewayContract.tokenAddressOf(tokenId);
+
+                    tokenContract = new ethers.Contract(
+                        tokenAddress,
+                        ethInfo.symbiotic_info.contracts.Token.abi,
+                        ethereumWallet
+                    );
+
+                    const operator = await middlewareContract.operatorByKey(opAccount.addressRaw);
+                    const operatorBalance = await tokenContract.balanceOf(operator);
+                    expect(operatorBalance).to.not.be.eq(0n);
                 }
-
-                const tokenAddress = await gatewayContract.tokenAddressOf(tokenId);
-
-                tokenContract = new ethers.Contract(
-                    tokenAddress,
-                    ethInfo.symbiotic_info.contracts.Token.abi,
-                    ethereumWallet
-                );
-
-                const operator = await middlewareContract.operatorByKey(operatorAccount.addressRaw);
-                const operatorBalance = await tokenContract.balanceOf(operator);
-                expect(operatorBalance).to.not.be.eq(0n);
             },
         });
 
@@ -707,7 +785,8 @@ describeSuite({
 
         it({
             id: "T08",
-            title: "Native token is transferred to (and from) Ethereum successfully",
+            title: "TANSSI, WETH and native ETH token transfers",
+            timeout: 1200000,
             test: async () => {
                 logTiming("Starting T08");
                 // Wait a few sessions to ensure the token was properly registered on Ethereum
@@ -879,6 +958,32 @@ describeSuite({
 
                 await sendWETHTokenTx.wait();
 
+                console.log("Sending native ETH from Ethereum");
+
+                const nativeETHBalanceFromEthereum = 300000000000000n;
+                const neededFeeNativeETH = await gatewayContract.quoteSendTokenFee(
+                    nativeETHAddress,
+                    ASSET_HUB_PARA_ID,
+                    fee
+                );
+
+                // Send native ETH from Ethereum
+                const sendNativeETHTokenTx = await gatewayContract.sendToken(
+                    nativeETHAddress,
+                    ASSET_HUB_PARA_ID,
+                    {
+                        kind: 1,
+                        data: u8aToHex(alice.addressRaw),
+                    },
+                    fee,
+                    nativeETHBalanceFromEthereum,
+                    {
+                        value: neededFeeNativeETH * 10n + nativeETHBalanceFromEthereum,
+                    }
+                );
+
+                await sendNativeETHTokenTx.wait();
+
                 const ownerBalanceAfter = await tokenContract.balanceOf(recipient);
 
                 // Ensure the token has been sent
@@ -896,7 +1001,7 @@ describeSuite({
                     async () => {
                         try {
                             const nonceAfter = await relayApi.query.ethereumInboundQueue.nonce(assetHubChannelId);
-                            expect(nonceAfter.toNumber()).to.be.eq(nonceInChannelBefore.toNumber() + 2);
+                            expect(nonceAfter.toNumber()).to.be.eq(nonceInChannelBefore.toNumber() + 3);
                         } catch (error) {
                             return false;
                         }
@@ -920,11 +1025,11 @@ describeSuite({
                 const executionRelayAfter = (await relayApi.query.system.account(executionRelay.address)).data.free;
                 expect(executionRelayAfter.toNumber()).to.be.greaterThan(executionRelayBefore.toNumber());
 
-                // Ensure the token has been received on the Starlight side
+                // Ensure the token has been received on the Tanssi side
                 const randomBalanceAfter = (await relayApi.query.system.account(randomAccount.address)).data.free;
                 expect(randomBalanceAfter.toBigInt()).to.be.eq(randomBalanceBefore.toBigInt() + amountBackFromETH);
 
-                // Ensure the WETH token has been received on the Starlight side
+                // Ensure the WETH token has been received on the Tanssi side
                 const aliceWETHBalanceAfter = await relayApi.query.foreignAssets.account(
                     FOREIGN_ASSET_ID,
                     alice.address
@@ -932,6 +1037,14 @@ describeSuite({
 
                 expect(aliceWETHBalanceAfter.unwrap().balance.toBigInt()).to.be.eq(wETHBalanceFromEthereum);
 
+                // Ensure the native ETH token has been received on the Tanssi side
+                const aliceNativeETHBalanceAfter = await relayApi.query.foreignAssets.account(
+                    nativeETHAssetId,
+                    alice.address
+                );
+                expect(aliceNativeETHBalanceAfter.unwrap().balance.toBigInt()).to.be.eq(nativeETHBalanceFromEthereum);
+
+                // First send some WETH back from Tanssi to Ethereum
                 const ethLocation = {
                     V4: {
                         parents: 1,
@@ -945,7 +1058,7 @@ describeSuite({
                     },
                 };
 
-                const beneficiaryLocation = {
+                const ownerBeneficiaryLocation = {
                     V4: {
                         parents: 0,
                         interior: {
@@ -978,7 +1091,7 @@ describeSuite({
                 console.log("Sending WETH back from Tanssi to Ethereum");
 
                 const transferWETHTx = await relayApi.tx.xcmPallet
-                    .transferAssets(ethLocation, beneficiaryLocation, assets, 0, "Unlimited")
+                    .transferAssets(ethLocation, ownerBeneficiaryLocation, assets, 0, "Unlimited")
                     .signAndSend(alice);
 
                 console.log("Transfer WETH tx was submitted:", transferWETHTx.toHex());
@@ -1001,6 +1114,64 @@ describeSuite({
                 const balanceAfter = await wETHContract.balanceOf(gatewayOwnerAddress);
                 expect(balanceAfter).to.be.eq(wETHBalanceBefore + wETHBalanceToSend);
 
+                // Now let's send the native ETH back from Tanssi to Ethereum
+                const nativeETHBalanceToSend = nativeETHBalanceFromEthereum - 200000000000000n;
+                const assetsNativeETH = {
+                    V4: [
+                        {
+                            id: nativeETHTokenLocation,
+                            fun: {
+                                Fungible: nativeETHBalanceToSend,
+                            },
+                        },
+                    ],
+                };
+
+                const randomEthereumAccount = generateKeyringPair("ethereum");
+
+                const randomBeneficiaryLocation = {
+                    V4: {
+                        parents: 0,
+                        interior: {
+                            X1: [
+                                {
+                                    AccountKey20: {
+                                        network: ETHEREUM_NETWORK_TESTNET,
+                                        key: hexToU8a(randomEthereumAccount.address),
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                };
+
+                const nativeETHBalanceBefore = await customHttpProvider.getBalance(randomEthereumAccount.address);
+
+                console.log("Sending native ETH back from Tanssi to Ethereum");
+
+                const transferNativeETHTx = await relayApi.tx.xcmPallet
+                    .transferAssets(ethLocation, randomBeneficiaryLocation, assetsNativeETH, 0, "Unlimited")
+                    .signAndSend(alice);
+
+                console.log("Transfer native ETH tx was submitted:", transferNativeETHTx.toHex());
+
+                let nativeETHTransferReceived = false;
+                let nativeETHTransferSuccess = false;
+
+                await gatewayContract.on("InboundMessageDispatched", (channelID, _nonce, _messageID, success) => {
+                    if (channelID === assetHubChannelId) {
+                        nativeETHTransferReceived = true;
+                        nativeETHTransferSuccess = success;
+                    }
+                });
+
+                while (!nativeETHTransferReceived) {
+                    await sleep(1000);
+                }
+                expect(nativeETHTransferSuccess).to.be.true;
+
+                const balanceAfterNativeETH = await customHttpProvider.getBalance(randomEthereumAccount.address);
+                expect(balanceAfterNativeETH).to.be.eq(nativeETHBalanceBefore + nativeETHBalanceToSend);
                 logTiming("Finish T08");
             },
         });

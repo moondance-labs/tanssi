@@ -261,7 +261,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: Cow::Borrowed("dancebox"),
     impl_name: Cow::Borrowed("dancebox"),
     authoring_version: 1,
-    spec_version: 1500,
+    spec_version: 1600,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -1686,6 +1686,7 @@ impl pallet_multisig::Config for Runtime {
 }
 parameter_types! {
     pub const MaxInactiveSessions: u32 = 5;
+    pub const CooldownLenghtInSessions: u32 = 2;
 }
 impl pallet_inactivity_tracking::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
@@ -1698,6 +1699,7 @@ impl pallet_inactivity_tracking::Config for Runtime {
     type ParaFilter = tp_parathread_filter_common::ExcludeAllParathreadsFilter<Runtime>;
     type InvulnerablesFilter = tp_invulnerables_filter_common::InvulnerablesFilter<Runtime>;
     type CollatorStakeHelper = PooledStaking;
+    type CooldownLength = CooldownLenghtInSessions;
     type WeightInfo = weights::pallet_inactivity_tracking::SubstrateWeight<Runtime>;
 }
 

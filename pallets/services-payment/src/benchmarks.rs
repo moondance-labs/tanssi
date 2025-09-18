@@ -200,7 +200,7 @@ mod benchmarks {
             T::ProvideCollatorAssignmentCost::collator_assignment_cost(&para_id.into()).0;
         let max_credit_stored = T::FreeCollatorAssignmentCredits::get();
         let balance_to_purchase = collator_assignment_cost.saturating_mul(max_credit_stored.into());
-        let caller = create_funded_user::<T>("caller", 1, 1_000_000_000_000_000_000u128);
+        let caller = create_funded_user::<T>("caller", 1, 1_000_000_000_000_000_000_000u128);
         let existential_deposit = <T::Currency>::minimum_balance();
         let tip = 1_000_000u32;
         assert_ok!(Pallet::<T>::purchase_credits(
