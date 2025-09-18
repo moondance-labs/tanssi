@@ -71,7 +71,7 @@
                     "validator": false,
                     "command": "../target/release/container-chain-simple-node",
                     "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm"],
-                    "rpc_port": 9949,
+                    "rpc_port": 9951,
                     "p2p_port": 33049,
                     "prometheus_port": 33102
                 },
@@ -98,7 +98,7 @@
                     "validator": false,
                     "command": "../target/release/container-chain-frontier-node",
                     "args": ["--no-hardware-benchmarks", "--database=paritydb", "--wasmtime-precompiled=wasm", "-lxcm=trace"],
-                    "rpc_port": 9950,
+                    "rpc_port": 9952,
                     "p2p_port": 33050
                 }
             ]
