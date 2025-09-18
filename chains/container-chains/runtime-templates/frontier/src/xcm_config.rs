@@ -211,6 +211,7 @@ pub type XcmRouter = WithUniqueTopic<(
         UniversalLocation,
         crate::EthereumNetwork,
         ContainerToEthTransferFee,
+        ParachainInfo,
     >,
 )>;
 
