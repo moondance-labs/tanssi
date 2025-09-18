@@ -107,7 +107,8 @@ runs:
     - name: Verify binary version
       shell: bash
       run: |
-        GIT_COMMIT=`git log -1 --format="%H" | cut -c1-7`
+        #GIT_COMMIT=`git log -1 --format="%H" | cut -c1-7`
+        GIT_COMMIT="-dev"
         TS_VERSION=`./target/release/tanssi-node --version`
         echo "Checking $TS_VERSION contains $GIT_COMMIT"
         echo "$TS_VERSION" | grep $GIT_COMMIT

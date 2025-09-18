@@ -90,7 +90,7 @@ cumulus-primitives-parachain-inherent = { workspace = true }
 cumulus-relay-chain-interface = { workspace = true }
 
 [build-dependencies]
-substrate-build-script-utils = { workspace = true }
+substrate-build-script-utils = { workspace = true, optional = true }
 
 [features]
-include-git-hash-in-version = []
+include-git-hash-in-version = [ "substrate-build-script-utils" ]

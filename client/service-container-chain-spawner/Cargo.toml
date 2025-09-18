@@ -91,12 +91,12 @@ polkadot-overseer = { workspace = true }
 tokio-stream = { workspace = true }
 
 [build-dependencies]
-substrate-build-script-utils = { workspace = true }
+substrate-build-script-utils = { workspace = true, optional = true }
 
 [features]
 default = []
 fast-runtime = [ "dancebox-runtime/fast-runtime" ]
-include-git-hash-in-version = []
+include-git-hash-in-version = [ "substrate-build-script-utils" ]
 runtime-benchmarks = [
 	"cumulus-primitives-core/runtime-benchmarks",
 	"dancebox-runtime/runtime-benchmarks",

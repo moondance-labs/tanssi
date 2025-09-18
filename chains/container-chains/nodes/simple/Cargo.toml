@@ -103,11 +103,11 @@ cumulus-primitives-parachain-inherent = { workspace = true }
 cumulus-relay-chain-interface = { workspace = true }
 
 [build-dependencies]
-substrate-build-script-utils = { workspace = true }
+substrate-build-script-utils = { workspace = true, optional = true }
 
 [features]
 default = []
-include-git-hash-in-version = []
+include-git-hash-in-version = [ "substrate-build-script-utils" ]
 runtime-benchmarks = [
 	"container-chain-template-simple-runtime/runtime-benchmarks",
 	"cumulus-primitives-core/runtime-benchmarks",
