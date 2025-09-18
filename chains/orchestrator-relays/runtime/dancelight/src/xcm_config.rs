@@ -24,7 +24,7 @@ use {
         ForeignAssetsCreator, ParaId, Runtime, RuntimeCall, RuntimeEvent, RuntimeOrigin,
         TransactionByteFee, Treasury, WeightToFee, XcmPallet,
     },
-    crate::{governance::StakingAdmin, EthereumSystem},
+    crate::{governance::StakingAdmin, EthereumSystem, SnowbridgeFeesAccount},
     dancelight_runtime_constants::{
         currency::CENTS,
         snowbridge::{EthereumLocation, EthereumNetwork},
@@ -44,6 +44,7 @@ use {
     snowbridge_core::{AgentId, ChannelId},
     sp_core::ConstU32,
     sp_runtime::traits::TryConvertInto,
+    tanssi_runtime_common::relay::ExporterFeeHandler,
     tp_bridge::{
         container_token_to_ethereum_message_exporter::ContainerEthereumBlobExporter,
         snowbridge_outbound_token_transfer::{EthereumBlobExporter, SnowbrigeTokenTransferRouter},
@@ -61,10 +62,9 @@ use {
         ChildParachainConvertsVia, ConvertedConcreteId, DescribeAllTerminal, DescribeFamily,
         FixedWeightBounds, FrameTransactionalProcessor, FungibleAdapter, FungiblesAdapter,
         HashedDescription, IsChildSystemParachain, IsConcrete, MintLocation, NoChecking,
-        OriginToPluralityVoice, SendXcmFeeToAccount, SignedAccountId32AsNative,
-        SignedToAccountId32, SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId,
-        UsingComponents, WeightInfoBounds, WithComputedOrigin, WithUniqueTopic,
-        XcmFeeManagerFromComponents,
+        OriginToPluralityVoice, SignedAccountId32AsNative, SignedToAccountId32,
+        SovereignSignedViaLocation, TakeWeightCredit, TrailingSetTopicAsId, UsingComponents,
+        WeightInfoBounds, WithComputedOrigin, WithUniqueTopic, XcmFeeManagerFromComponents,
     },
     xcm_executor::XcmExecutor,
 };
@@ -254,7 +254,7 @@ impl xcm_executor::Config for XcmConfig {
     type MaxAssetsIntoHolding = MaxAssetsIntoHolding;
     type FeeManager = XcmFeeManagerFromComponents<
         WaivedLocations,
-        SendXcmFeeToAccount<Self::AssetTransactor, TreasuryAccount>,
+        ExporterFeeHandler<Self::AssetTransactor, SnowbridgeFeesAccount, TreasuryAccount>,
     >;
     type MessageExporter = (SnowbridgeExporter, ContainerToSnowbridgeMessageExporter);
     type UniversalAliases = Nothing;

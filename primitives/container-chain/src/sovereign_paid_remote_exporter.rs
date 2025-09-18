@@ -17,6 +17,7 @@
 use {
     alloc::vec,
     core::marker::PhantomData,
+    cumulus_primitives_core::ParaId,
     frame_support::traits::Get,
     xcm::{
         latest::{Location, NetworkId},
@@ -37,15 +38,39 @@ fn is_ethereum_location(loc: &Location, ethereum_network: NetworkId) -> bool {
     )
 }
 
-pub struct SovereignPaidRemoteExporter<Router, UniversalLocation, EthereumNetwork, ExecutionFee>(
-    PhantomData<(Router, UniversalLocation, EthereumNetwork, ExecutionFee)>,
+pub struct SovereignPaidRemoteExporter<
+    Router,
+    UniversalLocation,
+    EthereumNetwork,
+    ExecutionFee,
+    SelfParaId,
+>(
+    PhantomData<(
+        Router,
+        UniversalLocation,
+        EthereumNetwork,
+        ExecutionFee,
+        SelfParaId,
+    )>,
 );
-impl<Router: SendXcm, UniversalLocation: Get<InteriorLocation>, EthereumNetwork, ExecutionFee>
-    SendXcm
-    for SovereignPaidRemoteExporter<Router, UniversalLocation, EthereumNetwork, ExecutionFee>
+impl<
+        Router: SendXcm,
+        UniversalLocation: Get<InteriorLocation>,
+        EthereumNetwork,
+        ExecutionFee,
+        SelfParaId,
+    > SendXcm
+    for SovereignPaidRemoteExporter<
+        Router,
+        UniversalLocation,
+        EthereumNetwork,
+        ExecutionFee,
+        SelfParaId,
+    >
 where
     EthereumNetwork: Get<NetworkId>,
     ExecutionFee: Get<u128>,
+    SelfParaId: Get<ParaId>,
 {
     type Ticket = Router::Ticket;
 
@@ -80,8 +105,7 @@ where
             id: AssetId(Location::here()),
             fun: Fungible(ExecutionFee::get()),
         };
-        let network = EthereumNetwork::get();
-        let eth_location = Location::new(2, GlobalConsensus(network));
+        let container_location = Location::new(0, Parachain(SelfParaId::get().into()));
 
         // Prepare the message to send
         let mut message = Xcm(vec![
@@ -92,7 +116,7 @@ where
             },
             SetAppendix(Xcm(vec![DepositAsset {
                 assets: AllCounted(1).into(),
-                beneficiary: eth_location,
+                beneficiary: container_location,
             }])),
             export_instruction,
         ]);
@@ -120,9 +144,20 @@ where
     }
 }
 
-impl<Router: SendXcm, UniversalLocation: Get<InteriorLocation>, EthereumNetwork, ExecutionFee>
-    InspectMessageQueues
-    for SovereignPaidRemoteExporter<Router, UniversalLocation, EthereumNetwork, ExecutionFee>
+impl<
+        Router: SendXcm,
+        UniversalLocation: Get<InteriorLocation>,
+        EthereumNetwork,
+        ExecutionFee,
+        SelfParaId,
+    > InspectMessageQueues
+    for SovereignPaidRemoteExporter<
+        Router,
+        UniversalLocation,
+        EthereumNetwork,
+        ExecutionFee,
+        SelfParaId,
+    >
 {
     fn clear_messages() {}
 

@@ -744,6 +744,7 @@ dependencies = [
  "container-chain-template-simple-runtime",
  "dancelight-emulated-chain",
  "dancelight-runtime",
+ "dancelight-runtime-constants",
  "dancelight-system-emulated-network",
  "frame-support",
  "frontier-template-emulated-chain",
@@ -751,12 +752,12 @@ dependencies = [
  "pallet-xcm",
  "polkadot-primitives",
  "simple-template-emulated-chain",
+ "snowbridge-core",
  "sp-core",
  "sp-runtime",
  "staging-xcm",
  "staging-xcm-executor",
  "tanssi-emulated-integration-tests-common",
- "westend-system-emulated-network",
  "xcm-emulator",
 ]
 
@@ -19438,6 +19439,7 @@ dependencies = [
  "sp-runtime",
  "sp-staking",
  "staging-xcm",
+ "staging-xcm-builder",
  "staging-xcm-executor",
 ]
 
