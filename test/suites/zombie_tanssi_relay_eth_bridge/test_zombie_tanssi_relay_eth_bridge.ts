@@ -17,7 +17,6 @@ import {
     waitSessions,
     TESTNET_ETHEREUM_NETWORK_ID,
     waitEventUntilTimeout,
-    SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS,
     DANCELIGHT_GENESIS_HASH,
     SEPOLIA_CONTAINER_SOVEREIGN_ADDRESS_FRONTIER,
     SEPOLIA_CONTAINER_SOVEREIGN_ADDRESS_SUBSTRATE,
@@ -1261,16 +1260,16 @@ describeSuite({
 
                 // Uncomment this for debugging purpose, if you run only this test
 
-                /* await relayApi.tx.sudo
-                    .sudo(
-                        relayApi.tx.ethereumTokenTransfers.setTokenTransferChannel(
-                            ASSET_HUB_CHANNEL_ID,
-                            ASSET_HUB_AGENT_ID,
-                            Number(ASSET_HUB_PARA_ID)
-                        )
-                    )
-                    .signAndSend(alice);
-                await waitSessions(context, relayApi, 4, null, "Tanssi-relay"); */
+                // await relayApi.tx.sudo
+                //     .sudo(
+                //         relayApi.tx.ethereumTokenTransfers.setTokenTransferChannel(
+                //             ASSET_HUB_CHANNEL_ID,
+                //             ASSET_HUB_AGENT_ID,
+                //             Number(ASSET_HUB_PARA_ID)
+                //         )
+                //     )
+                //     .signAndSend(alice);
+                // await waitSessions(context, relayApi, 4, null, "Tanssi-relay");
 
                 // We send the token to the gateway owner address
                 const destinationAddress = gatewayOwnerAddress;
@@ -1365,16 +1364,16 @@ describeSuite({
                 const tokenBalanceBeforeEthNetwork = await tokenContract.balanceOf(destinationAddress);
                 console.log(`T09: [ETH Network] tokenBalanceBefore: ${tokenBalanceBeforeEthNetwork}`);
 
-                // const existentialDeposit = relayApi.consts.balances.existentialDeposit.toBigInt();
-                // const feesAccountBalanceBeforeSending = (await relayApi.query.system.account(SNOWBRIDGE_FEES_ACCOUNT))
-                //     .data.free;
-                // expect(feesAccountBalanceBeforeSending.toBigInt()).to.be.eq(existentialDeposit);
+                const existentialDeposit = relayApi.consts.balances.existentialDeposit.toBigInt();
+                const feesAccountBalanceBeforeSending = (await relayApi.query.system.account(SNOWBRIDGE_FEES_ACCOUNT))
+                    .data.free;
+                expect(feesAccountBalanceBeforeSending.toBigInt()).to.be.eq(existentialDeposit);
 
                 await container2000PolkadotJs.tx.polkadotXcm
                     .transferAssets(dest, versionedBeneficiary, versionedAssets, 0, "Unlimited")
                     .signAndSend(aliceFrontierOrSimple);
 
-                await waitEventUntilTimeout(relayApi, "ethereumOutboundQueue.MessageAccepted", 90000);
+                await waitEventUntilTimeout(relayApi, "ethereumOutboundQueue.MessageAccepted", 120000);
 
                 const tokenBalanceAfterSubstrateNetwork = (
                     await container2000PolkadotJs.query.system.account(holdingAccount)
@@ -1387,15 +1386,15 @@ describeSuite({
                 // Check that nonce has changed
                 expect(channelNonceAfter.toNumber() - channelNonceBefore.toNumber()).toEqual(1);
 
-                // Wait 2 blocks until fees are collected
-                // await context.waitBlock(2, "Tanssi-relay");
+                // Wait a few blocks until fees are collected
+                await sleep(24000);
 
                 // Fees are collected
-                // const feesAccountBalanceAfterSending = (await relayApi.query.system.account(SNOWBRIDGE_FEES_ACCOUNT))
-                //     .data.free;
-                // expect(feesAccountBalanceAfterSending.toNumber()).to.be.greaterThan(
-                //     feesAccountBalanceBeforeSending.toNumber()
-                // );
+                const feesAccountBalanceAfterSending = (await relayApi.query.system.account(SNOWBRIDGE_FEES_ACCOUNT))
+                    .data.free;
+                expect(feesAccountBalanceAfterSending.toNumber()).to.be.greaterThan(
+                    feesAccountBalanceBeforeSending.toNumber()
+                );
 
                 let tokensTransferReceived = false;
                 let tokensTransferSuccess = false;
@@ -1438,7 +1437,7 @@ describeSuite({
                 const ownerBalanceBefore = await tokenContract.balanceOf(gatewayOwnerAddress);
                 expect(ownerBalanceBefore).to.eq(tokenBalanceBeforeEthNetwork + tokenToTransfer);
 
-                //const executionRelayBefore = (await relayApi.query.system.account(executionRelay.address)).data.free;
+                const executionRelayBefore = (await relayApi.query.system.account(executionRelay.address)).data.free;
 
                 const fee = 5_000_000_000n;
                 const nativeContainerTokenBalanceFromEthereum = 50_000_000_000_000n;
@@ -1498,18 +1497,20 @@ describeSuite({
 
                 // Reward is reduced from fees account
                 // at least the amount decided in localReward
-                // const localReward = (await relayApi.query.ethereumSystem.pricingParameters()).rewards.local.toBigInt();
+                const localReward = (await relayApi.query.ethereumSystem.pricingParameters()).rewards.local.toBigInt();
 
-                // const feesAccountBalanceAfterReceiving = (await relayApi.query.system.account(SNOWBRIDGE_FEES_ACCOUNT))
-                //     .data.free;
-                // expect(
-                //     feesAccountBalanceAfterSending.toBigInt() - feesAccountBalanceAfterReceiving.toBigInt() >
-                //         localReward
-                // ).to.be.true;
+                console.log("T09: localReward: ", localReward);
+
+                const feesAccountBalanceAfterReceiving = (await relayApi.query.system.account(SNOWBRIDGE_FEES_ACCOUNT))
+                    .data.free;
+                expect(
+                    feesAccountBalanceAfterSending.toBigInt() - feesAccountBalanceAfterReceiving.toBigInt() >
+                        localReward
+                ).to.be.true;
 
                 // Reward is added to execution relay account
-                //const executionRelayAfter = (await relayApi.query.system.account(executionRelay.address)).data.free;
-                // expect(executionRelayAfter.toNumber()).to.be.greaterThan(executionRelayBefore.toNumber());
+                const executionRelayAfter = (await relayApi.query.system.account(executionRelay.address)).data.free;
+                expect(executionRelayAfter.toNumber()).to.be.greaterThan(executionRelayBefore.toNumber());
 
                 // Ensure the token has been received on the container side
                 const randomBalanceAfter = (await container2000PolkadotJs.query.system.account(randomAccount.address))
@@ -1634,16 +1635,16 @@ describeSuite({
                 const tokenBalanceBeforeEthNetwork = await tokenContract.balanceOf(destinationAddress);
                 console.log(`T10: [ETH Network] tokenBalanceBefore: ${tokenBalanceBeforeEthNetwork}`);
 
-                // const existentialDeposit = relayApi.consts.balances.existentialDeposit.toBigInt();
-                // const feesAccountBalanceBeforeSending = (await relayApi.query.system.account(SNOWBRIDGE_FEES_ACCOUNT))
-                //     .data.free;
-                // expect(feesAccountBalanceBeforeSending.toBigInt()).to.be.eq(existentialDeposit);
+                const existentialDeposit = relayApi.consts.balances.existentialDeposit.toBigInt();
+                const feesAccountBalanceBeforeSending = (await relayApi.query.system.account(SNOWBRIDGE_FEES_ACCOUNT))
+                    .data.free;
+                expect(feesAccountBalanceBeforeSending.toBigInt()).to.be.eq(existentialDeposit);
 
                 await container2001PolkadotJs.tx.polkadotXcm
                     .transferAssets(dest, versionedBeneficiary, versionedAssets, 0, "Unlimited")
                     .signAndSend(aliceFrontierOrSimple);
 
-                await waitEventUntilTimeout(relayApi, "ethereumOutboundQueue.MessageAccepted", 90000);
+                await waitEventUntilTimeout(relayApi, "ethereumOutboundQueue.MessageAccepted", 120000);
 
                 const tokenBalanceAfterSubstrateNetwork = (
                     await container2001PolkadotJs.query.system.account(holdingAccount)
@@ -1656,15 +1657,15 @@ describeSuite({
                 // Check that nonce has changed
                 expect(channelNonceAfter.toNumber() - channelNonceBefore.toNumber()).toEqual(1);
 
-                // Wait 2 blocks until fees are collected
-                // await context.waitBlock(2, "Tanssi-relay");
+                // Wait a few blocks until fees are collected
+                await sleep(24000);
 
                 // Fees are collected
-                // const feesAccountBalanceAfterSending = (await relayApi.query.system.account(SNOWBRIDGE_FEES_ACCOUNT))
-                //     .data.free;
-                // expect(feesAccountBalanceAfterSending.toNumber()).to.be.greaterThan(
-                //     feesAccountBalanceBeforeSending.toNumber()
-                // );
+                const feesAccountBalanceAfterSending = (await relayApi.query.system.account(SNOWBRIDGE_FEES_ACCOUNT))
+                    .data.free;
+                expect(feesAccountBalanceAfterSending.toNumber()).to.be.greaterThan(
+                    feesAccountBalanceBeforeSending.toNumber()
+                );
 
                 let tokensTransferReceived = false;
                 let tokensTransferSuccess = false;
@@ -1707,7 +1708,7 @@ describeSuite({
                 const ownerBalanceBefore = await tokenContract.balanceOf(gatewayOwnerAddress);
                 expect(ownerBalanceBefore).to.eq(tokenBalanceBeforeEthNetwork + tokenToTransfer);
 
-                //const executionRelayBefore = (await relayApi.query.system.account(executionRelay.address)).data.free;
+                const executionRelayBefore = (await relayApi.query.system.account(executionRelay.address)).data.free;
 
                 const fee = 5_000_000_000_000_000n;
                 const nativeContainerTokenBalanceFromEthereum = 50_000_000_000_000n;
@@ -1767,18 +1768,18 @@ describeSuite({
 
                 // Reward is reduced from fees account
                 // at least the amount decided in localReward
-                // const localReward = (await relayApi.query.ethereumSystem.pricingParameters()).rewards.local.toBigInt();
+                const localReward = (await relayApi.query.ethereumSystem.pricingParameters()).rewards.local.toBigInt();
 
-                // const feesAccountBalanceAfterReceiving = (await relayApi.query.system.account(SNOWBRIDGE_FEES_ACCOUNT))
-                //     .data.free;
-                // expect(
-                //     feesAccountBalanceAfterSending.toBigInt() - feesAccountBalanceAfterReceiving.toBigInt() >
-                //         localReward
-                // ).to.be.true;
+                const feesAccountBalanceAfterReceiving = (await relayApi.query.system.account(SNOWBRIDGE_FEES_ACCOUNT))
+                    .data.free;
+                expect(
+                    feesAccountBalanceAfterSending.toBigInt() - feesAccountBalanceAfterReceiving.toBigInt() >
+                        localReward
+                ).to.be.true;
 
                 // Reward is added to execution relay account
-                //const executionRelayAfter = (await relayApi.query.system.account(executionRelay.address)).data.free;
-                // expect(executionRelayAfter.toNumber()).to.be.greaterThan(executionRelayBefore.toNumber());
+                const executionRelayAfter = (await relayApi.query.system.account(executionRelay.address)).data.free;
+                expect(executionRelayAfter.toNumber()).to.be.greaterThan(executionRelayBefore.toNumber());
 
                 // Wait a few blocks until assets are received
                 await sleep(24000);
