@@ -710,13 +710,34 @@ export async function getLastSessionEndBlock(api: ApiPromise, lastSessionIndex?:
     if (isDancebox(api)) {
         let blockNumber = (await api.rpc.chain.getBlock()).block.header.number.toNumber();
         let currentSessionIndex = (await api.query.session.currentIndex()).toNumber();
-        while (currentSessionIndex > lastSessionIndex) {
-            blockNumber -= 1;
-            const blockHash = await api.rpc.chain.getBlockHash(blockNumber);
-            const apiAtBlock = await api.at(blockHash);
-            currentSessionIndex = (await apiAtBlock.query.session.currentIndex()).toNumber();
+
+        // We are going to first try to get the session change block by simply math
+        // we know that in dancebox sessions are defined in block numbers and not in time
+        // in theory we should be able to fetch the session change block number like this
+        const danceboxSessionLength = 600;
+        const theoreticalSessionChangeBlockNumber = blockNumber - (blockNumber % danceboxSessionLength);
+        const theoreticalSessionChangeBlockHash = await api.rpc.chain.getBlockHash(theoreticalSessionChangeBlockNumber);
+        const apiAtTheoreticalBlockHash = await api.at(theoreticalSessionChangeBlockHash);
+        const theoreticalSessionChangeBeforeBlock = await api.rpc.chain.getBlockHash(
+            theoreticalSessionChangeBlockNumber - 1
+        );
+        const apiAtTheoreticalBlockHashBefore = await api.at(theoreticalSessionChangeBeforeBlock);
+        const theoreticalSession = (await apiAtTheoreticalBlockHash.query.session.currentIndex()).toNumber();
+        const theoreticalSessionBefore = (
+            await apiAtTheoreticalBlockHashBefore.query.session.currentIndex()
+        ).toNumber();
+
+        if (currentSessionIndex === theoreticalSession && theoreticalSessionBefore === theoreticalSession - 1) {
+            return theoreticalSessionChangeBlockNumber - 1;
+        } else {
+            while (currentSessionIndex > lastSessionIndex) {
+                blockNumber -= 1;
+                const blockHash = await api.rpc.chain.getBlockHash(blockNumber);
+                const apiAtBlock = await api.at(blockHash);
+                currentSessionIndex = (await apiAtBlock.query.session.currentIndex()).toNumber();
+            }
+            return blockNumber;
         }
-        return blockNumber;
     }
 
     throw new Error(`Unsupported runtime: ${api.runtimeVersion.specName.toString()}`);
