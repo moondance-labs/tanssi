@@ -837,19 +837,6 @@ describeSuite({
             test: async () => {
                 logTiming("Starting T08");
                 // Wait a few sessions to ensure the token was properly registered on Ethereum
-                //await waitSessions(context, relayApi, 4, null, "Tanssi-relay");
-
-                // Uncomment this for debugging purpose, if you run only this test
-
-                await relayApi.tx.sudo
-                    .sudo(
-                        relayApi.tx.ethereumTokenTransfers.setTokenTransferChannel(
-                            ASSET_HUB_CHANNEL_ID,
-                            ASSET_HUB_AGENT_ID,
-                            Number(ASSET_HUB_PARA_ID)
-                        )
-                    )
-                    .signAndSend(alice);
                 await waitSessions(context, relayApi, 4, null, "Tanssi-relay");
 
                 // How to encode the channel id for it to be compliant with Solidity
