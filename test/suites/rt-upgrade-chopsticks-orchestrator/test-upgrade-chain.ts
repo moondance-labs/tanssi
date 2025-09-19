@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import "@tanssi/api-augment/dancelight";
 import { MoonwallContext, beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { generateKeyringPair } from "@moonwall/util";

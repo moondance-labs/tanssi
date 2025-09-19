@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import { type DevModeContext, customDevRpcRequest, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
 import type { XcmpMessageFormat } from "@polkadot/types/interfaces";

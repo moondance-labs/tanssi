@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import { afterAll, beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import { spawn } from "node:child_process";

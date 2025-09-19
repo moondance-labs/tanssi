@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import { beforeAll, deployCreateCompiledContract, describeSuite, expect } from "@moonwall/cli";
 import {
     ALITH_ADDRESS,

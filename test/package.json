@@ -11,7 +11,7 @@
         "start": "moonwall",
         "fmt": "biome format .",
         "fmt:fix": "biome format --write .",
-        "lint": "biome lint .",
+        "lint": "biome lint . && tsc --noEmit",
         "lint:fix": "biome lint --write .",
         "build-spec": "./scripts/build-spec.sh",
         "pre-build-contracts": "tsx tools/pre-build-contracts.ts",

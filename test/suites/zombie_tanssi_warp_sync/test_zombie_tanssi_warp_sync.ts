@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { ApiPromise, Keyring, WsProvider } from "@polkadot/api";
 import { stringToHex, u8aToHex } from "@polkadot/util";

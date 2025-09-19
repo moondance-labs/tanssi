@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import { beforeAll, customDevRpcRequest, describeSuite, expect } from "@moonwall/cli";
 import { type KeyringPair, generateKeyringPair, filterAndApply } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";

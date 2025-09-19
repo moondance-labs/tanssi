@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import { describeSuite, expect } from "@moonwall/cli";
 import { customWeb3Request } from "@moonwall/util";
 

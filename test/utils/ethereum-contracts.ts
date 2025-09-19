@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import type Web3 from "web3";
 import fs from "node:fs";
 import path from "node:path";

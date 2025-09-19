@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import { expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
 import type { SpRuntimeDispatchError } from "@polkadot/types/lookup";

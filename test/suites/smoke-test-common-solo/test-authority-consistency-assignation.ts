@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import "@tanssi/api-augment/dancelight";
 
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";

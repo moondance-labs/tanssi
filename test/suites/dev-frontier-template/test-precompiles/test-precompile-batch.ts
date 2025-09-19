@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import { describeSuite, expect, fetchCompiledContract } from "@moonwall/cli";
 import {
     ALITH_ADDRESS,
