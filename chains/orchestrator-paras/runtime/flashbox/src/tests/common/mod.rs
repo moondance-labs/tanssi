@@ -25,7 +25,6 @@ use {
         traits::{OnFinalize, OnInitialize},
     },
     nimbus_primitives::{NimbusId, NIMBUS_ENGINE_ID},
-    pallet_collator_assignment_runtime_api::runtime_decl_for_collator_assignment_api::CollatorAssignmentApi,
     pallet_registrar_runtime_api::ContainerChainGenesisData,
     pallet_services_payment::{ProvideBlockProductionCost, ProvideCollatorAssignmentCost},
     parity_scale_codec::{Decode, Encode, MaxEncodedLen},
@@ -525,9 +524,47 @@ pub fn get_aura_id_from_seed(seed: &str) -> NimbusId {
         .into()
 }
 
+/// Return the parachain that the given `AccountId` is collating for.
+/// Returns `None` if the `AccountId` is not collating.
+pub fn current_collator_parachain_assignment(account: AccountId) -> Option<ParaId> {
+    let assigned_collators = CollatorAssignment::collator_container_chain();
+    let self_para_id = ParachainInfo::get();
+
+    assigned_collators.para_id_of(&account, self_para_id)
+}
+
+/// Return the parachain that the given `AccountId` will be collating for
+/// in the next session change.
+/// Returns `None` if the `AccountId` will not be collating.
+pub fn future_collator_parachain_assignment(account: AccountId) -> Option<ParaId> {
+    let assigned_collators = CollatorAssignment::pending_collator_container_chain();
+
+    match assigned_collators {
+        Some(assigned_collators) => {
+            let self_para_id = ParachainInfo::get();
+
+            assigned_collators.para_id_of(&account, self_para_id)
+        }
+        None => current_collator_parachain_assignment(account),
+    }
+}
+
+/// Return the list of collators of the given `ParaId`.
+/// Returns `None` if the `ParaId` is not in the registrar.
+pub fn parachain_collators(para_id: ParaId) -> Option<Vec<AccountId>> {
+    let assigned_collators = CollatorAssignment::collator_container_chain();
+    let self_para_id = ParachainInfo::get();
+
+    if para_id == self_para_id {
+        Some(assigned_collators.orchestrator_chain)
+    } else {
+        assigned_collators.container_chains.get(&para_id).cloned()
+    }
+}
+
 pub fn get_orchestrator_current_author() -> Option<AccountId> {
     let slot: u64 = current_slot();
-    let orchestrator_collators = Runtime::parachain_collators(ParachainInfo::get())?;
+    let orchestrator_collators = parachain_collators(ParachainInfo::get())?;
     let author_index = slot % orchestrator_collators.len() as u64;
     let account = orchestrator_collators.get(author_index as usize)?;
     Some(account.clone())
