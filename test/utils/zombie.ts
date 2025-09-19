@@ -321,3 +321,38 @@ export async function directoryExists(directoryPath: PathLike) {
         return false;
     }
 }
+
+export async function monitorBlockProduction(apis: ApiPromise[], blockProductionTimeout = 15000): Promise<() => void> {
+    const apisState: Map<number, { lastNumber: number; lastUpdate: number }> = new Map();
+    const intervals = [];
+    for (let i = 0; i < apis.length; i++) {
+        apisState.set(i, {
+            lastNumber: (await apis[i].rpc.chain.getHeader()).number.toNumber(),
+            lastUpdate: Date.now(),
+        });
+
+        intervals.push(
+            setInterval(async () => {
+                const lastNumber = apisState.get(i).lastNumber;
+                const lastUpdate = apisState.get(i).lastUpdate;
+
+                const header = await apis[i].rpc.chain.getHeader();
+                const number = header.number.toNumber();
+
+                if (number > lastNumber) {
+                    apisState.set(i, { lastNumber: number, lastUpdate: Date.now() });
+                } else {
+                    if (Date.now() - lastUpdate > blockProductionTimeout) {
+                        console.error("⛔⛔⛔ Block production stopped!");
+                    }
+                }
+            }, 6000)
+        );
+    }
+
+    return () => {
+        for (const interval of intervals) {
+            clearInterval(interval);
+        }
+    };
+}

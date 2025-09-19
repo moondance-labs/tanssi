@@ -1,4 +1,4 @@
-import { beforeAll, describeSuite, expect } from "@moonwall/cli";
+import { afterAll, beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { generateKeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import type { Signer } from "ethers";
@@ -8,6 +8,7 @@ import {
     checkLogsNotExist,
     getHeaderFromRelay,
     getTmpZombiePath,
+    monitorBlockProduction,
     signAndSendAndInclude,
     waitSessions,
 } from "utils";
@@ -22,6 +23,7 @@ describeSuite({
         let container2001Api: ApiPromise;
         let container2002Api: ApiPromise;
         let ethersSigner: Signer;
+        let cleanMonitorsFn: () => void;
 
         beforeAll(async () => {
             relayApi = context.polkadotJs("Tanssi-relay");
@@ -47,7 +49,18 @@ describeSuite({
             const paraId2002 = (await container2002Api.query.parachainInfo.parachainId()).toString();
             expect(container2002Network, "Container2002 API incorrect").to.contain("container-chain-template");
             expect(paraId2002, "Container2002 API incorrect").to.be.equal("2002");
+
+            cleanMonitorsFn = await monitorBlockProduction([
+                relayApi,
+                container2000Api,
+                container2001Api,
+                container2002Api,
+            ]);
         }, 120000);
+
+        afterAll(() => {
+            cleanMonitorsFn();
+        });
 
         it({
             id: "T01",

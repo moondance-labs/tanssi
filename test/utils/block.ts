@@ -312,6 +312,8 @@ export function filterRewardFromContainer(events: EventRecord[], feePayer: strin
 // @param timeout - The timeout in milliseconds, or null for no timeout. Defaults to 5 minutes.
 // @returns A Promise resolving with the transaction hash, block hash, and the full status object.
 export async function signAndSendAndInclude(tx, account, timeout: number | null = 3 * 60 * 1000) {
+    const callerStack = new Error().stack;
+
     // Inner function that doesn't handle timeout
     const signAndSendAndIncludeInner = (tx, account) => {
         return new Promise((resolve, reject) => {
@@ -327,6 +329,7 @@ export async function signAndSendAndInclude(tx, account, timeout: number | null 
                     });
                 }
             }).catch((error) => {
+                console.error("callerStack", callerStack);
                 reject(error.toHuman());
             });
         });
@@ -342,6 +345,7 @@ export async function signAndSendAndInclude(tx, account, timeout: number | null 
         const timer = setTimeout(() => {
             console.log("Transaction timed out");
             console.log(tx.toJSON());
+            console.error("callerStack", callerStack);
             reject(new Error("Transaction timed out"));
         }, timeout);
 
