@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import { beforeAll, deployCreateCompiledContract, describeSuite, expect } from "@moonwall/cli";
 import { ALITH_ADDRESS, BALTATHAR_ADDRESS, alith, createEthersTransaction } from "@moonwall/util";
 import type { u16 } from "@polkadot/types-codec";

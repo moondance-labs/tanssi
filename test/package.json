@@ -6,6 +6,7 @@
     "main": "index.js",
     "type": "module",
     "scripts": {
+        "typecheck": "tsc --noEmit",
         "typegen": "cd ../typescript-api && pnpm create-local-interfaces",
         "clean": "rm -rf node_modules tmp",
         "start": "moonwall",

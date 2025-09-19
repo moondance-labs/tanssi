@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import "@moonbeam-network/api-augment";
 import { beforeAll, deployCreateCompiledContract, describeSuite, expect } from "@moonwall/cli";
 import { ALITH_ADDRESS, BALTATHAR_PRIVATE_KEY, CHARLETH_ADDRESS, alith, createViemTransaction } from "@moonwall/util";
