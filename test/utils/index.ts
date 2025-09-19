@@ -15,3 +15,4 @@ export * from "./typescript";
 export * from "./xcm";
 export * from "./zombie";
 export * from "./light-client";
+export * from "./runtime";
