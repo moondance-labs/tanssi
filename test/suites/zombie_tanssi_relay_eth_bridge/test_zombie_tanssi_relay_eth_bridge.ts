@@ -114,13 +114,13 @@ describeSuite({
         let tokensData: { id: string; location: Array<LocationType> }[] = [];
 
         const ethUrl = "ws://127.0.0.1:8546";
-        const CONTAINER_PARA_ID_32 = 2000;
         const CONTAINER_PARA_ID_20 = 2001;
         let customHttpProvider: ethers.WebSocketProvider;
         let ethereumWallet: ethers.Wallet;
         let middlewareContract: ethers.Contract;
         let gatewayContract: ethers.Contract;
         let tokenContract: ethers.Contract;
+        let containerTokenContract: ethers.Contract;
         let wETHContract: ethers.Contract;
         let wETHAddress: string;
         let gatewayProxyAddress: string;
@@ -832,11 +832,24 @@ describeSuite({
 
         it({
             id: "T08",
-            title: "TANSSI, WETH and native ETH token transfers",
+            title: "Token transfers: TANSSI, WETH, native ETH, native container token",
             timeout: 1200000,
             test: async () => {
                 logTiming("Starting T08");
                 // Wait a few sessions to ensure the token was properly registered on Ethereum
+                //await waitSessions(context, relayApi, 4, null, "Tanssi-relay");
+
+                // Uncomment this for debugging purpose, if you run only this test
+
+                await relayApi.tx.sudo
+                    .sudo(
+                        relayApi.tx.ethereumTokenTransfers.setTokenTransferChannel(
+                            ASSET_HUB_CHANNEL_ID,
+                            ASSET_HUB_AGENT_ID,
+                            Number(ASSET_HUB_PARA_ID)
+                        )
+                    )
+                    .signAndSend(alice);
                 await waitSessions(context, relayApi, 4, null, "Tanssi-relay");
 
                 // How to encode the channel id for it to be compliant with Solidity
@@ -908,13 +921,6 @@ describeSuite({
                 expect(tokenTransferRecipient).to.be.eq(recipient);
                 expect(tokenTransferAmount).to.be.eq(Number(amountFromStarlight));
 
-                // Fees are collected
-                const feesAccountBalanceAfterSending = (await relayApi.query.system.account(SNOWBRIDGE_FEES_ACCOUNT))
-                    .data.free;
-                expect(feesAccountBalanceAfterSending.toNumber()).to.be.greaterThan(
-                    feesAccountBalanceBeforeSending.toNumber()
-                );
-
                 // Ensure the expected tokenId is properly set on Starlight
                 const expectedNativeToken = (
                     await relayApi.query.ethereumSystem.foreignToNativeId(tokenTransferTokenId)
@@ -926,29 +932,175 @@ describeSuite({
                 const tokenIsRegistered = await gatewayContract.isTokenRegistered(tokenAddress);
                 expect(tokenIsRegistered).to.be.true;
 
+                // Now let's send the container token from container 2001 to Ethereum
+                const containerAmountToTransfer = 123_321_000_000_000_000n;
+
+                const ethereumNetwork = { Ethereum: { chainId: TESTNET_ETHEREUM_NETWORK_ID } };
+
+                const convertLocation = await relayApi.call.locationToAccountApi.convertLocation({
+                    V3: { parents: 0, interior: { X1: { Parachain: 2001 } } },
+                });
+                const containerSovereignAddress = convertLocation.asOk.toHuman();
+
+                const txHash = await relayApi.tx.balances
+                    .transferKeepAlive(containerSovereignAddress, 100_000_000_000_000n)
+                    .signAndSend(alice);
+
+                expect(!!txHash.toHuman()).to.be.true;
+
+                // Check eth sovereign account balance before transfer
+                const ethSovereignContainerBalanceBefore = (
+                    await container2001PolkadotJs.query.system.account(SEPOLIA_CONTAINER_SOVEREIGN_ADDRESS_FRONTIER)
+                ).data.free.toBigInt();
+                const versionedBeneficiary = {
+                    V3: {
+                        parents: 0,
+                        interior: {
+                            X1: {
+                                AccountKey20: {
+                                    network: ethereumNetwork,
+                                    key: hexToU8a(gatewayOwnerAddress),
+                                },
+                            },
+                        },
+                    },
+                };
+
+                const assetToTransferNative = {
+                    id: {
+                        Concrete: {
+                            parents: 0,
+                            interior: {
+                                X1: { PalletInstance: balances2001PalletIndex },
+                            },
+                        },
+                    },
+                    fun: { Fungible: containerAmountToTransfer },
+                };
+                const versionedAssets = {
+                    V3: [assetToTransferNative],
+                };
+
+                // Specify ethereum destination with global consensus
+                const dest = {
+                    V3: {
+                        parents: 2,
+                        interior: {
+                            X1: {
+                                GlobalConsensus: ethereumNetwork,
+                            },
+                        },
+                    },
+                };
+
+                const containerTokenId = tokensData.find(
+                    ({ location }) =>
+                        location[0].interior.X3?.length === 3 && location[0].interior.X3?.[1].Parachain === "2,001"
+                )?.id;
+
+                console.log("containerTokenId", containerTokenId);
+
+                expect(!!containerTokenId, `Container tokenId should exist: ${containerTokenId}`).toEqual(true);
+
+                const containerTokenAddress = await gatewayContract.tokenAddressOf(containerTokenId);
+
+                containerTokenContract = new ethers.Contract(
+                    containerTokenAddress,
+                    ethInfo.symbiotic_info.contracts.Token.abi,
+                    ethereumWallet
+                );
+
+                const containerEthTokenBalanceBeforeSubstrateTx =
+                    await containerTokenContract.balanceOf(gatewayOwnerAddress);
+                console.log(`[ETH Network] containerTokenBalanceBefore: ${containerEthTokenBalanceBeforeSubstrateTx}`);
+                expect(containerEthTokenBalanceBeforeSubstrateTx).to.be.eq(0n);
+
+                await container2001PolkadotJs.tx.polkadotXcm
+                    .transferAssets(dest, versionedBeneficiary, versionedAssets, 0, "Unlimited")
+                    .signAndSend(alith);
+
+                // Wait a few blocks until fees are collected
+                await context.waitBlock(4, "Tanssi-relay");
+
+                // Fees are collected
+                const feesAccountBalanceAfterSending = (await relayApi.query.system.account(SNOWBRIDGE_FEES_ACCOUNT))
+                    .data.free;
+                expect(feesAccountBalanceAfterSending.toNumber()).to.be.greaterThan(
+                    feesAccountBalanceBeforeSending.toNumber()
+                );
+
+                // Wait some time for the eth sovereign balance to be reduced in container
+                // As soon as this happens, then we get out
+                await waitSessions(
+                    context,
+                    relayApi,
+                    2,
+                    async () => {
+                        try {
+                            // Check that the eth sovereign account balance in container has been reduced
+                            const ethSovereignContainerBalanceAfter = (
+                                await container2001PolkadotJs.query.system.account(
+                                    SEPOLIA_CONTAINER_SOVEREIGN_ADDRESS_FRONTIER
+                                )
+                            ).data.free.toBigInt();
+
+                            expect(ethSovereignContainerBalanceAfter - ethSovereignContainerBalanceBefore).toEqual(
+                                containerAmountToTransfer
+                            );
+                        } catch (error) {
+                            return false;
+                        }
+                        return true;
+                    },
+                    "Tanssi-relay"
+                );
+
+                // Checking native Tanssi reception on Ethereum
                 let tokenTransferReceived = false;
                 let tokenTransferSuccess = false;
 
                 console.log("Waiting for InboundMessageDispatched event...");
 
-                await gatewayContract.on("InboundMessageDispatched", (_channelID, _nonce, messageID, success) => {
+                let nativeTokenTransferNonce = 0n;
+                await gatewayContract.on("InboundMessageDispatched", (_channelID, nonce, messageID, success) => {
                     if (tokenTransferMessageId === messageID) {
                         tokenTransferReceived = true;
                         tokenTransferSuccess = success;
+                        nativeTokenTransferNonce = nonce;
                     }
                 });
 
-                while (!tokenTransferReceived) {
+                // Checking container token transfer reception on Ethereum
+                let containerTransferReceived = false;
+                let containerTransferSuccess = false;
+
+                await gatewayContract.on(
+                    "InboundMessageDispatched",
+                    (channelID, nonce, _messageID, success, _rewardAddress) => {
+                        if (channelID === ASSET_HUB_CHANNEL_ID && nonce == nativeTokenTransferNonce + 1n) {
+                            containerTransferReceived = true;
+                            containerTransferSuccess = success;
+                        }
+                    }
+                );
+
+                while (!tokenTransferReceived || !containerTransferReceived) {
                     await sleep(1000);
                 }
 
                 expect(tokenTransferSuccess).to.be.true;
+                expect(containerTransferSuccess).to.be.true;
 
-                // Send the token back
+                const containerEthTokenBalanceAfterSubstrateTx =
+                    await containerTokenContract.balanceOf(gatewayOwnerAddress);
+
+                expect(containerEthTokenBalanceAfterSubstrateTx).toEqual(containerAmountToTransfer);
+
+                // Send the native Tanssi token back from Ethereum to Tanssi
                 const amountBackFromETH = 300000000000000n;
                 const fee = 0n;
 
-                console.log(`Sending ${amountBackFromETH} tokens back from ETH`);
+                console.log(`Sending ${amountBackFromETH} Tanssi tokens back from ETH`);
 
                 tokenContract = new ethers.Contract(
                     tokenAddress,
@@ -1036,6 +1188,48 @@ describeSuite({
                 // Ensure the token has been sent
                 expect(ownerBalanceAfter).to.be.eq(ownerBalanceBefore - amountBackFromETH);
 
+                // Now let's send the container token back from Ethereum to Tanssi
+                const containerEthTokenBalanceBeforeEthTx = await containerTokenContract.balanceOf(gatewayOwnerAddress);
+                expect(containerEthTokenBalanceBeforeEthTx).to.eq(
+                    containerEthTokenBalanceBeforeSubstrateTx + containerAmountToTransfer
+                );
+
+                const containerFee = 5_000_000_000_000_000n;
+                const nativeContainerTokenBalanceFromEthereum = 50_000_000_000_000n;
+                const neededFeeNativeContainerToken = await gatewayContract.quoteSendTokenFee(
+                    containerTokenAddress,
+                    CONTAINER_PARA_ID_20,
+                    containerFee
+                );
+
+                const randomEthAccount = generateKeyringPair("ethereum");
+                const randomContainerAccountBalanceBefore = (
+                    await container2001PolkadotJs.query.system.account(randomEthAccount.address)
+                ).data.free;
+
+                // Send native ETH from Ethereum
+                const sendNativeContainerTokenTx = await gatewayContract.sendToken(
+                    containerTokenAddress,
+                    CONTAINER_PARA_ID_20,
+                    {
+                        kind: 2,
+                        data: u8aToHex(randomEthAccount.addressRaw),
+                    },
+                    containerFee,
+                    nativeContainerTokenBalanceFromEthereum,
+                    {
+                        value: neededFeeNativeContainerToken * 10n,
+                    }
+                );
+
+                await sendNativeContainerTokenTx.wait();
+
+                // Ensure the token has been sent
+                const containerEthTokenBalanceAfterEthTx = await containerTokenContract.balanceOf(gatewayOwnerAddress);
+                expect(containerEthTokenBalanceAfterEthTx).to.be.eq(
+                    containerEthTokenBalanceBeforeEthTx - nativeContainerTokenBalanceFromEthereum
+                );
+
                 // We retrieve the current nonce and wait at most 6 sessions to see the message being relayed
                 const nonceInChannelBefore = await relayApi.query.ethereumInboundQueue.nonce(assetHubChannelId);
 
@@ -1048,7 +1242,7 @@ describeSuite({
                     async () => {
                         try {
                             const nonceAfter = await relayApi.query.ethereumInboundQueue.nonce(assetHubChannelId);
-                            expect(nonceAfter.toNumber()).to.be.eq(nonceInChannelBefore.toNumber() + 3);
+                            expect(nonceAfter.toNumber()).to.be.eq(nonceInChannelBefore.toNumber() + 4);
                         } catch (error) {
                             return false;
                         }
@@ -1091,7 +1285,29 @@ describeSuite({
                 );
                 expect(aliceNativeETHBalanceAfter.unwrap().balance.toBigInt()).to.be.eq(nativeETHBalanceFromEthereum);
 
-                // First send some WETH back from Tanssi to Ethereum
+                // Wait some time until container assets are received
+                // As soon as we receive the tokens, we get out
+                await waitSessions(
+                    context,
+                    relayApi,
+                    2,
+                    async () => {
+                        try {
+                            const randomContainerBalanceAfter = (
+                                await container2001PolkadotJs.query.system.account(randomEthAccount.address)
+                            ).data.free;
+                            expect(randomContainerBalanceAfter.toBigInt()).to.be.eq(
+                                randomContainerAccountBalanceBefore.toBigInt() + nativeContainerTokenBalanceFromEthereum
+                            );
+                        } catch (error) {
+                            return false;
+                        }
+                        return true;
+                    },
+                    "Tanssi-relay"
+                );
+
+                // Now: send some WETH back from Tanssi to Ethereum
                 const ethLocation = {
                     V4: {
                         parents: 1,
@@ -1220,280 +1436,6 @@ describeSuite({
                 const balanceAfterNativeETH = await customHttpProvider.getBalance(randomEthereumAccount.address);
                 expect(balanceAfterNativeETH).to.be.eq(nativeETHBalanceBefore + nativeETHBalanceToSend);
                 logTiming("Finish T08");
-            },
-        });
-
-        it({
-            id: "T09",
-            title: "Send native container asset from container chain (AccountKey20) to Ethereum",
-            test: async () => {
-                logTiming("Start T09");
-
-                // Uncomment this for debugging purpose, if you run only this test
-
-                // await relayApi.tx.sudo
-                //     .sudo(
-                //         relayApi.tx.ethereumTokenTransfers.setTokenTransferChannel(
-                //             ASSET_HUB_CHANNEL_ID,
-                //             ASSET_HUB_AGENT_ID,
-                //             Number(ASSET_HUB_PARA_ID)
-                //         )
-                //     )
-                //     .signAndSend(alice);
-                // await waitSessions(context, relayApi, 4, null, "Tanssi-relay");
-
-                // We send the token to the gateway owner address
-                const destinationAddress = gatewayOwnerAddress;
-                const holdingAccount = SEPOLIA_CONTAINER_SOVEREIGN_ADDRESS_FRONTIER;
-                const tokenToTransfer = 123_321_000_000_000_000n;
-
-                const chain = container2001PolkadotJs.consts.system.version.specName.toString();
-
-                const aliceAccount32 = new Keyring({ type: "sr25519" }).addFromUri("//Alice", {
-                    name: "Alice default",
-                });
-                const aliceFrontierOrSimple = chain === "frontier-template" ? alith : aliceAccount32;
-
-                const ethereumNetwork = { Ethereum: { chainId: TESTNET_ETHEREUM_NETWORK_ID } };
-
-                const convertLocation = await relayApi.call.locationToAccountApi.convertLocation({
-                    V3: { parents: 0, interior: { X1: { Parachain: 2001 } } },
-                });
-                const convertedAddress = convertLocation.asOk.toHuman();
-
-                const txHash = await relayApi.tx.balances
-                    .transferKeepAlive(convertedAddress, 100_000_000_000_000n)
-                    .signAndSend(aliceAccount32);
-
-                expect(!!txHash.toHuman()).to.be.true;
-
-                // Check balance before transfer
-                const tokenBalanceBeforeSubstrateNetwork = (
-                    await container2001PolkadotJs.query.system.account(holdingAccount)
-                ).data.free.toBigInt();
-                const versionedBeneficiary = {
-                    V3: {
-                        parents: 0,
-                        interior: {
-                            X1: {
-                                AccountKey20: {
-                                    network: ethereumNetwork,
-                                    key: destinationAddress,
-                                },
-                            },
-                        },
-                    },
-                };
-
-                const assetToTransferNative = {
-                    id: {
-                        Concrete: {
-                            parents: 0,
-                            interior: {
-                                X1: { PalletInstance: balances2001PalletIndex },
-                            },
-                        },
-                    },
-                    fun: { Fungible: tokenToTransfer },
-                };
-                const versionedAssets = {
-                    V3: [assetToTransferNative],
-                };
-
-                // Specify ethereum destination with global consensus
-                const dest = {
-                    V3: {
-                        parents: 2,
-                        interior: {
-                            X1: {
-                                GlobalConsensus: ethereumNetwork,
-                            },
-                        },
-                    },
-                };
-
-                const channelNonceBefore = await relayApi.query.ethereumOutboundQueue.nonce(ASSET_HUB_CHANNEL_ID);
-
-                const containerTokenId = tokensData.find(
-                    ({ location }) =>
-                        location[0].interior.X3?.length === 3 && location[0].interior.X3?.[1].Parachain === "2,001"
-                )?.id;
-
-                console.log("T09: containerTokenId", containerTokenId);
-
-                expect(!!containerTokenId, `Container tokenId should exist: ${containerTokenId}`).toEqual(true);
-
-                const tokenAddress = await gatewayContract.tokenAddressOf(containerTokenId);
-                console.log(`T09: TokenAddress: ${tokenAddress}`);
-
-                tokenContract = new ethers.Contract(
-                    tokenAddress,
-                    ethInfo.symbiotic_info.contracts.Token.abi,
-                    ethereumWallet
-                );
-
-                const tokenBalanceBeforeEthNetwork = await tokenContract.balanceOf(destinationAddress);
-                console.log(`T09: [ETH Network] tokenBalanceBefore: ${tokenBalanceBeforeEthNetwork}`);
-
-                // Uncomment this if you run only this test
-                // const existentialDeposit = relayApi.consts.balances.existentialDeposit.toBigInt();
-                const feesAccountBalanceBeforeSending = (await relayApi.query.system.account(SNOWBRIDGE_FEES_ACCOUNT))
-                    .data.free;
-                expect(feesAccountBalanceBeforeSending.toBigInt()).to.not.be.eq(0n);
-                // expect(feesAccountBalanceBeforeSending.toBigInt()).to.be.eq(existentialDeposit);
-
-                await container2001PolkadotJs.tx.polkadotXcm
-                    .transferAssets(dest, versionedBeneficiary, versionedAssets, 0, "Unlimited")
-                    .signAndSend(aliceFrontierOrSimple);
-
-                await waitEventUntilTimeout(relayApi, "ethereumOutboundQueue.MessageAccepted", 120000);
-
-                const tokenBalanceAfterSubstrateNetwork = (
-                    await container2001PolkadotJs.query.system.account(holdingAccount)
-                ).data.free.toBigInt();
-
-                expect(tokenBalanceAfterSubstrateNetwork - tokenBalanceBeforeSubstrateNetwork).toEqual(tokenToTransfer);
-
-                const channelNonceAfter = await relayApi.query.ethereumOutboundQueue.nonce(ASSET_HUB_CHANNEL_ID);
-
-                // Check that nonce has changed
-                expect(channelNonceAfter.toNumber() - channelNonceBefore.toNumber()).toEqual(1);
-
-                // Wait a few blocks until fees are collected
-                await sleep(24000);
-
-                // Fees are collected
-                const feesAccountBalanceAfterSending = (await relayApi.query.system.account(SNOWBRIDGE_FEES_ACCOUNT))
-                    .data.free;
-                expect(feesAccountBalanceAfterSending.toNumber()).to.be.greaterThan(
-                    feesAccountBalanceBeforeSending.toNumber()
-                );
-
-                let tokensTransferReceived = false;
-                let tokensTransferSuccess = false;
-                await gatewayContract.on(
-                    "InboundMessageDispatched",
-                    (channelID, nonce, messageID, success, rewardAddress) => {
-                        console.log(
-                            "Received InboundMessageDispatched event from gateway with params: ",
-                            channelID,
-                            nonce,
-                            messageID,
-                            success,
-                            rewardAddress
-                        );
-
-                        if (channelID === ASSET_HUB_CHANNEL_ID) {
-                            tokensTransferReceived = true;
-                            tokensTransferSuccess = success;
-                        }
-                    }
-                );
-
-                logTiming("T09: Before waiting token transfer received");
-
-                while (!tokensTransferReceived) {
-                    await sleep(1000);
-                }
-                expect(tokensTransferSuccess).to.be.true;
-
-                logTiming("T09: After waiting token transfer received");
-
-                const tokenBalanceAfterEthNetwork = await tokenContract.balanceOf(destinationAddress);
-                console.log(`T09: [ETH Network] tokenBalanceAfter: ${tokenBalanceAfterEthNetwork}`);
-
-                expect(tokenBalanceAfterEthNetwork).toEqual(tokenToTransfer);
-
-                // Now let's send the token back
-                console.log("T09: Sending native container token from Ethereum to Tanssi");
-
-                const ownerBalanceBefore = await tokenContract.balanceOf(gatewayOwnerAddress);
-                expect(ownerBalanceBefore).to.eq(tokenBalanceBeforeEthNetwork + tokenToTransfer);
-
-                const executionRelayBefore = (await relayApi.query.system.account(executionRelay.address)).data.free;
-
-                const fee = 5_000_000_000_000_000n;
-                const nativeContainerTokenBalanceFromEthereum = 50_000_000_000_000n;
-                const neededFeeNativeContainerToken = await gatewayContract.quoteSendTokenFee(
-                    tokenAddress,
-                    CONTAINER_PARA_ID_20,
-                    fee
-                );
-
-                const randomAccount = generateKeyringPair("ethereum");
-                const randomBalanceBefore = (await container2001PolkadotJs.query.system.account(randomAccount.address))
-                    .data.free;
-
-                // Send native ETH from Ethereum
-                const sendNativeContainerTokenTx = await gatewayContract.sendToken(
-                    tokenAddress,
-                    CONTAINER_PARA_ID_20,
-                    {
-                        kind: 2,
-                        data: u8aToHex(randomAccount.addressRaw),
-                    },
-                    fee,
-                    nativeContainerTokenBalanceFromEthereum,
-                    {
-                        value: neededFeeNativeContainerToken * 10n,
-                    }
-                );
-
-                await sendNativeContainerTokenTx.wait();
-
-                const ownerBalanceAfter = await tokenContract.balanceOf(gatewayOwnerAddress);
-
-                // Ensure the token has been sent
-                expect(ownerBalanceAfter).to.be.eq(ownerBalanceBefore - nativeContainerTokenBalanceFromEthereum);
-
-                // We retrieve the current nonce and wait at most 6 sessions to see the message being relayed
-                const nonceInChannelBefore = await relayApi.query.ethereumInboundQueue.nonce(ASSET_HUB_CHANNEL_ID);
-                console.log("T10: nonceInChannelBefore: ", nonceInChannelBefore);
-
-                // wait some time for the data to be relayed
-                // As soon as the nonce increases, then we get out
-                await waitSessions(
-                    context,
-                    relayApi,
-                    6,
-                    async () => {
-                        try {
-                            const nonceAfter = await relayApi.query.ethereumInboundQueue.nonce(ASSET_HUB_CHANNEL_ID);
-                            expect(nonceAfter.toNumber()).to.be.eq(nonceInChannelBefore.toNumber() + 1);
-                        } catch (error) {
-                            return false;
-                        }
-                        return true;
-                    },
-                    "Tanssi-relay"
-                );
-
-                // Reward is reduced from fees account
-                // at least the amount decided in localReward
-                const localReward = (await relayApi.query.ethereumSystem.pricingParameters()).rewards.local.toBigInt();
-
-                const feesAccountBalanceAfterReceiving = (await relayApi.query.system.account(SNOWBRIDGE_FEES_ACCOUNT))
-                    .data.free;
-                expect(
-                    feesAccountBalanceAfterSending.toBigInt() - feesAccountBalanceAfterReceiving.toBigInt() >
-                        localReward
-                ).to.be.true;
-
-                // Reward is added to execution relay account
-                const executionRelayAfter = (await relayApi.query.system.account(executionRelay.address)).data.free;
-                expect(executionRelayAfter.toNumber()).to.be.greaterThan(executionRelayBefore.toNumber());
-
-                // Wait a few blocks until assets are received
-                await sleep(24000);
-
-                // Ensure the token has been received on the container side
-                const randomBalanceAfter = (await container2001PolkadotJs.query.system.account(randomAccount.address))
-                    .data.free;
-                expect(randomBalanceAfter.toBigInt()).to.be.eq(
-                    randomBalanceBefore.toBigInt() + nativeContainerTokenBalanceFromEthereum
-                );
-
-                logTiming("Finish T09");
             },
         });
 
