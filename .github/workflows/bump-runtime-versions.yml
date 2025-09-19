@@ -70,5 +70,3 @@ jobs:
             --base ${{ steps.branch.outputs.branch }} \
             --head "$BRANCH" \
             --reviewer "CoreDev"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
