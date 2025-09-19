@@ -6,6 +6,7 @@ import type { ApiPromise } from "@polkadot/api";
 import { fetchIssuance, jumpSessions } from "utils";
 import { paraIdTank } from "utils";
 import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SERVICES_PAYMENT, checkCallIsFiltered } from "helpers";
+import { type BN } from "@polkadot/util";
 
 describeSuite({
     id: "COMM0201",
@@ -16,7 +17,7 @@ describeSuite({
         let alice: KeyringPair;
         const blocksPerSession = 10n;
         const paraId2001 = 2001;
-        let costPerBlock = 1_000_000n;
+        let costPerBlock: bigint;
         let balanceTankBefore: bigint;
         let registerAlias: any;
         let isStarlight: boolean;
@@ -46,9 +47,7 @@ describeSuite({
                 return;
             }
 
-            if (isStarlight) {
-                costPerBlock = 30_000_000_000n;
-            }
+            costPerBlock = BigInt((await polkadotJs.call.servicesPaymentApi.blockCost(paraId2001)).toString());
 
             const sudoSignedTx = await polkadotJs.tx.sudo.sudo(tx2000OneSession).signAsync(alice);
             await context.createBlock([sudoSignedTx]);

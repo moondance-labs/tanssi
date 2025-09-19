@@ -17,7 +17,7 @@ describeSuite({
         const blocksPerSession = 10n;
         const paraId2000 = 2000;
         const paraId2001 = 2001;
-        let costPerBlock = 1_000_000n;
+        let costPerBlock: bigint;
         let collatorAssignmentAlias: any;
         let isStarlight: boolean;
         let specVersion: number;
@@ -35,9 +35,7 @@ describeSuite({
             shouldSkipStarlightSP =
                 isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SERVICES_PAYMENT.includes(specVersion);
 
-            if (isStarlight) {
-                costPerBlock = 30_000_000_000n;
-            }
+            costPerBlock = BigInt((await polkadotJs.call.servicesPaymentApi.blockCost(paraId2001)).toString());
         });
 
         it({

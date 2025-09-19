@@ -18,7 +18,7 @@ describeSuite({
         let isStarlight: boolean;
         let specVersion: number;
         let shouldSkipStarlightSP: boolean;
-        let costPerSession = 100_000_000n;
+        let costPerSession: bigint;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
@@ -27,9 +27,7 @@ describeSuite({
             specVersion = polkadotJs.consts.system.version.specVersion.toNumber();
             shouldSkipStarlightSP =
                 isStarlight && STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SERVICES_PAYMENT.includes(specVersion);
-            if (isStarlight) {
-                costPerSession = 50_000_000_000_000n;
-            }
+            costPerSession = BigInt((await polkadotJs.call.servicesPaymentApi.collatorAssignmentCost(1000)).toString());
         });
         it({
             id: "E01",
