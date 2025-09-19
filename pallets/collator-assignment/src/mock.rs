@@ -157,6 +157,7 @@ pub struct Mocks {
     pub full_rotation_mode: FullRotationModes,
     pub apply_tip: bool,
     pub assignment_hook_errors: bool,
+    pub cant_pay_tip: Vec<ParaId>,
 }
 
 impl Default for Mocks {
@@ -178,6 +179,7 @@ impl Default for Mocks {
             full_rotation_mode: Default::default(),
             apply_tip: Default::default(),
             assignment_hook_errors: Default::default(),
+            cant_pay_tip: Default::default(),
         }
     }
 }
@@ -311,13 +313,17 @@ impl Get<u32> for MockCollatorRotationSessionPeriod {
 pub struct MockCollatorAssignmentTip;
 
 impl CollatorAssignmentTip<u32> for MockCollatorAssignmentTip {
-    fn get_para_tip(para_id: ParaId) -> Option<u32> {
+    fn get_para_max_tip(para_id: ParaId) -> Option<u32> {
         if MockData::mock().apply_tip && MockData::mock().chains_that_are_tipping.contains(&para_id)
         {
             Some(1_000u32)
         } else {
             None
         }
+    }
+
+    fn can_pay_assignment(para_id: ParaId) -> bool {
+        !MockData::mock().cant_pay_tip.contains(&para_id)
     }
 }
 

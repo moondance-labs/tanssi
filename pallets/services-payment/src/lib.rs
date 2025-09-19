@@ -70,6 +70,8 @@ pub mod pallet {
 
         /// Currency type for fee payment
         type Currency: Currency<Self::AccountId>;
+        /// Existential deposit for that currency.
+        type CurrencyExistentialDeposit: Get<BalanceOf<Self>>;
         /// Provider of a block cost which can adjust from block to block
         type ProvideBlockProductionCost: ProvideBlockProductionCost<Self>;
         /// Provider of a block cost which can adjust from block to block
@@ -644,8 +646,50 @@ impl<T: Config> CollatorAssignmentHook<BalanceOf<T>> for Pallet<T> {
 }
 
 impl<T: Config> CollatorAssignmentTip<BalanceOf<T>> for Pallet<T> {
-    fn get_para_tip(para_id: ParaId) -> Option<BalanceOf<T>> {
+    fn get_para_max_tip(para_id: ParaId) -> Option<BalanceOf<T>> {
         MaxTip::<T>::get(para_id)
+    }
+
+    fn can_pay_assignment(para_id: ParaId) -> bool {
+        // compute amount to pay
+        let mut total_amount = Zero::zero();
+
+        if Pallet::<T>::burn_collator_assignment_free_credit_for_para(&para_id).is_err() {
+            let (amount_to_charge, _weight) =
+                T::ProvideCollatorAssignmentCost::collator_assignment_cost(&para_id);
+
+            total_amount += amount_to_charge;
+        }
+
+        if let Some(tip) = Self::get_para_max_tip(para_id) {
+            total_amount += tip;
+        }
+
+        // compute new free balance to call ensure_can_withdraw.
+        // we also need to check the new free balance is not below ED
+        let new_free_account =
+            T::Currency::free_balance(&Self::parachain_tank(para_id)).checked_sub(&total_amount);
+
+        let Some(new_free_account) = new_free_account else {
+            return false;
+        };
+
+        if new_free_account < T::CurrencyExistentialDeposit::get() {
+            return false;
+        }
+
+        if T::Currency::ensure_can_withdraw(
+            &Self::parachain_tank(para_id),
+            total_amount,
+            WithdrawReasons::FEE, // in reality it is a mix of FEE + TIP, is that fine to use FEE only?
+            new_free_account,
+        )
+        .is_err()
+        {
+            return false;
+        }
+
+        true
     }
 }
 

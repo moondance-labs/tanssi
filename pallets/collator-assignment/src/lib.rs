@@ -191,6 +191,7 @@ pub mod pallet {
         pub(crate) fn order_paras_with_core_config(
             mut bulk_paras: Vec<ChainNumCollators>,
             mut pool_paras: Vec<ChainNumCollators>,
+            old_assigned_para_ids: &BTreeSet<ParaId>,
             core_allocation_configuration: &CoreAllocationConfiguration,
             target_session_index: T::SessionIndex,
             number_of_collators: u32,
@@ -223,18 +224,29 @@ pub mod pallet {
             // We need to sort both separately as we have fixed space for parachains at the moment
             // which means even when we have some parathread cores empty we cannot schedule parachain there.
             if should_charge_tip {
+                // Filter out paras that cannot pay for the assignment (tip + assignment fee).
+                bulk_paras.retain(|x| T::CollatorAssignmentTip::can_pay_assignment(x.para_id));
+
                 bulk_paras.sort_by(|a, b| {
-                    T::CollatorAssignmentTip::get_para_tip(b.para_id)
-                        .cmp(&T::CollatorAssignmentTip::get_para_tip(a.para_id))
+                    // old assigned comes first
+                    let old_assigned_first = old_assigned_para_ids.contains(&b.para_id).cmp(&old_assigned_para_ids.contains(&a.para_id));
+
+                    // higher tip comes first
+                    let higher_tip_first = T::CollatorAssignmentTip::get_para_max_tip(b.para_id)
+                        .cmp(&T::CollatorAssignmentTip::get_para_max_tip(a.para_id));
+
+                    // order first by old assigned, if equal order by higher tip
+                    old_assigned_first.then(higher_tip_first)
                 });
 
                 pool_paras.sort_by(|a, b| {
-                    T::CollatorAssignmentTip::get_para_tip(b.para_id)
-                        .cmp(&T::CollatorAssignmentTip::get_para_tip(a.para_id))
+                    T::CollatorAssignmentTip::get_para_max_tip(b.para_id)
+                        .cmp(&T::CollatorAssignmentTip::get_para_max_tip(a.para_id))
                 });
             }
 
             bulk_paras.truncate(max_number_of_bulk_paras as usize);
+
             // We are not truncating pool paras, since their workload is not continuous one core
             // can be shared by many paras during the session.
 
@@ -246,6 +258,7 @@ pub mod pallet {
         pub(crate) fn order_paras(
             bulk_paras: Vec<ChainNumCollators>,
             pool_paras: Vec<ChainNumCollators>,
+            old_assigned_para_ids: &BTreeSet<ParaId>,
             target_session_index: T::SessionIndex,
             number_of_collators: u32,
             collators_per_container: u32,
@@ -266,9 +279,19 @@ pub mod pallet {
             // Prioritize paras by tip on congestion
             // As of now this doesn't distinguish between bulk paras and pool paras
             if !enough_collators_for_all_chain {
+                // Filter out paras that cannot pay for the assignment (tip + assignment fee).
+                chains.retain(|x| T::CollatorAssignmentTip::can_pay_assignment(x.para_id));
+
                 chains.sort_by(|a, b| {
-                    T::CollatorAssignmentTip::get_para_tip(b.para_id)
-                        .cmp(&T::CollatorAssignmentTip::get_para_tip(a.para_id))
+                    // old assigned comes first
+                    let old_assigned_first = old_assigned_para_ids.contains(&b.para_id).cmp(&old_assigned_para_ids.contains(&a.para_id));
+
+                    // higher tip comes first
+                    let higher_tip_first = T::CollatorAssignmentTip::get_para_max_tip(b.para_id)
+                        .cmp(&T::CollatorAssignmentTip::get_para_max_tip(a.para_id));
+
+                    // order first by old assigned, if equal order by higher tip
+                    old_assigned_first.then(higher_tip_first)
                 });
             }
 
@@ -384,6 +407,7 @@ pub mod pallet {
                     Self::order_paras_with_core_config(
                         bulk_paras,
                         pool_paras,
+                        &old_assigned_para_ids,
                         &core_allocation_configuration,
                         target_session_index,
                         collators.len() as u32,
@@ -394,6 +418,7 @@ pub mod pallet {
                     Self::order_paras(
                         bulk_paras,
                         pool_paras,
+                        &old_assigned_para_ids,
                         target_session_index,
                         collators.len() as u32,
                         collators_per_container,
@@ -463,7 +488,7 @@ pub mod pallet {
             } else {
                 assigned_containers
                     .into_keys()
-                    .filter_map(T::CollatorAssignmentTip::get_para_tip)
+                    .filter_map(T::CollatorAssignmentTip::get_para_max_tip)
                     .min()
             };
 
