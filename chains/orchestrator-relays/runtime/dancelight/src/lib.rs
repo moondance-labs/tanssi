@@ -173,7 +173,8 @@ mod weights;
 pub mod governance;
 use {
     governance::{
-        pallet_custom_origins, AuctionAdmin, Fellows, GeneralAdmin, Treasurer, TreasurySpender,
+        councils::*, pallet_custom_origins, AuctionAdmin, Fellows, GeneralAdmin, Treasurer,
+        TreasurySpender,
     },
     pallet_collator_assignment::CoreAllocationConfiguration,
 };
@@ -919,6 +920,7 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 				RuntimeCall::Referenda(..) |
 				RuntimeCall::FellowshipCollective(..) |
 				RuntimeCall::FellowshipReferenda(..) |
+                RuntimeCall::OpenTechCommitteeCollective(..) |
 				RuntimeCall::Whitelist(..) |
 				RuntimeCall::Utility(..) |
 				RuntimeCall::Identity(..) |
@@ -938,7 +940,8 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 					RuntimeCall::Referenda(..) |
 					RuntimeCall::FellowshipCollective(..) |
 					RuntimeCall::FellowshipReferenda(..) |
-					RuntimeCall::Whitelist(..)
+					RuntimeCall::Whitelist(..) |
+                    RuntimeCall::OpenTechCommitteeCollective(..)
             ),
             ProxyType::IdentityJudgement => matches!(
                 c,
@@ -1662,7 +1665,10 @@ impl pallet_maintenance_mode::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type NormalCallFilter = NormalFilter;
     type MaintenanceCallFilter = InsideBoth<MaintenanceFilter, NormalFilter>;
-    type MaintenanceOrigin = EnsureRoot<AccountId>;
+    type MaintenanceOrigin = EitherOf<
+        EnsureRoot<AccountId>,
+        pallet_collective::EnsureProportionAtLeast<AccountId, OpenTechCommitteeInstance, 5, 9>,
+    >;
     type XcmExecutionManager = ();
 }
 
@@ -1951,6 +1957,8 @@ construct_runtime! {
         FellowshipReferenda: pallet_referenda::<Instance2> = 44,
         Origins: pallet_custom_origins = 45,
         Whitelist: pallet_whitelist = 46,
+        OpenTechCommitteeCollective: pallet_collective::<Instance3> = 47,
+
 
         // Parachains pallets. Start indices at 50 to leave room.
         ParachainsOrigin: parachains_origin = 50,
@@ -2294,6 +2302,7 @@ frame_support::ord_parameter_types! {
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benches {
+
     frame_benchmarking::define_benchmarks!(
         // Polkadot
         // NOTE: Make sure to prefix these with `runtime_common::` so
@@ -2325,6 +2334,7 @@ mod benches {
         [pallet_sudo, Sudo]
         [frame_system, SystemBench::<Runtime>]
         [frame_system_extensions, frame_system_benchmarking::extensions::Pallet::<Runtime>]
+        [pallet_collective, OpenTechCommitteeCollective]
         [pallet_timestamp, Timestamp]
         [pallet_transaction_payment, TransactionPayment]
         [pallet_treasury, Treasury]

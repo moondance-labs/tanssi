@@ -24,7 +24,7 @@ import type {
     u8,
 } from "@polkadot/types-codec";
 import type { AnyNumber, ITuple } from "@polkadot/types-codec/types";
-import type { AccountId32, H256, Perbill } from "@polkadot/types/interfaces/runtime";
+import type { AccountId32, Call, H256, Perbill } from "@polkadot/types/interfaces/runtime";
 import type {
     BinaryHeapEnqueuedOrder,
     DancelightRuntimeAggregateMessageOrigin,
@@ -50,6 +50,7 @@ import type {
     PalletBalancesAccountData,
     PalletBalancesBalanceLock,
     PalletBalancesReserveData,
+    PalletCollectiveVotes,
     PalletConfigurationHostConfiguration,
     PalletConvictionVotingVoteVoting,
     PalletDataPreserversRegisteredProfile,
@@ -1961,6 +1962,56 @@ declare module "@polkadot/api-base/types/storage" {
              * Keeps track of accumulated revenue from on demand order sales.
              **/
             revenue: AugmentedQuery<ApiType, () => Observable<Vec<u128>>, []> & QueryableStorageEntry<ApiType, []>;
+            /**
+             * Generic query
+             **/
+            [key: string]: QueryableStorageEntry<ApiType>;
+        };
+        openTechCommitteeCollective: {
+            /**
+             * Consideration cost created for publishing and storing a proposal.
+             *
+             * Determined by [Config::Consideration] and may be not present for certain proposals (e.g. if
+             * the proposal count at the time of creation was below threshold N).
+             **/
+            costOf: AugmentedQuery<
+                ApiType,
+                (arg: H256 | string | Uint8Array) => Observable<Option<ITuple<[AccountId32, Null]>>>,
+                [H256]
+            > &
+                QueryableStorageEntry<ApiType, [H256]>;
+            /**
+             * The current members of the collective. This is stored sorted (just by value).
+             **/
+            members: AugmentedQuery<ApiType, () => Observable<Vec<AccountId32>>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * The prime member that helps determine the default vote behavior in case of abstentions.
+             **/
+            prime: AugmentedQuery<ApiType, () => Observable<Option<AccountId32>>, []> &
+                QueryableStorageEntry<ApiType, []>;
+            /**
+             * Proposals so far.
+             **/
+            proposalCount: AugmentedQuery<ApiType, () => Observable<u32>, []> & QueryableStorageEntry<ApiType, []>;
+            /**
+             * Actual proposal for a given hash, if it's current.
+             **/
+            proposalOf: AugmentedQuery<ApiType, (arg: H256 | string | Uint8Array) => Observable<Option<Call>>, [H256]> &
+                QueryableStorageEntry<ApiType, [H256]>;
+            /**
+             * The hashes of the active proposals.
+             **/
+            proposals: AugmentedQuery<ApiType, () => Observable<Vec<H256>>, []> & QueryableStorageEntry<ApiType, []>;
+            /**
+             * Votes on a given proposal, if it is ongoing.
+             **/
+            voting: AugmentedQuery<
+                ApiType,
+                (arg: H256 | string | Uint8Array) => Observable<Option<PalletCollectiveVotes>>,
+                [H256]
+            > &
+                QueryableStorageEntry<ApiType, [H256]>;
             /**
              * Generic query
              **/

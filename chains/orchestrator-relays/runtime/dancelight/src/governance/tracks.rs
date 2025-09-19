@@ -22,10 +22,16 @@ const fn percent(x: u128) -> sp_arithmetic::FixedI64 {
     sp_arithmetic::FixedI64::from_rational(x, 100)
 }
 use pallet_referenda::Curve;
+
 const APP_ROOT: Curve = Curve::make_reciprocal(4, 28, percent(80), percent(50), percent(100));
 const SUP_ROOT: Curve = Curve::make_linear(28, 28, percent(20), percent(50));
-const TRACKS_DATA: [pallet_referenda::Track<u16, Balance, BlockNumber>; 1] =
-    [pallet_referenda::Track {
+const APP_WHITELISTED: Curve =
+    Curve::make_reciprocal(1, 14, percent(96), percent(50), percent(100));
+const SUP_WHITELISTED: Curve =
+    Curve::make_reciprocal(1, 14 * 24, percent(1), percent(0), percent(2));
+
+const TRACKS_DATA: [pallet_referenda::Track<u16, Balance, BlockNumber>; 2] = [
+    pallet_referenda::Track {
         id: 0,
         info: pallet_referenda::TrackInfo {
             name: s("root"),
@@ -38,7 +44,22 @@ const TRACKS_DATA: [pallet_referenda::Track<u16, Balance, BlockNumber>; 1] =
             min_approval: APP_ROOT,
             min_support: SUP_ROOT,
         },
-    }];
+    },
+    pallet_referenda::Track {
+        id: 1,
+        info: pallet_referenda::TrackInfo {
+            name: s("whitelisted_caller"),
+            max_deciding: 100,
+            decision_deposit: 500 * GRAND,
+            prepare_period: 10 * MINUTES,
+            decision_period: 14 * DAYS,
+            confirm_period: 10 * MINUTES,
+            min_enactment_period: 30 * MINUTES,
+            min_approval: APP_WHITELISTED,
+            min_support: SUP_WHITELISTED,
+        },
+    },
+];
 
 pub struct TracksInfo;
 impl pallet_referenda::TracksInfo<Balance, BlockNumber> for TracksInfo {
@@ -53,6 +74,11 @@ impl pallet_referenda::TracksInfo<Balance, BlockNumber> for TracksInfo {
         if let Ok(system_origin) = frame_system::RawOrigin::try_from(id.clone()) {
             match system_origin {
                 frame_system::RawOrigin::Root => Ok(0),
+                _ => Err(()),
+            }
+        } else if let Ok(custom_origin) = pallet_custom_origins::Origin::try_from(id.clone()) {
+            match custom_origin {
+                origins::Origin::WhitelistedCaller => Ok(1),
                 _ => Err(()),
             }
         } else {
