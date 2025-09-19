@@ -128,7 +128,7 @@ cumulus-relay-chain-interface = { workspace = true }
 sp-panic-handler = { workspace = true }
 
 [build-dependencies]
-substrate-build-script-utils = { workspace = true }
+substrate-build-script-utils = { workspace = true, optional = true }
 
 [features]
 default = []
@@ -165,4 +165,5 @@ try-runtime = [
 ]
 
 fast-runtime = [ "dancebox-runtime/fast-runtime", "flashbox-runtime/fast-runtime" ]
+include-git-hash-in-version = [ "substrate-build-script-utils" ]
 metadata-hash = [ "dancebox-runtime/metadata-hash", "flashbox-runtime/metadata-hash" ]
