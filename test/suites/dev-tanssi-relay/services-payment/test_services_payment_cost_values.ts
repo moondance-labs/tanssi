@@ -1,6 +1,6 @@
 import "@tanssi/api-augment";
 
-import { beforeAll, customDevRpcRequest, describeSuite, expect } from "@moonwall/cli";
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
 import { isStarlightRuntime } from "../../../utils/runtime.ts";
 

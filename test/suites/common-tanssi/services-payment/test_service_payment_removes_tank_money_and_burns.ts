@@ -6,7 +6,6 @@ import type { ApiPromise } from "@polkadot/api";
 import { fetchIssuance, jumpSessions } from "utils";
 import { paraIdTank } from "utils";
 import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SERVICES_PAYMENT, checkCallIsFiltered } from "helpers";
-import { type BN } from "@polkadot/util";
 
 describeSuite({
     id: "COMM0201",
