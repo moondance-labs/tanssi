@@ -3,9 +3,8 @@ import "@tanssi/api-augment";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
-import { jumpSessions } from "utils";
+import { isStarlightRuntime, jumpSessions } from "utils";
 import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_SERVICES_PAYMENT, checkCallIsFiltered } from "helpers";
-import { isStarlightRuntime } from "../../../utils/runtime.ts";
 
 describeSuite({
     id: "COMM0204",
