@@ -19,10 +19,10 @@ use {
         currency::MICROUNIT,
         precompiles::FOREIGN_ASSET_PRECOMPILE_ADDRESS_PREFIX,
         weights::{self, xcm::XcmWeight as XcmGenericWeights},
-        AccountId, AllPalletsWithSystem, AssetRate, Balance, Balances, ForeignAssetsCreator,
-        MaintenanceMode, MessageQueue, ParachainInfo, ParachainSystem, PolkadotXcm, Runtime,
-        RuntimeBlockWeights, RuntimeCall, RuntimeEvent, RuntimeOrigin, TransactionByteFee,
-        WeightToFee, XcmpQueue,
+        AccountId, AllPalletsWithSystem, AssetRate, Balance, Balances, EthereumLocation,
+        EthereumNetwork, ForeignAssetsCreator, MaintenanceMode, MessageQueue, ParachainInfo,
+        ParachainSystem, PolkadotXcm, Runtime, RuntimeBlockWeights, RuntimeCall, RuntimeEvent,
+        RuntimeOrigin, TransactionByteFee, WeightToFee, XcmpQueue,
     },
     alloc::vec::Vec,
     ccp_xcm::SignedToAccountKey20,
@@ -53,6 +53,7 @@ use {
         sovereign_paid_remote_exporter::SovereignPaidRemoteExporter,
         ContainerChainEthereumLocationConverter,
     },
+    tp_xcm_commons::EthereumAssetReserveFromPara,
     xcm::latest::prelude::*,
     xcm_builder::{
         AccountKey20Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
@@ -80,6 +81,8 @@ parameter_types! {
             PalletInstance(<Balances as PalletInfoAccess>::index() as u8)
         ].into()
     };
+
+    pub NativeAssetLocation: Location = Location::here();
 
     // One XCM operation is 1_000_000_000 weight - almost certainly a conservative estimate.
     pub UnitWeightCost: Weight = Weight::from_parts(1_000_000_000, 64 * 1024);
@@ -161,7 +164,7 @@ pub type CurrencyTransactor = FungibleAdapter<
     // Use this currency:
     Balances,
     // Use this currency when it is a fungible asset matching the given location or name:
-    IsConcrete<SelfReserve>,
+    (IsConcrete<SelfReserve>, IsConcrete<NativeAssetLocation>),
     // Convert an XCM Location into a local account id:
     LocationToAccountId,
     // Our chain's account ID type (we can't get away without mentioning it explicitly):
@@ -221,13 +224,17 @@ impl xcm_executor::Config for XcmConfig {
     type XcmSender = XcmRouter;
     type AssetTransactor = AssetTransactors;
     type OriginConverter = XcmOriginToTransactDispatchOrigin;
-    type IsReserve = IsReserveFilter<Runtime>;
+    type IsReserve = (
+        IsReserveFilter<Runtime>,
+        EthereumAssetReserveFromPara<EthereumLocation, EthereumNetwork>,
+    );
     type IsTeleporter = IsTeleportFilter<Runtime>;
     type UniversalLocation = UniversalLocation;
     type Barrier = XcmBarrier;
     type Weigher = XcmWeigher;
     type Trader = (
         UsingComponents<WeightToFee, SelfReserve, AccountId, Balances, ()>,
+        UsingComponents<WeightToFee, NativeAssetLocation, AccountId, Balances, ()>,
         cumulus_primitives_utility::TakeFirstAssetTrader<
             AccountId,
             AssetRateAsMultiplier,

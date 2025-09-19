@@ -2430,6 +2430,7 @@ dependencies = [
  "substrate-wasm-builder",
  "tanssi-runtime-common",
  "tp-container-chain",
+ "tp-xcm-commons",
  "xcm-primitives",
  "xcm-runtime-apis",
 ]
@@ -2512,6 +2513,7 @@ dependencies = [
  "substrate-wasm-builder",
  "tanssi-runtime-common",
  "tp-container-chain",
+ "tp-xcm-commons",
  "xcm-primitives",
  "xcm-runtime-apis",
 ]
