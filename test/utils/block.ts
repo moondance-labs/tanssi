@@ -844,3 +844,16 @@ export const waitEventUntilTimeout = async (
 
     throw new Error(`Event "${eventSectionMethod}" not found within ${timeoutMs / 1000}s`);
 };
+
+/*
+ * In order to specify the block number to debug, you can set the BLOCK_NUMBER_TO_DEBUG environment variable.
+ * For example, to debug block number 12345, you can run the test with:
+ * sudo BLOCK_NUMBER_TO_DEBUG=2731016 pnpm moonwall test dancelight_smoke SMOK01
+ */
+export const getBlockNumberForDebug = (): number | undefined => {
+    if (process.env.BLOCK_NUMBER_TO_DEBUG !== undefined) {
+        console.log("Using BLOCK_NUMBER_TO_DEBUG parameter:", process.env.BLOCK_NUMBER_TO_DEBUG);
+
+        return Number(process.env.BLOCK_NUMBER_TO_DEBUG);
+    }
+};
