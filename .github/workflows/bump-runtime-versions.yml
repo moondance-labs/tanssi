@@ -42,7 +42,7 @@ jobs:
           client_version: ${{ github.event.inputs.client_version }}
           runtime_version: ${{ github.event.inputs.runtime_version }}
         run: |
-          ./scripts/bump-runtime-versions \
+          ./scripts/bump-runtime-versions.sh \
             --client-version="$client_version" \
             --runtime-version="$runtime_version"
 
