@@ -287,7 +287,12 @@ export interface XcmFragmentConfig {
         multilocation: MultiLocation;
         fungible: bigint;
     }[];
-    weight_limit?: BN;
+    weight_limit?:
+        | BN
+        | {
+              refTime: BN | number | bigint;
+              proofSize: BN | number | bigint;
+          };
     descend_origin?: string;
     beneficiary?: string;
 }
