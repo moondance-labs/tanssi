@@ -12,7 +12,6 @@
     "clean-all": "rm -rf node_modules && pnpm -r clean",
     "build": "pnpm -r build",
     "fmt": "pnpm -r fmt",
-    "typecheck": "pnpm -r typecheck",
     "fmt:fix": "pnpm -r fmt:fix",
     "lint": "pnpm -r lint",
     "lint:fix": "pnpm -r lint:fix",
