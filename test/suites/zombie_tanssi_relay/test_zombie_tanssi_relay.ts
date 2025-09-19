@@ -8,6 +8,7 @@ import {
     checkLogsNotExist,
     getHeaderFromRelay,
     getTmpZombiePath,
+    monitorBlockProduction,
     signAndSendAndInclude,
     waitSessions,
 } from "utils";
@@ -47,6 +48,8 @@ describeSuite({
             const paraId2002 = (await container2002Api.query.parachainInfo.parachainId()).toString();
             expect(container2002Network, "Container2002 API incorrect").to.contain("container-chain-template");
             expect(paraId2002, "Container2002 API incorrect").to.be.equal("2002");
+
+            await monitorBlockProduction([relayApi, container2000Api, container2001Api, container2002Api]);
         }, 120000);
 
         it({
