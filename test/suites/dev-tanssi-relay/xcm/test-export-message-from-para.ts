@@ -5,10 +5,11 @@ import {
     type RawXcmMessage,
     XcmFragment,
     injectUmpMessageAndSeal,
+    ,
     jumpToSession,
     TESTNET_ETHEREUM_NETWORK_ID,
 } from "utils";
-import { isStarlightRuntime, STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_EXPORTS } from "helpers";
+import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_EXPORTS } from "helpers";
 import type { EventRecord } from "@polkadot/types/interfaces";
 
 describeSuite({
