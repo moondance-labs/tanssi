@@ -323,27 +323,41 @@ export async function directoryExists(directoryPath: PathLike) {
 }
 
 export async function monitorBlockProduction(apis: ApiPromise[], blockProductionTimeout = 15000): Promise<() => void> {
-    const apisState: Map<number, { lastNumber: number; lastUpdate: number }> = new Map();
-    const intervals = [];
+    type ApiState = {
+        lastNumber: number;
+        lastUpdate: number;
+        stuck: boolean;
+    };
+
+    const apisState: Map<number, ApiState> = new Map();
+    const intervals: NodeJS.Timer[] = [];
+
     for (let i = 0; i < apis.length; i++) {
+        const header = await apis[i].rpc.chain.getHeader();
         apisState.set(i, {
-            lastNumber: (await apis[i].rpc.chain.getHeader()).number.toNumber(),
+            lastNumber: header.number.toNumber(),
             lastUpdate: Date.now(),
+            stuck: false,
         });
 
         intervals.push(
             setInterval(async () => {
-                const lastNumber = apisState.get(i).lastNumber;
-                const lastUpdate = apisState.get(i).lastUpdate;
+                const state = apisState.get(i);
+                if (!state) return;
 
                 const header = await apis[i].rpc.chain.getHeader();
                 const number = header.number.toNumber();
+                const now = Date.now();
 
-                if (number > lastNumber) {
-                    apisState.set(i, { lastNumber: number, lastUpdate: Date.now() });
+                if (number > state.lastNumber) {
+                    if (state.stuck) {
+                        console.log(`✅ Block production restored for ${await apis[i].rpc.system.chain()}!`);
+                    }
+                    apisState.set(i, { lastNumber: number, lastUpdate: now, stuck: false });
                 } else {
-                    if (Date.now() - lastUpdate > blockProductionTimeout) {
-                        console.error("⛔⛔⛔ Block production stopped!");
+                    if (!state.stuck && now - state.lastUpdate > blockProductionTimeout) {
+                        console.error(`⛔⛔⛔ Block production stuck for ${await apis[i].rpc.system.chain()}!`);
+                        apisState.set(i, { ...state, stuck: true });
                     }
                 }
             }, 6000)
@@ -352,7 +366,7 @@ export async function monitorBlockProduction(apis: ApiPromise[], blockProduction
 
     return () => {
         for (const interval of intervals) {
-            clearInterval(interval);
+            clearInterval(interval as unknown as NodeJS.Timeout);
         }
     };
 }
