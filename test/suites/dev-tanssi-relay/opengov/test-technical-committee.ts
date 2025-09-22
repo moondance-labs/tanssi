@@ -240,6 +240,7 @@ describeSuite({
                 expect(proposalsAfterClosing.length).to.be.equal(1, "The proposal should still be active");
             },
         });
+
         it({
             id: "E04",
             title: "Non-technical committee member address cannot vote on a proposal",
@@ -250,12 +251,12 @@ describeSuite({
 
                 // 1. Compose the technical committee proposal
                 const call = api.tx.system.remark("0x0001");
-                const failedProposal = api.tx.openTechCommitteeCollective.propose(
+                const proposal = api.tx.openTechCommitteeCollective.propose(
                     2, // threshold
                     call,
                     call.length
                 );
-                const proposalBlock = await context.createBlock(await failedProposal.signAsync(charlie));
+                const proposalBlock = await context.createBlock(await proposal.signAsync(charlie));
                 expect(proposalBlock.result?.successful).to.be.true;
 
                 // 2. Get the proposal index and hash
@@ -289,6 +290,9 @@ describeSuite({
                 });
 
                 expect(errorMeta.method).toEqual("NotMember");
+                const tallyAfterVotingAttempt = await api.query.openTechCommitteeCollective.voting(proposalHash);
+                expect(tallyAfterVotingAttempt.isSome).to.be.true;
+                expect(tallyAfterVotingAttempt.unwrap().ayes.length).to.be.equal(0);
             },
         });
     },
