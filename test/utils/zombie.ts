@@ -356,7 +356,7 @@ export async function monitorBlockProduction(apis: ApiPromise[], blockProduction
                     apisState.set(i, { lastNumber: number, lastUpdate: now, stuck: false });
                 } else {
                     if (!state.stuck && now - state.lastUpdate > blockProductionTimeout) {
-                        console.error(`⛔⛔⛔ Block production stuck for ${await apis[i].rpc.system.chain()}!`);
+                        console.error(`⛔ Block production stuck for ${await apis[i].rpc.system.chain()}!`);
                         apisState.set(i, { ...state, stuck: true });
                     }
                 }
