@@ -50,6 +50,7 @@ jobs:
         env:
           client_version: ${{ github.event.inputs.client_version }}
           runtime_version: ${{ github.event.inputs.runtime_version }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if git diff --quiet; then
             echo "No changes to commit, skipping PR creation."
@@ -70,5 +71,3 @@ jobs:
             --base ${{ steps.branch.outputs.branch }} \
             --head "$BRANCH" \
             --reviewer "CoreDev"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
