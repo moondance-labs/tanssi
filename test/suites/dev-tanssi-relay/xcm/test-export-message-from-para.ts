@@ -5,7 +5,7 @@ import {
     type RawXcmMessage,
     XcmFragment,
     injectUmpMessageAndSeal,
-    ,
+    isStarlightRuntime,
     jumpToSession,
     TESTNET_ETHEREUM_NETWORK_ID,
 } from "utils";
