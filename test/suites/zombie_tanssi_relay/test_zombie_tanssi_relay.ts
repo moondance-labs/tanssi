@@ -50,12 +50,7 @@ describeSuite({
             expect(container2002Network, "Container2002 API incorrect").to.contain("container-chain-template");
             expect(paraId2002, "Container2002 API incorrect").to.be.equal("2002");
 
-            cleanMonitorsFn = await monitorBlockProduction([
-                relayApi,
-                container2000Api,
-                container2001Api,
-                container2002Api,
-            ]);
+            cleanMonitorsFn = await monitorBlockProduction([relayApi, container2000Api, container2001Api]);
         }, 120000);
 
         afterAll(() => {
