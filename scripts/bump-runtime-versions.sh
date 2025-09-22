@@ -70,6 +70,21 @@ update_lib_rs() {
     echo "Updated $file to spec_version $new_version"
 }
 
+# Function to update the version in a package.json file for typescript-api
+update_package_json() {
+    local file=$1
+    local runtime_version=$2
+    local new_version="0.${runtime_version}.0"
+
+    # Fallback using sed if jq is not available
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        sed -i '' "s/\"version\": \".*\"/\"version\": \"$new_version\"/" "$file"
+    else
+        sed -i "s/\"version\": \".*\"/\"version\": \"$new_version\"/" "$file"
+    fi
+    echo "Updated $file to version $new_version using sed"
+}
+
 # Update Cargo.toml files
 update_cargo_toml "chains/container-chains/nodes/frontier/Cargo.toml" "$CLIENT_VERSION"
 update_cargo_toml "chains/container-chains/nodes/simple/Cargo.toml" "$CLIENT_VERSION"
@@ -77,7 +92,9 @@ update_cargo_toml "chains/orchestrator-paras/node/Cargo.toml" "$CLIENT_VERSION"
 update_cargo_toml "chains/orchestrator-relays/client/cli/Cargo.toml" "$CLIENT_VERSION"
 update_cargo_toml "chains/orchestrator-relays/node/tanssi-relay/Cargo.toml" "$CLIENT_VERSION"
 update_cargo_toml "chains/orchestrator-relays/node/tanssi-relay-service/Cargo.toml" "$CLIENT_VERSION"
-update_cargo_toml "client/service-container-chain/Cargo.toml" "$CLIENT_VERSION"
+update_cargo_toml "client/service-orchestrator-chain/Cargo.toml" "$CLIENT_VERSION"
+update_cargo_toml "client/service-container-chain-rpc-provider/Cargo.toml" "$CLIENT_VERSION"
+update_cargo_toml "client/service-container-chain-spawner/Cargo.toml" "$CLIENT_VERSION"
 update_cargo_toml "client/node-common/Cargo.toml" "$CLIENT_VERSION"
 
 # Update lib.rs files
@@ -87,6 +104,8 @@ update_lib_rs "chains/orchestrator-paras/runtime/dancebox/src/lib.rs" "$RUNTIME_
 update_lib_rs "chains/orchestrator-paras/runtime/flashbox/src/lib.rs" "$RUNTIME_VERSION"
 update_lib_rs "chains/orchestrator-relays/runtime/dancelight/src/lib.rs" "$RUNTIME_VERSION"
 update_lib_rs "chains/orchestrator-relays/runtime/starlight/src/lib.rs" "$RUNTIME_VERSION"
+
+update_package_json "typescript-api/package.json" "$RUNTIME_VERSION"
 
 echo "All files updated successfully. Updating Cargo.lock"
 

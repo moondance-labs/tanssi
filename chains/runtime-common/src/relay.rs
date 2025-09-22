@@ -40,7 +40,8 @@ use xcm::latest::{
     prelude::*, Asset as XcmAsset, AssetId as XcmAssetId, Assets as XcmAssets, ExecuteXcm,
     Fungibility, Junctions::*,
 };
-use xcm_executor::traits::WeightBounds;
+use xcm_builder::{deposit_or_burn_fee, HandleFee};
+use xcm_executor::traits::{FeeReason, TransactAsset, WeightBounds};
 use {
     snowbridge_inbound_queue_primitives::v1::{
         Command, Destination, Envelope, MessageProcessor, MessageV1, VersionedXcmMessage,
@@ -808,5 +809,33 @@ where
         }
 
         Ok(())
+    }
+}
+
+/// Handler for depositing fees to the exporter fees account or a default account based on the reason.
+pub struct ExporterFeeHandler<AssetTransactor, ExporterFeesAccount, DefaultAccount>(
+    PhantomData<(AssetTransactor, ExporterFeesAccount, DefaultAccount)>,
+);
+impl<AssetTransactor, ExporterFeesAccount, DefaultAccount> HandleFee
+    for ExporterFeeHandler<AssetTransactor, ExporterFeesAccount, DefaultAccount>
+where
+    AssetTransactor: TransactAsset,
+    ExporterFeesAccount: Get<Location>,
+    DefaultAccount: Get<Location>,
+{
+    fn handle_fee(fee: XcmAssets, context: Option<&XcmContext>, reason: FeeReason) -> XcmAssets {
+        match reason {
+            FeeReason::Export {
+                network: _,
+                destination: _,
+            } => {
+                deposit_or_burn_fee::<AssetTransactor>(fee, context, ExporterFeesAccount::get());
+            }
+            _ => {
+                deposit_or_burn_fee::<AssetTransactor>(fee, context, DefaultAccount::get());
+            }
+        }
+
+        XcmAssets::new()
     }
 }
