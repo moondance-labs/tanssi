@@ -5,7 +5,7 @@ on:
   pull_request:
     branches:
     # TODO: Remove after tests
-    - "MD-1320-semgrep"
+    - "master"
 
   schedule:
     - cron: '00 20 * * *' # Sets Semgrep to scan every day at 17:20 UTC.
