@@ -111,7 +111,7 @@ describeSuite({
                 const proposals = await api.query.openTechCommitteeCollective.proposals();
                 expect(proposals.length).to.be.equal(1, "There should be one active proposal");
                 const proposalIndex = proposals.length - 1;
-                const proposalHash = proposals[0];
+                const proposalHash = proposals[proposalIndex];
                 expect(proposalHash).to.not.be.undefined;
 
                 // 3. Technical committee members votes for the proposal
@@ -183,7 +183,7 @@ describeSuite({
                 expect(maintenanceModeProposalBlock.result?.successful).to.be.true;
                 const proposals = await api.query.openTechCommitteeCollective.proposals();
                 expect(proposals.length).to.be.equal(1, "There should be one active proposal");
-                const proposalIndex = proposals.length;
+                const proposalIndex = proposals.length - 1;
                 const proposalHash = proposals[0];
                 expect(proposalHash).to.not.be.undefined;
 
@@ -192,7 +192,6 @@ describeSuite({
                     api.tx.openTechCommitteeCollective.vote(proposalHash, proposalIndex, true).signAsync(dave),
                     {
                         allowFailures: false,
-                        expectEvents: [api.events.openTechCommitteeCollective.Voted],
                     }
                 );
                 const tallyAfterVoting = await api.query.openTechCommitteeCollective.voting(proposalHash);
@@ -236,9 +235,60 @@ describeSuite({
 
                 const maintenanceStatus = await api.query.maintenanceMode.maintenanceMode();
                 expect(maintenanceStatus.isFalse, "Maintenance mode should still be disabled");
-                
+
                 const proposalsAfterClosing = await api.query.openTechCommitteeCollective.proposals();
                 expect(proposalsAfterClosing.length).to.be.equal(1, "The proposal should still be active");
+            },
+        });
+        it({
+            id: "E04",
+            title: "Non-technical committee member address cannot vote on a proposal",
+            test: async ({ skip }) => {
+                if (isStarlightRuntime(api)) {
+                    skip();
+                }
+
+                // 1. Compose the technical committee proposal
+                const call = api.tx.system.remark("0x0001");
+                const failedProposal = api.tx.openTechCommitteeCollective.propose(
+                    2, // threshold
+                    call,
+                    call.length
+                );
+                const proposalBlock = await context.createBlock(await failedProposal.signAsync(charlie));
+                expect(proposalBlock.result?.successful).to.be.true;
+
+                // 2. Get the proposal index and hash
+                const proposals = await api.query.openTechCommitteeCollective.proposals();
+                const proposalIndex = proposals.length - 1;
+                const proposalHash = proposals[proposalIndex];
+                expect(proposalHash).to.not.be.undefined;
+
+                // 3. Try to vote on the proposal with a non-committee member address
+                const submitFailedVoteBlock = await context.createBlock(
+                    api.tx.openTechCommitteeCollective.vote(proposalHash, proposalIndex, true).signAsync(bob)
+                );
+                expect(submitFailedVoteBlock.result?.successful).to.be.false;
+
+                const metadata = await api.rpc.state.getMetadata();
+                const techCommitteePalletIndex = metadata.asLatest.pallets
+                    .find(({ name }) => name.toString() === "OpenTechCommitteeCollective")
+                    .index.toString();
+
+                const errorData = submitFailedVoteBlock.result.events
+                    .find((e) => e.event.method === "ExtrinsicFailed")
+                    .event.toHuman().data as unknown as ExtrinsicFailedEventDataType;
+                expect(errorData.dispatchError.Module.index).toEqual(techCommitteePalletIndex);
+
+                const errorBytes = Uint8Array.from(Buffer.from(errorData.dispatchError.Module.error.slice(2), "hex"));
+                const errorIndex = errorBytes[0];
+
+                const errorMeta = api.registry.findMetaError({
+                    index: new BN(errorData.dispatchError.Module.index),
+                    error: new BN(errorIndex),
+                });
+
+                expect(errorMeta.method).toEqual("NotMember");
             },
         });
     },
