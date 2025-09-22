@@ -183,13 +183,12 @@ describeSuite({
                 expect(maintenanceModeProposalBlock.result?.successful).to.be.true;
                 const proposals = await api.query.openTechCommitteeCollective.proposals();
                 expect(proposals.length).to.be.equal(1, "There should be one active proposal");
-                const proposalIndex = proposals.length - 1;
                 const proposalHash = proposals[0];
                 expect(proposalHash).to.not.be.undefined;
 
                 // 3. Make only half technical committee members votes for the proposal
                 await context.createBlock(
-                    api.tx.openTechCommitteeCollective.vote(proposalHash, proposalIndex, true).signAsync(dave),
+                    api.tx.openTechCommitteeCollective.vote(proposalHash, 1, true).signAsync(dave),
                     {
                         allowFailures: false,
                     }
@@ -203,7 +202,7 @@ describeSuite({
                     api.tx.openTechCommitteeCollective
                         .close(
                             proposalHash,
-                            proposalIndex,
+                            1,
                             {
                                 refTime: 5_000_000_000,
                                 proofSize: 100_000,
@@ -261,8 +260,8 @@ describeSuite({
 
                 // 2. Get the proposal index and hash
                 const proposals = await api.query.openTechCommitteeCollective.proposals();
-                const proposalIndex = proposals.length - 1;
-                const proposalHash = proposals[proposalIndex];
+                const proposalIndex = proposals.length;
+                const proposalHash = proposals[proposalIndex - 1];
                 expect(proposalHash).to.not.be.undefined;
 
                 // 3. Try to vote on the proposal with a non-committee member address
