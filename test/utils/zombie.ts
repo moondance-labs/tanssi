@@ -322,6 +322,14 @@ export async function directoryExists(directoryPath: PathLike) {
     }
 }
 
+/**
+ * Monitors block production for one or more Substrate APIs.
+ *
+ * This function periodically fetches the latest block header from each API
+ * and tracks whether new blocks are being produced. If the block number
+ * does not increase for longer than `blockProductionTimeout` (default 15 seconds),
+ * the block production is considered "stuck".
+ */
 export async function monitorBlockProduction(apis: ApiPromise[], blockProductionTimeout = 15000): Promise<() => void> {
     type ApiState = {
         lastNumber: number;
