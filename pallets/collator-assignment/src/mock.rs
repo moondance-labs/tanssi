@@ -321,10 +321,6 @@ impl CollatorAssignmentTip<u32> for MockCollatorAssignmentTip {
             None
         }
     }
-
-    fn can_pay_assignment(para_id: ParaId) -> bool {
-        !MockData::mock().cant_pay_tip.contains(&para_id)
-    }
 }
 
 pub struct GetCoreAllocationConfigurationImpl;
@@ -418,6 +414,7 @@ pub struct MockParaIdAssignmentHooksImpl;
 impl<AC> ParaIdAssignmentHooks<u32, AC> for MockParaIdAssignmentHooksImpl {
     fn pre_assignment(para_ids: &mut Vec<ParaId>, _old_assigned: &BTreeSet<ParaId>) {
         para_ids.retain(|para_id| *para_id <= ParaId::from(5000));
+        para_ids.retain(|para_id| !MockData::mock().cant_pay_tip.contains(para_id));
     }
 
     fn post_assignment(

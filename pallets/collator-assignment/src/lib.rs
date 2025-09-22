@@ -224,12 +224,11 @@ pub mod pallet {
             // We need to sort both separately as we have fixed space for parachains at the moment
             // which means even when we have some parathread cores empty we cannot schedule parachain there.
             if should_charge_tip {
-                // Filter out paras that cannot pay for the assignment (tip + assignment fee).
-                bulk_paras.retain(|x| T::CollatorAssignmentTip::can_pay_assignment(x.para_id));
-
                 bulk_paras.sort_by(|a, b| {
                     // old assigned comes first
-                    let old_assigned_first = old_assigned_para_ids.contains(&b.para_id).cmp(&old_assigned_para_ids.contains(&a.para_id));
+                    let old_assigned_first = old_assigned_para_ids
+                        .contains(&b.para_id)
+                        .cmp(&old_assigned_para_ids.contains(&a.para_id));
 
                     // higher tip comes first
                     let higher_tip_first = T::CollatorAssignmentTip::get_para_max_tip(b.para_id)
@@ -279,12 +278,11 @@ pub mod pallet {
             // Prioritize paras by tip on congestion
             // As of now this doesn't distinguish between bulk paras and pool paras
             if !enough_collators_for_all_chain {
-                // Filter out paras that cannot pay for the assignment (tip + assignment fee).
-                chains.retain(|x| T::CollatorAssignmentTip::can_pay_assignment(x.para_id));
-
                 chains.sort_by(|a, b| {
                     // old assigned comes first
-                    let old_assigned_first = old_assigned_para_ids.contains(&b.para_id).cmp(&old_assigned_para_ids.contains(&a.para_id));
+                    let old_assigned_first = old_assigned_para_ids
+                        .contains(&b.para_id)
+                        .cmp(&old_assigned_para_ids.contains(&a.para_id));
 
                     // higher tip comes first
                     let higher_tip_first = T::CollatorAssignmentTip::get_para_max_tip(b.para_id)
@@ -334,6 +332,13 @@ pub mod pallet {
             let old_assigned = Self::read_assigned_collators();
             let old_assigned_para_ids: BTreeSet<ParaId> =
                 old_assigned.container_chains.keys().cloned().collect();
+
+            let old_assigned_para_ids_with_collators = old_assigned
+                .container_chains
+                .iter()
+                .filter_map(|(k, v)| (!v.is_empty()).then_some(k))
+                .cloned()
+                .collect();
 
             // Remove the containerChains that do not have enough credits for block production
             T::ParaIdAssignmentHooks::pre_assignment(
@@ -407,7 +412,7 @@ pub mod pallet {
                     Self::order_paras_with_core_config(
                         bulk_paras,
                         pool_paras,
-                        &old_assigned_para_ids,
+                        &old_assigned_para_ids_with_collators,
                         &core_allocation_configuration,
                         target_session_index,
                         collators.len() as u32,
@@ -418,7 +423,7 @@ pub mod pallet {
                     Self::order_paras(
                         bulk_paras,
                         pool_paras,
-                        &old_assigned_para_ids,
+                        &old_assigned_para_ids_with_collators,
                         target_session_index,
                         collators.len() as u32,
                         collators_per_container,
@@ -479,6 +484,7 @@ pub mod pallet {
                 }
             };
 
+            // Containers only with assigned collators to call post_assignment (for payment).
             let mut assigned_containers = new_assigned.container_chains.clone();
             assigned_containers.retain(|_, v| !v.is_empty());
 
