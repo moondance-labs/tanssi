@@ -21,8 +21,8 @@ describeSuite({
             test: async () => {
                 const isStarlight = isStarlightRuntime(api);
                 const runtimeVersion = api.runtimeVersion.specVersion.toNumber();
-                const costPerBlock = isStarlight || runtimeVersion < 1500 ? 30_000_000_000n : 1_000_000n;
-                const costPerSession = isStarlight || runtimeVersion < 1500 ? 50_000_000_000_000n : 100_000_000n;
+                const costPerBlock = isStarlight && runtimeVersion >= 1500 ? 30_000_000_000n : 1_000_000n;
+                const costPerSession = isStarlight && runtimeVersion >= 1500 ? 50_000_000_000_000n : 100_000_000n;
 
                 const chainBlockCost = BigInt((await api.call.servicesPaymentApi.blockCost(1000)).toString());
                 const chainSessionCost = BigInt(
