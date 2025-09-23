@@ -793,6 +793,13 @@ describeSuite({
                         throw new Error(`Failed to claim rewards with error: ${e.toHuman()}`);
                     }
 
+                    tanssiTokenAddress = await gatewayContract.tokenAddressOf(tanssiTokenId);
+                    tanssiTokenContract = new ethers.Contract(
+                        tanssiTokenAddress,
+                        ethInfo.symbiotic_info.contracts.Token.abi,
+                        ethereumWallet
+                    );
+
                     const operator = await middlewareContract.operatorByKey(opAccount.addressRaw);
                     const operatorBalance = await tanssiTokenContract.balanceOf(operator);
                     expect(operatorBalance).to.not.be.eq(0n);
@@ -847,18 +854,6 @@ describeSuite({
                 logTiming("Starting T08");
                 // Wait a few sessions to ensure the token was properly registered on Ethereum
                 await waitSessions(context, relayApi, 4, null, "Tanssi-relay");
-
-                tanssiTokenAddress = await gatewayContract.tokenAddressOf(tanssiTokenId);
-
-                console.log("tanssiTokenAddress: ", tanssiTokenAddress);
-
-                tanssiTokenContract = new ethers.Contract(
-                    tanssiTokenAddress,
-                    ethInfo.symbiotic_info.contracts.Token.abi,
-                    ethereumWallet
-                );
-
-                console.log("tanssiTokenContract: ", tanssiTokenContract.address);
 
                 const channelOperatingModeOf = await gatewayContract.channelOperatingModeOf(assetHubChannelId);
 
