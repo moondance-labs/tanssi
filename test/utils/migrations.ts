@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import type { ApiPromise } from "@polkadot/api";
 import { hexToU8a } from "@polkadot/util";
 import { spawn } from "node:child_process";
