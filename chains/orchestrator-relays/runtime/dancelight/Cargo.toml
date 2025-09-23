@@ -171,6 +171,10 @@ snowbridge-pallet-system = { workspace = true }
 snowbridge-verification-primitives = { workspace = true }
 tp-bridge = { workspace = true }
 
+snowbridge-pallet-inbound-queue-v2 = { workspace = true }
+snowbridge-pallet-outbound-queue-v2 = { workspace = true }
+snowbridge-pallet-system-v2 = { workspace = true }
+
 [dev-dependencies]
 alloy-sol-types = { workspace = true, default-features = true }
 finality-grandpa = { workspace = true, default-features = true, features = [ "derive-codec" ] }

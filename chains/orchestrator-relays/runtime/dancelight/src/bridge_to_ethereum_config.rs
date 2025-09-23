@@ -16,6 +16,10 @@
 
 //! The bridge to ethereum config
 
+use frame_support::pallet_prelude::{DecodeWithMemTracking, Encode, EnsureOrigin, TypeInfo};
+use frame_system::{EnsureRoot, EnsureRootWithSuccess};
+use parity_scale_codec::{Decode, MaxEncodedLen};
+use xcm_executor::XcmExecutor;
 #[cfg(all(not(test), not(feature = "testing-helpers")))]
 use crate::EthereumBeaconClient;
 
@@ -47,6 +51,8 @@ use {
     tanssi_runtime_common::relay::{EthTokensLocalProcessor, RewardThroughFeesAccount},
     tp_bridge::{DoNothingConvertMessage, DoNothingRouter, EthereumSystemHandler},
 };
+use dancelight_runtime_constants::snowbridge::EthereumLocation;
+use crate::{AccountId, EthereumOutboundQueueV2, RuntimeOrigin};
 
 pub const SLOTS_PER_EPOCH: u32 = snowbridge_pallet_ethereum_client::config::SLOTS_PER_EPOCH as u32;
 
@@ -95,6 +101,48 @@ impl snowbridge_pallet_outbound_queue::Config for Runtime {
     type OnNewCommitment = CommitmentRecorder;
 }
 
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Decode,
+    DecodeWithMemTracking,
+    Encode,
+    Eq,
+    MaxEncodedLen,
+    PartialEq,
+    TypeInfo,
+)]
+pub enum BridgeReward {
+    /// Rewards for Snowbridge.
+    Snowbridge,
+}
+
+parameter_types! {
+    pub const SnowbridgeReward: BridgeReward = BridgeReward::Snowbridge;
+}
+
+impl snowbridge_pallet_outbound_queue_v2::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type Hashing = Keccak256;
+    type MessageQueue = MessageQueue; // This is hardcoded by snowbridge to use bridge hub common's AggregateMessageOrigin
+    type GasMeter = snowbridge_outbound_queue_primitives::v2::ConstantGasMeter;
+    type Balance = Balance;
+    type MaxMessagePayloadSize = ConstU32<2048>;
+    type MaxMessagesPerBlock = ConstU32<32>;
+    type WeightToFee = WeightToFee;
+    type WeightInfo = ();
+    #[cfg(all(not(test), not(feature = "testing-helpers")))]
+    type Verifier = EthereumBeaconClient;
+    #[cfg(any(test, feature = "testing-helpers"))]
+    type Verifier = test_helpers::MockVerifier;
+    type GatewayAddress = EthereumGatewayAddress;
+    type RewardKind = BridgeReward;
+    type DefaultRewardKind = SnowbridgeReward;
+    type RewardPayment = ();
+    type EthereumNetwork =  dancelight_runtime_constants::snowbridge::EthereumNetwork;
+}
+
 parameter_types! {
     pub const ChainForkVersions: ForkVersions = crate::eth_chain_config::fork_versions();
 }
@@ -131,6 +179,14 @@ impl snowbridge_pallet_system::Config for Runtime {
     type EthereumLocation =
         dancelight_runtime_constants::snowbridge::EthereumLocationForParaIdBenchmarks;
     type WeightInfo = crate::weights::snowbridge_pallet_system::SubstrateWeight<Runtime>;
+}
+
+impl snowbridge_pallet_system_v2::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    type OutboundQueue = EthereumOutboundQueueV2;
+    type FrontendOrigin = EnsureRootWithSuccess<AccountId, EthereumLocation>;
+    type GovernanceOrigin = EnsureRootWithSuccess<AccountId, EthereumLocation>;
+    type WeightInfo = ();
 }
 
 impl pallet_ethereum_token_transfers::Config for Runtime {
@@ -305,4 +361,23 @@ impl snowbridge_pallet_inbound_queue::Config for Runtime {
     type RewardProcessor = RewardThroughFeesAccount<Self>;
     #[cfg(feature = "runtime-benchmarks")]
     type MessageProcessor = (benchmark_helper::WorstCaseMessageProcessor<EthTokensProcessor>,);
+}
+
+impl snowbridge_pallet_inbound_queue_v2::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
+    #[cfg(all(not(test), not(feature = "testing-helpers")))]
+    type Verifier = EthereumBeaconClient;
+    #[cfg(any(test, feature = "testing-helpers"))]
+    type Verifier = test_helpers::MockVerifier;
+    // TODO: Revisit this when we enable xcmp messages
+    type XcmSender = DoNothingRouter;
+    type XcmExecutor = XcmExecutor<Runtime>;
+    type GatewayAddress = EthereumGatewayAddress;
+    type AssetHubParaId = ConstU32<0>; // Dummy para id
+    type MessageConverter = DoNothingConvertMessage;
+    type RewardKind = BridgeReward;
+    type DefaultRewardKind = SnowbridgeReward;
+    type RewardPayment = ();
+    type AccountToLocation = ();
+    type WeightInfo = ();
 }

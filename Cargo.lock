@@ -3906,8 +3906,11 @@ dependencies = [
  "snowbridge-pallet-ethereum-client",
  "snowbridge-pallet-inbound-queue",
  "snowbridge-pallet-inbound-queue-fixtures",
+ "snowbridge-pallet-inbound-queue-v2",
  "snowbridge-pallet-outbound-queue",
+ "snowbridge-pallet-outbound-queue-v2",
  "snowbridge-pallet-system",
+ "snowbridge-pallet-system-v2",
  "snowbridge-verification-primitives",
  "sp-api",
  "sp-application-crypto",
@@ -6654,7 +6657,7 @@ dependencies = [
  "httpdate",
  "itoa",
  "pin-project-lite",
- "socket2 0.4.10",
+ "socket2 0.5.10",
  "tokio",
  "tower-service",
  "tracing",
@@ -13487,7 +13490,7 @@ version = "0.13.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "be769465445e8c1474e9c5dac2018218498557af32d9ed057325ec9a41ae81bf"
 dependencies = [
- "heck 0.4.1",
+ "heck 0.5.0",
  "itertools 0.13.0",
  "log",
  "multimap",
@@ -17090,6 +17093,32 @@ dependencies = [
 ]
 
 [[package]]
+name = "snowbridge-pallet-inbound-queue-v2"
+version = "0.2.1"
+source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2503#d78fcadbaca093cd09d440f43fad47db07454a7b"
+dependencies = [
+ "alloy-core",
+ "bp-relayers",
+ "frame-support",
+ "frame-system",
+ "log",
+ "pallet-balances",
+ "parity-scale-codec",
+ "scale-info",
+ "snowbridge-beacon-primitives",
+ "snowbridge-core",
+ "snowbridge-inbound-queue-primitives",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "staging-xcm",
+ "staging-xcm-builder",
+ "staging-xcm-executor",
+ "tracing",
+]
+
+[[package]]
 name = "snowbridge-pallet-outbound-queue"
 version = "0.13.0"
 source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2503#d78fcadbaca093cd09d440f43fad47db07454a7b"
@@ -17113,6 +17142,36 @@ dependencies = [
 ]
 
 [[package]]
+name = "snowbridge-pallet-outbound-queue-v2"
+version = "0.2.2"
+source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2503#d78fcadbaca093cd09d440f43fad47db07454a7b"
+dependencies = [
+ "alloy-core",
+ "bp-relayers",
+ "bridge-hub-common",
+ "ethabi-decode",
+ "frame-support",
+ "frame-system",
+ "hex-literal 0.4.1",
+ "parity-scale-codec",
+ "scale-info",
+ "serde",
+ "snowbridge-beacon-primitives",
+ "snowbridge-core",
+ "snowbridge-merkle-tree",
+ "snowbridge-outbound-queue-primitives",
+ "snowbridge-verification-primitives",
+ "sp-arithmetic",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "staging-xcm",
+ "staging-xcm-builder",
+ "staging-xcm-executor",
+]
+
+[[package]]
 name = "snowbridge-pallet-system"
 version = "0.13.2"
 source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2503#d78fcadbaca093cd09d440f43fad47db07454a7b"
@@ -17125,6 +17184,28 @@ dependencies = [
  "scale-info",
  "snowbridge-core",
  "snowbridge-outbound-queue-primitives",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
+ "sp-std",
+ "staging-xcm",
+ "staging-xcm-executor",
+]
+
+[[package]]
+name = "snowbridge-pallet-system-v2"
+version = "0.2.1"
+source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2503#d78fcadbaca093cd09d440f43fad47db07454a7b"
+dependencies = [
+ "frame-support",
+ "frame-system",
+ "log",
+ "pallet-xcm",
+ "parity-scale-codec",
+ "scale-info",
+ "snowbridge-core",
+ "snowbridge-outbound-queue-primitives",
+ "snowbridge-pallet-system",
  "sp-core",
  "sp-io",
  "sp-runtime",

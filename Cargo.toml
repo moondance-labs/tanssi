@@ -324,6 +324,11 @@ snowbridge-pallet-outbound-queue = { git = "https://github.com/moondance-labs/po
 snowbridge-pallet-system = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2503", default-features = false }
 snowbridge-verification-primitives = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2503", default-features = false }
 
+# Bridges v2 (wasm)
+snowbridge-pallet-inbound-queue-v2 = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2503", default-features = false }
+snowbridge-pallet-outbound-queue-v2 = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2503", default-features = false }
+snowbridge-pallet-system-v2 = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2503", default-features = false }
+
 # Polkadot (client)
 polkadot-cli = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2503" }
 polkadot-node-subsystem = { git = "https://github.com/moondance-labs/polkadot-sdk", branch = "tanssi-polkadot-stable2503" }
