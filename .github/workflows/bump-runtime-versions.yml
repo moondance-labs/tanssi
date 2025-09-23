@@ -1,0 +1,72 @@
+name: Bump runtime and client versions
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to use as base"
+        required: true
+        default: "master"
+      client_version:
+        description: "Client version to set (e.g. 0.15.0)"
+        required: true
+      runtime_version:
+        description: "Runtime version to set (e.g. 1500)"
+        required: true
+
+jobs:
+  bump-runtime-versions:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Determine branch
+        id: branch
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "branch=${{ github.event.inputs.branch }}" >> $GITHUB_OUTPUT
+          else
+            echo "branch=master" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ steps.branch.outputs.branch }}
+
+      - name: Install GitHub CLI
+        uses: ./.github/workflow-templates/gh-cli
+
+      - name: Run script
+        env:
+          client_version: ${{ github.event.inputs.client_version }}
+          runtime_version: ${{ github.event.inputs.runtime_version }}
+        run: |
+          ./scripts/bump-runtime-versions.sh \
+            --client-version="$client_version" \
+            --runtime-version="$runtime_version"
+
+      - name: Create a pull request with new version
+        env:
+          client_version: ${{ github.event.inputs.client_version }}
+          runtime_version: ${{ github.event.inputs.runtime_version }}
+        run: |
+          if git diff --quiet; then
+            echo "No changes to commit, skipping PR creation."
+            exit 0
+          fi
+          
+          BRANCH="auto/bump-runtime-versions-$(date +%s)"
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git checkout -b "$BRANCH"
+          git add .
+          git commit -m "Upgrade node version to $client_version and runtime to $runtime_version"
+          git push origin "$BRANCH"
+
+          ~/bin/bin/gh pr create \
+            --title "Upgrade node version to $client_version and runtime to $runtime_version" \
+            --body "Auto-generated PR" \
+            --base ${{ steps.branch.outputs.branch }} \
+            --head "$BRANCH" \
+            --reviewer "CoreDev"
