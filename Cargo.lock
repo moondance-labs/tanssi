@@ -3803,6 +3803,8 @@ dependencies = [
  "alloy-sol-types 0.4.2",
  "binary-merkle-tree",
  "bitvec",
+ "bp-relayers",
+ "bridge-hub-common",
  "cumulus-pallet-parachain-system",
  "cumulus-pallet-session-benchmarking",
  "cumulus-primitives-core",
@@ -3835,6 +3837,7 @@ dependencies = [
  "pallet-balances",
  "pallet-beefy",
  "pallet-beefy-mmr",
+ "pallet-bridge-relayers",
  "pallet-collator-assignment",
  "pallet-configuration",
  "pallet-conviction-voting",
@@ -9752,6 +9755,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "pallet-bridge-grandpa"
+version = "0.20.0"
+source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2503#d78fcadbaca093cd09d440f43fad47db07454a7b"
+dependencies = [
+ "bp-header-chain",
+ "bp-runtime",
+ "frame-support",
+ "frame-system",
+ "log",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-consensus-grandpa",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
 name = "pallet-bridge-messages"
 version = "0.20.1"
 source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2503#d78fcadbaca093cd09d440f43fad47db07454a7b"
@@ -9768,6 +9788,47 @@ dependencies = [
  "sp-runtime",
  "sp-std",
  "sp-trie",
+]
+
+[[package]]
+name = "pallet-bridge-parachains"
+version = "0.20.0"
+source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2503#d78fcadbaca093cd09d440f43fad47db07454a7b"
+dependencies = [
+ "bp-header-chain",
+ "bp-parachains",
+ "bp-polkadot-core",
+ "bp-runtime",
+ "frame-support",
+ "frame-system",
+ "log",
+ "pallet-bridge-grandpa",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-runtime",
+ "sp-std",
+]
+
+[[package]]
+name = "pallet-bridge-relayers"
+version = "0.20.0"
+source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2503#d78fcadbaca093cd09d440f43fad47db07454a7b"
+dependencies = [
+ "bp-header-chain",
+ "bp-messages",
+ "bp-relayers",
+ "bp-runtime",
+ "frame-support",
+ "frame-system",
+ "log",
+ "pallet-bridge-grandpa",
+ "pallet-bridge-messages",
+ "pallet-bridge-parachains",
+ "pallet-transaction-payment",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-arithmetic",
+ "sp-runtime",
 ]
 
 [[package]]
@@ -17099,15 +17160,18 @@ source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polka
 dependencies = [
  "alloy-core",
  "bp-relayers",
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "log",
  "pallet-balances",
  "parity-scale-codec",
  "scale-info",
+ "serde",
  "snowbridge-beacon-primitives",
  "snowbridge-core",
  "snowbridge-inbound-queue-primitives",
+ "snowbridge-pallet-inbound-queue-v2-fixtures",
  "sp-core",
  "sp-io",
  "sp-runtime",
@@ -17116,6 +17180,19 @@ dependencies = [
  "staging-xcm-builder",
  "staging-xcm-executor",
  "tracing",
+]
+
+[[package]]
+name = "snowbridge-pallet-inbound-queue-v2-fixtures"
+version = "0.2.0"
+source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2503#d78fcadbaca093cd09d440f43fad47db07454a7b"
+dependencies = [
+ "hex-literal 0.4.1",
+ "snowbridge-beacon-primitives",
+ "snowbridge-core",
+ "snowbridge-inbound-queue-primitives",
+ "sp-core",
+ "sp-std",
 ]
 
 [[package]]
@@ -17150,6 +17227,7 @@ dependencies = [
  "bp-relayers",
  "bridge-hub-common",
  "ethabi-decode",
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "hex-literal 0.4.1",
@@ -17197,6 +17275,7 @@ name = "snowbridge-pallet-system-v2"
 version = "0.2.1"
 source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2503#d78fcadbaca093cd09d440f43fad47db07454a7b"
 dependencies = [
+ "frame-benchmarking",
  "frame-support",
  "frame-system",
  "log",
