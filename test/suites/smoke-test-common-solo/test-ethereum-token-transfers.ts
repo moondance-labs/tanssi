@@ -11,6 +11,7 @@ import { encodeAddress } from "@polkadot/util-crypto";
 import { Interface } from "ethers";
 import {
     ETHEREUM_MAINNET_SOVEREIGN_ACCOUNT_ADDRESS,
+    getBlockNumberForDebug,
     PRIMARY_GOVERNANCE_CHANNEL_ID,
     SEPOLIA_SOVEREIGN_ACCOUNT_ADDRESS,
 } from "utils";
@@ -18,8 +19,7 @@ import {
 const SS58_FORMAT = 42;
 
 let BLOCKS_AMOUNT_TO_CHECK = 100;
-// For debug purposes only, specify block here to check it
-const BLOCK_NUMBER_TO_DEBUG = undefined;
+const BLOCK_NUMBER_TO_DEBUG = getBlockNumberForDebug();
 
 const customTypes = {
     VersionedXcmMessage: {
