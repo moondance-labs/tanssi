@@ -25,7 +25,7 @@ import { ETHEREUM_NETWORK_TESTNET, FOREIGN_ASSET_ID } from "utils/constants";
 import type { SubmittableExtrinsic } from "@polkadot/api/types";
 
 import type { ParaId } from "@polkadot/types/interfaces";
-import { u128 } from "@polkadot/types-codec";
+import type { u128 } from "@polkadot/types-codec";
 
 // Change this if we change the storage parameter in runtime
 const GATEWAY_STORAGE_KEY = "0xaed97c7854d601808b98ae43079dafb3";
@@ -1069,7 +1069,7 @@ describeSuite({
                 await gatewayContract.on(
                     "InboundMessageDispatched",
                     (channelID, nonce, _messageID, success, _rewardAddress) => {
-                        if (channelID === ASSET_HUB_CHANNEL_ID && nonce == nativeTokenTransferNonce + 1n) {
+                        if (channelID === ASSET_HUB_CHANNEL_ID && nonce === nativeTokenTransferNonce + 1n) {
                             containerTransferSuccess = success;
                         }
                     }
@@ -1449,7 +1449,7 @@ describeSuite({
 
                 let nativeETHTransferSuccess = false;
                 await gatewayContract.on("InboundMessageDispatched", (channelID, nonce, _messageID, success) => {
-                    if (channelID === assetHubChannelId && nonce == wETHTransferNonce + 1n) {
+                    if (channelID === assetHubChannelId && nonce === wETHTransferNonce + 1n) {
                         nativeETHTransferSuccess = success;
                     }
                 });
