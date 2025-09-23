@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { generateKeyringPair, type KeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
