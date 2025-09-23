@@ -967,8 +967,7 @@
             "foundation": {
                 "type": "zombie",
                 "zombieSpec": {
-                    "configPath": "./configs/zombie_tanssi_relay_finalization_recovery.json",
-                    "skipBlockCheck": ["Container2000"]
+                    "configPath": "./configs/zombie_tanssi_relay_finalization_recovery.json"
                 }
             },
             "vitestArgs": {
