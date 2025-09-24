@@ -364,5 +364,43 @@ describeSuite({
                 expect(maintenanceStatusAfterDisabling.isFalse, "Maintenance mode should be disabled");
             },
         });
+
+        it({
+            id: "E06",
+            title: "Technical committee can whitelist a call",
+            test: async ({ skip }) => {
+                if (isStarlightRuntime(api)) {
+                    skip();
+                }
+
+                // 1. Compose the technical committee proposal to whitelist a call
+                const call = api.tx.system.remark("0x0001");
+                const whitelistCall = api.tx.whitelist.whitelistCall(call.method.hash.toHex());
+                const whitelistCallProposal = api.tx.openTechCommitteeCollective.propose(
+                    1, // threshold
+                    whitelistCall,
+                    whitelistCall.length
+                );
+
+                // Pre-check: Verify the call is not whitelisted
+                const isCallWhitelistedBeforeProposal = await api.query.whitelist.whitelistedCall(
+                    call.method.hash.toHex()
+                );
+                expect(isCallWhitelistedBeforeProposal.isNone, "The call should not be whitelisted yet");
+
+                // 2. Since the proposal has threshold of 1, we can skip voting and go to closing the proposal directly
+                const whitelistedProposalBlock = await context.createBlock(
+                    await whitelistCallProposal.signAsync(charlie)
+                );
+
+                expect(whitelistedProposalBlock.result?.successful).to.be.true;
+
+                // 3. Verify the call is whitelisted
+                const isCallWhitelistedAfterProposal = await api.query.whitelist.whitelistedCall(
+                    call.method.hash.toHex()
+                );
+                expect(isCallWhitelistedAfterProposal.isSome, "The call should be whitelisted");
+            },
+        });
     },
 });
