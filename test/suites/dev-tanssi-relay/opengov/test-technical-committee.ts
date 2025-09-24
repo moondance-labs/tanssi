@@ -7,6 +7,13 @@ import type { KeyringPair } from "@polkadot/keyring/types";
 import type { ExtrinsicFailedEventDataType } from "../../../utils";
 import { isStarlightRuntime } from "../../../utils/runtime.ts";
 
+export type ProposedEventDataType = {
+    account: string;
+    proposalIndex: number;
+    proposalHash: string;
+    threshold: number;
+};
+
 describeSuite({
     id: "DEVT24",
     title: "Technical committee test suite",
@@ -110,8 +117,14 @@ describeSuite({
                 expect(maintenanceModeProposalBlock.result?.successful).to.be.true;
                 const proposals = await api.query.openTechCommitteeCollective.proposals();
                 expect(proposals.length).to.be.equal(1, "There should be one active proposal");
-                const proposalIndex = proposals.length - 1;
-                const proposalHash = proposals[proposalIndex];
+
+                const proposedEventData = maintenanceModeProposalBlock.result?.events.find(
+                    ({ event: { method } }) => method.toString() === "Proposed"
+                )?.event.data as unknown as ProposedEventDataType;
+                expect(proposedEventData).to.not.be.undefined;
+
+                const proposalIndex = proposedEventData.proposalIndex;
+                const proposalHash = proposedEventData.proposalHash;
                 expect(proposalHash).to.not.be.undefined;
 
                 // 3. Technical committee members votes for the proposal
@@ -158,6 +171,14 @@ describeSuite({
                 expect(maintenanceStatus.isTrue, "Maintenance mode should be enabled");
                 const proposalsAfterClosing = await api.query.openTechCommitteeCollective.proposals();
                 expect(proposalsAfterClosing.length).to.be.equal(0, "There should be no active proposal");
+
+                // Cleanup: Exit maintenance mode for other tests
+                const exitMaintenanceBlock = await context.createBlock(
+                    await api.tx.sudo.sudo(api.tx.maintenanceMode.resumeNormalOperation()).signAsync(alice)
+                );
+                expect(exitMaintenanceBlock.result?.successful).to.be.true;
+                const finalMaintenanceStatus = await api.query.maintenanceMode.maintenanceMode();
+                expect(finalMaintenanceStatus.isFalse, "Maintenance mode should be disabled again");
             },
         });
 
@@ -168,6 +189,11 @@ describeSuite({
                 if (isStarlightRuntime(api)) {
                     skip();
                 }
+
+                // Verify that maintenance mode is disabled
+                const initialMaintenanceStatus = await api.query.maintenanceMode.maintenanceMode();
+                expect(initialMaintenanceStatus.isFalse, "Maintenance mode should be disabled");
+
                 // 1. Compose the technical committee proposal to enable maintenance mode
                 const maintenanceModeCall = api.tx.maintenanceMode.enterMaintenanceMode();
                 const maintenanceModeProposal = api.tx.openTechCommitteeCollective.propose(
@@ -183,12 +209,19 @@ describeSuite({
                 expect(maintenanceModeProposalBlock.result?.successful).to.be.true;
                 const proposals = await api.query.openTechCommitteeCollective.proposals();
                 expect(proposals.length).to.be.equal(1, "There should be one active proposal");
-                const proposalHash = proposals[0];
+
+                const proposedEventData = maintenanceModeProposalBlock.result?.events.find(
+                    ({ event: { method } }) => method.toString() === "Proposed"
+                )?.event.data as unknown as ProposedEventDataType;
+                expect(proposedEventData).to.not.be.undefined;
+
+                const proposalIndex = proposedEventData.proposalIndex;
+                const proposalHash = proposedEventData.proposalHash;
                 expect(proposalHash).to.not.be.undefined;
 
                 // 3. Make only half technical committee members votes for the proposal
                 await context.createBlock(
-                    api.tx.openTechCommitteeCollective.vote(proposalHash, 1, true).signAsync(dave),
+                    api.tx.openTechCommitteeCollective.vote(proposalHash, proposalIndex, true).signAsync(dave),
                     {
                         allowFailures: false,
                     }
@@ -259,9 +292,13 @@ describeSuite({
                 expect(proposalBlock.result?.successful).to.be.true;
 
                 // 2. Get the proposal index and hash
-                const proposals = await api.query.openTechCommitteeCollective.proposals();
-                const proposalIndex = proposals.length;
-                const proposalHash = proposals[proposalIndex - 1];
+                const proposedEventData = proposalBlock.result?.events.find(
+                    ({ event: { method } }) => method.toString() === "Proposed"
+                )?.event.data as unknown as ProposedEventDataType;
+                expect(proposedEventData).to.not.be.undefined;
+
+                const proposalIndex = proposedEventData.proposalIndex;
+                const proposalHash = proposedEventData.proposalHash;
                 expect(proposalHash).to.not.be.undefined;
 
                 // 3. Try to vote on the proposal with a non-committee member address
