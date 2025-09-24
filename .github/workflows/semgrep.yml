@@ -34,9 +34,7 @@ jobs:
 
       - name: Install GitHub CLI
 #        if: github.event_name == 'schedule'
-        run: |
-          apt-get update -y
-          apt-get install -y gh
+        uses: ./.github/workflow-templates/gh-cli
 
       - name: Create issue with Semgrep results (only on schedule)
 #        if: github.event_name == 'schedule'
