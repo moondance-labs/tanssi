@@ -20,10 +20,9 @@ use {
     super::*,
     frame_support::{
         parameter_types,
-        traits::{ConstU16, EitherOf, MapSuccess},
+        traits::{EitherOf, MapSuccess},
     },
     frame_system::EnsureRootWithSuccess,
-    sp_runtime::traits::Replace,
 };
 
 mod origins;
@@ -74,7 +73,7 @@ impl pallet_whitelist::Config for Runtime {
     type RuntimeCall = RuntimeCall;
     type RuntimeEvent = RuntimeEvent;
     type WhitelistOrigin = EitherOf<
-        EnsureRootWithSuccess<Self::AccountId, ConstU16<65535>>,
+        EnsureRoot<Self::AccountId>,
         pallet_collective::EnsureProportionAtLeast<
             Self::AccountId,
             councils::OpenTechCommitteeInstance,

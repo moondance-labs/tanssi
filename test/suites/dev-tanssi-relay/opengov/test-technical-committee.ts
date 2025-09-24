@@ -6,7 +6,7 @@ import { BN } from "@polkadot/util";
 import type { KeyringPair } from "@polkadot/keyring/types";
 import type { ExtrinsicFailedEventDataType } from "../../../utils";
 import { isStarlightRuntime } from "../../../utils/runtime.ts";
-import { H256 } from "@polkadot/types/interfaces";
+import type { H256 } from "@polkadot/types/interfaces";
 
 export type ProposedEventDataType = {
     account: string;
