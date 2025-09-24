@@ -1076,7 +1076,7 @@ fn receive_container_foreign_tokens_from_eth_works_for_foreign_account_id_32() {
 }
 
 #[test]
-fn receive_container_foreign_tokens_from_eth_doesnt_error_if_error_sending_xcm() {
+fn receive_container_foreign_tokens_from_eth_without_para_head_set_doesnt_error() {
     ExtBuilder::default().build().execute_with(|| {
         let relayer = RuntimeOrigin::signed(AccountId::from(ALICE));
         let para_id: ParaId = 2000u32.into();
@@ -1086,8 +1086,6 @@ fn receive_container_foreign_tokens_from_eth_doesnt_error_if_error_sending_xcm()
             root_origin(),
             Some(5u32)
         ));
-
-        // We don't set the current head on purpose, so the XCM sending will fail
 
         let channel_id = ChannelId::new([2u8; 32]);
         let agent_id = AgentId::from_low_u64_be(43);

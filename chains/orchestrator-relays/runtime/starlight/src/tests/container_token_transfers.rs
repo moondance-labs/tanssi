@@ -37,7 +37,7 @@ use {
 };
 
 #[test]
-fn receive_container_foreign_tokens_from_eth_disabled_no_error_and_no_xcm_sent() {
+fn receive_container_foreign_tokens_from_eth_is_disabled_so_no_error_and_no_xcm_is_sent() {
     ExtBuilder::default()
         .with_balances(vec![(AccountId::from(ALICE), 100_000 * UNIT)])
         .build()
