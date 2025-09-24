@@ -528,10 +528,13 @@ pub mod pallet {
 
             // Helpers for logs
             let count_collators = |new_assigned: &AssignedCollators<_>| {
-                new_assigned
-                    .orchestrator_chain
-                    .len()
-                    .saturating_add(new_assigned.container_chains.values().map(|x| x.len()).sum())
+                new_assigned.orchestrator_chain.len().saturating_add(
+                    new_assigned
+                        .container_chains
+                        .values()
+                        .map(|x| x.len())
+                        .sum(),
+                )
             };
 
             log::trace!(
