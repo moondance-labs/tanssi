@@ -952,13 +952,14 @@ fn receive_container_foreign_tokens_from_eth_works_for_foreign_account_id_20() {
 
             assert_ok!(EthereumInboundQueue::submit(relayer, message));
 
-            let sent = System::events().iter().any(|r| {
-                matches!(
-                    r.event,
-                    RuntimeEvent::XcmPallet(pallet_xcm::Event::Sent { .. })
-                )
+            let sent_to_container = System::events().iter().any(|rec| {
+                if let RuntimeEvent::XcmPallet(pallet_xcm::Event::Sent { destination, .. }) = &rec.event {
+                    is_destination_container(destination, container_para_id)
+                } else {
+                    false
+                }
             });
-            assert!(sent, "XCM Sent event should be emitted!");
+            assert!(sent_to_container, "XCM Sent event should be emitted!");
         });
 }
 
@@ -1065,13 +1066,15 @@ fn receive_container_foreign_tokens_from_eth_works_for_foreign_account_id_32() {
 
             assert_ok!(EthereumInboundQueue::submit(relayer, message));
 
-            let sent = System::events().iter().any(|r| {
-                matches!(
-                    r.event,
-                    RuntimeEvent::XcmPallet(pallet_xcm::Event::Sent { .. })
-                )
+            let sent_to_container = System::events().iter().any(|rec| {
+                if let RuntimeEvent::XcmPallet(pallet_xcm::Event::Sent { destination, .. }) = &rec.event {
+                    is_destination_container(destination, container_para_id)
+                } else {
+                    false
+                }
             });
-            assert!(sent, "XCM Sent event should be emitted!");
+    
+            assert!(sent_to_container, "XCM Sent event should be emitted!");
         });
 }
 
@@ -1173,4 +1176,14 @@ fn receive_container_foreign_tokens_from_eth_without_para_head_set_doesnt_error(
         });
         assert!(!sent, "XCM Sent event should NOT be emitted!");
     });
+}
+
+fn is_destination_container(dest: &Location, container_para_id: u32) -> bool {
+    matches!(
+        dest,
+        Location {
+            parents: 0,
+            interior: Junctions::X1(ref x1),
+        } if x1.as_ref()[0] == Junction::Parachain(container_para_id)
+    )
 }
