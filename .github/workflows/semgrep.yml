@@ -37,6 +37,8 @@ jobs:
     runs-on: ubuntu-latest
 #    if: always() && github.event_name == 'schedule'
     steps:
+      - uses: actions/checkout@v5
+
       - name: Download Semgrep report
         uses: actions/download-artifact@v4
         with:
