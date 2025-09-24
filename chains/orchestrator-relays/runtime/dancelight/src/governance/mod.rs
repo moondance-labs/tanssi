@@ -75,14 +75,11 @@ impl pallet_whitelist::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type WhitelistOrigin = EitherOf<
         EnsureRootWithSuccess<Self::AccountId, ConstU16<65535>>,
-        MapSuccess<
-            pallet_collective::EnsureProportionAtLeast<
-                Self::AccountId,
-                councils::OpenTechCommitteeInstance,
-                5,
-                9,
-            >,
-            Replace<ConstU16<6>>,
+        pallet_collective::EnsureProportionAtLeast<
+            Self::AccountId,
+            councils::OpenTechCommitteeInstance,
+            5,
+            9,
         >,
     >;
     type DispatchWhitelistedOrigin = EitherOf<EnsureRoot<Self::AccountId>, WhitelistedCaller>;
