@@ -13,12 +13,15 @@ import {
     signAndSendAndInclude,
     waitSessions,
 } from "utils";
+import { addApiMonitoringToContext } from "../../utils/block-production-monitor.ts";
 
 describeSuite({
     id: "ZOMBIETANSS01",
     title: "Zombie Tanssi Relay Test",
     foundationMethods: "zombie",
     testCases: ({ it, context }) => {
+        addApiMonitoringToContext(context);
+
         let relayApi: ApiPromise;
         let container2000Api: ApiPromise;
         let container2001Api: ApiPromise;
