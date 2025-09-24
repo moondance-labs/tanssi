@@ -6,9 +6,6 @@ on:
   schedule:
     - cron: '0 20 1 * *' # Runs on the 1st day of every month at 20:00 UTC
 
-permissions:
-  contents: read
-
 jobs:
   semgrep:
     runs-on: ubuntu-latest
