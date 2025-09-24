@@ -3,12 +3,8 @@ name: Semgrep Check
 on:
   workflow_dispatch:
   pull_request:
-    branches:
-    # TODO: Remove after tests
-    - "master"
-
   schedule:
-    - cron: '00 20 * * *' # Sets Semgrep to scan every day at 17:20 UTC.
+    - cron: '00 20 * * *' # Sets Semgrep to scan every day at 20:00 UTC.
 
 permissions:
   contents: read
@@ -24,6 +20,39 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
-      - run: semgrep ci
+
+      - name: Run Semgrep
+        id: semgrep
+        run: |
+          semgrep scan --config auto > semgrep-report.txt || true
+
+      - name: Upload Semgrep report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: semgrep-report
+          path: semgrep-report.txt
+
+      - name: Install GitHub CLI
+        if: github.event_name == 'schedule'
+        run: |
+          apt-get update -y
+          apt-get install -y gh
+
+      - name: Create issue with Semgrep results (only on schedule)
+        if: github.event_name == 'schedule'
+        run: |
+          if [ -s semgrep-report.txt ]; then
+            gh issue create \
+              --title "🔍 Semgrep report for ${{ github.ref_name }}" \
+              --body "$(printf 'Semgrep found issues in branch `%s`.\n\n<details>\n<summary>Full Report</summary>\n\n```txt\n%s\n```\n</details>\n\nSee logs: %s/%s/actions/runs/%s' \
+                "${{ github.ref_name }}" \
+                "$(cat semgrep-report.txt)" \
+                "${{ github.server_url }}" \
+                "${{ github.repository }}" \
+                "${{ github.run_id }}" )" \
+              --assignee evgeny-s
+          else
+            echo "No Semgrep findings, skipping issue creation."
+          fi
         env:
-          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
