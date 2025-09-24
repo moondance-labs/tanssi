@@ -49,7 +49,7 @@ jobs:
         run: |
           ~/bin/bin/gh issue create \
             --title "🔍 Semgrep scan results" \
-            --body "$(printf '```\n%s\n```' "$(cat semgrep_report.txt)")" \
+            --body "$(printf '### Semgrep Scan Report\n\nThe following issues were found by Semgrep:\n\n<details>\n<summary>Full Log</summary>\n\n```txt\n%s\n```\n</details>' "$(cat semgrep_report.txt)")" \
             --assignee evgeny-s
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
