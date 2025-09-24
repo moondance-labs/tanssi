@@ -34,7 +34,7 @@ jobs:
 
   create-issue:
     needs: semgrep
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 #    if: always() && github.event_name == 'schedule'
     steps:
       - uses: actions/checkout@v5
@@ -50,8 +50,8 @@ jobs:
 
       - name: Create issue with Semgrep results
         run: |
-          gh issue create \
-            --title "🔍 Monthly Semgrep scan results" \
+          ~/bin/bin/gh issue create \
+            --title "🔍 Semgrep scan results" \
             --body "$(printf '```\n%s\n```' "$(cat semgrep_report.txt)")" \
             --assignee evgeny-s
         env:
