@@ -21,36 +21,36 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Run Semgrep
-        id: semgrep
-        run: |
-          semgrep scan --config auto > semgrep-report.txt || true
+      - name: Run Semgrep scan
+        run: semgrep scan --output=semgrep_report.txt
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
 
-      - name: Upload Semgrep report artifact
+      - name: Upload Semgrep report
         uses: actions/upload-artifact@v4
         with:
           name: semgrep-report
-          path: semgrep-report.txt
+          path: semgrep_report.txt
+
+  create-issue:
+    needs: semgrep
+    runs-on: ubuntu-latest
+#    if: always() && github.event_name == 'schedule'
+    steps:
+      - name: Download Semgrep report
+        uses: actions/download-artifact@v4
+        with:
+          name: semgrep-report
+          path: .
 
       - name: Install GitHub CLI
-#        if: github.event_name == 'schedule'
         uses: ./.github/workflow-templates/gh-cli
 
-      - name: Create issue with Semgrep results (only on schedule)
-#        if: github.event_name == 'schedule'
+      - name: Create issue with Semgrep results
         run: |
-          if [ -s semgrep-report.txt ]; then
-            gh issue create \
-              --title "🔍 Semgrep report for ${{ github.ref_name }}" \
-              --body "$(printf 'Semgrep found issues in branch `%s`.\n\n<details>\n<summary>Full Report</summary>\n\n```txt\n%s\n```\n</details>\n\nSee logs: %s/%s/actions/runs/%s' \
-                "${{ github.ref_name }}" \
-                "$(cat semgrep-report.txt)" \
-                "${{ github.server_url }}" \
-                "${{ github.repository }}" \
-                "${{ github.run_id }}" )" \
-              --assignee evgeny-s
-          else
-            echo "No Semgrep findings, skipping issue creation."
-          fi
+          gh issue create \
+            --title "🔍 Monthly Semgrep scan results" \
+            --body "$(printf '```\n%s\n```' "$(cat semgrep_report.txt)")" \
+            --assignee evgeny-s
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
