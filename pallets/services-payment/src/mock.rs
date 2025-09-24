@@ -110,7 +110,6 @@ impl pallet_services_payment::Config for Test {
     type OnChargeForCollatorAssignment = ();
     type OnChargeForCollatorAssignmentTip = ();
     type Currency = Balances;
-    type CurrencyExistentialDeposit = ExistentialDeposit;
     type ProvideBlockProductionCost = BlockProductionCost<Test>;
     type ProvideCollatorAssignmentCost = CollatorAssignmentProductionCost<Test>;
     type FreeBlockProductionCredits = FreeBlockProductionCredits;

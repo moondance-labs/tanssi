@@ -1721,7 +1721,6 @@ impl pallet_services_payment::Config for Runtime {
     type OnChargeForCollatorAssignmentTip = ();
     /// Currency type for fee payment
     type Currency = Balances;
-    type CurrencyExistentialDeposit = ExistentialDeposit;
     /// Provider of a block cost which can adjust from block to block
     type ProvideBlockProductionCost = BlockProductionCost<Runtime>;
     /// Provider of a block cost which can adjust from block to block
