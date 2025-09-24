@@ -6,11 +6,12 @@ import { BN } from "@polkadot/util";
 import type { KeyringPair } from "@polkadot/keyring/types";
 import type { ExtrinsicFailedEventDataType } from "../../../utils";
 import { isStarlightRuntime } from "../../../utils/runtime.ts";
+import { H256 } from "@polkadot/types/interfaces";
 
 export type ProposedEventDataType = {
     account: string;
     proposalIndex: number;
-    proposalHash: string;
+    proposalHash: H256;
     threshold: number;
 };
 
@@ -275,7 +276,7 @@ describeSuite({
 
         it({
             id: "E04",
-            title: "Non-technical committee member address cannot vote on a proposal",
+            title: "Non-technical committee member address cannot vote on a technical committee proposal",
             test: async ({ skip }) => {
                 if (isStarlightRuntime(api)) {
                     skip();
@@ -329,6 +330,38 @@ describeSuite({
                 const tallyAfterVotingAttempt = await api.query.openTechCommitteeCollective.voting(proposalHash);
                 expect(tallyAfterVotingAttempt.isSome).to.be.true;
                 expect(tallyAfterVotingAttempt.unwrap().ayes.length).to.be.equal(0);
+            },
+        });
+
+        it({
+            id: "E05",
+            title: "Technical committee can disable maintenance mode",
+            test: async ({ skip }) => {
+                if (isStarlightRuntime(api)) {
+                    skip();
+                }
+                // 1. Enable maintenance mode
+                await context.createBlock(
+                    api.tx.sudo.sudo(api.tx.maintenanceMode.enterMaintenanceMode()).signAsync(alice)
+                );
+                const maintenanceStatusAfterEnabling = await api.query.maintenanceMode.maintenanceMode();
+                expect(maintenanceStatusAfterEnabling.isTrue, "Maintenance mode should be enabled");
+
+                // 2. Compose the technical committee proposal to enable maintenance mode
+                const disableMaintenanceModeCall = api.tx.maintenanceMode.resumeNormalOperation();
+                const disableMaintenanceModeProposal = api.tx.openTechCommitteeCollective.propose(
+                    1, // threshold
+                    disableMaintenanceModeCall,
+                    disableMaintenanceModeCall.length
+                );
+
+                // 3. Since the proposal has threshold of 1, we can skip voting and go to closing the proposal directly
+                const disableMaintenanceModeProposalBlock = await context.createBlock(
+                    await disableMaintenanceModeProposal.signAsync(charlie)
+                );
+                expect(disableMaintenanceModeProposalBlock.result?.successful).to.be.true;
+                const maintenanceStatusAfterDisabling = await api.query.maintenanceMode.maintenanceMode();
+                expect(maintenanceStatusAfterDisabling.isFalse, "Maintenance mode should be disabled");
             },
         });
     },
