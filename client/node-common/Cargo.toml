@@ -5,7 +5,7 @@ build = "build.rs"
 description = "Common code between various nodes"
 edition = "2021"
 license = "GPL-3.0-only"
-version = "0.15.0"
+version = "0.16.0"
 
 [lints]
 workspace = true
@@ -90,4 +90,7 @@ cumulus-primitives-parachain-inherent = { workspace = true }
 cumulus-relay-chain-interface = { workspace = true }
 
 [build-dependencies]
-substrate-build-script-utils = { workspace = true }
+substrate-build-script-utils = { workspace = true, optional = true }
+
+[features]
+include-git-hash-in-version = [ "substrate-build-script-utils" ]

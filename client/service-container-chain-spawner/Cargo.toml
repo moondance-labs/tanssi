@@ -4,7 +4,7 @@ authors = { workspace = true }
 build = "build.rs"
 edition = "2021"
 license = "GPL-3.0-only"
-version = "0.15.0"
+version = "0.16.0"
 
 [lints]
 workspace = true
@@ -91,10 +91,12 @@ polkadot-overseer = { workspace = true }
 tokio-stream = { workspace = true }
 
 [build-dependencies]
-substrate-build-script-utils = { workspace = true }
+substrate-build-script-utils = { workspace = true, optional = true }
 
 [features]
 default = []
+fast-runtime = [ "dancebox-runtime/fast-runtime" ]
+include-git-hash-in-version = [ "substrate-build-script-utils" ]
 runtime-benchmarks = [
 	"cumulus-primitives-core/runtime-benchmarks",
 	"dancebox-runtime/runtime-benchmarks",
@@ -113,5 +115,3 @@ try-runtime = [
 	"pallet-data-preservers/try-runtime",
 	"sp-runtime/try-runtime",
 ]
-
-fast-runtime = [ "dancebox-runtime/fast-runtime" ]

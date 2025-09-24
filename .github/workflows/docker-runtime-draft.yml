@@ -59,10 +59,10 @@ jobs:
         run: rustup show
       - name: Build Node tanssi-relay
         if:  contains(needs.set-tags.outputs.git_branch, 'starlight')
-        run: cargo build -p tanssi-relay --profile=production
+        run: cargo build -p tanssi-relay --profile=production --features=include-git-hash-in-version
       - name: Build Node parachains
         if:  contains(needs.set-tags.outputs.git_branch, 'para')
-        run: cargo build -p tanssi-node -p container-chain-frontier-node -p container-chain-simple-node --profile=production
+        run: cargo build -p tanssi-node -p container-chain-frontier-node -p container-chain-simple-node --profile=production --features=include-git-hash-in-version
       - name: Save binary (parachain)
         if: ${{ matrix.cpu == '' && contains(needs.set-tags.outputs.git_branch, 'para') }}
         uses: ./.github/workflow-templates/copy-parachain-node-binaries

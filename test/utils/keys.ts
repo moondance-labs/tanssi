@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import { u8aToHex } from "@polkadot/util";
 

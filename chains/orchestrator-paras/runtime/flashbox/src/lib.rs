@@ -242,7 +242,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: Cow::Borrowed("flashbox"),
     impl_name: Cow::Borrowed("flashbox"),
     authoring_version: 1,
-    spec_version: 1500,
+    spec_version: 1600,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -1772,47 +1772,6 @@ impl_runtime_apis! {
     }
 
     impl pallet_collator_assignment_runtime_api::CollatorAssignmentApi<Block, AccountId, ParaId> for Runtime {
-        /// Return the parachain that the given `AccountId` is collating for.
-        /// Returns `None` if the `AccountId` is not collating.
-        fn current_collator_parachain_assignment(account: AccountId) -> Option<ParaId> {
-            let assigned_collators = CollatorAssignment::collator_container_chain();
-            let self_para_id = ParachainInfo::get();
-
-            assigned_collators.para_id_of(&account, self_para_id)
-        }
-
-        /// Return the parachain that the given `AccountId` will be collating for
-        /// in the next session change.
-        /// Returns `None` if the `AccountId` will not be collating.
-        fn future_collator_parachain_assignment(account: AccountId) -> Option<ParaId> {
-            let assigned_collators = CollatorAssignment::pending_collator_container_chain();
-
-            match assigned_collators {
-                Some(assigned_collators) => {
-                    let self_para_id = ParachainInfo::get();
-
-                    assigned_collators.para_id_of(&account, self_para_id)
-                }
-                None => {
-                    Self::current_collator_parachain_assignment(account)
-                }
-            }
-
-        }
-
-        /// Return the list of collators of the given `ParaId`.
-        /// Returns `None` if the `ParaId` is not in the registrar.
-        fn parachain_collators(para_id: ParaId) -> Option<Vec<AccountId>> {
-            let assigned_collators = CollatorAssignment::collator_container_chain();
-            let self_para_id = ParachainInfo::get();
-
-            if para_id == self_para_id {
-                Some(assigned_collators.orchestrator_chain)
-            } else {
-                assigned_collators.container_chains.get(&para_id).cloned()
-            }
-        }
-
         /// Returns the list of `ParaId` of registered chains with at least some
         /// collators. This filters out parachains with no assigned collators.
         /// Since runtime APIs are called on top of a parent block, we need to be carefull

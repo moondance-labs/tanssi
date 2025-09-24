@@ -5,7 +5,7 @@ description = "Implementation of a `https://tanssi.network` node in Rust based o
 edition = "2021"
 license = "GPL-3.0-only"
 readme = "README.md"
-version = "0.15.0"
+version = "0.16.0"
 
 [[bin]]
 name = "tanssi-relay"
@@ -42,19 +42,19 @@ tempfile = { workspace = true }
 tokio = { workspace = true }
 
 [build-dependencies]
-substrate-build-script-utils = { workspace = true }
+substrate-build-script-utils = { workspace = true, optional = true }
 
 [features]
 fast-runtime = [ "tanssi-relay-cli/fast-runtime" ]
 force-debug = [ "sp-debug-derive/force-debug" ]
+include-git-hash-in-version = [ "substrate-build-script-utils" ]
+metadata-hash = [
+	"tanssi-relay-cli/metadata-hash",
+]
 pyroscope = [ "tanssi-relay-cli/pyroscope" ]
 runtime-benchmarks = [ "tanssi-relay-cli/runtime-benchmarks" ]
 runtime-metrics = [ "tanssi-relay-cli/runtime-metrics" ]
 try-runtime = [ "tanssi-relay-cli/try-runtime" ]
-
-metadata-hash = [
-	"tanssi-relay-cli/metadata-hash",
-]
 
 # Enables timeout-based tests supposed to be run only in CI environment as they may be flaky
 # when run locally depending on system load
