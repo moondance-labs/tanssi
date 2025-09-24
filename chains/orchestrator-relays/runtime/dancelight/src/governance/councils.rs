@@ -18,7 +18,6 @@ use super::*;
 pub type OpenTechCommitteeInstance = pallet_collective::Instance3;
 
 parameter_types! {
-    // TODO: Check value of this parameter
     pub MaxProposalWeight: Weight = Perbill::from_percent(50) * BlockWeights::get().max_block;
 }
 
