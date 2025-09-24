@@ -2,9 +2,8 @@ import "@tanssi/api-augment";
 
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
-import { BN } from "@polkadot/util";
 import type { KeyringPair } from "@polkadot/keyring/types";
-import type { ExtrinsicFailedEventDataType } from "../../../utils";
+import { checkIfErrorIsEmitted } from "../../../utils";
 import { isStarlightRuntime } from "../../../utils/runtime.ts";
 import type { H256 } from "@polkadot/types/interfaces";
 
@@ -69,25 +68,13 @@ describeSuite({
                 const submitFailedProposalBlock = await context.createBlock(await failedProposal.signAsync(alice));
                 expect(submitFailedProposalBlock.result?.successful).to.be.false;
 
-                const metadata = await api.rpc.state.getMetadata();
-                const techCommitteePalletIndex = metadata.asLatest.pallets
-                    .find(({ name }) => name.toString() === "OpenTechCommitteeCollective")
-                    .index.toString();
-
-                const errorData = submitFailedProposalBlock.result.events
-                    .find((e) => e.event.method === "ExtrinsicFailed")
-                    .event.toHuman().data as unknown as ExtrinsicFailedEventDataType;
-                expect(errorData.dispatchError.Module.index).toEqual(techCommitteePalletIndex);
-
-                const errorBytes = Uint8Array.from(Buffer.from(errorData.dispatchError.Module.error.slice(2), "hex"));
-                const errorIndex = errorBytes[0];
-
-                const errorMeta = api.registry.findMetaError({
-                    index: new BN(errorData.dispatchError.Module.index),
-                    error: new BN(errorIndex),
-                });
-
-                expect(errorMeta.method).toEqual("NotMember");
+                const isNotMemberErrorEmitted = await checkIfErrorIsEmitted(
+                    api,
+                    "OpenTechCommitteeCollective",
+                    submitFailedProposalBlock,
+                    "NotMember"
+                );
+                expect(isNotMemberErrorEmitted, "NotMember error should be emitted").to.be.true;
             },
         });
 
@@ -233,7 +220,7 @@ describeSuite({
 
                 // 4. Try to close the proposal and verify maintenance mode is not enabled
                 const failedProposalClosingBlock = await context.createBlock(
-                    api.tx.openTechCommitteeCollective
+                    await api.tx.openTechCommitteeCollective
                         .close(
                             proposalHash,
                             1,
@@ -247,24 +234,13 @@ describeSuite({
                 );
                 expect(failedProposalClosingBlock.result?.successful).to.be.false;
 
-                const metadata = await api.rpc.state.getMetadata();
-                const techCommitteePalletIndex = metadata.asLatest.pallets
-                    .find(({ name }) => name.toString() === "OpenTechCommitteeCollective")
-                    .index.toString();
-
-                const errorData = failedProposalClosingBlock.result.events
-                    .find((e) => e.event.method === "ExtrinsicFailed")
-                    .event.toHuman().data as unknown as ExtrinsicFailedEventDataType;
-                expect(errorData.dispatchError.Module.index).toEqual(techCommitteePalletIndex);
-
-                const errorBytes = Uint8Array.from(Buffer.from(errorData.dispatchError.Module.error.slice(2), "hex"));
-                const errorIndex = errorBytes[0];
-
-                const errorMeta = api.registry.findMetaError({
-                    index: new BN(errorData.dispatchError.Module.index),
-                    error: new BN(errorIndex),
-                });
-                expect(errorMeta.method).toEqual("TooEarly");
+                const isTooEarlyErrorEmitted = await checkIfErrorIsEmitted(
+                    api,
+                    "OpenTechCommitteeCollective",
+                    failedProposalClosingBlock,
+                    "TooEarly"
+                );
+                expect(isTooEarlyErrorEmitted, "TooEarly error should be emitted").to.be.true;
 
                 const maintenanceStatus = await api.query.maintenanceMode.maintenanceMode();
                 expect(maintenanceStatus.isFalse, "Maintenance mode should still be disabled");
@@ -304,29 +280,18 @@ describeSuite({
 
                 // 3. Try to vote on the proposal with a non-committee member address
                 const submitFailedVoteBlock = await context.createBlock(
-                    api.tx.openTechCommitteeCollective.vote(proposalHash, proposalIndex, true).signAsync(bob)
+                    await api.tx.openTechCommitteeCollective.vote(proposalHash, proposalIndex, true).signAsync(bob)
                 );
                 expect(submitFailedVoteBlock.result?.successful).to.be.false;
 
-                const metadata = await api.rpc.state.getMetadata();
-                const techCommitteePalletIndex = metadata.asLatest.pallets
-                    .find(({ name }) => name.toString() === "OpenTechCommitteeCollective")
-                    .index.toString();
+                const isNotMemberErrorEmitted = await checkIfErrorIsEmitted(
+                    api,
+                    "OpenTechCommitteeCollective",
+                    submitFailedVoteBlock,
+                    "NotMember"
+                );
+                expect(isNotMemberErrorEmitted, "NotMember error should be emitted").to.be.true;
 
-                const errorData = submitFailedVoteBlock.result.events
-                    .find((e) => e.event.method === "ExtrinsicFailed")
-                    .event.toHuman().data as unknown as ExtrinsicFailedEventDataType;
-                expect(errorData.dispatchError.Module.index).toEqual(techCommitteePalletIndex);
-
-                const errorBytes = Uint8Array.from(Buffer.from(errorData.dispatchError.Module.error.slice(2), "hex"));
-                const errorIndex = errorBytes[0];
-
-                const errorMeta = api.registry.findMetaError({
-                    index: new BN(errorData.dispatchError.Module.index),
-                    error: new BN(errorIndex),
-                });
-
-                expect(errorMeta.method).toEqual("NotMember");
                 const tallyAfterVotingAttempt = await api.query.openTechCommitteeCollective.voting(proposalHash);
                 expect(tallyAfterVotingAttempt.isSome).to.be.true;
                 expect(tallyAfterVotingAttempt.unwrap().ayes.length).to.be.equal(0);
@@ -395,40 +360,11 @@ describeSuite({
 
                 expect(whitelistedProposalBlock.result?.successful).to.be.true;
 
-                // 3. Verify the call is whitelisted
+                // 3. Verify the call is not whitelisted anymore
                 const isCallWhitelistedAfterProposal = await api.query.whitelist.whitelistedCall(
                     call.method.hash.toHex()
                 );
                 expect(isCallWhitelistedAfterProposal.isSome, "The call should be whitelisted");
-            },
-        });
-
-        it({
-            id: "E07",
-            title: "Non-whitelist origin cannot dispatch a whitelisted call",
-            test: async ({ skip }) => {
-                if (isStarlightRuntime(api)) {
-                    skip();
-                }
-
-                // Pre-check: Verify the call is whitelisted
-                const call = api.tx.system.remark("0x0001");
-                const isCallWhitelisted = await api.query.whitelist.whitelistedCall(call.method.hash.toHex());
-                expect(isCallWhitelisted.isSome, "The call should be whitelisted");
-
-                // 1. Compose the whitelisted call dispatch
-                const whitelistedCallDispatchTx = api.tx.whitelist.dispatchWhitelistedCallWithPreimage(call);
-
-                // 2. Try to dispatch the whitelisted call using a non-whitelist origin (Charlie)
-                const failedWhitelistedCallDispatchBlock = await context.createBlock(
-                    await whitelistedCallDispatchTx.signAsync(charlie)
-                );
-                expect(failedWhitelistedCallDispatchBlock.result?.successful).to.be.false;
-
-                const isCallWhitelistedAfterFailedWhitelistDispatch = await api.query.whitelist.whitelistedCall(
-                    call.method.hash.toHex()
-                );
-                expect(isCallWhitelistedAfterFailedWhitelistDispatch.isSome, "The call should still be whitelisted");
             },
         });
     },

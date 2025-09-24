@@ -4,8 +4,7 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import type { KeyringPair } from "@polkadot/keyring/types";
 import { isDancelightRuntime, isStarlightRuntime } from "../../../utils/runtime.ts";
-import { BN } from "@polkadot/util";
-import type { ExtrinsicFailedEventDataType } from "../../../utils";
+import { checkIfErrorIsEmitted } from "../../../utils";
 
 export type SubmittedEventDataType = {
     index: number;
@@ -299,25 +298,13 @@ describeSuite({
                 const submitBlockFailure = await context.createBlock(await submitTxFailure.signAsync(alice));
                 expect(submitBlockFailure.result?.successful).to.be.false;
 
-                const metadata = await api.rpc.state.getMetadata();
-                const referendaPalletIndex = metadata.asLatest.pallets
-                    .find(({ name }) => name.toString() === "Referenda")
-                    .index.toString();
-
-                const errorData = submitBlockFailure.result.events
-                    .find((e) => e.event.method === "ExtrinsicFailed")
-                    .event.toHuman().data as unknown as ExtrinsicFailedEventDataType;
-                expect(errorData.dispatchError.Module.index).toEqual(referendaPalletIndex);
-
-                const errorBytes = Uint8Array.from(Buffer.from(errorData.dispatchError.Module.error.slice(2), "hex"));
-                const errorIndex = errorBytes[0];
-
-                const errorMeta = api.registry.findMetaError({
-                    index: new BN(errorData.dispatchError.Module.index),
-                    error: new BN(errorIndex),
-                });
-
-                expect(errorMeta.method).toEqual("NoTrack");
+                const isNoTrackErrorEmitted = await checkIfErrorIsEmitted(
+                    api,
+                    "Referenda",
+                    submitBlockFailure,
+                    "NoTrack"
+                );
+                expect(isNoTrackErrorEmitted, "NoTrack error must be emitted").to.be.true;
             },
         });
 
