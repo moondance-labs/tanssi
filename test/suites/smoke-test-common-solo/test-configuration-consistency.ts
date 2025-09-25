@@ -24,7 +24,7 @@ describeSuite({
         let costPerSession: bigint;
         let costPerBlock: bigint;
         const blockNumberToDebug = getBlockNumberForDebug();
-        beforeAll(() => {
+        beforeAll(async () => {
             api = context.polkadotJs();
             const chain = api.consts.system.version.specName.toString();
             blocksPerSession = chain === "dancelight" ? 600n : 3600n;
