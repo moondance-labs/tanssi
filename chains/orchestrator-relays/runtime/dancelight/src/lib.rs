@@ -3182,7 +3182,7 @@ sp_api::impl_runtime_apis! {
                 AssetHub, LocalCheckAccount, LocationConverter, TokenLocation, XcmConfig,
             };
             use alloc::boxed::Box;
-            use tp_bridge::container_token_to_ethereum_message_exporter::ToEthDeliveryHelper;
+            use tp_bridge::snowbridge_outbound_token_transfer::ToEthDeliveryHelper;
 
             parameter_types! {
                 pub ExistentialDepositAsset: Option<Asset> = Some((

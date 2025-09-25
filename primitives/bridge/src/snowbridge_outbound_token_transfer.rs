@@ -598,6 +598,66 @@ impl<T: snowbridge_pallet_system::Config> TryConvert<ChannelId, AgentId>
     }
 }
 
+#[cfg(feature = "runtime-benchmarks")]
+pub struct ToEthDeliveryHelper<XcmConfig, ExistentialDeposit, PriceForDelivery>(
+    core::marker::PhantomData<(XcmConfig, ExistentialDeposit, PriceForDelivery)>,
+);
+
+#[cfg(feature = "runtime-benchmarks")]
+impl<
+        XcmConfig: xcm_executor::Config,
+        ExistentialDeposit: Get<Option<Asset>>,
+        PriceForDelivery: Get<u128>,
+    > xcm_builder::EnsureDelivery
+    for ToEthDeliveryHelper<XcmConfig, ExistentialDeposit, PriceForDelivery>
+{
+    fn ensure_successful_delivery(
+        origin_ref: &Location,
+        dest: &Location,
+        fee_reason: xcm_executor::traits::FeeReason,
+    ) -> (Option<xcm_executor::FeesMode>, Option<Assets>) {
+        log::trace!(target: "xcm::delivery_helper",
+            "ensure_successful_delivery params: {origin_ref:?} {dest:?} {fee_reason:?} "
+        );
+
+        use xcm_executor::{
+            traits::{FeeManager, TransactAsset},
+            FeesMode,
+        };
+
+        if !dest.is_here() {
+            log::trace!(target: "xcm::delivery_helper",
+                "skipped due to unmatched remote destination {dest:?}."
+            );
+            return (None, None);
+        }
+
+        let mut fees_mode = None;
+        if !XcmConfig::FeeManager::is_waived(Some(origin_ref), fee_reason) {
+            // if not waived, we need to set up accounts for paying and receiving fees
+
+            // overestimate delivery fee
+            let overestimated_fees = PriceForDelivery::get();
+            log::debug!(target: "xcm::delivery_helper", "fees to deposit {overestimated_fees:?} for origin: {origin_ref:?}");
+
+            // mint overestimated fee to origin
+            XcmConfig::AssetTransactor::deposit_asset(
+                &Asset {
+                    id: AssetId(Location::new(0, Here)),
+                    fun: Fungible(overestimated_fees),
+                },
+                &origin_ref,
+                None,
+            )
+            .unwrap();
+
+            // expected worst case - direct withdraw
+            fees_mode = Some(FeesMode { jit_withdraw: true });
+        }
+        (fees_mode, None)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use {
