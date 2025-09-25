@@ -113,6 +113,7 @@ mod xcm_converter {
 
     #[test]
     fn works_with_complete_message() {
+        let para_id = Some(2000);
         let agent_id = AgentId::repeat_byte(0x77);
         let token_address = hex!("0123456789abcdef0123456789abcdef01234567");
         let beneficiary_address = hex!("0101010101010101010101010101010101010101");
@@ -154,7 +155,7 @@ mod xcm_converter {
         ]);
 
         let mut xcm_converter =
-            XcmConverter::<(), ()>::new(&xcm_message, ethereum_network, agent_id);
+            XcmConverter::<(), ()>::new(&xcm_message, ethereum_network, agent_id, para_id);
 
         let command = xcm_converter
             .make_unlock_native_token_command()
