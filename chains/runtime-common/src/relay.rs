@@ -630,6 +630,7 @@ pub struct EthTokensLocalProcessor<
     T,
     XcmProcessor,
     XcmWeigher,
+    AssetTransactor,
     EthereumLocation,
     EthereumNetwork,
     InboundQueuePalletInstance,
@@ -639,6 +640,7 @@ pub struct EthTokensLocalProcessor<
         T,
         XcmProcessor,
         XcmWeigher,
+        AssetTransactor,
         EthereumLocation,
         EthereumNetwork,
         InboundQueuePalletInstance,
@@ -650,6 +652,7 @@ impl<
         T,
         XcmProcessor,
         XcmWeigher,
+        AssetTransactor,
         EthereumLocation,
         EthereumNetwork,
         InboundQueuePalletInstance,
@@ -659,6 +662,7 @@ impl<
         T,
         XcmProcessor,
         XcmWeigher,
+        AssetTransactor,
         EthereumLocation,
         EthereumNetwork,
         InboundQueuePalletInstance,
@@ -670,8 +674,10 @@ where
         + pallet_foreign_asset_creator::Config
         + pallet_xcm::Config,
     <T as frame_system::Config>::RuntimeEvent: From<pallet_xcm::Event<T>>,
+    <T as frame_system::Config>::AccountId: Into<Location>,
     XcmProcessor: ExecuteXcm<<T as pallet_xcm::Config>::RuntimeCall>,
     XcmWeigher: WeightBounds<<T as pallet_xcm::Config>::RuntimeCall>,
+    AssetTransactor: TransactAsset,
     EthereumLocation: Get<Location>,
     EthereumNetwork: Get<NetworkId>,
     InboundQueuePalletInstance: Get<u8>,
@@ -680,19 +686,9 @@ where
         EncodeLike<<T as pallet_foreign_asset_creator::Config>::ForeignAsset>,
 {
     fn can_process_message(channel: &Channel, envelope: &Envelope) -> bool {
-        if let Some(channel_info) = pallet_ethereum_token_transfers::CurrentChannelInfo::<T>::get()
-        {
-            if envelope.channel_id != channel_info.channel_id
-                || channel.para_id != channel_info.para_id
-                || channel.agent_id != channel_info.agent_id
-            {
-                return false;
-            }
-        } else {
-            return false;
-        }
-
-        if envelope.gateway != T::GatewayAddress::get() {
+        // Validate channel and gateway
+        if !GatewayAndChannelValidator::<T>::validate_gateway_and_channel(channel, envelope) {
+            log::warn!("EthTokensLocalProcessor::can_process_message: invalid gateway or channel");
             return false;
         }
 
@@ -743,6 +739,7 @@ impl<
         T,
         XcmProcessor,
         XcmWeigher,
+        AssetTransactor,
         EthereumLocation,
         EthereumNetwork,
         InboundQueuePalletInstance,
@@ -752,16 +749,19 @@ impl<
         T,
         XcmProcessor,
         XcmWeigher,
+        AssetTransactor,
         EthereumLocation,
         EthereumNetwork,
         InboundQueuePalletInstance,
         ContainerTransfersEnabled,
     >
 where
-    T: frame_system::Config + pallet_xcm::Config,
+    T: frame_system::Config + pallet_xcm::Config + pallet_ethereum_token_transfers::Config,
     <T as frame_system::Config>::RuntimeEvent: From<pallet_xcm::Event<T>>,
+    <T as frame_system::Config>::AccountId: Into<Location>,
     XcmProcessor: ExecuteXcm<<T as pallet_xcm::Config>::RuntimeCall>,
     XcmWeigher: WeightBounds<<T as pallet_xcm::Config>::RuntimeCall>,
+    AssetTransactor: TransactAsset,
     EthereumLocation: Get<Location>,
     EthereumNetwork: Get<NetworkId>,
     InboundQueuePalletInstance: Get<u8>,
@@ -894,7 +894,7 @@ where
 
         let container_location = Location::new(0, [Parachain(para_id)]);
 
-        let token_reanchored = match eth_transfer_data.token_location.reanchored(
+        let token_id_dest = match eth_transfer_data.token_location.reanchored(
             &container_location,
             &<T as pallet_xcm::Config>::UniversalLocation::get(),
         ) {
@@ -908,32 +908,57 @@ where
             }
         };
 
-        let asset_fee: Asset = (Location::parent(), fee).into();
-        let asset_to_deposit: Asset = (token_reanchored.clone(), eth_transfer_data.amount).into();
+        let asset_fee_relay: Asset = (Location::here(), fee).into();
+        let asset_fee_container: Asset = (Location::parent(), fee).into();
+        let asset_to_deposit: Asset = (token_id_dest.clone(), eth_transfer_data.amount).into();
 
-        let inbound_queue_pallet_index = InboundQueuePalletInstance::get();
-        let network = EthereumNetwork::get();
+        let dummy_context = XcmContext {
+            origin: None,
+            message_id: Default::default(),
+            topic: None,
+        };
 
+        // Transfer fee from FeesAccount to container sovereign account
+        if let Err(e) = AssetTransactor::transfer_asset(
+            &asset_fee_relay,
+            &T::FeesAccount::get().into(),
+            &container_location,
+            &dummy_context,
+        ) {
+            log::error!(
+                "EthTokensLocalProcessor: failed to transfer fee from FeesAccount to container sovereign account: {:?}",
+                e
+            );
+        }
+
+        // Mint the ERC20 token into the container sovereign account
+        if let Err(e) =
+            AssetTransactor::can_check_in(&container_location, &asset_to_deposit, &dummy_context)
+        {
+            log::error!("can_check_in failed: {:?}", e);
+        }
+
+        AssetTransactor::check_in(&container_location, &asset_to_deposit, &dummy_context);
+
+        if let Err(e) = AssetTransactor::deposit_asset(&asset_to_deposit, &container_location, None)
+        {
+            log::error!("deposit_asset failed: {:?}", e);
+        }
+
+        // Send XCM to deposit the ERC20 token into beneficiary account
         let remote_xcm = Xcm::<()>(vec![
-            DescendOrigin(PalletInstance(inbound_queue_pallet_index).into()),
-            UniversalOrigin(GlobalConsensus(network)),
-            WithdrawAsset(vec![asset_fee.clone()].into()),
+            ReserveAssetDeposited(
+                vec![asset_fee_container.clone(), asset_to_deposit.clone()].into(),
+            ),
             BuyExecution {
-                fees: asset_fee.clone(),
+                fees: asset_fee_container.clone(),
                 weight_limit: Unlimited,
             },
-            ReserveAssetDeposited(vec![asset_to_deposit.clone()].into()),
             DepositAsset {
                 assets: Definite(vec![asset_to_deposit].into()),
                 beneficiary,
             },
-            SetAppendix(Xcm(vec![DepositAsset {
-                assets: Wild(AllOf {
-                    id: AssetId(Location::parent()),
-                    fun: WildFungible,
-                }),
-                beneficiary: Location::new(2, [GlobalConsensus(network)]),
-            }])),
+            // TODO: check if we need to add SetAppendix instruction to deposit the leftover assets
         ]);
 
         match send_xcm::<<T as pallet_xcm::Config>::XcmRouter>(
