@@ -19,6 +19,7 @@ import { stringToHex } from "@polkadot/util";
 import type { FrameSystemEventRecord } from "@polkadot/types/lookup";
 import Bottleneck from "bottleneck";
 import type { GenericExtrinsic } from "@polkadot/types/extrinsic/Extrinsic";
+import { isDancebox, isLightRuntime } from "./runtime.ts";
 
 export async function jumpSessions(context: DevModeContext, count: number): Promise<string | null> {
     const session = (await context.polkadotJs().query.session.currentIndex()).addn(count.valueOf()).toNumber();
@@ -311,6 +312,8 @@ export function filterRewardFromContainer(events: EventRecord[], feePayer: strin
 // @param timeout - The timeout in milliseconds, or null for no timeout. Defaults to 5 minutes.
 // @returns A Promise resolving with the transaction hash, block hash, and the full status object.
 export async function signAndSendAndInclude(tx, account, timeout: number | null = 3 * 60 * 1000) {
+    const callerStack = new Error().stack;
+
     // Inner function that doesn't handle timeout
     const signAndSendAndIncludeInner = (tx, account) => {
         return new Promise((resolve, reject) => {
@@ -326,6 +329,7 @@ export async function signAndSendAndInclude(tx, account, timeout: number | null 
                     });
                 }
             }).catch((error) => {
+                console.error("callerStack", callerStack);
                 reject(error.toHuman());
             });
         });
@@ -341,6 +345,7 @@ export async function signAndSendAndInclude(tx, account, timeout: number | null 
         const timer = setTimeout(() => {
             console.log("Transaction timed out");
             console.log(tx.toJSON());
+            console.error("callerStack", callerStack);
             reject(new Error("Transaction timed out"));
         }, timeout);
 
@@ -699,10 +704,47 @@ export async function chopsticksWaitTillIncluded(
     }
 }
 
-export async function getLastSessionEndBlock(api: ApiPromise): Promise<number> {
-    const currentSessionStartBlock = (await api.query.babe.epochStart())[1].toNumber();
+export async function getLastSessionEndBlock(api: ApiPromise, lastSessionIndex?: number): Promise<number> {
+    if (isLightRuntime(api)) {
+        const currentSessionStartBlock = (await api.query.babe.epochStart())[1].toNumber();
 
-    return currentSessionStartBlock - 1;
+        return currentSessionStartBlock - 1;
+    }
+
+    if (isDancebox(api)) {
+        let blockNumber = (await api.rpc.chain.getBlock()).block.header.number.toNumber();
+        let currentSessionIndex = (await api.query.session.currentIndex()).toNumber();
+
+        // We are going to first try to get the session change block by simply math
+        // we know that in dancebox sessions are defined in block numbers and not in time
+        // in theory we should be able to fetch the session change block number like this
+        const danceboxSessionLength = 600;
+        const theoreticalSessionChangeBlockNumber = blockNumber - (blockNumber % danceboxSessionLength);
+        const theoreticalSessionChangeBlockHash = await api.rpc.chain.getBlockHash(theoreticalSessionChangeBlockNumber);
+        const apiAtTheoreticalBlockHash = await api.at(theoreticalSessionChangeBlockHash);
+        const theoreticalSessionChangeBeforeBlock = await api.rpc.chain.getBlockHash(
+            theoreticalSessionChangeBlockNumber - 1
+        );
+        const apiAtTheoreticalBlockHashBefore = await api.at(theoreticalSessionChangeBeforeBlock);
+        const theoreticalSession = (await apiAtTheoreticalBlockHash.query.session.currentIndex()).toNumber();
+        const theoreticalSessionBefore = (
+            await apiAtTheoreticalBlockHashBefore.query.session.currentIndex()
+        ).toNumber();
+
+        if (currentSessionIndex === theoreticalSession && theoreticalSessionBefore === theoreticalSession - 1) {
+            return theoreticalSessionChangeBlockNumber - 1;
+        }
+
+        while (currentSessionIndex > lastSessionIndex) {
+            blockNumber -= 1;
+            const blockHash = await api.rpc.chain.getBlockHash(blockNumber);
+            const apiAtBlock = await api.at(blockHash);
+            currentSessionIndex = (await apiAtBlock.query.session.currentIndex()).toNumber();
+        }
+        return blockNumber;
+    }
+
+    throw new Error(`Unsupported runtime: ${api.runtimeVersion.specName.toString()}`);
 }
 
 export type BlockData = {
@@ -805,4 +847,17 @@ export const waitEventUntilTimeout = async (
     }
 
     throw new Error(`Event "${eventSectionMethod}" not found within ${timeoutMs / 1000}s`);
+};
+
+/*
+ * In order to specify the block number to debug, you can set the BLOCK_NUMBER_TO_DEBUG environment variable.
+ * For example, to debug block number 12345, you can run the test with:
+ * sudo BLOCK_NUMBER_TO_DEBUG=2731016 pnpm moonwall test dancelight_smoke SMOK01
+ */
+export const getBlockNumberForDebug = (): number | undefined => {
+    if (process.env.BLOCK_NUMBER_TO_DEBUG !== undefined) {
+        console.log("Using BLOCK_NUMBER_TO_DEBUG parameter:", process.env.BLOCK_NUMBER_TO_DEBUG);
+
+        return Number(process.env.BLOCK_NUMBER_TO_DEBUG);
+    }
 };

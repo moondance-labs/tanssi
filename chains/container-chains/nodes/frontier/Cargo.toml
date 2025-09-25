@@ -31,7 +31,7 @@ dp-core = { workspace = true }
 tc-orchestrator-chain-interface-through-rpc = { workspace = true }
 
 # Local
-ccp-authorities-noting-inherent = { workspace = true }
+ccp-authorities-noting-inherent = { workspace = true, features = [ "std" ] }
 container-chain-template-frontier-runtime = { workspace = true, features = [ "std" ] }
 manual-xcm-rpc = { workspace = true }
 node-common = { workspace = true }
@@ -119,10 +119,11 @@ fp-evm = { workspace = true }
 fp-rpc = { workspace = true }
 pallet-ethereum = { workspace = true }
 [build-dependencies]
-substrate-build-script-utils = { workspace = true }
+substrate-build-script-utils = { workspace = true, optional = true }
 
 [features]
 default = []
+include-git-hash-in-version = [ "substrate-build-script-utils" ]
 runtime-benchmarks = [
 	"container-chain-template-frontier-runtime/runtime-benchmarks",
 	"cumulus-primitives-core/runtime-benchmarks",

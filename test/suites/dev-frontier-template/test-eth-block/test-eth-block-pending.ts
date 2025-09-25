@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import { describeSuite, expect, fetchCompiledContract } from "@moonwall/cli";
 import { ALITH_ADDRESS, ALITH_PRIVATE_KEY, customWeb3Request, generateKeyringPair } from "@moonwall/util";
 
