@@ -529,5 +529,127 @@ describeSuite({
                 expect(isCallIsNotWhitelistedErrorEmitted, "CallIsNotWhitelisted error should be emitted").to.be.true;
             },
         });
+
+        it({
+            id: "E10",
+            title: "Whitelisted call can be dispatched via whitelist track proposal",
+            test: async ({ skip }) => {
+                if (isStarlightRuntime(api)) {
+                    skip();
+                }
+
+                // Pre-check: Verify the call is whitelisted
+                const call = api.tx.system.remarkWithEvent("0x0001");
+                const isCallWhitelisted = await api.query.whitelist.whitelistedCall(call.method.hash.toHex());
+                expect(isCallWhitelisted.isSome, "The call should be whitelisted");
+
+                // 1. Note whitelisted call and  dispatch preimages
+                await context.createBlock(await api.tx.preimage.notePreimage(call.method.toHex()).signAsync(charlie), {
+                    allowFailures: false,
+                });
+                const whitelistedCallDispatchTx = api.tx.whitelist.dispatchWhitelistedCallWithPreimage(call);
+                await context.createBlock(
+                    await api.tx.preimage.notePreimage(whitelistedCallDispatchTx.method.toHex()).signAsync(charlie),
+                    {
+                        allowFailures: false,
+                    }
+                );
+
+                // 2. Create whitelisted call referendum proposal for the whitelisted track
+                const whitelistedCallReferendumProposalTx = api.tx.referenda.submit(
+                    {
+                        Origins: "WhitelistedCaller",
+                    },
+                    {
+                        Lookup: {
+                            Hash: whitelistedCallDispatchTx.method.hash.toHex(),
+                            len: whitelistedCallDispatchTx.method.encodedLength,
+                        },
+                    },
+                    { After: "1" }
+                );
+                const whitelistedCallReferendumProposalBlock = await context.createBlock(
+                    await whitelistedCallReferendumProposalTx.signAsync(charlie)
+                );
+
+                // 3. Extract referendum index
+                expect(whitelistedCallReferendumProposalBlock.result?.successful).to.be.true;
+
+                const proposalIndex = (
+                    whitelistedCallReferendumProposalBlock.result?.events
+                        .find((e) => e.event.method === "Submitted")
+                        .event.toHuman().data as unknown as SubmittedEventDataType
+                ).index;
+                expect(proposalIndex).to.not.be.undefined;
+
+                // 4. Place decision deposit for the proposal
+                const depositSubmitBlock = await context.createBlock(
+                    await api.tx.referenda.placeDecisionDeposit(proposalIndex).signAsync(charlie)
+                );
+                expect(depositSubmitBlock.result?.successful).to.be.true;
+
+                // 5. Vote
+                await context.createBlock(
+                    [
+                        api.tx.convictionVoting
+                            .vote(proposalIndex, {
+                                Standard: { vote: { aye: true, conviction: "None" }, balance: 999999000000000000n },
+                            })
+                            .signAsync(alice),
+                        api.tx.convictionVoting
+                            .vote(proposalIndex, {
+                                Standard: { vote: { aye: true, conviction: "None" }, balance: 999999000000000000n },
+                            })
+                            .signAsync(bob),
+                        api.tx.convictionVoting
+                            .vote(proposalIndex, {
+                                Standard: { vote: { aye: true, conviction: "None" }, balance: 999999000000000000n },
+                            })
+                            .signAsync(dave),
+                    ],
+                    {
+                        allowFailures: false,
+                        expectEvents: [api.events.convictionVoting.Voted],
+                    }
+                );
+
+                // 6. Wait for the referendum to be decided
+                const expectedEvents = [
+                    // { section: "referenda", method: "DecisionStarted" },
+                    { section: "referenda", method: "ConfirmStarted" },
+                    { section: "referenda", method: "Confirmed" },
+                    { section: "scheduler", method: "Dispatched" },
+                    { section: "scheduler", method: "Dispatched" },
+                    { section: "whitelist", method: "WhitelistedCallDispatched" },
+                ];
+
+                for (let i = 0; i < 450; i++) {
+                    const events = await api.query.system.events();
+                    for (const expectedEvent of expectedEvents) {
+                        const execEvent = events.find(
+                            (e) => e.event.section === expectedEvent.section && e.event.method === expectedEvent.method
+                        );
+                        if (execEvent) {
+                            expectedEvents.splice(expectedEvents.indexOf(expectedEvent), 1);
+                        }
+                    }
+                    if (expectedEvents.length === 0) {
+                        break;
+                    }
+                    await context.createBlock();
+                }
+                // Check if all the events happened
+                expect(expectedEvents).toEqual([]);
+
+                // 7. Verify the call is no longer whitelisted and the dispatch was successful
+                const isCallWhitelistedAfterFailedWhitelistDispatchTx = await api.query.whitelist.whitelistedCall(
+                    call.method.hash.toHex()
+                );
+                expect(
+                    isCallWhitelistedAfterFailedWhitelistDispatchTx.isNone,
+                    "The call should not be whitelisted anymore"
+                );
+            },
+        });
     },
 });
