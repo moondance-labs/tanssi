@@ -4,11 +4,7 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import type { KeyringPair } from "@polkadot/keyring/types";
 import { isDancelightRuntime, isStarlightRuntime } from "../../../utils/runtime.ts";
-import { checkIfErrorIsEmitted } from "../../../utils";
-
-export type SubmittedEventDataType = {
-    index: number;
-};
+import { type SubmittedEventDataType, checkIfErrorIsEmitted } from "../../../utils";
 
 describeSuite({
     id: "DEVT23",

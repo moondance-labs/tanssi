@@ -12,6 +12,10 @@ export type ExtrinsicFailedEventDataType = {
     };
 };
 
+export type SubmittedEventDataType = {
+    index: number;
+};
+
 export async function checkIfErrorIsEmitted(
     api: ApiPromise,
     moduleName: string,

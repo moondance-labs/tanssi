@@ -3,7 +3,7 @@ import "@tanssi/api-augment";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import type { KeyringPair } from "@polkadot/keyring/types";
-import { checkIfErrorIsEmitted } from "../../../utils";
+import { type SubmittedEventDataType, checkIfErrorIsEmitted } from "../../../utils";
 import { isStarlightRuntime } from "../../../utils/runtime.ts";
 import type { H256 } from "@polkadot/types/interfaces";
 
@@ -423,6 +423,110 @@ describeSuite({
                     call.method.hash.toHex()
                 );
                 expect(isCallWhitelistedAfterFailedWhitelistDispatch.isSome, "The call should still be whitelisted");
+            },
+        });
+
+        it({
+            id: "E09",
+            title: "Non-whitelisted call cannot be dispatched via whitelist referendum track",
+            test: async ({ skip }) => {
+                if (isStarlightRuntime(api)) {
+                    skip();
+                }
+
+                // Pre-check: Verify the call is  not whitelisted
+                const call = api.tx.system.remark("0x0001");
+                const isCallWhitelisted = await api.query.whitelist.whitelistedCall(call.method.hash.toHex());
+                expect(isCallWhitelisted.isNone, "The call should not be whitelisted");
+
+                // 1. Note whitelisted call dispatch referendum preimage
+                const whitelistedCallDispatchTx = api.tx.whitelist.dispatchWhitelistedCallWithPreimage(call);
+                await context.createBlock(
+                    await api.tx.preimage.notePreimage(whitelistedCallDispatchTx.method.toHex()).signAsync(charlie),
+                    {
+                        allowFailures: false,
+                    }
+                );
+
+                // 2. Create whitelisted call referendum proposal for the whitelisted track
+                const whitelistedCallReferendumProposalTx = api.tx.referenda.submit(
+                    {
+                        Origins: "WhitelistedCaller",
+                    },
+                    {
+                        Lookup: {
+                            Hash: whitelistedCallDispatchTx.method.hash.toHex(),
+                            len: whitelistedCallDispatchTx.method.encodedLength,
+                        },
+                    },
+                    { After: "1" }
+                );
+                const whitelistedCallReferendumProposalBlock = await context.createBlock(
+                    await whitelistedCallReferendumProposalTx.signAsync(charlie)
+                );
+
+                // 3. Extract referendum index
+                expect(whitelistedCallReferendumProposalBlock.result?.successful).to.be.true;
+
+                const proposalIndex = (
+                    whitelistedCallReferendumProposalBlock.result?.events
+                        .find((e) => e.event.method === "Submitted")
+                        .event.toHuman().data as unknown as SubmittedEventDataType
+                ).index;
+                expect(proposalIndex).to.not.be.undefined;
+
+                // 4. Place decision deposit for the proposal
+                const depositSubmitBlock = await context.createBlock(
+                    await api.tx.referenda.placeDecisionDeposit(proposalIndex).signAsync(charlie)
+                );
+                expect(depositSubmitBlock.result?.successful).to.be.true;
+
+                // 5. Vote
+                let lastBlock: any;
+
+                for (const voter of [alice, bob, dave]) {
+                    lastBlock = await context.createBlock(
+                        await api.tx.convictionVoting
+                            .vote(proposalIndex, {
+                                Standard: { vote: { aye: true, conviction: "None" }, balance: 999999000000000000n },
+                            })
+                            .signAsync(voter)
+                    );
+                    expect(lastBlock.result?.successful).to.be.true;
+                }
+
+                // 6. Wait for the referendum to be decided
+                const expectedEvents = [
+                    { section: "referenda", method: "ConfirmStarted" },
+                    { section: "referenda", method: "Confirmed" },
+                    { section: "scheduler", method: "Dispatched" },
+                    { section: "scheduler", method: "Dispatched" },
+                ];
+                let isCallIsNotWhitelistedErrorEmitted = false;
+                for (let i = 0; i <= 450; i++) {
+                    const events = await api.query.system.events();
+                    for (const expectedEvent of expectedEvents) {
+                        const execEvent = events.find(
+                            (e) => e.event.section === expectedEvent.section && e.event.method === expectedEvent.method
+                        );
+                        if (execEvent) {
+                            expectedEvents.splice(expectedEvents.indexOf(expectedEvent), 1);
+                        }
+                    }
+                    isCallIsNotWhitelistedErrorEmitted = await checkIfErrorIsEmitted(
+                        api,
+                        "Whitelist",
+                        lastBlock,
+                        "CallIsNotWhitelisted"
+                    );
+                    if (isCallIsNotWhitelistedErrorEmitted) {
+                        break;
+                    }
+                    lastBlock = await context.createBlock();
+                }
+                // Check if all the events happened and the CallIsNotWhitelisted error was emitted
+                expect(expectedEvents).toEqual([]);
+                expect(isCallIsNotWhitelistedErrorEmitted, "CallIsNotWhitelisted error should be emitted").to.be.true;
             },
         });
     },
