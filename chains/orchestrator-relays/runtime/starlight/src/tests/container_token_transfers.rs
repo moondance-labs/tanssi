@@ -145,6 +145,6 @@ fn receive_container_foreign_tokens_from_eth_is_disabled_so_no_error_and_no_xcm_
                     RuntimeEvent::XcmPallet(pallet_xcm::Event::Sent { .. })
                 )
             });
-            assert!(!sent, "XCM Sent event should be emitted!");
+            assert!(!sent, "XCM Sent event should not be emitted!");
         });
 }
