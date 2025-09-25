@@ -267,7 +267,7 @@ interface Junction {
     GlobalConsensus?: "Any" | XcmV3JunctionNetworkId["type"];
 }
 
-export interface Junctions {
+interface Junctions {
     Here?: null;
     X1?: Junction;
     X2?: [Junction, Junction];
