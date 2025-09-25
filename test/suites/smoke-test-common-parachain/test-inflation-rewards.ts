@@ -8,12 +8,12 @@ import {
     fetchRewardAuthorContainers,
     filterRewardFromOrchestratorWithFailure,
     getAuthorFromDigest,
+    getBlockNumberForDebug,
     PARACHAIN_BOND,
     PER_BILL_RATIO,
 } from "utils";
 
-// For debug purposes only, specify block here to check it
-const BLOCK_NUMBER_TO_DEBUG = undefined;
+const BLOCK_NUMBER_TO_DEBUG = getBlockNumberForDebug();
 
 describeSuite({
     id: "SM04",
