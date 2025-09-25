@@ -227,17 +227,11 @@ pub mod pallet {
             // which means even when we have some parathread cores empty we cannot schedule parachain there.
             if should_charge_tip {
                 bulk_paras.sort_by(|a, b| {
-                    // old assigned comes first
-                    let old_assigned_first = old_assigned_para_ids
-                        .contains(&b.para_id)
-                        .cmp(&old_assigned_para_ids.contains(&a.para_id));
-
-                    // higher tip comes first
-                    let higher_tip_first = T::CollatorAssignmentTip::get_para_max_tip(b.para_id)
-                        .cmp(&T::CollatorAssignmentTip::get_para_max_tip(a.para_id));
-
-                    // order first by old assigned, if equal order by higher tip
-                    old_assigned_first.then(higher_tip_first)
+                    order_old_assigned_first_then_by_max_tip::<T>(
+                        a.para_id,
+                        b.para_id,
+                        old_assigned_para_ids,
+                    )
                 });
 
                 pool_paras.sort_by(|a, b| {
@@ -281,17 +275,11 @@ pub mod pallet {
             // As of now this doesn't distinguish between bulk paras and pool paras
             if !enough_collators_for_all_chain {
                 chains.sort_by(|a, b| {
-                    // old assigned comes first
-                    let old_assigned_first = old_assigned_para_ids
-                        .contains(&b.para_id)
-                        .cmp(&old_assigned_para_ids.contains(&a.para_id));
-
-                    // higher tip comes first
-                    let higher_tip_first = T::CollatorAssignmentTip::get_para_max_tip(b.para_id)
-                        .cmp(&T::CollatorAssignmentTip::get_para_max_tip(a.para_id));
-
-                    // order first by old assigned, if equal order by higher tip
-                    old_assigned_first.then(higher_tip_first)
+                    order_old_assigned_first_then_by_max_tip::<T>(
+                        a.para_id,
+                        b.para_id,
+                        old_assigned_para_ids,
+                    )
                 });
             }
 
@@ -892,4 +880,24 @@ where
 
         T::get()
     }
+}
+
+fn order_old_assigned_first_then_by_max_tip<T: Config>(
+    a: ParaId,
+    b: ParaId,
+    old_assigned_para_ids: &BTreeSet<ParaId>,
+) -> core::cmp::Ordering {
+    // old assigned comes first
+    let old_assigned_first = old_assigned_para_ids
+        .contains(&b)
+        .cmp(&old_assigned_para_ids.contains(&a));
+
+    // higher tip comes first
+    let higher_tip_first = || {
+        T::CollatorAssignmentTip::get_para_max_tip(b)
+            .cmp(&T::CollatorAssignmentTip::get_para_max_tip(a))
+    };
+
+    // order first by old assigned, if equal order by higher tip
+    old_assigned_first.then_with(higher_tip_first)
 }
