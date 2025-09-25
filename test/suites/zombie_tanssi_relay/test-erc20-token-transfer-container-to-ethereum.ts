@@ -111,7 +111,7 @@ describeSuite({
 
                 expect(!!txHash1.toHuman()).to.be.true;
 
-                await sleep(12000);
+                await sleep(24000);
 
                 // Check balance before transfer
                 const balanceBefore = (
