@@ -908,21 +908,7 @@ where
             }
         };
 
-        let container_location_reanchored = match container_location.clone().reanchored(
-            &container_location,
-            &<T as pallet_xcm::Config>::UniversalLocation::get(),
-        ) {
-            Ok(loc) => loc,
-            Err(e) => {
-                log::error!(
-                    "EthTokensLocalProcessor: failed to reanchor native container token location: {:?}",
-                    e
-                );
-                return Ok(());
-            }
-        };
-
-        let _asset_fee: Asset = (container_location_reanchored.clone(), fee).into();
+        let asset_fee: Asset = (Location::parent(), fee).into();
         let asset_to_deposit: Asset = (token_reanchored.clone(), eth_transfer_data.amount).into();
 
         let inbound_queue_pallet_index = InboundQueuePalletInstance::get();
@@ -931,16 +917,23 @@ where
         let remote_xcm = Xcm::<()>(vec![
             DescendOrigin(PalletInstance(inbound_queue_pallet_index).into()),
             UniversalOrigin(GlobalConsensus(network)),
-            //WithdrawAsset(vec![asset_fee.clone()].into()),
-            //BuyExecution {
-            //    fees: asset_fee.clone(),
-            //    weight_limit: Unlimited,
-            //},
+            WithdrawAsset(vec![asset_fee.clone()].into()),
+            BuyExecution {
+                fees: asset_fee.clone(),
+                weight_limit: Unlimited,
+            },
             ReserveAssetDeposited(vec![asset_to_deposit.clone()].into()),
             DepositAsset {
                 assets: Definite(vec![asset_to_deposit].into()),
                 beneficiary,
             },
+            SetAppendix(Xcm(vec![DepositAsset {
+                assets: Wild(AllOf {
+                    id: AssetId(Location::parent()),
+                    fun: WildFungible,
+                }),
+                beneficiary: Location::new(2, [GlobalConsensus(network)]),
+            }])),
         ]);
 
         match send_xcm::<<T as pallet_xcm::Config>::XcmRouter>(

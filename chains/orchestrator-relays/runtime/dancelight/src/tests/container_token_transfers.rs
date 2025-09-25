@@ -953,7 +953,9 @@ fn receive_container_foreign_tokens_from_eth_works_for_foreign_account_id_20() {
             assert_ok!(EthereumInboundQueue::submit(relayer, message));
 
             let sent_to_container = System::events().iter().any(|rec| {
-                if let RuntimeEvent::XcmPallet(pallet_xcm::Event::Sent { destination, .. }) = &rec.event {
+                if let RuntimeEvent::XcmPallet(pallet_xcm::Event::Sent { destination, .. }) =
+                    &rec.event
+                {
                     is_destination_container(destination, container_para_id)
                 } else {
                     false
@@ -1067,13 +1069,15 @@ fn receive_container_foreign_tokens_from_eth_works_for_foreign_account_id_32() {
             assert_ok!(EthereumInboundQueue::submit(relayer, message));
 
             let sent_to_container = System::events().iter().any(|rec| {
-                if let RuntimeEvent::XcmPallet(pallet_xcm::Event::Sent { destination, .. }) = &rec.event {
+                if let RuntimeEvent::XcmPallet(pallet_xcm::Event::Sent { destination, .. }) =
+                    &rec.event
+                {
                     is_destination_container(destination, container_para_id)
                 } else {
                     false
                 }
             });
-    
+
             assert!(sent_to_container, "XCM Sent event should be emitted!");
         });
 }

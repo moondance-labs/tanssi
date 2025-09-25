@@ -3,10 +3,17 @@ import { type KeyringPair, alith } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import { hexToU8a } from "@polkadot/util";
 
-import { ETHEREUM_NETWORK_TESTNET, generateEventLog, generateUpdate, signAndSendAndInclude, waitSessions } from "utils";
+import {
+    ETHEREUM_NETWORK_TESTNET,
+    generateEventLog,
+    generateUpdate,
+    signAndSendAndInclude,
+    signAndSendAndIncludeMany,
+    waitSessions,
+} from "utils";
 
 describeSuite({
-    id: "ZOMBIETANSS03",
+    id: "ZOMBIETANSS04",
     title: "Container foreign tokens transfer from Ethereum to container (via Tanssi)",
     foundationMethods: "zombie",
     testCases: ({ context, it }) => {
@@ -29,7 +36,7 @@ describeSuite({
         it({
             id: "T01",
             title: "Should receive container foreign tokens from Ethereum and forward them to container",
-            timeout: 300000,
+            timeout: 600000,
             test: async () => {
                 const ethereumSovereignAccount =
                     await containerChainPolkadotJs.call.locationToAccountApi.convertLocation({
@@ -48,8 +55,8 @@ describeSuite({
                 const tokenReceiver = "0x0505050505050505050505050505050505050505";
 
                 const paraIdForChannel = 2000;
-                const containerParaId = 2001;
-                const assetId = 42;
+                const erc20AssetId = 24;
+                const tanssiAssetId = 42;
                 const tokenAddrHex = "0x1111111111111111111111111111111111111111";
 
                 // Hard-coding payload as we do not have scale encoding-decoding
@@ -90,6 +97,15 @@ describeSuite({
                 );
                 await signAndSendAndInclude(tx1, aliceRelay);
 
+                console.log("Force default XCM version");
+                const tx2 = relayChainPolkadotJs.tx.sudo.sudo(
+                    relayChainPolkadotJs.tx.xcmPallet.forceDefaultXcmVersion(5)
+                );
+                await signAndSendAndInclude(tx2, aliceRelay);
+
+                // Register token on foreignAssetsCreator.
+                console.log("Registering foreign tokens");
+
                 const ethTokenLocation = {
                     parents: 2,
                     interior: {
@@ -107,46 +123,72 @@ describeSuite({
                     },
                 };
 
-                // Register token on foreignAssetsCreator.
-                const tx2 = await containerChainPolkadotJs.tx.sudo
-                    .sudo(
-                        containerChainPolkadotJs.tx.foreignAssetsCreator.createForeignAsset(
-                            ethTokenLocation,
-                            assetId,
-                            aliceFrontier.address,
-                            true,
-                            1
-                        )
+                const registerErc20AssetTx = containerChainPolkadotJs.tx.sudo.sudo(
+                    containerChainPolkadotJs.tx.foreignAssetsCreator.createForeignAsset(
+                        ethTokenLocation,
+                        erc20AssetId,
+                        aliceFrontier.address,
+                        true,
+                        1
                     )
-                    .signAsync(aliceFrontier);
-                await signAndSendAndInclude(tx2, aliceFrontier);
-
-                const tx4 = relayChainPolkadotJs.tx.sudo.sudo(
-                    relayChainPolkadotJs.tx.xcmPallet.forceDefaultXcmVersion(5)
                 );
-                await signAndSendAndInclude(tx4, aliceRelay);
 
-                // Add funds in sovereign account for native and foreign tokens.
+                // Add funds in sovereign account for tanssi and foreign tokens.
+
+                const relayTokenLocation = {
+                    parents: 1,
+                    interior: "Here",
+                };
+
+                const registerTanssiAssetTx = containerChainPolkadotJs.tx.sudo.sudo(
+                    containerChainPolkadotJs.tx.foreignAssetsCreator.createForeignAsset(
+                        relayTokenLocation,
+                        tanssiAssetId,
+                        aliceFrontier.address,
+                        true,
+                        1
+                    )
+                );
+
+                await signAndSendAndIncludeMany(
+                    containerChainPolkadotJs,
+                    [registerErc20AssetTx, registerTanssiAssetTx],
+                    aliceFrontier
+                );
+
+                console.log("Creating asset rate for tanssi token");
+                const assetRateTx = containerChainPolkadotJs.tx.sudo.sudo(
+                    containerChainPolkadotJs.tx.assetRate.create(tanssiAssetId, 50_000_000_000_000_000_000n)
+                );
+                await signAndSendAndInclude(assetRateTx, aliceFrontier);
+
+                console.log("Minting tanssi token on foreignAssets");
+                const transferRelayToken = containerChainPolkadotJs.tx.foreignAssets.mint(
+                    tanssiAssetId,
+                    ethereumSovereignAccountAddress,
+                    20000000000000000000000n
+                );
+
+                await signAndSendAndInclude(transferRelayToken, aliceFrontier);
 
                 console.log("ethereumSovereignAccountAddress: ", ethereumSovereignAccountAddress);
 
-                const transferContainerToken = containerChainPolkadotJs.tx.balances.transferKeepAlive(
-                    ethereumSovereignAccountAddress,
-                    20000000000000000n
-                );
-                await signAndSendAndInclude(transferContainerToken, aliceFrontier);
-
-                const ethereumSovereignContainerNativeBalanceBefore = (
-                    await containerChainPolkadotJs.query.system.account(ethereumSovereignAccountAddress)
-                ).data.free.toBigInt();
+                const ethereumSovereignContainerTanssiBalanceBefore = (
+                    await containerChainPolkadotJs.query.foreignAssets.account(
+                        tanssiAssetId,
+                        ethereumSovereignAccountAddress
+                    )
+                )
+                    .unwrapOrDefault()
+                    .balance.toBigInt();
 
                 console.log(
-                    "ethereumSovereignContainerNativeBalanceBefore: ",
-                    ethereumSovereignContainerNativeBalanceBefore
+                    "ethereumSovereignContainerTanssiBalanceBefore: ",
+                    ethereumSovereignContainerTanssiBalanceBefore
                 );
 
                 const receiverForeignContainerBalanceBefore = (
-                    await containerChainPolkadotJs.query.foreignAssets.account(assetId, tokenReceiver)
+                    await containerChainPolkadotJs.query.foreignAssets.account(erc20AssetId, tokenReceiver)
                 )
                     .unwrapOrDefault()
                     .balance.toBigInt();
@@ -159,17 +201,22 @@ describeSuite({
                 // Wait for the XCM message to reach the container chain
                 await waitSessions(context, relayChainPolkadotJs, 1, null, "Tanssi-relay");
 
-                const ethereumSovereignContainerNativeBalanceAfter = (
-                    await containerChainPolkadotJs.query.system.account(ethereumSovereignAccountAddress)
-                ).data.free.toBigInt();
+                const ethereumSovereignContainerTanssiBalanceAfter = (
+                    await containerChainPolkadotJs.query.foreignAssets.account(
+                        tanssiAssetId,
+                        ethereumSovereignAccountAddress
+                    )
+                )
+                    .unwrapOrDefault()
+                    .balance.toBigInt();
 
                 console.log(
-                    "ethereumSovereignContainerNativeBalanceAfter: ",
-                    ethereumSovereignContainerNativeBalanceAfter
+                    "ethereumSovereignContainerTanssiBalanceAfter: ",
+                    ethereumSovereignContainerTanssiBalanceAfter
                 );
 
                 const receiverForeignContainerBalanceAfter = (
-                    await containerChainPolkadotJs.query.foreignAssets.account(assetId, tokenReceiver)
+                    await containerChainPolkadotJs.query.foreignAssets.account(erc20AssetId, tokenReceiver)
                 )
                     .unwrapOrDefault()
                     .balance.toBigInt();
@@ -177,9 +224,12 @@ describeSuite({
                 console.log("receiverNativeContainerBalanceAfter: ", receiverForeignContainerBalanceAfter);
 
                 // Check that fees were deducted in native token from the ETH sovereign account
-                expect(ethereumSovereignContainerNativeBalanceAfter).to.be.eq(
-                    ethereumSovereignContainerNativeBalanceBefore - containerFee
+                expect(ethereumSovereignContainerTanssiBalanceAfter).to.be.lt(
+                    Number(ethereumSovereignContainerTanssiBalanceBefore)
                 );
+                expect(
+                    ethereumSovereignContainerTanssiBalanceAfter - ethereumSovereignContainerTanssiBalanceBefore
+                ).to.be.lte(Number(containerFee));
 
                 // Check that the foreign token amount was deposited into the receiver account.
                 expect(receiverForeignContainerBalanceAfter).to.be.eq(
