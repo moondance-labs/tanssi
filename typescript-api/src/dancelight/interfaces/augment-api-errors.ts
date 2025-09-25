@@ -1249,6 +1249,60 @@ declare module "@polkadot/api-base/types/errors" {
              **/
             [key: string]: AugmentedError<ApiType>;
         };
+        openTechCommitteeCollective: {
+            /**
+             * Members are already initialized!
+             **/
+            AlreadyInitialized: AugmentedError<ApiType>;
+            /**
+             * Duplicate proposals not allowed
+             **/
+            DuplicateProposal: AugmentedError<ApiType>;
+            /**
+             * Duplicate vote ignored
+             **/
+            DuplicateVote: AugmentedError<ApiType>;
+            /**
+             * Account is not a member
+             **/
+            NotMember: AugmentedError<ApiType>;
+            /**
+             * Prime account is not a member
+             **/
+            PrimeAccountNotMember: AugmentedError<ApiType>;
+            /**
+             * Proposal is still active.
+             **/
+            ProposalActive: AugmentedError<ApiType>;
+            /**
+             * Proposal must exist
+             **/
+            ProposalMissing: AugmentedError<ApiType>;
+            /**
+             * The close call was made too early, before the end of the voting.
+             **/
+            TooEarly: AugmentedError<ApiType>;
+            /**
+             * There can only be a maximum of `MaxProposals` active proposals.
+             **/
+            TooManyProposals: AugmentedError<ApiType>;
+            /**
+             * Mismatched index
+             **/
+            WrongIndex: AugmentedError<ApiType>;
+            /**
+             * The given length bound for the proposal was too low.
+             **/
+            WrongProposalLength: AugmentedError<ApiType>;
+            /**
+             * The given weight bound for the proposal was too low.
+             **/
+            WrongProposalWeight: AugmentedError<ApiType>;
+            /**
+             * Generic error
+             **/
+            [key: string]: AugmentedError<ApiType>;
+        };
         paraInclusion: {
             /**
              * The candidate's relay-parent was not allowed. Either it was
