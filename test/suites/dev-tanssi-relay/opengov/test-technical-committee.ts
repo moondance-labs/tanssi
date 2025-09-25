@@ -339,7 +339,7 @@ describeSuite({
                 }
 
                 // 1. Compose the technical committee proposal to whitelist a call
-                const call = api.tx.system.remark("0x0001");
+                const call = api.tx.system.remarkWithEvent("0x0001");
                 const whitelistCall = api.tx.whitelist.whitelistCall(call.method.hash.toHex());
                 const whitelistCallProposal = api.tx.openTechCommitteeCollective.propose(
                     1, // threshold
@@ -360,11 +360,69 @@ describeSuite({
 
                 expect(whitelistedProposalBlock.result?.successful).to.be.true;
 
-                // 3. Verify the call is not whitelisted anymore
+                // 3. Verify the call is whitelisted
                 const isCallWhitelistedAfterProposal = await api.query.whitelist.whitelistedCall(
                     call.method.hash.toHex()
                 );
                 expect(isCallWhitelistedAfterProposal.isSome, "The call should be whitelisted");
+            },
+        });
+
+        it({
+            id: "E07",
+            title: "Non-whitelist origin can't whitelist a call",
+            test: async ({ skip }) => {
+                if (isStarlightRuntime(api)) {
+                    skip();
+                }
+
+                // 1. Compose the technical committee proposal to whitelist a call
+                const call = api.tx.system.remark("0x0001");
+                const whitelistCall = api.tx.whitelist.whitelistCall(call.method.hash.toHex());
+                // Pre-check: Verify the call is not whitelisted
+                const isCallWhitelistedBeforeProposal = await api.query.whitelist.whitelistedCall(
+                    call.method.hash.toHex()
+                );
+                expect(isCallWhitelistedBeforeProposal.isNone, "The call should not be whitelisted yet");
+
+                // 2. Try to whitelist the call using a non-whitelist origin (Charlie)
+                const failedWhitelistCallBlock = await context.createBlock(await whitelistCall.signAsync(charlie));
+                expect(failedWhitelistCallBlock.result?.successful).to.be.false;
+
+                // 3. Verify the call is still not whitelisted
+                const isCallWhitelistedAfterProposal = await api.query.whitelist.whitelistedCall(
+                    call.method.hash.toHex()
+                );
+                expect(isCallWhitelistedAfterProposal.isNone, "The call should still not be whitelisted");
+            },
+        });
+
+        it({
+            id: "E08",
+            title: "Non-whitelist origin cannot dispatch a whitelisted call",
+            test: async ({ skip }) => {
+                if (isStarlightRuntime(api)) {
+                    skip();
+                }
+
+                // Pre-check: Verify the call is whitelisted
+                const call = api.tx.system.remarkWithEvent("0x0001");
+                const isCallWhitelisted = await api.query.whitelist.whitelistedCall(call.method.hash.toHex());
+                expect(isCallWhitelisted.isSome, "The call should be whitelisted");
+
+                // 1. Compose the whitelisted call dispatch
+                const whitelistedCallDispatchTx = api.tx.whitelist.dispatchWhitelistedCallWithPreimage(call);
+
+                // 2. Try to dispatch the whitelisted call using a non-whitelist origin (Charlie)
+                const failedWhitelistedCallDispatchBlock = await context.createBlock(
+                    await whitelistedCallDispatchTx.signAsync(charlie)
+                );
+                expect(failedWhitelistedCallDispatchBlock.result?.successful).to.be.false;
+
+                const isCallWhitelistedAfterFailedWhitelistDispatch = await api.query.whitelist.whitelistedCall(
+                    call.method.hash.toHex()
+                );
+                expect(isCallWhitelistedAfterFailedWhitelistDispatch.isSome, "The call should still be whitelisted");
             },
         });
     },
