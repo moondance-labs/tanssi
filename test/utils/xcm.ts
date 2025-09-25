@@ -267,7 +267,7 @@ interface Junction {
     GlobalConsensus?: "Any" | XcmV3JunctionNetworkId["type"];
 }
 
-interface Junctions {
+export interface Junctions {
     Here?: null;
     X1?: Junction;
     X2?: [Junction, Junction];
@@ -797,8 +797,8 @@ export class XcmFragment {
 
     // Add a `ExportMessage` instruction
     export_message(
-        xcm: Array = [],
-        network: "Any" | XcmV3JunctionNetworkId["type"] = "Ethereum",
+        xcm: Array,
+        network: { Ethereum: { chainId: number } },
         destination: Junctions = { X1: { Parachain: 1000 } }
     ): this {
         this.instructions.push({

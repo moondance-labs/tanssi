@@ -1,6 +1,7 @@
 import { beforeAll, customDevRpcRequest, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
+import type { u128 } from "@polkadot/types-codec";
 import {
     type RawXcmMessage,
     XcmFragment,
@@ -134,7 +135,7 @@ describeSuite({
                 })
                     .withdraw_asset()
                     .buy_execution()
-                    .export_message(xcmToExport.instructions, ethereumNetwork, "Here")
+                    .export_message(xcmToExport.instructions, ethereumNetwork, { Here: null })
                     .as_v3();
 
                 await context.createBlock();
@@ -148,14 +149,14 @@ describeSuite({
                     payload: xcmMessage,
                 } as RawXcmMessage);
 
-                const tokenTransferNonceBefore =
-                    await polkadotJs.query.ethereumOutboundQueue.nonce(tokenTransferChannel);
+                const tokenTransferNonceBefore: u128 =
+                    await polkadotJs.query.ethereumOutboundQueue.nonce<u128>(tokenTransferChannel);
 
                 // Wait until message is processed
                 await jumpToSession(context, 3);
                 await context.createBlock();
-                const tokenTransferNonceAfter =
-                    await polkadotJs.query.ethereumOutboundQueue.nonce(tokenTransferChannel);
+                const tokenTransferNonceAfter: u128 =
+                    await polkadotJs.query.ethereumOutboundQueue.nonce<u128>(tokenTransferChannel);
 
                 expect(tokenTransferNonceAfter.toBigInt()).toBe(tokenTransferNonceBefore.toBigInt() + 1n);
             },
