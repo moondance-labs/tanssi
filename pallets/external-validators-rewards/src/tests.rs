@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use snowbridge_core::TokenIdOf;
 use {
     crate::{self as pallet_external_validators_rewards, mock::*},
     alloc::collections::btree_map::BTreeMap,
@@ -22,6 +23,7 @@ use {
     tp_traits::{ActiveEraInfo, OnEraEnd, OnEraStart},
     xcm::latest::prelude::*,
 };
+use tp_bridge::ConvertLocation;
 
 #[test]
 fn basic_setup_works() {
@@ -42,6 +44,7 @@ fn can_reward_validators() {
                 start: None,
             })
         });
+        Mock::set_location(RewardTokenLocation::get());
         ExternalValidatorsRewards::reward_by_ids([(1, 10), (3, 30), (5, 50)]);
         ExternalValidatorsRewards::reward_by_ids([(1, 10), (3, 10), (5, 10)]);
 
@@ -68,6 +71,7 @@ fn history_limit() {
                 start: None,
             })
         });
+        Mock::set_location(RewardTokenLocation::get());
         ExternalValidatorsRewards::reward_by_ids([(1, 10), (3, 30), (5, 50)]);
 
         let storage_eras =
@@ -96,6 +100,7 @@ fn test_on_era_end() {
                 start: None,
             })
         });
+        Mock::set_location(RewardTokenLocation::get());
         let points = [10u32, 30u32, 50u32];
         let total_points: u32 = points.iter().cloned().sum();
         let accounts = [1u64, 3u64, 5u64];
@@ -117,7 +122,8 @@ fn test_on_era_end() {
             tokens_inflated:
                 <Test as pallet_external_validators_rewards::Config>::EraInflationProvider::get(), // test inflation value used in mock
             rewards_merkle_root: rewards_utils.unwrap().rewards_merkle_root,
-            token_id: H256::repeat_byte(0x01),
+            //token_id: "0xee2bc658842c202640bfd9fc0b5d769b2f67a4e2bac3f16ddc2fdef1c3d455fb",
+            token_id: TokenIdOf::convert_location(&RewardTokenLocation::get()).unwrap(),
         };
 
         System::assert_last_event(RuntimeEvent::ExternalValidatorsRewards(
@@ -139,7 +145,7 @@ fn test_on_era_end_without_proper_token() {
                 start: None,
             })
         });
-        Mock::set_location(Location::parent());
+        Mock::set_location(RewardTokenLocation::get());
         let points = [10u32, 30u32, 50u32];
         let total_points: u32 = points.iter().cloned().sum();
         let accounts = [1u64, 3u64, 5u64];
@@ -191,6 +197,7 @@ fn test_on_era_end_with_zero_inflation() {
             });
             mock.era_inflation = Some(0);
         });
+        Mock::set_location(RewardTokenLocation::get());
         let points = [10u32, 30u32, 50u32];
         let total_points: u32 = points.iter().cloned().sum();
         let accounts = [1u64, 3u64, 5u64];
@@ -240,6 +247,7 @@ fn test_on_era_end_with_zero_points() {
                 start: None,
             });
         });
+        Mock::set_location(RewardTokenLocation::get());
         let points = [0u32, 0u32, 0u32];
         let total_points: u32 = points.iter().cloned().sum();
         let accounts = [1u64, 3u64, 5u64];

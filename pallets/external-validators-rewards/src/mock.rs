@@ -146,10 +146,23 @@ impl MaybeConvert<TokenId, Location> for MockTokenIdConvert {
     }
 }
 
+const DANCELIGHT_GENESIS_HASH: [u8; 32] = [1; 32];
+
+parameter_types! {
+    pub const ThisNetwork: NetworkId = NetworkId::ByGenesis(DANCELIGHT_GENESIS_HASH);
+    pub UniversalLocation: InteriorLocation = ThisNetwork::get().into();
+    pub EthereumNetwork: NetworkId = NetworkId::Ethereum { chain_id: 1 };
+    pub EthereumLocation: Location = Location::new(1, EthereumNetwork::get());
+    pub TokenLocationReanchored: Location = Location::here().reanchored(
+        &EthereumLocation::get(),
+        &UniversalLocation::get(),
+    ).expect("unable to reanchor reward token");
+}
+
 parameter_types! {
     pub const RewardsEthereumSovereignAccount: u64
         = 0xffffffffffffffff;
-    pub RewardTokenLocation: Location = Location::here();
+    pub RewardTokenLocation: Location = TokenLocationReanchored::get();
     pub EraInflationProvider: u128 = Mock::mock().era_inflation.unwrap_or(42);
 }
 
@@ -203,14 +216,14 @@ pub mod mock_data {
     pub(super) type Mock<T: Config> = StorageValue<_, Mocks, ValueQuery>;
 
     #[pallet::storage]
-    pub(super) type TokenLocation<T: Config> = StorageValue<_, Location, ValueQuery>;
+    pub(super) type TokenLocation<T: Config> = StorageValue<_, Location, OptionQuery>;
 
     impl<T: Config> Pallet<T> {
         pub fn mock() -> Mocks {
             Mock::<T>::get()
         }
         pub fn token_loc() -> Location {
-            TokenLocation::<T>::get()
+            TokenLocation::<T>::get().unwrap()
         }
         pub fn mutate<F, R>(f: F) -> R
         where
@@ -220,7 +233,7 @@ pub mod mock_data {
         }
 
         pub fn set_location(location: Location) {
-            TokenLocation::<T>::set(location)
+            TokenLocation::<T>::set(Some(location))
         }
     }
 
