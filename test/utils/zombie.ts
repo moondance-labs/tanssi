@@ -321,3 +321,60 @@ export async function directoryExists(directoryPath: PathLike) {
         return false;
     }
 }
+
+/**
+ * Monitors block production for one or more Substrate APIs.
+ *
+ * This function periodically fetches the latest block header from each API
+ * and tracks whether new blocks are being produced. If the block number
+ * does not increase for longer than `blockProductionTimeout` (default 15 seconds),
+ * the block production is considered "stuck".
+ */
+export async function monitorBlockProduction(apis: ApiPromise[], blockProductionTimeout = 15000): Promise<() => void> {
+    type ApiState = {
+        lastNumber: number;
+        lastUpdate: number;
+        stuck: boolean;
+    };
+
+    const apisState: Map<number, ApiState> = new Map();
+    const intervals: NodeJS.Timer[] = [];
+
+    for (let i = 0; i < apis.length; i++) {
+        const header = await apis[i].rpc.chain.getHeader();
+        apisState.set(i, {
+            lastNumber: header.number.toNumber(),
+            lastUpdate: Date.now(),
+            stuck: false,
+        });
+
+        intervals.push(
+            setInterval(async () => {
+                const state = apisState.get(i);
+                if (!state) return;
+
+                const header = await apis[i].rpc.chain.getHeader();
+                const number = header.number.toNumber();
+                const now = Date.now();
+
+                if (number > state.lastNumber) {
+                    if (state.stuck) {
+                        console.log(`✅ Block production restored for ${await apis[i].rpc.system.chain()}!`);
+                    }
+                    apisState.set(i, { lastNumber: number, lastUpdate: now, stuck: false });
+                } else {
+                    if (!state.stuck && now - state.lastUpdate > blockProductionTimeout) {
+                        console.error(`⛔ Block production stuck for ${await apis[i].rpc.system.chain()}!`);
+                        apisState.set(i, { ...state, stuck: true });
+                    }
+                }
+            }, 6000)
+        );
+    }
+
+    return () => {
+        for (const interval of intervals) {
+            clearInterval(interval as unknown as NodeJS.Timeout);
+        }
+    };
+}
