@@ -390,7 +390,7 @@ fc-storage = { git = "https://github.com/moondance-labs/frontier", branch = "tan
 bounded-collections = { version = "0.3.2", default-features = false }
 ethabi = { package = "ethabi-decode", version = "2.0.0", default-features = false }
 finality-grandpa = { version = "0.16.2", default-features = false }
-hex-literal = { version = "0.3.4" }
+hex-literal = { version = "0.4.1" }
 impl-trait-for-tuples = "0.2.2"
 log = { version = "0.4.22", default-features = false }
 macro_rules_attribute = { version = "0.2.0" }
