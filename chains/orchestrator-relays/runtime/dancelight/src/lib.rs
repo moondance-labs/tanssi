@@ -601,6 +601,7 @@ impl Convert<AccountId, Option<()>> for FullIdentificationOf {
 }
 
 impl pallet_session::historical::Config for Runtime {
+    type RuntimeEvent = RuntimeEvent;
     type FullIdentification = ();
     type FullIdentificationOf = FullIdentificationOf;
 }
@@ -1603,7 +1604,6 @@ impl pallet_configuration::Config for Runtime {
 }
 
 impl pallet_migrations::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type MigrationsList = (tanssi_runtime_common::migrations::DancelightMigrations<Runtime>,);
     type XcmExecutionManager = ();
 }
@@ -1659,7 +1659,6 @@ impl Contains<RuntimeCall> for MaintenanceFilter {
 type NormalFilter = EverythingBut<(IsRelayRegister, IsParathreadRegistrar)>;
 
 impl pallet_maintenance_mode::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type NormalCallFilter = NormalFilter;
     type MaintenanceCallFilter = InsideBoth<MaintenanceFilter, NormalFilter>;
     type MaintenanceOrigin = EnsureRoot<AccountId>;

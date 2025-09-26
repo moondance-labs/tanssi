@@ -450,7 +450,6 @@ impl ForeignAssetDestroyedHook<Location, AssetIdOf<Runtime>> for RevertCodePreco
 }
 
 impl pallet_foreign_asset_creator::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type ForeignAsset = Location;
     type ForeignAssetCreatorOrigin = EnsureRoot<AccountId>;
     type ForeignAssetModifierOrigin = EnsureRoot<AccountId>;
@@ -479,7 +478,6 @@ parameter_types! {
     pub const AllNeverTrustPolicy: DefaultTrustPolicy = DefaultTrustPolicy::Never;
 }
 impl pallet_xcm_executor_utils::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type TrustPolicyMaxAssets = TrustPolicyMaxAssets;
     type ReserveDefaultTrustPolicy = AllNativeTrustPolicy;
     type SetReserveTrustOrigin = EnsureRoot<AccountId>;

@@ -1203,7 +1203,6 @@ impl pallet_proxy::Config for Runtime {
 }
 
 impl pallet_migrations::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type MigrationsList = (tanssi_runtime_common::migrations::FlashboxMigrations<Runtime>,);
     type XcmExecutionManager = ();
 }
@@ -1256,7 +1255,6 @@ impl Contains<RuntimeCall> for IsRegisterParathreads {
 type NormalFilter = EverythingBut<IsRegisterParathreads>;
 
 impl pallet_maintenance_mode::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type NormalCallFilter = NormalFilter;
     type MaintenanceCallFilter = InsideBoth<MaintenanceFilter, NormalFilter>;
     type MaintenanceOrigin = EnsureRoot<AccountId>;
