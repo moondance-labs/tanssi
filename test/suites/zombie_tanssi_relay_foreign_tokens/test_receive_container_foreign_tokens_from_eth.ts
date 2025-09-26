@@ -5,10 +5,10 @@ import { hexToU8a } from "@polkadot/util";
 
 import {
     ETHEREUM_NETWORK_TESTNET,
+    SNOWBRIDGE_FEES_ACCOUNT,
     generateEventLog,
     generateUpdate,
     signAndSendAndInclude,
-    signAndSendAndIncludeMany,
     waitSessions,
 } from "utils";
 
@@ -38,12 +38,19 @@ describeSuite({
             title: "Should receive container foreign tokens from Ethereum and forward them to container",
             timeout: 600000,
             test: async () => {
-                const ethereumSovereignAccount =
+                const ethereumSovereignAccountInContainer =
                     await containerChainPolkadotJs.call.locationToAccountApi.convertLocation({
                         V3: { parents: 2, interior: { X1: { GlobalConsensus: ETHEREUM_NETWORK_TESTNET } } },
                     });
 
-                const ethereumSovereignAccountAddress = ethereumSovereignAccount.asOk.toHuman();
+                const ethereumSovereignAccountFrontierInRelay =
+                    await relayChainPolkadotJs.call.locationToAccountApi.convertLocation({
+                        V3: { parents: 0, interior: { X1: { Parachain: 2001 } } },
+                    });
+
+                const ethereumSovereignAccountFrontierInRelayAddress =
+                    ethereumSovereignAccountFrontierInRelay.asOk.toHuman();
+                const ethereumSovereignAccountAddress = ethereumSovereignAccountInContainer.asOk.toHuman();
 
                 // Amount of native container tokens to transfer.
                 const transferAmount = BigInt(100_000_000);
@@ -55,8 +62,8 @@ describeSuite({
                 const tokenReceiver = "0x0505050505050505050505050505050505050505";
 
                 const paraIdForChannel = 2000;
+                const relayNativeTokenAssetId = 42;
                 const erc20AssetId = 24;
-                const tanssiAssetId = 42;
                 const tokenAddrHex = "0x1111111111111111111111111111111111111111";
 
                 // Hard-coding payload as we do not have scale encoding-decoding
@@ -104,9 +111,9 @@ describeSuite({
                 await signAndSendAndInclude(tx2, aliceRelay);
 
                 // Register token on foreignAssetsCreator.
-                console.log("Registering foreign tokens");
+                console.log("Registering erc20 foreign token container");
 
-                const ethTokenLocation = {
+                const ethTokenLocationFromContainerViewpoint = {
                     parents: 2,
                     interior: {
                         X2: [
@@ -123,69 +130,83 @@ describeSuite({
                     },
                 };
 
-                const registerErc20AssetTx = containerChainPolkadotJs.tx.sudo.sudo(
+                const registerErc20ContainerViewpointAssetTx = containerChainPolkadotJs.tx.sudo.sudo(
                     containerChainPolkadotJs.tx.foreignAssetsCreator.createForeignAsset(
-                        ethTokenLocation,
+                        ethTokenLocationFromContainerViewpoint,
                         erc20AssetId,
                         aliceFrontier.address,
                         true,
                         1
                     )
                 );
+                await signAndSendAndInclude(registerErc20ContainerViewpointAssetTx, aliceFrontier);
 
-                // Add funds in sovereign account for tanssi and foreign tokens.
+                console.log("Registering native relay token in container");
 
-                const relayTokenLocation = {
+                const relayNativeTokenLocation = {
                     parents: 1,
                     interior: "Here",
                 };
 
-                const registerTanssiAssetTx = containerChainPolkadotJs.tx.sudo.sudo(
+                const registerRelayNativeTokenLocation = containerChainPolkadotJs.tx.sudo.sudo(
                     containerChainPolkadotJs.tx.foreignAssetsCreator.createForeignAsset(
-                        relayTokenLocation,
-                        tanssiAssetId,
+                        relayNativeTokenLocation,
+                        relayNativeTokenAssetId,
                         aliceFrontier.address,
                         true,
                         1
                     )
                 );
-
-                await signAndSendAndIncludeMany(
-                    containerChainPolkadotJs,
-                    [registerErc20AssetTx, registerTanssiAssetTx],
-                    aliceFrontier
-                );
+                await signAndSendAndInclude(registerRelayNativeTokenLocation, aliceFrontier);
 
                 console.log("Creating asset rate for tanssi token");
                 const assetRateTx = containerChainPolkadotJs.tx.sudo.sudo(
-                    containerChainPolkadotJs.tx.assetRate.create(tanssiAssetId, 50_000_000_000_000_000_000n)
+                    containerChainPolkadotJs.tx.assetRate.create(relayNativeTokenAssetId, 50_000_000_000_000_000_000n)
                 );
                 await signAndSendAndInclude(assetRateTx, aliceFrontier);
 
-                console.log("Minting tanssi token on foreignAssets");
-                const transferRelayToken = containerChainPolkadotJs.tx.foreignAssets.mint(
-                    tanssiAssetId,
-                    ethereumSovereignAccountAddress,
-                    20000000000000000000000n
-                );
+                console.log("Registering erc20 foreign token relay");
 
-                await signAndSendAndInclude(transferRelayToken, aliceFrontier);
+                const ethTokenLocationFromRelayViewpoint = {
+                    parents: 1,
+                    interior: {
+                        X2: [
+                            {
+                                GlobalConsensus: ETHEREUM_NETWORK_TESTNET,
+                            },
+                            {
+                                AccountKey20: {
+                                    network: ETHEREUM_NETWORK_TESTNET,
+                                    key: hexToU8a(tokenAddrHex),
+                                },
+                            },
+                        ],
+                    },
+                };
 
-                console.log("ethereumSovereignAccountAddress: ", ethereumSovereignAccountAddress);
-
-                const ethereumSovereignContainerTanssiBalanceBefore = (
-                    await containerChainPolkadotJs.query.foreignAssets.account(
-                        tanssiAssetId,
-                        ethereumSovereignAccountAddress
+                const registerErc20RelayViewpointAssetTx = relayChainPolkadotJs.tx.sudo.sudo(
+                    relayChainPolkadotJs.tx.foreignAssetsCreator.createForeignAsset(
+                        ethTokenLocationFromRelayViewpoint,
+                        erc20AssetId,
+                        aliceRelay.address,
+                        true,
+                        1
                     )
-                )
-                    .unwrapOrDefault()
-                    .balance.toBigInt();
-
-                console.log(
-                    "ethereumSovereignContainerTanssiBalanceBefore: ",
-                    ethereumSovereignContainerTanssiBalanceBefore
                 );
+
+                await signAndSendAndInclude(registerErc20RelayViewpointAssetTx, aliceRelay);
+
+                // Add funds in relay fees account
+                const transferFeesAccountTx = relayChainPolkadotJs.tx.sudo.sudo(
+                    relayChainPolkadotJs.tx.balances.forceSetBalance(SNOWBRIDGE_FEES_ACCOUNT, 500_000_000_000_000_000n)
+                );
+                await signAndSendAndInclude(transferFeesAccountTx, aliceRelay);
+
+                const snowbridgeFeesAccountBalanceBefore = (
+                    await relayChainPolkadotJs.query.system.account(SNOWBRIDGE_FEES_ACCOUNT)
+                ).data.free.toBigInt();
+
+                console.log("snowbridgeFeesAccountBalanceBefore: ", snowbridgeFeesAccountBalanceBefore);
 
                 const receiverForeignContainerBalanceBefore = (
                     await containerChainPolkadotJs.query.foreignAssets.account(erc20AssetId, tokenReceiver)
@@ -201,20 +222,6 @@ describeSuite({
                 // Wait for the XCM message to reach the container chain
                 await waitSessions(context, relayChainPolkadotJs, 1, null, "Tanssi-relay");
 
-                const ethereumSovereignContainerTanssiBalanceAfter = (
-                    await containerChainPolkadotJs.query.foreignAssets.account(
-                        tanssiAssetId,
-                        ethereumSovereignAccountAddress
-                    )
-                )
-                    .unwrapOrDefault()
-                    .balance.toBigInt();
-
-                console.log(
-                    "ethereumSovereignContainerTanssiBalanceAfter: ",
-                    ethereumSovereignContainerTanssiBalanceAfter
-                );
-
                 const receiverForeignContainerBalanceAfter = (
                     await containerChainPolkadotJs.query.foreignAssets.account(erc20AssetId, tokenReceiver)
                 )
@@ -223,13 +230,11 @@ describeSuite({
 
                 console.log("receiverNativeContainerBalanceAfter: ", receiverForeignContainerBalanceAfter);
 
-                // Check that fees were deducted in native token from the ETH sovereign account
-                expect(ethereumSovereignContainerTanssiBalanceAfter).to.be.lt(
-                    Number(ethereumSovereignContainerTanssiBalanceBefore)
-                );
-                expect(
-                    ethereumSovereignContainerTanssiBalanceAfter - ethereumSovereignContainerTanssiBalanceBefore
-                ).to.be.lte(Number(containerFee));
+                const snowbridgeFeesAccountBalanceAfter = (
+                    await relayChainPolkadotJs.query.system.account(SNOWBRIDGE_FEES_ACCOUNT)
+                ).data.free.toBigInt();
+
+                console.log("snowbridgeFeesAccountBalanceAfter: ", snowbridgeFeesAccountBalanceAfter);
 
                 // Check that the foreign token amount was deposited into the receiver account.
                 expect(receiverForeignContainerBalanceAfter).to.be.eq(

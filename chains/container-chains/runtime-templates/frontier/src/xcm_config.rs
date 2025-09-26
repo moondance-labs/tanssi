@@ -65,6 +65,7 @@ use {
     },
     xcm_executor::XcmExecutor,
     xcm_primitives::AccountIdAssetIdConversion,
+    frame_support::traits::ContainsPair,
 };
 
 pub const DANCELIGHT_GENESIS_HASH: [u8; 32] =
@@ -216,6 +217,17 @@ pub type XcmRouter = WithUniqueTopic<(
     >,
 )>;
 
+pub struct RelayReserve;
+impl ContainsPair<Asset, Location> for RelayReserve {
+    fn contains(asset: &Asset, origin: &Location) -> bool {
+        log::trace!(target: "xcm::contains", "RelayReserve asset: {:?}, origin: {:?}", asset, origin);
+        if *origin != Location::parent() {
+            return false;
+        }
+        matches!((asset.id.0.parents, asset.id.0.interior()), (1, Here))
+    }
+}
+
 pub struct XcmConfig;
 impl xcm_executor::Config for XcmConfig {
     type RuntimeCall = RuntimeCall;
@@ -224,6 +236,7 @@ impl xcm_executor::Config for XcmConfig {
     type OriginConverter = XcmOriginToTransactDispatchOrigin;
     type IsReserve = (
         IsReserveFilter<Runtime>,
+        RelayReserve,
         EthereumAssetReserveFromPara<EthereumLocation, EthereumNetwork>,
     );
     type IsTeleporter = IsTeleportFilter<Runtime>;

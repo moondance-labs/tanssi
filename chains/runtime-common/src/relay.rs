@@ -894,7 +894,7 @@ where
 
         let container_location = Location::new(0, [Parachain(para_id)]);
 
-        let token_id_dest = match eth_transfer_data.token_location.reanchored(
+        let token_id_dest = match eth_transfer_data.token_location.clone().reanchored(
             &container_location,
             &<T as pallet_xcm::Config>::UniversalLocation::get(),
         ) {
@@ -910,6 +910,7 @@ where
 
         let asset_fee_relay: Asset = (Location::here(), fee).into();
         let asset_fee_container: Asset = (Location::parent(), fee).into();
+        let eth_token_location: Asset = (eth_transfer_data.token_location.clone(), eth_transfer_data.amount).into();
         let asset_to_deposit: Asset = (token_id_dest.clone(), eth_transfer_data.amount).into();
 
         let dummy_context = XcmContext {
@@ -931,18 +932,18 @@ where
             );
         }
 
-        // Mint the ERC20 token into the container sovereign account
+         // Mint the ERC20 token into the container sovereign account
         if let Err(e) =
-            AssetTransactor::can_check_in(&container_location, &asset_to_deposit, &dummy_context)
+            AssetTransactor::can_check_in(&container_location, &eth_token_location, &dummy_context)
         {
-            log::error!("can_check_in failed: {:?}", e);
+            log::error!("EthTokensLocalProcessor: can_check_in failed: {:?}", e);
         }
 
-        AssetTransactor::check_in(&container_location, &asset_to_deposit, &dummy_context);
+        AssetTransactor::check_in(&container_location, &eth_token_location, &dummy_context);
 
-        if let Err(e) = AssetTransactor::deposit_asset(&asset_to_deposit, &container_location, None)
+        if let Err(e) = AssetTransactor::deposit_asset(&eth_token_location, &container_location, None)
         {
-            log::error!("deposit_asset failed: {:?}", e);
+            log::error!("EthTokensLocalProcessor: deposit_asset failed: {:?}", e);
         }
 
         // Send XCM to deposit the ERC20 token into beneficiary account
