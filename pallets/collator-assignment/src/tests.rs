@@ -797,7 +797,7 @@ fn assign_collators_rotation_container_chains_are_shuffled() {
         assert_eq!(assigned_collators(), initial_assignment,);
 
         MockData::mutate(|m| {
-            // Seed chosen manually to see the case where container 1002 is given priority
+            // Seed chosen manually to see assignment to different collators.
             m.random_seed = [1; 32];
         });
 
@@ -806,7 +806,7 @@ fn assign_collators_rotation_container_chains_are_shuffled() {
         // Random assignment depends on the seed, shouldn't change unless the algorithm changes
         // Test that container chains are shuffled because 1001 does not have priority
         let shuffled_assignment =
-            BTreeMap::from_iter(vec![(1, 1002), (2, 1000), (3, 1000), (4, 1002)]);
+            BTreeMap::from_iter(vec![(1, 1001), (2, 1000), (3, 1000), (4, 1001)]);
 
         assert_eq!(assigned_collators(), shuffled_assignment,);
     });
@@ -836,7 +836,7 @@ fn assign_collators_rotation_parathreads_are_shuffled() {
         assert_eq!(assigned_collators(), initial_assignment,);
 
         MockData::mutate(|m| {
-            // Seed chosen manually to see the case where parathread 3002 is given priority
+            // Seed chosen manually to see assignment to different collators.
             m.random_seed = [1; 32];
         });
 
@@ -845,7 +845,7 @@ fn assign_collators_rotation_parathreads_are_shuffled() {
         // Random assignment depends on the seed, shouldn't change unless the algorithm changes
         // Test that container chains are shuffled because 1001 does not have priority
         let shuffled_assignment =
-            BTreeMap::from_iter(vec![(1, 3002), (2, 1000), (3, 1000), (4, 3002)]);
+            BTreeMap::from_iter(vec![(1, 3001), (2, 1000), (3, 1000), (4, 3001)]);
 
         assert_eq!(assigned_collators(), shuffled_assignment,);
     });
@@ -1333,6 +1333,27 @@ fn assign_collators_prioritizing_tip() {
         MockData::mutate(|m| m.apply_tip = true);
 
         run_to_block(21);
+
+        // Chains that were selected before and can still pay stays, so the list wont change.
+        assert_eq!(
+            assigned_collators(),
+            BTreeMap::from_iter(vec![
+                (1, 1000),
+                (2, 1000),
+                (3, 1000),
+                (4, 1000),
+                (5, 1000),
+                (6, 1001),
+                (7, 1001),
+                (8, 1002),
+                (9, 1002),
+            ]),
+        );
+
+        // 1001 and 1002 can no longer pay
+        MockData::mutate(|m| m.cant_pay_tip = vec![1001.into(), 1002.into()]);
+
+        run_to_block(31);
 
         assert_eq!(
             assigned_collators(),
