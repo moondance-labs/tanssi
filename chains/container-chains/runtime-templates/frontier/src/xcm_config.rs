@@ -27,6 +27,7 @@ use {
     alloc::vec::Vec,
     ccp_xcm::SignedToAccountKey20,
     cumulus_primitives_core::{AggregateMessageOrigin, ParaId},
+    frame_support::traits::ContainsPair,
     frame_support::{
         parameter_types,
         traits::{Disabled, Equals, Everything, Nothing, PalletInfoAccess, TransformOrigin},
@@ -65,7 +66,6 @@ use {
     },
     xcm_executor::XcmExecutor,
     xcm_primitives::AccountIdAssetIdConversion,
-    frame_support::traits::ContainsPair,
 };
 
 pub const DANCELIGHT_GENESIS_HASH: [u8; 32] =

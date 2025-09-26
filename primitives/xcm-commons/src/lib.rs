@@ -91,7 +91,7 @@ where
     fn contains(asset: &Asset, origin: &Location) -> bool {
         log::trace!(target: "xcm::contains", "EthereumAssetReserveFromPara asset: {:?}, origin: {:?}, eth_network: {:?}", asset, origin, EthereumLocation::get());
         if *origin == EthereumLocation::get() || *origin == Location::parent() {
-            return matches!((asset.id.0.parents, asset.id.0.first_interior()), (2, Some(GlobalConsensus(network))) if *network == EthereumNetwork::get())
+            return matches!((asset.id.0.parents, asset.id.0.first_interior()), (2, Some(GlobalConsensus(network))) if *network == EthereumNetwork::get());
         }
         return false;
     }

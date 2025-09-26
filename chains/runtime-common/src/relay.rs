@@ -910,7 +910,11 @@ where
 
         let asset_fee_relay: Asset = (Location::here(), fee).into();
         let asset_fee_container: Asset = (Location::parent(), fee).into();
-        let eth_token_location: Asset = (eth_transfer_data.token_location.clone(), eth_transfer_data.amount).into();
+        let eth_token_location: Asset = (
+            eth_transfer_data.token_location.clone(),
+            eth_transfer_data.amount,
+        )
+            .into();
         let asset_to_deposit: Asset = (token_id_dest.clone(), eth_transfer_data.amount).into();
 
         let dummy_context = XcmContext {
@@ -932,7 +936,7 @@ where
             );
         }
 
-         // Mint the ERC20 token into the container sovereign account
+        // Mint the ERC20 token into the container sovereign account
         if let Err(e) =
             AssetTransactor::can_check_in(&container_location, &eth_token_location, &dummy_context)
         {
@@ -941,7 +945,8 @@ where
 
         AssetTransactor::check_in(&container_location, &eth_token_location, &dummy_context);
 
-        if let Err(e) = AssetTransactor::deposit_asset(&eth_token_location, &container_location, None)
+        if let Err(e) =
+            AssetTransactor::deposit_asset(&eth_token_location, &container_location, None)
         {
             log::error!("EthTokensLocalProcessor: deposit_asset failed: {:?}", e);
         }
