@@ -15,6 +15,7 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use snowbridge_core::TokenIdOf;
+use tp_bridge::ConvertLocation;
 use {
     crate::{self as pallet_external_validators_rewards, mock::*},
     alloc::collections::btree_map::BTreeMap,
@@ -23,7 +24,6 @@ use {
     tp_traits::{ActiveEraInfo, OnEraEnd, OnEraStart},
     xcm::latest::prelude::*,
 };
-use tp_bridge::ConvertLocation;
 
 #[test]
 fn basic_setup_works() {

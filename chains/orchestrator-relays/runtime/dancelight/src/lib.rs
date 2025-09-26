@@ -110,7 +110,7 @@ use {
     snowbridge_outbound_queue_primitives::v1::Command,
     snowbridge_outbound_queue_primitives::v1::Fee,
     sp_core::{storage::well_known_keys as StorageWellKnownKeys, Get},
-    sp_core::{OpaqueMetadata, H256, ConstUint},
+    sp_core::{ConstUint, OpaqueMetadata, H256},
     sp_genesis_builder::PresetId,
     sp_runtime::{
         generic, impl_opaque_keys,

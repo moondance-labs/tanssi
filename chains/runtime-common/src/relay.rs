@@ -18,7 +18,6 @@
 
 extern crate alloc;
 
-use sp_runtime::traits::MaybeConvert;
 use alloc::{vec, vec::Vec};
 use core::marker::PhantomData;
 use frame_support::{
@@ -33,6 +32,7 @@ use parity_scale_codec::{DecodeAll, Encode, EncodeLike};
 use snowbridge_core::Channel;
 use snowbridge_pallet_inbound_queue::RewardProcessor;
 use sp_core::{Get, H160, H256};
+use sp_runtime::traits::MaybeConvert;
 use sp_runtime::{
     traits::{Hash as _, MaybeEquivalence},
     DispatchError, DispatchResult,

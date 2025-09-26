@@ -72,7 +72,7 @@ use {
     snowbridge_outbound_queue_primitives::SendError,
     sp_core::{H160, H256},
     sp_runtime::{traits::MaybeConvert, DispatchResult},
-    tp_bridge::{ChannelInfo, EthereumSystemChannelManager, TicketInfo, ConvertLocation},
+    tp_bridge::{ChannelInfo, ConvertLocation, EthereumSystemChannelManager, TicketInfo},
     xcm::prelude::*,
 };
 
@@ -86,9 +86,9 @@ pub type BalanceOf<T> =
 
 #[frame_support::pallet]
 pub mod pallet {
-    use snowbridge_core::TokenIdOf;
     use super::*;
     pub use crate::weights::WeightInfo;
+    use snowbridge_core::TokenIdOf;
 
     /// The current storage version.
     const STORAGE_VERSION: StorageVersion = StorageVersion::new(0);
@@ -208,7 +208,8 @@ pub mod pallet {
                 CurrentChannelInfo::<T>::get().ok_or(Error::<T>::ChannelInfoNotSet)?;
 
             let token_location = T::TokenLocationReanchored::get();
-            let token_id = TokenIdOf::convert_location(&token_location).ok_or(Error::<T>::UnknownLocationForToken)?;
+            let token_id = TokenIdOf::convert_location(&token_location)
+                .ok_or(Error::<T>::UnknownLocationForToken)?;
             // Validate that token_id has been registered in snowbridge_pallet_system
             if T::TokenIdFromLocation::maybe_convert(token_id).is_none() {
                 return Err(Error::<T>::UnknownLocationForToken.into());
