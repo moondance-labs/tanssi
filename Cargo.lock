@@ -822,7 +822,7 @@ dependencies = [
 [[package]]
 name = "async-backing-primitives"
 version = "0.9.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#6ad60d1b5e1b8bfd1e75935e6716a79f0bffb28b"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#fb9b0f59e9ac38270015243173b79057211aea67"
 dependencies = [
  "sp-api",
  "sp-consensus-slots",
@@ -4948,32 +4948,14 @@ dependencies = [
 [[package]]
 name = "evm"
 version = "0.43.4"
-source = "git+https://github.com/rust-ethereum/evm?branch=v0.x#6917b131d552559ee84b0b3ea5450d9890a7e9bd"
-dependencies = [
- "auto_impl",
- "ethereum",
- "evm-core 0.43.0 (git+https://github.com/rust-ethereum/evm?branch=v0.x)",
- "evm-gasometer 0.43.0 (git+https://github.com/rust-ethereum/evm?branch=v0.x)",
- "evm-runtime 0.43.0 (git+https://github.com/rust-ethereum/evm?branch=v0.x)",
- "log",
- "parity-scale-codec",
- "primitive-types 0.13.1",
- "rlp 0.6.1",
- "scale-info",
- "sha3",
-]
-
-[[package]]
-name = "evm"
-version = "0.43.4"
 source = "git+https://github.com/rust-ethereum/evm.git?rev=e3f0e925390188e8d9396a7355fc43d63acbd013#e3f0e925390188e8d9396a7355fc43d63acbd013"
 dependencies = [
  "auto_impl",
  "environmental",
  "ethereum",
- "evm-core 0.43.0 (git+https://github.com/rust-ethereum/evm.git?rev=e3f0e925390188e8d9396a7355fc43d63acbd013)",
- "evm-gasometer 0.43.0 (git+https://github.com/rust-ethereum/evm.git?rev=e3f0e925390188e8d9396a7355fc43d63acbd013)",
- "evm-runtime 0.43.0 (git+https://github.com/rust-ethereum/evm.git?rev=e3f0e925390188e8d9396a7355fc43d63acbd013)",
+ "evm-core",
+ "evm-gasometer",
+ "evm-runtime",
  "log",
  "parity-scale-codec",
  "primitive-types 0.13.1",
@@ -4981,16 +4963,6 @@ dependencies = [
  "scale-info",
  "serde",
  "sha3",
-]
-
-[[package]]
-name = "evm-core"
-version = "0.43.0"
-source = "git+https://github.com/rust-ethereum/evm?branch=v0.x#6917b131d552559ee84b0b3ea5450d9890a7e9bd"
-dependencies = [
- "parity-scale-codec",
- "primitive-types 0.13.1",
- "scale-info",
 ]
 
 [[package]]
@@ -5007,33 +4979,12 @@ dependencies = [
 [[package]]
 name = "evm-gasometer"
 version = "0.43.0"
-source = "git+https://github.com/rust-ethereum/evm?branch=v0.x#6917b131d552559ee84b0b3ea5450d9890a7e9bd"
-dependencies = [
- "evm-core 0.43.0 (git+https://github.com/rust-ethereum/evm?branch=v0.x)",
- "evm-runtime 0.43.0 (git+https://github.com/rust-ethereum/evm?branch=v0.x)",
- "primitive-types 0.13.1",
-]
-
-[[package]]
-name = "evm-gasometer"
-version = "0.43.0"
 source = "git+https://github.com/rust-ethereum/evm.git?rev=e3f0e925390188e8d9396a7355fc43d63acbd013#e3f0e925390188e8d9396a7355fc43d63acbd013"
 dependencies = [
  "environmental",
- "evm-core 0.43.0 (git+https://github.com/rust-ethereum/evm.git?rev=e3f0e925390188e8d9396a7355fc43d63acbd013)",
- "evm-runtime 0.43.0 (git+https://github.com/rust-ethereum/evm.git?rev=e3f0e925390188e8d9396a7355fc43d63acbd013)",
+ "evm-core",
+ "evm-runtime",
  "primitive-types 0.13.1",
-]
-
-[[package]]
-name = "evm-runtime"
-version = "0.43.0"
-source = "git+https://github.com/rust-ethereum/evm?branch=v0.x#6917b131d552559ee84b0b3ea5450d9890a7e9bd"
-dependencies = [
- "auto_impl",
- "evm-core 0.43.0 (git+https://github.com/rust-ethereum/evm?branch=v0.x)",
- "primitive-types 0.13.1",
- "sha3",
 ]
 
 [[package]]
@@ -5043,7 +4994,7 @@ source = "git+https://github.com/rust-ethereum/evm.git?rev=e3f0e925390188e8d9396
 dependencies = [
  "auto_impl",
  "environmental",
- "evm-core 0.43.0 (git+https://github.com/rust-ethereum/evm.git?rev=e3f0e925390188e8d9396a7355fc43d63acbd013)",
+ "evm-core",
  "primitive-types 0.13.1",
  "sha3",
 ]
@@ -5249,7 +5200,7 @@ source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-
 dependencies = [
  "ethereum",
  "ethereum-types",
- "evm 0.43.4 (git+https://github.com/rust-ethereum/evm.git?rev=e3f0e925390188e8d9396a7355fc43d63acbd013)",
+ "evm",
  "fc-api",
  "fc-mapping-sync",
  "fc-rpc-core",
@@ -5655,7 +5606,7 @@ version = "3.0.0-dev"
 source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#88d51861180752c560e7019196c537cb3d1601fa"
 dependencies = [
  "environmental",
- "evm 0.43.4 (git+https://github.com/rust-ethereum/evm.git?rev=e3f0e925390188e8d9396a7355fc43d63acbd013)",
+ "evm",
  "frame-support",
  "num_enum",
  "parity-scale-codec",
@@ -6850,7 +6801,7 @@ dependencies = [
  "httpdate",
  "itoa",
  "pin-project-lite",
- "socket2 0.5.10",
+ "socket2 0.4.10",
  "tokio",
  "tower-service",
  "tracing",
@@ -9070,7 +9021,7 @@ dependencies = [
 [[package]]
 name = "nimbus-consensus"
 version = "0.9.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#6ad60d1b5e1b8bfd1e75935e6716a79f0bffb28b"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#fb9b0f59e9ac38270015243173b79057211aea67"
 dependencies = [
  "async-backing-primitives",
  "async-trait",
@@ -9110,7 +9061,7 @@ dependencies = [
 [[package]]
 name = "nimbus-primitives"
 version = "0.9.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#6ad60d1b5e1b8bfd1e75935e6716a79f0bffb28b"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#fb9b0f59e9ac38270015243173b79057211aea67"
 dependencies = [
  "async-trait",
  "frame-benchmarking",
@@ -9691,7 +9642,7 @@ dependencies = [
 [[package]]
 name = "pallet-async-backing"
 version = "0.9.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#6ad60d1b5e1b8bfd1e75935e6716a79f0bffb28b"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#fb9b0f59e9ac38270015243173b79057211aea67"
 dependencies = [
  "cumulus-pallet-parachain-system",
  "cumulus-primitives-core",
@@ -9711,7 +9662,7 @@ dependencies = [
 [[package]]
 name = "pallet-author-inherent"
 version = "0.9.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#6ad60d1b5e1b8bfd1e75935e6716a79f0bffb28b"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#fb9b0f59e9ac38270015243173b79057211aea67"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -10248,7 +10199,7 @@ source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-
 dependencies = [
  "ethereum",
  "ethereum-types",
- "evm 0.43.4 (git+https://github.com/rust-ethereum/evm.git?rev=e3f0e925390188e8d9396a7355fc43d63acbd013)",
+ "evm",
  "fp-consensus",
  "fp-ethereum",
  "fp-evm",
@@ -10298,7 +10249,7 @@ dependencies = [
  "cumulus-primitives-storage-weight-reclaim",
  "environmental",
  "ethereum",
- "evm 0.43.4 (git+https://github.com/rust-ethereum/evm.git?rev=e3f0e925390188e8d9396a7355fc43d63acbd013)",
+ "evm",
  "fp-account",
  "fp-evm",
  "frame-benchmarking",
@@ -10329,7 +10280,7 @@ dependencies = [
 [[package]]
 name = "pallet-evm-precompile-balances-erc20"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#6ad60d1b5e1b8bfd1e75935e6716a79f0bffb28b"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#fb9b0f59e9ac38270015243173b79057211aea67"
 dependencies = [
  "fp-evm",
  "frame-support",
@@ -10352,9 +10303,9 @@ dependencies = [
 [[package]]
 name = "pallet-evm-precompile-batch"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#6ad60d1b5e1b8bfd1e75935e6716a79f0bffb28b"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#fb9b0f59e9ac38270015243173b79057211aea67"
 dependencies = [
- "evm 0.43.4 (git+https://github.com/rust-ethereum/evm?branch=v0.x)",
+ "evm",
  "fp-evm",
  "frame-support",
  "frame-system",
@@ -10373,9 +10324,9 @@ dependencies = [
 [[package]]
 name = "pallet-evm-precompile-call-permit"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#6ad60d1b5e1b8bfd1e75935e6716a79f0bffb28b"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#fb9b0f59e9ac38270015243173b79057211aea67"
 dependencies = [
- "evm 0.43.4 (git+https://github.com/rust-ethereum/evm?branch=v0.x)",
+ "evm",
  "fp-evm",
  "frame-support",
  "frame-system",
@@ -10405,9 +10356,9 @@ dependencies = [
 [[package]]
 name = "pallet-evm-precompile-proxy"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#6ad60d1b5e1b8bfd1e75935e6716a79f0bffb28b"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#fb9b0f59e9ac38270015243173b79057211aea67"
 dependencies = [
- "evm 0.43.4 (git+https://github.com/rust-ethereum/evm?branch=v0.x)",
+ "evm",
  "fp-evm",
  "frame-support",
  "frame-system",
@@ -10447,10 +10398,10 @@ dependencies = [
 [[package]]
 name = "pallet-evm-precompile-xcm"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#6ad60d1b5e1b8bfd1e75935e6716a79f0bffb28b"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#fb9b0f59e9ac38270015243173b79057211aea67"
 dependencies = [
  "cumulus-primitives-core",
- "evm 0.43.4 (git+https://github.com/rust-ethereum/evm?branch=v0.x)",
+ "evm",
  "fp-evm",
  "frame-support",
  "frame-system",
@@ -10473,7 +10424,7 @@ dependencies = [
 [[package]]
 name = "pallet-evm-precompile-xcm-utils"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#6ad60d1b5e1b8bfd1e75935e6716a79f0bffb28b"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#fb9b0f59e9ac38270015243173b79057211aea67"
 dependencies = [
  "fp-evm",
  "frame-support",
@@ -10495,7 +10446,7 @@ dependencies = [
 [[package]]
 name = "pallet-evm-precompileset-assets-erc20"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#6ad60d1b5e1b8bfd1e75935e6716a79f0bffb28b"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#fb9b0f59e9ac38270015243173b79057211aea67"
 dependencies = [
  "fp-evm",
  "frame-support",
@@ -10618,7 +10569,7 @@ dependencies = [
 [[package]]
 name = "pallet-foreign-asset-creator"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#6ad60d1b5e1b8bfd1e75935e6716a79f0bffb28b"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#fb9b0f59e9ac38270015243173b79057211aea67"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -10783,7 +10734,7 @@ dependencies = [
 [[package]]
 name = "pallet-maintenance-mode"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#6ad60d1b5e1b8bfd1e75935e6716a79f0bffb28b"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#fb9b0f59e9ac38270015243173b79057211aea67"
 dependencies = [
  "cumulus-primitives-core",
  "frame-support",
@@ -10836,7 +10787,7 @@ dependencies = [
 [[package]]
 name = "pallet-migrations"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#6ad60d1b5e1b8bfd1e75935e6716a79f0bffb28b"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#fb9b0f59e9ac38270015243173b79057211aea67"
 dependencies = [
  "cumulus-primitives-core",
  "frame-benchmarking",
@@ -11166,7 +11117,7 @@ dependencies = [
 [[package]]
 name = "pallet-relay-storage-roots"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#6ad60d1b5e1b8bfd1e75935e6716a79f0bffb28b"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#fb9b0f59e9ac38270015243173b79057211aea67"
 dependencies = [
  "cumulus-pallet-parachain-system",
  "cumulus-primitives-core",
@@ -13574,7 +13525,7 @@ version = "0.1.0"
 source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#88d51861180752c560e7019196c537cb3d1601fa"
 dependencies = [
  "environmental",
- "evm 0.43.4 (git+https://github.com/rust-ethereum/evm.git?rev=e3f0e925390188e8d9396a7355fc43d63acbd013)",
+ "evm",
  "fp-evm",
  "frame-support",
  "frame-system",
@@ -13862,7 +13813,7 @@ version = "0.13.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "be769465445e8c1474e9c5dac2018218498557af32d9ed057325ec9a41ae81bf"
 dependencies = [
- "heck 0.5.0",
+ "heck 0.4.1",
  "itertools 0.13.0",
  "log",
  "multimap",
@@ -22513,7 +22464,7 @@ dependencies = [
 [[package]]
 name = "xcm-primitives"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#6ad60d1b5e1b8bfd1e75935e6716a79f0bffb28b"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#fb9b0f59e9ac38270015243173b79057211aea67"
 dependencies = [
  "frame-support",
  "impl-trait-for-tuples",
