@@ -27,7 +27,6 @@ use {
     alloc::vec::Vec,
     ccp_xcm::SignedToAccountKey20,
     cumulus_primitives_core::{AggregateMessageOrigin, ParaId},
-    frame_support::traits::ContainsPair,
     frame_support::{
         parameter_types,
         traits::{Disabled, Equals, Everything, Nothing, PalletInfoAccess, TransformOrigin},
@@ -217,17 +216,6 @@ pub type XcmRouter = WithUniqueTopic<(
     >,
 )>;
 
-pub struct RelayReserve;
-impl ContainsPair<Asset, Location> for RelayReserve {
-    fn contains(asset: &Asset, origin: &Location) -> bool {
-        log::trace!(target: "xcm::contains", "RelayReserve asset: {:?}, origin: {:?}", asset, origin);
-        if *origin != Location::parent() {
-            return false;
-        }
-        matches!((asset.id.0.parents, asset.id.0.interior()), (1, Here))
-    }
-}
-
 pub struct XcmConfig;
 impl xcm_executor::Config for XcmConfig {
     type RuntimeCall = RuntimeCall;
@@ -236,7 +224,6 @@ impl xcm_executor::Config for XcmConfig {
     type OriginConverter = XcmOriginToTransactDispatchOrigin;
     type IsReserve = (
         IsReserveFilter<Runtime>,
-        RelayReserve,
         EthereumAssetReserveFromPara<EthereumLocation, EthereumNetwork>,
     );
     type IsTeleporter = IsTeleportFilter<Runtime>;
