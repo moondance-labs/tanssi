@@ -409,6 +409,7 @@ async-trait = "0.1"
 chrono = "0.4.31"
 clap = { version = "4.5.3", default-features = false, features = [ "derive" ] }
 core_extensions = "1.5.3"
+ethereum = { version = "0.18.2", default-features = false }
 exit-future = { version = "0.2.0" }
 fdlimit = "0.3.0"
 flume = "0.10.9"

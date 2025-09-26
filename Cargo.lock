@@ -2357,6 +2357,7 @@ dependencies = [
  "dp-consensus",
  "dp-impl-tanssi-pallets-config",
  "dp-slot-duration-runtime-api",
+ "ethereum",
  "fp-account",
  "fp-evm",
  "fp-rpc",

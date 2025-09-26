@@ -16,6 +16,7 @@
 
 pub mod rpc;
 
+use sc_client_api::TrieCacheContext;
 use {
     cumulus_client_cli::CollatorOptions,
     cumulus_client_collator::service::CollatorService,
@@ -325,7 +326,7 @@ where
 
     let (block_import, import_queue) = import_queue(&parachain_config, &node_builder);
 
-    let (relay_chain_interface, collator_key) = node_builder
+    let (relay_chain_interface, collator_key, _network_service, _rx_incoming_request) = node_builder
         .build_relay_chain_interface(&parachain_config, polkadot_config, collator_options.clone())
         .await?;
 
@@ -398,6 +399,7 @@ where
         relay_chain_slot_duration,
         recovery_handle: Box::new(overseer_handle.clone()),
         sync_service: node_builder.network.sync_service.clone(),
+        prometheus_registry: node_builder.prometheus_registry.as_ref(),
     })?;
 
     let orchestrator_chain_interface_builder = OrchestratorChainInProcessInterfaceBuilder {
@@ -665,7 +667,8 @@ where
         orchestrator_parent: PHash,
         key: &[u8],
     ) -> OrchestratorChainResult<Option<StorageValue>> {
-        let state = self.backend.state_at(orchestrator_parent)?;
+        // TODO: trusted or untrusted?
+        let state = self.backend.state_at(orchestrator_parent, TrieCacheContext::Untrusted)?;
         state
             .storage(key)
             .map_err(OrchestratorChainError::GenericError)
@@ -676,7 +679,7 @@ where
         orchestrator_parent: PHash,
         relevant_keys: &Vec<Vec<u8>>,
     ) -> OrchestratorChainResult<StorageProof> {
-        let state_backend = self.backend.state_at(orchestrator_parent)?;
+        let state_backend = self.backend.state_at(orchestrator_parent, TrieCacheContext::Untrusted)?;
 
         sp_state_machine::prove_read(state_backend, relevant_keys)
             .map_err(OrchestratorChainError::StateMachineError)

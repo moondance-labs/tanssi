@@ -133,7 +133,7 @@ where
     let (_, import_queue) = import_queue(&parachain_config, &node_builder);
 
     // Relay chain interface
-    let (relay_chain_interface, _collator_key) = node_builder
+    let (relay_chain_interface, _collator_key, _, _) = node_builder
         .build_relay_chain_interface(&parachain_config, polkadot_config, collator_options.clone())
         .await?;
 

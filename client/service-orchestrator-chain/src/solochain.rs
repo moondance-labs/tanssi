@@ -121,7 +121,8 @@ pub async fn start_solochain_node(
     } else {
         Role::Full
     };
-    let (relay_chain_interface, collator_key) =
+    // TODO: extra outputs unused?
+    let (relay_chain_interface, collator_key, _, _) =
         cumulus_client_service::build_relay_chain_interface(
             polkadot_config,
             &dummy_parachain_config,
@@ -498,13 +499,15 @@ pub fn dummy_config(tokio_handle: tokio::runtime::Handle, base_path: BasePath) -
             kademlia_disjoint_query_paths: false,
             kademlia_replication_factor: NonZeroUsize::new(20).unwrap(),
             ipfs_server: false,
-            network_backend: Some(NetworkBackendType::Libp2p),
+            network_backend: Default::default(),
+            min_peers_to_start_warp_sync: None,
         },
         keystore: KeystoreConfig::InMemory,
         database: DatabaseSource::ParityDb {
             path: Default::default(),
         },
         trie_cache_maximum_size: None,
+        warm_up_trie_cache: None,
         state_pruning: None,
         blocks_pruning: BlocksPruning::KeepAll,
         chain_spec: Box::new(

@@ -402,7 +402,6 @@ async fn try_spawn<
                 match container_chain_cli_config
                     .network
                     .network_backend
-                    .unwrap_or(sc_network::config::NetworkBackendType::Libp2p)
                 {
                     sc_network::config::NetworkBackendType::Libp2p => {
                         start_node_impl_container::<_, _, sc_network::NetworkWorker<_, _>>(

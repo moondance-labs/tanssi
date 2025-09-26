@@ -62,6 +62,7 @@ use {
 
 #[allow(deprecated)]
 use sc_executor::NativeElseWasmExecutor;
+use sc_network::request_responses::IncomingRequest;
 use sc_network::service::traits::NetworkService;
 use {sc_transaction_pool_api::TransactionPool, sp_api::StorageProof, sp_core::traits::SpawnNamed};
 
@@ -324,6 +325,8 @@ where
     ExecutorOf<T>: Clone + CodeExecutor + RuntimeVersionOf + Sync + Send + 'static,
     RuntimeApiOf<T>: MinimalCumulusRuntimeApi<BlockOf<T>, ClientOf<T>>,
 {
+    // TODO: check usages of this function, should match PR
+    // https://github.com/paritytech/polkadot-sdk/pull/8072
     pub async fn build_relay_chain_interface(
         &mut self,
         parachain_config: &Configuration,
@@ -396,6 +399,10 @@ where
         let import_queue_service = import_queue.service();
         let spawn_handle = task_manager.spawn_handle();
 
+        let metrics = Net::register_notification_metrics(
+            parachain_config.prometheus_config.as_ref().map(|config| &config.registry),
+        );
+
         let (network, system_rpc_tx, tx_handler_controller, sync_service) =
             cumulus_client_service::build_network(cumulus_client_service::BuildNetworkParams {
                 parachain_config,
@@ -407,6 +414,7 @@ where
                 relay_chain_interface,
                 net_config,
                 sybil_resistance_level: CollatorSybilResistance::Resistant,
+                metrics,
             })
             .await?;
 
@@ -767,6 +775,7 @@ where
             import_queue: import_queue_service,
             recovery_handle: Box::new(overseer_handle),
             sync_service: network.sync_service.clone(),
+            prometheus_registry: prometheus_registry.as_ref(),
         };
 
         // TODO: change for async backing
@@ -843,6 +852,7 @@ where
             relay_chain_slot_duration,
             recovery_handle: Box::new(overseer_handle.clone()),
             sync_service: network.sync_service.clone(),
+            prometheus_registry: prometheus_registry.as_ref(),
         };
 
         // TODO: change for async backing
