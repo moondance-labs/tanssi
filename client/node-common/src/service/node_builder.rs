@@ -62,6 +62,7 @@ use {
 
 #[allow(deprecated)]
 use sc_executor::NativeElseWasmExecutor;
+use sc_network::service::traits::NetworkService;
 use {sc_transaction_pool_api::TransactionPool, sp_api::StorageProof, sp_core::traits::SpawnNamed};
 
 tp_traits::alias!(
@@ -331,6 +332,8 @@ where
     ) -> sc_service::error::Result<(
         Arc<(dyn RelayChainInterface + 'static)>,
         Option<CollatorPair>,
+        Arc<dyn NetworkService>,
+        async_channel::Receiver<IncomingRequest>,
     )> {
         build_relay_chain_interface(
             polkadot_config,

@@ -11,6 +11,7 @@ version = "0.16.0"
 workspace = true
 
 [dependencies]
+async-channel = { workspace = true }
 async-io = { workspace = true }
 async-trait = { workspace = true }
 clap = { workspace = true, features = [ "derive" ] }
