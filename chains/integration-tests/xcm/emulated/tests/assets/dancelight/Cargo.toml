@@ -31,6 +31,11 @@ tanssi-emulated-integration-tests-common = { workspace = true }
 xcm = { workspace = true }
 xcm-emulator = { workspace = true }
 xcm-executor = { workspace = true }
+hex-literal = { workspace = true }
+snowbridge-inbound-queue-primitives = { workspace = true }
+snowbridge-beacon-primitives = { workspace = true }
+cumulus-pallet-xcmp-queue = { workspace = true }
+fp-account = { workspace = true, features = [ "serde" ] }
 
 [features]
 fast-runtime = [
