@@ -67,7 +67,13 @@ fn check_native_eth_token_to_frontier_container_chain_transfer_works() {
             interior: Junctions::X2([Parachain(CONTAINER_PARA_ID), PalletInstance(<<FrontierTemplate as FrontierTemplateParaPallet>::Balances as PalletInfoAccess>::index() as u8)].into()),
         };
 
-        assert_ok!(<Dancelight as DancelightRelayPallet>::EthereumTokenTransfers::set_token_transfer_channel(root_origin.clone(), ChannelId::new(hex!("0000000000000000000000000000000000000000000000000000000000000004").into()), hex!("0000000000000000000000000000000000000000000000000000000000000005").into(), 3000u32.into()));
+        assert_ok!(
+            <Dancelight as DancelightRelayPallet>::EthereumTokenTransfers::set_token_transfer_channel(
+                root_origin.clone(), 
+                ChannelId::new(hex!("0000000000000000000000000000000000000000000000000000000000000004")), 
+                hex!("0000000000000000000000000000000000000000000000000000000000000005").into(), 
+                3000u32.into()),
+            );
 
         assert_ok!(
             <Dancelight as DancelightRelayPallet>::EthereumSystem::register_token(
@@ -88,24 +94,22 @@ fn check_native_eth_token_to_frontier_container_chain_transfer_works() {
         assert_ok!(
             <FrontierTemplate as FrontierTemplateParaPallet>::Balances::transfer_allow_death(
                 origin,
-                ethereum_sovereign_account_address.clone().into(),
+                ethereum_sovereign_account_address,
                 20_000_000_000_000_000
             )
         );
 
         ethereum_sovereign_container_balance_before =
             <FrontierTemplate as FrontierTemplateParaPallet>::System::account(
-                ethereum_sovereign_account_address.clone(),
+                ethereum_sovereign_account_address,
             )
             .data
             .free;
 
         receiver_native_container_balance_before =
-            <FrontierTemplate as FrontierTemplateParaPallet>::System::account(
-                token_receiver.clone(),
-            )
-            .data
-            .free;
+            <FrontierTemplate as FrontierTemplateParaPallet>::System::account(token_receiver)
+                .data
+                .free;
     });
 
     Dancelight::execute_with(|| {
