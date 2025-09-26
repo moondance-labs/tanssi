@@ -27,6 +27,7 @@ mod collator_assignment_tests;
 mod common;
 mod container_token_transfers;
 mod core_scheduling_tests;
+mod dynamic_xcm_config;
 mod ethereum_client;
 mod ethereum_token_transfers;
 mod external_validators_tests;

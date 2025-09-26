@@ -398,6 +398,17 @@ pub mod dynamic_params {
         #[codec(index = 1)]
         pub static ByteDeposit: Balance = deposit(0, 1);
     }
+
+    #[dynamic_pallet_params]
+    #[codec(index = 1)]
+    pub mod xcm_config {
+        use super::*;
+
+        /// The network identifier for this chain.
+        #[codec(index = 0)]
+        pub static ThisNetwork: xcm::latest::NetworkId = 
+            xcm::latest::NetworkId::ByGenesis(dancelight_runtime_constants::DANCELIGHT_GENESIS_HASH);
+    }
 }
 
 #[cfg(feature = "runtime-benchmarks")]
@@ -423,6 +434,7 @@ impl EnsureOriginWithArg<RuntimeOrigin, RuntimeParametersKey> for DynamicParamet
 
         match key {
             Preimage(_) => frame_system::ensure_root(origin.clone()),
+            XcmConfig(_) => frame_system::ensure_root(origin.clone()),
         }
         .map_err(|_| origin)
     }

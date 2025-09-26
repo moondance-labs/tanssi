@@ -27,7 +27,7 @@ use {
     crate::{governance::StakingAdmin, EthereumSystem},
     frame_support::{
         parameter_types,
-        traits::{Contains, Disabled, Equals, Everything, Nothing},
+        traits::{Contains, Disabled, Equals, Everything, Get, Nothing},
         weights::Weight,
     },
     frame_system::EnsureRoot,
@@ -70,11 +70,26 @@ use {
 parameter_types! {
     pub TokenLocation: Location = Here.into_location();
     pub RootLocation: Location = Location::here();
-    pub const ThisNetwork: NetworkId = NetworkId::ByGenesis(TANSSI_GENESIS_HASH);
-    pub UniversalLocation: InteriorLocation = ThisNetwork::get().into();
     pub CheckAccount: AccountId = XcmPallet::check_account();
     pub LocalCheckAccount: (AccountId, MintLocation) = (CheckAccount::get(), MintLocation::Local);
     pub TreasuryAccount: AccountId = Treasury::account_id();
+}
+
+/// Get the current ThisNetwork value from runtime parameters
+pub struct ThisNetwork;
+impl Get<NetworkId> for ThisNetwork {
+    fn get() -> NetworkId {
+        crate::dynamic_params::xcm_config::ThisNetwork::get()
+    }
+}
+impl Get<Option<NetworkId>> for ThisNetwork {
+    fn get() -> Option<NetworkId> {
+        Some(crate::dynamic_params::xcm_config::ThisNetwork::get())
+    }
+}
+
+parameter_types! {
+    pub UniversalLocation: InteriorLocation = <ThisNetwork as Get<NetworkId>>::get().into();
 }
 
 #[cfg(feature = "runtime-benchmarks")]
