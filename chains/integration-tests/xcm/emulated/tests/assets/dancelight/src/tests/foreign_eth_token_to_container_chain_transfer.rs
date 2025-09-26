@@ -15,13 +15,17 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
+    container_chain_template_frontier_runtime::EthereumNetwork,
     dancelight_emulated_chain::DancelightRelayPallet,
+    dancelight_runtime::SnowbridgeFeesAccount,
     dancelight_system_emulated_network::{
         DancelightRelay as Dancelight, DancelightSender, FrontierTemplatePara as FrontierTemplate,
+        FrontierTemplateSender,
     },
     fp_account::AccountId20,
-    frame_support::{assert_ok, pallet_prelude::DispatchResult, traits::PalletInfoAccess},
-    frontier_template_emulated_chain::{EthereumSender, FrontierTemplateParaPallet},
+    frame_support::traits::fungible::Mutate,
+    frame_support::{assert_ok, pallet_prelude::DispatchResult},
+    frontier_template_emulated_chain::FrontierTemplateParaPallet,
     hex_literal::hex,
     snowbridge_beacon_primitives::{
         types::deneb, AncestryProof, BeaconHeader, ExecutionProof, VersionedExecutionPayloadHeader,
@@ -30,113 +34,165 @@ use {
     snowbridge_inbound_queue_primitives::{EventFixture, EventProof, Log, Proof},
     sp_core::H160,
     sp_core::U256,
-    xcm::latest::prelude::*,
+    sp_runtime::FixedU128,
+    xcm::latest::prelude::{Junctions::*, *},
     xcm_emulator::{Chain, TestExt},
-    xcm_executor::traits::ConvertLocation,
 };
 
 #[test]
-fn check_native_eth_token_to_frontier_container_chain_transfer_works() {
-    const CONTAINER_PARA_ID: u32 = 2001;
+fn check_foreign_eth_token_to_frontier_container_chain_transfer_works() {
+    const PARA_ID_FOR_CHANNEL: u32 = 2000;
+    const RELAY_NATIVE_TOKEN_ASSET_ID: u16 = 42;
+    const ERC20_ASSET_ID: u16 = 24;
 
-    let token_receiver: AccountId20 = H160([
-        0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05,
-        0x05, 0x05, 0x05, 0x05, 0x05,
-    ])
-    .into();
+    const TRANSFER_AMOUNT: u128 = 100_000_000;
 
-    let mut ethereum_sovereign_container_balance_before = 0;
+    const TOKEN_ADDRESS: H160 = H160::repeat_byte(0x11);
+    let token_receiver: AccountId20 = [5u8; 20].into();
+
+    const CONTAINER_FEE: u128 = 500_000_000;
+
+    let mut snowbridge_fees_account_balance_before = 0;
     let mut receiver_native_container_balance_before = 0;
-
-    let ethereum_sovereign_account_address =
-        container_chain_template_frontier_runtime::xcm_config::LocationToAccountId::convert_location(
-            &Location::new(2, container_chain_template_frontier_runtime::EthereumNetwork::get()),
-        )
-            .unwrap();
-
-    let transfer_amount = 100_000_000;
-
-    // Amount in native container tokens to charge on destination.
-    let container_fee = 500_000_000_000_000;
 
     Dancelight::execute_with(|| {
         let root_origin = <Dancelight as Chain>::RuntimeOrigin::root();
+        let alice_account = DancelightSender::get();
 
-        let asset_location = Location {
-            parents: 0,
-            interior: Junctions::X2([Parachain(CONTAINER_PARA_ID), PalletInstance(<<FrontierTemplate as FrontierTemplateParaPallet>::Balances as PalletInfoAccess>::index() as u8)].into()),
-        };
-
+        // Create EthereumTokenTransfers channel to validate when receiving the tokens.
         assert_ok!(
             <Dancelight as DancelightRelayPallet>::EthereumTokenTransfers::set_token_transfer_channel(
                 root_origin.clone(),
                 ChannelId::new(hex!("0000000000000000000000000000000000000000000000000000000000000004")), 
                 hex!("0000000000000000000000000000000000000000000000000000000000000005").into(), 
-                3000u32.into()),
-            );
+                PARA_ID_FOR_CHANNEL.into()
+            ),
+        );
+
+        // Add funds in snowbridge fees account
+        assert_ok!(
+            <<Dancelight as DancelightRelayPallet>::Balances as Mutate<_>>::mint_into(
+                &SnowbridgeFeesAccount::get().into(),
+                CONTAINER_FEE * 2
+            )
+        );
+        snowbridge_fees_account_balance_before =
+            <Dancelight as DancelightRelayPallet>::System::account(SnowbridgeFeesAccount::get())
+                .data
+                .free;
+
+        // Register erc20 foreign token in ForeignAssetsCreator
+        let erc20_asset_location_relay: Location = Location {
+            parents: 1,
+            interior: X2([
+                GlobalConsensus(EthereumNetwork::get()),
+                AccountKey20 {
+                    network: Some(EthereumNetwork::get()),
+                    key: TOKEN_ADDRESS.into(),
+                },
+            ]
+            .into()),
+        };
 
         assert_ok!(
-            <Dancelight as DancelightRelayPallet>::EthereumSystem::register_token(
+            <Dancelight as DancelightRelayPallet>::ForeignAssetsCreator::create_foreign_asset(
                 root_origin.clone(),
-                Box::new(asset_location.into()),
-                snowbridge_core::AssetMetadata {
-                    name: "container".as_bytes().to_vec().try_into().unwrap(),
-                    symbol: "container".as_bytes().to_vec().try_into().unwrap(),
-                    decimals: 12,
-                }
+                erc20_asset_location_relay,
+                RELAY_NATIVE_TOKEN_ASSET_ID,
+                alice_account,
+                true,
+                1
             )
         );
     });
 
     FrontierTemplate::execute_with(|| {
-        let origin = <FrontierTemplate as Chain>::RuntimeOrigin::signed(EthereumSender::get());
+        let root_origin = <FrontierTemplate as Chain>::RuntimeOrigin::root();
+        let alice_account = FrontierTemplateSender::get();
+
+        receiver_native_container_balance_before =
+            <FrontierTemplate as FrontierTemplateParaPallet>::ForeignAssets::balance(
+                ERC20_ASSET_ID,
+                &token_receiver,
+            );
+
+        // Register relay token in ForeignAssetsCreator
+        const RELAY_TOKEN_ASSET_LOCATION: Location = Location::parent();
 
         assert_ok!(
-            <FrontierTemplate as FrontierTemplateParaPallet>::Balances::transfer_allow_death(
-                origin,
-                ethereum_sovereign_account_address,
-                20_000_000_000_000_000
+            <FrontierTemplate as FrontierTemplateParaPallet>::ForeignAssetsCreator::create_foreign_asset(
+                root_origin.clone(),
+                RELAY_TOKEN_ASSET_LOCATION,
+                RELAY_NATIVE_TOKEN_ASSET_ID,
+                alice_account.clone().into(),
+                true,
+                1
             )
         );
 
-        ethereum_sovereign_container_balance_before =
-            <FrontierTemplate as FrontierTemplateParaPallet>::System::account(
-                ethereum_sovereign_account_address,
+        // Create asset rate for relay token
+        assert_ok!(
+            <FrontierTemplate as FrontierTemplateParaPallet>::AssetRate::create(
+                root_origin.clone(),
+                Box::new(RELAY_NATIVE_TOKEN_ASSET_ID),
+                FixedU128::from_u32(500_000_000)
             )
-            .data
-            .free;
+        );
 
-        receiver_native_container_balance_before =
-            <FrontierTemplate as FrontierTemplateParaPallet>::System::account(token_receiver)
-                .data
-                .free;
+        // Register erc20 foreign token in ForeignAssetsCreator
+        let erc20_asset_location_container: Location = Location {
+            parents: 2,
+            interior: X2([
+                GlobalConsensus(EthereumNetwork::get()),
+                AccountKey20 {
+                    network: Some(EthereumNetwork::get()),
+                    key: TOKEN_ADDRESS.into(),
+                },
+            ]
+            .into()),
+        };
+
+        assert_ok!(
+            <FrontierTemplate as FrontierTemplateParaPallet>::ForeignAssetsCreator::create_foreign_asset(
+                root_origin.clone(),
+                erc20_asset_location_container,
+                ERC20_ASSET_ID,
+                alice_account.into(),
+                true,
+                1
+            )
+        );
     });
 
+    // Send inbound message
     Dancelight::execute_with(|| {
         assert_ok!(send_inbound_message(make_send_token_message()));
     });
 
-    FrontierTemplate::execute_with(|| {
-        let ethereum_sovereign_container_balance_after =
-            <FrontierTemplate as FrontierTemplateParaPallet>::System::account(
-                ethereum_sovereign_account_address,
-            )
-            .data
-            .free;
-
-        let receiver_native_countainer_balance_after =
-            <FrontierTemplate as FrontierTemplateParaPallet>::System::account(token_receiver)
+    // Check snowbridge fees are deducted
+    Dancelight::execute_with(|| {
+        let snowbridge_fees_account_balance_after =
+            <Dancelight as DancelightRelayPallet>::System::account(SnowbridgeFeesAccount::get())
                 .data
                 .free;
 
-        assert_eq!(
-            ethereum_sovereign_container_balance_after,
-            ethereum_sovereign_container_balance_before - (container_fee + transfer_amount)
+        assert!(
+            snowbridge_fees_account_balance_after
+                <= snowbridge_fees_account_balance_before - CONTAINER_FEE
         );
+    });
+
+    // Check foreign token is received
+    FrontierTemplate::execute_with(|| {
+        let receiver_native_countainer_balance_after =
+            <FrontierTemplate as FrontierTemplateParaPallet>::ForeignAssets::balance(
+                ERC20_ASSET_ID,
+                &token_receiver,
+            );
 
         assert_eq!(
             receiver_native_countainer_balance_after,
-            receiver_native_container_balance_before + transfer_amount
+            receiver_native_container_balance_before + TRANSFER_AMOUNT
         );
     });
 }
@@ -151,7 +207,7 @@ pub fn make_send_token_message() -> EventFixture {
                     hex!("0000000000000000000000000000000000000000000000000000000000000004").into(), // channel ID
                     hex!("0000000000000000000000000000000000000000000000000000000000000000").into(), // message ID
                 ],
-                data: hex!("00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000007300010000000000000002485f805cb9de38b4324485447c664e16035aa9d28e8723df192fa02ad353088902d1070000050505050505050505050505050505050505050500406352bfc60100000000000000000000e1f50500000000000000000000000000c029f73d540500000000000000000000000000000000000000000000").into(),
+                data: hex!("00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000006700010000000000000001111111111111111111111111111111111111111102d1070000050505050505050505050505050505050505050500406352bfc60100000000000000000000e1f50500000000000000000000000000c029f73d540500000000000000000000000000000000000000000000000000000000000000000000").into(),
             },
             // We just need a valid struct here, anyway we have mocked Verifier, that will ignore it
             proof: Proof {

@@ -934,6 +934,7 @@ where
                 "EthTokensLocalProcessor: failed to transfer fee from FeesAccount to container sovereign account: {:?}",
                 e
             );
+            return Ok(());
         }
 
         // Mint the ERC20 token into the container sovereign account
@@ -941,6 +942,7 @@ where
             AssetTransactor::can_check_in(&container_location, &eth_token_location, &dummy_context)
         {
             log::error!("EthTokensLocalProcessor: can_check_in failed: {:?}", e);
+            return Ok(());
         }
 
         AssetTransactor::check_in(&container_location, &eth_token_location, &dummy_context);
@@ -949,6 +951,7 @@ where
             AssetTransactor::deposit_asset(&eth_token_location, &container_location, None)
         {
             log::error!("EthTokensLocalProcessor: deposit_asset failed: {:?}", e);
+            return Ok(());
         }
 
         // Send XCM to deposit the ERC20 token into beneficiary account

@@ -23,7 +23,7 @@ use {
         tests::common::*,
         xcm_config::UniversalLocation,
         EthereumInboundQueue, EthereumLocation, EthereumSystem, EthereumTokenTransfers, Paras,
-        RuntimeEvent, XcmPallet,
+        RuntimeEvent, SnowbridgeFeesAccount, XcmPallet,
     },
     alloc::vec,
     alloy_sol_types::SolEvent,
@@ -852,7 +852,13 @@ fn native_container_can_process_message_returns_true_for_valid_message() {
 #[test]
 fn receive_container_foreign_tokens_from_eth_works_for_foreign_account_id_20() {
     ExtBuilder::default()
-        .with_balances(vec![(AccountId::from(ALICE), 100_000 * UNIT)])
+        .with_balances(vec![
+            (AccountId::from(ALICE), 100_000 * UNIT),
+            (
+                SnowbridgeFeesAccount::get(),
+                100_000_000_000_000_000_000 * UNIT,
+            ),
+        ])
         .build()
         .execute_with(|| {
             sp_tracing::try_init_simple();
@@ -968,7 +974,13 @@ fn receive_container_foreign_tokens_from_eth_works_for_foreign_account_id_20() {
 #[test]
 fn receive_container_foreign_tokens_from_eth_works_for_foreign_account_id_32() {
     ExtBuilder::default()
-        .with_balances(vec![(AccountId::from(ALICE), 100_000 * UNIT)])
+        .with_balances(vec![
+            (AccountId::from(ALICE), 100_000 * UNIT),
+            (
+                SnowbridgeFeesAccount::get(),
+                100_000_000_000_000_000_000 * UNIT,
+            ),
+        ])
         .build()
         .execute_with(|| {
             sp_tracing::try_init_simple();

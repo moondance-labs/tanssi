@@ -38,25 +38,8 @@ describeSuite({
             title: "Should receive container foreign tokens from Ethereum and forward them to container",
             timeout: 600000,
             test: async () => {
-                const ethereumSovereignAccountInContainer =
-                    await containerChainPolkadotJs.call.locationToAccountApi.convertLocation({
-                        V3: { parents: 2, interior: { X1: { GlobalConsensus: ETHEREUM_NETWORK_TESTNET } } },
-                    });
-
-                const ethereumSovereignAccountFrontierInRelay =
-                    await relayChainPolkadotJs.call.locationToAccountApi.convertLocation({
-                        V3: { parents: 0, interior: { X1: { Parachain: 2001 } } },
-                    });
-
-                const ethereumSovereignAccountFrontierInRelayAddress =
-                    ethereumSovereignAccountFrontierInRelay.asOk.toHuman();
-                const ethereumSovereignAccountAddress = ethereumSovereignAccountInContainer.asOk.toHuman();
-
                 // Amount of native container tokens to transfer.
                 const transferAmount = BigInt(100_000_000);
-
-                // Amount in native container tokens to charge on destination.
-                const containerFee = BigInt(500_000_000_000_000);
 
                 // Create token receiver account
                 const tokenReceiver = "0x0505050505050505050505050505050505050505";
