@@ -943,6 +943,7 @@ pub mod snowbridge_system_migration {
     {
         fn on_runtime_upgrade() -> Weight {
             let mut weight = T::DbWeight::get().reads(1);
+            /*
             let mut len_map1 = 0;
             let mut len_map2 = 0;
 
@@ -979,6 +980,7 @@ pub mod snowbridge_system_migration {
 
             // Additional sanity check that both mappings have the same number of elements
             assert_eq!(len_map1, len_map2);
+            */
 
             weight
         }

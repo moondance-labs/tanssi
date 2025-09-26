@@ -18,6 +18,7 @@
 
 extern crate alloc;
 
+use sp_runtime::traits::MaybeConvert;
 use alloc::{vec, vec::Vec};
 use core::marker::PhantomData;
 use frame_support::{
@@ -147,12 +148,15 @@ where
         if let Some(token_data) =
             NativeTokenTransferData::decode_native_token_message(&envelope.payload)
         {
-            let token_location = T::TokenLocationReanchored::get();
+            let expected_token_location = T::TokenLocationReanchored::get();
 
-            if let Some(expected_token_id) =
-                snowbridge_pallet_system::Pallet::<T>::convert_back(&token_location)
+            // TODO: review: https://github.com/paritytech/polkadot-sdk/pull/8473
+            // Now we can't convert Location to TokenId, but we can do the check backwards,
+            // convert TokenId to Location
+            if let Some(token_location) =
+                snowbridge_pallet_system::Pallet::<T>::maybe_convert(token_data.token_id)
             {
-                if token_data.token_id == expected_token_id {
+                if token_location == expected_token_location {
                     true
                 } else {
                     // TODO: ensure this does not warn on container token transfers or other message types, if yes change to debug
@@ -164,8 +168,8 @@ where
                 }
             } else {
                 log::warn!(
-                    "NativeTokenTransferMessageProcessor: token id not found for location: {:?}",
-                    token_location
+                    "NativeTokenTransferMessageProcessor: token id not found: {:?}",
+                    token_data.token_id
                 );
                 false
             }
@@ -363,7 +367,7 @@ where
     fn get_token_data_and_location(payload: &[u8]) -> TokenDataResult {
         if let Some(token_data) = NativeTokenTransferData::decode_native_token_message(payload) {
             if let Some(token_location) =
-                snowbridge_pallet_system::Pallet::<T>::convert(&token_data.token_id)
+                snowbridge_pallet_system::Pallet::<T>::maybe_convert(token_data.token_id)
             {
                 if token_location == TanssiLocationReanchored::get() {
                     // Extra safety check to forbid native Tanssi token for this processor
@@ -787,7 +791,8 @@ where
 
         let ethereum_location = EthereumLocation::get();
 
-        if let Ok(weight) = XcmWeigher::weight(&mut xcm) {
+        // TODO: review Weight::MAX https://github.com/paritytech/polkadot-sdk/pull/7730
+        if let Ok(weight) = XcmWeigher::weight(&mut xcm, Weight::MAX) {
             let mut message_id = xcm.using_encoded(sp_io::hashing::blake2_256);
 
             let outcome = XcmProcessor::prepare_and_execute(
