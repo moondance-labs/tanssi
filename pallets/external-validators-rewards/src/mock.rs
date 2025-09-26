@@ -13,6 +13,7 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
+use sp_runtime::traits::MaybeConvert;
 use {
     crate as pallet_external_validators_rewards,
     frame_support::{
@@ -139,16 +140,9 @@ impl tp_traits::ExternalIndexProvider for TimestampProvider {
 }
 
 pub struct MockTokenIdConvert;
-impl MaybeEquivalence<TokenId, Location> for MockTokenIdConvert {
-    fn convert(_id: &TokenId) -> Option<Location> {
+impl MaybeConvert<TokenId, Location> for MockTokenIdConvert {
+    fn maybe_convert(_id: TokenId) -> Option<Location> {
         Some(Location::parent())
-    }
-    fn convert_back(loc: &Location) -> Option<TokenId> {
-        if *loc == Location::here() {
-            Some(H256::repeat_byte(0x01))
-        } else {
-            None
-        }
     }
 }
 
