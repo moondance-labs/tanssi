@@ -14,3 +14,7 @@ disallowed-methods = [
 	{ path = "isize::saturating_div", reason = "saturating_div panics when dividing by 0. use checked_div instead" },
 	{ path = "sp_runtime::Weight::saturating_div", reason = "saturating_div panics when dividing by 0. use checked_div instead" },
 ]
+
+disallowed-types = [
+    { path = "snowbridge_core::TokenIdOf", reason = "we store location map in storage `NativeToForeignId`, do not use this snowbridge hashing struct" },
+]
