@@ -4866,23 +4866,6 @@ dependencies = [
 
 [[package]]
 name = "ethereum"
-version = "0.15.0"
-source = "git+https://github.com/rust-ethereum/ethereum?rev=bbb544622208ef6e9890a2dbc224248f6dd13318#bbb544622208ef6e9890a2dbc224248f6dd13318"
-dependencies = [
- "bytes",
- "ethereum-types",
- "hash-db",
- "hash256-std-hasher",
- "parity-scale-codec",
- "rlp 0.6.1",
- "scale-info",
- "serde",
- "sha3",
- "trie-root",
-]
-
-[[package]]
-name = "ethereum"
 version = "0.18.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3ee371ebb7479ed3258617557ab0b3247e741075cb6b02b820d188f68da44441"
@@ -4964,15 +4947,33 @@ dependencies = [
 
 [[package]]
 name = "evm"
-version = "0.42.0"
-source = "git+https://github.com/rust-ethereum/evm?branch=v0.x#6ca5a72bc8942f4860137155dd9033526fd362a5"
+version = "0.43.4"
+source = "git+https://github.com/rust-ethereum/evm?branch=v0.x#6917b131d552559ee84b0b3ea5450d9890a7e9bd"
+dependencies = [
+ "auto_impl",
+ "ethereum",
+ "evm-core 0.43.0 (git+https://github.com/rust-ethereum/evm?branch=v0.x)",
+ "evm-gasometer 0.43.0 (git+https://github.com/rust-ethereum/evm?branch=v0.x)",
+ "evm-runtime 0.43.0 (git+https://github.com/rust-ethereum/evm?branch=v0.x)",
+ "log",
+ "parity-scale-codec",
+ "primitive-types 0.13.1",
+ "rlp 0.6.1",
+ "scale-info",
+ "sha3",
+]
+
+[[package]]
+name = "evm"
+version = "0.43.4"
+source = "git+https://github.com/rust-ethereum/evm.git?rev=e3f0e925390188e8d9396a7355fc43d63acbd013#e3f0e925390188e8d9396a7355fc43d63acbd013"
 dependencies = [
  "auto_impl",
  "environmental",
- "ethereum 0.15.0",
- "evm-core",
- "evm-gasometer",
- "evm-runtime",
+ "ethereum",
+ "evm-core 0.43.0 (git+https://github.com/rust-ethereum/evm.git?rev=e3f0e925390188e8d9396a7355fc43d63acbd013)",
+ "evm-gasometer 0.43.0 (git+https://github.com/rust-ethereum/evm.git?rev=e3f0e925390188e8d9396a7355fc43d63acbd013)",
+ "evm-runtime 0.43.0 (git+https://github.com/rust-ethereum/evm.git?rev=e3f0e925390188e8d9396a7355fc43d63acbd013)",
  "log",
  "parity-scale-codec",
  "primitive-types 0.13.1",
@@ -4984,8 +4985,18 @@ dependencies = [
 
 [[package]]
 name = "evm-core"
-version = "0.42.0"
-source = "git+https://github.com/rust-ethereum/evm?branch=v0.x#6ca5a72bc8942f4860137155dd9033526fd362a5"
+version = "0.43.0"
+source = "git+https://github.com/rust-ethereum/evm?branch=v0.x#6917b131d552559ee84b0b3ea5450d9890a7e9bd"
+dependencies = [
+ "parity-scale-codec",
+ "primitive-types 0.13.1",
+ "scale-info",
+]
+
+[[package]]
+name = "evm-core"
+version = "0.43.0"
+source = "git+https://github.com/rust-ethereum/evm.git?rev=e3f0e925390188e8d9396a7355fc43d63acbd013#e3f0e925390188e8d9396a7355fc43d63acbd013"
 dependencies = [
  "parity-scale-codec",
  "primitive-types 0.13.1",
@@ -4995,23 +5006,44 @@ dependencies = [
 
 [[package]]
 name = "evm-gasometer"
-version = "0.42.0"
-source = "git+https://github.com/rust-ethereum/evm?branch=v0.x#6ca5a72bc8942f4860137155dd9033526fd362a5"
+version = "0.43.0"
+source = "git+https://github.com/rust-ethereum/evm?branch=v0.x#6917b131d552559ee84b0b3ea5450d9890a7e9bd"
+dependencies = [
+ "evm-core 0.43.0 (git+https://github.com/rust-ethereum/evm?branch=v0.x)",
+ "evm-runtime 0.43.0 (git+https://github.com/rust-ethereum/evm?branch=v0.x)",
+ "primitive-types 0.13.1",
+]
+
+[[package]]
+name = "evm-gasometer"
+version = "0.43.0"
+source = "git+https://github.com/rust-ethereum/evm.git?rev=e3f0e925390188e8d9396a7355fc43d63acbd013#e3f0e925390188e8d9396a7355fc43d63acbd013"
 dependencies = [
  "environmental",
- "evm-core",
- "evm-runtime",
+ "evm-core 0.43.0 (git+https://github.com/rust-ethereum/evm.git?rev=e3f0e925390188e8d9396a7355fc43d63acbd013)",
+ "evm-runtime 0.43.0 (git+https://github.com/rust-ethereum/evm.git?rev=e3f0e925390188e8d9396a7355fc43d63acbd013)",
  "primitive-types 0.13.1",
 ]
 
 [[package]]
 name = "evm-runtime"
-version = "0.42.0"
-source = "git+https://github.com/rust-ethereum/evm?branch=v0.x#6ca5a72bc8942f4860137155dd9033526fd362a5"
+version = "0.43.0"
+source = "git+https://github.com/rust-ethereum/evm?branch=v0.x#6917b131d552559ee84b0b3ea5450d9890a7e9bd"
+dependencies = [
+ "auto_impl",
+ "evm-core 0.43.0 (git+https://github.com/rust-ethereum/evm?branch=v0.x)",
+ "primitive-types 0.13.1",
+ "sha3",
+]
+
+[[package]]
+name = "evm-runtime"
+version = "0.43.0"
+source = "git+https://github.com/rust-ethereum/evm.git?rev=e3f0e925390188e8d9396a7355fc43d63acbd013#e3f0e925390188e8d9396a7355fc43d63acbd013"
 dependencies = [
  "auto_impl",
  "environmental",
- "evm-core",
+ "evm-core 0.43.0 (git+https://github.com/rust-ethereum/evm.git?rev=e3f0e925390188e8d9396a7355fc43d63acbd013)",
  "primitive-types 0.13.1",
  "sha3",
 ]
@@ -5132,7 +5164,7 @@ dependencies = [
 [[package]]
 name = "fc-api"
 version = "1.0.0-dev"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#d06492d238141d38fa601a4accf53937da7a52a8"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#88d51861180752c560e7019196c537cb3d1601fa"
 dependencies = [
  "async-trait",
  "fp-storage",
@@ -5144,7 +5176,7 @@ dependencies = [
 [[package]]
 name = "fc-consensus"
 version = "2.0.0-dev"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#d06492d238141d38fa601a4accf53937da7a52a8"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#88d51861180752c560e7019196c537cb3d1601fa"
 dependencies = [
  "async-trait",
  "fp-consensus",
@@ -5160,10 +5192,10 @@ dependencies = [
 [[package]]
 name = "fc-db"
 version = "2.0.0-dev"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#d06492d238141d38fa601a4accf53937da7a52a8"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#88d51861180752c560e7019196c537cb3d1601fa"
 dependencies = [
  "async-trait",
- "ethereum 0.18.2",
+ "ethereum",
  "fc-api",
  "fc-storage",
  "fp-consensus",
@@ -5190,7 +5222,7 @@ dependencies = [
 [[package]]
 name = "fc-mapping-sync"
 version = "2.0.0-dev"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#d06492d238141d38fa601a4accf53937da7a52a8"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#88d51861180752c560e7019196c537cb3d1601fa"
 dependencies = [
  "fc-db",
  "fc-storage",
@@ -5213,11 +5245,11 @@ dependencies = [
 [[package]]
 name = "fc-rpc"
 version = "2.0.0-dev"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#d06492d238141d38fa601a4accf53937da7a52a8"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#88d51861180752c560e7019196c537cb3d1601fa"
 dependencies = [
- "ethereum 0.18.2",
+ "ethereum",
  "ethereum-types",
- "evm",
+ "evm 0.43.4 (git+https://github.com/rust-ethereum/evm.git?rev=e3f0e925390188e8d9396a7355fc43d63acbd013)",
  "fc-api",
  "fc-mapping-sync",
  "fc-rpc-core",
@@ -5267,9 +5299,9 @@ dependencies = [
 [[package]]
 name = "fc-rpc-core"
 version = "1.1.0-dev"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#d06492d238141d38fa601a4accf53937da7a52a8"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#88d51861180752c560e7019196c537cb3d1601fa"
 dependencies = [
- "ethereum 0.18.2",
+ "ethereum",
  "ethereum-types",
  "jsonrpsee",
  "rlp 0.6.1",
@@ -5282,9 +5314,9 @@ dependencies = [
 [[package]]
 name = "fc-storage"
 version = "1.0.0-dev"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#d06492d238141d38fa601a4accf53937da7a52a8"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#88d51861180752c560e7019196c537cb3d1601fa"
 dependencies = [
- "ethereum 0.18.2",
+ "ethereum",
  "ethereum-types",
  "fp-rpc",
  "fp-storage",
@@ -5399,12 +5431,6 @@ name = "fixedbitset"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0ce7134b9999ecaf8bcd65542e436736ef32ddca1b3e06094cb6ec5755203b80"
-
-[[package]]
-name = "fixedbitset"
-version = "0.5.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1d674e81391d1e1ab681a28d99df07927c6d4aa5b027d7da16ba32d1d21ecd99"
 
 [[package]]
 name = "flashbox-runtime"
@@ -5585,7 +5611,7 @@ dependencies = [
 [[package]]
 name = "fp-account"
 version = "1.0.0-dev"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#d06492d238141d38fa601a4accf53937da7a52a8"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#88d51861180752c560e7019196c537cb3d1601fa"
 dependencies = [
  "hex",
  "impl-serde",
@@ -5603,9 +5629,9 @@ dependencies = [
 [[package]]
 name = "fp-consensus"
 version = "2.0.0-dev"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#d06492d238141d38fa601a4accf53937da7a52a8"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#88d51861180752c560e7019196c537cb3d1601fa"
 dependencies = [
- "ethereum 0.18.2",
+ "ethereum",
  "parity-scale-codec",
  "sp-core",
  "sp-runtime",
@@ -5614,9 +5640,9 @@ dependencies = [
 [[package]]
 name = "fp-ethereum"
 version = "1.0.0-dev"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#d06492d238141d38fa601a4accf53937da7a52a8"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#88d51861180752c560e7019196c537cb3d1601fa"
 dependencies = [
- "ethereum 0.18.2",
+ "ethereum",
  "ethereum-types",
  "fp-evm",
  "frame-support",
@@ -5626,10 +5652,10 @@ dependencies = [
 [[package]]
 name = "fp-evm"
 version = "3.0.0-dev"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#d06492d238141d38fa601a4accf53937da7a52a8"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#88d51861180752c560e7019196c537cb3d1601fa"
 dependencies = [
  "environmental",
- "evm",
+ "evm 0.43.4 (git+https://github.com/rust-ethereum/evm.git?rev=e3f0e925390188e8d9396a7355fc43d63acbd013)",
  "frame-support",
  "num_enum",
  "parity-scale-codec",
@@ -5642,9 +5668,9 @@ dependencies = [
 [[package]]
 name = "fp-rpc"
 version = "3.0.0-dev"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#d06492d238141d38fa601a4accf53937da7a52a8"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#88d51861180752c560e7019196c537cb3d1601fa"
 dependencies = [
- "ethereum 0.18.2",
+ "ethereum",
  "ethereum-types",
  "fp-evm",
  "parity-scale-codec",
@@ -5658,7 +5684,7 @@ dependencies = [
 [[package]]
 name = "fp-self-contained"
 version = "1.0.0-dev"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#d06492d238141d38fa601a4accf53937da7a52a8"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#88d51861180752c560e7019196c537cb3d1601fa"
 dependencies = [
  "frame-support",
  "parity-scale-codec",
@@ -5670,7 +5696,7 @@ dependencies = [
 [[package]]
 name = "fp-storage"
 version = "2.0.0"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#d06492d238141d38fa601a4accf53937da7a52a8"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#88d51861180752c560e7019196c537cb3d1601fa"
 dependencies = [
  "parity-scale-codec",
  "serde",
@@ -6824,7 +6850,7 @@ dependencies = [
  "httpdate",
  "itoa",
  "pin-project-lite",
- "socket2 0.4.10",
+ "socket2 0.5.10",
  "tokio",
  "tower-service",
  "tracing",
@@ -9554,7 +9580,7 @@ dependencies = [
  "expander",
  "indexmap 2.9.0",
  "itertools 0.11.0",
- "petgraph 0.6.5",
+ "petgraph",
  "proc-macro-crate 3.3.0",
  "proc-macro2",
  "quote",
@@ -9862,7 +9888,7 @@ dependencies = [
 [[package]]
 name = "pallet-base-fee"
 version = "1.0.0"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#d06492d238141d38fa601a4accf53937da7a52a8"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#88d51861180752c560e7019196c537cb3d1601fa"
 dependencies = [
  "fp-evm",
  "frame-support",
@@ -10218,11 +10244,11 @@ dependencies = [
 [[package]]
 name = "pallet-ethereum"
 version = "4.0.0-dev"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#d06492d238141d38fa601a4accf53937da7a52a8"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#88d51861180752c560e7019196c537cb3d1601fa"
 dependencies = [
- "ethereum 0.18.2",
+ "ethereum",
  "ethereum-types",
- "evm",
+ "evm 0.43.4 (git+https://github.com/rust-ethereum/evm.git?rev=e3f0e925390188e8d9396a7355fc43d63acbd013)",
  "fp-consensus",
  "fp-ethereum",
  "fp-evm",
@@ -10267,12 +10293,12 @@ dependencies = [
 [[package]]
 name = "pallet-evm"
 version = "6.0.0-dev"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#d06492d238141d38fa601a4accf53937da7a52a8"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#88d51861180752c560e7019196c537cb3d1601fa"
 dependencies = [
  "cumulus-primitives-storage-weight-reclaim",
  "environmental",
- "ethereum 0.18.2",
- "evm",
+ "ethereum",
+ "evm 0.43.4 (git+https://github.com/rust-ethereum/evm.git?rev=e3f0e925390188e8d9396a7355fc43d63acbd013)",
  "fp-account",
  "fp-evm",
  "frame-benchmarking",
@@ -10292,7 +10318,7 @@ dependencies = [
 [[package]]
 name = "pallet-evm-chain-id"
 version = "1.0.0-dev"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#d06492d238141d38fa601a4accf53937da7a52a8"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#88d51861180752c560e7019196c537cb3d1601fa"
 dependencies = [
  "frame-support",
  "frame-system",
@@ -10328,7 +10354,7 @@ name = "pallet-evm-precompile-batch"
 version = "0.1.0"
 source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#6ad60d1b5e1b8bfd1e75935e6716a79f0bffb28b"
 dependencies = [
- "evm",
+ "evm 0.43.4 (git+https://github.com/rust-ethereum/evm?branch=v0.x)",
  "fp-evm",
  "frame-support",
  "frame-system",
@@ -10349,7 +10375,7 @@ name = "pallet-evm-precompile-call-permit"
 version = "0.1.0"
 source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#6ad60d1b5e1b8bfd1e75935e6716a79f0bffb28b"
 dependencies = [
- "evm",
+ "evm 0.43.4 (git+https://github.com/rust-ethereum/evm?branch=v0.x)",
  "fp-evm",
  "frame-support",
  "frame-system",
@@ -10370,7 +10396,7 @@ dependencies = [
 [[package]]
 name = "pallet-evm-precompile-modexp"
 version = "2.0.0-dev"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#d06492d238141d38fa601a4accf53937da7a52a8"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#88d51861180752c560e7019196c537cb3d1601fa"
 dependencies = [
  "fp-evm",
  "num",
@@ -10381,7 +10407,7 @@ name = "pallet-evm-precompile-proxy"
 version = "0.1.0"
 source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#6ad60d1b5e1b8bfd1e75935e6716a79f0bffb28b"
 dependencies = [
- "evm",
+ "evm 0.43.4 (git+https://github.com/rust-ethereum/evm?branch=v0.x)",
  "fp-evm",
  "frame-support",
  "frame-system",
@@ -10400,7 +10426,7 @@ dependencies = [
 [[package]]
 name = "pallet-evm-precompile-sha3fips"
 version = "2.0.0-dev"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#d06492d238141d38fa601a4accf53937da7a52a8"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#88d51861180752c560e7019196c537cb3d1601fa"
 dependencies = [
  "fp-evm",
  "frame-support",
@@ -10411,7 +10437,7 @@ dependencies = [
 [[package]]
 name = "pallet-evm-precompile-simple"
 version = "2.0.0-dev"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#d06492d238141d38fa601a4accf53937da7a52a8"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#88d51861180752c560e7019196c537cb3d1601fa"
 dependencies = [
  "fp-evm",
  "ripemd",
@@ -10424,7 +10450,7 @@ version = "0.1.0"
 source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#6ad60d1b5e1b8bfd1e75935e6716a79f0bffb28b"
 dependencies = [
  "cumulus-primitives-core",
- "evm",
+ "evm 0.43.4 (git+https://github.com/rust-ethereum/evm?branch=v0.x)",
  "fp-evm",
  "frame-support",
  "frame-system",
@@ -12096,17 +12122,7 @@ version = "0.6.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b4c5cc86750666a3ed20bdaf5ca2a0344f9c67674cae0515bec2da16fbaa47db"
 dependencies = [
- "fixedbitset 0.4.2",
- "indexmap 2.9.0",
-]
-
-[[package]]
-name = "petgraph"
-version = "0.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3672b37090dbd86368a4145bc067582552b29c27377cad4e0a306c97f9bd7772"
-dependencies = [
- "fixedbitset 0.5.7",
+ "fixedbitset",
  "indexmap 2.9.0",
 ]
 
@@ -13555,10 +13571,10 @@ dependencies = [
 [[package]]
 name = "precompile-utils"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#d06492d238141d38fa601a4accf53937da7a52a8"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#88d51861180752c560e7019196c537cb3d1601fa"
 dependencies = [
  "environmental",
- "evm",
+ "evm 0.43.4 (git+https://github.com/rust-ethereum/evm.git?rev=e3f0e925390188e8d9396a7355fc43d63acbd013)",
  "fp-evm",
  "frame-support",
  "frame-system",
@@ -13579,7 +13595,7 @@ dependencies = [
 [[package]]
 name = "precompile-utils-macro"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#d06492d238141d38fa601a4accf53937da7a52a8"
+source = "git+https://github.com/moondance-labs/frontier?branch=tanssi-polkadot-stable2506#88d51861180752c560e7019196c537cb3d1601fa"
 dependencies = [
  "case",
  "num_enum",
@@ -13846,12 +13862,12 @@ version = "0.13.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "be769465445e8c1474e9c5dac2018218498557af32d9ed057325ec9a41ae81bf"
 dependencies = [
- "heck 0.4.1",
+ "heck 0.5.0",
  "itertools 0.13.0",
  "log",
  "multimap",
  "once_cell",
- "petgraph 0.7.1",
+ "petgraph",
  "prettyplease",
  "prost 0.13.5",
  "prost-types",
