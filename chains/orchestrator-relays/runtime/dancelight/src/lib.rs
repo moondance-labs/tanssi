@@ -110,7 +110,7 @@ use {
     snowbridge_outbound_queue_primitives::v1::Command,
     snowbridge_outbound_queue_primitives::v1::Fee,
     sp_core::{storage::well_known_keys as StorageWellKnownKeys, Get},
-    sp_core::{OpaqueMetadata, H256},
+    sp_core::{OpaqueMetadata, H256, ConstUint},
     sp_genesis_builder::PresetId,
     sp_runtime::{
         generic, impl_opaque_keys,
@@ -788,11 +788,11 @@ where
     type RuntimeCall = RuntimeCall;
 }
 
-impl<LocalCall> frame_system::offchain::CreateInherent<LocalCall> for Runtime
+impl<LocalCall> frame_system::offchain::CreateBare<LocalCall> for Runtime
 where
     RuntimeCall: From<LocalCall>,
 {
-    fn create_inherent(call: RuntimeCall) -> UncheckedExtrinsic {
+    fn create_bare(call: RuntimeCall) -> UncheckedExtrinsic {
         UncheckedExtrinsic::new_bare(call)
     }
 }
@@ -1057,6 +1057,12 @@ impl parachains_paras::Config for Runtime {
     type NextSessionRotation = Babe;
     type OnNewHead = Registrar;
     type AssignCoretime = ();
+    type Fungible = Balances;
+    // TODO: CooldownRemovalMultiplier from test network or from westend?
+    //type CooldownRemovalMultiplier = ConstUint<1>;
+    // Per day the cooldown is removed earlier, it should cost 1000.
+    type CooldownRemovalMultiplier = ConstUint<{ 1000 * UNITS / DAYS as u128 }>;
+    type AuthorizeCurrentCodeOrigin = EnsureRoot<Self::AccountId>;
 }
 
 parameter_types! {
