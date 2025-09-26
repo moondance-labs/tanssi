@@ -41,9 +41,9 @@ use {
     alloc::{vec, vec::Vec},
     cumulus_primitives_core::AggregateMessageOrigin,
     dp_impl_tanssi_pallets_config::impl_tanssi_pallets_config,
+    ethereum::AuthorizationList,
     fp_account::EthereumSignature,
     fp_rpc::TransactionStatus,
-    ethereum::AuthorizationList,
     frame_support::{
         construct_runtime,
         dispatch::{DispatchClass, GetDispatchInfo},

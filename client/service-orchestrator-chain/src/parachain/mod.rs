@@ -326,9 +326,14 @@ where
 
     let (block_import, import_queue) = import_queue(&parachain_config, &node_builder);
 
-    let (relay_chain_interface, collator_key, _network_service, _rx_incoming_request) = node_builder
-        .build_relay_chain_interface(&parachain_config, polkadot_config, collator_options.clone())
-        .await?;
+    let (relay_chain_interface, collator_key, _network_service, _rx_incoming_request) =
+        node_builder
+            .build_relay_chain_interface(
+                &parachain_config,
+                polkadot_config,
+                collator_options.clone(),
+            )
+            .await?;
 
     let validator = parachain_config.role.is_authority();
     let force_authoring = parachain_config.force_authoring;
@@ -668,7 +673,9 @@ where
         key: &[u8],
     ) -> OrchestratorChainResult<Option<StorageValue>> {
         // TODO: trusted or untrusted?
-        let state = self.backend.state_at(orchestrator_parent, TrieCacheContext::Untrusted)?;
+        let state = self
+            .backend
+            .state_at(orchestrator_parent, TrieCacheContext::Untrusted)?;
         state
             .storage(key)
             .map_err(OrchestratorChainError::GenericError)
@@ -679,7 +686,9 @@ where
         orchestrator_parent: PHash,
         relevant_keys: &Vec<Vec<u8>>,
     ) -> OrchestratorChainResult<StorageProof> {
-        let state_backend = self.backend.state_at(orchestrator_parent, TrieCacheContext::Untrusted)?;
+        let state_backend = self
+            .backend
+            .state_at(orchestrator_parent, TrieCacheContext::Untrusted)?;
 
         sp_state_machine::prove_read(state_backend, relevant_keys)
             .map_err(OrchestratorChainError::StateMachineError)

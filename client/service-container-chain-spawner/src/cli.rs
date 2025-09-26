@@ -126,12 +126,14 @@ impl ContainerChainRunCmd {
     /// Create [`CollatorOptions`] representing options only relevant to parachain collator nodes
     // Copied from polkadot-sdk/cumulus/client/cli/src/lib.rs
     pub fn collator_options(&self) -> CollatorOptions {
-        let relay_chain_mode =
-            match (self.relay_chain_light_client, !self.relay_chain_rpc_urls.is_empty()) {
-                (true, _) => RelayChainMode::LightClient,
-                (_, true) => RelayChainMode::ExternalRpc(self.relay_chain_rpc_urls.clone()),
-                _ => RelayChainMode::Embedded,
-            };
+        let relay_chain_mode = match (
+            self.relay_chain_light_client,
+            !self.relay_chain_rpc_urls.is_empty(),
+        ) {
+            (true, _) => RelayChainMode::LightClient,
+            (_, true) => RelayChainMode::ExternalRpc(self.relay_chain_rpc_urls.clone()),
+            _ => RelayChainMode::Embedded,
+        };
 
         CollatorOptions {
             relay_chain_mode,

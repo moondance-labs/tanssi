@@ -99,7 +99,7 @@ type TemplatePrecompilesAt<R> = (
     PrecompileAt<AddressU64<5>, Modexp, EthereumPrecompilesChecks>,
     // Non-template specific nor Ethereum precompiles :
     // TODO: benchmark Sha3FIPS256 precompile and use the real weights instead of ()
-    PrecompileAt<AddressU64<1024>, Sha3FIPS256::<R, ()>, (CallableByContract, CallableByPrecompile)>,
+    PrecompileAt<AddressU64<1024>, Sha3FIPS256<R, ()>, (CallableByContract, CallableByPrecompile)>,
     PrecompileAt<AddressU64<1025>, ECRecoverPublicKey, (CallableByContract, CallableByPrecompile)>,
     // Template specific precompiles:
     PrecompileAt<

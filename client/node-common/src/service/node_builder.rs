@@ -400,7 +400,10 @@ where
         let spawn_handle = task_manager.spawn_handle();
 
         let metrics = Net::register_notification_metrics(
-            parachain_config.prometheus_config.as_ref().map(|config| &config.registry),
+            parachain_config
+                .prometheus_config
+                .as_ref()
+                .map(|config| &config.registry),
         );
 
         let (network, system_rpc_tx, tx_handler_controller, sync_service) =
