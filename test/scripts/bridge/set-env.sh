@@ -18,7 +18,7 @@ export PATH="$output_bin_dir:$PATH"
 relayer_root_dir="$artifacts_dir/relayer"
 symbiotic_contracts_dir="$artifacts_dir/tanssi-symbiotic"
 web_dir="$relayer_root_dir/snowbridge/web"
-export contract_dir="$symbiotic_contracts_dir/lib/tanssi-bridge-relayer/snowbridge/contracts"
+export contract_dir="$symbiotic_contracts_dir/lib/snowbridge/contracts"
 test_helpers_dir="$web_dir/packages/test-helpers"
 relay_bin="$relayer_root_dir/build/tanssi-bridge-relayer"
 
@@ -26,7 +26,8 @@ relay_bin="$relayer_root_dir/build/tanssi-bridge-relayer"
 RELAYER_COMMIT="61773050e66a83139330a579a31b597b3a91faea" # TODO: Change to tag when we do releases
 
 # THIS IS WHERE CONTRACTS SHOULD BE DEPLOYED
-TANSSI_SYMBIOTIC_COMMIT="c0e299f8ef48c96dc1e3724aae598083b82073fa" # TODO: Change to tag when we do release
+# TODO: change commit when final changes are merged
+TANSSI_SYMBIOTIC_COMMIT="fc3e32b2e9abeeea6f39839a9aae9b98cf369597" # TODO: Change to tag when we do release
 GETH_TAG="v1.15.5" # We will need to investigate if this is right
 LODESTAR_TAG="v1.27.0"
 
