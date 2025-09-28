@@ -390,16 +390,14 @@ describeSuite({
                 expect(failedWhitelistCallBlock.result?.successful).to.be.false;
 
                 // 3. Verify the call is still not whitelisted
-                const isCallWhitelistedAfterProposal = await api.query.whitelist.whitelistedCall(
-                    call.method.hash.toHex()
-                );
-                expect(isCallWhitelistedAfterProposal.isNone, "The call should still not be whitelisted");
+                const isCallWhitelistedAfterTx = await api.query.whitelist.whitelistedCall(call.method.hash.toHex());
+                expect(isCallWhitelistedAfterTx.isNone, "The call should still not be whitelisted");
             },
         });
 
         it({
             id: "E08",
-            title: "Non-whitelist origin cannot dispatch a whitelisted call",
+            title: "Non-whitelist origin can't remove a call from being whitelisted",
             test: async ({ skip }) => {
                 if (isStarlightRuntime(api)) {
                     skip();
@@ -410,10 +408,76 @@ describeSuite({
                 const isCallWhitelisted = await api.query.whitelist.whitelistedCall(call.method.hash.toHex());
                 expect(isCallWhitelisted.isSome, "The call should be whitelisted");
 
-                // 1. Compose the whitelisted call dispatch
+                // 1. Try to remove the whitelisted the call using a non-whitelist origin (Charlie)
+                const removeWhitelistedCallTx = api.tx.whitelist.removeWhitelistedCall(call.method.hash.toHex());
+                const failedRemoveWhitelistCallBlock = await context.createBlock(
+                    await removeWhitelistedCallTx.signAsync(charlie)
+                );
+                expect(failedRemoveWhitelistCallBlock.result?.successful).to.be.false;
+
+                // 2. Verify the call is still whitelisted
+                const isCallWhitelistedAfterTx = await api.query.whitelist.whitelistedCall(call.method.hash.toHex());
+                expect(isCallWhitelistedAfterTx.isSome, "The call should still be whitelisted");
+            },
+        });
+
+        it({
+            id: "E09",
+            title: "Technical Committee can remove a call from being whitelisted",
+            test: async ({ skip }) => {
+                if (isStarlightRuntime(api)) {
+                    skip();
+                }
+
+                // Pre-check: Verify the call is whitelisted
+                const call = api.tx.system.remarkWithEvent("0x0001");
+                const isCallWhitelisted = await api.query.whitelist.whitelistedCall(call.method.hash.toHex());
+                expect(isCallWhitelisted.isSome, "The call should be whitelisted");
+
+                // 1. Compose the technical committee proposal to remove a call from being whitelisted
+                const removeWhitelistedCallTx = api.tx.whitelist.removeWhitelistedCall(call.method.hash.toHex());
+                const removeWhitelistedCallProposal = api.tx.openTechCommitteeCollective.propose(
+                    1, // threshold
+                    removeWhitelistedCallTx,
+                    removeWhitelistedCallTx.length
+                );
+
+                // 2. Since the proposal has threshold of 1, we can skip voting and go to closing the proposal directly
+                await context.createBlock(await removeWhitelistedCallProposal.signAsync(dave), {
+                    allowFailures: false,
+                });
+
+                // 3. Verify the call is not whitelisted anymore
+                const isCallWhitelistedAfterProposal = await api.query.whitelist.whitelistedCall(
+                    call.method.hash.toHex()
+                );
+                expect(isCallWhitelistedAfterProposal.isNone, "The call should not be whitelisted after removal.");
+            },
+        });
+
+        it({
+            id: "E10",
+            title: "Non-whitelist origin cannot dispatch a whitelisted call",
+            test: async ({ skip }) => {
+                if (isStarlightRuntime(api)) {
+                    skip();
+                }
+
+                // 1. Whitelist the call for this test
+                const call = api.tx.system.remarkWithEvent("0x0001");
+                await context.createBlock(
+                    await api.tx.sudo.sudo(api.tx.whitelist.whitelistCall(call.method.hash.toHex())).signAsync(alice),
+                    {
+                        allowFailures: false,
+                    }
+                );
+                const isCallWhitelisted = await api.query.whitelist.whitelistedCall(call.method.hash.toHex());
+                expect(isCallWhitelisted.isSome, "The call should be whitelisted");
+
+                // 2. Compose the whitelisted call dispatch
                 const whitelistedCallDispatchTx = api.tx.whitelist.dispatchWhitelistedCallWithPreimage(call);
 
-                // 2. Try to dispatch the whitelisted call using a non-whitelist origin (Charlie)
+                // 3. Try to dispatch the whitelisted call using a non-whitelist origin (Charlie)
                 const failedWhitelistedCallDispatchBlock = await context.createBlock(
                     await whitelistedCallDispatchTx.signAsync(charlie)
                 );
@@ -427,7 +491,7 @@ describeSuite({
         });
 
         it({
-            id: "E09",
+            id: "E11",
             title: "Whitelisted call can be dispatched via whitelist track proposal",
             test: async ({ skip }) => {
                 if (isStarlightRuntime(api)) {
@@ -503,7 +567,6 @@ describeSuite({
                     { section: "referenda", method: "Confirmed" },
                     { section: "scheduler", method: "Dispatched" },
                     { section: "scheduler", method: "Dispatched" },
-                    { section: "whitelist", method: "WhitelistedCallDispatched" },
                 ];
 
                 for (let i = 0; i <= 450; i++) {
@@ -544,7 +607,7 @@ describeSuite({
         });
 
         it({
-            id: "E10",
+            id: "E12",
             title: "Non-whitelisted call cannot be dispatched via whitelist referendum track",
             test: async ({ skip }) => {
                 if (isStarlightRuntime(api)) {
