@@ -8,6 +8,7 @@ import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_TRANSFERS, expectEventCoun
 import {
     ETHEREUM_NETWORK_MAINNET,
     ETHEREUM_NETWORK_TESTNET,
+    SNOWBRIDGE_FEES_ACCOUNT,
     generateEventLog,
     generateUpdate,
     mockAndInsertHeadData,
@@ -52,6 +53,12 @@ describeSuite({
                 const containerParaId = 2001;
                 const assetId = 42;
                 const tokenAddrHex = "1111111111111111111111111111111111111111";
+
+                // Add funds in relay fees account
+                const transferFeesAccountTx = await polkadotJs.tx.sudo.sudo(
+                    polkadotJs.tx.balances.forceSetBalance(SNOWBRIDGE_FEES_ACCOUNT, 500_000_000_000_000_000n)
+                ).signAsync(alice);
+                await context.createBlock([transferFeesAccountTx], { allowFailures: false });
 
                 // Hard-coding payload as we do not have scale encoding-decoding
                 const log = await generateEventLog(
