@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>.
 
-use sp_api::CallApiAt;
 use {
     crate::{
         collators as collator_util, collators::ClaimMode,

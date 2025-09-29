@@ -897,14 +897,9 @@ impl<T> MigrateMMRLeafPallet<T> {
 
 pub mod snowbridge_system_migration {
     use super::*;
-    use alloc::vec::Vec;
     use frame_support::pallet_prelude::*;
     use snowbridge_core::TokenId;
-    use xcm::{
-        self,
-        v5::NetworkId::ByGenesis,
-        v5::{Junction::GlobalConsensus, ROCOCO_GENESIS_HASH},
-    };
+    use xcm::{self, v5::Junction::GlobalConsensus, v5::NetworkId::ByGenesis};
 
     pub const DANCELIGHT_GENESIS_HASH: [u8; 32] =
         hex_literal::hex!["983a1a72503d6cc3636776747ec627172b51272bf45e50a355348facb67a820a"];
@@ -942,7 +937,7 @@ pub mod snowbridge_system_migration {
         frame_support::traits::OnRuntimeUpgrade for MigrationForGenesisHashes<T, L>
     {
         fn on_runtime_upgrade() -> Weight {
-            let mut weight = T::DbWeight::get().reads(1);
+            let weight = T::DbWeight::get().reads(1);
             /*
             let mut len_map1 = 0;
             let mut len_map2 = 0;

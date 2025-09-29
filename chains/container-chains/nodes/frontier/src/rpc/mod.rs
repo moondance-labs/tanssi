@@ -29,6 +29,7 @@ use {
     cumulus_client_parachain_inherent::ParachainInherentData,
     cumulus_primitives_core::{ParaId, PersistedValidationData},
     cumulus_test_relay_sproof_builder::RelayStateSproofBuilder,
+    fc_mapping_sync::{kv::MappingSyncWorker, SyncStrategy},
     fc_rpc::{
         EthApiServer, EthFilterApiServer, EthPubSubApiServer, EthTask, TxPool, TxPoolApiServer,
     },
@@ -340,7 +341,6 @@ pub struct SpawnTasksParams<'a, B: BlockT, C, BE> {
     >,
 }
 
-use fc_mapping_sync::{kv::MappingSyncWorker, SyncStrategy};
 /// Spawn the tasks that are required to run Moonbeam.
 pub fn spawn_essential_tasks<B, C, BE>(params: SpawnTasksParams<B, C, BE>)
 where

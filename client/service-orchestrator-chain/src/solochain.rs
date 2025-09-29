@@ -22,7 +22,6 @@ use {
         cli::RelayChainCli, service::solochain::RelayAsOrchestratorChainInterfaceBuilder,
     },
     sc_cli::{CliConfiguration, DefaultConfigurationValues, LoggerBuilder, Signals, SubstrateCli},
-    sc_network::config::NetworkBackendType,
     sc_service::{
         config::{ExecutorConfiguration, KeystoreConfig, NetworkConfiguration, TransportConfig},
         BasePath, BlocksPruning, ChainType, Configuration, DatabaseSource, GenericChainSpec,

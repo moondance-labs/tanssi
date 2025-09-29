@@ -25,7 +25,6 @@ use {
     snowbridge_core::{AgentId, ChannelId, TokenId},
     snowbridge_outbound_queue_primitives::v1::message::{Command, Message, SendMessage},
     sp_core::H160,
-    sp_runtime::traits::MaybeEquivalence,
     xcm::latest::SendError::{MissingArgument, NotApplicable, Unroutable},
     xcm::prelude::*,
     xcm_executor::traits::ExportXcm,

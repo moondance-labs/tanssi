@@ -33,10 +33,7 @@ use snowbridge_core::Channel;
 use snowbridge_pallet_inbound_queue::RewardProcessor;
 use sp_core::{Get, H160, H256};
 use sp_runtime::traits::MaybeConvert;
-use sp_runtime::{
-    traits::{Hash as _, MaybeEquivalence},
-    DispatchError, DispatchResult,
-};
+use sp_runtime::{traits::Hash as _, DispatchError, DispatchResult};
 use xcm::latest::{
     prelude::*, Asset as XcmAsset, AssetId as XcmAssetId, Assets as XcmAssets, ExecuteXcm,
     Fungibility, Junctions::*,
