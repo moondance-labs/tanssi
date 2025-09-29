@@ -2375,6 +2375,8 @@ fn create_payload_with_token_id(token_id: H256) -> Vec<u8> {
     message.encode()
 }
 
+// TODO: add tests for lts version
+
 #[test]
 fn test_token_id_hashing_consistency_across_xcm_versions() {
     // This test ensures that TokenIdOf hashing remains consistent across XCM versions.
