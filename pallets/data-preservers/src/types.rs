@@ -22,15 +22,58 @@ use {
     tp_traits::{apply, derive_scale_codec, derive_storage_traits},
 };
 
-// Data preserver profile.
+pub type StringOf<T> = BoundedVec<u8, <T as Config>::MaxStringLen>;
+pub type StringListOf<T> = BoundedVec<StringOf<T>, <T as Config>::MaxNodeUrlCount>;
+
+/// Old profile structure.
+/// Keep it until migration is removed.
+#[apply(derive_scale_codec)]
+#[derive(RuntimeDebugNoBound, PartialEqNoBound, EqNoBound, CloneNoBound, MaxEncodedLen)]
+#[scale_info(skip_type_params(T))]
+pub struct OldProfile<T: Config> {
+    pub url: BoundedVec<u8, T::MaxStringLen>,
+    pub para_ids: ParaIdsFilter<T>,
+    pub mode: ProfileMode,
+    pub assignment_request: ProviderRequestOf<T>,
+}
+
 #[apply(derive_scale_codec)]
 #[derive(RuntimeDebugNoBound, PartialEqNoBound, EqNoBound, CloneNoBound, MaxEncodedLen)]
 #[scale_info(skip_type_params(T))]
 pub struct Profile<T: Config> {
-    pub url: BoundedVec<u8, T::MaxNodeUrlLen>,
+    /// Which para ids this profile is willing to accept providing services to.
     pub para_ids: ParaIdsFilter<T>,
-    pub mode: ProfileMode,
+
+    /// Specifies how the profile is willing to be assigned, mainly in terms of payment.
     pub assignment_request: ProviderRequestOf<T>,
+
+    /// URLs to directly connect to this node RPC. Multiple URLs can be used to expose different
+    /// protocols (ws, wss, https, etc).
+    pub direct_rpc_urls: StringListOf<T>,
+
+    /// URLs to connect to a proxy/load balancer represented by this profile. Multiple URLs can be
+    /// used to expose different protocols (ws, wss, https, etc).
+    pub proxy_rpc_urls: StringListOf<T>,
+
+    /// URL to connect to the node as a bootnode. URL should be in MultiAddress format.
+    pub bootnode_url: Option<StringOf<T>>,
+
+    /// Kind of node this profile is running, which determines which services it can provide.
+    pub node_type: NodeType,
+
+    /// Freeform field to provide additional informations.
+    pub additional_info: StringOf<T>,
+}
+
+impl<T: Config> Profile<T> {
+    pub fn strings_len(&self) -> usize {
+        let mut len = 0;
+        len += self.direct_rpc_urls.iter().map(|x| x.len()).sum::<usize>();
+        len += self.proxy_rpc_urls.iter().map(|x| x.len()).sum::<usize>();
+        len += self.bootnode_url.iter().map(|x| x.len()).sum::<usize>();
+        len += self.additional_info.len();
+        len
+    }
 }
 
 #[apply(derive_scale_codec)]
@@ -65,6 +108,13 @@ impl<T: Config> ParaIdsFilter<T> {
 pub enum ProfileMode {
     Bootnode,
     Rpc { supports_ethereum_rpcs: bool },
+}
+
+#[apply(derive_storage_traits)]
+#[derive(MaxEncodedLen, DecodeWithMemTracking)]
+pub enum NodeType {
+    Substrate,
+    Frontier,
 }
 
 /// Profile with additional data:

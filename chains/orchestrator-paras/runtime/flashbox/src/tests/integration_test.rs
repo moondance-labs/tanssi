@@ -47,16 +47,20 @@ use {
 };
 
 fn set_dummy_boot_node(para_manager: RuntimeOrigin, para_id: ParaId) {
-    use pallet_data_preservers::{ParaIdsFilter, Profile, ProfileMode};
+    use pallet_data_preservers::{NodeType, ParaIdsFilter, Profile};
 
     let profile = Profile {
-        url:
+        bootnode_url: Some(
             b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9"
                 .to_vec()
                 .try_into()
                 .expect("to fit in BoundedVec"),
+        ),
+        direct_rpc_urls: Default::default(),
+        proxy_rpc_urls: Default::default(),
         para_ids: ParaIdsFilter::AnyParaId,
-        mode: ProfileMode::Bootnode,
+        node_type: NodeType::Substrate,
+        additional_info: Default::default(),
         assignment_request: tp_data_preservers_common::ProviderRequest::Free,
     };
 
@@ -3889,178 +3893,6 @@ fn test_collator_assignment_tip_withdraw_min_tip() {
 }
 
 #[test]
-fn test_migration_data_preservers_assignments() {
-    ExtBuilder::default().build().execute_with(|| {
-        use {
-            crate::{MaxAssignmentsPerParaId, MaxNodeUrlLen},
-            alloc::collections::btree_set::BTreeSet,
-            frame_support::{
-                migration::{have_storage_value, put_storage_value},
-                Blake2_128Concat, StorageHasher,
-            },
-            pallet_data_preservers::{ParaIdsFilter, Profile, ProfileMode, RegisteredProfile},
-            sp_runtime::BoundedBTreeSet,
-            tanssi_runtime_common::migrations::DataPreserversAssignmentsMigration,
-        };
-
-        macro_rules! bset {
-            ( $($value:expr),* $(,)? ) => {
-                {
-                    let mut set = BoundedBTreeSet::new();
-                    $(
-                        set.try_insert($value).expect("max bound reached");
-                    )*
-                    set
-                }
-            }
-        }
-
-        macro_rules! set {
-            ( $($value:expr),* $(,)? ) => {
-                {
-                    let mut set = BTreeSet::new();
-                    $(
-                        set.insert($value);
-                    )*
-                    set
-                }
-            }
-        }
-
-        let account = AccountId::from([0u8; 32]);
-        let free_request = tp_data_preservers_common::ProviderRequest::Free;
-        let free_witness = tp_data_preservers_common::AssignmentWitness::Free;
-
-        let pallet_prefix: &[u8] = b"DataPreservers";
-        let storage_item_prefix: &[u8] = b"BootNodes";
-
-        // Register 2 parachains
-        assert_ok!(Registrar::register(
-            origin_of(ALICE.into()),
-            1001.into(),
-            empty_genesis_data(),
-            None
-        ));
-        assert_ok!(Registrar::register(
-            origin_of(BOB.into()),
-            1002.into(),
-            empty_genesis_data(),
-            None
-        ));
-
-        // Set bootnodes in old storage
-        let bootnodes: BoundedVec<BoundedVec<u8, MaxNodeUrlLen>, MaxAssignmentsPerParaId> = vec![
-            b"alpha".to_vec().try_into().unwrap(),
-            b"beta".to_vec().try_into().unwrap(),
-        ]
-        .try_into()
-        .unwrap();
-        put_storage_value(
-            pallet_prefix,
-            storage_item_prefix,
-            &Blake2_128Concat::hash(&ParaId::from(1001).encode()),
-            bootnodes,
-        );
-
-        let bootnodes: BoundedVec<BoundedVec<u8, MaxNodeUrlLen>, MaxAssignmentsPerParaId> = vec![
-            b"delta".to_vec().try_into().unwrap(),
-            b"gamma".to_vec().try_into().unwrap(),
-        ]
-        .try_into()
-        .unwrap();
-        put_storage_value(
-            pallet_prefix,
-            storage_item_prefix,
-            &Blake2_128Concat::hash(&ParaId::from(1002).encode()),
-            bootnodes,
-        );
-
-        // Apply migration
-        let migration = DataPreserversAssignmentsMigration::<Runtime>(Default::default());
-        migration.migrate(Default::default());
-
-        // Check old storage is empty
-        assert!(!have_storage_value(
-            pallet_prefix,
-            storage_item_prefix,
-            &Blake2_128Concat::hash(&ParaId::from(1001).encode())
-        ));
-        assert!(!have_storage_value(
-            pallet_prefix,
-            storage_item_prefix,
-            &Blake2_128Concat::hash(&ParaId::from(1002).encode())
-        ));
-
-        // Check new storage
-        assert_eq!(
-            pallet_data_preservers::Assignments::<Runtime>::get(ParaId::from(1001)).into_inner(),
-            set![0, 1]
-        );
-        assert_eq!(
-            pallet_data_preservers::Assignments::<Runtime>::get(ParaId::from(1002)).into_inner(),
-            set![2, 3]
-        );
-        assert_eq!(pallet_data_preservers::NextProfileId::<Runtime>::get(), 4);
-        assert_eq!(
-            pallet_data_preservers::Profiles::<Runtime>::get(0),
-            Some(RegisteredProfile {
-                account: account.clone(),
-                deposit: 0,
-                assignment: Some((1001.into(), free_witness)),
-                profile: Profile {
-                    url: b"alpha".to_vec().try_into().unwrap(),
-                    para_ids: ParaIdsFilter::Whitelist(bset![1001.into()]),
-                    mode: ProfileMode::Bootnode,
-                    assignment_request: free_request,
-                }
-            })
-        );
-        assert_eq!(
-            pallet_data_preservers::Profiles::<Runtime>::get(1),
-            Some(RegisteredProfile {
-                account: account.clone(),
-                deposit: 0,
-                assignment: Some((1001.into(), free_witness)),
-                profile: Profile {
-                    url: b"beta".to_vec().try_into().unwrap(),
-                    para_ids: ParaIdsFilter::Whitelist(bset![1001.into()]),
-                    mode: ProfileMode::Bootnode,
-                    assignment_request: free_request,
-                }
-            })
-        );
-        assert_eq!(
-            pallet_data_preservers::Profiles::<Runtime>::get(2),
-            Some(RegisteredProfile {
-                account: account.clone(),
-                deposit: 0,
-                assignment: Some((1002.into(), free_witness)),
-                profile: Profile {
-                    url: b"delta".to_vec().try_into().unwrap(),
-                    para_ids: ParaIdsFilter::Whitelist(bset![1002.into()]),
-                    mode: ProfileMode::Bootnode,
-                    assignment_request: free_request,
-                }
-            })
-        );
-        assert_eq!(
-            pallet_data_preservers::Profiles::<Runtime>::get(3),
-            Some(RegisteredProfile {
-                account: account.clone(),
-                deposit: 0,
-                assignment: Some((1002.into(), free_witness)),
-                profile: Profile {
-                    url: b"gamma".to_vec().try_into().unwrap(),
-                    para_ids: ParaIdsFilter::Whitelist(bset![1002.into()]),
-                    mode: ProfileMode::Bootnode,
-                    assignment_request: free_request,
-                }
-            })
-        );
-    })
-}
-
-#[test]
 fn test_migration_registrar_reserves_to_hold() {
     ExtBuilder::default()
         .with_balances(vec![(AccountId::from(DAVE), 100_000 * UNIT)])
@@ -4223,13 +4055,16 @@ fn test_container_deregister_unassign_data_preserver() {
         .build()
         .execute_with(|| {
             use pallet_data_preservers::{
-                AssignerParameterOf, ParaIdsFilter, Profile, ProfileMode, ProviderRequestOf,
+                AssignerParameterOf, NodeType, ParaIdsFilter, Profile, ProviderRequestOf,
             };
 
             let profile = Profile {
-                url: b"test".to_vec().try_into().unwrap(),
+                bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
+                direct_rpc_urls: Default::default(),
+                proxy_rpc_urls: Default::default(),
                 para_ids: ParaIdsFilter::AnyParaId,
-                mode: ProfileMode::Bootnode,
+                node_type: NodeType::Substrate,
+                additional_info: Default::default(),
                 assignment_request: ProviderRequestOf::<Runtime>::Free,
             };
 
@@ -4275,13 +4110,16 @@ fn test_data_preserver_with_stream_payment() {
         .build()
         .execute_with(|| {
             use pallet_data_preservers::{
-                AssignerParameterOf, ParaIdsFilter, Profile, ProfileMode, ProviderRequestOf,
+                AssignerParameterOf, NodeType, ParaIdsFilter, Profile, ProviderRequestOf,
             };
 
             let profile = Profile {
-                url: b"test".to_vec().try_into().unwrap(),
+                bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
+                direct_rpc_urls: Default::default(),
+                proxy_rpc_urls: Default::default(),
                 para_ids: ParaIdsFilter::AnyParaId,
-                mode: ProfileMode::Bootnode,
+                node_type: NodeType::Substrate,
+                additional_info: Default::default(),
                 assignment_request: ProviderRequestOf::<Runtime>::StreamPayment {
                     config: StreamConfig {
                         time_unit: StreamPaymentTimeUnit::BlockNumber,
@@ -4341,13 +4179,16 @@ fn test_data_preserver_kind_needs_to_match() {
         .build()
         .execute_with(|| {
             use pallet_data_preservers::{
-                AssignerParameterOf, ParaIdsFilter, Profile, ProfileMode, ProviderRequestOf,
+                AssignerParameterOf, NodeType, ParaIdsFilter, Profile, ProviderRequestOf,
             };
 
             let profile = Profile {
-                url: b"test".to_vec().try_into().unwrap(),
+                bootnode_url: Some(b"test".to_vec().try_into().unwrap()),
+                direct_rpc_urls: Default::default(),
+                proxy_rpc_urls: Default::default(),
                 para_ids: ParaIdsFilter::AnyParaId,
-                mode: ProfileMode::Bootnode,
+                node_type: NodeType::Substrate,
+                additional_info: Default::default(),
                 assignment_request: ProviderRequestOf::<Runtime>::Free,
             };
 

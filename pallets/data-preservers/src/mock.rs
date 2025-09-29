@@ -456,7 +456,8 @@ impl pallet_data_preservers::Config for Test {
     type AssignmentOrigin = MockContainerChainManager<Test>;
     type ForceSetProfileOrigin = EnsureRoot<AccountId>;
     type MaxAssignmentsPerParaId = ConstU32<10>;
-    type MaxNodeUrlLen = ConstU32<200>;
+    type MaxNodeUrlCount = ConstU32<4>;
+    type MaxStringLen = ConstU32<200>;
     type MaxParaIdsVecLen = ConstU32<20>;
     type ProfileDeposit = tp_traits::BytesDeposit<ConstU128<1000>, ConstU128<51>>;
     type WeightInfo = ();
