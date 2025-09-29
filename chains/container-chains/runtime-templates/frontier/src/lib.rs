@@ -813,6 +813,17 @@ pub mod dynamic_params {
         #[codec(index = 1)]
         pub static AllowedAddressesToCreateInner: DeployFilter = DeployFilter::All;
     }
+
+    #[dynamic_pallet_params]
+    #[codec(index = 4)]
+    pub mod xcm_config {
+        use super::*;
+
+        /// The relay network identifier for this container chain.
+        #[codec(index = 0)]
+        pub static RelayNetwork: xcm::latest::NetworkId = 
+            xcm::latest::NetworkId::ByGenesis(crate::xcm_config::DANCELIGHT_GENESIS_HASH);
+    }
 }
 
 impl pallet_parameters::Config for Runtime {

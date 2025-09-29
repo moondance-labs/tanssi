@@ -26,7 +26,7 @@ use {
     cumulus_primitives_core::{AggregateMessageOrigin, ParaId},
     frame_support::{
         parameter_types,
-        traits::{Disabled, Equals, Everything, Nothing, PalletInfoAccess, TransformOrigin},
+        traits::{Disabled, Equals, Everything, Get, Nothing, PalletInfoAccess, TransformOrigin},
         weights::Weight,
     },
     frame_system::EnsureRoot,
@@ -74,10 +74,24 @@ parameter_types! {
     // One XCM operation is 1_000_000_000 weight - almost certainly a conservative estimate.
     pub UnitWeightCost: Weight = Weight::from_parts(1_000_000_000, 64 * 1024);
 
-    // For now this is being unused for our use cases (e.g container token transfers).
-    // We might need to revisit this later and make it dynamic (through pallet params for instance).
-    pub const RelayNetwork: NetworkId = NetworkId::ByGenesis(DANCELIGHT_GENESIS_HASH);
+    // Dynamic RelayNetwork parameter - configurable via pallet_parameters
 
+}
+
+/// Get the current RelayNetwork value from runtime parameters
+pub struct RelayNetwork;
+impl Get<NetworkId> for RelayNetwork {
+    fn get() -> NetworkId {
+        crate::dynamic_params::xcm_config::RelayNetwork::get()
+    }
+}
+impl Get<Option<NetworkId>> for RelayNetwork {
+    fn get() -> Option<NetworkId> {
+        Some(crate::dynamic_params::xcm_config::RelayNetwork::get())
+    }
+}
+
+parameter_types! {
     // The relay chain Origin type
     pub RelayChainOrigin: RuntimeOrigin = cumulus_pallet_xcm::Origin::Relay.into();
 
@@ -88,7 +102,7 @@ parameter_types! {
     pub MaxInstructions: u32 = 100;
 
     // The universal location within the global consensus system
-    pub UniversalLocation: InteriorLocation = [GlobalConsensus(RelayNetwork::get()), Parachain(ParachainInfo::parachain_id().into())].into();
+    pub UniversalLocation: InteriorLocation = [GlobalConsensus(<RelayNetwork as Get<NetworkId>>::get()), Parachain(ParachainInfo::parachain_id().into())].into();
 
     pub const BaseDeliveryFee: u128 = 100 * MICROUNIT;
 
