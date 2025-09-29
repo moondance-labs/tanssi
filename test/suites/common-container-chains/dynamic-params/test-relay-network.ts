@@ -12,10 +12,9 @@ describeSuite({
         let polkadotJs: ApiPromise;
         let alice: KeyringPair;
         let bob: KeyringPair;
+        let chain: string;
         let dancelightNetworkId: any;
         let starlightNetworkId: any;
-        let networkId: any;
-        let chain: string;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
