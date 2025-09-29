@@ -442,7 +442,7 @@ pub fn run() -> Result<()> {
                     container_chain_config = Some((container_chain_cli, tokio_handle));
                 }
 
-                match config.network.network_backend.unwrap_or(sc_network::config::NetworkBackendType::Libp2p) {
+                match config.network.network_backend.unwrap_or(sc_network::config::NetworkBackendType::Litep2p) {
                     sc_network::config::NetworkBackendType::Libp2p => {
                          tc_service_orchestrator_chain::parachain::start_parachain_node::<sc_network::NetworkWorker<_, _>>(
                             config,

@@ -226,7 +226,7 @@ pub fn build_full<OverseerGenerator: OverseerGen>(
     match config
         .network
         .network_backend
-        .unwrap_or(sc_network::config::NetworkBackendType::Libp2p)
+        .unwrap_or(sc_network::config::NetworkBackendType::Litep2p)
     {
         sc_network::config::NetworkBackendType::Libp2p => {
             new_full::<_, sc_network::NetworkWorker<Block, Hash>>(sealing, config, params)
