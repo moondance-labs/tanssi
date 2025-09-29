@@ -1,7 +1,7 @@
 import { describeSuite, expect, beforeAll } from "@moonwall/cli";
 import { type KeyringPair, alith, baltathar } from "@moonwall/util";
 import { Keyring } from "@polkadot/api";
-import { ApiPromise } from "@polkadot/api";
+import type { ApiPromise } from "@polkadot/api";
 import { DANCELIGHT_GENESIS_HASH, TANSSI_GENESIS_HASH } from "../../../utils/constants";
 
 describeSuite({
