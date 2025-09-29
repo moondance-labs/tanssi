@@ -16,3 +16,4 @@ export * from "./xcm";
 export * from "./zombie";
 export * from "./light-client";
 export * from "./events";
+export * from "./runtime";
