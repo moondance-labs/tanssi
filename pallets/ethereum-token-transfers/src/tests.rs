@@ -18,7 +18,7 @@ use {
     super::*,
     crate::mock::*,
     frame_support::{assert_noop, assert_ok},
-    snowbridge_core::{AgentId, ChannelId, ParaId},
+    snowbridge_core::{AgentId, ChannelId, ParaId, TokenIdOf},
     sp_runtime::DispatchError::BadOrigin,
 };
 
@@ -130,7 +130,9 @@ fn test_transfer_native_token_succeeds() {
             H160::default(),
         ));
 
-        let expected_token_id = MockTokenIdConvert::convert_back(&TokenLocation::get());
+        // TODO: this doesnt work because the location parent does not have a TokenId, need to change
+        // this test suite to use a different location like we did in external-validators-rewards
+        let expected_token_id = TokenIdOf::convert_location(&TokenLocation::get());
 
         System::assert_last_event(RuntimeEvent::EthereumTokenTransfers(
             crate::Event::NativeTokenTransferred {

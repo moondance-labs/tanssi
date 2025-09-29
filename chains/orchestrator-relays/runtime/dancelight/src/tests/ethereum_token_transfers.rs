@@ -16,6 +16,8 @@
 
 #![cfg(test)]
 
+use crate::tests::container_token_transfers::HackMakeTestsCompile;
+use pallet_xcm::ExecutionError;
 use {
     crate::{
         bridge_to_ethereum_config::EthereumGatewayAddress, filter_events, tests::common::*,
@@ -39,7 +41,7 @@ use {
     },
     snowbridge_inbound_queue_primitives::{EventProof, Log},
     sp_core::{H160, H256},
-    sp_runtime::{traits::MaybeEquivalence, FixedU128, TokenError},
+    sp_runtime::{FixedU128, TokenError},
     tanssi_runtime_common::relay::NativeTokenTransferMessageProcessor,
     xcm::{
         latest::{
@@ -1840,7 +1842,10 @@ fn cant_send_eth_unknown_token() {
                     0u32,
                     Unlimited,
                 ),
-                pallet_xcm::Error::<Runtime>::LocalExecutionIncomplete
+                pallet_xcm::Error::<Runtime>::LocalExecutionIncompleteWithError {
+                    index: 0,
+                    error: ExecutionError::Overflow
+                }
             );
 
             assert_eq!(
@@ -1936,7 +1941,10 @@ fn cant_send_eth_native_token_more_than_owned() {
                     0u32,
                     Unlimited,
                 ),
-                pallet_xcm::Error::<Runtime>::LocalExecutionIncomplete
+                pallet_xcm::Error::<Runtime>::LocalExecutionIncompleteWithError {
+                    index: 0,
+                    error: ExecutionError::Overflow
+                }
             );
 
             assert_eq!(

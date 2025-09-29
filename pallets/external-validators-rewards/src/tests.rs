@@ -22,7 +22,6 @@ use {
     sp_core::H256,
     tp_bridge::Command,
     tp_traits::{ActiveEraInfo, OnEraEnd, OnEraStart},
-    xcm::latest::prelude::*,
 };
 
 #[test]

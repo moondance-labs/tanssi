@@ -25,7 +25,7 @@ use {
     snowbridge_outbound_queue_primitives::{SendError, SendMessageFeeProvider},
     sp_core::H256,
     sp_runtime::{
-        traits::{BlakeTwo256, IdentityLookup, Keccak256, MaybeEquivalence},
+        traits::{BlakeTwo256, IdentityLookup, Keccak256},
         BuildStorage,
     },
     xcm::prelude::*,
@@ -167,7 +167,6 @@ parameter_types! {
 }
 
 impl pallet_external_validators_rewards::Config for Test {
-    type RuntimeEvent = RuntimeEvent;
     type EraIndexProvider = Mock;
     type HistoryDepth = ConstU32<10>;
     type BackingPoints = ConstU32<20>;
