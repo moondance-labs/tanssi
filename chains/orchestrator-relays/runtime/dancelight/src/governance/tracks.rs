@@ -86,3 +86,19 @@ impl pallet_referenda::TracksInfo<Balance, BlockNumber> for TracksInfo {
         }
     }
 }
+
+#[test]
+/// To ensure voters are always locked into their vote
+fn vote_locking_always_longer_than_enactment_period() {
+    use core::str::from_utf8;
+    for track in TRACKS_DATA {
+        assert!(
+            <Runtime as pallet_conviction_voting::Config>::VoteLockingPeriod::get()
+                >= track.info.min_enactment_period,
+            "Track {} has enactment period {} < vote locking period {}",
+            from_utf8(&track.info.name).expect("Track name is valid UTF-8"),
+            track.info.min_enactment_period,
+            <Runtime as pallet_conviction_voting::Config>::VoteLockingPeriod::get(),
+        );
+    }
+}
