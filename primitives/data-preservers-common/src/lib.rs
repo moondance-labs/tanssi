@@ -127,20 +127,6 @@ impl<Runtime: RuntimeConfigs> pallet_data_preservers::AssignmentProcessor<Accoun
         Ok(())
     }
 
-    /// Return the values for a free assignment if it is supported.
-    /// This is required to perform automatic migration from old Bootnodes storage.
-    fn free_variant_values() -> Option<(
-        Self::ProviderRequest,
-        Self::AssignerParameter,
-        Self::AssignmentWitness,
-    )> {
-        Some((
-            Self::ProviderRequest::Free,
-            Self::AssignerParameter::Free,
-            Self::AssignmentWitness::Free,
-        ))
-    }
-
     // The values returned by the following functions should match with each other.
     #[cfg(feature = "runtime-benchmarks")]
     fn benchmark_provider_request() -> Self::ProviderRequest {
