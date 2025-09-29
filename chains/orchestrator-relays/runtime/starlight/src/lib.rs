@@ -1463,7 +1463,6 @@ prod_or_fast_parameter_types! {
 }
 
 impl pallet_external_validators::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type UpdateOrigin = EnsureRoot<AccountId>;
     type HistoryDepth = ConstU32<84>;
     type MaxWhitelistedValidators = MaxWhitelistedValidators;
@@ -1524,7 +1523,6 @@ impl tp_bridge::TokenChannelSetterBenchmarkHelperTrait for RewardsBenchHelper {
 
 // Pallet to reward validators.
 impl pallet_external_validators_rewards::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type EraIndexProvider = ExternalValidators;
     type HistoryDepth = ConstU32<64>;
     type BackingPoints = ConstU32<20>;
@@ -1548,7 +1546,6 @@ impl pallet_external_validators_rewards::Config for Runtime {
 }
 
 impl pallet_external_validator_slashes::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type ValidatorId = AccountId;
     type ValidatorIdOf = ValidatorIdOf;
     type SlashDeferDuration = SlashDeferDuration;
@@ -1593,7 +1590,6 @@ parameter_types! {
 }
 
 impl pallet_invulnerables::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type UpdateOrigin = EnsureRoot<AccountId>;
     type MaxInvulnerables = MaxInvulnerables;
     type CollatorId = <Self as frame_system::Config>::AccountId;
@@ -1719,7 +1715,6 @@ parameter_types! {
 }
 
 impl pallet_services_payment::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     /// Handler for fees
     type OnChargeForBlock = ();
     type OnChargeForCollatorAssignment = ();
@@ -1746,7 +1741,6 @@ parameter_types! {
 }
 
 impl pallet_stream_payment::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type StreamId = tp_stream_payment_common::StreamId;
     type TimeUnit = tp_stream_payment_common::TimeUnit;
     type Balance = Balance;
@@ -1771,7 +1765,6 @@ parameter_types! {
 pub type DataPreserversProfileId = u64;
 
 impl pallet_data_preservers::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type RuntimeHoldReason = RuntimeHoldReason;
     type Currency = Balances;
     type WeightInfo = weights::pallet_data_preservers::SubstrateWeight<Runtime>;
@@ -1818,7 +1811,6 @@ impl frame_support::traits::OnUnbalanced<Credit<AccountId, Balances>> for OnUnba
 
 // Pallet to reward container chains collators.
 impl pallet_inflation_rewards::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type ContainerChains = ContainerRegistrar;
     type GetSelfChainBlockAuthor = ();
@@ -1881,7 +1873,6 @@ parameter_types! {
 }
 
 impl pallet_pooled_staking::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type Balance = Balance;
     type StakingAccount = StakingAccount;
@@ -1902,7 +1893,6 @@ parameter_types! {
     pub const CooldownLenghtInSessions: u32 = 2;
 }
 impl pallet_inactivity_tracking::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type MaxInactiveSessions = MaxInactiveSessions;
     type MaxCollatorsPerSession = MaxCandidatesBufferSize;
     type MaxContainerChains = MaxLengthParaIds;
@@ -2200,7 +2190,6 @@ where
 }
 
 impl pallet_registrar::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type RegistrarOrigin =
         EitherOfDiverse<pallet_registrar::EnsureSignedByManager<Runtime>, EnsureRoot<AccountId>>;
     type MarkValidForCollatingOrigin = EnsureRoot<AccountId>;
@@ -2303,7 +2292,6 @@ impl pallet_registrar::RegistrarHooks for StarlightRegistrarHooks {
 }
 
 impl pallet_author_noting::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type ContainerChains = TanssiCollatorAssignment;
     type SlotBeacon = BabeSlotBeacon<Runtime>;
     type ContainerChainAuthor = TanssiCollatorAssignment;
@@ -3815,7 +3803,6 @@ impl Get<Option<CoreAllocationConfiguration>> for GetCoreAllocationConfiguration
 }
 
 impl pallet_collator_assignment::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type HostConfiguration = CollatorConfiguration;
     type ContainerChains = ContainerRegistrar;
     type SessionIndex = u32;

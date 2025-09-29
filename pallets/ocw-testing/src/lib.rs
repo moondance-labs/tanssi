@@ -37,9 +37,6 @@ pub mod pallet {
     pub trait Config:
         CreateSignedTransaction<Call<Self>> + CreateInherent<Call<Self>> + frame_system::Config
     {
-        /// The overarching event type.
-        type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
-
         /// Number of blocks of cooldown after unsigned transaction is included.
         ///
         /// This ensures that we only accept unsigned transactions once, every `UnsignedInterval`

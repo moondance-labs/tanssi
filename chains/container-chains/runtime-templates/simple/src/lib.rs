@@ -780,7 +780,6 @@ where
 }
 
 impl pallet_ocw_testing::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type UnsignedInterval = ConstU32<6>;
 }
 

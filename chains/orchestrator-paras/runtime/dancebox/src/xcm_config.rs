@@ -449,7 +449,6 @@ parameter_types! {
 }
 
 impl pallet_xcm_core_buyer::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
 
     type XcmSender = XcmRouter;

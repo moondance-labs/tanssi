@@ -133,9 +133,6 @@ pub mod pallet {
     pub struct Pallet<T>(PhantomData<T>);
     #[pallet::config]
     pub trait Config: frame_system::Config {
-        /// Overarching event type.
-        type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
-
         /// The maximum number of sessions for which a collator can be inactive
         /// before being moved to the offline queue
         #[pallet::constant]
