@@ -436,6 +436,9 @@ impl pallet_transaction_payment::Config for Runtime {
 pub mod dynamic_params {
     use super::*;
 
+    /// The Dancelight genesis hash used as the default relay network identifier.
+    pub const DANCELIGHT_GENESIS_HASH: [u8; 32] = hex_literal::hex!["983a1a72503d6cc3636776747ec627172b51272bf45e50a355348facb67a820a"];
+
     #[dynamic_pallet_params]
     #[codec(index = 0)]
     pub mod xcm_config {
@@ -445,7 +448,7 @@ pub mod dynamic_params {
         /// Using Dancelight genesis hash as default.
         #[codec(index = 0)]
         pub static RelayNetwork: xcm::latest::NetworkId = 
-            xcm::latest::NetworkId::ByGenesis(hex_literal::hex!["983a1a72503d6cc3636776747ec627172b51272bf45e50a355348facb67a820a"]);
+            xcm::latest::NetworkId::ByGenesis(DANCELIGHT_GENESIS_HASH);
     }
 }
 
@@ -455,7 +458,7 @@ impl Default for RuntimeParameters {
         RuntimeParameters::XcmConfig(
             dynamic_params::xcm_config::Parameters::RelayNetwork(
                 dynamic_params::xcm_config::RelayNetwork,
-                Some(xcm::latest::NetworkId::ByGenesis(hex_literal::hex!["983a1a72503d6cc3636776747ec627172b51272bf45e50a355348facb67a820a"])),
+                Some(xcm::latest::NetworkId::ByGenesis(dynamic_params::DANCELIGHT_GENESIS_HASH)),
             ),
         )
     }
