@@ -56,9 +56,6 @@ use {
     xcm_executor::XcmExecutor,
 };
 
-pub const DANCELIGHT_GENESIS_HASH: [u8; 32] =
-    hex_literal::hex!["983a1a72503d6cc3636776747ec627172b51272bf45e50a355348facb67a820a"];
-
 parameter_types! {
     // Self Reserve location, defines the multilocation identifying the self-reserve currency
     // This is used to match it also against our Balances pallet when we receive such
@@ -73,22 +70,6 @@ parameter_types! {
 
     // One XCM operation is 1_000_000_000 weight - almost certainly a conservative estimate.
     pub UnitWeightCost: Weight = Weight::from_parts(1_000_000_000, 64 * 1024);
-
-    // Dynamic RelayNetwork parameter - configurable via pallet_parameters
-
-}
-
-/// Get the current RelayNetwork value from runtime parameters
-pub struct RelayNetwork;
-impl Get<NetworkId> for RelayNetwork {
-    fn get() -> NetworkId {
-        crate::dynamic_params::xcm_config::RelayNetwork::get()
-    }
-}
-impl Get<Option<NetworkId>> for RelayNetwork {
-    fn get() -> Option<NetworkId> {
-        Some(crate::dynamic_params::xcm_config::RelayNetwork::get())
-    }
 }
 
 parameter_types! {
@@ -101,8 +82,11 @@ parameter_types! {
     /// weight caculations getting too crazy.
     pub MaxInstructions: u32 = 100;
 
+    // Dynamic RelayNetwork parameter - configurable via pallet_parameters
+    pub RelayNetwork: NetworkId = crate::dynamic_params::xcm_config::RelayNetwork::get();
+
     // The universal location within the global consensus system
-    pub UniversalLocation: InteriorLocation = [GlobalConsensus(<RelayNetwork as Get<NetworkId>>::get()), Parachain(ParachainInfo::parachain_id().into())].into();
+    pub UniversalLocation: InteriorLocation = [GlobalConsensus(RelayNetwork::get()), Parachain(ParachainInfo::parachain_id().into())].into();
 
     pub const BaseDeliveryFee: u128 = 100 * MICROUNIT;
 

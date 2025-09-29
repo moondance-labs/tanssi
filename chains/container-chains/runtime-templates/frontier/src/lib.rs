@@ -820,9 +820,10 @@ pub mod dynamic_params {
         use super::*;
 
         /// The relay network identifier for this container chain.
+        /// Using Dancelight genesis hash as default.
         #[codec(index = 0)]
         pub static RelayNetwork: xcm::latest::NetworkId = 
-            xcm::latest::NetworkId::ByGenesis(crate::xcm_config::DANCELIGHT_GENESIS_HASH);
+            xcm::latest::NetworkId::ByGenesis(hex_literal::hex!["983a1a72503d6cc3636776747ec627172b51272bf45e50a355348facb67a820a"]);
     }
 }
 
