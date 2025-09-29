@@ -22,13 +22,12 @@ use {
         DancelightRelay as Dancelight, DancelightSender, FrontierTemplatePara as FrontierTemplate,
         FrontierTemplateSender, SimpleTemplatePara as SimpleTemplate, SimpleTemplateSender,
     },
-    simple_template_emulated_chain::SimpleTemplateParaPallet,
     fp_account::AccountId20,
-    sp_runtime::AccountId32,
     frame_support::traits::fungible::Mutate,
     frame_support::{assert_ok, pallet_prelude::DispatchResult},
     frontier_template_emulated_chain::FrontierTemplateParaPallet,
     hex_literal::hex,
+    simple_template_emulated_chain::SimpleTemplateParaPallet,
     snowbridge_beacon_primitives::{
         types::deneb, AncestryProof, BeaconHeader, ExecutionProof, VersionedExecutionPayloadHeader,
     },
@@ -36,6 +35,7 @@ use {
     snowbridge_inbound_queue_primitives::{EventFixture, EventProof, Log, Proof},
     sp_core::H160,
     sp_core::U256,
+    sp_runtime::AccountId32,
     sp_runtime::FixedU128,
     xcm::latest::prelude::{Junctions::*, *},
     xcm_emulator::{Chain, TestExt},
@@ -74,7 +74,7 @@ fn check_foreign_eth_token_to_frontier_container_chain_transfer_works() {
         // Add funds in snowbridge fees account
         assert_ok!(
             <<Dancelight as DancelightRelayPallet>::Balances as Mutate<_>>::mint_into(
-                &SnowbridgeFeesAccount::get().into(),
+                &SnowbridgeFeesAccount::get(),
                 CONTAINER_FEE * 2
             )
         );
@@ -168,7 +168,9 @@ fn check_foreign_eth_token_to_frontier_container_chain_transfer_works() {
 
     // Send inbound message
     Dancelight::execute_with(|| {
-        assert_ok!(send_inbound_message(make_send_token_message_frontier_template()));
+        assert_ok!(send_inbound_message(
+            make_send_token_message_frontier_template()
+        ));
     });
 
     // Check snowbridge fees are deducted
@@ -232,7 +234,7 @@ fn check_foreign_eth_token_to_simple_container_chain_transfer_works() {
         // Add funds in snowbridge fees account
         assert_ok!(
             <<Dancelight as DancelightRelayPallet>::Balances as Mutate<_>>::mint_into(
-                &SnowbridgeFeesAccount::get().into(),
+                &SnowbridgeFeesAccount::get(),
                 CONTAINER_FEE * 2
             )
         );
@@ -284,7 +286,7 @@ fn check_foreign_eth_token_to_simple_container_chain_transfer_works() {
                 root_origin.clone(),
                 RELAY_TOKEN_ASSET_LOCATION,
                 RELAY_NATIVE_TOKEN_ASSET_ID,
-                alice_account.clone().into(),
+                alice_account.clone(),
                 true,
                 1
             )
@@ -317,7 +319,7 @@ fn check_foreign_eth_token_to_simple_container_chain_transfer_works() {
                 root_origin.clone(),
                 erc20_asset_location_container,
                 ERC20_ASSET_ID,
-                alice_account.into(),
+                alice_account,
                 true,
                 1
             )
@@ -326,7 +328,9 @@ fn check_foreign_eth_token_to_simple_container_chain_transfer_works() {
 
     // Send inbound message
     Dancelight::execute_with(|| {
-        assert_ok!(send_inbound_message(make_send_token_message_simple_template()));
+        assert_ok!(send_inbound_message(
+            make_send_token_message_simple_template()
+        ));
     });
 
     // Check snowbridge fees are deducted
