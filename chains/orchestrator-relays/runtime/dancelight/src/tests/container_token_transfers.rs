@@ -920,18 +920,20 @@ fn receive_container_foreign_tokens_from_eth_works_for_foreign_account_id_20() {
             let fee = 1_500_000_000_000_000;
             let container_fee = 500_000_000_000_000;
 
+            let command = Command::SendToken {
+                token: token_addr,
+                destination: Destination::ForeignAccountId20 {
+                    para_id: container_para_id,
+                    id: beneficiary,
+                    fee: container_fee,
+                },
+                amount: amount_to_transfer,
+                fee,
+            };
+
             let payload = VersionedXcmMessage::V1(MessageV1 {
                 chain_id: 1,
-                command: Command::SendToken {
-                    token: token_addr,
-                    destination: Destination::ForeignAccountId20 {
-                        para_id: container_para_id,
-                        id: beneficiary,
-                        fee: container_fee,
-                    },
-                    amount: amount_to_transfer,
-                    fee,
-                },
+                command: command.clone(),
             })
             .encode();
 
@@ -958,16 +960,13 @@ fn receive_container_foreign_tokens_from_eth_works_for_foreign_account_id_20() {
 
             assert_ok!(EthereumInboundQueue::submit(relayer, message));
 
-            let sent_to_container = System::events().iter().any(|rec| {
-                if let RuntimeEvent::XcmPallet(pallet_xcm::Event::Sent { destination, .. }) =
-                    &rec.event
-                {
-                    is_destination_container(destination, container_para_id)
-                } else {
-                    false
-                }
-            });
-            assert!(sent_to_container, "XCM Sent event should be emitted!");
+            let xcm_sent_event = System::events()
+                .iter()
+                .filter(|rec| {
+                    is_expected_xcm_message_for_foreign_tokens(&rec.event, command.clone())
+                })
+                .count();
+            assert_eq!(xcm_sent_event, 1, "XCM Sent event should be emitted!");
         });
 }
 
@@ -1042,18 +1041,20 @@ fn receive_container_foreign_tokens_from_eth_works_for_foreign_account_id_32() {
             let fee = 1_500_000_000_000_000;
             let container_fee = 2_000_000_000_000_000;
 
+            let command = Command::SendToken {
+                token: token_addr,
+                destination: Destination::ForeignAccountId32 {
+                    para_id: container_para_id,
+                    id: beneficiary,
+                    fee: container_fee,
+                },
+                amount: amount_to_transfer,
+                fee,
+            };
+
             let payload = VersionedXcmMessage::V1(MessageV1 {
                 chain_id: 1,
-                command: Command::SendToken {
-                    token: token_addr,
-                    destination: Destination::ForeignAccountId32 {
-                        para_id: container_para_id,
-                        id: beneficiary,
-                        fee: container_fee,
-                    },
-                    amount: amount_to_transfer,
-                    fee,
-                },
+                command: command.clone(),
             })
             .encode();
 
@@ -1080,17 +1081,13 @@ fn receive_container_foreign_tokens_from_eth_works_for_foreign_account_id_32() {
 
             assert_ok!(EthereumInboundQueue::submit(relayer, message));
 
-            let sent_to_container = System::events().iter().any(|rec| {
-                if let RuntimeEvent::XcmPallet(pallet_xcm::Event::Sent { destination, .. }) =
-                    &rec.event
-                {
-                    is_destination_container(destination, container_para_id)
-                } else {
-                    false
-                }
-            });
-
-            assert!(sent_to_container, "XCM Sent event should be emitted!");
+            let xcm_sent_event = System::events()
+                .iter()
+                .filter(|rec| {
+                    is_expected_xcm_message_for_foreign_tokens(&rec.event, command.clone())
+                })
+                .count();
+            assert_eq!(xcm_sent_event, 1, "XCM Sent event should be emitted!");
         });
 }
 
@@ -1194,12 +1191,88 @@ fn receive_container_foreign_tokens_from_eth_without_para_head_set_doesnt_error(
     });
 }
 
-fn is_destination_container(dest: &Location, container_para_id: u32) -> bool {
-    matches!(
-        dest,
-        Location {
-            parents: 0,
-            interior: Junctions::X1(ref x1),
-        } if x1.as_ref()[0] == Junction::Parachain(container_para_id)
-    )
+fn is_expected_xcm_message_for_foreign_tokens(event: &RuntimeEvent, command: Command) -> bool {
+    let Command::SendToken {
+        token,
+        destination,
+        amount,
+        ..
+    } = command
+    else {
+        log::error!(
+            "is_expected_xcm_message: unsupported command type: {:?}",
+            command
+        );
+        return false;
+    };
+
+    let (container_para_id, beneficiary, container_fee) = match destination {
+        Destination::ForeignAccountId32 { para_id, id, fee } => (
+            para_id,
+            Location::new(0, [AccountId32 { network: None, id }]),
+            fee,
+        ),
+        Destination::ForeignAccountId20 { para_id, id, fee } => (
+            para_id,
+            Location::new(
+                0,
+                [AccountKey20 {
+                    network: None,
+                    key: id,
+                }],
+            ),
+            fee,
+        ),
+        _ => {
+            log::error!(
+                "is_expected_message: unsupported destination type: {:?}",
+                destination
+            );
+            return false;
+        }
+    };
+
+    let tanssi_location = Location::here();
+    let container_location = Location::new(0, [Parachain(container_para_id)]);
+
+    let asset_fee_container: Asset = (Location::parent(), container_fee).into();
+    let erc20_asset_location: Location = Location {
+        parents: 2,
+        interior: X2([
+            GlobalConsensus(EthereumNetwork::get()),
+            AccountKey20 {
+                network: Some(EthereumNetwork::get()),
+                key: token.into(),
+            },
+        ]
+        .into()),
+    };
+    let amount_to_transfer = amount;
+    let asset_to_deposit: Asset = (erc20_asset_location, amount_to_transfer).into();
+
+    let remote_xcm = Xcm::<()>(vec![
+        ReserveAssetDeposited(vec![asset_fee_container.clone(), asset_to_deposit.clone()].into()),
+        BuyExecution {
+            fees: asset_fee_container.clone(),
+            weight_limit: Unlimited,
+        },
+        DepositAsset {
+            assets: Definite(vec![asset_to_deposit].into()),
+            beneficiary,
+        },
+    ]);
+
+    match event {
+        RuntimeEvent::XcmPallet(pallet_xcm::Event::Sent {
+            origin,
+            destination,
+            message,
+            message_id: _,
+        }) => {
+            return *origin == tanssi_location
+                && *destination == container_location
+                && *message == remote_xcm
+        }
+        _ => return false,
+    };
 }
