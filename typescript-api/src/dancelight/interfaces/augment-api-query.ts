@@ -101,10 +101,10 @@ import type {
     PolkadotPrimitivesV8DisputeState,
     PolkadotPrimitivesV8ExecutorParams,
     PolkadotPrimitivesV8SessionInfo,
-    PolkadotPrimitivesV8SlashingPendingSlashes,
     PolkadotPrimitivesV8UpgradeGoAhead,
     PolkadotPrimitivesV8UpgradeRestriction,
     PolkadotPrimitivesV8ValidatorAppPublic,
+    PolkadotPrimitivesVstagingPendingSlashes,
     PolkadotPrimitivesVstagingScrapedOnChainVotes,
     PolkadotRuntimeCommonParasRegistrarParaInfo,
     PolkadotRuntimeParachainsConfigurationHostConfiguration,
@@ -115,6 +115,7 @@ import type {
     PolkadotRuntimeParachainsOnDemandTypesCoreAffinityCount,
     PolkadotRuntimeParachainsOnDemandTypesEnqueuedOrder,
     PolkadotRuntimeParachainsOnDemandTypesQueueStatusType,
+    PolkadotRuntimeParachainsParasAuthorizedCodeHashAndExpiry,
     PolkadotRuntimeParachainsParasParaGenesisArgs,
     PolkadotRuntimeParachainsParasParaLifecycle,
     PolkadotRuntimeParachainsParasParaPastCodeMeta,
@@ -910,17 +911,6 @@ declare module "@polkadot/api-base/types/storage" {
                 [H256]
             > &
                 QueryableStorageEntry<ApiType, [H256]>;
-            /**
-             * Lookup table for native location relative to ethereum to foreign token ID
-             **/
-            nativeToForeignId: AugmentedQuery<
-                ApiType,
-                (
-                    arg: StagingXcmV5Location | { parents?: any; interior?: any } | string | Uint8Array
-                ) => Observable<Option<H256>>,
-                [StagingXcmV5Location]
-            > &
-                QueryableStorageEntry<ApiType, [StagingXcmV5Location]>;
             pricingParameters: AugmentedQuery<ApiType, () => Observable<SnowbridgeCorePricingPricingParameters>, []> &
                 QueryableStorageEntry<ApiType, []>;
             /**
@@ -2047,6 +2037,17 @@ declare module "@polkadot/api-base/types/storage" {
             actionsQueue: AugmentedQuery<ApiType, (arg: u32 | AnyNumber | Uint8Array) => Observable<Vec<u32>>, [u32]> &
                 QueryableStorageEntry<ApiType, [u32]>;
             /**
+             * The code hash authorizations for a para which will expire `expire_at` `BlockNumberFor<T>`.
+             **/
+            authorizedCodeHash: AugmentedQuery<
+                ApiType,
+                (
+                    arg: u32 | AnyNumber | Uint8Array
+                ) => Observable<Option<PolkadotRuntimeParachainsParasAuthorizedCodeHashAndExpiry>>,
+                [u32]
+            > &
+                QueryableStorageEntry<ApiType, [u32]>;
+            /**
              * Validation code stored by its hash.
              *
              * This storage is consistent with [`FutureCodeHash`], [`CurrentCodeHash`] and
@@ -2451,7 +2452,7 @@ declare module "@polkadot/api-base/types/storage" {
                 (
                     arg1: u32 | AnyNumber | Uint8Array,
                     arg2: H256 | string | Uint8Array
-                ) => Observable<Option<PolkadotPrimitivesV8SlashingPendingSlashes>>,
+                ) => Observable<Option<PolkadotPrimitivesVstagingPendingSlashes>>,
                 [u32, H256]
             > &
                 QueryableStorageEntry<ApiType, [u32, H256]>;
