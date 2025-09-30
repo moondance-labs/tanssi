@@ -18,11 +18,13 @@ use {
     dancelight_emulated_chain::DancelightRelayPallet,
     dancelight_system_emulated_network::{
         DancelightRelay as Dancelight, DancelightSender, FrontierTemplatePara as FrontierTemplate,
+        SimpleTemplatePara as SimpleTemplate, SimpleTemplateReceiver, SimpleTemplateSender,
     },
     fp_account::AccountId20,
     frame_support::{assert_ok, pallet_prelude::DispatchResult, traits::PalletInfoAccess},
     frontier_template_emulated_chain::{EthereumSender, FrontierTemplateParaPallet},
     hex_literal::hex,
+    simple_template_emulated_chain::SimpleTemplateParaPallet,
     snowbridge_beacon_primitives::{
         types::deneb, AncestryProof, BeaconHeader, ExecutionProof, VersionedExecutionPayloadHeader,
     },
@@ -30,6 +32,7 @@ use {
     snowbridge_inbound_queue_primitives::{EventFixture, EventProof, Log, Proof},
     sp_core::H160,
     sp_core::U256,
+    sp_runtime::AccountId32,
     xcm::latest::prelude::*,
     xcm_emulator::{Chain, TestExt},
     xcm_executor::traits::ConvertLocation,
@@ -37,6 +40,8 @@ use {
 
 #[test]
 fn check_native_eth_token_to_frontier_container_chain_transfer_works() {
+    const PARA_ID_FOR_CHANNEL: u32 = 2000;
+
     const CONTAINER_PARA_ID: u32 = 2001;
 
     let token_receiver: AccountId20 = H160([
@@ -72,7 +77,7 @@ fn check_native_eth_token_to_frontier_container_chain_transfer_works() {
                 root_origin.clone(),
                 ChannelId::new(hex!("0000000000000000000000000000000000000000000000000000000000000004")), 
                 hex!("0000000000000000000000000000000000000000000000000000000000000005").into(), 
-                3000u32.into()),
+                PARA_ID_FOR_CHANNEL.into()),
             );
 
         assert_ok!(
@@ -113,7 +118,9 @@ fn check_native_eth_token_to_frontier_container_chain_transfer_works() {
     });
 
     Dancelight::execute_with(|| {
-        assert_ok!(send_inbound_message(make_send_token_message()));
+        assert_ok!(send_inbound_message(
+            make_send_token_message_frontier_template()
+        ));
     });
 
     FrontierTemplate::execute_with(|| {
@@ -141,7 +148,132 @@ fn check_native_eth_token_to_frontier_container_chain_transfer_works() {
     });
 }
 
-pub fn make_send_token_message() -> EventFixture {
+#[test]
+fn check_native_eth_token_to_simple_container_chain_transfer_works() {
+    const PARA_ID_FOR_CHANNEL: u32 = 2000;
+
+    const CONTAINER_PARA_ID: u32 = 2002;
+
+    let token_receiver: AccountId32 = SimpleTemplateReceiver::get();
+
+    let mut ethereum_sovereign_container_balance_before = 0;
+    let mut receiver_native_container_balance_before = 0;
+
+    let ethereum_sovereign_account_address =
+        container_chain_template_simple_runtime::xcm_config::LocationToAccountId::convert_location(
+            &Location::new(
+                2,
+                container_chain_template_simple_runtime::EthereumNetwork::get(),
+            ),
+        )
+        .unwrap();
+
+    let transfer_amount = 100_000_000;
+
+    // Amount in native container tokens to charge on destination.
+    let container_fee = 500_000_000_000_000;
+
+    Dancelight::execute_with(|| {
+        let root_origin = <Dancelight as Chain>::RuntimeOrigin::root();
+
+        let asset_location = Location {
+            parents: 0,
+            interior: Junctions::X2([Parachain(CONTAINER_PARA_ID), PalletInstance(<<SimpleTemplate as SimpleTemplateParaPallet>::Balances as PalletInfoAccess>::index() as u8)].into()),
+        };
+
+        assert_ok!(
+            <Dancelight as DancelightRelayPallet>::EthereumTokenTransfers::set_token_transfer_channel(
+                root_origin.clone(),
+                ChannelId::new(hex!("0000000000000000000000000000000000000000000000000000000000000004")),
+                hex!("0000000000000000000000000000000000000000000000000000000000000005").into(),
+                PARA_ID_FOR_CHANNEL.into()),
+            );
+
+        assert_ok!(
+            <Dancelight as DancelightRelayPallet>::EthereumSystem::register_token(
+                root_origin.clone(),
+                Box::new(asset_location.into()),
+                snowbridge_core::AssetMetadata {
+                    name: "container".as_bytes().to_vec().try_into().unwrap(),
+                    symbol: "container".as_bytes().to_vec().try_into().unwrap(),
+                    decimals: 12,
+                }
+            )
+        );
+    });
+
+    SimpleTemplate::execute_with(|| {
+        let origin = <SimpleTemplate as Chain>::RuntimeOrigin::signed(SimpleTemplateSender::get());
+
+        assert_ok!(
+            <SimpleTemplate as SimpleTemplateParaPallet>::Balances::transfer_allow_death(
+                origin.clone(),
+                sp_runtime::MultiAddress::Id(ethereum_sovereign_account_address.clone()),
+                20_000_000_000_000_000
+            )
+        );
+
+        assert_ok!(
+            <SimpleTemplate as SimpleTemplateParaPallet>::Balances::transfer_allow_death(
+                origin,
+                sp_runtime::MultiAddress::Id(token_receiver.clone()),
+                100_000_000_000
+            )
+        );
+
+        ethereum_sovereign_container_balance_before =
+            <SimpleTemplate as SimpleTemplateParaPallet>::System::account(
+                ethereum_sovereign_account_address.clone(),
+            )
+            .data
+            .free;
+
+        receiver_native_container_balance_before =
+            <SimpleTemplate as SimpleTemplateParaPallet>::System::account(&token_receiver)
+                .data
+                .free;
+    });
+
+    Dancelight::execute_with(|| {
+        assert_ok!(send_inbound_message(
+            make_send_token_message_simple_template()
+        ));
+    });
+
+    SimpleTemplate::execute_with(|| {
+        let ethereum_sovereign_container_balance_after =
+            <SimpleTemplate as SimpleTemplateParaPallet>::System::account(
+                ethereum_sovereign_account_address.clone(),
+            )
+            .data
+            .free;
+
+        let receiver_native_countainer_balance_after =
+            <SimpleTemplate as SimpleTemplateParaPallet>::System::account(&token_receiver)
+                .data
+                .free;
+
+        assert_eq!(
+            ethereum_sovereign_container_balance_after,
+            ethereum_sovereign_container_balance_before - (container_fee + transfer_amount)
+        );
+
+        assert_eq!(
+            receiver_native_countainer_balance_after,
+            receiver_native_container_balance_before + transfer_amount
+        );
+    });
+}
+
+pub fn make_send_token_message_simple_template() -> EventFixture {
+    make_send_token_fixture(hex!("00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000007f00010000000000000002c97f6a848a8e7895b55dc9b894e4f552ea33203bfbdb478d506f05b62d9d5fd101d2070000050505050505050505050505050505050505050505050505050505050505050500406352bfc60100000000000000000000e1f50500000000000000000000000000c029f73d540500000000000000000000").into())
+}
+
+pub fn make_send_token_message_frontier_template() -> EventFixture {
+    make_send_token_fixture(hex!("00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000007300010000000000000002485f805cb9de38b4324485447c664e16035aa9d28e8723df192fa02ad353088902d1070000050505050505050505050505050505050505050500406352bfc60100000000000000000000e1f50500000000000000000000000000c029f73d540500000000000000000000000000000000000000000000").into())
+}
+
+pub fn make_send_token_fixture(data: Vec<u8>) -> EventFixture {
     EventFixture {
         event: EventProof {
             event_log: Log {
@@ -151,7 +283,7 @@ pub fn make_send_token_message() -> EventFixture {
                     hex!("0000000000000000000000000000000000000000000000000000000000000004").into(), // channel ID
                     hex!("0000000000000000000000000000000000000000000000000000000000000000").into(), // message ID
                 ],
-                data: hex!("00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000007300010000000000000002485f805cb9de38b4324485447c664e16035aa9d28e8723df192fa02ad353088902d1070000050505050505050505050505050505050505050500406352bfc60100000000000000000000e1f50500000000000000000000000000c029f73d540500000000000000000000000000000000000000000000").into(),
+                data,
             },
             // We just need a valid struct here, anyway we have mocked Verifier, that will ignore it
             proof: Proof {
