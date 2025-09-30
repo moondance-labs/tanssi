@@ -450,7 +450,8 @@ where
 {
     fn set_up_token(location: Location, token_id: snowbridge_core::TokenId) {
         snowbridge_pallet_system::ForeignToNativeId::<Runtime>::insert(token_id, &location);
-        snowbridge_pallet_system::NativeToForeignId::<Runtime>::insert(&location, token_id);
+        // TODO: uncomment if we add storage map back
+        //snowbridge_pallet_system::NativeToForeignId::<Runtime>::insert(&location, token_id);
     }
 
     fn set_up_channel(channel_id: ChannelId, para_id: ParaId, agent_id: AgentId) {

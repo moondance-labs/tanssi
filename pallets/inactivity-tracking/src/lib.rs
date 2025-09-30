@@ -296,6 +296,7 @@ pub mod pallet {
         /// Allows a collator to mark itself offline.
         #[pallet::call_index(2)]
         #[pallet::weight(T::WeightInfo::set_offline())]
+        #[allow(clippy::useless_conversion)]
         pub fn set_offline(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
             let collator = ensure_signed(origin)?;
             Self::mark_collator_offline(&collator, None)
@@ -304,6 +305,7 @@ pub mod pallet {
         /// Allows a collator to mark itself online.
         #[pallet::call_index(3)]
         #[pallet::weight(T::WeightInfo::set_online())]
+        #[allow(clippy::useless_conversion)]
         pub fn set_online(origin: OriginFor<T>) -> DispatchResultWithPostInfo {
             let collator = ensure_signed(origin)?;
             Self::mark_collator_online(&collator)
@@ -312,6 +314,7 @@ pub mod pallet {
         /// Allows an account to notify inactive collator to be marked offline.
         #[pallet::call_index(4)]
         #[pallet::weight(T::WeightInfo::notify_inactive_collator())]
+        #[allow(clippy::useless_conversion)]
         pub fn notify_inactive_collator(
             origin: OriginFor<T>,
             collator: Collator<T>,

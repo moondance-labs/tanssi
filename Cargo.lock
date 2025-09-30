@@ -822,7 +822,7 @@ dependencies = [
 [[package]]
 name = "async-backing-primitives"
 version = "0.9.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#fb9b0f59e9ac38270015243173b79057211aea67"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#b21e8d57e0dcfefb6e5df41566c4321c7a4a1a7b"
 dependencies = [
  "sp-api",
  "sp-consensus-slots",
@@ -6802,7 +6802,7 @@ dependencies = [
  "httpdate",
  "itoa",
  "pin-project-lite",
- "socket2 0.5.10",
+ "socket2 0.4.10",
  "tokio",
  "tower-service",
  "tracing",
@@ -9022,7 +9022,7 @@ dependencies = [
 [[package]]
 name = "nimbus-consensus"
 version = "0.9.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#fb9b0f59e9ac38270015243173b79057211aea67"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#b21e8d57e0dcfefb6e5df41566c4321c7a4a1a7b"
 dependencies = [
  "async-backing-primitives",
  "async-trait",
@@ -9062,7 +9062,7 @@ dependencies = [
 [[package]]
 name = "nimbus-primitives"
 version = "0.9.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#fb9b0f59e9ac38270015243173b79057211aea67"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#b21e8d57e0dcfefb6e5df41566c4321c7a4a1a7b"
 dependencies = [
  "async-trait",
  "frame-benchmarking",
@@ -9644,7 +9644,7 @@ dependencies = [
 [[package]]
 name = "pallet-async-backing"
 version = "0.9.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#fb9b0f59e9ac38270015243173b79057211aea67"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#b21e8d57e0dcfefb6e5df41566c4321c7a4a1a7b"
 dependencies = [
  "cumulus-pallet-parachain-system",
  "cumulus-primitives-core",
@@ -9664,7 +9664,7 @@ dependencies = [
 [[package]]
 name = "pallet-author-inherent"
 version = "0.9.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#fb9b0f59e9ac38270015243173b79057211aea67"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#b21e8d57e0dcfefb6e5df41566c4321c7a4a1a7b"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -10282,7 +10282,7 @@ dependencies = [
 [[package]]
 name = "pallet-evm-precompile-balances-erc20"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#fb9b0f59e9ac38270015243173b79057211aea67"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#b21e8d57e0dcfefb6e5df41566c4321c7a4a1a7b"
 dependencies = [
  "fp-evm",
  "frame-support",
@@ -10305,7 +10305,7 @@ dependencies = [
 [[package]]
 name = "pallet-evm-precompile-batch"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#fb9b0f59e9ac38270015243173b79057211aea67"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#b21e8d57e0dcfefb6e5df41566c4321c7a4a1a7b"
 dependencies = [
  "evm",
  "fp-evm",
@@ -10326,7 +10326,7 @@ dependencies = [
 [[package]]
 name = "pallet-evm-precompile-call-permit"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#fb9b0f59e9ac38270015243173b79057211aea67"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#b21e8d57e0dcfefb6e5df41566c4321c7a4a1a7b"
 dependencies = [
  "evm",
  "fp-evm",
@@ -10358,7 +10358,7 @@ dependencies = [
 [[package]]
 name = "pallet-evm-precompile-proxy"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#fb9b0f59e9ac38270015243173b79057211aea67"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#b21e8d57e0dcfefb6e5df41566c4321c7a4a1a7b"
 dependencies = [
  "evm",
  "fp-evm",
@@ -10400,7 +10400,7 @@ dependencies = [
 [[package]]
 name = "pallet-evm-precompile-xcm"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#fb9b0f59e9ac38270015243173b79057211aea67"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#b21e8d57e0dcfefb6e5df41566c4321c7a4a1a7b"
 dependencies = [
  "cumulus-primitives-core",
  "evm",
@@ -10426,7 +10426,7 @@ dependencies = [
 [[package]]
 name = "pallet-evm-precompile-xcm-utils"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#fb9b0f59e9ac38270015243173b79057211aea67"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#b21e8d57e0dcfefb6e5df41566c4321c7a4a1a7b"
 dependencies = [
  "fp-evm",
  "frame-support",
@@ -10448,7 +10448,7 @@ dependencies = [
 [[package]]
 name = "pallet-evm-precompileset-assets-erc20"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#fb9b0f59e9ac38270015243173b79057211aea67"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#b21e8d57e0dcfefb6e5df41566c4321c7a4a1a7b"
 dependencies = [
  "fp-evm",
  "frame-support",
@@ -10571,7 +10571,7 @@ dependencies = [
 [[package]]
 name = "pallet-foreign-asset-creator"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#fb9b0f59e9ac38270015243173b79057211aea67"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#b21e8d57e0dcfefb6e5df41566c4321c7a4a1a7b"
 dependencies = [
  "frame-benchmarking",
  "frame-support",
@@ -10736,7 +10736,7 @@ dependencies = [
 [[package]]
 name = "pallet-maintenance-mode"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#fb9b0f59e9ac38270015243173b79057211aea67"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#b21e8d57e0dcfefb6e5df41566c4321c7a4a1a7b"
 dependencies = [
  "cumulus-primitives-core",
  "frame-support",
@@ -10789,7 +10789,7 @@ dependencies = [
 [[package]]
 name = "pallet-migrations"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#fb9b0f59e9ac38270015243173b79057211aea67"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#b21e8d57e0dcfefb6e5df41566c4321c7a4a1a7b"
 dependencies = [
  "cumulus-primitives-core",
  "frame-benchmarking",
@@ -11119,7 +11119,7 @@ dependencies = [
 [[package]]
 name = "pallet-relay-storage-roots"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#fb9b0f59e9ac38270015243173b79057211aea67"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#b21e8d57e0dcfefb6e5df41566c4321c7a4a1a7b"
 dependencies = [
  "cumulus-pallet-parachain-system",
  "cumulus-primitives-core",
@@ -13815,7 +13815,7 @@ version = "0.13.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "be769465445e8c1474e9c5dac2018218498557af32d9ed057325ec9a41ae81bf"
 dependencies = [
- "heck 0.5.0",
+ "heck 0.4.1",
  "itertools 0.13.0",
  "log",
  "multimap",
@@ -22466,7 +22466,7 @@ dependencies = [
 [[package]]
 name = "xcm-primitives"
 version = "0.1.0"
-source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#fb9b0f59e9ac38270015243173b79057211aea67"
+source = "git+https://github.com/moondance-labs/moonkit?branch=tanssi-polkadot-stable2506#b21e8d57e0dcfefb6e5df41566c4321c7a4a1a7b"
 dependencies = [
  "frame-support",
  "impl-trait-for-tuples",
