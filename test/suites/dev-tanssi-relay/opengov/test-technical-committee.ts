@@ -3,7 +3,7 @@ import "@tanssi/api-augment";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import type { KeyringPair } from "@polkadot/keyring/types";
-import { type SubmittedEventDataType, checkIfErrorIsEmitted } from "../../../utils";
+import { type SubmittedEventDataType, checkIfErrorIsEmitted, waitForReferendumDecision } from "../../../utils";
 import { isStarlightRuntime } from "../../../utils/runtime.ts";
 import type { H256 } from "@polkadot/types/interfaces";
 
@@ -561,39 +561,10 @@ describeSuite({
                 }
 
                 // 6. Wait for the referendum to be decided
-                const expectedEvents = [
-                    { section: "referenda", method: "DecisionStarted" },
-                    { section: "referenda", method: "ConfirmStarted" },
-                    { section: "referenda", method: "Confirmed" },
-                    { section: "scheduler", method: "Dispatched" },
-                    { section: "scheduler", method: "Dispatched" },
-                ];
+                const missingReferendumDecisionEvents = await waitForReferendumDecision(context, api);
 
-                for (let i = 0; i <= 450; i++) {
-                    const events = await api.query.system.events();
-                    let execEvent = events.find(
-                        (e) =>
-                            e.event.section === expectedEvents[0].section && e.event.method === expectedEvents[0].method
-                    );
-
-                    while (execEvent && expectedEvents.length > 0) {
-                        expectedEvents.shift();
-                        if (expectedEvents.length > 0) {
-                            execEvent = events.find(
-                                (e) =>
-                                    e.event.section === expectedEvents[0].section &&
-                                    e.event.method === expectedEvents[0].method
-                            );
-                        }
-                    }
-
-                    if (expectedEvents.length === 0) {
-                        break;
-                    }
-                    await context.createBlock();
-                }
-                // Check if all the events happened
-                expect(expectedEvents).toEqual([]);
+                // Check if all the events happened in the specified order.
+                expect(missingReferendumDecisionEvents).toEqual([]);
 
                 // 7. Verify the call is no longer whitelisted and the dispatch was successful
                 const isCallWhitelistedAfterFailedWhitelistDispatchTx = await api.query.whitelist.whitelistedCall(
@@ -678,40 +649,10 @@ describeSuite({
                 }
 
                 // 6. Wait for the referendum to be decided
-                const expectedEvents = [
-                    { section: "referenda", method: "DecisionStarted" },
-                    { section: "referenda", method: "ConfirmStarted" },
-                    { section: "referenda", method: "Confirmed" },
-                    { section: "scheduler", method: "Dispatched" },
-                    { section: "scheduler", method: "Dispatched" },
-                ];
-
-                for (let i = 0; i <= 450; i++) {
-                    const events = await api.query.system.events();
-                    let execEvent = events.find(
-                        (e) =>
-                            e.event.section === expectedEvents[0].section && e.event.method === expectedEvents[0].method
-                    );
-
-                    while (execEvent && expectedEvents.length > 0) {
-                        expectedEvents.shift();
-                        if (expectedEvents.length > 0) {
-                            execEvent = events.find(
-                                (e) =>
-                                    e.event.section === expectedEvents[0].section &&
-                                    e.event.method === expectedEvents[0].method
-                            );
-                        }
-                    }
-
-                    if (expectedEvents.length === 0) {
-                        break;
-                    }
-                    await context.createBlock();
-                }
+                const missingReferendumDecisionEvents = await waitForReferendumDecision(context, api);
 
                 // Check if all the events happened in the specified order.
-                expect(expectedEvents).toEqual([]);
+                expect(missingReferendumDecisionEvents).toEqual([]);
 
                 // 7. Confirm proxy is not added
                 const proxyInfo = await api.query.proxy.proxies(bob.address);

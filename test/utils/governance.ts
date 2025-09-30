@@ -1,5 +1,5 @@
 import type { ApiPromise } from "@polkadot/api";
-import type { BlockCreationResponse } from "@moonwall/cli";
+import type { BlockCreationResponse, DevModeContext } from "@moonwall/cli";
 import { BN } from "@polkadot/util";
 import type { ApiTypes, SubmittableExtrinsic } from "@polkadot/api/types";
 
@@ -53,4 +53,36 @@ export async function checkIfErrorIsEmitted(
         return true;
     }
     return false;
+}
+
+export async function waitForReferendumDecision(context: DevModeContext, api: ApiPromise) {
+    const expectedEvents = [
+        { section: "referenda", method: "DecisionStarted" },
+        { section: "referenda", method: "ConfirmStarted" },
+        { section: "referenda", method: "Confirmed" },
+        { section: "scheduler", method: "Dispatched" },
+        { section: "scheduler", method: "Dispatched" },
+    ];
+
+    for (let i = 0; i < 450; i++) {
+        await context.createBlock();
+        const events = await api.query.system.events();
+        let execEvent = events.find(
+            (e) => e.event.section === expectedEvents[0].section && e.event.method === expectedEvents[0].method
+        );
+
+        while (execEvent && expectedEvents.length > 0) {
+            expectedEvents.shift();
+            if (expectedEvents.length > 0) {
+                execEvent = events.find(
+                    (e) => e.event.section === expectedEvents[0].section && e.event.method === expectedEvents[0].method
+                );
+            }
+        }
+
+        if (expectedEvents.length === 0) {
+            break;
+        }
+    }
+    return expectedEvents;
 }
