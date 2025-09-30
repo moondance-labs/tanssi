@@ -3893,6 +3893,177 @@ fn test_collator_assignment_tip_withdraw_min_tip() {
 }
 
 #[test]
+fn test_migration_data_preservers_profile_content() {
+    ExtBuilder::default()
+        .with_balances(vec![(AccountId::from(DAVE), 100_000 * UNIT)])
+        .build()
+        .execute_with(|| {
+            use frame_support::{migration::put_storage_value, Blake2_128Concat, StorageHasher};
+            use pallet_data_preservers::{
+                migrations::{OldProfile, OldRegisteredProfile, ProfileMode},
+                NodeType, ParaIdsFilter, Profile, RegisteredProfile,
+            };
+            use sp_runtime::traits::Zero;
+            use tanssi_runtime_common::migrations::DataPreserversProfileContentMigration;
+            use tp_stream_payment_common::AssetId;
+
+            let bootnode_profile = OldRegisteredProfile::<Runtime> {
+                account: ALICE.into(),
+                deposit: 42u128,
+                assignment: None,
+                profile: OldProfile {
+                    url: b"alice".to_vec().try_into().unwrap(),
+                    para_ids: ParaIdsFilter::AnyParaId,
+                    assignment_request: tp_data_preservers_common::ProviderRequest::Free,
+                    mode: ProfileMode::Bootnode,
+                },
+            };
+
+            let substrate_rpc_profile = OldRegisteredProfile::<Runtime> {
+                account: BOB.into(),
+                deposit: 43u128,
+                assignment: Some((
+                    ParaId::from(1042),
+                    tp_data_preservers_common::AssignmentWitness::Free,
+                )),
+
+                profile: OldProfile {
+                    url: b"bob".to_vec().try_into().unwrap(),
+                    para_ids: ParaIdsFilter::AnyParaId,
+                    assignment_request: tp_data_preservers_common::ProviderRequest::Free,
+                    mode: ProfileMode::Rpc {
+                        supports_ethereum_rpcs: false,
+                    },
+                },
+            };
+
+            let stream_config = pallet_stream_payment::StreamConfig {
+                time_unit: tp_stream_payment_common::TimeUnit::BlockNumber,
+                asset_id: AssetId::Native,
+                rate: 100u128,
+                minimum_request_deadline_delay: Zero::zero(),
+                soft_minimum_deposit: Zero::zero(),
+            };
+            let frontier_rpc_profile = OldRegisteredProfile::<Runtime> {
+                account: CHARLIE.into(),
+                deposit: 44u128,
+                assignment: Some((
+                    ParaId::from(1043),
+                    tp_data_preservers_common::AssignmentWitness::StreamPayment { stream_id: 200 },
+                )),
+                profile: OldProfile {
+                    url: b"charlie".to_vec().try_into().unwrap(),
+                    para_ids: ParaIdsFilter::AnyParaId,
+                    assignment_request: tp_data_preservers_common::ProviderRequest::StreamPayment {
+                        config: stream_config.clone(),
+                    },
+                    mode: ProfileMode::Rpc {
+                        supports_ethereum_rpcs: true,
+                    },
+                },
+            };
+
+            let pallet_prefix: &[u8] = b"DataPreservers";
+            let storage_item_prefix: &[u8] = b"Profiles";
+
+            put_storage_value(
+                pallet_prefix,
+                storage_item_prefix,
+                &Blake2_128Concat::hash(&0u64.encode()),
+                bootnode_profile,
+            );
+            put_storage_value(
+                pallet_prefix,
+                storage_item_prefix,
+                &Blake2_128Concat::hash(&1u64.encode()),
+                substrate_rpc_profile,
+            );
+            put_storage_value(
+                pallet_prefix,
+                storage_item_prefix,
+                &Blake2_128Concat::hash(&2u64.encode()),
+                frontier_rpc_profile,
+            );
+
+            let migration = DataPreserversProfileContentMigration::<Runtime>(Default::default());
+            migration.migrate(Default::default());
+
+            assert_eq!(
+                pallet_data_preservers::Profiles::<Runtime>::get(0),
+                Some(RegisteredProfile {
+                    account: ALICE.into(),
+                    deposit: 42u128,
+                    assignment: None,
+                    profile: Profile {
+                        para_ids: ParaIdsFilter::AnyParaId,
+                        assignment_request: tp_data_preservers_common::ProviderRequest::Free,
+                        node_type: NodeType::Substrate,
+                        additional_info: Default::default(),
+                        direct_rpc_urls: Default::default(),
+                        proxy_rpc_urls: Default::default(),
+                        bootnode_url: Some(b"alice".to_vec().try_into().unwrap())
+                    }
+                })
+            );
+
+            assert_eq!(
+                pallet_data_preservers::Profiles::<Runtime>::get(1),
+                Some(RegisteredProfile {
+                    account: BOB.into(),
+                    deposit: 43u128,
+                    assignment: Some((
+                        ParaId::from(1042),
+                        tp_data_preservers_common::AssignmentWitness::Free
+                    )),
+                    profile: Profile {
+                        para_ids: ParaIdsFilter::AnyParaId,
+                        assignment_request: tp_data_preservers_common::ProviderRequest::Free,
+                        node_type: NodeType::Substrate,
+                        additional_info: Default::default(),
+                        direct_rpc_urls: {
+                            let url = b"bob".to_vec().try_into().unwrap();
+                            let urls = vec![url].try_into().unwrap();
+                            urls
+                        },
+                        proxy_rpc_urls: Default::default(),
+                        bootnode_url: None
+                    }
+                })
+            );
+
+            assert_eq!(
+                pallet_data_preservers::Profiles::<Runtime>::get(2),
+                Some(RegisteredProfile {
+                    account: CHARLIE.into(),
+                    deposit: 44u128,
+                    assignment: Some((
+                        ParaId::from(1043),
+                        tp_data_preservers_common::AssignmentWitness::StreamPayment {
+                            stream_id: 200,
+                        }
+                    )),
+                    profile: Profile {
+                        para_ids: ParaIdsFilter::AnyParaId,
+                        assignment_request:
+                            tp_data_preservers_common::ProviderRequest::StreamPayment {
+                                config: stream_config
+                            },
+                        node_type: NodeType::Frontier,
+                        additional_info: Default::default(),
+                        direct_rpc_urls: {
+                            let url = b"charlie".to_vec().try_into().unwrap();
+                            let urls = vec![url].try_into().unwrap();
+                            urls
+                        },
+                        proxy_rpc_urls: Default::default(),
+                        bootnode_url: None
+                    }
+                })
+            );
+        })
+}
+
+#[test]
 fn test_migration_registrar_reserves_to_hold() {
     ExtBuilder::default()
         .with_balances(vec![(AccountId::from(DAVE), 100_000 * UNIT)])

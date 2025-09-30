@@ -25,18 +25,6 @@ use {
 pub type StringOf<T> = BoundedVec<u8, <T as Config>::MaxStringLen>;
 pub type StringListOf<T> = BoundedVec<StringOf<T>, <T as Config>::MaxNodeUrlCount>;
 
-/// Old profile structure.
-/// Keep it until migration is removed.
-#[apply(derive_scale_codec)]
-#[derive(RuntimeDebugNoBound, PartialEqNoBound, EqNoBound, CloneNoBound, MaxEncodedLen)]
-#[scale_info(skip_type_params(T))]
-pub struct OldProfile<T: Config> {
-    pub url: BoundedVec<u8, T::MaxStringLen>,
-    pub para_ids: ParaIdsFilter<T>,
-    pub mode: ProfileMode,
-    pub assignment_request: ProviderRequestOf<T>,
-}
-
 #[apply(derive_scale_codec)]
 #[derive(RuntimeDebugNoBound, PartialEqNoBound, EqNoBound, CloneNoBound, MaxEncodedLen)]
 #[scale_info(skip_type_params(T))]
@@ -101,13 +89,6 @@ impl<T: Config> ParaIdsFilter<T> {
             ParaIdsFilter::Blacklist(list) => !list.contains(para_id),
         }
     }
-}
-
-#[apply(derive_storage_traits)]
-#[derive(MaxEncodedLen, DecodeWithMemTracking)]
-pub enum ProfileMode {
-    Bootnode,
-    Rpc { supports_ethereum_rpcs: bool },
 }
 
 #[apply(derive_storage_traits)]

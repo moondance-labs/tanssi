@@ -38,6 +38,8 @@ mod benchmarks;
 pub mod weights;
 pub use weights::WeightInfo;
 
+pub mod migrations;
+
 use {
     alloc::vec::Vec,
     core::fmt::Debug,

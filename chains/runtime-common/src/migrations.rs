@@ -41,7 +41,7 @@ use {
     core::marker::PhantomData,
     cumulus_primitives_core::ParaId,
     frame_support::{
-        migration::{clear_storage_prefix, move_pallet, storage_key_iter},
+        migration::{move_pallet, storage_key_iter},
         pallet_prelude::GetStorageVersion,
         parameter_types,
         traits::{
@@ -640,7 +640,6 @@ where
     }
 }
 
-
 pub struct ForeignAssetCreatorMigration<Runtime>(pub PhantomData<Runtime>);
 
 impl<Runtime> Migration for ForeignAssetCreatorMigration<Runtime>
@@ -1074,6 +1073,30 @@ where
     }
 }
 
+pub struct DataPreserversProfileContentMigration<Runtime>(pub PhantomData<Runtime>);
+impl<Runtime> Migration for DataPreserversProfileContentMigration<Runtime>
+where
+    Runtime: pallet_data_preservers::Config,
+{
+    fn friendly_name(&self) -> &str {
+        "TM_DataPreserversProfileContentMigration"
+    }
+
+    fn migrate(&self, available_weight: Weight) -> Weight {
+        pallet_data_preservers::migrations::migrate_profiles_content::<Runtime>(available_weight)
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn pre_upgrade(&self) -> Result<Vec<u8>, sp_runtime::DispatchError> {
+        Ok(vec![])
+    }
+
+    #[cfg(feature = "try-runtime")]
+    fn post_upgrade(&self, _state: Vec<u8>) -> Result<(), sp_runtime::DispatchError> {
+        Ok(())
+    }
+}
+
 pub struct FlashboxMigrations<Runtime>(PhantomData<Runtime>);
 
 impl<Runtime> GetMigrations for FlashboxMigrations<Runtime>
@@ -1110,6 +1133,7 @@ where
         //let migrate_config_full_rotation_mode = MigrateConfigurationAddFullRotationMode::<Runtime>(Default::default());
         //let migrate_stream_payment_new_config_items = MigrateStreamPaymentNewConfigFields::<Runtime>(Default::default());
         let migrate_pallet_session_v0_to_v1 = MigratePalletSessionV0toV1::<Runtime>(Default::default());
+        let migrate_data_preservers_profiles = DataPreserversProfileContentMigration::<Runtime>(Default::default());
 
         vec![
             // Applied in runtime 400
@@ -1135,6 +1159,7 @@ where
             // Applied in runtime 1200
             //Box::new(migrate_stream_payment_new_config_items),
             Box::new(migrate_pallet_session_v0_to_v1),
+            Box::new(migrate_data_preservers_profiles),
         ]
     }
 }
@@ -1197,6 +1222,8 @@ where
         let migrate_pallet_session_v0_to_v1 = MigratePalletSessionV0toV1::<Runtime>(Default::default());
         let migrate_offline_marking_storage =
             OfflineMarkingStorageMigration::<Runtime>(Default::default());
+            let migrate_data_preservers_profiles = DataPreserversProfileContentMigration::<Runtime>(Default::default());
+
 
         vec![
             // Applied in runtime 200
@@ -1243,6 +1270,7 @@ where
             //Box::new(migrate_pallet_xcm_v5),
             Box::new(migrate_pallet_session_v0_to_v1),
             Box::new(migrate_offline_marking_storage),
+            Box::new(migrate_data_preservers_profiles),
         ]
     }
 }
@@ -1370,6 +1398,7 @@ mod relay {
         Runtime: runtime_parachains::shared::Config,
         Runtime: pallet_xcm::Config,
         Runtime: pallet_inactivity_tracking::Config,
+        Runtime: pallet_data_preservers::Config,
     {
         fn get_migrations() -> Vec<Box<dyn Migration>> {
             /*let migrate_config_full_rotation_mode =
@@ -1391,6 +1420,8 @@ mod relay {
             >(Default::default());
             let migrate_offline_marking_storage =
                 OfflineMarkingStorageMigration::<Runtime>(Default::default());
+            let migrate_data_preservers_profiles =
+                DataPreserversProfileContentMigration::<Runtime>(Default::default());
 
             vec![
                 // Applied in runtime 1000
@@ -1413,6 +1444,7 @@ mod relay {
                 Box::new(migrate_snowbridge_fee_per_gas_migration_v0_to_v1),
                 Box::new(eth_system_genesis_hashes),
                 Box::new(migrate_offline_marking_storage),
+                Box::new(migrate_data_preservers_profiles),
             ]
         }
     }
@@ -1425,6 +1457,7 @@ mod relay {
         Runtime: pallet_session::Config,
         Runtime: snowbridge_pallet_system::Config,
         Runtime: pallet_inactivity_tracking::Config,
+        Runtime: pallet_data_preservers::Config,
     {
         fn get_migrations() -> Vec<Box<dyn Migration>> {
             let migrate_pallet_session_v0_to_v1 =
@@ -1437,11 +1470,15 @@ mod relay {
             >(Default::default());
             let migrate_offline_marking_storage =
                 OfflineMarkingStorageMigration::<Runtime>(Default::default());
+            let migrate_data_preservers_profiles =
+                DataPreserversProfileContentMigration::<Runtime>(Default::default());
+
             vec![
                 Box::new(migrate_pallet_session_v0_to_v1),
                 Box::new(migrate_snowbridge_fee_per_gas_migration_v0_to_v1),
                 Box::new(eth_system_genesis_hashes),
                 Box::new(migrate_offline_marking_storage),
+                Box::new(migrate_data_preservers_profiles),
             ]
         }
     }
