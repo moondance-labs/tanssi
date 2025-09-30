@@ -2,7 +2,7 @@
 
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type KeyringPair, alith, generateKeyringPair } from "@moonwall/util";
-import { type ApiPromise, Keyring, } from "@polkadot/api";
+import { type ApiPromise, Keyring } from "@polkadot/api";
 import { u8aToHex } from "@polkadot/util";
 import { XcmFragment } from "utils";
 
@@ -89,6 +89,20 @@ describeSuite({
                     tx,
                     XCM_VERSION
                 );
+                console.log("dryRunCall:", dryRunCall.toJSON());
+                console.log("dryRunCall.asOk.executionResult", dryRunCall.asOk.executionResult.toJSON());
+                /*
+dryRunCall.asOk.executionResult {
+  err: {
+    postInfo: { actualWeight: null, paysFee: 'Yes' },
+    error: { module: [Object] }
+  }
+}
+*/
+                console.log(
+                    "dryRunCall.asOk.executionResult.err.error.module",
+                    dryRunCall.asOk.executionResult.toJSON().err.error.module
+                );
 
                 expect(dryRunCall.isOk).to.be.true;
                 expect(dryRunCall.asOk.executionResult.isOk).be.true;
@@ -133,6 +147,7 @@ describeSuite({
                     },
                     xcmMessage
                 );
+                console.log("dryRunXcm:", dryRunXcm.toJSON());
 
                 expect(dryRunXcm.isOk).to.be.true;
                 expect(dryRunXcm.asOk.executionResult.isComplete).be.true;
