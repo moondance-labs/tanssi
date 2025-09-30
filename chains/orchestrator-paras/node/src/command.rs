@@ -273,7 +273,14 @@ pub fn run() -> Result<()> {
                     let builder = NodeConfig::new_builder(&config, None)?;
                     let db = builder.backend.expose_db();
                     let storage = builder.backend.expose_storage();
-                    cmd.run(config, builder.client, db, storage)
+                    let shared_trie_cache = builder.backend.expose_shared_trie_cache();
+                    cmd.run(
+                        config,
+                        builder.client.clone(),
+                        db,
+                        storage,
+                        shared_trie_cache,
+                    )
                 }),
                 BenchmarkCmd::Machine(cmd) => {
                     runner.sync_run(|config| cmd.run(&config, SUBSTRATE_REFERENCE_HARDWARE.clone()))
