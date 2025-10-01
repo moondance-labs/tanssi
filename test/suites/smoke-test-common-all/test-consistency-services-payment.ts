@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import "@tanssi/api-augment";
 
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
@@ -12,16 +14,20 @@ describeSuite({
     testCases: ({ it, context }) => {
         let api: ApiPromise;
         let runtimeVersion: number;
-        const costPerSession = 100_000_000n;
-        const costPerBlock = 1_000_000n;
+        let costPerSession: bigint;
+        let costPerBlock: bigint;
         let blocksPerSession: bigint;
         let chain: any;
 
         beforeAll(async () => {
             api = context.polkadotJs();
             runtimeVersion = api.runtimeVersion.specVersion.toNumber();
+
             chain = api.consts.system.version.specName.toString();
-            blocksPerSession = chain === "dancebox" || chain === "dancelight" ? 600n : 50n;
+            blocksPerSession =
+                chain === "dancebox" || chain === "dancelight" ? 600n : chain === "flashbox" ? 50n : 3600n;
+            costPerSession = BigInt((await api.call.servicesPaymentApi.collatorAssignmentCost(1000)).toString());
+            costPerBlock = BigInt((await api.call.servicesPaymentApi.blockCost(1000)).toString());
         });
 
         it({

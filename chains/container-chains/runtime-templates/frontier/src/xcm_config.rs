@@ -29,7 +29,7 @@ use {
     cumulus_primitives_core::{AggregateMessageOrigin, ParaId},
     frame_support::{
         parameter_types,
-        traits::{Disabled, Equals, Everything, Nothing, PalletInfoAccess, TransformOrigin},
+        traits::{Disabled, Equals, Everything, Get, Nothing, PalletInfoAccess, TransformOrigin},
         weights::Weight,
     },
     frame_system::EnsureRoot,
@@ -66,9 +66,6 @@ use {
     xcm_primitives::AccountIdAssetIdConversion,
 };
 
-pub const DANCELIGHT_GENESIS_HASH: [u8; 32] =
-    hex_literal::hex!["983a1a72503d6cc3636776747ec627172b51272bf45e50a355348facb67a820a"];
-
 parameter_types! {
     // Self Reserve location, defines the multilocation identifiying the self-reserve currency
     // This is used to match it also against our Balances pallet when we receive such
@@ -83,11 +80,9 @@ parameter_types! {
 
     // One XCM operation is 1_000_000_000 weight - almost certainly a conservative estimate.
     pub UnitWeightCost: Weight = Weight::from_parts(1_000_000_000, 64 * 1024);
+}
 
-    // For now this is being unused for our use cases (e.g container token transfers).
-    // We might need to revisit this later and make it dynamic (through pallet params for instance).
-    pub const RelayNetwork: NetworkId = NetworkId::ByGenesis(DANCELIGHT_GENESIS_HASH);
-
+parameter_types! {
     // The relay chain Origin type
     pub RelayChainOrigin: RuntimeOrigin = cumulus_pallet_xcm::Origin::Relay.into();
 
@@ -96,6 +91,9 @@ parameter_types! {
     /// Maximum number of instructions in a single XCM fragment. A sanity check against
     /// weight caculations getting too crazy.
     pub MaxInstructions: u32 = 100;
+
+    // Dynamic RelayNetwork parameter - configurable via pallet_parameters
+    pub RelayNetwork: NetworkId = crate::dynamic_params::xcm_config::RelayNetwork::get();
 
     // The universal location within the global consensus system
     pub UniversalLocation: InteriorLocation = [GlobalConsensus(RelayNetwork::get()), Parachain(ParachainInfo::parachain_id().into())].into();
@@ -211,6 +209,7 @@ pub type XcmRouter = WithUniqueTopic<(
         UniversalLocation,
         crate::EthereumNetwork,
         ContainerToEthTransferFee,
+        ParachainInfo,
     >,
 )>;
 

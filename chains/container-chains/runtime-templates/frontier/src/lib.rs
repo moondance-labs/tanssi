@@ -348,7 +348,7 @@ pub const VERSION: RuntimeVersion = RuntimeVersion {
     spec_name: Cow::Borrowed("frontier-template"),
     impl_name: Cow::Borrowed("frontier-template"),
     authoring_version: 1,
-    spec_version: 1500,
+    spec_version: 1600,
     impl_version: 0,
     apis: RUNTIME_API_VERSIONS,
     transaction_version: 1,
@@ -812,6 +812,22 @@ pub mod dynamic_params {
         pub static AllowedAddressesToCreate: DeployFilter = DeployFilter::All;
         #[codec(index = 1)]
         pub static AllowedAddressesToCreateInner: DeployFilter = DeployFilter::All;
+    }
+
+    /// The Dancelight genesis hash used as the default relay network identifier.
+    pub const DANCELIGHT_GENESIS_HASH: [u8; 32] =
+        hex_literal::hex!["983a1a72503d6cc3636776747ec627172b51272bf45e50a355348facb67a820a"];
+
+    #[dynamic_pallet_params]
+    #[codec(index = 4)]
+    pub mod xcm_config {
+        use super::*;
+
+        /// The relay network identifier for this container chain.
+        /// Using Dancelight genesis hash as default.
+        #[codec(index = 0)]
+        pub static RelayNetwork: xcm::latest::NetworkId =
+            xcm::latest::NetworkId::ByGenesis(DANCELIGHT_GENESIS_HASH);
     }
 }
 

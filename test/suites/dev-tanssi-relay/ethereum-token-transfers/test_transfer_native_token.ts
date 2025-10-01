@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import "@tanssi/api-augment";
 
 import { type DevModeContext, beforeAll, describeSuite, expect } from "@moonwall/cli";

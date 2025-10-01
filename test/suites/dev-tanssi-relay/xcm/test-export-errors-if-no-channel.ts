@@ -1,10 +1,10 @@
+// @ts-nocheck
+
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type KeyringPair, generateKeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
-import { u8aToHex } from "@polkadot/util";
-import { XcmFragment, TESTNET_ETHEREUM_NETWORK_ID } from "utils";
+import { isStarlightRuntime, XcmFragment, TESTNET_ETHEREUM_NETWORK_ID } from "utils";
 import { STARLIGHT_VERSIONS_TO_EXCLUDE_FROM_CONTAINER_EXPORTS } from "helpers";
-import { isStarlightRuntime } from "../../../utils/runtime.ts";
 
 describeSuite({
     id: "DEVT1907",
@@ -83,9 +83,23 @@ describeSuite({
                 },
             };
 
+            const containerAssetParentView = {
+                parents: 0,
+                interior: {
+                    X2: [
+                        {
+                            Parachain: 2000,
+                        },
+                        {
+                            PalletInstance: 10,
+                        },
+                    ],
+                },
+            };
+
             // Register the token of the container-chain
             const versionedLocation = {
-                V3: containerAsset,
+                V3: containerAssetParentView,
             };
 
             const metadata = {
@@ -141,7 +155,6 @@ describeSuite({
                             fungible: transferredBalance / 10n,
                         },
                     ],
-                    beneficiary: u8aToHex(random.addressRaw),
                 })
                     .push_any({
                         DescendOrigin: {

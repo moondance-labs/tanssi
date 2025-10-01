@@ -1,0 +1,55 @@
+[package]
+name = "tc-service-container-chain-rpc-provider"
+authors = { workspace = true }
+build = "build.rs"
+edition = "2021"
+license = "GPL-3.0-only"
+version = "0.16.0"
+
+[lints]
+workspace = true
+
+[dependencies]
+async-trait = { workspace = true }
+clap = { workspace = true, features = [ "derive" ] }
+futures = { workspace = true }
+log = { workspace = true }
+url = { workspace = true }
+
+# Local
+dancebox-runtime = { workspace = true, features = [ "std" ] }
+node-common = { workspace = true }
+pallet-data-preservers = { workspace = true, features = [ "std" ] }
+tc-orchestrator-chain-interface-through-rpc = { workspace = true }
+tc-service-container-chain-spawner = { workspace = true }
+tc-service-orchestrator-chain = { workspace = true }
+
+# Dancekit
+dc-orchestrator-chain-interface = { workspace = true }
+
+# Substrate
+sc-cli = { workspace = true }
+sc-network = { workspace = true }
+sc-service = { workspace = true }
+sc-telemetry = { workspace = true }
+sc-tracing = { workspace = true }
+sp-core = { workspace = true, features = [ "std" ] }
+
+# Cumulus
+cumulus-client-cli = { workspace = true }
+cumulus-client-service = { workspace = true }
+cumulus-primitives-core = { workspace = true }
+cumulus-relay-chain-interface = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }
+tokio-stream = { workspace = true }
+
+dp-container-chain-genesis-data = { workspace = true, features = [ "json", "std" ] }
+
+nimbus-primitives = { workspace = true }
+polkadot-overseer = { workspace = true }
+sc-client-api = { workspace = true }
+
+[build-dependencies]
+substrate-build-script-utils = { workspace = true }

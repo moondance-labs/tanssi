@@ -20,7 +20,7 @@ use {
         BenchmarkCmd, ExtrinsicFactory, SubstrateRemarkBuilder, SUBSTRATE_REFERENCE_HARDWARE,
     },
     futures::future::TryFutureExt,
-    node_common::service::Sealing,
+    node_common::service::node_builder::Sealing,
     polkadot_service::{
         self,
         benchmarking::{benchmark_inherent_data, TransferKeepAliveBuilder},

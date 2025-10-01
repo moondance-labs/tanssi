@@ -18,8 +18,6 @@ jobs:
     build:
         runs-on: self-hosted
         env:
-          TMP_TARGET: "/tmp/target"
-          CARGO_TARGET_DIR: "target"
           RUSTC_WRAPPER: "sccache"
           CARGO_INCREMENTAL: "0"
           SCCACHE_CACHE_SIZE: "100GB"
@@ -51,7 +49,9 @@ jobs:
             fail-fast: false
             matrix:
                 test_name:
-                    - zombie_data_preservers
+                    - zombie_data_preservers_remote_dancebox
+                    - zombie_data_preservers_embedded_dancebox
+                    - zombie_data_preservers_embedded_dancelight
                     - zombie_tanssi_rotation
         steps:
             - name: Checkout

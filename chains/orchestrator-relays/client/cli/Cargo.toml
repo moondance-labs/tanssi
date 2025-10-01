@@ -3,7 +3,7 @@ name = "tanssi-relay-cli"
 description = "Tanssi Relay-chain Client Node"
 edition = "2021"
 license = "GPL-3.0-only"
-version = "0.15.0"
+version = "0.16.0"
 
 [package.metadata.wasm-pack.profile.release]
 # `wasm-opt` has some problems on Linux, see
@@ -44,7 +44,7 @@ sp-maybe-compressed-blob = { workspace = true }
 sp-runtime = { workspace = true }
 
 [build-dependencies]
-substrate-build-script-utils = { workspace = true }
+substrate-build-script-utils = { workspace = true, optional = true }
 
 [features]
 default = [ "cli", "db", "full-node" ]
@@ -60,6 +60,7 @@ cli = [
 db = [ "polkadot-service/db" ]
 fast-runtime = [ "polkadot-service?/fast-runtime", "tanssi-relay-service?/fast-runtime" ]
 full-node = [ "polkadot-service/full-node" ]
+include-git-hash-in-version = [ "substrate-build-script-utils" ]
 pyroscope = [ "pyro", "pyroscope_pprofrs" ]
 runtime-benchmarks = [
 	"frame-benchmarking-cli?/runtime-benchmarks",

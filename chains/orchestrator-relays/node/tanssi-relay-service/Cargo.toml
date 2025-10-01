@@ -4,7 +4,7 @@ authors = { workspace = true }
 description = "Utils to tie different Tanssi components together and allow instantiation of a node."
 edition = "2021"
 license = "GPL-3.0-only"
-version = "0.15.0"
+version = "0.16.0"
 
 [lints]
 workspace = true
@@ -43,7 +43,7 @@ telemetry = { workspace = true }
 beefy-primitives = { workspace = true }
 consensus_common = { workspace = true }
 pallet-transaction-payment = { workspace = true }
-sp-api = { workspace = true }
+sp-api = { workspace = true, features = [ "std" ] }
 sp-authority-discovery = { workspace = true }
 sp-block-builder = { workspace = true }
 sp-blockchain = { workspace = true }

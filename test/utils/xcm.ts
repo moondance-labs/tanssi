@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import { type DevModeContext, customDevRpcRequest, expect } from "@moonwall/cli";
 import type { ApiPromise } from "@polkadot/api";
 import type { XcmpMessageFormat } from "@polkadot/types/interfaces";
@@ -511,6 +513,60 @@ export class XcmFragment {
                     },
                 });
             }
+        }
+        return this;
+    }
+
+    deposit_asset_definite(
+        location: any,
+        amount: bigint,
+        beneficiary: `0x${string}`,
+        network: XcmV3JunctionNetworkId["type"] | null = null
+    ): this {
+        if (hexToU8a(this.config.beneficiary).length === 20) {
+            this.instructions.push({
+                DepositAsset: {
+                    assets: {
+                        Definite: [
+                            {
+                                id: {
+                                    Concrete: location,
+                                },
+                                fun: {
+                                    Fungible: amount,
+                                },
+                            },
+                        ],
+                    },
+                    beneficiary: {
+                        parents: 0,
+                        interior: { X1: { AccountKey20: { network, key: beneficiary } } },
+                    },
+                },
+            });
+        } else if (hexToU8a(this.config.beneficiary).length === 32) {
+            this.instructions.push({
+                DepositAsset: {
+                    assets: {
+                        Definite: [
+                            {
+                                id: {
+                                    Concrete: location,
+                                },
+                                fun: {
+                                    Fungible: amount,
+                                },
+                            },
+                        ],
+                    },
+                    beneficiary: {
+                        parents: 0,
+                        interior: { X1: { AccountId32: { network, key: beneficiary } } },
+                    },
+                },
+            });
+        } else {
+            throw new Error("Invalid beneficiary");
         }
         return this;
     }
