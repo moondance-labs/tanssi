@@ -633,7 +633,6 @@ pub struct EthTokensLocalProcessor<
     AssetTransactor,
     EthereumLocation,
     EthereumNetwork,
-    InboundQueuePalletInstance,
     ContainerTransfersEnabled, // TODO: remove this when all runtimes support container transfers
 >(
     PhantomData<(
@@ -643,7 +642,6 @@ pub struct EthTokensLocalProcessor<
         AssetTransactor,
         EthereumLocation,
         EthereumNetwork,
-        InboundQueuePalletInstance,
         ContainerTransfersEnabled,
     )>,
 );
@@ -655,7 +653,6 @@ impl<
         AssetTransactor,
         EthereumLocation,
         EthereumNetwork,
-        InboundQueuePalletInstance,
         ContainerTransfersEnabled,
     > MessageProcessor
     for EthTokensLocalProcessor<
@@ -665,7 +662,6 @@ impl<
         AssetTransactor,
         EthereumLocation,
         EthereumNetwork,
-        InboundQueuePalletInstance,
         ContainerTransfersEnabled,
     >
 where
@@ -680,7 +676,6 @@ where
     AssetTransactor: TransactAsset,
     EthereumLocation: Get<Location>,
     EthereumNetwork: Get<NetworkId>,
-    InboundQueuePalletInstance: Get<u8>,
     ContainerTransfersEnabled: Get<bool>,
     cumulus_primitives_core::Location:
         EncodeLike<<T as pallet_foreign_asset_creator::Config>::ForeignAsset>,
@@ -742,7 +737,6 @@ impl<
         AssetTransactor,
         EthereumLocation,
         EthereumNetwork,
-        InboundQueuePalletInstance,
         ContainerTransfersEnabled,
     >
     EthTokensLocalProcessor<
@@ -752,7 +746,6 @@ impl<
         AssetTransactor,
         EthereumLocation,
         EthereumNetwork,
-        InboundQueuePalletInstance,
         ContainerTransfersEnabled,
     >
 where
@@ -764,7 +757,6 @@ where
     AssetTransactor: TransactAsset,
     EthereumLocation: Get<Location>,
     EthereumNetwork: Get<NetworkId>,
-    InboundQueuePalletInstance: Get<u8>,
     ContainerTransfersEnabled: Get<bool>,
 {
     pub fn decode_message_for_eth_transfer(mut payload: &[u8]) -> Option<EthTransferData> {

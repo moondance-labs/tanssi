@@ -260,7 +260,6 @@ pub type EthTokensProcessor = EthTokensLocalProcessor<
     AssetTransactor,
     dancelight_runtime_constants::snowbridge::EthereumLocation,
     dancelight_runtime_constants::snowbridge::EthereumNetwork,
-    InboundQueuePalletInstance,
     frame_support::traits::ConstBool<true>,
 >;
 

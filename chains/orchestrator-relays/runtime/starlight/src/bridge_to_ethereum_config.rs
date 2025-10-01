@@ -235,7 +235,6 @@ pub type EthTokensProcessor = EthTokensLocalProcessor<
     AssetTransactor,
     starlight_runtime_constants::snowbridge::EthereumLocation,
     starlight_runtime_constants::snowbridge::EthereumNetwork,
-    InboundQueuePalletInstance,
     frame_support::traits::ConstBool<false>,
 >;
 
