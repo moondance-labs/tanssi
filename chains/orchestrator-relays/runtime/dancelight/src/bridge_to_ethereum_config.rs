@@ -16,16 +16,15 @@
 
 //! The bridge to ethereum config
 
-use frame_support::pallet_prelude::{DecodeWithMemTracking, Encode, EnsureOrigin, TypeInfo};
-use frame_system::{EnsureRoot, EnsureRootWithSuccess};
-use parity_scale_codec::{Decode, MaxEncodedLen};
-use xcm_executor::XcmExecutor;
-use bp_relayers::RewardLedger;
-use frame_support::BoundedSlice;
-use frame_support::traits::{EnqueueMessage, QueueFootprint};
-use snowbridge_pallet_inbound_queue_v2::AccountIdOf;
 #[cfg(all(not(test), not(feature = "testing-helpers")))]
 use crate::EthereumBeaconClient;
+use frame_support::pallet_prelude::{DecodeWithMemTracking, Encode, TypeInfo};
+use frame_support::traits::{EnqueueMessage, QueueFootprint};
+use frame_support::BoundedSlice;
+use frame_system::EnsureRootWithSuccess;
+use parity_scale_codec::{Decode, MaxEncodedLen};
+use snowbridge_outbound_queue_primitives::v2::{Message, SendMessage};
+use snowbridge_outbound_queue_primitives::SendError;
 
 #[cfg(not(feature = "runtime-benchmarks"))]
 use {
@@ -38,6 +37,9 @@ use {
     },
 };
 
+use crate::{AccountId, BridgeRelayers};
+use dancelight_runtime_constants::snowbridge::EthereumLocation;
+use tp_traits::BlockNumber;
 use {
     crate::{
         parameter_types, weights, xcm_config, AggregateMessageOrigin, Balance, Balances,
@@ -55,10 +57,6 @@ use {
     tanssi_runtime_common::relay::{EthTokensLocalProcessor, RewardThroughFeesAccount},
     tp_bridge::{DoNothingConvertMessage, DoNothingRouter, EthereumSystemHandler},
 };
-use dancelight_runtime_constants::snowbridge::EthereumLocation;
-use tp_traits::BlockNumber;
-use crate::{AccountId, BridgeRelayers, EthereumOutboundQueueV2, RuntimeOrigin};
-use crate::xcm_config::XcmConfig;
 
 pub const SLOTS_PER_EPOCH: u32 = snowbridge_pallet_ethereum_client::config::SLOTS_PER_EPOCH as u32;
 
@@ -132,20 +130,22 @@ pub struct DoNothingMessageQueue;
 impl EnqueueMessage<bridge_hub_common::AggregateMessageOrigin> for DoNothingMessageQueue {
     type MaxMessageLen = ();
 
-    fn enqueue_message(message: BoundedSlice<u8, Self::MaxMessageLen>, origin: bridge_hub_common::AggregateMessageOrigin) {
-        todo!()
+    fn enqueue_message(
+        _message: BoundedSlice<u8, Self::MaxMessageLen>,
+        _origin: bridge_hub_common::AggregateMessageOrigin,
+    ) {
     }
 
-    fn enqueue_messages<'a>(messages: impl Iterator<Item=BoundedSlice<'a, u8, Self::MaxMessageLen>>, origin: bridge_hub_common::AggregateMessageOrigin) {
-        todo!()
+    fn enqueue_messages<'a>(
+        _messages: impl Iterator<Item = BoundedSlice<'a, u8, Self::MaxMessageLen>>,
+        _origin: bridge_hub_common::AggregateMessageOrigin,
+    ) {
     }
 
-    fn sweep_queue(origin: bridge_hub_common::AggregateMessageOrigin) {
-        todo!()
-    }
+    fn sweep_queue(_origin: bridge_hub_common::AggregateMessageOrigin) {}
 
-    fn footprint(origin: bridge_hub_common::AggregateMessageOrigin) -> QueueFootprint {
-        todo!()
+    fn footprint(_origin: bridge_hub_common::AggregateMessageOrigin) -> QueueFootprint {
+        QueueFootprint::default()
     }
 }
 
@@ -154,7 +154,7 @@ impl EnqueueMessage<bridge_hub_common::AggregateMessageOrigin> for DoNothingMess
 )]
 pub enum BridgeRewardBeneficiaries {
     /// A local chain account.
-    LocalAccount(AccountId)
+    LocalAccount(AccountId),
 }
 
 impl From<sp_runtime::AccountId32> for BridgeRewardBeneficiaries {
@@ -162,7 +162,6 @@ impl From<sp_runtime::AccountId32> for BridgeRewardBeneficiaries {
         BridgeRewardBeneficiaries::LocalAccount(value)
     }
 }
-
 
 pub struct BridgeRewardPayer;
 impl bp_relayers::PaymentProcedure<AccountId, BridgeReward, u128> for BridgeRewardPayer {
@@ -178,21 +177,21 @@ impl bp_relayers::PaymentProcedure<AccountId, BridgeReward, u128> for BridgeRewa
         match reward_kind {
             BridgeReward::Snowbridge => {
                 match beneficiary {
-                    BridgeRewardBeneficiaries::LocalAccount(account_id) => {
+                    BridgeRewardBeneficiaries::LocalAccount(_account_id) => {
                         // TODO: Pay relayer from reward account
-                        todo!()
-                    },
+                        Ok(())
+                    }
                 }
             }
         }
     }
 }
 
-/// These values are copied from bridge-hub-westend we will need to modify them
+// These values are copied from bridge-hub-westend we will need to modify them
 parameter_types! {
-	pub storage RequiredStakeForStakeAndSlash: Balance = 1_000_000;
-	pub const RelayerStakeLease: u32 = 8;
-	pub const RelayerStakeReserveId: [u8; 8] = *b"brdgrlrs";
+    pub storage RequiredStakeForStakeAndSlash: Balance = 1_000_000;
+    pub const RelayerStakeLease: u32 = 8;
+    pub const RelayerStakeReserveId: [u8; 8] = *b"brdgrlrs";
 }
 
 pub type BridgeRelayersInstance = ();
@@ -213,28 +212,6 @@ impl pallet_bridge_relayers::Config<BridgeRelayersInstance> for Runtime {
     >;
     type Balance = Balance;
     type WeightInfo = ();
-}
-
-
-impl snowbridge_pallet_outbound_queue_v2::Config for Runtime {
-    type RuntimeEvent = RuntimeEvent;
-    type Hashing = Keccak256;
-    type MessageQueue = DoNothingMessageQueue; // This is hardcoded by snowbridge to use bridge hub common's AggregateMessageOrigin, so we need to correct this
-    type GasMeter = snowbridge_outbound_queue_primitives::v2::ConstantGasMeter;
-    type Balance = Balance;
-    type MaxMessagePayloadSize = ConstU32<2048>;
-    type MaxMessagesPerBlock = ConstU32<32>;
-    type WeightToFee = WeightToFee;
-    type WeightInfo = ();
-    #[cfg(all(not(test), not(feature = "testing-helpers")))]
-    type Verifier = EthereumBeaconClient;
-    #[cfg(any(test, feature = "testing-helpers"))]
-    type Verifier = test_helpers::MockVerifier;
-    type GatewayAddress = EthereumGatewayAddress;
-    type RewardKind = BridgeReward;
-    type DefaultRewardKind = SnowbridgeReward;
-    type RewardPayment = BridgeRelayers;
-    type EthereumNetwork =  dancelight_runtime_constants::snowbridge::EthereumNetwork;
 }
 
 parameter_types! {
@@ -275,9 +252,23 @@ impl snowbridge_pallet_system::Config for Runtime {
     type WeightInfo = crate::weights::snowbridge_pallet_system::SubstrateWeight<Runtime>;
 }
 
+// Added this since we do not have outbound queue integrated yet
+pub struct DoNothingOutboundQueue;
+impl SendMessage for DoNothingOutboundQueue {
+    type Ticket = ();
+
+    fn validate(_: &Message) -> Result<Self::Ticket, SendError> {
+        Ok(())
+    }
+
+    fn deliver(_: Self::Ticket) -> Result<H256, SendError> {
+        Ok(H256::zero())
+    }
+}
+
 impl snowbridge_pallet_system_v2::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
-    type OutboundQueue = EthereumOutboundQueueV2;
+    type OutboundQueue = DoNothingOutboundQueue;
     type FrontendOrigin = EnsureRootWithSuccess<AccountId, EthereumLocation>;
     type GovernanceOrigin = EnsureRootWithSuccess<AccountId, EthereumLocation>;
     type WeightInfo = ();
@@ -464,17 +455,10 @@ impl snowbridge_pallet_inbound_queue_v2::Config for Runtime {
     #[cfg(any(test, feature = "testing-helpers"))]
     type Verifier = test_helpers::MockVerifier;
     // TODO: Revisit this when we enable xcmp messages
-    type XcmSender = DoNothingRouter;
-    type XcmExecutor = XcmExecutor<XcmConfig>;
     type GatewayAddress = EthereumGatewayAddress;
-    type AssetHubParaId = ConstU32<0>; // Dummy para id
-    type MessageConverter = DoNothingConvertMessage;
+    type MessageProcessor = (SymbioticMessageProcessor<Self>,);
     type RewardKind = BridgeReward;
     type DefaultRewardKind = SnowbridgeReward;
     type RewardPayment = BridgeRelayers;
-    type AccountToLocation = xcm_builder::AliasesIntoAccountId32<
-        xcm_config::RelayNetwork,
-        <Runtime as frame_system::Config>::AccountId,
-    >;
     type WeightInfo = ();
 }
