@@ -96,8 +96,6 @@ jobs:
         runs-on: self-hosted
         needs: ["set-tags", "build"]
         env:
-          TMP_TARGET: "/tmp/target"
-          CARGO_TARGET_DIR: "target"
           RUSTC_WRAPPER: "sccache"
           CARGO_INCREMENTAL: "0"
           SCCACHE_CACHE_SIZE: "100GB"
@@ -202,8 +200,6 @@ jobs:
         runs-on: self-hosted
         needs: ["set-tags"]
         env:
-          TMP_TARGET: "/tmp/target"
-          CARGO_TARGET_DIR: "target"
           RUSTC_WRAPPER: "sccache"
           CARGO_INCREMENTAL: "0"
           SCCACHE_CACHE_SIZE: "100GB"
@@ -432,8 +428,6 @@ jobs:
       runs-on: self-hosted
       needs: ["set-tags", "build"]
       env:
-        TMP_TARGET: "/tmp/target"
-        CARGO_TARGET_DIR: "target"
         RUSTC_WRAPPER: "sccache"
         CARGO_INCREMENTAL: "0"
         SCCACHE_CACHE_SIZE: "100GB"
