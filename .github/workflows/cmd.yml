@@ -42,7 +42,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Add reaction to triggered comment
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -121,7 +121,7 @@ jobs:
           fi
 
       - name: Add confused reaction on failure
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         if: ${{ failure() }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -134,7 +134,7 @@ jobs:
             })
 
       - name: Add 👍 reaction on success
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         if: ${{ !failure() }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
