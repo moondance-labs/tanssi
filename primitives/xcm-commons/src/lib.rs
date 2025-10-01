@@ -78,12 +78,12 @@ where
     }
 }
 
-/// Filter to ensure an ETH asset is coming from a Parachain.
-pub struct EthereumAssetReserveFromPara<EthereumLocation, EthereumNetwork>(
+/// Filter to ensure an ETH asset is coming from a parent.
+pub struct EthereumAssetReserveFromParent<EthereumLocation, EthereumNetwork>(
     core::marker::PhantomData<(EthereumLocation, EthereumNetwork)>,
 );
 impl<EthereumLocation, EthereumNetwork> frame_support::traits::ContainsPair<Asset, Location>
-    for EthereumAssetReserveFromPara<EthereumLocation, EthereumNetwork>
+    for EthereumAssetReserveFromParent<EthereumLocation, EthereumNetwork>
 where
     EthereumLocation: Get<Location>,
     EthereumNetwork: Get<NetworkId>,
