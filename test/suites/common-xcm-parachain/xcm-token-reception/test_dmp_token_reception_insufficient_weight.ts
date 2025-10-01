@@ -4,7 +4,7 @@ import { type ApiPromise, Keyring } from "@polkadot/api";
 import { u8aToHex } from "@polkadot/util";
 
 import { type RawXcmMessage, XcmFragment, injectDmpMessageAndSeal } from "utils";
-import { RELAY_SOURCE_LOCATION, RELAY_SOURCE_LOCATION_2 } from "utils";
+import { RELAY_SOURCE_LOCATION } from "utils";
 
 describeSuite({
     id: "COMMON0209",
