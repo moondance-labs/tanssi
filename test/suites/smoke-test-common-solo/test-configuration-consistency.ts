@@ -24,13 +24,12 @@ describeSuite({
         let costPerSession: bigint;
         let costPerBlock: bigint;
         const blockNumberToDebug = getBlockNumberForDebug();
-        beforeAll(() => {
+        beforeAll(async () => {
             api = context.polkadotJs();
-            const runtimeVersion = api.runtimeVersion.specVersion.toNumber();
             const chain = api.consts.system.version.specName.toString();
             blocksPerSession = chain === "dancelight" ? 600n : 3600n;
-            costPerSession = chain === "dancelight" || runtimeVersion < 1500 ? 100_000_000n : 50_000_000_000_000n;
-            costPerBlock = chain === "dancelight" || runtimeVersion < 1500 ? 1_000_000n : 30_000_000_000n;
+            costPerSession = BigInt((await api.call.servicesPaymentApi.collatorAssignmentCost(1000)).toString());
+            costPerBlock = BigInt((await api.call.servicesPaymentApi.blockCost(1000)).toString());
         });
 
         it({
