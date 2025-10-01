@@ -22,7 +22,7 @@ use {
     snowbridge_inbound_queue_primitives::v1::{
         Command, Destination, MessageV1, VersionedXcmMessage,
     },
-    sp_core::{H160, H256},
+    sp_core::H160,
     std::sync::Arc,
     xcm::latest::prelude::*,
     xcm::latest::Junctions,
@@ -132,7 +132,7 @@ impl PayloadGeneratorCmd {
         VersionedXcmMessage::V1(MessageV1 {
             chain_id: 1,
             command: Command::SendNativeToken {
-                token_id: H256::from(token_id),
+                token_id,
                 destination,
                 amount: self.amount,
                 fee: self.fee,
@@ -151,7 +151,7 @@ impl PayloadGeneratorCmd {
         VersionedXcmMessage::V1(MessageV1 {
             chain_id: 1,
             command: Command::SendNativeToken {
-                token_id: H256::from(token_id),
+                token_id,
                 destination,
                 amount: self.amount,
                 fee: self.fee,
@@ -255,10 +255,7 @@ impl PayloadGeneratorCmd {
 
             Location {
                 parents: 0,
-                interior: Junctions::X2(Arc::new([
-                    Parachain(para_id.into()),
-                    PalletInstance(pallet_id),
-                ])),
+                interior: Junctions::X2(Arc::new([Parachain(para_id), PalletInstance(pallet_id)])),
             }
         } else {
             panic!("Unsupported token-location format: {}", token_location);
