@@ -2482,6 +2482,7 @@ dependencies = [
  "pallet-migrations 11.0.0",
  "pallet-multisig",
  "pallet-ocw-testing",
+ "pallet-parameters",
  "pallet-proxy",
  "pallet-root-testing",
  "pallet-session",
