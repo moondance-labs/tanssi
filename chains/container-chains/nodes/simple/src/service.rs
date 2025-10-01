@@ -133,7 +133,7 @@ where
     let (_, import_queue) = import_queue(&parachain_config, &node_builder);
 
     // Relay chain interface
-    let (relay_chain_interface, _collator_key, _, _) = node_builder
+    let (relay_chain_interface, _collator_key, start_bootnode_params) = node_builder
         .build_relay_chain_interface(&parachain_config, polkadot_config, collator_options.clone())
         .await?;
 
@@ -170,6 +170,7 @@ where
         para_id,
         relay_chain_interface.clone(),
         relay_chain_slot_duration,
+        start_bootnode_params,
     )?;
 
     Ok((node_builder.task_manager, node_builder.client))
