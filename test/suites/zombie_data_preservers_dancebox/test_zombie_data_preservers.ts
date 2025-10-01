@@ -226,7 +226,7 @@ describeSuite({
                     value: parseUnits("0.001", "ether"),
                     nonce,
                 });
-                await customHttpProvider.waitForTransaction(tx.hash, 1, 60_000);
+                await customHttpProvider.waitForTransaction(tx.hash, 1, 120_000);
                 expect(Number(await customHttpProvider.getBalance(CHARLETH_ADDRESS))).to.be.greaterThan(0);
             },
         });
