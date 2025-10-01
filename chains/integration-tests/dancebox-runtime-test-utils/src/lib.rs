@@ -712,18 +712,22 @@ pub const FERDIE: [u8; 32] = [9u8; 32];
 
 pub fn set_dummy_boot_node(para_manager: RuntimeOrigin, para_id: ParaId) {
     use {
-        pallet_data_preservers::{ParaIdsFilter, Profile, ProfileMode},
+        pallet_data_preservers::{NodeType, ParaIdsFilter, Profile},
         tp_data_preservers_common::{AssignerExtra, ProviderRequest},
     };
 
     let profile = Profile {
-        url:
+        bootnode_url: Some(
             b"/ip4/127.0.0.1/tcp/33049/ws/p2p/12D3KooWHVMhQDHBpj9vQmssgyfspYecgV6e3hH1dQVDUkUbCYC9"
                 .to_vec()
                 .try_into()
                 .expect("to fit in BoundedVec"),
+        ),
+        direct_rpc_urls: Default::default(),
+        proxy_rpc_urls: Default::default(),
         para_ids: ParaIdsFilter::AnyParaId,
-        mode: ProfileMode::Bootnode,
+        node_type: NodeType::Substrate,
+        additional_info: Default::default(),
         assignment_request: ProviderRequest::Free,
     };
 
