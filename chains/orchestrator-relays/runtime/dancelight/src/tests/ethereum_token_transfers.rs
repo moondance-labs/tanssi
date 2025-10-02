@@ -1445,7 +1445,7 @@ fn can_process_message_returns_false_for_wrong_message_type() {
                     fee: 0,
                 },
             })
-            .encode(),
+                .encode(),
             nonce: 1,
             message_id: H256::zero(),
         };
@@ -2226,7 +2226,7 @@ fn test_unrelated_xcm_message() {
                     beneficiary_location,
                     xcm::opaque::latest::Xcm(vec![xcm::opaque::latest::Instruction::ClearOrigin]),
                 ),
-                SendError::NotApplicable,
+                SendError::Unroutable,
             );
 
             assert_eq!(
@@ -2336,7 +2336,7 @@ fn test_user_cannot_send_raw_message() {
                     Box::new(beneficiary_location.into()),
                     Box::new(VersionedXcm::V5(xcm_message)),
                 ),
-                pallet_xcm::Error::<Runtime>::Unreachable,
+                pallet_xcm::Error::<Runtime>::SendFailure,
             );
 
             assert_eq!(
