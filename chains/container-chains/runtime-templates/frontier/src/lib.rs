@@ -315,6 +315,7 @@ parameter_types! {
         /// <https://chainlist.org/chain/1>
         /// <https://ethereum.org/en/developers/docs/apis/json-rpc/#net_version>
         pub EthereumNetwork: NetworkId = NetworkId::Ethereum { chain_id: 11155111 };
+
 }
 
 /// Opaque types. These are used by the CLI to instantiate machinery that don't need to know

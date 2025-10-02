@@ -206,7 +206,7 @@ impl WeightToFeePolynomial for WeightToFee {
 }
 
 parameter_types! {
-            /// Network and location for the Ethereum chain. On Starlight, the Ethereum chain bridged
+        /// Network and location for the Ethereum chain. On Starlight, the Ethereum chain bridged
         /// to is the Ethereum mainnet, with chain ID 1.
         /// <https://chainlist.org/chain/1>
         /// <https://ethereum.org/en/developers/docs/apis/json-rpc/#net_version>
