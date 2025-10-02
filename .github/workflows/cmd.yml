@@ -57,8 +57,6 @@ jobs:
     needs: ["is-org-member"]
     runs-on: self-hosted
     env:
-      TMP_TARGET: "/tmp/target"
-      CARGO_TARGET_DIR: "target"
       RUSTC_WRAPPER: "sccache"
       CARGO_INCREMENTAL: "0"
       SCCACHE_CACHE_SIZE: "100GB"
