@@ -3,8 +3,12 @@ import "@tanssi/api-augment";
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import type { KeyringPair } from "@polkadot/keyring/types";
-import { type SubmittedEventDataType, checkIfErrorIsEmitted, waitForReferendumDecision } from "../../../utils";
-import { isStarlightRuntime } from "../../../utils/runtime.ts";
+import {
+    type SubmittedEventDataType,
+    checkIfErrorIsEmitted,
+    waitForReferendumDecision,
+    isStarlightRuntime,
+} from "../../../utils";
 import type { H256 } from "@polkadot/types/interfaces";
 
 export type ProposedEventDataType = {
@@ -464,7 +468,11 @@ describeSuite({
                 }
 
                 // 1. Whitelist the call for this test
-                const call = api.tx.system.remarkWithEvent("0x0001");
+                const delegate = alice.address;
+                const proxyType = "Any";
+                const delay = 0;
+
+                const call = api.tx.sudo.sudoAs(bob.address, api.tx.proxy.addProxy(delegate, proxyType, delay));
                 await context.createBlock(
                     await api.tx.sudo.sudo(api.tx.whitelist.whitelistCall(call.method.hash.toHex())).signAsync(alice),
                     {
@@ -499,7 +507,11 @@ describeSuite({
                 }
 
                 // Pre-check: Verify the call is whitelisted
-                const call = api.tx.system.remarkWithEvent("0x0001");
+                const delegate = alice.address;
+                const proxyType = "Any";
+                const delay = 0;
+
+                const call = api.tx.sudo.sudoAs(bob.address, api.tx.proxy.addProxy(delegate, proxyType, delay));
                 const isCallWhitelisted = await api.query.whitelist.whitelistedCall(call.method.hash.toHex());
                 expect(isCallWhitelisted.isSome, "The call should be whitelisted");
 
@@ -574,6 +586,14 @@ describeSuite({
                     isCallWhitelistedAfterFailedWhitelistDispatchTx.isNone,
                     "The call should not be whitelisted anymore"
                 );
+                for (let i = 0; i < 450; i++) {
+                    await context.createBlock();
+                }
+
+                const proxyInfo = await api.query.proxy.proxies(bob.address);
+                const [delegates] = proxyInfo.toJSON() as { delegate: string }[][];
+                const added = delegates.find((d: any) => d.delegate === delegate);
+                expect(added).to.exist;
             },
         });
 
@@ -590,7 +610,7 @@ describeSuite({
                 const proxyType = "Any";
                 const delay = 0;
 
-                const call = api.tx.sudo.sudoAs(bob.address, api.tx.proxy.addProxy(delegate, proxyType, delay));
+                const call = api.tx.sudo.sudoAs(dave.address, api.tx.proxy.addProxy(delegate, proxyType, delay));
                 const isCallWhitelisted = await api.query.whitelist.whitelistedCall(call.method.hash.toHex());
                 expect(isCallWhitelisted.isNone, "The call should not be whitelisted");
 
