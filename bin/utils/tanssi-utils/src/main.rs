@@ -23,7 +23,10 @@ use {
         collections::BTreeMap,
         path::{Path, PathBuf},
     },
+    xcm_payload::PayloadGeneratorCmd,
 };
+
+pub mod xcm_payload;
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct RewardData {
@@ -49,6 +52,7 @@ pub struct TanssiUtils {
 #[command(rename_all = "kebab-case")]
 pub enum TanssiUtilsCmd {
     RewardClaimGenerator(RewardClaimGeneratorCmd),
+    PayloadGenerator(PayloadGeneratorCmd),
 }
 
 #[derive(Parser, Debug)]
@@ -67,6 +71,9 @@ impl TanssiUtils {
                 let rewards =
                     extract_rewards_data_from_file(&cmd.input_path).expect("command fail");
                 generate_reward_utils(rewards)
+            }
+            TanssiUtilsCmd::PayloadGenerator(cmd) => {
+                cmd.run();
             }
         }
     }
