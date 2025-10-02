@@ -44,7 +44,7 @@ use {
         sovereign_paid_remote_exporter::SovereignPaidRemoteExporter,
         ContainerChainEthereumLocationConverter,
     },
-    tp_xcm_commons::EthereumAssetReserveFromPara,
+    tp_xcm_commons::RelayAssetReserveFromEthereum,
     xcm::latest::prelude::*,
     xcm::prelude::Location,
     xcm_builder::{
@@ -211,7 +211,7 @@ impl xcm_executor::Config for XcmConfig {
     type OriginConverter = XcmOriginToTransactDispatchOrigin;
     type IsReserve = (
         IsReserveFilter<Runtime>,
-        EthereumAssetReserveFromPara<crate::EthereumLocation, crate::EthereumNetwork>,
+        RelayAssetReserveFromEthereum<crate::EthereumNetwork>,
     );
     type IsTeleporter = IsTeleportFilter<Runtime>;
     type UniversalLocation = UniversalLocation;

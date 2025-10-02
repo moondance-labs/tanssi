@@ -82,8 +82,6 @@ where
         let expected_network = EthereumNetwork::get();
         let universal_location = UniversalLocation::get();
 
-        log::trace!(target: "xcm::ethereum_blob_exporter", "validate params: network={network:?}, _channel={_channel:?}, universal_source={universal_source:?}, destination={destination:?}, message={message:?}");
-
         if network != expected_network {
             log::trace!(target: "xcm::ethereum_blob_exporter", "skipped due to unmatched bridge network {network:?}.");
             return Err(SendError::NotApplicable);
@@ -117,25 +115,10 @@ where
             return Err(SendError::NotApplicable);
         }
 
-        match local_sub {
-            Junctions::Here => {}
-            Junctions::X1(arc) => {
-                if let [Junction::Parachain(_id)] = arc.as_ref() {
-                } else {
-                    log::trace!(
-                        target: "xcm::ethereum_blob_exporter",
-                        "skipped due to unexpected junction inside X1 {arc:?}."
-                    );
-                    return Err(SendError::NotApplicable);
-                }
-            }
-            _ => {
-                log::trace!(
-                    target: "xcm::ethereum_blob_exporter",
-                    "skipped due to unmatched sub network {local_sub:?}."
-                );
-                return Err(SendError::NotApplicable);
-            }
+        // TODO: Support source being a parachain.
+        if !matches!(local_sub, Junctions::Here) {
+            log::trace!(target: "xcm::ethereum_blob_exporter", "skipped due to unmatched sub network {local_sub:?}.");
+            return Err(SendError::NotApplicable);
         }
 
         let (channel_id, agent_id) = BridgeChannelInfo::get().ok_or_else(|| {
@@ -143,20 +126,16 @@ where
             SendError::Unroutable
         })?;
 
-        let message = message.as_ref().ok_or_else(|| {
+        let message = message.take().ok_or_else(|| {
             log::error!(target: "xcm::ethereum_blob_exporter", "xcm message not provided.");
             SendError::MissingArgument
         })?;
 
         let mut converter =
             XcmConverter::<ConvertAssetId, ()>::new(&message, expected_network, agent_id);
-        let (command, message_id) = converter.convert().map_err(|err| {
+        let (command, message_id) = converter.convert().map_err(|err|{
             log::error!(target: "xcm::ethereum_blob_exporter", "unroutable due to pattern matching error '{err:?}'.");
-            // For now - putting NotApplicable here to be able to pass the execution to the next
-            // exporter in the tuple. Both exporters: EthereumBlobExporter and ContainerEthereumBlobExporter
-            // should be refactored to the single exporter in a separate PR.
-            // After refactoring - revert error to SendError::Unroutable
-            SendError::NotApplicable
+            SendError::Unroutable
         })?;
 
         let outbound_message = Message {
@@ -244,7 +223,7 @@ where
 
     pub fn convert(&mut self) -> Result<(Command, [u8; 32]), XcmConverterError> {
         let result = match self.peek() {
-            // Ok(ReserveAssetDeposited { .. }) => self.make_mint_foreign_token_command(),
+            Ok(ReserveAssetDeposited { .. }) => self.make_mint_foreign_token_command(),
             // Get withdraw/deposit and make native tokens create message.
             Ok(WithdrawAsset { .. }) => self.make_unlock_native_token_command(),
             Err(e) => Err(e),
@@ -386,122 +365,122 @@ where
         }
     }
 
-    // /// Convert the xcm for Polkadot-native token from the origin chain (container chain) into the Command
-    // /// To match transfers of Polkadot-native tokens, we expect an input of the form:
-    // /// # ReserveAssetDeposited
-    // /// # ClearOrigin
-    // /// # BuyExecution
-    // /// # DepositAsset
-    // /// # SetTopic
-    // fn make_mint_foreign_token_command(
-    //     &mut self,
-    // ) -> Result<(Command, [u8; 32]), XcmConverterError> {
-    // TODO: This function will be used only when we start receiving tokens from containers.
-    // The whole struct is copied from Snowbridge and modified for our needs, and thus function
-    // will be modified in a latter PR.
-    // todo!("make_mint_foreign_token_command");
+    /// Convert the xcm for Polkadot-native token from the origin chain (container chain) into the Command
+    /// To match transfers of Polkadot-native tokens, we expect an input of the form:
+    /// # ReserveAssetDeposited
+    /// # ClearOrigin
+    /// # BuyExecution
+    /// # DepositAsset
+    /// # SetTopic
+    fn make_mint_foreign_token_command(
+        &mut self,
+    ) -> Result<(Command, [u8; 32]), XcmConverterError> {
+        // TODO: This function will be used only when we start receiving tokens from containers.
+        // The whole struct is copied from Snowbridge and modified for our needs, and thus function
+        // will be modified in a latter PR.
+        todo!("make_mint_foreign_token_command");
 
-    // use XcmConverterError::*;
+        // use XcmConverterError::*;
 
-    // // Get the reserve assets.
-    // let reserve_assets = match_expression!(
-    //     self.next()?,
-    //     ReserveAssetDeposited(reserve_assets),
-    //     reserve_assets
-    // )
-    // .ok_or(ReserveAssetDepositedExpected)?;
+        // // Get the reserve assets.
+        // let reserve_assets = match_expression!(
+        //     self.next()?,
+        //     ReserveAssetDeposited(reserve_assets),
+        //     reserve_assets
+        // )
+        // .ok_or(ReserveAssetDepositedExpected)?;
 
-    // // Check if clear origin exists and skip over it.
-    // if match_expression!(self.peek(), Ok(ClearOrigin), ()).is_some() {
-    //     let _ = self.next();
-    // }
+        // // Check if clear origin exists and skip over it.
+        // if match_expression!(self.peek(), Ok(ClearOrigin), ()).is_some() {
+        //     let _ = self.next();
+        // }
 
-    // // Get the fee asset item from BuyExecution or continue parsing.
-    // let fee_asset = match_expression!(self.peek(), Ok(BuyExecution { fees, .. }), fees);
-    // if fee_asset.is_some() {
-    //     let _ = self.next();
-    // }
+        // // Get the fee asset item from BuyExecution or continue parsing.
+        // let fee_asset = match_expression!(self.peek(), Ok(BuyExecution { fees, .. }), fees);
+        // if fee_asset.is_some() {
+        //     let _ = self.next();
+        // }
 
-    // let (deposit_assets, beneficiary) = match_expression!(
-    //     self.next()?,
-    //     DepositAsset {
-    //         assets,
-    //         beneficiary
-    //     },
-    //     (assets, beneficiary)
-    // )
-    // .ok_or(DepositAssetExpected)?;
+        // let (deposit_assets, beneficiary) = match_expression!(
+        //     self.next()?,
+        //     DepositAsset {
+        //         assets,
+        //         beneficiary
+        //     },
+        //     (assets, beneficiary)
+        // )
+        // .ok_or(DepositAssetExpected)?;
 
-    // // assert that the beneficiary is AccountKey20.
-    // let recipient = match_expression!(
-    //     beneficiary.unpack(),
-    //     (0, [AccountKey20 { network, key }])
-    //         if self.network_matches(network),
-    //     H160(*key)
-    // )
-    // .ok_or(BeneficiaryResolutionFailed)?;
+        // // assert that the beneficiary is AccountKey20.
+        // let recipient = match_expression!(
+        //     beneficiary.unpack(),
+        //     (0, [AccountKey20 { network, key }])
+        //         if self.network_matches(network),
+        //     H160(*key)
+        // )
+        // .ok_or(BeneficiaryResolutionFailed)?;
 
-    // // Make sure there are reserved assets.
-    // if reserve_assets.len() == 0 {
-    //     return Err(NoReserveAssets);
-    // }
+        // // Make sure there are reserved assets.
+        // if reserve_assets.len() == 0 {
+        //     return Err(NoReserveAssets);
+        // }
 
-    // // Check the the deposit asset filter matches what was reserved.
-    // if reserve_assets
-    //     .inner()
-    //     .iter()
-    //     .any(|asset| !deposit_assets.matches(asset))
-    // {
-    //     return Err(FilterDoesNotConsumeAllAssets);
-    // }
+        // // Check the the deposit asset filter matches what was reserved.
+        // if reserve_assets
+        //     .inner()
+        //     .iter()
+        //     .any(|asset| !deposit_assets.matches(asset))
+        // {
+        //     return Err(FilterDoesNotConsumeAllAssets);
+        // }
 
-    // // We only support a single asset at a time.
-    // ensure!(reserve_assets.len() == 1, TooManyAssets);
-    // let reserve_asset = reserve_assets.get(0).ok_or(AssetResolutionFailed)?;
+        // // We only support a single asset at a time.
+        // ensure!(reserve_assets.len() == 1, TooManyAssets);
+        // let reserve_asset = reserve_assets.get(0).ok_or(AssetResolutionFailed)?;
 
-    // // Fees are collected on the origin chain (container chain), up front and directly from the
-    // // user, to cover the complete cost of the transfer. Any additional fees provided in the XCM
-    // // program are refunded to the beneficiary. We only validate the fee here if its provided to
-    // // make sure the XCM program is well formed. Another way to think about this from an XCM
-    // // perspective would be that the user offered to pay X amount in fees, but we charge 0 of
-    // // that X amount (no fee) and refund X to the user.
-    // if let Some(fee_asset) = fee_asset {
-    //     // The fee asset must be the same as the reserve asset.
-    //     if fee_asset.id != reserve_asset.id || fee_asset.fun > reserve_asset.fun {
-    //         return Err(InvalidFeeAsset);
-    //     }
-    // }
+        // // Fees are collected on the origin chain (container chain), up front and directly from the
+        // // user, to cover the complete cost of the transfer. Any additional fees provided in the XCM
+        // // program are refunded to the beneficiary. We only validate the fee here if its provided to
+        // // make sure the XCM program is well formed. Another way to think about this from an XCM
+        // // perspective would be that the user offered to pay X amount in fees, but we charge 0 of
+        // // that X amount (no fee) and refund X to the user.
+        // if let Some(fee_asset) = fee_asset {
+        //     // The fee asset must be the same as the reserve asset.
+        //     if fee_asset.id != reserve_asset.id || fee_asset.fun > reserve_asset.fun {
+        //         return Err(InvalidFeeAsset);
+        //     }
+        // }
 
-    // let (asset_id, amount) = match reserve_asset {
-    //     Asset {
-    //         id: AssetId(inner_location),
-    //         fun: Fungible(amount),
-    //     } => Some((inner_location.clone(), *amount)),
-    //     _ => None,
-    // }
-    // .ok_or(AssetResolutionFailed)?;
+        // let (asset_id, amount) = match reserve_asset {
+        //     Asset {
+        //         id: AssetId(inner_location),
+        //         fun: Fungible(amount),
+        //     } => Some((inner_location.clone(), *amount)),
+        //     _ => None,
+        // }
+        // .ok_or(AssetResolutionFailed)?;
 
-    // // transfer amount must be greater than 0.
-    // ensure!(amount > 0, ZeroAssetTransfer);
+        // // transfer amount must be greater than 0.
+        // ensure!(amount > 0, ZeroAssetTransfer);
 
-    // let token_id = TokenIdOf::convert_location(&asset_id).ok_or(InvalidAsset)?;
+        // let token_id = TokenIdOf::convert_location(&asset_id).ok_or(InvalidAsset)?;
 
-    // let expected_asset_id = ConvertAssetId::convert(&token_id).ok_or(InvalidAsset)?;
+        // let expected_asset_id = ConvertAssetId::convert(&token_id).ok_or(InvalidAsset)?;
 
-    // ensure!(asset_id == expected_asset_id, InvalidAsset);
+        // ensure!(asset_id == expected_asset_id, InvalidAsset);
 
-    // // Check if there is a SetTopic and skip over it if found.
-    // let topic_id = match_expression!(self.next()?, SetTopic(id), id).ok_or(SetTopicExpected)?;
+        // // Check if there is a SetTopic and skip over it if found.
+        // let topic_id = match_expression!(self.next()?, SetTopic(id), id).ok_or(SetTopicExpected)?;
 
-    // Ok((
-    //     Command::MintForeignToken {
-    //         token_id,
-    //         recipient,
-    //         amount,
-    //     },
-    //     *topic_id,
-    // ))
-    // }
+        // Ok((
+        //     Command::MintForeignToken {
+        //         token_id,
+        //         recipient,
+        //         amount,
+        //     },
+        //     *topic_id,
+        // ))
+    }
 }
 
 pub struct SnowbrigeTokenTransferRouter<Bridges, UniversalLocation>(
