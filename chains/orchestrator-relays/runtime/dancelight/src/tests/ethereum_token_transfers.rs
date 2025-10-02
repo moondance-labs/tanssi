@@ -46,6 +46,7 @@ use {
             prelude::*, Asset as XcmAsset, AssetId as XcmAssetId, Assets as XcmAssets, Fungibility,
             Junctions::*, Location,
         },
+        lts,
         VersionedAssets, VersionedLocation, VersionedXcm,
     },
     snowbridge_core::TokenIdOf,
@@ -2376,6 +2377,202 @@ fn create_payload_with_token_id(token_id: H256) -> Vec<u8> {
 }
 
 // TODO: add tests for lts version
+
+#[test]
+fn test_token_id_hashing_lts_vs_latest_xcm_versions() {
+    // This test compares TokenIdOf hashes between xcm::lts and xcm::latest versions
+    // to ensure cross-version compatibility and detect breaking changes in hashing.
+    
+    ExtBuilder::default().build().execute_with(|| {
+
+        use xcm::latest::Junction::Parachain as ParachainXcmLatest;
+        use xcm::lts::Junction::Parachain as ParachainXcmLts;
+        use xcm::lts::Junction::{
+            GlobalConsensus as GlobalConsensusLts,
+            GeneralIndex as GeneralIndexLts,
+            GeneralKey as GeneralKeyLts,
+            AccountKey20 as AccountKey20Lts,
+            PalletInstance as PalletInstanceLts,
+        };
+        
+        // Helper function to convert LTS location to the type TokenIdOf expects
+        let convert_lts_location = |lts_loc: xcm::lts::Location| -> xcm::latest::Location {
+            let versioned = VersionedLocation::V4(lts_loc);
+            versioned.try_into().expect("Should convert LTS to latest")
+        };
+        
+        // Test Case 1: parents:0, interior: here
+        // Note: This location won't be convertible by TokenIdOf since it requires GlobalConsensus
+        let latest_here = xcm::latest::Location::new(0, []);
+        let lts_here = xcm::lts::Location::new(0, []);
+        
+        let latest_here_result = TokenIdOf::convert_location(&latest_here);
+        let lts_here_result = TokenIdOf::convert_location(&convert_lts_location(lts_here));
+        
+        assert_eq!(
+            latest_here_result.is_none(),
+            lts_here_result.is_none(),
+            "Both LTS and latest 'here' locations should have same convertibility"
+        );
+        
+        // Test Case 2: parents: 0, parachain 2000
+        // Note: This also won't be convertible without GlobalConsensus parent
+        let latest_para_only = xcm::latest::Location::new(0, [ParachainXcmLatest(2000)]);
+        let lts_para_only = xcm::lts::Location::new(0, [ParachainXcmLts(2000)]);
+        
+        let latest_para_result = TokenIdOf::convert_location(&latest_para_only);
+        let lts_para_result = TokenIdOf::convert_location(&convert_lts_location(lts_para_only));
+        
+        assert_eq!(
+            latest_para_result.is_none(),
+            lts_para_result.is_none(),
+            "Both LTS and latest parachain-only locations should have same convertibility"
+        );
+        
+        // Test Case 3: parents: 1, GlobalConsensus(ethereum), empty interior
+        let latest_eth_empty = xcm::latest::Location::new(1, [xcm::latest::GlobalConsensus(EthereumNetwork::get())]);
+        let lts_eth_empty = xcm::lts::Location::new(1, [GlobalConsensusLts(EthereumNetwork::get().into())]);
+        
+        let latest_eth_empty_id = TokenIdOf::convert_location(&latest_eth_empty).expect("Latest ethereum empty should convert");
+        let lts_eth_empty_id = TokenIdOf::convert_location(&convert_lts_location(lts_eth_empty)).expect("LTS ethereum empty should convert");
+        
+        assert_eq!(
+            latest_eth_empty_id,
+            lts_eth_empty_id,
+            "LTS and latest ethereum empty location hashes should match"
+        );
+        
+        // Test Case 4: parents: 1, GlobalConsensus(ethereum), parachain 2000
+        let latest_eth_para = xcm::latest::Location::new(1, [
+            xcm::latest::GlobalConsensus(EthereumNetwork::get()),
+            xcm::latest::Parachain(2000)
+        ]);
+        let lts_eth_para = xcm::lts::Location::new(1, [
+            GlobalConsensusLts(EthereumNetwork::get().into()),
+            ParachainXcmLts(2000)
+        ]);
+        
+        let latest_eth_para_id = TokenIdOf::convert_location(&latest_eth_para).expect("Latest ethereum + parachain should convert");
+        let lts_eth_para_id = TokenIdOf::convert_location(&convert_lts_location(lts_eth_para)).expect("LTS ethereum + parachain should convert");
+        
+        assert_eq!(
+            latest_eth_para_id,
+            lts_eth_para_id,
+            "LTS and latest ethereum + parachain location hashes should match"
+        );
+        
+        // Test Case 5: parents: 1, GlobalConsensus(ethereum), parachain 2000, GeneralIndex(5)
+        let latest_eth_para_index = xcm::latest::Location::new(1, [
+            xcm::latest::GlobalConsensus(EthereumNetwork::get()),
+            xcm::latest::Parachain(2000),
+            xcm::latest::GeneralIndex(5)
+        ]);
+        let lts_eth_para_index = xcm::lts::Location::new(1, [
+            GlobalConsensusLts(EthereumNetwork::get().into()),
+            ParachainXcmLts(2000),
+            GeneralIndexLts(5)
+        ]);
+        
+        let latest_eth_para_index_id = TokenIdOf::convert_location(&latest_eth_para_index).expect("Latest ethereum + parachain + index should convert");
+        let lts_eth_para_index_id = TokenIdOf::convert_location(&convert_lts_location(lts_eth_para_index)).expect("LTS ethereum + parachain + index should convert");
+        
+        assert_eq!(
+            latest_eth_para_index_id,
+            lts_eth_para_index_id,
+            "LTS and latest ethereum + parachain + index location hashes should match"
+        );
+        
+        // Test Case 6: General Key comparison
+        let key_data = [0x01, 0x02, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
+        let latest_general_key = xcm::latest::Location::new(1, [
+            xcm::latest::GlobalConsensus(EthereumNetwork::get()),
+            xcm::latest::Parachain(2000),
+            xcm::latest::GeneralKey { length: 32, data: key_data }
+        ]);
+        let lts_general_key = xcm::lts::Location::new(1, [
+            GlobalConsensusLts(EthereumNetwork::get().into()),
+            ParachainXcmLts(2000),
+            GeneralKeyLts { length: 32, data: key_data }
+        ]);
+        
+        let latest_general_key_id = TokenIdOf::convert_location(&latest_general_key).expect("Latest general key should convert");
+        let lts_general_key_id = TokenIdOf::convert_location(&convert_lts_location(lts_general_key)).expect("LTS general key should convert");
+        
+        assert_eq!(
+            latest_general_key_id,
+            lts_general_key_id,
+            "LTS and latest general key location hashes should match"
+        );
+        
+        // Test Case 7: AccountKey20 comparison
+        let account_key = [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14];
+        let latest_account_key20 = xcm::latest::Location::new(1, [
+            xcm::latest::GlobalConsensus(EthereumNetwork::get()),
+            xcm::latest::Parachain(2000),
+            xcm::latest::AccountKey20 { network: Some(EthereumNetwork::get()), key: account_key }
+        ]);
+        let lts_account_key20 = xcm::lts::Location::new(1, [
+            GlobalConsensusLts(EthereumNetwork::get().into()),
+            ParachainXcmLts(2000),
+            AccountKey20Lts { network: Some(EthereumNetwork::get().into()), key: account_key }
+        ]);
+        
+        let latest_account_key20_id = TokenIdOf::convert_location(&latest_account_key20).expect("Latest account key20 should convert");
+        let lts_account_key20_id = TokenIdOf::convert_location(&convert_lts_location(lts_account_key20)).expect("LTS account key20 should convert");
+        
+        assert_eq!(
+            latest_account_key20_id,
+            lts_account_key20_id,
+            "LTS and latest account key20 location hashes should match"
+        );
+        
+        // Test Case 8: PalletInstance comparison
+        let latest_pallet = xcm::latest::Location::new(1, [
+            xcm::latest::GlobalConsensus(EthereumNetwork::get()),
+            xcm::latest::Parachain(2000),
+            xcm::latest::PalletInstance(50)
+        ]);
+        let lts_pallet = xcm::lts::Location::new(1, [
+            GlobalConsensusLts(EthereumNetwork::get().into()),
+            ParachainXcmLts(2000),
+            PalletInstanceLts(50)
+        ]);
+        
+        let latest_pallet_id = TokenIdOf::convert_location(&latest_pallet).expect("Latest pallet should convert");
+        let lts_pallet_id = TokenIdOf::convert_location(&convert_lts_location(lts_pallet)).expect("LTS pallet should convert");
+        
+        assert_eq!(
+            latest_pallet_id,
+            lts_pallet_id,
+            "LTS and latest pallet location hashes should match"
+        );
+        
+        // Test Case 9: Complex case - PalletInstance + GeneralIndex
+        let latest_pallet_index = xcm::latest::Location::new(1, [
+            xcm::latest::GlobalConsensus(EthereumNetwork::get()),
+            xcm::latest::Parachain(2000),
+            xcm::latest::PalletInstance(50),
+            xcm::latest::GeneralIndex(10)
+        ]);
+        let lts_pallet_index = xcm::lts::Location::new(1, [
+            GlobalConsensusLts(EthereumNetwork::get().into()),
+            ParachainXcmLts(2000),
+            PalletInstanceLts(50),
+            GeneralIndexLts(10)
+        ]);
+        
+        let latest_pallet_index_id = TokenIdOf::convert_location(&latest_pallet_index).expect("Latest pallet + index should convert");
+        let lts_pallet_index_id = TokenIdOf::convert_location(&convert_lts_location(lts_pallet_index)).expect("LTS pallet + index should convert");
+        
+        assert_eq!(
+            latest_pallet_index_id,
+            lts_pallet_index_id,
+            "LTS and latest pallet + index location hashes should match"
+        );
+        
+        println!("✅ All LTS vs Latest XCM TokenIdOf cross-version compatibility checks passed!");
+    });
+}
 
 #[test]
 fn test_token_id_hashing_consistency_across_xcm_versions() {
