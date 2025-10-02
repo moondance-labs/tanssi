@@ -363,7 +363,7 @@ pub fn run() -> Result<()> {
                     }
                 }
 
-                match config.network.network_backend.unwrap_or(sc_network::config::NetworkBackendType::Libp2p) {
+                match config.network.network_backend.unwrap_or(sc_network::config::NetworkBackendType::Litep2p) {
                     sc_network::config::NetworkBackendType::Libp2p => {
                         crate::service::start_parachain_node::<sc_network::NetworkWorker<_, _>>(
                             config,

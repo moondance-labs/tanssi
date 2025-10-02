@@ -166,7 +166,7 @@ where
                     .config
                     .network
                     .network_backend
-                    .unwrap_or(sc_network::config::NetworkBackendType::Libp2p)
+                    .unwrap_or(sc_network::config::NetworkBackendType::Litep2p)
                 {
                     sc_network::config::NetworkBackendType::Libp2p => {
                         tc_service_orchestrator_chain::parachain::start_parachain_node::<
