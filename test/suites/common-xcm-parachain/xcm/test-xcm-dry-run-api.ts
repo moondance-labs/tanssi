@@ -83,6 +83,9 @@ describeSuite({
                     "Unlimited"
                 );
 
+                // Sending the tx works
+                //await context.createBlock(await tx.signAsync(alice));
+
                 const XCM_VERSION = 3;
                 const dryRunCall = await polkadotJs.call.dryRunApi.dryRunCall(
                     { System: { signed: alice.address } },
@@ -98,6 +101,10 @@ dryRunCall.asOk.executionResult {
     error: { module: [Object] }
   }
 }
+
+dryRunCall.asOk.executionResult.err.error.module { index: 53, error: '0x01000000' }
+
+2025-10-02 16:38:03 XCM validate_send failed with error error=Transport("Other") dest=Location { parents: 1, interior: Here } remote_xcm=Xcm([ReserveAssetDeposited(Assets([Asset { id: AssetId(Location { parents: 0, interior: X2([Parachain(1000), PalletInstance(10)]) }), fun: Fungible(1000000000000000) }])), ClearOrigin, BuyExecution { fees: Asset { id: AssetId(Location { parents: 0, interior: X2([Parachain(1000), PalletInstance(10)]) }), fun: Fungible(1000000000000000) }, weight_limit: Unlimited }, DepositAsset { assets: Wild(AllCounted(1)), beneficiary: Location { parents: 0, interior: X1([AccountId32 { network: None, id: [17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17] }]) } }])
 */
                 console.log(
                     "dryRunCall.asOk.executionResult.err.error.module",

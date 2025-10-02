@@ -221,6 +221,12 @@ describeSuite({
                     value: parseUnits("0.001", "ether"),
                     nonce,
                 });
+                const now = new Date();
+                const pad = (n) => String(n).padStart(2, "0");
+                console.log(
+                    `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ` +
+                        `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`
+                );
                 await customHttpProvider.waitForTransaction(tx.hash, 1, 300_000);
                 expect(Number(await customHttpProvider.getBalance(CHARLETH_ADDRESS))).to.be.greaterThan(0);
             },

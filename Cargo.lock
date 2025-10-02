@@ -3843,6 +3843,7 @@ dependencies = [
  "sp-core",
  "sp-io",
  "sp-runtime",
+ "sp-tracing",
  "staging-parachain-info",
  "staging-xcm",
  "tanssi-runtime-common",

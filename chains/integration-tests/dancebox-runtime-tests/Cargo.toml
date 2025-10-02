@@ -58,6 +58,7 @@ sp-consensus-slots = { workspace = true }
 sp-core = { workspace = true }
 sp-io = { workspace = true }
 sp-runtime = { workspace = true }
+sp-tracing = { workspace = true }
 tanssi-runtime-common = { workspace = true }
 test-relay-sproof-builder = { workspace = true }
 tp-author-noting-inherent = { workspace = true }
@@ -121,6 +122,7 @@ std = [
 	"tp-stream-payment-common/std",
 	"tp-traits/std",
 	"xcm/std",
+	"sp-tracing/std"
 ]
 
 fast-runtime = []
