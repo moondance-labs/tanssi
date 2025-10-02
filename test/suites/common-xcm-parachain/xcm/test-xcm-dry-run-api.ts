@@ -3,8 +3,9 @@
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type KeyringPair, alith, generateKeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
-import { u8aToHex } from "@polkadot/util";
-import { XcmFragment } from "utils";
+import {hexToU8a, u8aToHex} from "@polkadot/util";
+import {ETHEREUM_NETWORK_TESTNET, XcmFragment} from "utils";
+import { BN } from "@polkadot/util";
 
 describeSuite({
     id: "COMMON0305",
@@ -37,27 +38,29 @@ describeSuite({
                 const randomReceiver = "0x1111111111111111111111111111111111111111111111111111111111111111";
 
                 const versionedBeneficiary = {
-                    V3: {
+                    V4: {
                         parents: 0,
                         interior: {
-                            X1: {
+                            X1: [{
                                 AccountId32: {
                                     network: null,
                                     id: randomReceiver,
                                 },
-                            },
+                            }],
                         },
                     },
                 };
 
                 const versionedAssets = {
-                    V3: [
+                    V4: [
                         {
                             id: {
                                 Concrete: {
                                     parents: 0,
                                     interior: {
-                                        X1: { PalletInstance: Number(balancesPalletIndex) },
+                                        X1: [
+                                            { PalletInstance: Number(balancesPalletIndex) }
+                                        ],
                                     },
                                 },
                             },
@@ -68,7 +71,7 @@ describeSuite({
                     ],
                 };
                 const dest = {
-                    V3: {
+                    V4: {
                         parents: 1,
                         interior: {
                             Here: null,
@@ -83,7 +86,7 @@ describeSuite({
                     "Unlimited"
                 );
 
-                const XCM_VERSION = 3;
+                const XCM_VERSION = 4;
                 const dryRunCall = await polkadotJs.call.dryRunApi.dryRunCall(
                     { System: { signed: alice.address } },
                     tx,
@@ -103,6 +106,15 @@ dryRunCall.asOk.executionResult {
                     "dryRunCall.asOk.executionResult.err.error.module",
                     dryRunCall.asOk.executionResult.toJSON().err.error.module
                 );
+                const idx = 53;
+                //const pallets = (await polkadotJs.rpc.state.getMetadata()).asLatest.pallets;
+                //console.log('Pallet@53 =', pallets[idx].name.toString());
+
+                const dispatchError = dryRunCall.asOk.executionResult.asErr;
+                //const meta = polkadotJs.registry.findMetaError({ error: dispatchError.asModule.error, index: dispatchError.asModule.index });
+                const meta = polkadotJs.registry.findMetaError({ error: hexToU8a('0x1c000800'), index: new BN(53) });
+                //const meta = polkadotJs.registry.findMetaError('0x1c000800');
+                console.log(`${meta.section}.${meta.name}`, meta.docs?.toString());
 
                 expect(dryRunCall.isOk).to.be.true;
                 expect(dryRunCall.asOk.executionResult.isOk).be.true;
