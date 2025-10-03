@@ -55,7 +55,6 @@ use {
     },
     tp_xcm_commons::RelayAssetReserveFromEthereum,
     xcm::latest::prelude::*,
-    xcm::prelude::Location,
     xcm_builder::{
         AccountKey20Aliases, AllowKnownQueryResponses, AllowSubscriptionsFrom,
         AllowTopLevelPaidExecutionFrom, ConvertedConcreteId, EnsureXcmOrigin, FungibleAdapter,
@@ -104,7 +103,7 @@ parameter_types! {
     pub RootLocation: Location = Location::here();
 
     // TODO: Revisit later
-    pub const ContainerToEthTransferFee: u128 = 3_500_000_000_000u128;
+    pub const ContainerToEthTransferFee: u128 = 2_700_000_000_000u128;
 }
 
 #[cfg(feature = "runtime-benchmarks")]
