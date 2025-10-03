@@ -25,7 +25,8 @@ describeSuite({
                         1_000_000_000n,
                         "0",
                         null,
-                        []
+                        [],
+                        [],
                     );
                 expect(await context.createBlock([await tx.signAsync(alith)]).catch((e) => e.toString())).to.equal(
                     "RpcError: 1010: Invalid Transaction: Transaction call is not expected"
@@ -56,7 +57,8 @@ describeSuite({
                                     100_000_000_000_000n,
                                     "0",
                                     null,
-                                    []
+                                    [],
+                                    [],
                                 )
                         )
                 );
