@@ -17,3 +17,5 @@
 mod inactivity_tracking;
 mod integration_test;
 mod offline_marking;
+mod xcm_dry_run_test;
+mod xcm_minimal_test;
