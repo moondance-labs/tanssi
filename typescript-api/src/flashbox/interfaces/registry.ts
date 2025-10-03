@@ -179,7 +179,6 @@ import type {
     SpRuntimeDigest,
     SpRuntimeDigestDigestItem,
     SpRuntimeDispatchError,
-    SpRuntimeHeader,
     SpRuntimeModuleError,
     SpRuntimeMultiSignature,
     SpRuntimeProvingTrieTrieError,
@@ -378,7 +377,6 @@ declare module "@polkadot/types/types/registry" {
         SpRuntimeDigest: SpRuntimeDigest;
         SpRuntimeDigestDigestItem: SpRuntimeDigestDigestItem;
         SpRuntimeDispatchError: SpRuntimeDispatchError;
-        SpRuntimeHeader: SpRuntimeHeader;
         SpRuntimeModuleError: SpRuntimeModuleError;
         SpRuntimeMultiSignature: SpRuntimeMultiSignature;
         SpRuntimeProvingTrieTrieError: SpRuntimeProvingTrieTrieError;

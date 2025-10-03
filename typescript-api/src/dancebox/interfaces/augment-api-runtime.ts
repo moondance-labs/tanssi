@@ -11,6 +11,7 @@ import type { AnyNumber, IMethod, ITuple } from "@polkadot/types-codec/types";
 import type { CheckInherentsResult, InherentData } from "@polkadot/types/interfaces/blockbuilder";
 import type { BlockHash } from "@polkadot/types/interfaces/chain";
 import type { AuthorityId } from "@polkadot/types/interfaces/consensus";
+import type { CollationInfo } from "@polkadot/types/interfaces/cumulus";
 import type { CallDryRunEffects, XcmDryRunApiError, XcmDryRunEffects } from "@polkadot/types/interfaces/dryRunApi";
 import type { Extrinsic } from "@polkadot/types/interfaces/extrinsics";
 import type { GenesisBuildErr } from "@polkadot/types/interfaces/genesisBuilder";
@@ -99,6 +100,26 @@ declare module "@polkadot/api-base/types/calls" {
             inherentExtrinsics: AugmentedCall<
                 ApiType,
                 (inherent: InherentData | { data?: any } | string | Uint8Array) => Observable<Vec<Extrinsic>>
+            >;
+            /**
+             * Generic call
+             **/
+            [key: string]: DecoratedCallBase<ApiType>;
+        };
+        /** 0xea93e3f16f3d6962/2 */
+        collectCollationInfo: {
+            /**
+             * Collect information about a collation.
+             **/
+            collectCollationInfo: AugmentedCall<
+                ApiType,
+                (
+                    header:
+                        | Header
+                        | { parentHash?: any; number?: any; stateRoot?: any; extrinsicsRoot?: any; digest?: any }
+                        | string
+                        | Uint8Array
+                ) => Observable<CollationInfo>
             >;
             /**
              * Generic call

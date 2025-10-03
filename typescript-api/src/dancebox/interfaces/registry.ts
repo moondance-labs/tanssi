@@ -225,7 +225,6 @@ import type {
     PalletXcmCoreBuyerInFlightCoreBuyingOrder,
     PalletXcmCoreBuyerRelayXcmWeightConfigInner,
     PalletXcmError,
-    PalletXcmErrorsExecutionError,
     PalletXcmEvent,
     PalletXcmMaxAuthorizedAliases,
     PalletXcmOrigin,
@@ -246,7 +245,6 @@ import type {
     SpRuntimeDigest,
     SpRuntimeDigestDigestItem,
     SpRuntimeDispatchError,
-    SpRuntimeHeader,
     SpRuntimeModuleError,
     SpRuntimeMultiSignature,
     SpRuntimeProvingTrieTrieError,
@@ -294,7 +292,6 @@ import type {
     StagingXcmV5PalletInfo,
     StagingXcmV5QueryResponseInfo,
     StagingXcmV5Response,
-    StagingXcmV5TraitsInstructionError,
     StagingXcmV5TraitsOutcome,
     StagingXcmV5Xcm,
     TpAuthorNotingInherentOwnParachainInherentData,
@@ -563,7 +560,6 @@ declare module "@polkadot/types/types/registry" {
         PalletXcmCoreBuyerInFlightCoreBuyingOrder: PalletXcmCoreBuyerInFlightCoreBuyingOrder;
         PalletXcmCoreBuyerRelayXcmWeightConfigInner: PalletXcmCoreBuyerRelayXcmWeightConfigInner;
         PalletXcmError: PalletXcmError;
-        PalletXcmErrorsExecutionError: PalletXcmErrorsExecutionError;
         PalletXcmEvent: PalletXcmEvent;
         PalletXcmMaxAuthorizedAliases: PalletXcmMaxAuthorizedAliases;
         PalletXcmOrigin: PalletXcmOrigin;
@@ -584,7 +580,6 @@ declare module "@polkadot/types/types/registry" {
         SpRuntimeDigest: SpRuntimeDigest;
         SpRuntimeDigestDigestItem: SpRuntimeDigestDigestItem;
         SpRuntimeDispatchError: SpRuntimeDispatchError;
-        SpRuntimeHeader: SpRuntimeHeader;
         SpRuntimeModuleError: SpRuntimeModuleError;
         SpRuntimeMultiSignature: SpRuntimeMultiSignature;
         SpRuntimeProvingTrieTrieError: SpRuntimeProvingTrieTrieError;
@@ -632,7 +627,6 @@ declare module "@polkadot/types/types/registry" {
         StagingXcmV5PalletInfo: StagingXcmV5PalletInfo;
         StagingXcmV5QueryResponseInfo: StagingXcmV5QueryResponseInfo;
         StagingXcmV5Response: StagingXcmV5Response;
-        StagingXcmV5TraitsInstructionError: StagingXcmV5TraitsInstructionError;
         StagingXcmV5TraitsOutcome: StagingXcmV5TraitsOutcome;
         StagingXcmV5Xcm: StagingXcmV5Xcm;
         TpAuthorNotingInherentOwnParachainInherentData: TpAuthorNotingInherentOwnParachainInherentData;

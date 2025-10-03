@@ -1302,8 +1302,6 @@ declare module "@polkadot/api-base/types/submittable" {
                               relayChainState?: any;
                               downwardMessages?: any;
                               horizontalMessages?: any;
-                              relayParentDescendants?: any;
-                              collatorPeerId?: any;
                           }
                         | string
                         | Uint8Array
@@ -1439,7 +1437,7 @@ declare module "@polkadot/api-base/types/submittable" {
              * `pure` with corresponding parameters.
              *
              * - `spawner`: The account that originally called `pure` to create this account.
-             * - `index`: The disambiguation index originally passed to `create_pure`. Probably `0`.
+             * - `index`: The disambiguation index originally passed to `pure`. Probably `0`.
              * - `proxy_type`: The proxy type originally passed to `pure`.
              * - `height`: The height of the chain when the call to `pure` was processed.
              * - `ext_index`: The extrinsic index in which the call to `pure` was processed.
