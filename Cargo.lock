@@ -3949,7 +3949,6 @@ dependencies = [
  "tokio",
  "tp-author-noting-inherent",
  "tp-bridge",
- "tp-container-chain",
  "tp-data-preservers-common",
  "tp-invulnerables-filter-common",
  "tp-parathread-filter-common",
