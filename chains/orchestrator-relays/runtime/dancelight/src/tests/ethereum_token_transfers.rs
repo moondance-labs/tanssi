@@ -16,8 +16,6 @@
 
 #![cfg(test)]
 
-use crate::tests::container_token_transfers::HackMakeTestsCompile;
-use pallet_xcm::ExecutionError;
 use {
     crate::{
         bridge_to_ethereum_config::EthereumGatewayAddress, filter_events, tests::common::*,
@@ -33,6 +31,7 @@ use {
         traits::{fungible::Inspect, fungibles::Mutate},
     },
     hex_literal::hex,
+    pallet_xcm::ExecutionError,
     parity_scale_codec::Encode,
     snowbridge_core::{AgentId, Channel, ChannelId, ParaId},
     snowbridge_inbound_queue_primitives::v1::{
@@ -41,7 +40,7 @@ use {
     },
     snowbridge_inbound_queue_primitives::{EventProof, Log},
     sp_core::{H160, H256},
-    sp_runtime::{FixedU128, TokenError},
+    sp_runtime::{traits::MaybeEquivalence, FixedU128, TokenError},
     tanssi_runtime_common::relay::NativeTokenTransferMessageProcessor,
     xcm::{
         latest::{

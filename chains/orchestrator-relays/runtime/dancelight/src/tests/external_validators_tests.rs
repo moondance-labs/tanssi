@@ -16,7 +16,6 @@
 
 #![cfg(test)]
 
-use crate::tests::container_token_transfers::HackMakeTestsCompile;
 use {
     crate::{
         tests::common::*, EthereumSystem, ExternalValidators, ExternalValidatorsRewards,
@@ -26,6 +25,7 @@ use {
     frame_support::{assert_ok, traits::fungible::Mutate},
     pallet_external_validators::Forcing,
     sp_core::H256,
+    sp_runtime::traits::MaybeEquivalence,
     std::{collections::HashMap, ops::RangeInclusive},
     tp_bridge::Command,
     xcm::{latest::prelude::*, VersionedLocation},

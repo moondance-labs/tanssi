@@ -1498,8 +1498,7 @@ pub struct RewardsBenchHelper;
 impl tp_bridge::TokenChannelSetterBenchmarkHelperTrait for RewardsBenchHelper {
     fn set_up_token(location: Location, token_id: TokenId) {
         snowbridge_pallet_system::ForeignToNativeId::<Runtime>::insert(token_id, &location);
-        // TODO: uncomment if we add storage map back
-        //snowbridge_pallet_system::NativeToForeignId::<Runtime>::insert(&location, token_id);
+        snowbridge_pallet_system::NativeToForeignId::<Runtime>::insert(&location, token_id);
     }
 
     fn set_up_channel(_channel_id: ChannelId, _para_id: ParaId, _agent_id: AgentId) {}

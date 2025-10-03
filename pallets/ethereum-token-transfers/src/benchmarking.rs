@@ -129,8 +129,8 @@ mod benchmarks {
                 &T::FeesAccount::get(),
             );
 
-        //let expected_token_id =
-        //    T::TokenIdFromLocation::convert_back(&T::TokenLocationReanchored::get());
+        let expected_token_id =
+            T::TokenIdFromLocation::convert_back(&T::TokenLocationReanchored::get());
 
         if let Some(Event::NativeTokenTransferred {
             message_id,
@@ -146,7 +146,7 @@ mod benchmarks {
             assert_eq!(*channel_id_found, channel_id);
             assert_eq!(*source, caller.clone());
             assert_eq!(*recipient_found, recipient);
-            //assert_eq!(*token_id, expected_token_id.unwrap());
+            assert_eq!(*token_id, expected_token_id.unwrap());
             assert_eq!(*amount, amount_transferred);
 
             // Check balances after the transfer

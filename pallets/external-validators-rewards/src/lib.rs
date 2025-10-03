@@ -42,12 +42,12 @@ use {
     parity_scale_codec::Encode,
     polkadot_primitives::ValidatorIndex,
     runtime_parachains::session_info,
-    snowbridge_core::{ChannelId, TokenId, TokenIdOf},
+    snowbridge_core::{ChannelId, TokenId},
     snowbridge_merkle_tree::{merkle_proof, merkle_root, verify_proof, MerkleProof},
     sp_core::H256,
-    sp_runtime::traits::{Hash, MaybeConvert, Zero},
+    sp_runtime::traits::{Hash, MaybeEquivalence, Zero},
     sp_staking::SessionIndex,
-    tp_bridge::{Command, ConvertLocation, DeliverMessage, Message, TicketInfo, ValidateMessage},
+    tp_bridge::{Command, DeliverMessage, Message, TicketInfo, ValidateMessage},
     tp_traits::ExternalIndexProvider,
     xcm::prelude::*,
 };
@@ -122,7 +122,7 @@ pub mod pallet {
         type TokenLocationReanchored: Get<Location>;
 
         /// How to convert from a given Location to a specific TokenId.
-        type TokenIdFromLocation: MaybeConvert<TokenId, Location>;
+        type TokenIdFromLocation: MaybeEquivalence<TokenId, Location>;
 
         /// The weight information of this pallet.
         type WeightInfo: WeightInfo;
@@ -279,90 +279,84 @@ pub mod pallet {
             // - the generated message doesn't pass validation
 
             let token_location = T::TokenLocationReanchored::get();
-            let token_id = TokenIdOf::convert_location(&token_location);
-            if token_id.is_none() {
-                log::error!(target: "ext_validators_rewards", "convert_location failed, no token id found for location {:?}", token_location);
-                return;
-            }
-            let token_id = token_id.unwrap();
-            // Validate that token_id has been registered in snowbridge_pallet_system
-            if T::TokenIdFromLocation::maybe_convert(token_id).is_none() {
-                log::error!(target: "ext_validators_rewards", "TokenIdFromLocation failed, no location found for token id {:?}", token_id);
-                return;
-            }
+            let token_id = T::TokenIdFromLocation::convert_back(&token_location);
 
-            let era_rewards = RewardPointsForEra::<T>::get(era_index);
-            if let Some(utils) =
-                era_rewards.generate_era_rewards_utils::<<T as Config>::Hashing>(era_index, None)
-            {
-                let tokens_inflated = T::EraInflationProvider::get();
-
-                if tokens_inflated.is_zero() {
-                    log::error!(target: "ext_validators_rewards", "Not sending message because tokens_inflated is 0");
-                    return;
-                }
-
-                if utils.total_points.is_zero() {
-                    log::error!(target: "ext_validators_rewards", "Not sending message because total_points is 0");
-                    return;
-                }
-
-                let ethereum_sovereign_account = T::RewardsEthereumSovereignAccount::get();
-                if let Err(err) =
-                    T::Currency::mint_into(&ethereum_sovereign_account, tokens_inflated.into())
+            if let Some(token_id) = token_id {
+                let era_rewards = RewardPointsForEra::<T>::get(era_index);
+                if let Some(utils) = era_rewards
+                    .generate_era_rewards_utils::<<T as Config>::Hashing>(era_index, None)
                 {
-                    log::error!(target: "ext_validators_rewards", "Failed to mint inflation into Ethereum Soverein Account: {err:?}");
-                    log::error!(target: "ext_validators_rewards", "Not sending message since there are no rewards to distribute");
-                    return;
-                }
+                    let tokens_inflated = T::EraInflationProvider::get();
 
-                let command = Command::ReportRewards {
-                    external_idx: T::ExternalIndexProvider::get_external_index(),
-                    era_index,
-                    total_points: utils.total_points,
-                    tokens_inflated,
-                    rewards_merkle_root: utils.rewards_merkle_root,
-                    token_id,
-                };
+                    if tokens_inflated.is_zero() {
+                        log::error!(target: "ext_validators_rewards", "Not sending message because tokens_inflated is 0");
+                        return;
+                    }
 
-                let channel_id: ChannelId = snowbridge_core::PRIMARY_GOVERNANCE_CHANNEL;
+                    if utils.total_points.is_zero() {
+                        log::error!(target: "ext_validators_rewards", "Not sending message because total_points is 0");
+                        return;
+                    }
 
-                let outbound_message = Message {
-                    id: None,
-                    channel_id,
-                    command: command.clone(),
-                };
+                    let ethereum_sovereign_account = T::RewardsEthereumSovereignAccount::get();
+                    if let Err(err) =
+                        T::Currency::mint_into(&ethereum_sovereign_account, tokens_inflated.into())
+                    {
+                        log::error!(target: "ext_validators_rewards", "Failed to mint inflation into Ethereum Soverein Account: {err:?}");
+                        log::error!(target: "ext_validators_rewards", "Not sending message since there are no rewards to distribute");
+                        return;
+                    }
 
-                // Validate and deliver the message
-                match T::ValidateMessage::validate(&outbound_message) {
-                    Ok((ticket, _fee)) => {
-                        let message_id = ticket.message_id();
-                        if let Err(err) = T::OutboundQueue::deliver(ticket) {
-                            log::error!(target: "ext_validators_rewards", "OutboundQueue delivery of message failed. {err:?}");
-                        } else {
-                            Self::deposit_event(Event::RewardsMessageSent {
-                                message_id,
-                                rewards_command: command,
-                            });
+                    let command = Command::ReportRewards {
+                        external_idx: T::ExternalIndexProvider::get_external_index(),
+                        era_index,
+                        total_points: utils.total_points,
+                        tokens_inflated,
+                        rewards_merkle_root: utils.rewards_merkle_root,
+                        token_id,
+                    };
+
+                    let channel_id: ChannelId = snowbridge_core::PRIMARY_GOVERNANCE_CHANNEL;
+
+                    let outbound_message = Message {
+                        id: None,
+                        channel_id,
+                        command: command.clone(),
+                    };
+
+                    // Validate and deliver the message
+                    match T::ValidateMessage::validate(&outbound_message) {
+                        Ok((ticket, _fee)) => {
+                            let message_id = ticket.message_id();
+                            if let Err(err) = T::OutboundQueue::deliver(ticket) {
+                                log::error!(target: "ext_validators_rewards", "OutboundQueue delivery of message failed. {err:?}");
+                            } else {
+                                Self::deposit_event(Event::RewardsMessageSent {
+                                    message_id,
+                                    rewards_command: command,
+                                });
+                            }
+                        }
+                        Err(err) => {
+                            log::error!(target: "ext_validators_rewards", "OutboundQueue validation of message failed. {err:?}");
                         }
                     }
-                    Err(err) => {
-                        log::error!(target: "ext_validators_rewards", "OutboundQueue validation of message failed. {err:?}");
-                    }
-                }
 
-                frame_system::Pallet::<T>::register_extra_weight_unchecked(
-                    T::WeightInfo::on_era_end(),
-                    DispatchClass::Mandatory,
-                );
+                    frame_system::Pallet::<T>::register_extra_weight_unchecked(
+                        T::WeightInfo::on_era_end(),
+                        DispatchClass::Mandatory,
+                    );
+                } else {
+                    // Unreachable, this should never happen as we are sending
+                    // None as the second param in Self::generate_era_rewards_utils.
+                    log::error!(
+                        target: "ext_validators_rewards",
+                        "Outbound message not sent for era {:?}!",
+                        era_index
+                    );
+                }
             } else {
-                // Unreachable, this should never happen as we are sending
-                // None as the second param in Self::generate_era_rewards_utils.
-                log::error!(
-                    target: "ext_validators_rewards",
-                    "Outbound message not sent for era {:?}!",
-                    era_index
-                );
+                log::error!(target: "ext_validators_rewards", "no token id found for location {:?}", token_location);
             }
         }
     }

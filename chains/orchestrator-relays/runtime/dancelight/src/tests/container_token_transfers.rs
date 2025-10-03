@@ -16,7 +16,6 @@
 
 #![cfg(test)]
 
-use snowbridge_core::TokenId;
 use {
     crate::{
         bridge_to_ethereum_config::{EthereumGatewayAddress, InboundQueuePalletInstance},
@@ -40,19 +39,9 @@ use {
     },
     snowbridge_inbound_queue_primitives::{EventProof, Log},
     sp_core::{H160, H256},
+    sp_runtime::traits::MaybeEquivalence,
     xcm::latest::{prelude::*, Asset as XcmAsset, Location},
 };
-
-// Its not clear if we want to do the conversion from Location to TokenId using pallet ethereum system
-// storage, or using TokenIdOf and hashing, so this trait is here to make tests compile before we
-// decide. (but all tests will fail)
-pub trait HackMakeTestsCompile {
-    fn convert_back(_location: &Location) -> Option<TokenId> {
-        todo!()
-    }
-}
-
-impl HackMakeTestsCompile for EthereumSystem {}
 
 #[test]
 fn receive_container_native_tokens_from_eth_works() {

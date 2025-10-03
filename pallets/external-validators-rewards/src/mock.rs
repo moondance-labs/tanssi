@@ -13,7 +13,6 @@
 // You should have received a copy of the GNU General Public License
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
-use sp_runtime::traits::MaybeConvert;
 use {
     crate as pallet_external_validators_rewards,
     frame_support::{
@@ -25,7 +24,7 @@ use {
     snowbridge_outbound_queue_primitives::{SendError, SendMessageFeeProvider},
     sp_core::H256,
     sp_runtime::{
-        traits::{BlakeTwo256, IdentityLookup, Keccak256},
+        traits::{BlakeTwo256, IdentityLookup, Keccak256, MaybeEquivalence},
         BuildStorage,
     },
     xcm::prelude::*,
@@ -140,29 +139,23 @@ impl tp_traits::ExternalIndexProvider for TimestampProvider {
 }
 
 pub struct MockTokenIdConvert;
-impl MaybeConvert<TokenId, Location> for MockTokenIdConvert {
-    fn maybe_convert(_id: TokenId) -> Option<Location> {
+impl MaybeEquivalence<TokenId, Location> for MockTokenIdConvert {
+    fn convert(_id: &TokenId) -> Option<Location> {
         Some(Location::parent())
     }
-}
-
-const DANCELIGHT_GENESIS_HASH: [u8; 32] = [1; 32];
-
-parameter_types! {
-    pub const ThisNetwork: NetworkId = NetworkId::ByGenesis(DANCELIGHT_GENESIS_HASH);
-    pub UniversalLocation: InteriorLocation = ThisNetwork::get().into();
-    pub EthereumNetwork: NetworkId = NetworkId::Ethereum { chain_id: 1 };
-    pub EthereumLocation: Location = Location::new(1, EthereumNetwork::get());
-    pub TokenLocationReanchored: Location = Location::here().reanchored(
-        &EthereumLocation::get(),
-        &UniversalLocation::get(),
-    ).expect("unable to reanchor reward token");
+    fn convert_back(loc: &Location) -> Option<TokenId> {
+        if *loc == Location::here() {
+            Some(H256::repeat_byte(0x01))
+        } else {
+            None
+        }
+    }
 }
 
 parameter_types! {
     pub const RewardsEthereumSovereignAccount: u64
         = 0xffffffffffffffff;
-    pub RewardTokenLocation: Location = TokenLocationReanchored::get();
+    pub RewardTokenLocation: Location = Location::here();
     pub EraInflationProvider: u128 = Mock::mock().era_inflation.unwrap_or(42);
 }
 
@@ -215,14 +208,14 @@ pub mod mock_data {
     pub(super) type Mock<T: Config> = StorageValue<_, Mocks, ValueQuery>;
 
     #[pallet::storage]
-    pub(super) type TokenLocation<T: Config> = StorageValue<_, Location, OptionQuery>;
+    pub(super) type TokenLocation<T: Config> = StorageValue<_, Location, ValueQuery>;
 
     impl<T: Config> Pallet<T> {
         pub fn mock() -> Mocks {
             Mock::<T>::get()
         }
         pub fn token_loc() -> Location {
-            TokenLocation::<T>::get().unwrap()
+            TokenLocation::<T>::get()
         }
         pub fn mutate<F, R>(f: F) -> R
         where
@@ -232,7 +225,7 @@ pub mod mock_data {
         }
 
         pub fn set_location(location: Location) {
-            TokenLocation::<T>::set(Some(location))
+            TokenLocation::<T>::set(location)
         }
     }
 

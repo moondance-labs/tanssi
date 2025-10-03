@@ -28,7 +28,7 @@ use {
     snowbridge_outbound_queue_primitives::{SendError, SendMessageFeeProvider},
     sp_core::H256,
     sp_runtime::{
-        traits::{BlakeTwo256, IdentityLookup, MaybeConvert},
+        traits::{BlakeTwo256, IdentityLookup, MaybeEquivalence},
         BuildStorage,
     },
     tp_bridge::{ChannelInfo, EthereumSystemChannelManager, TicketInfo},
@@ -190,9 +190,16 @@ parameter_types! {
 }
 
 pub struct MockTokenIdConvert;
-impl MaybeConvert<TokenId, Location> for MockTokenIdConvert {
-    fn maybe_convert(_id: TokenId) -> Option<Location> {
+impl MaybeEquivalence<TokenId, Location> for MockTokenIdConvert {
+    fn convert(_id: &TokenId) -> Option<Location> {
         Some(Location::parent())
+    }
+    fn convert_back(loc: &Location) -> Option<TokenId> {
+        if *loc == Location::here() {
+            Some(H256::repeat_byte(0x01))
+        } else {
+            None
+        }
     }
 }
 
