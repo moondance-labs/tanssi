@@ -16,7 +16,7 @@
 
 use crate::xcm_config::UniversalLocation;
 use crate::EthereumLocation;
-use snowbridge_core::{TokenId, TokenIdOf};
+use snowbridge_core::TokenIdOf;
 use xcm::latest::Junction::GlobalConsensus;
 use xcm::latest::Junctions::Here;
 use xcm::latest::Junctions::X1;
@@ -300,8 +300,7 @@ fn test_genesis_hashes_migration() {
 
         // Check storage before migration
         let f_n = snowbridge_pallet_system::ForeignToNativeId::<Runtime>::iter().collect::<Vec<_>>();
-        //let n_f = snowbridge_pallet_system::NativeToForeignId::<Runtime>::iter().collect::<Vec<_>>();
-        let n_f: Vec<(Location, TokenId)> = vec![];
+        let n_f = snowbridge_pallet_system::NativeToForeignId::<Runtime>::iter().collect::<Vec<_>>();
 
         assert_eq!(f_n, [(
             hex_literal::hex!("bcd4282ca0c30cbd9c578b5c790e88c803d80cd9cc91f28686f24ac25a61e06e").into(),
@@ -323,8 +322,7 @@ fn test_genesis_hashes_migration() {
 
         // Check storage after migration
         let f_n = snowbridge_pallet_system::ForeignToNativeId::<Runtime>::iter().collect::<Vec<_>>();
-        //let n_f = snowbridge_pallet_system::NativeToForeignId::<Runtime>::iter().collect::<Vec<_>>();
-        let n_f: Vec<(Location, TokenId)> = vec![];
+        let n_f = snowbridge_pallet_system::NativeToForeignId::<Runtime>::iter().collect::<Vec<_>>();
 
         assert_eq!(f_n, [(
             hex_literal::hex!("bcd4282ca0c30cbd9c578b5c790e88c803d80cd9cc91f28686f24ac25a61e06e").into(),
