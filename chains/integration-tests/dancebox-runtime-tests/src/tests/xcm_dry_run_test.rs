@@ -16,11 +16,14 @@
 
 #![cfg(test)]
 
+use dancebox_runtime::RuntimeOrigin;
+use frame_support::assert_ok;
+use sp_runtime::traits::Dispatchable;
 use {
+    dancebox_runtime::{OriginCaller, PolkadotXcm},
     dancebox_runtime_test_utils::*,
-    dancebox_runtime::{PolkadotXcm, OriginCaller},
     xcm::latest::prelude::*,
-    xcm::{VersionedLocation, VersionedAssets},
+    xcm::{VersionedAssets, VersionedLocation},
 };
 
 #[test]
@@ -34,13 +37,13 @@ fn test_dry_run_call_transfer_assets() {
         .execute_with(|| {
             // Initialize XCM executor storage and parachain system state
             run_to_block(2);
-            
+
             // Get the balances pallet index (hardcoded for dancebox runtime)
             let balances_pallet_index = 10u8; // Balances pallet index in dancebox runtime
-            
+
             // Random receiver AccountId32 (equivalent to the randomReceiver in TS test)
             let random_receiver: [u8; 32] = [0x11; 32];
-            
+
             // Create versioned beneficiary using the correct XCM types
             let versioned_beneficiary = VersionedLocation::V4(xcm::v4::Location::new(
                 0,
@@ -49,21 +52,20 @@ fn test_dry_run_call_transfer_assets() {
                     id: random_receiver,
                 }],
             ));
-            
+
             // Create versioned assets (smaller amount to avoid issues)
-            let versioned_assets = VersionedAssets::V4(xcm::v4::Assets::from(vec![
-                xcm::v4::Asset {
+            let versioned_assets =
+                VersionedAssets::V4(xcm::v4::Assets::from(vec![xcm::v4::Asset {
                     id: xcm::v4::AssetId(xcm::v4::Location::new(
                         0,
                         [xcm::v4::Junction::PalletInstance(balances_pallet_index)],
                     )),
                     fun: xcm::v4::Fungibility::Fungible(1_000_000_000_000u128), // 0.001 UNIT
-                }
-            ]));
-            
+                }]));
+
             // Create destination (parent chain)
             let dest = VersionedLocation::V4(xcm::v4::Location::new(1, xcm::v4::Junctions::Here));
-            
+
             // Create the transfer_assets call
             let call = RuntimeCall::PolkadotXcm(pallet_xcm::Call::transfer_assets {
                 dest: Box::new(dest),
@@ -72,37 +74,37 @@ fn test_dry_run_call_transfer_assets() {
                 fee_asset_item: 0,
                 weight_limit: WeightLimit::Unlimited,
             });
-            
+
             // Set up the origin (signed by Alice)
-            let origin_caller = OriginCaller::system(frame_system::RawOrigin::Signed(AccountId::from(ALICE)));
-            
+            let origin_caller =
+                OriginCaller::system(frame_system::RawOrigin::Signed(AccountId::from(ALICE)));
+
             // Call dry_run_call with XCM version 4
             let xcm_version = 4;
-            
+
             // First, let's try a simple approach that might be less prone to segfaults
             // Instead of calling dry_run_call directly, let's verify the call can be constructed
             //println!("Testing XCM call construction for dry run");
             //println!("Call: {:?}", call);
             //println!("Origin: {:?}", origin_caller);
-            
+
             // For debugging purposes, let's avoid the actual dry_run_call for now
             // and just verify our setup is correct
-            
-            // Try calling the actual dry run function with proper error handling
-            let result =
-                PolkadotXcm::dry_run_call::<Runtime, dancebox_runtime::xcm_config::XcmRouter, OriginCaller, RuntimeCall>(
-                    origin_caller.clone(),
-                    call.clone(),
-                    xcm_version
-                );
 
-            
+            // Try calling the actual dry run function with proper error handling
+            let result = PolkadotXcm::dry_run_call::<
+                Runtime,
+                dancebox_runtime::xcm_config::XcmRouter,
+                OriginCaller,
+                RuntimeCall,
+            >(origin_caller.clone(), call.clone(), xcm_version);
+
             // match result {
             //     Ok(dry_run_result) => {
             //         match dry_run_result {
             //             Ok(dry_run_effects) => {
             //                 //println!("DryRun succeeded with effects: {:?}", dry_run_effects);
-                            
+
             //                 match &dry_run_effects.execution_result {
             //                     Ok(_) => {
             //                         //println!("DryRun execution successful");
@@ -111,11 +113,11 @@ fn test_dry_run_call_transfer_assets() {
             //                         //println!("DryRun execution failed with error: {:?}", e);
             //                     }
             //                 }
-                            
+
             //                 if let Some(local_xcm) = &dry_run_effects.local_xcm {
             //                     //println!("Local XCM generated: {:?}", local_xcm);
             //                 }
-                            
+
             //                 //println!("Forwarded XCMs: {:?}", &dry_run_effects.forwarded_xcms);
             //                 //println!("Events: {:?}", dry_run_effects.emitted_events);
             //             },
@@ -141,10 +143,19 @@ fn test_dry_run_call_transfer_assets_with_success_expectation() {
         ])
         .build()
         .execute_with(|| {
+            sp_tracing::try_init_simple();
+
+            // This must be set because in typescript dev tests the xcm version is already set, while
+            // in rust integration tests it is not set and that gives error SendError
+            assert_ok!(PolkadotXcm::force_default_xcm_version(
+                root_origin(),
+                Some(4u32)
+            ));
+
             // Similar to the above test but with different expectations
             let balances_pallet_index = 10u8; // Balances pallet index in dancebox runtime
             let random_receiver: [u8; 32] = [0x22; 32];
-            
+
             let versioned_beneficiary = VersionedLocation::V4(xcm::v4::Location::new(
                 0,
                 [xcm::v4::Junction::AccountId32 {
@@ -152,19 +163,18 @@ fn test_dry_run_call_transfer_assets_with_success_expectation() {
                     id: random_receiver,
                 }],
             ));
-            
-            let versioned_assets = VersionedAssets::V4(xcm::v4::Assets::from(vec![
-                xcm::v4::Asset {
+
+            let versioned_assets =
+                VersionedAssets::V4(xcm::v4::Assets::from(vec![xcm::v4::Asset {
                     id: xcm::v4::AssetId(xcm::v4::Location::new(
                         0,
                         [xcm::v4::Junction::PalletInstance(balances_pallet_index)],
                     )),
                     fun: xcm::v4::Fungibility::Fungible(100_000_000_000_000u128), // 0.1 UNIT
-                }
-            ]));
-            
+                }]));
+
             let dest = VersionedLocation::V4(xcm::v4::Location::new(1, xcm::v4::Junctions::Here));
-            
+
             let call = RuntimeCall::PolkadotXcm(pallet_xcm::Call::transfer_assets {
                 dest: Box::new(dest),
                 beneficiary: Box::new(versioned_beneficiary),
@@ -172,29 +182,37 @@ fn test_dry_run_call_transfer_assets_with_success_expectation() {
                 fee_asset_item: 0,
                 weight_limit: WeightLimit::Unlimited,
             });
-            
-            let origin_caller = OriginCaller::system(frame_system::RawOrigin::Signed(AccountId::from(ALICE)));
+
+            let origin_caller =
+                OriginCaller::system(frame_system::RawOrigin::Signed(AccountId::from(ALICE)));
             let xcm_version = 4;
-            
+
+            // This works because we are currently inside block 1, after on_initialize
+            //call.dispatch(RuntimeOrigin::signed(AccountId::from(ALICE))).unwrap();
+            //return;
+
             // Execute the dry run using PolkadotXcm directly
-            let result = PolkadotXcm::dry_run_call::<Runtime, dancebox_runtime::xcm_config::XcmRouter, OriginCaller, RuntimeCall>(
-                origin_caller,
-                call,
-                xcm_version
-            );
-            
-            // Assert that the dry run itself succeeded (no API errors)
+            let result = PolkadotXcm::dry_run_call::<
+                Runtime,
+                dancebox_runtime::xcm_config::XcmRouter,
+                OriginCaller,
+                RuntimeCall,
+            >(origin_caller, call, xcm_version);
+
+            // This also works because we are currently inside block 1, after on_initialize
+            // The typescript test fails because it runs the dryRunCall after block 0 on_finalize, and
+            // something is missing there that it makes the test fail
             match result {
                 Ok(dry_run_effects) => {
                     println!("DryRun completed with effects: {:?}", dry_run_effects);
-                    
+
                     // The TypeScript test expects executionResult.isOk to be true
                     // Here we check that the execution completed without errors
                     // Note: The actual success depends on the runtime configuration and XCM setup
-                    
+
                     // We can add more specific assertions based on the expected behavior
                     // For now, we verify that the dry run API call itself works
-                },
+                }
                 Err(e) => {
                     panic!("DryRun API call failed: {:?}", e);
                 }

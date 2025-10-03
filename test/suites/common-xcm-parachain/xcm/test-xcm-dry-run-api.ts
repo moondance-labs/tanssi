@@ -36,6 +36,13 @@ describeSuite({
                     .index.toNumber();
                 const randomReceiver = "0x1111111111111111111111111111111111111111111111111111111111111111";
 
+                /*
+                const tx4 = relayChainPolkadotJs.tx.sudo.sudo(
+                    relayChainPolkadotJs.tx.xcmPallet.forceDefaultXcmVersion(5)
+                );
+                await signAndSendAndInclude(tx4, aliceRelay);
+                 */
+
                 const versionedBeneficiary = {
                     V3: {
                         parents: 0,
@@ -84,7 +91,14 @@ describeSuite({
                 );
 
                 // Sending the tx works
-                //await context.createBlock(await tx.signAsync(alice));
+                /*
+                const result = await context.createBlock(await tx.signAsync(alice));
+                console.log(result);
+                return;
+                 */
+                // The dry run call is fixed if we create a block
+                // Why? ¯\_(ツ)_/¯
+                await context.createBlock();
 
                 const XCM_VERSION = 3;
                 const dryRunCall = await polkadotJs.call.dryRunApi.dryRunCall(
