@@ -57,6 +57,11 @@ parameter_types! {
     pub DancelightReceiver: AccountId = Sr25519Keyring::Bob.to_account_id();
     pub DancelightEmptyReceiver: AccountId = DancelightRelay::account_id_of(RANDOM);
 
+     // FrontierTemplate
+     pub FrontierTemplateSender: AccountId = Sr25519Keyring::Alice.to_account_id();
+     pub FrontierTemplateReceiver: AccountId = AccountId::from(BOB);
+     pub FrontierTemplateEmptyReceiver: AccountId = FrontierTemplatePara::account_id_of(RANDOM);
+
     // SimpleTemplate
     pub SimpleTemplateSender: AccountId = Sr25519Keyring::Alice.to_account_id();
     pub SimpleTemplateReceiver: AccountId = AccountId::from(BOB);
