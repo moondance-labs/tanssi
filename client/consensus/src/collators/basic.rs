@@ -131,6 +131,7 @@ pub async fn run<Block, P, BI, CIDP, Client, RClient, SO, Proposer, CS, GOH>(
     };
 
     let mut last_processed_slot = 0;
+    let mut last_relay_chain_block = Default::default();
 
     while let Some(request) = collation_requests.next().await {
         macro_rules! reject_with_error {
@@ -239,15 +240,29 @@ pub async fn run<Block, P, BI, CIDP, Client, RClient, SO, Proposer, CS, GOH>(
         //
         // With https://github.com/paritytech/polkadot-sdk/issues/3168 this implementation will be
         // obsolete and also the underlying issue will be fixed.
-        if last_processed_slot >= *claim.slot() {
+        if last_processed_slot >= *claim.slot()
+            && last_relay_chain_block < *relay_parent_header.number()
+        {
             continue;
         }
 
         let (parachain_inherent_data, other_inherent_data) = try_request!(
             collator
-                .create_inherent_data(*request.relay_parent(), validation_data, parent_hash, None,)
+                .create_inherent_data(
+                    *request.relay_parent(),
+                    validation_data,
+                    parent_hash,
+                    None,
+                    None
+                )
                 .await
         );
+
+        // Set the block limit to 50% of the maximum PoV size.
+        //
+        // TODO: If we got benchmarking that includes the proof size,
+        // we should be able to use the maximum pov size.
+        let allowed_pov_size = (validation_data.max_pov_size / 2) as usize;
 
         let maybe_collation = try_request!(
             collator
@@ -257,17 +272,20 @@ pub async fn run<Block, P, BI, CIDP, Client, RClient, SO, Proposer, CS, GOH>(
                     None,
                     (parachain_inherent_data, other_inherent_data),
                     params.authoring_duration,
-                    // Set the block limit to 50% of the maximum PoV size.
-                    //
-                    // TODO: If we got benchmarking that includes the proof size,
-                    // we should be able to use the maximum pov size.
-                    (validation_data.max_pov_size / 2) as usize,
+                    allowed_pov_size,
                 )
                 .await
         );
 
-        if let Some((collation, _, post_hash)) = maybe_collation {
-            let result_sender = Some(collator.collator_service().announce_with_barrier(post_hash));
+        if let Some((collation, block_data)) = maybe_collation {
+            let Some(block_hash) = block_data.blocks().first().map(|b| b.hash()) else {
+                continue;
+            };
+            let result_sender = Some(
+                collator
+                    .collator_service()
+                    .announce_with_barrier(block_hash),
+            );
             request.complete(Some(CollationResult {
                 collation,
                 result_sender,
@@ -277,6 +295,7 @@ pub async fn run<Block, P, BI, CIDP, Client, RClient, SO, Proposer, CS, GOH>(
             tracing::debug!(target: crate::LOG_TARGET, "No block proposal");
         }
         last_processed_slot = *claim.slot();
+        last_relay_chain_block = *relay_parent_header.number();
     }
 }
 

@@ -62,8 +62,8 @@ import type {
     PolkadotPrimitivesV8ExecutorParams,
     PolkadotPrimitivesV8PvfCheckStatement,
     PolkadotPrimitivesV8SchedulerParams,
-    PolkadotPrimitivesV8SlashingDisputeProof,
     PolkadotPrimitivesV8ValidatorAppSignature,
+    PolkadotPrimitivesVstagingDisputeProof,
     PolkadotPrimitivesVstagingInherentData,
     PolkadotRuntimeParachainsParasParaGenesisArgs,
     SnowbridgeBeaconPrimitivesUpdatesCheckpointUpdate,
@@ -4624,6 +4624,38 @@ declare module "@polkadot/api-base/types/submittable" {
                 [Bytes]
             >;
             /**
+             * Applies the already authorized current code for the parachain,
+             * triggering the same functionality as `force_set_current_code`.
+             **/
+            applyAuthorizedForceSetCurrentCode: AugmentedSubmittable<
+                (
+                    para: u32 | AnyNumber | Uint8Array,
+                    newCode: Bytes | string | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [u32, Bytes]
+            >;
+            /**
+             * Sets the storage for the authorized current code hash of the parachain.
+             * If not applied, it will be removed at the `System::block_number() + valid_period` block.
+             *
+             * This can be useful, when triggering `Paras::force_set_current_code(para, code)`
+             * from a different chain than the one where the `Paras` pallet is deployed.
+             *
+             * The main purpose is to avoid transferring the entire `code` Wasm blob between chains.
+             * Instead, we authorize `code_hash` with `root`, which can later be applied by
+             * `Paras::apply_authorized_force_set_current_code(para, code)` by anyone.
+             *
+             * Authorizations are stored in an **overwriting manner**.
+             **/
+            authorizeForceSetCurrentCodeHash: AugmentedSubmittable<
+                (
+                    para: u32 | AnyNumber | Uint8Array,
+                    newCodeHash: H256 | string | Uint8Array,
+                    validPeriod: u32 | AnyNumber | Uint8Array
+                ) => SubmittableExtrinsic<ApiType>,
+                [u32, H256, u32]
+            >;
+            /**
              * Note a new block head for para within the context of the current block.
              **/
             forceNoteNewHead: AugmentedSubmittable<
@@ -4710,6 +4742,16 @@ declare module "@polkadot/api-base/types/submittable" {
                 [H256]
             >;
             /**
+             * Remove an upgrade cooldown for a parachain.
+             *
+             * The cost for removing the cooldown earlier depends on the time left for the cooldown
+             * multiplied by [`Config::CooldownRemovalMultiplier`]. The paid tokens are burned.
+             **/
+            removeUpgradeCooldown: AugmentedSubmittable<
+                (para: u32 | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>,
+                [u32]
+            >;
+            /**
              * Generic tx
              **/
             [key: string]: SubmittableExtrinsicFunction<ApiType>;
@@ -4731,7 +4773,7 @@ declare module "@polkadot/api-base/types/submittable" {
             reportDisputeLostUnsigned: AugmentedSubmittable<
                 (
                     disputeProof:
-                        | PolkadotPrimitivesV8SlashingDisputeProof
+                        | PolkadotPrimitivesVstagingDisputeProof
                         | { timeSlot?: any; kind?: any; validatorIndex?: any; validatorId?: any }
                         | string
                         | Uint8Array,
@@ -4741,7 +4783,7 @@ declare module "@polkadot/api-base/types/submittable" {
                         | string
                         | Uint8Array
                 ) => SubmittableExtrinsic<ApiType>,
-                [PolkadotPrimitivesV8SlashingDisputeProof, SpSessionMembershipProof]
+                [PolkadotPrimitivesVstagingDisputeProof, SpSessionMembershipProof]
             >;
             /**
              * Generic tx
@@ -5096,7 +5138,7 @@ declare module "@polkadot/api-base/types/submittable" {
              * `pure` with corresponding parameters.
              *
              * - `spawner`: The account that originally called `pure` to create this account.
-             * - `index`: The disambiguation index originally passed to `pure`. Probably `0`.
+             * - `index`: The disambiguation index originally passed to `create_pure`. Probably `0`.
              * - `proxy_type`: The proxy type originally passed to `pure`.
              * - `height`: The height of the chain when the call to `pure` was processed.
              * - `ext_index`: The extrinsic index in which the call to `pure` was processed.

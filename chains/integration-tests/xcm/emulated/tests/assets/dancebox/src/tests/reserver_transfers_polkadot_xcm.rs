@@ -32,9 +32,10 @@ use {
     },
     xcm::{
         latest::prelude::{Junctions::*, *},
-        VersionedLocation,
+        VersionedLocation, VersionedAssetId, VersionedXcm,
     },
     xcm_emulator::{assert_expected_events, bx, Chain, Parachain, TestExt},
+    xcm_executor::traits::TransferType,
 };
 
 #[allow(unused_assignments)]
@@ -165,15 +166,14 @@ fn transfer_assets_relay_tanssi() {
     }
     .into();
 
-    let simple_template_beneficiary: VersionedLocation = Location {
+    let simple_template_beneficiary = Location {
         parents: 0,
         interior: X1([AccountId32 {
             network: None,
             id: SimpleTemplateEmptyReceiver::get().into(),
         }]
         .into()),
-    }
-    .into();
+    };
 
     let dancebox_dest: VersionedLocation = Location {
         parents: 0,
@@ -181,15 +181,14 @@ fn transfer_assets_relay_tanssi() {
     }
     .into();
 
-    let dancebox_beneficiary: VersionedLocation = Location {
+    let dancebox_beneficiary = Location {
         parents: 0,
         interior: X1([AccountId32 {
             network: None,
             id: DanceboxSender::get().into(),
         }]
         .into()),
-    }
-    .into();
+    };
 
     let dancebox_amount_to_send: dancebox_runtime::Balance =
         dancebox_runtime::ExistentialDeposit::get() * 1000;
@@ -206,7 +205,6 @@ fn transfer_assets_relay_tanssi() {
 
     let relay_assets: Assets = (Here, relay_amount_to_send).into();
 
-    let fee_asset_item = 0;
     let dancebox_token_asset_id = 1u16;
     let westend_token_asset_id = 2u16;
 
@@ -280,13 +278,22 @@ fn transfer_assets_relay_tanssi() {
 
     // Relay sends to dancebox first
     Westend::execute_with(|| {
+        let fees_id: VersionedAssetId = AssetId(Location::here()).into();
+        let xcm_on_dest = Xcm::<()>(vec![
+            DepositAsset {
+                assets: Wild(AllCounted(relay_assets.len() as u32)),
+                beneficiary: dancebox_beneficiary,
+            },
+        ]);
         assert_ok!(
-            <Westend as WestendRelayPallet>::XcmPallet::limited_reserve_transfer_assets(
+            <Westend as WestendRelayPallet>::XcmPallet::transfer_assets_using_type_and_then(
                 alice_relay_origin,
                 bx!(dancebox_dest),
-                bx!(dancebox_beneficiary),
                 bx!(relay_assets.into()),
-                fee_asset_item,
+                bx!(TransferType::LocalReserve),
+                bx!(fees_id),
+                bx!(TransferType::LocalReserve),
+                bx!(VersionedXcm::V5(xcm_on_dest)),
                 WeightLimit::Unlimited,
             )
         );
@@ -342,13 +349,22 @@ fn transfer_assets_relay_tanssi() {
     // This should not work as we are trying to send two assets
     // with different XCM paths (one goes to the relay, the other one does not)
     Dancebox::execute_with(|| {
+        let fees_id: VersionedAssetId = AssetId(Location::parent()).into();
+        let xcm_on_dest = Xcm::<()>(vec![
+            DepositAsset {
+                assets: Wild(AllCounted(combined_assets.len() as u32)),
+                beneficiary: simple_template_beneficiary,
+            },
+        ]);
         assert_noop!(
-            <Dancebox as DanceboxParaPallet>::PolkadotXcm::transfer_assets(
+            <Dancebox as DanceboxParaPallet>::PolkadotXcm::transfer_assets_using_type_and_then(
                 alice_dancebox_origin.clone(),
                 bx!(simple_template_dest.clone()),
-                bx!(simple_template_beneficiary.clone()),
                 bx!(combined_assets.clone().into()),
-                1,
+                bx!(TransferType::LocalReserve),
+                bx!(fees_id),
+                bx!(TransferType::RemoteReserve(Location::parent().into())),
+                bx!(VersionedXcm::V5(xcm_on_dest)),
                 WeightLimit::Unlimited,
             ),
             pallet_xcm::Error::<dancebox_runtime::Runtime>::InvalidAssetUnsupportedReserve
@@ -625,15 +641,14 @@ fn transfer_asset_relay_token_across_tanssi_container() {
     }
     .into();
 
-    let simple_template_beneficiary: VersionedLocation = Location {
+    let simple_template_beneficiary = Location {
         parents: 0,
         interior: X1([AccountId32 {
             network: None,
             id: SimpleTemplateEmptyReceiver::get().into(),
         }]
         .into()),
-    }
-    .into();
+    };
 
     let dancebox_dest: VersionedLocation = Location {
         parents: 0,
@@ -641,22 +656,19 @@ fn transfer_asset_relay_token_across_tanssi_container() {
     }
     .into();
 
-    let dancebox_beneficiary: VersionedLocation = Location {
+    let dancebox_beneficiary = Location {
         parents: 0,
         interior: X1([AccountId32 {
             network: None,
             id: DanceboxSender::get().into(),
         }]
         .into()),
-    }
-    .into();
+    };
 
     let relay_amount_to_send: dancebox_runtime::Balance =
         westend_runtime::ExistentialDeposit::get() * 1000;
 
     let relay_assets: Assets = (Here, relay_amount_to_send).into();
-
-    let fee_asset_item = 0;
     let westend_token_asset_id = 1u16;
 
     // Register the relay asset first
@@ -707,13 +719,22 @@ fn transfer_asset_relay_token_across_tanssi_container() {
 
     // Relay sends to dancebox first
     Westend::execute_with(|| {
+        let fees_id: VersionedAssetId = AssetId(Location::here()).into();
+        let xcm_on_dest = Xcm::<()>(vec![
+            DepositAsset {
+                assets: Wild(AllCounted(relay_assets.len() as u32)),
+                beneficiary: dancebox_beneficiary,
+            },
+        ]);
         assert_ok!(
-            <Westend as WestendRelayPallet>::XcmPallet::limited_reserve_transfer_assets(
+            <Westend as WestendRelayPallet>::XcmPallet::transfer_assets_using_type_and_then(
                 alice_relay_origin,
                 bx!(dancebox_dest),
-                bx!(dancebox_beneficiary),
                 bx!(relay_assets.into()),
-                fee_asset_item,
+                bx!(TransferType::LocalReserve),
+                bx!(fees_id),
+                bx!(TransferType::LocalReserve),
+                bx!(VersionedXcm::V5(xcm_on_dest)),
                 WeightLimit::Unlimited,
             )
         );
@@ -765,13 +786,22 @@ fn transfer_asset_relay_token_across_tanssi_container() {
     // Let's try to use dot as the fee
     // This should work as we are trying to send a single asset
     Dancebox::execute_with(|| {
+        let fees_id: VersionedAssetId = AssetId(Location::parent()).into();
+        let xcm_on_dest = Xcm::<()>(vec![
+            DepositAsset {
+                assets: Wild(AllCounted(relay_assets_to_send.len() as u32)),
+                beneficiary: simple_template_beneficiary,
+            },
+        ]);
         assert_ok!(
-            <Dancebox as DanceboxParaPallet>::PolkadotXcm::transfer_assets(
+            <Dancebox as DanceboxParaPallet>::PolkadotXcm::transfer_assets_using_type_and_then(
                 alice_dancebox_origin.clone(),
                 bx!(simple_template_dest.clone()),
-                bx!(simple_template_beneficiary.clone()),
                 bx!(relay_assets_to_send.into()),
-                0,
+                bx!(TransferType::RemoteReserve(Location::parent().into())),
+                bx!(fees_id),
+                bx!(TransferType::RemoteReserve(Location::parent().into())),
+                bx!(VersionedXcm::V5(xcm_on_dest)),
                 WeightLimit::Unlimited,
             )
         );

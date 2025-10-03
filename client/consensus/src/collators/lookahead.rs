@@ -719,7 +719,7 @@ where
                         // Build and announce collations recursively until
                         // `can_build_upon` fails or building a collation fails.
                         let (parachain_inherent_data, other_inherent_data) = match collator
-                            .create_inherent_data(relay_parent, &validation_data, parent_hash, None)
+                            .create_inherent_data(relay_parent, &validation_data, parent_hash, None, None)
                             .await
                         {
                             Err(err) => {
@@ -759,12 +759,35 @@ where
                             )
                             .await
                         {
-                            Ok(Some((collation, block_data, new_block_hash))) => {
+                            Ok(Some((collation, block_data))) => {
+                                let Some(new_block_header) =
+                                    block_data.blocks().first().map(|b| b.header().clone())
+                                else {
+                                    tracing::error!(target: crate::LOG_TARGET,  "Produced PoV doesn't contain any blocks");
+                                    break
+                                };
+                                let new_block_hash = new_block_header.hash();
+
                                 // Here we are assuming that the import logic protects against equivocations
                                 // and provides sybil-resistance, as it should.
                                 collator
                                     .collator_service()
                                     .announce_block(new_block_hash, None);
+
+                            /*
+                        if let Some(ref export_pov) = export_pov {
+                            export_pov_to_path::<Block>(
+                                export_pov.clone(),
+                                collation.proof_of_validity.clone().into_compressed(),
+                                new_block_hash,
+                                *new_block_header.number(),
+                                parent_header.clone(),
+                                *relay_parent_header.state_root(),
+                                *relay_parent_header.number(),
+                                validation_data.max_pov_size,
+                            );
+                        }
+                             */
 
                                 // Send a submit-collation message to the collation generation subsystem,
                                 // which then distributes this to validators.
@@ -788,7 +811,7 @@ where
                                     .await;
 
                                 parent_hash = new_block_hash;
-                                parent_header = block_data.into_header();
+                                parent_header = new_block_header;
                             }
                             Ok(None) => {
                                 tracing::debug!(target: crate::LOG_TARGET, "Lookahead collator: No block proposal");

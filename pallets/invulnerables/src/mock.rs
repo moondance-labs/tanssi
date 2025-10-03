@@ -115,7 +115,6 @@ impl ValidatorRegistration<u64> for IsRegistered {
 }
 
 impl Config for Test {
-    type RuntimeEvent = RuntimeEvent;
     type UpdateOrigin = EnsureSignedBy<RootAccount, u64>;
     type MaxInvulnerables = ConstU32<20>;
     type CollatorId = <Self as frame_system::Config>::AccountId;

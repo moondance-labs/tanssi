@@ -215,7 +215,6 @@ parameter_types! {
 }
 
 impl pallet_inflation_rewards::Config for Test {
-    type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
     type ContainerChains = MockContainerChainGetter;
     type GetSelfChainBlockAuthor = MockGetSelfChainBlockAuthor;

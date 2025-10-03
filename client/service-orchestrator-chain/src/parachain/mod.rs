@@ -16,6 +16,9 @@
 
 pub mod rpc;
 
+use cumulus_client_bootnodes::{start_bootnode_tasks, StartBootnodeTasksParams};
+use node_common::service::node_builder::StartBootnodeParams;
+use sc_client_api::TrieCacheContext;
 use {
     cumulus_client_cli::CollatorOptions,
     cumulus_client_collator::service::CollatorService,
@@ -325,7 +328,8 @@ where
 
     let (block_import, import_queue) = import_queue(&parachain_config, &node_builder);
 
-    let (relay_chain_interface, collator_key) = node_builder
+    // TODO: start bootnode tasks
+    let (relay_chain_interface, collator_key, start_bootnode_params) = node_builder
         .build_relay_chain_interface(&parachain_config, polkadot_config, collator_options.clone())
         .await?;
 
@@ -398,7 +402,38 @@ where
         relay_chain_slot_duration,
         recovery_handle: Box::new(overseer_handle.clone()),
         sync_service: node_builder.network.sync_service.clone(),
+        prometheus_registry: node_builder.prometheus_registry.as_ref(),
     })?;
+
+    {
+        let StartBootnodeParams {
+            relay_chain_fork_id,
+            parachain_fork_id,
+            advertise_non_global_ips,
+            parachain_public_addresses,
+            relay_chain_network,
+            paranode_rx,
+            embedded_dht_bootnode,
+            dht_bootnode_discovery,
+        } = start_bootnode_params;
+
+        // Advertise parachain bootnode address in relay chain DHT
+        start_bootnode_tasks(StartBootnodeTasksParams {
+            embedded_dht_bootnode,
+            dht_bootnode_discovery,
+            para_id,
+            task_manager: &mut node_builder.task_manager,
+            relay_chain_interface: relay_chain_interface.clone(),
+            relay_chain_fork_id,
+            relay_chain_network,
+            request_receiver: paranode_rx,
+            parachain_network: node_builder.network.network.clone(),
+            advertise_non_global_ips,
+            parachain_genesis_hash: node_builder.client.chain_info().genesis_hash,
+            parachain_fork_id,
+            parachain_public_addresses,
+        });
+    }
 
     let orchestrator_chain_interface_builder = OrchestratorChainInProcessInterfaceBuilder {
         client: node_builder.client.clone(),
@@ -665,7 +700,10 @@ where
         orchestrator_parent: PHash,
         key: &[u8],
     ) -> OrchestratorChainResult<Option<StorageValue>> {
-        let state = self.backend.state_at(orchestrator_parent)?;
+        // TODO: trusted or untrusted?
+        let state = self
+            .backend
+            .state_at(orchestrator_parent, TrieCacheContext::Untrusted)?;
         state
             .storage(key)
             .map_err(OrchestratorChainError::GenericError)
@@ -676,7 +714,9 @@ where
         orchestrator_parent: PHash,
         relevant_keys: &Vec<Vec<u8>>,
     ) -> OrchestratorChainResult<StorageProof> {
-        let state_backend = self.backend.state_at(orchestrator_parent)?;
+        let state_backend = self
+            .backend
+            .state_at(orchestrator_parent, TrieCacheContext::Untrusted)?;
 
         sp_state_machine::prove_read(state_backend, relevant_keys)
             .map_err(OrchestratorChainError::StateMachineError)

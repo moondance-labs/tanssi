@@ -70,12 +70,13 @@ impl<T: frame_system::Config> runtime_parachains::paras::WeightInfo for Substrat
 		// Proof Size summary in bytes:
 		//  Measured:  `8309`
 		//  Estimated: `11774`
-		// Minimum execution time: 44_529_000 picoseconds.
-		Weight::from_parts(44_843_000, 11774)
-			// Standard Error: 8
-			.saturating_add(Weight::from_parts(2_428, 0).saturating_mul(c.into()))
-			.saturating_add(T::DbWeight::get().reads(4_u64))
-			.saturating_add(T::DbWeight::get().writes(6_u64))
+		// Minimum execution time: 34_344_000 picoseconds.
+		Weight::from_parts(35_086_000, 0)
+			.saturating_add(Weight::from_parts(0, 11774))
+			// Standard Error: 101
+			.saturating_add(Weight::from_parts(10_734, 0).saturating_mul(c.into()))
+			.saturating_add(T::DbWeight::get().reads(4))
+			.saturating_add(T::DbWeight::get().writes(6))
 	}
 	/// Storage: `Paras::Heads` (r:0 w:1)
 	/// Proof: `Paras::Heads` (`max_values`: None, `max_size`: None, mode: `Measured`)
@@ -84,11 +85,12 @@ impl<T: frame_system::Config> runtime_parachains::paras::WeightInfo for Substrat
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 9_490_000 picoseconds.
-		Weight::from_parts(26_558_328, 0)
-			// Standard Error: 3
-			.saturating_add(Weight::from_parts(990, 0).saturating_mul(s.into()))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+		// Minimum execution time: 7_032_000 picoseconds.
+		Weight::from_parts(7_232_000, 0)
+			.saturating_add(Weight::from_parts(0, 0))
+			// Standard Error: 31
+			.saturating_add(Weight::from_parts(3_618, 0).saturating_mul(s.into()))
+			.saturating_add(T::DbWeight::get().writes(1))
 	}
 	/// Storage: `Paras::MostRecentContext` (r:0 w:1)
 	/// Proof: `Paras::MostRecentContext` (`max_values`: None, `max_size`: None, mode: `Measured`)
@@ -96,9 +98,10 @@ impl<T: frame_system::Config> runtime_parachains::paras::WeightInfo for Substrat
 		// Proof Size summary in bytes:
 		//  Measured:  `0`
 		//  Estimated: `0`
-		// Minimum execution time: 5_148_000 picoseconds.
-		Weight::from_parts(5_289_000, 0)
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+		// Minimum execution time: 3_545_000 picoseconds.
+		Weight::from_parts(3_822_000, 0)
+			.saturating_add(Weight::from_parts(0, 0))
+			.saturating_add(T::DbWeight::get().writes(1))
 	}
 	/// Storage: `Paras::FutureCodeHash` (r:1 w:1)
 	/// Proof: `Paras::FutureCodeHash` (`max_values`: None, `max_size`: None, mode: `Measured`)
@@ -121,14 +124,15 @@ impl<T: frame_system::Config> runtime_parachains::paras::WeightInfo for Substrat
 	/// The range of component `c` is `[9, 3145728]`.
 	fn force_schedule_code_upgrade(c: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `8552`
-		//  Estimated: `12017`
-		// Minimum execution time: 60_601_000 picoseconds.
-		Weight::from_parts(61_519_000, 12017)
-			// Standard Error: 6
-			.saturating_add(Weight::from_parts(2_389, 0).saturating_mul(c.into()))
-			.saturating_add(T::DbWeight::get().reads(8_u64))
-			.saturating_add(T::DbWeight::get().writes(7_u64))
+		//  Measured:  `8452`
+		//  Estimated: `11917`
+		// Minimum execution time: 50_046_000 picoseconds.
+		Weight::from_parts(50_780_000, 0)
+			.saturating_add(Weight::from_parts(0, 11917))
+			// Standard Error: 101
+			.saturating_add(Weight::from_parts(10_685, 0).saturating_mul(c.into()))
+			.saturating_add(T::DbWeight::get().reads(8))
+			.saturating_add(T::DbWeight::get().writes(7))
 	}
 	/// Storage: `Paras::FutureCodeUpgrades` (r:1 w:0)
 	/// Proof: `Paras::FutureCodeUpgrades` (`max_values`: None, `max_size`: None, mode: `Measured`)
@@ -145,12 +149,13 @@ impl<T: frame_system::Config> runtime_parachains::paras::WeightInfo for Substrat
 		// Proof Size summary in bytes:
 		//  Measured:  `299`
 		//  Estimated: `3764`
-		// Minimum execution time: 25_475_000 picoseconds.
-		Weight::from_parts(46_159_751, 3764)
-			// Standard Error: 3
-			.saturating_add(Weight::from_parts(997, 0).saturating_mul(s.into()))
-			.saturating_add(T::DbWeight::get().reads(2_u64))
-			.saturating_add(T::DbWeight::get().writes(3_u64))
+		// Minimum execution time: 18_737_000 picoseconds.
+		Weight::from_parts(18_995_000, 0)
+			.saturating_add(Weight::from_parts(0, 3764))
+			// Standard Error: 31
+			.saturating_add(Weight::from_parts(3_645, 0).saturating_mul(s.into()))
+			.saturating_add(T::DbWeight::get().reads(2))
+			.saturating_add(T::DbWeight::get().writes(3))
 	}
 	/// Storage: `ParasShared::CurrentSessionIndex` (r:1 w:0)
 	/// Proof: `ParasShared::CurrentSessionIndex` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
@@ -158,12 +163,13 @@ impl<T: frame_system::Config> runtime_parachains::paras::WeightInfo for Substrat
 	/// Proof: `Paras::ActionsQueue` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	fn force_queue_action() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `4412`
-		//  Estimated: `7877`
-		// Minimum execution time: 28_021_000 picoseconds.
-		Weight::from_parts(29_367_000, 7877)
-			.saturating_add(T::DbWeight::get().reads(2_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+		//  Measured:  `4312`
+		//  Estimated: `7777`
+		// Minimum execution time: 21_058_000 picoseconds.
+		Weight::from_parts(21_657_000, 0)
+			.saturating_add(Weight::from_parts(0, 7777))
+			.saturating_add(T::DbWeight::get().reads(2))
+			.saturating_add(T::DbWeight::get().writes(1))
 	}
 	/// Storage: `Paras::PvfActiveVoteMap` (r:1 w:1)
 	/// Proof: `Paras::PvfActiveVoteMap` (`max_values`: None, `max_size`: None, mode: `Measured`)
@@ -176,14 +182,15 @@ impl<T: frame_system::Config> runtime_parachains::paras::WeightInfo for Substrat
 	/// The range of component `c` is `[9, 3145728]`.
 	fn add_trusted_validation_code(c: u32, ) -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `783`
-		//  Estimated: `4248`
-		// Minimum execution time: 103_230_000 picoseconds.
-		Weight::from_parts(74_743_184, 4248)
-			// Standard Error: 5
-			.saturating_add(Weight::from_parts(1_888, 0).saturating_mul(c.into()))
-			.saturating_add(T::DbWeight::get().reads(4_u64))
-			.saturating_add(T::DbWeight::get().writes(3_u64))
+		//  Measured:  `683`
+		//  Estimated: `4148`
+		// Minimum execution time: 85_102_000 picoseconds.
+		Weight::from_parts(86_779_000, 0)
+			.saturating_add(Weight::from_parts(0, 4148))
+			// Standard Error: 96
+			.saturating_add(Weight::from_parts(10_226, 0).saturating_mul(c.into()))
+			.saturating_add(T::DbWeight::get().reads(4))
+			.saturating_add(T::DbWeight::get().writes(3))
 	}
 	/// Storage: `Paras::CodeByHashRefs` (r:1 w:0)
 	/// Proof: `Paras::CodeByHashRefs` (`max_values`: None, `max_size`: None, mode: `Measured`)
@@ -193,10 +200,11 @@ impl<T: frame_system::Config> runtime_parachains::paras::WeightInfo for Substrat
 		// Proof Size summary in bytes:
 		//  Measured:  `28`
 		//  Estimated: `3493`
-		// Minimum execution time: 9_091_000 picoseconds.
-		Weight::from_parts(9_344_000, 3493)
-			.saturating_add(T::DbWeight::get().reads(1_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+		// Minimum execution time: 7_005_000 picoseconds.
+		Weight::from_parts(7_242_000, 0)
+			.saturating_add(Weight::from_parts(0, 3493))
+			.saturating_add(T::DbWeight::get().reads(1))
+			.saturating_add(T::DbWeight::get().writes(1))
 	}
 	/// Storage: `ParasShared::ActiveValidatorKeys` (r:1 w:0)
 	/// Proof: `ParasShared::ActiveValidatorKeys` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
@@ -206,12 +214,13 @@ impl<T: frame_system::Config> runtime_parachains::paras::WeightInfo for Substrat
 	/// Proof: `Paras::PvfActiveVoteMap` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	fn include_pvf_check_statement() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `26806`
-		//  Estimated: `30271`
-		// Minimum execution time: 115_128_000 picoseconds.
-		Weight::from_parts(119_444_000, 30271)
-			.saturating_add(T::DbWeight::get().reads(3_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+		//  Measured:  `26706`
+		//  Estimated: `30171`
+		// Minimum execution time: 114_183_000 picoseconds.
+		Weight::from_parts(117_660_000, 0)
+			.saturating_add(Weight::from_parts(0, 30171))
+			.saturating_add(T::DbWeight::get().reads(3))
+			.saturating_add(T::DbWeight::get().writes(1))
 	}
 	/// Storage: `ParasShared::ActiveValidatorKeys` (r:1 w:0)
 	/// Proof: `ParasShared::ActiveValidatorKeys` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
@@ -227,12 +236,13 @@ impl<T: frame_system::Config> runtime_parachains::paras::WeightInfo for Substrat
 	/// Proof: `Paras::FutureCodeUpgrades` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	fn include_pvf_check_statement_finalize_upgrade_accept() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `27460`
-		//  Estimated: `30925`
-		// Minimum execution time: 860_198_000 picoseconds.
-		Weight::from_parts(922_048_000, 30925)
-			.saturating_add(T::DbWeight::get().reads(5_u64))
-			.saturating_add(T::DbWeight::get().writes(103_u64))
+		//  Measured:  `27360`
+		//  Estimated: `30825`
+		// Minimum execution time: 701_780_000 picoseconds.
+		Weight::from_parts(717_725_000, 0)
+			.saturating_add(Weight::from_parts(0, 30825))
+			.saturating_add(T::DbWeight::get().reads(5))
+			.saturating_add(T::DbWeight::get().writes(103))
 	}
 	/// Storage: `ParasShared::ActiveValidatorKeys` (r:1 w:0)
 	/// Proof: `ParasShared::ActiveValidatorKeys` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
@@ -242,12 +252,13 @@ impl<T: frame_system::Config> runtime_parachains::paras::WeightInfo for Substrat
 	/// Proof: `Paras::PvfActiveVoteMap` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	fn include_pvf_check_statement_finalize_upgrade_reject() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `27438`
-		//  Estimated: `30903`
-		// Minimum execution time: 108_178_000 picoseconds.
-		Weight::from_parts(113_745_000, 30903)
-			.saturating_add(T::DbWeight::get().reads(3_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+		//  Measured:  `27338`
+		//  Estimated: `30803`
+		// Minimum execution time: 111_232_000 picoseconds.
+		Weight::from_parts(116_478_000, 0)
+			.saturating_add(Weight::from_parts(0, 30803))
+			.saturating_add(T::DbWeight::get().reads(3))
+			.saturating_add(T::DbWeight::get().writes(1))
 	}
 	/// Storage: `ParasShared::ActiveValidatorKeys` (r:1 w:0)
 	/// Proof: `ParasShared::ActiveValidatorKeys` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
@@ -261,12 +272,13 @@ impl<T: frame_system::Config> runtime_parachains::paras::WeightInfo for Substrat
 	/// Proof: `Paras::ActionsQueue` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	fn include_pvf_check_statement_finalize_onboarding_accept() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `26828`
-		//  Estimated: `30293`
-		// Minimum execution time: 715_286_000 picoseconds.
-		Weight::from_parts(730_022_000, 30293)
-			.saturating_add(T::DbWeight::get().reads(5_u64))
-			.saturating_add(T::DbWeight::get().writes(3_u64))
+		//  Measured:  `26728`
+		//  Estimated: `30193`
+		// Minimum execution time: 566_791_000 picoseconds.
+		Weight::from_parts(588_058_000, 0)
+			.saturating_add(Weight::from_parts(0, 30193))
+			.saturating_add(T::DbWeight::get().reads(5))
+			.saturating_add(T::DbWeight::get().writes(3))
 	}
 	/// Storage: `ParasShared::ActiveValidatorKeys` (r:1 w:0)
 	/// Proof: `ParasShared::ActiveValidatorKeys` (`max_values`: Some(1), `max_size`: None, mode: `Measured`)
@@ -276,11 +288,53 @@ impl<T: frame_system::Config> runtime_parachains::paras::WeightInfo for Substrat
 	/// Proof: `Paras::PvfActiveVoteMap` (`max_values`: None, `max_size`: None, mode: `Measured`)
 	fn include_pvf_check_statement_finalize_onboarding_reject() -> Weight {
 		// Proof Size summary in bytes:
-		//  Measured:  `26806`
-		//  Estimated: `30271`
-		// Minimum execution time: 105_665_000 picoseconds.
-		Weight::from_parts(110_890_000, 30271)
-			.saturating_add(T::DbWeight::get().reads(3_u64))
-			.saturating_add(T::DbWeight::get().writes(1_u64))
+		//  Measured:  `26706`
+		//  Estimated: `30171`
+		// Minimum execution time: 106_546_000 picoseconds.
+		Weight::from_parts(112_236_000, 0)
+			.saturating_add(Weight::from_parts(0, 30171))
+			.saturating_add(T::DbWeight::get().reads(3))
+			.saturating_add(T::DbWeight::get().writes(1))
+	}
+
+	fn remove_upgrade_cooldown() -> Weight {
+		// JUST COPIED AND WILL BE UPDATED NEXT TIME
+		Weight::from_parts(107_759_000, 0)
+			.saturating_add(Weight::from_parts(0, 30171))
+			.saturating_add(T::DbWeight::get().reads(3))
+			.saturating_add(T::DbWeight::get().writes(1))
+	}
+
+	/// Storage: `Paras::AuthorizedCodeHash` (r:0 w:1)
+	/// Proof: `Paras::AuthorizedCodeHash` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	fn authorize_force_set_current_code_hash() -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `0`
+		//  Estimated: `0`
+		// Minimum execution time: 8_217_000 picoseconds.
+		Weight::from_parts(8_415_000, 0)
+			.saturating_add(Weight::from_parts(0, 0))
+			.saturating_add(T::DbWeight::get().writes(1))
+	}
+	/// Storage: `Paras::AuthorizedCodeHash` (r:1 w:1)
+	/// Proof: `Paras::AuthorizedCodeHash` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `Paras::CodeByHashRefs` (r:1 w:1)
+	/// Proof: `Paras::CodeByHashRefs` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `Paras::CurrentCodeHash` (r:1 w:1)
+	/// Proof: `Paras::CurrentCodeHash` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `Paras::CodeByHash` (r:0 w:1)
+	/// Proof: `Paras::CodeByHash` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// The range of component `c` is `[9, 3145728]`.
+	fn apply_authorized_force_set_current_code(c: u32, ) -> Weight {
+		// Proof Size summary in bytes:
+		//  Measured:  `132`
+		//  Estimated: `3597`
+		// Minimum execution time: 29_238_000 picoseconds.
+		Weight::from_parts(29_741_000, 0)
+			.saturating_add(Weight::from_parts(0, 3597))
+			// Standard Error: 103
+			.saturating_add(Weight::from_parts(12_157, 0).saturating_mul(c.into()))
+			.saturating_add(T::DbWeight::get().reads(3))
+			.saturating_add(T::DbWeight::get().writes(4))
 	}
 }

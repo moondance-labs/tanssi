@@ -36,6 +36,13 @@ describeSuite({
                     .index.toNumber();
                 const randomReceiver = "0x1111111111111111111111111111111111111111111111111111111111111111";
 
+                /*
+                const tx4 = relayChainPolkadotJs.tx.sudo.sudo(
+                    relayChainPolkadotJs.tx.xcmPallet.forceDefaultXcmVersion(5)
+                );
+                await signAndSendAndInclude(tx4, aliceRelay);
+                 */
+
                 const versionedBeneficiary = {
                     V3: {
                         parents: 0,
@@ -83,12 +90,43 @@ describeSuite({
                     "Unlimited"
                 );
 
+                // Sending the tx works
+                /*
+                const result = await context.createBlock(await tx.signAsync(alice));
+                console.log(result);
+                return;
+                 */
+                // The dry run call is fixed if we create a block
+                // Why? ¯\_(ツ)_/¯
+                await context.createBlock();
+
                 const XCM_VERSION = 3;
                 const dryRunCall = await polkadotJs.call.dryRunApi.dryRunCall(
                     { System: { signed: alice.address } },
                     tx,
                     XCM_VERSION
                 );
+                console.log("dryRunCall:", dryRunCall.toJSON());
+                console.log("dryRunCall.asOk.executionResult", dryRunCall.asOk.executionResult.toJSON());
+                /*
+dryRunCall.asOk.executionResult {
+  err: {
+    postInfo: { actualWeight: null, paysFee: 'Yes' },
+    error: { module: [Object] }
+  }
+}
+
+dryRunCall.asOk.executionResult.err.error.module { index: 53, error: '0x01000000' }
+
+2025-10-02 16:38:03 XCM validate_send failed with error error=Transport("Other") dest=Location { parents: 1, interior: Here } remote_xcm=Xcm([ReserveAssetDeposited(Assets([Asset { id: AssetId(Location { parents: 0, interior: X2([Parachain(1000), PalletInstance(10)]) }), fun: Fungible(1000000000000000) }])), ClearOrigin, BuyExecution { fees: Asset { id: AssetId(Location { parents: 0, interior: X2([Parachain(1000), PalletInstance(10)]) }), fun: Fungible(1000000000000000) }, weight_limit: Unlimited }, DepositAsset { assets: Wild(AllCounted(1)), beneficiary: Location { parents: 0, interior: X1([AccountId32 { network: None, id: [17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17, 17] }]) } }])
+*/
+
+                if (dryRunCall.asOk.executionResult.toJSON().err) {
+                    console.log(
+                        "dryRunCall.asOk.executionResult.err.error.module",
+                        dryRunCall.asOk.executionResult.toJSON().err.error.module
+                    );
+                }
 
                 expect(dryRunCall.isOk).to.be.true;
                 expect(dryRunCall.asOk.executionResult.isOk).be.true;
@@ -133,6 +171,7 @@ describeSuite({
                     },
                     xcmMessage
                 );
+                console.log("dryRunXcm:", dryRunXcm.toJSON());
 
                 expect(dryRunXcm.isOk).to.be.true;
                 expect(dryRunXcm.asOk.executionResult.isComplete).be.true;
