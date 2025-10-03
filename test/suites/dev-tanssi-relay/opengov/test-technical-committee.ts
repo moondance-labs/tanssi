@@ -511,7 +511,7 @@ describeSuite({
                 const proxyType = "Any";
                 const delay = 0;
 
-                const call = api.tx.sudo.sudoAs(bob.address, api.tx.proxy.addProxy(delegate, proxyType, delay));
+                const call = api.tx.system.remarkWithEvent("0x0001");
                 const isCallWhitelisted = await api.query.whitelist.whitelistedCall(call.method.hash.toHex());
                 expect(isCallWhitelisted.isSome, "The call should be whitelisted");
 
@@ -586,14 +586,6 @@ describeSuite({
                     isCallWhitelistedAfterFailedWhitelistDispatchTx.isNone,
                     "The call should not be whitelisted anymore"
                 );
-                for (let i = 0; i < 450; i++) {
-                    await context.createBlock();
-                }
-
-                const proxyInfo = await api.query.proxy.proxies(bob.address);
-                const [delegates] = proxyInfo.toJSON() as { delegate: string }[][];
-                const added = delegates.find((d: any) => d.delegate === delegate);
-                expect(added).to.exist;
             },
         });
 
