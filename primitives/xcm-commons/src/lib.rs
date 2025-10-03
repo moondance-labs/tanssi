@@ -77,3 +77,29 @@ where
         matches!((asset.id.0.parents, asset.id.0.first_interior()), (1, Some(GlobalConsensus(network))) if *network == EthereumNetwork::get())
     }
 }
+
+// Filter to ensure an Relay Asset is coming from a trusted Ethereum location
+pub struct RelayAssetReserveFromEthereum<EthereumNetwork>(
+    core::marker::PhantomData<EthereumNetwork>,
+);
+impl<EthereumNetwork> frame_support::traits::ContainsPair<Asset, Location>
+    for RelayAssetReserveFromEthereum<EthereumNetwork>
+where
+    EthereumNetwork: Get<NetworkId>,
+{
+    fn contains(asset: &Asset, origin: &Location) -> bool {
+        log::trace!(target: "xcm::contains", "RelayAssetReserve asset: {:?}, origin: {:?}", asset, origin);
+        let is_eth_asset = matches!(
+            (asset.id.0.parents, asset.id.0.first_interior()),
+            (2, Some(GlobalConsensus(network))) if *network == EthereumNetwork::get()
+        );
+
+        let is_relay_origin = *origin
+            == Location {
+                parents: 1,
+                interior: Here,
+            };
+
+        is_eth_asset && is_relay_origin
+    }
+}

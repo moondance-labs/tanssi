@@ -802,8 +802,8 @@ export class XcmFragment {
 
     // Add a `ExportMessage` instruction
     export_message(
-        xcm: Array = [],
-        network: "Any" | XcmV3JunctionNetworkId["type"] = "Ethereum",
+        xcm: Array,
+        network: { Ethereum: { chainId: number } },
         destination: Junctions = { X1: { Parachain: 1000 } }
     ): this {
         this.instructions.push({
