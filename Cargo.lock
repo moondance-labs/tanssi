@@ -10052,8 +10052,8 @@ dependencies = [
 
 [[package]]
 name = "pallet-collective"
-version = "40.1.0"
-source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2503#d78fcadbaca093cd09d440f43fad47db07454a7b"
+version = "41.0.0"
+source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2506#43ed227f865c7b83e26a2f7de8355a786018a995"
 dependencies = [
  "docify",
  "frame-benchmarking",
