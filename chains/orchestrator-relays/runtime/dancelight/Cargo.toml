@@ -126,7 +126,6 @@ cumulus-primitives-core = { workspace = true }
 dp-consensus = { workspace = true }
 dp-container-chain-genesis-data = { workspace = true }
 tp-author-noting-inherent = { workspace = true }
-tp-container-chain = { workspace = true }
 tp-data-preservers-common = { workspace = true }
 tp-invulnerables-filter-common = { workspace = true }
 tp-parathread-filter-common = { workspace = true }
@@ -327,7 +326,6 @@ std = [
 	"test-relay-sproof-builder/std",
 	"tp-author-noting-inherent/std",
 	"tp-bridge/std",
-	"tp-container-chain/std",
 	"tp-data-preservers-common/std",
 	"tp-invulnerables-filter-common/std",
 	"tp-parathread-filter-common/std",
@@ -417,7 +415,6 @@ runtime-benchmarks = [
 	"sp-staking/runtime-benchmarks",
 	"tanssi-runtime-common/runtime-benchmarks",
 	"tp-bridge/runtime-benchmarks",
-	"tp-container-chain/runtime-benchmarks",
 	"tp-data-preservers-common/runtime-benchmarks",
 	"tp-invulnerables-filter-common/runtime-benchmarks",
 	"tp-parathread-filter-common/runtime-benchmarks",
