@@ -50,7 +50,6 @@ use {
         snowbridge_outbound_token_transfer::{EthereumBlobExporter, SnowbrigeTokenTransferRouter},
         EthereumLocationsConverterFor,
     },
-    tp_container_chain::ContainerChainEthereumLocationConverter,
     tp_xcm_commons::{EthereumAssetReserve, NativeAssetReserve},
     xcm::{
         latest::prelude::{AssetId as XcmAssetId, *},
@@ -95,9 +94,6 @@ pub type LocationConverter = (
     // Ethereum contract sovereign account.
     // (Used to convert ethereum contract locations to sovereign account)
     EthereumLocationsConverterFor<AccountId>,
-    // Ethereum contract sovereign account for the container chain
-    // (Used to convert ethereum contract locations to sovereign account in the container chain context)
-    ContainerChainEthereumLocationConverter<AccountId>,
 );
 
 /// Our asset transactor. This is what allows us to interest with the runtime facilities from the

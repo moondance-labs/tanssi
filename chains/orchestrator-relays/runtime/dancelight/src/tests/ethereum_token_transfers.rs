@@ -1445,7 +1445,7 @@ fn can_process_message_returns_false_for_wrong_message_type() {
                     fee: 0,
                 },
             })
-                .encode(),
+            .encode(),
             nonce: 1,
             message_id: H256::zero(),
         };
