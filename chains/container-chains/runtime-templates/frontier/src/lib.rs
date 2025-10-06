@@ -814,6 +814,22 @@ pub mod dynamic_params {
         #[codec(index = 1)]
         pub static AllowedAddressesToCreateInner: DeployFilter = DeployFilter::All;
     }
+
+    /// The Dancelight genesis hash used as the default relay network identifier.
+    pub const DANCELIGHT_GENESIS_HASH: [u8; 32] =
+        hex_literal::hex!["983a1a72503d6cc3636776747ec627172b51272bf45e50a355348facb67a820a"];
+
+    #[dynamic_pallet_params]
+    #[codec(index = 4)]
+    pub mod xcm_config {
+        use super::*;
+
+        /// The relay network identifier for this container chain.
+        /// Using Dancelight genesis hash as default.
+        #[codec(index = 0)]
+        pub static RelayNetwork: xcm::latest::NetworkId =
+            xcm::latest::NetworkId::ByGenesis(DANCELIGHT_GENESIS_HASH);
+    }
 }
 
 impl pallet_parameters::Config for Runtime {
