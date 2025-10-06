@@ -26,8 +26,6 @@ extern crate alloc;
 
 pub mod xcm_config;
 
-pub use xcm_runtime_apis::dry_run::runtime_decl_for_dry_run_api::DryRunApiV2;
-
 #[cfg(feature = "std")]
 use sp_version::NativeVersion;
 

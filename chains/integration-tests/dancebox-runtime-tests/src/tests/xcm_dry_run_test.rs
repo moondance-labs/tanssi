@@ -26,6 +26,8 @@ use {
 
 #[test]
 fn test_dry_run_call_transfer_assets() {
+    // Rewrite of test `test-xcm-dry-run-api.ts` in rust to debug a failure that only happened in typescript tests.
+    // The fix was to create a new block, because this runtime api does no longer work when the current block is 0.
     ExtBuilder::default()
         .with_balances(vec![
             // Alice gets tokens for her tests
@@ -77,12 +79,12 @@ fn test_dry_run_call_transfer_assets() {
                 OriginCaller::system(frame_system::RawOrigin::Signed(AccountId::from(ALICE)));
             let xcm_version = 4;
 
-            // This works because we are currently inside block 1, after on_initialize
+            // Ensure the actual call works, without the dry_run_call.
+            // This works because we are currently inside block 1, after on_initialize.
             /*
             use sp_runtime::traits::Dispatchable;
             use dancebox_runtime::RuntimeOrigin;
             call.dispatch(RuntimeOrigin::signed(AccountId::from(ALICE))).unwrap();
-            return;
              */
 
             // Execute the dry run using PolkadotXcm directly
@@ -98,7 +100,6 @@ fn test_dry_run_call_transfer_assets() {
             // something is missing there that it makes the test fail
             match result {
                 Ok(dry_run_effects) => {
-                    println!("DryRun completed with effects: {:?}", dry_run_effects);
                     assert!(dry_run_effects.execution_result.is_ok());
                 }
                 Err(e) => {
