@@ -15,13 +15,11 @@
 // along with Tanssi.  If not, see <http://www.gnu.org/licenses/>
 
 use {
-    dancelight_emulated_chain::{genesis::INITIAL_BALANCE, DancelightRelayPallet},
+    dancelight_emulated_chain::DancelightRelayPallet,
     dancelight_system_emulated_network::{
         DancelightRelay as Dancelight, DancelightSender, FrontierTemplatePara as FrontierTemplate,
     },
     frame_support::assert_ok,
-    frame_support::traits::PalletInfoAccess,
-    frontier_template_emulated_chain::EthereumReceiver,
     frontier_template_emulated_chain::{EthereumSender, FrontierTemplateParaPallet},
     hex_literal::hex,
     snowbridge_core::ChannelId,
@@ -47,8 +45,6 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
     const ERC20_ASSET_AMOUNT: u128 = 123_321_000_000_000_000;
 
     const RELAY_ASSET_FEE_AMOUNT: u128 = 3_500_000_000_000;
-
-    let fees_account = dancelight_runtime::SnowbridgeFeesAccount::get();
 
     // Common location calculations
     let container_location = Location::new(0, Parachain(CONTAINER_PARA_ID));
