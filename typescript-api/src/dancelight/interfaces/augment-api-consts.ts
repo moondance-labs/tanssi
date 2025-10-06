@@ -577,6 +577,16 @@ declare module "@polkadot/api-base/types/consts" {
              **/
             [key: string]: Codec;
         };
+        openTechCommitteeCollective: {
+            /**
+             * The maximum weight of a dispatch call that can be proposed and executed.
+             **/
+            maxProposalWeight: SpWeightsWeightV2Weight & AugmentedConst<ApiType>;
+            /**
+             * Generic const
+             **/
+            [key: string]: Codec;
+        };
         paras: {
             unsignedPriority: u64 & AugmentedConst<ApiType>;
             /**
