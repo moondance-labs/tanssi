@@ -29,7 +29,7 @@ use {
     },
     xcm::{
         latest::prelude::{Junctions::*, *},
-        VersionedLocation, VersionedAssetId, VersionedXcm
+        VersionedAssetId, VersionedLocation, VersionedXcm,
     },
     xcm_emulator::{assert_expected_events, bx, Chain, Parachain, TestExt},
     xcm_executor::traits::TransferType,
@@ -93,12 +93,10 @@ fn receive_tokens_from_the_relay_to_frontier_template() {
     // Send XCM message from Westend
     Westend::execute_with(|| {
         let fees_id: VersionedAssetId = AssetId(Location::here()).into();
-        let xcm_on_dest = Xcm::<()>(vec![
-            DepositAsset {
-                assets: Wild(AllCounted(assets.len() as u32)),
-                beneficiary: frontier_template_beneficiary,
-            },
-        ]);
+        let xcm_on_dest = Xcm::<()>(vec![DepositAsset {
+            assets: Wild(AllCounted(assets.len() as u32)),
+            beneficiary: frontier_template_beneficiary,
+        }]);
         assert_ok!(
             <Westend as WestendRelayPallet>::XcmPallet::transfer_assets_using_type_and_then(
                 alice_origin,
@@ -205,12 +203,10 @@ fn cannot_receive_tokens_from_the_relay_if_no_rate_is_assigned_frontier_template
     // Send XCM message from Westend
     Westend::execute_with(|| {
         let fees_id: VersionedAssetId = AssetId(Location::here()).into();
-        let xcm_on_dest = Xcm::<()>(vec![
-            DepositAsset {
-                assets: Wild(AllCounted(assets.len() as u32)),
-                beneficiary: frontier_template_beneficiary,
-            },
-        ]);
+        let xcm_on_dest = Xcm::<()>(vec![DepositAsset {
+            assets: Wild(AllCounted(assets.len() as u32)),
+            beneficiary: frontier_template_beneficiary,
+        }]);
         assert_ok!(
             <Westend as WestendRelayPallet>::XcmPallet::transfer_assets_using_type_and_then(
                 alice_origin,
@@ -284,12 +280,10 @@ fn cannot_receive_tokens_from_the_relay_if_no_token_is_registered() {
     // Send XCM message from Westend
     Westend::execute_with(|| {
         let fees_id: VersionedAssetId = AssetId(Location::here()).into();
-        let xcm_on_dest = Xcm::<()>(vec![
-            DepositAsset {
-                assets: Wild(AllCounted(assets.len() as u32)),
-                beneficiary: frontier_template_beneficiary,
-            },
-        ]);
+        let xcm_on_dest = Xcm::<()>(vec![DepositAsset {
+            assets: Wild(AllCounted(assets.len() as u32)),
+            beneficiary: frontier_template_beneficiary,
+        }]);
         assert_ok!(
             <Westend as WestendRelayPallet>::XcmPallet::transfer_assets_using_type_and_then(
                 alice_origin,
