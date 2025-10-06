@@ -38,12 +38,13 @@ use {
     sp_runtime::AccountId32,
     sp_runtime::FixedU128,
     xcm::latest::prelude::{Junctions::*, *},
-    xcm_emulator::{Chain, TestExt},
+    xcm_emulator::{Chain, ConvertLocation, TestExt},
 };
 
 #[test]
 fn check_foreign_eth_token_to_frontier_container_chain_transfer_works() {
     const PARA_ID_FOR_CHANNEL: u32 = 2000;
+    const CONTAINER_PARA_ID: u32 = 2002;
     const RELAY_NATIVE_TOKEN_ASSET_ID: u16 = 42;
     const ERC20_ASSET_ID: u16 = 24;
 
@@ -56,6 +57,12 @@ fn check_foreign_eth_token_to_frontier_container_chain_transfer_works() {
 
     let mut snowbridge_fees_account_balance_before = 0;
     let mut receiver_native_container_balance_before = 0;
+    let mut container_sovereign_balance_before = 0;
+
+    let container_location = Location::new(0, Parachain(CONTAINER_PARA_ID));
+    let container_sovereign_account =
+        dancelight_runtime::xcm_config::LocationConverter::convert_location(&container_location)
+            .unwrap();
 
     Dancelight::execute_with(|| {
         let root_origin = <Dancelight as Chain>::RuntimeOrigin::root();
@@ -82,6 +89,13 @@ fn check_foreign_eth_token_to_frontier_container_chain_transfer_works() {
             <Dancelight as DancelightRelayPallet>::System::account(SnowbridgeFeesAccount::get())
                 .data
                 .free;
+
+        container_sovereign_balance_before =
+            <Dancelight as DancelightRelayPallet>::System::account(
+                container_sovereign_account.clone(),
+            )
+            .data
+            .free;
 
         // Register erc20 foreign token in ForeignAssetsCreator
         let erc20_asset_location_relay: Location = Location {
@@ -180,9 +194,18 @@ fn check_foreign_eth_token_to_frontier_container_chain_transfer_works() {
                 .data
                 .free;
 
+        let container_sovereign_balance_after =
+            <Dancelight as DancelightRelayPallet>::System::account(container_sovereign_account)
+                .data
+                .free;
+
         assert!(
             snowbridge_fees_account_balance_after
                 <= snowbridge_fees_account_balance_before - CONTAINER_FEE
+        );
+
+        assert!(
+            container_sovereign_balance_after <= container_sovereign_balance_before + CONTAINER_FEE
         );
     });
 
@@ -204,6 +227,7 @@ fn check_foreign_eth_token_to_frontier_container_chain_transfer_works() {
 #[test]
 fn check_foreign_eth_token_to_simple_container_chain_transfer_works() {
     const PARA_ID_FOR_CHANNEL: u32 = 2000;
+    const CONTAINER_PARA_ID: u32 = 2002;
     const RELAY_NATIVE_TOKEN_ASSET_ID: u16 = 42;
     const ERC20_ASSET_ID: u16 = 24;
 
@@ -212,10 +236,16 @@ fn check_foreign_eth_token_to_simple_container_chain_transfer_works() {
     const TOKEN_ADDRESS: H160 = H160::repeat_byte(0x11);
     let token_receiver: AccountId32 = [5u8; 32].into();
 
-    const CONTAINER_FEE: u128 = 500_000_000;
+    const CONTAINER_FEE: u128 = 2_000_000_000_000_000;
+
+    let container_location = Location::new(0, Parachain(CONTAINER_PARA_ID));
+    let container_sovereign_account =
+        dancelight_runtime::xcm_config::LocationConverter::convert_location(&container_location)
+            .unwrap();
 
     let mut snowbridge_fees_account_balance_before = 0;
     let mut receiver_native_container_balance_before = 0;
+    let mut container_sovereign_balance_before = 0;
 
     Dancelight::execute_with(|| {
         let root_origin = <Dancelight as Chain>::RuntimeOrigin::root();
@@ -242,6 +272,13 @@ fn check_foreign_eth_token_to_simple_container_chain_transfer_works() {
             <Dancelight as DancelightRelayPallet>::System::account(SnowbridgeFeesAccount::get())
                 .data
                 .free;
+
+        container_sovereign_balance_before =
+            <Dancelight as DancelightRelayPallet>::System::account(
+                container_sovereign_account.clone(),
+            )
+            .data
+            .free;
 
         // Register erc20 foreign token in ForeignAssetsCreator
         let erc20_asset_location_relay: Location = Location {
@@ -340,10 +377,19 @@ fn check_foreign_eth_token_to_simple_container_chain_transfer_works() {
                 .data
                 .free;
 
+        let container_sovereign_balance_after =
+            <Dancelight as DancelightRelayPallet>::System::account(container_sovereign_account)
+                .data
+                .free;
+
         assert!(
             snowbridge_fees_account_balance_after
                 <= snowbridge_fees_account_balance_before - CONTAINER_FEE
         );
+
+        assert!(
+            container_sovereign_balance_after <= container_sovereign_balance_before + CONTAINER_FEE
+        )
     });
 
     // Check foreign token is received

@@ -855,9 +855,7 @@ where
         Ok(())
     }
 
-    fn process_xcm_container_eth_transfer(
-        eth_transfer_data: EthTransferData,
-    ) -> DispatchResult {
+    fn process_xcm_container_eth_transfer(eth_transfer_data: EthTransferData) -> DispatchResult {
         let (para_id, beneficiary, fee) = match eth_transfer_data.destination {
             Destination::ForeignAccountId32 { para_id, id, fee } => (
                 para_id,
