@@ -75,7 +75,7 @@ describeSuite({
                             // Manually set gas limit because the default of 200_000 is too low
                             // TODO: gas estimation is broken in moonkit, should estimate more than 200_000
                             // fix it in pallet_assets precompile, there must be a missing db read or db write somewhere
-                            gasLimit: 900_000,
+                            //gasLimit: 900_000,
                         })
                     );
 
