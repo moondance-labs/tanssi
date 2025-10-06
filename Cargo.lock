@@ -2472,6 +2472,7 @@ dependencies = [
  "pallet-migrations 10.1.0",
  "pallet-multisig",
  "pallet-ocw-testing",
+ "pallet-parameters",
  "pallet-proxy",
  "pallet-root-testing",
  "pallet-session",
@@ -3836,6 +3837,7 @@ dependencies = [
  "pallet-beefy",
  "pallet-beefy-mmr",
  "pallet-collator-assignment",
+ "pallet-collective",
  "pallet-configuration",
  "pallet-conviction-voting",
  "pallet-data-preservers",
@@ -9879,6 +9881,23 @@ dependencies = [
  "scale-info",
  "sp-runtime",
  "sp-staking",
+]
+
+[[package]]
+name = "pallet-collective"
+version = "40.1.0"
+source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2503#d78fcadbaca093cd09d440f43fad47db07454a7b"
+dependencies = [
+ "docify",
+ "frame-benchmarking",
+ "frame-support",
+ "frame-system",
+ "log",
+ "parity-scale-codec",
+ "scale-info",
+ "sp-core",
+ "sp-io",
+ "sp-runtime",
 ]
 
 [[package]]
