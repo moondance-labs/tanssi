@@ -1843,7 +1843,7 @@ fn cant_send_eth_unknown_token() {
                 ),
                 pallet_xcm::Error::<Runtime>::LocalExecutionIncompleteWithError {
                     index: 0,
-                    error: ExecutionError::Overflow
+                    error: ExecutionError::AssetNotFound
                 }
             );
 
@@ -1942,7 +1942,7 @@ fn cant_send_eth_native_token_more_than_owned() {
                 ),
                 pallet_xcm::Error::<Runtime>::LocalExecutionIncompleteWithError {
                     index: 0,
-                    error: ExecutionError::Overflow
+                    error: ExecutionError::FailedToTransactAsset
                 }
             );
 
