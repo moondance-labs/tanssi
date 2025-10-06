@@ -714,7 +714,7 @@ where
             }
             Destination::ForeignAccountId32 { .. } | Destination::ForeignAccountId20 { .. } => {
                 if ContainerTransfersEnabled::get() {
-                    Self::process_xcm_local_container_eth_transfer(eth_transfer_data)
+                    Self::process_xcm_container_eth_transfer(eth_transfer_data)
                 } else {
                     log::error!("EthTokensLocalProcessor: container transfers not supported yet");
                     return Ok(());
@@ -855,7 +855,7 @@ where
         Ok(())
     }
 
-    fn process_xcm_local_container_eth_transfer(
+    fn process_xcm_container_eth_transfer(
         eth_transfer_data: EthTransferData,
     ) -> DispatchResult {
         let (para_id, beneficiary, fee) = match eth_transfer_data.destination {
