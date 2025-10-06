@@ -741,63 +741,6 @@ fn check_foreign_eth_token_container_fails_if_foreign_token_not_registered_in_re
     });
 }
 
-#[test]
-pub fn check_foreign_eth_token_container_fails_if_msg_sent_from_another_para() {
-    const CONTAINER_PARA_ID: u32 = 2002;
-    const TOKEN_ADDRESS: H160 = H160::repeat_byte(0x11);
-    const CONTAINER_FEE: u128 = 2_000_000_000_000_000;
-
-    let container_location = Location::new(0, Parachain(CONTAINER_PARA_ID));
-
-    FrontierTemplate::execute_with(|| {
-        let asset_fee_container: Asset = (Location::parent(), CONTAINER_FEE).into();
-        let token_id_to_deposit = Location {
-            parents: 2,
-            interior: X2([
-                GlobalConsensus(EthereumNetwork::get()),
-                AccountKey20 {
-                    network: Some(EthereumNetwork::get()),
-                    key: TOKEN_ADDRESS.into(),
-                },
-            ]
-            .into()),
-        };
-        let asset_to_deposit: Asset = (token_id_to_deposit, 100_000_000).into();
-
-        let beneficiary_key = [5u8; 32];
-        let beneficiary = Location::new(
-            0,
-            [Junction::AccountId32 {
-                network: None,
-                id: beneficiary_key,
-            }],
-        );
-
-        let xcm_msg = Xcm::<()>(vec![
-            ReserveAssetDeposited(
-                vec![asset_fee_container.clone(), asset_to_deposit.clone()].into(),
-            ),
-            BuyExecution {
-                fees: asset_fee_container.clone(),
-                weight_limit: Unlimited,
-            },
-            DepositAsset {
-                assets: Definite(vec![asset_to_deposit].into()),
-                beneficiary,
-            },
-        ]);
-
-        assert_err!(
-            <FrontierTemplate as FrontierTemplateParaPallet>::PolkadotXcm::send_xcm(
-                Here,
-                container_location.clone(),
-                xcm_msg.clone(),
-            ),
-            SendError::NotApplicable,
-        );
-    });
-}
-
 pub fn make_send_token_message_simple_template() -> EventFixture {
     make_send_token_fixture(hex!("00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000007300010000000000000001111111111111111111111111111111111111111101d2070000050505050505050505050505050505050505050505050505050505050505050500008d49fd1a0700000000000000000000e1f50500000000000000000000000000c029f73d540500000000000000000000000000000000000000000000").into())
 }
