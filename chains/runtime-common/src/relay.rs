@@ -959,7 +959,6 @@ where
                 assets: Definite(vec![asset_to_deposit].into()),
                 beneficiary,
             },
-            // TODO: check if we need to add SetAppendix instruction to deposit the leftover assets
         ]);
 
         match send_xcm::<<T as pallet_xcm::Config>::XcmRouter>(
