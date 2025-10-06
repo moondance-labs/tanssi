@@ -901,7 +901,21 @@ where
         };
 
         let asset_fee_relay: Asset = (Location::here(), fee).into();
-        let asset_fee_container: Asset = (Location::parent(), fee).into();
+
+        let asset_fee_container = match asset_fee_relay.clone().reanchored(
+            &container_location,
+            &<T as pallet_xcm::Config>::UniversalLocation::get(),
+        ) {
+            Ok(loc) => loc,
+            Err(e) => {
+                log::error!(
+                    "EthTokensLocalProcessor: failed to reanchor relay token location: {:?}",
+                    e
+                );
+                return Ok(());
+            }
+        };
+
         let eth_token_location: Asset = (
             eth_transfer_data.token_location.clone(),
             eth_transfer_data.amount,
