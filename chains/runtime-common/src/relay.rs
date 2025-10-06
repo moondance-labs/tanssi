@@ -927,6 +927,14 @@ where
             topic: None,
         };
 
+        // to early check if the token is registered in the relay
+        if let Err(e) =
+        AssetTransactor::can_check_in(&container_location, &eth_token_location, &dummy_context)
+        {
+            log::error!("EthTokensLocalProcessor: can_check_in failed: {:?}", e);
+            return Ok(());
+        }
+
         // Transfer fee from FeesAccount to container sovereign account
         if let Err(e) = AssetTransactor::transfer_asset(
             &asset_fee_relay,
@@ -942,13 +950,6 @@ where
         }
 
         // Mint the ERC20 token into the container sovereign account
-        if let Err(e) =
-            AssetTransactor::can_check_in(&container_location, &eth_token_location, &dummy_context)
-        {
-            log::error!("EthTokensLocalProcessor: can_check_in failed: {:?}", e);
-            return Ok(());
-        }
-
         AssetTransactor::check_in(&container_location, &eth_token_location, &dummy_context);
 
         if let Err(e) =
