@@ -748,6 +748,7 @@ dependencies = [
  "dancelight-system-emulated-network",
  "frame-support",
  "frontier-template-emulated-chain",
+ "hex-literal 0.3.4",
  "pallet-message-queue",
  "pallet-xcm",
  "polkadot-primitives",

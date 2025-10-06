@@ -44,6 +44,8 @@ decl_test_relay_chains! {
             EthereumSystem: dancelight_runtime::EthereumSystem,
             ExternalValidators: dancelight_runtime::ExternalValidators,
             EthereumTokenTransfers: dancelight_runtime::EthereumTokenTransfers,
+            ForeignAssetsCreator: dancelight_runtime::ForeignAssetsCreator,
+            ForeignAssets: dancelight_runtime::ForeignAssets,
         }
     }
 }

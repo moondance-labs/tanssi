@@ -57,7 +57,6 @@ describeSuite({
                 const containerSovereignAccountInRelay = containerSovereignAccountInRelayRaw.asOk.toHuman();
 
                 const erc20AssetId = hexToU8a("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef");
-                const existentialDeposit = relayChainPolkadotJs.consts.balances.existentialDeposit.toBigInt();
 
                 const accountKey20Interior = {
                     AccountKey20: {
@@ -144,7 +143,7 @@ describeSuite({
                             ),
                             relayChainPolkadotJs.tx.balances.transferKeepAlive(
                                 containerSovereignAccountInRelay,
-                                RELAY_ASSET_FEE_AMOUNT + existentialDeposit
+                                RELAY_ASSET_FEE_AMOUNT
                             ),
                         ])
                         .signAndSend(aliceAccount32);
@@ -209,13 +208,10 @@ describeSuite({
                     const containerChainSovereignAccountSystemBalanceAfter = (
                         await relayChainPolkadotJs.query.system.account(containerSovereignAccountInRelay)
                     ).data.free.toBigInt();
-                    expect(containerChainSovereignAccountSystemBalanceAfter).to.eq(existentialDeposit);
+                    expect(containerChainSovereignAccountSystemBalanceAfter).to.eq(0n);
 
                     const isContainerChainSovereignAccountErc20BalanceEmpty = (
-                        await containerChainPolkadotJs.query.foreignAssets.account(
-                            erc20AssetIdTyped.toU8a(),
-                            containerSovereignAccountInRelay
-                        )
+                        await relayChainPolkadotJs.query.foreignAssets.account(erc20AssetIdTyped.toU8a(), alice.address)
                     ).isNone;
                     expect(isContainerChainSovereignAccountErc20BalanceEmpty).to.eq(true);
                 }
@@ -246,15 +242,10 @@ describeSuite({
                     const containerChainSovereignAccountSystemBalanceBefore = (
                         await relayChainPolkadotJs.query.system.account(containerSovereignAccountInRelay)
                     ).data.free.toBigInt();
-                    expect(containerChainSovereignAccountSystemBalanceBefore).to.eq(
-                        RELAY_ASSET_FEE_AMOUNT + existentialDeposit
-                    );
+                    expect(containerChainSovereignAccountSystemBalanceBefore).to.eq(RELAY_ASSET_FEE_AMOUNT);
 
                     const containerChainSovereignAccountErc20BalanceBefore = (
-                        await relayChainPolkadotJs.query.foreignAssets.account(
-                            erc20AssetIdTyped.toU8a(),
-                            containerSovereignAccountInRelay
-                        )
+                        await relayChainPolkadotJs.query.foreignAssets.account(erc20AssetIdTyped.toU8a(), alice.address)
                     )
                         .unwrap()
                         .balance.toBigInt();
