@@ -23,7 +23,9 @@ use {
         FrontierTemplateSender, SimpleTemplatePara as SimpleTemplate, SimpleTemplateSender,
     },
     fp_account::AccountId20,
-    frame_support::{assert_err, assert_ok, pallet_prelude::DispatchResult, traits::fungible::Mutate},
+    frame_support::{
+        assert_err, assert_ok, pallet_prelude::DispatchResult, traits::fungible::Mutate,
+    },
     frontier_template_emulated_chain::FrontierTemplateParaPallet,
     hex_literal::hex,
     simple_template_emulated_chain::SimpleTemplateParaPallet,
@@ -560,8 +562,14 @@ fn check_foreign_eth_token_container_fails_if_fees_account_has_not_enough_balanc
                 .data
                 .free;
 
-        assert_eq!(snowbridge_fees_account_balance_after, snowbridge_fees_account_balance_before);
-        assert_eq!(container_sovereign_balance_after, container_sovereign_balance_before);
+        assert_eq!(
+            snowbridge_fees_account_balance_after,
+            snowbridge_fees_account_balance_before
+        );
+        assert_eq!(
+            container_sovereign_balance_after,
+            container_sovereign_balance_before
+        );
     });
 
     // Check foreign token is not received
@@ -572,7 +580,10 @@ fn check_foreign_eth_token_container_fails_if_fees_account_has_not_enough_balanc
                 &token_receiver,
             );
 
-        assert_eq!(receiver_native_countainer_balance_after, receiver_native_container_balance_before)
+        assert_eq!(
+            receiver_native_countainer_balance_after,
+            receiver_native_container_balance_before
+        )
     });
 }
 
@@ -709,7 +720,10 @@ fn check_foreign_eth_token_container_fails_if_foreign_token_not_registered_in_re
                 .free;
 
         assert!(snowbridge_fees_account_balance_after <= snowbridge_fees_account_balance_before);
-        assert_eq!(container_sovereign_balance_after, container_sovereign_balance_before);
+        assert_eq!(
+            container_sovereign_balance_after,
+            container_sovereign_balance_before
+        );
     });
 
     // Check foreign token is not received
@@ -720,7 +734,10 @@ fn check_foreign_eth_token_container_fails_if_foreign_token_not_registered_in_re
                 &token_receiver,
             );
 
-        assert_eq!(receiver_native_countainer_balance_after, receiver_native_container_balance_before)
+        assert_eq!(
+            receiver_native_countainer_balance_after,
+            receiver_native_container_balance_before
+        )
     });
 }
 
@@ -748,7 +765,13 @@ pub fn check_foreign_eth_token_container_fails_if_msg_sent_from_another_para() {
         let asset_to_deposit: Asset = (token_id_to_deposit, 100_000_000).into();
 
         let beneficiary_key = [5u8; 32];
-        let beneficiary = Location::new(0, [Junction::AccountId32 { network: None, id: beneficiary_key }]);
+        let beneficiary = Location::new(
+            0,
+            [Junction::AccountId32 {
+                network: None,
+                id: beneficiary_key,
+            }],
+        );
 
         let xcm_msg = Xcm::<()>(vec![
             ReserveAssetDeposited(

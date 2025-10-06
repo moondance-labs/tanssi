@@ -55,8 +55,7 @@ describeSuite({
                 const tokenAddrHex = "1111111111111111111111111111111111111111";
                 const feesAmount = 500_000_000_000_000_000n;
 
-                const parachainSovereignAccount = 
-                await polkadotJs.call.locationToAccountApi.convertLocation({
+                const parachainSovereignAccount = await polkadotJs.call.locationToAccountApi.convertLocation({
                     V3: { parents: 0, interior: { X1: { Parachain: containerParaId } } },
                 });
                 const parachainSovereignAddress = parachainSovereignAccount.asOk.toHuman();
