@@ -1,6 +1,6 @@
 import "@tanssi/api-augment";
 
-import { beforeAll, describeSuite } from "@moonwall/cli";
+import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import type { KeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import { hexToU8a } from "@polkadot/util";
@@ -53,6 +53,19 @@ describeSuite({
                 const containerParaId = 2001;
                 const assetId = 42;
                 const tokenAddrHex = "1111111111111111111111111111111111111111";
+                const feesAmount = 500_000_000_000_000_000n;
+
+                const parachainSovereignAccount = 
+                await polkadotJs.call.locationToAccountApi.convertLocation({
+                    V3: { parents: 0, interior: { X1: { Parachain: containerParaId } } },
+                });
+                const parachainSovereignAddress = parachainSovereignAccount.asOk.toHuman();
+
+                const parachainSovereignAccountBalanceBefore = (
+                    await polkadotJs.query.system.account(parachainSovereignAddress)
+                ).data.free.toBigInt();
+
+                expect(parachainSovereignAccountBalanceBefore).to.be.eq(0n);
 
                 // Add funds in relay fees account
                 const transferFeesAccountTx = await polkadotJs.tx.sudo
@@ -158,6 +171,13 @@ describeSuite({
                 await expectEventCount(polkadotJs, {
                     Sent: 1,
                 });
+
+                // Check sovereign account receive the fees amount
+                const parachainSovereignAccountBalanceAfter = (
+                    await polkadotJs.query.system.account(parachainSovereignAddress)
+                ).data.free.toBigInt();
+
+                expect(parachainSovereignAccountBalanceAfter <= feesAmount).to.be.true;
             },
         });
     },
