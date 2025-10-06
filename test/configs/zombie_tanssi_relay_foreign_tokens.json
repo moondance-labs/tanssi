@@ -91,50 +91,6 @@
                         "--pool-type=fork-aware"
                     ],
                     "prometheus_port": 33102
-                },
-                {
-                    "name": "Collator-03",
-                    "command": "../target/release/tanssi-node solo-chain",
-                    "args": [
-                        "--no-hardware-benchmarks",
-                        "--database=paritydb",
-                        "--wasmtime-precompiled=wasm",
-                        "--pool-type=fork-aware"
-                    ],
-                    "prometheus_port": 33102
-                },
-                {
-                    "name": "Collator-04",
-                    "command": "../target/release/tanssi-node solo-chain",
-                    "args": [
-                        "--no-hardware-benchmarks",
-                        "--database=paritydb",
-                        "--wasmtime-precompiled=wasm",
-                        "--pool-type=fork-aware"
-                    ],
-                    "prometheus_port": 33102
-                },
-                {
-                    "name": "Collator-05",
-                    "command": "../target/release/tanssi-node solo-chain",
-                    "args": [
-                        "--no-hardware-benchmarks",
-                        "--database=paritydb",
-                        "--wasmtime-precompiled=wasm",
-                        "--pool-type=fork-aware"
-                    ],
-                    "prometheus_port": 33102
-                },
-                {
-                    "name": "Collator-06",
-                    "command": "../target/release/tanssi-node solo-chain",
-                    "args": [
-                        "--no-hardware-benchmarks",
-                        "--database=paritydb",
-                        "--wasmtime-precompiled=wasm",
-                        "--pool-type=fork-aware"
-                    ],
-                    "prometheus_port": 33102
                 }
             ]
         },
