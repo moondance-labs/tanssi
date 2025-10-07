@@ -22,6 +22,7 @@ import {
 import { keccak256 } from "viem";
 import { ETHEREUM_NETWORK_TESTNET, FOREIGN_ASSET_ID } from "utils/constants";
 import type { SubmittableExtrinsic } from "@polkadot/api/types";
+import { DUMMY_REVERT_BYTECODE } from "../../helpers/assets.ts";
 
 // Change this if we change the storage parameter in runtime
 const GATEWAY_STORAGE_KEY = "0xaed97c7854d601808b98ae43079dafb3";
@@ -420,7 +421,8 @@ describeSuite({
                 },
             });
             relayerChildProcess.stderr.setEncoding("utf-8");
-            relayerChildProcess.stderr.on("data", (chunk) => console.log(chunk));
+            relayerChildProcess.stderr.on("data", (chunk) => console.log(Buffer.from(chunk).toString('utf-8')));
+            relayerChildProcess.stdout.on("data", (chunk) => console.log(Buffer.from(chunk).toString('utf-8')));
             logTiming("After start relayer");
         }, 12000000);
 
@@ -462,6 +464,7 @@ describeSuite({
                 expect(nextBeefyBlock).to.greaterThan(currentBeefyBlock);
             },
         });
+
 
         it({
             id: "T03",
@@ -568,6 +571,71 @@ describeSuite({
                 }
                 expect.fail(`Operator(-s) didn't produce a block: ${JSON.stringify([...countedSet])}`);
             },
+        });
+
+        it({
+            id: "T04-1",
+            title: "Resetting beefy genesis after stopping the relayers",
+            test: async () => {
+                relayerChildProcess.kill("SIGTERM");
+
+                const delayInBlocks = 20;
+                const waitForBlock = delayInBlocks - 2;
+
+                const previousValidatorSetId = (await relayApi.query.beefy.validatorSetId());
+                console.log("Current validator set id in substrate is:", previousValidatorSetId);
+
+                const beefyContract = new ethers.Contract(
+                    beefyClientDetails.address,
+                    beefyClientDetails.abi,
+                    customHttpProvider
+                );
+                const currentValidatorSetAsPerContract = await beefyContract.currentValidatorSet();
+                console.log("Current validator set in beefy client contract: ", currentValidatorSetAsPerContract);
+                const targetValidatorSetIdAsPerContract = context.polkadotJs().createType("u64", currentValidatorSetAsPerContract.id);
+                console.log("Target validator set id as per beefy client contract:", targetValidatorSetIdAsPerContract.toJSON());
+
+                // Reset beefy genesis
+                const setBeefyGenesis = await relayApi.tx.sudo
+                    .sudo(
+                        relayApi.tx.beefy.setNewGenesis(delayInBlocks)
+                    )
+                    .signAndSend(alice);
+
+                console.log("Beefy genesis tx sent with hash:", setBeefyGenesis.toHex());
+                await context.waitBlock(waitForBlock, "Tanssi-relay", "quantity");
+
+                const currentValidatorSetId = await relayApi.query.beefy.validatorSetId();
+                console.log("Current validator set id as per substrate is:", currentValidatorSetId.toJSON());
+
+                // Now, let's roll back to previous validator set id at encoded storage key:
+                const validatorSetIdKey = "0x08c41974a97dbf15cfbec28365bea2da8f05bccc2f70ec66a32999c5761156be";
+
+                let txHash = await relayApi.tx.sudo.sudo(relayApi.tx.system.setStorage([[validatorSetIdKey, targetValidatorSetIdAsPerContract.toHex(true)]]))
+                    .signAndSend(alice);
+
+                console.log("Setting storage tx hash: {:?}", txHash.toHex());
+
+                await sleep(10000);
+
+                const rollBackedValidatorSetId = await relayApi.query.beefy.validatorSetId();
+                console.log("Rolled back validator set id in substrate is:", rollBackedValidatorSetId.toJSON());
+
+                logTiming("Before start relayer");
+
+                relayerChildProcess = spawn("./scripts/bridge/start-relayer.sh", {
+                    shell: true,
+                    detached: true,
+                    env: {
+                        RELAYCHAIN_ENDPOINT: "ws://127.0.0.1:9947",
+                        ...process.env,
+                    },
+                });
+                relayerChildProcess.stderr.setEncoding("utf-8");
+                relayerChildProcess.stderr.on("data", (chunk) => console.log(Buffer.from(chunk).toString('utf-8')));
+                logTiming("After start relayer");
+
+            }
         });
 
         it({
@@ -1179,6 +1247,8 @@ describeSuite({
         });
 
         afterAll(async () => {
+            return;
+
             console.log("Cleaning up");
             if (ethereumNodeChildProcess) {
                 ethereumNodeChildProcess.kill("SIGINT");

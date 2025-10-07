@@ -17,13 +17,14 @@ start_relayer() {
     echo "Starting relay services"
     # Launch beefy relay
     (
-        : >"$logs_dir"/beefy-relay.log
         while :; do
             echo "Starting beefy relay at $(date)"
+            echo "Starting new instance..." >>"$logs_dir"/beefy-relay.log
             "${relay_bin}" run beefy \
                 --config "$output_dir/beefy-relay.json" \
                 --ethereum.private-key $beefy_relay_eth_key \
                 >>"$logs_dir"/beefy-relay.log 2>&1 || true
+            echo "Beefy relay is terminated, restarting now.."
             sleep 20
         done
     ) &
@@ -31,13 +32,14 @@ start_relayer() {
 
     # Launch beacon relay
     (
-        : >"$logs_dir"/beacon-relay.log
         while :; do
             echo "Starting beacon relay at $(date)"
+            echo "Starting new instance..." >>"$logs_dir"/beacon-relay.log
             "${relay_bin}" run beacon \
                 --config $output_dir/beacon-relay.json \
                 --substrate.private-key "//BeaconRelay" \
                 >>"$logs_dir"/beacon-relay.log 2>&1 || true
+            echo "Beacon relay is terminated, restarting now.."
             sleep 20
         done
     ) &
@@ -45,13 +47,14 @@ start_relayer() {
 
     # Launch execution relay
     (
-        : >$output_dir/execution-relay.log
         while :; do
             echo "Starting execution relay at $(date)"
+            echo "Starting new instance..." >>"$logs_dir"/execution-relay.log
             "${relay_bin}" run execution \
                 --config $output_dir/execution-relay.json \
                 --substrate.private-key "//ExecutionRelay" \
                 >>"$logs_dir"/execution-relay.log 2>&1 || true
+            echo "Execution relay is terminated, restarting now.."
             sleep 20
         done
     ) &
@@ -59,13 +62,14 @@ start_relayer() {
 
      # Launch substrate relay for primary channel
     (
-        : >$output_dir/substrate-relay-primary.log
         while :; do
             echo "Starting substrate relay primary at $(date)"
+            echo "Starting new instance..." >>"$logs_dir"/substrate-relay-primary.log
             "${relay_bin}" run solochain \
                 --config $output_dir/substrate-relay-primary.json \
                 --ethereum.private-key $ethereum_key \
                 >>"$logs_dir"/substrate-relay-primary.log 2>&1 || true
+            echo "Substrate relay primary is terminated, restarting now.."
             sleep 20
         done
     ) &
@@ -73,13 +77,14 @@ start_relayer() {
     
      # Launch substrate relay for secondary channel
     (
-        : >$output_dir/substrate-relay-secondary.log
         while :; do
             echo "Starting substrate relay secondary at $(date)"
+            echo "Starting new instance..." >>"$logs_dir"/substrate-relay-secondary.log
             "${relay_bin}" run solochain \
                 --config $output_dir/substrate-relay-secondary.json \
                 --ethereum.private-key $ethereum_key \
                 >>"$logs_dir"/substrate-relay-secondary.log 2>&1 || true
+            echo "Substrate relay secondary is terminated, restarting now.."
             sleep 20
         done
     ) &
@@ -87,13 +92,14 @@ start_relayer() {
 
     # Launch execution relay for AssetHub (eth to starlight)
     (
-        : >$output_dir/execution-relay-asset-hub.log
         while :; do
             echo "Starting execution relay asset hub at $(date)"
+            echo "Starting new instance..." >>"$logs_dir"/execution-relay-asset-hub.log
             "${relay_bin}" run execution \
                 --config $output_dir/execution-relay-asset-hub.json \
                 --substrate.private-key "//ExecutionRelay" \
                 >>"$logs_dir"/execution-relay-asset-hub.log 2>&1 || true
+            echo "Execution relay asset hub is terminated, restarting now.."
             sleep 20
         done
     ) &
@@ -101,13 +107,14 @@ start_relayer() {
 
     # Launch substrate relay for AssetHub channel (starlight to eth)
     (
-        : >$output_dir/substrate-relay-asset-hub.log
         while :; do
             echo "Starting substrate relay asset hub at $(date)"
+            echo "Starting new instance..." >>"$logs_dir"/substrate-relay-asset-hub.log
             "${relay_bin}" run solochain \
                 --config $output_dir/substrate-relay-asset-hub.json \
                 --ethereum.private-key $ethereum_key \
                 >>"$logs_dir"/substrate-relay-asset-hub.log 2>&1 || true
+            echo "Substrate relay asset hub is terminated, restarting now.."
             sleep 20
         done
     ) &
