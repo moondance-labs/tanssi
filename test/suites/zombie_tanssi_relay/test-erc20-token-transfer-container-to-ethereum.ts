@@ -2,7 +2,13 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type KeyringPair, alith, generateKeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 
-import { getTreasuryAddress, sleep, TESTNET_ETHEREUM_NETWORK_ID, waitEventUntilTimeout } from "utils";
+import {
+    getTreasuryAddress,
+    signAndSendAndInclude,
+    sleep,
+    TESTNET_ETHEREUM_NETWORK_ID,
+    waitEventUntilTimeout,
+} from "utils";
 import { hexToU8a } from "@polkadot/util";
 
 describeSuite({
@@ -45,8 +51,8 @@ describeSuite({
                 const erc20AssetReceiverAddress = generateKeyringPair("ethereum").address;
                 const treasuryAccount = getTreasuryAddress(relayChainPolkadotJs);
 
-                const erc20AssetIdTyped = context.polkadotJs().createType("u16", ERC20_FOREIGN_ASSET_ID);
-                const relayAssetIdTyped = context.polkadotJs().createType("u16", RELAY_FOREIGN_ASSET_ID);
+                const erc20AssetIdTyped = containerChainPolkadotJs.createType("u16", ERC20_FOREIGN_ASSET_ID);
+                const relayAssetIdTyped = containerChainPolkadotJs.createType("u16", RELAY_FOREIGN_ASSET_ID);
 
                 const ethereumNetwork = { Ethereum: { chainId: TESTNET_ETHEREUM_NETWORK_ID } };
                 const globalConsensusEthereumInterior = { GlobalConsensus: ethereumNetwork };
@@ -119,6 +125,8 @@ describeSuite({
 
                 // Helpers
                 async function prepareForeignAssetsAndDistributeBalances() {
+                    console.log("prepareForeignAssetsAndDistributeBalances");
+
                     const txHash = await relayChainPolkadotJs.tx.utility
                         .batch([
                             relayChainPolkadotJs.tx.sudo.sudo(
@@ -150,44 +158,42 @@ describeSuite({
                         .signAndSend(aliceAccount32);
                     expect(!!txHash.toHuman()).to.be.true;
 
-                    const txHash1 = await containerChainPolkadotJs.tx.utility
-                        .batch([
-                            containerChainPolkadotJs.tx.sudo.sudo(
-                                containerChainPolkadotJs.tx.foreignAssetsCreator.createForeignAsset(
-                                    erc20AssetIdForContainerContext,
-                                    ERC20_FOREIGN_ASSET_ID,
-                                    alice.address,
-                                    true,
-                                    1
-                                )
-                            ),
-                            containerChainPolkadotJs.tx.sudo.sudo(
-                                containerChainPolkadotJs.tx.foreignAssetsCreator.createForeignAsset(
-                                    relayAssetIdForContainerContext,
-                                    RELAY_FOREIGN_ASSET_ID,
-                                    alice.address,
-                                    true,
-                                    1
-                                )
-                            ),
-                            containerChainPolkadotJs.tx.foreignAssets.mint(
-                                erc20AssetIdTyped.toU8a(),
+                    const tx1 = containerChainPolkadotJs.tx.utility.batch([
+                        containerChainPolkadotJs.tx.sudo.sudo(
+                            containerChainPolkadotJs.tx.foreignAssetsCreator.createForeignAsset(
+                                erc20AssetIdForContainerContext,
+                                ERC20_FOREIGN_ASSET_ID,
                                 alice.address,
-                                ERC20_ASSET_AMOUNT
-                            ),
-                            containerChainPolkadotJs.tx.foreignAssets.mint(
-                                relayAssetIdTyped.toU8a(),
+                                true,
+                                1
+                            )
+                        ),
+                        containerChainPolkadotJs.tx.sudo.sudo(
+                            containerChainPolkadotJs.tx.foreignAssetsCreator.createForeignAsset(
+                                relayAssetIdForContainerContext,
+                                RELAY_FOREIGN_ASSET_ID,
                                 alice.address,
-                                RELAY_ASSET_FEE_AMOUNT
-                            ),
-                        ])
-                        .signAndSend(alice);
-                    expect(!!txHash1.toHuman()).to.be.true;
-
-                    await sleep(42000);
+                                true,
+                                1
+                            )
+                        ),
+                        containerChainPolkadotJs.tx.foreignAssets.mint(
+                            erc20AssetIdTyped.toU8a(),
+                            alice.address,
+                            ERC20_ASSET_AMOUNT
+                        ),
+                        containerChainPolkadotJs.tx.foreignAssets.mint(
+                            relayAssetIdTyped.toU8a(),
+                            alice.address,
+                            RELAY_ASSET_FEE_AMOUNT
+                        ),
+                    ]);
+                    await signAndSendAndInclude(tx1, alice);
                 }
 
                 async function checkBalancesAfterExecution() {
+                    console.log("checkBalancesAfterExecution");
+
                     // Container chain: check relay native (for fees) and ERC20 balances
                     const isErc20BalanceEmpty = (
                         await containerChainPolkadotJs.query.foreignAssets.account(
@@ -222,10 +228,24 @@ describeSuite({
                     const treasureAccountBalanceAfter = (
                         await relayChainPolkadotJs.query.system.account(treasuryAccount)
                     ).data.free.toBigInt();
-                    expect(treasureAccountBalanceAfter > RELAY_ASSET_FEE_AMOUNT).to.be.true;
+                    // We compare with 90% of the fee amount, because the fee will be a bit less and the rest will be trapped in HR
+                    const ninetyPercentFee = (BigInt(RELAY_ASSET_FEE_AMOUNT) * 9n) / 10n;
+                    expect(
+                        treasureAccountBalanceAfter > ninetyPercentFee,
+                        `Treasury account balance: ${treasureAccountBalanceAfter} should be around ${RELAY_ASSET_FEE_AMOUNT}`
+                    ).to.be.true;
                 }
 
                 async function checkBalancesBeforeExecution() {
+                    console.log("checkBalancesBeforeExecution");
+
+                    const keys = await containerChainPolkadotJs.query.foreignAssets.account.keys();
+                    for (const k of keys) {
+                        console.log("AssetId:", k.args[0].toHuman(), "Account:", k.args[1].toHuman());
+                    }
+                    console.log("alice.address", alice.address);
+                    console.log("erc20AssetIdTyped", erc20AssetIdTyped);
+
                     // Container chain: check relay native (for fees) and ERC20 balances
                     const erc20AssetBalanceBefore = (
                         await containerChainPolkadotJs.query.foreignAssets.account(
@@ -263,13 +283,18 @@ describeSuite({
                         .balance.toBigInt();
                     expect(containerChainSovereignAccountErc20BalanceBefore).to.eq(ERC20_ASSET_AMOUNT);
 
+                    const ninetyPercentFee = (BigInt(RELAY_ASSET_FEE_AMOUNT) * 9n) / 10n;
                     const treasureAccountBalanceBefore = (
                         await relayChainPolkadotJs.query.system.account(treasuryAccount)
                     ).data.free.toBigInt();
-                    expect(treasureAccountBalanceBefore < RELAY_ASSET_FEE_AMOUNT).to.be.true;
+                    expect(
+                        treasureAccountBalanceBefore < ninetyPercentFee,
+                        `Treasury account balance: ${treasureAccountBalanceBefore} should be much less than ${RELAY_ASSET_FEE_AMOUNT}`
+                    ).to.be.true;
                 }
 
                 function prepareAssets() {
+                    console.log("prepareAssets");
                     const erc20Assets = {
                         id: {
                             Concrete: erc20AssetIdForContainerContext,
@@ -289,6 +314,7 @@ describeSuite({
                 }
 
                 function prepareCustomXcmOnDest() {
+                    console.log("prepareCustomXcmOnDest");
                     const erc20AssetIdForEthereumContext = {
                         parents: 0,
                         interior: {
