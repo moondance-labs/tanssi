@@ -448,8 +448,6 @@ export function initializeCustomCreateBlock(context): any {
             const expectedTxHashes = txs.map((x) => x.hash.toString());
             const block = await context.polkadotJs().rpc.chain.getBlock(res.block.hash);
             const includedTxHashes = block.block.extrinsics.map((x) => x.hash.toString());
-            console.log("expectedTxHashes", expectedTxHashes);
-            console.log("includedTxHashes", includedTxHashes);
             // Note, the block may include some additional extrinsics
 
             for (const a of expectedTxHashes) {
