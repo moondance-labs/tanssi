@@ -39,7 +39,7 @@ fn test_message_exporter_disabled_for_origin_account() {
         ));
 
         let message = Xcm(vec![Instruction::ExportMessage {
-            network: NetworkId::Ethereum { chain_id: 11155111 },
+            network: NetworkId::Ethereum { chain_id: 1 },
             destination: Junctions::Here,
             xcm: Xcm(vec![]),
         }]);
