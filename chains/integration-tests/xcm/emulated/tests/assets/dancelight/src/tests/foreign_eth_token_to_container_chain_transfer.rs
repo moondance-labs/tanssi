@@ -24,7 +24,7 @@ use {
     },
     fp_account::AccountId20,
     frame_support::{
-        assert_err, assert_ok, pallet_prelude::DispatchResult, traits::fungible::Mutate,
+        assert_ok, pallet_prelude::DispatchResult, traits::fungible::Mutate,
     },
     frontier_template_emulated_chain::FrontierTemplateParaPallet,
     hex_literal::hex,

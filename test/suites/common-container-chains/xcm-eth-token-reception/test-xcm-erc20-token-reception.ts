@@ -1,8 +1,9 @@
 // @ts-nocheck
 
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { type KeyringPair, alith } from "@moonwall/util";
+import { type KeyringPair, alith, generateKeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
+import { u8aToHex } from "@polkadot/util";
 
 import { ETHEREUM_NETWORK_TESTNET } from "utils";
 
@@ -20,10 +21,13 @@ describeSuite({
         let relayNativeTokenAssetId: number;
         let erc20AssetId: number;
         let ethTokenLocationFromContainerViewpoint: any;
+        let beneficiary: KeyringPair;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             chain = polkadotJs.consts.system.version.specName.toString();
+          
+            beneficiary = chain === "frontier-template" ? generateKeyringPair() : generateKeyringPair("sr25519");
 
             // since in the future is likely that we are going to add this to containers, I leave it here
             alice =
@@ -77,7 +81,6 @@ describeSuite({
             const assetRateTx = polkadotJs.tx.sudo.sudo(
                 polkadotJs.tx.assetRate.create(relayNativeTokenAssetId, 50_000_000_000_000_000_000n)
             );
-
             await context.createBlock(await assetRateTx.signAsync(alice), {
                 allowFailures: false,
             });
@@ -103,41 +106,34 @@ describeSuite({
             test: async () => {
                 const feeLocation = { parents: 1, interior: "Here" };
                 const feeAmount = 2_000_000_000_000_000n;
-                const beneficiary = "0x0505050505050505050505050505050505050505";
                 const depositAmount = 100_000_000n;
-
-                // Check sovereign balance before
-                const beneficiaryBalanceBefore = (
-                    await polkadotJs.query.foreignAssets.account(erc20AssetId, beneficiary)
-                )
-                    .unwrapOrDefault()
-                    .balance.toBigInt();
 
                 // Send an XCM and create block to execute it
                 // This is composed of
                 /*
-                ReserveAssetDeposited(
-                    vec![asset_fee_container.clone(), asset_to_deposit.clone()].into(),
-                ),
-                BuyExecution {
-                    fees: asset_fee_container.clone(),
-                    weight_limit: Unlimited,
-                },
-                DepositAsset {
-                    assets: Definite(vec![asset_to_deposit].into()),
-                    beneficiary,
-                },
+                    ReserveAssetDeposited(
+                        vec![asset_fee_container.clone(), asset_to_deposit.clone()].into(),
+                    ),
+                    BuyExecution {
+                        fees: asset_fee_container.clone(),
+                        weight_limit: Unlimited,
+                    },
+                    DepositAsset {
+                        assets: Definite(vec![asset_to_deposit].into()),
+                        beneficiary,
+                    },
                 */
+
                 const xcmMessage = new XcmFragment({
                     assets: [
                         { multilocation: feeLocation, fungible: feeAmount },
                         { multilocation: ethTokenLocationFromContainerViewpoint, fungible: depositAmount },
                     ],
-                    beneficiary,
+                    beneficiary: u8aToHex(beneficiary.addressRaw),
                 })
                     .reserve_asset_deposited()
                     .buy_execution(0)
-                    .deposit_asset_definite(ethTokenLocationFromContainerViewpoint, depositAmount, beneficiary)
+                    .deposit_asset_definite(ethTokenLocationFromContainerViewpoint, depositAmount, u8aToHex(beneficiary.addressRaw))
                     .as_v3();
 
                 // Send an XCM and create block to execute it
@@ -150,13 +146,13 @@ describeSuite({
                 await context.createBlock();
 
                 const beneficiaryBalanceAfter = (
-                    await polkadotJs.query.foreignAssets.account(erc20AssetId, beneficiary)
+                    await polkadotJs.query.foreignAssets.account(erc20AssetId, u8aToHex(beneficiary.addressRaw))
                 )
-                    .unwrapOrDefault()
+                    .unwrap()
                     .balance.toBigInt();
 
                 // Tokens are minted to the beneficiary account
-                expect(beneficiaryBalanceAfter).to.be.eq(beneficiaryBalanceBefore + depositAmount);
+                expect(beneficiaryBalanceAfter).to.be.eq(depositAmount);
             },
         });
     },
