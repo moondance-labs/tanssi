@@ -5,7 +5,7 @@ import { type KeyringPair, alith, generateKeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import { u8aToHex } from "@polkadot/util";
 
-import { ETHEREUM_NETWORK_TESTNET } from "utils";
+import { ETHEREUM_NETWORK_TESTNET, injectHrmpMessage } from "utils";
 
 import { type RawXcmMessage, XcmFragment, injectDmpMessageAndSeal } from "utils";
 
@@ -20,14 +20,17 @@ describeSuite({
         let tokenAddrHex: string;
         let relayNativeTokenAssetId: number;
         let erc20AssetId: number;
+        let depositAmount: bigint;
         let ethTokenLocationFromContainerViewpoint: any;
         let beneficiary: KeyringPair;
+        let xcmMessage: any;
 
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             chain = polkadotJs.consts.system.version.specName.toString();
 
             beneficiary = chain === "frontier-template" ? generateKeyringPair() : generateKeyringPair("sr25519");
+            depositAmount = 100_000_000n;
 
             // since in the future is likely that we are going to add this to containers, I leave it here
             alice =
@@ -98,48 +101,81 @@ describeSuite({
             await context.createBlock(await registerErc20ContainerViewpointAssetTx.signAsync(alice), {
                 allowFailures: false,
             });
+
+            const feeLocation = { parents: 1, interior: "Here" };
+            const feeAmount = 2_000_000_000_000_000n;
+
+            // Send an XCM and create block to execute it
+            // This is composed of
+            /*
+                ReserveAssetDeposited(
+                    vec![asset_fee_container.clone(), asset_to_deposit.clone()].into(),
+                ),
+                BuyExecution {
+                    fees: asset_fee_container.clone(),
+                    weight_limit: Unlimited,
+                },
+                DepositAsset {
+                    assets: Definite(vec![asset_to_deposit].into()),
+                    beneficiary,
+                },
+            */
+
+            xcmMessage = new XcmFragment({
+                assets: [
+                    { multilocation: feeLocation, fungible: feeAmount },
+                    { multilocation: ethTokenLocationFromContainerViewpoint, fungible: depositAmount },
+                ],
+                beneficiary: u8aToHex(beneficiary.addressRaw),
+            })
+                .reserve_asset_deposited()
+                .buy_execution(0)
+                .deposit_asset_definite(
+                    ethTokenLocationFromContainerViewpoint,
+                    depositAmount,
+                    u8aToHex(beneficiary.addressRaw)
+                )
+                .as_v3();
         });
 
         it({
             id: "T01",
+            title: "Should fail receiving msg from another parachain",
+            test: async () => {
+                // Send an XCM and create block to execute it
+                await injectHrmpMessage(context, 2003, {
+                    type: "XcmVersionedXcm",
+                    payload: xcmMessage,
+                } as RawXcmMessage);
+
+                // Create a block in which the XCM will be executed
+                await context.createBlock();
+
+                const events = await polkadotJs.query.system.events();
+
+                const xcmErrEvents = events.filter(
+                    ({ event }) =>
+                        event.section === "polkadotXcm" &&
+                        (event.method === "ProcessXcmError" ||
+                            event.method === "Processed" ||
+                            event.method === "Attempted")
+                );
+
+                expect(xcmErrEvents).to.be.length.at.least(1);
+
+                const hasUntrustedReserve = xcmErrEvents.some(({ event }) => {
+                    const human = event.toHuman();
+                    return JSON.stringify(human).includes("UntrustedReserveLocation");
+                });
+
+                expect(hasUntrustedReserve, "Expected polkadotXcm error: UntrustedReserveLocation").to.be.true;
+            },
+        });
+
+        it({
+            id: "T02",
             title: "Should succeed receiving tokens",
             test: async () => {
-                const feeLocation = { parents: 1, interior: "Here" };
-                const feeAmount = 2_000_000_000_000_000n;
-                const depositAmount = 100_000_000n;
-
-                // Send an XCM and create block to execute it
-                // This is composed of
-                /*
-                    ReserveAssetDeposited(
-                        vec![asset_fee_container.clone(), asset_to_deposit.clone()].into(),
-                    ),
-                    BuyExecution {
-                        fees: asset_fee_container.clone(),
-                        weight_limit: Unlimited,
-                    },
-                    DepositAsset {
-                        assets: Definite(vec![asset_to_deposit].into()),
-                        beneficiary,
-                    },
-                */
-
-                const xcmMessage = new XcmFragment({
-                    assets: [
-                        { multilocation: feeLocation, fungible: feeAmount },
-                        { multilocation: ethTokenLocationFromContainerViewpoint, fungible: depositAmount },
-                    ],
-                    beneficiary: u8aToHex(beneficiary.addressRaw),
-                })
-                    .reserve_asset_deposited()
-                    .buy_execution(0)
-                    .deposit_asset_definite(
-                        ethTokenLocationFromContainerViewpoint,
-                        depositAmount,
-                        u8aToHex(beneficiary.addressRaw)
-                    )
-                    .as_v3();
-
                 // Send an XCM and create block to execute it
                 await injectDmpMessageAndSeal(context, {
                     type: "XcmVersionedXcm",
