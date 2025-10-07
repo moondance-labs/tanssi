@@ -773,6 +773,7 @@ dependencies = [
  "polkadot-primitives",
  "simple-template-emulated-chain",
  "sp-runtime",
+ "sp-tracing",
  "staging-xcm",
  "staging-xcm-executor",
  "starlight-emulated-chain",
