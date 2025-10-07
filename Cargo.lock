@@ -763,6 +763,7 @@ dependencies = [
  "snowbridge-core",
  "sp-core",
  "sp-runtime",
+ "sp-tracing",
  "staging-xcm",
  "staging-xcm-executor",
  "tanssi-emulated-integration-tests-common",
@@ -18205,6 +18206,7 @@ version = "17.1.0"
 source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2506#43ed227f865c7b83e26a2f7de8355a786018a995"
 dependencies = [
  "parity-scale-codec",
+ "regex",
  "tracing",
  "tracing-core",
  "tracing-subscriber",
