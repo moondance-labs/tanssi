@@ -944,6 +944,7 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 				RuntimeCall::Identity(..) |
 				RuntimeCall::Scheduler(..) |
 				RuntimeCall::Proxy(..) |
+				RuntimeCall::PooledStaking(..) |
 				RuntimeCall::Multisig(..) |
 				RuntimeCall::Registrar(paras_registrar::Call::register {..}) |
 				RuntimeCall::Registrar(paras_registrar::Call::deregister {..}) |
