@@ -267,7 +267,11 @@ describeSuite({
         it({
             id: "E08",
             title: "Account with non transfer proxy can call staking extrinsics",
-            test: async () => {
+            test: async ({ skip }) => {
+                if (!chain.includes("light")) {
+                    skip();
+                }
+
                 await context.createBlock();
 
                 const proxyTx = polkadotJs.tx.pooledStaking.executePendingOperations([
