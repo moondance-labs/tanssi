@@ -257,6 +257,13 @@ impl From<u32> for AggregateMessageOrigin {
     }
 }
 
+impl From<H256> for AggregateMessageOrigin {
+    fn from(n: H256) -> Self {
+        // Some dummy for the benchmarks.
+        AggregateMessageOrigin::Snowbridge(n.into())
+    }
+}
+
 pub struct GetAggregateMessageOrigin;
 
 impl Convert<ChannelId, AggregateMessageOrigin> for GetAggregateMessageOrigin {

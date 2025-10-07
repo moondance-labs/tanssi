@@ -23,7 +23,9 @@ use frame_support::traits::{EnqueueMessage, QueueFootprint};
 use frame_support::BoundedSlice;
 use frame_system::EnsureRootWithSuccess;
 use parity_scale_codec::{Decode, MaxEncodedLen};
-use snowbridge_outbound_queue_primitives::v2::{ConstantGasMeter as ConstantGasMeterV2, Message, SendMessage};
+use snowbridge_outbound_queue_primitives::v2::{
+    ConstantGasMeter as ConstantGasMeterV2, Message, SendMessage,
+};
 use snowbridge_outbound_queue_primitives::SendError;
 
 #[cfg(not(feature = "runtime-benchmarks"))]
@@ -53,6 +55,7 @@ use {
     snowbridge_beacon_primitives::ForkVersions,
     snowbridge_core::{gwei, meth, PricingParameters, Rewards},
     snowbridge_pallet_outbound_queue::OnNewCommitment,
+    snowbridge_pallet_outbound_queue_v2::OnNewCommitment as OnNewCommitmentV2,
     sp_core::{ConstU32, ConstU8, H160, H256},
     tanssi_runtime_common::relay::{EthTokensLocalProcessor, RewardThroughFeesAccount},
     tp_bridge::{DoNothingConvertMessage, DoNothingRouter, EthereumSystemHandler},
@@ -77,6 +80,12 @@ parameter_types! {
 pub struct CommitmentRecorder;
 
 impl OnNewCommitment for CommitmentRecorder {
+    fn on_new_commitment(commitment: H256) {
+        OutboundMessageCommitmentRecorder::record_commitment_root(commitment);
+    }
+}
+
+impl OnNewCommitmentV2 for CommitmentRecorder {
     fn on_new_commitment(commitment: H256) {
         OutboundMessageCommitmentRecorder::record_commitment_root(commitment);
     }
@@ -463,36 +472,36 @@ impl snowbridge_pallet_inbound_queue_v2::Config for Runtime {
     type WeightInfo = ();
 }
 
-
 // Outbound queue
 
 impl snowbridge_pallet_outbound_queue_v2::Config for Runtime {
-	type RuntimeEvent = RuntimeEvent;
-	type Hashing = Keccak256;
-	type MessageQueue = MessageQueue;
-	// Maximum payload size for outbound messages.
-	type MaxMessagePayloadSize = ConstU32<2048>;
-	// Maximum number of outbound messages that can be committed per block.
-	// It's benchmarked, including the entire process flow(initialize,submit,commit) in the
-	// worst-case, Benchmark results in `../weights/snowbridge_pallet_outbound_queue_v2.
-	// rs` show that the `process` function consumes less than 1% of the block capacity, which is
-	// safe enough.
-	type MaxMessagesPerBlock = ConstU32<32>;
-	type GasMeter = ConstantGasMeterV2;
-	type Balance = Balance;
-	type WeightToFee = WeightToFee;
-	#[cfg(all(not(test), not(feature = "testing-helpers")))]
+    type RuntimeEvent = RuntimeEvent;
+    type Hashing = Keccak256;
+    type MessageQueue = MessageQueue;
+    // Maximum payload size for outbound messages.
+    type MaxMessagePayloadSize = ConstU32<2048>;
+    // Maximum number of outbound messages that can be committed per block.
+    // It's benchmarked, including the entire process flow(initialize,submit,commit) in the
+    // worst-case, Benchmark results in `../weights/snowbridge_pallet_outbound_queue_v2.
+    // rs` show that the `process` function consumes less than 1% of the block capacity, which is
+    // safe enough.
+    type MaxMessagesPerBlock = ConstU32<32>;
+    type GasMeter = ConstantGasMeterV2;
+    type Balance = Balance;
+    type WeightToFee = WeightToFee;
+    #[cfg(all(not(test), not(feature = "testing-helpers")))]
     type Verifier = EthereumBeaconClient;
     #[cfg(any(test, feature = "testing-helpers"))]
     type Verifier = test_helpers::MockVerifier;
-	type GatewayAddress = EthereumGatewayAddress;
-	type WeightInfo = ();
-	type EthereumNetwork = dancelight_runtime_constants::snowbridge::EthereumNetwork;
-	type RewardKind = BridgeReward;
-	type DefaultRewardKind = SnowbridgeReward;
-	type RewardPayment = BridgeRelayers;
-	// Enable once we cherry-pick
-	//type OnNewCommitment = CommitmentRecorder;
-	#[cfg(feature = "runtime-benchmarks")]
-	type Helper = Runtime;
+    type GatewayAddress = EthereumGatewayAddress;
+    type WeightInfo = ();
+    type EthereumNetwork = dancelight_runtime_constants::snowbridge::EthereumNetwork;
+    type RewardKind = BridgeReward;
+    type DefaultRewardKind = SnowbridgeReward;
+    type RewardPayment = BridgeRelayers;
+    // Enable once we cherry-pick
+    type OnNewCommitment = CommitmentRecorder;
+    type AggregateMessageOrigin = AggregateMessageOrigin;
+    #[cfg(feature = "runtime-benchmarks")]
+    type Helper = Runtime;
 }
