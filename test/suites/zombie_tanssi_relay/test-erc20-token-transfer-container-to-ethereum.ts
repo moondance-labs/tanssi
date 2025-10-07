@@ -2,7 +2,7 @@ import { beforeAll, describeSuite, expect } from "@moonwall/cli";
 import { type KeyringPair, alith, generateKeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 
-import { sleep, TESTNET_ETHEREUM_NETWORK_ID, waitEventUntilTimeout } from "utils";
+import { getTreasuryAddress, sleep, TESTNET_ETHEREUM_NETWORK_ID, waitEventUntilTimeout } from "utils";
 import { hexToU8a } from "@polkadot/util";
 
 describeSuite({
@@ -43,6 +43,7 @@ describeSuite({
             test: async () => {
                 // Random ETH destination that we send asset to
                 const erc20AssetReceiverAddress = generateKeyringPair("ethereum").address;
+                const treasuryAccount = getTreasuryAddress(relayChainPolkadotJs);
 
                 const erc20AssetIdTyped = context.polkadotJs().createType("u16", ERC20_FOREIGN_ASSET_ID);
                 const relayAssetIdTyped = context.polkadotJs().createType("u16", RELAY_FOREIGN_ASSET_ID);
@@ -183,7 +184,7 @@ describeSuite({
                         .signAndSend(alice);
                     expect(!!txHash1.toHuman()).to.be.true;
 
-                    await sleep(30000);
+                    await sleep(42000);
                 }
 
                 async function checkBalancesAfterExecution() {
@@ -211,9 +212,17 @@ describeSuite({
                     expect(containerChainSovereignAccountSystemBalanceAfter).to.eq(0n);
 
                     const isContainerChainSovereignAccountErc20BalanceEmpty = (
-                        await relayChainPolkadotJs.query.foreignAssets.account(erc20AssetIdTyped.toU8a(), alice.address)
+                        await relayChainPolkadotJs.query.foreignAssets.account(
+                            erc20AssetIdTyped.toU8a(),
+                            aliceAccount32.address
+                        )
                     ).isNone;
                     expect(isContainerChainSovereignAccountErc20BalanceEmpty).to.eq(true);
+
+                    const treasureAccountBalanceAfter = (
+                        await relayChainPolkadotJs.query.system.account(treasuryAccount)
+                    ).data.free.toBigInt();
+                    expect(treasureAccountBalanceAfter > RELAY_ASSET_FEE_AMOUNT).to.be.true;
                 }
 
                 async function checkBalancesBeforeExecution() {
@@ -245,11 +254,19 @@ describeSuite({
                     expect(containerChainSovereignAccountSystemBalanceBefore).to.eq(RELAY_ASSET_FEE_AMOUNT);
 
                     const containerChainSovereignAccountErc20BalanceBefore = (
-                        await relayChainPolkadotJs.query.foreignAssets.account(erc20AssetIdTyped.toU8a(), alice.address)
+                        await relayChainPolkadotJs.query.foreignAssets.account(
+                            erc20AssetIdTyped.toU8a(),
+                            containerSovereignAccountInRelay
+                        )
                     )
                         .unwrap()
                         .balance.toBigInt();
                     expect(containerChainSovereignAccountErc20BalanceBefore).to.eq(ERC20_ASSET_AMOUNT);
+
+                    const treasureAccountBalanceBefore = (
+                        await relayChainPolkadotJs.query.system.account(treasuryAccount)
+                    ).data.free.toBigInt();
+                    expect(treasureAccountBalanceBefore < RELAY_ASSET_FEE_AMOUNT).to.be.true;
                 }
 
                 function prepareAssets() {

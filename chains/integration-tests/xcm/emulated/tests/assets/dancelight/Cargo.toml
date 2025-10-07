@@ -20,6 +20,7 @@ dancelight-runtime-constants = { workspace = true }
 dancelight-system-emulated-network  = { workspace = true }
 frame-support = { workspace = true, features = [ "tuples-96" ] }
 frontier-template-emulated-chain = { workspace = true }
+hex-literal = { workspace = true }
 pallet-message-queue = { workspace = true }
 pallet-xcm = { workspace = true }
 primitives = { workspace = true }
@@ -31,7 +32,6 @@ tanssi-emulated-integration-tests-common = { workspace = true }
 xcm = { workspace = true }
 xcm-emulator = { workspace = true }
 xcm-executor = { workspace = true }
-hex-literal = { workspace = true }
 
 [features]
 fast-runtime = [

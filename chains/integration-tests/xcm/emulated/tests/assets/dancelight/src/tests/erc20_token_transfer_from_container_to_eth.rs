@@ -16,6 +16,7 @@
 
 use {
     dancelight_emulated_chain::DancelightRelayPallet,
+    dancelight_runtime::TreasuryAccount,
     dancelight_system_emulated_network::{
         DancelightRelay as Dancelight, DancelightSender, FrontierTemplatePara as FrontierTemplate,
     },
@@ -23,7 +24,6 @@ use {
     frontier_template_emulated_chain::{EthereumSender, FrontierTemplateParaPallet},
     hex_literal::hex,
     snowbridge_core::ChannelId,
-    sp_core::H160,
     xcm::latest::prelude::*,
     xcm_emulator::{Chain, TestExt},
     xcm_executor::traits::{ConvertLocation, TransferType},
@@ -31,6 +31,8 @@ use {
 
 #[test]
 fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
+    const ETHEREUM_NETWORK: u64 = 11155111;
+
     // Define common constants and accounts
     const CONTAINER_PARA_ID: u32 = 2001;
 
@@ -56,9 +58,13 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
         parents: 2,
         interior: Junctions::X2(
             [
-                GlobalConsensus(NetworkId::Ethereum { chain_id: 11155111 }),
+                GlobalConsensus(NetworkId::Ethereum {
+                    chain_id: ETHEREUM_NETWORK,
+                }),
                 AccountKey20 {
-                    network: Some(NetworkId::Ethereum { chain_id: 11155111 }),
+                    network: Some(NetworkId::Ethereum {
+                        chain_id: ETHEREUM_NETWORK,
+                    }),
                     key: ERC20_TOKEN_ADDRESS,
                 },
             ]
@@ -70,9 +76,13 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
         parents: 1,
         interior: Junctions::X2(
             [
-                GlobalConsensus(NetworkId::Ethereum { chain_id: 11155111 }),
+                GlobalConsensus(NetworkId::Ethereum {
+                    chain_id: ETHEREUM_NETWORK,
+                }),
                 AccountKey20 {
-                    network: Some(NetworkId::Ethereum { chain_id: 11155111 }),
+                    network: Some(NetworkId::Ethereum {
+                        chain_id: ETHEREUM_NETWORK,
+                    }),
                     key: ERC20_TOKEN_ADDRESS,
                 },
             ]
@@ -172,7 +182,18 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
         );
     });
 
+    let mut treasury_fees_account_balance_before: u128 = 0;
     Dancelight::execute_with(|| {
+        let container_chain_sovereign_account_erc20_balance_before =
+            <Dancelight as DancelightRelayPallet>::ForeignAssets::balance(
+                ERC20_ASSET_ID,
+                container_sovereign_account.clone(),
+            );
+        assert_eq!(
+            container_chain_sovereign_account_erc20_balance_before,
+            ERC20_ASSET_AMOUNT
+        );
+
         let container_chain_sovereign_account_system_balance_before =
             <Dancelight as DancelightRelayPallet>::System::account(
                 container_sovereign_account.clone(),
@@ -183,14 +204,18 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
             container_chain_sovereign_account_system_balance_before,
             RELAY_ASSET_FEE_AMOUNT
         );
+
+        treasury_fees_account_balance_before =
+            <Dancelight as DancelightRelayPallet>::System::account(TreasuryAccount::get())
+                .data
+                .free;
+        assert_eq!(
+            treasury_fees_account_balance_before,
+            dancelight_runtime_constants::currency::EXISTENTIAL_DEPOSIT
+        );
     });
 
     FrontierTemplate::execute_with(|| {
-        let beneficiary_address = H160([
-            0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 0x01, 0x23, 0x45, 0x67, 0x89, 0xab,
-            0xcd, 0xef, 0x01, 0x23, 0x45, 0x67,
-        ]);
-
         let relay_destination = Location {
             parents: 1,
             interior: Here,
@@ -210,16 +235,6 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
             );
         assert_eq!(relay_asset_balance_before, RELAY_ASSET_FEE_AMOUNT);
 
-        let container_chain_sovereign_account_erc20_balance_before =
-            <FrontierTemplate as FrontierTemplateParaPallet>::ForeignAssets::balance(
-                ERC20_ASSET_ID,
-                EthereumSender::get(),
-            );
-        assert_eq!(
-            container_chain_sovereign_account_erc20_balance_before,
-            ERC20_ASSET_AMOUNT
-        );
-
         let fee_assets = AssetId(relay_asset_id_for_container_context.clone())
             .into_asset(Fungibility::Fungible(RELAY_ASSET_FEE_AMOUNT));
         let erc20_assets = AssetId(erc20_asset_id_for_container_context.clone())
@@ -230,18 +245,22 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
             interior: Junctions::X1(
                 [AccountKey20 {
                     network: Some(container_chain_template_simple_runtime::EthereumNetwork::get()),
-                    key: beneficiary_address.into(),
+                    key: ERC20_TOKEN_ADDRESS,
                 }]
                 .into(),
             ),
         };
 
+        let beneficiary_address = [
+            0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 0x01, 0x23, 0x45, 0x67, 0x89, 0xab,
+            0xcd, 0xef, 0x01, 0x23, 0x45, 0x67,
+        ];
         let beneficiary = Location {
             parents: 0,
             interior: Junctions::X1(
                 [AccountKey20 {
                     network: Some(container_chain_template_simple_runtime::EthereumNetwork::get()),
-                    key: beneficiary_address.into(),
+                    key: beneficiary_address,
                 }]
                 .into(),
             ),
@@ -256,7 +275,10 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
             reserve: Location {
                 parents: 1,
                 interior: Junctions::X1(
-                    [GlobalConsensus(NetworkId::Ethereum { chain_id: 11155111 })].into(),
+                    [GlobalConsensus(NetworkId::Ethereum {
+                        chain_id: ETHEREUM_NETWORK,
+                    })]
+                    .into(),
                 ),
             },
             xcm: Xcm::<()>(vec![DepositAsset {
@@ -315,5 +337,17 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
             .data
             .free;
         assert_eq!(container_chain_sovereign_account_system_balance_after, 0);
+
+        let treasury_fees_account_balance_after =
+            <Dancelight as DancelightRelayPallet>::System::account(TreasuryAccount::get())
+                .data
+                .free;
+        assert!(
+            treasury_fees_account_balance_after
+                > dancelight_runtime_constants::currency::EXISTENTIAL_DEPOSIT
+        );
+
+        // Check that fees were transferred to the treasury account
+        assert!(treasury_fees_account_balance_after < RELAY_ASSET_FEE_AMOUNT);
     });
 }
