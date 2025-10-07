@@ -29,6 +29,10 @@ use {
 
 #[test]
 fn test_message_exporter_disabled_for_origin_account() {
+    use sp_tracing::{
+        test_log_capture::init_log_capture,
+        tracing::{subscriber, Level},
+    };
     Starlight::execute_with(|| {
         // The only test we can do is with signed runtime origins since we are ensuring local origin in xcm config
         let origin = <Starlight as Chain>::RuntimeOrigin::signed(AccountId::from(
@@ -41,21 +45,30 @@ fn test_message_exporter_disabled_for_origin_account() {
             xcm: Xcm(vec![]),
         }]);
 
-        assert_eq!(
-            <Starlight as StarlightRelayPallet>::XcmPallet::execute(
-                origin,
-                Box::new(VersionedXcm::V5(message)),
-                Weight::from_parts(0, 0)
-            )
-            .unwrap_err()
-            .error,
-            DispatchError::from(
-                Error::<<Starlight as Chain>::Runtime>::LocalExecutionIncompleteWithError {
-                    index: 0,
-                    error: ExecutionError::Overflow,
-                }
-            )
-        );
+        // this test now fails because exports are yet to be allowed in starlight
+        // so its weight is set to MAX
+        // once we change that, we should change the message log received too
+        let (log_capture, subscriber) = init_log_capture(Level::ERROR, true);
+        subscriber::with_default(subscriber, || {
+            assert_eq!(
+                <Starlight as StarlightRelayPallet>::XcmPallet::execute(
+                    origin,
+                    Box::new(VersionedXcm::V5(message)),
+                    Weight::from_parts(5_000_000_000, 1_000_000)
+                )
+                .unwrap_err()
+                .error,
+                DispatchError::from(
+                    Error::<<Starlight as Chain>::Runtime>::LocalExecutionIncompleteWithError {
+                        index: 0,
+                        error: ExecutionError::WeightLimitReached,
+                    }
+                )
+            );
+            assert!(
+                log_capture.contains("XCM execution failed with error error=InstructionError { index: 0, error: WeightLimitReached(Weight { ref_time: 18446744073709551615, proof_size: 18446744073709551615 }) }")
+            );
+        });
     });
 }
 
