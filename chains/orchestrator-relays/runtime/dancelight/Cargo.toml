@@ -172,7 +172,7 @@ snowbridge-verification-primitives = { workspace = true }
 tp-bridge = { workspace = true }
 
 snowbridge-pallet-inbound-queue-v2 = { workspace = true }
-# snowbridge-pallet-outbound-queue-v2 = { workspace = true }
+snowbridge-pallet-outbound-queue-v2 = { workspace = true }
 snowbridge-pallet-system-v2 = { workspace = true }
 bp-relayers = { workspace = true }
 bridge-hub-common = { workspace = true }
@@ -311,7 +311,7 @@ std = [
 	"snowbridge-pallet-inbound-queue/std",
 	"snowbridge-pallet-inbound-queue-v2/std",
 	"snowbridge-pallet-outbound-queue/std",
-	# "snowbridge-pallet-outbound-queue-v2/std",
+	"snowbridge-pallet-outbound-queue-v2/std",
 	"snowbridge-pallet-system/std",
 	"snowbridge-pallet-system-v2/std",
 	"snowbridge-verification-primitives/std",
