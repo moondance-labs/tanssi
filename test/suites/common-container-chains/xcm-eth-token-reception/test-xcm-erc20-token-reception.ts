@@ -26,7 +26,7 @@ describeSuite({
         beforeAll(async () => {
             polkadotJs = context.polkadotJs();
             chain = polkadotJs.consts.system.version.specName.toString();
-          
+
             beneficiary = chain === "frontier-template" ? generateKeyringPair() : generateKeyringPair("sr25519");
 
             // since in the future is likely that we are going to add this to containers, I leave it here
@@ -133,7 +133,11 @@ describeSuite({
                 })
                     .reserve_asset_deposited()
                     .buy_execution(0)
-                    .deposit_asset_definite(ethTokenLocationFromContainerViewpoint, depositAmount, u8aToHex(beneficiary.addressRaw))
+                    .deposit_asset_definite(
+                        ethTokenLocationFromContainerViewpoint,
+                        depositAmount,
+                        u8aToHex(beneficiary.addressRaw)
+                    )
                     .as_v3();
 
                 // Send an XCM and create block to execute it
