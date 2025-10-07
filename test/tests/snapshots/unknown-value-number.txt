@@ -1,0 +1,6 @@
+error: unrecognized subcommand '1'
+
+Usage: tanssi-relay [OPTIONS]
+       tanssi-relay <COMMAND>
+
+For more information, try '--help'.

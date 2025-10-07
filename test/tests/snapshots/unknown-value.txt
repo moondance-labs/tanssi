@@ -1,0 +1,8 @@
+error: unrecognized subcommand 'a'
+
+  tip: a similar subcommand exists: 'chain-info'
+
+Usage: tanssi-relay [OPTIONS]
+       tanssi-relay <COMMAND>
+
+For more information, try '--help'.
