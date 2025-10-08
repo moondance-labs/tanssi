@@ -2376,8 +2376,6 @@ fn create_payload_with_token_id(token_id: H256) -> Vec<u8> {
     message.encode()
 }
 
-// TODO: add tests for lts version
-
 #[test]
 fn test_token_id_hashing_lts_vs_latest_xcm_versions() {
     // This test compares TokenIdOf hashes between xcm::lts and xcm::latest versions
@@ -2430,7 +2428,7 @@ fn test_token_id_hashing_lts_vs_latest_xcm_versions() {
         );
         
         // Test Case 3: parents: 1, GlobalConsensus(ethereum), empty interior
-        let latest_eth_empty = xcm::latest::Location::new(1, [xcm::latest::GlobalConsensus(EthereumNetwork::get())]);
+        let latest_eth_empty = xcm::latest::Location::new(1, [xcm::latest::Junction::GlobalConsensus(EthereumNetwork::get())]);
         let lts_eth_empty = xcm::lts::Location::new(1, [GlobalConsensusLts(EthereumNetwork::get().into())]);
         
         let latest_eth_empty_id = TokenIdOf::convert_location(&latest_eth_empty).expect("Latest ethereum empty should convert");
@@ -2444,8 +2442,8 @@ fn test_token_id_hashing_lts_vs_latest_xcm_versions() {
         
         // Test Case 4: parents: 1, GlobalConsensus(ethereum), parachain 2000
         let latest_eth_para = xcm::latest::Location::new(1, [
-            xcm::latest::GlobalConsensus(EthereumNetwork::get()),
-            xcm::latest::Parachain(2000)
+            xcm::latest::Junction::GlobalConsensus(EthereumNetwork::get()),
+            xcm::latest::Junction::Parachain(2000)
         ]);
         let lts_eth_para = xcm::lts::Location::new(1, [
             GlobalConsensusLts(EthereumNetwork::get().into()),
@@ -2463,9 +2461,9 @@ fn test_token_id_hashing_lts_vs_latest_xcm_versions() {
         
         // Test Case 5: parents: 1, GlobalConsensus(ethereum), parachain 2000, GeneralIndex(5)
         let latest_eth_para_index = xcm::latest::Location::new(1, [
-            xcm::latest::GlobalConsensus(EthereumNetwork::get()),
-            xcm::latest::Parachain(2000),
-            xcm::latest::GeneralIndex(5)
+            xcm::latest::Junction::GlobalConsensus(EthereumNetwork::get()),
+            xcm::latest::Junction::Parachain(2000),
+            xcm::latest::Junction::GeneralIndex(5)
         ]);
         let lts_eth_para_index = xcm::lts::Location::new(1, [
             GlobalConsensusLts(EthereumNetwork::get().into()),
@@ -2485,9 +2483,9 @@ fn test_token_id_hashing_lts_vs_latest_xcm_versions() {
         // Test Case 6: General Key comparison
         let key_data = [0x01, 0x02, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
         let latest_general_key = xcm::latest::Location::new(1, [
-            xcm::latest::GlobalConsensus(EthereumNetwork::get()),
-            xcm::latest::Parachain(2000),
-            xcm::latest::GeneralKey { length: 32, data: key_data }
+            xcm::latest::Junction::GlobalConsensus(EthereumNetwork::get()),
+            xcm::latest::Junction::Parachain(2000),
+            xcm::latest::Junction::GeneralKey { length: 32, data: key_data }
         ]);
         let lts_general_key = xcm::lts::Location::new(1, [
             GlobalConsensusLts(EthereumNetwork::get().into()),
@@ -2507,9 +2505,9 @@ fn test_token_id_hashing_lts_vs_latest_xcm_versions() {
         // Test Case 7: AccountKey20 comparison
         let account_key = [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0x10, 0x11, 0x12, 0x13, 0x14];
         let latest_account_key20 = xcm::latest::Location::new(1, [
-            xcm::latest::GlobalConsensus(EthereumNetwork::get()),
-            xcm::latest::Parachain(2000),
-            xcm::latest::AccountKey20 { network: Some(EthereumNetwork::get()), key: account_key }
+            xcm::latest::Junction::GlobalConsensus(EthereumNetwork::get()),
+            xcm::latest::Junction::Parachain(2000),
+            xcm::latest::Junction::AccountKey20 { network: Some(EthereumNetwork::get()), key: account_key }
         ]);
         let lts_account_key20 = xcm::lts::Location::new(1, [
             GlobalConsensusLts(EthereumNetwork::get().into()),
@@ -2528,9 +2526,9 @@ fn test_token_id_hashing_lts_vs_latest_xcm_versions() {
         
         // Test Case 8: PalletInstance comparison
         let latest_pallet = xcm::latest::Location::new(1, [
-            xcm::latest::GlobalConsensus(EthereumNetwork::get()),
-            xcm::latest::Parachain(2000),
-            xcm::latest::PalletInstance(50)
+            xcm::latest::Junction::GlobalConsensus(EthereumNetwork::get()),
+            xcm::latest::Junction::Parachain(2000),
+            xcm::latest::Junction::PalletInstance(50)
         ]);
         let lts_pallet = xcm::lts::Location::new(1, [
             GlobalConsensusLts(EthereumNetwork::get().into()),
@@ -2549,10 +2547,10 @@ fn test_token_id_hashing_lts_vs_latest_xcm_versions() {
         
         // Test Case 9: Complex case - PalletInstance + GeneralIndex
         let latest_pallet_index = xcm::latest::Location::new(1, [
-            xcm::latest::GlobalConsensus(EthereumNetwork::get()),
-            xcm::latest::Parachain(2000),
-            xcm::latest::PalletInstance(50),
-            xcm::latest::GeneralIndex(10)
+            xcm::latest::Junction::GlobalConsensus(EthereumNetwork::get()),
+            xcm::latest::Junction::Parachain(2000),
+            xcm::latest::Junction::PalletInstance(50),
+            xcm::latest::Junction::GeneralIndex(10)
         ]);
         let lts_pallet_index = xcm::lts::Location::new(1, [
             GlobalConsensusLts(EthereumNetwork::get().into()),
@@ -2569,8 +2567,6 @@ fn test_token_id_hashing_lts_vs_latest_xcm_versions() {
             lts_pallet_index_id,
             "LTS and latest pallet + index location hashes should match"
         );
-        
-        println!("✅ All LTS vs Latest XCM TokenIdOf cross-version compatibility checks passed!");
     });
 }
 
@@ -2745,8 +2741,6 @@ fn test_token_id_hashing_consistency_across_xcm_versions() {
             TokenIdOf::convert_location(&unsupported_location).is_none(),
             "Unsupported junction pattern should not be convertible"
         );
-        
-        println!("✅ All TokenIdOf hash consistency checks passed!");
     });
 }
 
