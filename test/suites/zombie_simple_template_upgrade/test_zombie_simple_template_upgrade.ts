@@ -53,6 +53,7 @@ describeSuite({
                     log("Runtime already upgraded, skipping test");
                     skip();
                 }
+                // TODO: this log function is broken and it only logs the first argument
                 log("Current runtime spec version: ", rtBefore);
                 log("Runtime not upgraded, proceeding with test");
                 log(`Current runtime bytes: ${rtHex.slice(0, 10)}...${rtHex.slice(-10)}`);
