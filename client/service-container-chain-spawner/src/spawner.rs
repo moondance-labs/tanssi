@@ -749,14 +749,14 @@ impl<
         // then the real assignment is used.
         // Except in solochain mode, then the initial assignment is None.
         if validator && !solochain {
-            self.handle_update_assignment(Some(orchestrator_para_id), None)
+            self.handle_update_assignment(Some(orchestrator_para_id), None, true)
                 .await;
         }
 
         while let Some(msg) = rx.recv().await {
             match msg {
                 CcSpawnMsg::UpdateAssignment { current, next } => {
-                    self.handle_update_assignment(current, next).await;
+                    self.handle_update_assignment(current, next, false).await;
                 }
             }
         }
@@ -770,8 +770,8 @@ impl<
     }
 
     /// Handle `CcSpawnMsg::UpdateAssignment`
-    async fn handle_update_assignment(&mut self, current: Option<ParaId>, next: Option<ParaId>) {
-        if !self.db_folder_cleanup_done {
+    async fn handle_update_assignment(&mut self, current: Option<ParaId>, next: Option<ParaId>, disable_db_folder_cleanup: bool) {
+        if !disable_db_folder_cleanup && !self.db_folder_cleanup_done {
             self.db_folder_cleanup_done = true;
 
             // Disabled when running with --keep-db
