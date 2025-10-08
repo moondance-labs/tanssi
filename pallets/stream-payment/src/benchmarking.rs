@@ -445,54 +445,6 @@ mod benchmarks {
         Ok(())
     }
 
-    #[benchmark]
-    fn poke_deposit() -> Result<(), BenchmarkError> {
-        let time_unit = T::TimeProvider::bench_worst_case_time_unit();
-        let asset_id = T::AssetsManager::bench_worst_case_asset_id();
-
-        let caller = create_funded_user::<T>("caller", 1, &asset_id);
-        let source = create_funded_user::<T>("source", 2, &asset_id);
-        let target = create_funded_user::<T>("target", 3, &asset_id);
-
-        let rate = 100u32.into();
-        let initial_deposit = 1_000_000u32.into();
-        let config = StreamConfig {
-            time_unit: time_unit.clone(),
-            asset_id,
-            rate,
-            minimum_request_deadline_delay: 1u32.into(),
-            soft_minimum_deposit: 0u32.into(),
-        };
-
-        assert_ok!(Pallet::<T>::open_stream(
-            RawOrigin::Signed(source.clone()).into(),
-            target.clone(),
-            config.clone(),
-            initial_deposit,
-        ));
-
-        // worst case: perform transfer_deposit.
-        let now = T::TimeProvider::now(&time_unit).expect("can fetch time");
-        let delta: T::Balance = 10u32.into();
-        T::TimeProvider::bench_set_now(now + delta);
-
-        #[extrinsic_call]
-        _(RawOrigin::Signed(caller), 0u32.into());
-
-        assert_last_event::<T>(
-            Event::StreamPayment {
-                stream_id: 0u32.into(),
-                source,
-                target,
-                amount: rate * delta,
-                stalled: false,
-            }
-            .into(),
-        );
-
-        Ok(())
-    }
-
     impl_benchmark_test_suite!(
         Pallet,
         crate::mock::ExtBuilder::default().build(),

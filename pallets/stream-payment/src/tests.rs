@@ -2260,7 +2260,7 @@ mod poke_deposit {
     }
 
     #[test]
-    fn poke_with_no_time_passed_does_nothing() {
+    fn poke_with_no_time_passed_is_noop() {
         ExtBuilder::default().build().execute_with(|| {
             let open_stream = OpenStream::default();
             assert_ok!(open_stream.call());
@@ -2274,6 +2274,7 @@ mod poke_deposit {
             ));
 
             let stream_after = Streams::<Runtime>::get(0).unwrap();
+            // last_time_updated remains the same
             assert_eq!(stream_after.last_time_updated, 1);
             assert_eq!(stream_after.deposit, open_stream.deposit);
 
@@ -2286,16 +2287,17 @@ mod poke_deposit {
     }
 
     #[test]
-    fn poke_pays_out_when_stored_greater_than_expected() {
+    fn poke_performs_pending_payment_and_updates_timestamp() {
         ExtBuilder::default().build().execute_with(|| {
             let opening_deposit = OpenStreamHoldAmount::get();
             let open_stream = OpenStream::default();
             assert_ok!(open_stream.call());
 
+            // Advance time
             run_to_block(10);
 
-            let delta = 9u128; // 10 - 1
-            let expected_payment = delta * open_stream.config.rate;
+            let delta_blocks = 9u128; // 10 - 1
+            let expected_payment = delta_blocks * open_stream.config.rate;
             let expected_deposit = open_stream.deposit.saturating_sub(expected_payment);
 
             assert_ok!(StreamPayment::poke_deposit(
@@ -2312,6 +2314,7 @@ mod poke_deposit {
             assert_eq!(stream_after.deposit, expected_deposit);
             assert_eq!(stream_after.last_time_updated, 10);
 
+            // Frozen deposit reduced and target received the payment
             assert_eq!(get_deposit(ALICE), expected_deposit);
             assert_balance_change!(-, ALICE, open_stream.deposit + opening_deposit);
             assert_balance_change!(+, BOB, expected_payment);
