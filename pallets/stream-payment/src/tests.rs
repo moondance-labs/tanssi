@@ -2232,3 +2232,89 @@ mod immediately_change_deposit {
         })
     }
 }
+
+mod poke_deposit {
+    use super::*;
+
+    #[test]
+    fn cannot_poke_unknown_stream() {
+        ExtBuilder::default().build().execute_with(|| {
+            assert_err!(
+                StreamPayment::poke_deposit(RuntimeOrigin::signed(ALICE), 0),
+                Error::UnknownStreamId
+            );
+        })
+    }
+
+    #[test]
+    fn anyone_can_poke() {
+        ExtBuilder::default().build().execute_with(|| {
+            let open_stream = OpenStream::default();
+            assert_ok!(open_stream.call());
+
+            assert_ok!(StreamPayment::poke_deposit(
+                RuntimeOrigin::signed(CHARLIE),
+                0
+            ));
+        })
+    }
+
+    #[test]
+    fn poke_with_no_time_passed_does_nothing() {
+        ExtBuilder::default().build().execute_with(|| {
+            let open_stream = OpenStream::default();
+            assert_ok!(open_stream.call());
+
+            let stream_before = Streams::<Runtime>::get(0).unwrap();
+            assert_eq!(stream_before.last_time_updated, 1);
+
+            assert_ok!(StreamPayment::poke_deposit(
+                RuntimeOrigin::signed(CHARLIE),
+                0
+            ));
+
+            let stream_after = Streams::<Runtime>::get(0).unwrap();
+            assert_eq!(stream_after.last_time_updated, 1);
+            assert_eq!(stream_after.deposit, open_stream.deposit);
+
+            // No event emitted
+            assert_event_not_emitted!(PaymentEvent {
+                amount: 0,
+                ..default()
+            });
+        })
+    }
+
+    #[test]
+    fn poke_pays_out_when_stored_greater_than_expected() {
+        ExtBuilder::default().build().execute_with(|| {
+            let opening_deposit = OpenStreamHoldAmount::get();
+            let open_stream = OpenStream::default();
+            assert_ok!(open_stream.call());
+
+            run_to_block(10);
+
+            let delta = 9u128; // 10 - 1
+            let expected_payment = delta * open_stream.config.rate;
+            let expected_deposit = open_stream.deposit.saturating_sub(expected_payment);
+
+            assert_ok!(StreamPayment::poke_deposit(
+                RuntimeOrigin::signed(CHARLIE),
+                0
+            ));
+
+            assert_event_emitted!(PaymentEvent {
+                amount: expected_payment,
+                ..default()
+            });
+
+            let stream_after = Streams::<Runtime>::get(0).unwrap();
+            assert_eq!(stream_after.deposit, expected_deposit);
+            assert_eq!(stream_after.last_time_updated, 10);
+
+            assert_eq!(get_deposit(ALICE), expected_deposit);
+            assert_balance_change!(-, ALICE, open_stream.deposit + opening_deposit);
+            assert_balance_change!(+, BOB, expected_payment);
+        })
+    }
+}

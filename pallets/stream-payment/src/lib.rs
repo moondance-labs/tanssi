@@ -879,6 +879,86 @@ pub mod pallet {
 
             Ok(().into())
         }
+
+        /// Check the deposit with the expected deposit given elapsed time and rate.
+        /// - If expected deposit < stored deposit: transfers the difference to the target (like perform_payment).
+        /// - If expected deposit > stored deposit: increases the stream deposit by the difference
+        /// - Always updates `last_time_updated` to the current time unit's "now".
+        #[pallet::call_index(7)]
+        #[pallet::weight(T::WeightInfo::immediately_change_deposit())]
+        #[allow(clippy::useless_conversion)]
+        pub fn poke_deposit(
+            origin: OriginFor<T>,
+            stream_id: T::StreamId,
+        ) -> DispatchResultWithPostInfo {
+            let _ = ensure_signed(origin)?;
+
+            let mut stream = Streams::<T>::get(stream_id).ok_or(Error::<T>::UnknownStreamId)?;
+
+            let now = T::TimeProvider::now(&stream.config.time_unit)
+                .ok_or(Error::<T>::CantFetchCurrentTime)?;
+
+            let last_time_updated = stream.last_time_updated;
+            stream.last_time_updated = now;
+
+            let status = Self::stream_payment_status_by_ref(&stream, last_time_updated, now)?;
+            let expected_deposit = status.deposit_left;
+            let stored_deposit = stream.deposit;
+
+            match expected_deposit.cmp(&stored_deposit) {
+                core::cmp::Ordering::Equal => {
+                    // Nothing to do: storage already matches the expected deposit.
+                    // updates last_time_updated
+                    Streams::<T>::insert(stream_id, stream);
+                    Ok(().into())
+                }
+                core::cmp::Ordering::Less => {
+                    // expected < stored => we must pay out the delta to the target.
+                    let delta = stored_deposit
+                        .checked_sub(&expected_deposit)
+                        .ok_or(sp_runtime::ArithmeticError::Underflow)?;
+
+                    // Transfer from source frozen deposit to target (does not change total issuance).
+                    T::AssetsManager::transfer_deposit(
+                        &stream.config.asset_id,
+                        &stream.source,
+                        &stream.target,
+                        delta,
+                    )?;
+
+                    // Update in-memory state and emit the standard payment event for visibility.
+                    stream.deposit = expected_deposit;
+                    Pallet::<T>::deposit_event(Event::<T>::StreamPayment {
+                        stream_id,
+                        source: stream.source.clone(),
+                        target: stream.target.clone(),
+                        amount: delta,
+                        stalled: status.stalled,
+                    });
+
+                    Streams::<T>::insert(stream_id, stream);
+                    Ok(().into())
+                }
+                core::cmp::Ordering::Greater => {
+                    // expected > stored => we need to increase the on-chain deposit by the delta
+                    let delta = expected_deposit
+                        .checked_sub(&stored_deposit)
+                        .ok_or(sp_runtime::ArithmeticError::Underflow)?;
+
+                    // Increase deposit safely (freezes funds from source).
+                    T::AssetsManager::increase_deposit(
+                        &stream.config.asset_id,
+                        &stream.source,
+                        delta,
+                    )?;
+
+                    stream.deposit = expected_deposit;
+
+                    Streams::<T>::insert(stream_id, stream);
+                    Ok(().into())
+                }
+            }
+        }
     }
 
     impl<T: Config> Pallet<T> {
