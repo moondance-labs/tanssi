@@ -753,6 +753,68 @@ pub mod pallet {
 
             Ok(())
         }
+
+        /// Recalculate and reconcile the reserved deposit for `para_id`.
+        ///
+        /// If the required amount differs from the currently held deposit,
+        /// this extrinsic increases or releases the difference on the creator's account.
+        #[pallet::call_index(11)]
+        #[pallet::weight(Weight::MAX)] //TODO: recalculate
+        pub fn poke_deposit(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
+            use frame_support::traits::tokens::Precision;
+            let _ = ensure_signed(origin)?;
+
+            let genesis =
+                ParaGenesisData::<T>::get(para_id).ok_or(Error::<T>::ParaIdNotRegistered)?;
+
+            // Compute current required deposit
+            let required = Self::get_genesis_cost(genesis.encoded_size());
+
+            let Some(mut info) = RegistrarDeposit::<T>::get(para_id) else {
+                return Ok(());
+            };
+
+            let current = info.deposit;
+
+            // Nothing to do
+            if required == current {
+                return Ok(());
+            }
+
+            if required > current {
+                // Need to increase the held amount on the creator account
+                let delta = required.saturating_sub(current);
+
+                // Check the creator can sustain the additional hold
+                ensure!(
+                    T::Currency::can_hold(
+                        &HoldReason::RegistrarDeposit.into(),
+                        &info.creator,
+                        delta
+                    ),
+                    Error::<T>::NotSufficientDeposit
+                );
+
+                // Increase the hold
+                T::Currency::hold(&HoldReason::RegistrarDeposit.into(), &info.creator, delta)?;
+            } else {
+                // Release the excess.
+                let delta = current.saturating_sub(required);
+
+                T::Currency::release(
+                    &HoldReason::RegistrarDeposit.into(),
+                    &info.creator,
+                    delta,
+                    Precision::Exact,
+                )?;
+            }
+
+            // Persist the new deposit amount.
+            info.deposit = required;
+            RegistrarDeposit::<T>::insert(para_id, &info);
+
+            Ok(())
+        }
     }
 
     pub struct SessionChangeOutcome<T: Config> {
