@@ -2,6 +2,7 @@ export * from "./account";
 export * from "./author";
 export * from "./block";
 export * from "./constants";
+export * from "./dir-canary";
 export * from "./ethereum";
 export * from "./ethereum-contracts";
 export * from "./genesis-data";
