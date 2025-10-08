@@ -219,32 +219,6 @@ impl pallet_stream_payment::AssetsManager<AccountId, StreamPaymentAssetId, Balan
     }
 }
 
-impl StreamPaymentAssets {
-    pub fn set_deposit(asset_id: &StreamPaymentAssetId, account: &AccountId, amount: Balance) {
-        match asset_id {
-            StreamPaymentAssetId::Native => {
-                let current_hold = Balances::balance_on_hold(
-                    &pallet_stream_payment::HoldReason::StreamPayment.into(),
-                    account,
-                );
-                if let Ok(_) = Balances::release(
-                    &pallet_stream_payment::HoldReason::StreamPayment.into(),
-                    account,
-                    current_hold,
-                    Precision::Exact,
-                ) {
-                    let _ = Balances::hold(
-                        &pallet_stream_payment::HoldReason::StreamPayment.into(),
-                        account,
-                        amount,
-                    );
-                }
-            }
-            StreamPaymentAssetId::Dummy => {}
-        }
-    }
-}
-
 #[derive(
     RuntimeDebug,
     PartialEq,
