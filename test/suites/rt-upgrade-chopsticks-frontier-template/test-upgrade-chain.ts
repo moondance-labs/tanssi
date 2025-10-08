@@ -5,7 +5,6 @@ import { alith, generateKeyringPair } from "@moonwall/util";
 import type { ApiPromise } from "@polkadot/api";
 import { chopsticksWaitTillIncluded, testPalletVersions } from "utils";
 
-const MAX_BALANCE_TRANSFER_TRIES = 5;
 describeSuite({
     id: "R01",
     title: "Chopsticks Frontier Template Upgrade Test",
