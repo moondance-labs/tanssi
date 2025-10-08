@@ -760,6 +760,7 @@ dependencies = [
  "snowbridge-inbound-queue-primitives",
  "sp-core",
  "sp-runtime",
+ "sp-tracing",
  "staging-xcm",
  "staging-xcm-executor",
  "tanssi-emulated-integration-tests-common",
@@ -777,6 +778,7 @@ dependencies = [
  "polkadot-primitives",
  "simple-template-emulated-chain",
  "sp-runtime",
+ "sp-tracing",
  "staging-xcm",
  "staging-xcm-executor",
  "starlight-emulated-chain",
@@ -17862,6 +17864,7 @@ version = "17.1.0"
 source = "git+https://github.com/moondance-labs/polkadot-sdk?branch=tanssi-polkadot-stable2503#d78fcadbaca093cd09d440f43fad47db07454a7b"
 dependencies = [
  "parity-scale-codec",
+ "regex",
  "tracing",
  "tracing-core",
  "tracing-subscriber",

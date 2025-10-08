@@ -16,8 +16,8 @@ container-chain-template-frontier-runtime = { workspace = true, features = [ "st
 container-chain-template-simple-runtime = { workspace = true }
 cumulus-pallet-xcmp-queue = { workspace = true }
 dancelight-emulated-chain = { workspace = true }
-dancelight-runtime = { workspace = true }
-dancelight-runtime-constants = { workspace = true }
+dancelight-runtime = { workspace = true, features = [ "std" ] }
+dancelight-runtime-constants = { workspace = true, features = [ "std" ] }
 dancelight-system-emulated-network  = { workspace = true }
 fp-account = { workspace = true, features = [ "serde" ] }
 frame-support = { workspace = true, features = [ "tuples-96" ] }
@@ -32,6 +32,7 @@ snowbridge-core = { workspace = true }
 snowbridge-inbound-queue-primitives = { workspace = true }
 sp-core = { workspace = true }
 sp-runtime = { workspace = true }
+sp-tracing = { workspace = true, features = [ "std", "test-utils" ] }
 tanssi-emulated-integration-tests-common = { workspace = true }
 xcm = { workspace = true }
 xcm-emulator = { workspace = true }
