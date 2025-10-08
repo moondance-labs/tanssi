@@ -770,7 +770,12 @@ impl<
     }
 
     /// Handle `CcSpawnMsg::UpdateAssignment`
-    async fn handle_update_assignment(&mut self, current: Option<ParaId>, next: Option<ParaId>, disable_db_folder_cleanup: bool) {
+    async fn handle_update_assignment(
+        &mut self,
+        current: Option<ParaId>,
+        next: Option<ParaId>,
+        disable_db_folder_cleanup: bool,
+    ) {
         if !disable_db_folder_cleanup && !self.db_folder_cleanup_done {
             self.db_folder_cleanup_done = true;
 
