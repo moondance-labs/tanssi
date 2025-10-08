@@ -450,7 +450,7 @@ mod benchmarks {
         let time_unit = T::TimeProvider::bench_worst_case_time_unit();
         let asset_id = T::AssetsManager::bench_worst_case_asset_id();
 
-        let caller = create_funded_user::<T>("caller", 1, &asset_id); 
+        let caller = create_funded_user::<T>("caller", 1, &asset_id);
         let source = create_funded_user::<T>("source", 2, &asset_id);
         let target = create_funded_user::<T>("target", 3, &asset_id);
 
