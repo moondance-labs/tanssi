@@ -883,7 +883,10 @@ pub mod pallet {
         /// Performs any pending payment for the given stream and updates its timestamp.
         #[pallet::call_index(7)]
         #[pallet::weight(T::WeightInfo::perform_payment())]
-        pub fn poke_deposit(origin: OriginFor<T>, stream_id: T::StreamId) -> DispatchResultWithPostInfo {
+        pub fn poke_deposit(
+            origin: OriginFor<T>,
+            stream_id: T::StreamId,
+        ) -> DispatchResultWithPostInfo {
             let _ = ensure_signed(origin)?;
 
             let mut stream = Streams::<T>::get(stream_id).ok_or(Error::<T>::UnknownStreamId)?;
