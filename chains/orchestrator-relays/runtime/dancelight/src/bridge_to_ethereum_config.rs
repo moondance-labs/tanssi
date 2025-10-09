@@ -45,10 +45,11 @@ use tp_traits::BlockNumber;
 use {
     crate::{
         parameter_types, weights, xcm_config, AggregateMessageOrigin, Balance, Balances,
-        EthereumInboundQueue, EthereumOutboundQueue, EthereumSovereignAccount, EthereumSystem,
-        FixedU128, GetAggregateMessageOrigin, Keccak256, MessageQueue,
-        OutboundMessageCommitmentRecorder, Runtime, RuntimeEvent, SnowbridgeFeesAccount,
-        TokenLocationReanchored, TransactionByteFee, TreasuryAccount, WeightToFee, UNITS,
+        EthereumInboundQueue, EthereumOutboundQueue, EthereumOutboundQueueV2,
+        EthereumSovereignAccount, EthereumSystem, FixedU128, GetAggregateMessageOrigin, Keccak256,
+        MessageQueue, OutboundMessageCommitmentRecorder, Runtime, RuntimeEvent,
+        SnowbridgeFeesAccount, TokenLocationReanchored, TransactionByteFee, TreasuryAccount,
+        WeightToFee, UNITS,
     },
     frame_support::{traits::PalletInfoAccess, weights::ConstantMultiplier},
     pallet_xcm::EnsureXcm,
@@ -66,6 +67,11 @@ pub const SLOTS_PER_EPOCH: u32 = snowbridge_pallet_ethereum_client::config::SLOT
 // Ethereum Bridge
 parameter_types! {
     pub storage EthereumGatewayAddress: H160 = H160(hex_literal::hex!("EDa338E4dC46038493b885327842fD3E301CaB39"));
+}
+
+// Ethereum Bridge
+parameter_types! {
+    pub storage UseSnowbridgeV2: bool = false;
 }
 
 parameter_types! {
@@ -286,6 +292,7 @@ impl snowbridge_pallet_system_v2::Config for Runtime {
 impl pallet_ethereum_token_transfers::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Currency = Balances;
+    // todo: add v2
     type OutboundQueue = EthereumOutboundQueue;
     type EthereumSystemHandler = EthereumSystemHandler<Runtime>;
     type EthereumSovereignAccount = EthereumSovereignAccount;
@@ -472,8 +479,13 @@ impl snowbridge_pallet_inbound_queue_v2::Config for Runtime {
     type WeightInfo = ();
 }
 
-// Outbound queue
+// Outbound queue V2
+// Should only used when detected an AliasOrigin instruction
+// this is going to be a bit hard to do though, we will need to change a bunch of stuff
+// The first thing we should see is whether regular transfers FROM tanssi work
+// The container-chain exporter will come later
 
+// For this it is mandatory to use the initiateTransfer xcmV5 instruction!
 impl snowbridge_pallet_outbound_queue_v2::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type Hashing = Keccak256;

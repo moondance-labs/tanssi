@@ -48,6 +48,7 @@ use {
     tp_bridge::{
         container_token_to_ethereum_message_exporter::ContainerEthereumBlobExporter,
         snowbridge_outbound_token_transfer::{EthereumBlobExporter, SnowbrigeTokenTransferRouter},
+        snowbridge_outbound_token_transfer_v2::EthereumBlobExporterV2,
         EthereumLocationsConverterFor,
     },
     tp_xcm_commons::{EthereumAssetReserve, NativeAssetReserve},
@@ -156,6 +157,8 @@ pub type PriceForChildParachainDelivery =
 pub type XcmRouter = WithUniqueTopic<(
     // Use DMP to communicate with child parachains.
     ChildParachainRouter<Runtime, XcmPallet, PriceForChildParachainDelivery>,
+    // Send Ethereum-native tokens back to Ethereum V2.
+    SnowbrigeTokenTransferRouter<SnowbridgeExporterv2, UniversalLocation>,
     // Send Ethereum-native tokens back to Ethereum.
     SnowbrigeTokenTransferRouter<SnowbridgeExporter, UniversalLocation>,
 )>;
@@ -252,7 +255,7 @@ impl xcm_executor::Config for XcmConfig {
         WaivedLocations,
         ExporterFeeHandler<Self::AssetTransactor, SnowbridgeFeesAccount, TreasuryAccount>,
     >;
-    type MessageExporter = ContainerToSnowbridgeMessageExporter;
+    type MessageExporter = (ContainerToSnowbridgeMessageExporter);
     type UniversalAliases = Nothing;
     type CallDispatcher = RuntimeCall;
     type SafeCallFilter = Everything;
@@ -404,11 +407,30 @@ pub type SnowbridgeExporter = EthereumBlobExporter<
 >;
 
 /// Exports message to the Ethereum Gateway contract.
+pub type SnowbridgeExporterv2 = EthereumBlobExporterV2<
+    UniversalLocation,
+    EthereumNetwork,
+    snowbridge_pallet_outbound_queue_v2::Pallet<Runtime>,
+    EthereumSystem,
+    SnowbridgeChannelInfo,
+>;
+
+/// Exports message to the Ethereum Gateway contract.
 pub type ContainerToSnowbridgeMessageExporter = ContainerEthereumBlobExporter<
     UniversalLocation,
     EthereumNetwork,
     EthereumLocation,
     snowbridge_pallet_outbound_queue::Pallet<Runtime>,
+    EthereumSystem,
+    SnowbridgeChannelInfo,
+>;
+
+/// Exports message to the Ethereum Gateway contract.
+pub type ContainerToSnowbridgeMessageExporterV2 = ContainerEthereumBlobExporter<
+    UniversalLocation,
+    EthereumNetwork,
+    EthereumLocation,
+    snowbridge_pallet_outbound_queue_v2::Pallet<Runtime>,
     EthereumSystem,
     SnowbridgeChannelInfo,
 >;
