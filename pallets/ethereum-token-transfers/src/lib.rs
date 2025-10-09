@@ -69,6 +69,10 @@ use {
     snowbridge_outbound_queue_primitives::v1::{
         Command as SnowbridgeCommand, Message as SnowbridgeMessage, SendMessage,
     },
+    snowbridge_outbound_queue_primitives::v2::{
+        Command as SnowbridgeCommandV2, Message as SnowbridgeMessageV2,
+        SendMessage as SendMessageV2,
+    },
     snowbridge_outbound_queue_primitives::SendError,
     sp_core::{H160, H256},
     sp_runtime::{traits::MaybeEquivalence, DispatchResult},
@@ -108,6 +112,12 @@ pub mod pallet {
 
         /// Validate and send a message to Ethereum.
         type OutboundQueue: SendMessage<Balance = BalanceOf<Self>, Ticket: TicketInfo>;
+
+        /// Validate and send a message to Ethereum V2.
+        type OutboundQueueV2: SendMessageV2<Ticket: TicketInfo>;
+
+        /// Should use v2
+        type ShouldUseV2: Get<bool>;
 
         /// Handler for EthereumSystem pallet. Commonly used to manage channel creation.
         type EthereumSystemHandler: EthereumSystemChannelManager;
@@ -160,6 +170,8 @@ pub mod pallet {
         InvalidMessage(SendError),
         /// The outbound message could not be sent.
         TransferMessageNotSent(SendError),
+        V2SendingIsNotAllowed,
+        TooManyCommands,
     }
 
     #[pallet::pallet]
@@ -254,6 +266,75 @@ pub mod pallet {
                 token_id,
                 amount,
                 fee: fee.total(),
+            });
+
+            Ok(())
+        }
+
+        #[pallet::call_index(2)]
+        #[pallet::weight(T::WeightInfo::transfer_native_token())]
+        pub fn transfer_native_token_v2(
+            origin: OriginFor<T>,
+            amount: u128,
+            recipient: H160,
+        ) -> DispatchResult {
+            let source = ensure_signed(origin)?;
+            ensure!(T::ShouldUseV2::get(), Error::<T>::V2SendingIsNotAllowed);
+
+            let channel_info =
+                CurrentChannelInfo::<T>::get().ok_or(Error::<T>::ChannelInfoNotSet)?;
+
+            let token_location = T::TokenLocationReanchored::get();
+            let token_id = T::TokenIdFromLocation::convert_back(&token_location)
+                .ok_or(Error::<T>::UnknownLocationForToken)?;
+
+            // Transfer amount to Ethereum's sovereign account.
+            T::Currency::transfer(
+                &source,
+                &T::EthereumSovereignAccount::get(),
+                amount.into(),
+                Preservation::Preserve,
+            )?;
+
+            let command = SnowbridgeCommandV2::MintForeignToken {
+                token_id,
+                recipient,
+                amount,
+            };
+
+            let mut commands: Vec<SnowbridgeCommandV2> = Vec::new();
+            commands.push(command);
+
+            // TODO! half of this stuff should be fixed
+            // for starters, fee cannot be 0, we should probably ask through args
+            // OR charge a certain amount (the export amount)
+            // Origin needs to be converted from the account calling this
+            // although for this command it does not affect
+            // ID should be generated somehow
+            let message = SnowbridgeMessageV2 {
+                id: [0u8; 32].into(),
+                commands: BoundedVec::try_from(commands)
+                    .map_err(|_| Error::<T>::TooManyCommands)?,
+                fee: 0u128.into(),
+                origin: [0u8; 32].into(),
+            };
+
+            let ticket = T::OutboundQueueV2::validate(&message)
+                .map_err(|err| Error::<T>::InvalidMessage(err))?;
+            let message_id = ticket.message_id();
+
+            T::OutboundQueueV2::deliver(ticket)
+                .map_err(|err| Error::<T>::TransferMessageNotSent(err))?;
+            let fee = 0u128.into();
+
+            Self::deposit_event(Event::<T>::NativeTokenTransferred {
+                message_id,
+                channel_id: channel_info.channel_id,
+                source,
+                recipient,
+                token_id,
+                amount,
+                fee,
             });
 
             Ok(())
