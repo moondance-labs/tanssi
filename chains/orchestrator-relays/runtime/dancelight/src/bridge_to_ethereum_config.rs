@@ -19,7 +19,7 @@
 #[cfg(all(not(test), not(feature = "testing-helpers")))]
 use crate::EthereumBeaconClient;
 use frame_support::pallet_prelude::{DecodeWithMemTracking, Encode, TypeInfo};
-use frame_support::traits::{EnqueueMessage, QueueFootprint};
+use frame_support::traits::{EnqueueMessage, QueueFootprint, ConstBool};
 use frame_support::BoundedSlice;
 use frame_system::EnsureRootWithSuccess;
 use parity_scale_codec::{Decode, MaxEncodedLen};
@@ -294,6 +294,8 @@ impl pallet_ethereum_token_transfers::Config for Runtime {
     type Currency = Balances;
     // todo: add v2
     type OutboundQueue = EthereumOutboundQueue;
+    type OutboundQueueV2 = EthereumOutboundQueueV2;
+    type ShouldUseV2 = ConstBool<true>;
     type EthereumSystemHandler = EthereumSystemHandler<Runtime>;
     type EthereumSovereignAccount = EthereumSovereignAccount;
     type FeesAccount = SnowbridgeFeesAccount;

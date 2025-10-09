@@ -55,7 +55,7 @@ mod benchmarking;
 pub mod weights;
 
 use {
-    alloc::vec,
+    alloc::{vec, vec::Vec},
     frame_support::{
         pallet_prelude::*,
         traits::{
