@@ -205,6 +205,24 @@ describeSuite({
         });
 
         it({
+            id: "T07b",
+            title: "RPC endpoint 2001 is synced to latest block",
+            test: async () => {
+                const wsProvider = new WsProvider("ws://127.0.0.1:9952");
+                dataProvider2001Api = await ApiPromise.create({ provider: wsProvider });
+
+                while (true) {
+                    const blockNum = (await dataProvider2001Api.rpc.chain.getBlock()).block.header.number.toNumber();
+                    if (blockNum > 0) {
+                        break;
+                    }
+                    // TODO: we want to wait for 1 container block, not 1 tanssi block, but this also works
+                    await context.waitBlock(1, "Tanssi");
+                }
+            },
+        });
+
+        it({
             id: "T08",
             title: "RPC endpoint 2001 is Ethereum compatible",
             test: async () => {
@@ -221,12 +239,18 @@ describeSuite({
                     value: parseUnits("0.001", "ether"),
                     nonce,
                 });
+                let blockNumber = await customHttpProvider.getBlockNumber();
+                console.log("frontier template block number sent: ", blockNumber);
+                console.log("frontier tx: ", tx);
                 const now = new Date();
                 const pad = (n) => String(n).padStart(2, "0");
                 console.log(
                     `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ` +
                         `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`
                 );
+                await customHttpProvider.waitForTransaction(tx.hash, 1, 300_000);
+                blockNumber = await customHttpProvider.getBlockNumber();
+                console.log("frontier template block number included: ", blockNumber);
                 await customHttpProvider.waitForTransaction(tx.hash, 1, 300_000);
                 expect(Number(await customHttpProvider.getBalance(CHARLETH_ADDRESS))).to.be.greaterThan(0);
             },
