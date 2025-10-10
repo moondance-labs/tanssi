@@ -217,7 +217,7 @@ describeSuite({
                         break;
                     }
                     // TODO: we want to wait for 1 container block, not 1 tanssi block, but this also works
-                    await context.waitBlock(1, "Tanssi");
+                    await context.waitBlock(1, "Relay");
                 }
             },
         });
