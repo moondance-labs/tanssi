@@ -1031,44 +1031,6 @@ fn handle_update_assignment_state_change(
     }
 }
 
-/// Select [SyncMode] to use for a container chain.
-/// We want to use warp sync unless the db still exists, or the container chain is
-/// still at genesis block (because of a warp sync bug in that case).
-///
-/// Remember that warp sync doesn't work if a partially synced database already exists, it falls
-/// back to full sync instead. The only exception is if the previous instance of the database was
-/// interrupted before it finished downloading the state, in that case the node will use warp sync.
-/// If it was interrupted during the block history download, the node will use full sync but also
-/// finish the block history download in the background, even if sync mode is set to full sync.
-pub fn select_sync_mode_using_client(
-    db_exists: bool,
-    orchestrator_client: &Arc<ParachainClient>,
-    container_chain_para_id: ParaId,
-) -> sc_service::error::Result<SyncMode> {
-    if db_exists {
-        // If the user wants to use warp sync, they should have already removed the database
-        return Ok(SyncMode::Full);
-    }
-
-    // The following check is only needed because of this bug:
-    // https://github.com/paritytech/polkadot-sdk/issues/1930
-
-    let orchestrator_runtime_api = orchestrator_client.runtime_api();
-    let orchestrator_chain_info = orchestrator_client.chain_info();
-
-    // If the container chain is still at genesis block, use full sync because warp sync is broken
-    let full_sync_needed = orchestrator_runtime_api
-        .latest_author(orchestrator_chain_info.best_hash, container_chain_para_id)
-        .map_err(|e| format!("Failed to read latest author: {}", e))?
-        .is_none();
-
-    if full_sync_needed {
-        Ok(SyncMode::Full)
-    } else {
-        Ok(SyncMode::Warp)
-    }
-}
-
 async fn get_latest_container_block_number_from_orchestrator(
     orchestrator_chain_interface: &Arc<dyn OrchestratorChainInterface>,
     orchestrator_block_hash: PHash,
