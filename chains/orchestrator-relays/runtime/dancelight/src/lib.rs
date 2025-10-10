@@ -909,9 +909,14 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
     fn filter(&self, c: &RuntimeCall) -> bool {
         match self {
             ProxyType::Any => true,
-            ProxyType::NonTransfer => matches!(
-                c,
-                RuntimeCall::System(..) |
+            ProxyType::NonTransfer => match c {
+                RuntimeCall::Identity(
+                    pallet_identity::Call::add_sub { .. } | pallet_identity::Call::set_subs { .. },
+                ) => false,
+                call => {
+                    matches!(
+                        call,
+                        RuntimeCall::System(..) |
 				RuntimeCall::Babe(..) |
 				RuntimeCall::Timestamp(..) |
 				// Specifically omitting Indices `transfer`, `force_transfer`
@@ -929,12 +934,15 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 				RuntimeCall::Identity(..) |
 				RuntimeCall::Scheduler(..) |
 				RuntimeCall::Proxy(..) |
+                RuntimeCall::PooledStaking(..) |
 				RuntimeCall::Multisig(..) |
 				RuntimeCall::Registrar(paras_registrar::Call::register {..}) |
 				RuntimeCall::Registrar(paras_registrar::Call::deregister {..}) |
 				// Specifically omitting Registrar `swap`
 				RuntimeCall::Registrar(paras_registrar::Call::reserve {..})
-            ),
+                    )
+                }
+            },
             ProxyType::Governance => matches!(
                 c,
                 RuntimeCall::Utility(..) |
@@ -2297,7 +2305,6 @@ frame_support::ord_parameter_types! {
 
 #[cfg(feature = "runtime-benchmarks")]
 mod benches {
-
     frame_benchmarking::define_benchmarks!(
         // Polkadot
         // NOTE: Make sure to prefix these with `runtime_common::` so
