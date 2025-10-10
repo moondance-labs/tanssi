@@ -132,7 +132,8 @@
                         "--wasmtime-precompiled=wasm",
                         "--prometheus-external --prometheus-port 33104",
                         " --rpc-cors all --unsafe-rpc-external --rpc-methods unsafe",
-                        "--rpc-port 9950"
+                        "--rpc-port 9950",
+                        "--sync=warp"
                     ],
                     "prometheus_port": 33102
                 },
@@ -146,7 +147,8 @@
                         "--wasmtime-precompiled=wasm",
                         "--prometheus-external --prometheus-port 33105",
                         " --rpc-cors all --unsafe-rpc-external --rpc-methods unsafe",
-                        "--rpc-port 9952"
+                        "--rpc-port 9952",
+                        "--sync=warp"
                     ],
                     "prometheus_port": 33103
                 }
