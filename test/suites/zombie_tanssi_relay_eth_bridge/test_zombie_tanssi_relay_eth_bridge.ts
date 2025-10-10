@@ -429,12 +429,21 @@ describeSuite({
             title: "Ethereum Blocks are being recognized on tanssi-relay",
             test: async () => {
                 logTiming("Starting T01");
-                await waitSessions(context, relayApi, 1, async () => {
-                    const firstFinalizedBlockRoot = (
-                        await relayApi.query.ethereumBeaconClient.latestFinalizedBlockRoot()
-                    ).toJSON();
-                    return firstFinalizedBlockRoot != "0x0000000000000000000000000000000000000000000000000000000000000000";
-                }, "Tanssi-relay");
+                await waitSessions(
+                    context,
+                    relayApi,
+                    1,
+                    async () => {
+                        const firstFinalizedBlockRoot = (
+                            await relayApi.query.ethereumBeaconClient.latestFinalizedBlockRoot()
+                        ).toJSON();
+                        return (
+                            firstFinalizedBlockRoot !==
+                            "0x0000000000000000000000000000000000000000000000000000000000000000"
+                        );
+                    },
+                    "Tanssi-relay"
+                );
                 const firstFinalizedBlockRoot = (
                     await relayApi.query.ethereumBeaconClient.latestFinalizedBlockRoot()
                 ).toJSON();

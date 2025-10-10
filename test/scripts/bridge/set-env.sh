@@ -23,7 +23,7 @@ test_helpers_dir="$web_dir/packages/test-helpers"
 relay_bin="$relayer_root_dir/build/tanssi-bridge-relayer"
 
 # RELAYER NODE SHOULD BE COMPILED FROM HERE
-RELAYER_COMMIT="b8bb49969a514c7db87c9cafce1b3938b6ed1a70" # TODO: Change to tag when we do releases
+RELAYER_COMMIT="acab82745d9fb6f09f71e6c637617b61c550275a" # TODO: Change to tag when we do releases
 
 # THIS IS WHERE CONTRACTS SHOULD BE DEPLOYED
 TANSSI_SYMBIOTIC_COMMIT="3bd2ea8ca4a6ab7b9946bf997979013ae8dad2a5" # TODO: Change to tag when we do release
