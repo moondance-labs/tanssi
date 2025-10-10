@@ -43,6 +43,7 @@ use {
     frame_support::{
         construct_runtime,
         dispatch::DispatchClass,
+        dynamic_params::{dynamic_pallet_params, dynamic_params},
         genesis_builder_helper::{build_state, get_preset},
         pallet_prelude::DispatchResult,
         parameter_types,
@@ -64,6 +65,7 @@ use {
         EnsureRoot,
     },
     nimbus_primitives::{NimbusId, SlotBeacon},
+    pallet_parameters,
     pallet_transaction_payment::FungibleAdapter,
     parity_scale_codec::{Decode, DecodeWithMemTracking, Encode},
     polkadot_runtime_common::SlowAdjustingFeeUpdate,
@@ -427,6 +429,47 @@ impl pallet_transaction_payment::Config for Runtime {
     type LengthToFee = ConstantMultiplier<Balance, TransactionByteFee>;
     type FeeMultiplierUpdate = SlowAdjustingFeeUpdate<Self>;
     type WeightInfo = weights::pallet_transaction_payment::SubstrateWeight<Runtime>;
+}
+
+/// Dynamic params that can be adjusted at runtime.
+#[dynamic_params(RuntimeParameters, pallet_parameters::Parameters::<Runtime>)]
+pub mod dynamic_params {
+    use super::*;
+
+    /// The Dancelight genesis hash used as the default relay network identifier.
+    pub const DANCELIGHT_GENESIS_HASH: [u8; 32] =
+        hex_literal::hex!["983a1a72503d6cc3636776747ec627172b51272bf45e50a355348facb67a820a"];
+
+    #[dynamic_pallet_params]
+    #[codec(index = 0)]
+    pub mod xcm_config {
+        use super::*;
+
+        /// The relay network identifier for this container chain.
+        /// Using Dancelight genesis hash as default.
+        #[codec(index = 0)]
+        pub static RelayNetwork: xcm::latest::NetworkId =
+            xcm::latest::NetworkId::ByGenesis(DANCELIGHT_GENESIS_HASH);
+    }
+}
+
+#[cfg(feature = "runtime-benchmarks")]
+impl Default for RuntimeParameters {
+    fn default() -> Self {
+        RuntimeParameters::XcmConfig(dynamic_params::xcm_config::Parameters::RelayNetwork(
+            dynamic_params::xcm_config::RelayNetwork,
+            Some(xcm::latest::NetworkId::ByGenesis(
+                dynamic_params::DANCELIGHT_GENESIS_HASH,
+            )),
+        ))
+    }
+}
+
+impl pallet_parameters::Config for Runtime {
+    type AdminOrigin = EnsureRoot<AccountId>;
+    type RuntimeEvent = RuntimeEvent;
+    type RuntimeParameters = RuntimeParameters;
+    type WeightInfo = weights::pallet_parameters::SubstrateWeight<Runtime>;
 }
 
 parameter_types! {
@@ -814,6 +857,7 @@ construct_runtime!(
 
         // Other utilities
         Multisig: pallet_multisig = 16,
+        Parameters: pallet_parameters = 17,
 
         // ContainerChain Author Verification
         AuthoritiesNoting: pallet_cc_authorities_noting = 50,

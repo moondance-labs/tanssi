@@ -26,14 +26,8 @@ describeSuite({
             chain = api.consts.system.version.specName.toString();
             blocksPerSession =
                 chain === "dancebox" || chain === "dancelight" ? 600n : chain === "flashbox" ? 50n : 3600n;
-            costPerSession =
-                chain === "dancebox" || chain === "dancelight" || chain === "flashbox" || runtimeVersion < 1500
-                    ? 100_000_000n
-                    : 50_000_000_000_000n;
-            costPerBlock =
-                chain === "dancebox" || chain === "dancelight" || chain === "flashbox" || runtimeVersion < 1500
-                    ? 1_000_000n
-                    : 30_000_000_000n;
+            costPerSession = BigInt((await api.call.servicesPaymentApi.collatorAssignmentCost(1000)).toString());
+            costPerBlock = BigInt((await api.call.servicesPaymentApi.blockCost(1000)).toString());
         });
 
         it({

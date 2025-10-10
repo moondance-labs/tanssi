@@ -52,7 +52,7 @@ jobs:
           version: 9
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22.x
 
@@ -100,9 +100,6 @@ jobs:
   build:
     runs-on: self-hosted
     needs: [ "get-tests" ]
-    env:
-      TMP_TARGET: "/tmp/target"
-      CARGO_TARGET_DIR: "target"
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -133,7 +130,7 @@ jobs:
       - name: Package all runtime Wasm into tarball
         run: |
           mkdir -p runtimes
-          cd $CARGO_TARGET_DIR
+          cd ${CARGO_TARGET_DIR:-target}
           # gather all .wasm paths (relative to $CARGO_TARGET_DIR)…
           find . -type f -name '*.wasm' > wasm_files.txt
           # …then tar them up into a gzipped archive in the workspace
@@ -164,8 +161,6 @@ jobs:
   run-tests:
     runs-on: self-hosted
     needs: [ "get-tests", "build" ]
-    env:
-      CARGO_TARGET_DIR: "target"
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.get-tests.outputs.matrix) }}
@@ -190,9 +185,9 @@ jobs:
       - name: Extract runtimes back into target/
         run: |
           # ensure the target dir exists
-          mkdir -p $CARGO_TARGET_DIR
+          mkdir -p ${CARGO_TARGET_DIR:-target}
           # unpack, preserving all sub‑dirs exactly as they were
-          tar xzf runtimes/runtimes.tar.gz -C $CARGO_TARGET_DIR
+          tar xzf runtimes/runtimes.tar.gz -C ${CARGO_TARGET_DIR:-target}
       - name: Run Zombienet Test ${{ matrix.test_name }}
         uses: ./.github/workflow-templates/zombienet-tests
         with:
