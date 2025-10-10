@@ -10,8 +10,7 @@
             "--no-hardware-benchmarks",
             "-lparachain=debug",
             "--database=paritydb",
-            "--enable-offchain-indexing true",
-            "--state-pruning archive"
+            "--enable-offchain-indexing true"
         ],
         "genesis": {
             "runtimeGenesis": {
