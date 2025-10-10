@@ -19,7 +19,7 @@
 #[cfg(all(not(test), not(feature = "testing-helpers")))]
 use crate::EthereumBeaconClient;
 use frame_support::pallet_prelude::{DecodeWithMemTracking, Encode, TypeInfo};
-use frame_support::traits::{EnqueueMessage, QueueFootprint, ConstBool};
+use frame_support::traits::{ConstBool, EnqueueMessage, QueueFootprint};
 use frame_support::BoundedSlice;
 use frame_system::EnsureRootWithSuccess;
 use parity_scale_codec::{Decode, MaxEncodedLen};
