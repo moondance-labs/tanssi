@@ -3,9 +3,10 @@ import { beforeAll, describeSuite, expect, fetchCompiledContract } from "@moonwa
 import { ALITH_ADDRESS, BALTATHAR_ADDRESS, alith, createEthersTransaction } from "@moonwall/util";
 import type { u16 } from "@polkadot/types-codec";
 import { expectEVMResult } from "helpers";
-import { RELAY_SOURCE_LOCATION } from "utils";
+import { RELAY_SOURCE_LOCATION, TESTNET_ETHEREUM_NETWORK_ID } from "utils";
 import { encodeFunctionData } from "viem";
 import { mockAssetCreation, relayAssetMetadata } from "../../../helpers/assets.ts";
+import { numberToHex } from "@polkadot/util";
 
 const PRECOMPILE_PALLET_XCM_ADDRESS: `0x${string}` = "0x0000000000000000000000000000000000000804";
 
@@ -189,6 +190,39 @@ describeSuite({
                     .unwrap()
                     .balance.toBigInt();
                 expect(assetBalanceAfter).to.equal(assetBalanceBefore - amountToSend);
+            },
+        });
+
+        it({
+            id: "T05",
+            title: "allows to call transferAssetsLocation precompile for exporting assets to Ethereum",
+            test: async () => {
+                const { abi: xcmInterface } = fetchCompiledContract("XCM");
+
+                const chainIdHex = numberToHex(TESTNET_ETHEREUM_NETWORK_ID, 64);
+
+                const rawTxn = await createEthersTransaction(context, {
+                    to: PRECOMPILE_PALLET_XCM_ADDRESS,
+                    data: encodeFunctionData({
+                        abi: xcmInterface,
+                        functionName: "transferAssetsLocation",
+                        // args: [dest, beneficiary, assets, feeAssetItem],
+                        args: [
+                            // junction: globalConsensus + ethereum + chainId
+                            [2, ["0x" + "09" + "08" + chainIdHex.slice(2)]],
+                            [
+                                0,
+                                // junction: AccountId32 enum (01) + the 32 byte account + Network Any - 00
+                                ["0x01" + "0101010101010101010101010101010101010101010101010101010101010101" + "00"],
+                            ],
+                            [[[0, ["0x040a"]], 123_321_000_000_000n]],
+                            0,
+                        ],
+                    }),
+                });
+
+                const result = await context.createBlock(rawTxn);
+                expectEVMResult(result.result?.events, "Succeed");
             },
         });
     },
