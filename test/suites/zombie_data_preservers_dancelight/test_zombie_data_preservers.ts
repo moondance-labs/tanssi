@@ -256,7 +256,6 @@ describeSuite({
                 }
                 blockNumber = await customHttpProvider.getBlockNumber();
                 console.log("frontier template block number included: ", blockNumber);
-                await customHttpProvider.waitForTransaction(tx.hash, 1, 300_000);
                 expect(Number(await customHttpProvider.getBalance(CHARLETH_ADDRESS))).to.be.greaterThan(0);
             },
         });
