@@ -136,6 +136,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
                 alice_origin.clone(),
                 container_sovereign_account.clone().into(),
                 RELAY_ASSET_FEE_AMOUNT
+                    + dancelight_runtime_constants::currency::EXISTENTIAL_DEPOSIT
             )
         );
 
@@ -220,7 +221,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
             .free;
         assert_eq!(
             container_chain_sovereign_account_system_balance_before,
-            RELAY_ASSET_FEE_AMOUNT
+            RELAY_ASSET_FEE_AMOUNT + dancelight_runtime_constants::currency::EXISTENTIAL_DEPOSIT
         );
 
         treasury_fees_account_balance_before =
@@ -358,7 +359,10 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
             )
             .data
             .free;
-        assert_eq!(container_chain_sovereign_account_system_balance_after, 0);
+        assert_eq!(
+            container_chain_sovereign_account_system_balance_after,
+            dancelight_runtime_constants::currency::EXISTENTIAL_DEPOSIT
+        );
 
         let treasury_fees_account_balance_after =
             <Dancelight as DancelightRelayPallet>::System::account(TreasuryAccount::get())
@@ -477,6 +481,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
                 alice_origin.clone(),
                 container_sovereign_account.clone().into(),
                 RELAY_ASSET_FEE_AMOUNT
+                    + dancelight_runtime_constants::currency::EXISTENTIAL_DEPOSIT
             )
         );
 
@@ -561,7 +566,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
             .free;
         assert_eq!(
             container_chain_sovereign_account_system_balance_before,
-            RELAY_ASSET_FEE_AMOUNT
+            RELAY_ASSET_FEE_AMOUNT + dancelight_runtime_constants::currency::EXISTENTIAL_DEPOSIT
         );
 
         treasury_fees_account_balance_before =
@@ -697,7 +702,10 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
             )
             .data
             .free;
-        assert_eq!(container_chain_sovereign_account_system_balance_after, 0);
+        assert_eq!(
+            container_chain_sovereign_account_system_balance_after,
+            dancelight_runtime_constants::currency::EXISTENTIAL_DEPOSIT
+        );
 
         let treasury_fees_account_balance_after =
             <Dancelight as DancelightRelayPallet>::System::account(TreasuryAccount::get())
