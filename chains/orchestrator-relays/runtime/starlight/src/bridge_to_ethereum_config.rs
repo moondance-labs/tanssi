@@ -36,7 +36,7 @@ use {
         OutboundMessageCommitmentRecorder, Runtime, RuntimeEvent, SnowbridgeFeesAccount,
         TokenLocationReanchored, TransactionByteFee, TreasuryAccount, WeightToFee, UNITS,
     },
-    frame_support::{traits::PalletInfoAccess, weights::ConstantMultiplier},
+    frame_support::weights::ConstantMultiplier,
     pallet_xcm::EnsureXcm,
     snowbridge_beacon_primitives::ForkVersions,
     snowbridge_core::{gwei, meth, PricingParameters, Rewards},
