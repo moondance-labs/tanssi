@@ -213,11 +213,19 @@ describeSuite({
 
                 console.log("receiverNativeContainerBalanceAfter: ", receiverForeignContainerBalanceAfter);
 
-                const snowbridgeFeesAccountBalanceAfter = (
-                    await relayChainPolkadotJs.query.system.account(SNOWBRIDGE_FEES_ACCOUNT)
-                ).data.free.toBigInt();
+                const containerSovereignAccount = await relayChainPolkadotJs.call.locationToAccountApi.convertLocation({
+                    V3: { parents: 0, interior: { X1: { Parachain: 2001 } } },
+                });
+                const containerSovereignAccountHex = containerSovereignAccount.asOk.toHuman()
 
-                console.log("snowbridgeFeesAccountBalanceAfter: ", snowbridgeFeesAccountBalanceAfter);
+                const containerSovereignAccountBalanceAfter = (
+                    await relayChainPolkadotJs.query.foreignAssets.account(erc20AssetId, containerSovereignAccountHex)
+                ).unwrapOrDefault()
+                .balance.toBigInt();
+
+                console.log("containerSovereignAccountBalanceAfter: ", containerSovereignAccountBalanceAfter);
+
+                expect(containerSovereignAccountBalanceAfter).to.be.eq(transferAmount);
 
                 // Check that the foreign token amount was deposited into the receiver account.
                 expect(receiverForeignContainerBalanceAfter).to.be.eq(
