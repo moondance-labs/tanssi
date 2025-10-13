@@ -182,10 +182,7 @@ fn check_foreign_eth_token_to_frontier_container_chain_transfer_works() {
         assert_ok!(send_inbound_message(
             make_send_token_message_frontier_template()
         ));
-    });
 
-    // Check snowbridge fees are deducted
-    Dancelight::execute_with(|| {
         let snowbridge_fees_account_balance_after =
             <Dancelight as DancelightRelayPallet>::System::account(SnowbridgeFeesAccount::get())
                 .data
