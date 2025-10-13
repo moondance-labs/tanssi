@@ -285,6 +285,9 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
             ),
         };
 
+        // The custom XCM on the destination is used to remove the ERC20
+        // tokens from the holding and send Snowbridge command to withdraw
+        // assets on the reserve location
         let custom_xcm_on_dest = Xcm::<()>(vec![InitiateReserveWithdraw {
             assets: Definite(
                 vec![AssetId(erc20_asset_id_for_relay_context.clone())
