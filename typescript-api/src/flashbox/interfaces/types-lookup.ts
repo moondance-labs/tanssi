@@ -2171,6 +2171,10 @@ declare module "@polkadot/types/lookup" {
             readonly relayProofBlockNumber: u32;
             readonly relayStorageProof: SpTrieStorageProof;
         } & Struct;
+        readonly isPokeDeposit: boolean;
+        readonly asPokeDeposit: {
+            readonly paraId: u32;
+        } & Struct;
         readonly type:
             | "Register"
             | "Deregister"
@@ -2181,7 +2185,8 @@ declare module "@polkadot/types/lookup" {
             | "SetParathreadParams"
             | "SetParaManager"
             | "RegisterWithRelayProof"
-            | "DeregisterWithRelayProof";
+            | "DeregisterWithRelayProof"
+            | "PokeDeposit";
     }
 
     /** @name DpContainerChainGenesisDataContainerChainGenesisData (222) */

@@ -3193,6 +3193,9 @@ export default {
                 relayProofBlockNumber: "u32",
                 relayStorageProof: "SpTrieStorageProof",
             },
+            poke_deposit: {
+                paraId: "u32",
+            },
         },
     },
     /**
