@@ -27,7 +27,7 @@ use {
     frontier_template_emulated_chain::FrontierTemplateParaPallet,
     hex_literal::hex,
     simple_template_emulated_chain::SimpleTemplateParaPallet,
-    snowbridge_beacon_primitives::{
+    snowbridge_beacon_qmitives::{
         types::deneb, AncestryProof, BeaconHeader, ExecutionProof, VersionedExecutionPayloadHeader,
     },
     snowbridge_core::ChannelId,
@@ -41,7 +41,7 @@ use {
 #[test]
 fn check_foreign_eth_token_to_frontier_container_chain_transfer_works() {
     const PARA_ID_FOR_CHANNEL: u32 = 2000;
-    const CONTAINER_PARA_ID: u32 = 2002;
+    const CONTAINER_PARA_ID: u32 = 2001;
     const RELAY_NATIVE_TOKEN_ASSET_ID: u16 = 42;
     const ERC20_ASSET_ID: u16 = 24;
 
@@ -50,7 +50,7 @@ fn check_foreign_eth_token_to_frontier_container_chain_transfer_works() {
     const TOKEN_ADDRESS: H160 = H160::repeat_byte(0x11);
     let token_receiver: AccountId20 = [5u8; 20].into();
 
-    const CONTAINER_FEE: u128 = 500_000_000;
+    const CONTAINER_FEE: u128 = 500_000_000_000_000;
 
     let mut snowbridge_fees_account_balance_before = 0;
     let mut receiver_native_container_balance_before = 0;
@@ -111,7 +111,7 @@ fn check_foreign_eth_token_to_frontier_container_chain_transfer_works() {
             <Dancelight as DancelightRelayPallet>::ForeignAssetsCreator::create_foreign_asset(
                 root_origin.clone(),
                 erc20_asset_location_relay,
-                RELAY_NATIVE_TOKEN_ASSET_ID,
+                ERC20_ASSET_ID,
                 alice_account,
                 true,
                 1
@@ -189,9 +189,15 @@ fn check_foreign_eth_token_to_frontier_container_chain_transfer_works() {
                 .free;
 
         let container_sovereign_balance_after =
-            <Dancelight as DancelightRelayPallet>::System::account(container_sovereign_account)
+            <Dancelight as DancelightRelayPallet>::System::account(&container_sovereign_account)
                 .data
                 .free;
+
+        let container_sovereign_erc20_token_balance_after =
+            <Dancelight as DancelightRelayPallet>::ForeignAssets::balance(
+                ERC20_ASSET_ID,
+                &container_sovereign_account,
+            );
 
         assert!(
             snowbridge_fees_account_balance_after
@@ -200,6 +206,11 @@ fn check_foreign_eth_token_to_frontier_container_chain_transfer_works() {
 
         assert!(
             container_sovereign_balance_after <= container_sovereign_balance_before + CONTAINER_FEE
+        );
+
+        assert_eq!(
+            container_sovereign_erc20_token_balance_after,
+            TRANSFER_AMOUNT
         );
     });
 
@@ -291,7 +302,7 @@ fn check_foreign_eth_token_to_simple_container_chain_transfer_works() {
             <Dancelight as DancelightRelayPallet>::ForeignAssetsCreator::create_foreign_asset(
                 root_origin.clone(),
                 erc20_asset_location_relay,
-                RELAY_NATIVE_TOKEN_ASSET_ID,
+                ERC20_ASSET_ID,
                 alice_account,
                 true,
                 1
@@ -362,19 +373,22 @@ fn check_foreign_eth_token_to_simple_container_chain_transfer_works() {
         assert_ok!(send_inbound_message(
             make_send_token_message_simple_template()
         ));
-    });
 
-    // Check snowbridge fees are deducted
-    Dancelight::execute_with(|| {
         let snowbridge_fees_account_balance_after =
             <Dancelight as DancelightRelayPallet>::System::account(SnowbridgeFeesAccount::get())
                 .data
                 .free;
 
         let container_sovereign_balance_after =
-            <Dancelight as DancelightRelayPallet>::System::account(container_sovereign_account)
+            <Dancelight as DancelightRelayPallet>::System::account(&container_sovereign_account)
                 .data
                 .free;
+
+        let container_sovereign_erc20_token_balance_after =
+            <Dancelight as DancelightRelayPallet>::ForeignAssets::balance(
+                ERC20_ASSET_ID,
+                &container_sovereign_account,
+            );
 
         assert!(
             snowbridge_fees_account_balance_after
@@ -383,7 +397,12 @@ fn check_foreign_eth_token_to_simple_container_chain_transfer_works() {
 
         assert!(
             container_sovereign_balance_after <= container_sovereign_balance_before + CONTAINER_FEE
-        )
+        );
+
+        assert_eq!(
+            container_sovereign_erc20_token_balance_after,
+            TRANSFER_AMOUNT
+        );
     });
 
     // Check foreign token is received
