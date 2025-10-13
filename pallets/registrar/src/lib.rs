@@ -762,7 +762,7 @@ pub mod pallet {
         #[pallet::weight(Weight::MAX)] //TODO: recalculate
         pub fn poke_deposit(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
             use frame_support::traits::tokens::Precision;
-            let _ = ensure_signed(origin)?;
+            let who = ensure_signed(origin)?;
 
             let genesis =
                 ParaGenesisData::<T>::get(para_id).ok_or(Error::<T>::ParaIdNotRegistered)?;
@@ -773,6 +773,8 @@ pub mod pallet {
             let Some(mut info) = RegistrarDeposit::<T>::get(para_id) else {
                 return Ok(());
             };
+
+            ensure!(info.creator == who, Error::<T>::NotParaCreator);
 
             let current = info.deposit;
 

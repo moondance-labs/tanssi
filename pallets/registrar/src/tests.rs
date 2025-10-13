@@ -2078,7 +2078,7 @@ fn poke_deposit_fails_for_unknown_para() {
 }
 
 #[test]
-fn poke_deposit_is_permissionless() {
+fn poke_deposit_fails_for_wrong_creator() {
     new_test_ext().execute_with(|| {
         run_to_block(1);
 
@@ -2089,11 +2089,11 @@ fn poke_deposit_is_permissionless() {
             None
         ));
 
-        // Called by BOB (not creator) and should work
-        assert_ok!(ParaRegistrar::poke_deposit(
+        // Called by BOB (not creator) should fail
+        assert_noop!(ParaRegistrar::poke_deposit(
             RuntimeOrigin::signed(BOB),
             42.into()
-        ));
+        ), Error::<Test>::NotParaCreator);
     });
 }
 
@@ -2122,7 +2122,7 @@ fn poke_deposit_is_noop_when_exact() {
         let before = System::account(ALICE).data;
 
         assert_ok!(ParaRegistrar::poke_deposit(
-            RuntimeOrigin::signed(BOB),
+            RuntimeOrigin::signed(ALICE),
             42.into()
         ));
 
@@ -2183,7 +2183,7 @@ fn poke_deposit_increases_when_underfunded() {
         );
 
         assert_ok!(ParaRegistrar::poke_deposit(
-            RuntimeOrigin::signed(CHARLIE),
+            RuntimeOrigin::signed(ALICE),
             42.into()
         ));
 
@@ -2237,7 +2237,7 @@ fn poke_deposit_decreases_when_overfunded() {
         );
 
         assert_ok!(ParaRegistrar::poke_deposit(
-            RuntimeOrigin::signed(BOB),
+            RuntimeOrigin::signed(ALICE),
             42.into()
         ));
 
