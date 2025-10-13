@@ -121,7 +121,8 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
             )
         );
 
-        // Minting foreign assets for the ERC20 tokens came from Ethereum
+        // Artificially minting foreign assets for the ERC20 tokens came from Ethereum to
+        // the sovereign account to fake the reception of the token
         assert_ok!(<Dancelight as DancelightRelayPallet>::ForeignAssets::mint(
             alice_origin.clone(),
             ERC20_ASSET_ID,
@@ -458,7 +459,8 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
             )
         );
 
-        // Minting foreign assets for the ERC20 tokens came from Ethereum
+        // Artificially minting foreign assets for the ERC20 tokens came from Ethereum to
+        // the sovereign account to fake the reception of the token
         assert_ok!(<Dancelight as DancelightRelayPallet>::ForeignAssets::mint(
             alice_origin.clone(),
             ERC20_ASSET_ID,
