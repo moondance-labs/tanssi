@@ -17,7 +17,7 @@
                 "forkVersions": {
                     "deneb": 0,
                     "electra": 0,
-                    "fulu": 5000000000
+                    "fulu": 0
                 }
             },
             "datastore": {
