@@ -20,7 +20,7 @@
 use {
     crate::{
         benchmark_blob::benchmark_blob, Call, Config, DepositBalanceOf, EnsureSignedByManager,
-        Pallet, RegistrarHooks,
+        Pallet, RegistrarHooks, RegistrarDeposit
     },
     alloc::{vec, vec::Vec},
     dp_container_chain_genesis_data::{ContainerChainGenesisData, ContainerChainGenesisDataItem},
@@ -230,6 +230,45 @@ mod benchmarks {
         assert!(Pallet::<T>::registrar_deposit(ParaId::default()).is_some());
 
         Ok(())
+    }
+
+    #[benchmark]
+    fn poke_deposit(x: Linear<100, 3_000_000>, z: Linear<1, 10>) {
+        let storage = max_size_genesis_data(z, x);
+        let required = Pallet::<T>::get_genesis_cost(storage.encoded_size());
+
+        let (caller, _deposit_amount) = create_funded_user::<T>(
+            "caller",
+            0,
+            Pallet::<T>::get_genesis_cost(storage.encoded_size()), 
+        );
+
+        let para_id = ParaId::from(BASE_PARA_ID);
+
+        T::InnerRegistrar::prepare_chain_registration(para_id, caller.clone());
+
+        assert_ok!(Pallet::<T>::register(
+            RawOrigin::Signed(caller.clone()).into(),
+            para_id,
+            storage.clone(),
+            T::InnerRegistrar::bench_head_data(),
+        ));
+
+        assert_ok!(Pallet::<T>::mark_valid_for_collating(
+            RawOrigin::Root.into(),
+            para_id
+        ));
+
+        // Force adjustment by setting deposit to 0 (worst case: full increase)
+        let mut info = Pallet::<T>::registrar_deposit(para_id).unwrap();
+        info.deposit = 0u32.into();
+        RegistrarDeposit::<T>::insert(para_id, info);
+
+        #[extrinsic_call]
+        Pallet::<T>::poke_deposit(RawOrigin::Signed(caller.clone()), para_id);
+
+        let updated_info = Pallet::<T>::registrar_deposit(para_id).unwrap();
+        assert_eq!(updated_info.deposit, required);
     }
 
     #[benchmark]

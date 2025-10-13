@@ -759,7 +759,7 @@ pub mod pallet {
         /// If the required amount differs from the currently held deposit,
         /// this extrinsic increases or releases the difference on the creator's account.
         #[pallet::call_index(11)]
-        #[pallet::weight(Weight::MAX)] //TODO: recalculate
+        #[pallet::weight(T::WeightInfo::poke_deposit())] //TODO: recalculate
         pub fn poke_deposit(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
             use frame_support::traits::tokens::Precision;
             let who = ensure_signed(origin)?;
