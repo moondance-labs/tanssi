@@ -1010,14 +1010,12 @@
             "runScripts": [
                 "build-spec-dancelight.sh",
                 "compile-wasm.ts compile -b ../target/release/tanssi-relay -o wasm -c specs/tanssi-relay.json",
-                "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/single-container-template-container-2000.json",
-                "compile-wasm.ts compile -b ../target/release/container-chain-frontier-node -o wasm -c specs/single-container-template-container-2001.json"
+                "compile-wasm.ts compile -b ../target/release/container-chain-simple-node -o wasm -c specs/single-container-template-container-2000.json"
             ],
             "foundation": {
                 "type": "zombie",
                 "zombieSpec": {
-                    "configPath": "./configs/zombie_tanssi_relay_finalization_recovery.json",
-                    "skipBlockCheck": ["Container2002"]
+                    "configPath": "./configs/zombie_tanssi_relay_finalization_recovery.json"
                 }
             },
             "vitestArgs": {
@@ -1035,29 +1033,9 @@
                     "endpoints": ["ws://127.0.0.1:9948"]
                 },
                 {
-                    "name": "Container2000",
+                    "name": "Tanssi-dave",
                     "type": "polkadotJs",
-                    "endpoints": ["ws://127.0.0.1:9949"]
-                },
-                {
-                    "name": "Container2001",
-                    "type": "polkadotJs",
-                    "endpoints": ["ws://127.0.0.1:9950"]
-                },
-                {
-                    "name": "Container2002",
-                    "type": "polkadotJs",
-                    "endpoints": ["ws://127.0.0.1:9951"]
-                },
-                {
-                    "name": "ethers",
-                    "type": "ethers",
-                    "endpoints": ["ws://127.0.0.1:9950"]
-                },
-                {
-                    "name": "w3",
-                    "type": "web3",
-                    "endpoints": ["ws://127.0.0.1:9950"]
+                    "endpoints": ["ws://127.0.0.1:9946"]
                 }
             ]
         },
