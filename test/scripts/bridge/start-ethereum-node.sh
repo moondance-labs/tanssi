@@ -74,6 +74,8 @@ start_lodestar() {
     
     export LODESTAR_PRESET="mainnet"
 
+    export NODE_OPTIONS="--max-old-space-size=8192"
+
     $output_bin_dir/lodestar dev \
         --genesisValidators 8 \
         --genesisTime $timestamp \
@@ -91,11 +93,13 @@ start_lodestar() {
         --params.CAPELLA_FORK_EPOCH 0 \
         --params.DENEB_FORK_EPOCH 0 \
         --params.ELECTRA_FORK_EPOCH 0 \
-        --params.SECONDS_PER_SLOT 1 \
+        --params.FULU_FORK_EPOCH 5000000000 \
+        --params.SLOT_DURATION_MS 1000 \
         --eth1=true \
         --rest.namespace="*" \
         --jwt-secret $assets_dir/jwtsecret \
         --chain.archiveStateEpochFrequency 1 \
+        --serveHistoricalState \
         >"$logs_dir/lodestar.log" 2>&1 &
     echo "lodestar=$!" >> $artifacts_dir/daemons.pid
 }
