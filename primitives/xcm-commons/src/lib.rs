@@ -78,7 +78,7 @@ where
     }
 }
 
-// Filter to ensure an Relay Asset is coming from a trusted Ethereum location
+// Filter to permit reception of Ethereum assets that come from the parent
 pub struct RelayAssetReserveFromEthereum<EthereumNetwork>(
     core::marker::PhantomData<EthereumNetwork>,
 );
