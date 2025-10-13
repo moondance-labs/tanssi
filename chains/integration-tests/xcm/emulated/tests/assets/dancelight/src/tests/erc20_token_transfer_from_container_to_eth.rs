@@ -36,8 +36,6 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
     const ETHEREUM_NETWORK: u64 = 11155111;
 
     // Define common constants and accounts
-    const CONTAINER_PARA_ID: u32 = 2001;
-
     const PARA_ID_FOR_CHANNEL: u32 = 2000;
 
     const ERC20_TOKEN_ADDRESS: [u8; 20] = hex!("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef");
@@ -52,8 +50,12 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
 
     let asset_sender = EthereumSender::get();
 
+    let container_para_id: u32 = FrontierTemplate::execute_with(|| {
+        <FrontierTemplate as FrontierTemplateParaPallet>::ParachainInfo::parachain_id().into()
+    });
+
     // Common location calculations
-    let container_location = Location::new(0, Parachain(CONTAINER_PARA_ID));
+    let container_location = Location::new(0, Parachain(container_para_id));
     let container_sovereign_account =
         dancelight_runtime::xcm_config::LocationConverter::convert_location(&container_location)
             .unwrap();
@@ -359,8 +361,6 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
     const ETHEREUM_NETWORK: u64 = 11155111;
 
     // Define common constants and accounts
-    const CONTAINER_PARA_ID: u32 = 2002;
-
     const PARA_ID_FOR_CHANNEL: u32 = 2000;
 
     const ERC20_TOKEN_ADDRESS: [u8; 20] = hex!("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef");
@@ -375,8 +375,12 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
 
     let asset_sender = SimpleTemplateSender::get();
 
+    let container_para_id: u32 = SimpleTemplate::execute_with(|| {
+        <SimpleTemplate as SimpleTemplateParaPallet>::ParachainInfo::parachain_id().into()
+    });
+
     // Common location calculations
-    let container_location = Location::new(0, Parachain(CONTAINER_PARA_ID));
+    let container_location = Location::new(0, Parachain(container_para_id));
     let container_sovereign_account =
         dancelight_runtime::xcm_config::LocationConverter::convert_location(&container_location)
             .unwrap();
