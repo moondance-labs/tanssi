@@ -42,6 +42,12 @@ pub const ELECTRA_TEST_FORK_EPOCH: u64 = match current_env() {
     _ => 0,
 };
 
+// TODO: change this when parity has new tests matching fulu
+pub const FULU_TEST_FORK_EPOCH: u64 = match current_env() {
+    BuildEnv::Benchmark => 80000000001,
+    _ => 5000000000,
+};
+
 // For tests, benchmarks and fast-runtime configurations we use the mocked fork versions
 pub const fn fork_versions() -> ForkVersions {
     match current_env() {
@@ -70,6 +76,10 @@ pub const fn fork_versions() -> ForkVersions {
                 version: hex!("90000074"),
                 epoch: 222464,
             },
+            fulu: Fork {
+                version: hex!("90000075"),
+                epoch: 272640, // https://notes.ethereum.org/@bbusa/fusaka-bpo-timeline
+            },
         },
         _ => ForkVersions {
             genesis: Fork {
@@ -95,6 +105,10 @@ pub const fn fork_versions() -> ForkVersions {
             electra: Fork {
                 version: [5, 0, 0, 0],
                 epoch: ELECTRA_TEST_FORK_EPOCH,
+            },
+            fulu: Fork {
+                version: [6, 0, 0, 0],
+                epoch: FULU_TEST_FORK_EPOCH,
             },
         },
     }
