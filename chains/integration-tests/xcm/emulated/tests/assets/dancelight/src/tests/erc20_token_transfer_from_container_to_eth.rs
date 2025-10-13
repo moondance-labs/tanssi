@@ -26,15 +26,15 @@ use {
     hex_literal::hex,
     simple_template_emulated_chain::SimpleTemplateParaPallet,
     snowbridge_core::ChannelId,
+    sp_core::Get,
     xcm::latest::prelude::*,
+    xcm::v5::NetworkId,
     xcm_emulator::{Chain, TestExt},
     xcm_executor::traits::{ConvertLocation, TransferType},
 };
 
 #[test]
 fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
-    const ETHEREUM_NETWORK: u64 = 11155111;
-
     // Define common constants and accounts
     const PARA_ID_FOR_CHANNEL: u32 = 2000;
 
@@ -54,6 +54,9 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
         <FrontierTemplate as FrontierTemplateParaPallet>::ParachainInfo::parachain_id().into()
     });
 
+    let ethereum_network =
+        ethereum_chain_id::<container_chain_template_frontier_runtime::EthereumNetwork>();
+
     // Common location calculations
     let container_location = Location::new(0, Parachain(container_para_id));
     let container_sovereign_account =
@@ -65,11 +68,11 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
         interior: Junctions::X2(
             [
                 GlobalConsensus(NetworkId::Ethereum {
-                    chain_id: ETHEREUM_NETWORK,
+                    chain_id: ethereum_network,
                 }),
                 AccountKey20 {
                     network: Some(NetworkId::Ethereum {
-                        chain_id: ETHEREUM_NETWORK,
+                        chain_id: ethereum_network,
                     }),
                     key: ERC20_TOKEN_ADDRESS,
                 },
@@ -83,11 +86,11 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
         interior: Junctions::X2(
             [
                 GlobalConsensus(NetworkId::Ethereum {
-                    chain_id: ETHEREUM_NETWORK,
+                    chain_id: ethereum_network,
                 }),
                 AccountKey20 {
                     network: Some(NetworkId::Ethereum {
-                        chain_id: ETHEREUM_NETWORK,
+                        chain_id: ethereum_network,
                     }),
                     key: ERC20_TOKEN_ADDRESS,
                 },
@@ -281,7 +284,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
                 parents: 1,
                 interior: Junctions::X1(
                     [GlobalConsensus(NetworkId::Ethereum {
-                        chain_id: ETHEREUM_NETWORK,
+                        chain_id: ethereum_network,
                     })]
                     .into(),
                 ),
@@ -358,8 +361,6 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
 
 #[test]
 fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
-    const ETHEREUM_NETWORK: u64 = 11155111;
-
     // Define common constants and accounts
     const PARA_ID_FOR_CHANNEL: u32 = 2000;
 
@@ -379,6 +380,9 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
         <SimpleTemplate as SimpleTemplateParaPallet>::ParachainInfo::parachain_id().into()
     });
 
+    let ethereum_network =
+        ethereum_chain_id::<container_chain_template_frontier_runtime::EthereumNetwork>();
+
     // Common location calculations
     let container_location = Location::new(0, Parachain(container_para_id));
     let container_sovereign_account =
@@ -390,11 +394,11 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
         interior: Junctions::X2(
             [
                 GlobalConsensus(NetworkId::Ethereum {
-                    chain_id: ETHEREUM_NETWORK,
+                    chain_id: ethereum_network,
                 }),
                 AccountKey20 {
                     network: Some(NetworkId::Ethereum {
-                        chain_id: ETHEREUM_NETWORK,
+                        chain_id: ethereum_network,
                     }),
                     key: ERC20_TOKEN_ADDRESS,
                 },
@@ -408,11 +412,11 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
         interior: Junctions::X2(
             [
                 GlobalConsensus(NetworkId::Ethereum {
-                    chain_id: ETHEREUM_NETWORK,
+                    chain_id: ethereum_network,
                 }),
                 AccountKey20 {
                     network: Some(NetworkId::Ethereum {
-                        chain_id: ETHEREUM_NETWORK,
+                        chain_id: ethereum_network,
                     }),
                     key: ERC20_TOKEN_ADDRESS,
                 },
@@ -606,7 +610,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
                 parents: 1,
                 interior: Junctions::X1(
                     [GlobalConsensus(NetworkId::Ethereum {
-                        chain_id: ETHEREUM_NETWORK,
+                        chain_id: ethereum_network,
                     })]
                     .into(),
                 ),
@@ -680,4 +684,11 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
         // Check that fees were transferred to the treasury account
         assert!(treasury_fees_account_balance_after < RELAY_ASSET_FEE_AMOUNT);
     });
+}
+
+fn ethereum_chain_id<N: Get<NetworkId>>() -> u64 {
+    match N::get() {
+        NetworkId::Ethereum { chain_id } => chain_id,
+        _ => panic!("Expected Ethereum NetworkId"),
+    }
 }
