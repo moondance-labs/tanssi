@@ -109,6 +109,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
         let root_origin = <Dancelight as Chain>::RuntimeOrigin::root();
         let alice_origin = <Dancelight as Chain>::RuntimeOrigin::signed(DancelightSender::get());
 
+        // Creating foreign assets for the ERC20 tokens came from Ethereum in the Relay
         assert_ok!(
             <Dancelight as DancelightRelayPallet>::ForeignAssetsCreator::create_foreign_asset(
                 root_origin.clone(),
@@ -120,6 +121,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
             )
         );
 
+        // Minting foreign assets for the ERC20 tokens came from Ethereum
         assert_ok!(<Dancelight as DancelightRelayPallet>::ForeignAssets::mint(
             alice_origin.clone(),
             ERC20_ASSET_ID,
@@ -127,6 +129,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
             ERC20_ASSET_AMOUNT
         ));
 
+        // Adding native relay tokens to the sovereign account to be able to pay fees
         assert_ok!(
             <Dancelight as DancelightRelayPallet>::Balances::transfer_allow_death(
                 alice_origin.clone(),
@@ -135,6 +138,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
             )
         );
 
+        // Specifying the channel for the ERC20 token transfers
         assert_ok!(
             <Dancelight as DancelightRelayPallet>::EthereumTokenTransfers::set_token_transfer_channel(
                 root_origin.clone(),
@@ -149,6 +153,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
         let root_origin = <FrontierTemplate as Chain>::RuntimeOrigin::root();
         let alice_origin = <FrontierTemplate as Chain>::RuntimeOrigin::signed(asset_sender);
 
+        // Creating foreign assets for the ERC20 tokens came from Ethereum in the container chain
         assert_ok!(
             <FrontierTemplate as FrontierTemplateParaPallet>::ForeignAssetsCreator::create_foreign_asset(
                 root_origin.clone(),
@@ -160,6 +165,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
             )
         );
 
+        // Creating foreign assets for the Relay native tokens in the container chain
         assert_ok!(
             <FrontierTemplate as FrontierTemplateParaPallet>::ForeignAssetsCreator::create_foreign_asset(
                 root_origin.clone(),
@@ -171,6 +177,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
             )
         );
 
+        // Minting foreign assets for the ERC20 tokens came from Ethereum in the container chain
         assert_ok!(
             <FrontierTemplate as FrontierTemplateParaPallet>::ForeignAssets::mint(
                 alice_origin.clone(),
@@ -180,6 +187,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
             )
         );
 
+        // Minting foreign assets for the Relay native tokens in the container chain
         assert_ok!(
             <FrontierTemplate as FrontierTemplateParaPallet>::ForeignAssets::mint(
                 alice_origin.clone(),
@@ -190,6 +198,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
         );
     });
 
+    // Check initial balances for the relay chain
     let mut treasury_fees_account_balance_before: u128 = 0;
     Dancelight::execute_with(|| {
         let container_chain_sovereign_account_erc20_balance_before =
@@ -223,6 +232,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
         );
     });
 
+    // Check initial balances for the container chain, execute the transfer and check result balances
     FrontierTemplate::execute_with(|| {
         let relay_destination = Location {
             parents: 1,
@@ -329,6 +339,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
         assert_eq!(relay_asset_balance_after, 0);
     });
 
+    // Check result balances for the relay chain
     Dancelight::execute_with(|| {
         let container_chain_sovereign_account_erc20_balance_after =
             <Dancelight as DancelightRelayPallet>::ForeignAssets::balance(
@@ -435,6 +446,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
         let root_origin = <Dancelight as Chain>::RuntimeOrigin::root();
         let alice_origin = <Dancelight as Chain>::RuntimeOrigin::signed(DancelightSender::get());
 
+        // Creating foreign assets for the ERC20 tokens came from Ethereum in the Relay
         assert_ok!(
             <Dancelight as DancelightRelayPallet>::ForeignAssetsCreator::create_foreign_asset(
                 root_origin.clone(),
@@ -446,6 +458,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
             )
         );
 
+        // Minting foreign assets for the ERC20 tokens came from Ethereum
         assert_ok!(<Dancelight as DancelightRelayPallet>::ForeignAssets::mint(
             alice_origin.clone(),
             ERC20_ASSET_ID,
@@ -453,6 +466,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
             ERC20_ASSET_AMOUNT
         ));
 
+        // Adding native relay tokens to the sovereign account to be able to pay fees
         assert_ok!(
             <Dancelight as DancelightRelayPallet>::Balances::transfer_allow_death(
                 alice_origin.clone(),
@@ -461,6 +475,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
             )
         );
 
+        // Specifying the channel for the ERC20 token transfers
         assert_ok!(
             <Dancelight as DancelightRelayPallet>::EthereumTokenTransfers::set_token_transfer_channel(
                 root_origin.clone(),
@@ -475,6 +490,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
         let root_origin = <SimpleTemplate as Chain>::RuntimeOrigin::root();
         let alice_origin = <SimpleTemplate as Chain>::RuntimeOrigin::signed(asset_sender.clone());
 
+        // Creating foreign assets for the ERC20 tokens came from Ethereum in the container chain
         assert_ok!(
             <SimpleTemplate as SimpleTemplateParaPallet>::ForeignAssetsCreator::create_foreign_asset(
                 root_origin.clone(),
@@ -486,6 +502,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
             )
         );
 
+        // Creating foreign assets for the Relay native tokens in the container chain
         assert_ok!(
             <SimpleTemplate as SimpleTemplateParaPallet>::ForeignAssetsCreator::create_foreign_asset(
                 root_origin.clone(),
@@ -497,6 +514,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
             )
         );
 
+        // Minting foreign assets for the ERC20 tokens came from Ethereum in the container chain
         assert_ok!(
             <SimpleTemplate as SimpleTemplateParaPallet>::ForeignAssets::mint(
                 alice_origin.clone(),
@@ -506,6 +524,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
             )
         );
 
+        // Minting foreign assets for the Relay native tokens in the container chain
         assert_ok!(
             <SimpleTemplate as SimpleTemplateParaPallet>::ForeignAssets::mint(
                 alice_origin.clone(),
@@ -516,6 +535,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
         );
     });
 
+    // Check initial balances for the relay chain
     let mut treasury_fees_account_balance_before: u128 = 0;
     Dancelight::execute_with(|| {
         let container_chain_sovereign_account_erc20_balance_before =
@@ -549,6 +569,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
         );
     });
 
+    // Check initial balances for the container chain, execute the transfer and check result balances
     SimpleTemplate::execute_with(|| {
         let relay_destination = Location {
             parents: 1,
@@ -656,6 +677,7 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
         assert_eq!(relay_asset_balance_after, 0);
     });
 
+    // Check result balances for the relay chain
     Dancelight::execute_with(|| {
         let container_chain_sovereign_account_erc20_balance_after =
             <Dancelight as DancelightRelayPallet>::ForeignAssets::balance(
