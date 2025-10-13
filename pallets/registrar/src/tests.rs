@@ -23,6 +23,7 @@ use {
         dispatch::GetDispatchInfo,
         traits::fungible::{InspectHold, MutateHold},
         BoundedVec, Hashable,
+        error::BadOrigin,
     },
     parity_scale_codec::Encode,
     sp_core::Pair,
@@ -2074,6 +2075,57 @@ fn poke_deposit_fails_for_unknown_para() {
             ParaRegistrar::poke_deposit(RuntimeOrigin::signed(ALICE), 777.into()),
             Error::<Test>::ParaIdNotRegistered
         );
+    });
+}
+
+#[test]
+fn poke_deposit_fails_for_unsigned() {
+    new_test_ext().execute_with(|| {
+        run_to_block(1);
+
+        // Called by BOB (not creator) should fail
+        assert_noop!(ParaRegistrar::poke_deposit(
+            RuntimeOrigin::none(),
+            42.into()
+        ), BadOrigin);
+    });
+}
+
+#[test]
+fn poke_deposit_is_idempotent_after_adjustment() {
+    new_test_ext().execute_with(|| {
+        run_to_block(1);
+
+        assert_ok!(ParaRegistrar::register(
+            RuntimeOrigin::signed(ALICE),
+            42.into(),
+            empty_genesis_data(),
+            None
+        ));
+
+        // Unbalanced deposit
+        let required = {
+            let gd = empty_genesis_data();
+            let size = gd.encoded_size() as u32;
+            DataDepositPerByte::get() * (size as u128)
+        };
+        let extra = required / 3;
+        assert_ok!(Balances::hold(&HoldReason::RegistrarDeposit.into(), &ALICE, extra));
+        crate::RegistrarDeposit::<Test>::insert(
+            42,
+            crate::DepositInfo::<Test> { creator: ALICE, deposit: required + extra },
+        );
+
+        assert_ok!(ParaRegistrar::poke_deposit(RuntimeOrigin::signed(ALICE), 42.into()));
+        let hold_after_first = Balances::balance_on_hold(&HoldReason::RegistrarDeposit.into(), &ALICE);
+
+        // Second call: should not change anything
+        assert_ok!(ParaRegistrar::poke_deposit(RuntimeOrigin::signed(ALICE), 42.into()));
+        let hold_after_second = Balances::balance_on_hold(&HoldReason::RegistrarDeposit.into(), &ALICE);
+
+        assert_eq!(hold_after_first, hold_after_second);
+        let info = ParaRegistrar::registrar_deposit(42.into()).expect("exists");
+        assert_eq!(info.deposit, required);
     });
 }
 
