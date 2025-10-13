@@ -27,3 +27,8 @@ $scripts_root_dir/add-ci-fast-foundry-profile.sh
 export FOUNDRY_PROFILE=ci-fast
 forge build
 popd
+
+pushd $test_helpers_dir
+pnpm install node-gyp
+pnpm install
+popd

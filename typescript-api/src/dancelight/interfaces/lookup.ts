@@ -8966,6 +8966,7 @@ export default {
         capella: "SnowbridgeBeaconPrimitivesFork",
         deneb: "SnowbridgeBeaconPrimitivesFork",
         electra: "SnowbridgeBeaconPrimitivesFork",
+        fulu: "SnowbridgeBeaconPrimitivesFork",
     },
     /**
      * Lookup973: snowbridge_beacon_primitives::types::Fork
