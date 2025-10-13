@@ -29,7 +29,7 @@ use {
     sp_core::Get,
     xcm::latest::prelude::*,
     xcm::v5::NetworkId,
-    xcm_emulator::{Chain, TestExt},
+    xcm_emulator::{assert_expected_events, Chain, TestExt},
     xcm_executor::traits::{ConvertLocation, TransferType},
 };
 
@@ -346,6 +346,14 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_frontier() {
 
     // Check result balances for the relay chain
     Dancelight::execute_with(|| {
+        type RuntimeEvent = <Dancelight as Chain>::RuntimeEvent;
+        assert_expected_events!(
+            Dancelight,
+            vec![
+                RuntimeEvent::EthereumOutboundQueue(snowbridge_pallet_outbound_queue::Event::MessageAccepted { nonce: 1, id: _ }) => {},
+            ]
+        );
+
         let container_chain_sovereign_account_erc20_balance_after =
             <Dancelight as DancelightRelayPallet>::ForeignAssets::balance(
                 ERC20_ASSET_ID,
@@ -689,6 +697,14 @@ fn check_if_container_chain_router_is_working_for_eth_transfer_simple() {
 
     // Check result balances for the relay chain
     Dancelight::execute_with(|| {
+        type RuntimeEvent = <Dancelight as Chain>::RuntimeEvent;
+        assert_expected_events!(
+            Dancelight,
+            vec![
+                RuntimeEvent::EthereumOutboundQueue(snowbridge_pallet_outbound_queue::Event::MessageAccepted { nonce: 1, id: _ }) => {},
+            ]
+        );
+
         let container_chain_sovereign_account_erc20_balance_after =
             <Dancelight as DancelightRelayPallet>::ForeignAssets::balance(
                 ERC20_ASSET_ID,

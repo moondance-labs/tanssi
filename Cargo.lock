@@ -754,6 +754,7 @@ dependencies = [
  "polkadot-primitives",
  "simple-template-emulated-chain",
  "snowbridge-core",
+ "snowbridge-pallet-outbound-queue",
  "sp-core",
  "sp-runtime",
  "sp-tracing",

@@ -33,6 +33,7 @@ tanssi-emulated-integration-tests-common = { workspace = true }
 xcm = { workspace = true }
 xcm-emulator = { workspace = true }
 xcm-executor = { workspace = true }
+snowbridge-pallet-outbound-queue = {workspace = true}
 
 [features]
 fast-runtime = [
