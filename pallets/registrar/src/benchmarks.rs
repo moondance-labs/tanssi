@@ -20,7 +20,7 @@
 use {
     crate::{
         benchmark_blob::benchmark_blob, Call, Config, DepositBalanceOf, EnsureSignedByManager,
-        Pallet, RegistrarHooks, RegistrarDeposit
+        Pallet, RegistrarDeposit, RegistrarHooks,
     },
     alloc::{vec, vec::Vec},
     dp_container_chain_genesis_data::{ContainerChainGenesisData, ContainerChainGenesisDataItem},
@@ -240,7 +240,7 @@ mod benchmarks {
         let (caller, _deposit_amount) = create_funded_user::<T>(
             "caller",
             0,
-            Pallet::<T>::get_genesis_cost(storage.encoded_size()), 
+            Pallet::<T>::get_genesis_cost(storage.encoded_size()),
         );
 
         let para_id = ParaId::from(BASE_PARA_ID);

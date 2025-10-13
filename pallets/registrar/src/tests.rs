@@ -21,9 +21,9 @@ use {
     frame_support::{
         assert_noop, assert_ok,
         dispatch::GetDispatchInfo,
+        error::BadOrigin,
         traits::fungible::{InspectHold, MutateHold},
         BoundedVec, Hashable,
-        error::BadOrigin,
     },
     parity_scale_codec::Encode,
     sp_core::Pair,
@@ -2084,10 +2084,10 @@ fn poke_deposit_fails_for_unsigned() {
         run_to_block(1);
 
         // Called by BOB (not creator) should fail
-        assert_noop!(ParaRegistrar::poke_deposit(
-            RuntimeOrigin::none(),
-            42.into()
-        ), BadOrigin);
+        assert_noop!(
+            ParaRegistrar::poke_deposit(RuntimeOrigin::none(), 42.into()),
+            BadOrigin
+        );
     });
 }
 
@@ -2110,18 +2110,33 @@ fn poke_deposit_is_idempotent_after_adjustment() {
             DataDepositPerByte::get() * (size as u128)
         };
         let extra = required / 3;
-        assert_ok!(Balances::hold(&HoldReason::RegistrarDeposit.into(), &ALICE, extra));
+        assert_ok!(Balances::hold(
+            &HoldReason::RegistrarDeposit.into(),
+            &ALICE,
+            extra
+        ));
         crate::RegistrarDeposit::<Test>::insert(
             42,
-            crate::DepositInfo::<Test> { creator: ALICE, deposit: required + extra },
+            crate::DepositInfo::<Test> {
+                creator: ALICE,
+                deposit: required + extra,
+            },
         );
 
-        assert_ok!(ParaRegistrar::poke_deposit(RuntimeOrigin::signed(ALICE), 42.into()));
-        let hold_after_first = Balances::balance_on_hold(&HoldReason::RegistrarDeposit.into(), &ALICE);
+        assert_ok!(ParaRegistrar::poke_deposit(
+            RuntimeOrigin::signed(ALICE),
+            42.into()
+        ));
+        let hold_after_first =
+            Balances::balance_on_hold(&HoldReason::RegistrarDeposit.into(), &ALICE);
 
         // Second call: should not change anything
-        assert_ok!(ParaRegistrar::poke_deposit(RuntimeOrigin::signed(ALICE), 42.into()));
-        let hold_after_second = Balances::balance_on_hold(&HoldReason::RegistrarDeposit.into(), &ALICE);
+        assert_ok!(ParaRegistrar::poke_deposit(
+            RuntimeOrigin::signed(ALICE),
+            42.into()
+        ));
+        let hold_after_second =
+            Balances::balance_on_hold(&HoldReason::RegistrarDeposit.into(), &ALICE);
 
         assert_eq!(hold_after_first, hold_after_second);
         let info = ParaRegistrar::registrar_deposit(42.into()).expect("exists");
@@ -2142,10 +2157,10 @@ fn poke_deposit_fails_for_wrong_creator() {
         ));
 
         // Called by BOB (not creator) should fail
-        assert_noop!(ParaRegistrar::poke_deposit(
-            RuntimeOrigin::signed(BOB),
-            42.into()
-        ), Error::<Test>::NotParaCreator);
+        assert_noop!(
+            ParaRegistrar::poke_deposit(RuntimeOrigin::signed(BOB), 42.into()),
+            Error::<Test>::NotParaCreator
+        );
     });
 }
 
