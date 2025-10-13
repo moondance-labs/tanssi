@@ -222,10 +222,6 @@ mod test_helpers {
     }
 }
 
-parameter_types! {
-    pub InboundQueuePalletInstance: u8 = <EthereumInboundQueue as PalletInfoAccess>::index() as u8;
-}
-
 type AssetTransactor = <xcm_config::XcmConfig as xcm_executor::Config>::AssetTransactor;
 
 pub type EthTokensProcessor = EthTokensLocalProcessor<
