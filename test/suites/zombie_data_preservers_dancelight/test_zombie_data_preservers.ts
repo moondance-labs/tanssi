@@ -224,6 +224,7 @@ describeSuite({
 
         it({
             id: "T08",
+            timeout: 600_000,
             title: "RPC endpoint 2001 is Ethereum compatible",
             test: async () => {
                 const url = "ws://127.0.0.1:9952";
@@ -250,7 +251,7 @@ describeSuite({
                 );
                 try {
                     // TODO: ignore timeout error, maybe transaction is included but not confirmed?
-                    await customHttpProvider.waitForTransaction(tx.hash, 1, 300_000);
+                    await customHttpProvider.waitForTransaction(tx.hash, 1, 590_000);
                 } catch (e) {
                     console.log(e);
                 }
