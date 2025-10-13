@@ -245,7 +245,7 @@ describeSuite({
                 const balanceAfter = (
                     await context.polkadotJs().query.system.account(holdingAccount)
                 ).data.free.toBigInt();
-                expect(balanceAfter - balanceBefore).toEqual(tokenToTransfer + 1n);
+                expect(balanceAfter - balanceBefore).toEqual(tokenToTransfer);
 
                 expect(sentXcmEvent.event.data).toEqual({
                     origin: {
