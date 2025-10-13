@@ -26,7 +26,8 @@ relay_bin="$relayer_root_dir/build/tanssi-bridge-relayer"
 RELAYER_COMMIT="61773050e66a83139330a579a31b597b3a91faea" # TODO: Change to tag when we do releases
 
 # THIS IS WHERE CONTRACTS SHOULD BE DEPLOYED
-TANSSI_SYMBIOTIC_COMMIT="3bd2ea8ca4a6ab7b9946bf997979013ae8dad2a5" # TODO: Change to tag when we do release
+# TODO: change commit when final changes are merged
+TANSSI_SYMBIOTIC_COMMIT="fc3e32b2e9abeeea6f39839a9aae9b98cf369597" # TODO: Change to tag when we do release
 GETH_TAG="v1.15.5" # We will need to investigate if this is right
 LODESTAR_TAG="v1.27.0"
 
