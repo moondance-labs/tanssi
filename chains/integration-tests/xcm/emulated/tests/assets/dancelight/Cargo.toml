@@ -14,7 +14,6 @@ workspace = true
 [dependencies]
 container-chain-template-frontier-runtime = { workspace = true, features = [ "std" ] }
 container-chain-template-simple-runtime = { workspace = true }
-cumulus-pallet-xcmp-queue = { workspace = true }
 dancelight-emulated-chain = { workspace = true }
 dancelight-runtime = { workspace = true, features = [ "std" ] }
 dancelight-runtime-constants = { workspace = true, features = [ "std" ] }
