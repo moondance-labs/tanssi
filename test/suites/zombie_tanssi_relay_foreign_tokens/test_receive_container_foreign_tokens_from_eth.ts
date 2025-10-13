@@ -216,12 +216,13 @@ describeSuite({
                 const containerSovereignAccount = await relayChainPolkadotJs.call.locationToAccountApi.convertLocation({
                     V3: { parents: 0, interior: { X1: { Parachain: 2001 } } },
                 });
-                const containerSovereignAccountHex = containerSovereignAccount.asOk.toHuman()
+                const containerSovereignAccountHex = containerSovereignAccount.asOk.toHuman();
 
                 const containerSovereignAccountBalanceAfter = (
                     await relayChainPolkadotJs.query.foreignAssets.account(erc20AssetId, containerSovereignAccountHex)
-                ).unwrapOrDefault()
-                .balance.toBigInt();
+                )
+                    .unwrapOrDefault()
+                    .balance.toBigInt();
 
                 console.log("containerSovereignAccountBalanceAfter: ", containerSovereignAccountBalanceAfter);
 

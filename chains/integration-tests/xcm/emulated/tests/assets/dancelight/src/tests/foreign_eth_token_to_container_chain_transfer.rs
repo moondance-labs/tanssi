@@ -38,7 +38,6 @@ use {
     xcm_emulator::{Chain, ConvertLocation, TestExt},
 };
 
-
 #[test]
 fn check_foreign_eth_token_to_frontier_container_chain_transfer_works() {
     const PARA_ID_FOR_CHANNEL: u32 = 2000;
