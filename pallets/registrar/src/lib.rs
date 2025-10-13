@@ -762,60 +762,58 @@ pub mod pallet {
         #[pallet::weight(T::WeightInfo::poke_deposit())] //TODO: recalculate
         pub fn poke_deposit(origin: OriginFor<T>, para_id: ParaId) -> DispatchResult {
             use frame_support::traits::tokens::Precision;
+        
             let who = ensure_signed(origin)?;
-
-            let genesis =
-                ParaGenesisData::<T>::get(para_id).ok_or(Error::<T>::ParaIdNotRegistered)?;
-
-            // Compute current required deposit
-            let required = Self::get_genesis_cost(genesis.encoded_size());
-
-            let Some(mut info) = RegistrarDeposit::<T>::get(para_id) else {
-                return Ok(());
-            };
-
-            ensure!(info.creator == who, Error::<T>::NotParaCreator);
-
-            let current = info.deposit;
-
-            // Nothing to do
-            if required == current {
-                return Ok(());
-            }
-
-            if required > current {
-                // Need to increase the held amount on the creator account
-                let delta = required.saturating_sub(current);
-
-                // Check the creator can sustain the additional hold
-                ensure!(
-                    T::Currency::can_hold(
+        
+            // Mutate the deposit entry in-place
+            RegistrarDeposit::<T>::try_mutate_exists(para_id, |maybe_info| -> DispatchResult {
+                // If the deposit info doesn't exist, there's nothing to update.
+                let info = match maybe_info.as_mut() {
+                    Some(info) => info,
+                    None => return Ok(()),
+                };
+        
+                // Only the original creator of the para can poke their deposit.
+                ensure!(info.creator == who, Error::<T>::NotParaCreator);
+        
+                // Retrieve the genesis data and calculate the cost based on its encoded size.
+                let genesis =
+                    ParaGenesisData::<T>::get(para_id).ok_or(Error::<T>::ParaIdNotRegistered)?;
+                let required = Self::get_genesis_cost(genesis.encoded_size());
+        
+                let current = info.deposit;
+        
+                // If the current deposit already matches the required one, do nothing.
+                if required == current {
+                    return Ok(());
+                }
+        
+                // Adjust the held amount depending on whether we need to increase or decrease
+                if required > current {
+                    // The deposit must increase
+                    let delta = required.saturating_sub(current);
+        
+                    // Attempt to hold the additional amount from the creator's balance.
+                    T::Currency::hold(&HoldReason::RegistrarDeposit.into(), &info.creator, delta)
+                        .map_err(|_| Error::<T>::NotSufficientDeposit)?;
+                } else {
+                    // The deposit must decrease
+                    let delta = current.saturating_sub(required);
+        
+                    // Release the exact delta from the hold.
+                    T::Currency::release(
                         &HoldReason::RegistrarDeposit.into(),
                         &info.creator,
-                        delta
-                    ),
-                    Error::<T>::NotSufficientDeposit
-                );
-
-                // Increase the hold
-                T::Currency::hold(&HoldReason::RegistrarDeposit.into(), &info.creator, delta)?;
-            } else {
-                // Release the excess.
-                let delta = current.saturating_sub(required);
-
-                T::Currency::release(
-                    &HoldReason::RegistrarDeposit.into(),
-                    &info.creator,
-                    delta,
-                    Precision::Exact,
-                )?;
-            }
-
-            // Persist the new deposit amount.
-            info.deposit = required;
-            RegistrarDeposit::<T>::insert(para_id, &info);
-
-            Ok(())
+                        delta,
+                        Precision::Exact,
+                    )?;
+                }
+        
+                // Update the stored deposit value
+                info.deposit = required;
+        
+                Ok(())
+            })
         }
     }
 

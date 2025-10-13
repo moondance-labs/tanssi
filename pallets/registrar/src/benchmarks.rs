@@ -20,15 +20,16 @@
 use {
     crate::{
         benchmark_blob::benchmark_blob, Call, Config, DepositBalanceOf, EnsureSignedByManager,
-        Pallet, RegistrarDeposit, RegistrarHooks,
+        Pallet, RegistrarDeposit, RegistrarHooks, HoldReason,
     },
     alloc::{vec, vec::Vec},
     dp_container_chain_genesis_data::{ContainerChainGenesisData, ContainerChainGenesisDataItem},
     frame_benchmarking::{account, v2::*},
+    sp_runtime::Saturating,
     frame_support::{
         assert_ok,
         traits::{
-            fungible::{Inspect, Mutate},
+            fungible::{Inspect, Mutate, InspectHold},
             EnsureOrigin, EnsureOriginWithArg,
         },
         BoundedVec,
@@ -233,42 +234,56 @@ mod benchmarks {
     }
 
     #[benchmark]
-    fn poke_deposit(x: Linear<100, 3_000_000>, z: Linear<1, 10>) {
-        let storage = max_size_genesis_data(z, x);
-        let required = Pallet::<T>::get_genesis_cost(storage.encoded_size());
+    fn poke_deposit() {
+        let max = T::MaxGenesisDataSize::get();
+        let small_size: u32 = max / 8;
+        let big_size:   u32 = max; // worst case allowed by the runtime
 
-        let (caller, _deposit_amount) = create_funded_user::<T>(
-            "caller",
-            0,
-            Pallet::<T>::get_genesis_cost(storage.encoded_size()),
-        );
+        let storage_small = max_size_genesis_data(1, small_size);
+        let storage_big = max_size_genesis_data(1, big_size);
 
+        // Calculate requireds
+        let required_small =
+            Pallet::<T>::get_genesis_cost(storage_small.encoded_size());
+        let required_big =
+            Pallet::<T>::get_genesis_cost(storage_big.encoded_size());
+
+        // Create funded caller
+        let (caller, _total) = create_funded_user::<T>("caller", 0, required_big);
+
+        // Prepare a para_id and initial registration with the "small" genesis
         let para_id = ParaId::from(BASE_PARA_ID);
-
         T::InnerRegistrar::prepare_chain_registration(para_id, caller.clone());
-
-        assert_ok!(Pallet::<T>::register(
+        Pallet::<T>::register(
             RawOrigin::Signed(caller.clone()).into(),
             para_id,
-            storage.clone(),
+            storage_small.clone(),
             T::InnerRegistrar::bench_head_data(),
-        ));
+        )
+        .unwrap();
 
-        assert_ok!(Pallet::<T>::mark_valid_for_collating(
-            RawOrigin::Root.into(),
-            para_id
-        ));
+        // - RegistrarDeposit(para_id) exists with deposit = required_small and creator = caller
+        // - There is an initial hold by required_small (created during `register`)
 
-        // Force adjustment by setting deposit to 0 (worst case: full increase)
-        let mut info = Pallet::<T>::registrar_deposit(para_id).unwrap();
-        info.deposit = 0u32.into();
-        RegistrarDeposit::<T>::insert(para_id, info);
+        // Override the genesis in storage to increase the required cost
+        // (this is what the extrinsic reads to recalculate `required`)
+        crate::ParaGenesisData::<T>::insert(para_id, storage_big.clone());
+
+        let held_before =
+            T::Currency::balance_on_hold(&HoldReason::RegistrarDeposit.into(), &caller);
 
         #[extrinsic_call]
         Pallet::<T>::poke_deposit(RawOrigin::Signed(caller.clone()), para_id);
 
-        let updated_info = Pallet::<T>::registrar_deposit(para_id).unwrap();
-        assert_eq!(updated_info.deposit, required);
+        // RegistrarDeposit updated to required_big
+        let info = RegistrarDeposit::<T>::get(para_id).expect("deposit info must exist");
+        assert_eq!(info.deposit, required_big);
+
+        // Hold incremented exactly by delta
+        let held_after =
+            T::Currency::balance_on_hold(&HoldReason::RegistrarDeposit.into(), &caller);
+        let delta = required_big.saturating_sub(required_small);
+        assert_eq!(held_after, held_before.saturating_add(delta));
     }
 
     #[benchmark]
