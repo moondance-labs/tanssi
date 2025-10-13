@@ -690,6 +690,7 @@ where
         if let Some(eth_transfer_data) =
             Self::decode_message_for_eth_transfer(envelope.payload.as_slice())
         {
+            // Check if the token is registered in the relay
             match eth_transfer_data.destination {
                 Destination::AccountId32 { id: _ } => {
                     return pallet_foreign_asset_creator::ForeignAssetToAssetId::<T>::get(
@@ -856,6 +857,7 @@ where
     }
 
     fn process_xcm_container_eth_transfer(eth_transfer_data: EthTransferData) -> DispatchResult {
+        // Get the para_id, beneficiary and fee from the destination
         let (para_id, beneficiary, fee) = match eth_transfer_data.destination {
             Destination::ForeignAccountId32 { para_id, id, fee } => (
                 para_id,
@@ -882,8 +884,10 @@ where
             }
         };
 
+        // Container chain location from relay point of view
         let container_location = Location::new(0, [Parachain(para_id)]);
 
+        // Reanchor the token location to the container chain location
         let token_id_dest = match eth_transfer_data.token_location.clone().reanchored(
             &container_location,
             &<T as pallet_xcm::Config>::UniversalLocation::get(),
@@ -898,8 +902,10 @@ where
             }
         };
 
+        // Asset to pay fees, in this case native relay token
         let asset_fee_relay: Asset = (Location::here(), fee).into();
 
+        // Reanchor the asset fee to the container chain location
         let asset_fee_container = match asset_fee_relay.clone().reanchored(
             &container_location,
             &<T as pallet_xcm::Config>::UniversalLocation::get(),
@@ -914,11 +920,14 @@ where
             }
         };
 
+        // Ethereum token location from relay point of view
         let eth_token_location: Asset = (
             eth_transfer_data.token_location.clone(),
             eth_transfer_data.amount,
         )
             .into();
+
+        // Asset to deposit into the container chain
         let asset_to_deposit: Asset = (token_id_dest.clone(), eth_transfer_data.amount).into();
 
         let dummy_context = XcmContext {
@@ -927,7 +936,7 @@ where
             topic: None,
         };
 
-        // to early check if the token is registered in the relay
+        // To early check if the token is registered in the relay
         if let Err(e) =
             AssetTransactor::can_check_in(&container_location, &eth_token_location, &dummy_context)
         {
@@ -959,7 +968,7 @@ where
             return Ok(());
         }
 
-        // Send XCM to deposit the ERC20 token into beneficiary account
+        // Send XCM to deposit the ERC20 token into beneficiary account and pay fees
         let remote_xcm = Xcm::<()>(vec![
             ReserveAssetDeposited(
                 vec![asset_fee_container.clone(), asset_to_deposit.clone()].into(),
