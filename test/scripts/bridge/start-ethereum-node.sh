@@ -93,7 +93,7 @@ start_lodestar() {
         --params.CAPELLA_FORK_EPOCH 0 \
         --params.DENEB_FORK_EPOCH 0 \
         --params.ELECTRA_FORK_EPOCH 0 \
-        --params.FULU_FORK_EPOCH 0 \
+        --params.FULU_FORK_EPOCH 5000000000 \
         --params.SLOT_DURATION_MS 1000 \
         --eth1=true \
         --rest.namespace="*" \

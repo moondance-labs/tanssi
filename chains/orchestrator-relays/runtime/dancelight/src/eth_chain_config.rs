@@ -41,9 +41,11 @@ pub const ELECTRA_TEST_FORK_EPOCH: u64 = match current_env() {
     BuildEnv::Benchmark => 80000000000,
     _ => 0,
 };
+
+// TODO: change this when parity has new tests matching fulu
 pub const FULU_TEST_FORK_EPOCH: u64 = match current_env() {
     BuildEnv::Benchmark => 80000000001,
-    _ => 0,
+    _ => 5000000,
 };
 
 // For tests, benchmarks and fast-runtime configurations we use the mocked fork versions
