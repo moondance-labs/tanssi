@@ -5,7 +5,7 @@ import { generateKeyringPair } from "@moonwall/util";
 import { type ApiPromise, Keyring } from "@polkadot/api";
 import type { TpTraitsSlotFrequency } from "@polkadot/types/lookup";
 import fs, { stat } from "node:fs/promises";
-import { generateEmptyGenesisData, createCollatorKeyToNameMap, signAndSendAndInclude, } from "utils";
+import { generateEmptyGenesisData, createCollatorKeyToNameMap, signAndSendAndInclude } from "utils";
 
 describeSuite({
     id: "ZOMBIETAN01",

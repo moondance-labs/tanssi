@@ -238,8 +238,7 @@ describeSuite({
 
                 const signer = new ethers.Wallet(BALTATHAR_PRIVATE_KEY, customHttpProvider);
 
-                // Assert charleth has 0 balance before
-                expect(Number(await customHttpProvider.getBalance(CHARLETH_ADDRESS))).to.be.equal(0);
+                const balanceBefore = await customHttpProvider.getBalance(CHARLETH_ADDRESS);
                 // Try to send a test transaction.
                 const nonce = await customHttpProvider.getTransactionCount(BALTATHAR_ADDRESS);
                 const tx = await signer.sendTransaction({
@@ -264,7 +263,8 @@ describeSuite({
                 }
                 blockNumber = await customHttpProvider.getBlockNumber();
                 console.log("frontier template block number included: ", blockNumber);
-                expect(Number(await customHttpProvider.getBalance(CHARLETH_ADDRESS))).to.be.greaterThan(0);
+                const balanceAfter = await customHttpProvider.getBalance(CHARLETH_ADDRESS);
+                expect(Number(balanceAfter - balanceBefore)).to.be.greaterThan(0);
             },
         });
 

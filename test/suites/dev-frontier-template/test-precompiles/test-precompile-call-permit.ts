@@ -64,7 +64,7 @@ describeSuite({
             ).data;
 
             const signature = await context.viem().signTypedData({
-                account: privateKeyToAccount(ALITH_PRIVATE_KEY),
+                account: privateKeyToAccount(ALITH_PRIVATE_KEY).address,
                 types: {
                     EIP712Domain: [
                         {
