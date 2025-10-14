@@ -206,9 +206,11 @@ impl xcm_executor::Config for XcmConfig {
     type XcmSender = XcmRouter;
     type AssetTransactor = AssetTransactors;
     type OriginConverter = XcmOriginToTransactDispatchOrigin;
+    // We admit as reserves:
+    // - Native assets 'AllNative'
+    // - Ethereum assets with ethereum or relay origin
     type IsReserve = (
         IsReserveFilter<Runtime>,
-        // We admit ETH assets from Parent(relay) chain
         EthereumAssetReserveFromParent<EthereumLocation, EthereumNetwork>,
     );
     type IsTeleporter = IsTeleportFilter<Runtime>;
