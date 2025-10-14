@@ -20,22 +20,22 @@
 use {
     crate::{
         benchmark_blob::benchmark_blob, Call, Config, DepositBalanceOf, EnsureSignedByManager,
-        Pallet, RegistrarDeposit, RegistrarHooks, HoldReason,
+        HoldReason, Pallet, RegistrarDeposit, RegistrarHooks,
     },
     alloc::{vec, vec::Vec},
     dp_container_chain_genesis_data::{ContainerChainGenesisData, ContainerChainGenesisDataItem},
     frame_benchmarking::{account, v2::*},
-    sp_runtime::Saturating,
     frame_support::{
         assert_ok,
         traits::{
-            fungible::{Inspect, Mutate, InspectHold},
+            fungible::{Inspect, InspectHold, Mutate},
             EnsureOrigin, EnsureOriginWithArg,
         },
         BoundedVec,
     },
     frame_system::RawOrigin,
     sp_core::Get,
+    sp_runtime::Saturating,
     tp_traits::{ParaId, RegistrarHandler, RelayStorageRootProvider, SlotFrequency},
 };
 
@@ -237,16 +237,14 @@ mod benchmarks {
     fn poke_deposit() {
         let max = T::MaxGenesisDataSize::get();
         let small_size: u32 = max / 8;
-        let big_size:   u32 = max; // worst case allowed by the runtime
+        let big_size: u32 = max; // worst case allowed by the runtime
 
         let storage_small = max_size_genesis_data(1, small_size);
         let storage_big = max_size_genesis_data(1, big_size);
 
         // Calculate requireds
-        let required_small =
-            Pallet::<T>::get_genesis_cost(storage_small.encoded_size());
-        let required_big =
-            Pallet::<T>::get_genesis_cost(storage_big.encoded_size());
+        let required_small = Pallet::<T>::get_genesis_cost(storage_small.encoded_size());
+        let required_big = Pallet::<T>::get_genesis_cost(storage_big.encoded_size());
 
         // Create funded caller
         let (caller, _total) = create_funded_user::<T>("caller", 0, required_big);
