@@ -1,0 +1,21 @@
+2025-10-14 16:48:05 Tanssi    
+2025-10-14 16:48:05 ✌️  version 0.16.0-dev    
+2025-10-14 16:48:05 ❤️  by , 2017-2025    
+2025-10-14 16:48:05 📋 Chain specification: Tanssi    
+2025-10-14 16:48:05 🏷  Node name: eatable-purpose-8525    
+2025-10-14 16:48:05 👤 Role: AUTHORITY    
+2025-10-14 16:48:05 💾 Database: RocksDb at /tmp/substratewlUPxX/chains/tanssi/db/full    
+2025-10-14 16:48:19 🔨 Initializing Genesis block/state (state: 0x3838…c09f, header-hash: 0xdd6d…1a60)    
+2025-10-14 16:48:19 Creating transaction pool txpool_type=ForkAware ready=Limit { count: 8192, total_bytes: 20971520 } future=Limit { count: 819, total_bytes: 2097152 }
+2025-10-14 16:48:19 👴 Loading GRANDPA authority set from genesis on what appears to be first startup.    
+2025-10-14 16:48:19 👶 Creating empty BABE epoch changes on what appears to be first startup.    
+2025-10-14 16:48:19 🚀 Using prepare-worker binary at: "/home/tomasz/projects/tanssi/target/release/tanssi-relay-prepare-worker"    
+2025-10-14 16:48:19 🚀 Using execute-worker binary at: "/home/tomasz/projects/tanssi/target/release/tanssi-relay-execute-worker"    
+2025-10-14 16:48:19 Essential task `basic-block-import-worker` failed. Shutting down service.    
+2025-10-14 16:48:19 Essential task `babe-worker` failed. Shutting down service.    
+2025-10-14 16:48:19 Essential task `txpool-background` failed. Shutting down service.    
+Error: 
+   0: failed to parse Ed25519 secret key: could not convert slice to array
+
+Backtrace omitted. Run with RUST_BACKTRACE=1 environment variable to display it.
+Run with RUST_BACKTRACE=full to include source snippets.

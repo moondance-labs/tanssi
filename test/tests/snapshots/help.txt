@@ -445,6 +445,15 @@ Options:
           
           [default: 1073741824]
 
+      --warm-up-trie-cache [<STRATEGY>]
+          Warm up the trie cache.
+          
+          No warmup if flag is not present. Using flag without value chooses non-blocking warmup.
+
+          Possible values:
+          - non-blocking: Warm up the cache in a non-blocking way
+          - blocking:     Warm up the cache in a blocking way (not recommended for production use)
+
       --bootnodes <ADDR>...
           Specify a list of bootnodes
 
@@ -635,8 +644,14 @@ Options:
       --network-backend <NETWORK_BACKEND>
           Network backend used for P2P networking.
           
-          litep2p network backend is considered experimental and isn't as stable as the libp2p
-          network backend.
+          Litep2p is a lightweight alternative to libp2p, that is designed to be more
+          efficient and easier to use. At the same time, litep2p brings performance
+          improvements and reduces the CPU usage significantly.
+          
+          Libp2p is the old network backend, that may still be used for compatibility
+          reasons until the whole ecosystem is migrated to litep2p.
+          
+          [default: litep2p]
 
           Possible values:
           - libp2p:  Use libp2p for P2P networking
@@ -660,7 +675,7 @@ Options:
       --pool-type <POOL_TYPE>
           The type of transaction pool to be instantiated
           
-          [default: single-state]
+          [default: fork-aware]
 
           Possible values:
           - single-state: Uses a legacy, single-state transaction pool
@@ -827,3 +842,5 @@ Options:
 
   -V, --version
           Print version
+
+Support: https://github.com/moondance-labs/tanssi/issues/new
