@@ -498,7 +498,7 @@ pub fn dummy_config(tokio_handle: tokio::runtime::Handle, base_path: BasePath) -
             kademlia_disjoint_query_paths: false,
             kademlia_replication_factor: NonZeroUsize::new(20).unwrap(),
             ipfs_server: false,
-            network_backend: Some(NetworkBackendType::Libp2p),
+            network_backend: Some(NetworkBackendType::Litep2p),
         },
         keystore: KeystoreConfig::InMemory,
         database: DatabaseSource::ParityDb {
