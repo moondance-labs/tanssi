@@ -39,7 +39,7 @@ const DEFAULT_ENDPOINTS = [
     "wss://rococo-rpc.polkadot.io",
     "wss://westend-rpc.polkadot.io",
     // Frontier template
-    "wss://services.tanssi-testnet.network/tanssi-2000",
+    "wss://services.tanssi-testnet.network/dancelight-2001",
     // TODO: add simple template rpc endpoint
 ];
 

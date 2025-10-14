@@ -173,7 +173,8 @@ mod weights;
 pub mod governance;
 use {
     governance::{
-        pallet_custom_origins, AuctionAdmin, Fellows, GeneralAdmin, Treasurer, TreasurySpender,
+        councils::*, pallet_custom_origins, AuctionAdmin, Fellows, GeneralAdmin, Treasurer,
+        TreasurySpender,
     },
     pallet_collator_assignment::CoreAllocationConfiguration,
 };
@@ -905,9 +906,14 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
     fn filter(&self, c: &RuntimeCall) -> bool {
         match self {
             ProxyType::Any => true,
-            ProxyType::NonTransfer => matches!(
-                c,
-                RuntimeCall::System(..) |
+            ProxyType::NonTransfer => match c {
+                RuntimeCall::Identity(
+                    pallet_identity::Call::add_sub { .. } | pallet_identity::Call::set_subs { .. },
+                ) => false,
+                call => {
+                    matches!(
+                        call,
+                        RuntimeCall::System(..) |
 				RuntimeCall::Babe(..) |
 				RuntimeCall::Timestamp(..) |
 				// Specifically omitting Indices `transfer`, `force_transfer`
@@ -919,17 +925,21 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 				RuntimeCall::Referenda(..) |
 				RuntimeCall::FellowshipCollective(..) |
 				RuntimeCall::FellowshipReferenda(..) |
+                RuntimeCall::OpenTechCommitteeCollective(..) |
 				RuntimeCall::Whitelist(..) |
 				RuntimeCall::Utility(..) |
 				RuntimeCall::Identity(..) |
 				RuntimeCall::Scheduler(..) |
 				RuntimeCall::Proxy(..) |
+                RuntimeCall::PooledStaking(..) |
 				RuntimeCall::Multisig(..) |
 				RuntimeCall::Registrar(paras_registrar::Call::register {..}) |
 				RuntimeCall::Registrar(paras_registrar::Call::deregister {..}) |
 				// Specifically omitting Registrar `swap`
 				RuntimeCall::Registrar(paras_registrar::Call::reserve {..})
-            ),
+                    )
+                }
+            },
             ProxyType::Governance => matches!(
                 c,
                 RuntimeCall::Utility(..) |
@@ -938,7 +948,8 @@ impl InstanceFilter<RuntimeCall> for ProxyType {
 					RuntimeCall::Referenda(..) |
 					RuntimeCall::FellowshipCollective(..) |
 					RuntimeCall::FellowshipReferenda(..) |
-					RuntimeCall::Whitelist(..)
+					RuntimeCall::Whitelist(..) |
+                    RuntimeCall::OpenTechCommitteeCollective(..)
             ),
             ProxyType::IdentityJudgement => matches!(
                 c,
@@ -1662,7 +1673,10 @@ impl pallet_maintenance_mode::Config for Runtime {
     type RuntimeEvent = RuntimeEvent;
     type NormalCallFilter = NormalFilter;
     type MaintenanceCallFilter = InsideBoth<MaintenanceFilter, NormalFilter>;
-    type MaintenanceOrigin = EnsureRoot<AccountId>;
+    type MaintenanceOrigin = EitherOf<
+        EnsureRoot<AccountId>,
+        pallet_collective::EnsureProportionAtLeast<AccountId, OpenTechCommitteeInstance, 5, 9>,
+    >;
     type XcmExecutionManager = ();
 }
 
@@ -1951,6 +1965,8 @@ construct_runtime! {
         FellowshipReferenda: pallet_referenda::<Instance2> = 44,
         Origins: pallet_custom_origins = 45,
         Whitelist: pallet_whitelist = 46,
+        OpenTechCommitteeCollective: pallet_collective::<Instance3> = 47,
+
 
         // Parachains pallets. Start indices at 50 to leave room.
         ParachainsOrigin: parachains_origin = 50,
@@ -2325,6 +2341,7 @@ mod benches {
         [pallet_sudo, Sudo]
         [frame_system, SystemBench::<Runtime>]
         [frame_system_extensions, frame_system_benchmarking::extensions::Pallet::<Runtime>]
+        [pallet_collective, OpenTechCommitteeCollective]
         [pallet_timestamp, Timestamp]
         [pallet_transaction_payment, TransactionPayment]
         [pallet_treasury, Treasury]
