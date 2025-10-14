@@ -293,21 +293,37 @@ pub mod pallet {
     #[pallet::generate_deposit(pub(super) fn deposit_event)]
     pub enum Event<T: Config> {
         /// A new para id has been registered. [para_id]
-        ParaIdRegistered { para_id: ParaId },
+        ParaIdRegistered {
+            para_id: ParaId,
+        },
         /// A para id has been deregistered. [para_id]
-        ParaIdDeregistered { para_id: ParaId },
+        ParaIdDeregistered {
+            para_id: ParaId,
+        },
         /// A new para id is now valid for collating. [para_id]
-        ParaIdValidForCollating { para_id: ParaId },
+        ParaIdValidForCollating {
+            para_id: ParaId,
+        },
         /// A para id has been paused from collating.
-        ParaIdPaused { para_id: ParaId },
+        ParaIdPaused {
+            para_id: ParaId,
+        },
         /// A para id has been unpaused.
-        ParaIdUnpaused { para_id: ParaId },
+        ParaIdUnpaused {
+            para_id: ParaId,
+        },
         /// Parathread params changed
-        ParathreadParamsChanged { para_id: ParaId },
+        ParathreadParamsChanged {
+            para_id: ParaId,
+        },
         /// Para manager has changed
         ParaManagerChanged {
             para_id: ParaId,
             manager_address: T::AccountId,
+        },
+        // Deposit has updated
+        DepositUpdated {
+            para_id: ParaId,
         },
     }
 
@@ -767,11 +783,7 @@ pub mod pallet {
 
             // Mutate the deposit entry in-place
             RegistrarDeposit::<T>::try_mutate_exists(para_id, |maybe_info| -> DispatchResult {
-                // If the deposit info doesn't exist, there's nothing to update.
-                let info = match maybe_info.as_mut() {
-                    Some(info) => info,
-                    None => return Ok(()),
-                };
+                let info = maybe_info.as_mut().ok_or(Error::<T>::ParaIdNotRegistered)?;
 
                 // Only the original creator of the para can poke their deposit.
                 ensure!(info.creator == who, Error::<T>::NotParaCreator);
@@ -811,6 +823,8 @@ pub mod pallet {
 
                 // Update the stored deposit value
                 info.deposit = required;
+
+                Self::deposit_event(Event::DepositUpdated { para_id });
 
                 Ok(())
             })
