@@ -63,23 +63,10 @@ This tool provides a way to generate XCM payloads for different use cases:
 
 ### Usage
 
-Container native to container chain (frontier):
+Container native to container chain:
 ```
 cargo run -p tanssi-utils -- payload-generator \
-  --token-location "Parachain:2002,PalletInstance:10" \
-  --para-id 2002 \
-  --beneficiary 0x0505050505050505050505050505050505050505050505050505050505050505 \
-  --container-fee 500000000000000 \
-  --amount 100000000 \
-  --fee 1500000000000000 \
-  --destination container \
-  --token native
-```
-
-Container native to container chain (simple):
-```
-cargo run -p tanssi-utils -- payload-generator \
-  --token-location "Parachain:2002,PalletInstance:10" \
+  --token-location '{"parents": 0, "interior": {"X2": [{"Parachain": 2002}, {"PalletInstance": 10}]}}' \
   --para-id 2002 \
   --beneficiary 0x0505050505050505050505050505050505050505050505050505050505050505 \
   --container-fee 500000000000000 \
@@ -92,7 +79,7 @@ cargo run -p tanssi-utils -- payload-generator \
 Relay native to relay
 ```
 cargo run -p tanssi-utils -- payload-generator \
-  --token-location "Here" \
+  --token-location '{"parents": 0, "interior": "Here"}' \
   --para-id 2002 \
   --beneficiary 0x0505050505050505050505050505050505050505050505050505050505050505 \
   --container-fee 500000000000000 \

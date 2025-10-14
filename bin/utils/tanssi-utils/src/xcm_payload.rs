@@ -23,9 +23,7 @@ use {
         Command, Destination, MessageV1, VersionedXcmMessage,
     },
     sp_core::H160,
-    std::sync::Arc,
     xcm::latest::prelude::*,
-    xcm::latest::Junctions,
     xcm::latest::Location,
     xcm::prelude::InteriorLocation,
     xcm::v5::NetworkId,
@@ -93,8 +91,14 @@ pub struct PayloadGeneratorCmd {
     pub token_address: Option<String>,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct PayloadResult {
+    pub payload_bytes: Vec<u8>,
+    pub encoded_hex: String,
+}
+
 impl PayloadGeneratorCmd {
-    pub fn run(&self) {
+    pub fn run(&self) -> PayloadResult {
         let beneficiary_bytes = self.decode_beneficiary();
 
         let payload = match (&self.destination, &self.token) {
@@ -114,11 +118,20 @@ impl PayloadGeneratorCmd {
 
         let payload_bytes = payload.encode();
         println!("\nPayload (bytes): {:?}", payload_bytes);
-        let encoded = encode(&[Token::Uint(self.nonce.into()), Token::Bytes(payload_bytes)]);
+        let encoded = encode(&[
+            Token::Uint(self.nonce.into()),
+            Token::Bytes(payload_bytes.clone()),
+        ]);
+        let encoded_hex = hex::encode(encoded);
         println!(
             "\nSnowbridgeVerificationPrimitivesLog.data (hex): 0x{}",
-            hex::encode(encoded)
+            encoded_hex
         );
+
+        PayloadResult {
+            payload_bytes,
+            encoded_hex,
+        }
     }
 
     fn build_native_relay(&self, beneficiary: &[u8]) -> VersionedXcmMessage {
@@ -235,31 +248,7 @@ impl PayloadGeneratorCmd {
             .as_ref()
             .expect("--token-location is required for native");
 
-        if token_location.eq_ignore_ascii_case("Here") {
-            Location::here()
-        } else if token_location.starts_with("Parachain:") {
-            let parts: Vec<&str> = token_location.split(',').collect();
-            let mut para_id: Option<u32> = None;
-            let mut pallet_id: Option<u8> = None;
-
-            for p in parts {
-                if let Some(v) = p.strip_prefix("Parachain:") {
-                    para_id = Some(v.parse().expect("invalid parachain id"));
-                } else if let Some(v) = p.strip_prefix("PalletInstance:") {
-                    pallet_id = Some(v.parse().expect("invalid pallet id"));
-                }
-            }
-
-            let para_id = para_id.expect("Parachain missing");
-            let pallet_id = pallet_id.expect("PalletInstance missing");
-
-            Location {
-                parents: 0,
-                interior: Junctions::X2(Arc::new([Parachain(para_id), PalletInstance(pallet_id)])),
-            }
-        } else {
-            panic!("Unsupported token-location format: {}", token_location);
-        }
+        serde_json::from_str::<Location>(token_location).expect("invalid JSON for token_location")
     }
 
     fn reanchor_token(&self, token_location: Location) -> Location {
@@ -304,5 +293,98 @@ impl PayloadGeneratorCmd {
         let mut id32 = [0u8; 32];
         id32.copy_from_slice(bytes);
         Destination::AccountId32 { id: id32 }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn e2e_native_container() {
+        let cmd = PayloadGeneratorCmd {
+            token_location: Some(
+                json!({"parents":0,"interior":{"X2": [{"Parachain": 2002, }, {"PalletInstance": 10}]}})
+                    .to_string(),
+            ),
+            para_id: 2002,
+            beneficiary: "0x0505050505050505050505050505050505050505050505050505050505050505"
+                .into(),
+            container_fee: 500000000000000,
+            amount: 100000000,
+            fee: 1500000000000000,
+            destination: DestinationType::Container,
+            token: TokenType::Native,
+            genesis_hash: None,
+            token_address: None,
+            nonce: 1,
+        };
+        let result = cmd.run();
+
+        assert_eq!(result.encoded_hex, "00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000007f00010000000000000002c97f6a848a8e7895b55dc9b894e4f552ea33203bfbdb478d506f05b62d9d5fd101d2070000050505050505050505050505050505050505050505050505050505050505050500406352bfc60100000000000000000000e1f50500000000000000000000000000c029f73d540500000000000000000000");
+    }
+
+    #[test]
+    fn e2e_relay_native_to_relay() {
+        let cmd = PayloadGeneratorCmd {
+            token_location: Some(json!({"parents":0,"interior":"Here"}).to_string()),
+            para_id: 2002,
+            beneficiary: "0x0505050505050505050505050505050505050505050505050505050505050505"
+                .into(),
+            container_fee: 500000000000000,
+            amount: 100000000,
+            fee: 1500000000000000,
+            destination: DestinationType::Relay,
+            token: TokenType::Native,
+            genesis_hash: None,
+            token_address: None,
+            nonce: 1,
+        };
+        let result = cmd.run();
+
+        assert_eq!(result.encoded_hex, "00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000006b00010000000000000002e95142d5aca3299068a3d9b4a659f9589559382d0a130a1d7cedc67d6c3d401d00050505050505050505050505050505050505050505050505050505050505050500e1f50500000000000000000000000000c029f73d5405000000000000000000000000000000000000000000000000000000000000");
+    }
+
+    #[test]
+    fn e2e_erc20_to_relay() {
+        let cmd = PayloadGeneratorCmd {
+            token_location: Some(json!({"parents":0,"interior":"Here"}).to_string()),
+            para_id: 2002,
+            beneficiary: "0x0505050505050505050505050505050505050505050505050505050505050505"
+                .into(),
+            container_fee: 500000000000000,
+            amount: 100000000,
+            fee: 1500000000000000,
+            destination: DestinationType::Relay,
+            token: TokenType::Erc20,
+            genesis_hash: None,
+            nonce: 1,
+            token_address: Some("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef".into()),
+        };
+        let result = cmd.run();
+
+        assert_eq!(result.encoded_hex, "00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000005f00010000000000000001deadbeefdeadbeefdeadbeefdeadbeefdeadbeef00050505050505050505050505050505050505050505050505050505050505050500e1f50500000000000000000000000000c029f73d540500000000000000000000");
+    }
+
+    #[test]
+    fn e2e_to_container() {
+        let cmd = PayloadGeneratorCmd {
+            token_location: Some(json!({"parents":0,"interior":"Here"}).to_string()),
+            para_id: 2002,
+            beneficiary: "0x0505050505050505050505050505050505050505050505050505050505050505"
+                .into(),
+            container_fee: 500000000000000,
+            amount: 100000000,
+            fee: 1500000000000000,
+            destination: DestinationType::Container,
+            token: TokenType::Erc20,
+            genesis_hash: None,
+            nonce: 1,
+            token_address: Some("0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef".into()),
+        };
+        let result = cmd.run();
+
+        assert_eq!(result.encoded_hex, "00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000007300010000000000000001deadbeefdeadbeefdeadbeefdeadbeefdeadbeef01d2070000050505050505050505050505050505050505050505050505050505050505050500406352bfc60100000000000000000000e1f50500000000000000000000000000c029f73d540500000000000000000000000000000000000000000000");
     }
 }
