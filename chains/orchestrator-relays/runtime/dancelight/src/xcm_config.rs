@@ -161,25 +161,7 @@ pub type XcmRouter = WithUniqueTopic<(
 )>;
 
 parameter_types! {
-    pub Star: AssetFilter = Wild(AllOf { fun: WildFungible, id: XcmAssetId(TokenLocation::get()) });
     pub AssetHub: Location = Parachain(ASSET_HUB_ID).into_location();
-    pub Contracts: Location = Parachain(CONTRACTS_ID).into_location();
-    pub Encointer: Location = Parachain(ENCOINTER_ID).into_location();
-    pub BridgeHub: Location = Parachain(BRIDGE_HUB_ID).into_location();
-    pub People: Location = Parachain(PEOPLE_ID).into_location();
-    pub Broker: Location = Parachain(BROKER_ID).into_location();
-    pub Tick: Location = Parachain(100).into_location();
-    pub Trick: Location = Parachain(110).into_location();
-    pub Track: Location = Parachain(120).into_location();
-    pub StarForTick: (AssetFilter, Location) = (Star::get(), Tick::get());
-    pub StarForTrick: (AssetFilter, Location) = (Star::get(), Trick::get());
-    pub StarForTrack: (AssetFilter, Location) = (Star::get(), Track::get());
-    pub StarForAssetHub: (AssetFilter, Location) = (Star::get(), AssetHub::get());
-    pub StarForContracts: (AssetFilter, Location) = (Star::get(), Contracts::get());
-    pub StarForEncointer: (AssetFilter, Location) = (Star::get(), Encointer::get());
-    pub StarForBridgeHub: (AssetFilter, Location) = (Star::get(), BridgeHub::get());
-    pub StarForPeople: (AssetFilter, Location) = (Star::get(), People::get());
-    pub StarForBroker: (AssetFilter, Location) = (Star::get(), Broker::get());
     pub const RelayNetwork: NetworkId = NetworkId::ByGenesis(WESTEND_GENESIS_HASH);
     pub const MaxInstructions: u32 = 100;
     pub const MaxAssetsIntoHolding: u32 = 64;
