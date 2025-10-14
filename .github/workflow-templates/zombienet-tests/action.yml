@@ -25,7 +25,8 @@ runs:
     - name: "Run zombie test"
       uses: nick-fields/retry@v3
       with:
-        max_attempts: 3
+        # TODO: set max_attempts back to 3
+        max_attempts: 1
         timeout_minutes: 60
         shell: bash
         command: |
@@ -37,6 +38,10 @@ runs:
       if: failure()
       shell: bash
       run: |
+        # TODO: if multiple attempts fail, we only get logs for the latest failed attempt
+        # We could try to get logs for all the attempts, but we need some way to get the zombienet folder name
+        # for each test run.
+        
         # Print collapsed output of /tmp for debugging
         echo "::group::ls -ltr /tmp"
         ls -ltr /tmp || true
