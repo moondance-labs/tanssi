@@ -18,13 +18,5 @@
     "polkadot": "6ffc9c3e491515c9803f03c89e4d681664763bdc6c47042bc72c305ee208e2c8",
     "polkadot-execute-worker": "a840a8bc972d45501bdd3d0940bf78f6713b583a822b52ca074a73f3de465e91",
     "polkadot-prepare-worker": "6230051a0779cc8d17ed83bad25bffd1f0d5d3ab58d11fec5dc57c42c35f2734"
-  },
-  "stable2506-1": {
-    "polkadot": "2d0dc4a242fff5513b982ebe7715463eae6a1c9e8a1b4d75d6c5845b7f8eb6cc"
-  },
-  "stable2506-2": {
-    "polkadot": "6ffc9c3e491515c9803f03c89e4d681664763bdc6c47042bc72c305ee208e2c8",
-    "polkadot-execute-worker": "a840a8bc972d45501bdd3d0940bf78f6713b583a822b52ca074a73f3de465e91",
-    "polkadot-prepare-worker": "6230051a0779cc8d17ed83bad25bffd1f0d5d3ab58d11fec5dc57c42c35f2734"
   }
 }

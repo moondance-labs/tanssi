@@ -19,7 +19,7 @@ async function main() {
     const polkadotVersionMappings: PolkadotVersionMapping = jsonFile;
     const fileContents = await fs.readFile(CONFIG.CARGO_PATH, "utf-8");
     const cargoToml = parse(fileContents) as CargoToml;
-    const stableVersion = overrideStable2506(findPolkadotStableVersion(cargoToml.workspace.dependencies));
+    const stableVersion = findPolkadotStableVersion(cargoToml.workspace.dependencies);
     console.log(`🔎 Found polkadot-sdk version: ${stableVersion}`);
     if (!checkSupportedArch()) {
         // Skip binary download if running on unsupported architecture
@@ -168,13 +168,4 @@ function checkSupportedArch(): boolean {
     }
 
     return true;
-}
-
-function overrideStable2506(x: string): string {
-    // Try to use a newer release to fix issues with litep2p in dancebox data preservers tests
-    if (x == "stable2506") {
-        return "stable2506-2";
-    }
-
-    return x;
 }
