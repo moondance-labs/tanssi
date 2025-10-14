@@ -522,6 +522,10 @@ declare module "@polkadot/types/lookup" {
             readonly paraId: u32;
             readonly managerAddress: AccountId32;
         } & Struct;
+        readonly isDepositUpdated: boolean;
+        readonly asDepositUpdated: {
+            readonly paraId: u32;
+        } & Struct;
         readonly type:
             | "ParaIdRegistered"
             | "ParaIdDeregistered"
@@ -529,7 +533,8 @@ declare module "@polkadot/types/lookup" {
             | "ParaIdPaused"
             | "ParaIdUnpaused"
             | "ParathreadParamsChanged"
-            | "ParaManagerChanged";
+            | "ParaManagerChanged"
+            | "DepositUpdated";
     }
 
     /** @name PalletInvulnerablesEvent (47) */

@@ -734,6 +734,9 @@ export default {
                 paraId: "u32",
                 managerAddress: "AccountId32",
             },
+            DepositUpdated: {
+                paraId: "u32",
+            },
         },
     },
     /**
