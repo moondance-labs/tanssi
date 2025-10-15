@@ -76,6 +76,7 @@ pub use {
 pub use benchmarks::*;
 
 mod custom_do_process_message;
+mod custom_do_process_message_v2;
 mod custom_send_message;
 
 #[derive(Clone, Encode, Decode, DecodeWithMemTracking, RuntimeDebug, TypeInfo, PartialEq)]

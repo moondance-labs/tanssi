@@ -20399,6 +20399,7 @@ dependencies = [
 name = "tp-bridge"
 version = "0.1.0"
 dependencies = [
+ "alloy-core",
  "cumulus-primitives-core",
  "dp-chain-state-snapshot",
  "dp-container-chain-genesis-data",
@@ -20418,6 +20419,7 @@ dependencies = [
  "snowbridge-inbound-queue-primitives",
  "snowbridge-outbound-queue-primitives",
  "snowbridge-pallet-outbound-queue",
+ "snowbridge-pallet-outbound-queue-v2",
  "snowbridge-pallet-system",
  "sp-core",
  "sp-runtime",
