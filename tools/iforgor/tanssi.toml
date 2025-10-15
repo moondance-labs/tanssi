@@ -213,3 +213,7 @@ name = "[Git] Delete local branches (select)"
 script = """
 git branch | ichoose --multi --title "Select branches to delete" | while read x ; do git branch -D $x ; done
 """
+
+[[entries]]
+name = "Replace Polkadot SDK dependency"
+script = "diener patch --crates-to-patch ../polkadot-sdk/ --target https://github.com/moondance-labs/polkadot-sdk"
