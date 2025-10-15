@@ -372,7 +372,21 @@ impl<T: frame_system::Config> pallet_registrar::WeightInfo for SubstrateWeight<T
 			.saturating_add(T::DbWeight::get().writes(1_u64))
 	}
 
+	/// Storage: `Registrar::RegistrarDeposit` (r:1 w:1)
+	/// Proof: `Registrar::RegistrarDeposit` (`max_values`: None, `max_size`: Some(68), added: 2543, mode: `MaxEncodedLen`)
+	/// Storage: `Registrar::ParaGenesisData` (r:1 w:0)
+	/// Proof: `Registrar::ParaGenesisData` (`max_values`: None, `max_size`: None, mode: `Measured`)
+	/// Storage: `System::Account` (r:1 w:1)
+	/// Proof: `System::Account` (`max_values`: None, `max_size`: Some(128), added: 2603, mode: `MaxEncodedLen`)
+	/// Storage: `Balances::Holds` (r:1 w:1)
+	/// Proof: `Balances::Holds` (`max_values`: None, `max_size`: Some(139), added: 2614, mode: `MaxEncodedLen`)
 	fn poke_deposit() -> Weight {
-		Weight::MAX
+		// Proof Size summary in bytes:
+		//  Measured:  `5000508`
+		//  Estimated: `5003973`
+		// Minimum execution time: 10_590_000_000 picoseconds.
+		Weight::from_parts(10_590_000_000, 5003973)
+			.saturating_add(T::DbWeight::get().reads(4_u64))
+			.saturating_add(T::DbWeight::get().writes(3_u64))
 	}
 }
