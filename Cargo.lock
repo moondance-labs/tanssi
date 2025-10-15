@@ -19868,7 +19868,7 @@ dependencies = [
  "clap",
  "ethabi-decode",
  "hex",
- "hex-literal 0.3.4",
+ "hex-literal",
  "pallet-external-validators-rewards",
  "parity-scale-codec",
  "serde",
