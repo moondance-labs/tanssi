@@ -55,6 +55,8 @@ use core::marker::PhantomData;
 pub trait WeightInfo {
 	fn set_token_transfer_channel() -> Weight;
 	fn transfer_native_token() -> Weight;
+
+	fn add_tip_v2() -> Weight;
 }
 
 /// Weights for pallet_ethereum_token_transfers using the Substrate node and recommended hardware.
@@ -106,6 +108,10 @@ impl<T: frame_system::Config> WeightInfo for SubstrateWeight<T> {
 			.saturating_add(T::DbWeight::get().reads(9_u64))
 			.saturating_add(T::DbWeight::get().writes(7_u64))
 	}
+
+	fn add_tip_v2() -> Weight {
+		Weight::from_parts(104_480_000, 6196)
+	}
 }
 
 // For backwards compatibility and tests
@@ -155,5 +161,9 @@ impl WeightInfo for () {
 		Weight::from_parts(104_480_000, 6196)
 			.saturating_add(RocksDbWeight::get().reads(9_u64))
 			.saturating_add(RocksDbWeight::get().writes(7_u64))
+	}
+
+	fn add_tip_v2() -> Weight {
+		Weight::from_parts(104_480_000, 6196)
 	}
 }

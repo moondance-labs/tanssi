@@ -19,6 +19,7 @@
 #[cfg(all(not(test), not(feature = "testing-helpers")))]
 use crate::EthereumBeaconClient;
 
+use pallet_ethereum_token_transfers::DummyTipHandler;
 #[cfg(not(feature = "runtime-benchmarks"))]
 use {
     tanssi_runtime_common::relay::NativeTokenTransferMessageProcessor,
@@ -143,6 +144,7 @@ impl pallet_ethereum_token_transfers::Config for Runtime {
     #[cfg(feature = "runtime-benchmarks")]
     type BenchmarkHelper = tp_bridge::EthereumTokenTransfersBenchHelper<Runtime>;
     type WeightInfo = crate::weights::pallet_ethereum_token_transfers::SubstrateWeight<Runtime>;
+    type TipHandler = DummyTipHandler;
 }
 #[cfg(feature = "runtime-benchmarks")]
 mod benchmark_helper {
