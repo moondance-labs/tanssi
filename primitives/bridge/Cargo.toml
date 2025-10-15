@@ -10,6 +10,7 @@ version = "0.1.0"
 workspace = true
 
 [dependencies]
+alloy-core = { workspace = true, features = ["sol-types"] }
 dp-chain-state-snapshot = { workspace = true }
 dp-container-chain-genesis-data = { workspace = true }
 ethabi = { workspace = true }
@@ -27,6 +28,7 @@ snowbridge-core = { workspace = true }
 snowbridge-inbound-queue-primitives = { workspace = true }
 snowbridge-outbound-queue-primitives = { workspace = true }
 snowbridge-pallet-outbound-queue = { workspace = true }
+snowbridge-pallet-outbound-queue-v2 = { workspace = true }
 snowbridge-pallet-system = { workspace = true }
 sp-core = { workspace = true }
 sp-runtime = { workspace = true }
@@ -43,6 +45,7 @@ hex-literal = { workspace = true }
 [features]
 default = [ "std" ]
 std = [
+	"alloy-core/std",
 	"cumulus-primitives-core/std",
 	"dp-chain-state-snapshot/std",
 	"dp-container-chain-genesis-data/std",
@@ -59,6 +62,7 @@ std = [
 	"snowbridge-inbound-queue-primitives/std",
 	"snowbridge-outbound-queue-primitives/std",
 	"snowbridge-pallet-outbound-queue/std",
+	"snowbridge-pallet-outbound-queue-v2/std",
 	"snowbridge-pallet-system/std",
 	"sp-core/std",
 	"sp-runtime/std",
