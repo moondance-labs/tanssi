@@ -1,18 +1,14 @@
 // @ts-nocheck
 
 import { beforeAll, describeSuite, expect } from "@moonwall/cli";
-import { ApiPromise, Keyring, WsProvider } from "@polkadot/api";
-import { stringToHex, u8aToHex } from "@polkadot/util";
-import { decodeAddress } from "@polkadot/util-crypto";
+import type { ApiPromise, } from "@polkadot/api";
 import {
-    checkLogs,
+    getAuthorFromDigestRange,
     checkLogsNotExist,
-    directoryExists,
     getAuthorFromDigest,
     getHeaderFromRelay,
     getKeyringNimbusIdHex,
     getTmpZombiePath,
-    signAndSendAndInclude,
     waitSessions,
 } from "utils";
 
@@ -156,17 +152,16 @@ describeSuite({
                 await waitSessions(context, relayApi, 2, null, "Tanssi");
             },
         });
-
         it({
             id: "T12",
-            title: "Peers over time for container collators (fail if majority == 1)",
+            title: "Peers over time for container collators (fail if majority == 1) + block authors list",
             timeout: 240000,
             test: async () => {
-                const { readFile } = await import("fs/promises");
+                const { readFile } = await import("node:fs/promises");
 
                 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-                // Extract all "(N peers)" counts (with timestamps) from a log file
+                // -------- Peer series helpers --------
                 const parsePeerSeries = (txt: string) => {
                     const peers: number[] = [];
                     const times: string[] = [];
@@ -177,10 +172,9 @@ describeSuite({
                         if (!line.includes("[Container-2000]") || !line.includes("Idle")) continue;
                         const m = rePeers.exec(line);
                         if (!m) continue;
-                        const n = parseInt(m[1], 10);
+                        const n = Number.parseInt(m[1], 10);
                         if (!Number.isNaN(n)) {
                             peers.push(n);
-                            // best-effort timestamp: take everything before the first '['
                             const bracket = line.indexOf("[");
                             const ts = bracket > 0 ? line.slice(0, bracket).trim() : "";
                             times.push(ts);
@@ -189,7 +183,6 @@ describeSuite({
                     return { peers, times };
                 };
 
-                // Render a compact sparkline for the series (downsample to ~120 chars if needed)
                 const sparkline = (nums: number[]) => {
                     if (nums.length === 0) return "";
                     const blocks = "▁▂▃▄▅▆▇█";
@@ -208,7 +201,10 @@ describeSuite({
                     const data = downsample(nums, target);
                     const min = Math.min(...data);
                     const max = Math.max(...data);
-                    if (max === min) return blocks[Math.min(blocks.length - 1, Math.max(0, Math.floor(blocks.length / 2)))].repeat(data.length);
+                    if (max === min)
+                        return blocks[Math.min(blocks.length - 1, Math.max(0, Math.floor(blocks.length / 2)))].repeat(
+                            data.length
+                        );
                     return data
                         .map((v) => {
                             const t = (v - min) / (max - min);
@@ -228,7 +224,6 @@ describeSuite({
                     return { min, max, mean, p50: q(0.5), p90: q(0.9) };
                 };
 
-                // Ensure we have enough samples; if not, wait a bit and re-read
                 const collectSeries = async (logPath: string) => {
                     let tries = 0;
                     let series = { peers: [] as number[], times: [] as string[] };
@@ -236,7 +231,7 @@ describeSuite({
                         try {
                             const txt = await readFile(logPath, "utf8");
                             series = parsePeerSeries(txt);
-                            if (series.peers.length >= 8) break; // decent baseline (~40s if 5s cadence)
+                            if (series.peers.length >= 8) break;
                         } catch {
                             // file may not exist yet
                         }
@@ -252,8 +247,82 @@ describeSuite({
                     { name: "Collator2000-02", path: `${base}/Collator2000-02.log` },
                 ];
 
+                // -------- Block authors list (Container-2000) --------
+                // Prefer project utility.
+                const getAuthorsRange = async (start: number, end: number): Promise<Array<[number, string]>> => {
+                    return await getAuthorFromDigestRange(container2000Api, start, end);
+                };
+
+                // Fetch block timestamp (ms) at a given height. Try storage first; fallback to scanning extrinsics.
+                const fetchTimestampMs = async (num: number): Promise<number | undefined> => {
+                    try {
+                        const hash = await container2000Api.rpc.chain.getBlockHash(num);
+                        try {
+                            const ts = await (container2000Api as any).query?.timestamp?.now?.at?.(hash);
+                            if (ts && typeof ts.toNumber === "function") return ts.toNumber();
+                        } catch {
+                            // fall through to extrinsic scan
+                        }
+                        const blk = await container2000Api.rpc.chain.getBlock(hash);
+                        for (const ex of blk.block.extrinsics as any[]) {
+                            const m = ex.method;
+                            if (m?.section === "timestamp" && m?.method === "set" && m?.args?.length) {
+                                const v = m.args[0];
+                                const n =
+                                    typeof v?.toNumber === "function" ? v.toNumber() : Number(v?.toString?.() ?? Number.NaN);
+                                if (Number.isFinite(n)) return n;
+                            }
+                        }
+                    } catch {
+                        // ignore
+                    }
+                    return undefined;
+                };
+
+                const head = await container2000Api.rpc.chain.getBlock();
+                const current = head.block.header.number.toNumber();
+                const window = Math.min(60, Math.max(10, current >= 10 ? 40 : current + 1)); // 40 by default, clamp 10..60
+                const start = Math.max(1, current - window + 1);
+                const end = current;
+
+                const authorPairs = await getAuthorsRange(start, end);
+
+                // Pretty print list + time deltas + a tiny summary
+                const byAuthor = new Map<string, number>();
+                console.log(`\n[Container-2000] Block authors for #${start}..#${end} (${authorPairs.length} blocks):`);
+
+                // Seed previous timestamp with block (start-1) if available; otherwise first delta will be 0s.
+                let prevTs = null;
+
+                const rows: Array<{ n: number; author: string; delta: number }> = [];
+                for (const [n, author] of authorPairs) {
+                    const ts = await fetchTimestampMs(n);
+                    const deltaSec = prevTs != null && ts != null ? Math.max(0, Math.round((ts - prevTs) / 1000)) : 0;
+
+                    rows.push({ n, author, delta: deltaSec });
+
+                    if (ts != null) prevTs = ts;
+                    byAuthor.set(author, (byAuthor.get(author) ?? 0) + 1);
+                }
+
+                const numWidth = Math.max(...rows.map((r) => r.n)).toString().length; // width for block numbers
+                const deltaWidth = Math.max(...rows.map((r) => r.delta), 0).toString().length; // width for delta seconds
+
+                const lines = rows.map(
+                    ({ n, author, delta }) =>
+                        `#${n.toString().padStart(numWidth)} (+${delta.toString().padStart(deltaWidth)}s): ${author}`
+                );
+
+                console.log(lines.join("\n"));
+                const entries = [...byAuthor.entries()].sort((a, b) => b[1] - a[1]);
+                const summaryLines = entries.map(([a, c]) => `  - ${a}: ${c}`).join("\n") || "  (none)";
+                console.log(`[Container-2000] Authors summary:\n${summaryLines}`);
+
+                // -------- Run peers analysis + assertions --------
                 for (const { name, path } of collatorLogs) {
                     const { peers, times } = await collectSeries(path);
+
+                    expect(peers.length, `${name}: no 'Idle (N peers)' lines found in ${path}`).to.be.greaterThan(0);
 
                     const st = stats(peers);
                     const ones = peers.filter((n) => n === 1).length;
@@ -261,36 +330,23 @@ describeSuite({
                     const frac1 = ones / peers.length;
                     const frac0 = zeros / peers.length;
 
-                    // Log a concise summary + sparkline “graph”
                     const firstTs = times[0] || "(unknown start)";
                     const lastTs = times[times.length - 1] || "(unknown end)";
 
-                    // Header
                     console.log(`\n[${name}] peers over time (${peers.length} samples)`);
                     console.log(`[${name}] window: ${firstTs}  →  ${lastTs}`);
                     console.log(
-                        `[${name}] min=${st.min}, max=${st.max}, mean=${st.mean.toFixed(2)}, p50=${st.p50}, p90=${st.p90} | 1-peer=${(frac1 * 100).toFixed(
+                        `[${name}] min=${st.min}, max=${st.max}, mean=${st.mean.toFixed(2)}, p50=${st.p50}, p90=${st.p90} | 1-peer=${(
+                            frac1 * 100
+                        ).toFixed(
                             1
                         )}% (${ones}/${peers.length}) | 0-peer=${(frac0 * 100).toFixed(1)}% (${zeros}/${peers.length})`
                     );
                     console.log(`[${name}] sparkline:\n${sparkline(peers)}\n`);
-                }
 
-                for (const { name, path } of collatorLogs) {
-                    const { peers } = await collectSeries(path);
-
-                    // If still empty, surface a helpful error
-                    expect(peers.length, `${name}: no 'Idle (N peers)' lines found in ${path}`).to.be.greaterThan(0);
-
-                    const ones = peers.filter((n) => n === 1).length;
-                    const frac1 = ones / peers.length;
-
-                    // Hard requirement: FAIL if the majority of time shows exactly 1 peer
                     expect(
                         frac1,
-                        `${name}: majority of samples report exactly 1 peer (${ones}/${peers.length} = ${(frac1 * 100).toFixed(
-                            1
-                        )}%). Expected ≤ 50%.`
+                        `${name}: majority of samples report exactly 1 peer (${ones}/${peers.length} = ${(frac1 * 100).toFixed(1)}%). Expected ≤ 50%.`
                     ).to.be.at.most(0.5);
                 }
 
@@ -298,7 +354,9 @@ describeSuite({
                 try {
                     const health: any = await container2000Api.rpc.system.health();
                     const peersNow =
-                        typeof health?.peers?.toNumber === "function" ? health.peers.toNumber() : (health?.toJSON?.().peers ?? 0);
+                        typeof health?.peers?.toNumber === "function"
+                            ? health.peers.toNumber()
+                            : (health?.toJSON?.().peers ?? 0);
                     console.log(`[Container2000 RPC] current peers=${peersNow}`);
                 } catch {
                     // ignore if not available
